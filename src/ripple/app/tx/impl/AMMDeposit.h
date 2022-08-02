@@ -26,6 +26,40 @@ namespace ripple {
 
 class Sandbox;
 
+/** AMMDeposit implements AMM deposit Transactor.
+ * The deposit transaction is used to add liquidity to the AMM instance pool,
+ * thus obtaining some share of the instance's pools in the form of LPTokens.
+ * If the trader deposits proportional values of both assets without changing
+ * their relative price, then no trading fee is charged on the transaction.
+ * The trader can specify different combination of the fields in the deposit.
+ * LPTokens - transaction assumes proportional deposit of pools assets in
+ *     exchange for the specified amount of LPTokens of the AMM instance.
+ * Asset1In - transaction assumes single asset deposit of the amount of asset
+ *     specified by Asset1In. This is essentially an equal asset deposit
+ *     and a swap.
+ * Asset1In and Asset2In - transaction assumes proportional deposit of pool
+ *     assets with the constraints on the maximum amount of each asset that
+ *     the trader is willing to deposit.
+ * Asset1In and LPTokens - transaction assumes that a single asset asset1
+ *     is deposited to obtain some share of the AMM instance's pools
+ *     represented by amount of LPTokens.
+ * Asset1In and EPrice - transaction assumes single asset deposit with
+ *     the following two constraints:
+ *         a. amount of asset1 if specified in Asset1In specifies the maximum
+ *             amount of asset1 that the trader is willing to deposit
+ *         b. The effective-price of the LPTokens traded out does not exceed
+ *             the specified EPrice.
+ * Following updates after a successful AMMDeposit transaction:
+ * The deposited asset, if XRP, is transferred from the account that initiated
+ *     the transaction to the AMM instance account, thus changing the Balance
+ *     field of each account.
+ * The deposited asset, if tokens, are balanced between the AMM account
+ *     and the issuer account trustline.
+ * The LPTokens are issued by the AMM instance account to the account
+ *     that initiated the transaction and a new trustline is created,
+ *     if there does not exist one.
+ * The pool composition is updated.
+ */
 class AMMDeposit : public Transactor
 {
 public:
@@ -58,7 +92,7 @@ private:
     std::pair<TER, bool>
     applyGuts(Sandbox& view);
 
-    /** Deposit requested assets and tokens amount into LP account.
+    /** Deposit requested assets and token amount into LP account.
      * @param view
      * @param ammAccount AMM account
      * @param asset1Deposit deposit amount
@@ -74,10 +108,8 @@ private:
         std::optional<STAmount> const& asset2Deposit,
         STAmount const& lpTokensDeposit);
 
-    /** Equal asset deposit for the specified share of the AMM instance pools.
-     * Depositing assets proportionally doesn't change the assets ratio and
-     * consequently doesn't change the relative pricing. Therefore the fee
-     * is not charged.
+    /** Equal asset deposit (LPTokens) for the specified share of
+     * the AMM instance pools. The trading fee is not charged.
      * @param view
      * @param ammAccount AMM account
      * @param asset1Balance current AMM asset1 balance
@@ -95,9 +127,9 @@ private:
         STAmount const& lptAMMBalance,
         STAmount const& lpTokensDeposit);
 
-    /** Equal asset deposit with the constraint on the maximum amount of
-     * both assets that the trader is willing to deposit. The fee is not
-     * charged.
+    /** Equal asset deposit (Asset1In, Asset2In) with the constraint on
+     * the maximum amount of both assets that the trader is willing to deposit.
+     * The trading fee is not charged.
      * @param view
      * @param ammAccount AMM account
      * @param asset1Balance current AMM asset1 balance
@@ -117,7 +149,8 @@ private:
         STAmount const& asset1In,
         STAmount const& asset2In);
 
-    /** Single asset deposit by the amount. The fee is charged.
+    /** Single asset deposit (Asset1In) by the amount.
+     * The trading fee is charged.
      * @param view
      * @param ammAccount AMM account
      * @param asset1Balance current AMM asset1 balance
@@ -135,9 +168,8 @@ private:
         STAmount const& asset1In,
         std::uint16_t tfee);
 
-    /** Single asset deposit by the tokens. The trading fee is charged.
-     * The pool to deposit into is determined in the applyGuts() via
-     * asset1InDetails issue. The fee is charged.
+    /** Single asset deposit (Asset1In, LPTokens) by the tokens.
+     * The trading fee is charged.
      * @param view
      * @param ammAccount AMM account
      * @param asset1Balance current AMM asset1 balance
@@ -155,8 +187,8 @@ private:
         STAmount const& lpTokensDeposit,
         std::uint16_t tfee);
 
-    /** Single asset deposit with the constraint that the effective price
-     * of the trade doesn't exceed the specified. The fee is charged.
+    /** Single asset deposit (Asset1In, EPrice) with two constraints.
+     * The trading fee is charged.
      * @param view
      * @param ammAccount AMM account
      * @param asset1Balance current AMM asset1 balance

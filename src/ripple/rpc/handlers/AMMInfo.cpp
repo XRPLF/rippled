@@ -129,19 +129,19 @@ doAMMInfo(RPC::JsonContext& context)
     lptAMMBalance.setJson(result[jss::LPTokens]);
     result[jss::TradingFee] = amm->getFieldU16(sfTradingFee);
     result[jss::AMMAccount] = to_string(ammAccountID);
-    Json::Value voteEntries(Json::arrayValue);
-    if (amm->isFieldPresent(sfVoteEntries))
+    Json::Value voteSlots(Json::arrayValue);
+    if (amm->isFieldPresent(sfVoteSlots))
     {
-        for (auto const& voteEntry : amm->getFieldArray(sfVoteEntries))
+        for (auto const& voteEntry : amm->getFieldArray(sfVoteSlots))
         {
             Json::Value vote;
             vote[jss::FeeVal] = voteEntry.getFieldU32(sfFeeVal);
             vote[jss::VoteWeight] = voteEntry.getFieldU32(sfVoteWeight);
-            voteEntries.append(vote);
+            voteSlots.append(vote);
         }
     }
-    if (voteEntries.size() > 0)
-        result[jss::VoteEntries] = voteEntries;
+    if (voteSlots.size() > 0)
+        result[jss::VoteSlots] = voteSlots;
     if (amm->isFieldPresent(sfAuctionSlot))
     {
         auto const& auctionSlot =
@@ -276,14 +276,14 @@ doAmmInfoGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetAmmInfoRequest>& context)
         toBase58(ammAccountID);
     if (!params.has_ammhash())
         *result.mutable_ammhash()->mutable_value() = to_string(ammHash);
-    if (amm->isFieldPresent(sfVoteEntries))
+    if (amm->isFieldPresent(sfVoteSlots))
     {
-        for (auto const& voteEntry : amm->getFieldArray(sfVoteEntries))
+        for (auto const& voteEntry : amm->getFieldArray(sfVoteSlots))
         {
-            auto& vote_entries = *result.add_vote_entries();
-            vote_entries.mutable_fee_val()->set_value(
+            auto& vote_slots = *result.add_vote_slots();
+            vote_slots.mutable_fee_val()->set_value(
                 voteEntry.getFieldU32(sfFeeVal));
-            vote_entries.mutable_vote_weight()->set_value(
+            vote_slots.mutable_vote_weight()->set_value(
                 voteEntry.getFieldU32(sfVoteWeight));
         }
     }

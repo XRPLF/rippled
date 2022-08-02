@@ -61,7 +61,7 @@ message GetAmmInfoResponse
 
   TradingFee trading_fee = 6;
 
-  repeated VoteEntryResp vote_entries = 7;
+  repeated VoteEntryResp vote_slots = 7;
 
   AuctionSlotResp auction_slot = 8;
 

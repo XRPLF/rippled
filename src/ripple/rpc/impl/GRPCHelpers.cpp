@@ -1210,17 +1210,17 @@ populateVoteWeight(T& to, STObject const& from)
 
 template <class T>
 void
-populateVoteEntries(T& to, STObject const& from)
+populateVoteSlots(T& to, STObject const& from)
 {
     populateProtoArray(
-        [&to]() { return to.add_vote_entries(); },
+        [&to]() { return to.add_vote_slots(); },
         [&](auto& innerObj, auto& innerProto) {
             populateAccount(innerProto, innerObj);
             populateFeeVal(innerProto, innerObj);
             populateVoteWeight(innerProto, innerObj);
         },
         from,
-        sfVoteEntries,
+        sfVoteSlots,
         sfVoteEntry);
 }
 
@@ -2002,7 +2002,7 @@ convert(org::xrpl::rpc::v1::AMM& to, STObject const& from)
 
     populateTradingFee(to, from);
 
-    populateVoteEntries(to, from);
+    populateVoteSlots(to, from);
 
     populateAuctionSlot(*to.mutable_auction_slot(), from);
 

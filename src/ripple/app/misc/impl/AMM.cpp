@@ -123,7 +123,7 @@ lpHolds(
 }
 
 std::optional<TEMcodes>
-validAmount(std::optional<STAmount> const& a, bool zero)
+invalidAmount(std::optional<STAmount> const& a, bool zero)
 {
     if (!a)
         return std::nullopt;
@@ -216,6 +216,35 @@ getTokensIssue(SLE const& ammSle)
         return issue;
     };
     return {getIssue(sfToken1), getIssue(sfToken2)};
+}
+
+TER
+ammSend(
+    ApplyView& view,
+    AccountID const& from,
+    AccountID const& to,
+    STAmount const& amount,
+    beast::Journal j)
+{
+    if (isXRP(amount))
+        return accountSend(view, from, to, amount, j);
+
+    auto const issuer = amount.getIssuer();
+
+    if (from == issuer || to == issuer || issuer == noAccount())
+    {
+        auto const ter = rippleCredit(view, from, to, amount, false, j);
+        if (view.rules().enabled(featureDeletableAccounts) && ter != tesSUCCESS)
+            return ter;
+        return tesSUCCESS;
+    }
+
+    TER terResult = rippleCredit(view, issuer, to, amount, true, j);
+
+    if (tesSUCCESS == terResult)
+        terResult = rippleCredit(view, from, issuer, amount, true, j);
+
+    return terResult;
 }
 
 }  // namespace ripple

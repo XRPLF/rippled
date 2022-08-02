@@ -134,7 +134,7 @@ JSS(TradingFee);             // in/out: AMM trading fee
 JSS(TransactionType);        // in: TransactionSign.
 JSS(TransferRate);           // in: TransferRate.
 JSS(TrustSet);               // transaction type.
-JSS(VoteEntries);            // out: AMM Vote
+JSS(VoteSlots);              // out: AMM Vote
 JSS(VoteWeight);             // out: AMM Vote
 JSS(aborted);                // out: InboundLedger
 JSS(accepted);               // out: LedgerToJson, OwnerInfo, SubmitTransaction

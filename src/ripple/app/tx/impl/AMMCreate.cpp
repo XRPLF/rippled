@@ -57,7 +57,8 @@ AMMCreate::preflight(PreflightContext const& ctx)
     auto const saAsset2 = tx[sfAsset2];
     if (saAsset1.issue() == saAsset2.issue())
     {
-        JLOG(j.debug()) << "AMM Instance: assets can not have the same issue.";
+        JLOG(j.debug())
+            << "AMM Instance: tokens can not have the same currency/issuer.";
         return temBAD_AMM_TOKENS;
     }
     if (saAsset1 <= beast::zero || saAsset2 <= beast::zero)
@@ -221,7 +222,7 @@ AMMCreate::applyGuts(Sandbox& sb)
     }
 
     // Send asset1.
-    res = accountSend(sb, account_, ammAccountID, saAsset1, ctx_.journal);
+    res = ammSend(sb, account_, ammAccountID, saAsset1, ctx_.journal);
     if (res != tesSUCCESS)
     {
         JLOG(j_.debug()) << "AMM Instance: failed to send " << saAsset1;
@@ -229,7 +230,7 @@ AMMCreate::applyGuts(Sandbox& sb)
     }
 
     // Send asset2.
-    res = accountSend(sb, account_, ammAccountID, saAsset2, ctx_.journal);
+    res = ammSend(sb, account_, ammAccountID, saAsset2, ctx_.journal);
     if (res != tesSUCCESS)
         JLOG(j_.debug()) << "AMM Instance: failed to send " << saAsset2;
     else

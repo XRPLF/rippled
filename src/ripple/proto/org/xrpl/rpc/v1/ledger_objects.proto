@@ -426,7 +426,7 @@ message AMM
 
     TradingFee trading_fee = 2;
 
-    repeated VoteEntry vote_entries = 3;
+    repeated VoteEntry vote_slots = 3;
 
     AuctionSlot auction_slot = 4;
 

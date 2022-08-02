@@ -267,7 +267,7 @@ LedgerFormats::LedgerFormats()
         {
             {sfAMMAccount, soeREQUIRED},
             {sfTradingFee, soeREQUIRED},
-            {sfVoteEntries, soeOPTIONAL},
+            {sfVoteSlots, soeOPTIONAL},
             {sfAuctionSlot, soeOPTIONAL},
             {sfLPTokenBalance, soeREQUIRED},
             {sfAMMToken, soeREQUIRED}

@@ -734,7 +734,7 @@ private:
             {sfSigners.getName(), &sfSigner},
             {sfNFTokenOffers.getName(), &sfLedgerIndex},
             {sfAuthAccounts.getName(), &sfAuthAccount},
-            {sfVoteEntries.getName(), &sfVoteEntry}};
+            {sfVoteSlots.getName(), &sfVoteEntry}};
 
         if (!repeatsWhat.count(sField->getName()))
         {

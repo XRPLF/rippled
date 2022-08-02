@@ -280,9 +280,9 @@ private:
             AMM ammAlice(env, alice, USD(20000), BTC(0.5));
             BEAST_EXPECT(ammAlice.expectBalances(
                 USD(20000), BTC(0.5), IOUAmount{100, 0}));
-            // Charge AMM's LP the transfer fee.
-            env.require(balance(alice, USD(0)));
-            env.require(balance(alice, BTC(0)));
+            // Transfer fee is not charged.
+            env.require(balance(alice, USD(5000)));
+            env.require(balance(alice, BTC(0.125)));
         }
 
         // Require authorization is set, account is authorized
@@ -670,16 +670,16 @@ private:
             AMM ammAlice(env, alice, USD(20000), BTC(0.5));
             BEAST_EXPECT(ammAlice.expectBalances(
                 USD(20000), BTC(0.5), IOUAmount{100, 0}));
-            // Charge AMM's LP the transfer fee.
-            env.require(balance(alice, USD(0)));
-            env.require(balance(alice, BTC(0)));
-            // LP deposits, pays transfer fee
+            // Transfer fee is not charged.
+            env.require(balance(alice, USD(5000)));
+            env.require(balance(alice, BTC(0.125)));
+            // LP deposits, doesn't pay transfer fee.
             fund(env, gw, {carol}, {USD(2500), BTC(0.0625)}, Fund::Acct);
             ammAlice.deposit(carol, 10);
             BEAST_EXPECT(ammAlice.expectBalances(
                 USD(22000), BTC(0.55), IOUAmount{110, 0}));
-            env.require(balance(carol, USD(0)));
-            env.require(balance(carol, BTC(0)));
+            env.require(balance(carol, USD(500)));
+            env.require(balance(carol, BTC(0.0125)));
         }
     }
 
@@ -1083,23 +1083,23 @@ private:
             AMM ammAlice(env, alice, USD(20000), BTC(0.5));
             BEAST_EXPECT(ammAlice.expectBalances(
                 USD(20000), BTC(0.5), IOUAmount{100, 0}));
-            // Charge AMM's LP the transfer fee.
-            env.require(balance(alice, USD(0)));
-            env.require(balance(alice, BTC(0)));
-            // LP deposits, pays transfer fee
+            // Transfer fee is not charged.
+            env.require(balance(alice, USD(5000)));
+            env.require(balance(alice, BTC(0.125)));
+            // LP deposits, doesn't pay transfer fee.
             fund(env, gw, {carol}, {USD(2500), BTC(0.0625)}, Fund::Acct);
             ammAlice.deposit(carol, 10);
             BEAST_EXPECT(ammAlice.expectBalances(
                 USD(22000), BTC(0.55), IOUAmount{110, 0}));
-            env.require(balance(carol, USD(0)));
-            env.require(balance(carol, BTC(0)));
-            // LP withdraws, AMM pays the transfer fee
+            env.require(balance(carol, USD(500)));
+            env.require(balance(carol, BTC(0.0125)));
+            // LP withdraws, AMM doesn't pay the transfer fee.
             ammAlice.withdraw(carol, 10);
             BEAST_EXPECT(ammAlice.expectBalances(
-                USD(19500), BTC(0.4875), IOUAmount{100, 0}));
+                USD(20000), BTC(0.5), IOUAmount{100, 0}));
             ammAlice.expectLPTokens(carol, IOUAmount{0, 0});
-            env.require(balance(carol, USD(2000)));
-            env.require(balance(carol, BTC(0.05)));
+            env.require(balance(carol, USD(2500)));
+            env.require(balance(carol, BTC(0.0625)));
         }
     }
 
@@ -1449,37 +1449,39 @@ private:
             fund(env, gw, {bob}, {USD(10000)}, Fund::Acct);
             ammAlice.deposit(bob, 1000000);
             env.close();
+            BEAST_EXPECT(ammAlice.expectBalances(
+                XRP(12000), USD(12000), IOUAmount{12000000, 0}));
 
             // Initial state, not owned. Default MinSlotPrice.
             ammAlice.bid(carol);
             env.close();
             BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount{120, 0}));
 
-            // 1st Interval.
+            // 1st Interval after close, price for 0th interval.
             ammAlice.bid(bob);
             env.close(seconds(intervalDuration + 1));
             BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 1, IOUAmount{126, 0}));
 
-            // 10th Interval.
+            // 10th Interval after close, price for 1st interval.
             ammAlice.bid(carol);
             env.close(seconds(10 * intervalDuration + 1));
-            BEAST_EXPECT(ammAlice.expectAuctionSlot(
-                0, 10, IOUAmount{2520609925373213, -13}));
+            BEAST_EXPECT(
+                ammAlice.expectAuctionSlot(0, 10, IOUAmount{252298737, -6}));
 
-            // 20th Interval - expired.
+            // 20th Interval (expired) after close, price for 11th interval.
             ammAlice.bid(bob);
             env.close(seconds(20 * intervalDuration + 1));
             BEAST_EXPECT(ammAlice.expectAuctionSlot(
-                0, 0, IOUAmount{3846625271031949, -13}));
+                0, 0, IOUAmount{384912158551263, -12}));
 
             // 0 Interval.
             ammAlice.bid(carol);
             env.close();
             BEAST_EXPECT(ammAlice.expectAuctionSlot(
-                0, 0, IOUAmount{1199963692951085, -13}));
-            // Tokens burned on bidding fees
+                0, 0, IOUAmount{119996367684391, -12}));
+            // ~363.232 tokens burned on bidding fees.
             BEAST_EXPECT(ammAlice.expectBalances(
-                XRP(12000), USD(12000), IOUAmount{1199951693314156, -8}));
+                XRP(12000), USD(12000), IOUAmount{1199951677207142, -8}));
         });
 
         // Pool's fee 1%. Bid to pay computed price.

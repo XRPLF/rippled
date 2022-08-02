@@ -353,7 +353,7 @@ CONSTRUCT_UNTYPED_SFIELD(sfAffectedNodes,       "AffectedNodes",        ARRAY,  
 CONSTRUCT_UNTYPED_SFIELD(sfMemos,               "Memos",                ARRAY,      9);
 CONSTRUCT_UNTYPED_SFIELD(sfNFTokens,            "NFTokens",             ARRAY,     10);
 CONSTRUCT_UNTYPED_SFIELD(sfHooks,               "Hooks",                ARRAY,     11);
-CONSTRUCT_UNTYPED_SFIELD(sfVoteEntries,         "VoteEntries",          ARRAY,     14);
+CONSTRUCT_UNTYPED_SFIELD(sfVoteSlots,           "VoteSlots",            ARRAY,     14);
 CONSTRUCT_UNTYPED_SFIELD(sfAuthAccounts,        "AuthAccounts",         ARRAY,     15);
 
 // array of objects (uncommon)

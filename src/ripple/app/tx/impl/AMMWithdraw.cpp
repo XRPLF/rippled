@@ -62,13 +62,13 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
     //   Asset1Out and Asset2Out
     //   Asset1Out and [LPTokens|tfAMMWithdrawAll]
     //   Asset1Out and EPrice
-    if ((!lpTokens && !asset1Out && !withdrawAll) ||
-        (lpTokens && (asset2Out || ePrice || withdrawAll)) ||
-        (asset1Out &&
-         ((asset2Out && (lpTokens || ePrice || withdrawAll)) ||
-          (ePrice && (asset2Out || lpTokens || withdrawAll)))) ||
-        (ePrice && (asset2Out || lpTokens || withdrawAll)) ||
-        (asset2Out && withdrawAll && *asset2Out != beast::zero))
+    if ((asset1Out && asset2Out && (lpTokens || withdrawAll || ePrice)) ||
+        (asset1Out && (lpTokens || withdrawAll) && (asset2Out || ePrice)) ||
+        (asset1Out && ePrice && (asset2Out || lpTokens || withdrawAll)) ||
+        (asset2Out && !asset1Out) || (ePrice && !asset1Out) ||
+        (!asset1Out && !lpTokens && !withdrawAll) ||
+        (lpTokens && withdrawAll) ||
+        (asset1Out && withdrawAll && *asset1Out != beast::zero))
     {
         JLOG(ctx.j.debug()) << "AMM Withdraw: invalid combination of "
                                "withdraw fields.";
@@ -79,19 +79,19 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
         JLOG(ctx.j.debug()) << "AMM Withdraw: invalid tokens.";
         return temBAD_AMM_TOKENS;
     }
-    if (auto const res = validAmount(
+    if (auto const res = invalidAmount(
             asset1Out,
             withdrawAll || lpTokens.has_value() || ePrice.has_value()))
     {
         JLOG(ctx.j.debug()) << "AMM Withdraw: invalid Asset1Out";
         return *res;
     }
-    else if (auto const res = validAmount(asset2Out))
+    else if (auto const res = invalidAmount(asset2Out))
     {
         JLOG(ctx.j.debug()) << "AMM Withdraw: invalid Asset2OutAmount";
         return *res;
     }
-    else if (auto const res = validAmount(ePrice))
+    else if (auto const res = invalidAmount(ePrice))
     {
         JLOG(ctx.j.debug()) << "AMM Withdraw: invalid EPrice";
         return *res;
@@ -316,7 +316,7 @@ AMMWithdraw::withdraw(
 
     // Withdraw asset1Withdraw
     auto res =
-        accountSend(view, ammAccount, account_, asset1Withdraw, ctx_.journal);
+        ammSend(view, ammAccount, account_, asset1Withdraw, ctx_.journal);
     if (res != tesSUCCESS)
     {
         JLOG(ctx_.journal.debug())
@@ -327,8 +327,8 @@ AMMWithdraw::withdraw(
     // Withdraw asset2Withdraw
     if (asset2Withdraw)
     {
-        res = accountSend(
-            view, ammAccount, account_, *asset2Withdraw, ctx_.journal);
+        res =
+            ammSend(view, ammAccount, account_, *asset2Withdraw, ctx_.journal);
         if (res != tesSUCCESS)
         {
             JLOG(ctx_.journal.debug())

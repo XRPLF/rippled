@@ -26,6 +26,27 @@ namespace ripple {
 
 class Sandbox;
 
+/** AMMVote implements AMM vote Transactor.
+ * This transactor allows for the TradingFee of the AMM instance be a votable
+ * parameter. Any account (LP) that holds the corresponding LPTokens can cast
+ * a vote using the new AMMVote transaction. VoteSlots array in ltAMM object
+ * keeps track of upto eight active votes (VoteEntry) for the instance.
+ * VoteEntry contains:
+ * Account - account id that cast the vote.
+ * FeeVal - proposed fee in basis points.
+ * VoteWeight - LPTokens owned by the account in basis points.
+ * TradingFee is calculated as sum(VoteWeight_i * fee_i)/sum(VoteWeight_i).
+ * Every time AMMVote transaction is submitted, the transactor
+ * - Fails the transaction is the account doesn't hold LPTokens
+ * - Removes VoteEntry for accounts that don't hold LPTokens
+ * - If there are fewer than eight VoteEntry objects then add new VoteEntry
+ *     object for the account.
+ * - If all eight VoteEntry slots are full, then remove VoteEntry that
+ *     holds less LPTokens than the account. If all accounts hold more
+ *     LPTokens then fail transaction.
+ * - If the account already holds a vote, then update VoteEntry.
+ * - Calculate and update TradingFee.
+ */
 class AMMVote : public Transactor
 {
 public:

@@ -53,16 +53,17 @@ AMMDeposit::preflight(PreflightContext const& ctx)
     auto const asset2In = ctx.tx[~sfAsset2In];
     auto const ePrice = ctx.tx[~sfEPrice];
     auto const lpTokens = ctx.tx[~sfLPTokens];
-    // Valid combinations are:
+    // Valid options are:
     //   LPTokens
     //   Asset1In
     //   Asset1In and Asset2In
     //   Asset1In and LPTokens
     //   Asset1In and EPrice
-    if ((!lpTokens && !asset1In) || (lpTokens && (asset2In || ePrice)) ||
-        (asset1In &&
-         ((asset2In && (lpTokens || ePrice)) ||
-          (ePrice && (asset2In || lpTokens)))))
+    if ((asset1In && asset2In && (lpTokens || ePrice)) ||
+        (asset1In && lpTokens && (asset2In || ePrice)) ||
+        (asset1In && ePrice && (asset2In || lpTokens)) ||
+        (ePrice && !asset1In) || (asset2In && !asset1In) ||
+        (!lpTokens && !asset1In))
     {
         JLOG(ctx.j.debug()) << "AMM Deposit: invalid combination of "
                                "deposit fields.";
@@ -74,18 +75,18 @@ AMMDeposit::preflight(PreflightContext const& ctx)
         return temBAD_AMM_TOKENS;
     }
     else if (
-        auto const res =
-            validAmount(asset1In, (lpTokens.has_value() || ePrice.has_value())))
+        auto const res = invalidAmount(
+            asset1In, (lpTokens.has_value() || ePrice.has_value())))
     {
         JLOG(ctx.j.debug()) << "AMM Deposit: invalid Asset1In";
         return *res;
     }
-    else if (auto const res = validAmount(asset2In))
+    else if (auto const res = invalidAmount(asset2In))
     {
         JLOG(ctx.j.debug()) << "AMM Deposit: invalid Asset2InAmount";
         return *res;
     }
-    else if (auto const res = validAmount(ePrice))
+    else if (auto const res = invalidAmount(ePrice))
     {
         JLOG(ctx.j.debug()) << "AMM Deposit: invalid EPrice";
         return *res;
@@ -265,8 +266,7 @@ AMMDeposit::deposit(
             << asset1Deposit;
         return {tecUNFUNDED_AMM, STAmount{}};
     }
-    auto res =
-        accountSend(view, account_, ammAccount, asset1Deposit, ctx_.journal);
+    auto res = ammSend(view, account_, ammAccount, asset1Deposit, ctx_.journal);
     if (res != tesSUCCESS)
     {
         JLOG(ctx_.journal.debug())
@@ -284,8 +284,7 @@ AMMDeposit::deposit(
                 << *asset2Deposit;
             return {tecUNFUNDED_AMM, STAmount{}};
         }
-        res = accountSend(
-            view, account_, ammAccount, *asset2Deposit, ctx_.journal);
+        res = ammSend(view, account_, ammAccount, *asset2Deposit, ctx_.journal);
         if (res != tesSUCCESS)
         {
             JLOG(ctx_.journal.debug())

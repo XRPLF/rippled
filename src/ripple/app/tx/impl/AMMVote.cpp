@@ -99,24 +99,35 @@ AMMVote::applyGuts(Sandbox& sb)
 
     std::optional<STAmount> minTokens{};
     std::size_t minPos{0};
-    STArray updatedVoteEntries;
+    STArray updatedVoteSlots;
     Number num{0};
     Number den{0};
+    // Account already has vote entry
     bool foundAccount = false;
-    for (auto const& entry : amm->getFieldArray(sfVoteEntries))
+    // Iterate over the current vote entries and update each entry
+    // per current total tokens balance and each LP tokens balance.
+    // Find the entry with the least tokens and whether the account
+    // has the vote entry.
+    for (auto const& entry : amm->getFieldArray(sfVoteSlots))
     {
         auto const account = entry.getAccountID(sfAccount);
         auto lpTokens = lpHolds(sb, ammAccount, account, ctx_.journal);
         if (lpTokens == beast::zero)
+        {
+            JLOG(j_.debug())
+                << "AMMVote::applyGuts, account " << account << " is not LP";
             continue;
+        }
         auto feeVal = entry.getFieldU32(sfFeeVal);
         STObject newEntry{sfVoteEntry};
+        // The account already has the vote entry.
         if (account == account_)
         {
             lpTokens = lpTokensNew;
             feeVal = feeNew;
             foundAccount = true;
         }
+        // Keep running numerator/denominator to calculate the updated fee.
         num += feeVal * lpTokens;
         den += lpTokens;
         newEntry.setAccountID(sfAccount, account);
@@ -125,14 +136,16 @@ AMMVote::applyGuts(Sandbox& sb)
             sfVoteWeight,
             (std::int64_t)(
                 Number(lpTokens) * 100000 / lptAMMBalance + Number(1) / 2));
+        // Find an entry with the least tokens.
         if (!minTokens || lpTokens < *minTokens)
         {
             minTokens = lpTokens;
-            minPos = updatedVoteEntries.size();
+            minPos = updatedVoteSlots.size();
         }
-        updatedVoteEntries.emplace_back(newEntry);
+        updatedVoteSlots.emplace_back(newEntry);
     }
 
+    // The account doesn't have the vote entry.
     if (!foundAccount)
     {
         auto update = [&]() {
@@ -146,21 +159,34 @@ AMMVote::applyGuts(Sandbox& sb)
             newEntry.setAccountID(sfAccount, account_);
             num += feeNew * lpTokensNew;
             den += lpTokensNew;
-            updatedVoteEntries.emplace_back(newEntry);
+            updatedVoteSlots.emplace_back(newEntry);
         };
-        if (updatedVoteEntries.size() < 8)
+        // Add new entry if the number of the vote entries
+        // is less than 8.
+        if (updatedVoteSlots.size() < 8)
             update();
+        // Add the entry if the account has more tokens than
+        // the least token holder.
         else if (lpTokensNew > *minTokens)
         {
-            auto const entry = updatedVoteEntries.begin() + minPos;
+            auto const entry = updatedVoteSlots.begin() + minPos;
+            // Remove the least token vote entry.
             num -= entry->getFieldU32(sfFeeVal) * *minTokens;
             den -= *minTokens;
-            updatedVoteEntries.erase(updatedVoteEntries.begin() + minPos);
+            updatedVoteSlots.erase(updatedVoteSlots.begin() + minPos);
             update();
+        }
+        // All slots are full and the account does not hold more LPTokens
+        else
+        {
+            JLOG(j_.debug()) << "AMMVote::applyGuts, insufficient tokens to "
+                                "override other votes";
+            return {tecAMM_FAILED_VOTE, false};
         }
     }
 
-    amm->setFieldArray(sfVoteEntries, updatedVoteEntries);
+    // Update the vote entries and the trading fee.
+    amm->setFieldArray(sfVoteSlots, updatedVoteSlots);
     amm->setFieldU16(sfTradingFee, (std::int64_t)(num / den + Number(1) / 2));
     sb.update(amm);
 

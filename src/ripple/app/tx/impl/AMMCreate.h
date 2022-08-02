@@ -27,13 +27,29 @@ namespace ripple {
 class Sandbox;
 
 /** AMMCreate implements Automatic Market Maker(AMM) creation Transactor.
- *  It creates a new AMM instance with two tokens.
- *  AMM instance creates AccountRoot (no private key)
- *  object for book-keeping of the AMM and XRP balance if one of the tokens
+ *  It creates a new AMM instance with two tokens. Any trader, or Liquidity
+ *  Provider (LP), can create the AMM instance and receive in return shares
+ *  of the AMM pool in the form on LPTokens. The number of tokens that LP gets
+ *  are determined by LPTokens = sqrt(A * B), where A and B is the current
+ *  composition of the AMM pool. LP can add or withdraw tokens from AMM and
+ *  AMM can be used transparently in the payment or offer crossing transactions.
+ *  Trading fee is charged to the traders for the trades executed against
+ *  AMM instance. The fee is added to the AMM pool and distributed to the LPs
+ *  in proportion to the LPTokens upon liquidity removal. The fee can be voted
+ *  on by LP's. LP's can continuously bid for the 24 hour auction slot,
+ *  which enables LP's to trade at zero trading fee.
+ *  AMM instance creates AccountRoot object with disabled master key
+ *  for book-keeping of XRP balance if one of the tokens
  *  is XRP, a trustline for each IOU token, a trustline to keep track
- *  of Liquidity Provider (LP) Tokens (LP share in the AMM instance)
- *  and a directory entry to keep track of the AMM with different weights
- *  (50/50 in the first release).
+ *  of LPTokens, and ltAMM ledger object. AccountRoot ID is generated
+ *  internally from the parent's hash. ltAMM's object ID is
+ * hash{token1.currency, token1.issuer, token2.currency, token2.issuer}, where
+ * issue1 < issue2. ltAMM object provides mapping from the hash to AccountRoot
+ * ID and contains: AMMAccount - AMM AccountRoot ID. TradingFee - AMM voted
+ * TradingFee. VoteSlots - Array of VoteEntry, contains fee vote information.
+ *  AuctionSlot - Auction slot, contains discounted fee bid information.
+ *  LPTokenBalance - LPTokens outstanding balance.
+ *  AMMToken - currency/issuer information for AMM tokens.
  */
 class AMMCreate : public Transactor
 {

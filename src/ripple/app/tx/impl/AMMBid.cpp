@@ -57,8 +57,8 @@ AMMBid::preflight(PreflightContext const& ctx)
         return temBAD_AMM_OPTIONS;
     }
 
-    if (validAmount(ctx.tx[~sfMinSlotPrice]) ||
-        validAmount(ctx.tx[~sfMaxSlotPrice]))
+    if (invalidAmount(ctx.tx[~sfMinSlotPrice]) ||
+        invalidAmount(ctx.tx[~sfMaxSlotPrice]))
     {
         JLOG(ctx.j.debug()) << "AMM Bid: invalid min slot price.";
         return temBAD_AMM_TOKENS;
@@ -147,15 +147,16 @@ AMMBid::applyGuts(Sandbox& sb)
     std::uint32_t constexpr totalSlotTimeSecs = 24 * 3600;
     std::uint32_t constexpr nIntervals = 20;
     std::uint32_t constexpr intervalDuration = totalSlotTimeSecs / nIntervals;
-    // If seated then it is the time slot, otherwise
-    // the auction slot is not owned
-    auto timeSlot = [&]() -> std::optional<Number> {
+
+    // If seated then it is the current slot-holder time slot, otherwise
+    // the auction slot is not owned. Slot range is in {0-19}
+    auto const timeSlot = [&]() -> std::optional<std::uint8_t> {
         if (auctionSlot.isFieldPresent(sfTimeStamp))
         {
             auto const stamp = auctionSlot.getFieldU32(sfTimeStamp);
             auto const diff = current - stamp;
             if (diff < totalSlotTimeSecs)
-                return diff / intervalDuration;
+                return (std::int64_t)(diff / intervalDuration);
         }
         return std::nullopt;
     }();
@@ -197,7 +198,7 @@ AMMBid::applyGuts(Sandbox& sb)
     auto const minSlotPrice = ctx_.tx[~sfMinSlotPrice];
     auto const maxSlotPrice = ctx_.tx[~sfMaxSlotPrice];
 
-    Number MinSlotPrice = lptAMMBalance / 100000;  // 0.001% TBD
+    Number const MinSlotPrice = lptAMMBalance / 100000;  // 0.001% TBD
     // Arbitrager's bid price
     auto const bidPrice = [&]() -> Number {
         if (minSlotPrice.has_value())
@@ -209,6 +210,7 @@ AMMBid::applyGuts(Sandbox& sb)
     }();
 
     // No one owns the slot or expired slot.
+    // The bidder pays MinSlotPrice
     if (!auctionSlot.isFieldPresent(sfAccount) ||
         !validOwner(auctionSlot.getAccountID(sfAccount)))
     {
@@ -216,22 +218,27 @@ AMMBid::applyGuts(Sandbox& sb)
     }
     else
     {
-        Number const price = auctionSlot.getFieldAmount(sfPrice);
-        auto const fractionRemaining = 1 - (*timeSlot + 1) / nIntervals;
+        // Price the slot was purchased at.
+        Number const pricePurchased = auctionSlot.getFieldAmount(sfPrice);
+        auto const fractionUsed = (Number(*timeSlot) + 1) / nIntervals;
+        auto const fractionRemaining = Number(1) - fractionUsed;
         auto computedPrice = [&]() -> Number {
             Number const p1_05 = Number(105) / 100;
+            // First interval slot price
             if (*timeSlot == 0)
-                return price * p1_05;
+                return pricePurchased * p1_05;
+            // Other intervals slot price
             else
-                return price * p1_05 * (1 - power(fractionRemaining, 60)) +
+                return pricePurchased * p1_05 * (1 - power(fractionUsed, 60)) +
                     MinSlotPrice;
         }();
 
-        // If max price then don't pay more than the max price.
+        // If max pricePurchased then don't pay more than the max
+        // pricePurchased.
         if (maxSlotPrice.has_value() && computedPrice > *maxSlotPrice)
         {
-            JLOG(ctx_.journal.debug())
-                << "AMM Bid: computed price exceeds max price.";
+            JLOG(ctx_.journal.debug()) << "AMM Bid: computed pricePurchased "
+                                          "exceeds max pricePurchased.";
             return {tecAMM_FAILED_BID, false};
         }
 
@@ -240,7 +247,7 @@ AMMBid::applyGuts(Sandbox& sb)
             if (minSlotPrice.has_value())
                 return bidPrice > computedPrice ? bidPrice : computedPrice;
             else if (maxSlotPrice.has_value())
-                return bidPrice;
+                return bidPrice;  // max slot price is less than computed price
             else
                 return computedPrice;
         }();
@@ -248,7 +255,8 @@ AMMBid::applyGuts(Sandbox& sb)
         res = updateSlot(0, payPrice, payPrice * (1 - fractionRemaining));
         if (res != tesSUCCESS)
             return {res, false};
-        // Refund the previous owner.
+        // Refund the previous owner. If the time slot is 0 then
+        // the owner is refunded full amount.
         res = accountSend(
             sb,
             account_,
