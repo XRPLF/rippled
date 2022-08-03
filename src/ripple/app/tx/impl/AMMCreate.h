@@ -27,17 +27,19 @@ namespace ripple {
 class Sandbox;
 
 /** AMMCreate implements Automatic Market Maker(AMM) creation Transactor.
+ * [https://github.com/XRPLF/XRPL-Standards/discussions/78]
  *  It creates a new AMM instance with two tokens. Any trader, or Liquidity
  *  Provider (LP), can create the AMM instance and receive in return shares
  *  of the AMM pool in the form on LPTokens. The number of tokens that LP gets
  *  are determined by LPTokens = sqrt(A * B), where A and B is the current
- *  composition of the AMM pool. LP can add or withdraw tokens from AMM and
+ *  composition of the AMM pool. LP can add (AMMDeposit) or withdraw
+ *  (AMMWithdraw) tokens from AMM and
  *  AMM can be used transparently in the payment or offer crossing transactions.
  *  Trading fee is charged to the traders for the trades executed against
  *  AMM instance. The fee is added to the AMM pool and distributed to the LPs
  *  in proportion to the LPTokens upon liquidity removal. The fee can be voted
- *  on by LP's. LP's can continuously bid for the 24 hour auction slot,
- *  which enables LP's to trade at zero trading fee.
+ *  on by LP's (AMMVote). LP's can continuously bid (AMMBid) for the 24 hour
+ *  auction slot, which enables LP's to trade at zero trading fee.
  *  AMM instance creates AccountRoot object with disabled master key
  *  for book-keeping of XRP balance if one of the tokens
  *  is XRP, a trustline for each IOU token, a trustline to keep track
@@ -50,6 +52,8 @@ class Sandbox;
  *  AuctionSlot - Auction slot, contains discounted fee bid information.
  *  LPTokenBalance - LPTokens outstanding balance.
  *  AMMToken - currency/issuer information for AMM tokens.
+ *  AMMDeposit, AMMWithdraw, AMMVote, and AMMBid transactions use the hash
+ *  to access AMM instance.
  */
 class AMMCreate : public Transactor
 {
