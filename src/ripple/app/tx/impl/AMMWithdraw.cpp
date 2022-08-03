@@ -357,6 +357,8 @@ AMMWithdraw::withdraw(
     return {tesSUCCESS, lpTokensWithdraw};
 }
 
+/** Proportional withdrawal of pool assets for the amount of LPTokens.
+ */
 std::pair<TER, STAmount>
 AMMWithdraw::equalWithdrawalTokens(
     Sandbox& view,
@@ -376,6 +378,31 @@ AMMWithdraw::equalWithdrawalTokens(
         lpTokensWithdraw);
 }
 
+/** All assets withdrawal with the constraints on the maximum amount
+ * of each asset that the trader is willing to withdraw.
+ *       a = (t/T) * A (5)
+ *       b = (t/T) * B (6)
+ *       where
+ *      A,B: current pool composition
+ *      T: current balance of outstanding LPTokens
+ *      a: balance of asset A being added
+ *      b: balance of asset B being added
+ *      t: balance of LPTokens issued to LP after a successful transaction
+ * Use equation 5 to compute , given the amount in Asset1Out. Let this be Z
+ * Use equation 6 to compute the amount of asset2, given  t~Z. Let
+ *     the computed amount of asset2 be X
+ * If X <= amount in Asset2Out:
+ *   The amount of asset1 to be withdrawn is the one specified in Asset1Out
+ *   The amount of asset2 to be withdrawn is X
+ *   The amount of LPTokens redeemed is Z
+ * If X> amount in Asset2Out:
+ *   Use equation 5 to compute , given the amount in Asset2Out. Let this be Q
+ *   Use equation 6 to compute the amount of asset1, given t~Q.
+ *     Let the computed amount of asset1 be W
+ *   The amount of asset2 to be withdrawn is the one specified in Asset2Out
+ *   The amount of asset1 to be withdrawn is W
+ *   The amount of LPTokens redeemed is Q
+ */
 std::pair<TER, STAmount>
 AMMWithdraw::equalWithdrawalLimit(
     Sandbox& view,
@@ -407,6 +434,10 @@ AMMWithdraw::equalWithdrawalLimit(
         toSTAmount(lptAMMBalance.issue(), lptAMMBalance * frac));
 }
 
+/** Withdrawal of single asset equivalent to the amount specified in Asset1Out.
+ *       t = T * (1 - sqrt(1 - b/(B * (1 - 0.5 * tfee)))) (7)
+ * Use equation 7 to compute the t, given the amount in Asset1Out.
+ */
 std::pair<TER, STAmount>
 AMMWithdraw::singleWithdrawal(
     Sandbox& view,
@@ -422,6 +453,16 @@ AMMWithdraw::singleWithdrawal(
         view, ammAccount, asset1Out, std::nullopt, lptAMMBalance, tokens);
 }
 
+/** withdrawal of single asset specified in Asset1Out proportional
+ * to the share represented by the amount of LPTokens.
+ *       b = B * (1 - (1 - t/T)**2) * (1 - 0.5 * tfee) (8)
+ * Use equation 8 to compute the amount of asset1, given the redeemed t
+ *   represented by LPTokens. Let this be Y.
+ * If (amount exists for Asset1Out & Y >= amount in Asset1Out) ||
+ *       (amount field does not exist for Asset1Out):
+ *   The amount of asset out is Y
+ *   The amount of LPTokens redeemed is LPTokens
+ */
 std::pair<TER, STAmount>
 AMMWithdraw::singleWithdrawalTokens(
     Sandbox& view,
@@ -445,6 +486,24 @@ AMMWithdraw::singleWithdrawalTokens(
     return {tecAMM_FAILED_WITHDRAW, STAmount{}};
 }
 
+/** Withdrawal of single asset with two constraints.
+ * a. amount of asset1 if specified in Asset1Out specifies the minimum
+ *     amount of asset1 that the trader is willing to withdraw.
+ * b. The effective price of asset traded out does not exceed the amount
+ *     specified in EPrice
+ *       The effective price (EP) of a trade is defined as the ratio
+ *       of the tokens the trader sold or swapped in (Token B) and
+ *       the token they got in return or swapped out (Token A).
+ *       EP(B/A) = b/a (III)
+ *       b = B * (1 - (1 - t/T)**2) * (1 - 0.5 * tfee) (8)
+ * Use equations 8 & III and amount in EPrice to compute the two variables:
+ *   asset in as LPTokens. Let this be X
+ *   asset out as that in Asset1Out. Let this be Y
+ * If (amount exists for Asset1Out & Y >= amount in Asset1Out) ||
+ *     (amount field does not exist for Asset1Out):
+ *   The amount of assetOut is given by Y
+ *   The amount of LPTokens is given by X
+ */
 std::pair<TER, STAmount>
 AMMWithdraw::singleWithdrawalEPrice(
     Sandbox& view,

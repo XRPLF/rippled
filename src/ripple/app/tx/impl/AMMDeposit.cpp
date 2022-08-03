@@ -305,6 +305,9 @@ AMMDeposit::deposit(
     return {tesSUCCESS, lpTokensDeposit};
 }
 
+/** Proportional deposit of pools assets in exchange for the specified
+ * amount of LPTokens.
+ */
 std::pair<TER, STAmount>
 AMMDeposit::equalDepositTokens(
     Sandbox& view,
@@ -324,6 +327,34 @@ AMMDeposit::equalDepositTokens(
         lpTokensDeposit);
 }
 
+/** Proportional deposit of pool assets with the constraints on the maximum
+ * amount of each asset that the trader is willing to deposit.
+ *      a = (t/T) * A (1)
+ *      b = (t/T) * B (2)
+ *     where
+ *      A,B: current pool composition
+ *      T: current balance of outstanding LPTokens
+ *      a: balance of asset A being added
+ *      b: balance of asset B being added
+ *      t: balance of LPTokens issued to LP after a successful transaction
+ * Use equation 1 to compute the amount of , given the amount in Asset1In.
+ *     Let this be Z
+ * Use equation 2 to compute the amount of asset2, given  t~Z. Let
+ *     the computed amount of asset2 be X.
+ * If X <= amount in Asset2In:
+ *   The amount of asset1 to be deposited is the one specified in Asset1In
+ *   The amount of asset2 to be deposited is X
+ *   The amount of LPTokens to be issued is Z
+ * If X > amount in Asset2In:
+ *   Use equation 2 to compute , given the amount in Asset2In. Let this be W
+ *   Use equation 1 to compute the amount of asset1, given t~W from above.
+ *     Let the computed amount of asset1 be Y
+ *   If Y <= amount in Asset1In:
+ *     The amount of asset1 to be deposited is Y
+ *     The amount of asset2 to be deposited is the one specified in Asset2In
+ *     The amount of LPTokens to be issued is W
+ * else, failed transaction
+ */
 std::pair<TER, STAmount>
 AMMDeposit::equalDepositLimit(
     Sandbox& view,
@@ -361,6 +392,11 @@ AMMDeposit::equalDepositLimit(
     return {tecAMM_FAILED_DEPOSIT, STAmount{}};
 }
 
+/** Single asset deposit of the amount of asset specified by Asset1In.
+ *       t = T * (sqrt(1 + (b - 0.5 * tfee * b) / B) - 1) (3)
+ * Use equation 3 to compute amount of LPTokens to be issued, given
+ * the amount in Asset1In.
+ */
 std::pair<TER, STAmount>
 AMMDeposit::singleDeposit(
     Sandbox& view,
@@ -377,6 +413,12 @@ AMMDeposit::singleDeposit(
     return deposit(view, ammAccount, asset1In, std::nullopt, tokens);
 }
 
+/** Single asset asset1 is deposited to obtain some share of
+ * the AMM instance's pools represented by amount of LPTokens.
+ *       b = (((t/T + 1)**2 - 1) / (1 - 0.5 * tfee)) * B (4)
+ * Use equation 4 to compute the amount of asset1 to be deposited,
+ * given t represented by amount of LPTokens.
+ */
 std::pair<TER, STAmount>
 AMMDeposit::singleDepositTokens(
     Sandbox& view,
@@ -392,6 +434,31 @@ AMMDeposit::singleDepositTokens(
         view, ammAccount, asset1Deposit, std::nullopt, lpTokensDeposit);
 }
 
+/** Single asset deposit with two constraints.
+ * a. Amount of asset1 if specified in Asset1In specifies the maximum
+ *     amount of asset1 that the trader is willing to deposit.
+ * b. The effective-price of the LPToken traded out does not exceed
+ *     the specified EPrice.
+ *       The effective price (EP) of a trade is defined as the ratio
+ *       of the tokens the trader sold or swapped in (Token B) and
+ *       the token they got in return or swapped out (Token A).
+ *       EP(B/A) = b/a (III)
+ * Use equation 3 to compute the amount of LPTokens out, given the amount
+ *   of Asset1In. Let this be X.
+ * Use equation III to compute the effective-price of the trade given
+ *   Asset1In amount as the asset in and the LPTokens amount X as asset out.
+ *   Let this be Y.
+ * If Y <= amount in EPrice:
+ *  The amount of asset1 to be deposited is given by amount in Asset1In
+ *  The amount of LPTokens to be issued is X
+ * If (Y>EPrice) OR (amount in Asset1In does not exist):
+ *   Use equations 3 & III and the given EPrice to compute the following
+ *     two variables:
+ *       The amount of asset1 in. Let this be Q
+ *       The amount of LPTokens out. Let this be W
+ *   The amount of asset1 to be deposited is Q
+ *   The amount of LPTokens to be issued is W
+ */
 std::pair<TER, STAmount>
 AMMDeposit::singleDepositEPrice(
     Sandbox& view,
