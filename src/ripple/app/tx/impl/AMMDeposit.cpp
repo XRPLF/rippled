@@ -74,9 +74,7 @@ AMMDeposit::preflight(PreflightContext const& ctx)
         JLOG(ctx.j.debug()) << "AMM Deposit: invalid LPTokens";
         return temBAD_AMM_TOKENS;
     }
-    else if (
-        auto const res = invalidAmount(
-            asset1In, (lpTokens.has_value() || ePrice.has_value())))
+    else if (auto const res = invalidAmount(asset1In, (lpTokens || ePrice)))
     {
         JLOG(ctx.j.debug()) << "AMM Deposit: invalid Asset1In";
         return *res;

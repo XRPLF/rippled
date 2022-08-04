@@ -79,9 +79,8 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
         JLOG(ctx.j.debug()) << "AMM Withdraw: invalid tokens.";
         return temBAD_AMM_TOKENS;
     }
-    if (auto const res = invalidAmount(
-            asset1Out,
-            withdrawAll || lpTokens.has_value() || ePrice.has_value()))
+    if (auto const res =
+            invalidAmount(asset1Out, withdrawAll || lpTokens || ePrice))
     {
         JLOG(ctx.j.debug()) << "AMM Withdraw: invalid Asset1Out";
         return *res;
@@ -304,7 +303,7 @@ AMMWithdraw::withdraw(
     }
     // Withdrawing all tokens but balances are not 0.
     if (lpTokensWithdraw == lptAMMBalance && asset1Withdraw != asset1 &&
-        (!asset2Withdraw.has_value() || *asset2Withdraw != asset2))
+        (!asset2Withdraw || *asset2Withdraw != asset2))
     {
         JLOG(ctx_.journal.debug())
             << "AMM Withdraw: failed to withdraw, invalid LP balance "

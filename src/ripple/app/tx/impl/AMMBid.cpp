@@ -165,7 +165,7 @@ AMMBid::applyGuts(Sandbox& sb)
     auto validOwner = [&](AccountID const& account) {
         return sb.read(keylet::account(account)) &&
             lpHolds(sb, ammAccount, account, ctx_.journal) != beast::zero &&
-            timeSlot.has_value() && *timeSlot < 19;
+            timeSlot && *timeSlot < 19;
     };
 
     auto updateSlot = [&](std::uint32_t fee,
@@ -201,9 +201,9 @@ AMMBid::applyGuts(Sandbox& sb)
     Number const MinSlotPrice = lptAMMBalance / 100000;  // 0.001% TBD
     // Arbitrager's bid price
     auto const bidPrice = [&]() -> Number {
-        if (minSlotPrice.has_value())
+        if (minSlotPrice)
             return *minSlotPrice;
-        else if (maxSlotPrice.has_value())
+        else if (maxSlotPrice)
             return *maxSlotPrice;
         else
             return 0;
@@ -235,7 +235,7 @@ AMMBid::applyGuts(Sandbox& sb)
 
         // If max pricePurchased then don't pay more than the max
         // pricePurchased.
-        if (maxSlotPrice.has_value() && computedPrice > *maxSlotPrice)
+        if (maxSlotPrice && computedPrice > *maxSlotPrice)
         {
             JLOG(ctx_.journal.debug()) << "AMM Bid: computed pricePurchased "
                                           "exceeds max pricePurchased.";
@@ -244,9 +244,9 @@ AMMBid::applyGuts(Sandbox& sb)
 
         auto const payPrice = [&]() -> Number {
             // Bidder pays max(bidPrice, computedPrice)
-            if (minSlotPrice.has_value())
+            if (minSlotPrice)
                 return bidPrice > computedPrice ? bidPrice : computedPrice;
-            else if (maxSlotPrice.has_value())
+            else if (maxSlotPrice)
                 return bidPrice;  // max slot price is less than computed price
             else
                 return computedPrice;

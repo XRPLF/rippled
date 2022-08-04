@@ -110,6 +110,8 @@ else ()
       -Wno-unused-local-typedefs
       $<$<BOOL:${is_gcc}>:
         -Wno-unused-but-set-variable
+      >
+      $<$<OR:$<BOOL:${is_gcc}>,$<BOOL:${is_clang}>,$<BOOL:${APPLE}>>:
         -Wno-deprecated
       >
       $<$<NOT:$<CONFIG:Debug>>:-fno-strict-aliasing>

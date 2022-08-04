@@ -33,6 +33,7 @@ namespace ripple {
 class PaymentSandbox;
 class ReadView;
 class ApplyView;
+class AMMOfferCounter;
 
 enum class DebtDirection { issues, redeems };
 enum class QualityDirection { in, out };
@@ -375,6 +376,7 @@ toStrand(
     STPath const& path,
     bool ownerPaysTransferFee,
     bool offerCrossing,
+    AMMOfferCounter& ammOfferCounter,
     beast::Journal j);
 
 /**
@@ -413,6 +415,7 @@ toStrands(
     bool addDefaultPath,
     bool ownerPaysTransferFee,
     bool offerCrossing,
+    AMMOfferCounter& ammOfferCounter,
     beast::Journal j);
 
 /// @cond INTERNAL
@@ -521,6 +524,7 @@ struct StrandContext
         than once
     */
     boost::container::flat_set<Issue>& seenBookOuts;
+    AMMOfferCounter& ammOfferCounter;
     beast::Journal const j;
 
     /** StrandContext constructor. */
@@ -540,7 +544,8 @@ struct StrandContext
         std::array<boost::container::flat_set<Issue>, 2>&
             seenDirectIssues_,  ///< For detecting currency loops
         boost::container::flat_set<Issue>&
-            seenBookOuts_,   ///< For detecting book loops
+            seenBookOuts_,  ///< For detecting book loops
+        AMMOfferCounter& ammOfferCounter_,
         beast::Journal j_);  ///< Journal for logging
 };
 

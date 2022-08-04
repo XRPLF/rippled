@@ -20,6 +20,7 @@
 #ifndef RIPPLE_APP_PATHS_IMPL_STRANDFLOW_H_INCLUDED
 #define RIPPLE_APP_PATHS_IMPL_STRANDFLOW_H_INCLUDED
 
+#include <ripple/app/paths/AMMOfferCounter.h>
 #include <ripple/app/paths/Credit.h>
 #include <ripple/app/paths/Flow.h>
 #include <ripple/app/paths/impl/AmountSpec.h>
@@ -502,6 +503,7 @@ flow(
     std::optional<Quality> const& limitQuality,
     std::optional<STAmount> const& sendMaxST,
     beast::Journal j,
+    AMMOfferCounter& ammOfferCounter,
     path::detail::FlowDebugInfo* flowDebugInfo = nullptr)
 {
     // Used to track the strand that offers the best quality (output/input
@@ -708,6 +710,7 @@ flow(
                             << " remainingOut: " << to_string(remainingOut);
 
             best->sb.apply(sb);
+            ammOfferCounter.updateIters();
         }
         else
         {

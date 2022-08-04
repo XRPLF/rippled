@@ -1,0 +1,311 @@
+//------------------------------------------------------------------------------
+/*
+    This file is part of rippled: https://github.com/ripple/rippled
+    Copyright (c) 2022 Ripple Labs Inc.
+
+    Permission to use, copy, modify, and/or distribute this software for any
+    purpose  with  or without fee is hereby granted, provided that the above
+    copyright notice and this permission notice appear in all copies.
+
+    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
+    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
+    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+*/
+//==============================================================================
+
+#ifndef RIPPLE_APP_TX_AMMOFFERMAKER_H_INCLUDED
+#define RIPPLE_APP_TX_AMMOFFERMAKER_H_INCLUDED
+
+#include "ripple/app/misc/AMM.h"
+#include "ripple/app/misc/AMM_formulae.h"
+#include "ripple/app/paths/AMMOfferCounter.h"
+#include "ripple/basics/Log.h"
+#include "ripple/ledger/ReadView.h"
+#include "ripple/ledger/View.h"
+#include "ripple/protocol/Quality.h"
+#include "ripple/protocol/STLedgerEntry.h"
+
+namespace ripple {
+
+namespace {
+
+/** Generate AMM offers with the offer size based on Fibonacci sequence.
+ */
+class FibSeqHelper
+{
+private:
+    mutable Amounts curSeq_{};
+    mutable Number x_{0};
+    mutable Number y_{0};
+
+public:
+    FibSeqHelper() = default;
+    ~FibSeqHelper() = default;
+    FibSeqHelper(FibSeqHelper const&) = delete;
+    FibSeqHelper&
+    operator=(FibSeqHelper const&) = delete;
+    /** Generate first sequence.
+     * @param balances current AMM pool balances.
+     * @param tfee trading fee in basis points.
+     * @return
+     */
+    Amounts const&
+    firstSeq(Amounts const& balances, std::uint16_t tfee) const
+    {
+        auto const SP = balances.out / (balances.in * feeMult(tfee));
+        curSeq_.in = toSTAmount(
+            balances.in.issue(), (Number(5) / 10000) * balances.in / 2);
+        curSeq_.out = toSTAmount(balances.out.issue(), SP * curSeq_.in);
+        y_ = curSeq_.out;
+        return curSeq_;
+    }
+    Amounts const&
+    curSeq() const
+    {
+        return curSeq_;
+    }
+    /** Generate next sequence.
+     * @param balances current AMM pool balances.
+     * @param tfee trading fee in basis points.
+     * @return
+     */
+    Amounts const&
+    nextSeq(Amounts const& balances, std::uint16_t tfee) const
+    {
+        auto const total = x_ + y_;
+        curSeq_.out = toSTAmount(balances.out.issue(), total);
+        curSeq_.in = toSTAmount(
+            balances.in.issue(),
+            (balances.in * balances.out / (balances.out - curSeq_.out) -
+             balances.in) /
+                feeMult(tfee));
+        x_ = y_;
+        y_ = total;
+        return curSeq_;
+    }
+};
+
+}  // namespace
+
+/** AMMLiquidity class provides AMM offers to BookStep class.
+ * The offers are generated in two ways. If there are multiple
+ * paths specified to the payment transaction then the offers
+ * are generated based on the Fibonacci sequence with
+ * the maximum of four offers generated in total and
+ * at most four payment engine iterations consuming AMM offers.
+ * These offers behave the same way as CLOB offers in that if
+ * there is a limiting step, then the offers are adjusted
+ * based on their quality.
+ * If there is only one path specified in the payment transaction
+ * then the offers are generated based on the current step
+ * remainingIn/remainingOut amounts and/or competing CLOB offer.
+ * In the latter case, the offer's size is set in such a way
+ * that the new AMM's pool spot price quality is equal to the CLOB's
+ * offer quality. Offer generation is transparent to BookStep, which
+ * gets the offer as Amounts.
+ */
+class AMMLiquidity
+{
+private:
+    AMMOfferCounter const& offerCounter_;
+    AccountID ammAccountID_;
+    std::uint32_t tradingFee_;
+    // Cached AMM pool balances as of last getOffers()
+    mutable Amounts balances_;
+    mutable std::optional<FibSeqHelper> fibSeqHelper_;
+    // Indicates that the balances may have changed
+    // since the last fetchBalances()
+    mutable bool dirty_;
+    beast::Journal const j_;
+
+public:
+    AMMLiquidity(
+        ReadView const& view,
+        AccountID const& ammAccountID,
+        std::uint32_t tradingFee,
+        Issue const& in,
+        Issue const& out,
+        AMMOfferCounter const& offerCounter,
+        beast::Journal j);
+    ~AMMLiquidity() = default;
+    AMMLiquidity(AMMLiquidity const&) = delete;
+    AMMLiquidity&
+    operator=(AMMLiquidity const&) = delete;
+
+    /** Generate AMM offer. Returns nullopt if clobQuality is provided
+     * and it is better than AMM offer quality. Otherwise returns AMM offer.
+     * If clobQuality is provided then AMM offer size is set based on this
+     * quality. If either remainingIn/remainingOut/cache is provided
+     * then the offer size is adjusted based on those amounts.
+     */
+    template <typename TIn, typename TOut>
+    std::optional<Amounts>
+    getOffer(
+        ReadView const& view,
+        std::optional<Quality> const& clobQuality = std::nullopt,
+        std::optional<TIn> const& remainingIn = std::nullopt,
+        std::optional<TOut> const& remainingOut = std::nullopt,
+        std::optional<TAmounts<TIn, TOut>> const& cache = std::nullopt) const;
+
+    /** Called when AMM offer is consumed. Sets dirty_ to indicate that
+     * the balances may have changed and increments offer counter
+     * to indicate that AMM offer is used in the strand.
+     */
+    void
+    consumed()
+    {
+        dirty_ = true;
+        offerCounter_.incrementCounter();
+    }
+
+    AccountID
+    ammAccount() const
+    {
+        return ammAccountID_;
+    }
+
+private:
+    /** Fetches AMM balances if dirty_ is set.
+     */
+    Amounts
+    fetchBalances(ReadView const& view) const;
+
+    /** Returns total amount held by AMM for the given token.
+     */
+    STAmount
+    ammAccountHolds(
+        ReadView const& view,
+        AccountID const& ammAccountID,
+        Issue const& issue) const;
+
+    /** Generate offer based on Fibonacci sequence.
+     * @param balances current AMM balances
+     */
+    Amounts
+    generateFibSeqOffer(Amounts const& balances) const;
+};
+
+template <typename TIn, typename TOut>
+std::optional<Amounts>
+AMMLiquidity::getOffer(
+    ReadView const& view,
+    std::optional<Quality> const& clobQuality,
+    std::optional<TIn> const& remainingIn,
+    std::optional<TOut> const& remainingOut,
+    std::optional<TAmounts<TIn, TOut>> const& cache) const
+{
+    // Can't generate more offers. Only applies if generating
+    // based on Fibonacci sequence.
+    if (offerCounter_.maxItersReached())
+        return std::nullopt;
+
+    auto const balances = fetchBalances(view);
+
+    JLOG(j_.debug()) << "AMMLiquidity::getOffer balances " << balances_.in
+                     << " " << balances_.out << " new balances " << balances.in
+                     << " " << balances.out;
+
+    // Spot Price quality
+    auto const spQuality = Quality{balances};
+    // Can't generate AMM offer with a better quality than CLOB's offer quality.
+    if (clobQuality && spQuality < *clobQuality)
+    {
+        JLOG(j_.debug()) << "AMMLiquidity::getOffer, higher clob quality";
+        return std::nullopt;
+    }
+
+    std::optional<STAmount> const saRemIn = remainingIn
+        ? std::optional<STAmount>(toSTAmount(*remainingIn, balances.in.issue()))
+        : std::nullopt;
+    std::optional<STAmount> const saRemOut = remainingOut
+        ? std::optional<STAmount>(
+              toSTAmount(*remainingOut, balances.out.issue()))
+        : std::nullopt;
+    std::optional<STAmount> const saCacheIn = cache
+        ? std::optional<STAmount>(toSTAmount(cache->in, balances.in.issue()))
+        : std::nullopt;
+    std::optional<STAmount> const saCacheOut = cache
+        ? std::optional<STAmount>(toSTAmount(cache->out, balances.out.issue()))
+        : std::nullopt;
+
+    auto const offer = [&]() -> std::optional<Amounts> {
+        if (offerCounter_.multiPath())
+        {
+            auto const offer = generateFibSeqOffer(balances);
+            auto const quality = Quality{offer};
+            if (clobQuality && quality < clobQuality.value())
+                return std::nullopt;
+            // Change offer size proportionally to the quality
+            if (saRemOut && offer.out > *saRemOut)
+                return quality.ceil_out(offer, *saRemOut);
+            if (saRemIn && offer.in > *saRemIn)
+            {
+                auto amounts = quality.ceil_in(offer, *saRemIn);
+                // The step produced more output in the forward pass than the
+                // reverse pass while consuming the same input (or less).
+                if (saCacheOut && amounts.out > *saCacheOut &&
+                    amounts.in <= saCacheIn)
+                {
+                    amounts = quality.ceil_out(offer, *saCacheOut);
+                    if (amounts.in != *saCacheIn)
+                        return std::nullopt;
+                }
+                return amounts;
+            }
+            return offer;
+        }
+        else if (
+            auto const offer = clobQuality
+                ? changeSpotPriceQuality(balances, *clobQuality, tradingFee_)
+                : balances)
+        {
+            // Change offer size based on swap in/out formulas
+            if (saRemOut && offer->out > *saRemOut)
+                return Amounts{
+                    swapAssetOut(*offer, *remainingOut, tradingFee_),
+                    *saRemOut};
+            if (saRemIn && offer->in > *saRemIn)
+            {
+                auto in = *saRemIn;
+                auto out = swapAssetIn(*offer, *remainingIn, tradingFee_);
+                // The step produced more output in the forward pass than the
+                // reverse pass while consuming the same input (or less).
+                if (saCacheOut && out > *saCacheOut && in <= *saCacheIn)
+                {
+                    out = *saCacheOut;
+                    in = swapAssetOut(*offer, out, tradingFee_);
+                    if (in != *saCacheIn)
+                        return std::nullopt;
+                }
+                return Amounts{in, out};
+            }
+            return offer;
+        }
+        else
+            return std::nullopt;
+    }();
+
+    balances_ = balances;
+
+    if (offer && offer->in > beast::zero && offer->out > beast::zero)
+    {
+        JLOG(j_.debug()) << "AMMLiquidity::getOffer, created " << offer->in
+                         << " " << offer->out;
+        return offer;
+    }
+    else
+    {
+        JLOG(j_.debug()) << "AMMLiquidity::getOffer, failed "
+                         << offer.has_value();
+    }
+
+    return std::nullopt;
+}
+
+}  // namespace ripple
+
+#endif  // RIPPLE_APP_TX_AMMOFFERMAKER_H_INCLUDED
