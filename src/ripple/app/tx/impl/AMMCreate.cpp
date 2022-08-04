@@ -150,31 +150,32 @@ AMMCreate::preCompute()
 std::pair<TER, bool>
 AMMCreate::applyGuts(Sandbox& sb)
 {
-    auto const ammAccountID = ctx_.tx[sfAMMAccount];
     auto const saAsset1 = ctx_.tx[sfAsset1];
     auto const saAsset2 = ctx_.tx[sfAsset2];
 
     auto const ammHash = calcAMMGroupHash(saAsset1.issue(), saAsset2.issue());
 
-    // AMM account already exists.
+    // Check if AMM already exists for the token pair
+    if (sb.peek(keylet::amm(ammHash)))
+    {
+        JLOG(j_.debug()) << "AMM Instance: ltAMM already exists.";
+        return {tecAMM_EXISTS, false};
+    }
+
+    auto const ammAccountID = calcAccountID(sb.info().parentHash, ammHash);
+
+    // AMM account already exists (should not happen)
     if (sb.peek(keylet::account(ammAccountID)))
     {
         JLOG(j_.debug()) << "AMM Instance: AMM already exists.";
         return {tecAMM_EXISTS, false};
     }
 
-    // LP Token already exists.
+    // LP Token already exists. (should not happen)
     auto const lptIssue = calcLPTIssue(ammAccountID);
     if (sb.read(keylet::line(ammAccountID, lptIssue)))
     {
         JLOG(j_.debug()) << "AMM Instance: LP Token already exists.";
-        return {tecAMM_EXISTS, false};
-    }
-
-    // Check if ltAMM object exists
-    if (sb.peek(keylet::amm(ammHash)))
-    {
-        JLOG(j_.debug()) << "AMM Instance: ltAMM already exists.";
         return {tecAMM_EXISTS, false};
     }
 

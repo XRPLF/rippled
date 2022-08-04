@@ -40,7 +40,7 @@ class AMM
     Env& env_;
     Account const creatorAccount_;
     uint256 ammHash_;
-    Account ammAccount_;
+    AccountID ammAccount_;
     Issue lptIssue_;
     STAmount asset1_;
     STAmount asset2_;
@@ -256,7 +256,7 @@ public:
         std::optional<jtx::seq> const& seq = std::nullopt,
         std::optional<ter> const& ter = std::nullopt);
 
-    Account const&
+    AccountID const&
     ammAccount() const
     {
         return ammAccount_;
