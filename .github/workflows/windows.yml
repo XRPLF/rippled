@@ -59,7 +59,7 @@ jobs:
         run: |
           mkdir $env:build_dir
           cd $env:build_dir
-          conan install .. --build missing --settings build_type=${{ matrix.configuration }}
+          conan install .. --build missing --settings build_type=${{ matrix.configuration }} --profile:build default --profile:host default
       - name: configure
         run: |
           $env:build_dir
