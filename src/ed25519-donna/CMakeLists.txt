@@ -8,7 +8,9 @@ if(PROJECT_NAME STREQUAL CMAKE_PROJECT_NAME)
   set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/output/$<CONFIG>/lib")
 endif()
 
-find_package(OpenSSL)
+if(NOT TARGET OpenSSL::SSL)
+  find_package(OpenSSL)
+endif()
 
 add_library(ed25519 STATIC
   ed25519.c
