@@ -89,7 +89,7 @@ RCLConsensus::Adaptor::Adaptor(
     , valCookie_{rand_int<std::uint64_t>(
           1,
           std::numeric_limits<std::uint64_t>::max())}
-    , nUnlVote_(validatorKeys_.nodeID, j_)
+    , nUnlVote_(validatorKeys_.masterPublicKey, j_)
 {
     assert(valCookie_ != 0);
 

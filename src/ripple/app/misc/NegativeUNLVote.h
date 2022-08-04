@@ -88,10 +88,10 @@ public:
     /**
      * Constructor
      *
-     * @param myId the NodeID of the local node
+     * @param myValPubKey the PublicKey of the local node
      * @param j log
      */
-    NegativeUNLVote(NodeID const& myId, beast::Journal j);
+    NegativeUNLVote(PublicKey const& myValPubKey, beast::Journal j);
     ~NegativeUNLVote() = default;
 
     /**
@@ -124,7 +124,7 @@ public:
     newValidators(LedgerIndex seq, hash_set<NodeID> const& nowTrusted);
 
 private:
-    NodeID const myId_;
+    PublicKey const myValPubKey_;
     beast::Journal j_;
     mutable std::mutex mutex_;
     hash_map<NodeID, LedgerIndex> newValidators_;
@@ -134,8 +134,8 @@ private:
      */
     struct Candidates
     {
-        std::vector<NodeID> toDisableCandidates;
-        std::vector<NodeID> toReEnableCandidates;
+        std::vector<PublicKey> toDisableCandidates;
+        std::vector<PublicKey> toReEnableCandidates;
     };
 
     /**
@@ -162,8 +162,10 @@ private:
      * @param candidates the vector of candidates
      * @return the picked candidate
      */
-    NodeID
-    choose(uint256 const& randomPadData, std::vector<NodeID> const& candidates);
+    PublicKey
+    choose(
+        uint256 const& randomPadData,
+        std::vector<PublicKey> const& candidates);
 
     /**
      * Build a reliability measurement score table of validators' validation
@@ -179,10 +181,10 @@ private:
      * @return the built scoreTable or empty optional if table could not be
      * built
      */
-    std::optional<hash_map<NodeID, std::uint32_t>>
+    std::optional<hash_map<PublicKey, std::uint32_t>>
     buildScoreTable(
         std::shared_ptr<Ledger const> const& prevLedger,
-        hash_set<NodeID> const& unl,
+        hash_set<PublicKey> const& unl,
         RCLValidations& validations);
 
     /**
@@ -196,9 +198,9 @@ private:
      */
     Candidates const
     findAllCandidates(
-        hash_set<NodeID> const& unl,
-        hash_set<NodeID> const& negUnl,
-        hash_map<NodeID, std::uint32_t> const& scoreTable);
+        hash_set<PublicKey> const& unl,
+        hash_set<PublicKey> const& negUnl,
+        hash_map<PublicKey, std::uint32_t> const& scoreTable);
 
     /**
      * Purge validators that are not new anymore.

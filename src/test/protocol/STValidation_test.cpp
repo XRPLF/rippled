@@ -185,12 +185,22 @@ public:
     {
         testcase("Deserialization");
 
+        std::array<std::uint8_t, 33> const testPubKeyData{
+            0x03, 0x33, 0x07, 0x57, 0xF4, 0xE7, 0x12, 0xF6, 0x8B, 0x39, 0x11,
+            0xC0, 0x8B, 0x0A, 0x05, 0x9E, 0x9C, 0xE2, 0x61, 0x55, 0xC7, 0xE5,
+            0xDB, 0xC6, 0xDC, 0xB6, 0xD6, 0x5E, 0x22, 0x3B, 0xD9, 0x85, 0x60};
+
+        PublicKey const testPubKey(makeSlice(testPubKeyData));
+
         try
         {
             SerialIter sit{payload8};
 
             auto val = std::make_shared<STValidation>(
-                sit, [](PublicKey const& pk) { return calcNodeID(pk); }, true);
+                sit,
+                [](PublicKey const& pk) { return calcNodeID(pk); },
+                [&testPubKey](PublicKey const& pk) { return testPubKey; },
+                true);
 
             BEAST_EXPECT(val);
             BEAST_EXPECT(val->isFieldPresent(sfLedgerSequence));

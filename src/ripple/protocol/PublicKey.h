@@ -129,12 +129,10 @@ public:
     {
         return slice();
     }
-};
 
-/** Print the public key to a stream.
- */
-std::ostream&
-operator<<(std::ostream& os, PublicKey const& pk);
+    friend std::string
+    to_string(PublicKey const&);
+};
 
 inline bool
 operator==(PublicKey const& lhs, PublicKey const& rhs)

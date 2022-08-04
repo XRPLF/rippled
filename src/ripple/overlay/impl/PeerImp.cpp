@@ -603,7 +603,7 @@ PeerImp::fail(std::string const& reason)
         return post(
             strand_,
             std::bind(
-                (void (Peer::*)(std::string const&)) & PeerImp::fail,
+                (void(Peer::*)(std::string const&)) & PeerImp::fail,
                 shared_from_this(),
                 reason));
     if (journal_.active(beast::severities::kWarning) && socket_.is_open())
@@ -2546,6 +2546,9 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
                     return calcNodeID(
                         app_.validatorManifests().getMasterKey(pk));
                 },
+                [this](PublicKey const& pk) {
+                    return app_.validatorManifests().getMasterKey(pk);
+                },
                 false);
             val->setSeen(closeTime);
         }
@@ -2605,7 +2608,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
 #ifdef DEBUG
                 ret += " " +
                     std::to_string(val->getFieldU32(sfLedgerSequence)) + ": " +
-                    to_string(val->getNodeID());
+                    to_string(val->getSignerPublic());
 #endif
 
                 return ret;

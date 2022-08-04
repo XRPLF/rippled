@@ -52,6 +52,11 @@ class STValidation final : public STObject, public CountedObject<STValidation>
     // The public key associated with the key used to sign this validation
     PublicKey const signingPubKey_;
 
+    // Master PublicKey associated with the signing public key of this
+    // validation Maybe equal to signing public key (if manifest is not used by
+    // the validator)
+    PublicKey const masterPubKey_;
+
     // The ID of the validator that issued this validation. For validators
     // that use manifests this will be derived from the master public key.
     NodeID const nodeID_;
@@ -76,6 +81,13 @@ public:
     STValidation(
         SerialIter& sit,
         LookupNodeID&& lookupNodeID,
+        bool checkSignature);
+
+    template <class LookupNodeID, class LookupMasterPubKey>
+    STValidation(
+        SerialIter& sit,
+        LookupNodeID&& lookupNodeID,
+        LookupMasterPubKey&& lookupMasterKey,
         bool checkSignature);
 
     /** Construct, sign and trust a new STValidation issued by this node.
@@ -110,6 +122,9 @@ public:
 
     PublicKey const&
     getSignerPublic() const noexcept;
+
+    PublicKey const&
+    getSignerMasterPublic() const noexcept;
 
     NodeID const&
     getNodeID() const noexcept;
@@ -167,6 +182,35 @@ STValidation::STValidation(
 
         return PublicKey{makeSlice(spk)};
     }())
+    , masterPubKey_(signingPubKey_)
+    , nodeID_(lookupNodeID(signingPubKey_))
+{
+    if (checkSignature && !isValid())
+    {
+        JLOG(debugLog().error()) << "Invalid signature in validation: "
+                                 << getJson(JsonOptions::none);
+        Throw<std::runtime_error>("Invalid signature in validation");
+    }
+
+    assert(nodeID_.isNonZero());
+}
+
+template <class LookupNodeID, class LookupMasterPubKey>
+STValidation::STValidation(
+    SerialIter& sit,
+    LookupNodeID&& lookupNodeID,
+    LookupMasterPubKey&& lookupMasterKey,
+    bool checkSignature)
+    : STObject(validationFormat(), sit, sfValidation)
+    , signingPubKey_([this]() {
+        auto const spk = getFieldVL(sfSigningPubKey);
+
+        if (publicKeyType(makeSlice(spk)) != KeyType::secp256k1)
+            Throw<std::runtime_error>("Invalid public key in validation");
+
+        return PublicKey{makeSlice(spk)};
+    }())
+    , masterPubKey_(lookupMasterKey(signingPubKey_))
     , nodeID_(lookupNodeID(signingPubKey_))
 {
     if (checkSignature && !isValid())
@@ -196,6 +240,7 @@ STValidation::STValidation(
     F&& f)
     : STObject(validationFormat(), sfValidation)
     , signingPubKey_(pk)
+    , masterPubKey_(pk)
     , nodeID_(nodeID)
     , seenTime_(signTime)
 {
@@ -233,6 +278,12 @@ inline PublicKey const&
 STValidation::getSignerPublic() const noexcept
 {
     return signingPubKey_;
+}
+
+inline PublicKey const&
+STValidation::getSignerMasterPublic() const noexcept
+{
+    return masterPubKey_;
 }
 
 inline NodeID const&

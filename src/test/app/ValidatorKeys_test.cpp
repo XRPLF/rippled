@@ -23,9 +23,8 @@
 #include <ripple/beast/unit_test.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/ConfigSections.h>
-#include <test/jtx/Env.h>
-
 #include <string>
+#include <test/unit_test/SuiteJournal.h>
 
 namespace ripple {
 namespace test {
@@ -76,14 +75,7 @@ public:
     void
     run() override
     {
-        // We're only using Env for its Journal.  That Journal gives better
-        // coverage in unit tests.
-        test::jtx::Env env{
-            *this,
-            test::jtx::envconfig(),
-            nullptr,
-            beast::severities::kDisabled};
-        beast::Journal journal{env.app().journal("ValidatorKeys_test")};
+        SuiteJournal journal("ValidatorKeys_test", *this);
 
         // Keys/ID when using [validation_seed]
         SecretKey const seedSecretKey =
