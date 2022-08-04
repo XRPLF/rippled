@@ -33,10 +33,6 @@
 #include <iterator>
 #include <utility>
 
-// This is used for the _mm_pause instruction:
-#include <immintrin.h>
-#endif
-
 namespace ripple {
 
 SHAMapInnerNode::SHAMapInnerNode(
