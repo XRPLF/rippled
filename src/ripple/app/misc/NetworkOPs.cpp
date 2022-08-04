@@ -62,6 +62,7 @@
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/resource/ResourceManager.h>
+#include <ripple/rpc/BookChanges.h>
 #include <ripple/rpc/DeliveredAmount.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 #include <boost/asio/ip/host_name.hpp>
@@ -503,6 +504,11 @@ public:
     unsubLedger(std::uint64_t uListener) override;
 
     bool
+    subBookChanges(InfoSub::ref ispListener) override;
+    bool
+    unsubBookChanges(std::uint64_t uListener) override;
+
+    bool
     subServer(InfoSub::ref ispListener, Json::Value& jvResult, bool admin)
         override;
     bool
@@ -743,9 +749,10 @@ private:
         sValidations,     // Received validations.
         sPeerStatus,      // Peer status changes.
         sConsensusPhase,  // Consensus phase
+        sBookChanges,     // Per-ledger order book changes
 
-        sLastEntry = sConsensusPhase  // as this name implies, any new entry
-                                      // must be ADDED ABOVE this one
+        sLastEntry = sBookChanges  // as this name implies, any new entry
+                                   // must be ADDED ABOVE this one
     };
     std::array<SubMapType, SubTypes::sLastEntry + 1> mStreamMaps;
 
@@ -912,7 +919,10 @@ void
 NetworkOPsImp::setStateTimer()
 {
     setHeartbeatTimer();
-    setClusterTimer();
+
+    // Only do this work if a cluster is configured
+    if (app_.cluster().size() != 0)
+        setClusterTimer();
 }
 
 void
@@ -965,6 +975,7 @@ void
 NetworkOPsImp::setClusterTimer()
 {
     using namespace std::chrono_literals;
+
     setTimer(
         clusterTimer_,
         10s,
@@ -1050,7 +1061,11 @@ NetworkOPsImp::processHeartbeatTimer()
 void
 NetworkOPsImp::processClusterTimer()
 {
+    if (app_.cluster().size() == 0)
+        return;
+
     using namespace std::chrono_literals;
+
     bool const update = app_.cluster().update(
         app_.nodeIdentity().first,
         "",
@@ -2316,10 +2331,6 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
     if (!app_.config().SERVER_DOMAIN.empty())
         info[jss::server_domain] = app_.config().SERVER_DOMAIN;
 
-    if (!app_.config().reporting())
-        if (auto const netid = app_.overlay().networkID())
-            info[jss::network_id] = static_cast<Json::UInt>(*netid);
-
     info[jss::build_version] = BuildInfo::getVersionString();
 
     info[jss::server_state] = strOperatingMode(admin);
@@ -2462,6 +2473,9 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
 
     if (!app_.config().reporting())
     {
+        if (auto const netid = app_.overlay().networkID())
+            info[jss::network_id] = static_cast<Json::UInt>(*netid);
+
         auto const escalationMetrics =
             app_.getTxQ().getMetrics(*app_.openLedger().current());
 
@@ -2895,6 +2909,24 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
                 }
                 else
                     it = mStreamMaps[sLedger].erase(it);
+            }
+        }
+
+        if (!mStreamMaps[sBookChanges].empty())
+        {
+            Json::Value jvObj = ripple::RPC::computeBookChanges(lpAccepted);
+
+            auto it = mStreamMaps[sBookChanges].begin();
+            while (it != mStreamMaps[sBookChanges].end())
+            {
+                InfoSub::pointer p = it->second.lock();
+                if (p)
+                {
+                    p->send(jvObj, true);
+                    ++it;
+                }
+                else
+                    it = mStreamMaps[sBookChanges].erase(it);
             }
         }
 
@@ -3876,12 +3908,30 @@ NetworkOPsImp::subLedger(InfoSub::ref isrListener, Json::Value& jvResult)
         .second;
 }
 
+// <-- bool: true=added, false=already there
+bool
+NetworkOPsImp::subBookChanges(InfoSub::ref isrListener)
+{
+    std::lock_guard sl(mSubLock);
+    return mStreamMaps[sBookChanges]
+        .emplace(isrListener->getSeq(), isrListener)
+        .second;
+}
+
 // <-- bool: true=erased, false=was not there
 bool
 NetworkOPsImp::unsubLedger(std::uint64_t uSeq)
 {
     std::lock_guard sl(mSubLock);
     return mStreamMaps[sLedger].erase(uSeq);
+}
+
+// <-- bool: true=erased, false=was not there
+bool
+NetworkOPsImp::unsubBookChanges(std::uint64_t uSeq)
+{
+    std::lock_guard sl(mSubLock);
+    return mStreamMaps[sBookChanges].erase(uSeq);
 }
 
 // <-- bool: true=added, false=already there

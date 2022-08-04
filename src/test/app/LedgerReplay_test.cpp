@@ -465,7 +465,7 @@ struct LedgerServer
         assert(param.initLedgers > 0);
         createAccounts(param.initAccounts);
         createLedgerHistory();
-        app.logs().threshold(beast::severities::Severity::kWarning);
+        app.logs().threshold(beast::severities::kWarning);
     }
 
     /**
@@ -567,7 +567,10 @@ public:
         PeerSetBehavior behavior = PeerSetBehavior::Good,
         InboundLedgersBehavior inboundBhvr = InboundLedgersBehavior::Good,
         PeerFeature peerFeature = PeerFeature::LedgerReplayEnabled)
-        : env(suite, jtx::envconfig(jtx::port_increment, 3))
+        : env(suite,
+              jtx::envconfig(jtx::port_increment, 3),
+              nullptr,
+              beast::severities::kDisabled)
         , app(env.app())
         , ledgerMaster(env.app().getLedgerMaster())
         , inboundLedgers(

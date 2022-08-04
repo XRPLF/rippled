@@ -873,9 +873,23 @@ ServerHandlerImp::processRequest(
             params,
             {user, forwardedFor}};
         Json::Value result;
+
         auto start = std::chrono::system_clock::now();
-        RPC::doCommand(context, result);
+
+        try
+        {
+            RPC::doCommand(context, result);
+        }
+        catch (std::exception const& ex)
+        {
+            result = RPC::make_error(rpcINTERNAL);
+            JLOG(m_journal.error()) << "Internal error : " << ex.what()
+                                    << " when processing request: "
+                                    << Json::Compact{Json::Value{params}};
+        }
+
         auto end = std::chrono::system_clock::now();
+
         logDuration(params, end - start, m_journal);
 
         usage.charge(loadType);

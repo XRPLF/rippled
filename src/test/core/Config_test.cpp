@@ -154,7 +154,7 @@ public:
         rmDataDir_ = !exists(dataDir_);
         config_.setup(
             file_.string(),
-            /*bQuiet*/ true,
+            /* bQuiet */ true,
             /* bSilent */ false,
             /* bStandalone */ false);
     }
@@ -190,9 +190,6 @@ public:
             using namespace boost::filesystem;
             if (rmDataDir_)
                 rmDir(dataDir_);
-            else
-                test_.log << "Skipping rm dir: " << dataDir_.string()
-                          << std::endl;
         }
         catch (std::exception& e)
         {

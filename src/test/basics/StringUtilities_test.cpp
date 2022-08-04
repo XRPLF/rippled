@@ -289,6 +289,13 @@ public:
             BEAST_EXPECT(!parseUrl(pUrl, "nonsense"));
             BEAST_EXPECT(!parseUrl(pUrl, "://"));
             BEAST_EXPECT(!parseUrl(pUrl, ":///"));
+            BEAST_EXPECT(
+                !parseUrl(pUrl, "scheme://user:pass@domain:65536/abc:321"));
+            BEAST_EXPECT(!parseUrl(pUrl, "UPPER://domain:23498765/"));
+            BEAST_EXPECT(!parseUrl(pUrl, "UPPER://domain:0/"));
+            BEAST_EXPECT(!parseUrl(pUrl, "UPPER://domain:+7/"));
+            BEAST_EXPECT(!parseUrl(pUrl, "UPPER://domain:-7234/"));
+            BEAST_EXPECT(!parseUrl(pUrl, "UPPER://domain:@#$56!/"));
         }
 
         {

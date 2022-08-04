@@ -28,6 +28,12 @@ if(Git_FOUND)
     endif()
 endif() #git
 
+if(thread_safety_analysis)
+  add_compile_options(-Wthread-safety -D_LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS -DRIPPLE_ENABLE_THREAD_SAFETY_ANNOTATIONS)
+  add_compile_options("-stdlib=libc++")
+  add_link_options("-stdlib=libc++")
+endif()
+
 include (CheckCXXCompilerFlag)
 include (FetchContent)
 include (ExternalProject)

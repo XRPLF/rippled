@@ -96,7 +96,10 @@ class NFToken_test : public beast::unit_test::suite
         {
             // If the NFT amendment is not enabled, you should not be able
             // to create or burn NFTs.
-            Env env{*this, features - featureNonFungibleTokensV1};
+            Env env{
+                *this,
+                features - featureNonFungibleTokensV1 -
+                    featureNonFungibleTokensV1_1};
             Account const& master = env.master;
 
             BEAST_EXPECT(ownerCount(env, master) == 0);
@@ -2666,7 +2669,7 @@ class NFToken_test : public beast::unit_test::suite
         env.close();
 
         // Test how adding a Destination field to an offer affects permissions
-        // for cancelling offers.
+        // for canceling offers.
         {
             uint256 const offerMinterToIssuer =
                 keylet::nftoffer(minter, env.seq(minter)).key;
@@ -2680,14 +2683,20 @@ class NFToken_test : public beast::unit_test::suite
                 token::destination(buyer),
                 txflags(tfSellNFToken));
 
-            // buy offers cannot contain a Destination, so this attempt fails.
+            uint256 const offerIssuerToMinter =
+                keylet::nftoffer(issuer, env.seq(issuer)).key;
             env(token::createOffer(issuer, nftokenID, drops(1)),
                 token::owner(minter),
-                token::destination(minter),
-                ter(temMALFORMED));
+                token::destination(minter));
+
+            uint256 const offerIssuerToBuyer =
+                keylet::nftoffer(issuer, env.seq(issuer)).key;
+            env(token::createOffer(issuer, nftokenID, drops(1)),
+                token::owner(minter),
+                token::destination(buyer));
 
             env.close();
-            BEAST_EXPECT(ownerCount(env, issuer) == 0);
+            BEAST_EXPECT(ownerCount(env, issuer) == 2);
             BEAST_EXPECT(ownerCount(env, minter) == 3);
             BEAST_EXPECT(ownerCount(env, buyer) == 0);
 
@@ -2702,8 +2711,12 @@ class NFToken_test : public beast::unit_test::suite
                 ter(tecNO_PERMISSION));
             env(token::cancelOffer(buyer, {offerMinterToIssuer}),
                 ter(tecNO_PERMISSION));
+            env(token::cancelOffer(buyer, {offerIssuerToMinter}),
+                ter(tecNO_PERMISSION));
+            env(token::cancelOffer(minter, {offerIssuerToBuyer}),
+                ter(tecNO_PERMISSION));
             env.close();
-            BEAST_EXPECT(ownerCount(env, issuer) == 0);
+            BEAST_EXPECT(ownerCount(env, issuer) == 2);
             BEAST_EXPECT(ownerCount(env, minter) == 3);
             BEAST_EXPECT(ownerCount(env, buyer) == 0);
 
@@ -2711,6 +2724,8 @@ class NFToken_test : public beast::unit_test::suite
             // cancel the offers.
             env(token::cancelOffer(buyer, {offerMinterToBuyer}));
             env(token::cancelOffer(minter, {offerMinterToIssuer}));
+            env(token::cancelOffer(buyer, {offerIssuerToBuyer}));
+            env(token::cancelOffer(issuer, {offerIssuerToMinter}));
             env.close();
             BEAST_EXPECT(ownerCount(env, issuer) == 0);
             BEAST_EXPECT(ownerCount(env, minter) == 1);
@@ -2720,7 +2735,7 @@ class NFToken_test : public beast::unit_test::suite
         // Test how adding a Destination field to a sell offer affects
         // accepting that offer.
         {
-            uint256 const offerMinterToBuyer =
+            uint256 const offerMinterSellsToBuyer =
                 keylet::nftoffer(minter, env.seq(minter)).key;
             env(token::createOffer(minter, nftokenID, drops(1)),
                 token::destination(buyer),
@@ -2732,7 +2747,7 @@ class NFToken_test : public beast::unit_test::suite
 
             // issuer cannot accept a sell offer where they are not the
             // destination.
-            env(token::acceptSellOffer(issuer, offerMinterToBuyer),
+            env(token::acceptSellOffer(issuer, offerMinterSellsToBuyer),
                 ter(tecNO_PERMISSION));
             env.close();
             BEAST_EXPECT(ownerCount(env, issuer) == 0);
@@ -2740,36 +2755,61 @@ class NFToken_test : public beast::unit_test::suite
             BEAST_EXPECT(ownerCount(env, buyer) == 0);
 
             // However buyer can accept the sell offer.
-            env(token::acceptSellOffer(buyer, offerMinterToBuyer));
+            env(token::acceptSellOffer(buyer, offerMinterSellsToBuyer));
             env.close();
             BEAST_EXPECT(ownerCount(env, issuer) == 0);
             BEAST_EXPECT(ownerCount(env, minter) == 0);
             BEAST_EXPECT(ownerCount(env, buyer) == 1);
         }
 
-        // You can't add a Destination field to a buy offer.
+        // Test how adding a Destination field to a buy offer affects
+        // accepting that offer.
         {
-            env(token::createOffer(minter, nftokenID, drops(1)),
-                token::owner(buyer),
-                token::destination(buyer),
-                ter(temMALFORMED));
-            env.close();
-            BEAST_EXPECT(ownerCount(env, issuer) == 0);
-            BEAST_EXPECT(ownerCount(env, minter) == 0);
-            BEAST_EXPECT(ownerCount(env, buyer) == 1);
-
-            // However without the Destination the buy offer works fine.
-            uint256 const offerMinterToBuyer =
+            uint256 const offerMinterBuysFromBuyer =
                 keylet::nftoffer(minter, env.seq(minter)).key;
             env(token::createOffer(minter, nftokenID, drops(1)),
-                token::owner(buyer));
+                token::owner(buyer),
+                token::destination(buyer));
+            env.close();
+            BEAST_EXPECT(ownerCount(env, issuer) == 0);
+            BEAST_EXPECT(ownerCount(env, minter) == 1);
+            BEAST_EXPECT(ownerCount(env, buyer) == 1);
+
+            // issuer cannot accept a buy offer where they are the
+            // destination.
+            env(token::acceptBuyOffer(issuer, offerMinterBuysFromBuyer),
+                ter(tecNO_PERMISSION));
             env.close();
             BEAST_EXPECT(ownerCount(env, issuer) == 0);
             BEAST_EXPECT(ownerCount(env, minter) == 1);
             BEAST_EXPECT(ownerCount(env, buyer) == 1);
 
             // Buyer accepts minter's offer.
-            env(token::acceptBuyOffer(buyer, offerMinterToBuyer));
+            env(token::acceptBuyOffer(buyer, offerMinterBuysFromBuyer));
+            env.close();
+            BEAST_EXPECT(ownerCount(env, issuer) == 0);
+            BEAST_EXPECT(ownerCount(env, minter) == 1);
+            BEAST_EXPECT(ownerCount(env, buyer) == 0);
+
+            // If a destination other than the NFToken owner is set, that
+            // destination must act as a broker.  The NFToken owner may not
+            // simply accept the offer.
+            uint256 const offerBuyerBuysFromMinter =
+                keylet::nftoffer(buyer, env.seq(buyer)).key;
+            env(token::createOffer(buyer, nftokenID, drops(1)),
+                token::owner(minter),
+                token::destination(broker));
+            env.close();
+            BEAST_EXPECT(ownerCount(env, issuer) == 0);
+            BEAST_EXPECT(ownerCount(env, minter) == 1);
+            BEAST_EXPECT(ownerCount(env, buyer) == 1);
+
+            env(token::acceptBuyOffer(minter, offerBuyerBuysFromMinter),
+                ter(tecNO_PERMISSION));
+            env.close();
+
+            // Clean up the unused offer.
+            env(token::cancelOffer(buyer, {offerBuyerBuysFromMinter}));
             env.close();
             BEAST_EXPECT(ownerCount(env, issuer) == 0);
             BEAST_EXPECT(ownerCount(env, minter) == 1);
@@ -2856,6 +2896,47 @@ class NFToken_test : public beast::unit_test::suite
             BEAST_EXPECT(ownerCount(env, issuer) == 1);
             BEAST_EXPECT(ownerCount(env, minter) == 1);
             BEAST_EXPECT(ownerCount(env, buyer) == 0);
+
+            // Clean out the unconsumed offer.
+            env(token::cancelOffer(issuer, {offerIssuerToBuyer}));
+            env.close();
+            BEAST_EXPECT(ownerCount(env, issuer) == 0);
+            BEAST_EXPECT(ownerCount(env, minter) == 1);
+            BEAST_EXPECT(ownerCount(env, buyer) == 0);
+        }
+
+        // Show that if a buy and a sell offer both have the same destination,
+        // then that destination can broker the offers.
+        {
+            uint256 const offerMinterToBroker =
+                keylet::nftoffer(minter, env.seq(minter)).key;
+            env(token::createOffer(minter, nftokenID, drops(1)),
+                token::destination(broker),
+                txflags(tfSellNFToken));
+
+            uint256 const offerBuyerToBroker =
+                keylet::nftoffer(buyer, env.seq(buyer)).key;
+            env(token::createOffer(buyer, nftokenID, drops(1)),
+                token::owner(minter),
+                token::destination(broker));
+
+            // Cannot broker offers when the sell destination is not the buyer
+            // or the broker.
+            env(token::brokerOffers(
+                    issuer, offerBuyerToBroker, offerMinterToBroker),
+                ter(tecNFTOKEN_BUY_SELL_MISMATCH));
+            env.close();
+            BEAST_EXPECT(ownerCount(env, issuer) == 0);
+            BEAST_EXPECT(ownerCount(env, minter) == 2);
+            BEAST_EXPECT(ownerCount(env, buyer) == 1);
+
+            // Broker is successful if they are the destination of both offers.
+            env(token::brokerOffers(
+                broker, offerBuyerToBroker, offerMinterToBroker));
+            env.close();
+            BEAST_EXPECT(ownerCount(env, issuer) == 0);
+            BEAST_EXPECT(ownerCount(env, minter) == 0);
+            BEAST_EXPECT(ownerCount(env, buyer) == 1);
         }
     }
 
@@ -4558,6 +4639,243 @@ class NFToken_test : public beast::unit_test::suite
     }
 
     void
+    testFixNFTokenNegOffer(FeatureBitset features)
+    {
+        // Exercise changes introduced by fixNFTokenNegOffer.
+        using namespace test::jtx;
+
+        testcase("fixNFTokenNegOffer");
+
+        Account const issuer{"issuer"};
+        Account const buyer{"buyer"};
+        Account const gw{"gw"};
+        IOU const gwXAU(gw["XAU"]);
+
+        // Test both with and without fixNFTokenNegOffer
+        for (auto const& tweakedFeatures :
+             {features - fixNFTokenNegOffer - featureNonFungibleTokensV1_1,
+              features | fixNFTokenNegOffer})
+        {
+            // There was a bug in the initial NFT implementation that
+            // allowed offers to be placed with negative amounts.  Verify
+            // that fixNFTokenNegOffer addresses the problem.
+            Env env{*this, tweakedFeatures};
+
+            env.fund(XRP(1000000), issuer, buyer, gw);
+            env.close();
+
+            env(trust(issuer, gwXAU(2000)));
+            env(trust(buyer, gwXAU(2000)));
+            env.close();
+
+            env(pay(gw, issuer, gwXAU(1000)));
+            env(pay(gw, buyer, gwXAU(1000)));
+            env.close();
+
+            // Create an NFT that we'll make XRP offers for.
+            uint256 const nftID0{
+                token::getNextID(env, issuer, 0u, tfTransferable)};
+            env(token::mint(issuer, 0), txflags(tfTransferable));
+            env.close();
+
+            // Create an NFT that we'll make IOU offers for.
+            uint256 const nftID1{
+                token::getNextID(env, issuer, 1u, tfTransferable)};
+            env(token::mint(issuer, 1), txflags(tfTransferable));
+            env.close();
+
+            TER const offerCreateTER = tweakedFeatures[fixNFTokenNegOffer]
+                ? static_cast<TER>(temBAD_AMOUNT)
+                : static_cast<TER>(tesSUCCESS);
+
+            // Make offers with negative amounts for the NFTs
+            uint256 const sellNegXrpOfferIndex =
+                keylet::nftoffer(issuer, env.seq(issuer)).key;
+            env(token::createOffer(issuer, nftID0, XRP(-2)),
+                txflags(tfSellNFToken),
+                ter(offerCreateTER));
+            env.close();
+
+            uint256 const sellNegIouOfferIndex =
+                keylet::nftoffer(issuer, env.seq(issuer)).key;
+            env(token::createOffer(issuer, nftID1, gwXAU(-2)),
+                txflags(tfSellNFToken),
+                ter(offerCreateTER));
+            env.close();
+
+            uint256 const buyNegXrpOfferIndex =
+                keylet::nftoffer(buyer, env.seq(buyer)).key;
+            env(token::createOffer(buyer, nftID0, XRP(-1)),
+                token::owner(issuer),
+                ter(offerCreateTER));
+            env.close();
+
+            uint256 const buyNegIouOfferIndex =
+                keylet::nftoffer(buyer, env.seq(buyer)).key;
+            env(token::createOffer(buyer, nftID1, gwXAU(-1)),
+                token::owner(issuer),
+                ter(offerCreateTER));
+            env.close();
+
+            {
+                // Now try to accept the offers.
+                //  1. If fixNFTokenNegOffer is NOT enabled get tecINTERNAL.
+                //  2. If fixNFTokenNegOffer IS enabled get tecOBJECT_NOT_FOUND.
+                TER const offerAcceptTER = tweakedFeatures[fixNFTokenNegOffer]
+                    ? static_cast<TER>(tecOBJECT_NOT_FOUND)
+                    : static_cast<TER>(tecINTERNAL);
+
+                // Sell offers.
+                env(token::acceptSellOffer(buyer, sellNegXrpOfferIndex),
+                    ter(offerAcceptTER));
+                env.close();
+                env(token::acceptSellOffer(buyer, sellNegIouOfferIndex),
+                    ter(offerAcceptTER));
+                env.close();
+
+                // Buy offers.
+                env(token::acceptBuyOffer(issuer, buyNegXrpOfferIndex),
+                    ter(offerAcceptTER));
+                env.close();
+                env(token::acceptBuyOffer(issuer, buyNegIouOfferIndex),
+                    ter(offerAcceptTER));
+                env.close();
+            }
+            {
+                //  1. If fixNFTokenNegOffer is NOT enabled get tecSUCCESS.
+                //  2. If fixNFTokenNegOffer IS enabled get tecOBJECT_NOT_FOUND.
+                TER const offerAcceptTER = tweakedFeatures[fixNFTokenNegOffer]
+                    ? static_cast<TER>(tecOBJECT_NOT_FOUND)
+                    : static_cast<TER>(tesSUCCESS);
+
+                // Brokered offers.
+                env(token::brokerOffers(
+                        gw, buyNegXrpOfferIndex, sellNegXrpOfferIndex),
+                    ter(offerAcceptTER));
+                env.close();
+                env(token::brokerOffers(
+                        gw, buyNegIouOfferIndex, sellNegIouOfferIndex),
+                    ter(offerAcceptTER));
+                env.close();
+            }
+        }
+
+        // Test what happens if NFTokenOffers are created with negative amounts
+        // and then fixNFTokenNegOffer goes live.  What does an acceptOffer do?
+        {
+            Env env{
+                *this,
+                features - fixNFTokenNegOffer - featureNonFungibleTokensV1_1};
+
+            env.fund(XRP(1000000), issuer, buyer, gw);
+            env.close();
+
+            env(trust(issuer, gwXAU(2000)));
+            env(trust(buyer, gwXAU(2000)));
+            env.close();
+
+            env(pay(gw, issuer, gwXAU(1000)));
+            env(pay(gw, buyer, gwXAU(1000)));
+            env.close();
+
+            // Create an NFT that we'll make XRP offers for.
+            uint256 const nftID0{
+                token::getNextID(env, issuer, 0u, tfTransferable)};
+            env(token::mint(issuer, 0), txflags(tfTransferable));
+            env.close();
+
+            // Create an NFT that we'll make IOU offers for.
+            uint256 const nftID1{
+                token::getNextID(env, issuer, 1u, tfTransferable)};
+            env(token::mint(issuer, 1), txflags(tfTransferable));
+            env.close();
+
+            // Make offers with negative amounts for the NFTs
+            uint256 const sellNegXrpOfferIndex =
+                keylet::nftoffer(issuer, env.seq(issuer)).key;
+            env(token::createOffer(issuer, nftID0, XRP(-2)),
+                txflags(tfSellNFToken));
+            env.close();
+
+            uint256 const sellNegIouOfferIndex =
+                keylet::nftoffer(issuer, env.seq(issuer)).key;
+            env(token::createOffer(issuer, nftID1, gwXAU(-2)),
+                txflags(tfSellNFToken));
+            env.close();
+
+            uint256 const buyNegXrpOfferIndex =
+                keylet::nftoffer(buyer, env.seq(buyer)).key;
+            env(token::createOffer(buyer, nftID0, XRP(-1)),
+                token::owner(issuer));
+            env.close();
+
+            uint256 const buyNegIouOfferIndex =
+                keylet::nftoffer(buyer, env.seq(buyer)).key;
+            env(token::createOffer(buyer, nftID1, gwXAU(-1)),
+                token::owner(issuer));
+            env.close();
+
+            // Now the amendment passes.
+            env.enableFeature(fixNFTokenNegOffer);
+            env.close();
+
+            // All attempts to accept the offers with negative amounts
+            // should fail with temBAD_OFFER.
+            env(token::acceptSellOffer(buyer, sellNegXrpOfferIndex),
+                ter(temBAD_OFFER));
+            env.close();
+            env(token::acceptSellOffer(buyer, sellNegIouOfferIndex),
+                ter(temBAD_OFFER));
+            env.close();
+
+            // Buy offers.
+            env(token::acceptBuyOffer(issuer, buyNegXrpOfferIndex),
+                ter(temBAD_OFFER));
+            env.close();
+            env(token::acceptBuyOffer(issuer, buyNegIouOfferIndex),
+                ter(temBAD_OFFER));
+            env.close();
+
+            // Brokered offers.
+            env(token::brokerOffers(
+                    gw, buyNegXrpOfferIndex, sellNegXrpOfferIndex),
+                ter(temBAD_OFFER));
+            env.close();
+            env(token::brokerOffers(
+                    gw, buyNegIouOfferIndex, sellNegIouOfferIndex),
+                ter(temBAD_OFFER));
+            env.close();
+        }
+
+        // Test buy offers with a destination with and without
+        // fixNFTokenNegOffer.
+        for (auto const& tweakedFeatures :
+             {features - fixNFTokenNegOffer - featureNonFungibleTokensV1_1,
+              features | fixNFTokenNegOffer})
+        {
+            Env env{*this, tweakedFeatures};
+
+            env.fund(XRP(1000000), issuer, buyer);
+
+            // Create an NFT that we'll make offers for.
+            uint256 const nftID{
+                token::getNextID(env, issuer, 0u, tfTransferable)};
+            env(token::mint(issuer, 0), txflags(tfTransferable));
+            env.close();
+
+            TER const offerCreateTER = tweakedFeatures[fixNFTokenNegOffer]
+                ? static_cast<TER>(tesSUCCESS)
+                : static_cast<TER>(temMALFORMED);
+
+            env(token::createOffer(buyer, nftID, drops(1)),
+                token::owner(issuer),
+                token::destination(issuer),
+                ter(offerCreateTER));
+            env.close();
+        }
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testEnabled(features);
@@ -4584,6 +4902,7 @@ class NFToken_test : public beast::unit_test::suite
         testNFTokenWithTickets(features);
         testNFTokenDeleteAccount(features);
         testNftXxxOffers(features);
+        testFixNFTokenNegOffer(features);
     }
 
 public:

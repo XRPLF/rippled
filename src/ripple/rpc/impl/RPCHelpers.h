@@ -31,6 +31,7 @@
 #include <ripple/rpc/impl/Tuning.h>
 #include <optional>
 #include <org/xrpl/rpc/v1/xrp_ledger.pb.h>
+#include <variant>
 
 namespace Json {
 class Value;
@@ -286,6 +287,11 @@ chooseLedgerEntryType(Json::Value const& params);
  */
 unsigned int
 getAPIVersionNumber(const Json::Value& value, bool betaEnabled);
+
+/** Return a ledger based on ledger_hash or ledger_index,
+    or an RPC error */
+std::variant<std::shared_ptr<Ledger const>, Json::Value>
+getLedgerByContext(RPC::JsonContext& context);
 
 }  // namespace RPC
 }  // namespace ripple

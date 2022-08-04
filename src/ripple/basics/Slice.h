@@ -48,7 +48,8 @@ private:
     std::size_t size_ = 0;
 
 public:
-    using const_iterator = std::uint8_t const*;
+    using value_type = std::uint8_t;
+    using const_iterator = value_type const*;
 
     /** Default constructed Slice has length 0. */
     Slice() noexcept = default;
@@ -75,13 +76,13 @@ public:
         This may be zero for an empty range.
     */
     /** @{ */
-    std::size_t
+    [[nodiscard]] std::size_t
     size() const noexcept
     {
         return size_;
     }
 
-    std::size_t
+    [[nodiscard]] std::size_t
     length() const noexcept
     {
         return size_;

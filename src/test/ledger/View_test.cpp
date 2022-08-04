@@ -130,6 +130,8 @@ class View_test : public beast::unit_test::suite
     void
     testLedger()
     {
+        testcase("Ledger");
+
         using namespace jtx;
         Env env(*this);
         Config config;
@@ -165,6 +167,8 @@ class View_test : public beast::unit_test::suite
     void
     testMeta()
     {
+        testcase("Meta");
+
         using namespace jtx;
         Env env(*this);
         wipe(env.app().openLedger());
@@ -196,6 +200,8 @@ class View_test : public beast::unit_test::suite
     void
     testMetaSucc()
     {
+        testcase("Meta succ");
+
         using namespace jtx;
         Env env(*this);
         wipe(env.app().openLedger());
@@ -260,6 +266,8 @@ class View_test : public beast::unit_test::suite
     void
     testStacked()
     {
+        testcase("Stacked");
+
         using namespace jtx;
         Env env(*this);
         wipe(env.app().openLedger());
@@ -325,6 +333,8 @@ class View_test : public beast::unit_test::suite
     void
     testContext()
     {
+        testcase("Context");
+
         using namespace jtx;
         using namespace std::chrono;
         {
@@ -387,6 +397,8 @@ class View_test : public beast::unit_test::suite
     void
     testUpperAndLowerBound()
     {
+        testcase("Upper and lower bound");
+
         using namespace jtx;
         Env env(*this);
         Config config;
@@ -654,6 +666,8 @@ class View_test : public beast::unit_test::suite
     void
     testSles()
     {
+        testcase("Sles");
+
         using namespace jtx;
         Env env(*this);
         Config config;
@@ -786,6 +800,8 @@ class View_test : public beast::unit_test::suite
     void
     testFlags()
     {
+        testcase("Flags");
+
         using namespace jtx;
         Env env(*this);
 
@@ -949,6 +965,8 @@ class View_test : public beast::unit_test::suite
     void
     testTransferRate()
     {
+        testcase("Transfer rate");
+
         using namespace jtx;
         Env env(*this);
 
@@ -975,12 +993,14 @@ class View_test : public beast::unit_test::suite
         // construct and manage two different Env instances at the same
         // time.  So we can use two Env instances to produce mutually
         // incompatible ledgers.
+        testcase("Are compatible");
+
         using namespace jtx;
         auto const alice = Account("alice");
         auto const bob = Account("bob");
 
         // The first Env.
-        Env eA(*this);
+        Env eA(*this, envconfig(), nullptr, beast::severities::kDisabled);
 
         eA.fund(XRP(10000), alice);
         eA.close();
@@ -990,9 +1010,13 @@ class View_test : public beast::unit_test::suite
         eA.close();
         auto const rdViewA4 = eA.closed();
 
-        // The two Env's can't share the same ports, so modifiy the config
+        // The two Env's can't share the same ports, so modify the config
         // of the second Env to use higher port numbers
-        Env eB{*this, envconfig(port_increment, 3)};
+        Env eB{
+            *this,
+            envconfig(port_increment, 3),
+            nullptr,
+            beast::severities::kDisabled};
 
         // Make ledgers that are incompatible with the first ledgers.  Note
         // that bob is funded before alice.
@@ -1029,6 +1053,8 @@ class View_test : public beast::unit_test::suite
     void
     testRegressions()
     {
+        testcase("Regressions");
+
         using namespace jtx;
 
         // Create a ledger with 1 item, put a
