@@ -103,7 +103,7 @@ doNoRippleCheck(RPC::JsonContext& context)
         return result;
     }
 
-    auto const sle = ledger->read(keylet::account(accountID));
+    auto const sle = ledger->readSLE(keylet::account(accountID));
     if (!sle)
         return rpcError(rpcACT_NOT_FOUND);
 

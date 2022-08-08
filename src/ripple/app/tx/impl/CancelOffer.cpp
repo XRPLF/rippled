@@ -56,7 +56,7 @@ CancelOffer::preclaim(PreclaimContext const& ctx)
     auto const id = ctx.tx[sfAccount];
     auto const offerSequence = ctx.tx[sfOfferSequence];
 
-    auto const sle = ctx.view.read(keylet::account(id));
+    auto const sle = ctx.view.readSLE(keylet::account(id));
     if (!sle)
         return terNO_ACCOUNT;
 
@@ -77,11 +77,11 @@ CancelOffer::doApply()
 {
     auto const offerSequence = ctx_.tx[sfOfferSequence];
 
-    auto const sle = view().read(keylet::account(account_));
+    auto const sle = view().readSLE(keylet::account(account_));
     if (!sle)
         return tefINTERNAL;
 
-    if (auto sleOffer = view().peek(keylet::offer(account_, offerSequence)))
+    if (auto sleOffer = view().peekSLE(keylet::offer(account_, offerSequence)))
     {
         JLOG(j_.debug()) << "Trying to cancel offer #" << offerSequence;
         return offerDelete(view(), sleOffer, ctx_.app.journal("View"));

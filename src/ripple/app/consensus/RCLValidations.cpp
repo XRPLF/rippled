@@ -46,7 +46,7 @@ RCLValidatedLedger::RCLValidatedLedger(
     beast::Journal j)
     : ledgerID_{ledger->info().hash}, ledgerSeq_{ledger->seq()}, j_{j}
 {
-    auto const hashIndex = ledger->read(keylet::skip());
+    auto const hashIndex = ledger->readSLE(keylet::skip());
     if (hashIndex)
     {
         assert(hashIndex->getFieldU32(sfLastLedgerSequence) == (seq() - 1));

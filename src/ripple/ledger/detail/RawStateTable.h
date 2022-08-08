@@ -84,7 +84,7 @@ public:
     replace(std::shared_ptr<SLE> const& sle);
 
     std::shared_ptr<SLE const>
-    read(ReadView const& base, KeyletBase const& k) const;
+    readSLE(ReadView const& base, KeyletBase const& k) const;
 
     void
     destroyXRP(XRPAmount const& fee);

@@ -145,7 +145,7 @@ closeChannel(
     }
 
     // Transfer amount back to owner, decrement owner count
-    auto const sle = view.peek(keylet::account(src));
+    auto const sle = view.peekSLE(keylet::account(src));
     if (!sle)
         return tefINTERNAL;
 
@@ -193,7 +193,7 @@ TER
 PayChanCreate::preclaim(PreclaimContext const& ctx)
 {
     auto const account = ctx.tx[sfAccount];
-    auto const sle = ctx.view.read(keylet::account(account));
+    auto const sle = ctx.view.readSLE(keylet::account(account));
     if (!sle)
         return terNO_ACCOUNT;
 
@@ -214,7 +214,7 @@ PayChanCreate::preclaim(PreclaimContext const& ctx)
 
     {
         // Check destination account
-        auto const sled = ctx.view.read(keylet::account(dst));
+        auto const sled = ctx.view.readSLE(keylet::account(dst));
         if (!sled)
             return tecNO_DST;
 
@@ -242,7 +242,7 @@ TER
 PayChanCreate::doApply()
 {
     auto const account = ctx_.tx[sfAccount];
-    auto const sle = ctx_.view().peek(keylet::account(account));
+    auto const sle = ctx_.view().peekSLE(keylet::account(account));
     if (!sle)
         return tefINTERNAL;
 
@@ -326,7 +326,7 @@ TER
 PayChanFund::doApply()
 {
     Keylet const k(ltPAYCHAN, ctx_.tx[sfChannel]);
-    auto const slep = ctx_.view().peek(k);
+    auto const slep = ctx_.view().peekSLE(k);
     if (!slep)
         return tecNO_ENTRY;
 
@@ -362,7 +362,7 @@ PayChanFund::doApply()
         ctx_.view().update(slep);
     }
 
-    auto const sle = ctx_.view().peek(keylet::account(txAccount));
+    auto const sle = ctx_.view().peekSLE(keylet::account(txAccount));
     if (!sle)
         return tefINTERNAL;
 
@@ -381,7 +381,7 @@ PayChanFund::doApply()
 
     // do not allow adding funds if dst does not exist
     if (AccountID const dst = (*slep)[sfDestination];
-        !ctx_.view().read(keylet::account(dst)))
+        !ctx_.view().readSLE(keylet::account(dst)))
     {
         return tecNO_DST;
     }
@@ -457,7 +457,7 @@ TER
 PayChanClaim::doApply()
 {
     Keylet const k(ltPAYCHAN, ctx_.tx[sfChannel]);
-    auto const slep = ctx_.view().peek(k);
+    auto const slep = ctx_.view().peekSLE(k);
     if (!slep)
         return tecNO_TARGET;
 
@@ -502,7 +502,7 @@ PayChanClaim::doApply()
             // nothing requested
             return tecUNFUNDED_PAYMENT;
 
-        auto const sled = ctx_.view().peek(keylet::account(dst));
+        auto const sled = ctx_.view().peekSLE(keylet::account(dst));
         if (!sled)
             return tecNO_DST;
 

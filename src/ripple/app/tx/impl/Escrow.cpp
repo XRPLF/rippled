@@ -194,7 +194,7 @@ EscrowCreate::doApply()
     }
 
     auto const account = ctx_.tx[sfAccount];
-    auto const sle = ctx_.view().peek(keylet::account(account));
+    auto const sle = ctx_.view().peekSLE(keylet::account(account));
     if (!sle)
         return tefINTERNAL;
 
@@ -214,7 +214,7 @@ EscrowCreate::doApply()
     // Check destination account
     {
         auto const sled =
-            ctx_.view().read(keylet::account(ctx_.tx[sfDestination]));
+            ctx_.view().readSLE(keylet::account(ctx_.tx[sfDestination]));
         if (!sled)
             return tecNO_DST;
         if (((*sled)[sfFlags] & lsfRequireDestTag) &&
@@ -355,7 +355,7 @@ TER
 EscrowFinish::doApply()
 {
     auto const k = keylet::escrow(ctx_.tx[sfOwner], ctx_.tx[sfOfferSequence]);
-    auto const slep = ctx_.view().peek(k);
+    auto const slep = ctx_.view().peekSLE(k);
     if (!slep)
         return tecNO_TARGET;
 
@@ -438,7 +438,7 @@ EscrowFinish::doApply()
 
     // NOTE: Escrow payments cannot be used to fund accounts.
     AccountID const destID = (*slep)[sfDestination];
-    auto const sled = ctx_.view().peek(keylet::account(destID));
+    auto const sled = ctx_.view().peekSLE(keylet::account(destID));
     if (!sled)
         return tecNO_DST;
 
@@ -488,7 +488,7 @@ EscrowFinish::doApply()
     ctx_.view().update(sled);
 
     // Adjust source owner count
-    auto const sle = ctx_.view().peek(keylet::account(account));
+    auto const sle = ctx_.view().peekSLE(keylet::account(account));
     adjustOwnerCount(ctx_.view(), sle, -1, ctx_.journal);
     ctx_.view().update(sle);
 
@@ -516,7 +516,7 @@ TER
 EscrowCancel::doApply()
 {
     auto const k = keylet::escrow(ctx_.tx[sfOwner], ctx_.tx[sfOfferSequence]);
-    auto const slep = ctx_.view().peek(k);
+    auto const slep = ctx_.view().peekSLE(k);
     if (!slep)
         return tecNO_TARGET;
 
@@ -569,7 +569,7 @@ EscrowCancel::doApply()
     }
 
     // Transfer amount back to owner, decrement owner count
-    auto const sle = ctx_.view().peek(keylet::account(account));
+    auto const sle = ctx_.view().peekSLE(keylet::account(account));
     (*sle)[sfBalance] = (*sle)[sfBalance] + (*slep)[sfAmount];
     adjustOwnerCount(ctx_.view(), sle, -1, ctx_.journal);
     ctx_.view().update(sle);

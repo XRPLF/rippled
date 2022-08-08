@@ -78,7 +78,7 @@ class View_test : public beast::unit_test::suite
                 if (!next)
                     break;
                 view.rawErase(std::make_shared<SLE>(
-                    *view.read(keylet::unchecked(*next))));
+                    *view.readSLE(keylet::unchecked(*next))));
             }
             return true;
         });
@@ -95,8 +95,8 @@ class View_test : public beast::unit_test::suite
             next = ledger.succ(*next);
             if (!next)
                 break;
-            ledger.rawErase(
-                std::make_shared<SLE>(*ledger.read(keylet::unchecked(*next))));
+            ledger.rawErase(std::make_shared<SLE>(
+                *ledger.readSLE(keylet::unchecked(*next))));
         }
     }
 
@@ -147,17 +147,17 @@ class View_test : public beast::unit_test::suite
         succ(v, 0, std::nullopt);
         ledger->rawInsert(sle(1, 1));
         BEAST_EXPECT(v.exists(k(1)));
-        BEAST_EXPECT(seq(v.read(k(1))) == 1);
+        BEAST_EXPECT(seq(v.readSLE(k(1))) == 1);
         succ(v, 0, 1);
         succ(v, 1, std::nullopt);
         ledger->rawInsert(sle(2, 2));
-        BEAST_EXPECT(seq(v.read(k(2))) == 2);
+        BEAST_EXPECT(seq(v.readSLE(k(2))) == 2);
         ledger->rawInsert(sle(3, 3));
-        BEAST_EXPECT(seq(v.read(k(3))) == 3);
-        auto s = copy(v.read(k(2)));
+        BEAST_EXPECT(seq(v.readSLE(k(3))) == 3);
+        auto s = copy(v.readSLE(k(2)));
         seq(s, 4);
         ledger->rawReplace(s);
-        BEAST_EXPECT(seq(v.read(k(2))) == 4);
+        BEAST_EXPECT(seq(v.readSLE(k(2))) == 4);
         ledger->rawErase(sle(2));
         BEAST_EXPECT(!v.exists(k(2)));
         BEAST_EXPECT(v.exists(k(1)));
@@ -177,19 +177,19 @@ class View_test : public beast::unit_test::suite
         succ(v, 0, std::nullopt);
         v.insert(sle(1));
         BEAST_EXPECT(v.exists(k(1)));
-        BEAST_EXPECT(seq(v.read(k(1))) == 1);
-        BEAST_EXPECT(seq(v.peek(k(1))) == 1);
+        BEAST_EXPECT(seq(v.readSLE(k(1))) == 1);
+        BEAST_EXPECT(seq(v.peekSLE(k(1))) == 1);
         succ(v, 0, 1);
         succ(v, 1, std::nullopt);
         v.insert(sle(2, 2));
-        BEAST_EXPECT(seq(v.read(k(2))) == 2);
+        BEAST_EXPECT(seq(v.readSLE(k(2))) == 2);
         v.insert(sle(3, 3));
-        auto s = v.peek(k(3));
+        auto s = v.peekSLE(k(3));
         BEAST_EXPECT(seq(s) == 3);
-        s = v.peek(k(2));
+        s = v.peekSLE(k(2));
         seq(s, 4);
         v.update(s);
-        BEAST_EXPECT(seq(v.read(k(2))) == 4);
+        BEAST_EXPECT(seq(v.readSLE(k(2))) == 4);
         v.erase(s);
         BEAST_EXPECT(!v.exists(k(2)));
         BEAST_EXPECT(v.exists(k(1)));
@@ -238,10 +238,10 @@ class View_test : public beast::unit_test::suite
             succ(v1, 6, 7);
             succ(v1, 7, std::nullopt);
 
-            v1.erase(v1.peek(k(4)));
+            v1.erase(v1.peekSLE(k(4)));
             succ(v1, 3, 5);
 
-            v1.erase(v1.peek(k(6)));
+            v1.erase(v1.peekSLE(k(6)));
             succ(v1, 5, 7);
             succ(v1, 6, 7);
 
@@ -279,53 +279,53 @@ class View_test : public beast::unit_test::suite
 
         {
             Sandbox v1(&v0);
-            v1.erase(v1.peek(k(2)));
+            v1.erase(v1.peekSLE(k(2)));
             v1.insert(sle(3, 3));
-            auto s = v1.peek(k(4));
+            auto s = v1.peekSLE(k(4));
             seq(s, 5);
             v1.update(s);
-            BEAST_EXPECT(seq(v1.read(k(1))) == 1);
+            BEAST_EXPECT(seq(v1.readSLE(k(1))) == 1);
             BEAST_EXPECT(!v1.exists(k(2)));
-            BEAST_EXPECT(seq(v1.read(k(3))) == 3);
-            BEAST_EXPECT(seq(v1.read(k(4))) == 5);
+            BEAST_EXPECT(seq(v1.readSLE(k(3))) == 3);
+            BEAST_EXPECT(seq(v1.readSLE(k(4))) == 5);
             {
                 Sandbox v2(&v1);
-                auto s2 = v2.peek(k(3));
+                auto s2 = v2.peekSLE(k(3));
                 seq(s2, 6);
                 v2.update(s2);
-                v2.erase(v2.peek(k(4)));
-                BEAST_EXPECT(seq(v2.read(k(1))) == 1);
+                v2.erase(v2.peekSLE(k(4)));
+                BEAST_EXPECT(seq(v2.readSLE(k(1))) == 1);
                 BEAST_EXPECT(!v2.exists(k(2)));
-                BEAST_EXPECT(seq(v2.read(k(3))) == 6);
+                BEAST_EXPECT(seq(v2.readSLE(k(3))) == 6);
                 BEAST_EXPECT(!v2.exists(k(4)));
                 // discard v2
             }
-            BEAST_EXPECT(seq(v1.read(k(1))) == 1);
+            BEAST_EXPECT(seq(v1.readSLE(k(1))) == 1);
             BEAST_EXPECT(!v1.exists(k(2)));
-            BEAST_EXPECT(seq(v1.read(k(3))) == 3);
-            BEAST_EXPECT(seq(v1.read(k(4))) == 5);
+            BEAST_EXPECT(seq(v1.readSLE(k(3))) == 3);
+            BEAST_EXPECT(seq(v1.readSLE(k(4))) == 5);
 
             {
                 Sandbox v2(&v1);
-                auto s2 = v2.peek(k(3));
+                auto s2 = v2.peekSLE(k(3));
                 seq(s2, 6);
                 v2.update(s2);
-                v2.erase(v2.peek(k(4)));
-                BEAST_EXPECT(seq(v2.read(k(1))) == 1);
+                v2.erase(v2.peekSLE(k(4)));
+                BEAST_EXPECT(seq(v2.readSLE(k(1))) == 1);
                 BEAST_EXPECT(!v2.exists(k(2)));
-                BEAST_EXPECT(seq(v2.read(k(3))) == 6);
+                BEAST_EXPECT(seq(v2.readSLE(k(3))) == 6);
                 BEAST_EXPECT(!v2.exists(k(4)));
                 v2.apply(v1);
             }
-            BEAST_EXPECT(seq(v1.read(k(1))) == 1);
+            BEAST_EXPECT(seq(v1.readSLE(k(1))) == 1);
             BEAST_EXPECT(!v1.exists(k(2)));
-            BEAST_EXPECT(seq(v1.read(k(3))) == 6);
+            BEAST_EXPECT(seq(v1.readSLE(k(3))) == 6);
             BEAST_EXPECT(!v1.exists(k(4)));
             v1.apply(v0);
         }
-        BEAST_EXPECT(seq(v0.read(k(1))) == 1);
+        BEAST_EXPECT(seq(v0.readSLE(k(1))) == 1);
         BEAST_EXPECT(!v0.exists(k(2)));
-        BEAST_EXPECT(seq(v0.read(k(3))) == 6);
+        BEAST_EXPECT(seq(v0.readSLE(k(3))) == 6);
         BEAST_EXPECT(!v0.exists(k(4)));
     }
 
@@ -764,9 +764,9 @@ class View_test : public beast::unit_test::suite
             view.rawReplace(sle(1, 10));
             view.rawReplace(sle(3, 30));
             BEAST_EXPECT(sles(view) == list(1, 2, 3));
-            BEAST_EXPECT(seq(view.read(k(1))) == 10);
-            BEAST_EXPECT(seq(view.read(k(2))) == 1);
-            BEAST_EXPECT(seq(view.read(k(3))) == 30);
+            BEAST_EXPECT(seq(view.readSLE(k(1))) == 10);
+            BEAST_EXPECT(seq(view.readSLE(k(2))) == 1);
+            BEAST_EXPECT(seq(view.readSLE(k(3))) == 30);
 
             view.rawErase(sle(3));
             BEAST_EXPECT(sles(view) == list(1, 2));
@@ -1077,7 +1077,7 @@ class View_test : public beast::unit_test::suite
             ApplyViewImpl v1(&v0, tapNONE);
             {
                 Sandbox v2(&v1);
-                v2.erase(v2.peek(k(1)));
+                v2.erase(v2.peekSLE(k(1)));
                 v2.apply(v1);
             }
             BEAST_EXPECT(!v1.exists(k(1)));

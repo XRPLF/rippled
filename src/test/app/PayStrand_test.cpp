@@ -499,7 +499,7 @@ struct ExistingElementPool
         std::uint64_t totalXRP = 0;
         auto add = [&](auto const& a) {
             // XRP balance
-            auto const sle = v.read(keylet::account(a));
+            auto const sle = v.readSLE(keylet::account(a));
             if (!sle)
                 return;
             auto const b = (*sle)[sfBalance];
@@ -520,13 +520,13 @@ struct ExistingElementPool
         std::vector<std::tuple<STAmount, STAmount, AccountID, AccountID>> diffs;
 
         auto xrpBalance = [](ReadView const& v, ripple::Keylet const& k) {
-            auto const sle = v.read(k);
+            auto const sle = v.readSLE(k);
             if (!sle)
                 return STAmount{};
             return (*sle)[sfBalance];
         };
         auto lineBalance = [](ReadView const& v, ripple::Keylet const& k) {
-            auto const sle = v.read(k);
+            auto const sle = v.readSLE(k);
             if (!sle)
                 return STAmount{};
             return (*sle)[sfBalance];

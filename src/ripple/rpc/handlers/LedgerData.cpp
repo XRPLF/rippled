@@ -102,7 +102,7 @@ doLedgerData(RPC::JsonContext& context)
     auto e = lpLedger->sles.end();
     for (auto i = lpLedger->sles.upper_bound(key); i != e; ++i)
     {
-        auto sle = lpLedger->read(keylet::unchecked((*i)->key()));
+        auto sle = lpLedger->readSLE(keylet::unchecked((*i)->key()));
         if (limit-- <= 0)
         {
             // Stop processing before the current key.
@@ -184,7 +184,7 @@ doLedgerDataGrpc(
 
     for (auto i = ledger->sles.upper_bound(startKey); i != e; ++i)
     {
-        auto sle = ledger->read(keylet::unchecked((*i)->key()));
+        auto sle = ledger->readSLE(keylet::unchecked((*i)->key()));
         if (maxLimit-- <= 0)
         {
             // Stop processing before the current key.

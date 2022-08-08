@@ -31,7 +31,7 @@ ApplyView::dirAdd(
     uint256 const& key,
     std::function<void(std::shared_ptr<SLE> const&)> const& describe)
 {
-    auto root = peek(directory);
+    auto root = peekSLE(directory);
 
     if (!root)
     {
@@ -54,7 +54,7 @@ ApplyView::dirAdd(
 
     if (page)
     {
-        node = peek(keylet::page(directory, page));
+        node = peekSLE(keylet::page(directory, page));
         if (!node)
             LogicError("Directory chain: root back-pointer broken.");
     }
@@ -124,7 +124,7 @@ ApplyView::dirAdd(
 bool
 ApplyView::emptyDirDelete(Keylet const& directory)
 {
-    auto node = peek(directory);
+    auto node = peekSLE(directory);
 
     if (!node)
         return false;
@@ -155,7 +155,7 @@ ApplyView::emptyDirDelete(Keylet const& directory)
     // page to be empty. Remove such pages:
     if (nextPage == prevPage && nextPage != rootPage)
     {
-        auto last = peek(keylet::page(directory, nextPage));
+        auto last = peekSLE(keylet::page(directory, nextPage));
 
         if (!last)
             LogicError("Directory chain: fwd link broken.");
@@ -192,7 +192,7 @@ ApplyView::dirRemove(
     uint256 const& key,
     bool keepRoot)
 {
-    auto node = peek(keylet::page(directory, page));
+    auto node = peekSLE(keylet::page(directory, page));
 
     if (!node)
         return false;
@@ -240,7 +240,7 @@ ApplyView::dirRemove(
         // pages if we stumble on them:
         if (nextPage == prevPage && nextPage != page)
         {
-            auto last = peek(keylet::page(directory, nextPage));
+            auto last = peekSLE(keylet::page(directory, nextPage));
             if (!last)
                 LogicError("Directory chain: fwd link broken.");
 
@@ -283,14 +283,14 @@ ApplyView::dirRemove(
     // middle of the list, or at the end. Unlink it first
     // and then check if that leaves the list with only a
     // root:
-    auto prev = peek(keylet::page(directory, prevPage));
+    auto prev = peekSLE(keylet::page(directory, prevPage));
     if (!prev)
         LogicError("Directory chain: fwd link broken.");
     // Fix previous to point to its new next.
     prev->setFieldU64(sfIndexNext, nextPage);
     update(prev);
 
-    auto next = peek(keylet::page(directory, nextPage));
+    auto next = peekSLE(keylet::page(directory, nextPage));
     if (!next)
         LogicError("Directory chain: rev link broken.");
     // Fix next to point to its new previous.
@@ -314,7 +314,7 @@ ApplyView::dirRemove(
         update(prev);
 
         // And the root points to the the last page:
-        auto root = peek(keylet::page(directory, rootPage));
+        auto root = peekSLE(keylet::page(directory, rootPage));
         if (!root)
             LogicError("Directory chain: root link broken.");
         root->setFieldU64(sfIndexPrevious, prevPage);
@@ -343,7 +343,7 @@ ApplyView::dirDelete(
 
     do
     {
-        auto const page = peek(keylet::page(directory, pi.value_or(0)));
+        auto const page = peekSLE(keylet::page(directory, pi.value_or(0)));
 
         if (!page)
             return false;

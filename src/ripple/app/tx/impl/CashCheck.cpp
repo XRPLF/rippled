@@ -82,7 +82,7 @@ CashCheck::preflight(PreflightContext const& ctx)
 TER
 CashCheck::preclaim(PreclaimContext const& ctx)
 {
-    auto const sleCheck = ctx.view.read(keylet::check(ctx.tx[sfCheckID]));
+    auto const sleCheck = ctx.view.readSLE(keylet::check(ctx.tx[sfCheckID]));
     if (!sleCheck)
     {
         JLOG(ctx.j.warn()) << "Check does not exist.";
@@ -105,8 +105,8 @@ CashCheck::preclaim(PreclaimContext const& ctx)
         return tecINTERNAL;
     }
     {
-        auto const sleSrc = ctx.view.read(keylet::account(srcId));
-        auto const sleDst = ctx.view.read(keylet::account(dstId));
+        auto const sleSrc = ctx.view.readSLE(keylet::account(srcId));
+        auto const sleDst = ctx.view.readSLE(keylet::account(dstId));
         if (!sleSrc || !sleDst)
         {
             // If the check exists this should never occur.
@@ -188,7 +188,7 @@ CashCheck::preclaim(PreclaimContext const& ctx)
         if (!value.native() && (value.getIssuer() != dstId))
         {
             auto const sleTrustLine =
-                ctx.view.read(keylet::line(dstId, issuerId, currency));
+                ctx.view.readSLE(keylet::line(dstId, issuerId, currency));
 
             if (!sleTrustLine &&
                 !ctx.view.rules().enabled(featureCheckCashMakesTrustLine))
@@ -198,7 +198,7 @@ CashCheck::preclaim(PreclaimContext const& ctx)
                 return tecNO_LINE;
             }
 
-            auto const sleIssuer = ctx.view.read(keylet::account(issuerId));
+            auto const sleIssuer = ctx.view.readSLE(keylet::account(issuerId));
             if (!sleIssuer)
             {
                 JLOG(ctx.j.warn())
@@ -256,7 +256,7 @@ CashCheck::doApply()
     // directly on a View.
     PaymentSandbox psb(&ctx_.view());
 
-    auto sleCheck = psb.peek(keylet::check(ctx_.tx[sfCheckID]));
+    auto sleCheck = psb.peekSLE(keylet::check(ctx_.tx[sfCheckID]));
     if (!sleCheck)
     {
         JLOG(j_.fatal()) << "Precheck did not verify check's existence.";
@@ -365,7 +365,7 @@ CashCheck::doApply()
                 //     a. this (destination) account and
                 //     b. issuing account (not sending account).
 
-                auto const sleDst = psb.peek(keylet::account(account_));
+                auto const sleDst = psb.peekSLE(keylet::account(account_));
 
                 // Can the account cover the trust line's reserve?
                 if (std::uint32_t const ownerCount = {sleDst->at(sfOwnerCount)};
@@ -414,7 +414,7 @@ CashCheck::doApply()
             // the funds even if their new total funds would exceed the limit
             // on their trust line.  So we tweak the trust line limits before
             // calling flow and then restore the trust line limits afterwards.
-            auto const sleTrustLine = psb.peek(trustLineKey);
+            auto const sleTrustLine = psb.peekSLE(trustLineKey);
             if (!sleTrustLine)
                 return tecNO_LINE;
 
@@ -424,7 +424,7 @@ CashCheck::doApply()
             // Make sure the tweaked limits are restored when we leave scope.
             scope_exit fixup(
                 [&psb, &trustLineKey, &tweakedLimit, &savedLimit]() {
-                    if (auto const sleTrustLine = psb.peek(trustLineKey))
+                    if (auto const sleTrustLine = psb.peekSLE(trustLineKey))
                         sleTrustLine->at(tweakedLimit) = savedLimit;
                 });
 
@@ -477,7 +477,7 @@ CashCheck::doApply()
             if (checkCashMakesTrustLine)
                 ctx_.deliver(result.actualAmountOut);
 
-            sleCheck = psb.peek(keylet::check(ctx_.tx[sfCheckID]));
+            sleCheck = psb.peekSLE(keylet::check(ctx_.tx[sfCheckID]));
         }
     }
 
@@ -506,7 +506,7 @@ CashCheck::doApply()
     }
 
     // If we succeeded, update the check owner's reserve.
-    adjustOwnerCount(psb, psb.peek(keylet::account(srcId)), -1, viewJ);
+    adjustOwnerCount(psb, psb.peekSLE(keylet::account(srcId)), -1, viewJ);
 
     // Remove check from ledger.
     psb.erase(sleCheck);

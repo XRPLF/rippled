@@ -80,7 +80,7 @@ BookDirs::const_iterator::operator*() const
 {
     assert(index_ != beast::zero);
     if (!cache_)
-        cache_ = view_->read(keylet::offer(index_));
+        cache_ = view_->readSLE(keylet::offer(index_));
     return *cache_;
 }
 

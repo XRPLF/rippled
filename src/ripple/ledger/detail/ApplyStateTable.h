@@ -82,10 +82,10 @@ public:
         std::optional<key_type> const& last) const;
 
     std::shared_ptr<SLE const>
-    read(ReadView const& base, KeyletBase const& k) const;
+    readSLE(ReadView const& base, KeyletBase const& k) const;
 
     std::shared_ptr<SLE>
-    peek(ReadView const& base, KeyletBase const& k);
+    peekSLE(ReadView const& base, KeyletBase const& k);
 
     std::size_t
     size() const;

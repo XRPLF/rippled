@@ -87,7 +87,7 @@ ApplyStateTable::visit(
                 func(
                     item.first,
                     true,
-                    to.read(keylet::unchecked(item.first)),
+                    to.readSLE(keylet::unchecked(item.first)),
                     item.second.second);
                 break;
 
@@ -99,7 +99,7 @@ ApplyStateTable::visit(
                 func(
                     item.first,
                     false,
-                    to.read(keylet::unchecked(item.first)),
+                    to.readSLE(keylet::unchecked(item.first)),
                     item.second.second);
                 break;
 
@@ -145,7 +145,7 @@ ApplyStateTable::apply(
                     type = &sfModifiedNode;
                     break;
             }
-            auto const origNode = to.read(keylet::unchecked(item.first));
+            auto const origNode = to.readSLE(keylet::unchecked(item.first));
             auto curNode = item.second.second;
             if ((type == &sfModifiedNode) && (*curNode == *origNode))
                 continue;
@@ -322,11 +322,11 @@ ApplyStateTable::succ(
 }
 
 std::shared_ptr<SLE const>
-ApplyStateTable::read(ReadView const& base, KeyletBase const& k) const
+ApplyStateTable::readSLE(ReadView const& base, KeyletBase const& k) const
 {
     auto const iter = items_.find(k.key);
     if (iter == items_.end())
-        return base.read(k);
+        return base.readSLE(k);
     auto const& item = iter->second;
     auto const& sle = item.second;
     switch (item.first)
@@ -344,12 +344,12 @@ ApplyStateTable::read(ReadView const& base, KeyletBase const& k) const
 }
 
 std::shared_ptr<SLE>
-ApplyStateTable::peek(ReadView const& base, KeyletBase const& k)
+ApplyStateTable::peekSLE(ReadView const& base, KeyletBase const& k)
 {
     auto iter = items_.lower_bound(k.key);
     if (iter == items_.end() || iter->first != k.key)
     {
-        auto const sle = base.read(k);
+        auto const sle = base.readSLE(k);
         if (!sle)
             return nullptr;
         // Make our own copy
@@ -579,7 +579,7 @@ ApplyStateTable::getForMod(
             // metadata; fall through and track it in the mods table.
         }
     }
-    auto c = base.read(keylet::unchecked(key));
+    auto c = base.readSLE(keylet::unchecked(key));
     if (!c)
     {
         // The Destination of an Escrow or a PayChannel may have been

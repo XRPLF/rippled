@@ -68,9 +68,9 @@ ApplyViewBase::succ(key_type const& key, std::optional<key_type> const& last)
 }
 
 std::shared_ptr<SLE const>
-ApplyViewBase::read(KeyletBase const& k) const
+ApplyViewBase::readSLE(KeyletBase const& k) const
 {
-    return items_.read(*base_, k);
+    return items_.readSLE(*base_, k);
 }
 
 auto
@@ -125,9 +125,9 @@ ApplyViewBase::flags() const
 }
 
 std::shared_ptr<SLE>
-ApplyViewBase::peek(KeyletBase const& k)
+ApplyViewBase::peekSLE(KeyletBase const& k)
 {
-    return items_.peek(*base_, k);
+    return items_.peekSLE(*base_, k);
 }
 
 void

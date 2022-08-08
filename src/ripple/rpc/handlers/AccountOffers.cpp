@@ -123,7 +123,7 @@ doAccountOffers(RPC::JsonContext& context)
 
         // We then must check if the object pointed to by the marker is actually
         // owned by the account in the request.
-        auto const sle = ledger->read(Keylet(ltANY, startAfter));
+        auto const sle = ledger->readSLE(Keylet(ltANY, startAfter));
 
         if (!sle)
             return rpcError(rpcINVALID_PARAMS);

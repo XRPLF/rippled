@@ -187,7 +187,7 @@ removeSignersFromLedger(
 {
     // We have to examine the current SignerList so we know how much to
     // reduce the OwnerCount.
-    SLE::pointer signers = view.peek(signerListKeylet);
+    SLE::pointer signers = view.peekSLE(signerListKeylet);
 
     // If the signer list doesn't exist we've already succeeded in deleting it.
     if (!signers)
@@ -216,7 +216,7 @@ removeSignersFromLedger(
 
     adjustOwnerCount(
         view,
-        view.peek(accountKeylet),
+        view.peekSLE(accountKeylet),
         removeFromOwnerCount,
         app.journal("View"));
 
@@ -328,7 +328,7 @@ SetSignerList::replaceSignerList()
             j_))
         return ter;
 
-    auto const sle = view().peek(accountKeylet);
+    auto const sle = view().peekSLE(accountKeylet);
     if (!sle)
         return tefINTERNAL;
 
@@ -384,7 +384,7 @@ SetSignerList::destroySignerList()
     auto const accountKeylet = keylet::account(account_);
     // Destroying the signer list is only allowed if either the master key
     // is enabled or there is a regular key.
-    SLE::pointer ledgerEntry = view().peek(accountKeylet);
+    SLE::pointer ledgerEntry = view().peekSLE(accountKeylet);
     if (!ledgerEntry)
         return tefINTERNAL;
 

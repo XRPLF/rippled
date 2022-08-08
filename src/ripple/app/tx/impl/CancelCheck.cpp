@@ -53,7 +53,7 @@ CancelCheck::preflight(PreflightContext const& ctx)
 TER
 CancelCheck::preclaim(PreclaimContext const& ctx)
 {
-    auto const sleCheck = ctx.view.read(keylet::check(ctx.tx[sfCheckID]));
+    auto const sleCheck = ctx.view.readSLE(keylet::check(ctx.tx[sfCheckID]));
     if (!sleCheck)
     {
         JLOG(ctx.j.warn()) << "Check does not exist.";
@@ -88,7 +88,7 @@ CancelCheck::preclaim(PreclaimContext const& ctx)
 TER
 CancelCheck::doApply()
 {
-    auto const sleCheck = view().peek(keylet::check(ctx_.tx[sfCheckID]));
+    auto const sleCheck = view().peekSLE(keylet::check(ctx_.tx[sfCheckID]));
     if (!sleCheck)
     {
         // Error should have been caught in preclaim.
@@ -123,7 +123,7 @@ CancelCheck::doApply()
     }
 
     // If we succeeded, update the check owner's reserve.
-    auto const sleSrc = view().peek(keylet::account(srcId));
+    auto const sleSrc = view().peekSLE(keylet::account(srcId));
     adjustOwnerCount(view(), sleSrc, -1, viewJ);
 
     // Remove check from ledger.

@@ -190,7 +190,7 @@ PathRequest::isValid(std::shared_ptr<RippleLineCache> const& crCache)
         return false;
     }
 
-    auto const sleDest = lrLedger->read(keylet::account(*raDstAccount));
+    auto const sleDest = lrLedger->readSLE(keylet::account(*raDstAccount));
 
     Json::Value& jvDestCur =
         (jvStatus[jss::destination_currencies] = Json::arrayValue);

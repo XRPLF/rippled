@@ -202,7 +202,8 @@ private:
     static std::int32_t
     computeReserveReduction(StrandContext const& ctx, AccountID const& acc)
     {
-        if (ctx.isFirst && !ctx.view.read(keylet::line(acc, ctx.strandDeliver)))
+        if (ctx.isFirst &&
+            !ctx.view.readSLE(keylet::line(acc, ctx.strandDeliver)))
             return -1;
         return 0;
     }
@@ -342,7 +343,7 @@ XRPEndpointStep<TDerived>::check(StrandContext const& ctx) const
         return temBAD_PATH;
     }
 
-    auto sleAcc = ctx.view.read(keylet::account(acc_));
+    auto sleAcc = ctx.view.readSLE(keylet::account(acc_));
     if (!sleAcc)
     {
         JLOG(j_.warn()) << "XRPEndpointStep: can't send or receive XRP from "

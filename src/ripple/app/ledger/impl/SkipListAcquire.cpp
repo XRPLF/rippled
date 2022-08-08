@@ -192,7 +192,7 @@ SkipListAcquire::retrieveSkipList(
     std::shared_ptr<Ledger const> const& ledger,
     ScopedLockType& sl)
 {
-    if (auto const hashIndex = ledger->read(keylet::skip());
+    if (auto const hashIndex = ledger->readSLE(keylet::skip());
         hashIndex && hashIndex->isFieldPresent(sfHashes))
     {
         auto const& slist = hashIndex->getFieldV256(sfHashes).value();

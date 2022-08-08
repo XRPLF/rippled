@@ -194,7 +194,7 @@ SetAccount::preclaim(PreclaimContext const& ctx)
 
     std::uint32_t const uTxFlags = ctx.tx.getFlags();
 
-    auto const sle = ctx.view.read(keylet::account(id));
+    auto const sle = ctx.view.readSLE(keylet::account(id));
     if (!sle)
         return terNO_ACCOUNT;
 
@@ -224,7 +224,7 @@ SetAccount::preclaim(PreclaimContext const& ctx)
 TER
 SetAccount::doApply()
 {
-    auto const sle = view().peek(keylet::account(account_));
+    auto const sle = view().peekSLE(keylet::account(account_));
     if (!sle)
         return tefINTERNAL;
 
@@ -320,7 +320,7 @@ SetAccount::doApply()
         }
 
         if ((!sle->isFieldPresent(sfRegularKey)) &&
-            (!view().peek(keylet::signers(account_))))
+            (!view().peekSLE(keylet::signers(account_))))
         {
             // Account has no regular key or multi-signer signer list.
             return tecNO_ALTERNATIVE_KEY;

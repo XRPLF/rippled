@@ -1932,7 +1932,7 @@ VerifyPubKeyAndSeq(
     std::shared_ptr<Ledger const> const& l,
     hash_map<PublicKey, std::uint32_t> nUnlLedgerSeq)
 {
-    auto sle = l->read(keylet::negativeUNL());
+    auto sle = l->readSLE(keylet::negativeUNL());
     if (!sle)
         return false;
     if (!sle->isFieldPresent(sfDisabledValidators))

@@ -600,7 +600,7 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
             (offer.owner() != offer.issueIn().account))
         {
             auto const& issuerID = offer.issueIn().account;
-            auto const issuer = afView.read(keylet::account(issuerID));
+            auto const issuer = afView.readSLE(keylet::account(issuerID));
             if (issuer && ((*issuer)[sfFlags] & lsfRequireAuth))
             {
                 // Issuer requires authorization.  See if offer owner has that.
@@ -608,7 +608,7 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
                 auto const authFlag =
                     issuerID > ownerID ? lsfHighAuth : lsfLowAuth;
 
-                auto const line = afView.read(
+                auto const line = afView.readSLE(
                     keylet::line(ownerID, issuerID, offer.issueIn().currency));
 
                 if (!line || (((*line)[sfFlags] & authFlag) == 0))
@@ -1077,7 +1077,7 @@ BookStep<TIn, TOut, TDerived>::check(StrandContext const& ctx) const
     }
 
     auto issuerExists = [](ReadView const& view, Issue const& iss) -> bool {
-        return isXRP(iss.account) || view.read(keylet::account(iss.account));
+        return isXRP(iss.account) || view.readSLE(keylet::account(iss.account));
     };
 
     if (!issuerExists(ctx.view, book_.in) || !issuerExists(ctx.view, book_.out))
@@ -1093,7 +1093,8 @@ BookStep<TIn, TOut, TDerived>::check(StrandContext const& ctx) const
             auto const& view = ctx.view;
             auto const& cur = book_.in.account;
 
-            auto sle = view.read(keylet::line(*prev, cur, book_.in.currency));
+            auto sle =
+                view.readSLE(keylet::line(*prev, cur, book_.in.currency));
             if (!sle)
                 return terNO_LINE;
             if ((*sle)[sfFlags] &

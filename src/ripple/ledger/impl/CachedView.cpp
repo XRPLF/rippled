@@ -27,11 +27,11 @@ namespace detail {
 bool
 CachedViewImpl::exists(KeyletBase const& k) const
 {
-    return read(k) != nullptr;
+    return readSLE(k) != nullptr;
 }
 
 std::shared_ptr<SLE const>
-CachedViewImpl::read(KeyletBase const& k) const
+CachedViewImpl::readSLE(KeyletBase const& k) const
 {
     {
         std::lock_guard lock(mutex_);
@@ -46,7 +46,7 @@ CachedViewImpl::read(KeyletBase const& k) const
     auto const digest = base_.digest(k.key);
     if (!digest)
         return nullptr;
-    auto sle = cache_.fetch(*digest, [&]() { return base_.read(k); });
+    auto sle = cache_.fetch(*digest, [&]() { return base_.readSLE(k); });
     std::lock_guard lock(mutex_);
     auto const er = map_.emplace(k.key, sle);
     auto const& iter = er.first;

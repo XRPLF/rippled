@@ -61,9 +61,9 @@ internalDirNext(
         }
 
         if constexpr (std::is_const_v<N>)
-            page = view.read(keylet::page(root, next));
+            page = view.readSLE(keylet::page(root, next));
         else
-            page = view.peek(keylet::page(root, next));
+            page = view.peekSLE(keylet::page(root, next));
 
         assert(page);
 
@@ -94,9 +94,9 @@ internalDirFirst(
     uint256& entry)
 {
     if constexpr (std::is_const_v<N>)
-        page = view.read(keylet::page(root));
+        page = view.readSLE(keylet::page(root));
     else
-        page = view.peek(keylet::page(root));
+        page = view.peekSLE(keylet::page(root));
 
     if (!page)
         return false;
@@ -189,7 +189,7 @@ isGlobalFrozen(ReadView const& view, AccountID const& issuer)
 {
     if (isXRP(issuer))
         return false;
-    if (auto const sle = view.read(keylet::account(issuer)))
+    if (auto const sle = view.readSLE(keylet::account(issuer)))
         return sle->isFlag(lsfGlobalFreeze);
     return false;
 }
@@ -205,13 +205,13 @@ isFrozen(
 {
     if (isXRP(currency))
         return false;
-    auto sle = view.read(keylet::account(issuer));
+    auto sle = view.readSLE(keylet::account(issuer));
     if (sle && sle->isFlag(lsfGlobalFreeze))
         return true;
     if (issuer != account)
     {
         // Check if the issuer froze the line
-        sle = view.read(keylet::line(account, issuer, currency));
+        sle = view.readSLE(keylet::line(account, issuer, currency));
         if (sle &&
             sle->isFlag((issuer > account) ? lsfHighFreeze : lsfLowFreeze))
             return true;
@@ -235,7 +235,7 @@ accountHolds(
     }
 
     // IOU: Return balance on trust line modulo freeze
-    auto const sle = view.read(keylet::line(account, issuer, currency));
+    auto const sle = view.readSLE(keylet::line(account, issuer, currency));
     if (!sle)
     {
         amount.clear({currency, issuer});
@@ -334,7 +334,7 @@ xrpLiquid(
     std::int32_t ownerCountAdj,
     beast::Journal j)
 {
-    auto const sle = view.read(keylet::account(id));
+    auto const sle = view.readSLE(keylet::account(id));
     if (sle == nullptr)
         return beast::zero;
 
@@ -378,11 +378,11 @@ forEachItem(
 
     while (true)
     {
-        auto sle = view.read(pos);
+        auto sle = view.readSLE(pos);
         if (!sle)
             return;
         for (auto const& key : sle->getFieldV256(sfIndexes))
-            f(view.read(keylet::child(key)));
+            f(view.readSLE(keylet::child(key)));
         auto const next = sle->getFieldU64(sfIndexNext);
         if (!next)
             return;
@@ -411,7 +411,7 @@ forEachItemAfter(
     {
         auto const hintIndex = keylet::page(root, hint);
 
-        if (auto hintDir = view.read(hintIndex))
+        if (auto hintDir = view.readSLE(hintIndex))
         {
             for (auto const& key : hintDir->getFieldV256(sfIndexes))
             {
@@ -427,7 +427,7 @@ forEachItemAfter(
         bool found = false;
         for (;;)
         {
-            auto const ownerDir = view.read(currentIndex);
+            auto const ownerDir = view.readSLE(currentIndex);
             if (!ownerDir)
                 return found;
             for (auto const& key : ownerDir->getFieldV256(sfIndexes))
@@ -437,7 +437,7 @@ forEachItemAfter(
                     if (key == after)
                         found = true;
                 }
-                else if (f(view.read(keylet::child(key))) && limit-- <= 1)
+                else if (f(view.readSLE(keylet::child(key))) && limit-- <= 1)
                 {
                     return found;
                 }
@@ -453,11 +453,11 @@ forEachItemAfter(
     {
         for (;;)
         {
-            auto const ownerDir = view.read(currentIndex);
+            auto const ownerDir = view.readSLE(currentIndex);
             if (!ownerDir)
                 return true;
             for (auto const& key : ownerDir->getFieldV256(sfIndexes))
-                if (f(view.read(keylet::child(key))) && limit-- <= 1)
+                if (f(view.readSLE(keylet::child(key))) && limit-- <= 1)
                     return true;
             auto const uNodeNext = ownerDir->getFieldU64(sfIndexNext);
             if (uNodeNext == 0)
@@ -470,7 +470,7 @@ forEachItemAfter(
 Rate
 transferRate(ReadView const& view, AccountID const& issuer)
 {
-    auto const sle = view.read(keylet::account(issuer));
+    auto const sle = view.readSLE(keylet::account(issuer));
 
     if (sle && sle->isFieldPresent(sfTransferRate))
         return Rate{sle->getFieldU32(sfTransferRate)};
@@ -589,7 +589,7 @@ areCompatible(
 bool
 dirIsEmpty(ReadView const& view, Keylet const& k)
 {
-    auto const sleNode = view.read(k);
+    auto const sleNode = view.readSLE(k);
     if (!sleNode)
         return true;
     if (!sleNode->getFieldV256(sfIndexes).empty())
@@ -605,7 +605,7 @@ getEnabledAmendments(ReadView const& view)
 {
     std::set<uint256> amendments;
 
-    if (auto const sle = view.read(keylet::amendments()))
+    if (auto const sle = view.readSLE(keylet::amendments()))
     {
         if (sle->isFieldPresent(sfAmendments))
         {
@@ -622,7 +622,7 @@ getMajorityAmendments(ReadView const& view)
 {
     majorityAmendments_t ret;
 
-    if (auto const sle = view.read(keylet::amendments()))
+    if (auto const sle = view.readSLE(keylet::amendments()))
     {
         if (sle->isFieldPresent(sfMajorities))
         {
@@ -658,7 +658,7 @@ hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal)
     if (int diff = ledger.seq() - seq; diff <= 256)
     {
         // Within 256...
-        auto const hashIndex = ledger.read(keylet::skip());
+        auto const hashIndex = ledger.readSLE(keylet::skip());
         if (hashIndex)
         {
             assert(
@@ -687,7 +687,7 @@ hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal)
     }
 
     // in skiplist
-    auto const hashIndex = ledger.read(keylet::skip(seq));
+    auto const hashIndex = ledger.readSLE(keylet::skip(seq));
     if (hashIndex)
     {
         auto const lastSeq = hashIndex->getFieldU32(sfLastLedgerSequence);
@@ -790,8 +790,8 @@ trustCreate(
     assert(
         sleAccount->getAccountID(sfAccount) ==
         (bSetHigh ? uHighAccountID : uLowAccountID));
-    auto const slePeer =
-        view.peek(keylet::account(bSetHigh ? uLowAccountID : uHighAccountID));
+    auto const slePeer = view.peekSLE(
+        keylet::account(bSetHigh ? uLowAccountID : uHighAccountID));
     if (!slePeer)
         return tecNO_TARGET;
 
@@ -918,7 +918,7 @@ offerDelete(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j)
         return tefBAD_LEDGER;
     }
 
-    adjustOwnerCount(view, view.peek(keylet::account(owner)), -1, j);
+    adjustOwnerCount(view, view.peekSLE(keylet::account(owner)), -1, j);
 
     view.erase(sle);
 
@@ -955,7 +955,7 @@ rippleCredit(
     assert(!isXRP(uReceiverID) && uReceiverID != noAccount());
 
     // If the line exists, modify it accordingly.
-    if (auto const sleRippleState = view.peek(index))
+    if (auto const sleRippleState = view.peekSLE(index))
     {
         STAmount saBalance = sleRippleState->getFieldAmount(sfBalance);
 
@@ -989,7 +989,7 @@ rippleCredit(
             static_cast<bool>(
                 uFlags & (!bSenderHigh ? lsfLowNoRipple : lsfHighNoRipple)) !=
                 static_cast<bool>(
-                    view.read(keylet::account(uSenderID))->getFlags() &
+                    view.readSLE(keylet::account(uSenderID))->getFlags() &
                     lsfDefaultRipple) &&
             !(uFlags & (!bSenderHigh ? lsfLowFreeze : lsfHighFreeze)) &&
             !sleRippleState->getFieldAmount(
@@ -1004,7 +1004,7 @@ rippleCredit(
         {
             // Clear the reserve of the sender, possibly delete the line!
             adjustOwnerCount(
-                view, view.peek(keylet::account(uSenderID)), -1, j);
+                view, view.peekSLE(keylet::account(uSenderID)), -1, j);
 
             // Clear reserve flag.
             sleRippleState->setFieldU32(
@@ -1048,7 +1048,7 @@ rippleCredit(
                     << to_string(uSenderID) << " -> " << to_string(uReceiverID)
                     << " : " << saAmount.getFullText();
 
-    auto const sleAccount = view.peek(keylet::account(uReceiverID));
+    auto const sleAccount = view.peekSLE(keylet::account(uReceiverID));
     if (!sleAccount)
         return tefINTERNAL;
 
@@ -1153,10 +1153,10 @@ accountSend(
     TER terResult(tesSUCCESS);
 
     SLE::pointer sender = uSenderID != beast::zero
-        ? view.peek(keylet::account(uSenderID))
+        ? view.peekSLE(keylet::account(uSenderID))
         : SLE::pointer();
     SLE::pointer receiver = uReceiverID != beast::zero
-        ? view.peek(keylet::account(uReceiverID))
+        ? view.peekSLE(keylet::account(uReceiverID))
         : SLE::pointer();
 
     if (auto stream = j.trace())
@@ -1238,7 +1238,7 @@ updateTrustLine(
         return false;
     std::uint32_t const flags(state->getFieldU32(sfFlags));
 
-    auto sle = view.peek(keylet::account(sender));
+    auto sle = view.peekSLE(keylet::account(sender));
     if (!sle)
         return false;
 
@@ -1300,7 +1300,7 @@ issueIOU(
 
     auto const index = keylet::line(issue.account, account, issue.currency);
 
-    if (auto state = view.peek(index))
+    if (auto state = view.peekSLE(index))
     {
         STAmount final_balance = state->getFieldAmount(sfBalance);
 
@@ -1350,7 +1350,7 @@ issueIOU(
 
     final_balance.setIssuer(noAccount());
 
-    auto const receiverAccount = view.peek(keylet::account(account));
+    auto const receiverAccount = view.peekSLE(keylet::account(account));
     if (!receiverAccount)
         return tefINTERNAL;
 
@@ -1395,7 +1395,7 @@ redeemIOU(
     bool bSenderHigh = account > issue.account;
 
     if (auto state =
-            view.peek(keylet::line(account, issue.account, issue.currency)))
+            view.peekSLE(keylet::line(account, issue.account, issue.currency)))
     {
         STAmount final_balance = state->getFieldAmount(sfBalance);
 
@@ -1456,8 +1456,8 @@ transferXRP(
     assert(from != to);
     assert(amount.native());
 
-    SLE::pointer const sender = view.peek(keylet::account(from));
-    SLE::pointer const receiver = view.peek(keylet::account(to));
+    SLE::pointer const sender = view.peekSLE(keylet::account(from));
+    SLE::pointer const receiver = view.peekSLE(keylet::account(to));
     if (!sender || !receiver)
         return tefINTERNAL;
 

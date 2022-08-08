@@ -106,7 +106,7 @@ class RCLValidations_test : public beast::unit_test::suite
                 *prev, env.app().timeKeeper().closeTime());
             // Force a different hash on the first iteration
             next->updateSkipList();
-            BEAST_EXPECT(next->read(keylet::fees()));
+            BEAST_EXPECT(next->readSLE(keylet::fees()));
             if (forceHash)
             {
                 next->setImmutable();

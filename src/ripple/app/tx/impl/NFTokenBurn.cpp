@@ -68,7 +68,7 @@ NFTokenBurn::preclaim(PreclaimContext const& ctx)
         if (auto const issuer = nft::getIssuer(ctx.tx[sfNFTokenID]);
             issuer != account)
         {
-            if (auto const sle = ctx.view.read(keylet::account(issuer)); sle)
+            if (auto const sle = ctx.view.readSLE(keylet::account(issuer)); sle)
             {
                 if (auto const minter = (*sle)[~sfNFTokenMinter];
                     minter != account)
@@ -101,8 +101,8 @@ NFTokenBurn::doApply()
     if (!isTesSuccess(ret))
         return ret;
 
-    if (auto issuer =
-            view().peek(keylet::account(nft::getIssuer(ctx_.tx[sfNFTokenID]))))
+    if (auto issuer = view().peekSLE(
+            keylet::account(nft::getIssuer(ctx_.tx[sfNFTokenID]))))
     {
         (*issuer)[~sfBurnedNFTokens] =
             (*issuer)[~sfBurnedNFTokens].value_or(0) + 1;

@@ -166,7 +166,7 @@ Change::activateTrustLinesToSelfFix()
     JLOG(j_.warn()) << "fixTrustLinesToSelf amendment activation code starting";
 
     auto removeTrustLineToSelf = [this](Sandbox& sb, uint256 id) {
-        auto tl = sb.peek(keylet::child(id));
+        auto tl = sb.peekSLE(keylet::child(id));
 
         if (tl == nullptr)
         {
@@ -210,11 +210,11 @@ Change::activateTrustLinesToSelfFix()
 
         if (tl->getFlags() & lsfLowReserve)
             adjustOwnerCount(
-                sb, sb.peek(keylet::account(lo.getIssuer())), -1, j_);
+                sb, sb.peekSLE(keylet::account(lo.getIssuer())), -1, j_);
 
         if (tl->getFlags() & lsfHighReserve)
             adjustOwnerCount(
-                sb, sb.peek(keylet::account(hi.getIssuer())), -1, j_);
+                sb, sb.peekSLE(keylet::account(hi.getIssuer())), -1, j_);
 
         sb.erase(tl);
 
@@ -249,7 +249,7 @@ Change::applyAmendment()
 
     auto const k = keylet::amendments();
 
-    SLE::pointer amendmentObject = view().peek(k);
+    SLE::pointer amendmentObject = view().peekSLE(k);
 
     if (!amendmentObject)
     {
@@ -346,7 +346,7 @@ Change::applyFee()
 {
     auto const k = keylet::fees();
 
-    SLE::pointer feeObject = view().peek(k);
+    SLE::pointer feeObject = view().peekSLE(k);
 
     if (!feeObject)
     {
@@ -421,7 +421,7 @@ Change::applyUNLModify()
                     << " validator data:" << strHex(validator);
 
     auto const k = keylet::negativeUNL();
-    SLE::pointer negUnlObject = view().peek(k);
+    SLE::pointer negUnlObject = view().peekSLE(k);
     if (!negUnlObject)
     {
         negUnlObject = std::make_shared<SLE>(k);

@@ -215,7 +215,7 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
         return tesSUCCESS;
 
     auto const id = ctx.tx.getAccountID(sfAccount);
-    auto const sle = ctx.view.read(keylet::account(id));
+    auto const sle = ctx.view.readSLE(keylet::account(id));
     if (!sle)
         return terNO_ACCOUNT;
 
@@ -244,7 +244,7 @@ Transactor::payFee()
 {
     auto const feePaid = ctx_.tx[sfFee].xrp();
 
-    auto const sle = view().peek(keylet::account(account_));
+    auto const sle = view().peekSLE(keylet::account(account_));
     if (!sle)
         return tefINTERNAL;
 
@@ -267,7 +267,7 @@ Transactor::checkSeqProxy(
 {
     auto const id = tx.getAccountID(sfAccount);
 
-    auto const sle = view.read(keylet::account(id));
+    auto const sle = view.readSLE(keylet::account(id));
 
     if (!sle)
     {
@@ -336,7 +336,7 @@ Transactor::checkPriorTxAndLastLedger(PreclaimContext const& ctx)
 {
     auto const id = ctx.tx.getAccountID(sfAccount);
 
-    auto const sle = ctx.view.read(keylet::account(id));
+    auto const sle = ctx.view.readSLE(keylet::account(id));
 
     if (!sle)
     {
@@ -388,7 +388,7 @@ Transactor::ticketDelete(
 {
     // Delete the Ticket, adjust the account root ticket count, and
     // reduce the owner count.
-    SLE::pointer const sleTicket = view.peek(keylet::ticket(ticketIndex));
+    SLE::pointer const sleTicket = view.peekSLE(keylet::ticket(ticketIndex));
     if (!sleTicket)
     {
         JLOG(j.fatal()) << "Ticket disappeared from ledger.";
@@ -404,7 +404,7 @@ Transactor::ticketDelete(
 
     // Update the account root's TicketCount.  If the ticket count drops to
     // zero remove the (optional) field.
-    auto sleAccount = view.peek(keylet::account(account));
+    auto sleAccount = view.peekSLE(keylet::account(account));
     if (!sleAccount)
     {
         JLOG(j.fatal()) << "Could not find Ticket owner account root.";
@@ -446,7 +446,7 @@ Transactor::apply()
 
     // If the transactor requires a valid account and the transaction doesn't
     // list one, preflight will have already a flagged a failure.
-    auto const sle = view().peek(keylet::account(account_));
+    auto const sle = view().peekSLE(keylet::account(account_));
 
     // sle must exist except for transactions
     // that allow zero account.
@@ -499,7 +499,7 @@ Transactor::checkSingleSign(PreclaimContext const& ctx)
     // Look up the account.
     auto const idSigner = calcAccountID(PublicKey(makeSlice(pkSigner)));
     auto const idAccount = ctx.tx.getAccountID(sfAccount);
-    auto const sleAccount = ctx.view.read(keylet::account(idAccount));
+    auto const sleAccount = ctx.view.readSLE(keylet::account(idAccount));
     if (!sleAccount)
         return terNO_ACCOUNT;
 
@@ -564,7 +564,7 @@ Transactor::checkMultiSign(PreclaimContext const& ctx)
     auto const id = ctx.tx.getAccountID(sfAccount);
     // Get mTxnAccountID's SignerList and Quorum.
     std::shared_ptr<STLedgerEntry const> sleAccountSigners =
-        ctx.view.read(keylet::signers(id));
+        ctx.view.readSLE(keylet::signers(id));
     // If the signer list doesn't exist the account is not multi-signing.
     if (!sleAccountSigners)
     {
@@ -656,7 +656,8 @@ Transactor::checkMultiSign(PreclaimContext const& ctx)
 
         // In any of these cases we need to know whether the account is in
         // the ledger.  Determine that now.
-        auto sleTxSignerRoot = ctx.view.read(keylet::account(txSignerAcctID));
+        auto sleTxSignerRoot =
+            ctx.view.readSLE(keylet::account(txSignerAcctID));
 
         if (signingAcctIDFromPubKey == txSignerAcctID)
         {
@@ -728,7 +729,7 @@ removeUnfundedOffers(
 
     for (auto const& index : offers)
     {
-        if (auto const sleOffer = view.peek(keylet::offer(index)))
+        if (auto const sleOffer = view.peekSLE(keylet::offer(index)))
         {
             // offer is unfunded
             offerDelete(view, sleOffer, viewJ);
@@ -748,7 +749,7 @@ removeExpiredNFTokenOffers(
 
     for (auto const& index : offers)
     {
-        if (auto const offer = view.peek(keylet::nftoffer(index)))
+        if (auto const offer = view.peekSLE(keylet::nftoffer(index)))
         {
             nft::deleteTokenOffer(view, offer);
             if (++removed == expiredOfferRemoveLimit)
@@ -764,7 +765,7 @@ Transactor::reset(XRPAmount fee)
     ctx_.discard();
 
     auto const txnAcct =
-        view().peek(keylet::account(ctx_.tx.getAccountID(sfAccount)));
+        view().peekSLE(keylet::account(ctx_.tx.getAccountID(sfAccount)));
     if (!txnAcct)
         // The account should never be missing from the ledger.  But if it
         // is missing then we can't very well charge it a fee, can we?

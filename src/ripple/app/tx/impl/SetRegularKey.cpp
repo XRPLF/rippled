@@ -34,7 +34,7 @@ SetRegularKey::calculateBaseFee(ReadView const& view, STTx const& tx)
     {
         if (calcAccountID(PublicKey(makeSlice(spk))) == id)
         {
-            auto const sle = view.read(keylet::account(id));
+            auto const sle = view.readSLE(keylet::account(id));
 
             if (sle && (!(sle->getFlags() & lsfPasswordSpent)))
             {
@@ -75,7 +75,7 @@ SetRegularKey::preflight(PreflightContext const& ctx)
 TER
 SetRegularKey::doApply()
 {
-    auto const sle = view().peek(keylet::account(account_));
+    auto const sle = view().peekSLE(keylet::account(account_));
     if (!sle)
         return tefINTERNAL;
 
@@ -90,7 +90,7 @@ SetRegularKey::doApply()
     {
         // Account has disabled master key and no multi-signer signer list.
         if (sle->isFlag(lsfDisableMaster) &&
-            !view().peek(keylet::signers(account_)))
+            !view().peekSLE(keylet::signers(account_)))
             return tecNO_ALTERNATIVE_KEY;
 
         sle->makeFieldAbsent(sfRegularKey);

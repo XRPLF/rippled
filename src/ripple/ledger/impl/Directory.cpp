@@ -24,7 +24,7 @@ namespace ripple {
 using const_iterator = Dir::const_iterator;
 
 Dir::Dir(ReadView const& view, Keylet const& key)
-    : view_(&view), root_(key), sle_(view_->read(root_))
+    : view_(&view), root_(key), sle_(view_->readSLE(root_))
 {
     if (sle_ != nullptr)
         indexes_ = &sle_->getFieldV256(sfIndexes);
@@ -69,7 +69,7 @@ const_iterator::operator*() const
 {
     assert(index_ != beast::zero);
     if (!cache_)
-        cache_ = view_->read(keylet::child(index_));
+        cache_ = view_->readSLE(keylet::child(index_));
     return *cache_;
 }
 
@@ -108,7 +108,7 @@ const_iterator::next_page()
     else
     {
         page_ = keylet::page(root_, next);
-        sle_ = view_->read(page_);
+        sle_ = view_->readSLE(page_);
         assert(sle_);
         indexes_ = &sle_->getFieldV256(sfIndexes);
         if (indexes_->empty())

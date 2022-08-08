@@ -99,7 +99,7 @@ enumerateNFTOffers(
         if (!startAfter.parseHex(marker.asString()))
             return rpcError(rpcINVALID_PARAMS);
 
-        auto const sle = ledger->read(keylet::nftoffer(startAfter));
+        auto const sle = ledger->readSLE(keylet::nftoffer(startAfter));
 
         if (!sle || nftId != sle->getFieldH256(sfNFTokenID))
             return rpcError(rpcINVALID_PARAMS);

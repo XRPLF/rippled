@@ -168,9 +168,9 @@ OpenView::succ(key_type const& key, std::optional<key_type> const& last) const
 }
 
 std::shared_ptr<SLE const>
-OpenView::read(KeyletBase const& k) const
+OpenView::readSLE(KeyletBase const& k) const
 {
-    return items_.read(*base_, k);
+    return items_.readSLE(*base_, k);
 }
 
 auto

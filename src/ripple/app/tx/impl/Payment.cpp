@@ -216,7 +216,7 @@ Payment::preclaim(PreclaimContext const& ctx)
     STAmount const saDstAmount(ctx.tx[sfAmount]);
 
     auto const k = keylet::account(uDstAccountID);
-    auto const sleDst = ctx.view.read(k);
+    auto const sleDst = ctx.view.readSLE(k);
 
     if (!sleDst)
     {
@@ -329,7 +329,7 @@ Payment::doApply()
 
     // Open a ledger for editing.
     auto const k = keylet::account(uDstAccountID);
-    SLE::pointer sleDst = view().peek(k);
+    SLE::pointer sleDst = view().peekSLE(k);
 
     if (!sleDst)
     {
@@ -438,7 +438,7 @@ Payment::doApply()
 
     // Direct XRP payment.
 
-    auto const sleSrc = view().peek(keylet::account(account_));
+    auto const sleSrc = view().peekSLE(keylet::account(account_));
     if (!sleSrc)
         return tefINTERNAL;
 

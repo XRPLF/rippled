@@ -70,7 +70,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
             if (id->isZero())
                 return {nullptr, tecOBJECT_NOT_FOUND};
 
-            auto offerSLE = ctx.view.read(keylet::nftoffer(*id));
+            auto offerSLE = ctx.view.readSLE(keylet::nftoffer(*id));
 
             if (!offerSLE)
                 return {nullptr, tecOBJECT_NOT_FOUND};
@@ -352,7 +352,7 @@ NFTokenAcceptOffer::doApply()
     auto const loadToken = [this](std::optional<uint256> const& id) {
         std::shared_ptr<SLE> sle;
         if (id)
-            sle = view().peek(keylet::nftoffer(*id));
+            sle = view().peekSLE(keylet::nftoffer(*id));
         return sle;
     };
 

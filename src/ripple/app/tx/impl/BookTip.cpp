@@ -58,7 +58,7 @@ BookTip::step(beast::Journal j)
         if (dirFirst(view_, *first_page, dir, di, m_index))
         {
             m_dir = dir->key();
-            m_entry = view_.peek(keylet::offer(m_index));
+            m_entry = view_.peekSLE(keylet::offer(m_index));
             m_quality = Quality(getQuality(*first_page));
             m_valid = true;
 

@@ -494,7 +494,7 @@ struct Flow_test : public beast::unit_test::suite
                         return false;
                     Sandbox sb(&view, tapNONE);
                     for (auto const& o : flowResult.removableOffers)
-                        if (auto ok = sb.peek(keylet::offer(o)))
+                        if (auto ok = sb.peekSLE(keylet::offer(o)))
                             offerDelete(sb, ok, flowJournal);
                     sb.apply(view);
                     return true;

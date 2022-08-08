@@ -2271,7 +2271,7 @@ public:
         payment[jss::tx_json] = pay(bob, bob, bob["XXX"](1));
         payment[jss::tx_json][jss::Sequence] =
             env.current()
-                ->read(keylet::account(bob.id()))
+                ->readSLE(keylet::account(bob.id()))
                 ->getFieldU32(sfSequence);
         payment[jss::tx_json][jss::Fee] = to_string(env.current()->fees().base);
         payment[jss::tx_json][jss::SendMax] =

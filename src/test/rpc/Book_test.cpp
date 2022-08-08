@@ -37,12 +37,12 @@ class Book_test : public beast::unit_test::suite
         auto key = view->succ(uBookBase, uBookEnd);
         if (key)
         {
-            auto sleOfferDir = view->read(keylet::page(key.value()));
+            auto sleOfferDir = view->readSLE(keylet::page(key.value()));
             uint256 offerIndex;
             unsigned int bookEntry;
             cdirFirst(
                 *view, sleOfferDir->key(), sleOfferDir, bookEntry, offerIndex);
-            auto sleOffer = view->read(keylet::offer(offerIndex));
+            auto sleOffer = view->readSLE(keylet::offer(offerIndex));
             dir = to_string(sleOffer->getFieldH256(sfBookDirectory));
         }
         return dir;

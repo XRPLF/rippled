@@ -183,7 +183,7 @@ public:
         const override;
 
     std::shared_ptr<SLE const>
-    read(KeyletBase const& k) const override;
+    readSLE(KeyletBase const& k) const override;
 
     std::unique_ptr<sles_type::iter_base>
     slesBegin() const override;
@@ -391,7 +391,7 @@ public:
     isVotingLedger() const;
 
     std::shared_ptr<SLE>
-    peek(KeyletBase const& k) const;
+    peekSLE(KeyletBase const& k) const;
 
 private:
     class sles_iter_impl;

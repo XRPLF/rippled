@@ -164,7 +164,7 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     AccountID const account{ctx.tx[sfAccount]};
     AccountID const dst{ctx.tx[sfDestination]};
 
-    auto sleDst = ctx.view.read(keylet::account(dst));
+    auto sleDst = ctx.view.readSLE(keylet::account(dst));
 
     if (!sleDst)
         return tecNO_DST;
@@ -180,7 +180,7 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
             return tecNO_PERMISSION;
     }
 
-    auto sleAccount = ctx.view.read(keylet::account(account));
+    auto sleAccount = ctx.view.readSLE(keylet::account(account));
     assert(sleAccount);
     if (!sleAccount)
         return terNO_ACCOUNT;
@@ -197,7 +197,7 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
         Keylet const first = keylet::nftpage_min(account);
         Keylet const last = keylet::nftpage_max(account);
 
-        auto const cp = ctx.view.read(Keylet(
+        auto const cp = ctx.view.readSLE(Keylet(
             ltNFTOKEN_PAGE,
             ctx.view.succ(first.key, last.key.next()).value_or(last.key)));
         if (cp)
@@ -252,7 +252,7 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     {
         // Make sure any directory node types that we find are the kind
         // we can delete.
-        auto sleItem = ctx.view.read(keylet::child(dirEntry));
+        auto sleItem = ctx.view.readSLE(keylet::child(dirEntry));
         if (!sleItem)
         {
             // Directory node has an invalid index.  Bail out.
@@ -283,10 +283,10 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
 TER
 DeleteAccount::doApply()
 {
-    auto src = view().peek(keylet::account(account_));
+    auto src = view().peekSLE(keylet::account(account_));
     assert(src);
 
-    auto dst = view().peek(keylet::account(ctx_.tx[sfDestination]));
+    auto dst = view().peekSLE(keylet::account(ctx_.tx[sfDestination]));
     assert(dst);
 
     if (!src || !dst)
@@ -304,7 +304,7 @@ DeleteAccount::doApply()
         do
         {
             // Choose the right way to delete each directory node.
-            auto sleItem = view().peek(keylet::child(dirEntry));
+            auto sleItem = view().peekSLE(keylet::child(dirEntry));
             if (!sleItem)
             {
                 // Directory node has an invalid index.  Bail out.

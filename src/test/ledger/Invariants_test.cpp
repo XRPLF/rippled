@@ -103,7 +103,7 @@ class Invariants_test : public beast::unit_test::suite
             {{"XRP net change was positive: 500"}},
             [](Account const& A1, Account const&, ApplyContext& ac) {
                 // put a single account in the view and "manufacture" some XRP
-                auto const sle = ac.view().peek(keylet::account(A1.id()));
+                auto const sle = ac.view().peekSLE(keylet::account(A1.id()));
                 if (!sle)
                     return false;
                 auto amt = sle->getFieldAmount(sfBalance);
@@ -124,7 +124,7 @@ class Invariants_test : public beast::unit_test::suite
             {{"an account root was deleted"}},
             [](Account const& A1, Account const&, ApplyContext& ac) {
                 // remove an account from the view
-                auto const sle = ac.view().peek(keylet::account(A1.id()));
+                auto const sle = ac.view().peekSLE(keylet::account(A1.id()));
                 if (!sle)
                     return false;
                 ac.view().erase(sle);
@@ -150,8 +150,8 @@ class Invariants_test : public beast::unit_test::suite
             {{"account deletion succeeded but deleted multiple accounts"}},
             [](Account const& A1, Account const& A2, ApplyContext& ac) {
                 // remove two accounts from the view
-                auto const sleA1 = ac.view().peek(keylet::account(A1.id()));
-                auto const sleA2 = ac.view().peek(keylet::account(A2.id()));
+                auto const sleA1 = ac.view().peekSLE(keylet::account(A1.id()));
+                auto const sleA2 = ac.view().peekSLE(keylet::account(A2.id()));
                 if (!sleA1 || !sleA2)
                     return false;
                 ac.view().erase(sleA1);
@@ -172,7 +172,7 @@ class Invariants_test : public beast::unit_test::suite
              {"XRP net change of -1000000000 doesn't match fee 0"}},
             [](Account const& A1, Account const&, ApplyContext& ac) {
                 // replace an entry in the table with an SLE of a different type
-                auto const sle = ac.view().peek(keylet::account(A1.id()));
+                auto const sle = ac.view().peekSLE(keylet::account(A1.id()));
                 if (!sle)
                     return false;
                 auto sleNew = std::make_shared<SLE>(ltTICKET, sle->key());
@@ -184,7 +184,7 @@ class Invariants_test : public beast::unit_test::suite
             {{"invalid ledger entry type added"}},
             [](Account const& A1, Account const&, ApplyContext& ac) {
                 // add an entry in the table with an SLE of an invalid type
-                auto const sle = ac.view().peek(keylet::account(A1.id()));
+                auto const sle = ac.view().peekSLE(keylet::account(A1.id()));
                 if (!sle)
                     return false;
 
@@ -228,7 +228,7 @@ class Invariants_test : public beast::unit_test::suite
             {{"Cannot return non-native STAmount as XRPAmount"}},
             [](Account const& A1, Account const& A2, ApplyContext& ac) {
                 // non-native balance
-                auto const sle = ac.view().peek(keylet::account(A1.id()));
+                auto const sle = ac.view().peekSLE(keylet::account(A1.id()));
                 if (!sle)
                     return false;
                 STAmount nonNative(A2["USD"](51));
@@ -242,7 +242,7 @@ class Invariants_test : public beast::unit_test::suite
              {"XRP net change was positive: 99999999000000001"}},
             [this](Account const& A1, Account const&, ApplyContext& ac) {
                 // balance exceeds genesis amount
-                auto const sle = ac.view().peek(keylet::account(A1.id()));
+                auto const sle = ac.view().peekSLE(keylet::account(A1.id()));
                 if (!sle)
                     return false;
                 // Use `drops(1)` to bypass a call to STAmount::canonicalize
@@ -258,7 +258,7 @@ class Invariants_test : public beast::unit_test::suite
              {"XRP net change of -1000000001 doesn't match fee 0"}},
             [this](Account const& A1, Account const&, ApplyContext& ac) {
                 // balance is negative
-                auto const sle = ac.view().peek(keylet::account(A1.id()));
+                auto const sle = ac.view().peekSLE(keylet::account(A1.id()));
                 if (!sle)
                     return false;
                 sle->setFieldAmount(sfBalance, STAmount{1, true});
@@ -308,7 +308,7 @@ class Invariants_test : public beast::unit_test::suite
             {{"offer with a bad amount"}},
             [](Account const& A1, Account const&, ApplyContext& ac) {
                 // offer with negative takerpays
-                auto const sle = ac.view().peek(keylet::account(A1.id()));
+                auto const sle = ac.view().peekSLE(keylet::account(A1.id()));
                 if (!sle)
                     return false;
                 auto sleNew = std::make_shared<SLE>(
@@ -324,7 +324,7 @@ class Invariants_test : public beast::unit_test::suite
             {{"offer with a bad amount"}},
             [](Account const& A1, Account const&, ApplyContext& ac) {
                 // offer with negative takergets
-                auto const sle = ac.view().peek(keylet::account(A1.id()));
+                auto const sle = ac.view().peekSLE(keylet::account(A1.id()));
                 if (!sle)
                     return false;
                 auto sleNew = std::make_shared<SLE>(
@@ -341,7 +341,7 @@ class Invariants_test : public beast::unit_test::suite
             {{"offer with a bad amount"}},
             [](Account const& A1, Account const&, ApplyContext& ac) {
                 // offer XRP to XRP
-                auto const sle = ac.view().peek(keylet::account(A1.id()));
+                auto const sle = ac.view().peekSLE(keylet::account(A1.id()));
                 if (!sle)
                     return false;
                 auto sleNew = std::make_shared<SLE>(
@@ -365,7 +365,7 @@ class Invariants_test : public beast::unit_test::suite
             {{"Cannot return non-native STAmount as XRPAmount"}},
             [](Account const& A1, Account const& A2, ApplyContext& ac) {
                 // escrow with nonnative amount
-                auto const sle = ac.view().peek(keylet::account(A1.id()));
+                auto const sle = ac.view().peekSLE(keylet::account(A1.id()));
                 if (!sle)
                     return false;
                 auto sleNew = std::make_shared<SLE>(
@@ -381,7 +381,7 @@ class Invariants_test : public beast::unit_test::suite
              {"escrow specifies invalid amount"}},
             [](Account const& A1, Account const&, ApplyContext& ac) {
                 // escrow with negative amount
-                auto const sle = ac.view().peek(keylet::account(A1.id()));
+                auto const sle = ac.view().peekSLE(keylet::account(A1.id()));
                 if (!sle)
                     return false;
                 auto sleNew = std::make_shared<SLE>(
@@ -396,7 +396,7 @@ class Invariants_test : public beast::unit_test::suite
              {"escrow specifies invalid amount"}},
             [](Account const& A1, Account const&, ApplyContext& ac) {
                 // escrow with too-large amount
-                auto const sle = ac.view().peek(keylet::account(A1.id()));
+                auto const sle = ac.view().peekSLE(keylet::account(A1.id()));
                 if (!sle)
                     return false;
                 auto sleNew = std::make_shared<SLE>(

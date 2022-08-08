@@ -104,7 +104,7 @@ struct Directory_test : public beast::unit_test::suite
             do
             {
                 auto p =
-                    view->read(keylet::page(keylet::ownerDir(alice), page));
+                    view->readSLE(keylet::page(keylet::ownerDir(alice), page));
 
                 // Ensure that the entries in the page are sorted
                 auto const& v = p->getFieldV256(sfIndexes);
@@ -118,7 +118,7 @@ struct Directory_test : public beast::unit_test::suite
 
                 for (auto const& e : v)
                 {
-                    auto c = view->read(keylet::child(e));
+                    auto c = view->readSLE(keylet::child(e));
                     BEAST_EXPECT(c);
                     BEAST_EXPECT(c->getFieldU32(sfSequence) >= minSeq);
                     BEAST_EXPECT(c->getFieldU32(sfSequence) < maxSeq);
@@ -334,7 +334,7 @@ struct Directory_test : public beast::unit_test::suite
 
             // Insert an item in the middle page:
             {
-                auto p = sb.peek(keylet::page(base, 1));
+                auto p = sb.peekSLE(keylet::page(base, 1));
                 BEAST_EXPECT(p);
 
                 STVector256 v;
@@ -347,9 +347,9 @@ struct Directory_test : public beast::unit_test::suite
             // page. This should cause all pages to be deleted:
             BEAST_EXPECT(sb.dirRemove(
                 keylet::page(base, 0), 1, keylet::unchecked(item), false));
-            BEAST_EXPECT(!sb.peek(keylet::page(base, 2)));
-            BEAST_EXPECT(!sb.peek(keylet::page(base, 1)));
-            BEAST_EXPECT(!sb.peek(keylet::page(base, 0)));
+            BEAST_EXPECT(!sb.peekSLE(keylet::page(base, 2)));
+            BEAST_EXPECT(!sb.peekSLE(keylet::page(base, 1)));
+            BEAST_EXPECT(!sb.peekSLE(keylet::page(base, 0)));
         }
 
         {
@@ -359,7 +359,7 @@ struct Directory_test : public beast::unit_test::suite
 
             // Now add items on pages 1 and 2:
             {
-                auto p1 = sb.peek(keylet::page(base, 1));
+                auto p1 = sb.peekSLE(keylet::page(base, 1));
                 BEAST_EXPECT(p1);
 
                 STVector256 v1;
@@ -367,7 +367,7 @@ struct Directory_test : public beast::unit_test::suite
                 p1->setFieldV256(sfIndexes, v1);
                 sb.update(p1);
 
-                auto p2 = sb.peek(keylet::page(base, 2));
+                auto p2 = sb.peekSLE(keylet::page(base, 2));
                 BEAST_EXPECT(p2);
 
                 STVector256 v2;
@@ -381,15 +381,15 @@ struct Directory_test : public beast::unit_test::suite
             // deleted:
             BEAST_EXPECT(sb.dirRemove(
                 keylet::page(base, 0), 2, keylet::unchecked(item), false));
-            BEAST_EXPECT(!sb.peek(keylet::page(base, 3)));
-            BEAST_EXPECT(!sb.peek(keylet::page(base, 2)));
+            BEAST_EXPECT(!sb.peekSLE(keylet::page(base, 3)));
+            BEAST_EXPECT(!sb.peekSLE(keylet::page(base, 2)));
 
-            auto p1 = sb.peek(keylet::page(base, 1));
+            auto p1 = sb.peekSLE(keylet::page(base, 1));
             BEAST_EXPECT(p1);
             BEAST_EXPECT(p1->getFieldU64(sfIndexNext) == 0);
             BEAST_EXPECT(p1->getFieldU64(sfIndexPrevious) == 0);
 
-            auto p0 = sb.peek(keylet::page(base, 0));
+            auto p0 = sb.peekSLE(keylet::page(base, 0));
             BEAST_EXPECT(p0);
             BEAST_EXPECT(p0->getFieldU64(sfIndexNext) == 1);
             BEAST_EXPECT(p0->getFieldU64(sfIndexPrevious) == 1);

@@ -120,7 +120,7 @@ operator&=(ApplyFlags& lhs, ApplyFlags const& rhs)
         v.insert(sle);
 
         // Check out a value for modification
-        sle = v.peek(k);
+        sle = v.peekSLE(k);
 
         // Indicate that changes were made
         v.update(sle)
@@ -171,13 +171,13 @@ public:
         @return `nullptr` if the key is not present
     */
     virtual std::shared_ptr<SLE>
-    peek(KeyletBase const& k) = 0;
+    peekSLE(KeyletBase const& k) = 0;
 
     /** Remove a peeked SLE.
 
         Requirements:
 
-            `sle` was obtained from prior call to peek()
+            `sle` was obtained from prior call to peekSLE()
             on this instance of the RawView.
 
         Effects:
@@ -192,7 +192,7 @@ public:
         Requirements:
 
             `sle` was not obtained from any calls to
-            peek() on any instances of RawView.
+            peekSLE() on any instances of RawView.
 
             The SLE's key must not already exist.
 
@@ -214,7 +214,7 @@ public:
 
             The SLE's key must exist.
 
-            `sle` was obtained from prior call to peek()
+            `sle` was obtained from prior call to peekSLE()
             on this instance of the RawView.
 
         Effects:

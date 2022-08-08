@@ -242,7 +242,7 @@ public:
                 if the type does not match.
     */
     virtual std::shared_ptr<SLE const>
-    read(KeyletBase const& k) const = 0;
+    readSLE(KeyletBase const& k) const = 0;
 
     // Accounts in a payment are not allowed to use assets acquired during that
     // payment. The PaymentSandbox tracks the debits, credits, and owner count

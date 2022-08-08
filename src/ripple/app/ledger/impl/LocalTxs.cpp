@@ -156,7 +156,7 @@ public:
                 return true;
 
             AccountID const acctID = txn.getAccount();
-            auto const sleAcct = view.read(keylet::account(acctID));
+            auto const sleAcct = view.readSLE(keylet::account(acctID));
 
             if (!sleAcct)
                 return false;

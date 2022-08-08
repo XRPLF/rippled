@@ -65,7 +65,7 @@ public:
         std::optional<key_type> const& last = std::nullopt) const override;
 
     std::shared_ptr<SLE const>
-    read(KeyletBase const& k) const override;
+    readSLE(KeyletBase const& k) const override;
 
     std::unique_ptr<sles_type::iter_base>
     slesBegin() const override;
@@ -94,7 +94,7 @@ public:
     flags() const override;
 
     std::shared_ptr<SLE>
-    peek(KeyletBase const& k) override;
+    peekSLE(KeyletBase const& k) override;
 
     void
     erase(std::shared_ptr<SLE> const& sle) override;

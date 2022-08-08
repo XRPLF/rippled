@@ -108,7 +108,7 @@ DepositPreauth::doApply()
 {
     if (ctx_.tx.isFieldPresent(sfAuthorize))
     {
-        auto const sleOwner = view().peek(keylet::account(account_));
+        auto const sleOwner = view().peekSLE(keylet::account(account_));
         if (!sleOwner)
             return {tefINTERNAL};
 
@@ -172,7 +172,7 @@ DepositPreauth::removeFromLedger(
     // Verify that the Preauth entry they asked to remove is
     // in the ledger.
     std::shared_ptr<SLE> const slePreauth{
-        view.peek(keylet::depositPreauth(preauthIndex))};
+        view.peekSLE(keylet::depositPreauth(preauthIndex))};
     if (!slePreauth)
     {
         JLOG(j.warn()) << "Selected DepositPreauth does not exist.";
@@ -188,7 +188,7 @@ DepositPreauth::removeFromLedger(
     }
 
     // If we succeeded, update the DepositPreauth owner's reserve.
-    auto const sleOwner = view.peek(keylet::account(account));
+    auto const sleOwner = view.peekSLE(keylet::account(account));
     if (!sleOwner)
         return tefINTERNAL;
 

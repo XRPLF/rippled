@@ -721,7 +721,7 @@ Pathfinder::getPathsOut(
     if (!inserted)
         return it->second;
 
-    auto sleAccount = mLedger->read(keylet::account(account));
+    auto sleAccount = mLedger->readSLE(keylet::account(account));
 
     if (!sleAccount)
         return 0;
@@ -888,7 +888,7 @@ Pathfinder::isNoRipple(
     Currency const& currency)
 {
     auto sleRipple =
-        mLedger->read(keylet::line(toAccount, fromAccount, currency));
+        mLedger->readSLE(keylet::line(toAccount, fromAccount, currency));
 
     auto const flag(
         (toAccount > fromAccount) ? lsfHighNoRipple : lsfLowNoRipple);
@@ -970,7 +970,7 @@ Pathfinder::addLink(
         else
         {
             // search for accounts to add
-            auto const sleEnd = mLedger->read(keylet::account(uEndAccount));
+            auto const sleEnd = mLedger->readSLE(keylet::account(uEndAccount));
 
             if (sleEnd)
             {

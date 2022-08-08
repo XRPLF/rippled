@@ -742,7 +742,7 @@ TxQ::apply(
     // If the account is not currently in the ledger, don't queue its tx.
     auto const account = (*tx)[sfAccount];
     Keylet const accountKey{keylet::account(account)};
-    auto const sleAccount = view.read(accountKey);
+    auto const sleAccount = view.readSLE(accountKey);
     if (!sleAccount)
         return {terNO_ACCOUNT, false};
 
@@ -1109,7 +1109,7 @@ TxQ::apply(
             // Create the test view from the current view.
             multiTxn.emplace(view, flags);
 
-            auto const sleBump = multiTxn->applyView.peek(accountKey);
+            auto const sleBump = multiTxn->applyView.peekSLE(accountKey);
             if (!sleBump)
                 return {tefINTERNAL, false};
 
@@ -1661,7 +1661,7 @@ TxQ::tryDirectApply(
     beast::Journal j)
 {
     auto const account = (*tx)[sfAccount];
-    auto const sleAccount = view.read(keylet::account(account));
+    auto const sleAccount = view.readSLE(keylet::account(account));
 
     // Don't attempt to direct apply if the account is not in the ledger.
     if (!sleAccount)
@@ -1778,7 +1778,7 @@ TxQ::getTxRequiredFeeAndSeq(
     auto const baseFee = calculateBaseFee(view, *tx);
     auto const fee = FeeMetrics::scaleFeeLevel(snapshot, view);
 
-    auto const sle = view.read(keylet::account(account));
+    auto const sle = view.readSLE(keylet::account(account));
 
     std::uint32_t const accountSeq = sle ? (*sle)[sfSequence] : 0;
     std::uint32_t const availableSeq = nextQueuableSeqImpl(sle, lock).value();

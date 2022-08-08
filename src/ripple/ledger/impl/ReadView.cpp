@@ -80,7 +80,7 @@ makeRulesGivenLedger(
     std::optional digest = ledger.digest(k.key);
     if (digest)
     {
-        auto const sle = ledger.read(k);
+        auto const sle = ledger.readSLE(k);
         if (sle)
             return Rules(presets, digest, sle->getFieldV256(sfAmendments));
     }

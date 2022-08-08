@@ -1522,7 +1522,7 @@ NetworkOPsImp::getOwnerInfo(
 {
     Json::Value jvObjects(Json::objectValue);
     auto root = keylet::ownerDir(account);
-    auto sleNode = lpLedger->read(keylet::page(root));
+    auto sleNode = lpLedger->readSLE(keylet::page(root));
     if (sleNode)
     {
         std::uint64_t uNodeDir;
@@ -1531,7 +1531,7 @@ NetworkOPsImp::getOwnerInfo(
         {
             for (auto const& uDirEntry : sleNode->getFieldV256(sfIndexes))
             {
-                auto sleCur = lpLedger->read(keylet::child(uDirEntry));
+                auto sleCur = lpLedger->readSLE(keylet::child(uDirEntry));
                 assert(sleCur);
 
                 switch (sleCur->getType())
@@ -1568,7 +1568,7 @@ NetworkOPsImp::getOwnerInfo(
 
             if (uNodeDir)
             {
-                sleNode = lpLedger->read(keylet::page(root, uNodeDir));
+                sleNode = lpLedger->readSLE(keylet::page(root, uNodeDir));
                 assert(sleNode);
             }
         } while (uNodeDir);
@@ -3742,7 +3742,7 @@ NetworkOPsImp::subAccountHistoryStart(
     }
     if (accountId == genesisAccountId)
     {
-        if (auto const sleAcct = ledger->read(accountKeylet); sleAcct)
+        if (auto const sleAcct = ledger->readSLE(accountKeylet); sleAcct)
         {
             if (sleAcct->getFieldU32(sfSequence) == 1)
             {
@@ -4203,7 +4203,7 @@ NetworkOPsImp::getBookPage(
 
             auto const ledgerIndex = view.succ(uTipIndex, uBookEnd);
             if (ledgerIndex)
-                sleOfferDir = view.read(keylet::page(*ledgerIndex));
+                sleOfferDir = view.readSLE(keylet::page(*ledgerIndex));
             else
                 sleOfferDir.reset();
 
@@ -4228,7 +4228,7 @@ NetworkOPsImp::getBookPage(
 
         if (!bDone)
         {
-            auto sleOffer = view.read(keylet::offer(offerIndex));
+            auto sleOffer = view.readSLE(keylet::offer(offerIndex));
 
             if (sleOffer)
             {

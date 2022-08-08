@@ -83,7 +83,7 @@ TER
 CreateCheck::preclaim(PreclaimContext const& ctx)
 {
     AccountID const dstId{ctx.tx[sfDestination]};
-    auto const sleDst = ctx.view.read(keylet::account(dstId));
+    auto const sleDst = ctx.view.readSLE(keylet::account(dstId));
     if (!sleDst)
     {
         JLOG(ctx.j.warn()) << "Destination account does not exist.";
@@ -125,7 +125,7 @@ CreateCheck::preclaim(PreclaimContext const& ctx)
             if (issuerId != srcId)
             {
                 // Check if the issuer froze the line
-                auto const sleTrust = ctx.view.read(
+                auto const sleTrust = ctx.view.readSLE(
                     keylet::line(srcId, issuerId, sendMax.getCurrency()));
                 if (sleTrust &&
                     sleTrust->isFlag(
@@ -139,7 +139,7 @@ CreateCheck::preclaim(PreclaimContext const& ctx)
             if (issuerId != dstId)
             {
                 // Check if dst froze the line.
-                auto const sleTrust = ctx.view.read(
+                auto const sleTrust = ctx.view.readSLE(
                     keylet::line(issuerId, dstId, sendMax.getCurrency()));
                 if (sleTrust &&
                     sleTrust->isFlag(
@@ -163,7 +163,7 @@ CreateCheck::preclaim(PreclaimContext const& ctx)
 TER
 CreateCheck::doApply()
 {
-    auto const sle = view().peek(keylet::account(account_));
+    auto const sle = view().peekSLE(keylet::account(account_));
     if (!sle)
         return tefINTERNAL;
 

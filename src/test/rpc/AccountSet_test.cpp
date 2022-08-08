@@ -434,7 +434,7 @@ public:
             env.app().openLedger().modify(
                 [&gw, transferRate](OpenView& view, beast::Journal j) {
                     // Get the account root we want to hijack.
-                    auto const sle = view.read(keylet::account(gw.id()));
+                    auto const sle = view.readSLE(keylet::account(gw.id()));
                     if (!sle)
                         return false;  // This would be really surprising!
 

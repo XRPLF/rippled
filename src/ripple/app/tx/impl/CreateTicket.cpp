@@ -57,7 +57,7 @@ TER
 CreateTicket::preclaim(PreclaimContext const& ctx)
 {
     auto const id = ctx.tx[sfAccount];
-    auto const sleAccountRoot = ctx.view.read(keylet::account(id));
+    auto const sleAccountRoot = ctx.view.readSLE(keylet::account(id));
     if (!sleAccountRoot)
         return terNO_ACCOUNT;
 
@@ -84,7 +84,8 @@ CreateTicket::preclaim(PreclaimContext const& ctx)
 TER
 CreateTicket::doApply()
 {
-    SLE::pointer const sleAccountRoot = view().peek(keylet::account(account_));
+    SLE::pointer const sleAccountRoot =
+        view().peekSLE(keylet::account(account_));
     if (!sleAccountRoot)
         return tefINTERNAL;
 

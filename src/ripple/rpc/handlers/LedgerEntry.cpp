@@ -363,7 +363,7 @@ doLedgerEntry(RPC::JsonContext& context)
 
     if (uNodeIndex.isNonZero())
     {
-        auto const sleNode = lpLedger->read(keylet::unchecked(uNodeIndex));
+        auto const sleNode = lpLedger->readSLE(keylet::unchecked(uNodeIndex));
         if (context.params.isMember(jss::binary))
             bNodeBinary = context.params[jss::binary].asBool();
 
@@ -429,7 +429,7 @@ doLedgerEntryGrpc(
         return {response, errorStatus};
     }
 
-    auto const sleNode = ledger->read(keylet::unchecked(*key));
+    auto const sleNode = ledger->readSLE(keylet::unchecked(*key));
     if (!sleNode)
     {
         grpc::Status errorStatus{
