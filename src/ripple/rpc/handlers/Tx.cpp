@@ -28,7 +28,6 @@
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/DeliveredAmount.h>
 #include <ripple/rpc/GRPCHandlers.h>
-#include <ripple/rpc/impl/GRPCHelpers.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 
 namespace ripple {
@@ -251,101 +250,6 @@ doTxHelp(RPC::Context& context, TxArgs const& args)
     return {result, rpcSUCCESS};
 }
 
-std::pair<org::xrpl::rpc::v1::GetTransactionResponse, grpc::Status>
-populateProtoResponse(
-    std::pair<TxResult, RPC::Status> const& res,
-    TxArgs const& args,
-    RPC::GRPCContext<org::xrpl::rpc::v1::GetTransactionRequest> const& context)
-{
-    org::xrpl::rpc::v1::GetTransactionResponse response;
-    grpc::Status status = grpc::Status::OK;
-    RPC::Status const& error = res.second;
-    TxResult const& result = res.first;
-    // handle errors
-    if (error.toErrorCode() != rpcSUCCESS)
-    {
-        if (error.toErrorCode() == rpcTXN_NOT_FOUND &&
-            result.searchedAll != TxSearched::unknown)
-        {
-            status = {
-                grpc::StatusCode::NOT_FOUND,
-                "txn not found. searched_all = " +
-                    to_string(
-                        (result.searchedAll == TxSearched::all ? "true"
-                                                               : "false"))};
-        }
-        else
-        {
-            if (error.toErrorCode() == rpcTXN_NOT_FOUND)
-                status = {grpc::StatusCode::NOT_FOUND, "txn not found"};
-            else
-                status = {grpc::StatusCode::INTERNAL, error.message()};
-        }
-    }
-    // no errors
-    else if (result.txn)
-    {
-        auto& txn = result.txn;
-
-        std::shared_ptr<STTx const> stTxn = txn->getSTransaction();
-        if (args.binary)
-        {
-            Serializer s = stTxn->getSerializer();
-            response.set_transaction_binary(s.data(), s.size());
-        }
-        else
-        {
-            RPC::convert(*response.mutable_transaction(), stTxn);
-        }
-
-        response.set_hash(context.params.hash());
-
-        auto ledgerIndex = txn->getLedger();
-        response.set_ledger_index(ledgerIndex);
-        if (ledgerIndex)
-        {
-            auto ct =
-                context.app.getLedgerMaster().getCloseTimeBySeq(ledgerIndex);
-            if (ct)
-                response.mutable_date()->set_value(
-                    ct->time_since_epoch().count());
-        }
-
-        RPC::convert(
-            *response.mutable_meta()->mutable_transaction_result(),
-            txn->getResult());
-        response.mutable_meta()->mutable_transaction_result()->set_result(
-            transToken(txn->getResult()));
-
-        // populate binary metadata
-        if (auto blob = std::get_if<Blob>(&result.meta))
-        {
-            assert(args.binary);
-            Slice slice = makeSlice(*blob);
-            response.set_meta_binary(slice.data(), slice.size());
-        }
-        // populate meta data
-        else if (auto m = std::get_if<std::shared_ptr<TxMeta>>(&result.meta))
-        {
-            auto& meta = *m;
-            if (meta)
-            {
-                RPC::convert(*response.mutable_meta(), meta);
-                auto amt =
-                    getDeliveredAmount(context, stTxn, *meta, txn->getLedger());
-                if (amt)
-                {
-                    RPC::convert(
-                        *response.mutable_meta()->mutable_delivered_amount(),
-                        *amt);
-                }
-            }
-        }
-        response.set_validated(result.validated);
-    }
-    return {response, status};
-}
-
 Json::Value
 populateJsonResponse(
     std::pair<TxResult, RPC::Status> const& res,
@@ -435,50 +339,6 @@ doTxJson(RPC::JsonContext& context)
 
     std::pair<TxResult, RPC::Status> res = doTxHelp(context, args);
     return populateJsonResponse(res, args, context);
-}
-
-std::pair<org::xrpl::rpc::v1::GetTransactionResponse, grpc::Status>
-doTxGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetTransactionRequest>& context)
-{
-    if (!context.app.config().useTxTables())
-    {
-        return {
-            {},
-            {grpc::StatusCode::UNIMPLEMENTED, "Not enabled in configuration."}};
-    }
-
-    // return values
-    org::xrpl::rpc::v1::GetTransactionResponse response;
-    grpc::Status status = grpc::Status::OK;
-
-    // input
-    org::xrpl::rpc::v1::GetTransactionRequest& request = context.params;
-
-    TxArgs args;
-
-    if (auto hash = uint256::fromVoidChecked(request.hash()))
-    {
-        args.hash = *hash;
-    }
-    else
-    {
-        grpc::Status errorStatus{
-            grpc::StatusCode::INVALID_ARGUMENT, "tx hash malformed"};
-        return {response, errorStatus};
-    }
-
-    args.binary = request.binary();
-
-    if (request.ledger_range().ledger_index_min() != 0 &&
-        request.ledger_range().ledger_index_max() != 0)
-    {
-        args.ledgerRange = std::make_pair(
-            request.ledger_range().ledger_index_min(),
-            request.ledger_range().ledger_index_max());
-    }
-
-    std::pair<TxResult, RPC::Status> res = doTxHelp(context, args);
-    return populateProtoResponse(res, args, context);
 }
 
 }  // namespace ripple

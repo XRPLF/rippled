@@ -48,8 +48,6 @@ needCurrentOrClosed(Request& request)
 {
     // These are the only gRPC requests that specify a ledger
     if constexpr (
-        std::is_same<Request, org::xrpl::rpc::v1::GetAccountInfoRequest>::
-            value ||
         std::is_same<Request, org::xrpl::rpc::v1::GetLedgerRequest>::value ||
         std::is_same<Request, org::xrpl::rpc::v1::GetLedgerDataRequest>::
             value ||

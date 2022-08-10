@@ -773,25 +773,6 @@ class ReportingETL_test : public beast::unit_test::suite
     testNeedCurrentOrClosed()
     {
         testcase("NeedCurrentOrClosed");
-        {
-            org::xrpl::rpc::v1::GetAccountInfoRequest request;
-            request.mutable_ledger()->set_sequence(1);
-            BEAST_EXPECT(!needCurrentOrClosed(request));
-            request.mutable_ledger()->set_hash("");
-            BEAST_EXPECT(!needCurrentOrClosed(request));
-            request.mutable_ledger()->set_shortcut(
-                org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_VALIDATED);
-            BEAST_EXPECT(!needCurrentOrClosed(request));
-            request.mutable_ledger()->set_shortcut(
-                org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_UNSPECIFIED);
-            BEAST_EXPECT(!needCurrentOrClosed(request));
-            request.mutable_ledger()->set_shortcut(
-                org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_CURRENT);
-            BEAST_EXPECT(needCurrentOrClosed(request));
-            request.mutable_ledger()->set_shortcut(
-                org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_CLOSED);
-            BEAST_EXPECT(needCurrentOrClosed(request));
-        }
 
         {
             org::xrpl::rpc::v1::GetLedgerRequest request;
@@ -903,18 +884,6 @@ class ReportingETL_test : public beast::unit_test::suite
             request.mutable_base_ledger()->set_shortcut(
                 org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_CURRENT);
             BEAST_EXPECT(needCurrentOrClosed(request));
-        }
-
-        {
-            org::xrpl::rpc::v1::GetFeeRequest feeRequest;
-            BEAST_EXPECT(!needCurrentOrClosed(feeRequest));
-
-            org::xrpl::rpc::v1::GetAccountTransactionHistoryRequest
-                accountTxRequest;
-            BEAST_EXPECT(!needCurrentOrClosed(accountTxRequest));
-
-            org::xrpl::rpc::v1::GetTransactionRequest txRequest;
-            BEAST_EXPECT(!needCurrentOrClosed(txRequest));
         }
     }
 
