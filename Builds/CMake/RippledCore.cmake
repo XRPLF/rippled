@@ -641,7 +641,6 @@ target_sources (rippled PRIVATE
   src/ripple/rpc/handlers/WalletPropose.cpp
   src/ripple/rpc/impl/DeliveredAmount.cpp
   src/ripple/rpc/impl/Handler.cpp
-  src/ripple/rpc/impl/GRPCHelpers.cpp
   src/ripple/rpc/impl/LegacyPathFind.cpp
   src/ripple/rpc/impl/RPCHandler.cpp
   src/ripple/rpc/impl/RPCHelpers.cpp
@@ -946,7 +945,6 @@ if (tests)
     src/test/rpc/DepositAuthorized_test.cpp
     src/test/rpc/DeliveredAmount_test.cpp
     src/test/rpc/Feature_test.cpp
-    src/test/rpc/Fee_test.cpp
     src/test/rpc/GatewayBalances_test.cpp
     src/test/rpc/GetCounts_test.cpp
     src/test/rpc/JSONRPC_test.cpp
@@ -969,12 +967,10 @@ if (tests)
     src/test/rpc/ServerInfo_test.cpp
     src/test/rpc/ShardArchiveHandler_test.cpp
     src/test/rpc/Status_test.cpp
-    src/test/rpc/Submit_test.cpp
     src/test/rpc/Subscribe_test.cpp
     src/test/rpc/Transaction_test.cpp
     src/test/rpc/TransactionEntry_test.cpp
     src/test/rpc/TransactionHistory_test.cpp
-    src/test/rpc/Tx_test.cpp
     src/test/rpc/ValidatorInfo_test.cpp
     src/test/rpc/ValidatorRPC_test.cpp
     src/test/rpc/Version_test.cpp

@@ -33,7 +33,6 @@
 #include <boost/algorithm/string/case_conv.hpp>
 
 #include <ripple/resource/Fees.h>
-#include <ripple/rpc/impl/GRPCHelpers.h>
 
 namespace ripple {
 namespace RPC {
@@ -299,12 +298,6 @@ ledgerFromRequest(T& ledger, GRPCContext<R>& context)
     R& request = context.params;
     return ledgerFromSpecifier(ledger, request.ledger(), context);
 }
-
-// explicit instantiation of above function
-template Status
-ledgerFromRequest<>(
-    std::shared_ptr<ReadView const>&,
-    GRPCContext<org::xrpl::rpc::v1::GetAccountInfoRequest>&);
 
 // explicit instantiation of above function
 template Status
