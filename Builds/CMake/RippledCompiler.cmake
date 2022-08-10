@@ -108,10 +108,8 @@ else ()
       -Wno-char-subscripts
       -Wno-format
       -Wno-unused-local-typedefs
-      $<$<BOOL:${is_gcc}>:
+      $<$<OR:$<BOOL:${is_gcc}>,$<BOOL:${is_clang}>>:
         -Wno-unused-but-set-variable
-      >
-      $<$<OR:$<BOOL:${is_gcc}>,$<BOOL:${is_clang}>,$<BOOL:${APPLE}>>:
         -Wno-deprecated
       >
       $<$<NOT:$<CONFIG:Debug>>:-fno-strict-aliasing>

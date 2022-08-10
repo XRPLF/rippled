@@ -905,6 +905,7 @@ public:
     {
         testcase("IOU to IOU");
 
+        NumberSO stNumberSO{true};
         Quality q1 = get_quality("1", "1");
 
         // Highly exaggerated 50% transfer rate for the input and output:
@@ -937,7 +938,7 @@ public:
             q1,
             {"4", "4"},
             "4",
-            {"2.666666666666666", "2.666666666666666"},
+            {"2.666666666666667", "2.666666666666667"},
             eur(),
             usd(),
             rate,
@@ -993,7 +994,7 @@ public:
             q1,
             {"2", "2"},
             "10",
-            {"1.666666666666666", "1.666666666666666"},
+            {"1.666666666666667", "1.666666666666667"},
             eur(),
             usd(),
             rate,

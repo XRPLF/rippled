@@ -81,7 +81,7 @@ TxFormats::TxFormats()
         commonFields);
 
     add(jss::AMMInstanceCreate,
-        ttAMM_CREATE,
+        ttAMM_INSTANCE_CREATE,
         {
             {sfAsset1, soeREQUIRED},
             {sfAsset2, soeREQUIRED},

@@ -20,7 +20,6 @@
 #ifndef RIPPLE_BASICS_NUMBER_H_INCLUDED
 #define RIPPLE_BASICS_NUMBER_H_INCLUDED
 
-#include <ripple/basics/IOUAmount.h>
 #include <ripple/basics/XRPAmount.h>
 #include <cstdint>
 #include <ostream>
@@ -37,7 +36,7 @@ class Number
 {
     using rep = std::int64_t;
     rep mantissa_{0};
-    int exponent_{-2'147'483'648};
+    int exponent_{std::numeric_limits<int>::lowest()};
 
 public:
     struct unchecked
@@ -45,13 +44,12 @@ public:
         explicit unchecked() = default;
     };
 
-    explicit Number() = default;
+    explicit constexpr Number() = default;
 
     Number(rep mantissa);
     explicit Number(rep mantissa, int exponent);
     explicit constexpr Number(rep mantissa, int exponent, unchecked) noexcept;
 
-    Number(IOUAmount const& x);
     Number(XRPAmount const& x);
 
     constexpr rep
@@ -82,7 +80,6 @@ public:
     Number&
     operator/=(Number const& x);
 
-    explicit operator IOUAmount() const;
     explicit operator XRPAmount() const;  // round to nearest, even on tie
     explicit operator rep() const;        // round to nearest, even on tie
 
@@ -166,7 +163,7 @@ private:
     constexpr static int minExponent = -32768;
     constexpr static int maxExponent = 32768;
 
-    class guard;
+    class Guard;
 };
 
 inline constexpr Number::Number(rep mantissa, int exponent, unchecked) noexcept
@@ -181,10 +178,6 @@ inline Number::Number(rep mantissa, int exponent)
 }
 
 inline Number::Number(rep mantissa) : Number{mantissa, 0}
-{
-}
-
-inline Number::Number(IOUAmount const& x) : Number{x.mantissa(), x.exponent()}
 {
 }
 
@@ -286,11 +279,6 @@ operator/(Number const& x, Number const& y)
     return z;
 }
 
-inline Number::operator IOUAmount() const
-{
-    return IOUAmount{mantissa(), exponent()};
-}
-
 inline constexpr bool
 Number::isnormal() const noexcept
 {
@@ -308,10 +296,10 @@ abs(Number x) noexcept
 }
 
 // Returns f^n
-// Uses a log_2(n) number of mulitiplications
+// Uses a log_2(n) number of multiplications
 
 Number
-power(Number f, unsigned n);
+power(Number const& f, unsigned n);
 
 // Returns f^(1/d)
 // Uses Newton–Raphson iterations until the result stops changing
@@ -323,12 +311,12 @@ root(Number f, unsigned d);
 // Returns f^(n/d)
 
 Number
-power(Number f, unsigned n, unsigned d);
+power(Number const& f, unsigned n, unsigned d);
 
 // Return 0 if abs(x) < limit, else returns x
 
 inline constexpr Number
-clip(Number const& x, Number const& limit) noexcept
+squelch(Number const& x, Number const& limit) noexcept
 {
     if (abs(x) < limit)
         return Number{};

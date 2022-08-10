@@ -247,4 +247,22 @@ ammSend(
     return terResult;
 }
 
+std::uint16_t
+timeSlot(NetClock::time_point const& clock, STObject const& auctionSlot)
+{
+    using namespace std::chrono;
+    std::uint32_t constexpr totalSlotTimeSecs = 24 * 3600;
+    std::uint32_t constexpr intervalDuration = totalSlotTimeSecs / 20;
+    auto const current =
+        duration_cast<seconds>(clock.time_since_epoch()).count();
+    if (auctionSlot.isFieldPresent(sfTimeStamp))
+    {
+        auto const stamp = auctionSlot.getFieldU32(sfTimeStamp);
+        auto const diff = current - stamp;
+        if (diff < totalSlotTimeSecs)
+            return diff / intervalDuration;
+    }
+    return 0;
+}
+
 }  // namespace ripple

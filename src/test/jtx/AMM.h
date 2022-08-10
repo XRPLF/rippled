@@ -47,23 +47,6 @@ class AMM
     std::optional<ter> ter_;
     bool log_ = false;
 
-    struct AMMgRPCInfoClient : ripple::test::GRPCTestClientBase
-    {
-        org::xrpl::rpc::v1::GetAmmInfoRequest request;
-        org::xrpl::rpc::v1::GetAmmInfoResponse reply;
-
-        explicit AMMgRPCInfoClient(std::string const& port)
-            : GRPCTestClientBase(port)
-        {
-        }
-
-        grpc::Status
-        getAMMInfo()
-        {
-            return stub_->GetAmmInfo(&context, request, &reply);
-        }
-    };
-
     void
     create(
         std::uint32_t tfee = 0,
@@ -122,15 +105,6 @@ public:
         std::optional<uint256> const& ammHash = std::nullopt,
         bool useAssets = false) const;
 
-    /** Send amm_info gRPC command
-     */
-    std::optional<Json::Value>
-    ammgRPCInfo(
-        std::optional<AccountID> const& account = std::nullopt,
-        std::optional<std::string> const& ledgerIndex = std::nullopt,
-        std::optional<uint256> const& ammHash = std::nullopt,
-        bool useAssets = false) const;
-
     /** Verify the AMM balances.
      */
     bool
@@ -141,8 +115,6 @@ public:
         std::optional<AccountID> const& account = std::nullopt,
         std::optional<std::string> const& ledger_index = std::nullopt) const;
 
-    /** Expect all balances 0
-     */
     bool
     expectLPTokens(AccountID const& account, IOUAmount const& tokens) const;
 
@@ -154,19 +126,15 @@ public:
         std::optional<std::string> const& ledger_index = std::nullopt) const;
 
     bool
+    expectTradingFee(std::uint16_t fee) const;
+
+    bool
     expectAmmRpcInfo(
         STAmount const& asset1,
         STAmount const& asset2,
         IOUAmount const& balance,
         std::optional<AccountID> const& account = std::nullopt,
         std::optional<std::string> const& ledger_index = std::nullopt) const;
-
-    bool
-    expectAmmgRPCInfo(
-        STAmount const& asset1,
-        STAmount const& asset2,
-        IOUAmount const& balance,
-        std::optional<AccountID> const& account = std::nullopt) const;
 
     bool
     ammExists() const;
@@ -266,6 +234,12 @@ public:
     ammHash() const
     {
         return ammHash_;
+    }
+
+    Issue
+    lptIssue() const
+    {
+        return lptIssue_;
     }
 };
 

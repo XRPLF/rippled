@@ -78,10 +78,10 @@ AMMLiquidity::fetchBalances(const ReadView& view) const
         if (assetIn <= beast::zero || assetOut <= beast::zero)
             Throw<std::runtime_error>("AMMLiquidity: unexpected 0 balances");
 
+        dirty_ = false;
+
         return Amounts(assetIn, assetOut);
     }
-
-    dirty_ = false;
 
     return balances_;
 }
@@ -95,14 +95,9 @@ AMMLiquidity::generateFibSeqOffer(const Amounts& balances) const
         fibSeqHelper_.emplace();
         return fibSeqHelper_->firstSeq(balances, tradingFee_);
     }
-    // if balances have not changed
-    // then the offer size stays the same
-    else if (balances.out == balances_.out)
-    {
-        return fibSeqHelper_->curSeq();
-    }
     // advance to next sequence
-    return fibSeqHelper_->nextSeq(balances, tradingFee_);
+    return fibSeqHelper_->nextNthSeq(
+        offerCounter_.curIters(), balances, tradingFee_);
 }
 
 }  // namespace ripple

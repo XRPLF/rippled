@@ -39,6 +39,7 @@ class FibSeqHelper
 {
 private:
     mutable Amounts curSeq_{};
+    mutable std::uint16_t lastNSeq_{0};
     mutable Number x_{0};
     mutable Number y_{0};
 
@@ -48,6 +49,23 @@ public:
     FibSeqHelper(FibSeqHelper const&) = delete;
     FibSeqHelper&
     operator=(FibSeqHelper const&) = delete;
+    /** The product after the offer is consumed must be greater or equal
+     * to the previous product.
+     */
+    void
+    validateProduct(Amounts const& balances, Amounts const& offer) const
+    {
+        if (auto const newProduct =
+                Number(balances.out - offer.out) * (balances.in + offer.in),
+            product = Number(balances.in) * balances.out;
+            newProduct < product)
+        {
+            std::stringstream str;
+            str << "FibSeq results in invalid pool product: orig " << product
+                << " new " << newProduct << std::endl;
+            // Throw<std::runtime_error>(str.str());
+        }
+    }
     /** Generate first sequence.
      * @param balances current AMM pool balances.
      * @param tfee trading fee in basis points.
@@ -61,11 +79,7 @@ public:
             balances.in.issue(), (Number(5) / 10000) * balances.in / 2);
         curSeq_.out = toSTAmount(balances.out.issue(), SP * curSeq_.in);
         y_ = curSeq_.out;
-        return curSeq_;
-    }
-    Amounts const&
-    curSeq() const
-    {
+        validateProduct(balances, curSeq_);
         return curSeq_;
     }
     /** Generate next sequence.
@@ -74,17 +88,34 @@ public:
      * @return
      */
     Amounts const&
-    nextSeq(Amounts const& balances, std::uint16_t tfee) const
+    nextNthSeq(std::uint16_t n, Amounts const& balances, std::uint16_t tfee)
+        const
     {
-        auto const total = x_ + y_;
+        // We are at the same payment engine iteration when executing
+        // a limiting step. Have to generate the same sequence.
+        if (n == lastNSeq_)
+            return curSeq_;
+        auto const total = [&]() {
+            if (n < lastNSeq_)
+                Throw<std::runtime_error>(
+                    std::string("nextNthSeq: invalid sequence ") +
+                    std::to_string(n) + " " + std::to_string(lastNSeq_));
+            Number total{};
+            do
+            {
+                total = x_ + y_;
+                x_ = y_;
+                y_ = total;
+            } while (++lastNSeq_ < n);
+            return total;
+        }();
         curSeq_.out = toSTAmount(balances.out.issue(), total);
         curSeq_.in = toSTAmount(
             balances.in.issue(),
             (balances.in * balances.out / (balances.out - curSeq_.out) -
              balances.in) /
                 feeMult(tfee));
-        x_ = y_;
-        y_ = total;
+        validateProduct(balances, curSeq_);
         return curSeq_;
     }
 };
@@ -166,6 +197,14 @@ public:
     ammAccount() const
     {
         return ammAccountID_;
+    }
+
+    QualityFunction
+    getQF(ReadView const& view) const
+    {
+        if (dirty_)
+            balances_ = fetchBalances(view);
+        return QualityFunction(balances_);
     }
 
 private:

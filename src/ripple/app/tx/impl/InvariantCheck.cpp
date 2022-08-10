@@ -142,7 +142,7 @@ XRPNotCreated::finalize(
     beast::Journal const& j)
 {
     // AMM is created with AMMInstanceCreate, not payment
-    if (tx.getTxnType() == ttAMM_CREATE)
+    if (tx.getTxnType() == ttAMM_INSTANCE_CREATE)
         return true;
 
     // The net change should never be positive, as this would mean that the
@@ -483,7 +483,8 @@ ValidNewAccountRoot::finalize(
     }
 
     // From this point on we know exactly one account was created.
-    if ((tx.getTxnType() == ttPAYMENT || tx.getTxnType() == ttAMM_CREATE) &&
+    if ((tx.getTxnType() == ttPAYMENT ||
+         tx.getTxnType() == ttAMM_INSTANCE_CREATE) &&
         result == tesSUCCESS)
     {
         std::uint32_t const startingSeq{

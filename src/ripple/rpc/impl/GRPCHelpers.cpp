@@ -1104,177 +1104,6 @@ populateNFTokens(T& to, STObject const& from)
         sfNFToken);
 }
 
-template <class T>
-void
-populateAMMAccount(T& to, STObject const& from)
-{
-    populateProtoAccount(
-        [&to]() { return to.mutable_account(); }, from, sfAMMAccount);
-}
-
-template <class T>
-void
-populateTradingFee(T& to, STObject const& from)
-{
-    populateProtoPrimitive(
-        [&to]() { return to.mutable_trading_fee(); }, from, sfTradingFee);
-}
-
-template <class T>
-void
-populateAsset1(T& to, STObject const& from)
-{
-    populateProtoAmount(
-        [&to]() { return to.mutable_asset1(); }, from, sfAsset1);
-}
-
-template <class T>
-void
-populateAsset2(T& to, STObject const& from)
-{
-    populateProtoAmount(
-        [&to]() { return to.mutable_asset2(); }, from, sfAsset2);
-}
-
-template <class T>
-void
-populateAMMHash(T& to, STObject const& from)
-{
-    populateProtoPrimitive(
-        [&to]() { return to.mutable_ammhash(); }, from, sfAMMHash);
-}
-
-template <class T>
-void
-populateAsset1In(T& to, STObject const& from)
-{
-    populateProtoAmount(
-        [&to]() { return to.mutable_asset1_in(); }, from, sfAsset1In);
-}
-
-template <class T>
-void
-populateAsset2In(T& to, STObject const& from)
-{
-    populateProtoAmount(
-        [&to]() { return to.mutable_asset2_in(); }, from, sfAsset2In);
-}
-
-template <class T>
-void
-populateLPTokens(T& to, STObject const& from)
-{
-    populateProtoAmount(
-        [&to]() { return to.mutable_lptokens(); }, from, sfLPTokens);
-}
-
-template <class T>
-void
-populateEPrice(T& to, STObject const& from)
-{
-    populateProtoAmount(
-        [&to]() { return to.mutable_eprice(); }, from, sfEPrice);
-}
-
-template <class T>
-void
-populateAsset1Out(T& to, STObject const& from)
-{
-    populateProtoAmount(
-        [&to]() { return to.mutable_asset1_out(); }, from, sfAsset1Out);
-}
-
-template <class T>
-void
-populateAsset2Out(T& to, STObject const& from)
-{
-    populateProtoAmount(
-        [&to]() { return to.mutable_asset2_out(); }, from, sfAsset2Out);
-}
-
-template <class T>
-void
-populateFeeVal(T& to, STObject const& from)
-{
-    populateProtoPrimitive(
-        [&to]() { return to.mutable_fee_val(); }, from, sfFeeVal);
-}
-
-template <class T>
-void
-populateVoteWeight(T& to, STObject const& from)
-{
-    populateProtoPrimitive(
-        [&to]() { return to.mutable_vote_weight(); }, from, sfVoteWeight);
-}
-
-template <class T>
-void
-populateVoteSlots(T& to, STObject const& from)
-{
-    populateProtoArray(
-        [&to]() { return to.add_vote_slots(); },
-        [&](auto& innerObj, auto& innerProto) {
-            populateAccount(innerProto, innerObj);
-            populateFeeVal(innerProto, innerObj);
-            populateVoteWeight(innerProto, innerObj);
-        },
-        from,
-        sfVoteSlots,
-        sfVoteEntry);
-}
-
-template <class T>
-void
-populateAuthAccounts(T& to, STObject const& from)
-{
-    populateProtoArray(
-        [&to]() { return to.add_auth_accounts(); },
-        [&](auto& innerObj, auto& innerProto) {
-            populateAccount(innerProto, innerObj);
-        },
-        from,
-        sfAuthAccounts,
-        sfAuthAccount);
-}
-
-template <class T>
-void
-populateAuctionSlot(T& to, STObject const& from)
-{
-    populateAccount(to, from);
-
-    populateProtoPrimitive(
-        [&to]() { return to.mutable_time_stamp(); }, from, sfTimeStamp);
-
-    populateProtoPrimitive(
-        [&to]() { return to.mutable_discounted_fee(); }, from, sfDiscountedFee);
-
-    populateProtoAmount([&to]() { return to.mutable_price(); }, from, sfPrice);
-
-    populateAuthAccounts(to, from);
-}
-
-template <class T>
-void
-populateToken(T& to, STObject const& from)
-{
-    populateProtoCurrency(
-        [&to]() { return to.mutable_token_currency(); }, from, sfTokenCurrency);
-
-    populateProtoPrimitive(
-        [&to]() { return to.mutable_token_issuer(); }, from, sfTokenIssuer);
-}
-
-template <class T>
-void
-populateAMMToken(T& to, STObject const& from)
-{
-    populateToken(*to.mutable_token1(), from);
-
-    populateToken(*to.mutable_token2(), from);
-}
-
 void
 convert(org::xrpl::rpc::v1::TransactionResult& to, TER from)
 {
@@ -1934,89 +1763,6 @@ convert(org::xrpl::rpc::v1::NFTokenPage& to, STObject const& from)
 }
 
 void
-convert(org::xrpl::rpc::v1::AMMInstanceCreate& to, STObject const& from)
-{
-    populateAMMAccount(to, from);
-
-    populateAsset1(to, from);
-
-    populateAsset2(to, from);
-
-    populateTradingFee(to, from);
-}
-
-void
-convert(org::xrpl::rpc::v1::AMMDeposit& to, STObject const& from)
-{
-    populateAMMHash(to, from);
-
-    populateAsset1In(to, from);
-
-    populateAsset2In(to, from);
-
-    populateLPTokens(to, from);
-
-    populateEPrice(to, from);
-}
-
-void
-convert(org::xrpl::rpc::v1::AMMWithdraw& to, STObject const& from)
-{
-    populateAMMHash(to, from);
-
-    populateAsset1Out(to, from);
-
-    populateAsset2Out(to, from);
-
-    populateLPTokens(to, from);
-
-    populateEPrice(to, from);
-}
-
-void
-convert(org::xrpl::rpc::v1::AMMVote& to, STObject const& from)
-{
-    populateAMMHash(to, from);
-
-    populateFeeVal(to, from);
-}
-
-void
-convert(org::xrpl::rpc::v1::AMMBid& to, STObject const& from)
-{
-    populateAMMHash(to, from);
-
-    populateProtoAmount(
-        [&to]() { return to.mutable_min_slot_price(); }, from, sfMinSlotPrice);
-
-    populateProtoAmount(
-        [&to]() { return to.mutable_max_slot_price(); }, from, sfMaxSlotPrice);
-
-    populateAuthAccounts(to, from);
-}
-
-void
-convert(org::xrpl::rpc::v1::AMM& to, STObject const& from)
-{
-    populateAMMAccount(to, from);
-
-    populateTradingFee(to, from);
-
-    populateVoteSlots(to, from);
-
-    populateAuctionSlot(*to.mutable_auction_slot(), from);
-
-    populateProtoAmount(
-        [&to]() { return to.mutable_lp_token_balance(); },
-        from,
-        sfLPTokenBalance);
-
-    populateAMMToken(*to.mutable_amm_token(), from);
-
-    populateFlags(to, from);
-}
-
-void
 setLedgerEntryType(
     org::xrpl::rpc::v1::AffectedNode& proto,
     std::uint16_t lgrType)
@@ -2087,10 +1833,6 @@ setLedgerEntryType(
             proto.set_ledger_entry_type(
                 org::xrpl::rpc::v1::LEDGER_ENTRY_TYPE_NFTOKEN_PAGE);
             break;
-        case ltAMM:
-            proto.set_ledger_entry_type(
-                org::xrpl::rpc::v1::LEDGER_ENTRY_TYPE_AMM);
-            break;
     }
 }
 
@@ -2147,9 +1889,6 @@ convert(T& to, STObject& from, std::uint16_t type)
             break;
         case ltNFTOKEN_PAGE:
             RPC::convert(*to.mutable_nftoken_page(), from);
-            break;
-        case ltAMM:
-            RPC::convert(*to.mutable_amm(), from);
             break;
     }
 }
@@ -2443,21 +2182,6 @@ convert(
             break;
         case TxType::ttNFTOKEN_ACCEPT_OFFER:
             convert(*to.mutable_nftoken_accept_offer(), fromObj);
-            break;
-        case TxType::ttAMM_CREATE:
-            convert(*to.mutable_amminstance_create(), fromObj);
-            break;
-        case TxType::ttAMM_DEPOSIT:
-            convert(*to.mutable_ammdeposit(), fromObj);
-            break;
-        case TxType::ttAMM_WITHDRAW:
-            convert(*to.mutable_ammwithdraw(), fromObj);
-            break;
-        case TxType::ttAMM_VOTE:
-            convert(*to.mutable_ammvote(), fromObj);
-            break;
-        case TxType::ttAMM_BID:
-            convert(*to.mutable_ammbid(), fromObj);
             break;
         default:
             break;

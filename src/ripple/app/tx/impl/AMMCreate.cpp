@@ -186,8 +186,11 @@ AMMCreate::applyGuts(Sandbox& sb)
     std::uint32_t const seqno{
         view().rules().enabled(featureDeletableAccounts) ? view().seq() : 1};
     sleAMMRoot->setFieldU32(sfSequence, seqno);
-    // Ignore reserves requirement and disable the master key.
-    sleAMMRoot->setFieldU32(sfFlags, lsfAMM | lsfDisableMaster);
+    // Ignore reserves requirement, disable the master key, and allow default
+    // rippling (AMM LPToken can be used a token in another AMM, which must
+    // support payments and offer crossing).
+    sleAMMRoot->setFieldU32(
+        sfFlags, lsfAMM | lsfDisableMaster | lsfDefaultRipple);
     sb.insert(sleAMMRoot);
 
     // Calculate initial LPT balance.

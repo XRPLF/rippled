@@ -27,7 +27,6 @@ message LedgerObject
         SignerList signer_list = 12;
         NegativeUNL negative_unl = 13;
         TicketObject ticket = 14;
-        AMM amm = 20;
     }
 }
 
@@ -51,7 +50,6 @@ enum LedgerEntryType
     LEDGER_ENTRY_TYPE_TICKET          = 14;
     LEDGER_ENTRY_TYPE_NFTOKEN_OFFER   = 15;
     LEDGER_ENTRY_TYPE_NFTOKEN_PAGE    = 16;
-    LEDGER_ENTRY_TYPE_AMM             = 17;
 }
 
 // Next field: 19
@@ -417,22 +415,4 @@ message NegativeUNL
     ValidatorToReEnable validator_to_re_enable = 3;
 
     Flags flags = 4;
-}
-
-// Next field: 7
-message AMM
-{
-    AMMAccount account = 1;
-
-    TradingFee trading_fee = 2;
-
-    repeated VoteEntry vote_slots = 3;
-
-    AuctionSlot auction_slot = 4;
-
-    LPTokenBalance lp_token_balance = 5;
-
-    AMMToken amm_token = 6;
-
-    Flags flags = 7;
 }

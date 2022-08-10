@@ -57,6 +57,17 @@ private:
     static constexpr auto fieldTYPE_MESSAGE =
         google::protobuf::FieldDescriptor::Type::TYPE_MESSAGE;
 
+    // gRPC is going to be deprecated moving forward. New objects
+    // and transactions should not have serialization/deserialization
+    // and be added to the exceptions_.
+    hash_set<std::string> exceptions_ = {
+        "AMM",
+        "AMMBid",
+        "AMMDeposit",
+        "AMMInstanceCreate",
+        "AMMVote",
+        "AMMWithdraw"};
+
     // Format names are CamelCase and FieldDescriptor names are snake_case.
     // Convert from CamelCase to snake_case.  Do not be fooled by consecutive
     // capital letters like in NegativeUNL.
@@ -732,9 +743,7 @@ private:
             {sfNFTokens.getName(), &sfNFToken},
             {sfSignerEntries.getName(), &sfSignerEntry},
             {sfSigners.getName(), &sfSigner},
-            {sfNFTokenOffers.getName(), &sfLedgerIndex},
-            {sfAuthAccounts.getName(), &sfAuthAccount},
-            {sfVoteSlots.getName(), &sfVoteEntry}};
+            {sfNFTokenOffers.getName(), &sfLedgerIndex}};
 
         if (!repeatsWhat.count(sField->getName()))
         {
@@ -842,6 +851,8 @@ private:
 
         for (auto const& item : knownFormat)
         {
+            if (exceptions_.find(item.getName()) != exceptions_.end())
+                continue;
             if constexpr (std::is_same_v<FmtType, LedgerEntryType>)
             {
                 // Skip LedgerEntryTypes that gRPC does not currently support.

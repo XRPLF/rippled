@@ -83,6 +83,7 @@ AMM::create(
         env_(jv, *ter_);
     else
         env_(jv);
+    env_.close();
     if (!ter_)
     {
         if (auto const amm = getAMMSle(
@@ -126,68 +127,6 @@ AMM::ammRpcInfo(
     return std::nullopt;
 }
 
-std::optional<Json::Value>
-AMM::ammgRPCInfo(
-    const std::optional<AccountID>& account,
-    const std::optional<std::string>& ledgerIndex,
-    std::optional<uint256> const& ammHash,
-    bool useAssets) const
-{
-    auto config = env_.app().config();
-    auto const grpcPort = config["port_grpc"].get<std::string>("port");
-    if (!grpcPort.has_value())
-        return {};
-    AMMgRPCInfoClient client(*grpcPort);
-    if (useAssets)
-    {
-        RPC::convert(*client.request.mutable_asset1(), asset1_);
-        RPC::convert(*client.request.mutable_asset2(), asset2_);
-    }
-    else if (ammHash)
-    {
-        if (ammHash != uint256{0})
-            *client.request.mutable_ammhash()->mutable_value() =
-                to_string(*ammHash);
-    }
-    else
-        *client.request.mutable_ammhash()->mutable_value() =
-            to_string(ammHash_);
-    if (account)
-        *client.request.mutable_account()->mutable_value()->mutable_address() =
-            to_string(*account);
-    if (ledgerIndex)
-        *client.request.mutable_ledger()->mutable_hash() = *ledgerIndex;
-    auto const status = client.getAMMInfo();
-    Json::Value jv;
-    if (!status.ok())
-    {
-        jv[jss::error_message] = status.error_message();
-        jv[jss::error_code] = status.error_code();
-        jv[jss::error] = status.error_details();
-        return jv;
-    }
-    auto const ammAccountID =
-        parseBase58<AccountID>(client.reply.ammaccount().value().address());
-    auto getAmt = [&](auto const& amt) {
-        if (amt.value().has_xrp_amount())
-            return STAmount{xrpIssue(), amt.value().xrp_amount().drops(), 0};
-        auto const iou = amt.value().issued_currency_amount();
-        auto const account =
-            RPC::accountFromStringStrict(iou.issuer().address());
-        Currency currency = to_currency(iou.currency().name());
-        auto const value = iou.value();
-        if (!account.has_value() || currency == badCurrency())
-            return STAmount{};
-        return amountFromString(Issue(currency, *account), value);
-    };
-    getAmt(client.reply.asset1()).setJson(jv[jss::Asset1]);
-    getAmt(client.reply.asset2()).setJson(jv[jss::Asset2]);
-    getAmt(client.reply.tokens()).setJson(jv[jss::LPTokens]);
-    jv[jss::AMMAccount] = ammAccountID ? to_string(*ammAccountID) : "";
-    jv[jss::AMMHash] = client.reply.ammhash().value();
-    return jv;
-}
-
 bool
 AMM::expectBalances(
     STAmount const& asset1,
@@ -196,21 +135,33 @@ AMM::expectBalances(
     std::optional<AccountID> const& account,
     std::optional<std::string> const& ledger_index) const
 {
-    return expectAmmRpcInfo(asset1, asset2, lpt, account, ledger_index);
+    if (auto const amm = getAMMSle(*env_.current(), ammHash_))
+    {
+        auto const ammAccountID = amm->getAccountID(sfAMMAccount);
+        auto const [asset1Balance, asset2Balance] = ammPoolHolds(
+            *env_.current(),
+            ammAccountID,
+            asset1.issue(),
+            asset2.issue(),
+            env_.journal);
+        auto const lptAMMBalance = account
+            ? lpHolds(*env_.current(), ammAccountID, *account, env_.journal)
+            : amm->getFieldAmount(sfLPTokenBalance);
+        return asset1 == asset1Balance && asset2 == asset2Balance &&
+            lptAMMBalance == STAmount{lpt, lptIssue_};
+    }
+    return false;
 }
 
 bool
 AMM::expectLPTokens(AccountID const& account, IOUAmount const& expTokens) const
 {
-    try
+    if (auto const amm = getAMMSle(*env_.current(), ammHash_))
     {
-        STAmount saTokens;
-        if (auto const jv = *ammRpcInfo(account);
-            amountFromJsonNoThrow(saTokens, jv[jss::LPTokens]))
-            return saTokens.iou() == expTokens;
-    }
-    catch (...)
-    {
+        auto const ammAccountID = amm->getAccountID(sfAMMAccount);
+        auto const lptAMMBalance =
+            lpHolds(*env_.current(), ammAccountID, account, env_.journal);
+        return lptAMMBalance == STAmount{expTokens, lptIssue_};
     }
     return false;
 }
@@ -222,21 +173,28 @@ AMM::expectAuctionSlot(
     IOUAmount const& price,
     std::optional<std::string> const& ledger_index) const
 {
-    try
+    if (auto const amm = getAMMSle(*env_.current(), ammHash_);
+        amm && amm->isFieldPresent(sfAuctionSlot))
     {
-        if (auto const jv = *ammRpcInfo(std::nullopt, ledger_index))
+        auto const& auctionSlot =
+            static_cast<STObject const&>(amm->peekAtField(sfAuctionSlot));
+        if (auctionSlot.isFieldPresent(sfAccount))
         {
-            auto const auctionSlot = jv[jss::AuctionSlot];
-            STAmount saPrice;
-            return auctionSlot[jss::DiscountedFee].asUInt() == fee &&
-                auctionSlot[jss::TimeInterval].asUInt() == timeInterval &&
-                amountFromJsonNoThrow(saPrice, auctionSlot[jss::Price]) &&
-                saPrice.iou() == price;
+            return auctionSlot.getFieldU32(sfDiscountedFee) == fee &&
+                timeSlot(env_.app().timeKeeper().now(), auctionSlot) ==
+                timeInterval &&
+                auctionSlot.getFieldAmount(sfPrice).iou() == price;
         }
     }
-    catch (...)
-    {
-    }
+    return false;
+}
+
+bool
+AMM::expectTradingFee(std::uint16_t fee) const
+{
+    if (auto const amm = getAMMSle(*env_.current(), ammHash_);
+        amm && amm->getFieldU16(sfTradingFee) == fee)
+        return true;
     return false;
 }
 
@@ -257,19 +215,6 @@ AMM::expectAmmRpcInfo(
     std::optional<std::string> const& ledger_index) const
 {
     auto const jv = ammRpcInfo(account, ledger_index);
-    if (!jv)
-        return false;
-    return expectAmmInfo(asset1, asset2, balance, *jv);
-}
-
-bool
-AMM::expectAmmgRPCInfo(
-    STAmount const& asset1,
-    STAmount const& asset2,
-    IOUAmount const& balance,
-    std::optional<AccountID> const& account) const
-{
-    auto const jv = ammgRPCInfo(account);
     if (!jv)
         return false;
     return expectAmmInfo(asset1, asset2, balance, *jv);
@@ -322,6 +267,7 @@ AMM::deposit(
         env_(jv, *ter_);
     else
         env_(jv);
+    env_.close();
 }
 
 void
@@ -412,6 +358,7 @@ AMM::withdraw(
         env_(jv, *ter);
     else
         env_(jv);
+    env_.close();
 }
 
 void
@@ -507,6 +454,7 @@ AMM::vote(
         env_(jv, *ter);
     else
         env_(jv);
+    env_.close();
 }
 
 void
@@ -556,6 +504,7 @@ AMM::bid(
         env_(jv, *ter);
     else
         env_(jv);
+    env_.close();
 }
 
 namespace amm {

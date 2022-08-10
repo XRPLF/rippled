@@ -351,6 +351,51 @@ qualityUpperBound(ReadView const& v, Strand const& strand)
 /// @endcond
 
 /// @cond INTERNAL
+/** Limit remaining out if only one strand and limitQuality is included.
+ * Targets a path with AMM where the average quality is linear and instant
+ * quality is quadratic function of output. Calculating quality function
+ * for the whole strand enables figuring out required output to produce
+ * requested strand's limitQuality.
+ */
+template <typename TOutAmt>
+inline TOutAmt
+limitOut(
+    ReadView const& v,
+    Strand const& strand,
+    TOutAmt const& remainingOut,
+    Quality const& limitQuality)
+{
+    std::optional<QualityFunction> stepQF;
+    QualityFunction qf;
+    DebtDirection dir = DebtDirection::issues;
+    for (auto const& step : strand)
+    {
+        if (std::tie(stepQF, dir) = step->getQF(v, dir); stepQF)
+            qf.combineWithNext(*stepQF);
+        else
+            return remainingOut;
+    }
+
+    // QualityFunction is constant
+    if (qf.isConst())
+        return remainingOut;
+
+    auto const out = [&]() {
+        if (auto const out = qf.outFromInstQ(limitQuality); !out)
+            return remainingOut;
+        else if constexpr (std::is_same_v<TOutAmt, XRPAmount>)
+            return (XRPAmount)*out;
+        else if constexpr (std::is_same_v<TOutAmt, IOUAmount>)
+            return IOUAmount{*out};
+        else
+            return STAmount{
+                remainingOut.issue(), out->mantissa(), out->exponent()};
+    }();
+    return out < remainingOut ? out : remainingOut;
+};
+/// @endcond
+
+/// @cond INTERNAL
 /* Track the non-dry strands
 
    flow will search the non-dry strands (stored in `cur_`) for the best
@@ -587,6 +632,16 @@ flow(
 
         activeStrands.activateNext(sb, limitQuality);
 
+        ammOfferCounter.setMultiPath(activeStrands.size() > 1);
+
+        // Limit only if one strand and limitQuality
+        auto const limitRemainingOut = [&]() {
+            if (activeStrands.size() == 1 && limitQuality)
+                if (auto const strand = activeStrands.get(0))
+                    return limitOut(sb, *strand, remainingOut, *limitQuality);
+            return remainingOut;
+        }();
+
         boost::container::flat_set<uint256> ofrsToRm;
         std::optional<BestStrand> best;
         if (flowDebugInfo)
@@ -613,7 +668,7 @@ flow(
                     continue;
             }
             auto f = flow<TInAmt, TOutAmt>(
-                sb, *strand, remainingIn, remainingOut, j);
+                sb, *strand, remainingIn, limitRemainingOut, j);
 
             // rm bad offers even if the strand fails
             SetUnion(ofrsToRm, f.ofrsToRm);

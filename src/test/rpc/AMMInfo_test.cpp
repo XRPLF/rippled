@@ -87,25 +87,11 @@ public:
                 jv.has_value() &&
                 (*jv)[jss::error_message] == "Account not found.");
         });
-        proc([&](AMM& ammAlice, Env&) {
-            uint256 hash{1};
-            auto const jv = ammAlice.ammgRPCInfo({}, {}, hash);
-            BEAST_EXPECT(
-                jv.has_value() &&
-                (*jv)[jss::error_message] == "Account not found.");
-        });
 
         // Invalid LP account id
         proc([&](AMM& ammAlice, Env&) {
             Account bogie("bogie");
             auto const jv = ammAlice.ammRpcInfo(bogie.id());
-            BEAST_EXPECT(
-                jv.has_value() &&
-                (*jv)[jss::error_message] == "Account malformed.");
-        });
-        proc([&](AMM& ammAlice, Env&) {
-            Account bogie("bogie");
-            auto const jv = ammAlice.ammgRPCInfo(bogie.id());
             BEAST_EXPECT(
                 jv.has_value() &&
                 (*jv)[jss::error_message] == "Account malformed.");
@@ -138,36 +124,10 @@ public:
     }
 
     void
-    testSimpleGrpc()
-    {
-        testcase("gRPC simple");
-
-        using namespace jtx;
-        proc([&](AMM& ammAlice, Env&) {
-            BEAST_EXPECT(ammAlice.expectAmmgRPCInfo(
-                XRP(10000), USD(10000), IOUAmount{10000000, 0}));
-        });
-        proc([&](AMM& ammAlice, Env&) {
-            auto const ammHash = [&]() -> std::optional<uint256> {
-                if (auto const jv = ammAlice.ammgRPCInfo({}, {}, {}, true);
-                    jv.has_value())
-                {
-                    uint256 ammHash;
-                    if (ammHash.parseHex((*jv)[jss::AMMHash].asString()))
-                        return ammHash;
-                }
-                return {};
-            }();
-            BEAST_EXPECT(ammHash.has_value() && ammAlice.ammHash() == *ammHash);
-        });
-    }
-
-    void
     run() override
     {
         testErrors();
         testSimpleRpc();
-        testSimpleGrpc();
     }
 };
 

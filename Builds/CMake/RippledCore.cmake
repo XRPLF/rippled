@@ -81,6 +81,7 @@ target_sources (xrpl_core PRIVATE
   src/ripple/protocol/impl/LedgerFormats.cpp
   src/ripple/protocol/impl/PublicKey.cpp
   src/ripple/protocol/impl/Quality.cpp
+  src/ripple/protocol/impl/QualityFunction.cpp
   src/ripple/protocol/impl/Rate2.cpp
   src/ripple/protocol/impl/Rules.cpp
   src/ripple/protocol/impl/SField.cpp
@@ -212,6 +213,7 @@ install (
     src/ripple/protocol/Protocol.h
     src/ripple/protocol/PublicKey.h
     src/ripple/protocol/Quality.h
+    src/ripple/protocol/QualityFunction.h
     src/ripple/protocol/Rate.h
     src/ripple/protocol/Rules.h
     src/ripple/protocol/SField.h

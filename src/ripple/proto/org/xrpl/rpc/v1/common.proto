@@ -215,31 +215,6 @@ message TransferRate
     uint32 value = 1;
 }
 
-message TradingFee
-{
-    // is actually uint16
-    uint32 value = 1;
-}
-
-message FeeVal
-{
-    uint32 value = 1;
-}
-
-message VoteWeight
-{
-    uint32 value = 1;
-}
-
-message TimeStamp
-{
-    uint32 value = 1;
-}
-
-message DiscountedFee
-{
-    uint32 value = 1;
-}
 
 // *** Messages wrapping uint64 ***
 
@@ -312,12 +287,6 @@ message TakerGetsIssuer
 }
 
 message TakerPaysIssuer
-{
-    // 20 bytes
-    bytes value = 1;
-}
-
-message TokenIssuer
 {
     // 20 bytes
     bytes value = 1;
@@ -399,12 +368,6 @@ message PreviousTransactionID
 }
 
 message RootIndex
-{
-    // 32 bytes
-    bytes value = 1;
-}
-
-message AMMHash
 {
     // 32 bytes
     bytes value = 1;
@@ -492,11 +455,6 @@ message TakerPaysCurrency
     Currency value = 1;
 }
 
-message TokenCurrency
-{
-    Currency value = 1;
-}
-
 
 // *** Messages wrapping a CurrencyAmount ***
 
@@ -561,70 +519,6 @@ message TakerPays
     CurrencyAmount value = 1;
 }
 
-message Asset1
-{
-    CurrencyAmount value = 1;
-}
-
-message Asset2
-{
-    CurrencyAmount value = 1;
-}
-
-message Asset1In
-{
-    CurrencyAmount value = 1;
-}
-
-message Asset2In
-{
-    CurrencyAmount value = 1;
-}
-
-message LPTokens
-{
-    CurrencyAmount value = 1;
-}
-
-message EPrice
-{
-    CurrencyAmount value = 1;
-}
-
-message Asset1Out
-{
-    CurrencyAmount value = 1;
-}
-
-message Asset2Out
-{
-    CurrencyAmount value = 1;
-}
-
-message Tokens
-{
-    CurrencyAmount value = 1;
-}
-
-message MinSlotPrice
-{
-    CurrencyAmount value = 1;
-}
-
-message MaxSlotPrice
-{
-    CurrencyAmount value = 1;
-}
-
-message Price
-{
-    CurrencyAmount value = 1;
-}
-
-message LPTokenBalance
-{
-    CurrencyAmount value = 1;
-}
 
 // *** Messages wrapping an AccountAddress ***
 
@@ -664,11 +558,6 @@ message RegularKey
 }
 
 message Unauthorize
-{
-    AccountAddress value = 1;
-}
-
-message AMMAccount
 {
     AccountAddress value = 1;
 }
@@ -715,57 +604,3 @@ message DisabledValidator
     FirstLedgerSequence ledger_sequence = 2;
 }
 
-// Next field: 3
-message VoteEntry
-{
-    Account account = 1;
-
-    FeeVal fee_val = 2;
-
-    VoteWeight vote_weight = 3;
-}
-
-// Next field: 1
-message AuthAccount
-{
-    Account account = 1;
-}
-
-// Next field: 5
-message AuctionSlot
-{
-    Account account = 1;
-
-    TimeStamp time_stamp = 2;
-
-    DiscountedFee discounted_fee = 3;
-
-    Price price = 4;
-
-    repeated AuthAccount auth_accounts = 5;
-}
-
-// Next field: 2
-message Token1
-{
-    TokenCurrency token_currency = 1;
-
-    TokenIssuer  token_issuer = 2;
-}
-
-// Next field: 2
-message Token2
-{
-    TokenCurrency token_currency = 1;
-
-    TokenIssuer  token_issuer = 2;
-}
-
-// Next field: 2
-message AMMToken
-{
-
-    Token1 token1 = 1;
-
-    Token2 token2 = 2;
-}

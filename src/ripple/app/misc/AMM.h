@@ -34,15 +34,15 @@ class ReadView;
 class ApplyView;
 class Sandbox;
 class STLedgerEntry;
+class NetClock;
+class STObject;
 
 /** Calculate AMM account ID.
- * @return AMM account id
  */
 template <typename... Args>
 AccountID
 calcAccountID(Args const&... args)
 {
-    // TODO use private/public keys to generate account id
     ripesha_hasher rsh;
     auto hash = sha512Half(args...);
     rsh(hash.data(), hash.size());
@@ -50,22 +50,17 @@ calcAccountID(Args const&... args)
 }
 
 /** Calculate AMM group hash. The ltAMM object
- * contains all AMM's for the same issues and different
- * weights.
+ * contains all AMM's for the same issues.
  */
 uint256
 calcAMMGroupHash(Issue const& issue1, Issue const& issue2);
 
 /** Calculate Liquidity Provider Token (LPT) Currency.
- * @param ammAccountID AMM's instance account id
- * @return LPT Currency
  */
 Currency
 calcLPTCurrency(AccountID const& ammAccountID);
 
 /** Calculate LPT Issue.
- * @param ammAccountID AMM's instance account id
- * @return LPT Issue
  */
 Issue
 calcLPTIssue(AccountID const& ammAccountID);
@@ -115,9 +110,6 @@ isFrozen(ReadView const& view, std::optional<STAmount> const& a);
 
 /** Get AMM SLE and verify that the AMM account exists.
  * Return null if SLE not found or AMM account doesn't exist.
- * @param view
- * @param ammHash
- * @return
  */
 std::shared_ptr<STLedgerEntry const>
 getAMMSle(ReadView const& view, uint256 ammHash);
@@ -153,6 +145,11 @@ ammSend(
     AccountID const& to,
     STAmount const& amount,
     beast::Journal j);
+
+/** Get time slot of the auction slot.
+ */
+std::uint16_t
+timeSlot(NetClock::time_point const& clock, STObject const& auctionSlot);
 
 }  // namespace ripple
 

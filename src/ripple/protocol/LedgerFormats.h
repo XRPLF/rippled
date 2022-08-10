@@ -238,6 +238,7 @@ enum LedgerSpecificFlags {
     lsfDefaultRipple =
         0x00800000,               // True, trust lines allow rippling by default
     lsfDepositAuth = 0x01000000,  // True, all deposits require authorization
+    lsfAMM = 0x02000000,          // True, AMM account
 
     // ltOFFER
     lsfPassive = 0x00010000,
@@ -263,8 +264,6 @@ enum LedgerSpecificFlags {
     // ltNFTOKEN_OFFER
     lsfSellNFToken = 0x00000001,
 
-    // ltAMM
-    lsfAMM = 0x00010000, // True, AMM account
 };
 
 //------------------------------------------------------------------------------

@@ -24,7 +24,7 @@
 
 namespace ripple {
 
-/** Maintains multipath flag for the payment engine for one-path optimization.
+/** Maintains multiPath_ flag for the payment engine for one-path optimization.
  * Maintains counters of amm offers executed at a payment engine iteration
  * and the number of iterations that include AMM offers.
  * Only one instance of this class is created in Flow.cpp::flow().
@@ -34,12 +34,15 @@ namespace ripple {
 class AMMOfferCounter
 {
 private:
+    // true if payment has multiple paths
     bool multiPath_{false};
+    // Counter of consumed AMM at payment engine iteration
     mutable std::uint16_t ammCounter_{0};
+    // Counter of payment engine iterations with consumed AMM
     std::uint16_t ammIters_{0};
 
 public:
-    AMMOfferCounter(bool multiPath) : multiPath_(multiPath)
+    AMMOfferCounter(bool fibSeq) : multiPath_(fibSeq)
     {
     }
     ~AMMOfferCounter() = default;
@@ -51,6 +54,12 @@ public:
     multiPath() const
     {
         return multiPath_;
+    }
+
+    void
+    setMultiPath(bool fs)
+    {
+        multiPath_ = fs;
     }
 
     void
@@ -72,6 +81,12 @@ public:
     maxItersReached() const
     {
         return ammIters_ >= 4;
+    }
+
+    std::uint16_t
+    curIters() const
+    {
+        return ammIters_;
     }
 };
 

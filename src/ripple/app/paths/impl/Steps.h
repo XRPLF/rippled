@@ -23,6 +23,7 @@
 #include <ripple/app/paths/impl/AmountSpec.h>
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/Quality.h>
+#include <ripple/protocol/QualityFunction.h>
 #include <ripple/protocol/STLedgerEntry.h>
 #include <ripple/protocol/TER.h>
 
@@ -188,6 +189,22 @@ public:
     // clang-format on
     virtual std::pair<std::optional<Quality>, DebtDirection>
     qualityUpperBound(ReadView const& v, DebtDirection prevStepDir) const = 0;
+
+    /** Get QualityFunction. Used in one path optimization where
+     * the quality function is non-constant (has AMM) and there
+     * limitQuality. QualityFunction allows calculation of
+     * required path output given requested limitQuality.
+     * All steps, except for BookStep have the default
+     * implementation.
+     */
+    virtual std::pair<std::optional<QualityFunction>, DebtDirection>
+    getQF(ReadView const& v, DebtDirection prevStepDir) const
+    {
+        if (auto const res = qualityUpperBound(v, prevStepDir); res.first)
+            return {QualityFunction{*res.first}, res.second};
+        else
+            return {std::nullopt, res.second};
+    }
 
     /** Return the number of offers consumed or partially consumed the last time
         the step ran, including expired and unfunded offers.

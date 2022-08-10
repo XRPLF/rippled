@@ -148,6 +148,9 @@ public:
     qualityUpperBound(ReadView const& v, DebtDirection prevStepDir)
         const override;
 
+    std::pair<std::optional<QualityFunction>, DebtDirection>
+    getQF(ReadView const& v, DebtDirection prevStepDir) const override;
+
     std::uint32_t
     offersUsed() const override;
 
@@ -243,9 +246,10 @@ private:
         std::optional<TIn> const& remainingIn = std::nullopt,
         std::optional<TOut> const& remainingOut = std::nullopt) const;
 
-    // Returns seated best Quality of either AMM or CLOB offer if available
-    // and the flag is set to true if AMM offer is selected.
-    std::optional<std::pair<Quality, bool>>
+    // Returns seated best Quality of either AMM or CLOB offer if available,
+    // QualityFunction of the step, and the flag, which is set to true
+    // if AMM offer is selected.
+    std::optional<std::tuple<Quality, QualityFunction, bool>>
     selectAMMCLOBQuality(ReadView const& view) const;
 };
 
@@ -519,10 +523,30 @@ BookStep<TIn, TOut, TDerived>::qualityUpperBound(
         return {std::nullopt, dir};
 
     // Don't adjust if AMM
-    Quality const q = res->second
-        ? res->first
+    Quality const q = std::get<bool>(*res)
+        ? std::get<Quality>(*res)
         : static_cast<TDerived const*>(this)->adjustQualityWithFees(
-              v, res->first, prevStepDir);
+              v, std::get<Quality>(*res), prevStepDir);
+    return {q, dir};
+}
+
+template <class TIn, class TOut, class TDerived>
+std::pair<std::optional<QualityFunction>, DebtDirection>
+BookStep<TIn, TOut, TDerived>::getQF(
+    ReadView const& v,
+    DebtDirection prevStepDir) const
+{
+    auto const dir = this->debtDirection(v, StrandDirection::forward);
+
+    auto const res = selectAMMCLOBQuality(v);
+    if (!res)
+        return {std::nullopt, dir};
+
+    if (std::get<bool>(*res))
+        return {std::get<QualityFunction>(*res), dir};
+
+    Quality const q = static_cast<TDerived const*>(this)->adjustQualityWithFees(
+        v, std::get<Quality>(*res), prevStepDir);
     return {q, dir};
 }
 
@@ -762,7 +786,7 @@ BookStep<TIn, TOut, TDerived>::getAMMOffer(
 }
 
 template <class TIn, class TOut, class TDerived>
-std::optional<std::pair<Quality, bool>>
+std::optional<std::tuple<Quality, QualityFunction, bool>>
 BookStep<TIn, TOut, TDerived>::selectAMMCLOBQuality(ReadView const& view) const
 {
     // This can be simplified (and sped up) if directories are never empty.
@@ -772,9 +796,11 @@ BookStep<TIn, TOut, TDerived>::selectAMMCLOBQuality(ReadView const& view) const
         bt.step(j_) ? std::optional<Quality>(bt.quality()) : std::nullopt;
     // Returns seated only if AMM offer quality is better than clobQuality
     if (auto const ammOffer = getAMMOffer(view, clobQuality))
-        return std::make_pair(Quality{*ammOffer}, true);
+        return std::make_tuple(
+            Quality{*ammOffer}, QualityFunction{*ammOffer}, true);
     else if (clobQuality)
-        return std::make_pair(*clobQuality, false);
+        return std::make_tuple(
+            *clobQuality, QualityFunction{*clobQuality}, false);
     return std::nullopt;
 }
 
