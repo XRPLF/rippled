@@ -795,8 +795,7 @@ SHAMap::addGiveItem(SHAMapNodeType type, std::shared_ptr<SHAMapItem const> item)
         auto inner = std::static_pointer_cast<SHAMapInnerNode>(node);
         int branch = selectBranch(nodeID, tag);
         assert(inner->isEmptyBranch(branch));
-        auto newNode = makeTypedLeaf(type, std::move(item), cowid_);
-        inner->setChild(branch, std::move(newNode));
+        inner->setChild(branch, makeTypedLeaf(type, std::move(item), cowid_));
     }
     else
     {
