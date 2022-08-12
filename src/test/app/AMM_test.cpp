@@ -552,6 +552,32 @@ private:
                 std::nullopt,
                 ter(tecAMM_BALANCE));
         });
+
+        // Insufficient XRP balance
+        testAMM([&](AMM& ammAlice, Env& env) {
+            env.fund(XRP(1000), bob);
+            env.close();
+            ammAlice.deposit(
+                bob,
+                XRP(1001),
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                ter(tecUNFUNDED_AMM));
+        });
+
+        // Insufficient USD balance
+        testAMM([&](AMM& ammAlice, Env& env) {
+            fund(env, gw, {bob}, {USD(1000)}, Fund::Acct);
+            env.close();
+            ammAlice.deposit(
+                bob,
+                USD(1001),
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                ter(tecUNFUNDED_AMM));
+        });
     }
 
     void
@@ -1521,6 +1547,34 @@ private:
         testcase("Basic Payment");
         using namespace jtx;
 
+        //  Dependent AMM and CLOB offers
+        {
+            Env env(*this);
+            env.fund(XRP(100000), gw, alice, carol, bob);
+            fund(
+                env,
+                gw,
+                {alice, carol, bob},
+                {USD(30000), EUR(30000), GBP(30000)},
+                Fund::None);
+            AMM ammXRP_EUR(env, alice, XRP(10000), EUR(10000));
+            AMM ammEUR_USD(env, alice, EUR(10000), USD(10000));
+            AMM ammXRP_GBP(env, alice, XRP(10000), GBP(10001));
+            AMM ammGBP_EUR(env, alice, GBP(10000), EUR(10000));
+            env(offer(bob, EUR(10), USD(11)), txflags(tfPassive));
+            env(pay(bob, carol, USD(100)),
+                path(~EUR, ~USD),
+                path(~GBP, ~EUR, ~USD),
+                sendmax(XRP(102)),
+                txflags(tfPartialPayment | tfNoRippleDirect));
+            std::cout << ammXRP_EUR.ammRpcInfo()->toStyledString();
+            std::cout << ammEUR_USD.ammRpcInfo()->toStyledString();
+            std::cout << ammXRP_GBP.ammRpcInfo()->toStyledString();
+            std::cout << ammGBP_EUR.ammRpcInfo()->toStyledString();
+            std::cout << readOffers(env, bob).toStyledString();
+            std::cout << readLines(env, carol).toStyledString();
+        }
+#if 0
         // Partial payment ~99.0099USD for 100XRP.
         // Force one path with tfNoRippleDirect.
         testAMM([&](AMM& ammAlice, Env& env) {
@@ -1689,6 +1743,7 @@ private:
                     STAmount{USD, 488743710662ULL, -10},
                     XRPAmount{49368052}}}}));
         });
+#endif
     }
 
     void
@@ -1861,9 +1916,10 @@ private:
     void
     run() override
     {
-        testInvalidInstance();
-        testInstanceCreate();
+        // testInvalidInstance();
+        // testInstanceCreate();
         testInvalidDeposit();
+#if 0
         testDeposit();
         testInvalidWithdraw();
         testWithdraw();
@@ -1874,6 +1930,7 @@ private:
         testInvalidAMMPayment();
         testBasicPayment();
         testAMMTokens();
+#endif
     }
 };
 

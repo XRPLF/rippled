@@ -214,7 +214,7 @@ swapAssetOut(Amounts const& pool, TOut const& assetOut, std::uint16_t tfee)
         pool.in * (pool.out / (pool.out - assetOut) - 1) / feeMult(tfee));
 }
 
-/** Get amount based on T
+/** Get T amount
  */
 template <typename T>
 T
