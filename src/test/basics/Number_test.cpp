@@ -26,6 +26,24 @@
 
 namespace ripple {
 
+class saveNumberRoundMode
+{
+    Number::rounding_mode mode_;
+
+public:
+    ~saveNumberRoundMode()
+    {
+        Number::setround(mode_);
+    }
+    explicit saveNumberRoundMode(Number::rounding_mode mode) noexcept
+        : mode_{mode}
+    {
+    }
+    saveNumberRoundMode(saveNumberRoundMode const&) = delete;
+    saveNumberRoundMode&
+    operator=(saveNumberRoundMode const&) = delete;
+};
+
 class Number_test : public beast::unit_test::suite
 {
 public:
@@ -338,39 +356,156 @@ public:
     {
         testcase("test_to_integer");
         using Case = std::tuple<Number, std::int64_t>;
-        Case c[]{
-            {Number{0}, 0},
-            {Number{1}, 1},
-            {Number{2}, 2},
-            {Number{3}, 3},
-            {Number{-1}, -1},
-            {Number{-2}, -2},
-            {Number{-3}, -3},
-            {Number{10}, 10},
-            {Number{99}, 99},
-            {Number{1155}, 1155},
-            {Number{9'999'999'999'999'999, 0}, 9'999'999'999'999'999},
-            {Number{9'999'999'999'999'999, 1}, 99'999'999'999'999'990},
-            {Number{9'999'999'999'999'999, 2}, 999'999'999'999'999'900},
-            {Number{-9'999'999'999'999'999, 2}, -999'999'999'999'999'900},
-            {Number{15, -1}, 2},
-            {Number{14, -1}, 1},
-            {Number{16, -1}, 2},
-            {Number{25, -1}, 2},
-            {Number{6, -1}, 1},
-            {Number{5, -1}, 0},
-            {Number{4, -1}, 0},
-            {Number{-15, -1}, -2},
-            {Number{-14, -1}, -1},
-            {Number{-16, -1}, -2},
-            {Number{-25, -1}, -2},
-            {Number{-6, -1}, -1},
-            {Number{-5, -1}, 0},
-            {Number{-4, -1}, 0}};
-        for (auto const& [x, y] : c)
+        saveNumberRoundMode save{Number::setround(Number::to_nearest)};
         {
-            auto j = static_cast<std::int64_t>(x);
-            BEAST_EXPECT(j == y);
+            Case c[]{
+                {Number{0}, 0},
+                {Number{1}, 1},
+                {Number{2}, 2},
+                {Number{3}, 3},
+                {Number{-1}, -1},
+                {Number{-2}, -2},
+                {Number{-3}, -3},
+                {Number{10}, 10},
+                {Number{99}, 99},
+                {Number{1155}, 1155},
+                {Number{9'999'999'999'999'999, 0}, 9'999'999'999'999'999},
+                {Number{9'999'999'999'999'999, 1}, 99'999'999'999'999'990},
+                {Number{9'999'999'999'999'999, 2}, 999'999'999'999'999'900},
+                {Number{-9'999'999'999'999'999, 2}, -999'999'999'999'999'900},
+                {Number{15, -1}, 2},
+                {Number{14, -1}, 1},
+                {Number{16, -1}, 2},
+                {Number{25, -1}, 2},
+                {Number{6, -1}, 1},
+                {Number{5, -1}, 0},
+                {Number{4, -1}, 0},
+                {Number{-15, -1}, -2},
+                {Number{-14, -1}, -1},
+                {Number{-16, -1}, -2},
+                {Number{-25, -1}, -2},
+                {Number{-6, -1}, -1},
+                {Number{-5, -1}, 0},
+                {Number{-4, -1}, 0}};
+            for (auto const& [x, y] : c)
+            {
+                auto j = static_cast<std::int64_t>(x);
+                BEAST_EXPECT(j == y);
+            }
+        }
+        auto prev_mode = Number::setround(Number::towards_zero);
+        BEAST_EXPECT(prev_mode == Number::to_nearest);
+        {
+            Case c[]{
+                {Number{0}, 0},
+                {Number{1}, 1},
+                {Number{2}, 2},
+                {Number{3}, 3},
+                {Number{-1}, -1},
+                {Number{-2}, -2},
+                {Number{-3}, -3},
+                {Number{10}, 10},
+                {Number{99}, 99},
+                {Number{1155}, 1155},
+                {Number{9'999'999'999'999'999, 0}, 9'999'999'999'999'999},
+                {Number{9'999'999'999'999'999, 1}, 99'999'999'999'999'990},
+                {Number{9'999'999'999'999'999, 2}, 999'999'999'999'999'900},
+                {Number{-9'999'999'999'999'999, 2}, -999'999'999'999'999'900},
+                {Number{15, -1}, 1},
+                {Number{14, -1}, 1},
+                {Number{16, -1}, 1},
+                {Number{25, -1}, 2},
+                {Number{6, -1}, 0},
+                {Number{5, -1}, 0},
+                {Number{4, -1}, 0},
+                {Number{-15, -1}, -1},
+                {Number{-14, -1}, -1},
+                {Number{-16, -1}, -1},
+                {Number{-25, -1}, -2},
+                {Number{-6, -1}, 0},
+                {Number{-5, -1}, 0},
+                {Number{-4, -1}, 0}};
+            for (auto const& [x, y] : c)
+            {
+                auto j = static_cast<std::int64_t>(x);
+                BEAST_EXPECT(j == y);
+            }
+        }
+        prev_mode = Number::setround(Number::downward);
+        BEAST_EXPECT(prev_mode == Number::towards_zero);
+        {
+            Case c[]{
+                {Number{0}, 0},
+                {Number{1}, 1},
+                {Number{2}, 2},
+                {Number{3}, 3},
+                {Number{-1}, -1},
+                {Number{-2}, -2},
+                {Number{-3}, -3},
+                {Number{10}, 10},
+                {Number{99}, 99},
+                {Number{1155}, 1155},
+                {Number{9'999'999'999'999'999, 0}, 9'999'999'999'999'999},
+                {Number{9'999'999'999'999'999, 1}, 99'999'999'999'999'990},
+                {Number{9'999'999'999'999'999, 2}, 999'999'999'999'999'900},
+                {Number{-9'999'999'999'999'999, 2}, -999'999'999'999'999'900},
+                {Number{15, -1}, 1},
+                {Number{14, -1}, 1},
+                {Number{16, -1}, 1},
+                {Number{25, -1}, 2},
+                {Number{6, -1}, 0},
+                {Number{5, -1}, 0},
+                {Number{4, -1}, 0},
+                {Number{-15, -1}, -2},
+                {Number{-14, -1}, -2},
+                {Number{-16, -1}, -2},
+                {Number{-25, -1}, -3},
+                {Number{-6, -1}, -1},
+                {Number{-5, -1}, -1},
+                {Number{-4, -1}, -1}};
+            for (auto const& [x, y] : c)
+            {
+                auto j = static_cast<std::int64_t>(x);
+                BEAST_EXPECT(j == y);
+            }
+        }
+        prev_mode = Number::setround(Number::upward);
+        BEAST_EXPECT(prev_mode == Number::downward);
+        {
+            Case c[]{
+                {Number{0}, 0},
+                {Number{1}, 1},
+                {Number{2}, 2},
+                {Number{3}, 3},
+                {Number{-1}, -1},
+                {Number{-2}, -2},
+                {Number{-3}, -3},
+                {Number{10}, 10},
+                {Number{99}, 99},
+                {Number{1155}, 1155},
+                {Number{9'999'999'999'999'999, 0}, 9'999'999'999'999'999},
+                {Number{9'999'999'999'999'999, 1}, 99'999'999'999'999'990},
+                {Number{9'999'999'999'999'999, 2}, 999'999'999'999'999'900},
+                {Number{-9'999'999'999'999'999, 2}, -999'999'999'999'999'900},
+                {Number{15, -1}, 2},
+                {Number{14, -1}, 2},
+                {Number{16, -1}, 2},
+                {Number{25, -1}, 3},
+                {Number{6, -1}, 1},
+                {Number{5, -1}, 1},
+                {Number{4, -1}, 1},
+                {Number{-15, -1}, -1},
+                {Number{-14, -1}, -1},
+                {Number{-16, -1}, -1},
+                {Number{-25, -1}, -2},
+                {Number{-6, -1}, 0},
+                {Number{-5, -1}, 0},
+                {Number{-4, -1}, 0}};
+            for (auto const& [x, y] : c)
+            {
+                auto j = static_cast<std::int64_t>(x);
+                BEAST_EXPECT(j == y);
+            }
         }
         bool caught = false;
         try
