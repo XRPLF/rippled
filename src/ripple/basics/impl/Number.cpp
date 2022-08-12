@@ -23,6 +23,7 @@
 #include <numeric>
 #include <stdexcept>
 #include <type_traits>
+#include <utility>
 
 #ifdef _MSVC_LANG
 #include <boost/multiprecision/cpp_int.hpp>
@@ -32,6 +33,20 @@ using uint128_t = __uint128_t;
 #endif  // !defined(_MSVC_LANG)
 
 namespace ripple {
+
+thread_local Number::rounding_mode Number::mode_ = Number::to_nearest;
+
+Number::rounding_mode
+Number::getround()
+{
+    return mode_;
+}
+
+Number::rounding_mode
+Number::setround(rounding_mode mode)
+{
+    return std::exchange(mode_, mode);
+}
 
 // Guard
 
@@ -107,16 +122,40 @@ Number::Guard::pop() noexcept
     return d;
 }
 
+// Returns:
+//     -1 if Guard is less than half
+//      0 if Guard is exactly half
+//      1 if Guard is greater than half
 int
 Number::Guard::round() noexcept
 {
-    if (digits_ > 0x5000'0000'0000'0000)
-        return 1;
-    if (digits_ < 0x5000'0000'0000'0000)
-        return -1;
-    if (xbit_)
-        return 1;
-    return 0;
+    auto mode = Number::getround();
+    switch (mode)
+    {
+        case to_nearest:
+            if (digits_ > 0x5000'0000'0000'0000)
+                return 1;
+            if (digits_ < 0x5000'0000'0000'0000)
+                return -1;
+            if (xbit_)
+                return 1;
+            return 0;
+        case towards_zero:
+            return -1;
+        case downward:
+            if (sbit_)
+            {
+                if (digits_ > 0 || xbit_)
+                    return 1;
+            }
+            return -1;
+        case upward:
+            if (sbit_)
+                return -1;
+            if (digits_ > 0 || xbit_)
+                return 1;
+            return -1;
+    }
 }
 
 // Number

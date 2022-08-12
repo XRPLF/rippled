@@ -149,7 +149,17 @@ public:
         return os << to_string(x);
     }
 
+    // Thread local rounding control.  Default is to_nearest
+    enum rounding_mode { to_nearest, towards_zero, downward, upward };
+    static rounding_mode
+    getround();
+    // Returns previously set mode
+    static rounding_mode
+    setround(rounding_mode mode);
+
 private:
+    static thread_local rounding_mode mode_;
+
     void
     normalize();
     constexpr bool
@@ -307,6 +317,9 @@ power(Number const& f, unsigned n);
 
 Number
 root(Number f, unsigned d);
+
+Number
+root2(Number f);
 
 // Returns f^(n/d)
 
