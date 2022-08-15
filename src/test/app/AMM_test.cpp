@@ -578,6 +578,39 @@ private:
                 std::nullopt,
                 ter(tecUNFUNDED_AMM));
         });
+
+        // Insufficient USD balance by tokens
+        testAMM([&](AMM& ammAlice, Env& env) {
+            fund(env, gw, {bob}, {USD(1000)}, Fund::Acct);
+            env.close();
+            ammAlice.deposit(
+                bob,
+                10000000,
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                ter(tecUNFUNDED_AMM));
+        });
+
+        // Insufficient XRP balance by tokens
+        testAMM([&](AMM& ammAlice, Env& env) {
+            env.fund(XRP(1000), bob);
+            env.trust(USD(100000), bob);
+            env.close();
+            env(pay(gw, bob, USD(90000)));
+            env.close();
+            ammAlice.deposit(
+                bob,
+                10000000,
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                ter(tecUNFUNDED_AMM));
+        });
     }
 
     void
