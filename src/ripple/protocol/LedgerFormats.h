@@ -278,6 +278,7 @@ enum LedgerSpecificFlags {
     // ltDIR_NODE
     lsfNFTokenBuyOffers = 0x00000001,
     lsfNFTokenSellOffers = 0x00000002,
+    lsfEmittedDir = 0x00000004,
 
     // ltNFTOKEN_OFFER
     lsfSellNFToken = 0x00000001,

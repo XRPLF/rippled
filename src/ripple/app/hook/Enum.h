@@ -217,6 +217,7 @@ namespace hook_api
         RESERVE_INSUFFICIENT = -38,     // setting a new state object would exceed account reserve 
         COMPLEX_NOT_SUPPORTED = -39,
         DOES_NOT_MATCH = -40,           // two keylets were required to be the same type but werent
+        INVALID_KEY = -41,              // user supplied key was not valid
 
     };
 
@@ -228,10 +229,10 @@ namespace hook_api
         ACCEPT = 3,
     };
 
-    const int max_slots = 255;
-    const int max_nonce = 255;
-    const int max_emit = 255;
-    const int max_params = 16;
+    const uint8_t max_slots = 255;
+    const uint8_t max_nonce = 255;
+    const uint8_t max_emit = 255;
+    const uint8_t max_params = 16;
     const double fee_base_multiplier = 1.1f;
 
 

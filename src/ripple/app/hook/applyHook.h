@@ -254,7 +254,7 @@ namespace hook
         bool isCallback,
         bool isStrongTSH,
         uint32_t wasmParam,
-        int32_t hookChainPosition,
+        uint8_t hookChainPosition,
         // result of apply() if this is weak exec
         std::shared_ptr<STObject const> const& provisionalMeta
     );
@@ -306,7 +306,7 @@ namespace hook
         bool isStrong = false;
         uint32_t wasmParam = 0;
         uint32_t overrideCount = 0;
-        int32_t hookChainPosition = -1;
+        uint8_t hookChainPosition = 0;
         bool foreignStateSetDisabled = false;
         bool executeAgainAsWeak = false;     // hook_again allows strong pre-apply to nominate 
                                              // additional weak post-apply execution
@@ -330,14 +330,14 @@ namespace hook
         // keep the underlying object alive for the duration of the hook's execution
         // slot number -> { keylet or hash, { pointer to current object, storage for that object } }
         std::map<int, SlotEntry> slot {};
-        int slot_counter { 1 };
+        uint8_t slot_counter { 1 };
         std::queue<int> slot_free {};
         int64_t expected_etxn_count { -1 }; // make this a 64bit int so the uint32 from the hookapi cant overflow it
-        int emit_nonce_counter { 0 }; // incremented whenever nonce is called to ensure unique nonces
-        int ledger_nonce_counter { 0 };
+        uint8_t emit_nonce_counter { 0 }; // incremented whenever nonce is called to ensure unique nonces
+        uint8_t ledger_nonce_counter { 0 };
         std::map<ripple::uint256, bool> nonce_used {};
         uint32_t generation = 0; // used for caching, only generated when txn_generation is called
-        int64_t burden = 0;      // used for caching, only generated when txn_burden is called
+        uint64_t burden = 0;      // used for caching, only generated when txn_burden is called
         std::map<uint32_t, uint32_t> guard_map {}; // iteration guard map <id -> upto_iteration>
         HookResult result;
         std::optional<ripple::STObject> emitFailure;    // if this is a callback from a failed

@@ -941,7 +941,7 @@ executeHookChain(
         >> hookParamOverrides {};
 
     auto const& hooks = hookSLE->getFieldArray(sfHooks);
-    int hook_no = 0;
+    uint8_t hook_no = 0;
 
     for (auto const& hook : hooks)
     {
@@ -1105,7 +1105,7 @@ Transactor::doHookCallback(std::shared_ptr<STObject const> const& provisionalMet
 
     bool found = false;
     auto const& hooks = hooksCallback->getFieldArray(sfHooks);
-    int hook_no = 0;
+    uint8_t hook_no = 0;
     for (auto const& hook : hooks)
     {
         hook_no++;
@@ -1352,7 +1352,7 @@ doTSH(
 }
 
 void
-Transactor::doAaw(
+Transactor::doAgainAsWeak(
     AccountID const& hookAccountID,
     std::set<uint256> const& hookHashes,
     hook::HookStateMap& stateMap,
@@ -1377,7 +1377,7 @@ Transactor::doAaw(
     }
 
     auto const& hooks = hooksArray->getFieldArray(sfHooks);
-    int hook_no = 0;
+    uint8_t hook_no = 0;
     for (auto const& hook : hooks)
     {
         hook_no++;
@@ -1566,7 +1566,7 @@ Transactor::operator()()
     if (ctx_.size() > oversizeMetaDataCap)
         result = tecOVERSIZE;
 
-    if ((isTecClaim(result) && (view().flags() & tapFAIL_HARD)))
+    if (isTecClaim(result) && (view().flags() & tapFAIL_HARD))
     {
         // If the tapFAIL_HARD flag is set, a tec result
         // must not do anything
@@ -1702,7 +1702,7 @@ Transactor::operator()()
 
         // execute any hooks that nominated for 'again as weak'
         for (auto const& [accID, hookHashes] : aawMap)
-            doAaw(accID, hookHashes, stateMap, weakResults, proMeta);
+            doAgainAsWeak(accID, hookHashes, stateMap, weakResults, proMeta);
 
         // write hook results
         hook::finalizeHookState(stateMap, ctx_, ctx_.tx.getTransactionID());

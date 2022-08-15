@@ -201,7 +201,7 @@ protected:
     // a hook that which is being executed pre-application of the otxn
     // to request an additional post-application execution.
     void
-    doAaw(
+    doAgainAsWeak(
         AccountID const& hookAccountID,
         std::set<uint256> const& hookHashes,
         hook::HookStateMap& stateMap,

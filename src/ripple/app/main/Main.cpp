@@ -778,9 +778,6 @@ run(int argc, char** argv)
 
 }  // namespace ripple
 
-// Must be outside the namespace for obvious reasons
-//
-
 int
 main(int argc, char** argv)
 {

@@ -1500,7 +1500,7 @@ SetHook::setHook()
         // do any pending removals
         for (auto const& p : keyletsToDestroy)
         {
-            auto const& sle = view().peek(p);
+            auto const sle = view().peek(p);
             if (!sle)
                 continue;
             if (sle->isFieldPresent(sfReferenceCount))

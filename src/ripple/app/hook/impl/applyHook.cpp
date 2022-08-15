@@ -464,14 +464,13 @@ std::optional<ripple::Keylet>
 unserialize_keylet(uint8_t* ptr, uint32_t len)
 {
     if (len != 34)
-        return std::nullopt;
+        return {};
 
     uint16_t ktype =
         ((uint16_t)ptr[0] << 8) +
         ((uint16_t)ptr[1]);
 
-    ripple::Keylet reconstructed { (ripple::LedgerEntryType)ktype, ripple::uint256::fromVoid(ptr + 2) };
-    return reconstructed;
+    return ripple::Keylet{ static_cast<LedgerEntryType>(ktype), ripple::uint256::fromVoid(ptr + 2) };
 }
 
 
@@ -501,7 +500,6 @@ bool hook::isEmittedTxn(ripple::STTx const& tx)
 }
 
 
-#define U32MAX ((uint32_t)(-1))
 int64_t hook::computeExecutionFee(uint64_t instructionCount)
 {
     int64_t fee = (int64_t)instructionCount;
@@ -605,7 +603,7 @@ hook::setHookState(
     bool createNew = !hookState;
 
     // if the blob is nil then delete the entry if it exists
-    if (data.size() == 0)
+    if (data.empty())
     {
 
         if (!view.peek(hookStateKeylet))
@@ -722,21 +720,11 @@ hook::setHookState(
         // update namespace vector where necessary
         if (!nsExists)
         {
-            if (!sleAccount->isFieldPresent(sfHookNamespaces))
-            {
-                sleAccount->setFieldV256(sfHookNamespaces, STVector256{std::vector<uint256>{ns}});
-                view.update(sleAccount);
-            }
-            else
-            {
-                STVector256 const& vec = sleAccount->getFieldV256(sfHookNamespaces);
-                std::vector<uint256> nv { vec.value() };
-                nv.push_back(ns);
-                sleAccount->setFieldV256(sfHookNamespaces, STVector256{std::move(nv)});
-                view.update(sleAccount);
-            }
+            STVector256 vec = sleAccount->getFieldV256(sfHookNamespaces);
+            vec.push_back(ns);
+            sleAccount->setFieldV256(sfHookNamespaces, vec);
+            view.update(sleAccount);
         }
-
     }
     else
     {
@@ -769,7 +757,7 @@ hook::apply(
     bool isCallback,
     bool isStrong,
     uint32_t wasmParam,
-    int32_t hookChainPosition,
+    uint8_t hookChainPosition,
     std::shared_ptr<STObject const> const& provisionalMeta)
 {
 
@@ -1406,7 +1394,7 @@ finalizeHookResult(
                     keylet::emittedDir(),
                     emittedId,
                     [&](SLE::ref sle) {
-                    // RH TODO: should something be here?
+                        (*sle)[sfFlags] = lsfEmittedDir;
                     });
 
 
@@ -2351,7 +2339,7 @@ DEFINE_HOOK_FUNCTION(
                     return INVALID_ARGUMENT;
 
                 ripple::AccountID id =
-                    ripple::base_uint<160, ripple::detail::AccountIDTag>::fromVoid(memory + read_ptr);
+                    AccountID::fromVoid(memory + read_ptr);
 
                 ripple::Keylet kl =
                     keylet_type == keylet_code::HOOK        ? ripple::keylet::hook(id)      :
@@ -2381,7 +2369,7 @@ DEFINE_HOOK_FUNCTION(
                     return INVALID_ARGUMENT;
 
                 ripple::AccountID id =
-                    ripple::base_uint<160, ripple::detail::AccountIDTag>::fromVoid(memory + read_ptr);
+                    AccountID::fromVoid(memory + read_ptr);
 
                 ripple::Keylet kl =
                     keylet_type == keylet_code::CHECK       ? ripple::keylet::check(id, c)      :
@@ -2432,7 +2420,7 @@ DEFINE_HOOK_FUNCTION(
 
                 ripple::Keylet kl =
                     ripple::keylet::hookState(
-                            ripple::base_uint<160, ripple::detail::AccountIDTag>::fromVoid(memory + aread_ptr),
+                            AccountID::fromVoid(memory + aread_ptr),
                             ripple::base_uint<256>::fromVoid(memory + kread_ptr),
                             ripple::base_uint<256>::fromVoid(memory + nread_ptr));
 
@@ -2462,13 +2450,30 @@ DEFINE_HOOK_FUNCTION(
                 if (a != 0 || b != 0 || c != 0 || d != 0 || e != 0 || f != 0)
                    return INVALID_ARGUMENT;
 
-                ripple::Keylet kl =
-                    keylet_type == keylet_code::AMENDMENTS   ? ripple::keylet::amendments()       :
-                    keylet_type == keylet_code::FEES         ? ripple::keylet::fees()             :
-                    keylet_type == keylet_code::NEGATIVE_UNL ? ripple::keylet::negativeUNL()      :
-                    ripple::keylet::emittedDir();
+                auto makeKeyCache = [](ripple::Keylet kl) -> std::array<uint8_t, 34>
+                {
+                    std::array<uint8_t, 34> d;
 
-                return serialize_keylet(kl, memory, write_ptr, write_len);
+                    d[0] = (kl.type >> 8) & 0xFFU;
+                    d[1] = (kl.type >> 0) & 0xFFU;
+                    for (int i = 0; i < 32; ++i)
+                        d[2 + i] = kl.key.data()[i];
+
+                    return d;
+                };
+
+                static std::array<uint8_t, 34> cAmendments  = makeKeyCache(ripple::keylet::amendments());
+                static std::array<uint8_t, 34> cFees        = makeKeyCache(ripple::keylet::fees());
+                static std::array<uint8_t, 34> cNegativeUNL = makeKeyCache(ripple::keylet::negativeUNL());
+                static std::array<uint8_t, 34> cEmittedDir  = makeKeyCache(ripple::keylet::emittedDir());
+
+                WRITE_WASM_MEMORY_AND_RETURN(
+                    write_ptr, write_len,
+                    keylet_type == keylet_code::AMENDMENTS   ? cAmendments.data()       :
+                    keylet_type == keylet_code::FEES         ? cFees.data()             :
+                    keylet_type == keylet_code::NEGATIVE_UNL ? cNegativeUNL.data()      :
+                    cEmittedDir.data(), 34,
+                    memory, memory_length);
             }
 
             case keylet_code::LINE:
@@ -2486,12 +2491,10 @@ DEFINE_HOOK_FUNCTION(
                 if (hi_len != 20 || lo_len != 20 || cu_len != 20)
                     return INVALID_ARGUMENT;
 
-                ripple::AccountID a0 = ripple::base_uint<160, ripple::detail::AccountIDTag>::fromVoid(memory + hi_ptr);
-                ripple::AccountID a1 = ripple::base_uint<160, ripple::detail::AccountIDTag>::fromVoid(memory + lo_ptr);
-                ripple::Currency  cu = ripple::base_uint<160, ripple::detail::CurrencyTag>::fromVoid(memory + cu_ptr);
-
-                ripple::Keylet kl =
-                    ripple::keylet::line(a0, a1, cu);
+                auto kl = ripple::keylet::line(
+                    AccountID::fromVoid(memory + hi_ptr), 
+                    AccountID::fromVoid(memory + lo_ptr),
+                    Currency::fromVoid(memory + cu_ptr));                
                 return serialize_keylet(kl, memory, write_ptr, write_len);
             }
 
@@ -2515,9 +2518,9 @@ DEFINE_HOOK_FUNCTION(
                     return INVALID_ARGUMENT;
 
                 ripple::AccountID aid =
-                    ripple::base_uint<160, ripple::detail::AccountIDTag>::fromVoid(memory + aread_ptr);
+                    AccountID::fromVoid(memory + aread_ptr);
                 ripple::AccountID bid =
-                    ripple::base_uint<160, ripple::detail::AccountIDTag>::fromVoid(memory + bread_ptr);
+                    AccountID::fromVoid(memory + bread_ptr);
 
                 ripple::Keylet kl =
                     ripple::keylet::depositPreauth(aid, bid);
@@ -2545,9 +2548,9 @@ DEFINE_HOOK_FUNCTION(
                     return INVALID_ARGUMENT;
 
                 ripple::AccountID aid =
-                    ripple::base_uint<160, ripple::detail::AccountIDTag>::fromVoid(memory + aread_ptr);
+                    AccountID::fromVoid(memory + aread_ptr);
                 ripple::AccountID bid =
-                    ripple::base_uint<160, ripple::detail::AccountIDTag>::fromVoid(memory + bread_ptr);
+                    AccountID::fromVoid(memory + bread_ptr);
 
                 ripple::Keylet kl =
                     ripple::keylet::payChan(aid, bid, e);
@@ -2607,6 +2610,13 @@ DEFINE_HOOK_FUNCTION(
     {
         JLOG(j.trace())
             << "HookEmit[" << HC_ACC() << "]: Failed " << e.what() << "\n";
+        return EMISSION_FAILURE;
+    }
+
+    if (isPseudoTx(*stpTrans))
+    {
+        JLOG(j.trace())
+            << "HookEmit[" << HC_ACC() << "]: Attempted to emit pseudo txn.";
         return EMISSION_FAILURE;
     }
 
@@ -2964,7 +2974,7 @@ DEFINE_HOOK_FUNCTION(
 
     std::optional<Account> acc = hookCtx.result.account;
     if (aread_len == 20 && !(NOT_IN_BOUNDS(aread_ptr, aread_len, memory_length)))
-        acc = ripple::base_uint<160, ripple::detail::AccountIDTag>::fromVoid(memory + aread_ptr);
+        acc = AccountID::fromVoid(memory + aread_ptr);
 
     assert(kl || hookno);
 
@@ -3786,6 +3796,10 @@ DEFINE_HOOK_FUNCTION(
     ripple::Slice keyslice  {reinterpret_cast<const void*>(kread_ptr + memory), kread_len};
     ripple::Slice data {reinterpret_cast<const void*>(dread_ptr + memory), dread_len};
     ripple::Slice sig  {reinterpret_cast<const void*>(sread_ptr + memory), sread_len};
+    
+    if (!publicKeyType(keyslice))
+        return INVALID_KEY;
+    
     ripple::PublicKey key { keyslice };
     return verify(key, data, sig, false) ? 1 : 0;
 }
