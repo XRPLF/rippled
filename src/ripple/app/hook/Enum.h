@@ -206,7 +206,7 @@ namespace hook_api
         MANTISSA_UNDERSIZED = -27,
         EXPONENT_OVERSIZED = -28,
         EXPONENT_UNDERSIZED = -29,
-        OVERFLOW = -30,                 // if an operation with a float results in an overflow
+        XFL_OVERFLOW = -30,                 // if an operation with a float results in an overflow
         NOT_IOU_AMOUNT = -31,
         NOT_AN_AMOUNT = -32,
         CANT_RETURN_NEGATIVE = -33,

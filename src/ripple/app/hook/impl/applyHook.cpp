@@ -3539,12 +3539,16 @@ DEFINE_HOOK_FUNCTION(
 
     // RH TODO we shouldn't need to slice this input but the base58 routine fails if we dont... maybe
     // some encoding or padding that shouldnt be there or maybe something that should be there
+
     char buffer[50];
     for (int i = 0; i < read_len; ++i)
         buffer[i] = *(memory + read_ptr + i);
     buffer[read_len] = 0;
 
     std::string raddr{buffer};
+    
+    //std::string raddr((char*)(memory + read_ptr), read_len);
+
     auto const result = decodeBase58Token(raddr, TokenType::AccountID);
     if (result.empty())
         return INVALID_ARGUMENT;
@@ -4064,7 +4068,7 @@ inline int64_t mulratio_internal
     }
     catch (std::overflow_error& e)
     {
-        return OVERFLOW;
+        return XFL_OVERFLOW;
     }
 }
 
@@ -4098,7 +4102,7 @@ inline int64_t float_multiply_internal_parts(
     while (man_lo > maxMantissa)
     {
         if (exp_out > maxExponent)
-            return OVERFLOW;
+            return XFL_OVERFLOW;
         man_lo /= 10;
         exp_out++;
     }
@@ -4110,11 +4114,11 @@ inline int64_t float_multiply_internal_parts(
     {
         man_shifted -=32;
         if (mulratio_internal(man_out, exp_out, false, 0xFFFFFFFFU, 1) < 0)
-            return OVERFLOW;
+            return XFL_OVERFLOW;
     }
 
     if (mulratio_internal(man_out, exp_out, false, 1U << man_shifted, 1) < 0)
-        return OVERFLOW;
+        return XFL_OVERFLOW;
 
     // now we have our product
     return make_float(man_out, exp_out);
@@ -4150,7 +4154,7 @@ DEFINE_HOOK_FUNCTION(
     }
 
     if (exp1 > dp)
-        return OVERFLOW;
+        return XFL_OVERFLOW;
 
     while (exp1 < dp && man1 > 0)
     {
@@ -4209,7 +4213,7 @@ DEFINE_HOOK_FUNCTION(
     int32_t exp1 = get_exponent(float1);
 
     if (mulratio_internal(man1, exp1, round_up > 0, numerator, denominator) < 0)
-        return OVERFLOW;
+        return XFL_OVERFLOW;
 
     return make_float(man1, exp1);
 }
@@ -4265,7 +4269,7 @@ DEFINE_HOOK_FUNCTION(
     }
     catch (std::overflow_error& e)
     {
-        return OVERFLOW;
+        return XFL_OVERFLOW;
     }
 
 }
@@ -4295,7 +4299,7 @@ DEFINE_HOOK_FUNCTION(
     }
     catch (std::overflow_error& e)
     {
-        return OVERFLOW;
+        return XFL_OVERFLOW;
     }
 }
 
