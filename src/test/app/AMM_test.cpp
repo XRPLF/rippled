@@ -1028,7 +1028,7 @@ private:
             ammAlice.withdrawAll(carol, USD(0));
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(10000),
-                STAmount{USD, 999999999999999ULL, -11},
+                STAmount{USD, static_cast<std::int64_t>(999999999999999), -11},
                 IOUAmount{10000000, 0}));
             BEAST_EXPECT(
                 ammAlice.expectLPTokens(carol, IOUAmount(beast::Zero())));
@@ -1080,7 +1080,7 @@ private:
             ammAlice.withdrawAll(carol, USD(0));
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(11000),
-                STAmount{USD, 9090909090909092ULL, -12},
+                STAmount{USD, static_cast<std::int64_t>(9090909090909092), -12},
                 IOUAmount{10000000, 0}));
         });
 
@@ -1099,7 +1099,8 @@ private:
             BEAST_EXPECT(
                 ammAlice.expectBalances(
                     XRPAmount(11000000000),
-                    STAmount{USD, 9372781065088756ULL, -12},
+                    STAmount{
+                        USD, static_cast<std::int64_t>(9372781065088756), -12},
                     IOUAmount{1015384615384615, -8}) &&
                 ammAlice.expectLPTokens(carol, IOUAmount{153846153846153, -9}));
         });
@@ -1111,7 +1112,8 @@ private:
             BEAST_EXPECT(
                 ammAlice.expectBalances(
                     XRPAmount(11000000000),
-                    STAmount{USD, 9372781065088756ULL, -12},
+                    STAmount{
+                        USD, static_cast<std::int64_t>(9372781065088756), -12},
                     IOUAmount{1015384615384615, -8}) &&
                 ammAlice.expectLPTokens(carol, IOUAmount{153846153846153, -9}));
         });
@@ -1607,7 +1609,7 @@ private:
             std::cout << readOffers(env, bob).toStyledString();
             std::cout << readLines(env, carol).toStyledString();
         }
-#if 0
+
         // Partial payment ~99.0099USD for 100XRP.
         // Force one path with tfNoRippleDirect.
         testAMM([&](AMM& ammAlice, Env& env) {
@@ -1620,7 +1622,7 @@ private:
             env.close();
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(10100),
-                STAmount(USD, 9900990099009901ULL, -12),
+                STAmount(USD, static_cast<std::int64_t>(9900990099009901), -12),
                 IOUAmount{10000000, 0}));
         });
 
@@ -1634,7 +1636,7 @@ private:
             env.close();
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(10100),
-                STAmount(USD, 9900990099009901ULL, -12),
+                STAmount(USD, static_cast<std::int64_t>(9900990099009901), -12),
                 IOUAmount{10000000, 0}));
         });
 
@@ -1650,7 +1652,7 @@ private:
             env.close();
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(10100),
-                STAmount(USD, 9900990099009901ULL, -12),
+                STAmount(USD, static_cast<std::int64_t>(9900990099009901), -12),
                 IOUAmount{10000000, 0}));
         });
 
@@ -1678,7 +1680,7 @@ private:
                 STAmount(EUR, 99825, -1),
                 IOUAmount{10000000, 0}));
             BEAST_EXPECT(ammUSD_EUR.expectBalances(
-                STAmount(USD, 9982529967221676ULL, -12),
+                STAmount(USD, static_cast<std::int64_t>(9982529967221676), -12),
                 STAmount(EUR, 100175, -1),
                 IOUAmount{10000, 0}));
             BEAST_EXPECT(expectOffers(
@@ -1687,7 +1689,10 @@ private:
                 1,
                 {{Amounts{
                     XRPAmount(17644733),
-                    STAmount(USD, 1747003277832415ULL, -14)}}}));
+                    STAmount(
+                        USD,
+                        static_cast<std::int64_t>(1747003277832415),
+                        -14)}}}));
         }
 
         // Default path (with AMM) has a better quality than a non-default path.
@@ -1734,7 +1739,8 @@ private:
                 env.close();
                 BEAST_EXPECT(ammAlice.expectBalances(
                     XRPAmount(9999499987),
-                    STAmount(USD, 9999499987998749ULL, -12),
+                    STAmount(
+                        USD, static_cast<std::int64_t>(9999499987998749), -12),
                     IOUAmount{999949998749938, -8}));
                 BEAST_EXPECT(expectLine(env, carol, STAmount{USD, 30200, 0}));
             },
@@ -1766,17 +1772,16 @@ private:
             env.close();
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRPAmount{10050378152},
-                STAmount(USD, 99498743710662ULL, -10),
+                STAmount(USD, static_cast<std::int64_t>(99498743710662), -10),
                 IOUAmount{10000000, 0}));
             BEAST_EXPECT(expectOffers(
                 env,
                 bob,
                 1,
                 {{Amounts{
-                    STAmount{USD, 488743710662ULL, -10},
+                    STAmount{USD, static_cast<std::int64_t>(488743710662), -10},
                     XRPAmount{49368052}}}}));
         });
-#endif
     }
 
     void
@@ -1928,7 +1933,8 @@ private:
                 txflags(tfPartialPayment | tfNoRippleDirect));
             env.close();
             BEAST_EXPECT(ammAMMTokens.expectBalances(
-                STAmount(token1, 9999000099990001ULL, -10),
+                STAmount(
+                    token1, static_cast<std::int64_t>(9999000099990001), -10),
                 STAmount(token2, 1000100, 0),
                 IOUAmount{1000000, 0}));
         });
