@@ -108,7 +108,7 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
         return terNO_ACCOUNT;
     }
 
-    auto const ammSle = getAMMSle(ctx.view, ctx.tx[sfAMMHash]);
+    auto const ammSle = getAMMSle(ctx.view, ctx.tx[sfAMMID]);
     if (!ammSle)
     {
         JLOG(ctx.j.debug()) << "AMM Withdraw: Invalid AMM account.";
@@ -156,7 +156,7 @@ AMMWithdraw::applyGuts(Sandbox& sb)
     auto const asset1Out = ctx_.tx[~sfAsset1Out];
     auto const asset2Out = ctx_.tx[~sfAsset2Out];
     auto const ePrice = ctx_.tx[~sfEPrice];
-    auto ammSle = getAMMSle(sb, ctx_.tx[sfAMMHash]);
+    auto ammSle = getAMMSle(sb, ctx_.tx[sfAMMID]);
     assert(ammSle);
     auto const ammAccountID = ammSle->getAccountID(sfAMMAccount);
     auto const lpTokensWithdraw =
@@ -259,7 +259,7 @@ AMMWithdraw::deleteAccount(Sandbox& view, AccountID const& ammAccountID)
 {
     auto sleAMMRoot = view.peek(keylet::account(ammAccountID));
     assert(sleAMMRoot);
-    auto sleAMM = view.peek(keylet::amm(ctx_.tx[sfAMMHash]));
+    auto sleAMM = view.peek(keylet::amm(ctx_.tx[sfAMMID]));
     assert(sleAMM);
 
     if (!sleAMMRoot || !sleAMM)
@@ -283,7 +283,7 @@ AMMWithdraw::withdraw(
     STAmount const& lptAMMBalance,
     STAmount const& lpTokensWithdraw)
 {
-    auto const ammSle = getAMMSle(view, ctx_.tx[sfAMMHash]);
+    auto const ammSle = getAMMSle(view, ctx_.tx[sfAMMID]);
     assert(ammSle);
     auto const lpTokens = lpHolds(view, ammAccount, account_, ctx_.journal);
     auto const [issue1, issue2] = getTokensIssue(*ammSle);

@@ -102,7 +102,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
         return terNO_ACCOUNT;
     }
 
-    auto const ammSle = getAMMSle(ctx.view, ctx.tx[sfAMMHash]);
+    auto const ammSle = getAMMSle(ctx.view, ctx.tx[sfAMMID]);
     if (!ammSle)
     {
         JLOG(ctx.j.debug()) << "AMM Deposit: Invalid AMM account.";
@@ -142,7 +142,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
     auto const asset2In = ctx_.tx[~sfAsset2In];
     auto const ePrice = ctx_.tx[~sfEPrice];
     auto const lpTokensDeposit = ctx_.tx[~sfLPTokens];
-    auto ammSle = getAMMSle(sb, ctx_.tx[sfAMMHash]);
+    auto ammSle = getAMMSle(sb, ctx_.tx[sfAMMID]);
     assert(ammSle);
     auto const ammAccountID = ammSle->getAccountID(sfAMMAccount);
 

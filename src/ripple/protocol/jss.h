@@ -50,7 +50,7 @@ JSS(AccountSet);             // transaction type.
 JSS(AMM);                    // ledger type
 JSS(AMMAccount);             // field
 JSS(AMMBid);                 // transaction type
-JSS(AMMHash);                // field
+JSS(AMMID);                  // field
 JSS(AMMInstanceCreate);      // transaction type
 JSS(AMMDeposit);             // transaction type
 JSS(AMMVote);                // transaction type

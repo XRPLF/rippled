@@ -153,16 +153,16 @@ AMMCreate::applyGuts(Sandbox& sb)
     auto const saAsset1 = ctx_.tx[sfAsset1];
     auto const saAsset2 = ctx_.tx[sfAsset2];
 
-    auto const ammHash = calcAMMGroupHash(saAsset1.issue(), saAsset2.issue());
+    auto const ammID = calcAMMGroupHash(saAsset1.issue(), saAsset2.issue());
 
     // Check if AMM already exists for the token pair
-    if (sb.peek(keylet::amm(ammHash)))
+    if (sb.peek(keylet::amm(ammID)))
     {
         JLOG(j_.debug()) << "AMM Instance: ltAMM already exists.";
         return {tecAMM_EXISTS, false};
     }
 
-    auto const ammAccountID = calcAccountID(sb.info().parentHash, ammHash);
+    auto const ammAccountID = calcAccountID(sb.info().parentHash, ammID);
 
     // AMM account already exists (should not happen)
     if (sb.peek(keylet::account(ammAccountID)))
@@ -197,7 +197,7 @@ AMMCreate::applyGuts(Sandbox& sb)
     auto const lpTokens = calcAMMLPT(saAsset1, saAsset2, lptIssue);
 
     // Create ltAMM
-    auto ammSle = std::make_shared<SLE>(keylet::amm(ammHash));
+    auto ammSle = std::make_shared<SLE>(keylet::amm(ammID));
     ammSle->setFieldU16(sfTradingFee, ctx_.tx[sfTradingFee]);
     ammSle->setAccountID(sfAMMAccount, ammAccountID);
     ammSle->setFieldAmount(sfLPTokenBalance, lpTokens);
@@ -239,7 +239,7 @@ AMMCreate::applyGuts(Sandbox& sb)
         JLOG(j_.debug()) << "AMM Instance: failed to send " << saAsset2;
     else
         JLOG(j_.debug()) << "AMM Instance: success " << ammAccountID << " "
-                         << ammHash << " " << lptIssue << " " << saAsset1 << " "
+                         << ammID << " " << lptIssue << " " << saAsset1 << " "
                          << saAsset2;
 
     return {res, res == tesSUCCESS};

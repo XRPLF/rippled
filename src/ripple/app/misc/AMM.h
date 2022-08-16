@@ -112,10 +112,10 @@ isFrozen(ReadView const& view, std::optional<STAmount> const& a);
  * Return null if SLE not found or AMM account doesn't exist.
  */
 std::shared_ptr<STLedgerEntry const>
-getAMMSle(ReadView const& view, uint256 ammHash);
+getAMMSle(ReadView const& view, uint256 ammID);
 
 std::shared_ptr<STLedgerEntry>
-getAMMSle(Sandbox& view, uint256 ammHash);
+getAMMSle(Sandbox& view, uint256 ammID);
 
 /** Check if the account requires authorization.
  *  Return true if issuer's account, account, and trust line exist

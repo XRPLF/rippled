@@ -109,17 +109,17 @@ public:
                 XRP(10000), USD(10000), IOUAmount{10000000, 0}));
         });
         proc([&](AMM& ammAlice, Env&) {
-            auto const ammHash = [&]() -> std::optional<uint256> {
+            auto const ammID = [&]() -> std::optional<uint256> {
                 if (auto const jv = ammAlice.ammRpcInfo({}, {}, {}, true);
                     jv.has_value())
                 {
-                    uint256 ammHash;
-                    if (ammHash.parseHex((*jv)[jss::AMMHash].asString()))
-                        return ammHash;
+                    uint256 ammID;
+                    if (ammID.parseHex((*jv)[jss::AMMID].asString()))
+                        return ammID;
                 }
                 return {};
             }();
-            BEAST_EXPECT(ammHash.has_value() && ammAlice.ammHash() == *ammHash);
+            BEAST_EXPECT(ammID.has_value() && ammAlice.ammID() == *ammID);
         });
     }
 

@@ -41,7 +41,7 @@ AMM::AMM(
     std::optional<ter> const& ter)
     : env_(env)
     , creatorAccount_(account)
-    , ammHash_(ripple::calcAMMGroupHash(asset1.issue(), asset2.issue()))
+    , ammID_(ripple::calcAMMGroupHash(asset1.issue(), asset2.issue()))
     , asset1_(asset1)
     , asset2_(asset2)
     , ter_(ter)
@@ -100,7 +100,7 @@ std::optional<Json::Value>
 AMM::ammRpcInfo(
     std::optional<AccountID> const& account,
     std::optional<std::string> const& ledgerIndex,
-    std::optional<uint256> const& ammHash,
+    std::optional<uint256> const& ammID,
     bool useAssets) const
 {
     Json::Value jv;
@@ -113,13 +113,13 @@ AMM::ammRpcInfo(
         asset1_.setJson(jv[jss::Asset1]);
         asset2_.setJson(jv[jss::Asset2]);
     }
-    else if (ammHash)
+    else if (ammID)
     {
-        if (*ammHash != uint256(0))
-            jv[jss::AMMHash] = to_string(*ammHash);
+        if (*ammID != uint256(0))
+            jv[jss::AMMID] = to_string(*ammID);
     }
     else
-        jv[jss::AMMHash] = to_string(ammHash_);
+        jv[jss::AMMID] = to_string(ammID_);
     auto jr = env_.rpc("json", "amm_info", to_string(jv));
     if (jr.isObject() && jr.isMember(jss::result) &&
         jr[jss::result].isMember(jss::status))
@@ -135,7 +135,7 @@ AMM::expectBalances(
     std::optional<AccountID> const& account,
     std::optional<std::string> const& ledger_index) const
 {
-    if (auto const amm = getAMMSle(*env_.current(), ammHash_))
+    if (auto const amm = getAMMSle(*env_.current(), ammID_))
     {
         auto const ammAccountID = amm->getAccountID(sfAMMAccount);
         auto const [asset1Balance, asset2Balance] = ammPoolHolds(
@@ -156,7 +156,7 @@ AMM::expectBalances(
 bool
 AMM::expectLPTokens(AccountID const& account, IOUAmount const& expTokens) const
 {
-    if (auto const amm = getAMMSle(*env_.current(), ammHash_))
+    if (auto const amm = getAMMSle(*env_.current(), ammID_))
     {
         auto const ammAccountID = amm->getAccountID(sfAMMAccount);
         auto const lptAMMBalance =
@@ -173,7 +173,7 @@ AMM::expectAuctionSlot(
     IOUAmount const& price,
     std::optional<std::string> const& ledger_index) const
 {
-    if (auto const amm = getAMMSle(*env_.current(), ammHash_);
+    if (auto const amm = getAMMSle(*env_.current(), ammID_);
         amm && amm->isFieldPresent(sfAuctionSlot))
     {
         auto const& auctionSlot =
@@ -192,7 +192,7 @@ AMM::expectAuctionSlot(
 bool
 AMM::expectTradingFee(std::uint16_t fee) const
 {
-    if (auto const amm = getAMMSle(*env_.current(), ammHash_);
+    if (auto const amm = getAMMSle(*env_.current(), ammID_);
         amm && amm->getFieldU16(sfTradingFee) == fee)
         return true;
     return false;
@@ -257,7 +257,7 @@ AMM::deposit(
     std::optional<jtx::seq> const& seq)
 {
     jv[jss::Account] = account ? account->human() : creatorAccount_.human();
-    jv[jss::AMMHash] = to_string(ammHash_);
+    jv[jss::AMMID] = to_string(ammID_);
     jv[jss::TransactionType] = jss::AMMDeposit;
     if (log_)
         std::cout << jv.toStyledString();
@@ -348,7 +348,7 @@ AMM::withdraw(
     std::optional<ter> const& ter)
 {
     jv[jss::Account] = account ? account->human() : creatorAccount_.human();
-    jv[jss::AMMHash] = to_string(ammHash_);
+    jv[jss::AMMID] = to_string(ammID_);
     jv[jss::TransactionType] = jss::AMMWithdraw;
     if (log_)
         std::cout << jv.toStyledString();
@@ -441,7 +441,7 @@ AMM::vote(
 {
     Json::Value jv;
     jv[jss::Account] = account ? account->human() : creatorAccount_.human();
-    jv[jss::AMMHash] = to_string(ammHash_);
+    jv[jss::AMMID] = to_string(ammID_);
     jv[jss::FeeVal] = feeVal;
     jv[jss::TransactionType] = jss::AMMVote;
     if (flags)
@@ -469,7 +469,7 @@ AMM::bid(
 {
     Json::Value jv;
     jv[jss::Account] = account ? account->human() : creatorAccount_.human();
-    jv[jss::AMMHash] = to_string(ammHash_);
+    jv[jss::AMMID] = to_string(ammID_);
     if (minSlotPrice)
     {
         STAmount saTokens{lptIssue_, *minSlotPrice, 0};

@@ -39,7 +39,7 @@ class AMM
 {
     Env& env_;
     Account const creatorAccount_;
-    uint256 ammHash_;
+    uint256 ammID_;
     AccountID ammAccount_;
     Issue lptIssue_;
     STAmount asset1_;
@@ -102,7 +102,7 @@ public:
     ammRpcInfo(
         std::optional<AccountID> const& account = std::nullopt,
         std::optional<std::string> const& ledgerIndex = std::nullopt,
-        std::optional<uint256> const& ammHash = std::nullopt,
+        std::optional<uint256> const& ammID = std::nullopt,
         bool useAssets = false) const;
 
     /** Verify the AMM balances.
@@ -231,9 +231,9 @@ public:
     }
 
     uint256
-    ammHash() const
+    ammID() const
     {
-        return ammHash_;
+        return ammID_;
     }
 
     Issue

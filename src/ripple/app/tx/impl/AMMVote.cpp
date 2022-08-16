@@ -67,7 +67,7 @@ AMMVote::preclaim(PreclaimContext const& ctx)
         return terNO_ACCOUNT;
     }
 
-    if (!getAMMSle(ctx.view, ctx.tx[sfAMMHash]))
+    if (!getAMMSle(ctx.view, ctx.tx[sfAMMID]))
     {
         JLOG(ctx.j.debug()) << "AMM Vote: Invalid AMM account.";
         return terNO_ACCOUNT;
@@ -86,7 +86,7 @@ std::pair<TER, bool>
 AMMVote::applyGuts(Sandbox& sb)
 {
     auto const feeNew = ctx_.tx[sfFeeVal];
-    auto const amm = getAMMSle(sb, ctx_.tx[sfAMMHash]);
+    auto const amm = getAMMSle(sb, ctx_.tx[sfAMMID]);
     assert(amm);
     auto const ammAccount = amm->getAccountID(sfAMMAccount);
     auto const lptAMMBalance = amm->getFieldAmount(sfLPTokenBalance);

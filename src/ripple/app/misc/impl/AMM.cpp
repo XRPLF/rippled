@@ -143,9 +143,9 @@ isFrozen(ReadView const& view, std::optional<STAmount> const& a)
 }
 
 std::shared_ptr<STLedgerEntry const>
-getAMMSle(ReadView const& view, uint256 ammHash)
+getAMMSle(ReadView const& view, uint256 ammID)
 {
-    if (auto const sle = view.read(keylet::amm(ammHash));
+    if (auto const sle = view.read(keylet::amm(ammID));
         (!sle || !view.read(keylet::account(sle->getAccountID(sfAMMAccount)))))
         return nullptr;
     else
@@ -153,9 +153,9 @@ getAMMSle(ReadView const& view, uint256 ammHash)
 }
 
 std::shared_ptr<STLedgerEntry>
-getAMMSle(Sandbox& view, uint256 ammHash)
+getAMMSle(Sandbox& view, uint256 ammID)
 {
-    if (auto const sle = view.peek(keylet::amm(ammHash));
+    if (auto const sle = view.peek(keylet::amm(ammID));
         (!sle || !view.read(keylet::account(sle->getAccountID(sfAMMAccount)))))
         return nullptr;
     else

@@ -1602,12 +1602,6 @@ private:
                 path(~GBP, ~EUR, ~USD),
                 sendmax(XRP(102)),
                 txflags(tfPartialPayment | tfNoRippleDirect));
-            std::cout << ammXRP_EUR.ammRpcInfo()->toStyledString();
-            std::cout << ammEUR_USD.ammRpcInfo()->toStyledString();
-            std::cout << ammXRP_GBP.ammRpcInfo()->toStyledString();
-            std::cout << ammGBP_EUR.ammRpcInfo()->toStyledString();
-            std::cout << readOffers(env, bob).toStyledString();
-            std::cout << readLines(env, carol).toStyledString();
         }
 
         // Partial payment ~99.0099USD for 100XRP.
@@ -1955,10 +1949,9 @@ private:
     void
     run() override
     {
-        // testInvalidInstance();
-        // testInstanceCreate();
+        testInvalidInstance();
+        testInstanceCreate();
         testInvalidDeposit();
-#if 0
         testDeposit();
         testInvalidWithdraw();
         testWithdraw();
@@ -1969,7 +1962,6 @@ private:
         testInvalidAMMPayment();
         testBasicPayment();
         testAMMTokens();
-#endif
     }
 };
 

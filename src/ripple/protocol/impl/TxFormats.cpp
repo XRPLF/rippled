@@ -93,7 +93,7 @@ TxFormats::TxFormats()
     add(jss::AMMDeposit,
         ttAMM_DEPOSIT,
         {
-            {sfAMMHash, soeREQUIRED},
+            {sfAMMID, soeREQUIRED},
             {sfAsset1In, soeOPTIONAL},
             {sfAsset2In, soeOPTIONAL},
             {sfEPrice, soeOPTIONAL},
@@ -105,7 +105,7 @@ TxFormats::TxFormats()
     add(jss::AMMWithdraw,
         ttAMM_WITHDRAW,
         {
-            {sfAMMHash, soeREQUIRED},
+            {sfAMMID, soeREQUIRED},
             {sfAsset1Out, soeOPTIONAL},
             {sfAsset2Out, soeOPTIONAL},
             {sfEPrice, soeOPTIONAL},
@@ -117,7 +117,7 @@ TxFormats::TxFormats()
     add(jss::AMMVote,
         ttAMM_VOTE,
         {
-            {sfAMMHash, soeREQUIRED},
+            {sfAMMID, soeREQUIRED},
             {sfFeeVal, soeREQUIRED},
             {sfTicketSequence, soeOPTIONAL},
         },
@@ -126,7 +126,7 @@ TxFormats::TxFormats()
     add(jss::AMMBid,
         ttAMM_BID,
         {
-            {sfAMMHash, soeREQUIRED},
+            {sfAMMID, soeREQUIRED},
             {sfMinSlotPrice, soeOPTIONAL},
             {sfMaxSlotPrice, soeOPTIONAL},
             {sfAuthAccounts, soeOPTIONAL},
