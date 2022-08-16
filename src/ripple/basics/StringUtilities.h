@@ -25,6 +25,7 @@
 
 #include <boost/format.hpp>
 #include <boost/utility/string_view.hpp>
+#include <array>
 #include <optional>
 #include <sstream>
 #include <string>
@@ -85,7 +86,6 @@ strUnHex(std::size_t strSize, Iterator begin, Iterator end)
     while (iter != end)
     {
         int cHigh = unxtab[*iter++];
-        ++iter;
 
         if (cHigh < 0)
             return {};
