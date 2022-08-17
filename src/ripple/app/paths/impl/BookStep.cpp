@@ -872,7 +872,7 @@ BookStep<TIn, TOut, TDerived>::revImp(
     // be consumed once at a given CLOB quality. Return true
     // if AMM offer is consumed and has a better quality than
     // CLOB offer quality. Return false if AMM offer is not
-    // available, or it has the same quality as CLOB offer.
+    // available, or if it has the same quality as CLOB offer.
     auto tryAMM = [&](std::optional<Quality> const& clobQuality) {
         triedAMM = true;
         if (auto const offer =
@@ -886,8 +886,10 @@ BookStep<TIn, TOut, TDerived>::revImp(
             consumeAMMOffer(sb, *offer);
 
             remainingOut -= get<TOut>(offer->out);
-            // AMM and offer have the same quality
-            if (quality == clobQuality)
+            // AMM and offer have the same quality.
+            // The offer stream can continue consuming
+            // CLOB offers at the same quality.
+            if (clobQuality && quality == *clobQuality)
             {
                 savedIns.insert(get<TIn>(offer->in));
                 savedOuts.insert(get<TOut>(offer->out));

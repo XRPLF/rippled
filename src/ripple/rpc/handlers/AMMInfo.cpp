@@ -54,20 +54,20 @@ doAMMInfo(RPC::JsonContext& context)
     uint256 ammID{};
     STAmount asset1{noIssue()};
     STAmount asset2{noIssue()};
-    if (!params.isMember(jss::AMMID))
+    if (!params.isMember(jss::amm_id))
     {
         // May provide asset1/asset2 as amounts
-        if (!params.isMember(jss::Asset1) || !params.isMember(jss::Asset2))
-            return RPC::missing_field_error(jss::AMMID);
-        if (!amountFromJsonNoThrow(asset1, params[jss::Asset1]) ||
-            !amountFromJsonNoThrow(asset2, params[jss::Asset2]))
+        if (!params.isMember(jss::asset1) || !params.isMember(jss::asset2))
+            return RPC::missing_field_error(jss::amm_id);
+        if (!amountFromJsonNoThrow(asset1, params[jss::asset1]) ||
+            !amountFromJsonNoThrow(asset2, params[jss::asset2]))
         {
             RPC::inject_error(rpcACT_MALFORMED, result);
             return result;
         }
         ammID = calcAMMGroupHash(asset1.issue(), asset2.issue());
     }
-    else if (!ammID.parseHex(params[jss::AMMID].asString()))
+    else if (!ammID.parseHex(params[jss::amm_id].asString()))
     {
         RPC::inject_error(rpcACT_MALFORMED, result);
         return result;
@@ -139,7 +139,7 @@ doAMMInfo(RPC::JsonContext& context)
             result[jss::AuctionSlot] = auction;
         }
     }
-    if (!params.isMember(jss::AMMID))
+    if (!params.isMember(jss::amm_id))
         result[jss::AMMID] = to_string(ammID);
 
     return result;

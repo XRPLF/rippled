@@ -110,16 +110,16 @@ AMM::ammRpcInfo(
         jv[jss::ledger_index] = *ledgerIndex;
     if (useAssets)
     {
-        asset1_.setJson(jv[jss::Asset1]);
-        asset2_.setJson(jv[jss::Asset2]);
+        asset1_.setJson(jv[jss::asset1]);
+        asset2_.setJson(jv[jss::asset2]);
     }
     else if (ammID)
     {
         if (*ammID != uint256(0))
-            jv[jss::AMMID] = to_string(*ammID);
+            jv[jss::amm_id] = to_string(*ammID);
     }
     else
-        jv[jss::AMMID] = to_string(ammID_);
+        jv[jss::amm_id] = to_string(ammID_);
     auto jr = env_.rpc("json", "amm_info", to_string(jv));
     if (jr.isObject() && jr.isMember(jss::result) &&
         jr[jss::result].isMember(jss::status))

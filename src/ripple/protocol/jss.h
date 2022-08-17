@@ -163,11 +163,14 @@ JSS(age);                    // out: NetworkOPs, Peers
 JSS(alternatives);           // out: PathRequest, RipplePathFind
 JSS(amendment_blocked);      // out: NetworkOPs
 JSS(amendments);             // in: AccountObjects, out: NetworkOPs
+JSS(amm_id);                 // in: AMMID in amm_info
 JSS(amount);                 // out: AccountChannels
 JSS(api_version);            // in: many, out: Version
 JSS(api_version_low);        // out: Version
 JSS(applied);                // out: SubmitTransaction
 JSS(asks);                   // out: Subscribe
+JSS(asset1);                 // in: Asset1 in amm_info
+JSS(asset2);                 // in: Asset2 in amm_info
 JSS(assets);                 // out: GatewayBalances
 JSS(authorized);             // out: AccountLines
 JSS(auth_change);            // out: AccountInfo

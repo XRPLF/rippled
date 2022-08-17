@@ -31,7 +31,7 @@
 
 namespace ripple {
 
-namespace {
+namespace detail {
 
 /** Generate AMM offers with the offer size based on Fibonacci sequence.
  */
@@ -120,7 +120,7 @@ public:
     }
 };
 
-}  // namespace
+}  // namespace detail
 
 /** AMMLiquidity class provides AMM offers to BookStep class.
  * The offers are generated in two ways. If there are multiple
@@ -147,7 +147,7 @@ private:
     std::uint32_t tradingFee_;
     // Cached AMM pool balances as of last getOffers()
     mutable Amounts balances_;
-    mutable std::optional<FibSeqHelper> fibSeqHelper_;
+    mutable std::optional<detail::FibSeqHelper> fibSeqHelper_;
     // Indicates that the balances may have changed
     // since the last fetchBalances()
     mutable bool dirty_;
