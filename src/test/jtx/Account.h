@@ -25,6 +25,7 @@
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/UintTypes.h>
 #include <string>
+#include <type_traits>
 #include <unordered_map>
 
 namespace ripple {
@@ -144,6 +145,12 @@ private:
     AccountID id_;
     std::string human_;  // base58 public key string
 };
+
+static_assert(std::is_default_constructible_v<Account>);
+static_assert(std::is_copy_constructible_v<Account>);
+static_assert(std::is_move_constructible_v<Account>);
+static_assert(std::is_copy_assignable_v<Account>);
+static_assert(std::is_move_assignable_v<Account>);
 
 inline bool
 operator==(Account const& lhs, Account const& rhs) noexcept

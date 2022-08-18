@@ -49,13 +49,6 @@ public:
     testAccount()
     {
         using namespace jtx;
-        {
-            Account a;
-            Account b(a);
-            a = b;
-            a = std::move(b);
-            Account c(std::move(a));
-        }
         Account("alice");
         Account("alice", KeyType::secp256k1);
         Account("alice", KeyType::ed25519);
