@@ -55,7 +55,7 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
     auto const asset1Out = ctx.tx[~sfAsset1Out];
     auto const asset2Out = ctx.tx[~sfAsset2Out];
     auto const ePrice = ctx.tx[~sfEPrice];
-    auto const lpTokens = ctx.tx[~sfLPTokens];
+    auto const lpTokens = ctx.tx[~sfLPToken];
     // Valid combinations are:
     //   LPTokens|tfAMMWithdrawAll
     //   Asset1Out
@@ -543,7 +543,7 @@ AMMWithdraw::getTxLPTokens(
     if (tx.getFlags() & tfAMMWithdrawAll)
         return lpHolds(view, ammAccount, tx[sfAccount], journal);
     else
-        return tx[~sfLPTokens];
+        return tx[~sfLPToken];
 }
 
 }  // namespace ripple

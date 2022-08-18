@@ -97,7 +97,7 @@ TxFormats::TxFormats()
             {sfAsset1In, soeOPTIONAL},
             {sfAsset2In, soeOPTIONAL},
             {sfEPrice, soeOPTIONAL},
-            {sfLPTokens, soeOPTIONAL},
+            {sfLPToken, soeOPTIONAL},
             {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
@@ -109,7 +109,7 @@ TxFormats::TxFormats()
             {sfAsset1Out, soeOPTIONAL},
             {sfAsset2Out, soeOPTIONAL},
             {sfEPrice, soeOPTIONAL},
-            {sfLPTokens, soeOPTIONAL},
+            {sfLPToken, soeOPTIONAL},
             {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);

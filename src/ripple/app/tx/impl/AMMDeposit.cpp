@@ -52,7 +52,7 @@ AMMDeposit::preflight(PreflightContext const& ctx)
     auto const asset1In = ctx.tx[~sfAsset1In];
     auto const asset2In = ctx.tx[~sfAsset2In];
     auto const ePrice = ctx.tx[~sfEPrice];
-    auto const lpTokens = ctx.tx[~sfLPTokens];
+    auto const lpTokens = ctx.tx[~sfLPToken];
     // Valid options are:
     //   LPTokens
     //   Asset1In
@@ -141,7 +141,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
     auto const asset1In = ctx_.tx[~sfAsset1In];
     auto const asset2In = ctx_.tx[~sfAsset2In];
     auto const ePrice = ctx_.tx[~sfEPrice];
-    auto const lpTokensDeposit = ctx_.tx[~sfLPTokens];
+    auto const lpTokensDeposit = ctx_.tx[~sfLPToken];
     auto ammSle = getAMMSle(sb, ctx_.tx[sfAMMID]);
     assert(ammSle);
     auto const ammAccountID = ammSle->getAccountID(sfAMMAccount);

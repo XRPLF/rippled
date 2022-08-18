@@ -228,7 +228,7 @@ AMM::expectAmmInfo(
     Json::Value const& jv) const
 {
     if (!jv.isMember(jss::Asset1) || !jv.isMember(jss::Asset2) ||
-        !jv.isMember(jss::LPTokens))
+        !jv.isMember(jss::LPToken))
         return false;
     STAmount asset1Info;
     if (!amountFromJsonNoThrow(asset1Info, jv[jss::Asset1]))
@@ -237,7 +237,7 @@ AMM::expectAmmInfo(
     if (!amountFromJsonNoThrow(asset2Info, jv[jss::Asset2]))
         return false;
     STAmount lptBalance;
-    if (!amountFromJsonNoThrow(lptBalance, jv[jss::LPTokens]))
+    if (!amountFromJsonNoThrow(lptBalance, jv[jss::LPToken]))
         return false;
     // ammRpcInfo returns unordered assets
     if (asset1Info.issue() != asset1.issue())
@@ -327,7 +327,7 @@ AMM::deposit(
     if (tokens)
     {
         STAmount saTokens{lptIssue_, *tokens, 0};
-        saTokens.setJson(jv[jss::LPTokens]);
+        saTokens.setJson(jv[jss::LPToken]);
     }
     if (asset1In)
         asset1In->setJson(jv[jss::Asset1In]);
@@ -415,7 +415,7 @@ AMM::withdraw(
     if (tokens)
     {
         STAmount saTokens{lptIssue_, *tokens, 0};
-        saTokens.setJson(jv[jss::LPTokens]);
+        saTokens.setJson(jv[jss::LPToken]);
     }
     if (asset1Out)
         asset1Out->setJson(jv[jss::Asset1Out]);

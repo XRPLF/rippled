@@ -108,7 +108,7 @@ doAMMInfo(RPC::JsonContext& context)
 
     asset1Balance.setJson(result[jss::Asset1]);
     asset2Balance.setJson(result[jss::Asset2]);
-    lptAMMBalance.setJson(result[jss::LPTokens]);
+    lptAMMBalance.setJson(result[jss::LPToken]);
     result[jss::TradingFee] = amm->getFieldU16(sfTradingFee);
     result[jss::AMMAccount] = to_string(ammAccountID);
     Json::Value voteSlots(Json::arrayValue);

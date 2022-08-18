@@ -794,8 +794,10 @@ BookStep<TIn, TOut, TDerived>::selectAMMCLOBQuality(ReadView const& view) const
     BookTip bt(sb, book_);
     auto const clobQuality =
         bt.step(j_) ? std::optional<Quality>(bt.quality()) : std::nullopt;
-    // Returns seated only if AMM offer quality is better than clobQuality
-    if (auto const ammOffer = getAMMOffer(view, clobQuality))
+    // Don't adjust AMM offer size based on clobQuality. If it's one path
+    // optimization then we need SP quality, if it's FibSeq then the quality
+    // is constant regardless of the size.
+    if (auto const ammOffer = getAMMOffer(view, std::nullopt))
         return std::make_tuple(
             Quality{*ammOffer}, QualityFunction{*ammOffer}, true);
     else if (clobQuality)
