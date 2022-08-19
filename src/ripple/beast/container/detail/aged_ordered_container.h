@@ -989,22 +989,20 @@ public:
     template <
         bool is_const,
         class Iterator,
-        class Base,
         class = std::enable_if_t<!is_boost_reverse_iterator<Iterator>::value>>
-    beast::detail::aged_container_iterator<false, Iterator, Base>
-    erase(beast::detail::aged_container_iterator<is_const, Iterator, Base> pos);
+    beast::detail::aged_container_iterator<false, Iterator>
+    erase(beast::detail::aged_container_iterator<is_const, Iterator> pos);
 
     // enable_if prevents erase (reverse_iterator first, reverse_iterator last)
     // from compiling
     template <
         bool is_const,
         class Iterator,
-        class Base,
         class = std::enable_if_t<!is_boost_reverse_iterator<Iterator>::value>>
-    beast::detail::aged_container_iterator<false, Iterator, Base>
+    beast::detail::aged_container_iterator<false, Iterator>
     erase(
-        beast::detail::aged_container_iterator<is_const, Iterator, Base> first,
-        beast::detail::aged_container_iterator<is_const, Iterator, Base> last);
+        beast::detail::aged_container_iterator<is_const, Iterator> first,
+        beast::detail::aged_container_iterator<is_const, Iterator> last);
 
     template <class K>
     auto
@@ -1019,10 +1017,9 @@ public:
     template <
         bool is_const,
         class Iterator,
-        class Base,
         class = std::enable_if_t<!is_boost_reverse_iterator<Iterator>::value>>
     void
-    touch(beast::detail::aged_container_iterator<is_const, Iterator, Base> pos)
+    touch(beast::detail::aged_container_iterator<is_const, Iterator> pos)
     {
         touch(pos, clock().now());
     }
@@ -1264,11 +1261,10 @@ private:
     template <
         bool is_const,
         class Iterator,
-        class Base,
         class = std::enable_if_t<!is_boost_reverse_iterator<Iterator>::value>>
     void
     touch(
-        beast::detail::aged_container_iterator<is_const, Iterator, Base> pos,
+        beast::detail::aged_container_iterator<is_const, Iterator> pos,
         typename clock_type::time_point const& now);
 
     template <
@@ -2010,13 +2006,13 @@ template <
     class Clock,
     class Compare,
     class Allocator>
-template <bool is_const, class Iterator, class Base, class>
-beast::detail::aged_container_iterator<false, Iterator, Base>
+template <bool is_const, class Iterator, class>
+beast::detail::aged_container_iterator<false, Iterator>
 aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
-    erase(beast::detail::aged_container_iterator<is_const, Iterator, Base> pos)
+    erase(beast::detail::aged_container_iterator<is_const, Iterator> pos)
 {
     unlink_and_delete_element(&*((pos++).iterator()));
-    return beast::detail::aged_container_iterator<false, Iterator, Base>(
+    return beast::detail::aged_container_iterator<false, Iterator>(
         pos.iterator());
 }
 
@@ -2028,17 +2024,17 @@ template <
     class Clock,
     class Compare,
     class Allocator>
-template <bool is_const, class Iterator, class Base, class>
-beast::detail::aged_container_iterator<false, Iterator, Base>
+template <bool is_const, class Iterator, class>
+beast::detail::aged_container_iterator<false, Iterator>
 aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
     erase(
-        beast::detail::aged_container_iterator<is_const, Iterator, Base> first,
-        beast::detail::aged_container_iterator<is_const, Iterator, Base> last)
+        beast::detail::aged_container_iterator<is_const, Iterator> first,
+        beast::detail::aged_container_iterator<is_const, Iterator> last)
 {
     for (; first != last;)
         unlink_and_delete_element(&*((first++).iterator()));
 
-    return beast::detail::aged_container_iterator<false, Iterator, Base>(
+    return beast::detail::aged_container_iterator<false, Iterator>(
         first.iterator());
 }
 
@@ -2173,11 +2169,11 @@ template <
     class Clock,
     class Compare,
     class Allocator>
-template <bool is_const, class Iterator, class Base, class>
+template <bool is_const, class Iterator, class>
 void
 aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
     touch(
-        beast::detail::aged_container_iterator<is_const, Iterator, Base> pos,
+        beast::detail::aged_container_iterator<is_const, Iterator> pos,
         typename clock_type::time_point const& now)
 {
     auto& e(*pos.iterator());
