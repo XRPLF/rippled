@@ -1205,15 +1205,15 @@ public:
         return emplace<maybe_multi>(std::forward<Args>(args)...);
     }
 
-    template <bool is_const, class Iterator, class Base>
-    beast::detail::aged_container_iterator<false, Iterator, Base>
-    erase(beast::detail::aged_container_iterator<is_const, Iterator, Base> pos);
+    template <bool is_const, class Iterator>
+    beast::detail::aged_container_iterator<false, Iterator>
+    erase(beast::detail::aged_container_iterator<is_const, Iterator> pos);
 
-    template <bool is_const, class Iterator, class Base>
-    beast::detail::aged_container_iterator<false, Iterator, Base>
+    template <bool is_const, class Iterator>
+    beast::detail::aged_container_iterator<false, Iterator>
     erase(
-        beast::detail::aged_container_iterator<is_const, Iterator, Base> first,
-        beast::detail::aged_container_iterator<is_const, Iterator, Base> last);
+        beast::detail::aged_container_iterator<is_const, Iterator> first,
+        beast::detail::aged_container_iterator<is_const, Iterator> last);
 
     template <class K>
     auto
@@ -1222,9 +1222,9 @@ public:
     void
     swap(aged_unordered_container& other) noexcept;
 
-    template <bool is_const, class Iterator, class Base>
+    template <bool is_const, class Iterator>
     void
-    touch(beast::detail::aged_container_iterator<is_const, Iterator, Base> pos)
+    touch(beast::detail::aged_container_iterator<is_const, Iterator> pos)
     {
         touch(pos, clock().now());
     }
@@ -1541,10 +1541,10 @@ private:
         insert_unchecked(first, last);
     }
 
-    template <bool is_const, class Iterator, class Base>
+    template <bool is_const, class Iterator>
     void
     touch(
-        beast::detail::aged_container_iterator<is_const, Iterator, Base> pos,
+        beast::detail::aged_container_iterator<is_const, Iterator> pos,
         typename clock_type::time_point const& now)
     {
         auto& e(*pos.iterator());
@@ -3044,8 +3044,8 @@ template <
     class Hash,
     class KeyEqual,
     class Allocator>
-template <bool is_const, class Iterator, class Base>
-beast::detail::aged_container_iterator<false, Iterator, Base>
+template <bool is_const, class Iterator>
+beast::detail::aged_container_iterator<false, Iterator>
 aged_unordered_container<
     IsMulti,
     IsMap,
@@ -3054,11 +3054,11 @@ aged_unordered_container<
     Clock,
     Hash,
     KeyEqual,
-    Allocator>::
-    erase(beast::detail::aged_container_iterator<is_const, Iterator, Base> pos)
+    Allocator>::erase(beast::detail::aged_container_iterator<is_const, Iterator>
+                          pos)
 {
     unlink_and_delete_element(&*((pos++).iterator()));
-    return beast::detail::aged_container_iterator<false, Iterator, Base>(
+    return beast::detail::aged_container_iterator<false, Iterator>(
         pos.iterator());
 }
 
@@ -3071,8 +3071,8 @@ template <
     class Hash,
     class KeyEqual,
     class Allocator>
-template <bool is_const, class Iterator, class Base>
-beast::detail::aged_container_iterator<false, Iterator, Base>
+template <bool is_const, class Iterator>
+beast::detail::aged_container_iterator<false, Iterator>
 aged_unordered_container<
     IsMulti,
     IsMap,
@@ -3083,13 +3083,13 @@ aged_unordered_container<
     KeyEqual,
     Allocator>::
     erase(
-        beast::detail::aged_container_iterator<is_const, Iterator, Base> first,
-        beast::detail::aged_container_iterator<is_const, Iterator, Base> last)
+        beast::detail::aged_container_iterator<is_const, Iterator> first,
+        beast::detail::aged_container_iterator<is_const, Iterator> last)
 {
     for (; first != last;)
         unlink_and_delete_element(&*((first++).iterator()));
 
-    return beast::detail::aged_container_iterator<false, Iterator, Base>(
+    return beast::detail::aged_container_iterator<false, Iterator>(
         first.iterator());
 }
 

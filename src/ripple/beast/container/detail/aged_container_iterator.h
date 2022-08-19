@@ -30,23 +30,21 @@ class aged_ordered_container;
 
 namespace detail {
 
-// Idea for Base template argument to prevent having to repeat
-// the base class declaration comes from newbiz on ##c++/Freenode
-//
 // If Iterator is SCARY then this iterator will be as well.
-template <
-    bool is_const,
-    class Iterator,
-    class Base = std::iterator<
-        typename std::iterator_traits<Iterator>::iterator_category,
-        typename std::conditional<
-            is_const,
-            typename Iterator::value_type::stashed::value_type const,
-            typename Iterator::value_type::stashed::value_type>::type,
-        typename std::iterator_traits<Iterator>::difference_type>>
-class aged_container_iterator : public Base
+template <bool is_const, class Iterator>
+class aged_container_iterator
 {
 public:
+    using iterator_category =
+        typename std::iterator_traits<Iterator>::iterator_category;
+    using value_type = typename std::conditional<
+        is_const,
+        typename Iterator::value_type::stashed::value_type const,
+        typename Iterator::value_type::stashed::value_type>::type;
+    using difference_type =
+        typename std::iterator_traits<Iterator>::difference_type;
+    using pointer = value_type*;
+    using reference = value_type&;
     using time_point = typename Iterator::value_type::stashed::time_point;
 
     aged_container_iterator() = default;
@@ -56,13 +54,11 @@ public:
     template <
         bool other_is_const,
         class OtherIterator,
-        class OtherBase,
         class = typename std::enable_if<
             (other_is_const == false || is_const == true) &&
             std::is_same<Iterator, OtherIterator>::value == false>::type>
     explicit aged_container_iterator(
-        aged_container_iterator<other_is_const, OtherIterator, OtherBase> const&
-            other)
+        aged_container_iterator<other_is_const, OtherIterator> const& other)
         : m_iter(other.m_iter)
     {
     }
@@ -70,22 +66,19 @@ public:
     // Disable constructing a const_iterator from a non-const_iterator.
     template <
         bool other_is_const,
-        class OtherBase,
         class = typename std::enable_if<
             other_is_const == false || is_const == true>::type>
     aged_container_iterator(
-        aged_container_iterator<other_is_const, Iterator, OtherBase> const&
-            other)
+        aged_container_iterator<other_is_const, Iterator> const& other)
         : m_iter(other.m_iter)
     {
     }
 
     // Disable assigning a const_iterator to a non-const iterator
-    template <bool other_is_const, class OtherIterator, class OtherBase>
+    template <bool other_is_const, class OtherIterator>
     auto
     operator=(
-        aged_container_iterator<other_is_const, OtherIterator, OtherBase> const&
-            other) ->
+        aged_container_iterator<other_is_const, OtherIterator> const& other) ->
         typename std::enable_if<
             other_is_const == false || is_const == true,
             aged_container_iterator&>::type
@@ -94,20 +87,18 @@ public:
         return *this;
     }
 
-    template <bool other_is_const, class OtherIterator, class OtherBase>
+    template <bool other_is_const, class OtherIterator>
     bool
-    operator==(
-        aged_container_iterator<other_is_const, OtherIterator, OtherBase> const&
-            other) const
+    operator==(aged_container_iterator<other_is_const, OtherIterator> const&
+                   other) const
     {
         return m_iter == other.m_iter;
     }
 
-    template <bool other_is_const, class OtherIterator, class OtherBase>
+    template <bool other_is_const, class OtherIterator>
     bool
-    operator!=(
-        aged_container_iterator<other_is_const, OtherIterator, OtherBase> const&
-            other) const
+    operator!=(aged_container_iterator<other_is_const, OtherIterator> const&
+                   other) const
     {
         return m_iter != other.m_iter;
     }
@@ -142,13 +133,13 @@ public:
         return prev;
     }
 
-    typename Base::reference
+    reference
     operator*() const
     {
         return m_iter->value;
     }
 
-    typename Base::pointer
+    pointer
     operator->() const
     {
         return &m_iter->value;
@@ -167,7 +158,7 @@ private:
     template <bool, bool, class, class, class, class, class, class>
     friend class aged_unordered_container;
 
-    template <bool, class, class>
+    template <bool, class>
     friend class aged_container_iterator;
 
     template <class OtherIterator>
