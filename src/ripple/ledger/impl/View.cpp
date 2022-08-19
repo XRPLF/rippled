@@ -348,11 +348,15 @@ xrpLiquid(
 
     auto const balance = view.balanceHook(id, xrpAccount(), fullBalance);
 
-    // AMM doesn't require the reserves
-    STAmount amount =
-        (sle->getFlags() & lsfAMM) ? balance : (balance - reserve);
-    if (balance < reserve)
-        amount.clear();
+    STAmount amount = [&]() {
+        // AMM doesn't require the reserves
+        if (sle->getFlags() & lsfAMM)
+            return balance;
+        STAmount amount = balance - reserve;
+        if (balance < reserve)
+            amount.clear();
+        return amount;
+    }();
 
     JLOG(j.trace()) << "accountHolds:"
                     << " account=" << to_string(id)
