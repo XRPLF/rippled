@@ -77,7 +77,7 @@ public:
         auto const SP = balances.out / (balances.in * feeMult(tfee));
         curSeq_.in = toSTAmount(
             balances.in.issue(), (Number(5) / 10000) * balances.in / 2);
-        curSeq_.out = toSTAmount(balances.out.issue(), SP * curSeq_.in);
+        curSeq_.out = swapAssetIn(balances, curSeq_.in, tfee);
         y_ = curSeq_.out;
         validateProduct(balances, curSeq_);
         return curSeq_;
@@ -305,18 +305,18 @@ AMMLiquidity::getOffer(
             // Change offer size based on swap in/out formulas
             if (saRemOut && offer->out > *saRemOut)
                 return Amounts{
-                    swapAssetOut(*offer, *remainingOut, tradingFee_),
+                    swapAssetOut(balances, *remainingOut, tradingFee_),
                     *saRemOut};
             if (saRemIn && offer->in > *saRemIn)
             {
                 auto in = *saRemIn;
-                auto out = swapAssetIn(*offer, *remainingIn, tradingFee_);
+                auto out = swapAssetIn(balances, *remainingIn, tradingFee_);
                 // The step produced more output in the forward pass than the
                 // reverse pass while consuming the same input (or less).
                 if (saCacheOut && out > *saCacheOut && in <= *saCacheIn)
                 {
                     out = *saCacheOut;
-                    in = swapAssetOut(*offer, out, tradingFee_);
+                    in = swapAssetOut(balances, out, tradingFee_);
                     if (in != *saCacheIn)
                         return std::nullopt;
                 }
