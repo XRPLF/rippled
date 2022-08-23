@@ -436,12 +436,12 @@ REGISTER_FEATURE(TicketBatch,                   Supported::yes, DefaultVote::yes
 REGISTER_FEATURE(FlowSortStrands,               Supported::yes, DefaultVote::yes);
 REGISTER_FIX    (fixSTAmountCanonicalize,       Supported::yes, DefaultVote::yes);
 REGISTER_FIX    (fixRmSmallIncreasedQOffers,    Supported::yes, DefaultVote::yes);
-REGISTER_FEATURE(CheckCashMakesTrustLine,       Supported::yes, DefaultVote::no);
+REGISTER_FEATURE(CheckCashMakesTrustLine,       Supported::yes, DefaultVote::yes);
 REGISTER_FEATURE(NonFungibleTokensV1,           Supported::yes, DefaultVote::no);
-REGISTER_FEATURE(ExpandedSignerList,            Supported::yes, DefaultVote::no);
+REGISTER_FEATURE(ExpandedSignerList,            Supported::yes, DefaultVote::yes);
 REGISTER_FIX    (fixNFTokenDirV1,               Supported::yes, DefaultVote::no);
 REGISTER_FIX    (fixNFTokenNegOffer,            Supported::yes, DefaultVote::no);
-REGISTER_FEATURE(NonFungibleTokensV1_1,         Supported::yes, DefaultVote::no);
+REGISTER_FEATURE(NonFungibleTokensV1_1,         Supported::yes, DefaultVote::yes);
 
 // The following amendments have been active for at least two years. Their
 // pre-amendment code has been removed and the identifiers are deprecated.
