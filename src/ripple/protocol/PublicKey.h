@@ -131,6 +131,12 @@ public:
     }
 };
 
+static_assert(std::is_default_constructible_v<PublicKey>);
+static_assert(std::is_copy_constructible_v<PublicKey>);
+static_assert(std::is_move_constructible_v<PublicKey>);
+static_assert(std::is_copy_assignable_v<PublicKey>);
+static_assert(std::is_move_assignable_v<PublicKey>);
+
 /** Print the public key to a stream.
  */
 std::ostream&
