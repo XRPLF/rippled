@@ -477,13 +477,13 @@ $(function() {
 <div class="line"><a name="l00425"></a><span class="lineno">  425</span>&#160;            }</div>
 <div class="line"><a name="l00426"></a><span class="lineno">  426</span>&#160;            <span class="keywordflow">else</span>  <span class="comment">// up-vote</span></div>
 <div class="line"><a name="l00427"></a><span class="lineno">  427</span>&#160;            {</div>
-<div class="line"><a name="l00428"></a><span class="lineno">  428</span>&#160;                <span class="keyword">auto</span> s = <a class="code" href="classripple_1_1AmendmentTableImpl.html#a6a02743339c64f66083284b3098c8345">add</a>(amend_hash, lock);</div>
+<div class="line"><a name="l00428"></a><span class="lineno">  428</span>&#160;                <a class="code" href="structripple_1_1AmendmentState.html">AmendmentState</a>&amp; s = <a class="code" href="classripple_1_1AmendmentTableImpl.html#a6a02743339c64f66083284b3098c8345">add</a>(amend_hash, lock);</div>
 <div class="line"><a name="l00429"></a><span class="lineno">  429</span>&#160; </div>
 <div class="line"><a name="l00430"></a><span class="lineno">  430</span>&#160;                JLOG(<a class="code" href="classripple_1_1AmendmentTableImpl.html#aaf114c1d54cf39de4ad5ba1bcd804547">j_</a>.<a class="code" href="classbeast_1_1Journal.html#a556228cb60bcf405c225d3f64b7b01ae">debug</a>()) &lt;&lt; <span class="stringliteral">&quot;Amendment {&quot;</span> &lt;&lt; *amendment_name &lt;&lt; <span class="stringliteral">&quot;, &quot;</span></div>
 <div class="line"><a name="l00431"></a><span class="lineno">  431</span>&#160;                                 &lt;&lt; amend_hash &lt;&lt; <span class="stringliteral">&quot;} is upvoted.&quot;</span>;</div>
 <div class="line"><a name="l00432"></a><span class="lineno">  432</span>&#160;                <span class="keywordflow">if</span> (!amendment_name-&gt;empty())</div>
-<div class="line"><a name="l00433"></a><span class="lineno">  433</span>&#160;                    s.name = *amendment_name;</div>
-<div class="line"><a name="l00434"></a><span class="lineno">  434</span>&#160;                s.vote = *vote;</div>
+<div class="line"><a name="l00433"></a><span class="lineno">  433</span>&#160;                    s.<a class="code" href="structripple_1_1AmendmentState.html#aa277e358200e0a43605b34f901d6f6d7">name</a> = *amendment_name;</div>
+<div class="line"><a name="l00434"></a><span class="lineno">  434</span>&#160;                s.<a class="code" href="structripple_1_1AmendmentState.html#aded5fcee7705f5497086749ea0aea289">vote</a> = *vote;</div>
 <div class="line"><a name="l00435"></a><span class="lineno">  435</span>&#160;            }</div>
 <div class="line"><a name="l00436"></a><span class="lineno">  436</span>&#160;        });</div>
 <div class="line"><a name="l00437"></a><span class="lineno">  437</span>&#160;}</div>
