@@ -1690,20 +1690,20 @@ private:
                 txflags(tfPartialPayment));
             env.close();
             BEAST_EXPECT(ammEUR_XRP.expectBalances(
-                XRPAmount(10017530051),
-                STAmount(EUR, 99825, -1),
+                XRPAmount(10017526288),
+                STAmount(EUR, UINT64_C(9982504373906523), -12),
                 IOUAmount{10000000, 0}));
             BEAST_EXPECT(ammUSD_EUR.expectBalances(
-                STAmount(USD, UINT64_C(9982529967221676), -12),
-                STAmount(EUR, 100175, -1),
+                STAmount(USD, UINT64_C(9982534930139728), -12),
+                STAmount(EUR, UINT64_C(1001749562609347), -11),
                 IOUAmount{10000, 0}));
             BEAST_EXPECT(expectOffers(
                 env,
                 alice,
                 1,
                 {{Amounts{
-                    XRPAmount(17644733),
-                    STAmount(USD, UINT64_C(1747003277832415), -14)}}}));
+                    XRPAmount(17639720),
+                    STAmount(USD, UINT64_C(1746506986027236), -14)}}}));
         }
 
         // Default path (with AMM) has a better quality than a non-default path.
@@ -1725,15 +1725,19 @@ private:
                 txflags(tfPartialPayment));
             env.close();
             BEAST_EXPECT(ammAlice.expectBalances(
-                XRPAmount(10017530051),
-                STAmount(USD, 99825, -1),
+                XRPAmount(10017526288),
+                STAmount(USD, UINT64_C(9982504373906523), -12),
                 IOUAmount{10000000, 0}));
             BEAST_EXPECT(expectOffers(
                 env,
                 alice,
                 2,
-                {{Amounts{XRPAmount(17675000), STAmount(EUR, 175, -1)},
-                  Amounts{STAmount(EUR, 175, -1), STAmount(USD, 175, -1)}}}));
+                {{Amounts{
+                      XRPAmount(17670582),
+                      STAmount(EUR, UINT64_C(17495626093477), -12)},
+                  Amounts{
+                      STAmount(EUR, UINT64_C(17495626093477), -12),
+                      STAmount(USD, UINT64_C(17495626093477), -12)}}}));
         });
 
         // Default path with AMM and Order Book offer. AMM is consumed first,
@@ -1804,13 +1808,10 @@ private:
         testAMM([&](AMM& ammAlice, Env& env) {
             fund(env, gw, {alice}, {EUR(10000)}, Fund::None);
             AMM ammAMMToken(
-                env,
-                alice,
-                EUR(10000),
-                STAmount{ammAlice.lptIssue(), 1000000, 0});
+                env, alice, EUR(10000), STAmount{ammAlice.lptIssue(), 1000000});
             BEAST_EXPECT(ammAMMToken.expectBalances(
                 EUR(10000),
-                STAmount(ammAlice.lptIssue(), 1000000, 0),
+                STAmount(ammAlice.lptIssue(), 1000000),
                 IOUAmount{100000, 0}));
         });
 
@@ -1823,11 +1824,11 @@ private:
             AMM ammAMMTokens(
                 env,
                 alice,
-                STAmount{token1, 1000000, 0},
-                STAmount{token2, 1000000, 0});
+                STAmount{token1, 1000000},
+                STAmount{token2, 1000000});
             BEAST_EXPECT(ammAMMTokens.expectBalances(
-                STAmount(token1, 1000000, 0),
-                STAmount(token2, 1000000, 0),
+                STAmount(token1, 1000000),
+                STAmount(token2, 1000000),
                 IOUAmount{1000000, 0}));
         });
 
@@ -1841,17 +1842,17 @@ private:
             AMM ammAMMTokens(
                 env,
                 alice,
-                STAmount{token1, 1000000, 0},
-                STAmount{token2, 1000000, 0});
+                STAmount{token1, 1000000},
+                STAmount{token2, 1000000});
             BEAST_EXPECT(ammAMMTokens.expectBalances(
-                STAmount(token1, 1000000, 0),
-                STAmount(token2, 1000000, 0),
+                STAmount(token1, 1000000),
+                STAmount(token2, 1000000),
                 IOUAmount{1000000, 0}));
             ammAMMTokens.deposit(alice, 10000);
             ammAMMTokens.withdraw(alice, 10000);
             BEAST_EXPECT(ammAMMTokens.expectBalances(
-                STAmount(token1, 1000000, 0),
-                STAmount(token2, 1000000, 0),
+                STAmount(token1, 1000000),
+                STAmount(token2, 1000000),
                 IOUAmount{1000000, 0}));
         });
 
@@ -1863,20 +1864,18 @@ private:
             ammAlice1.deposit(carol, 1000000);
             auto const token1 = ammAlice.lptIssue();
             auto const token2 = ammAlice1.lptIssue();
-            env(offer(
-                    alice, STAmount{token1, 100, 0}, STAmount{token2, 100, 0}),
+            env(offer(alice, STAmount{token1, 100}, STAmount{token2, 100}),
                 txflags(tfPassive));
             env.close();
             env.require(offers(alice, 1));
-            env(offer(
-                carol, STAmount{token2, 100, 0}, STAmount{token1, 100, 0}));
+            env(offer(carol, STAmount{token2, 100}, STAmount{token1, 100}));
             env.close();
             BEAST_EXPECT(
-                expectLine(env, alice, STAmount{token1, 10000100, 0}) &&
-                expectLine(env, alice, STAmount{token2, 9999900, 0}));
+                expectLine(env, alice, STAmount{token1, 10000100}) &&
+                expectLine(env, alice, STAmount{token2, 9999900}));
             BEAST_EXPECT(
-                expectLine(env, carol, STAmount{token2, 1000100, 0}) &&
-                expectLine(env, carol, STAmount{token1, 999900, 0}));
+                expectLine(env, carol, STAmount{token2, 1000100}) &&
+                expectLine(env, carol, STAmount{token1, 999900}));
             env.require(offers(alice, 0), offers(carol, 0));
         });
 
@@ -1889,17 +1888,13 @@ private:
             auto const token1 = ammAlice.lptIssue();
             auto const token2 = ammAlice1.lptIssue();
             AMM ammAMMTokens(
-                env,
-                alice,
-                STAmount{token1, 999900, 0},
-                STAmount{token2, 1000100, 0});
-            env(offer(
-                carol, STAmount{token2, 100, 0}, STAmount{token1, 100, 0}));
+                env, alice, STAmount{token1, 9900}, STAmount{token2, 10100});
+            env(offer(carol, STAmount{token2, 100}, STAmount{token1, 100}));
             env.require(offers(carol, 0));
             BEAST_EXPECT(ammAMMTokens.expectBalances(
-                STAmount(token1, 99999999, -2),
-                STAmount(token2, 1000000, 0),
-                IOUAmount{999999995, -3}));
+                STAmount(token1, 9999),
+                STAmount(token2, 10000),
+                IOUAmount{999949998749938, -11}));
         });
 
         // AMM with two tokens from another AMM.
@@ -1929,15 +1924,15 @@ private:
             AMM ammAMMTokens(
                 env,
                 alice,
-                STAmount{token1, 1000000, 0},
-                STAmount{token2, 1000000, 0});
+                STAmount{token1, 1000000},
+                STAmount{token2, 1000000});
             BEAST_EXPECT(ammAMMTokens.expectBalances(
-                STAmount(token1, 1000000, 0),
-                STAmount(token2, 1000000, 0),
+                STAmount(token1, 1000000),
+                STAmount(token2, 1000000),
                 IOUAmount{1000000, 0}));
-            env.trust(STAmount{token1, 1000, 0}, carol);
+            env.trust(STAmount{token1, 1000}, carol);
             env.close();
-            env(pay(alice, carol, STAmount{token1, 100, 0}),
+            env(pay(alice, carol, STAmount{token1, 100}),
                 path(BookSpec(token1.account, token1.currency)),
                 sendmax(STAmount{token2, 100, 0}),
                 txflags(tfPartialPayment | tfNoRippleDirect));

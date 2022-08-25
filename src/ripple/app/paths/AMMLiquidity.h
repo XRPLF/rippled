@@ -74,7 +74,6 @@ public:
     Amounts const&
     firstSeq(Amounts const& balances, std::uint16_t tfee) const
     {
-        auto const SP = balances.out / (balances.in * feeMult(tfee));
         curSeq_.in = toSTAmount(
             balances.in.issue(), (Number(5) / 10000) * balances.in / 2);
         curSeq_.out = swapAssetIn(balances, curSeq_.in, tfee);
@@ -280,20 +279,23 @@ AMMLiquidity::getOffer(
                 return std::nullopt;
             // Change offer size proportionally to the quality
             if (saRemOut && offer.out > *saRemOut)
-                return quality.ceil_out(offer, *saRemOut);
+                return Amounts{
+                    swapAssetOut(balances, *remainingOut, tradingFee_),
+                    *saRemOut};
             if (saRemIn && offer.in > *saRemIn)
             {
-                auto amounts = quality.ceil_in(offer, *saRemIn);
+                auto in = *saRemIn;
+                auto out = swapAssetIn(balances, *remainingIn, tradingFee_);
                 // The step produced more output in the forward pass than the
                 // reverse pass while consuming the same input (or less).
-                if (saCacheOut && amounts.out > *saCacheOut &&
-                    amounts.in <= saCacheIn)
+                if (saCacheOut && out > *saCacheOut && in <= saCacheIn)
                 {
-                    amounts = quality.ceil_out(offer, *saCacheOut);
-                    if (amounts.in != *saCacheIn)
+                    out = *saCacheOut;
+                    in = swapAssetOut(balances, out, tradingFee_);
+                    if (in != *saCacheIn)
                         return std::nullopt;
                 }
-                return amounts;
+                return Amounts{in, out};
             }
             return offer;
         }
