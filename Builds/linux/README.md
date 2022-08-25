@@ -1,20 +1,15 @@
 # Linux Build Instructions
 
 This document focuses on building rippled for development purposes under recent
-Ubuntu linux distributions. To build rippled for Redhat, Fedora or Centos
+Ubuntu linux distributions. To build rippled for Redhat, Fedora or CentOS
 builds, including docker based builds for those distributions, please consult
 the [rippled-package-builder](https://github.com/ripple/rippled-package-builder)
-repository. 
-
-Note: Ubuntu 16.04 users may need to update their compiler (see the dependencies
-section). For non Ubuntu distributions, the steps below should work by
-installing the appropriate dependencies using that distribution's package
-management tools.
+repository.
 
 
 ## Dependencies
 
-gcc-8 or later is required.
+gcc-11 or later is required.
 
 Use `apt-get` to install the dependencies provided by the distribution
 
@@ -30,15 +25,18 @@ $ apt-get install -y autoconf flex bison
 
 Advanced users can choose to install newer versions of gcc, or the clang compiler.
 
+At this time, rippled only supports protobuf version 2. Using version 3 of
+protobuf will give errors.
+
 ### Build Boost
 
-Boost 1.70 or later is required. We recommend downloading and compiling boost
+Boost 1.77 or later is required. We recommend downloading and compiling boost
 with the following process: After changing to the directory where
 you wish to download and compile boost, run
-``` 
-$ wget https://boostorg.jfrog.io/artifactory/main/release/1.70.0/source/boost_1_70_0.tar.gz
-$ tar -xzf boost_1_70_0.tar.gz
-$ cd boost_1_70_0
+```
+$ wget https://boostorg.jfrog.io/artifactory/main/release/1.77.0/source/boost_1_77_0.tar.gz
+$ tar -xzf boost_1_77_0.tar.gz
+$ cd boost_1_77_0
 $ ./bootstrap.sh
 $ ./b2 headers
 $ ./b2 -j $(echo $(nproc)-2 | bc)
@@ -58,12 +56,12 @@ the necessary components, see [this document](../../docs/README.md)
 From a shell:
 
 ```
-git clone git@github.com:ripple/rippled.git
+git clone git@github.com:XRPLF/rippled.git
 cd rippled
 ```
 
 For a stable release, choose the `master` branch or one of the tagged releases
-listed on [GitHub](https://github.com/ripple/rippled/releases). 
+listed on [GitHub](https://github.com/XRPLF/rippled/releases).
 
 ```
 git checkout master
@@ -87,19 +85,21 @@ git checkout develop
 If you didn't persistently set the `BOOST_ROOT` environment variable to the
 directory in which you compiled boost, then you should set it temporarily.
 
+
 For example, if you built Boost in your home directory `~/boost_1_70_0`, you
 would run the following shell command:
 
+
 ```
-export BOOST_ROOT=~/boost_1_70_0
+export BOOST_ROOT=~/boost_1_77_0
 ```
 
-Alternatively, you can add `DBOOST_ROOT=~/boost_1_70_0` to the command line when
+Alternatively, you can add `-DBOOST_ROOT=~/boost_1_77_0` to the command line when
 invoking `cmake`.
 
 ### Generate Configuration
 
-All builds should be done in a separate directory from the source tree root 
+All builds should be done in a separate directory from the source tree root
 (a subdirectory is fine). For example, from the root of the ripple source tree:
 
 ```
@@ -113,16 +113,16 @@ followed by:
 cmake -DCMAKE_BUILD_TYPE=Debug ..
 ```
 
-If your operating system does not provide static libraries (Arch Linux, and 
+If your operating system does not provide static libraries (Arch Linux, and
 Manjaro Linux, for example), you must configure a non-static build by adding
 `-Dstatic=OFF` to the above cmake line.
 
 `CMAKE_BUILD_TYPE` can be changed as desired for `Debug` vs.
 `Release` builds (all four standard cmake build types are supported).
 
-To select a different compiler (most likely gcc will be found by default), pass 
+To select a different compiler (most likely gcc will be found by default), pass
 `-DCMAKE_C_COMPILER=<path/to/c-compiler>` and
-`-DCMAKE_CXX_COMPILER=</path/to/cxx-compiler>` when configuring. If you prefer, 
+`-DCMAKE_CXX_COMPILER=</path/to/cxx-compiler>` when configuring. If you prefer,
 you can instead set `CC` and `CXX` environment variables which cmake will honor.
 
 #### Options During Configuration:
@@ -136,7 +136,7 @@ don't specify. `nounity` builds can be helpful for detecting include omissions
 or for finding other build-related issues, but aren't generally needed for
 testing and running.
 
-* `-Dunity=ON` to enable/disable unity builds (defaults to ON)  
+* `-Dunity=ON` to enable/disable unity builds (defaults to ON)
 * `-Dassert=ON` to enable asserts
 * `-Djemalloc=ON` to enable jemalloc support for heap checking
 * `-Dsan=thread` to enable the thread sanitizer with clang
@@ -212,7 +212,7 @@ git submodule add -b master https://github.com/ripple/rippled.git vendor/rippled
 change the `vendor/rippled` path as desired for your repo layout. Furthermore,
 change the branch name if you want to track a different rippled branch, such
 as `develop`.
- 
+
 Second, to bring this submodule into your project, just add the rippled subdirectory:
 
 ```
@@ -238,32 +238,3 @@ change the `/opt/local` module path above to match your chosen installation pref
 `rippled` builds a set of unit tests into the server executable. To run these unit
 tests after building, pass the `--unittest` option to the compiled `rippled`
 executable. The executable will exit with summary info after running the unit tests.
-
-## Workaround for a compile error in soci
-
-Compilation errors have been observed with Apple Clang 13.1.6+ and soci v4.x. soci compiles with the `-Werror` flag which causes warnings to be treated as errors. These warnings pertain to style (not correctness). However, they cause the cmake process to fail.
-
-Here's an example of how this looks:
-```
-.../rippled/.nih_c/unix_makefiles/AppleClang_13.1.6.13160021/Debug/src/soci/src/core/session.cpp:450:66: note: in instantiation of function template specialization 'soci::use<std::string>' requested here
-    return prepare << backEnd_->get_column_descriptions_query(), use(table_name, "t");
-                                                                 ^
-1 error generated.
-```
-
-Please apply the below patch (courtesy of Scott Determan) to remove these errors. `.nih_c/unix_makefiles/AppleClang_13.1.6.13160021/Debug/src/soci/cmake/SociConfig.cmake` file needs to be edited. This file is an example for Mac OS and it might be slightly different for other OS/Architectures.
-
-```
-diff --git a/cmake/SociConfig.cmake b/cmake/SociConfig.cmake
-index 97d907e4..11bcd1f3 100644
---- a/cmake/SociConfig.cmake
-+++ b/cmake/SociConfig.cmake
-@@ -58,8 +58,8 @@ if (MSVC)
- 
- else()
- 
--  set(SOCI_GCC_CLANG_COMMON_FLAGS
--    "-pedantic -Werror -Wno-error=parentheses -Wall -Wextra -Wpointer-arith -Wcast-align -Wcast-qual -Wfloat-equal -Woverloaded-virtual -Wredundant-decls -Wno-long-long")
-+  set(SOCI_GCC_CLANG_COMMON_FLAGS "")
-+    # "-pedantic -Werror -Wno-error=parentheses -Wall -Wextra -Wpointer-arith -Wcast-align -Wcast-qual -Wfloat-equal -Woverloaded-virtual -Wredundant-decls -Wno-long-long")
-```

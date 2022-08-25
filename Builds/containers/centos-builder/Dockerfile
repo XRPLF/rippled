@@ -16,19 +16,19 @@ RUN chmod +x /tmp/centos_setup.sh && \
     chmod +x /tmp/extras.sh
 RUN /tmp/centos_setup.sh
 
-RUN /tmp/install_cmake.sh 3.16.1 /opt/local/cmake-3.16
+RUN /tmp/install_cmake.sh 3.16.3 /opt/local/cmake-3.16
 RUN ln -s /opt/local/cmake-3.16 /opt/local/cmake
 ENV PATH="/opt/local/cmake/bin:$PATH"
 # also install min supported cmake for testing
-RUN if [ "${CI_USE}" = true ] ; then /tmp/install_cmake.sh 3.9.0 /opt/local/cmake-3.9; fi
+RUN if [ "${CI_USE}" = true ] ; then /tmp/install_cmake.sh 3.16.3 /opt/local/cmake-3.16; fi
 
-RUN source scl_source enable devtoolset-7 python27 && \
+RUN source scl_source enable devtoolset-11 && \
      /tmp/build_deps.sh
 ENV BOOST_ROOT="/opt/local/boost/_INSTALLED_"
 ENV PLANTUML_JAR="/opt/plantuml/plantuml.jar"
 ENV OPENSSL_ROOT="/opt/local/openssl"
 ENV GDB_ROOT="/opt/local/gdb"
-RUN source scl_source enable devtoolset-7 python27 && \
+RUN source scl_source enable devtoolset-11 && \
      /tmp/extras.sh
 
 # prep files for package building
@@ -39,5 +39,3 @@ RUN mkdir -m 777 ./rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
 
 COPY packaging/rpm/build_rpm.sh ./
 CMD ./build_rpm.sh
-
-

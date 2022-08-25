@@ -8,7 +8,7 @@ else ()
   set (grpc_suffix "_unsecure")
 endif ()
 
-find_package (gRPC 1.23 CONFIG QUIET)
+find_package (gRPC 1.44 CONFIG QUIET)
 if (TARGET gRPC::gpr AND NOT local_grpc)
   get_target_property (_grpc_l gRPC::gpr IMPORTED_LOCATION_DEBUG)
   if (NOT _grpc_l)
@@ -91,7 +91,7 @@ else ()
     ExternalProject_Add (c-ares_src
       PREFIX ${nih_cache_path}
       GIT_REPOSITORY https://github.com/c-ares/c-ares.git
-      GIT_TAG cares-1_15_0
+      GIT_TAG cares-1_18_1
       CMAKE_ARGS
         -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
         $<$<BOOL:${CMAKE_VERBOSE_MAKEFILE}>:-DCMAKE_VERBOSE_MAKEFILE=ON>
@@ -150,7 +150,7 @@ else ()
       ExternalProject_Add (zlib_src
         PREFIX ${nih_cache_path}
         GIT_REPOSITORY https://github.com/madler/zlib.git
-        GIT_TAG v1.2.11
+        GIT_TAG v1.2.12
         CMAKE_ARGS
           -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
           $<$<BOOL:${CMAKE_VERBOSE_MAKEFILE}>:-DCMAKE_VERBOSE_MAKEFILE=ON>
@@ -200,7 +200,7 @@ else ()
     ExternalProject_Add (grpc_src
       PREFIX ${nih_cache_path}
       GIT_REPOSITORY https://github.com/grpc/grpc.git
-      GIT_TAG v1.25.0
+      GIT_TAG v1.44.0
       CMAKE_ARGS
         -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
         -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}

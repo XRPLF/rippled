@@ -3,7 +3,7 @@ set -ex
 
 source /etc/os-release
 
-if [[ ${VERSION_ID} =~ ^18\. || ${VERSION_ID} =~ ^16\. ]] ; then
+if [[ ${VERSION_ID} =~ ^20\. || ${VERSION_ID} =~ ^18\. ]] ; then
     echo "setup for ${PRETTY_NAME}"
 else
     echo "${VERSION} not supported"
@@ -45,118 +45,91 @@ apt-get -y --fix-missing install \
     dh-buildinfo dh-make dh-systemd \
     apt-transport-https
 
-apt-get -y install gcc-7 g++-7
+apt-get -y install gcc-11 g++-11
 update-alternatives --install \
-    /usr/bin/gcc gcc /usr/bin/gcc-7 40 \
-    --slave /usr/bin/g++ g++ /usr/bin/g++-7 \
-    --slave /usr/bin/gcc-ar gcc-ar /usr/bin/gcc-ar-7 \
-    --slave /usr/bin/gcc-nm gcc-nm /usr/bin/gcc-nm-7 \
-    --slave /usr/bin/gcc-ranlib gcc-ranlib /usr/bin/gcc-ranlib-7 \
-    --slave /usr/bin/gcov gcov /usr/bin/gcov-7 \
-    --slave /usr/bin/gcov-tool gcov-tool /usr/bin/gcov-dump-7 \
-    --slave /usr/bin/gcov-dump gcov-dump /usr/bin/gcov-tool-7
-
-apt-get -y install gcc-8 g++-8
-update-alternatives --install \
-    /usr/bin/gcc gcc /usr/bin/gcc-8 20 \
-    --slave /usr/bin/g++ g++ /usr/bin/g++-8 \
-    --slave /usr/bin/gcc-ar gcc-ar /usr/bin/gcc-ar-8 \
-    --slave /usr/bin/gcc-nm gcc-nm /usr/bin/gcc-nm-8 \
-    --slave /usr/bin/gcc-ranlib gcc-ranlib /usr/bin/gcc-ranlib-8 \
-    --slave /usr/bin/gcov gcov /usr/bin/gcov-8 \
-    --slave /usr/bin/gcov-tool gcov-tool /usr/bin/gcov-dump-8 \
-    --slave /usr/bin/gcov-dump gcov-dump /usr/bin/gcov-tool-8
+    /usr/bin/gcc gcc /usr/bin/gcc-11 20 \
+    --slave /usr/bin/g++ g++ /usr/bin/g++-11 \
+    --slave /usr/bin/gcc-ar gcc-ar /usr/bin/gcc-ar-11 \
+    --slave /usr/bin/gcc-nm gcc-nm /usr/bin/gcc-nm-11 \
+    --slave /usr/bin/gcc-ranlib gcc-ranlib /usr/bin/gcc-ranlib-11 \
+    --slave /usr/bin/gcov gcov /usr/bin/gcov-11 \
+    --slave /usr/bin/gcov-tool gcov-tool /usr/bin/gcov-dump-11 \
+    --slave /usr/bin/gcov-dump gcov-dump /usr/bin/gcov-tool-11
 update-alternatives --auto gcc
 
-update-alternatives --install /usr/bin/cpp cpp /usr/bin/cpp-7 40
-update-alternatives --install /usr/bin/cpp cpp /usr/bin/cpp-8 20
+update-alternatives --install /usr/bin/cpp cpp /usr/bin/cpp-11 20
 update-alternatives --auto cpp
 
 if [ "${CI_USE}" = true ] ; then
-    apt-get -y install gcc-6 g++-6
+    apt-get -y install gcc-11 g++-11
     update-alternatives --install \
-        /usr/bin/gcc gcc /usr/bin/gcc-6 10 \
-        --slave /usr/bin/g++ g++ /usr/bin/g++-6 \
-        --slave /usr/bin/gcc-ar gcc-ar /usr/bin/gcc-ar-6 \
-        --slave /usr/bin/gcc-nm gcc-nm /usr/bin/gcc-nm-6 \
-        --slave /usr/bin/gcc-ranlib gcc-ranlib /usr/bin/gcc-ranlib-6 \
-        --slave /usr/bin/gcov gcov /usr/bin/gcov-6 \
-        --slave /usr/bin/gcov-tool gcov-tool /usr/bin/gcov-dump-6 \
-        --slave /usr/bin/gcov-dump gcov-dump /usr/bin/gcov-tool-6
-
-    apt-get -y install gcc-9 g++-9
-    update-alternatives --install \
-        /usr/bin/gcc gcc /usr/bin/gcc-9 15 \
-        --slave /usr/bin/g++ g++ /usr/bin/g++-9 \
-        --slave /usr/bin/gcc-ar gcc-ar /usr/bin/gcc-ar-9 \
-        --slave /usr/bin/gcc-nm gcc-nm /usr/bin/gcc-nm-9 \
-        --slave /usr/bin/gcc-ranlib gcc-ranlib /usr/bin/gcc-ranlib-9 \
-        --slave /usr/bin/gcov gcov /usr/bin/gcov-9 \
-        --slave /usr/bin/gcov-tool gcov-tool /usr/bin/gcov-dump-9 \
-        --slave /usr/bin/gcov-dump gcov-dump /usr/bin/gcov-tool-9
-fi
-
-if [[ ${VERSION_ID} =~ ^18\. ]] ; then
-    apt-get -y install binutils
-elif [[ ${VERSION_ID} =~ ^16\. ]] ; then
-    apt-get -y install python-software-properties  binutils-gold
+        /usr/bin/gcc gcc /usr/bin/gcc-11 15 \
+        --slave /usr/bin/g++ g++ /usr/bin/g++-11 \
+        --slave /usr/bin/gcc-ar gcc-ar /usr/bin/gcc-ar-11 \
+        --slave /usr/bin/gcc-nm gcc-nm /usr/bin/gcc-nm-11 \
+        --slave /usr/bin/gcc-ranlib gcc-ranlib /usr/bin/gcc-ranlib-11 \
+        --slave /usr/bin/gcov gcov /usr/bin/gcov-11 \
+        --slave /usr/bin/gcov-tool gcov-tool /usr/bin/gcov-dump-11 \
+        --slave /usr/bin/gcov-dump gcov-dump /usr/bin/gcov-tool-11
 fi
 
 wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
+
 if [[ ${VERSION_ID} =~ ^18\. ]] ; then
     cat << EOF > /etc/apt/sources.list.d/llvm.list
-deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic main
-deb-src http://apt.llvm.org/bionic/ llvm-toolchain-bionic main
-deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-7 main
-deb-src http://apt.llvm.org/bionic/ llvm-toolchain-bionic-7 main
-deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-8 main
-deb-src http://apt.llvm.org/bionic/ llvm-toolchain-bionic-8 main
-deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main
-deb-src http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main
-EOF
-elif [[ ${VERSION_ID} =~ ^16\. ]] ; then
-    cat << EOF > /etc/apt/sources.list.d/llvm.list
-deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial main
-deb-src http://apt.llvm.org/xenial/ llvm-toolchain-xenial main
-deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-7 main
-deb-src http://apt.llvm.org/xenial/ llvm-toolchain-xenial-7 main
-deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-8 main
-deb-src http://apt.llvm.org/xenial/ llvm-toolchain-xenial-8 main
-deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-9 main
-deb-src http://apt.llvm.org/xenial/ llvm-toolchain-xenial-9 main
+
+deb http://apt.llvm.org/focal/ llvm-toolchain-focal-13 main
+deb-src http://apt.llvm.org/focal/ llvm-toolchain-focal-13 main
 EOF
 fi
+if [[ ${VERSION_ID} =~ ^20\. ]] ; then
+    cat << EOF > /etc/apt/sources.list.d/llvm.list
+deb http://apt.llvm.org/focal/ llvm-toolchain-focal main
+deb-src http://apt.llvm.org/focal/ llvm-toolchain-focal main
+deb http://apt.llvm.org/focal/ llvm-toolchain-focal-13 main
+deb-src http://apt.llvm.org/focal/ llvm-toolchain-focal-13 main
+deb http://apt.llvm.org/focal/ llvm-toolchain-focal-14 main
+deb-src http://apt.llvm.org/focal/ llvm-toolchain-focal-14 main
+EOF
+    apt-get -y install binutils
+elif [[ ${VERSION_ID} =~ ^18\. ]] ; then
+    apt-get -y install  binutils-gold
+fi
+
+
 apt-get -y update
+if [[ ${VERSION_ID} =~ ^20\. ]] ; then
 
 apt-get -y install \
-    clang-7 libclang-common-7-dev libclang-7-dev libllvm7 llvm-7 \
-    llvm-7-dev llvm-7-runtime clang-format-7 python-clang-7 \
-    lld-7 libfuzzer-7-dev libc++-7-dev
+    clang-12 libclang-common-12-dev libclang-12-dev libllvm12 llvm-12 \
+    llvm-12-dev llvm-12-runtime clang-format-12 python-clang-12 \
+    lld-12 libfuzzer-12-dev libc++-12-dev
 update-alternatives --install \
-    /usr/bin/clang clang /usr/bin/clang-7 40 \
-    --slave /usr/bin/clang++ clang++ /usr/bin/clang++-7 \
-    --slave /usr/bin/llvm-profdata llvm-profdata /usr/bin/llvm-profdata-7 \
-    --slave /usr/bin/asan-symbolize asan-symbolize /usr/bin/asan_symbolize-7 \
-    --slave /usr/bin/llvm-symbolizer llvm-symbolizer /usr/bin/llvm-symbolizer-7 \
-    --slave /usr/bin/clang-format clang-format /usr/bin/clang-format-7 \
-    --slave /usr/bin/llvm-ar llvm-ar /usr/bin/llvm-ar-7 \
-    --slave /usr/bin/llvm-cov llvm-cov /usr/bin/llvm-cov-7 \
-    --slave /usr/bin/llvm-nm llvm-nm /usr/bin/llvm-nm-7
+    /usr/bin/clang clang /usr/bin/clang-12 40 \
+    --slave /usr/bin/clang++ clang++ /usr/bin/clang++-12 \
+    --slave /usr/bin/llvm-profdata llvm-profdata /usr/bin/llvm-profdata-12 \
+    --slave /usr/bin/asan-symbolize asan-symbolize /usr/bin/asan_symbolize-12 \
+    --slave /usr/bin/llvm-symbolizer llvm-symbolizer /usr/bin/llvm-symbolizer-12 \
+    --slave /usr/bin/clang-format clang-format /usr/bin/clang-format-12 \
+    --slave /usr/bin/llvm-ar llvm-ar /usr/bin/llvm-ar-12 \
+    --slave /usr/bin/llvm-cov llvm-cov /usr/bin/llvm-cov-12 \
+    --slave /usr/bin/llvm-nm llvm-nm /usr/bin/llvm-nm-12
 apt-get -y install \
-    clang-8 libclang-common-8-dev libclang-8-dev libllvm8 llvm-8 \
-    llvm-8-dev llvm-8-runtime clang-format-8 python-clang-8 \
-    lld-8 libfuzzer-8-dev libc++-8-dev
+    clang-14 libclang-common-14-dev libclang-14-dev libllvm14 llvm-14 \
+    llvm-14-dev llvm-14-runtime clang-format-14 python-clang-14 \
+    lld-14 libfuzzer-14-dev libc++-14-dev
 update-alternatives --install \
-    /usr/bin/clang clang /usr/bin/clang-8 20 \
-    --slave /usr/bin/clang++ clang++ /usr/bin/clang++-8 \
-    --slave /usr/bin/llvm-profdata llvm-profdata /usr/bin/llvm-profdata-8 \
-    --slave /usr/bin/asan-symbolize asan-symbolize /usr/bin/asan_symbolize-8 \
-    --slave /usr/bin/llvm-symbolizer llvm-symbolizer /usr/bin/llvm-symbolizer-8 \
-    --slave /usr/bin/clang-format clang-format /usr/bin/clang-format-8 \
-    --slave /usr/bin/llvm-ar llvm-ar /usr/bin/llvm-ar-8 \
-    --slave /usr/bin/llvm-cov llvm-cov /usr/bin/llvm-cov-8 \
-    --slave /usr/bin/llvm-nm llvm-nm /usr/bin/llvm-nm-8
+    /usr/bin/clang clang /usr/bin/clang-14 20 \
+    --slave /usr/bin/clang++ clang++ /usr/bin/clang++-14 \
+    --slave /usr/bin/llvm-profdata llvm-profdata /usr/bin/llvm-profdata-14 \
+    --slave /usr/bin/asan-symbolize asan-symbolize /usr/bin/asan_symbolize-14 \
+    --slave /usr/bin/llvm-symbolizer llvm-symbolizer /usr/bin/llvm-symbolizer-14 \
+    --slave /usr/bin/clang-format clang-format /usr/bin/clang-format-14 \
+    --slave /usr/bin/llvm-ar llvm-ar /usr/bin/llvm-ar-14 \
+    --slave /usr/bin/llvm-cov llvm-cov /usr/bin/llvm-cov-14 \
+    --slave /usr/bin/llvm-nm llvm-nm /usr/bin/llvm-nm-14
 update-alternatives --auto clang
+fi
 
 if [ "${CI_USE}" = true ] ; then
     apt-get -y install \
@@ -186,4 +159,3 @@ if [ "${CI_USE}" = true ] ; then
 fi
 
 apt-get -y autoremove
-

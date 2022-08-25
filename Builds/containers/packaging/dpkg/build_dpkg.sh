@@ -15,7 +15,7 @@ RIPPLED_DPKG_VERSION=$(echo "${RIPPLED_VERSION}" | sed 's!-!~!g')
 # TODO - decide how to handle the trailing/release
 # version here (hardcoded to 1). Does it ever need to change?
 RIPPLED_DPKG_FULL_VERSION="${RIPPLED_DPKG_VERSION}-1"
-
+git config --global --add safe.directory /opt/rippled_bld/pkg/rippled
 cd /opt/rippled_bld/pkg/rippled
 if [[ -n $(git status --porcelain) ]]; then
     git status
@@ -45,8 +45,8 @@ CHANGELOG
 # PATH must be preserved for our more modern cmake in /opt/local
 # TODO : consider allowing lintian to run in future ?
 export DH_BUILD_DDEBS=1
-export CC=gcc-8
-export CXX=g++-8
+export CC=gcc-11
+export CXX=g++-11
 debuild --no-lintian --preserve-envvar PATH --preserve-env -us -uc
 rc=$?; if [[ $rc != 0 ]]; then
     error "error building dpkg"

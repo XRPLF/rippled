@@ -11,7 +11,7 @@
 set -exu
 
 odir=$(pwd)
-: ${BOOST_TOOLSET:=msvc-14.1}
+: ${BOOST_TOOLSET:=msvc-14.2}
 
 if [[ -d "$BOOST_ROOT/lib" || -d "${BOOST_ROOT}/stage/lib" ]] ; then
     echo "Using cached boost at $BOOST_ROOT"
@@ -90,4 +90,3 @@ if [[ ${CI:-false} == "true" ]]; then
 fi
 
 cd $odir
-

@@ -8,7 +8,7 @@
 if (static)
   set (Protobuf_USE_STATIC_LIBS ON)
 endif ()
-find_package (Protobuf 3.8)
+find_package (Protobuf 3.21)
 if (is_multiconfig)
     set(protobuf_protoc_lib ${Protobuf_PROTOC_LIBRARIES})
 else ()
@@ -38,7 +38,7 @@ if (local_protobuf OR NOT (Protobuf_FOUND AND Protobuf_PROTOC_EXECUTABLE AND pro
   ExternalProject_Add (protobuf_src
     PREFIX ${nih_cache_path}
     GIT_REPOSITORY https://github.com/protocolbuffers/protobuf.git
-    GIT_TAG v3.8.0
+    GIT_TAG v3.21.5
     SOURCE_SUBDIR cmake
     CMAKE_ARGS
       -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}

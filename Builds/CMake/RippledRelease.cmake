@@ -27,9 +27,9 @@ if (is_root_project)
         OUTPUT_STRIP_TRAILING_WHITESPACE)
       message (STATUS "docker local group id: ${DOCKER_GROUP_ID}")
     endif ()
-    if (DOCKER_USER_ID AND DOCKER_GROUP_ID)
-      set(map_user TRUE)
-    endif ()
+    # if (DOCKER_USER_ID AND DOCKER_GROUP_ID)
+      set(map_user FALSE)
+    # endif ()
     #[===================================================================[
         rpm
     #]===================================================================]
