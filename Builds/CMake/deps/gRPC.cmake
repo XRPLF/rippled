@@ -91,7 +91,7 @@ else ()
     ExternalProject_Add (c-ares_src
       PREFIX ${nih_cache_path}
       GIT_REPOSITORY https://github.com/c-ares/c-ares.git
-      GIT_TAG cares-1_18_1
+      GIT_TAG cares-1_15_0
       CMAKE_ARGS
         -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
         $<$<BOOL:${CMAKE_VERBOSE_MAKEFILE}>:-DCMAKE_VERBOSE_MAKEFILE=ON>
@@ -200,7 +200,7 @@ else ()
     ExternalProject_Add (grpc_src
       PREFIX ${nih_cache_path}
       GIT_REPOSITORY https://github.com/grpc/grpc.git
-      GIT_TAG v1.44.0
+      GIT_TAG v1.25.0
       CMAKE_ARGS
         -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
         -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
