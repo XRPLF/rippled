@@ -21,7 +21,7 @@ if [[ "${installed}" != "" && ${installed} =~ ${cm_maj}.${cm_min}.${cm_rel} ]] ;
     echo "cmake already installed: ${installed}"
     exit
 fi
-# @ CMake 20 Linux is lowercase so `uname` be the correct path
+# From CMake 20+ "Linux" is lowercase so using `uname` won't create be the correct path
 if [ ${cm_min} -gt 19 ];then
     linux="linux"
 else
