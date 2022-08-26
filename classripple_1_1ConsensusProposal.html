@@ -83,9 +83,10 @@ Collaboration diagram for ripple::ConsensusProposal&lt; NodeID_t, LedgerID_t, Po
 <div class="dyncontent">
 <div class="center"><img src="classripple_1_1ConsensusProposal__coll__graph.png" border="0" usemap="#ripple_1_1ConsensusProposal_3_01NodeID__t_00_01LedgerID__t_00_01Position__t_01_4_coll__map" alt="Collaboration graph"/></div>
 <map name="ripple_1_1ConsensusProposal_3_01NodeID__t_00_01LedgerID__t_00_01Position__t_01_4_coll__map" id="ripple_1_1ConsensusProposal_3_01NodeID__t_00_01LedgerID__t_00_01Position__t_01_4_coll__map">
-<area shape="rect" title="Represents a proposed position taken during a round of consensus." alt="" coords="40,139,233,195"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="5,13,108,39"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/chrono/time_point.html" title=" " alt="" coords="132,5,304,47"/>
+<area shape="rect" title="Represents a proposed position taken during a round of consensus." alt="" coords="317,59,511,115"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="40,15,143,41"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/utility/optional.html" title=" " alt="" coords="14,66,169,107"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/chrono/time_point.html" title=" " alt="" coords="5,131,177,173"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -135,6 +136,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a799315c246e228ac703759505d8997d8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#a799315c246e228ac703759505d8997d8">getJson</a> () const</td></tr>
 <tr class="memdesc:a799315c246e228ac703759505d8997d8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get JSON representation for debugging.  <a href="classripple_1_1ConsensusProposal.html#a799315c246e228ac703759505d8997d8">More...</a><br /></td></tr>
 <tr class="separator:a799315c246e228ac703759505d8997d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af5df2e264785c5310dba333549fb5ec2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#af5df2e264785c5310dba333549fb5ec2">signingHash</a> () const</td></tr>
+<tr class="memdesc:af5df2e264785c5310dba333549fb5ec2"><td class="mdescLeft">&#160;</td><td class="mdescRight">The digest for this proposal, used for signing purposes.  <a href="classripple_1_1ConsensusProposal.html#af5df2e264785c5310dba333549fb5ec2">More...</a><br /></td></tr>
+<tr class="separator:af5df2e264785c5310dba333549fb5ec2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
@@ -162,6 +166,9 @@ Private Attributes</h2></td></tr>
 <tr class="memitem:a85ae5e886165b6dcb4cc60deb3dae2ef"><td class="memItemLeft" align="right" valign="top">NodeID_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#a85ae5e886165b6dcb4cc60deb3dae2ef">nodeID_</a></td></tr>
 <tr class="memdesc:a85ae5e886165b6dcb4cc60deb3dae2ef"><td class="mdescLeft">&#160;</td><td class="mdescRight">The identifier of the node taking this position.  <a href="classripple_1_1ConsensusProposal.html#a85ae5e886165b6dcb4cc60deb3dae2ef">More...</a><br /></td></tr>
 <tr class="separator:a85ae5e886165b6dcb4cc60deb3dae2ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a59392a6dd8f11f23ed3978458f54be31"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#a59392a6dd8f11f23ed3978458f54be31">signingHash_</a></td></tr>
+<tr class="memdesc:a59392a6dd8f11f23ed3978458f54be31"><td class="mdescLeft">&#160;</td><td class="mdescRight">The signing hash for this proposal.  <a href="classripple_1_1ConsensusProposal.html#a59392a6dd8f11f23ed3978458f54be31">More...</a><br /></td></tr>
+<tr class="separator:a59392a6dd8f11f23ed3978458f54be31"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><h3>template&lt;class NodeID_t, class LedgerID_t, class Position_t&gt;<br />
@@ -181,7 +188,7 @@ class ripple::ConsensusProposal&lt; NodeID_t, LedgerID_t, Position_t &gt;</h3>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00052">52</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00055">55</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="a8aa8f75fd852edae88d109313c96de4d"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a8aa8f75fd852edae88d109313c96de4d">&#9670;&nbsp;</a></span>NodeID</h2>
@@ -197,7 +204,7 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00055">55</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00058">58</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
 
 </div>
 </div>
@@ -267,7 +274,7 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00072">72</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00075">75</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
 
 </div>
 </div>
@@ -291,7 +298,7 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
 
 <p>Identifying which peer took this position. </p>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00090">90</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00093">93</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
 
 </div>
 </div>
@@ -314,7 +321,7 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
 
 <p>Get the proposed position. </p>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00097">97</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00100">100</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
 
 </div>
 </div>
@@ -337,7 +344,7 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
 
 <p>Get the prior accepted ledger this position is based on. </p>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00104">104</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00107">107</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
 
 </div>
 </div>
@@ -362,7 +369,7 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
 <p>Starting with an initial sequence number of <code>seqJoin</code>, successive proposals from a peer will increase the sequence number.</p>
 <dl class="section return"><dt>Returns</dt><dd>the sequence number </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00117">117</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00120">120</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
 
 </div>
 </div>
@@ -385,7 +392,7 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
 
 <p>The current position on the consensus close time. </p>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00124">124</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00127">127</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
 
 </div>
 </div>
@@ -408,7 +415,7 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
 
 <p>Get when this position was taken. </p>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00131">131</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00134">134</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
 
 </div>
 </div>
@@ -431,7 +438,7 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
 
 <p>Whether this is the first position taken during the current consensus round. </p>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00140">140</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00143">143</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
 
 </div>
 </div>
@@ -454,7 +461,7 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
 
 <p>Get whether this node left the consensus process. </p>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00147">147</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00150">150</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
 
 </div>
 </div>
@@ -478,7 +485,7 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
 
 <p>Get whether this position is stale relative to the provided cutoff. </p>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00154">154</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00157">157</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
 
 </div>
 </div>
@@ -527,7 +534,7 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00167">167</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00170">170</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
 
 </div>
 </div>
@@ -558,7 +565,7 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00186">186</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00190">190</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
 
 </div>
 </div>
@@ -581,7 +588,30 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
 
 <p>Get JSON representation for debugging. </p>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00194">194</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00199">199</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+
+</div>
+</div>
+<a id="af5df2e264785c5310dba333549fb5ec2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af5df2e264785c5310dba333549fb5ec2">&#9670;&nbsp;</a></span>signingHash()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const&amp; <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t &gt;::signingHash </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>The digest for this proposal, used for signing purposes. </p>
+
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00220">220</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
 
 </div>
 </div>
@@ -608,7 +638,7 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00058">58</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00061">61</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
 
 </div>
 </div>
@@ -634,7 +664,7 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00061">61</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00064">64</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
 
 </div>
 </div>
@@ -662,7 +692,7 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
 
 <p>Unique identifier of prior ledger this proposal is based on. </p>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00215">215</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00237">237</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
 
 </div>
 </div>
@@ -690,7 +720,7 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
 
 <p>Unique identifier of the position this proposal is taking. </p>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00218">218</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00240">240</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
 
 </div>
 </div>
@@ -718,7 +748,7 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
 
 <p>The ledger close time this position is taking. </p>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00221">221</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00243">243</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
 
 </div>
 </div>
@@ -744,7 +774,7 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00224">224</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00246">246</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
 
 </div>
 </div>
@@ -772,7 +802,7 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
 
 <p>The sequence number of these positions taken by this node. </p>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00227">227</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00249">249</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
 
 </div>
 </div>
@@ -800,7 +830,35 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
 
 <p>The identifier of the node taking this position. </p>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00230">230</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00252">252</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+
+</div>
+</div>
+<a id="a59392a6dd8f11f23ed3978458f54be31"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a59392a6dd8f11f23ed3978458f54be31">&#9670;&nbsp;</a></span>signingHash_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&gt; <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t &gt;::signingHash_</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">mutable</span><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>The signing hash for this proposal. </p>
+
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00255">255</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
 
 </div>
 </div>

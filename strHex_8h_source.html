@@ -96,42 +96,33 @@ $(function() {
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160; </div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;<span class="keywordtype">int</span></div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;<a class="code" href="namespaceripple.html#ac6bd4d1a123ab730216bc521e094720f">charUnHex</a>(<span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> c);</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160; </div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;<span class="keyword">inline</span> <span class="keywordtype">int</span></div>
-<div class="line"><a name="l00037"></a><span class="lineno"><a class="line" href="namespaceripple.html#a4a45dc2a0e6745d94de60e7b77bbc01e">   37</a></span>&#160;<a class="code" href="namespaceripple.html#ac6bd4d1a123ab730216bc521e094720f">charUnHex</a>(<span class="keywordtype">char</span> c)</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;{</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#ac6bd4d1a123ab730216bc521e094720f">charUnHex</a>(<span class="keyword">static_cast&lt;</span><span class="keywordtype">unsigned</span> <span class="keywordtype">char</span><span class="keyword">&gt;</span>(c));</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;}</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> FwdIt&gt;</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> FwdIt&gt;</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div>
+<div class="line"><a name="l00030"></a><span class="lineno"><a class="line" href="namespaceripple.html#a86e358ce3f06ff049af13c2342791cf8">   30</a></span>&#160;<a class="code" href="namespaceripple.html#a86e358ce3f06ff049af13c2342791cf8">strHex</a>(FwdIt begin, FwdIt end)</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;{</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    static_assert(</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/is_convertible.html">std::is_convertible</a>&lt;</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;            <span class="keyword">typename</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/iterator/iterator_traits.html">std::iterator_traits&lt;FwdIt&gt;::iterator_category</a>,</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/iterator/iterator_tags.html">std::forward_iterator_tag</a>&gt;::value,</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;        <span class="stringliteral">&quot;FwdIt must be a forward iterator&quot;</span>);</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> result;</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/reserve.html">reserve</a>(2 * <a class="codeRef" href="http://en.cppreference.com/w/cpp/iterator/distance.html">std::distance</a>(begin, end));</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    boost::algorithm::hex(begin, end, <a class="codeRef" href="http://en.cppreference.com/w/cpp/iterator/back_inserter.html">std::back_inserter</a>(result));</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    <span class="keywordflow">return</span> result;</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;}</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160; </div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;template &lt;class T, class = decltype(std::declval&lt;T&gt;().<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/begin.html">begin</a>())&gt;</div>
 <div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div>
-<div class="line"><a name="l00045"></a><span class="lineno"><a class="line" href="namespaceripple.html#a86e358ce3f06ff049af13c2342791cf8">   45</a></span>&#160;<a class="code" href="namespaceripple.html#a86e358ce3f06ff049af13c2342791cf8">strHex</a>(FwdIt begin, FwdIt end)</div>
+<div class="line"><a name="l00045"></a><span class="lineno"><a class="line" href="namespaceripple.html#aad719e86c8d9c67c9cc085c7203ef6a3">   45</a></span>&#160;<a class="code" href="namespaceripple.html#a86e358ce3f06ff049af13c2342791cf8">strHex</a>(T <span class="keyword">const</span>&amp; from)</div>
 <div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;{</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    static_assert(</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/is_convertible.html">std::is_convertible</a>&lt;</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;            <span class="keyword">typename</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/iterator/iterator_traits.html">std::iterator_traits&lt;FwdIt&gt;::iterator_category</a>,</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/iterator/iterator_tags.html">std::forward_iterator_tag</a>&gt;::value,</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;        <span class="stringliteral">&quot;FwdIt must be a forward iterator&quot;</span>);</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> result;</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/reserve.html">reserve</a>(2 * <a class="codeRef" href="http://en.cppreference.com/w/cpp/iterator/distance.html">std::distance</a>(begin, end));</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    boost::algorithm::hex(begin, end, <a class="codeRef" href="http://en.cppreference.com/w/cpp/iterator/back_inserter.html">std::back_inserter</a>(result));</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    <span class="keywordflow">return</span> result;</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;}</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160; </div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;template &lt;class T, class = decltype(std::declval&lt;T&gt;().<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/begin.html">begin</a>())&gt;</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div>
-<div class="line"><a name="l00060"></a><span class="lineno"><a class="line" href="namespaceripple.html#aad719e86c8d9c67c9cc085c7203ef6a3">   60</a></span>&#160;<a class="code" href="namespaceripple.html#a86e358ce3f06ff049af13c2342791cf8">strHex</a>(T <span class="keyword">const</span>&amp; from)</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;{</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a86e358ce3f06ff049af13c2342791cf8">strHex</a>(from.begin(), from.end());</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;}</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160; </div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;}  <span class="comment">// namespace ripple</span></div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160; </div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a86e358ce3f06ff049af13c2342791cf8">strHex</a>(from.begin(), from.end());</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;}</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160; </div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div><div class="ttdoc">STL class.</div></div>
-<div class="ttc" id="anamespaceripple_html_ac6bd4d1a123ab730216bc521e094720f"><div class="ttname"><a href="namespaceripple.html#ac6bd4d1a123ab730216bc521e094720f">ripple::charUnHex</a></div><div class="ttdeci">int charUnHex(unsigned char c)</div><div class="ttdoc">Converts a hex digit to the corresponding integer.</div><div class="ttdef"><b>Definition:</b> <a href="strHex_8cpp_source.html#l00026">strHex.cpp:26</a></div></div>
 <div class="ttc" id="areserve_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string/reserve.html">std::string::reserve</a></div><div class="ttdeci">T reserve(T... args)</div></div>
 <div class="ttc" id="aback_inserter_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/iterator/back_inserter.html">std::back_inserter</a></div><div class="ttdeci">T back_inserter(T... args)</div></div>
 <div class="ttc" id="aiterator_tags_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/iterator/iterator_tags.html">std::forward_iterator_tag</a></div></div>
@@ -140,7 +131,7 @@ $(function() {
 <div class="ttc" id="aiterator_traits_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/iterator/iterator_traits.html">std::iterator_traits</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="abegin_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string/begin.html">std::string::begin</a></div><div class="ttdeci">T begin(T... args)</div></div>
-<div class="ttc" id="anamespaceripple_html_a86e358ce3f06ff049af13c2342791cf8"><div class="ttname"><a href="namespaceripple.html#a86e358ce3f06ff049af13c2342791cf8">ripple::strHex</a></div><div class="ttdeci">std::string strHex(FwdIt begin, FwdIt end)</div><div class="ttdef"><b>Definition:</b> <a href="strHex_8h_source.html#l00045">strHex.h:45</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a86e358ce3f06ff049af13c2342791cf8"><div class="ttname"><a href="namespaceripple.html#a86e358ce3f06ff049af13c2342791cf8">ripple::strHex</a></div><div class="ttdeci">std::string strHex(FwdIt begin, FwdIt end)</div><div class="ttdef"><b>Definition:</b> <a href="strHex_8h_source.html#l00030">strHex.h:30</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

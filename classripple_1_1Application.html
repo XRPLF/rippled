@@ -116,20 +116,23 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a8f3b40098b20712612de1b46a65b5156"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aac3ea8b275005bfc4ace992be365a488"><td class="memItemLeft" align="right" valign="top">virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Application.html#aac3ea8b275005bfc4ace992be365a488">~Application</a> ()=default</td></tr>
 <tr class="separator:aac3ea8b275005bfc4ace992be365a488"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af53f54c7202b613b48124d6f8f5ffad6"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Application.html#af53f54c7202b613b48124d6f8f5ffad6">setup</a> ()=0</td></tr>
-<tr class="separator:af53f54c7202b613b48124d6f8f5ffad6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2b799a86c8f2f04710fcd11bd688aa94"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Application.html#a2b799a86c8f2f04710fcd11bd688aa94">setup</a> (boost::program_options::variables_map const &amp;options)=0</td></tr>
+<tr class="separator:a2b799a86c8f2f04710fcd11bd688aa94"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0df7c75a72ab51048c7ec50c2bb1f0d3"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Application.html#a0df7c75a72ab51048c7ec50c2bb1f0d3">start</a> (bool withTimers)=0</td></tr>
 <tr class="separator:a0df7c75a72ab51048c7ec50c2bb1f0d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7981acc17eda76d35718596eb0f073e0"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Application.html#a7981acc17eda76d35718596eb0f073e0">run</a> ()=0</td></tr>
 <tr class="separator:a7981acc17eda76d35718596eb0f073e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab7df0df981780800966c5b063ff215c1"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Application.html#ab7df0df981780800966c5b063ff215c1">signalStop</a> ()=0</td></tr>
-<tr class="separator:ab7df0df981780800966c5b063ff215c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a933dfa389afdec24aa5b75bda76ee656"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Application.html#a933dfa389afdec24aa5b75bda76ee656">signalStop</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> msg=&quot;&quot;)=0</td></tr>
+<tr class="separator:a933dfa389afdec24aa5b75bda76ee656"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3f00a293d48fe74b97e406066362816d"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Application.html#a3f00a293d48fe74b97e406066362816d">checkSigs</a> () const =0</td></tr>
 <tr class="separator:a3f00a293d48fe74b97e406066362816d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac7847e6c1c097b025b2e8e9ed6f96b51"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Application.html#ac7847e6c1c097b025b2e8e9ed6f96b51">checkSigs</a> (bool)=0</td></tr>
 <tr class="separator:ac7847e6c1c097b025b2e8e9ed6f96b51"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2e6e1d3e6568b3cce07e0d09803cb231"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Application.html#a2e6e1d3e6568b3cce07e0d09803cb231">isStopping</a> () const =0</td></tr>
 <tr class="separator:a2e6e1d3e6568b3cce07e0d09803cb231"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aadb9ab904b1e2a1dae4c77a9275be921"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Application.html#aadb9ab904b1e2a1dae4c77a9275be921">instanceID</a> () const =0</td></tr>
+<tr class="memdesc:aadb9ab904b1e2a1dae4c77a9275be921"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a 64-bit instance identifier, generated at startup.  <a href="classripple_1_1Application.html#aadb9ab904b1e2a1dae4c77a9275be921">More...</a><br /></td></tr>
+<tr class="separator:aadb9ab904b1e2a1dae4c77a9275be921"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a25782128c9548339beec993b748b0268"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classripple_1_1Logs.html">Logs</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Application.html#a25782128c9548339beec993b748b0268">logs</a> ()=0</td></tr>
 <tr class="separator:a25782128c9548339beec993b748b0268"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aca56b7c63030174e59720ab51d739422"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classripple_1_1Config.html">Config</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Application.html#aca56b7c63030174e59720ab51d739422">config</a> ()=0</td></tr>
@@ -214,8 +217,6 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a6f1008fae10cc18f12aaee19091d9980"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abddbb82136e88fc73b03054df91e8ba6"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classripple_1_1PendingSaves.html">PendingSaves</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Application.html#abddbb82136e88fc73b03054df91e8ba6">pendingSaves</a> ()=0</td></tr>
 <tr class="separator:abddbb82136e88fc73b03054df91e8ba6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0d508c01af813d937de83e30c58dd828"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classripple_1_1AccountIDCache.html">AccountIDCache</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Application.html#a0d508c01af813d937de83e30c58dd828">accountIDCache</a> () const =0</td></tr>
-<tr class="separator:a0d508c01af813d937de83e30c58dd828"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a002e22abe4c34d378ff9ece1ab46c7ea"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classripple_1_1OpenLedger.html">OpenLedger</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Application.html#a002e22abe4c34d378ff9ece1ab46c7ea">openLedger</a> ()=0</td></tr>
 <tr class="separator:a002e22abe4c34d378ff9ece1ab46c7ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa296af2ee4f4d39e1f5529f563b48a7c"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classripple_1_1OpenLedger.html">OpenLedger</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Application.html#aa296af2ee4f4d39e1f5529f563b48a7c">openLedger</a> () const =0</td></tr>
@@ -334,7 +335,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l02148">2148</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l02165">2165</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -391,8 +392,8 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="af53f54c7202b613b48124d6f8f5ffad6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af53f54c7202b613b48124d6f8f5ffad6">&#9670;&nbsp;</a></span>setup()</h2>
+<a id="a2b799a86c8f2f04710fcd11bd688aa94"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2b799a86c8f2f04710fcd11bd688aa94">&#9670;&nbsp;</a></span>setup()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -403,7 +404,8 @@ Private Attributes</h2></td></tr>
         <tr>
           <td class="memname">virtual bool ripple::Application::setup </td>
           <td>(</td>
-          <td class="paramname"></td><td>)</td>
+          <td class="paramtype">boost::program_options::variables_map const &amp;&#160;</td>
+          <td class="paramname"><em>options</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -414,7 +416,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implemented in <a class="el" href="classripple_1_1ApplicationImp.html#a66757a2f9a3ef2eaf7b4f157e40b4896">ripple::ApplicationImp</a>.</p>
+<p>Implemented in <a class="el" href="classripple_1_1ApplicationImp.html#af3c592cbfb90c9f0c05aa15bdd5d1c49">ripple::ApplicationImp</a>.</p>
 
 </div>
 </div>
@@ -473,8 +475,8 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="ab7df0df981780800966c5b063ff215c1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab7df0df981780800966c5b063ff215c1">&#9670;&nbsp;</a></span>signalStop()</h2>
+<a id="a933dfa389afdec24aa5b75bda76ee656"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a933dfa389afdec24aa5b75bda76ee656">&#9670;&nbsp;</a></span>signalStop()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -485,7 +487,8 @@ Private Attributes</h2></td></tr>
         <tr>
           <td class="memname">virtual void ripple::Application::signalStop </td>
           <td>(</td>
-          <td class="paramname"></td><td>)</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td>
+          <td class="paramname"><em>msg</em> = <code>&quot;&quot;</code></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -496,7 +499,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implemented in <a class="el" href="classripple_1_1ApplicationImp.html#aaddff37c2fcd30a2c705f315b4066bcf">ripple::ApplicationImp</a>.</p>
+<p>Implemented in <a class="el" href="classripple_1_1ApplicationImp.html#a0fa7fbb335c097d3f91aeca7866387cc">ripple::ApplicationImp</a>.</p>
 
 </div>
 </div>
@@ -579,6 +582,35 @@ Private Attributes</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Implemented in <a class="el" href="classripple_1_1ApplicationImp.html#a2d2e39521897795875793df42a49e586">ripple::ApplicationImp</a>.</p>
+
+</div>
+</div>
+<a id="aadb9ab904b1e2a1dae4c77a9275be921"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aadb9ab904b1e2a1dae4c77a9275be921">&#9670;&nbsp;</a></span>instanceID()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> ripple::Application::instanceID </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Returns a 64-bit instance identifier, generated at startup. </p>
+
+<p>Implemented in <a class="el" href="classripple_1_1ApplicationImp.html#acb4b8c9da3d4acfd0236447feef6e93e">ripple::ApplicationImp</a>.</p>
 
 </div>
 </div>
@@ -1717,33 +1749,6 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a0d508c01af813d937de83e30c58dd828"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0d508c01af813d937de83e30c58dd828">&#9670;&nbsp;</a></span>accountIDCache()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">virtual <a class="el" href="classripple_1_1AccountIDCache.html">AccountIDCache</a> const&amp; ripple::Application::accountIDCache </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Implemented in <a class="el" href="classripple_1_1ApplicationImp.html#a844664651a86aee48c1a7f26afe8c1b0">ripple::ApplicationImp</a>.</p>
-
-</div>
-</div>
 <a id="a002e22abe4c34d378ff9ece1ab46c7ea"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a002e22abe4c34d378ff9ece1ab46c7ea">&#9670;&nbsp;</a></span>openLedger() <span class="overload">[1/2]</span></h2>
 
@@ -2108,7 +2113,7 @@ template&lt;class Derived &gt; </div>
 <p>Add a child source by pointer. </p>
 <p>The source pointer is returned so it can be used in ctor-initializers. </p>
 
-<p class="definition">Definition at line <a class="el" href="PropertyStream_8h_source.html#l00372">372</a> of file <a class="el" href="PropertyStream_8h_source.html">PropertyStream.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PropertyStream_8h_source.html#l00360">360</a> of file <a class="el" href="PropertyStream_8h_source.html">PropertyStream.h</a>.</p>
 
 </div>
 </div>
@@ -2526,7 +2531,7 @@ template&lt;class Derived &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PropertyStream_8h_source.html#l00345">345</a> of file <a class="el" href="PropertyStream_8h_source.html">PropertyStream.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PropertyStream_8h_source.html#l00333">333</a> of file <a class="el" href="PropertyStream_8h_source.html">PropertyStream.h</a>.</p>
 
 </div>
 </div>
@@ -2550,7 +2555,7 @@ template&lt;class Derived &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PropertyStream_8h_source.html#l00346">346</a> of file <a class="el" href="PropertyStream_8h_source.html">PropertyStream.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PropertyStream_8h_source.html#l00334">334</a> of file <a class="el" href="PropertyStream_8h_source.html">PropertyStream.h</a>.</p>
 
 </div>
 </div>
@@ -2574,7 +2579,7 @@ template&lt;class Derived &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PropertyStream_8h_source.html#l00347">347</a> of file <a class="el" href="PropertyStream_8h_source.html">PropertyStream.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PropertyStream_8h_source.html#l00335">335</a> of file <a class="el" href="PropertyStream_8h_source.html">PropertyStream.h</a>.</p>
 
 </div>
 </div>
@@ -2598,7 +2603,7 @@ template&lt;class Derived &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PropertyStream_8h_source.html#l00348">348</a> of file <a class="el" href="PropertyStream_8h_source.html">PropertyStream.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PropertyStream_8h_source.html#l00336">336</a> of file <a class="el" href="PropertyStream_8h_source.html">PropertyStream.h</a>.</p>
 
 </div>
 </div>
@@ -2622,7 +2627,7 @@ template&lt;class Derived &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PropertyStream_8h_source.html#l00349">349</a> of file <a class="el" href="PropertyStream_8h_source.html">PropertyStream.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PropertyStream_8h_source.html#l00337">337</a> of file <a class="el" href="PropertyStream_8h_source.html">PropertyStream.h</a>.</p>
 
 </div>
 </div>

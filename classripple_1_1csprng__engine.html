@@ -69,7 +69,6 @@ $(function() {
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-static-methods">Static Public Member Functions</a> &#124;
-<a href="#pri-methods">Private Member Functions</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classripple_1_1csprng__engine-members.html">List of all members</a>  </div>
   <div class="headertitle">
@@ -125,11 +124,6 @@ Static Public Member Functions</h2></td></tr>
 <tr class="memitem:aef86b5d2308d9e403ae27d4c2e049f3b"><td class="memItemLeft" align="right" valign="top">static constexpr <a class="el" href="classripple_1_1csprng__engine.html#a1d06454904c264b7a0cce18101762af3">result_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1csprng__engine.html#aef86b5d2308d9e403ae27d4c2e049f3b">max</a> ()</td></tr>
 <tr class="separator:aef86b5d2308d9e403ae27d4c2e049f3b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-methods"></a>
-Private Member Functions</h2></td></tr>
-<tr class="memitem:a96ddc690cc7338157ca46689d94908f5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1csprng__engine.html#a96ddc690cc7338157ca46689d94908f5">mix</a> (void *buffer, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> count, double bitsPerByte)</td></tr>
-<tr class="separator:a96ddc690cc7338157ca46689d94908f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
 <tr class="memitem:a97b1006643b8f6035436b268ec9925bd"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/mutex.html">std::mutex</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1csprng__engine.html#a97b1006643b8f6035436b268ec9925bd">mutex_</a></td></tr>
@@ -154,7 +148,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="csprng_8h_source.html#l00046">46</a> of file <a class="el" href="csprng_8h_source.html">csprng.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="csprng_8h_source.html#l00043">43</a> of file <a class="el" href="csprng_8h_source.html">csprng.h</a>.</p>
 
 </div>
 </div>
@@ -226,7 +220,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="csprng_8cpp_source.html#l00042">42</a> of file <a class="el" href="csprng_8cpp_source.html">csprng.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="csprng_8cpp_source.html#l00030">30</a> of file <a class="el" href="csprng_8cpp_source.html">csprng.cpp</a>.</p>
 
 </div>
 </div>
@@ -245,55 +239,11 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="csprng_8cpp_source.html#l00047">47</a> of file <a class="el" href="csprng_8cpp_source.html">csprng.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="csprng_8cpp_source.html#l00037">37</a> of file <a class="el" href="csprng_8cpp_source.html">csprng.cpp</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a96ddc690cc7338157ca46689d94908f5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a96ddc690cc7338157ca46689d94908f5">&#9670;&nbsp;</a></span>mix()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ripple::csprng_engine::mix </td>
-          <td>(</td>
-          <td class="paramtype">void *&#160;</td>
-          <td class="paramname"><em>buffer</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td>
-          <td class="paramname"><em>count</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">double&#160;</td>
-          <td class="paramname"><em>bitsPerByte</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="csprng_8cpp_source.html#l00032">32</a> of file <a class="el" href="csprng_8cpp_source.html">csprng.cpp</a>.</p>
-
-</div>
-</div>
 <a id="adbf105cfedac9f9a042d695cb705f4a0"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#adbf105cfedac9f9a042d695cb705f4a0">&#9670;&nbsp;</a></span>operator=() <span class="overload">[1/2]</span></h2>
 
@@ -374,7 +324,7 @@ Private Attributes</h2></td></tr>
 
 <p>Mix entropy into the pool. </p>
 
-<p class="definition">Definition at line <a class="el" href="csprng_8cpp_source.html#l00053">53</a> of file <a class="el" href="csprng_8cpp_source.html">csprng.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="csprng_8cpp_source.html#l00046">46</a> of file <a class="el" href="csprng_8cpp_source.html">csprng.cpp</a>.</p>
 
 </div>
 </div>
@@ -395,7 +345,7 @@ Private Attributes</h2></td></tr>
 
 <p>Generate a random integer. </p>
 
-<p class="definition">Definition at line <a class="el" href="csprng_8cpp_source.html#l00080">80</a> of file <a class="el" href="csprng_8cpp_source.html">csprng.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="csprng_8cpp_source.html#l00091">91</a> of file <a class="el" href="csprng_8cpp_source.html">csprng.cpp</a>.</p>
 
 </div>
 </div>
@@ -427,7 +377,7 @@ Private Attributes</h2></td></tr>
 
 <p>Fill a buffer with the requested amount of random data. </p>
 
-<p class="definition">Definition at line <a class="el" href="csprng_8cpp_source.html#l00096">96</a> of file <a class="el" href="csprng_8cpp_source.html">csprng.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="csprng_8cpp_source.html#l00074">74</a> of file <a class="el" href="csprng_8cpp_source.html">csprng.cpp</a>.</p>
 
 </div>
 </div>
@@ -454,7 +404,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="csprng_8h_source.html#l00073">73</a> of file <a class="el" href="csprng_8h_source.html">csprng.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="csprng_8h_source.html#l00070">70</a> of file <a class="el" href="csprng_8h_source.html">csprng.h</a>.</p>
 
 </div>
 </div>
@@ -481,7 +431,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="csprng_8h_source.html#l00080">80</a> of file <a class="el" href="csprng_8h_source.html">csprng.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="csprng_8h_source.html#l00077">77</a> of file <a class="el" href="csprng_8h_source.html">csprng.h</a>.</p>
 
 </div>
 </div>

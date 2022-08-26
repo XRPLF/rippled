@@ -1189,10 +1189,10 @@ $(function() {
 <div class="line"><a name="l01125"></a><span class="lineno"> 1125</span>&#160;    <span class="keywordtype">bool</span> <span class="keyword">const</span> inXRP = <a class="code" href="namespaceripple.html#a20d30277b9c78756b3d14493055a307c">isXRP</a>(book.<a class="code" href="classripple_1_1Book.html#a44f1acfd1d549e7f025f5372fb345f27">in</a>.<a class="code" href="classripple_1_1Issue.html#a4b723aa4198e4c630e41de06586e2fe7">currency</a>);</div>
 <div class="line"><a name="l01126"></a><span class="lineno"> 1126</span>&#160;    <span class="keywordtype">bool</span> <span class="keyword">const</span> outXRP = <a class="code" href="namespaceripple.html#a20d30277b9c78756b3d14493055a307c">isXRP</a>(book.<a class="code" href="classripple_1_1Book.html#a6992e8a5da385182ec3ab51a0216281a">out</a>.<a class="code" href="classripple_1_1Issue.html#a4b723aa4198e4c630e41de06586e2fe7">currency</a>);</div>
 <div class="line"><a name="l01127"></a><span class="lineno"> 1127</span>&#160;    <span class="keywordflow">if</span> (inXRP &amp;&amp; outXRP)</div>
-<div class="line"><a name="l01128"></a><span class="lineno"> 1128</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="namespaceripple_1_1test.html#a39b1794357565802f08397fa85fd67b5">equalHelper</a>&lt;</div>
-<div class="line"><a name="l01129"></a><span class="lineno"> 1129</span>&#160;            <a class="code" href="classripple_1_1XRPAmount.html">XRPAmount</a>,</div>
-<div class="line"><a name="l01130"></a><span class="lineno"> 1130</span>&#160;            <a class="code" href="classripple_1_1XRPAmount.html">XRPAmount</a>,</div>
-<div class="line"><a name="l01131"></a><span class="lineno"> 1131</span>&#160;            <a class="code" href="classripple_1_1BookPaymentStep.html">BookPaymentStep&lt;XRPAmount, XRPAmount&gt;</a>&gt;(step, book);</div>
+<div class="line"><a name="l01128"></a><span class="lineno"> 1128</span>&#160;    {</div>
+<div class="line"><a name="l01129"></a><span class="lineno"> 1129</span>&#160;        assert(0);</div>
+<div class="line"><a name="l01130"></a><span class="lineno"> 1130</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">false</span>;  <span class="comment">// no such thing as xrp/xrp book step</span></div>
+<div class="line"><a name="l01131"></a><span class="lineno"> 1131</span>&#160;    }</div>
 <div class="line"><a name="l01132"></a><span class="lineno"> 1132</span>&#160;    <span class="keywordflow">if</span> (inXRP &amp;&amp; !outXRP)</div>
 <div class="line"><a name="l01133"></a><span class="lineno"> 1133</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="namespaceripple_1_1test.html#a39b1794357565802f08397fa85fd67b5">equalHelper</a>&lt;</div>
 <div class="line"><a name="l01134"></a><span class="lineno"> 1134</span>&#160;            <a class="code" href="classripple_1_1XRPAmount.html">XRPAmount</a>,</div>

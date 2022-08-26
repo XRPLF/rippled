@@ -76,29 +76,23 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 <div class="dynheader">
-Inheritance diagram for beast::LockFreeStackIterator&lt; Container, IsConst &gt;:</div>
-<div class="dyncontent">
-<div class="center"><img src="classbeast_1_1LockFreeStackIterator__inherit__graph.png" border="0" usemap="#beast_1_1LockFreeStackIterator_3_01Container_00_01IsConst_01_4_inherit__map" alt="Inheritance graph"/></div>
-<map name="beast_1_1LockFreeStackIterator_3_01Container_00_01IsConst_01_4_inherit__map" id="beast_1_1LockFreeStackIterator_3_01Container_00_01IsConst_01_4_inherit__map">
-<area shape="rect" title=" " alt="" coords="325,64,532,105"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/iterator/iterator.html" title=" " alt="" coords="5,5,277,164"/>
-</map>
-<center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
-<div class="dynheader">
 Collaboration diagram for beast::LockFreeStackIterator&lt; Container, IsConst &gt;:</div>
 <div class="dyncontent">
 <div class="center"><img src="classbeast_1_1LockFreeStackIterator__coll__graph.png" border="0" usemap="#beast_1_1LockFreeStackIterator_3_01Container_00_01IsConst_01_4_coll__map" alt="Collaboration graph"/></div>
 <map name="beast_1_1LockFreeStackIterator_3_01Container_00_01IsConst_01_4_coll__map" id="beast_1_1LockFreeStackIterator_3_01Container_00_01IsConst_01_4_coll__map">
-<area shape="rect" title=" " alt="" coords="383,127,589,168"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/iterator/iterator.html" title=" " alt="" coords="5,5,277,164"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/types/conditional.html" title=" " alt="" coords="47,188,236,229"/>
+<area shape="rect" title=" " alt="" coords="5,109,212,151"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/types/conditional.html" title=" " alt="" coords="14,5,203,47"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
+<tr class="memitem:a397c3782964c102b72cbf4a798cb98b9"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1LockFreeStackIterator.html#a397c3782964c102b72cbf4a798cb98b9">iterator_category</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/iterator/iterator_tags.html">std::forward_iterator_tag</a></td></tr>
+<tr class="separator:a397c3782964c102b72cbf4a798cb98b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a71586033c2d5693fc12713552f2fe500"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1LockFreeStackIterator.html#a71586033c2d5693fc12713552f2fe500">value_type</a> = typename Container::value_type</td></tr>
 <tr class="separator:a71586033c2d5693fc12713552f2fe500"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ace9865681ddc94e3f7c3611dc13d255b"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1LockFreeStackIterator.html#ace9865681ddc94e3f7c3611dc13d255b">difference_type</a> = typename Container::difference_type</td></tr>
+<tr class="separator:ace9865681ddc94e3f7c3611dc13d255b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a505378c41e90579c85b28853a1bf1e6b"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1LockFreeStackIterator.html#a505378c41e90579c85b28853a1bf1e6b">pointer</a> = typename <a class="elRef" href="http://en.cppreference.com/w/cpp/types/conditional.html">std::conditional</a>&lt; IsConst, typename Container::const_pointer, typename Container::pointer &gt;::type</td></tr>
 <tr class="separator:a505378c41e90579c85b28853a1bf1e6b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acfde7183f21f3777c239d127543aef22"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1LockFreeStackIterator.html#acfde7183f21f3777c239d127543aef22">reference</a> = typename <a class="elRef" href="http://en.cppreference.com/w/cpp/types/conditional.html">std::conditional</a>&lt; IsConst, typename Container::const_reference, typename Container::reference &gt;::type</td></tr>
@@ -167,7 +161,7 @@ template&lt;class Container , bool IsConst&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LockFreeStack_8h_source.html#l00046">46</a> of file <a class="el" href="LockFreeStack_8h_source.html">LockFreeStack.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LockFreeStack_8h_source.html#l00035">35</a> of file <a class="el" href="LockFreeStack_8h_source.html">LockFreeStack.h</a>.</p>
 
 </div>
 </div>
@@ -193,7 +187,25 @@ template&lt;class Container , bool IsConst&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LockFreeStack_8h_source.html#l00048">48</a> of file <a class="el" href="LockFreeStack_8h_source.html">LockFreeStack.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LockFreeStack_8h_source.html#l00037">37</a> of file <a class="el" href="LockFreeStack_8h_source.html">LockFreeStack.h</a>.</p>
+
+</div>
+</div>
+<a id="a397c3782964c102b72cbf4a798cb98b9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a397c3782964c102b72cbf4a798cb98b9">&#9670;&nbsp;</a></span>iterator_category</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class Container , bool IsConst&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classbeast_1_1LockFreeStackIterator.html">beast::LockFreeStackIterator</a>&lt; Container, IsConst &gt;::<a class="el" href="classbeast_1_1LockFreeStackIterator.html#a397c3782964c102b72cbf4a798cb98b9">iterator_category</a> =  <a class="elRef" href="http://en.cppreference.com/w/cpp/iterator/iterator_tags.html">std::forward_iterator_tag</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="LockFreeStack_8h_source.html#l00040">40</a> of file <a class="el" href="LockFreeStack_8h_source.html">LockFreeStack.h</a>.</p>
 
 </div>
 </div>
@@ -211,7 +223,25 @@ template&lt;class Container , bool IsConst&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LockFreeStack_8h_source.html#l00051">51</a> of file <a class="el" href="LockFreeStack_8h_source.html">LockFreeStack.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LockFreeStack_8h_source.html#l00041">41</a> of file <a class="el" href="LockFreeStack_8h_source.html">LockFreeStack.h</a>.</p>
+
+</div>
+</div>
+<a id="ace9865681ddc94e3f7c3611dc13d255b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ace9865681ddc94e3f7c3611dc13d255b">&#9670;&nbsp;</a></span>difference_type</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class Container , bool IsConst&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classbeast_1_1LockFreeStackIterator.html">beast::LockFreeStackIterator</a>&lt; Container, IsConst &gt;::<a class="el" href="classbeast_1_1LockFreeStackIterator.html#ace9865681ddc94e3f7c3611dc13d255b">difference_type</a> =  typename Container::difference_type</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="LockFreeStack_8h_source.html#l00042">42</a> of file <a class="el" href="LockFreeStack_8h_source.html">LockFreeStack.h</a>.</p>
 
 </div>
 </div>
@@ -229,7 +259,7 @@ template&lt;class Container , bool IsConst&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LockFreeStack_8h_source.html#l00055">55</a> of file <a class="el" href="LockFreeStack_8h_source.html">LockFreeStack.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LockFreeStack_8h_source.html#l00046">46</a> of file <a class="el" href="LockFreeStack_8h_source.html">LockFreeStack.h</a>.</p>
 
 </div>
 </div>
@@ -247,7 +277,7 @@ template&lt;class Container , bool IsConst&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LockFreeStack_8h_source.html#l00059">59</a> of file <a class="el" href="LockFreeStack_8h_source.html">LockFreeStack.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LockFreeStack_8h_source.html#l00050">50</a> of file <a class="el" href="LockFreeStack_8h_source.html">LockFreeStack.h</a>.</p>
 
 </div>
 </div>
@@ -269,7 +299,7 @@ template&lt;class Container , bool IsConst&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LockFreeStack_8h_source.html#l00061">61</a> of file <a class="el" href="LockFreeStack_8h_source.html">LockFreeStack.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LockFreeStack_8h_source.html#l00052">52</a> of file <a class="el" href="LockFreeStack_8h_source.html">LockFreeStack.h</a>.</p>
 
 </div>
 </div>
@@ -291,7 +321,7 @@ template&lt;class Container , bool IsConst&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LockFreeStack_8h_source.html#l00065">65</a> of file <a class="el" href="LockFreeStack_8h_source.html">LockFreeStack.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LockFreeStack_8h_source.html#l00056">56</a> of file <a class="el" href="LockFreeStack_8h_source.html">LockFreeStack.h</a>.</p>
 
 </div>
 </div>
@@ -323,7 +353,7 @@ template&lt;bool OtherIsConst&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LockFreeStack_8h_source.html#l00070">70</a> of file <a class="el" href="LockFreeStack_8h_source.html">LockFreeStack.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LockFreeStack_8h_source.html#l00061">61</a> of file <a class="el" href="LockFreeStack_8h_source.html">LockFreeStack.h</a>.</p>
 
 </div>
 </div>
@@ -346,7 +376,7 @@ template&lt;class Container , bool IsConst&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LockFreeStack_8h_source.html#l00077">77</a> of file <a class="el" href="LockFreeStack_8h_source.html">LockFreeStack.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LockFreeStack_8h_source.html#l00068">68</a> of file <a class="el" href="LockFreeStack_8h_source.html">LockFreeStack.h</a>.</p>
 
 </div>
 </div>
@@ -367,7 +397,7 @@ template&lt;class Container , bool IsConst&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LockFreeStack_8h_source.html#l00084">84</a> of file <a class="el" href="LockFreeStack_8h_source.html">LockFreeStack.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LockFreeStack_8h_source.html#l00075">75</a> of file <a class="el" href="LockFreeStack_8h_source.html">LockFreeStack.h</a>.</p>
 
 </div>
 </div>
@@ -389,7 +419,7 @@ template&lt;class Container , bool IsConst&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LockFreeStack_8h_source.html#l00091">91</a> of file <a class="el" href="LockFreeStack_8h_source.html">LockFreeStack.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LockFreeStack_8h_source.html#l00082">82</a> of file <a class="el" href="LockFreeStack_8h_source.html">LockFreeStack.h</a>.</p>
 
 </div>
 </div>
@@ -410,7 +440,7 @@ template&lt;class Container , bool IsConst&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LockFreeStack_8h_source.html#l00099">99</a> of file <a class="el" href="LockFreeStack_8h_source.html">LockFreeStack.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LockFreeStack_8h_source.html#l00090">90</a> of file <a class="el" href="LockFreeStack_8h_source.html">LockFreeStack.h</a>.</p>
 
 </div>
 </div>
@@ -431,7 +461,7 @@ template&lt;class Container , bool IsConst&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LockFreeStack_8h_source.html#l00105">105</a> of file <a class="el" href="LockFreeStack_8h_source.html">LockFreeStack.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LockFreeStack_8h_source.html#l00096">96</a> of file <a class="el" href="LockFreeStack_8h_source.html">LockFreeStack.h</a>.</p>
 
 </div>
 </div>
@@ -452,7 +482,7 @@ template&lt;class Container , bool IsConst&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LockFreeStack_8h_source.html#l00111">111</a> of file <a class="el" href="LockFreeStack_8h_source.html">LockFreeStack.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LockFreeStack_8h_source.html#l00102">102</a> of file <a class="el" href="LockFreeStack_8h_source.html">LockFreeStack.h</a>.</p>
 
 </div>
 </div>
@@ -479,7 +509,7 @@ template&lt;class Container , bool IsConst&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LockFreeStack_8h_source.html#l00117">117</a> of file <a class="el" href="LockFreeStack_8h_source.html">LockFreeStack.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LockFreeStack_8h_source.html#l00108">108</a> of file <a class="el" href="LockFreeStack_8h_source.html">LockFreeStack.h</a>.</p>
 
 </div>
 </div>

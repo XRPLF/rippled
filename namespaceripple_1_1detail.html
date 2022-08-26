@@ -78,6 +78,9 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1AccountIdCache.html">AccountIdCache</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Caches the base58 representations of AccountIDs.  <a href="classripple_1_1detail_1_1AccountIdCache.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1AccountIDTag.html">AccountIDTag</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1ApplyStateTable.html">ApplyStateTable</a></td></tr>
@@ -269,15 +272,15 @@ Functions</h2></td></tr>
 <tr class="memitem:a9f544f38cf755215588e5759421b4420"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classripple_1_1RelationalDatabase.html#ad49d721f8f069c1ee9652b93a3485423">RelationalDatabase::txnMetaLedgerType</a> &gt;, int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a9f544f38cf755215588e5759421b4420">getNewestAccountTxsB</a> (soci::session &amp;session, <a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, <a class="el" href="structripple_1_1RelationalDatabase_1_1AccountTxOptions.html">RelationalDatabase::AccountTxOptions</a> const  &amp;options, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; int &gt; const  &amp;limit_used, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
 <tr class="memdesc:a9f544f38cf755215588e5759421b4420"><td class="mdescLeft">&#160;</td><td class="mdescRight">getNewestAccountTxsB Returns newest transactions in binary form for given account which match given criteria starting from given offset.  <a href="namespaceripple_1_1detail.html#a9f544f38cf755215588e5759421b4420">More...</a><br /></td></tr>
 <tr class="separator:a9f544f38cf755215588e5759421b4420"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa0c1e6ad71c5f213105e25412e796666"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="structripple_1_1RelationalDatabase_1_1AccountTxMarker.html">RelationalDatabase::AccountTxMarker</a> &gt;, int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#aa0c1e6ad71c5f213105e25412e796666">accountTxPage</a> (soci::session &amp;session, <a class="el" href="classripple_1_1AccountIDCache.html">AccountIDCache</a> const &amp;idCache, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>)&gt; const &amp;onUnsavedLedger, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;, <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &amp;&amp;, <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &amp;&amp;)&gt; const &amp;onTransaction, <a class="el" href="structripple_1_1RelationalDatabase_1_1AccountTxPageOptions.html">RelationalDatabase::AccountTxPageOptions</a> const &amp;options, int limit_used, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> page_length, bool forward)</td></tr>
-<tr class="memdesc:aa0c1e6ad71c5f213105e25412e796666"><td class="mdescLeft">&#160;</td><td class="mdescRight">accountTxPage Searches for the oldest or newest transactions for the account that matches the given criteria starting from the provided marker and invokes the callback parameter for each found transaction.  <a href="namespaceripple_1_1detail.html#aa0c1e6ad71c5f213105e25412e796666">More...</a><br /></td></tr>
-<tr class="separator:aa0c1e6ad71c5f213105e25412e796666"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adab1115ffb405412540fc262c146c4f5"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="structripple_1_1RelationalDatabase_1_1AccountTxMarker.html">RelationalDatabase::AccountTxMarker</a> &gt;, int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#adab1115ffb405412540fc262c146c4f5">oldestAccountTxPage</a> (soci::session &amp;session, <a class="el" href="classripple_1_1AccountIDCache.html">AccountIDCache</a> const  &amp;idCache, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>)&gt; const  &amp;onUnsavedLedger, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const  &amp;, <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &amp;&amp;, <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &amp;&amp;)&gt; const  &amp;onTransaction, <a class="el" href="structripple_1_1RelationalDatabase_1_1AccountTxPageOptions.html">RelationalDatabase::AccountTxPageOptions</a> const  &amp;options, int limit_used, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> page_length)</td></tr>
-<tr class="memdesc:adab1115ffb405412540fc262c146c4f5"><td class="mdescLeft">&#160;</td><td class="mdescRight">oldestAccountTxPage Searches oldest transactions for given account which match given criteria starting from given marker and calls callback for each found transaction.  <a href="namespaceripple_1_1detail.html#adab1115ffb405412540fc262c146c4f5">More...</a><br /></td></tr>
-<tr class="separator:adab1115ffb405412540fc262c146c4f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a32e747530613ca57a950315769baa323"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="structripple_1_1RelationalDatabase_1_1AccountTxMarker.html">RelationalDatabase::AccountTxMarker</a> &gt;, int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a32e747530613ca57a950315769baa323">newestAccountTxPage</a> (soci::session &amp;session, <a class="el" href="classripple_1_1AccountIDCache.html">AccountIDCache</a> const  &amp;idCache, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>)&gt; const  &amp;onUnsavedLedger, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const  &amp;, <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &amp;&amp;, <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &amp;&amp;)&gt; const  &amp;onTransaction, <a class="el" href="structripple_1_1RelationalDatabase_1_1AccountTxPageOptions.html">RelationalDatabase::AccountTxPageOptions</a> const  &amp;options, int limit_used, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> page_length)</td></tr>
-<tr class="memdesc:a32e747530613ca57a950315769baa323"><td class="mdescLeft">&#160;</td><td class="mdescRight">newestAccountTxPage Searches newest transactions for given account which match given criteria starting from given marker and calls callback for each found transaction.  <a href="namespaceripple_1_1detail.html#a32e747530613ca57a950315769baa323">More...</a><br /></td></tr>
-<tr class="separator:a32e747530613ca57a950315769baa323"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a892a7b76cf715706187350c63cedef8b"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="structripple_1_1RelationalDatabase_1_1AccountTxMarker.html">RelationalDatabase::AccountTxMarker</a> &gt;, int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a892a7b76cf715706187350c63cedef8b">accountTxPage</a> (soci::session &amp;session, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>)&gt; const &amp;onUnsavedLedger, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;, <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &amp;&amp;, <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &amp;&amp;)&gt; const &amp;onTransaction, <a class="el" href="structripple_1_1RelationalDatabase_1_1AccountTxPageOptions.html">RelationalDatabase::AccountTxPageOptions</a> const &amp;options, int limit_used, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> page_length, bool forward)</td></tr>
+<tr class="memdesc:a892a7b76cf715706187350c63cedef8b"><td class="mdescLeft">&#160;</td><td class="mdescRight">accountTxPage Searches for the oldest or newest transactions for the account that matches the given criteria starting from the provided marker and invokes the callback parameter for each found transaction.  <a href="namespaceripple_1_1detail.html#a892a7b76cf715706187350c63cedef8b">More...</a><br /></td></tr>
+<tr class="separator:a892a7b76cf715706187350c63cedef8b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a691df57c4b491e41afe720405ac9ebb3"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="structripple_1_1RelationalDatabase_1_1AccountTxMarker.html">RelationalDatabase::AccountTxMarker</a> &gt;, int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a691df57c4b491e41afe720405ac9ebb3">oldestAccountTxPage</a> (soci::session &amp;session, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>)&gt; const  &amp;onUnsavedLedger, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const  &amp;, <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &amp;&amp;, <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &amp;&amp;)&gt; const  &amp;onTransaction, <a class="el" href="structripple_1_1RelationalDatabase_1_1AccountTxPageOptions.html">RelationalDatabase::AccountTxPageOptions</a> const  &amp;options, int limit_used, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> page_length)</td></tr>
+<tr class="memdesc:a691df57c4b491e41afe720405ac9ebb3"><td class="mdescLeft">&#160;</td><td class="mdescRight">oldestAccountTxPage Searches oldest transactions for given account which match given criteria starting from given marker and calls callback for each found transaction.  <a href="namespaceripple_1_1detail.html#a691df57c4b491e41afe720405ac9ebb3">More...</a><br /></td></tr>
+<tr class="separator:a691df57c4b491e41afe720405ac9ebb3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aebe9c123515b55f0778e74f55c61e026"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="structripple_1_1RelationalDatabase_1_1AccountTxMarker.html">RelationalDatabase::AccountTxMarker</a> &gt;, int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#aebe9c123515b55f0778e74f55c61e026">newestAccountTxPage</a> (soci::session &amp;session, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>)&gt; const  &amp;onUnsavedLedger, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const  &amp;, <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &amp;&amp;, <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &amp;&amp;)&gt; const  &amp;onTransaction, <a class="el" href="structripple_1_1RelationalDatabase_1_1AccountTxPageOptions.html">RelationalDatabase::AccountTxPageOptions</a> const  &amp;options, int limit_used, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> page_length)</td></tr>
+<tr class="memdesc:aebe9c123515b55f0778e74f55c61e026"><td class="mdescLeft">&#160;</td><td class="mdescRight">newestAccountTxPage Searches newest transactions for given account which match given criteria starting from given marker and calls callback for each found transaction.  <a href="namespaceripple_1_1detail.html#aebe9c123515b55f0778e74f55c61e026">More...</a><br /></td></tr>
+<tr class="separator:aebe9c123515b55f0778e74f55c61e026"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aceb06a4c305fb22f61cfc9e65e36effe"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/variant.html">std::variant</a>&lt; <a class="el" href="classripple_1_1RelationalDatabase.html#a251e55e3d5aa9b4e4d1a7eebe2157d46">RelationalDatabase::AccountTx</a>, <a class="el" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66cc">TxSearched</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#aceb06a4c305fb22f61cfc9e65e36effe">getTransaction</a> (soci::session &amp;session, <a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const  &amp;id, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a79dcedfb918a7b371ab7797ae9d9bf23">ClosedInterval</a>&lt; uint32_t &gt;&gt; const  &amp;<a class="el" href="namespaceripple.html#a718d6c3cd459b4d24d7bc790905c57f2">range</a>, <a class="el" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932">error_code_i</a> &amp;ec)</td></tr>
 <tr class="memdesc:aceb06a4c305fb22f61cfc9e65e36effe"><td class="mdescLeft">&#160;</td><td class="mdescRight">getTransaction Returns transaction with given hash.  <a href="namespaceripple_1_1detail.html#aceb06a4c305fb22f61cfc9e65e36effe">More...</a><br /></td></tr>
 <tr class="separator:aceb06a4c305fb22f61cfc9e65e36effe"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -375,7 +378,7 @@ Functions</h2></td></tr>
 Variables</h2></td></tr>
 <tr class="memitem:a8ae7bb2924041d323f1d27c2f7b8af9f"><td class="memItemLeft" align="right" valign="top">constexpr int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a8ae7bb2924041d323f1d27c2f7b8af9f">TableTypeCount</a> = 3</td></tr>
 <tr class="separator:a8ae7bb2924041d323f1d27c2f7b8af9f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a21f3cf18de89d49823e064f09526cb5f"><td class="memItemLeft" align="right" valign="top">static constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a21f3cf18de89d49823e064f09526cb5f">numFeatures</a> = 50</td></tr>
+<tr class="memitem:a21f3cf18de89d49823e064f09526cb5f"><td class="memItemLeft" align="right" valign="top">static constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a21f3cf18de89d49823e064f09526cb5f">numFeatures</a> = 51</td></tr>
 <tr class="separator:a21f3cf18de89d49823e064f09526cb5f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad7cc030b8a64621b81be32a2dc7ad84f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structripple_1_1detail_1_1defaultObject__t.html">defaultObject_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#ad7cc030b8a64621b81be32a2dc7ad84f">defaultObject</a></td></tr>
 <tr class="separator:ad7cc030b8a64621b81be32a2dc7ad84f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1659,7 +1662,7 @@ template&lt;class T &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Vector of pairs of found transactions and their metadata sorted by account sequence in the specified order along with the number of transactions processed or skipped. If this number is &gt;= 0, then it represents the number of transactions processed, if it is &lt; 0, then -number represents the number of transactions skipped. We need to skip some number of transactions if option offset is &gt; 0 in the options structure. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l00806">806</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l00805">805</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
 
 </div>
 </div>
@@ -1727,7 +1730,7 @@ template&lt;class T &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Vector of pairs of found transactions and their metadata sorted in ascending order by account sequence. Also number of transactions processed or skipped. If this number is &gt;= 0, then it means number of transactions processed, if it is &lt; 0, then -number means number of transactions skipped. We need to skip some quantity of transactions if option offset is &gt; 0 in the options structure. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l00900">900</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l00899">899</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
 
 </div>
 </div>
@@ -1795,7 +1798,7 @@ template&lt;class T &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Vector of pairs of found transactions and their metadata sorted in descending order by account sequence. Also number of transactions processed or skipped. If this number is &gt;= 0, then it means number of transactions processed, if it is &lt; 0, then -number means number of transactions skipped. We need to skip some quantity of transactions if option offset is &gt; 0 in the options structure. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l00913">913</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l00912">912</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
 
 </div>
 </div>
@@ -1871,7 +1874,7 @@ template&lt;class T &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Vector of tuples each containing (the found transactions, their metadata, and their account sequences) sorted by account sequence in the specified order along with the number of transactions processed or skipped. If this number is &gt;= 0, then it represents the number of transactions processed, if it is &lt; 0, then -number represents the number of transactions skipped. We need to skip some number of transactions if option offset is &gt; 0 in the options structure. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l00949">949</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l00948">948</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
 
 </div>
 </div>
@@ -1932,7 +1935,7 @@ template&lt;class T &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Vector of tuples of found transactions, their metadata and account sequences sorted in ascending order by account sequence. Also number of transactions processed or skipped. If this number is &gt;= 0, then it means number of transactions processed, if it is &lt; 0, then -number means number of transactions skipped. We need to skip some quantity of transactions if option offset is &gt; 0 in the options structure. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l01021">1021</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l01020">1020</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
 
 </div>
 </div>
@@ -1993,12 +1996,12 @@ template&lt;class T &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Vector of tuples of found transactions, their metadata and account sequences sorted in descending order by account sequence. Also number of transactions processed or skipped. If this number is &gt;= 0, then it means number of transactions processed, if it is &lt; 0, then -number means number of transactions skipped. We need to skip some quantity of transactions if option offset is &gt; 0 in the options structure. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l01032">1032</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l01031">1031</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
 
 </div>
 </div>
-<a id="aa0c1e6ad71c5f213105e25412e796666"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa0c1e6ad71c5f213105e25412e796666">&#9670;&nbsp;</a></span>accountTxPage()</h2>
+<a id="a892a7b76cf715706187350c63cedef8b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a892a7b76cf715706187350c63cedef8b">&#9670;&nbsp;</a></span>accountTxPage()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2011,12 +2014,6 @@ template&lt;class T &gt; </div>
           <td>(</td>
           <td class="paramtype">soci::session &amp;&#160;</td>
           <td class="paramname"><em>session</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1AccountIDCache.html">AccountIDCache</a> const &amp;&#160;</td>
-          <td class="paramname"><em>idCache</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -2071,7 +2068,6 @@ template&lt;class T &gt; </div>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">session</td><td><a class="el" href="classripple_1_1Session.html" title="Persistent state information for a connection session.">Session</a> with the database. </td></tr>
-    <tr><td class="paramname">idCache</td><td>Account ID cache. </td></tr>
     <tr><td class="paramname">onUnsavedLedger</td><td>Callback function to call on each found unsaved ledger within the given range. </td></tr>
     <tr><td class="paramname">onTransaction</td><td>Callback function to call on each found transaction. </td></tr>
     <tr><td class="paramname">options</td><td>Struct AccountTxPageOptions which contains the criteria to match: the account, the ledger search range, the marker of the first returned entry, the number of transactions to return, and a flag if this number unlimited. </td></tr>
@@ -2083,12 +2079,12 @@ template&lt;class T &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Vector of tuples of found transactions, their metadata and account sequences sorted in the specified order by account sequence, a marker for the next search if the search was not finished and the number of transactions processed during this call. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l01065">1065</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l01063">1063</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
 
 </div>
 </div>
-<a id="adab1115ffb405412540fc262c146c4f5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adab1115ffb405412540fc262c146c4f5">&#9670;&nbsp;</a></span>oldestAccountTxPage()</h2>
+<a id="a691df57c4b491e41afe720405ac9ebb3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a691df57c4b491e41afe720405ac9ebb3">&#9670;&nbsp;</a></span>oldestAccountTxPage()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2098,12 +2094,6 @@ template&lt;class T &gt; </div>
           <td>(</td>
           <td class="paramtype">soci::session &amp;&#160;</td>
           <td class="paramname"><em>session</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1AccountIDCache.html">AccountIDCache</a> const &amp;&#160;</td>
-          <td class="paramname"><em>idCache</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -2147,7 +2137,6 @@ template&lt;class T &gt; </div>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">session</td><td><a class="el" href="classripple_1_1Session.html" title="Persistent state information for a connection session.">Session</a> with database. </td></tr>
-    <tr><td class="paramname">idCache</td><td>Account ID cache. </td></tr>
     <tr><td class="paramname">onUnsavedLedger</td><td>Callback function to call on each found unsaved ledger within given range. </td></tr>
     <tr><td class="paramname">onTransaction</td><td>Callback function to call on each found transaction. </td></tr>
     <tr><td class="paramname">options</td><td>Struct AccountTxPageOptions which contain criteria to match: the account, minimum and maximum ledger numbers to search, marker of first returned entry, number of transactions to return, flag if this number unlimited. </td></tr>
@@ -2158,12 +2147,12 @@ template&lt;class T &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Vector of tuples of found transactions, their metadata and account sequences sorted in ascending order by account sequence and marker for next search if search not finished. Also number of transactions processed during this call. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l01227">1227</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l01224">1224</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a32e747530613ca57a950315769baa323"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a32e747530613ca57a950315769baa323">&#9670;&nbsp;</a></span>newestAccountTxPage()</h2>
+<a id="aebe9c123515b55f0778e74f55c61e026"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aebe9c123515b55f0778e74f55c61e026">&#9670;&nbsp;</a></span>newestAccountTxPage()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2173,12 +2162,6 @@ template&lt;class T &gt; </div>
           <td>(</td>
           <td class="paramtype">soci::session &amp;&#160;</td>
           <td class="paramname"><em>session</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1AccountIDCache.html">AccountIDCache</a> const &amp;&#160;</td>
-          <td class="paramname"><em>idCache</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -2222,7 +2205,6 @@ template&lt;class T &gt; </div>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">session</td><td><a class="el" href="classripple_1_1Session.html" title="Persistent state information for a connection session.">Session</a> with database. </td></tr>
-    <tr><td class="paramname">idCache</td><td>Account ID cache. </td></tr>
     <tr><td class="paramname">onUnsavedLedger</td><td>Callback function to call on each found unsaved ledger within given range. </td></tr>
     <tr><td class="paramname">onTransaction</td><td>Callback function to call on each found transaction. </td></tr>
     <tr><td class="paramname">options</td><td>Struct AccountTxPageOptions which contain criteria to match: the account, minimum and maximum ledger numbers to search, marker of first returned entry, number of transactions to return, flag if this number unlimited. </td></tr>
@@ -2233,7 +2215,7 @@ template&lt;class T &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Vector of tuples of found transactions, their metadata and account sequences sorted in descending order by account sequence and marker for next search if search not finished. Also number of transactions processed during this call. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l01250">1250</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l01245">1245</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
 
 </div>
 </div>
@@ -2294,7 +2276,7 @@ template&lt;class T &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd><a class="el" href="classripple_1_1Transaction.html">Transaction</a> and its metadata if found, <a class="el" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66ccaa181a603769c1f98ad927e7367c7aa51">TxSearched::all</a> if range given and all ledgers from range are present in the database, <a class="el" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66cca03d59e663c1af9ac33a9949d1193505a">TxSearched::some</a> if range given and not all ledgers are present, <a class="el" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66ccaad921d60486366258809553a3db49a4a">TxSearched::unknown</a> if range not given or deserializing error occured. In the last case error code modified in ec link parameter, in other cases default error code remained. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l01273">1273</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l01266">1266</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
 
 </div>
 </div>
@@ -2341,7 +2323,7 @@ template&lt;class T &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>True if space is available. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l01354">1354</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l01347">1347</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
 
 </div>
 </div>
@@ -3446,7 +3428,7 @@ template&lt;class T , class... Args&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> ripple::detail::numFeatures = 50</td>
+          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> ripple::detail::numFeatures = 51</td>
         </tr>
       </table>
   </td>

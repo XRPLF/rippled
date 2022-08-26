@@ -113,7 +113,7 @@ Public Attributes</h2></td></tr>
 <div class="textblock"><p>Timing parameters to control validation staleness and expiration. </p>
 <dl class="section note"><dt>Note</dt><dd>These are protocol level parameters that should not be changed without careful consideration. They are <em>not</em> implemented as static constexpr to allow simulation code to test alternate parameter settings. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00043">43</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00045">45</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="aaaa4e5dc1cbca651d304076f14b4d1ba"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aaaa4e5dc1cbca651d304076f14b4d1ba">&#9670;&nbsp;</a></span>ValidationParms()</h2>
@@ -156,7 +156,7 @@ Public Attributes</h2></td></tr>
 <p>The number of seconds a validation remains current after its ledger's close time. </p>
 <p>This is a safety to protect against very old validations and the time it takes to adjust the close time accuracy window. </p>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00053">53</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00055">55</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -175,7 +175,7 @@ Public Attributes</h2></td></tr>
 <p>Duration a validation remains current after first observed. </p>
 <p>The number of seconds a validation remains current after the time we first saw it. This provides faster recovery in very rare cases where the number of validations produced by the network is lower than normal </p>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00061">61</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00063">63</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -194,7 +194,7 @@ Public Attributes</h2></td></tr>
 <p>Duration pre-close in which validations are acceptable. </p>
 <p>The number of seconds before a close time that we consider a validation acceptable. This protects against extreme clock errors </p>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00068">68</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00070">70</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -213,7 +213,7 @@ Public Attributes</h2></td></tr>
 <p>Duration a set of validations for a given ledger hash remain valid. </p>
 <p>The number of seconds before a set of validations for a given ledger hash can expire. This keeps validations for recent ledgers available for a reasonable interval. </p>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00076">76</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00078">78</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -232,7 +232,7 @@ Public Attributes</h2></td></tr>
 <p>How long we consider a validation fresh. </p>
 <p>The number of seconds since a validation has been seen for it to be considered to accurately represent a live proposer's most recent validation. This value should be sufficiently higher than ledgerMAX_CONSENSUS such that validators who are waiting for laggards are not considered offline. </p>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00086">86</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00088">88</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>

@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['x509_5fptr_26415',['x509_ptr',['../namespaceripple_1_1openssl_1_1detail.html#ae2d29f79e03cddf63e1c4d4b9d0c0db3',1,'ripple::openssl::detail']]],
-  ['xor_5fshift_5fengine_26416',['xor_shift_engine',['../namespacebeast.html#a3a89b040ab5ccff1b2ce7692464c6a48',1,'beast']]]
+  ['xor_5fshift_5fengine_26381',['xor_shift_engine',['../namespacebeast.html#a3a89b040ab5ccff1b2ce7692464c6a48',1,'beast']]]
 ];
