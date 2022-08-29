@@ -130,6 +130,18 @@ ledgerEntryRoot(jtx::Env& env, jtx::Account const& acct)
     return env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
 }
 
+static auto
+ledgerEntryOffer(
+    jtx::Env& env,
+    jtx::Account const& acct,
+    std::uint32_t offer_seq)
+{
+    Json::Value jvParams;
+    jvParams[jss::offer][jss::account] = acct.human();
+    jvParams[jss::offer][jss::seq] = offer_seq;
+    return env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
+}
+
 class Test : public beast::unit_test::suite
 {
 protected:
@@ -2290,10 +2302,127 @@ private:
     }
 
     void
-    testUnfundedCross(FeatureBitset features)
+    testCurrencyConversionPartial(FeatureBitset features)
     {
-        testcase("Unfunded Crossing");
+        testcase("Currency Conversion: In Parts");
+
         using namespace jtx;
+
+        Env env{*this, features};
+
+        fund(env, gw, {alice, bob}, {USD(20000)}, Fund::All);
+        AMM ammAlice(env, alice, XRP(10000), USD(10000));
+
+        // Alice converts USD to XRP which should fail
+        // due to PartialPayment.
+        env(pay(alice, alice, XRP(600)),
+            sendmax(USD(100)),
+            ter(tecPATH_PARTIAL));
+
+        // Alice converts USD to XRP, should succeed because
+        // we permit partial payment
+        env(pay(alice, alice, XRP(600)),
+            sendmax(USD(100)),
+            txflags(tfPartialPayment));
+        env.close();
+        BEAST_EXPECT(ammAlice.expectBalances(
+            XRPAmount{9900990100}, USD(10100), IOUAmount{10000000}));
+    }
+
+    void
+    testCrossCurrencyStartXRP(FeatureBitset features)
+    {
+        testcase("Cross Currency Payment: Start with XRP");
+
+        using namespace jtx;
+
+        Env env{*this, features};
+
+        fund(env, gw, {alice, bob}, {USD(10000)}, Fund::All);
+
+        AMM ammAlice(env, alice, XRP(10000), USD(10000));
+
+        env(pay(alice, bob, USD(100)), sendmax(XRP(120)));
+        env.close();
+        BEAST_EXPECT(ammAlice.expectBalances(
+            XRPAmount{10101010101}, USD(9900), IOUAmount{10000000}));
+        auto const jrr = ledgerEntryState(env, bob, gw, "USD");
+        BEAST_EXPECT(
+            jrr[jss::node][sfBalance.fieldName][jss::value] == "-10100");
+    }
+
+    void
+    testCrossCurrencyEndXRP(FeatureBitset features)
+    {
+        testcase("Cross Currency Payment: End with XRP");
+
+        using namespace jtx;
+
+        Env env{*this, features};
+
+        fund(env, gw, {alice, bob}, {USD(10200)}, Fund::All);
+
+        AMM ammAlice(env, alice, XRP(10000), USD(10000));
+
+        env(pay(alice, bob, XRP(100)), sendmax(USD(120)));
+        env.close();
+        BEAST_EXPECT(ammAlice.expectBalances(
+            XRP(9900),
+            STAmount{USD, UINT64_C(101010101010101), -10},
+            IOUAmount{10000000}));
+    }
+
+    void
+    testCrossCurrencyBridged(FeatureBitset features)
+    {
+        testcase("Cross Currency Payment: Bridged");
+
+        using namespace jtx;
+
+        Env env{*this, features};
+
+        auto const gw1 = Account{"gateway_1"};
+        auto const gw2 = Account{"gateway_2"};
+        auto const dan = Account{"dan"};
+        auto const USD1 = gw1["USD"];
+        auto const EUR1 = gw2["EUR"];
+
+        // env.fund(XRP(60000), gw1, gw2, alice, bob, carol, dan);
+        fund(env, gw1, {gw2, alice, bob, carol, dan}, XRP(60000));
+
+        env(trust(alice, USD1(1000)));
+        env.close();
+        env(trust(bob, EUR1(1000)));
+        env.close();
+        env(trust(carol, USD1(10000)));
+        env.close();
+        env(trust(dan, EUR1(1000)));
+        env.close();
+
+        env(pay(gw1, alice, alice["USD"](500)));
+        env.close();
+        env(pay(gw1, carol, carol["USD"](6000)));
+        env(pay(gw2, dan, dan["EUR"](400)));
+        env.close();
+
+        AMM ammCarol(env, carol, USD1(5000), XRP(50000));
+
+        env(offer(dan, XRP(500), EUR1(50)));
+        env.close();
+
+        Json::Value jtp{Json::arrayValue};
+        jtp[0u][0u][jss::currency] = "XRP";
+        env(pay(alice, bob, EUR1(30)),
+            json(jss::Paths, jtp),
+            sendmax(USD1(333)));
+        env.close();
+        BEAST_EXPECT(ammCarol.expectBalances(
+            XRP(49700),
+            STAmount{USD1, UINT64_C(5030181086519115), -12},
+            IOUAmount{158113883008419, -7}));
+        BEAST_EXPECT(expectOffers(env, dan, 1, {{Amounts{XRP(200), EUR(20)}}}));
+        auto const jrr = ledgerEntryState(env, bob, gw2, "EUR");
+        BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "-30");
     }
 
     void
@@ -2315,9 +2444,15 @@ private:
         FeatureBitset const all{supported_amendments()};
         testEnforceNoRipple(all);
         testFillModes(all);
+        // testUnfundedCross
         // testNegativeBalance
         testOfferCrossWithXRP(all);
         // testOfferCrossWithLimitOverride
+        // testCurrencyConversionIntoDebt
+        testCurrencyConversionPartial(all);
+        testCrossCurrencyStartXRP(all);
+        testCrossCurrencyEndXRP(all);
+        testCrossCurrencyBridged(all);
     }
 
     void
