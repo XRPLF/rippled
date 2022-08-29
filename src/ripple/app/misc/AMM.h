@@ -36,6 +36,7 @@ class Sandbox;
 class STLedgerEntry;
 class NetClock;
 class STObject;
+class Rules;
 
 /** Calculate AMM account ID.
  */
@@ -150,6 +151,9 @@ ammSend(
  */
 std::uint16_t
 timeSlot(NetClock::time_point const& clock, STObject const& auctionSlot);
+
+bool
+ammRequiredAmendments(Rules const&);
 
 }  // namespace ripple
 

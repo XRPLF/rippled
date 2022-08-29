@@ -37,7 +37,7 @@ AMMCreate::makeTxConsequences(PreflightContext const& ctx)
 NotTEC
 AMMCreate::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureAMM))
+    if (!ammRequiredAmendments(ctx.rules))
         return temDISABLED;
 
     auto const ret = preflight1(ctx);

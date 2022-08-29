@@ -265,4 +265,11 @@ timeSlot(NetClock::time_point const& clock, STObject const& auctionSlot)
     return 0;
 }
 
+bool
+ammRequiredAmendments(Rules const& rules)
+{
+    return rules.enabled(featureAMM) && rules.enabled(fixUniversalNumber) &&
+        rules.enabled(featureFlowCross);
+}
+
 }  // namespace ripple
