@@ -278,6 +278,7 @@ AMMLiquidity::getOffer(
             if (clobQuality && quality < clobQuality.value())
                 return std::nullopt;
             // Change offer size proportionally to the quality
+            // so that the strands order is retained.
             if (saRemOut && offer.out > *saRemOut)
                 return quality.ceil_out(offer, *saRemOut);
             if (saRemIn && offer.in > *saRemIn)
