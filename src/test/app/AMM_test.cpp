@@ -1694,7 +1694,7 @@ private:
                 STAmount(EUR, UINT64_C(9982504373906523), -12),
                 IOUAmount{10000000, 0}));
             BEAST_EXPECT(ammUSD_EUR.expectBalances(
-                STAmount(USD, UINT64_C(9982534930139728), -12),
+                STAmount(USD, UINT64_C(9982534949910292), -12),
                 STAmount(EUR, UINT64_C(1001749562609347), -11),
                 IOUAmount{10000, 0}));
             BEAST_EXPECT(expectOffers(
@@ -1702,8 +1702,8 @@ private:
                 alice,
                 1,
                 {{Amounts{
-                    XRPAmount(17639720),
-                    STAmount(USD, UINT64_C(1746506986027236), -14)}}}));
+                    XRPAmount(17639700),
+                    STAmount(USD, UINT64_C(1746505008970784), -14)}}}));
         }
 
         // Default path (with AMM) has a better quality than a non-default path.
@@ -1879,7 +1879,7 @@ private:
             env.require(offers(alice, 0), offers(carol, 0));
         });
 
-        // Offer crossing with two AMM LPtokens via AMM.
+        // Offer crossing with two AMM LPTokens via AMM.
         testAMM([&](AMM& ammAlice, Env& env) {
             ammAlice.deposit(carol, 1000000);
             fund(env, gw, {alice, carol}, {EUR(10000)}, Fund::None);
@@ -1890,6 +1890,7 @@ private:
             AMM ammAMMTokens(
                 env, alice, STAmount{token1, 9900}, STAmount{token2, 10100});
             env(offer(carol, STAmount{token2, 100}, STAmount{token1, 100}));
+            env.close();
             env.require(offers(carol, 0));
             BEAST_EXPECT(ammAMMTokens.expectBalances(
                 STAmount(token1, 9999),
@@ -1898,7 +1899,7 @@ private:
         });
 
         // AMM with two tokens from another AMM.
-        // LPs pay LPTokens directly. Must set trust.
+        // LPs pay LPTokens directly. Must trust set .
         testAMM([&](AMM& ammAlice, Env& env) {
             auto const token1 = ammAlice.lptIssue();
             env.trust(STAmount{token1, 2000000, 0}, carol);
@@ -1908,6 +1909,7 @@ private:
                 ammAlice.expectLPTokens(alice, IOUAmount{10000000, 0}) &&
                 ammAlice.expectLPTokens(carol, IOUAmount{1000000, 0}));
             env(pay(alice, carol, STAmount{ammAlice.lptIssue(), 100, 0}));
+            env.close();
             BEAST_EXPECT(
                 ammAlice.expectLPTokens(alice, IOUAmount{9999900, 0}) &&
                 ammAlice.expectLPTokens(carol, IOUAmount{1000100, 0}));

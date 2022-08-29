@@ -279,23 +279,20 @@ AMMLiquidity::getOffer(
                 return std::nullopt;
             // Change offer size proportionally to the quality
             if (saRemOut && offer.out > *saRemOut)
-                return Amounts{
-                    swapAssetOut(balances, *remainingOut, tradingFee_),
-                    *saRemOut};
+                return quality.ceil_out(offer, *saRemOut);
             if (saRemIn && offer.in > *saRemIn)
             {
-                auto in = *saRemIn;
-                auto out = swapAssetIn(balances, *remainingIn, tradingFee_);
+                auto amounts = quality.ceil_in(offer, *saRemIn);
                 // The step produced more output in the forward pass than the
                 // reverse pass while consuming the same input (or less).
-                if (saCacheOut && out > *saCacheOut && in <= saCacheIn)
+                if (saCacheOut && amounts.out > *saCacheOut &&
+                    amounts.in <= saCacheIn)
                 {
-                    out = *saCacheOut;
-                    in = swapAssetOut(balances, out, tradingFee_);
-                    if (in != *saCacheIn)
+                    amounts = quality.ceil_out(offer, *saCacheOut);
+                    if (amounts.in != *saCacheIn)
                         return std::nullopt;
                 }
-                return Amounts{in, out};
+                return amounts;
             }
             return offer;
         }
