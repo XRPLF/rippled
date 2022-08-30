@@ -121,6 +121,18 @@ ledgerEntryState(
     return env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
 }
 
+static bool
+expectLedgerEntryState(
+    jtx::Env& env,
+    jtx::Account const& acct_a,
+    jtx::Account const& acct_b,
+    std::string const& currency,
+    std::string const& expectedValue)
+{
+    auto const jrr = ledgerEntryState(env, acct_a, acct_b, currency);
+    return jrr[jss::node][sfBalance.fieldName][jss::value] == expectedValue;
+}
+
 static auto
 ledgerEntryRoot(jtx::Env& env, jtx::Account const& acct)
 {
@@ -128,6 +140,25 @@ ledgerEntryRoot(jtx::Env& env, jtx::Account const& acct)
     jvParams[jss::ledger_index] = "current";
     jvParams[jss::account_root] = acct.human();
     return env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
+}
+
+template <typename V>
+static bool
+expectLedgerEntryRoot(
+    jtx::Env& env,
+    jtx::Account const& acct,
+    V const& expectedValue)
+{
+    auto const jrr = ledgerEntryRoot(env, acct);
+    auto const value = [&]() -> std::string {
+        if constexpr (std::is_same_v<STAmount, V>)
+            return to_string(expectedValue.xrp());
+        else if constexpr (std::is_same_v<jtx::XRP_t, V>)
+            return expectedValue.value().getText();
+        else
+            assert(0);
+    }();
+    return jrr[jss::node][sfBalance.fieldName] == value;
 }
 
 static auto
@@ -217,10 +248,11 @@ protected:
         std::optional<std::pair<STAmount, STAmount>> const& pool = {},
         std::optional<IOUAmount> const& lpt = {},
         std::uint32_t fee = 0,
-        std::optional<jtx::ter> const& ter = std::nullopt)
+        std::optional<jtx::ter> const& ter = std::nullopt,
+        std::optional<FeatureBitset> const& features = std::nullopt)
     {
         using namespace jtx;
-        Env env{*this};
+        auto env = features ? Env{*this, *features} : Env{*this};
 
         auto [asset1, asset2] = [&]() -> std::pair<STAmount, STAmount> {
             if (pool)
@@ -232,14 +264,14 @@ protected:
             env,
             gw,
             {alice, carol},
-            {STAmount{asset2.issue(), 30000, 0}},
+            {STAmount{asset2.issue(), 30000}},
             Fund::All);
         if (!asset1.native())
             fund(
                 env,
                 gw,
                 {alice, carol},
-                {STAmount{asset1.issue(), 30000, 0}},
+                {STAmount{asset1.issue(), 30000}},
                 Fund::None);
         auto tokens = [&]() {
             if (lpt)
@@ -1631,7 +1663,7 @@ private:
     }
 
     void
-    testBasicPayment()
+    testBasicPaymentEngine()
     {
         testcase("Basic Payment");
         using namespace jtx;
@@ -1768,7 +1800,7 @@ private:
                     XRPAmount(9999499987),
                     STAmount(USD, UINT64_C(9999499987998749), -12),
                     IOUAmount{999949998749938, -8}));
-                BEAST_EXPECT(expectLine(env, carol, STAmount{USD, 30200, 0}));
+                BEAST_EXPECT(expectLine(env, carol, STAmount{USD, 30200}));
             },
             std::make_pair(XRP(9900), USD(10100)),
             IOUAmount{999949998749938, -8});
@@ -1782,7 +1814,7 @@ private:
                 env.close();
                 BEAST_EXPECT(ammAlice.expectBalances(
                     XRPAmount(9999000000),
-                    STAmount(USD, 10000, 0),
+                    STAmount(USD, 10000),
                     IOUAmount{999949998749938, -8}));
                 env.require(offers(bob, 0));
             },
@@ -1914,13 +1946,13 @@ private:
         // LPs pay LPTokens directly. Must trust set .
         testAMM([&](AMM& ammAlice, Env& env) {
             auto const token1 = ammAlice.lptIssue();
-            env.trust(STAmount{token1, 2000000, 0}, carol);
+            env.trust(STAmount{token1, 2000000}, carol);
             env.close();
             ammAlice.deposit(carol, 1000000);
             BEAST_EXPECT(
                 ammAlice.expectLPTokens(alice, IOUAmount{10000000, 0}) &&
                 ammAlice.expectLPTokens(carol, IOUAmount{1000000, 0}));
-            env(pay(alice, carol, STAmount{ammAlice.lptIssue(), 100, 0}));
+            env(pay(alice, carol, STAmount{ammAlice.lptIssue(), 100}));
             env.close();
             BEAST_EXPECT(
                 ammAlice.expectLPTokens(alice, IOUAmount{9999900, 0}) &&
@@ -1948,12 +1980,12 @@ private:
             env.close();
             env(pay(alice, carol, STAmount{token1, 100}),
                 path(BookSpec(token1.account, token1.currency)),
-                sendmax(STAmount{token2, 100, 0}),
+                sendmax(STAmount{token2, 100}),
                 txflags(tfPartialPayment | tfNoRippleDirect));
             env.close();
             BEAST_EXPECT(ammAMMTokens.expectBalances(
                 STAmount(token1, UINT64_C(9999000099990001), -10),
-                STAmount(token2, 1000100, 0),
+                STAmount(token2, 1000100),
                 IOUAmount{1000000, 0}));
         });
     }
@@ -2282,23 +2314,17 @@ private:
         // Pay 1 USD, get 3061224489 Drops.
         auto const xrpConsumed = XRPAmount{3061224489};
 
-        auto jrr = ledgerEntryState(env, bob, gw, "USD");
-        BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "-1");
-        jrr = ledgerEntryRoot(env, bob);
-        BEAST_EXPECT(
-            jrr[jss::node][sfBalance.fieldName] ==
-            to_string(
-                (XRP(10000) - xrpConsumed - env.current()->fees().base * 2)
-                    .xrp()));
+        BEAST_EXPECT(expectLedgerEntryState(env, bob, gw, "USD", "-1"));
+        BEAST_EXPECT(expectLedgerEntryRoot(
+            env,
+            bob,
+            XRP(10000) - xrpConsumed - env.current()->fees().base * 2));
 
-        jrr = ledgerEntryState(env, alice, gw, "USD");
-        BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "-450");
-        jrr = ledgerEntryRoot(env, alice);
-        BEAST_EXPECT(
-            jrr[jss::node][sfBalance.fieldName] ==
-            to_string(
-                (XRP(210000) - XRP(150000) - env.current()->fees().base * 2)
-                    .xrp()));
+        BEAST_EXPECT(expectLedgerEntryState(env, alice, gw, "USD", "-450"));
+        BEAST_EXPECT(expectLedgerEntryRoot(
+            env,
+            alice,
+            XRP(210000) - XRP(150000) - env.current()->fees().base * 2));
     }
 
     void
@@ -2346,9 +2372,7 @@ private:
         env.close();
         BEAST_EXPECT(ammAlice.expectBalances(
             XRPAmount{10101010101}, USD(9900), IOUAmount{10000000}));
-        auto const jrr = ledgerEntryState(env, bob, gw, "USD");
-        BEAST_EXPECT(
-            jrr[jss::node][sfBalance.fieldName][jss::value] == "-10100");
+        BEAST_EXPECT(expectLedgerEntryState(env, bob, gw, "USD", "-10100"));
     }
 
     void
@@ -2387,7 +2411,6 @@ private:
         auto const USD1 = gw1["USD"];
         auto const EUR1 = gw2["EUR"];
 
-        // env.fund(XRP(60000), gw1, gw2, alice, bob, carol, dan);
         fund(env, gw1, {gw2, alice, bob, carol, dan}, XRP(60000));
 
         env(trust(alice, USD1(1000)));
@@ -2421,8 +2444,49 @@ private:
             STAmount{USD1, UINT64_C(5030181086519115), -12},
             IOUAmount{158113883008419, -7}));
         BEAST_EXPECT(expectOffers(env, dan, 1, {{Amounts{XRP(200), EUR(20)}}}));
-        auto const jrr = ledgerEntryState(env, bob, gw2, "EUR");
-        BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "-30");
+        BEAST_EXPECT(expectLedgerEntryState(env, bob, gw2, "EUR", "-30"));
+    }
+
+    void
+    testSellFlagBasic(FeatureBitset features)
+    {
+        testcase("Offer tfSell: Basic Sell");
+
+        using namespace jtx;
+
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                fund(env, gw, {bob}, XRP(1000), {}, Fund::Acct);
+                env(offer(bob, USD(100), XRP(100)), json(jss::Flags, tfSell));
+                env.close();
+                // There is a slight results difference because
+                // of tfSell flag between this test and offer
+                // crossing in testBasicPaymentEngine() test.
+                // The difference is due to how limitQuality
+                // is handled in one-path AMM optimization.
+                // In the former test limitQuality doesn't
+                // change remainingOut. In this test limitQuality
+                // changes remainingOut, which is 1/2 max because
+                // of tfSell, to ~100.5USD. This results in
+                // slightly larger consumed offer 100.5USD/99.5XRP
+                // as opposed to former of 100USD/99XRP.
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRPAmount(9999499987),
+                    STAmount{USD, UINT64_C(999949998749938), -11},
+                    IOUAmount{999949998749938, -8}));
+                BEAST_EXPECT(expectOffers(
+                    env,
+                    bob,
+                    1,
+                    {{{STAmount{USD, 500013, -6}, XRPAmount{500013}}}}));
+                BEAST_EXPECT(expectLedgerEntryState(
+                    env, bob, gw, "USD", "-100.5000125006196"));
+            },
+            {{XRP(9900), USD(10100)}},
+            IOUAmount{999949998749938, -8},
+            0,
+            std::nullopt,
+            features);
     }
 
     void
@@ -2453,6 +2517,8 @@ private:
         testCrossCurrencyStartXRP(all);
         testCrossCurrencyEndXRP(all);
         testCrossCurrencyBridged(all);
+        // testBridgedSecondLegDry
+        testSellFlagBasic(all);
     }
 
     void
@@ -2469,7 +2535,7 @@ private:
         testInvalidBid();
         testBid();
         testInvalidAMMPayment();
-        testBasicPayment();
+        testBasicPaymentEngine();
         testAMMTokens();
     }
 
