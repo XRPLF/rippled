@@ -30,7 +30,7 @@
 namespace ripple {
 namespace test {
 
-Json::Value
+static Json::Value
 readOffers(jtx::Env& env, AccountID const& acct)
 {
     Json::Value jv;
@@ -38,7 +38,7 @@ readOffers(jtx::Env& env, AccountID const& acct)
     return env.rpc("json", "account_offers", to_string(jv));
 }
 
-Json::Value
+static Json::Value
 readLines(jtx::Env& env, AccountID const& acctId)
 {
     Json::Value jv;
@@ -46,7 +46,7 @@ readLines(jtx::Env& env, AccountID const& acctId)
     return env.rpc("json", "account_lines", to_string(jv));
 }
 
-Json::Value
+static Json::Value
 accountInfo(jtx::Env& env, AccountID const& acctId)
 {
     Json::Value jv;
@@ -54,7 +54,13 @@ accountInfo(jtx::Env& env, AccountID const& acctId)
     return env.rpc("json", "account_info", to_string(jv));
 }
 
-bool
+static XRPAmount
+txfee(jtx::Env const& env, std::uint16_t n)
+{
+    return env.current()->fees().base * n;
+}
+
+static bool
 expectLine(jtx::Env& env, AccountID const& account, STAmount const& value)
 {
     if (auto const sle = env.le(keylet::line(account, value.issue())))
@@ -68,7 +74,7 @@ expectLine(jtx::Env& env, AccountID const& account, STAmount const& value)
     return false;
 }
 
-bool
+static bool
 expectOffers(
     jtx::Env& env,
     AccountID const& account,
@@ -98,42 +104,6 @@ expectOffers(
 }
 
 static auto
-xrpMinusFee(jtx::Env const& env, XRPAmount xrpAmount) -> jtx::PrettyAmount
-{
-    using namespace jtx;
-    auto feeDrops = env.current()->fees().base;
-    return xrpAmount - feeDrops;
-}
-
-static auto
-ledgerEntryState(
-    jtx::Env& env,
-    jtx::Account const& acct_a,
-    jtx::Account const& acct_b,
-    std::string const& currency)
-{
-    Json::Value jvParams;
-    jvParams[jss::ledger_index] = "current";
-    jvParams[jss::ripple_state][jss::currency] = currency;
-    jvParams[jss::ripple_state][jss::accounts] = Json::arrayValue;
-    jvParams[jss::ripple_state][jss::accounts].append(acct_a.human());
-    jvParams[jss::ripple_state][jss::accounts].append(acct_b.human());
-    return env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
-}
-
-static bool
-expectLedgerEntryState(
-    jtx::Env& env,
-    jtx::Account const& acct_a,
-    jtx::Account const& acct_b,
-    std::string const& currency,
-    std::string const& expectedValue)
-{
-    auto const jrr = ledgerEntryState(env, acct_a, acct_b, currency);
-    return jrr[jss::node][sfBalance.fieldName][jss::value] == expectedValue;
-}
-
-static auto
 ledgerEntryRoot(jtx::Env& env, jtx::Account const& acct)
 {
     Json::Value jvParams;
@@ -159,18 +129,6 @@ expectLedgerEntryRoot(
             assert(0);
     }();
     return jrr[jss::node][sfBalance.fieldName] == value;
-}
-
-static auto
-ledgerEntryOffer(
-    jtx::Env& env,
-    jtx::Account const& acct,
-    std::uint32_t offer_seq)
-{
-    Json::Value jvParams;
-    jvParams[jss::offer][jss::account] = acct.human();
-    jvParams[jss::offer][jss::seq] = offer_seq;
-    return env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
 }
 
 class Test : public beast::unit_test::suite
@@ -1652,7 +1610,7 @@ private:
         testcase("Invalid AMM Payment");
         using namespace jtx;
 
-        // Can't pay into of AMM account.
+        // Can't pay into AMM account.
         // Can't pay out since there is no keys
         testAMM([&](AMM& ammAlice, Env& env) {
             env(pay(carol, ammAlice.ammAccount(), XRP(10)),
@@ -1682,6 +1640,12 @@ private:
                 XRP(10100),
                 STAmount(USD, UINT64_C(9900990099009901), -12),
                 IOUAmount{10000000, 0}));
+            // Initial balance 30,000 + 99.0099009901
+            BEAST_EXPECT(expectLine(
+                env, carol, STAmount{USD, UINT64_C(300990099009901), -10}));
+            // Initial balance 30,000 - 100(sendmax) - 10(tx fee)
+            BEAST_EXPECT(expectLedgerEntryRoot(
+                env, bob, XRP(30000) - XRP(100) - txfee(env, 1)));
         });
 
         // Partial payment ~99.0099USD for 100XRP, use default path.
@@ -1696,6 +1660,12 @@ private:
                 XRP(10100),
                 STAmount(USD, UINT64_C(9900990099009901), -12),
                 IOUAmount{10000000, 0}));
+            // Initial balance 30,000 + 99.0099009901
+            BEAST_EXPECT(expectLine(
+                env, carol, STAmount{USD, UINT64_C(300990099009901), -10}));
+            // Initial balance 30,000 - 100(sendmax) - 10(tx fee)
+            BEAST_EXPECT(expectLedgerEntryRoot(
+                env, bob, XRP(30000) - XRP(100) - txfee(env, 1)));
         });
 
         // This payment is identical to above. While it has
@@ -1712,6 +1682,12 @@ private:
                 XRP(10100),
                 STAmount(USD, UINT64_C(9900990099009901), -12),
                 IOUAmount{10000000, 0}));
+            // Initial balance 30,000 + 99.0099009901
+            BEAST_EXPECT(expectLine(
+                env, carol, STAmount{USD, UINT64_C(300990099009901), -10}));
+            // Initial balance 30,000 - 100(sendmax) - 10(tx fee)
+            BEAST_EXPECT(expectLedgerEntryRoot(
+                env, bob, XRP(30000) - XRP(100) - txfee(env, 1)));
         });
 
         // Non-default path (with AMM) has a better quality than default path.
@@ -1748,6 +1724,14 @@ private:
                 {{Amounts{
                     XRPAmount(17639700),
                     STAmount(USD, UINT64_C(1746505008970784), -14)}}}));
+            // Initial 30,000 + 100
+            BEAST_EXPECT(expectLine(env, carol, STAmount{USD, 30100}));
+            // Initial 1,000 - 17526288(AMM pool) - 83360300(offer) - 10(tx fee)
+            BEAST_EXPECT(expectLedgerEntryRoot(
+                env,
+                bob,
+                XRP(1000) - XRPAmount{17526288} - XRPAmount{83360300} -
+                    txfee(env, 1)));
         }
 
         // Default path (with AMM) has a better quality than a non-default path.
@@ -1782,6 +1766,15 @@ private:
                   Amounts{
                       STAmount(EUR, UINT64_C(17495626093477), -12),
                       STAmount(USD, UINT64_C(17495626093477), -12)}}}));
+            // Initial 30,000 + 99.99999999999
+            BEAST_EXPECT(expectLine(
+                env, carol, STAmount{USD, UINT64_C(3009999999999999), -11}));
+            // Initial 1,000 - 17526288(AMM pool) - 83329418(offer) - 10(tx fee)
+            BEAST_EXPECT(expectLedgerEntryRoot(
+                env,
+                bob,
+                XRP(1000) - XRPAmount{17526288} - XRPAmount{83329418} -
+                    txfee(env, 1)));
         });
 
         // Default path with AMM and Order Book offer. AMM is consumed first,
@@ -1800,7 +1793,21 @@ private:
                     XRPAmount(9999499987),
                     STAmount(USD, UINT64_C(9999499987998749), -12),
                     IOUAmount{999949998749938, -8}));
+                // Initial 30,000 + 200
                 BEAST_EXPECT(expectLine(env, carol, STAmount{USD, 30200}));
+                // Initial 30,000 - 9,900(AMM pool LP) - 99499987(AMM offer) -
+                // - 99499988(offer) - 20(tx fee)
+                BEAST_EXPECT(expectLedgerEntryRoot(
+                    env,
+                    alice,
+                    XRP(30000) - XRP(9900) - XRPAmount{99499987} -
+                        XRPAmount{99499988} - txfee(env, 2)));
+                BEAST_EXPECT(expectOffers(
+                    env,
+                    bob,
+                    1,
+                    {{{XRPAmount{500012},
+                       STAmount{USD, UINT64_C(5000120012508), -13}}}}));
             },
             std::make_pair(XRP(9900), USD(10100)),
             IOUAmount{999949998749938, -8});
@@ -1816,6 +1823,11 @@ private:
                     XRPAmount(9999000000),
                     STAmount(USD, 10000),
                     IOUAmount{999949998749938, -8}));
+                // Initial 1,000 + 100
+                BEAST_EXPECT(expectLine(env, bob, STAmount{USD, 1100}));
+                // Initial 30,000 - 99(offer) - 10(tx fee)
+                BEAST_EXPECT(expectLedgerEntryRoot(
+                    env, bob, XRP(30000) - XRP(99) - txfee(env, 1)));
                 env.require(offers(bob, 0));
             },
             std::make_pair(XRP(9900), USD(10100)),
@@ -1832,6 +1844,12 @@ private:
                 XRPAmount{10050378152},
                 STAmount(USD, UINT64_C(99498743710662), -10),
                 IOUAmount{10000000, 0}));
+            // Initial 1,000 + 50.1256289338(offer)
+            BEAST_EXPECT(expectLine(
+                env, bob, STAmount{USD, UINT64_C(10501256289338), -10}));
+            // Initial 30,000 - 50.378152(AMM offer) - 10(tx fee)
+            BEAST_EXPECT(expectLedgerEntryRoot(
+                env, bob, XRP(30000) - XRPAmount{50378152} - txfee(env, 1)));
             BEAST_EXPECT(expectOffers(
                 env,
                 bob,
@@ -2054,7 +2072,7 @@ private:
 
             env.require(balance(
                 alice,
-                xrpMinusFee(env, 20000 * dropsPerXRP - XRPAmount{50251256})));
+                20000 * dropsPerXRP - XRPAmount{50251256} - txfee(env, 1)));
             env.require(balance(bob, USD1(100)));
             env.require(balance(bob, USD2(0)));
             env.require(balance(carol, USD2(50)));
@@ -2082,7 +2100,7 @@ private:
             {
                 Env env{*this, tweakedFeatures};
 
-                auto const f = env.current()->fees().base;
+                auto const f = txfee(env, 1);
 
                 fund(env, gw, {alice, bob}, startBalance);
                 env.close();
@@ -2150,7 +2168,7 @@ private:
             {
                 Env env{*this, features};
 
-                auto const f = env.current()->fees().base;
+                auto const f = txfee(env, 1);
 
                 fund(env, gw, {alice, bob}, startBalance);
 
@@ -2187,7 +2205,7 @@ private:
             {
                 Env env{*this, features};
 
-                auto const f = env.current()->fees().base;
+                auto const f = txfee(env, 1);
 
                 fund(env, gw, {alice, bob}, startBalance);
 
@@ -2314,17 +2332,13 @@ private:
         // Pay 1 USD, get 3061224489 Drops.
         auto const xrpConsumed = XRPAmount{3061224489};
 
-        BEAST_EXPECT(expectLedgerEntryState(env, bob, gw, "USD", "-1"));
+        BEAST_EXPECT(expectLine(env, bob, STAmount{USD, 1}));
         BEAST_EXPECT(expectLedgerEntryRoot(
-            env,
-            bob,
-            XRP(10000) - xrpConsumed - env.current()->fees().base * 2));
+            env, bob, XRP(10000) - xrpConsumed - txfee(env, 2)));
 
-        BEAST_EXPECT(expectLedgerEntryState(env, alice, gw, "USD", "-450"));
+        BEAST_EXPECT(expectLine(env, alice, STAmount{USD, 450}));
         BEAST_EXPECT(expectLedgerEntryRoot(
-            env,
-            alice,
-            XRP(210000) - XRP(150000) - env.current()->fees().base * 2));
+            env, alice, XRP(210000) - XRP(150000) - txfee(env, 2)));
     }
 
     void
@@ -2372,7 +2386,7 @@ private:
         env.close();
         BEAST_EXPECT(ammAlice.expectBalances(
             XRPAmount{10101010101}, USD(9900), IOUAmount{10000000}));
-        BEAST_EXPECT(expectLedgerEntryState(env, bob, gw, "USD", "-10100"));
+        BEAST_EXPECT(expectLine(env, bob, STAmount{USD, 10100}));
     }
 
     void
@@ -2444,7 +2458,7 @@ private:
             STAmount{USD1, UINT64_C(5030181086519115), -12},
             IOUAmount{158113883008419, -7}));
         BEAST_EXPECT(expectOffers(env, dan, 1, {{Amounts{XRP(200), EUR(20)}}}));
-        BEAST_EXPECT(expectLedgerEntryState(env, bob, gw2, "EUR", "-30"));
+        BEAST_EXPECT(expectLine(env, bob, STAmount{EUR1, 30}));
     }
 
     void
@@ -2479,8 +2493,8 @@ private:
                     bob,
                     1,
                     {{{STAmount{USD, 500013, -6}, XRPAmount{500013}}}}));
-                BEAST_EXPECT(expectLedgerEntryState(
-                    env, bob, gw, "USD", "-100.5000125006196"));
+                BEAST_EXPECT(expectLine(
+                    env, bob, STAmount{USD, UINT64_C(1005000125006196), -13}));
             },
             {{XRP(9900), USD(10100)}},
             IOUAmount{999949998749938, -8},
