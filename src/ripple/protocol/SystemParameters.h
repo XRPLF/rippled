@@ -46,6 +46,14 @@ constexpr XRPAmount INITIAL_XRP{100'000'000'000 * DROPS_PER_XRP};
 inline bool
 isLegalAmount(XRPAmount const& amount)
 {
+    return amount <= INITIAL_XRP;
+}
+
+/** Returns true if the absolute value of the amount does not exceed the initial
+ * XRP in existence. */
+inline bool
+isLegalAmountSigned(XRPAmount const& amount)
+{
     return amount >= -INITIAL_XRP && amount <= INITIAL_XRP;
 }
 
