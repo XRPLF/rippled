@@ -1958,9 +1958,12 @@ private:
                 STAmount(token1, 9999),
                 STAmount(token2, 10000),
                 IOUAmount{999949998749938, -11}));
+            // Carol initial token1 1,000,000 - 99(offer)
+            BEAST_EXPECT(expectLine(env, carol, STAmount{token1, 999901}));
+            // Carol initial token2 1,000,000 + 100(offer)
+            BEAST_EXPECT(expectLine(env, carol, STAmount{token2, 1000100}));
         });
 
-        // AMM with two tokens from another AMM.
         // LPs pay LPTokens directly. Must trust set .
         testAMM([&](AMM& ammAlice, Env& env) {
             auto const token1 = ammAlice.lptIssue();
@@ -1970,10 +1973,14 @@ private:
             BEAST_EXPECT(
                 ammAlice.expectLPTokens(alice, IOUAmount{10000000, 0}) &&
                 ammAlice.expectLPTokens(carol, IOUAmount{1000000, 0}));
-            env(pay(alice, carol, STAmount{ammAlice.lptIssue(), 100}));
+            // Pool balance doesn't change, only tokens moved from
+            // one line to another.
+            env(pay(alice, carol, STAmount{token1, 100}));
             env.close();
             BEAST_EXPECT(
+                // Alice initial token1 10,000,000 - 100
                 ammAlice.expectLPTokens(alice, IOUAmount{9999900, 0}) &&
+                // Carol initial token1 1,000,000 + 100
                 ammAlice.expectLPTokens(carol, IOUAmount{1000100, 0}));
         });
 
@@ -2005,6 +2012,18 @@ private:
                 STAmount(token1, UINT64_C(9999000099990001), -10),
                 STAmount(token2, 1000100),
                 IOUAmount{1000000, 0}));
+            // Alice's token1 balance doesn't change after the payment.
+            // The payment comes out of AMM pool. Alice's token1 balance
+            // is initial 10,000,000 - 1,000,000 deposited into ammAMMTokens
+            // pool.
+            BEAST_EXPECT(ammAlice.expectLPTokens(alice, IOUAmount{9000000}));
+            // Carol got ~99.99 token1 from ammAMMTokens pool. Alice swaps
+            // in 100 token2 into ammAMMTokens pool.
+            BEAST_EXPECT(
+                ammAlice.expectLPTokens(carol, IOUAmount{999900009999, -10}));
+            // Alice's token2 balance changes. Initial 10,000,000 - 1,000,000
+            // deposited into ammAMMTokens pool - 100 payment.
+            BEAST_EXPECT(ammAlice1.expectLPTokens(alice, IOUAmount{8999900}));
         });
     }
 
