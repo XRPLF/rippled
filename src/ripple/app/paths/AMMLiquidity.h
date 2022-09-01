@@ -34,11 +34,16 @@ namespace ripple {
 namespace detail {
 
 /** Generate AMM offers with the offer size based on Fibonacci sequence.
+ * The sequence corresponds to the payment engine iterations with AMM
+ * liquidity. Iterations that don't consume AMM offers don't count.
+ * We max out at four iterations with AMM offers.
  */
 class FibSeqHelper
 {
 private:
+    // Current sequence amounts.
     mutable Amounts curSeq_{};
+    // Laset sequence number.
     mutable std::uint16_t lastNSeq_{0};
     mutable Number x_{0};
     mutable Number y_{0};
@@ -50,7 +55,7 @@ public:
     FibSeqHelper&
     operator=(FibSeqHelper const&) = delete;
     /** The product after the offer is consumed must be greater or equal
-     * to the previous product.
+     * than the previous product.
      */
     void
     validateProduct(Amounts const& balances, Amounts const& offer) const
@@ -82,6 +87,7 @@ public:
         return curSeq_;
     }
     /** Generate next sequence.
+     * @param n sequence to generate
      * @param balances current AMM pool balances.
      * @param tfee trading fee in basis points.
      * @return
@@ -125,7 +131,6 @@ public:
  * The offers are generated in two ways. If there are multiple
  * paths specified to the payment transaction then the offers
  * are generated based on the Fibonacci sequence with
- * the maximum of four offers generated in total and
  * at most four payment engine iterations consuming AMM offers.
  * These offers behave the same way as CLOB offers in that if
  * there is a limiting step, then the offers are adjusted
@@ -135,8 +140,7 @@ public:
  * remainingIn/remainingOut amounts and/or competing CLOB offer.
  * In the latter case, the offer's size is set in such a way
  * that the new AMM's pool spot price quality is equal to the CLOB's
- * offer quality. Offer generation is transparent to BookStep, which
- * gets the offer as Amounts.
+ * offer quality.
  */
 class AMMLiquidity
 {
@@ -146,6 +150,8 @@ private:
     std::uint32_t tradingFee_;
     // Cached AMM pool balances as of last getOffers()
     mutable Amounts balances_;
+    // Is seated in case of multi-path. Generates Fibonacci
+    // sequence offer.
     mutable std::optional<detail::FibSeqHelper> fibSeqHelper_;
     // Indicates that the balances may have changed
     // since the last fetchBalances()
@@ -168,7 +174,7 @@ public:
 
     /** Generate AMM offer. Returns nullopt if clobQuality is provided
      * and it is better than AMM offer quality. Otherwise returns AMM offer.
-     * If clobQuality is provided then AMM offer size is set based on this
+     * If clobQuality is provided then AMM offer size is set based on the
      * quality. If either remainingIn/remainingOut/cache is provided
      * then the offer size is adjusted based on those amounts.
      */
@@ -181,9 +187,10 @@ public:
         std::optional<TOut> const& remainingOut = std::nullopt,
         std::optional<TAmounts<TIn, TOut>> const& cache = std::nullopt) const;
 
-    /** Called when AMM offer is consumed. Sets dirty_ to indicate that
-     * the balances may have changed and increments offer counter
-     * to indicate that AMM offer is used in the strand.
+    /** Called when AMM offer is consumed. Sets dirty flag
+     * to indicate that the balances may have changed and
+     * increments offer counter to indicate that AMM offer
+     * is used in the strand.
      */
     void
     consumed()
@@ -198,16 +205,8 @@ public:
         return ammAccountID_;
     }
 
-    QualityFunction
-    getQF(ReadView const& view) const
-    {
-        if (dirty_)
-            balances_ = fetchBalances(view);
-        return QualityFunction(balances_);
-    }
-
 private:
-    /** Fetches AMM balances if dirty_ is set.
+    /** Fetches AMM balances if dirty flag is set.
      */
     Amounts
     fetchBalances(ReadView const& view) const;
@@ -302,7 +301,9 @@ AMMLiquidity::getOffer(
                 ? changeSpotPriceQuality(balances, *clobQuality, tradingFee_)
                 : balances)
         {
-            // Change offer size based on swap in/out formulas
+            // Change offer size based on swap in/out formulas. The stand's
+            // quality changes in this case for the better. It doesn't matter
+            // since there is only one strand.
             if (saRemOut && offer->out > *saRemOut)
                 return Amounts{
                     swapAssetOut(balances, *remainingOut, tradingFee_),
