@@ -42,8 +42,8 @@ class Quality;
 class QualityFunction
 {
 private:
-    Number m_;
-    Number b_;
+    Number m_;  // slope
+    Number b_;  // intercept
 
 public:
     QualityFunction(Quality const& quality);
