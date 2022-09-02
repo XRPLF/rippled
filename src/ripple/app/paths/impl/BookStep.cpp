@@ -232,13 +232,12 @@ private:
         TAmounts<TIn, TOut> const& stepAmt,
         TOut const& ownerGives) const;
 
-    // Consume AMM offer
     void
     consumeAMMOffer(PaymentSandbox& sb, Amounts const& offer);
 
-    // If ammLiquidity_ is set then gets AMM offer. If clobQuality
-    // is available and has a better quality then return nullopt,
-    // otherwise return AMM offer.
+    // If clobQuality is available and has a better quality then return nullopt,
+    // otherwise if amm liquidity is available return AMM offer adjusted based
+    // on remainingIn/Out.
     std::optional<Amounts>
     getAMMOffer(
         ReadView const& view,
@@ -246,11 +245,11 @@ private:
         std::optional<TIn> const& remainingIn = std::nullopt,
         std::optional<TOut> const& remainingOut = std::nullopt) const;
 
-    // Returns seated best Quality of either AMM or CLOB offer if available,
+    // If seated then it is either AMM or CLOB quality (whichever is best),
     // QualityFunction of the step, and the flag, which is set to true
-    // if AMM offer is selected.
+    // if AMM quality is best.
     std::optional<std::tuple<Quality, QualityFunction, bool>>
-    selectAMMCLOBQuality(ReadView const& view) const;
+    getAMMOrCLOBQuality(ReadView const& view) const;
 };
 
 //------------------------------------------------------------------------------
@@ -518,7 +517,7 @@ BookStep<TIn, TOut, TDerived>::qualityUpperBound(
 {
     auto const dir = this->debtDirection(v, StrandDirection::forward);
 
-    auto const res = selectAMMCLOBQuality(v);
+    auto const res = getAMMOrCLOBQuality(v);
     if (!res)
         return {std::nullopt, dir};
 
@@ -538,10 +537,11 @@ BookStep<TIn, TOut, TDerived>::getQF(
 {
     auto const dir = this->debtDirection(v, StrandDirection::forward);
 
-    auto const res = selectAMMCLOBQuality(v);
+    auto const res = getAMMOrCLOBQuality(v);
     if (!res)
         return {std::nullopt, dir};
 
+    // Don't adjust if AMM
     if (std::get<bool>(*res))
         return {std::get<QualityFunction>(*res), dir};
 
@@ -787,19 +787,28 @@ BookStep<TIn, TOut, TDerived>::getAMMOffer(
 
 template <class TIn, class TOut, class TDerived>
 std::optional<std::tuple<Quality, QualityFunction, bool>>
-BookStep<TIn, TOut, TDerived>::selectAMMCLOBQuality(ReadView const& view) const
+BookStep<TIn, TOut, TDerived>::getAMMOrCLOBQuality(ReadView const& view) const
 {
     // This can be simplified (and sped up) if directories are never empty.
     Sandbox sb(&view, tapNONE);
     BookTip bt(sb, book_);
     auto const clobQuality =
         bt.step(j_) ? std::optional<Quality>(bt.quality()) : std::nullopt;
-    if (auto const ammOffer = getAMMOffer(view, clobQuality))
-        return std::make_tuple(
-            Quality{*ammOffer}, QualityFunction{*ammOffer}, true);
-    else if (clobQuality)
+    // Don't pass in clobQuality. For one-path it returns the offer as
+    // the pool balances and the resulting quality is Spot Price Quality.
+    // For multi-path it returns the actual offer.
+    if (auto const ammOffer = getAMMOffer(view, std::nullopt))
+    {
+        auto const ammQ{Quality{*ammOffer}};
+        // AMM quality is better or no CLOB offer
+        if ((clobQuality && ammQ > *clobQuality) || !clobQuality)
+            return std::make_tuple(ammQ, QualityFunction{*ammOffer}, true);
+    }
+    // CLOB quality is better or no AMM offer
+    if (clobQuality)
         return std::make_tuple(
             *clobQuality, QualityFunction{*clobQuality}, false);
+    // Neither CLOB nor AMM offer is available
     return std::nullopt;
 }
 

@@ -33,6 +33,26 @@ namespace ripple {
 
 namespace detail {
 
+/** The product after the offer is consumed must be greater or equal
+ * than the previous product.
+ */
+void
+validateProduct(Amounts const& balances, Amounts const& offer)
+{
+    if (auto const newProduct =
+            Number(balances.out - offer.out) * (balances.in + offer.in),
+        product = Number(balances.in) * balances.out;
+        newProduct < product)
+    {
+        std::stringstream str;
+        str << "FibSeq results in invalid pool product: orig " << product
+            << " new " << newProduct << " balances " << balances.in << " "
+            << balances.out << " offer " << offer.in << " " << offer.out
+            << std::endl;
+        Throw<std::runtime_error>(str.str());
+    }
+}
+
 /** Generate AMM offers with the offer size based on Fibonacci sequence.
  * The sequence corresponds to the payment engine iterations with AMM
  * liquidity. Iterations that don't consume AMM offers don't count.
@@ -54,23 +74,6 @@ public:
     FibSeqHelper(FibSeqHelper const&) = delete;
     FibSeqHelper&
     operator=(FibSeqHelper const&) = delete;
-    /** The product after the offer is consumed must be greater or equal
-     * than the previous product.
-     */
-    void
-    validateProduct(Amounts const& balances, Amounts const& offer) const
-    {
-        if (auto const newProduct =
-                Number(balances.out - offer.out) * (balances.in + offer.in),
-            product = Number(balances.in) * balances.out;
-            newProduct < product)
-        {
-            std::stringstream str;
-            str << "FibSeq results in invalid pool product: orig " << product
-                << " new " << newProduct << std::endl;
-            // Throw<std::runtime_error>(str.str());
-        }
-    }
     /** Generate first sequence.
      * @param balances current AMM pool balances.
      * @param tfee trading fee in basis points.
@@ -83,7 +86,6 @@ public:
             balances.in.issue(), (Number(5) / 10000) * balances.in / 2);
         curSeq_.out = swapAssetIn(balances, curSeq_.in, tfee);
         y_ = curSeq_.out;
-        validateProduct(balances, curSeq_);
         return curSeq_;
     }
     /** Generate next sequence.
@@ -120,7 +122,6 @@ public:
             (balances.in * balances.out / (balances.out - curSeq_.out) -
              balances.in) /
                 feeMult(tfee));
-        validateProduct(balances, curSeq_);
         return curSeq_;
     }
 };
@@ -335,6 +336,7 @@ AMMLiquidity::getOffer(
     {
         JLOG(j_.debug()) << "AMMLiquidity::getOffer, created " << offer->in
                          << " " << offer->out;
+        detail::validateProduct(balances_, *offer);
         return offer;
     }
     else

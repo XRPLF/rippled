@@ -47,7 +47,7 @@ QualityFunction::combineWithNext(QualityFunction const& qf)
 {
     if (m_ == 0 && b_ == 0)
     {
-        m_ += qf.m_;
+        m_ = qf.m_;
         b_ = qf.b_;
     }
     else

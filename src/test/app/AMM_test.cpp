@@ -125,6 +125,8 @@ expectLedgerEntryRoot(
             return to_string(expectedValue.xrp());
         else if constexpr (std::is_same_v<jtx::XRP_t, V>)
             return expectedValue.value().getText();
+        else if constexpr (std::is_same_v<XRPAmount, V>)
+            return to_string(expectedValue);
         else
             assert(0);
     }();
