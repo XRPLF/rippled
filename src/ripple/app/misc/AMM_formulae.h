@@ -31,9 +31,24 @@
 
 namespace ripple {
 
+/** When converting Number to XRP as the result of swap in/out
+ * operation, round downward/upward respectively to maintain
+ * the invariant - the new pool product is greater or equal
+ * to the previous pool product.
+ */
 inline STAmount
-toSTAmount(Issue const& issue, Number const& n)
+toSTAmount(
+    Issue const& issue,
+    Number const& n,
+    Number::rounding_mode mode = Number::rounding_mode::to_nearest)
 {
+    if (isXRP(issue))
+    {
+        Number::setround(mode);
+        auto const res = STAmount{issue, (std::int64_t)n};
+        Number::setround(Number::rounding_mode::to_nearest);
+        return res;
+    }
     return STAmount{issue, n.mantissa(), n.exponent()};
 }
 
@@ -193,9 +208,11 @@ template <typename TIn>
 STAmount
 swapAssetIn(Amounts const& pool, TIn const& assetIn, std::uint16_t tfee)
 {
-    return toSTAmount(
+    auto const res = toSTAmount(
         pool.out.issue(),
-        pool.out * (1 - pool.in / (pool.in + assetIn * feeMult(tfee))));
+        pool.out * (1 - pool.in / (pool.in + assetIn * feeMult(tfee))),
+        Number::rounding_mode::downward);
+    return res;
 }
 
 /** Swap assetOut out of the pool and swap in a proportional amount
@@ -209,9 +226,11 @@ template <typename TOut>
 STAmount
 swapAssetOut(Amounts const& pool, TOut const& assetOut, std::uint16_t tfee)
 {
-    return toSTAmount(
+    auto const res = toSTAmount(
         pool.in.issue(),
-        pool.in * (pool.out / (pool.out - assetOut) - 1) / feeMult(tfee));
+        pool.in * (pool.out / (pool.out - assetOut) - 1) / feeMult(tfee),
+        Number::rounding_mode::upward);
+    return res;
 }
 
 /** Get T amount

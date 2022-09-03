@@ -33,26 +33,6 @@ namespace ripple {
 
 namespace detail {
 
-/** The product after the offer is consumed must be greater or equal
- * than the previous product.
- */
-void
-validateProduct(Amounts const& balances, Amounts const& offer)
-{
-    if (auto const newProduct =
-            Number(balances.out - offer.out) * (balances.in + offer.in),
-        product = Number(balances.in) * balances.out;
-        newProduct < product)
-    {
-        std::stringstream str;
-        str << "FibSeq results in invalid pool product: orig " << product
-            << " new " << newProduct << " balances " << balances.in << " "
-            << balances.out << " offer " << offer.in << " " << offer.out
-            << std::endl;
-        Throw<std::runtime_error>(str.str());
-    }
-}
-
 /** Generate AMM offers with the offer size based on Fibonacci sequence.
  * The sequence corresponds to the payment engine iterations with AMM
  * liquidity. Iterations that don't consume AMM offers don't count.
@@ -63,7 +43,7 @@ class FibSeqHelper
 private:
     // Current sequence amounts.
     mutable Amounts curSeq_{};
-    // Laset sequence number.
+    // Latest sequence number.
     mutable std::uint16_t lastNSeq_{0};
     mutable Number x_{0};
     mutable Number y_{0};
@@ -83,7 +63,9 @@ public:
     firstSeq(Amounts const& balances, std::uint16_t tfee) const
     {
         curSeq_.in = toSTAmount(
-            balances.in.issue(), (Number(5) / 10000) * balances.in / 2);
+            balances.in.issue(),
+            (Number(5) / 10000) * balances.in / 2,
+            Number::rounding_mode::upward);
         curSeq_.out = swapAssetIn(balances, curSeq_.in, tfee);
         y_ = curSeq_.out;
         return curSeq_;
@@ -116,12 +98,9 @@ public:
             } while (++lastNSeq_ < n);
             return total;
         }();
-        curSeq_.out = toSTAmount(balances.out.issue(), total);
-        curSeq_.in = toSTAmount(
-            balances.in.issue(),
-            (balances.in * balances.out / (balances.out - curSeq_.out) -
-             balances.in) /
-                feeMult(tfee));
+        curSeq_.out = toSTAmount(
+            balances.out.issue(), total, Number::rounding_mode::downward);
+        curSeq_.in = swapAssetOut(balances, curSeq_.out, tfee);
         return curSeq_;
     }
 };
@@ -278,7 +257,7 @@ AMMLiquidity::getOffer(
             if (clobQuality && quality < clobQuality.value())
                 return std::nullopt;
             // Change offer size proportionally to the quality
-            // so that the strands order is retained.
+            // to retain the strands order by quality.
             if (saRemOut && offer.out > *saRemOut)
                 return quality.ceil_out(offer, *saRemOut);
             if (saRemIn && offer.in > *saRemIn)
@@ -303,8 +282,8 @@ AMMLiquidity::getOffer(
                 : balances)
         {
             // Change offer size based on swap in/out formulas. The stand's
-            // quality changes in this case for the better. It doesn't matter
-            // since there is only one strand.
+            // quality changes in this case for the better but since
+            // there is only one strand it doesn't impact the strands order.
             if (saRemOut && offer->out > *saRemOut)
                 return Amounts{
                     swapAssetOut(balances, *remainingOut, tradingFee_),
@@ -336,7 +315,16 @@ AMMLiquidity::getOffer(
     {
         JLOG(j_.debug()) << "AMMLiquidity::getOffer, created " << offer->in
                          << " " << offer->out;
-        detail::validateProduct(balances_, *offer);
+        // The new pool product must be greater or equal to the original pool
+        // product. Swap in/out formulas are used in case of one-path, which by
+        // design maintain the product invariant. The FibSeq is also generated
+        // with the swap in/out formulas except when the offer has to
+        // be reduced, in which case it is changed proportionally to
+        // the original offer quality. It can be shown that in this case
+        // the new pool product is greater than the original pool product.
+        // Since the result for XRP is fractional, round downward
+        // out amount and round upward in amount to maintain the invariant.
+        // This is done in Number/STAmount conversion.
         return offer;
     }
     else

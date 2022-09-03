@@ -1712,11 +1712,11 @@ private:
                 txflags(tfPartialPayment));
             env.close();
             BEAST_EXPECT(ammEUR_XRP.expectBalances(
-                XRPAmount(10017526288),
+                XRPAmount(10017526291),
                 STAmount(EUR, UINT64_C(9982504373906523), -12),
                 IOUAmount{10000000, 0}));
             BEAST_EXPECT(ammUSD_EUR.expectBalances(
-                STAmount(USD, UINT64_C(9982534949910292), -12),
+                STAmount(USD, UINT64_C(9982534949910309), -12),
                 STAmount(EUR, UINT64_C(1001749562609347), -11),
                 IOUAmount{10000, 0}));
             BEAST_EXPECT(expectOffers(
@@ -1725,14 +1725,14 @@ private:
                 1,
                 {{Amounts{
                     XRPAmount(17639700),
-                    STAmount(USD, UINT64_C(1746505008970784), -14)}}}));
+                    STAmount(USD, UINT64_C(1746505008969044), -14)}}}));
             // Initial 30,000 + 100
             BEAST_EXPECT(expectLine(env, carol, STAmount{USD, 30100}));
-            // Initial 1,000 - 17526288(AMM pool) - 83360300(offer) - 10(tx fee)
+            // Initial 1,000 - 17526291(AMM pool) - 83360300(offer) - 10(tx fee)
             BEAST_EXPECT(expectLedgerEntryRoot(
                 env,
                 bob,
-                XRP(1000) - XRPAmount{17526288} - XRPAmount{83360300} -
+                XRP(1000) - XRPAmount{17526291} - XRPAmount{83360300} -
                     txfee(env, 1)));
         }
 
@@ -1755,7 +1755,7 @@ private:
                 txflags(tfPartialPayment));
             env.close();
             BEAST_EXPECT(ammAlice.expectBalances(
-                XRPAmount(10017526288),
+                XRPAmount(10017526291),
                 STAmount(USD, UINT64_C(9982504373906523), -12),
                 IOUAmount{10000000, 0}));
             BEAST_EXPECT(expectOffers(
@@ -1771,11 +1771,12 @@ private:
             // Initial 30,000 + 99.99999999999
             BEAST_EXPECT(expectLine(
                 env, carol, STAmount{USD, UINT64_C(3009999999999999), -11}));
-            // Initial 1,000 - 17526288(AMM pool) - 83329418(offer) - 10(tx fee)
+            // Initial 1,000 - 10017526291(AMM pool) - 83329418(offer) - 10(tx
+            // fee)
             BEAST_EXPECT(expectLedgerEntryRoot(
                 env,
                 bob,
-                XRP(1000) - XRPAmount{17526288} - XRPAmount{83329418} -
+                XRP(1000) - XRPAmount{17526291} - XRPAmount{83329418} -
                     txfee(env, 1)));
         });
 
@@ -1843,15 +1844,15 @@ private:
             env(offer(bob, USD(99), XRP(100)));
             env.close();
             BEAST_EXPECT(ammAlice.expectBalances(
-                XRPAmount{10050378152},
+                XRPAmount{10050378153},
                 STAmount(USD, UINT64_C(99498743710662), -10),
                 IOUAmount{10000000, 0}));
             // Initial 1,000 + 50.1256289338(offer)
             BEAST_EXPECT(expectLine(
                 env, bob, STAmount{USD, UINT64_C(10501256289338), -10}));
-            // Initial 30,000 - 50.378152(AMM offer) - 10(tx fee)
+            // Initial 30,000 - 50378153(AMM offer) - 10(tx fee)
             BEAST_EXPECT(expectLedgerEntryRoot(
-                env, bob, XRP(30000) - XRPAmount{50378152} - txfee(env, 1)));
+                env, bob, XRP(30000) - XRPAmount{50378153} - txfee(env, 1)));
             BEAST_EXPECT(expectOffers(
                 env,
                 bob,
@@ -2089,11 +2090,11 @@ private:
                 sendmax(XRP(60)),
                 txflags(tfNoRippleDirect));
             BEAST_EXPECT(ammDan.expectBalances(
-                XRPAmount{10050251256}, USD1(9950), IOUAmount{10000000, 0}));
+                XRPAmount{10050251257}, USD1(9950), IOUAmount{10000000, 0}));
 
             env.require(balance(
                 alice,
-                20000 * dropsPerXRP - XRPAmount{50251256} - txfee(env, 1)));
+                20000 * dropsPerXRP - XRPAmount{50251257} - txfee(env, 1)));
             env.require(balance(bob, USD1(100)));
             env.require(balance(bob, USD2(0)));
             env.require(balance(carol, USD2(50)));
@@ -2346,12 +2347,12 @@ private:
         env(offer(bob, USD(1), XRP(4000)));
 
         BEAST_EXPECT(ammAlice.expectBalances(
-            XRPAmount{153061224489}, USD(49), IOUAmount{273861278752583, -8}));
+            XRPAmount{153061224490}, USD(49), IOUAmount{273861278752583, -8}));
 
         // Existing offer pays better than this wants.
         // Partially consume existing offer.
         // Pay 1 USD, get 3061224489 Drops.
-        auto const xrpConsumed = XRPAmount{3061224489};
+        auto const xrpConsumed = XRPAmount{3061224490};
 
         BEAST_EXPECT(expectLine(env, bob, STAmount{USD, 1}));
         BEAST_EXPECT(expectLedgerEntryRoot(
@@ -2406,7 +2407,7 @@ private:
         env(pay(alice, bob, USD(100)), sendmax(XRP(120)));
         env.close();
         BEAST_EXPECT(ammAlice.expectBalances(
-            XRPAmount{10101010101}, USD(9900), IOUAmount{10000000}));
+            XRPAmount{10101010102}, USD(9900), IOUAmount{10000000}));
         BEAST_EXPECT(expectLine(env, bob, STAmount{USD, 10100}));
     }
 
@@ -2506,14 +2507,14 @@ private:
                 // slightly larger consumed offer 100.5USD/99.5XRP
                 // as opposed to former of 100USD/99XRP.
                 BEAST_EXPECT(ammAlice.expectBalances(
-                    XRPAmount(9999499987),
+                    XRPAmount(9999499988),
                     STAmount{USD, UINT64_C(999949998749938), -11},
                     IOUAmount{999949998749938, -8}));
                 BEAST_EXPECT(expectOffers(
                     env,
                     bob,
                     1,
-                    {{{STAmount{USD, 500013, -6}, XRPAmount{500013}}}}));
+                    {{{STAmount{USD, 500012, -6}, XRPAmount{500012}}}}));
                 BEAST_EXPECT(expectLine(
                     env, bob, STAmount{USD, UINT64_C(1005000125006196), -13}));
             },

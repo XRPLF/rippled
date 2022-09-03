@@ -351,11 +351,13 @@ qualityUpperBound(ReadView const& v, Strand const& strand)
 /// @endcond
 
 /// @cond INTERNAL
-/** Limit remaining out if only one strand and limitQuality is included.
- * Targets a path with AMM where the average quality is linear and instant
- * quality is quadratic function of output. Calculating quality function
- * for the whole strand enables figuring out required output to produce
- * requested strand's limitQuality.
+/** Limit remaining out only if one strand and limitQuality is included.
+ * Targets one path payment with AMM where the average quality is linear
+ * and instant quality is quadratic function of output. Calculating quality
+ * function for the whole strand enables figuring out required output
+ * to produce requested strand's limitQuality. Reducing the output,
+ * increases quality of AMM steps, increasing the strand's composite
+ * quality as the result.
  */
 template <typename TOutAmt>
 inline TOutAmt
