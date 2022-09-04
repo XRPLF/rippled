@@ -263,6 +263,10 @@ nft_buys(uint256 const& id) noexcept;
 Keylet
 nft_sells(uint256 const& id) noexcept;
 
+/** AMM entry */
+Keylet
+amm(uint256 const& amm) noexcept;
+
 }  // namespace keylet
 
 // Everything below is deprecated and should be removed in favor of keylets:

@@ -142,6 +142,7 @@ test.jtx > ripple.json
 test.jtx > ripple.ledger
 test.jtx > ripple.net
 test.jtx > ripple.protocol
+test.jtx > ripple.rpc
 test.jtx > ripple.server
 test.ledger > ripple.app
 test.ledger > ripple.basics
@@ -203,7 +204,6 @@ test.rpc > ripple.overlay
 test.rpc > ripple.protocol
 test.rpc > ripple.resource
 test.rpc > ripple.rpc
-test.rpc > test.jtx
 test.rpc > test.nodestore
 test.rpc > test.toplevel
 test.server > ripple.app

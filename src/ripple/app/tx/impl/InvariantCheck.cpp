@@ -135,12 +135,16 @@ XRPNotCreated::visitEntry(
 
 bool
 XRPNotCreated::finalize(
-    STTx const&,
+    STTx const& tx,
     TER const,
     XRPAmount const fee,
     ReadView const&,
     beast::Journal const& j)
 {
+    // AMM is created with AMMInstanceCreate, not payment
+    if (tx.getTxnType() == ttAMM_INSTANCE_CREATE)
+        return true;
+
     // The net change should never be positive, as this would mean that the
     // transaction created XRP out of thin air. That's not possible.
     if (drops_ > 0)
@@ -320,7 +324,13 @@ AccountRootsNotDeleted::finalize(
     ReadView const&,
     beast::Journal const& j)
 {
-    if (tx.getTxnType() == ttACCOUNT_DELETE && result == tesSUCCESS)
+    // AMM account root can be deleted as the result of AMM withdraw
+    // transaction when the total AMM LP Tokens balance goes to 0.
+    // Not every AMM withdraw deletes the AMM account, accountsDeleted_
+    // is set if it is deleted.
+    if ((tx.getTxnType() == ttACCOUNT_DELETE ||
+         (tx.getTxnType() == ttAMM_WITHDRAW && accountsDeleted_ == 1)) &&
+        result == tesSUCCESS)
     {
         if (accountsDeleted_ == 1)
             return true;
@@ -372,6 +382,7 @@ LedgerEntryTypesMatch::visitEntry(
             case ltNEGATIVE_UNL:
             case ltNFTOKEN_PAGE:
             case ltNFTOKEN_OFFER:
+            case ltAMM:
                 break;
             default:
                 invalidTypeAdded_ = true;
@@ -472,7 +483,9 @@ ValidNewAccountRoot::finalize(
     }
 
     // From this point on we know exactly one account was created.
-    if (tx.getTxnType() == ttPAYMENT && result == tesSUCCESS)
+    if ((tx.getTxnType() == ttPAYMENT ||
+         tx.getTxnType() == ttAMM_INSTANCE_CREATE) &&
+        result == tesSUCCESS)
     {
         std::uint32_t const startingSeq{
             view.rules().enabled(featureDeletableAccounts) ? view.seq() : 1};

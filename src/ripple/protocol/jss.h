@@ -47,8 +47,25 @@ JSS(Account);                // in: TransactionSign; field.
 JSS(AccountDelete);          // transaction type.
 JSS(AccountRoot);            // ledger type.
 JSS(AccountSet);             // transaction type.
+JSS(AMM);                    // ledger type
+JSS(AMMAccount);             // field
+JSS(AMMBid);                 // transaction type
+JSS(AMMID);                  // field
+JSS(AMMInstanceCreate);      // transaction type
+JSS(AMMDeposit);             // transaction type
+JSS(AMMVote);                // transaction type
+JSS(AMMWithdraw);            // transaction type
 JSS(Amendments);             // ledger type.
 JSS(Amount);                 // in: TransactionSign; field.
+JSS(Asset1);                 // in/out: AMM IOU/XRP pool amount
+JSS(Asset2);                 // in/out: AMM IOU pool amount
+JSS(Asset1In);               // in: AMM Deposit option
+JSS(Asset2In);               // in: AMM Deposit option
+JSS(Asset1Out);              // in: AMM Withdraw option
+JSS(Asset2Out);              // in: AMM Withdraw option
+JSS(AuctionSlot);            // out: AMM Auction Slot
+JSS(AuthAccount);            // in: AMM Auction Slot
+JSS(AuthAccounts);           // in: AMM Auction Slot
 JSS(Check);                  // ledger type.
 JSS(CheckCancel);            // transaction type.
 JSS(CheckCash);              // transaction type.
@@ -57,20 +74,25 @@ JSS(ClearFlag);              // field.
 JSS(DeliverMin);             // in: TransactionSign
 JSS(DepositPreauth);         // transaction and ledger type.
 JSS(Destination);            // in: TransactionSign; field.
+JSS(DiscountedFee);          // out: AMM Auction Slot
 JSS(DirectoryNode);          // ledger type.
 JSS(EnableAmendment);        // transaction type.
+JSS(EPrice);                 // in: AMM Deposit option
 JSS(Escrow);                 // ledger type.
 JSS(EscrowCancel);           // transaction type.
 JSS(EscrowCreate);           // transaction type.
 JSS(EscrowFinish);           // transaction type.
 JSS(Fee);                    // in/out: TransactionSign; field.
 JSS(FeeSettings);            // ledger type.
+JSS(FeeVal);                 // in: AMM Vote
 JSS(Flags);                  // in/out: TransactionSign; field.
 JSS(incomplete_shards);      // out: OverlayImpl, PeerImp
 JSS(Invalid);                //
 JSS(LastLedgerSequence);     // in: TransactionSign; field
 JSS(LedgerHashes);           // ledger type.
 JSS(LimitAmount);            // field.
+JSS(MaxSlotPrice);           // in: AMM Bid
+JSS(MinSlotPrice);           // in: AMM Bid
 JSS(NetworkID);              // field.
 JSS(NFTokenBurn);            // transaction type.
 JSS(NFTokenMint);            // transaction type.
@@ -79,6 +101,7 @@ JSS(NFTokenAcceptOffer);     // transaction type.
 JSS(NFTokenCancelOffer);     // transaction type.
 JSS(NFTokenCreateOffer);     // transaction type.
 JSS(NFTokenPage);            // ledger type.
+JSS(LPToken);                // in: AMM Liquidity Provider tokens
 JSS(Offer);                  // ledger type.
 JSS(OfferCancel);            // transaction type.
 JSS(OfferCreate);            // transaction type.
@@ -89,6 +112,7 @@ JSS(Payment);                // transaction type.
 JSS(PaymentChannelClaim);    // transaction type.
 JSS(PaymentChannelCreate);   // transaction type.
 JSS(PaymentChannelFund);     // transaction type.
+JSS(Price);                  // out: AMM Auction Slot
 JSS(RippleState);            // ledger type.
 JSS(SLE_hit_rate);           // out: GetCounts.
 JSS(SetFee);                 // transaction type.
@@ -105,10 +129,14 @@ JSS(TakerGets);              // field.
 JSS(TakerPays);              // field.
 JSS(Ticket);                 // ledger type.
 JSS(TicketCreate);           // transaction type.
+JSS(TimeInterval);           // out: AMM Auction Slot
 JSS(TxnSignature);           // field.
+JSS(TradingFee);             // in/out: AMM trading fee
 JSS(TransactionType);        // in: TransactionSign.
 JSS(TransferRate);           // in: TransferRate.
 JSS(TrustSet);               // transaction type.
+JSS(VoteSlots);              // out: AMM Vote
+JSS(VoteWeight);             // out: AMM Vote
 JSS(aborted);                // out: InboundLedger
 JSS(accepted);               // out: LedgerToJson, OwnerInfo, SubmitTransaction
 JSS(account);                // in/out: many
@@ -137,11 +165,14 @@ JSS(age);                    // out: NetworkOPs, Peers
 JSS(alternatives);           // out: PathRequest, RipplePathFind
 JSS(amendment_blocked);      // out: NetworkOPs
 JSS(amendments);             // in: AccountObjects, out: NetworkOPs
+JSS(amm_id);                 // in: AMMID in amm_info
 JSS(amount);                 // out: AccountChannels
 JSS(api_version);            // in: many, out: Version
 JSS(api_version_low);        // out: Version
 JSS(applied);                // out: SubmitTransaction
 JSS(asks);                   // out: Subscribe
+JSS(asset1);                 // in: Asset1 in amm_info
+JSS(asset2);                 // in: Asset2 in amm_info
 JSS(assets);                 // out: GatewayBalances
 JSS(authorized);             // out: AccountLines
 JSS(auth_change);            // out: AccountInfo

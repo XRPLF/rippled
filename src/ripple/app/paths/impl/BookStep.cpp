@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <ripple/app/misc/AMM.h>
+#include <ripple/app/paths/AMMLiquidity.h>
 #include <ripple/app/paths/Credit.h>
 #include <ripple/app/paths/impl/FlatSets.h>
 #include <ripple/app/paths/impl/Steps.h>
@@ -59,6 +61,10 @@ protected:
         be partially consumed multiple times during a payment.
     */
     std::uint32_t offersUsed_ = 0;
+    // If set, AMM liquidity might be available
+    // if AMM offer quality is better than CLOB offer
+    // quality or there is no CLOB offer.
+    std::optional<AMMLiquidity> ammLiquidity_;
     beast::Journal const j_;
 
     struct Cache
@@ -89,8 +95,18 @@ public:
         , strandDst_(ctx.strandDst)
         , prevStep_(ctx.prevStep)
         , ownerPaysTransferFee_(ctx.ownerPaysTransferFee)
+        , ammLiquidity_{std::nullopt}
         , j_(ctx.j)
     {
+        if (auto const ammSle = getAMMSle(ctx.view, calcAMMGroupHash(in, out)))
+            ammLiquidity_.emplace(
+                ctx.view,
+                ammSle->getAccountID(sfAMMAccount),
+                ammSle->getFieldU16(sfTradingFee),
+                in,
+                out,
+                ctx.ammOfferCounter,
+                ctx.j);
     }
 
     Book const&
@@ -131,6 +147,9 @@ public:
     std::pair<std::optional<Quality>, DebtDirection>
     qualityUpperBound(ReadView const& v, DebtDirection prevStepDir)
         const override;
+
+    std::pair<std::optional<QualityFunction>, DebtDirection>
+    getQF(ReadView const& v, DebtDirection prevStepDir) const override;
 
     std::uint32_t
     offersUsed() const override;
@@ -212,6 +231,25 @@ private:
         TAmounts<TIn, TOut> const& ofrAmt,
         TAmounts<TIn, TOut> const& stepAmt,
         TOut const& ownerGives) const;
+
+    void
+    consumeAMMOffer(PaymentSandbox& sb, Amounts const& offer);
+
+    // If clobQuality is available and has a better quality then return nullopt,
+    // otherwise if amm liquidity is available return AMM offer adjusted based
+    // on remainingIn/Out.
+    std::optional<Amounts>
+    getAMMOffer(
+        ReadView const& view,
+        std::optional<Quality> const& clobQuality,
+        std::optional<TIn> const& remainingIn = std::nullopt,
+        std::optional<TOut> const& remainingOut = std::nullopt) const;
+
+    // If seated then it is either AMM or CLOB quality (whichever is best),
+    // QualityFunction of the step, and the flag, which is set to true
+    // if AMM quality is best.
+    std::optional<std::tuple<Quality, QualityFunction, bool>>
+    getAMMOrCLOBQuality(ReadView const& view) const;
 };
 
 //------------------------------------------------------------------------------
@@ -247,7 +285,7 @@ public:
 
     // A payment can look at offers of any quality
     bool
-    checkQualityThreshold(TOffer<TIn, TOut> const& offer) const
+    checkQualityThreshold(Quality const& quality) const
     {
         return true;
     }
@@ -396,9 +434,9 @@ public:
     // Offer crossing can prune the offers it needs to look at with a
     // quality threshold.
     bool
-    checkQualityThreshold(TOffer<TIn, TOut> const& offer) const
+    checkQualityThreshold(Quality const& quality) const
     {
-        return !defaultPath_ || offer.quality() >= qualityThreshold_;
+        return !defaultPath_ || quality >= qualityThreshold_;
     }
 
     // For offer crossing don't pay the transfer fee if alice is paying alice.
@@ -479,14 +517,36 @@ BookStep<TIn, TOut, TDerived>::qualityUpperBound(
 {
     auto const dir = this->debtDirection(v, StrandDirection::forward);
 
-    // This can be simplified (and sped up) if directories are never empty.
-    Sandbox sb(&v, tapNONE);
-    BookTip bt(sb, book_);
-    if (!bt.step(j_))
+    auto const res = getAMMOrCLOBQuality(v);
+    if (!res)
         return {std::nullopt, dir};
 
+    // Don't adjust if AMM
+    Quality const q = std::get<bool>(*res)
+        ? std::get<Quality>(*res)
+        : static_cast<TDerived const*>(this)->adjustQualityWithFees(
+              v, std::get<Quality>(*res), prevStepDir);
+    return {q, dir};
+}
+
+template <class TIn, class TOut, class TDerived>
+std::pair<std::optional<QualityFunction>, DebtDirection>
+BookStep<TIn, TOut, TDerived>::getQF(
+    ReadView const& v,
+    DebtDirection prevStepDir) const
+{
+    auto const dir = this->debtDirection(v, StrandDirection::forward);
+
+    auto const res = getAMMOrCLOBQuality(v);
+    if (!res)
+        return {std::nullopt, dir};
+
+    // Don't adjust if AMM
+    if (std::get<bool>(*res))
+        return {std::get<QualityFunction>(*res), dir};
+
     Quality const q = static_cast<TDerived const*>(this)->adjustQualityWithFees(
-        v, bt.quality(), prevStepDir);
+        v, std::get<Quality>(*res), prevStepDir);
     return {q, dir};
 }
 
@@ -625,7 +685,8 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
             }
         }
 
-        if (!static_cast<TDerived const*>(this)->checkQualityThreshold(offer))
+        if (!static_cast<TDerived const*>(this)->checkQualityThreshold(
+                offer.quality()))
             break;
 
         auto const ofrInRate = static_cast<TDerived const*>(this)->getOfrInRate(
@@ -705,6 +766,84 @@ BookStep<TIn, TOut, TDerived>::consumeOffer(
     offer.consume(sb, ofrAmt);
 }
 
+template <class TIn, class TOut, class TDerived>
+std::optional<Amounts>
+BookStep<TIn, TOut, TDerived>::getAMMOffer(
+    ReadView const& view,
+    std::optional<Quality> const& clobQuality,
+    std::optional<TIn> const& remainingIn,
+    std::optional<TOut> const& remainingOut) const
+{
+    if (ammLiquidity_)
+    {
+        auto const cache = cache_ ? std::optional<TAmounts<TIn, TOut>>(
+                                        TAmounts{cache_->in, cache_->out})
+                                  : std::nullopt;
+        return ammLiquidity_->getOffer(
+            view, clobQuality, remainingIn, remainingOut, cache);
+    }
+    return std::nullopt;
+}
+
+template <class TIn, class TOut, class TDerived>
+std::optional<std::tuple<Quality, QualityFunction, bool>>
+BookStep<TIn, TOut, TDerived>::getAMMOrCLOBQuality(ReadView const& view) const
+{
+    // This can be simplified (and sped up) if directories are never empty.
+    Sandbox sb(&view, tapNONE);
+    BookTip bt(sb, book_);
+    auto const clobQuality =
+        bt.step(j_) ? std::optional<Quality>(bt.quality()) : std::nullopt;
+    // Don't pass in clobQuality. For one-path it returns the offer as
+    // the pool balances and the resulting quality is Spot Price Quality.
+    // For multi-path it returns the actual offer.
+    if (auto const ammOffer = getAMMOffer(view, std::nullopt))
+    {
+        auto const ammQ{Quality{*ammOffer}};
+        // AMM quality is better or no CLOB offer
+        if ((clobQuality && ammQ > *clobQuality) || !clobQuality)
+            return std::make_tuple(ammQ, QualityFunction{*ammOffer}, true);
+    }
+    // CLOB quality is better or no AMM offer
+    if (clobQuality)
+        return std::make_tuple(
+            *clobQuality, QualityFunction{*clobQuality}, false);
+    // Neither CLOB nor AMM offer is available
+    return std::nullopt;
+}
+
+template <class TIn, class TOut, class TDerived>
+void
+BookStep<TIn, TOut, TDerived>::consumeAMMOffer(
+    PaymentSandbox& sb,
+    Amounts const& offer)
+{
+    assert(ammLiquidity_);
+
+    if (auto const res = ammSend(
+            sb,
+            offer.in.issue().account,
+            ammLiquidity_->ammAccount(),
+            offer.in,
+            j_);
+        res != tesSUCCESS)
+        Throw<FlowException>(res);
+
+    if (auto const res = ammSend(
+            sb,
+            ammLiquidity_->ammAccount(),
+            offer.out.issue().account,
+            offer.out,
+            j_);
+        res != tesSUCCESS)
+        Throw<FlowException>(res);
+
+    JLOG(j_.trace()) << "AMMLiquidity::consume " << offer.in << " "
+                     << offer.out;
+
+    ammLiquidity_->consumed();
+}
+
 template <class TCollection>
 static auto
 sum(TCollection const& col)
@@ -734,6 +873,45 @@ BookStep<TIn, TOut, TDerived>::revImp(
     boost::container::flat_multiset<TOut> savedOuts;
     savedOuts.reserve(64);
 
+    bool triedAMM = false;
+
+    // Consume AMM offer if it is available and has a better
+    // quality than CLOB offer quality. AMM offer can only
+    // be consumed once at a given CLOB quality. Return true
+    // if AMM offer is consumed and has a better quality than
+    // CLOB offer quality. Return false if AMM offer is not
+    // available, or if it has the same quality as CLOB offer.
+    auto tryAMM = [&](std::optional<Quality> const& clobQuality) {
+        triedAMM = true;
+        if (auto const offer =
+                getAMMOffer(sb, clobQuality, std::nullopt, remainingOut))
+        {
+            auto const quality = Quality{*offer};
+            if (!static_cast<TDerived const*>(this)->checkQualityThreshold(
+                    quality))
+                return false;
+
+            consumeAMMOffer(sb, *offer);
+
+            remainingOut -= get<TOut>(offer->out);
+            // AMM and offer have the same quality.
+            // The offer stream can continue consuming
+            // CLOB offers at the same quality.
+            if (clobQuality && quality == *clobQuality)
+            {
+                savedIns.insert(get<TIn>(offer->in));
+                savedOuts.insert(get<TOut>(offer->out));
+            }
+            else
+            {
+                result.in = get<TIn>(offer->in);
+                result.out = get<TOut>(offer->out);
+                return true;
+            }
+        }
+        return false;
+    };
+
     /* amt fed will be adjusted by owner funds (and may differ from the offer's
       amounts - tho always <=)
       Return true to continue to receive offers, false to stop receiving offers.
@@ -745,6 +923,10 @@ BookStep<TIn, TOut, TDerived>::revImp(
                          std::uint32_t transferRateIn,
                          std::uint32_t transferRateOut) mutable -> bool {
         if (remainingOut <= beast::zero)
+            return false;
+
+        // AMM offer is available and has a better quality
+        if (!triedAMM && tryAMM(offer.quality()))
             return false;
 
         if (stpAmt.out <= remainingOut)
@@ -798,6 +980,9 @@ BookStep<TIn, TOut, TDerived>::revImp(
         std::uint32_t const offersConsumed = std::get<1>(r);
         offersUsed_ = offersConsumed;
         SetUnion(ofrsToRm, toRm);
+        // CLOB offer is not available, try AMM
+        if (!triedAMM)
+            tryAMM(std::nullopt);
 
         if (offersConsumed >= maxOffersToConsume_)
         {
@@ -855,6 +1040,43 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
     boost::container::flat_multiset<TOut> savedOuts;
     savedOuts.reserve(64);
 
+    bool triedAMM = false;
+
+    // Consume AMM offer if it is available and has a better
+    // quality than CLOB offer quality. AMM offer can only
+    // be consumed once at a given CLOB quality. Return true
+    // if AMM offer is consumed and has a better quality than
+    // CLOB offer quality. Return false if AMM offer is not
+    // available, or it has the same quality as CLOB offer.
+    auto tryAMM = [&](std::optional<Quality> const& clobQuality) {
+        triedAMM = true;
+        if (auto const offer =
+                getAMMOffer(sb, clobQuality, remainingIn, std::nullopt))
+        {
+            auto const quality = Quality{*offer};
+            if (!static_cast<TDerived const*>(this)->checkQualityThreshold(
+                    quality))
+                return false;
+
+            consumeAMMOffer(sb, *offer);
+
+            remainingIn -= get<TIn>(offer->in);
+            // AMM and CLOB offer have the same quality
+            if (quality == clobQuality)
+            {
+                savedIns.insert(get<TIn>(offer->in));
+                savedOuts.insert(get<TOut>(offer->out));
+            }
+            else
+            {
+                result.in = get<TIn>(offer->in);
+                result.out = get<TOut>(offer->out);
+                return true;
+            }
+        }
+        return false;
+    };
+
     // amt fed will be adjusted by owner funds (and may differ from the offer's
     // amounts - tho always <=)
     auto eachOffer = [&](TOffer<TIn, TOut>& offer,
@@ -866,6 +1088,10 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
         assert(cache_);
 
         if (remainingIn <= beast::zero)
+            return false;
+
+        // AMM offer is available and has a better quality
+        if (!triedAMM && tryAMM(offer.quality()))
             return false;
 
         bool processMore = true;
@@ -968,6 +1194,9 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
         std::uint32_t const offersConsumed = std::get<1>(r);
         offersUsed_ = offersConsumed;
         SetUnion(ofrsToRm, toRm);
+        // CLOB offer is not available, try AMM
+        if (!triedAMM)
+            tryAMM(std::nullopt);
 
         if (offersConsumed >= maxOffersToConsume_)
         {

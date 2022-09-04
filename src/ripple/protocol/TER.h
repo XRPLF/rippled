@@ -123,6 +123,9 @@ enum TEMcodes : TERUnderlyingType {
 
     temSEQ_AND_TICKET,
     temBAD_NFTOKEN_TRANSFER_FEE,
+
+    temBAD_AMM_OPTIONS,
+    temBAD_AMM_TOKENS,
 };
 
 //------------------------------------------------------------------------------
@@ -292,6 +295,15 @@ enum TECcodes : TERUnderlyingType {
     tecINSUFFICIENT_FUNDS = 159,
     tecOBJECT_NOT_FOUND = 160,
     tecINSUFFICIENT_PAYMENT = 161,
+    tecUNFUNDED_AMM = 162,
+    tecAMM_BALANCE = 163,
+    tecAMM_FAILED_DEPOSIT = 164,
+    tecAMM_FAILED_WITHDRAW = 165,
+    tecAMM_INVALID_TOKENS = 166,
+    tecAMM_EXISTS = 167,
+    tecAMM_FAILED_BID = 168,
+    tecAMM_DIRECT_PAYMENT = 169,
+    tecAMM_FAILED_VOTE = 170
 };
 
 //------------------------------------------------------------------------------
