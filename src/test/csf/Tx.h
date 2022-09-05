@@ -21,7 +21,7 @@
 #include <ripple/beast/hash/hash_append.h>
 #include <ripple/beast/hash/uhash.h>
 #include <boost/container/flat_set.hpp>
-#include <boost/function_output_iterator.hpp>
+#include <boost/iterator/function_output_iterator.hpp>
 #include <map>
 #include <ostream>
 #include <string>
