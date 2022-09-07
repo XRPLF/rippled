@@ -37,10 +37,6 @@ class PerfLog;
 }
 
 class Logs;
-struct Coro_create_t
-{
-    explicit Coro_create_t() = default;
-};
 
 /** A pool of threads to perform work.
 
@@ -76,7 +72,7 @@ public:
     public:
         // Private: Used in the implementation
         template <class F>
-        Coro(Coro_create_t, JobQueue&, JobType, std::string const&, F&&);
+        Coro(JobQueue&, JobType, std::string const&, F&&);
 
         // Not copy-constructible or assignable
         Coro(Coro const&) = delete;
@@ -414,8 +410,7 @@ JobQueue::postCoro(JobType t, std::string const& name, F&& f)
         Last param is the function the coroutine runs. Signature of
         void(std::shared_ptr<Coro>).
     */
-    auto coro = std::make_shared<Coro>(
-        Coro_create_t{}, *this, t, name, std::forward<F>(f));
+    auto coro = std::make_shared<Coro>(*this, t, name, std::forward<F>(f));
     if (!coro->post())
     {
         // The Coro was not successfully posted.  Disable it so it's destructor
