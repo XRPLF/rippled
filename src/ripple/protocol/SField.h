@@ -484,9 +484,9 @@ extern SF_AMOUNT const sfDeliveredAmount;
 extern SF_AMOUNT const sfNFTokenBrokerFee;
 
 // currency amount (fees)
-extern SF_AMOUNT const sfBaseFeeXRP;
-extern SF_AMOUNT const sfReserveBaseXRP;
-extern SF_AMOUNT const sfReserveIncrementXRP;
+extern SF_AMOUNT const sfBaseFeeDrops;
+extern SF_AMOUNT const sfReserveBaseDrops;
+extern SF_AMOUNT const sfReserveIncrementDrops;
 
 // variable length (common)
 extern SF_VL const sfPublicKey;

@@ -141,17 +141,17 @@ FeeVoteImpl::doValidation(
                 v[sfield] = target;
             }
         };
-        vote(lastFees.base, target_.reference_fee, "base fee", sfBaseFeeXRP);
+        vote(lastFees.base, target_.reference_fee, "base fee", sfBaseFeeDrops);
         vote(
             lastFees.accountReserve(0),
             target_.account_reserve,
             "base reserve",
-            sfReserveBaseXRP);
+            sfReserveBaseDrops);
         vote(
             lastFees.increment,
             target_.owner_reserve,
             "reserve increment",
-            sfReserveIncrementXRP);
+            sfReserveIncrementDrops);
     }
     else
     {
@@ -236,9 +236,9 @@ FeeVoteImpl::doVoting(
         {
             if (!val->isTrusted())
                 continue;
-            doVote(val, baseFeeVote, sfBaseFeeXRP);
-            doVote(val, baseReserveVote, sfReserveBaseXRP);
-            doVote(val, incReserveVote, sfReserveIncrementXRP);
+            doVote(val, baseFeeVote, sfBaseFeeDrops);
+            doVote(val, baseReserveVote, sfReserveBaseDrops);
+            doVote(val, incReserveVote, sfReserveIncrementDrops);
         }
     }
     else

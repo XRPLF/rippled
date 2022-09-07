@@ -2182,16 +2182,16 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
 
         // (The ~ operator converts the Proxy to a std::optional, which
         //  simplifies later operations)
-        if (auto const baseFeeXRP = ~val->at(~sfBaseFeeXRP);
+        if (auto const baseFeeXRP = ~val->at(~sfBaseFeeDrops);
             baseFeeXRP && baseFeeXRP->native())
             jvObj[jss::base_fee_drops] = baseFeeXRP->xrp().jsonClipped();
 
-        if (auto const reserveBaseXRP = ~val->at(~sfReserveBaseXRP);
+        if (auto const reserveBaseXRP = ~val->at(~sfReserveBaseDrops);
             reserveBaseXRP && reserveBaseXRP->native())
             jvObj[jss::reserve_base_drops] =
                 reserveBaseXRP->xrp().jsonClipped();
 
-        if (auto const reserveIncXRP = ~val->at(~sfReserveIncrementXRP);
+        if (auto const reserveIncXRP = ~val->at(~sfReserveIncrementDrops);
             reserveIncXRP && reserveIncXRP->native())
             jvObj[jss::reserve_inc_drops] = reserveIncXRP->xrp().jsonClipped();
 

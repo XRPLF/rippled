@@ -235,9 +235,9 @@ CONSTRUCT_TYPED_SFIELD(sfDeliveredAmount,       "DeliveredAmount",      AMOUNT, 
 CONSTRUCT_TYPED_SFIELD(sfNFTokenBrokerFee,      "NFTokenBrokerFee",     AMOUNT,    19);
 
 // currency amount (fees)
-CONSTRUCT_TYPED_SFIELD(sfBaseFeeXRP,            "BaseFeeXRP",           AMOUNT,    20);
-CONSTRUCT_TYPED_SFIELD(sfReserveBaseXRP,        "ReserveBaseXRP",       AMOUNT,    21);
-CONSTRUCT_TYPED_SFIELD(sfReserveIncrementXRP,   "ReserveIncrementXRP",  AMOUNT,    22);
+CONSTRUCT_TYPED_SFIELD(sfBaseFeeDrops,            "BaseFeeDrops",           AMOUNT,    20);
+CONSTRUCT_TYPED_SFIELD(sfReserveBaseDrops,        "ReserveBaseDrops",       AMOUNT,    21);
+CONSTRUCT_TYPED_SFIELD(sfReserveIncrementDrops,   "ReserveIncrementDrops",  AMOUNT,    22);
 
 // variable length (common)
 CONSTRUCT_TYPED_SFIELD(sfPublicKey,             "PublicKey",            VL,         1);

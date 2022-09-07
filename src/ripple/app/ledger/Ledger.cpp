@@ -627,10 +627,10 @@ Ledger::setup(Config const& config)
                 oldFees = baseFee || reserveBase || reserveIncrement;
             }
             {
-                auto const baseFeeXRP = sle->at(~sfBaseFeeXRP);
-                auto const reserveBaseXRP = sle->at(~sfReserveBaseXRP);
+                auto const baseFeeXRP = sle->at(~sfBaseFeeDrops);
+                auto const reserveBaseXRP = sle->at(~sfReserveBaseDrops);
                 auto const reserveIncrementXRP =
-                    sle->at(~sfReserveIncrementXRP);
+                    sle->at(~sfReserveIncrementDrops);
                 auto assign = [&ret](
                                   XRPAmount& dest,
                                   std::optional<STAmount> const& src) {

@@ -63,9 +63,9 @@ STValidation::validationFormat()
         {sfValidatedHash,       soeOPTIONAL},
         {sfServerVersion,       soeOPTIONAL},
         // featureXRPFees
-        {sfBaseFeeXRP,          soeOPTIONAL},
-        {sfReserveBaseXRP,      soeOPTIONAL},
-        {sfReserveIncrementXRP, soeOPTIONAL},
+        {sfBaseFeeDrops,          soeOPTIONAL},
+        {sfReserveBaseDrops,      soeOPTIONAL},
+        {sfReserveIncrementDrops, soeOPTIONAL},
     };
     // clang-format on
 

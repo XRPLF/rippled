@@ -93,9 +93,9 @@ Change::preclaim(PreclaimContext const& ctx)
         case ttFEE:
             if (ctx.view.rules().enabled(featureXRPFees))
             {
-                if (!ctx.tx.isFieldPresent(sfBaseFeeXRP) ||
-                    !ctx.tx.isFieldPresent(sfReserveBaseXRP) ||
-                    !ctx.tx.isFieldPresent(sfReserveIncrementXRP))
+                if (!ctx.tx.isFieldPresent(sfBaseFeeDrops) ||
+                    !ctx.tx.isFieldPresent(sfReserveBaseDrops) ||
+                    !ctx.tx.isFieldPresent(sfReserveIncrementDrops))
                     return temMALFORMED;
                 // The transaction should only have one set of fields or the
                 // other.
@@ -119,9 +119,9 @@ Change::preclaim(PreclaimContext const& ctx)
                     return temMALFORMED;
                 // The transaction should only have one or the other. If the new
                 // fields are present without the amendment, that's bad, too.
-                if (ctx.tx.isFieldPresent(sfBaseFeeXRP) ||
-                    ctx.tx.isFieldPresent(sfReserveBaseXRP) ||
-                    ctx.tx.isFieldPresent(sfReserveIncrementXRP))
+                if (ctx.tx.isFieldPresent(sfBaseFeeDrops) ||
+                    ctx.tx.isFieldPresent(sfReserveBaseDrops) ||
+                    ctx.tx.isFieldPresent(sfReserveIncrementDrops))
                     return temDISABLED;
             }
             return tesSUCCESS;
@@ -354,9 +354,9 @@ Change::applyFee()
     };
     if (view().rules().enabled(featureXRPFees))
     {
-        set(feeObject, ctx_.tx, sfBaseFeeXRP);
-        set(feeObject, ctx_.tx, sfReserveBaseXRP);
-        set(feeObject, ctx_.tx, sfReserveIncrementXRP);
+        set(feeObject, ctx_.tx, sfBaseFeeDrops);
+        set(feeObject, ctx_.tx, sfReserveBaseDrops);
+        set(feeObject, ctx_.tx, sfReserveIncrementDrops);
         // Ensure the old fields are removed
         feeObject->makeFieldAbsent(sfBaseFee);
         feeObject->makeFieldAbsent(sfReferenceFeeUnits);

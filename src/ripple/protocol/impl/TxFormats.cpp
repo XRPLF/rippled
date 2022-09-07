@@ -161,9 +161,9 @@ TxFormats::TxFormats()
             {sfReserveBase, soeOPTIONAL},
             {sfReserveIncrement, soeOPTIONAL},
             // New version uses Amounts
-            {sfBaseFeeXRP, soeOPTIONAL},
-            {sfReserveBaseXRP, soeOPTIONAL},
-            {sfReserveIncrementXRP, soeOPTIONAL},
+            {sfBaseFeeDrops, soeOPTIONAL},
+            {sfReserveBaseDrops, soeOPTIONAL},
+            {sfReserveIncrementDrops, soeOPTIONAL},
         },
         commonFields);
 

@@ -37,9 +37,9 @@ struct PseudoTx_test : public beast::unit_test::suite
             obj[sfLedgerSequence] = seq;
             if (rules.enabled(featureXRPFees))
             {
-                obj[sfBaseFeeXRP] = XRPAmount{0};
-                obj[sfReserveBaseXRP] = XRPAmount{0};
-                obj[sfReserveIncrementXRP] = XRPAmount{0};
+                obj[sfBaseFeeDrops] = XRPAmount{0};
+                obj[sfReserveBaseDrops] = XRPAmount{0};
+                obj[sfReserveIncrementDrops] = XRPAmount{0};
             }
             else
             {
