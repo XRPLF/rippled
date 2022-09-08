@@ -35,21 +35,6 @@
 
 namespace ripple {
 
-// Even though this is written as a template, and could potentially be a
-// global helper, it's only intended to be used for
-// std::vector<AmendmentTable::FeatureInfo> in this class.
-template <class T>
-std::vector<T>
-operator+(std::vector<T> left, std::vector<T> right)
-{
-    left.reserve(left.size() + right.size());
-    for (auto& item : right)
-    {
-        left.emplace_back(std::move(item));
-    }
-    return left;
-}
-
 class AmendmentTable_test final : public beast::unit_test::suite
 {
 private:
@@ -141,6 +126,44 @@ private:
         return makeFeatureInfo(amendments, VoteBehavior::Obsolete);
     }
 
+    template <class Arg, class... Args>
+    static size_t
+    totalsize(std::vector<Arg> const& src, Args const&... args)
+    {
+        if constexpr (sizeof...(args) > 0)
+            return src.size() + totalsize(args...);
+        return src.size();
+    }
+
+    template <class Arg, class... Args>
+    static void
+    combine_arg(
+        std::vector<Arg>& dest,
+        std::vector<Arg> const& src,
+        Args const&... args)
+    {
+        assert(dest.capacity() >= dest.size() + src.size());
+        std::copy(src.begin(), src.end(), std::back_inserter(dest));
+        if constexpr (sizeof...(args) > 0)
+            combine_arg(dest, args...);
+    }
+
+    template <class Arg, class... Args>
+    static std::vector<Arg>
+    combine(
+        // Pass "left" by value. The values will need to be copied one way or
+        // another, so just reuse it.
+        std::vector<Arg> left,
+        std::vector<Arg> const& right,
+        Args const&... args)
+    {
+        left.reserve(totalsize(left, right, args...));
+
+        combine_arg(left, right, args...);
+
+        return left;
+    }
+
     // All useful amendments are supported amendments.
     // Enabled amendments are typically a subset of supported amendments.
     // Vetoed amendments should be supported but not enabled.
@@ -152,17 +175,17 @@ private:
     std::vector<std::string> const vetoed_{"a", "c", "e"};
     std::vector<std::string> const obsolete_{"0", "1", "2"};
     std::vector<std::string> const allSupported_{
-        yes_ + enabled_ + vetoed_ + obsolete_};
+        combine(yes_, enabled_, vetoed_, obsolete_)};
     std::vector<std::string> const unsupported_{"v", "w", "x"};
     std::vector<std::string> const unsupportedMajority_{"y", "z"};
 
-    Section const emptySection;
-    std::vector<AmendmentTable::FeatureInfo> const emptyYes;
+    Section const emptySection_;
+    std::vector<AmendmentTable::FeatureInfo> const emptyYes_;
 
-    test::SuiteJournal journal;
+    test::SuiteJournal journal_;
 
 public:
-    AmendmentTable_test() : journal("AmendmentTable_test", *this)
+    AmendmentTable_test() : journal_("AmendmentTable_test", *this)
     {
     }
 
@@ -175,7 +198,7 @@ public:
         Section const& vetoed)
     {
         return make_AmendmentTable(
-            app, majorityTime, supported, enabled, vetoed, journal);
+            app, majorityTime, supported, enabled, vetoed, journal_);
     }
 
     std::unique_ptr<AmendmentTable>
@@ -192,11 +215,20 @@ public:
     std::unique_ptr<AmendmentTable>
     makeTable(test::jtx::Env& env, std::chrono::seconds majorityTime)
     {
+        static std::vector<AmendmentTable::FeatureInfo> const supported =
+            combine(
+                makeDefaultYes(yes_),
+                // Use non-intuitive default votes for "enabled_" and "vetoed_"
+                // so that when the tests later explicitly enable or veto them,
+                // we can be certain that they are not simply going by their
+                // default vote setting.
+                makeDefaultNo(enabled_),
+                makeDefaultYes(vetoed_),
+                makeObsolete(obsolete_));
         return makeTable(
             env.app(),
             majorityTime,
-            makeDefaultYes(yes_) + makeDefaultNo(enabled_) +
-                makeDefaultYes(vetoed_) + makeObsolete(obsolete_),
+            supported,
             makeSection(enabled_),
             makeSection(vetoed_));
     }
@@ -285,7 +317,7 @@ public:
             try
             {
                 test::jtx::Env env{*this, makeConfig()};
-                if (makeTable(env, weeks(2), yesVotes, test, emptySection))
+                if (makeTable(env, weeks(2), yesVotes, test, emptySection_))
                     fail("Accepted only amendment ID");
             }
             catch (std::exception const& e)
@@ -302,7 +334,7 @@ public:
             try
             {
                 test::jtx::Env env{*this, makeConfig()};
-                if (makeTable(env, weeks(2), yesVotes, test, emptySection))
+                if (makeTable(env, weeks(2), yesVotes, test, emptySection_))
                     fail("Accepted extra arguments");
             }
             catch (std::exception const& e)
@@ -323,7 +355,7 @@ public:
             try
             {
                 test::jtx::Env env{*this, makeConfig()};
-                if (makeTable(env, weeks(2), yesVotes, test, emptySection))
+                if (makeTable(env, weeks(2), yesVotes, test, emptySection_))
                     fail("Accepted short amendment ID");
             }
             catch (std::exception const& e)
@@ -343,7 +375,7 @@ public:
             try
             {
                 test::jtx::Env env{*this, makeConfig()};
-                if (makeTable(env, weeks(2), yesVotes, test, emptySection))
+                if (makeTable(env, weeks(2), yesVotes, test, emptySection_))
                     fail("Accepted long amendment ID");
             }
             catch (std::exception const& e)
@@ -364,7 +396,7 @@ public:
             try
             {
                 test::jtx::Env env{*this, makeConfig()};
-                if (makeTable(env, weeks(2), yesVotes, test, emptySection))
+                if (makeTable(env, weeks(2), yesVotes, test, emptySection_))
                     fail("Accepted non-hex amendment ID");
             }
             catch (std::exception const& e)
@@ -577,7 +609,7 @@ public:
 
         test::jtx::Env env{*this};
         auto table =
-            makeTable(env, weeks(2), emptyYes, emptySection, emptySection);
+            makeTable(env, weeks(2), emptyYes_, emptySection_, emptySection_);
 
         std::vector<std::pair<uint256, int>> votes;
         std::vector<uint256> ourVotes;
@@ -638,7 +670,11 @@ public:
 
         test::jtx::Env env{*this};
         auto table = makeTable(
-            env, weeks(2), emptyYes, emptySection, makeSection(testAmendment));
+            env,
+            weeks(2),
+            emptyYes_,
+            emptySection_,
+            makeSection(testAmendment));
 
         auto const validators = makeValidators(10);
 
@@ -697,7 +733,7 @@ public:
 
         test::jtx::Env env{*this};
         auto table = makeTable(
-            env, weeks(2), makeDefaultYes(yes_), emptySection, emptySection);
+            env, weeks(2), makeDefaultYes(yes_), emptySection_, emptySection_);
 
         auto const validators = makeValidators(10);
         std::vector<std::pair<uint256, int>> votes;
@@ -780,8 +816,8 @@ public:
             env,
             weeks(2),
             makeDefaultYes(testAmendment),
-            emptySection,
-            emptySection);
+            emptySection_,
+            emptySection_);
 
         auto const validators = makeValidators(16);
 
@@ -851,8 +887,8 @@ public:
             env,
             weeks(8),
             makeDefaultYes(testAmendment),
-            emptySection,
-            emptySection);
+            emptySection_,
+            emptySection_);
 
         std::set<uint256> enabled;
         majorityAmendments_t majority;
