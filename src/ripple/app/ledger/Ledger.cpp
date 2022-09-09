@@ -209,8 +209,33 @@ Ledger::Ledger(
         rawInsert(sle);
     }
 
+    {
+        auto sle = std::make_shared<SLE>(keylet::fees());
+        // Whether featureXRPFees is supported will depend on startup options.
+        if (std::find(amendments.begin(), amendments.end(), featureXRPFees) !=
+            amendments.end())
+        {
+            sle->at(sfBaseFeeDrops) = config.FEE_DEFAULT;
+            sle->at(sfReserveBaseDrops) = config.FEE_ACCOUNT_RESERVE;
+            sle->at(sfReserveIncrementDrops) = config.FEE_OWNER_RESERVE;
+        }
+        else
+        {
+            if (auto const f = config.FEE_DEFAULT.dropsAs<std::uint64_t>())
+                sle->at(sfBaseFee) = *f;
+            if (auto const f =
+                    config.FEE_ACCOUNT_RESERVE.dropsAs<std::uint32_t>())
+                sle->at(sfReserveBase) = *f;
+            if (auto const f =
+                    config.FEE_OWNER_RESERVE.dropsAs<std::uint32_t>())
+                sle->at(sfReserveIncrement) = *f;
+            sle->at(sfReferenceFeeUnits) = Config::FEE_UNITS_DEPRECATED;
+        }
+        rawInsert(sle);
+    }
+
     stateMap_->flushDirty(hotACCOUNT_NODE);
-    setImmutable(config);
+    setImmutable();
 }
 
 Ledger::Ledger(
@@ -259,7 +284,8 @@ Ledger::Ledger(
     txMap_->setImmutable();
     stateMap_->setImmutable();
 
-    if (!setup(config))
+    defaultFees(config);
+    if (!setup())
         loaded = false;
 
     if (!loaded)
@@ -329,11 +355,12 @@ Ledger::Ledger(
     info_.seq = ledgerSeq;
     info_.closeTime = closeTime;
     info_.closeTimeResolution = ledgerDefaultTimeResolution;
-    setup(config);
+    defaultFees(config);
+    setup();
 }
 
 void
-Ledger::setImmutable(Config const& config, bool rehash)
+Ledger::setImmutable(bool rehash)
 {
     // Force update, since this is the only
     // place the hash transitions to valid
@@ -349,15 +376,14 @@ Ledger::setImmutable(Config const& config, bool rehash)
     mImmutable = true;
     txMap_->setImmutable();
     stateMap_->setImmutable();
-    setup(config);
+    setup();
 }
 
 void
 Ledger::setAccepted(
     NetClock::time_point closeTime,
     NetClock::duration closeResolution,
-    bool correctCloseTime,
-    Config const& config)
+    bool correctCloseTime)
 {
     // Used when we witnessed the consensus.
     assert(!open());
@@ -365,7 +391,7 @@ Ledger::setAccepted(
     info_.closeTime = closeTime;
     info_.closeTimeResolution = closeResolution;
     info_.closeFlags = correctCloseTime ? 0 : sLCF_NoConsensusTime;
-    setImmutable(config);
+    setImmutable();
 }
 
 bool
@@ -587,13 +613,13 @@ Ledger::rawTxInsertWithHash(
 }
 
 bool
-Ledger::setup(Config const& config)
+Ledger::setup()
 {
     bool ret = true;
 
     try
     {
-        rules_ = makeRulesGivenLedger(*this, config.features);
+        rules_ = makeRulesGivenLedger(*this, rules_);
     }
     catch (SHAMapMissingNode const&)
     {
@@ -603,10 +629,6 @@ Ledger::setup(Config const& config)
     {
         Rethrow();
     }
-
-    fees_.base = config.FEE_DEFAULT;
-    fees_.reserve = config.FEE_ACCOUNT_RESERVE;
-    fees_.increment = config.FEE_OWNER_RESERVE;
 
     try
     {
@@ -665,6 +687,18 @@ Ledger::setup(Config const& config)
     }
 
     return ret;
+}
+
+void
+Ledger::defaultFees(Config const& config)
+{
+    assert(fees_.base == 0 && fees_.reserve == 0 && fees_.increment == 0);
+    if (fees_.base == 0)
+        fees_.base = config.FEE_DEFAULT;
+    if (fees_.reserve == 0)
+        fees_.reserve = config.FEE_ACCOUNT_RESERVE;
+    if (fees_.increment == 0)
+        fees_.increment = config.FEE_OWNER_RESERVE;
 }
 
 std::shared_ptr<SLE>
@@ -1071,7 +1105,10 @@ finishLoadByIndexOrHash(
     if (!ledger)
         return;
 
-    ledger->setImmutable(config);
+    assert(
+        ledger->info().seq < XRP_LEDGER_EARLIEST_FEES ||
+        ledger->read(keylet::fees()));
+    ledger->setImmutable();
 
     JLOG(j.trace()) << "Loaded ledger: " << to_string(ledger->info().hash);
 

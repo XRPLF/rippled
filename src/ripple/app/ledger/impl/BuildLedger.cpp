@@ -75,8 +75,10 @@ buildLedgerImpl(
     built->unshare();
 
     // Accept ledger
-    built->setAccepted(
-        closeTime, closeResolution, closeTimeCorrect, app.config());
+    assert(
+        built->info().seq < XRP_LEDGER_EARLIEST_FEES ||
+        built->read(keylet::fees()));
+    built->setAccepted(closeTime, closeResolution, closeTimeCorrect);
 
     return built;
 }

@@ -532,7 +532,7 @@ class ReportingETL_test : public beast::unit_test::suite
             BEAST_EXPECT(status.ok());
 
             BEAST_EXPECT(
-                reply.ledger_objects().objects_size() == num_accounts + 3);
+                reply.ledger_objects().objects_size() == num_accounts + 4);
             BEAST_EXPECT(reply.marker().size() == 0);
             auto ledger = env.closed();
             size_t idx = 0;

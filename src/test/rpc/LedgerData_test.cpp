@@ -123,7 +123,7 @@ public:
             jrr[jss::ledger_current_index].isIntegral() &&
             jrr[jss::ledger_current_index].asInt() > 0);
         BEAST_EXPECT(!jrr.isMember(jss::marker));
-        BEAST_EXPECT(checkArraySize(jrr[jss::state], num_accounts + 3));
+        BEAST_EXPECT(checkArraySize(jrr[jss::state], num_accounts + 4));
     }
 
     void

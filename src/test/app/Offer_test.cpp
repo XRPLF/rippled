@@ -2079,7 +2079,8 @@ public:
         BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "100");
         jrr = ledgerEntryRoot(env, alice);
         BEAST_EXPECT(
-            jrr[jss::node][sfBalance.fieldName] == XRP(350).value().getText());
+            jrr[jss::node][sfBalance.fieldName] ==
+            STAmount(env.current()->fees().accountReserve(3)).getText());
 
         jrr = ledgerEntryState(env, bob, gw1, "USD");
         BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "-400");
@@ -2160,7 +2161,8 @@ public:
         BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "-100");
         jrr = ledgerEntryRoot(env, alice);
         BEAST_EXPECT(
-            jrr[jss::node][sfBalance.fieldName] == XRP(250).value().getText());
+            jrr[jss::node][sfBalance.fieldName] ==
+            STAmount(env.current()->fees().accountReserve(1)).getText());
 
         jrr = ledgerEntryState(env, bob, gw, "USD");
         BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "-400");
@@ -2203,7 +2205,8 @@ public:
         BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "-200");
         jrr = ledgerEntryRoot(env, alice);
         BEAST_EXPECT(
-            jrr[jss::node][sfBalance.fieldName] == XRP(250).value().getText());
+            jrr[jss::node][sfBalance.fieldName] ==
+            STAmount(env.current()->fees().accountReserve(1)).getText());
 
         jrr = ledgerEntryState(env, bob, gw, "USD");
         BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "-300");

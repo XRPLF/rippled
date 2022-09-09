@@ -108,7 +108,8 @@ class RCLValidations_test : public beast::unit_test::suite
             next->updateSkipList();
             if (forceHash)
             {
-                next->setImmutable(config);
+                BEAST_EXPECT(next->read(keylet::fees()));
+                next->setImmutable();
                 forceHash = false;
             }
 

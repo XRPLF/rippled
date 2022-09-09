@@ -215,12 +215,13 @@ class NFToken_test : public beast::unit_test::suite
         Account const minter{"minter"};
 
         // Fund alice and minter enough to exist, but not enough to meet
-        // the reserve for creating their first NFT.  Account reserve for unit
-        // tests is 200 XRP, not 20.
-        env.fund(XRP(200), alice, minter);
+        // the reserve for creating their first NFT.
+        auto const acctReserve = env.current()->fees().accountReserve(0);
+        auto const incReserve = env.current()->fees().increment;
+        env.fund(acctReserve, alice, minter);
         env.close();
-        BEAST_EXPECT(env.balance(alice) == XRP(200));
-        BEAST_EXPECT(env.balance(minter) == XRP(200));
+        BEAST_EXPECT(env.balance(alice) == acctReserve);
+        BEAST_EXPECT(env.balance(minter) == acctReserve);
         BEAST_EXPECT(ownerCount(env, alice) == 0);
         BEAST_EXPECT(ownerCount(env, minter) == 0);
 
@@ -232,7 +233,7 @@ class NFToken_test : public beast::unit_test::suite
         BEAST_EXPECT(burnedCount(env, alice) == 0);
 
         // Pay alice almost enough to make the reserve for an NFT page.
-        env(pay(env.master, alice, XRP(50) + drops(9)));
+        env(pay(env.master, alice, incReserve + drops(9)));
         env.close();
 
         // A lambda that checks alice's ownerCount, mintedCount, and

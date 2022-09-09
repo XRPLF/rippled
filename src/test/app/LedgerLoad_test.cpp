@@ -82,7 +82,7 @@ class LedgerLoad_test : public beast::unit_test::suite
 
         retval.ledger = env.rpc("ledger", "current", "full")[jss::result];
         BEAST_EXPECT(
-            retval.ledger[jss::ledger][jss::accountState].size() == 101);
+            retval.ledger[jss::ledger][jss::accountState].size() == 102);
 
         retval.hashes = [&] {
             for (auto const& it : retval.ledger[jss::ledger][jss::accountState])
@@ -193,7 +193,7 @@ class LedgerLoad_test : public beast::unit_test::suite
             nullptr,
             beast::severities::kDisabled);
         auto jrb = env.rpc("ledger", "current", "full")[jss::result];
-        BEAST_EXPECT(jrb[jss::ledger][jss::accountState].size() == 97);
+        BEAST_EXPECT(jrb[jss::ledger][jss::accountState].size() == 98);
         BEAST_EXPECT(
             jrb[jss::ledger][jss::accountState].size() <=
             sd.ledger[jss::ledger][jss::accountState].size());
