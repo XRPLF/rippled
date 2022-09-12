@@ -47,14 +47,6 @@ readLines(jtx::Env& env, AccountID const& acctId)
     jv[jss::account] = to_string(acctId);
     return env.rpc("json", "account_lines", to_string(jv));
 }
-
-static Json::Value
-accountInfo(jtx::Env& env, AccountID const& acctId)
-{
-    Json::Value jv;
-    jv[jss::account] = to_string(acctId);
-    return env.rpc("json", "account_info", to_string(jv));
-}
 #endif
 
 static XRPAmount
@@ -64,15 +56,35 @@ txfee(jtx::Env const& env, std::uint16_t n)
 }
 
 static bool
-expectLine(jtx::Env& env, AccountID const& account, STAmount const& value)
+expectLine(
+    jtx::Env& env,
+    AccountID const& account,
+    STAmount const& value,
+    bool defaultTrustline = false)
 {
     if (auto const sle = env.le(keylet::line(account, value.issue())))
     {
+        Issue const issue = value.issue();
+        bool const accountLow = account < issue.account;
+
+        bool expectDefaultTrustLine = true;
+        if (defaultTrustline)
+        {
+            STAmount low{issue};
+            STAmount high{issue};
+
+            low.setIssuer(accountLow ? account : issue.account);
+            high.setIssuer(accountLow ? issue.account : account);
+
+            expectDefaultTrustLine = sle->getFieldAmount(sfLowLimit) == low &&
+                sle->getFieldAmount(sfHighLimit) == high;
+        }
+
         auto amount = sle->getFieldAmount(sfBalance);
         amount.setIssuer(value.issue().account);
-        if (account > value.issue().account)
+        if (!accountLow)
             amount.negate();
-        return amount == value;
+        return amount == value && expectDefaultTrustLine;
     }
     return false;
 }
@@ -124,6 +136,12 @@ expectLedgerEntryRoot(
     auto const jrr = ledgerEntryRoot(env, acct);
     return jrr[jss::node][sfBalance.fieldName] ==
         to_string(expectedValue.xrp());
+}
+
+static bool
+expectOwners(jtx::Env& env, jtx::Account const& account, std::int32_t value)
+{
+    return env.le(account)->getFieldU32(sfOwnerCount) == value;
 }
 
 class Test : public beast::unit_test::suite
@@ -1848,7 +1866,7 @@ private:
             std::make_pair(XRP(9900), USD(10100)),
             IOUAmount{999949998749938, -8});
 
-        // Offer crossing
+        // Offer crossing XRP/IOU
         testAMM(
             [&](AMM& ammAlice, Env& env) {
                 fund(env, gw, {bob}, {USD(1000)}, Fund::Acct);
@@ -1864,36 +1882,30 @@ private:
                 // Initial 30,000 - 99(offer) - 10(tx fee)
                 BEAST_EXPECT(expectLedgerEntryRoot(
                     env, bob, XRP(30000) - XRP(99) - txfee(env, 1)));
-                env.require(offers(bob, 0));
+                BEAST_EXPECT(expectOffers(env, bob, 0));
             },
             std::make_pair(XRP(9900), USD(10100)),
             IOUAmount{999949998749938, -8});
 
-        // Partial offer crossing. Smaller offer is consumed because of
-        // the quality limit.
-        testAMM([&](AMM& ammAlice, Env& env) {
-            fund(env, gw, {bob}, {USD(1000)}, Fund::Acct);
-            env.close();
-            env(offer(bob, USD(99), XRP(100)));
-            env.close();
-            BEAST_EXPECT(ammAlice.expectBalances(
-                XRPAmount{10050378153},
-                STAmount(USD, UINT64_C(99498743710662), -10),
-                IOUAmount{10000000, 0}));
-            // Initial 1,000 + 50.1256289338(offer)
-            BEAST_EXPECT(expectLine(
-                env, bob, STAmount{USD, UINT64_C(10501256289338), -10}));
-            // Initial 30,000 - 50378153(AMM offer) - 10(tx fee)
-            BEAST_EXPECT(expectLedgerEntryRoot(
-                env, bob, XRP(30000) - XRPAmount{50378153} - txfee(env, 1)));
-            BEAST_EXPECT(expectOffers(
-                env,
-                bob,
-                1,
-                {{Amounts{
-                    STAmount{USD, UINT64_C(488743710662), -10},
-                    XRPAmount{49368052}}}}));
-        });
+        // Offer crossing IOU/IOU
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                fund(env, gw, {bob}, {USD(1000), EUR(1000)}, Fund::Acct);
+                env.close();
+                env(offer(bob, USD(100), EUR(100)));
+                env.close();
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    STAmount(EUR, 9999),
+                    STAmount(USD, 10000),
+                    IOUAmount{999949998749938, -11}));
+                // Initial 1,000 + 100
+                BEAST_EXPECT(expectLine(env, bob, STAmount{USD, 1100}));
+                // Initial 1,000 - 99
+                BEAST_EXPECT(expectLine(env, bob, STAmount(EUR, 901)));
+                BEAST_EXPECT(expectOffers(env, bob, 0));
+            },
+            std::make_pair(EUR(9900), USD(10100)),
+            IOUAmount{999949998749938, -11});
     }
 
     void
@@ -1965,7 +1977,7 @@ private:
             env(offer(alice, STAmount{token1, 100}, STAmount{token2, 100}),
                 txflags(tfPassive));
             env.close();
-            env.require(offers(alice, 1));
+            BEAST_EXPECT(expectOffers(env, alice, 1));
             env(offer(carol, STAmount{token2, 100}, STAmount{token1, 100}));
             env.close();
             BEAST_EXPECT(
@@ -1974,7 +1986,8 @@ private:
             BEAST_EXPECT(
                 expectLine(env, carol, STAmount{token2, 1000100}) &&
                 expectLine(env, carol, STAmount{token1, 999900}));
-            env.require(offers(alice, 0), offers(carol, 0));
+            BEAST_EXPECT(
+                expectOffers(env, alice, 0) && expectOffers(env, carol, 0));
         });
 
         // Offer crossing with two AMM LPTokens via AMM.
@@ -1989,7 +2002,7 @@ private:
                 env, alice, STAmount{token1, 9900}, STAmount{token2, 10100});
             env(offer(carol, STAmount{token2, 100}, STAmount{token1, 100}));
             env.close();
-            env.require(offers(carol, 0));
+            BEAST_EXPECT(expectOffers(env, carol, 0));
             BEAST_EXPECT(ammAMMTokens.expectBalances(
                 STAmount(token1, 9999),
                 STAmount(token2, 10000),
@@ -2125,12 +2138,13 @@ private:
             BEAST_EXPECT(ammDan.expectBalances(
                 XRPAmount{10050251257}, USD1(9950), IOUAmount{10000000, 0}));
 
-            env.require(balance(
+            BEAST_EXPECT(expectLedgerEntryRoot(
+                env,
                 alice,
                 20000 * dropsPerXRP - XRPAmount{50251257} - txfee(env, 1)));
-            env.require(balance(bob, USD1(100)));
-            env.require(balance(bob, USD2(0)));
-            env.require(balance(carol, USD2(50)));
+            BEAST_EXPECT(expectLine(env, bob, USD1(100)));
+            BEAST_EXPECT(expectLine(env, bob, USD2(0)));
+            BEAST_EXPECT(expectLine(env, carol, USD2(50)));
         }
     }
 
@@ -2155,194 +2169,103 @@ private:
             {
                 Env env{*this, tweakedFeatures};
 
-                auto const f = txfee(env, 1);
-
-                fund(env, gw, {alice, bob}, startBalance);
-                env.close();
-                env(trust(alice, USD(20000)), ter(tesSUCCESS));
-                env.close();
-                env(trust(bob, USD(500)), ter(tesSUCCESS));
-                env.close();
-                env(pay(gw, alice, USD(15000)), ter(tesSUCCESS));
-                env.close();
+                fund(env, gw, {alice, bob}, {USD(10000)}, Fund::All);
                 AMM ammAlice(env, alice, XRP(10000), USD(10000));
-                env.close();
                 TER const killedCode{
                     tweakedFeatures[fix1578] ? TER{tecKILLED}
                                              : TER{tesSUCCESS}};
+                // Offer's quality is the same as AMM's Spot Price
+                // quality, which means any liquidity taken out
+                // of AMM has worse quality.
                 env(offer(bob, USD(500), XRP(500)),
                     txflags(tfFillOrKill),
                     ter(killedCode));
                 env.close();
                 BEAST_EXPECT(ammAlice.expectBalances(
                     XRP(10000), USD(10000), IOUAmount{10000000, 0}));
-                env.require(
-                    balance(
-                        alice,
-                        startBalance - XRP(10000) - (f * 2)),  // trust+AMM
-                    owners(bob, 1),
-                    offers(bob, 0));
+                // fee = AMM
+                BEAST_EXPECT(expectLedgerEntryRoot(
+                    env, alice, XRP(30000) - XRP(10000) - (txfee(env, 1))));
+                BEAST_EXPECT(expectOffers(env, bob, 0));
+                BEAST_EXPECT(expectOwners(env, bob, 1));
             }
 
+            // Order that can be filled
             {
                 Env env{*this, tweakedFeatures};
 
-                fund(env, gw, {alice, bob}, startBalance);
-                env.close();
-                env(trust(alice, USD(20000)), ter(tesSUCCESS));
-                env.close();
-                env(trust(bob, USD(1000)), ter(tesSUCCESS));
-                env.close();
-                env(pay(gw, alice, USD(15000)), ter(tesSUCCESS));
-                env.close();
-                env(pay(gw, bob, USD(500)), ter(tesSUCCESS));
-                env.close();
-                AMM ammAlice(env, alice, XRP(10000), USD(10000));
-                // TODO
-                // Order that can be filled has it been another offer
-                // instead of AMM. Does this work in practice with AMM?
-                // There is no exact match.
-#if 0
+                fund(env, gw, {alice, bob}, {USD(20000)}, Fund::All);
+                AMM ammAlice(env, alice, XRP(10500), USD(10000));
                 env(offer(bob, XRP(500), USD(500)),
                     txflags(tfFillOrKill),
                     ter(tesSUCCESS));
                 BEAST_EXPECT(ammAlice.expectBalances(
-                    XRP(10000), USD(10000), IOUAmount{10000000, 0}));
-                env.require(
-                    balance(
-                        alice,
-                        startBalance - XRP(10000) - (f * 2)),  // trust + AMM
-                    owners(bob, 1),
-                    offers(bob, 0));
-#endif
+                    XRP(10000), USD(10500), IOUAmount{102469507659596, -7}));
+                BEAST_EXPECT(expectLedgerEntryRoot(
+                    env, alice, XRP(30000) - XRP(10500) - txfee(env, 1)));
+                BEAST_EXPECT(expectLine(env, bob, USD(19500)));
+                BEAST_EXPECT(expectOffers(env, bob, 0));
+                BEAST_EXPECT(expectOwners(env, bob, 1));
             }
 
             // Immediate or Cancel - cross as much as possible
-            // and add nothing on the books:
-            // Partially cross
+            // and add nothing on the books.
             {
                 Env env{*this, features};
 
-                auto const f = txfee(env, 1);
-
-                fund(env, gw, {alice, bob}, startBalance);
-
-                env(trust(alice, USD(1000)), ter(tesSUCCESS));
-                env(pay(gw, alice, USD(1000)), ter(tesSUCCESS));
-                env(trust(bob, USD(20000)), ter(tesSUCCESS));
-                env(pay(gw, bob, USD(15000)), ter(tesSUCCESS));
+                fund(env, gw, {alice, bob}, {USD(10000)}, Fund::All);
 
                 AMM ammBob(env, bob, XRP(11000), USD(10000));
                 env(offer(alice, XRP(1000), USD(1000)),
                     txflags(tfImmediateOrCancel),
                     ter(tesSUCCESS));
                 BEAST_EXPECT(ammBob.expectBalances(
-                    XRPAmount{10488088482},
-                    STAmount{USD, UINT64_C(1048808848140303), -11},
+                    XRP(10000),
+                    STAmount{USD, 11000},
                     IOUAmount{1048808848170152, -8}));
 
-                env.require(
-                    // + AMM - (trust + offer) * fee
-                    balance(alice, startBalance - f - f + XRPAmount{511911518}),
-                    // AMM
-                    balance(
-                        alice, STAmount{USD, UINT64_C(51191151859697), -11}),
-                    owners(alice, 1),
-                    offers(alice, 0),
-                    // -AMM - (trust + AMM) * fee
-                    balance(bob, startBalance - XRP(11000) - f - f),
-                    balance(bob, USD(5000)),
-                    // USD + LPTokens
-                    owners(bob, 2));
-            }
-
-            // Fully cross:
-            {
-                Env env{*this, features};
-
-                auto const f = txfee(env, 1);
-
-                fund(env, gw, {alice, bob}, startBalance);
-
-                env(trust(alice, USD(1000)), ter(tesSUCCESS));
-                env(pay(gw, alice, USD(1000)), ter(tesSUCCESS));
-                env(trust(bob, USD(20000)), ter(tesSUCCESS));
-                env(pay(gw, bob, USD(15000)), ter(tesSUCCESS));
-
-                // Consumed 1000XRP/900USD
-                AMM ammBob(env, bob, XRP(11000), USD(9000));
-                env(offer(alice, XRP(1000), USD(1000)),
-                    txflags(tfImmediateOrCancel),
-                    ter(tesSUCCESS));
-                BEAST_EXPECT(ammBob.expectBalances(
-                    XRP(10000), USD(9900), IOUAmount{99498743710662, -7}));
-
-                env.require(
-                    // + AMM - (trust + offer) * fee
-                    balance(alice, startBalance - f - f + XRP(1000)),
-                    // AMM
-                    balance(alice, USD(100)),
-                    owners(alice, 1),
-                    offers(alice, 0),
-                    // -AMM - (trust + AMM) * fee
-                    balance(bob, startBalance - XRP(11000) - f - f),
-                    balance(bob, USD(6000)),
-                    // USD + LPTokens
-                    owners(bob, 2));
+                // +AMM - offer * fee
+                BEAST_EXPECT(expectLedgerEntryRoot(
+                    env, alice, XRP(30000) - txfee(env, 1) + XRP(1000)));
+                // AMM
+                BEAST_EXPECT(expectLine(env, alice, USD(9000)));
+                BEAST_EXPECT(expectOffers(env, alice, 0));
+                // -AMM - AMM * fee
+                BEAST_EXPECT(expectLedgerEntryRoot(
+                    env, bob, XRP(30000) - XRP(11000) - txfee(env, 1)));
+                BEAST_EXPECT(expectLine(env, bob, USD(0)));
+                BEAST_EXPECT(expectOwners(env, alice, 1));
+                // USD + LPToken
+                BEAST_EXPECT(expectOwners(env, bob, 2));
             }
 
             // tfPassive -- place the offer without crossing it.
             {
                 Env env(*this, features);
 
-                fund(env, gw, {alice, bob}, startBalance);
+                fund(env, gw, {alice, bob}, {USD(10000)}, Fund::All);
 
-                env(trust(bob, USD(1000)));
-                env.close();
+                AMM ammAlice(env, alice, XRP(11000), USD(10000));
 
-                env(pay(gw, bob, USD(1000)));
-                env.close();
-
-                env(trust(alice, USD(20000)));
-                env.close();
-
-                env(pay(gw, alice, USD(15000)));
-                env.close();
-                AMM ammAlice(env, alice, XRP(11000), USD(9000));
-                env.close();
-
-                // TODO
-                // Does this work in practice with AMM?
-                // There is no exact match.
                 // bob creates a passive offer that could cross AMM.
                 // bob's offer should stay in the ledger.
-#if 0
                 env(offer(bob, XRP(1000), USD(1000), tfPassive));
                 env.close();
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(11000),
+                    STAmount{USD, 10000},
+                    IOUAmount{1048808848170152, -8}));
                 BEAST_EXPECT(expectOffers(
-                    env, bob, 1, {{{XRPAmount{1000}, STAmount{USD, 1000}}}}));
-#endif
+                    env, bob, 1, {{{XRP(1000), STAmount{USD, 1000}}}}));
             }
 
             // tfPassive -- cross only offers of better quality.
             {
                 Env env(*this, features);
 
-                fund(env, gw, {alice, bob}, startBalance);
+                fund(env, gw, {alice, bob}, {USD(10000)}, Fund::All);
 
-                env(trust(bob, USD(1000)));
-                env.close();
-
-                env(pay(gw, bob, USD(1000)));
-                env.close();
-
-                env(trust(alice, USD(20000)));
-                env.close();
-
-                env(pay(gw, alice, USD(15000)));
-                env.close();
                 AMM ammAlice(env, alice, XRP(11000), USD(9000));
-                env.close();
                 env(offer(alice, USD(1101), XRP(900)));
                 env.close();
 
@@ -2367,13 +2290,7 @@ private:
 
         Env env{*this, features};
 
-        fund(env, gw, {bob}, XRP(10000));
-        env.fund(XRP(210000), alice);
-
-        env(trust(alice, USD(1000)));
-        env(trust(bob, USD(1000)));
-
-        env(pay(gw, alice, alice["USD"](500)));
+        fund(env, gw, {bob, alice}, XRP(300000), {USD(100)}, Fund::All);
 
         AMM ammAlice(env, alice, XRP(150000), USD(50));
 
@@ -2387,13 +2304,13 @@ private:
         // Pay 1 USD, get 3061224489 Drops.
         auto const xrpConsumed = XRPAmount{3061224490};
 
-        BEAST_EXPECT(expectLine(env, bob, STAmount{USD, 1}));
+        BEAST_EXPECT(expectLine(env, bob, STAmount{USD, 101}));
         BEAST_EXPECT(expectLedgerEntryRoot(
-            env, bob, XRP(10000) - xrpConsumed - txfee(env, 2)));
+            env, bob, XRP(300000) - xrpConsumed - txfee(env, 1)));
 
-        BEAST_EXPECT(expectLine(env, alice, STAmount{USD, 450}));
+        BEAST_EXPECT(expectLine(env, alice, STAmount{USD, 50}));
         BEAST_EXPECT(expectLedgerEntryRoot(
-            env, alice, XRP(210000) - XRP(150000) - txfee(env, 2)));
+            env, alice, XRP(300000) - XRP(150000) - txfee(env, 1)));
     }
 
     void
@@ -2528,28 +2445,12 @@ private:
                 fund(env, gw, {bob}, XRP(1000), {}, Fund::Acct);
                 env(offer(bob, USD(100), XRP(100)), json(jss::Flags, tfSell));
                 env.close();
-                // There is a slight results difference because
-                // of tfSell flag between this test and offer
-                // crossing in testBasicPaymentEngine() test.
-                // The difference is due to how limitQuality
-                // is handled in one-path AMM optimization.
-                // In the former test limitQuality doesn't
-                // change remainingOut. In this test limitQuality
-                // changes remainingOut, which is 1/2 max because
-                // of tfSell, to ~100.5USD. This results in
-                // slightly larger consumed offer 100.5USD/99.5XRP
-                // as opposed to former of 100USD/99XRP.
                 BEAST_EXPECT(ammAlice.expectBalances(
-                    XRPAmount(9999499988),
-                    STAmount{USD, UINT64_C(999949998749938), -11},
+                    XRP(10000),
+                    STAmount{USD, 9999},
                     IOUAmount{999949998749938, -8}));
-                BEAST_EXPECT(expectOffers(
-                    env,
-                    bob,
-                    1,
-                    {{{STAmount{USD, 500012, -6}, XRPAmount{500012}}}}));
-                BEAST_EXPECT(expectLine(
-                    env, bob, STAmount{USD, UINT64_C(1005000125006196), -13}));
+                BEAST_EXPECT(expectOffers(env, bob, 0));
+                BEAST_EXPECT(expectLine(env, bob, STAmount{USD, 101}));
             },
             {{XRP(9900), USD(10100)}},
             IOUAmount{999949998749938, -8},
@@ -2657,6 +2558,119 @@ private:
     }
 
     void
+    testBridgedCross(FeatureBitset features)
+    {
+        testcase("Bridged Crossing");
+
+        using namespace jtx;
+
+        Env env{*this, features};
+
+        fund(env, gw, {alice, bob, carol}, {USD(15000), EUR(15000)}, Fund::All);
+
+        // The scenario:
+        //   o USD/XPR AMM is created.
+        //   o EUR/XRP AMM is created.
+        //   o carol has EUR but wants USD.
+        // Note that carol's offer must come last.  If carol's offer is placed
+        // before AMM is created, then autobridging will not occur.
+        AMM ammAlice(env, alice, XRP(10000), USD(11000));
+        AMM ammBob(env, bob, EUR(10000), XRP(11000));
+
+        // Carol makes an offer that consumes AMM liquidity and
+        // fully consumes Carol's offer.
+        env(offer(carol, USD(400), EUR(400)));
+        env.close();
+
+        BEAST_EXPECT(ammAlice.expectBalances(
+            XRPAmount{10377358491},
+            STAmount{USD, 10600},
+            IOUAmount{1048808848170152, -8}));
+        BEAST_EXPECT(ammBob.expectBalances(
+            XRPAmount{10622641509},
+            STAmount{EUR, UINT64_C(1035523978727917), -11},
+            IOUAmount{1048808848170152, -8}));
+        BEAST_EXPECT(expectLine(env, carol, STAmount{USD, 15400}));
+        BEAST_EXPECT(expectLine(
+            env, carol, STAmount{EUR, UINT64_C(1464476021272083), -11}));
+        BEAST_EXPECT(expectOffers(env, carol, 0));
+    }
+
+    void
+    testSellWithFillOrKill(FeatureBitset features)
+    {
+        // Test a number of different corner cases regarding offer crossing
+        // when both the tfSell flag and tfFillOrKill flags are set.
+        testcase("Combine tfSell with tfFillOrKill");
+
+        using namespace jtx;
+
+        // Code returned if an offer is killed.
+        TER const killedCode{
+            features[fix1578] ? TER{tecKILLED} : TER{tesSUCCESS}};
+
+        {
+            Env env{*this, features};
+            fund(env, gw, {alice, bob}, {USD(20000)}, Fund::All);
+            AMM ammBob(env, bob, XRP(20000), USD(200));
+            // alice submits a tfSell | tfFillOrKill offer that does not cross.
+            env(offer(alice, USD(2.1), XRP(210), tfSell | tfFillOrKill),
+                ter(killedCode));
+
+            BEAST_EXPECT(ammBob.expectBalances(
+                XRP(20000), STAmount{USD, 200}, IOUAmount{2000000}));
+            BEAST_EXPECT(expectOffers(env, bob, 0));
+        }
+        {
+            Env env{*this, features};
+            fund(env, gw, {alice, bob}, {USD(1000)}, Fund::All);
+            AMM ammBob(env, bob, XRP(20000), USD(200));
+            // alice submits a tfSell | tfFillOrKill offer that crosses.
+            // Even though tfSell is present it doesn't matter this time.
+            env(offer(alice, USD(2), XRP(220), tfSell | tfFillOrKill));
+            env.close();
+            BEAST_EXPECT(ammBob.expectBalances(
+                XRP(20220),
+                STAmount{USD, UINT64_C(1978239366963402), -13},
+                IOUAmount{2000000}));
+            BEAST_EXPECT(expectLine(
+                env, alice, STAmount{USD, UINT64_C(100217606330366), -11}));
+            BEAST_EXPECT(expectOffers(env, alice, 0));
+        }
+        {
+            // alice submits a tfSell | tfFillOrKill offer that crosses and
+            // returns more than was asked for (because of the tfSell flag).
+            Env env{*this, features};
+            fund(env, gw, {alice, bob}, {USD(1000)}, Fund::All);
+            AMM ammBob(env, bob, XRP(20000), USD(200));
+
+            env(offer(alice, USD(10), XRP(1500), tfSell | tfFillOrKill));
+            env.close();
+
+            BEAST_EXPECT(ammBob.expectBalances(
+                XRP(21500),
+                STAmount{USD, UINT64_C(186046511627907), -12},
+                IOUAmount{2000000}));
+            BEAST_EXPECT(expectLine(
+                env, alice, STAmount{USD, UINT64_C(1013953488372093), -12}));
+            BEAST_EXPECT(expectOffers(env, alice, 0));
+        }
+        {
+            // alice submits a tfSell | tfFillOrKill offer that doesn't cross.
+            // This would have succeeded with a regular tfSell, but the
+            // fillOrKill prevents the transaction from crossing since not
+            // all of the offer is consumed.
+            Env env{*this, features};
+            fund(env, gw, {alice, bob}, {USD(10000)}, Fund::All);
+            AMM ammBob(env, bob, XRP(500), USD(5));
+
+            env(offer(alice, USD(1), XRP(501), tfSell | tfFillOrKill),
+                ter(killedCode));
+            env.close();
+        }
+    }
+
+    void
     testAmendment()
     {
         testcase("Amendment");
@@ -2688,6 +2702,8 @@ private:
         testSellFlagBasic(all);
         testSellFlagExceedLimit(all);
         testGatewayCrossCurrency(all);
+        testBridgedCross(all);
+        testSellWithFillOrKill(all);
     }
 
     void

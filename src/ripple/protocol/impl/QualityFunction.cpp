@@ -58,11 +58,11 @@ QualityFunction::combineWithNext(QualityFunction const& qf)
 }
 
 std::optional<Number>
-QualityFunction::outFromInstQ(Quality const& quality)
+QualityFunction::outFromAvgQ(Quality const& quality)
 {
     if (m_ != 0 && quality.rate() != beast::zero)
     {
-        auto const out = -(b_ - root(b_ / quality.rate(), 2)) / m_;
+        auto const out = (b_ - 1 / quality.rate()) / m_;
         if (out <= 0)
             return std::nullopt;
         return out;

@@ -383,7 +383,7 @@ limitOut(
         return remainingOut;
 
     auto const out = [&]() {
-        if (auto const out = qf.outFromInstQ(limitQuality); !out)
+        if (auto const out = qf.outFromAvgQ(limitQuality); !out)
             return remainingOut;
         else if constexpr (std::is_same_v<TOutAmt, XRPAmount>)
             return (XRPAmount)*out;

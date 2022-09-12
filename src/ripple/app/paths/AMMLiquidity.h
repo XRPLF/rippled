@@ -128,7 +128,7 @@ private:
     AMMOfferCounter const& offerCounter_;
     AccountID ammAccountID_;
     std::uint32_t tradingFee_;
-    // Cached AMM pool balances as of last getOffers()
+    // Cached AMM pool balances as of last getOffer()
     mutable Amounts balances_;
     // Is seated in case of multi-path. Generates Fibonacci
     // sequence offer.

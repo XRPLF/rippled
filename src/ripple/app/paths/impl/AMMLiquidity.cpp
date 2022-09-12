@@ -52,6 +52,7 @@ AMMLiquidity::ammAccountHolds(
     }
     else if (auto const sle = view.read(
                  keylet::line(ammAccountID, issue.account, issue.currency));
+             sle &&
              !isFrozen(view, ammAccountID, issue.currency, issue.account))
     {
         auto amount = sle->getFieldAmount(sfBalance);
@@ -73,10 +74,9 @@ AMMLiquidity::fetchBalances(const ReadView& view) const
             ammAccountHolds(view, ammAccountID_, balances_.in.issue());
         auto const assetOut =
             ammAccountHolds(view, ammAccountID_, balances_.out.issue());
-        // This should not happen since AMMLiquidity is created only
-        // if AMM exists for the given token pair.
-        if (assetIn <= beast::zero || assetOut <= beast::zero)
-            Throw<std::runtime_error>("AMMLiquidity: unexpected 0 balances");
+        // This should not happen.
+        if (assetIn < beast::zero || assetOut < beast::zero)
+            Throw<std::runtime_error>("AMMLiquidity: invalid balances");
 
         dirty_ = false;
 
