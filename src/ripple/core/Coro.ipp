@@ -26,7 +26,7 @@ namespace ripple {
 
 template <class F>
 JobQueue::Coro::Coro(
-    Coro_create_t,
+    JobQueue::CoroCreator,
     JobQueue& jq,
     JobType type,
     std::string const& name,

@@ -36,10 +36,6 @@ class PerfLog;
 }
 
 class Logs;
-struct Coro_create_t
-{
-    explicit Coro_create_t() = default;
-};
 
 /** A pool of threads to perform work.
 
@@ -53,6 +49,13 @@ struct Coro_create_t
 */
 class JobQueue : private Workers::Callback
 {
+    // A small class used to prevent construction of coroutines without
+    // going through the JobQueue APIs.
+    struct CoroCreator
+    {
+        explicit constexpr CoroCreator() = default;
+    };
+
 public:
     /** Coroutines must run to completion. */
     class Coro : public std::enable_shared_from_this<Coro>,
@@ -74,9 +77,13 @@ public:
 #endif
 
     public:
-        // Private: Used in the implementation
         template <class F>
-        Coro(Coro_create_t, JobQueue&, JobType, std::string const&, F&&);
+        Coro(
+            JobQueue::CoroCreator,
+            JobQueue& jq,
+            JobType type,
+            std::string const& name,
+            F&& f);
 
         Coro(Coro const&) = delete;
         Coro&
@@ -86,7 +93,7 @@ public:
         Coro&
         operator=(Coro&&) = delete;
 
-        ~Coro();
+        virtual ~Coro();
 
         /** Suspend the execution of a running coroutine.
 
@@ -292,10 +299,7 @@ private:
     //
     //    return true if func added to queue.
     bool
-    addRefCountedJob(
-        JobType type,
-        std::string const& name,
-        JobFunction func);
+    addRefCountedJob(JobType type, std::string const& name, JobFunction func);
 
     // Runs the next appropriate waiting Job.
     //
@@ -390,11 +394,9 @@ JobQueue::postCoro(JobType t, std::string const& name, F&& f)
     if (stopping_ || stopped_)
         return nullptr;
 
-    // The first parameter is a detail type to make construction private and
-    // the last is the function the coroutine runs, which has a signature of
-    //    void(std::shared_ptr<Coro>)
     auto coro = std::make_shared<Coro>(
-        Coro_create_t{}, *this, t, name, std::forward<F>(f));
+        CoroCreator{}, *this, t, name, std::forward<F>(f));
+
     if (!coro->post())
     {
         // The coroutine was not successfully posted, so we disable it. That
@@ -403,6 +405,7 @@ JobQueue::postCoro(JobType t, std::string const& name, F&& f)
         coro->expectEarlyExit();
         coro.reset();
     }
+
     return coro;
 }
 
