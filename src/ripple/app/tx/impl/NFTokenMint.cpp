@@ -53,10 +53,10 @@ NFTokenMint::preflight(PreflightContext const& ctx)
     // The fixRemoveNFTokenAutoTrustLine amendment disables minting with the
     // tfTrustLine flag as a way to prevent the attack.  But until the
     // amendment passes we still need to keep the old behavior available.
-    std::uint32_t const NFTokeMintMask =
+    std::uint32_t const NFTokenMintMask =
         ctx.rules.enabled(fixRemoveNFTokenAutoTrustLine) ? tfNFTokenMintMask
                                                          : tfNFTokenMintOldMask;
-    if (ctx.tx.getFlags() & NFTokeMintMask)
+    if (ctx.tx.getFlags() & NFTokenMintMask)
         return temINVALID_FLAG;
 
     if (auto const f = ctx.tx[~sfTransferFee])
