@@ -1394,7 +1394,7 @@ private:
                 vote(i, 10000);
             BEAST_EXPECT(ammAlice.expectTradingFee(2750));
             vote(0, 20000);
-            BEAST_EXPECT(ammAlice.expectTradingFee(2056));
+            BEAST_EXPECT(ammAlice.expectTradingFee(2445));
         });
     }
 

@@ -99,6 +99,8 @@ AMMVote::applyGuts(Sandbox& sb)
 
     std::optional<STAmount> minTokens{};
     std::size_t minPos{0};
+    AccountID minAccount{0};
+    std::uint32_t minFee{0};
     STArray updatedVoteSlots;
     Number num{0};
     Number den{0};
@@ -136,11 +138,17 @@ AMMVote::applyGuts(Sandbox& sb)
             sfVoteWeight,
             (std::int64_t)(
                 Number(lpTokens) * 100000 / lptAMMBalance + Number(1) / 2));
-        // Find an entry with the least tokens.
-        if (!minTokens || lpTokens < *minTokens)
+        // Find an entry with the least tokens/fee. Make the order deterministic
+        // if the tokens/fees are equal.
+        if (!minTokens ||
+            (lpTokens < *minTokens ||
+             (lpTokens == *minTokens &&
+              (feeVal < minFee || (feeVal == minFee && account < minAccount)))))
         {
             minTokens = lpTokens;
             minPos = updatedVoteSlots.size();
+            minAccount = account;
+            minFee = feeVal;
         }
         updatedVoteSlots.emplace_back(newEntry);
     }
