@@ -132,6 +132,8 @@ Number::Guard::round() noexcept
     auto mode = Number::getround();
     switch (mode)
     {
+        // round to nearest if mode is not one of the predefined values
+        default:
         case to_nearest:
             if (digits_ > 0x5000'0000'0000'0000)
                 return 1;
@@ -506,8 +508,8 @@ to_string(Number const& amount)
 
     assert(exponent + 43 > 0);
 
-    size_t const pad_prefix = 27;
-    size_t const pad_suffix = 23;
+    ptrdiff_t const pad_prefix = 27;
+    ptrdiff_t const pad_suffix = 23;
 
     std::string const raw_value(std::to_string(mantissa));
     std::string val;
@@ -517,7 +519,7 @@ to_string(Number const& amount)
     val.append(raw_value);
     val.append(pad_suffix, '0');
 
-    size_t const offset(exponent + 43);
+    ptrdiff_t const offset(exponent + 43);
 
     auto pre_from(val.begin());
     auto const pre_to(val.begin() + offset);
