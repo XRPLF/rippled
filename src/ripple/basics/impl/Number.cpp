@@ -25,7 +25,7 @@
 #include <type_traits>
 #include <utility>
 
-#ifdef _MSVC_LANG
+#ifdef BOOST_COMP_MSVC
 #include <boost/multiprecision/cpp_int.hpp>
 using uint128_t = boost::multiprecision::uint128_t;
 #else   // !defined(_MSVC_LANG)
@@ -130,34 +130,37 @@ int
 Number::Guard::round() noexcept
 {
     auto mode = Number::getround();
-    switch (mode)
+
+    if (mode == towards_zero)
+        return -1;
+
+    if (mode == downward)
     {
-        // round to nearest if mode is not one of the predefined values
-        default:
-        case to_nearest:
-            if (digits_ > 0x5000'0000'0000'0000)
-                return 1;
-            if (digits_ < 0x5000'0000'0000'0000)
-                return -1;
-            if (xbit_)
-                return 1;
-            return 0;
-        case towards_zero:
-            return -1;
-        case downward:
-            if (sbit_)
-            {
-                if (digits_ > 0 || xbit_)
-                    return 1;
-            }
-            return -1;
-        case upward:
-            if (sbit_)
-                return -1;
+        if (sbit_)
+        {
             if (digits_ > 0 || xbit_)
                 return 1;
-            return -1;
+        }
+        return -1;
     }
+
+    if (mode == upward)
+    {
+        if (sbit_)
+            return -1;
+        if (digits_ > 0 || xbit_)
+            return 1;
+        return -1;
+    }
+
+    // assume round to nearest if mode is not one of the predefined values
+    if (digits_ > 0x5000'0000'0000'0000)
+        return 1;
+    if (digits_ < 0x5000'0000'0000'0000)
+        return -1;
+    if (xbit_)
+        return 1;
+    return 0;
 }
 
 // Number
@@ -173,9 +176,9 @@ Number::normalize()
         return;
     }
     bool const negative = (mantissa_ < 0);
-    if (negative)
-        mantissa_ = -mantissa_;
     auto m = static_cast<std::make_unsigned_t<rep>>(mantissa_);
+    if (negative)
+        m = -m;
     while ((m < minMantissa) && (exponent_ > minExponent))
     {
         m *= 10;

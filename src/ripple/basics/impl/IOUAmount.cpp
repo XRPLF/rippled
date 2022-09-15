@@ -45,6 +45,12 @@ IOUAmount::minPositiveAmount()
 void
 IOUAmount::normalize()
 {
+    if (mantissa_ == 0)
+    {
+        *this = beast::zero;
+        return;
+    }
+
     if (*stNumberSwitchover)
     {
         Number v{mantissa_, exponent_};
@@ -54,11 +60,6 @@ IOUAmount::normalize()
             Throw<std::overflow_error>("value overflow");
         if (exponent_ < minExponent)
             *this = beast::zero;
-        return;
-    }
-    if (mantissa_ == 0)
-    {
-        *this = beast::zero;
         return;
     }
 
@@ -107,48 +108,46 @@ IOUAmount::IOUAmount(Number const& other)
 IOUAmount&
 IOUAmount::operator+=(IOUAmount const& other)
 {
+    if (other == beast::zero)
+        return *this;
+
+    if (*this == beast::zero)
+    {
+        *this = other;
+        return *this;
+    }
+
     if (*stNumberSwitchover)
     {
         *this = IOUAmount{Number{*this} + Number{other}};
+        return *this;
     }
-    else
+    auto m = other.mantissa_;
+    auto e = other.exponent_;
+
+    while (exponent_ < e)
     {
-        if (other == beast::zero)
-            return *this;
-
-        if (*this == beast::zero)
-        {
-            *this = other;
-            return *this;
-        }
-
-        auto m = other.mantissa_;
-        auto e = other.exponent_;
-
-        while (exponent_ < e)
-        {
-            mantissa_ /= 10;
-            ++exponent_;
-        }
-
-        while (e < exponent_)
-        {
-            m /= 10;
-            ++e;
-        }
-
-        // This addition cannot overflow an std::int64_t but we may throw from
-        // normalize if the result isn't representable.
-        mantissa_ += m;
-
-        if (mantissa_ >= -10 && mantissa_ <= 10)
-        {
-            *this = beast::zero;
-            return *this;
-        }
-
-        normalize();
+        mantissa_ /= 10;
+        ++exponent_;
     }
+
+    while (e < exponent_)
+    {
+        m /= 10;
+        ++e;
+    }
+
+    // This addition cannot overflow an std::int64_t but we may throw from
+    // normalize if the result isn't representable.
+    mantissa_ += m;
+
+    if (mantissa_ >= -10 && mantissa_ <= 10)
+    {
+        *this = beast::zero;
+        return *this;
+    }
+
+    normalize();
     return *this;
 }
 
