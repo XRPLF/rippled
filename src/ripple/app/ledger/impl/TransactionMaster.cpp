@@ -133,7 +133,7 @@ TransactionMaster::fetch(
         if (uCommitLedger)
             iTx->setStatus(COMMITTED, uCommitLedger);
 
-        txn = iTx->getSTransaction();
+        txn = iTx->getSerializedTx();
     }
 
     return txn;

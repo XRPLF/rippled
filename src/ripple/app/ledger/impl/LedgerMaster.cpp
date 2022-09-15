@@ -426,7 +426,7 @@ LedgerMaster::addHeldTransaction(
     std::shared_ptr<Transaction> const& transaction)
 {
     std::lock_guard ml(m_mutex);
-    mHeldTransactions.insert(transaction->getSTransaction());
+    mHeldTransactions.insert(transaction->getSerializedTx());
 }
 
 // Validate a ledger's close time and sequence number if we're considering

@@ -35,38 +35,8 @@
 
 namespace ripple {
 
-Transaction::Transaction(
-    std::shared_ptr<STTx const> const& stx,
-    std::string& reason,
-    Application& app) noexcept
-    : mTransaction(stx), mApp(app), j_(app.journal("Ledger"))
-{
-    try
-    {
-        mTransactionID = mTransaction->getTransactionID();
-    }
-    catch (std::exception& e)
-    {
-        reason = e.what();
-        return;
-    }
-
-    mStatus = NEW;
-}
-
-//
-// Misc.
-//
-
-void
-Transaction::setStatus(TransStatus ts, std::uint32_t lseq)
-{
-    mStatus = ts;
-    mInLedger = lseq;
-}
-
 TransStatus
-Transaction::sqlTransactionStatus(boost::optional<std::string> const& status)
+sqlTransactionStatus(boost::optional<std::string> const& status)
 {
     char const c = (status) ? (*status)[0] : safe_cast<char>(txnSqlUnknown);
 
@@ -88,24 +58,12 @@ Transaction::sqlTransactionStatus(boost::optional<std::string> const& status)
     return INVALID;
 }
 
-Transaction::pointer
-Transaction::transactionFromSQL(
-    boost::optional<std::uint64_t> const& ledgerSeq,
-    boost::optional<std::string> const& status,
-    Blob const& rawTxn,
-    Application& app)
+Transaction::Transaction(
+    std::shared_ptr<STTx const> const& tx,
+    TransStatus status,
+    std::uint32_t ledgerSeq) noexcept
+    : ledger_(ledgerSeq), status_(status), tx_(tx)
 {
-    std::uint32_t const inLedger =
-        rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or(0));
-
-    SerialIter it(makeSlice(rawTxn));
-    auto txn = std::make_shared<STTx const>(it);
-    std::string reason;
-    auto tr = std::make_shared<Transaction>(txn, reason, app);
-
-    tr->setStatus(sqlTransactionStatus(status));
-    tr->setLedger(inLedger);
-    return tr;
 }
 
 std::variant<
@@ -165,18 +123,18 @@ Transaction::load(
 
 // options 1 to include the date of the transaction
 Json::Value
-Transaction::getJson(JsonOptions options, bool binary) const
+Transaction::getJson(Application& app, JsonOptions options, bool binary) const
 {
-    Json::Value ret(mTransaction->getJson(JsonOptions::none, binary));
+    Json::Value ret(tx_->getJson(JsonOptions::none, binary));
 
-    if (mInLedger)
+    if (ledger_)
     {
-        ret[jss::inLedger] = mInLedger;  // Deprecated.
-        ret[jss::ledger_index] = mInLedger;
+        ret[jss::inLedger] = ledger_;  // Deprecated.
+        ret[jss::ledger_index] = ledger_;
 
         if (options == JsonOptions::include_date)
         {
-            auto ct = mApp.getLedgerMaster().getCloseTimeBySeq(mInLedger);
+            auto ct = app.getLedgerMaster().getCloseTimeBySeq(ledger_);
             if (ct)
                 ret[jss::date] = ct->time_since_epoch().count();
         }

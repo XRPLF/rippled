@@ -806,7 +806,7 @@ class Ticket_test : public beast::unit_test::suite
             {
                 std::shared_ptr<Transaction>& tx = txPtr->first;
                 BEAST_EXPECT(tx->getLedger() == ledgerSeq);
-                std::shared_ptr<STTx const> const& sttx = tx->getSTransaction();
+                std::shared_ptr<STTx const> const& sttx = tx->getSerializedTx();
                 BEAST_EXPECT((*sttx)[sfSequence] == txSeq);
                 if (ticketSeq)
                     BEAST_EXPECT((*sttx)[sfTicketSequence] == *ticketSeq);

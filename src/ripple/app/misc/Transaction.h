@@ -54,6 +54,13 @@ enum TransStatus {
     INCOMPLETE = 8   // needs more signatures
 };
 
+/** Convert the database status to a runtime code
+
+    The boost::optional parameter is used because the SOCI API requires it.
+ */
+TransStatus
+sqlTransactionStatus(boost::optional<std::string> const& status);
+
 enum class TxSearched { all, some, unknown };
 
 // This class is for constructing and examining transactions.
@@ -66,79 +73,63 @@ public:
     using ref = const pointer&;
 
     Transaction(
-        std::shared_ptr<STTx const> const&,
-        std::string&,
-        Application&) noexcept;
-
-    // The two boost::optional parameters are because SOCI requires
-    // boost::optional (not std::optional) parameters.
-    static Transaction::pointer
-    transactionFromSQL(
-        boost::optional<std::uint64_t> const& ledgerSeq,
-        boost::optional<std::string> const& status,
-        Blob const& rawTxn,
-        Application& app);
-
-    // The boost::optional parameter is because SOCI requires
-    // boost::optional (not std::optional) parameters.
-    static TransStatus
-    sqlTransactionStatus(boost::optional<std::string> const& status);
+        std::shared_ptr<STTx const> const& tx,
+        TransStatus status = NEW,
+        std::uint32_t ledgerSeq = 0) noexcept;
 
     std::shared_ptr<STTx const> const&
-    getSTransaction()
+    getSerializedTx() const noexcept
     {
-        return mTransaction;
+        return tx_;
     }
 
     uint256 const&
-    getID() const
+    getID() const noexcept
     {
-        return mTransactionID;
+        return tx_->getTransactionID();
     }
 
     LedgerIndex
-    getLedger() const
+    getLedger() const noexcept
     {
-        return mInLedger;
+        return ledger_;
     }
 
     bool
-    isValidated() const
+    isValidated() const noexcept
     {
-        return mInLedger != 0;
+        return ledger_ != 0;
     }
 
     TransStatus
-    getStatus() const
+    getStatus() const noexcept
     {
-        return mStatus;
+        return status_;
     }
 
     TER
-    getResult()
+    getResult() const noexcept
     {
-        return mResult;
+        return result_;
     }
 
     void
     setResult(TER terResult)
     {
-        mResult = terResult;
+        result_ = terResult;
     }
 
     void
-    setStatus(TransStatus status, std::uint32_t ledgerSeq);
+    setStatus(TransStatus status, std::uint32_t ledgerSeq)
+    {
+        status_ = status;
+        ledger_ = ledgerSeq;
+    }
 
     void
     setStatus(TransStatus status)
     {
-        mStatus = status;
-    }
-
-    void
-    setLedger(LedgerIndex ledger)
-    {
-        mInLedger = ledger;
+        status_ = status;
     }
 
     /**
@@ -147,7 +138,7 @@ public:
     void
     setApplying()
     {
-        mApplying = true;
+        applying_ = true;
     }
 
     /**
@@ -158,7 +149,7 @@ public:
     bool
     getApplying()
     {
-        return mApplying;
+        return applying_;
     }
 
     /**
@@ -167,7 +158,7 @@ public:
     void
     clearApplying()
     {
-        mApplying = false;
+        applying_ = false;
     }
 
     struct SubmitResult
@@ -306,7 +297,7 @@ public:
     }
 
     Json::Value
-    getJson(JsonOptions options, bool binary = false) const;
+    getJson(Application& app, JsonOptions options, bool binary = false) const;
 
     // Information used to locate a transaction.
     // Contains a nodestore hash and ledger sequence pair if the transaction was
@@ -384,21 +375,17 @@ private:
         std::optional<ClosedInterval<uint32_t>> const& range,
         error_code_i& ec);
 
-    uint256 mTransactionID;
-
-    LedgerIndex mInLedger = 0;
-    TransStatus mStatus = INVALID;
-    TER mResult = temUNCERTAIN;
-    bool mApplying = false;
+    LedgerIndex ledger_;
+    TransStatus status_;
+    TER result_ = temUNCERTAIN;
+    bool applying_ = false;
 
     /** different ways for transaction to be accepted */
     SubmitResult submitResult_;
 
     std::optional<CurrentLedgerState> currentLedgerState_;
 
-    std::shared_ptr<STTx const> mTransaction;
-    Application& mApp;
-    beast::Journal j_;
+    std::shared_ptr<STTx const> tx_;
 };
 
 }  // namespace ripple

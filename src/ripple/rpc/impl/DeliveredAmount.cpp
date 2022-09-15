@@ -216,7 +216,7 @@ insertDeliveredAmount(
     TxMeta const& transactionMeta)
 {
     insertDeliveredAmount(
-        meta, context, transaction->getSTransaction(), transactionMeta);
+        meta, context, transaction->getSerializedTx(), transactionMeta);
 }
 
 void

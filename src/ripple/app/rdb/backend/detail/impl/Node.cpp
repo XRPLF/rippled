@@ -617,6 +617,24 @@ getHashesByIndex(
     return res;
 }
 
+// The boost::optional parameter is used because the SOCI API requires it.
+static Transaction::pointer
+transactionFromSQL(
+    boost::optional<std::uint64_t> const& ledgerSeq,
+    boost::optional<std::string> const& status,
+    Blob const& rawTxn)
+{
+    std::uint32_t const inLedger =
+        rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or(0));
+
+    SerialIter it(makeSlice(rawTxn));
+
+    return std::make_shared<Transaction>(
+        std::make_shared<STTx const>(it),
+        sqlTransactionStatus(status),
+        inLedger);
+}
+
 std::pair<std::vector<std::shared_ptr<Transaction>>, int>
 getTxHistory(
     soci::session& session,
@@ -656,8 +674,7 @@ getTxHistory(
             else
                 rawTxn.clear();
 
-            if (auto trans = Transaction::transactionFromSQL(
-                    ledgerSeq, status, rawTxn, app))
+            if (auto trans = transactionFromSQL(ledgerSeq, status, rawTxn))
             {
                 total++;
                 txs.push_back(trans);
@@ -856,8 +873,7 @@ getAccountTxs(
             else
                 txnMeta.clear();
 
-            auto txn =
-                Transaction::transactionFromSQL(ledgerSeq, status, rawTxn, app);
+            auto txn = transactionFromSQL(ledgerSeq, status, rawTxn);
 
             if (txnMeta.empty())
             {  // Work around a bug that could leave the metadata missing
@@ -1339,8 +1355,7 @@ getTransaction(
 
     try
     {
-        auto txn =
-            Transaction::transactionFromSQL(ledgerSeq, status, rawTxn, app);
+        auto txn = transactionFromSQL(ledgerSeq, status, rawTxn);
 
         if (!ledgerSeq)
             return std::pair{std::move(txn), nullptr};
