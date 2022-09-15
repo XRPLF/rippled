@@ -22,6 +22,7 @@
 
 #include <ripple/basics/XRPAmount.h>
 #include <cstdint>
+#include <limits>
 #include <ostream>
 #include <string>
 
