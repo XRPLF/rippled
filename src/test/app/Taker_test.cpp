@@ -905,100 +905,143 @@ public:
     {
         testcase("IOU to IOU");
 
-        NumberSO stNumberSO{true};
-        Quality q1 = get_quality("1", "1");
+        for (auto NumberSwitchOver : {false, true})
+        {
+            NumberSO stNumberSO{NumberSwitchOver};
+            Quality q1 = get_quality("1", "1");
 
-        // Highly exaggerated 50% transfer rate for the input and output:
-        Rate const rate{parityRate.value + (parityRate.value / 2)};
+            // Highly exaggerated 50% transfer rate for the input and output:
+            Rate const rate{parityRate.value + (parityRate.value / 2)};
 
-        //                             TAKER                    OWNER
-        //                     QUAL    OFFER     FUNDS  QUAL    OFFER     FUNDS
-        //                     EXPECTED
-        //                                        EUR                      USD
-        attempt(
-            Sell,
-            "N:N",
-            q1,
-            {"2", "2"},
-            "10",
-            q1,
-            {"2", "2"},
-            "10",
-            {"2", "2"},
-            eur(),
-            usd(),
-            rate,
-            rate);
-        attempt(
-            Sell,
-            "N:B",
-            q1,
-            {"4", "4"},
-            "10",
-            q1,
-            {"4", "4"},
-            "4",
-            {"2.666666666666667", "2.666666666666667"},
-            eur(),
-            usd(),
-            rate,
-            rate);
-        attempt(
-            Buy,
-            "N:T",
-            q1,
-            {"1", "1"},
-            "10",
-            q1,
-            {"2", "2"},
-            "10",
-            {"1", "1"},
-            eur(),
-            usd(),
-            rate,
-            rate);
-        attempt(
-            Buy,
-            "N:BT",
-            q1,
-            {"2", "2"},
-            "10",
-            q1,
-            {"6", "6"},
-            "5",
-            {"2", "2"},
-            eur(),
-            usd(),
-            rate,
-            rate);
-        attempt(
-            Buy,
-            "N:TB",
-            q1,
-            {"2", "2"},
-            "2",
-            q1,
-            {"6", "6"},
-            "1",
-            {"0.6666666666666667", "0.6666666666666667"},
-            eur(),
-            usd(),
-            rate,
-            rate);
-        attempt(
-            Sell,
-            "A:N",
-            q1,
-            {"2", "2"},
-            "2.5",
-            q1,
-            {"2", "2"},
-            "10",
-            {"1.666666666666667", "1.666666666666667"},
-            eur(),
-            usd(),
-            rate,
-            rate);
+            //                             TAKER                    OWNER
+            //                     QUAL    OFFER     FUNDS  QUAL    OFFER FUNDS
+            //                     EXPECTED
+            //                                        EUR USD
+            attempt(
+                Sell,
+                "N:N",
+                q1,
+                {"2", "2"},
+                "10",
+                q1,
+                {"2", "2"},
+                "10",
+                {"2", "2"},
+                eur(),
+                usd(),
+                rate,
+                rate);
+            if (NumberSwitchOver)
+            {
+                attempt(
+                    Sell,
+                    "N:B",
+                    q1,
+                    {"4", "4"},
+                    "10",
+                    q1,
+                    {"4", "4"},
+                    "4",
+                    {"2.666666666666667", "2.666666666666667"},
+                    eur(),
+                    usd(),
+                    rate,
+                    rate);
+            }
+            else
+            {
+                attempt(
+                    Sell,
+                    "N:B",
+                    q1,
+                    {"4", "4"},
+                    "10",
+                    q1,
+                    {"4", "4"},
+                    "4",
+                    {"2.666666666666666", "2.666666666666666"},
+                    eur(),
+                    usd(),
+                    rate,
+                    rate);
+            }
+            attempt(
+                Buy,
+                "N:T",
+                q1,
+                {"1", "1"},
+                "10",
+                q1,
+                {"2", "2"},
+                "10",
+                {"1", "1"},
+                eur(),
+                usd(),
+                rate,
+                rate);
+            attempt(
+                Buy,
+                "N:BT",
+                q1,
+                {"2", "2"},
+                "10",
+                q1,
+                {"6", "6"},
+                "5",
+                {"2", "2"},
+                eur(),
+                usd(),
+                rate,
+                rate);
+            attempt(
+                Buy,
+                "N:TB",
+                q1,
+                {"2", "2"},
+                "2",
+                q1,
+                {"6", "6"},
+                "1",
+                {"0.6666666666666667", "0.6666666666666667"},
+                eur(),
+                usd(),
+                rate,
+                rate);
+            if (NumberSwitchOver)
+            {
+                attempt(
+                    Sell,
+                    "A:N",
+                    q1,
+                    {"2", "2"},
+                    "2.5",
+                    q1,
+                    {"2", "2"},
+                    "10",
+                    {"1.666666666666667", "1.666666666666667"},
+                    eur(),
+                    usd(),
+                    rate,
+                    rate);
+            }
+            else
+            {
+                attempt(
+                    Sell,
+                    "A:N",
+                    q1,
+                    {"2", "2"},
+                    "2.5",
+                    q1,
+                    {"2", "2"},
+                    "10",
+                    {"1.666666666666666", "1.666666666666666"},
+                    eur(),
+                    usd(),
+                    rate,
+                    rate);
+            }
+        }
     }
 
     void
