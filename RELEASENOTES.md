@@ -9,13 +9,13 @@ Have new ideas? Need help with setting up your node? Come visit us [here](https:
 
 # Introducing XRP Ledger version 1.9.4
 
-Version 1.9.4 of `rippled`, the reference implementation of the XRP Ledger protocol is now available. This releases introduces an amendment that removes the ability for an NFT issuer to indicate that trustlines should be automatically created for royalty payments from secondary sales of NFTs, in response to a bug report that indicated how this functionality could be abused to mount a ddenial of service attack against the issuer.
+Version 1.9.4 of `rippled`, the reference implementation of the XRP Ledger protocol is now available. This release introduces an amendment that removes the ability for an NFT issuer to indicate that trust lines should be automatically created for royalty payments from secondary sales of NFTs, in response to a bug report that indicated how this functionality could be abused to mount a denial of service attack against the issuer.
 
 ## Action Required
 
-This release introduces a new amendment to the XRP Ledger protocol, **`fixRemoveNFTokenAutoTrustLine`** to mitigate a potential denial-of-service attack against NFT issuers that minted NFTs and allowed secondary trading of those NFTs to create trustlines for any asset.
+This release introduces a new amendment to the XRP Ledger protocol, **`fixRemoveNFTokenAutoTrustLine`** to mitigate a potential denial-of-service attack against NFT issuers that minted NFTs and allowed secondary trading of those NFTs to create trust lines for any asset.
 
-This amendments are now open for voting according to the XRP Ledger's [amendment process](https://xrpl.org/amendments.html), which enables protocol changes following two weeks of >80% support from trusted validators.
+This amendment is open for voting according to the XRP Ledger's [amendment process](https://xrpl.org/amendments.html), which enables protocol changes following two weeks of >80% support from trusted validators.
 
 If you operate an XRP Ledger server, then you should upgrade to version 1.9.4 within two weeks, to ensure service continuity. The exact time that protocol changes take effect depends on the voting decisions of the decentralized network.
 
@@ -30,16 +30,16 @@ On supported platforms, see the [instructions on installing or updating `rippled
 
 ## Contributions
 
-This primary change in this release is the following bug fix:
+The primary change in this release is the following bug fix:
 
-- **Introduce fixRemoveNFTokenAutoTrustLine amendment**: Introduces the `fixRemoveNFTokenAutoTrustLine` amendment, which disables the `tfTrustLine` flag, which a malicious attacker could exploit to mount denial of service attacks against NFT issuers that specified the flag on their NFTs. ([#4301](https://github.com/XRPLF/rippled/4301))
+- **Introduce fixRemoveNFTokenAutoTrustLine amendment**: Introduces the `fixRemoveNFTokenAutoTrustLine` amendment, which disables the `tfTrustLine` flag, which a malicious attacker could exploit to mount denial-of-service attacks against NFT issuers that specified the flag on their NFTs. ([#4301](https://github.com/XRPLF/rippled/4301))
 
 
 ### GitHub
 
 The public source code repository for `rippled` is hosted on GitHub at <https://github.com/XRPLF/rippled>.
 
-We welcome contributions, big and small, and invite everyone to join the community of XRP Ledger developers and help us build the Internet of Value.
+We welcome all contributions and invite everyone to join the community of XRP Ledger developers and help us build the Internet of Value.
 
 ### Credits
 
@@ -63,7 +63,7 @@ On supported platforms, see the [instructions on installing or updating `rippled
 
 ## Contributions
 
-This releases contains the following bug fixes:
+This release contains the following bug fixes:
 
 - **Change by-value to by-reference to persist vote**: A minor technical flaw, caused by use of a copy instead of a reference, resulted in operator-configured "yes" votes to not be properly loaded after a restart. ([#4256](https://github.com/XRPLF/rippled/pull/4256))
 - **Properly handle self-assignment of PublicKey**: The `PublicKey` copy assignment operator mishandled the case where a `PublicKey` would be assigned to itself, and could result in undefined behavior. 
