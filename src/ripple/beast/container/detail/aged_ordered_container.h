@@ -1432,7 +1432,12 @@ template <
     class Allocator>
 aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
     aged_ordered_container(aged_ordered_container const& other)
-    : m_config(other.m_config), m_cont(other.m_cont.comp())
+    : m_config(other.m_config)
+#if BOOST_VERSION >= 108000
+    , m_cont(other.m_cont.get_comp())
+#else
+    , m_cont(other.m_cont.comp())
+#endif
 {
     insert(other.cbegin(), other.cend());
 }
@@ -1449,7 +1454,12 @@ aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
     aged_ordered_container(
         aged_ordered_container const& other,
         Allocator const& alloc)
-    : m_config(other.m_config, alloc), m_cont(other.m_cont.comp())
+    : m_config(other.m_config, alloc)
+#if BOOST_VERSION >= 108000
+    , m_cont(other.m_cont.get_comp())
+#else
+    , m_cont(other.m_cont.comp())
+#endif
 {
     insert(other.cbegin(), other.cend());
 }
@@ -1482,7 +1492,12 @@ aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
         aged_ordered_container&& other,
         Allocator const& alloc)
     : m_config(std::move(other.m_config), alloc)
+#if BOOST_VERSION >= 108000
+    , m_cont(std::move(other.m_cont.get_comp()))
+#else
     , m_cont(std::move(other.m_cont.comp()))
+#endif
+
 {
     insert(other.cbegin(), other.cend());
     other.clear();
