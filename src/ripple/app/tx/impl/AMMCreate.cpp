@@ -108,14 +108,14 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
     }
 
     auto insufficientBalance = [&](STAmount const& asset) {
-        auto const balance = accountHolds(
-            ctx.view,
-            accountID,
-            asset.issue().currency,
-            asset.issue().account,
-            FreezeHandling::fhZERO_IF_FROZEN,
-            ctx.j);
-        return balance < asset;
+        return accountID != asset.issue().account &&
+            accountHolds(
+                ctx.view,
+                accountID,
+                asset.issue().currency,
+                asset.issue().account,
+                FreezeHandling::fhZERO_IF_FROZEN,
+                ctx.j) < asset;
     };
 
     if (insufficientBalance(saAsset1) || insufficientBalance(saAsset2))
