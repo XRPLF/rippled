@@ -39,45 +39,14 @@ class AMM
 {
     Env& env_;
     Account const creatorAccount_;
-    uint256 ammID_;
+    uint256 const ammID_;
     AccountID ammAccount_;
     Issue lptIssue_;
-    STAmount asset1_;
-    STAmount asset2_;
+    STAmount const asset1_;
+    STAmount const asset2_;
+    IOUAmount const initialLPTokens_;
     std::optional<ter> ter_;
     bool log_ = false;
-
-    void
-    create(
-        std::uint32_t tfee = 0,
-        std::optional<std::uint32_t> flags = std::nullopt,
-        std::optional<jtx::seq> seq = std::nullopt);
-
-    void
-    deposit(
-        std::optional<Account> const& account,
-        Json::Value& jv,
-        std::optional<jtx::seq> const& seq = std::nullopt);
-
-    void
-    withdraw(
-        std::optional<Account> const& account,
-        Json::Value& jv,
-        std::optional<jtx::seq> const& seq,
-        std::optional<ter> const& ter = std::nullopt);
-
-    void
-    log(bool log)
-    {
-        log_ = log;
-    }
-
-    bool
-    expectAmmInfo(
-        STAmount const& asset1,
-        STAmount const& asset2,
-        IOUAmount const& balance,
-        Json::Value const& jv) const;
 
 public:
     AMM(Env& env,
@@ -241,6 +210,45 @@ public:
     {
         return lptIssue_;
     }
+
+    IOUAmount
+    tokens() const
+    {
+        return initialLPTokens_;
+    }
+
+private:
+    void
+    create(
+        std::uint32_t tfee = 0,
+        std::optional<std::uint32_t> flags = std::nullopt,
+        std::optional<jtx::seq> seq = std::nullopt);
+
+    void
+    deposit(
+        std::optional<Account> const& account,
+        Json::Value& jv,
+        std::optional<jtx::seq> const& seq = std::nullopt);
+
+    void
+    withdraw(
+        std::optional<Account> const& account,
+        Json::Value& jv,
+        std::optional<jtx::seq> const& seq,
+        std::optional<ter> const& ter = std::nullopt);
+
+    void
+    log(bool log)
+    {
+        log_ = log;
+    }
+
+    bool
+    expectAmmInfo(
+        STAmount const& asset1,
+        STAmount const& asset2,
+        IOUAmount const& balance,
+        Json::Value const& jv) const;
 };
 
 namespace amm {

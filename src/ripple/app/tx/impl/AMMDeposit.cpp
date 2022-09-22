@@ -118,11 +118,28 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
     auto const asset1In = ctx.tx[~sfAsset1In];
     auto const asset2Out = ctx.tx[~sfAsset2Out];
 
-    if ((asset1In && requireAuth(ctx.view, asset1In->issue(), accountID)) ||
-        (asset2Out && requireAuth(ctx.view, asset2Out->issue(), accountID)))
+    if (asset1In)
     {
-        JLOG(ctx.j.debug()) << "AMM Instance: account is not authorized";
-        return tecNO_PERMISSION;
+        if (auto const ter =
+                requireAuth(ctx.view, asset1In->issue(), accountID);
+            ter != tesSUCCESS)
+        {
+            JLOG(ctx.j.debug()) << "AMM Deposit: account is not authorized, "
+                                << asset1In->issue();
+            return ter;
+        }
+    }
+
+    if (asset2Out)
+    {
+        if (auto const ter =
+                requireAuth(ctx.view, asset2Out->issue(), accountID);
+            ter != tesSUCCESS)
+        {
+            JLOG(ctx.j.debug()) << "AMM Deposit: account is not authorized, "
+                                << asset2Out->issue();
+            return ter;
+        }
     }
 
     if (isFrozen(ctx.view, asset1In) || isFrozen(ctx.view, asset2Out))

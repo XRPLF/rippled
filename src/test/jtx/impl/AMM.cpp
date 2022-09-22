@@ -29,6 +29,14 @@ namespace ripple {
 namespace test {
 namespace jtx {
 
+static Number
+number(STAmount const& a)
+{
+    if (isXRP(a))
+        return a.xrp();
+    return a;
+}
+
 AMM::AMM(
     Env& env,
     Account const& account,
@@ -44,6 +52,7 @@ AMM::AMM(
     , ammID_(ripple::calcAMMGroupHash(asset1.issue(), asset2.issue()))
     , asset1_(asset1)
     , asset2_(asset2)
+    , initialLPTokens_((IOUAmount)root2(number(asset1) * number(asset2)))
     , ter_(ter)
     , log_(log)
 {

@@ -162,24 +162,25 @@ getAMMSle(Sandbox& view, uint256 ammID)
         return sle;
 }
 
-bool
+TER
 requireAuth(ReadView const& view, Issue const& issue, AccountID const& account)
 {
     if (isXRP(issue) || issue.account == account)
-        return false;
-
+        return tesSUCCESS;
     if (auto const issuerAccount = view.read(keylet::account(issue.account));
         issuerAccount && (*issuerAccount)[sfFlags] & lsfRequireAuth)
     {
         if (auto const trustLine =
                 view.read(keylet::line(account, issue.account, issue.currency));
             trustLine)
-            return !(
-                (*trustLine)[sfFlags] &
-                ((account > issue.account) ? lsfLowAuth : lsfHighAuth));
+            return !((*trustLine)[sfFlags] &
+                     ((account > issue.account) ? lsfLowAuth : lsfHighAuth))
+                ? TER{tecNO_AUTH}
+                : tesSUCCESS;
+        return TER{tecNO_LINE};
     }
 
-    return false;
+    return tesSUCCESS;
 }
 
 std::uint16_t

@@ -119,10 +119,10 @@ std::shared_ptr<STLedgerEntry>
 getAMMSle(Sandbox& view, uint256 ammID);
 
 /** Check if the account requires authorization.
- *  Return true if issuer's account, account, and trust line exist
- *  and the account requires authorization.
+ *  Return terNO_AUTH or terNO_LINE if it does
+ *  and tsSUCCESS otherwise.
  */
-bool
+TER
 requireAuth(ReadView const& view, Issue const& issue, AccountID const& account);
 
 /** Get AMM trading fee for the given account. The fee is discounted

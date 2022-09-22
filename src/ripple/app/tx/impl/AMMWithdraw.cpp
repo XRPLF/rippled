@@ -124,11 +124,28 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
     auto const asset2Out = ctx.tx[~sfAsset2Out];
     auto const ammAccountID = ammSle->getAccountID(sfAMMAccount);
 
-    if ((asset1Out && requireAuth(ctx.view, asset1Out->issue(), accountID)) ||
-        (asset2Out && requireAuth(ctx.view, asset2Out->issue(), accountID)))
+    if (asset1Out)
     {
-        JLOG(ctx.j.debug()) << "AMM Instance: account is not authorized";
-        return tecNO_PERMISSION;
+        if (auto const ter =
+                requireAuth(ctx.view, asset1Out->issue(), accountID);
+            ter != tesSUCCESS)
+        {
+            JLOG(ctx.j.debug()) << "AMM Instance: account is not authorized, "
+                                << asset1Out->issue();
+            return ter;
+        }
+    }
+
+    if (asset2Out)
+    {
+        if (auto const ter =
+                requireAuth(ctx.view, asset2Out->issue(), accountID);
+            ter != tesSUCCESS)
+        {
+            JLOG(ctx.j.debug()) << "AMM Instance: account is not authorized, "
+                                << asset2Out->issue();
+            return ter;
+        }
     }
 
     if (isFrozen(ctx.view, asset1Out) || isFrozen(ctx.view, sfAsset2Out))
