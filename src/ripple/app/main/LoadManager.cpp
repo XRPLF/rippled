@@ -21,6 +21,7 @@
 #include <ripple/app/main/LoadManager.h>
 #include <ripple/app/misc/LoadFeeTrack.h>
 #include <ripple/app/misc/NetworkOPs.h>
+#include <ripple/basics/ThreadUtilities.h>
 #include <ripple/basics/UptimeClock.h>
 #include <ripple/beast/core/CurrentThreadName.h>
 #include <ripple/json/to_string.h>
@@ -99,7 +100,7 @@ LoadManager::stop()
 void
 LoadManager::run()
 {
-    beast::setCurrentThreadName("LoadManager");
+    this_thread::set_name("LoadManager");
 
     using namespace std::chrono_literals;
     using clock_type = std::chrono::steady_clock;

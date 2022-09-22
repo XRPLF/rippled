@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/basics/PerfLog.h>
+#include <ripple/basics/ThreadUtilities.h>
 #include <ripple/beast/core/CurrentThreadName.h>
 #include <ripple/core/impl/Workers.h>
 #include <cassert>
@@ -206,7 +207,7 @@ Workers::Worker::run()
         for (;;)
         {
             // Put the name back in case the callback changed it
-            beast::setCurrentThreadName(threadName_);
+            this_thread::set_name(threadName_);
 
             // Acquire a task or "internal task."
             //
@@ -259,7 +260,7 @@ Workers::Worker::run()
         }
 
         // Set inactive thread name.
-        beast::setCurrentThreadName("(" + threadName_ + ")");
+        this_thread::set_name("(" + threadName_ + ")");
 
         // [1] We will be here when the paused list is popped
         //

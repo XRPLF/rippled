@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/basics/Log.h>
+#include <ripple/basics/ThreadUtilities.h>
 #include <ripple/basics/random.h>
 #include <ripple/beast/core/CurrentThreadName.h>
 #include <ripple/core/impl/SNTPClock.h>
@@ -193,7 +194,7 @@ public:
     void
     doRun()
     {
-        beast::setCurrentThreadName("rippled: SNTPClock");
+        this_thread::set_name("rippled: SNTPClock");
         io_service_.run();
     }
 

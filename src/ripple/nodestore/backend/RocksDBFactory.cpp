@@ -22,6 +22,7 @@
 #if RIPPLE_ROCKSDB_AVAILABLE
 
 #include <ripple/basics/ByteUtilities.h>
+#include <ripple/basics/ThreadUtilities.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/safe_cast.h>
 #include <ripple/beast/core/CurrentThreadName.h>
@@ -67,7 +68,7 @@ public:
         std::size_t const id(++n);
         std::stringstream ss;
         ss << "rocksdb #" << id;
-        beast::setCurrentThreadName(ss.str());
+        this_thread::set_name(ss.str());
 
         (*f)(a);
     }

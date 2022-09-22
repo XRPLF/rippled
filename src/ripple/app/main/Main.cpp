@@ -22,6 +22,7 @@
 #include <ripple/app/rdb/Vacuum.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
+#include <ripple/basics/ThreadUtilities.h>
 #include <ripple/basics/contract.h>
 #include <ripple/beast/clock/basic_seconds_clock.h>
 #include <ripple/beast/core/CurrentThreadName.h>
@@ -348,8 +349,7 @@ run(int argc, char** argv)
 {
     using namespace std;
 
-    beast::setCurrentThreadName(
-        "rippled: main " + BuildInfo::getVersionString());
+    this_thread::set_name("rippled: main " + BuildInfo::getVersionString());
 
     po::variables_map vm;
 
@@ -777,7 +777,7 @@ run(int argc, char** argv)
     }
 
     // We have an RPC command to process:
-    beast::setCurrentThreadName("rippled: rpc");
+    this_thread::set_name("rippled: rpc");
     return RPCCall::fromCommandLine(
         *config, vm["parameters"].as<std::vector<std::string>>(), *logs);
 }
