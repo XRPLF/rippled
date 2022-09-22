@@ -56,6 +56,7 @@ target_sources (xrpl_core PRIVATE
   src/ripple/basics/impl/Log.cpp
   src/ripple/basics/impl/Number.cpp
   src/ripple/basics/impl/StringUtilities.cpp
+  src/ripple/basics/impl/ThreadUtilities.cpp
   #[===============================[
     main sources:
       subdir: json
@@ -201,6 +202,7 @@ install (
     src/ripple/basics/tagged_integer.h
     src/ripple/basics/SubmitSync.h
     src/ripple/basics/ThreadSafetyAnalysis.h
+    src/ripple/basics/ThreadUtilities.h
     src/ripple/basics/ToString.h
     src/ripple/basics/UnorderedContainers.h
     src/ripple/basics/UptimeClock.h
@@ -839,6 +841,7 @@ if (tests)
     src/test/basics/Slice_test.cpp
     src/test/basics/StringUtilities_test.cpp
     src/test/basics/TaggedCache_test.cpp
+    src/test/basics/ThreadName_test.cpp
     src/test/basics/XRPAmount_test.cpp
     src/test/basics/base64_test.cpp
     src/test/basics/base_uint_test.cpp
