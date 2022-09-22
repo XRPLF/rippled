@@ -20,7 +20,6 @@
 #include <ripple/basics/Log.h>
 #include <ripple/basics/ThreadUtilities.h>
 #include <ripple/basics/chrono.h>
-#include <ripple/beast/core/CurrentThreadName.h>
 #include <ripple/beast/net/IPAddressConversion.h>
 #include <ripple/resource/ResourceManager.h>
 #include <ripple/resource/impl/Logic.h>

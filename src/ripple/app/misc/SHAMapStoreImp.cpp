@@ -24,7 +24,6 @@
 #include <ripple/app/rdb/State.h>
 #include <ripple/app/rdb/backend/SQLiteDatabase.h>
 #include <ripple/basics/ThreadUtilities.h>
-#include <ripple/beast/core/CurrentThreadName.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/core/Pg.h>
 #include <ripple/nodestore/Scheduler.h>

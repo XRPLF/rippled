@@ -23,7 +23,6 @@
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/basics/ThreadUtilities.h>
 #include <ripple/basics/UptimeClock.h>
-#include <ripple/beast/core/CurrentThreadName.h>
 #include <ripple/json/to_string.h>
 #include <memory>
 #include <mutex>

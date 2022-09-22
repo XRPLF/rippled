@@ -25,7 +25,6 @@
 #include <ripple/basics/ThreadUtilities.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/safe_cast.h>
-#include <ripple/beast/core/CurrentThreadName.h>
 #include <ripple/core/Config.h>  // VFALCO Bad dependency
 #include <ripple/nodestore/Factory.h>
 #include <ripple/nodestore/Manager.h>

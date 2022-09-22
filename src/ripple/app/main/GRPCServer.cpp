@@ -20,7 +20,6 @@
 #include <ripple/app/main/GRPCServer.h>
 #include <ripple/app/reporting/P2pProxy.h>
 #include <ripple/basics/ThreadUtilities.h>
-#include <ripple/beast/core/CurrentThreadName.h>
 #include <ripple/resource/Fees.h>
 
 #include <ripple/beast/net/IPAddressConversion.h>

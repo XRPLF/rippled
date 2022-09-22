@@ -21,7 +21,6 @@
 
 #include <ripple/basics/BasicConfig.h>
 #include <ripple/basics/ThreadUtilities.h>
-#include <ripple/beast/core/CurrentThreadName.h>
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/core/JobTypes.h>
 #include <ripple/json/json_writer.h>

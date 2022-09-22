@@ -19,7 +19,6 @@
 
 #include <ripple/basics/PerfLog.h>
 #include <ripple/basics/ThreadUtilities.h>
-#include <ripple/beast/core/CurrentThreadName.h>
 #include <ripple/core/impl/Workers.h>
 #include <cassert>
 

@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <ripple/basics/ThreadUtilities.h>
-#include <ripple/beast/core/CurrentThreadName.h>
 #include <ripple/core/Job.h>
 #include <cassert>
 

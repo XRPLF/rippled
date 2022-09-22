@@ -19,7 +19,6 @@
 
 #include <ripple/app/main/BasicApp.h>
 #include <ripple/basics/ThreadUtilities.h>
-#include <ripple/beast/core/CurrentThreadName.h>
 
 BasicApp::BasicApp(std::size_t numberOfThreads)
 {

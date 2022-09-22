@@ -24,7 +24,6 @@ add_library(xrpl::libxrpl ALIAS libxrpl)
 #]===============================]
 target_sources (xrpl_core PRIVATE
   src/ripple/beast/clock/basic_seconds_clock.cpp
-  src/ripple/beast/core/CurrentThreadName.cpp
   src/ripple/beast/core/SemanticVersion.cpp
   src/ripple/beast/hash/impl/xxhash.cpp
   src/ripple/beast/insight/impl/Collector.cpp
@@ -859,7 +858,6 @@ if (tests)
     src/test/beast/LexicalCast_test.cpp
     src/test/beast/SemanticVersion_test.cpp
     src/test/beast/aged_associative_container_test.cpp
-    src/test/beast/beast_CurrentThreadName_test.cpp
     src/test/beast/beast_Journal_test.cpp
     src/test/beast/beast_PropertyStream_test.cpp
     src/test/beast/beast_Zero_test.cpp

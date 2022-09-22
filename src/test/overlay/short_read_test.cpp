@@ -19,7 +19,6 @@
 
 #include <ripple/basics/ThreadUtilities.h>
 #include <ripple/basics/make_SSLContext.h>
-#include <ripple/beast/core/CurrentThreadName.h>
 #include <ripple/beast/unit_test.h>
 #include <test/jtx/envconfig.h>
 
