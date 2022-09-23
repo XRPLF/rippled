@@ -692,7 +692,6 @@ GRPCServer::start()
     if (running_ = impl_.start(); running_)
     {
         thread_ = std::thread([this]() {
-            this_thread::set_name("rippled : GRPCServer");
             // Start the event loop and begin handling requests
             this_thread::set_name("rippled: grpc");
             this->impl_.handleRpcs();
