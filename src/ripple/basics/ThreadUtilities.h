@@ -21,7 +21,6 @@
 #define RIPPLE_BASICS_THREADUTILITIES_H_INCLUDED
 
 #include <string>
-#include <string_view>
 #include <thread>
 
 namespace ripple {
@@ -42,7 +41,7 @@ std::string
 get_name();
 
 void
-set_name(std::string_view s);
+set_name(std::string const& s);
 
 }  // namespace this_thread
 

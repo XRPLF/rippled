@@ -44,7 +44,7 @@ get_name()
 }
 
 void
-set_name(std::string_view s)
+set_name(std::string const& s)
 {
     if (pthread_setname_np(s.data()) != 0)
         throw std::runtime_error("this_thread::set_name failed\n");
@@ -76,7 +76,7 @@ get_name()
 }
 
 void
-set_name(std::string_view s)
+set_name(std::string const& s)
 {
     if (pthread_setname_np(pthread_self(), s.data()) != 0)
         throw std::runtime_error("this_thread::set_name failed\n");
@@ -87,6 +87,8 @@ set_name(std::string_view s)
 #endif  // __linux__
 
 #ifdef _WIN64
+
+#define WIN32_LEAN_AND_MEAN
 
 #include <memory>
 #include <processthreadsapi.h>
@@ -117,7 +119,7 @@ get_name()
 }
 
 void
-set_name(std::string_view s)
+set_name(std::string const& s)
 {
     std::wstring ws;
     for (auto c : s)
