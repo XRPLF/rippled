@@ -23,6 +23,21 @@ class Xrpl(ConanFile):
         'unity': [True, False],
     }
 
+    requires = [
+        'boost/1.77.0',
+        'date/3.0.1',
+        'libarchive/3.6.0',
+        'lz4/1.9.3',
+        'grpc/1.44.0',
+        'nudb/2.0.8',
+        'openssl/1.1.1m',
+        'protobuf/3.19.2',
+        'snappy/1.1.9',
+        'soci/4.0.3',
+        'sqlite3/3.38.0',
+        'zlib/1.2.11',
+    ]
+
     default_options = {
         'assertions': False,
         'coverage': False,
@@ -71,21 +86,6 @@ class Xrpl(ConanFile):
         'soci:with_sqlite3': True,
         'soci:with_boost': True,
     }
-
-    requires = [
-        'boost/1.77.0',
-        'date/3.0.1',
-        'libarchive/3.6.0',
-        'lz4/1.9.3',
-        'grpc/1.44.0',
-        'nudb/2.0.8',
-        'openssl/1.1.1m',
-        'protobuf/3.19.2',
-        'snappy/1.1.9',
-        'soci/4.0.3',
-        'sqlite3/3.38.0',
-        'zlib/1.2.11',
-    ]
 
     def set_version(self):
         path = f'{self.recipe_folder}/src/ripple/protocol/impl/BuildInfo.cpp'
