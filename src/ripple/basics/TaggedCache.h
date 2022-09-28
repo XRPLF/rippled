@@ -684,7 +684,7 @@ private:
                     {
                         // strong, expired
                         ++cacheRemovals;
-                        if (cit->second.ptr.unique())
+                        if (cit->second.ptr.use_count() == 1)
                         {
                             stuffToSweep.push_back(cit->second.ptr);
                             ++mapRemovals;

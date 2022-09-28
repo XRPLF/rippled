@@ -27,8 +27,10 @@
 #include <ripple/beast/container/aged_unordered_map.h>
 #include <ripple/consensus/LedgerTrie.h>
 #include <ripple/protocol/PublicKey.h>
+
 #include <mutex>
 #include <optional>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -294,7 +296,7 @@ class Validations
     using NodeKey = typename Validation::NodeKey;
 
     using WrappedValidationType = std::decay_t<
-        std::result_of_t<decltype (&Validation::unwrap)(Validation)>>;
+        std::invoke_result_t<decltype(&Validation::unwrap), Validation>>;
 
     // Manages concurrent access to members
     mutable Mutex mutex_;

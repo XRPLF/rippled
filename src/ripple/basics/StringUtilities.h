@@ -25,6 +25,7 @@
 
 #include <boost/format.hpp>
 #include <boost/utility/string_view.hpp>
+#include <array>
 #include <optional>
 #include <sstream>
 #include <string>
@@ -48,6 +49,24 @@ template <class Iterator>
 std::optional<Blob>
 strUnHex(std::size_t strSize, Iterator begin, Iterator end)
 {
+    static constexpr std::array<int, 256> const unxtab = []() {
+        std::array<int, 256> t{};
+
+        for (auto& x : t)
+            x = -1;
+
+        for (int i = 0; i < 10; ++i)
+            t['0' + i] = i;
+
+        for (int i = 0; i < 6; ++i)
+        {
+            t['A' + i] = 10 + i;
+            t['a' + i] = 10 + i;
+        }
+
+        return t;
+    }();
+
     Blob out;
 
     out.reserve((strSize + 1) / 2);
@@ -56,25 +75,22 @@ strUnHex(std::size_t strSize, Iterator begin, Iterator end)
 
     if (strSize & 1)
     {
-        int c = charUnHex(*iter);
+        int c = unxtab[*iter++];
 
         if (c < 0)
             return {};
 
         out.push_back(c);
-        ++iter;
     }
 
     while (iter != end)
     {
-        int cHigh = charUnHex(*iter);
-        ++iter;
+        int cHigh = unxtab[*iter++];
 
         if (cHigh < 0)
             return {};
 
-        int cLow = charUnHex(*iter);
-        ++iter;
+        int cLow = unxtab[*iter++];
 
         if (cLow < 0)
             return {};

@@ -204,6 +204,8 @@ buildHandshake(
         h.insert("Session-Signature", base64_encode(sig.data(), sig.size()));
     }
 
+    h.insert("Instance-Cookie", std::to_string(app.instanceID()));
+
     if (!app.config().SERVER_DOMAIN.empty())
         h.insert("Server-Domain", app.config().SERVER_DOMAIN);
 
@@ -215,14 +217,8 @@ buildHandshake(
 
     if (auto const cl = app.getLedgerMaster().getClosedLedger())
     {
-        // TODO: Use hex for these
-        h.insert(
-            "Closed-Ledger",
-            base64_encode(cl->info().hash.begin(), cl->info().hash.size()));
-        h.insert(
-            "Previous-Ledger",
-            base64_encode(
-                cl->info().parentHash.begin(), cl->info().parentHash.size()));
+        h.insert("Closed-Ledger", strHex(cl->info().hash));
+        h.insert("Previous-Ledger", strHex(cl->info().parentHash));
     }
 }
 
@@ -306,7 +302,34 @@ verifyHandshake(
     }();
 
     if (publicKey == app.nodeIdentity().first)
+    {
+        auto const peerInstanceID = [&headers]() {
+            std::uint64_t iid = 0;
+
+            if (auto const iter = headers.find("Instance-Cookie");
+                iter != headers.end())
+            {
+                if (!beast::lexicalCastChecked(iid, iter->value().to_string()))
+                    throw std::runtime_error("Invalid instance cookie");
+
+                if (iid == 0)
+                    throw std::runtime_error("Invalid instance cookie");
+            }
+
+            return iid;
+        }();
+
+        // Attempt to differentiate self-connections as opposed to accidental
+        // node identity reuse caused by accidental misconfiguration. When we
+        // detect this, we stop the process and log an error message.
+        if (peerInstanceID != app.instanceID())
+        {
+            app.signalStop("Remote server is using our node identity");
+            throw std::runtime_error("Node identity reuse detected");
+        }
+
         throw std::runtime_error("Self connection");
+    }
 
     // This check gets two birds with one stone:
     //

@@ -186,14 +186,18 @@ PublicKey::PublicKey(PublicKey const& other) : size_(other.size_)
 {
     if (size_)
         std::memcpy(buf_, other.buf_, size_);
-};
+}
 
 PublicKey&
 PublicKey::operator=(PublicKey const& other)
 {
-    size_ = other.size_;
-    if (size_)
-        std::memcpy(buf_, other.buf_, size_);
+    if (this != &other)
+    {
+        size_ = other.size_;
+        if (size_)
+            std::memcpy(buf_, other.buf_, size_);
+    }
+
     return *this;
 }
 

@@ -389,7 +389,6 @@ getNewestAccountTxsB(
  *        account which match given criteria starting from given marker
  *        and calls callback for each found transaction.
  * @param session Session with database.
- * @param idCache Account ID cache.
  * @param onUnsavedLedger Callback function to call on each found unsaved
  *        ledger within given range.
  * @param onTransaction Callback function to call on each found transaction.
@@ -408,7 +407,6 @@ getNewestAccountTxsB(
 std::pair<std::optional<RelationalDatabase::AccountTxMarker>, int>
 oldestAccountTxPage(
     soci::session& session,
-    AccountIDCache const& idCache,
     std::function<void(std::uint32_t)> const& onUnsavedLedger,
     std::function<
         void(std::uint32_t, std::string const&, Blob&&, Blob&&)> const&
@@ -422,7 +420,6 @@ oldestAccountTxPage(
  *        account which match given criteria starting from given marker
  *        and calls callback for each found transaction.
  * @param session Session with database.
- * @param idCache Account ID cache.
  * @param onUnsavedLedger Callback function to call on each found unsaved
  *        ledger within given range.
  * @param onTransaction Callback function to call on each found transaction.
@@ -441,7 +438,6 @@ oldestAccountTxPage(
 std::pair<std::optional<RelationalDatabase::AccountTxMarker>, int>
 newestAccountTxPage(
     soci::session& session,
-    AccountIDCache const& idCache,
     std::function<void(std::uint32_t)> const& onUnsavedLedger,
     std::function<
         void(std::uint32_t, std::string const&, Blob&&, Blob&&)> const&

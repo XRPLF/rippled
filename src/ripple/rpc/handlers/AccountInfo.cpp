@@ -215,7 +215,7 @@ doAccountInfo(RPC::JsonContext& context)
     }
     else
     {
-        result[jss::account] = context.app.accountIDCache().toBase58(accountID);
+        result[jss::account] = toBase58(accountID);
         RPC::inject_error(rpcACT_NOT_FOUND, result);
     }
 

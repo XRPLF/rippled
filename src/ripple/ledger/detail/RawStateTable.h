@@ -119,7 +119,7 @@ private:
         }
     };
 
-    // Use the boost pmr functionality instead of the c++-17 standard pmr
+    // Use boost::pmr functionality instead of the std::pmr
     // functions b/c clang does not support pmr yet (as-of 9/2020)
     using items_t = std::map<
         key_type,
