@@ -174,8 +174,7 @@ Shard::tryClose()
     acquireInfo_.reset();
 
     // Reset caches to reduce memory use
-    app_.getShardFamily()->getFullBelowCache(lastSeq_)->reset();
-    app_.getShardFamily()->getTreeNodeCache(lastSeq_)->reset();
+    app_.getShardFamily()->resetCacheFor(lastSeq_);
 
     return true;
 }
@@ -647,12 +646,11 @@ Shard::finalize(bool writeSQLite, std::optional<uint256> const& referenceHash)
     std::shared_ptr<Ledger const> next;
     auto const lastLedgerHash{hash};
     auto& shardFamily{*app_.getShardFamily()};
-    auto const fullBelowCache{shardFamily.getFullBelowCache(lastSeq_)};
-    auto const treeNodeCache{shardFamily.getTreeNodeCache(lastSeq_)};
 
-    // Reset caches to reduce memory usage
-    fullBelowCache->reset();
-    treeNodeCache->reset();
+    shardFamily.resetCacheFor(lastSeq_);
+
+    auto const fullBelowCache = shardFamily.getFullBelowCache(lastSeq_);
+    auto const treeNodeCache = shardFamily.getTreeNodeCache(lastSeq_);
 
     Serializer s;
     s.add32(version);
@@ -721,8 +719,7 @@ Shard::finalize(bool writeSQLite, std::optional<uint256> const& referenceHash)
 
         --ledgerSeq;
 
-        fullBelowCache->reset();
-        treeNodeCache->reset();
+        shardFamily.resetCacheFor(lastSeq_);
     }
 
     JLOG(j_.debug()) << "shard " << index_ << " is valid";

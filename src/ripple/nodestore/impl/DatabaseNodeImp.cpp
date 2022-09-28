@@ -105,12 +105,12 @@ DatabaseNodeImp::fetchNodeObject(
                 if (cache_)
                 {
                     if (nodeObject)
-                        cache_->canonicalize_replace_client(hash, nodeObject);
+                        cache_->retrieve_or_insert(hash, nodeObject);
                     else
                     {
                         auto notFound =
                             NodeObject::createObject(hotDUMMY, {}, hash);
-                        cache_->canonicalize_replace_client(hash, notFound);
+                        cache_->retrieve_or_insert(hash, notFound);
                         if (notFound->getType() != hotDUMMY)
                             nodeObject = notFound;
                     }
@@ -188,7 +188,7 @@ DatabaseNodeImp::fetchBatch(std::vector<uint256> const& hashes)
         {
             // Ensure all threads get the same object
             if (cache_)
-                cache_->canonicalize_replace_client(hash, nObj);
+                cache_->retrieve_or_insert(hash, nObj);
         }
         else
         {
@@ -198,7 +198,7 @@ DatabaseNodeImp::fetchBatch(std::vector<uint256> const& hashes)
             if (cache_)
             {
                 auto notFound = NodeObject::createObject(hotDUMMY, {}, hash);
-                cache_->canonicalize_replace_client(hash, notFound);
+                cache_->retrieve_or_insert(hash, notFound);
                 if (notFound->getType() != hotDUMMY)
                     nObj = std::move(notFound);
             }

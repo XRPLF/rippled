@@ -76,14 +76,14 @@ public:
     bool
     inLedger(uint256 const& hash, std::uint32_t ledger);
 
-    void
-    canonicalize(std::shared_ptr<Transaction>* pTransaction);
+    [[nodiscard]] std::shared_ptr<Transaction>
+    canonicalize(std::shared_ptr<Transaction> tx);
 
     void
-    sweep(void);
+    sweep();
 
-    TaggedCache<uint256, Transaction>&
-    getCache();
+    Json::Value
+    info() const;
 
 private:
     Application& mApp;

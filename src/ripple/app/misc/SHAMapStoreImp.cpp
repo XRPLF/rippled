@@ -290,8 +290,7 @@ SHAMapStoreImp::run()
     LedgerIndex lastRotated = state_db_.getState().lastRotated;
     netOPs_ = &app_.getOPs();
     ledgerMaster_ = &app_.getLedgerMaster();
-    fullBelowCache_ = &(*app_.getNodeFamily().getFullBelowCache(0));
-    treeNodeCache_ = &(*app_.getNodeFamily().getTreeNodeCache(0));
+    fullBelowCache_ = app_.getNodeFamily().getFullBelowCache(0);
 
     if (advisoryDelete_)
         canDelete_ = state_db_.getCanDelete();
@@ -387,13 +386,6 @@ SHAMapStoreImp::run()
             // Only log if we completed without a "health" abort
             JLOG(journal_.debug()) << "copied ledger " << validatedSeq
                                    << " nodecount " << nodeCount;
-
-            JLOG(journal_.debug()) << "freshening caches";
-            freshenCaches();
-            if (healthWait() == stopping)
-                return;
-            // Only log if we completed without a "health" abort
-            JLOG(journal_.debug()) << validatedSeq << " freshened caches";
 
             JLOG(journal_.trace()) << "Making a new backend";
             auto newBackend = makeBackendRotating();
@@ -602,15 +594,6 @@ SHAMapStoreImp::clearCaches(LedgerIndex validatedSeq)
 {
     ledgerMaster_->clearLedgerCachePrior(validatedSeq);
     fullBelowCache_->clear();
-}
-
-void
-SHAMapStoreImp::freshenCaches()
-{
-    if (freshenCache(*treeNodeCache_))
-        return;
-    if (freshenCache(app_.getMasterTransaction().getCache()))
-        return;
 }
 
 void

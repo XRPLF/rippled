@@ -343,7 +343,6 @@ JSS(ledger_hash);                 // in: RPCHelpers, LedgerRequest,
                                   // out: NetworkOPs, RPCHelpers,
                                   //      LedgerClosed, LedgerData,
                                   //      AccountLines
-JSS(ledger_hit_rate);             // out: GetCounts
 JSS(ledger_index);                // in/out: many
 JSS(ledger_index_max);            // in, out: AccountTx*
 JSS(ledger_index_min);            // in, out: AccountTx*

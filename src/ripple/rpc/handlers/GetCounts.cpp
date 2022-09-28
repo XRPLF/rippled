@@ -103,21 +103,22 @@ getCountsJson(Application& app, int minObjectCount)
         }
     }
 
+    ret["ledger_master"] = app.getLedgerMaster().info();
+
+    auto& caches = (ret["caches"] = Json::arrayValue);
+
+    {
+        caches.append(app.getNodeFamily().getFullBelowCache(0)->info());
+        caches.append(app.getNodeFamily().getTreeNodeCache(0)->info());
+        caches.append(app.getTempNodeCache().info());
+        caches.append(app.getAcceptedLedgerCache().info());
+        caches.append(app.cachedSLEs().info());
+    }
+
     ret[jss::write_load] = app.getNodeStore().getWriteLoad();
 
     ret[jss::historical_perminute] =
         static_cast<int>(app.getInboundLedgers().fetchRate());
-    ret[jss::SLE_hit_rate] = app.cachedSLEs().rate();
-    ret[jss::ledger_hit_rate] = app.getLedgerMaster().getCacheHitRate();
-    ret[jss::AL_size] = Json::UInt(app.getAcceptedLedgerCache().size());
-    ret[jss::AL_hit_rate] = app.getAcceptedLedgerCache().getHitRate();
-
-    ret[jss::fullbelow_size] =
-        static_cast<int>(app.getNodeFamily().getFullBelowCache(0)->size());
-    ret[jss::treenode_cache_size] =
-        app.getNodeFamily().getTreeNodeCache(0)->getCacheSize();
-    ret[jss::treenode_track_size] =
-        app.getNodeFamily().getTreeNodeCache(0)->getTrackSize();
 
     std::string uptime;
     auto s = UptimeClock::now();
@@ -132,12 +133,22 @@ getCountsJson(Application& app, int minObjectCount)
     if (auto shardStore = app.getShardStore())
     {
         auto shardFamily{dynamic_cast<ShardFamily*>(app.getShardFamily())};
-        auto const [cacheSz, trackSz] = shardFamily->getTreeNodeCacheSize();
+
         Json::Value& jv = (ret[jss::shards] = Json::objectValue);
 
-        jv[jss::fullbelow_size] = shardFamily->getFullBelowCacheSize();
-        jv[jss::treenode_cache_size] = cacheSz;
-        jv[jss::treenode_track_size] = trackSz;
+        auto& caches = (ret["caches"] = Json::arrayValue);
+
+        {
+            shardFamily->forEachFullBelowCache(
+                [&caches](FullBelowCache const* fbc) {
+                    caches.append(fbc->info());
+                });
+            shardFamily->forEachTreeNodeCache(
+                [&caches](TreeNodeCache const* tnc) {
+                    caches.append(tnc->info());
+                });
+        }
+
         ret[jss::write_load] = shardStore->getWriteLoad();
         jv[jss::node_writes] = std::to_string(shardStore->getStoreCount());
         jv[jss::node_reads_total] = shardStore->getFetchTotalCount();

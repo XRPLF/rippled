@@ -46,7 +46,7 @@ ConsensusTransSetSF::gotNode(
     if (fromFilter)
         return;
 
-    m_nodeCache.insert(nodeHash, nodeData);
+    m_nodeCache.insert(nodeHash.as_uint256(), nodeData);
 
     if ((type == SHAMapNodeType::tnTRANSACTION_NM) && (nodeData.size() > 16))
     {
@@ -78,23 +78,20 @@ ConsensusTransSetSF::gotNode(
 std::optional<Blob>
 ConsensusTransSetSF::getNode(SHAMapHash const& nodeHash) const
 {
-    Blob nodeData;
-    if (m_nodeCache.retrieve(nodeHash, nodeData))
-        return nodeData;
+    auto const nh = nodeHash.as_uint256();
 
-    auto txn =
-        app_.getMasterTransaction().fetch_from_cache(nodeHash.as_uint256());
+    if (auto e = m_nodeCache.fetch(nh))
+        return *e;  // This requires copying the blob.
 
-    if (txn)
+    if (auto txn = app_.getMasterTransaction().fetch_from_cache(nh))
     {
         // this is a transaction, and we have it
         JLOG(j_.trace()) << "Node in our acquiring TX set is TXN we have";
         Serializer s;
         s.add32(HashPrefix::transactionID);
         txn->getSTransaction()->add(s);
-        assert(sha512Half(s.slice()) == nodeHash.as_uint256());
-        nodeData = s.peekData();
-        return nodeData;
+        assert(sha512Half(s.slice()) == nh);
+        return std::move(s.modData());
     }
 
     return std::nullopt;

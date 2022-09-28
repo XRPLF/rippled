@@ -26,24 +26,9 @@
 namespace ripple {
 
 NodeFamily::NodeFamily(Application& app, CollectorManager& cm)
-    : app_(app)
-    , db_(app.getNodeStore())
-    , j_(app.journal("NodeFamily"))
-    , fbCache_(std::make_shared<FullBelowCache>(
-          "Node family full below cache",
-          stopwatch(),
-          app.journal("NodeFamilyFulLBelowCache"),
-          cm.collector(),
-          fullBelowTargetSize,
-          fullBelowExpiration))
-    , tnCache_(std::make_shared<TreeNodeCache>(
-          "Node family tree node cache",
-          app.config().getValueFor(SizedItem::treeCacheSize),
-          std::chrono::seconds(
-              app.config().getValueFor(SizedItem::treeCacheAge)),
-          stopwatch(),
-          j_))
+    : app_(app), db_(app.getNodeStore()), j_(app.journal("NodeFamily"))
 {
+    initCaches();
 }
 
 void
@@ -54,21 +39,22 @@ NodeFamily::sweep()
 }
 
 void
-NodeFamily::reset()
+NodeFamily::acquire(uint256 const& hash, std::uint32_t seq)
 {
+    if (hash.isNonZero())
     {
-        std::lock_guard lock(maxSeqMutex_);
-        maxSeq_ = 0;
-    }
+        JLOG(j_.error()) << "Missing node in " << to_string(hash);
 
-    fbCache_->reset();
-    tnCache_->reset();
+        app_.getInboundLedgers().acquire(
+            hash, seq, InboundLedger::Reason::GENERIC);
+    }
 }
 
 void
 NodeFamily::missingNodeAcquireBySeq(std::uint32_t seq, uint256 const& nodeHash)
 {
     JLOG(j_.error()) << "Missing node in " << seq;
+
     if (app_.config().reporting())
     {
         std::stringstream ss;
@@ -103,15 +89,23 @@ NodeFamily::missingNodeAcquireBySeq(std::uint32_t seq, uint256 const& nodeHash)
 }
 
 void
-NodeFamily::acquire(uint256 const& hash, std::uint32_t seq)
+NodeFamily::initCaches()
 {
-    if (hash.isNonZero())
-    {
-        JLOG(j_.error()) << "Missing node in " << to_string(hash);
+    fbCache_ = std::make_shared<FullBelowCache>(
+        "NodeFamily",
+        stopwatch(),
+        j_,
+        fullBelowTargetSize,
+        fullBelowExpiration,
+        app_.getCollectorManager().collector());
 
-        app_.getInboundLedgers().acquire(
-            hash, seq, InboundLedger::Reason::GENERIC);
-    }
+    tnCache_ = std::make_shared<TreeNodeCache>(
+        "TreeNodeCache: NodeFamily",
+        app_.config().getValueFor(SizedItem::treeCacheSize),
+        std::chrono::seconds(
+            app_.config().getValueFor(SizedItem::treeCacheAge)),
+        stopwatch(),
+        j_);
 }
 
 }  // namespace ripple

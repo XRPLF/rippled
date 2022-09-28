@@ -34,7 +34,7 @@ namespace ripple {
 class ConsensusTransSetSF : public SHAMapSyncFilter
 {
 public:
-    using NodeCache = TaggedCache<SHAMapHash, Blob>;
+    using NodeCache = TaggedCache<uint256, Blob>;
 
     ConsensusTransSetSF(Application& app, NodeCache& nodeCache);
 

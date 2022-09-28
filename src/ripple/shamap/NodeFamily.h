@@ -66,6 +66,11 @@ public:
         return false;
     }
 
+    void resetCacheFor(std::uint32_t) override
+    {
+        return;
+    }
+
     std::shared_ptr<FullBelowCache> getFullBelowCache(std::uint32_t) override
     {
         return fbCache_;
@@ -78,9 +83,6 @@ public:
 
     void
     sweep() override;
-
-    void
-    reset() override;
 
     void
     missingNodeAcquireBySeq(std::uint32_t seq, uint256 const& hash) override;
@@ -105,6 +107,9 @@ private:
 
     void
     acquire(uint256 const& hash, std::uint32_t seq);
+
+    void
+    initCaches();
 };
 
 }  // namespace ripple

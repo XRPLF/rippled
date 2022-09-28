@@ -78,7 +78,7 @@ saveLedgerMeta(
             if (!aLedger)
             {
                 aLedger = std::make_shared<AcceptedLedger>(ledger, app);
-                app.getAcceptedLedgerCache().canonicalize_replace_client(
+                app.getAcceptedLedgerCache().retrieve_or_insert(
                     ledger->info().hash, aLedger);
             }
 

@@ -32,7 +32,6 @@
 #include <ripple/shamap/SHAMapLeafNode.h>
 #include <ripple/shamap/SHAMapMissingNode.h>
 #include <ripple/shamap/SHAMapTreeNode.h>
-#include <ripple/shamap/TreeNodeCache.h>
 #include <cassert>
 #include <stack>
 #include <vector>

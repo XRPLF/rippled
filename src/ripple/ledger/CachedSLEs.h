@@ -25,7 +25,56 @@
 #include <ripple/protocol/STLedgerEntry.h>
 
 namespace ripple {
-using CachedSLEs = TaggedCache<uint256, SLE const>;
-}
+
+class CachedSLEs : public TaggedCache<uint256, SLE const>
+{
+    std::atomic<std::uint64_t> handlerHits_ = 0;
+    std::atomic<std::uint64_t> handlerMisses_ = 0;
+
+public:
+    using TaggedCache::TaggedCache;
+
+    /** Fetch from the cache; if needed, invoke the handler to load the item. */
+    template <class Handler>
+    std::shared_ptr<SLE const>
+    fetch(uint256 const& digest, Handler const& handler)
+    {
+        if (auto ret = TaggedCache::fetch(digest))
+            return ret;
+
+        if (auto sle = handler(); sle)
+        {
+            if (retrieve_or_insert(digest, sle))
+                handlerHits_++;
+
+            return sle;
+        }
+
+        handlerMisses_++;
+        return {};
+    }
+
+    // Reintroduce the function we just hid.
+    using TaggedCache::fetch;
+
+    /** Returns the fraction of cache hits. */
+    double
+    rate() const
+    {
+        // TODO
+        return 0;
+    }
+
+    Json::Value
+    info()
+    {
+        auto ret = TaggedCache::info();
+        ret["handler_hits"] = std::to_string(handlerHits_.load());
+        ret["handler_misses"] = std::to_string(handlerMisses_.load());
+        return ret;
+    }
+};
+
+}  // namespace ripple
 
 #endif  // RIPPLE_LEDGER_CACHEDSLES_H_INCLUDED

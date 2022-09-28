@@ -376,10 +376,8 @@ flatFetchTransactions(
         else
         {
             auto& transactions = std::get<TxnsData>(ret);
-            std::string reason;
-            auto txnRet = std::make_shared<Transaction>(txn, reason, app);
-            txnRet->setLedger(ledgerSequences[i]);
-            txnRet->setStatus(COMMITTED);
+            auto txnRet = std::make_shared<Transaction>(txn);
+            txnRet->setStatus(COMMITTED, ledgerSequences[i]);
             auto txMeta = std::make_shared<TxMeta>(
                 txnRet->getID(), ledgerSequences[i], *meta);
             transactions.push_back(std::make_pair(txnRet, txMeta));
@@ -829,10 +827,8 @@ PostgresDatabaseImp::getTxHistory(LedgerIndex startIndex)
         auto const& [sttx, meta] = txns[i];
         assert(sttx);
 
-        std::string reason;
-        auto txn = std::make_shared<Transaction>(sttx, reason, app_);
-        txn->setLedger(ledgerSequences[i]);
-        txn->setStatus(COMMITTED);
+        auto txn = std::make_shared<Transaction>(sttx);
+        txn->setStatus(COMMITTED, ledgerSequences[i]);
         ret.push_back(txn);
     }
 

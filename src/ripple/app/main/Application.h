@@ -54,17 +54,13 @@ class ShardArchiveHandler;
 // VFALCO TODO Fix forward declares required for header dependency loops
 class AmendmentTable;
 
-template <
-    class Key,
-    class T,
-    bool IsKeyCache,
-    class Hash,
-    class KeyEqual,
-    class Mutex>
+template <class Key, class Value, std::size_t N, class Hash, class KeyEqual>
 class TaggedCache;
+
 class STLedgerEntry;
 using SLE = STLedgerEntry;
-using CachedSLEs = TaggedCache<uint256, SLE const>;
+
+class CachedSLEs;
 
 class CollectorManager;
 class Family;
@@ -105,7 +101,7 @@ class SHAMapStore;
 
 class ReportingETL;
 
-using NodeCache = TaggedCache<SHAMapHash, Blob>;
+using NodeCache = TaggedCache<uint256, Blob>;
 
 template <class Adaptor>
 class Validations;

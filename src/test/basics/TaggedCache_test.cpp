@@ -51,9 +51,8 @@ public:
 
         using Key = LedgerIndex;
         using Value = std::string;
-        using Cache = TaggedCache<Key, Value>;
 
-        Cache c("test", 1, 1s, clock, journal);
+        TaggedCache<Key, Value> c("test", 1, 1s, clock, journal);
 
         // Insert an item, retrieve it, and age it so it gets purged.
         {
@@ -62,12 +61,6 @@ public:
             BEAST_EXPECT(!c.insert(1, "one"));
             BEAST_EXPECT(c.getCacheSize() == 1);
             BEAST_EXPECT(c.getTrackSize() == 1);
-
-            {
-                std::string s;
-                BEAST_EXPECT(c.retrieve(1, s));
-                BEAST_EXPECT(s == "one");
-            }
 
             ++clock;
             c.sweep();
@@ -105,7 +98,7 @@ public:
             {
                 auto const p1 = c.fetch(3);
                 auto p2 = std::make_shared<Value>("three");
-                c.canonicalize_replace_client(3, p2);
+                c.retrieve_or_insert(3, p2);
                 BEAST_EXPECT(p1.get() == p2.get());
             }
             ++clock;
@@ -136,7 +129,7 @@ public:
                 BEAST_EXPECT(c.getTrackSize() == 1);
                 // Canonicalize a new object with the same key
                 auto p2 = std::make_shared<std::string>("four");
-                BEAST_EXPECT(c.canonicalize_replace_client(4, p2));
+                BEAST_EXPECT(c.retrieve_or_insert(4, p2));
                 BEAST_EXPECT(c.getCacheSize() == 1);
                 BEAST_EXPECT(c.getTrackSize() == 1);
                 // Make sure we get the original object

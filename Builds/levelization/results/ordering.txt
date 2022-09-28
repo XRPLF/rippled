@@ -80,6 +80,7 @@ ripple.server > ripple.protocol
 ripple.shamap > ripple.basics
 ripple.shamap > ripple.beast
 ripple.shamap > ripple.crypto
+ripple.shamap > ripple.json
 ripple.shamap > ripple.nodestore
 ripple.shamap > ripple.protocol
 test.app > ripple.app

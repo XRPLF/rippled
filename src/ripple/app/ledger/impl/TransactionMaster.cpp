@@ -73,7 +73,7 @@ TransactionMaster::fetch(uint256 const& txnID, error_code_i& ec)
     auto [txn, txnMeta] = std::get<TxPair>(v);
 
     if (txn)
-        mCache.canonicalize_replace_client(txnID, txn);
+        mCache.retrieve_or_insert(txnID, txn);
 
     return std::pair{std::move(txn), std::move(txnMeta)};
 }
@@ -100,7 +100,7 @@ TransactionMaster::fetch(
     auto [txn, txnMeta] = std::get<TxPair>(v);
 
     if (txn)
-        mCache.canonicalize_replace_client(txnID, txn);
+        mCache.retrieve_or_insert(txnID, txn);
 
     return std::pair{std::move(txn), std::move(txnMeta)};
 }
@@ -139,29 +139,26 @@ TransactionMaster::fetch(
     return txn;
 }
 
-void
-TransactionMaster::canonicalize(std::shared_ptr<Transaction>* pTransaction)
+std::shared_ptr<Transaction>
+TransactionMaster::canonicalize(std::shared_ptr<Transaction> tx)
 {
-    uint256 const tid = (*pTransaction)->getID();
-    if (tid != beast::zero)
-    {
-        auto txn = *pTransaction;
-        // VFALCO NOTE canonicalize can change the value of txn!
-        mCache.canonicalize_replace_client(tid, txn);
-        *pTransaction = txn;
-    }
+    // Note that retrieve_or_insert can change the value of tx
+    if (uint256 const tid = tx->getID(); tid != beast::zero)
+        mCache.retrieve_or_insert(tid, tx);
+
+    return tx;
 }
 
 void
-TransactionMaster::sweep(void)
+TransactionMaster::sweep()
 {
     mCache.sweep();
 }
 
-TaggedCache<uint256, Transaction>&
-TransactionMaster::getCache()
+Json::Value
+TransactionMaster::info() const
 {
-    return mCache;
+    return mCache.info();
 }
 
 }  // namespace ripple

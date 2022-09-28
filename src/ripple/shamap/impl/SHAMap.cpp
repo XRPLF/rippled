@@ -1181,7 +1181,7 @@ SHAMap::canonicalize(
     assert(node->getHash() == hash);
 
     f_.getTreeNodeCache(ledgerSeq_)
-        ->canonicalize_replace_client(hash.as_uint256(), node);
+        ->retrieve_or_insert(hash.as_uint256(), node);
 }
 
 void

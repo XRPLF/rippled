@@ -231,7 +231,7 @@ saveValidatedLedger(
         if (!aLedger)
         {
             aLedger = std::make_shared<AcceptedLedger>(ledger, app);
-            app.getAcceptedLedgerCache().canonicalize_replace_client(
+            app.getAcceptedLedgerCache().retrieve_or_insert(
                 ledger->info().hash, aLedger);
         }
     }
@@ -617,6 +617,36 @@ getHashesByIndex(
     return res;
 }
 
+/** Construct a transaction object from the database.
+
+    @param ledgerSeq if set, specifies the ledger in which this transaction was
+                     was included.
+    @param status if set, specifies the status that the server believes this
+                  transaction achieved.
+    @param rawTxn The transaction, in serialized format.
+    @param app The main application object.
+
+    @note The two optional parameters use boost::optional because that's the
+          interface that SOCI expects.
+ */
+static std::shared_ptr<Transaction>
+transactionFromSQL(
+    boost::optional<std::uint64_t> const& ledgerSeq,
+    boost::optional<std::string> const& status,
+    Blob const& rawTxn,
+    Application& app)
+{
+    std::uint32_t const inLedger =
+        rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or(0));
+
+    SerialIter it(makeSlice(rawTxn));
+    auto txn = std::make_shared<STTx const>(it);
+
+    auto tr = std::make_shared<Transaction>(txn);
+    tr->setStatus(sqlTransactionStatus(status), inLedger);
+    return tr;
+}
+
 std::pair<std::vector<std::shared_ptr<Transaction>>, int>
 getTxHistory(
     soci::session& session,
@@ -656,8 +686,7 @@ getTxHistory(
             else
                 rawTxn.clear();
 
-            if (auto trans = Transaction::transactionFromSQL(
-                    ledgerSeq, status, rawTxn, app))
+            if (auto trans = transactionFromSQL(ledgerSeq, status, rawTxn, app))
             {
                 total++;
                 txs.push_back(trans);
@@ -859,8 +888,7 @@ getAccountTxs(
             else
                 txnMeta.clear();
 
-            auto txn =
-                Transaction::transactionFromSQL(ledgerSeq, status, rawTxn, app);
+            auto txn = transactionFromSQL(ledgerSeq, status, rawTxn, app);
 
             if (txnMeta.empty())
             {  // Work around a bug that could leave the metadata missing
@@ -1342,8 +1370,7 @@ getTransaction(
 
     try
     {
-        auto txn =
-            Transaction::transactionFromSQL(ledgerSeq, status, rawTxn, app);
+        auto txn = transactionFromSQL(ledgerSeq, status, rawTxn, app);
 
         if (!ledgerSeq)
             return std::pair{std::move(txn), nullptr};

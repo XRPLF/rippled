@@ -550,23 +550,22 @@ transactionPreProcessImpl(
     return transactionPreProcessResult{std::move(stpTrans)};
 }
 
-static std::pair<Json::Value, Transaction::pointer>
+static std::pair<Json::Value, std::shared_ptr<Transaction>>
 transactionConstructImpl(
     std::shared_ptr<STTx const> const& stpTrans,
     Rules const& rules,
     Application& app)
 {
-    std::pair<Json::Value, Transaction::pointer> ret;
+    std::pair<Json::Value, std::shared_ptr<Transaction>> ret;
 
     // Turn the passed in STTx into a Transaction.
-    Transaction::pointer tpTrans;
+    std::shared_ptr<Transaction> tpTrans;
     {
-        std::string reason;
-        tpTrans = std::make_shared<Transaction>(stpTrans, reason, app);
+        tpTrans = std::make_shared<Transaction>(stpTrans);
         if (tpTrans->getStatus() != NEW)
         {
-            ret.first = RPC::make_error(
-                rpcINTERNAL, "Unable to construct transaction: " + reason);
+            ret.first =
+                RPC::make_error(rpcINTERNAL, "Unable to construct transaction");
             return ret;
         }
     }
@@ -597,9 +596,7 @@ transactionConstructImpl(
                 return ret;
             }
 
-            std::string reason;
-            auto tpTransNew =
-                std::make_shared<Transaction>(sttxNew, reason, app);
+            auto tpTransNew = std::make_shared<Transaction>(sttxNew);
 
             if (tpTransNew)
             {
@@ -629,12 +626,14 @@ transactionConstructImpl(
 }
 
 static Json::Value
-transactionFormatResultImpl(Transaction::pointer tpTrans)
+transactionFormatResultImpl(
+    std::shared_ptr<Transaction> tpTrans,
+    Application& app)
 {
     Json::Value jvResult;
     try
     {
-        jvResult[jss::tx_json] = tpTrans->getJson(JsonOptions::none);
+        jvResult[jss::tx_json] = tpTrans->getJson(app, JsonOptions::none);
         jvResult[jss::tx_blob] =
             strHex(tpTrans->getSTransaction()->getSerializer().peekData());
 
@@ -785,13 +784,13 @@ transactionSign(
     else
         ledger = app.openLedger().current();
     // Make sure the STTx makes a legitimate Transaction.
-    std::pair<Json::Value, Transaction::pointer> txn =
+    std::pair<Json::Value, std::shared_ptr<Transaction>> txn =
         transactionConstructImpl(preprocResult.second, ledger->rules(), app);
 
     if (!txn.second)
         return txn.first;
 
-    return transactionFormatResultImpl(txn.second);
+    return transactionFormatResultImpl(txn.second, app);
 }
 
 /** Returns a Json::objectValue. */
@@ -819,7 +818,7 @@ transactionSubmit(
         return preprocResult.first;
 
     // Make sure the STTx makes a legitimate Transaction.
-    std::pair<Json::Value, Transaction::pointer> txn =
+    std::pair<Json::Value, std::shared_ptr<Transaction>> txn =
         transactionConstructImpl(preprocResult.second, ledger->rules(), app);
 
     if (!txn.second)
@@ -837,7 +836,7 @@ transactionSubmit(
             rpcINTERNAL, "Exception occurred during transaction submission.");
     }
 
-    return transactionFormatResultImpl(txn.second);
+    return transactionFormatResultImpl(txn.second, app);
 }
 
 namespace detail {
@@ -1021,13 +1020,13 @@ transactionSignFor(
     }
 
     // Make sure the STTx makes a legitimate Transaction.
-    std::pair<Json::Value, Transaction::pointer> txn =
+    std::pair<Json::Value, std::shared_ptr<Transaction>> txn =
         transactionConstructImpl(sttx, ledger->rules(), app);
 
     if (!txn.second)
         return txn.first;
 
-    return transactionFormatResultImpl(txn.second);
+    return transactionFormatResultImpl(txn.second, app);
 }
 
 /** Returns a Json::objectValue. */
@@ -1201,7 +1200,7 @@ transactionSubmitMultiSigned(
         return err;
 
     // Make sure the SerializedTransaction makes a legitimate Transaction.
-    std::pair<Json::Value, Transaction::pointer> txn =
+    std::pair<Json::Value, std::shared_ptr<Transaction>> txn =
         transactionConstructImpl(stpTrans, ledger->rules(), app);
 
     if (!txn.second)
@@ -1219,7 +1218,7 @@ transactionSubmitMultiSigned(
             rpcINTERNAL, "Exception occurred during transaction submission.");
     }
 
-    return transactionFormatResultImpl(txn.second);
+    return transactionFormatResultImpl(txn.second, app);
 }
 
 }  // namespace RPC

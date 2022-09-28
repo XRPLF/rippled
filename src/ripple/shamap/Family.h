@@ -53,6 +53,9 @@ public:
     virtual beast::Journal const&
     journal() = 0;
 
+    virtual void
+    resetCacheFor(std::uint32_t ledgerSeq) = 0;
+
     /** Return a pointer to the Family Full Below Cache
 
         @param ledgerSeq ledger sequence determines a corresponding shard cache
@@ -92,9 +95,6 @@ public:
      */
     virtual void
     missingNodeAcquireByHash(uint256 const& refHash, std::uint32_t refNum) = 0;
-
-    virtual void
-    reset() = 0;
 };
 
 }  // namespace ripple

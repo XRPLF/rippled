@@ -3092,16 +3092,10 @@ PeerImp::checkTransaction(
                 app_.getHashRouter(), stx->getTransactionID(), Validity::Valid);
         }
 
-        std::string reason;
-        auto tx = std::make_shared<Transaction>(stx, reason, app_);
+        auto tx = std::make_shared<Transaction>(stx);
 
         if (tx->getStatus() == INVALID)
         {
-            if (!reason.empty())
-            {
-                JLOG(p_journal_.trace())
-                    << "Exception checking transaction: " << reason;
-            }
             app_.getHashRouter().setFlags(stx->getTransactionID(), SF_BAD);
             charge(Resource::feeInvalidSignature);
             return;

@@ -24,6 +24,7 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/beast/insight/Collector.h>
 #include <ripple/beast/insight/Event.h>
+#include <ripple/json/json_value.h>
 #include <ripple/protocol/RippleLedgerHash.h>
 
 #include <optional>
@@ -46,15 +47,6 @@ public:
     bool
     insert(std::shared_ptr<Ledger const> const& ledger, bool validated);
 
-    /** Get the ledgers_by_hash cache hit rate
-        @return the hit rate
-    */
-    float
-    getCacheHitRate()
-    {
-        return m_ledgers_by_hash.getHitRate();
-    }
-
     /** Get a ledger given its sequence number */
     std::shared_ptr<Ledger const>
     getLedgerBySeq(LedgerIndex ledgerIndex);
@@ -75,8 +67,8 @@ public:
     void
     sweep()
     {
-        m_ledgers_by_hash.sweep();
-        m_consensus_validated.sweep();
+        ledgerCache_.sweep();
+        consensusValidated_.sweep();
     }
 
     /** Report that we have locally built a particular ledger */
@@ -103,6 +95,9 @@ public:
     void
     clearLedgerCachePrior(LedgerIndex seq);
 
+    Json::Value
+    info() const;
+
 private:
     /** Log details in the case where we build one ledger but
         validate a different one.
@@ -126,9 +121,7 @@ private:
     beast::insight::Collector::ptr collector_;
     beast::insight::Counter mismatch_counter_;
 
-    using LedgersByHash = TaggedCache<LedgerHash, Ledger const>;
-
-    LedgersByHash m_ledgers_by_hash;
+    TaggedCache<LedgerHash, Ledger const> ledgerCache_;
 
     // Maps ledger indexes to the corresponding hashes
     // For debug and logging purposes
@@ -145,8 +138,11 @@ private:
         // Consensus metadata of built ledger
         std::optional<Json::Value> consensus;
     };
-    using ConsensusValidated = TaggedCache<LedgerIndex, cv_entry>;
-    ConsensusValidated m_consensus_validated;
+
+    TaggedCache<LedgerIndex, cv_entry> consensusValidated_;
+
+    // Protects mLedgersByIndex
+    std::mutex mutable mutex_;
 
     // Maps ledger indexes to the corresponding hash.
     std::map<LedgerIndex, LedgerHash> mLedgersByIndex;  // validated ledgers

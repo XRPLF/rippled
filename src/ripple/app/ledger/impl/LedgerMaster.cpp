@@ -1877,12 +1877,6 @@ LedgerMaster::sweep()
     fetch_packs_.sweep();
 }
 
-float
-LedgerMaster::getCacheHitRate()
-{
-    return mLedgerHistory.getCacheHitRate();
-}
-
 void
 LedgerMaster::clearPriorLedgers(LedgerIndex seq)
 {
@@ -2139,20 +2133,22 @@ LedgerMaster::doAdvance(std::unique_lock<std::recursive_mutex>& sl)
 void
 LedgerMaster::addFetchPack(uint256 const& hash, std::shared_ptr<Blob> data)
 {
-    fetch_packs_.canonicalize_replace_client(hash, data);
+    fetch_packs_.retrieve_or_insert(hash, data);
 }
 
 std::optional<Blob>
 LedgerMaster::getFetchPack(uint256 const& hash)
 {
-    Blob data;
-    if (fetch_packs_.retrieve(hash, data))
+    std::optional<Blob> ret;
+
+    // We retrieve the data from the cache _and_ remove it.
+    if (auto bp = fetch_packs_.fetch(hash, true);
+        bp && hash == sha512Half(makeSlice(*bp)))
     {
-        fetch_packs_.del(hash, false);
-        if (hash == sha512Half(makeSlice(data)))
-            return data;
+        ret.emplace(std::move(*bp));
     }
-    return std::nullopt;
+
+    return ret;
 }
 
 void
@@ -2360,6 +2356,34 @@ std::size_t
 LedgerMaster::getFetchPackCacheSize() const
 {
     return fetch_packs_.getCacheSize();
+}
+
+Json::Value
+LedgerMaster::info() const
+{
+    Json::Value ret(Json::objectValue);
+
+    ret["fetch_packs"] = fetch_packs_.info();
+
+    {
+        std::lock_guard sl(mCompleteLock);
+        ret["complete_ledgers"] = to_string(mCompleteLedgers);
+    }
+
+    {
+        std::lock_guard sl(m_mutex);
+        ret["validated"] = Json::objectValue;
+        ret["validated"]["hash"] = to_string(mLastValidLedger.first);
+        ret["validated"]["index"] = mLastValidLedger.second;
+    }
+
+    ret["history"] = mLedgerHistory.info();
+
+    ret["fetch_depth"] = fetch_depth_;
+    ret["ledger_history"] = ledger_history_;
+    ret["ledger_fetch_size"] = ledger_fetch_size_;
+
+    return ret;
 }
 
 // Returns the minimum ledger sequence in SQL database, if any.

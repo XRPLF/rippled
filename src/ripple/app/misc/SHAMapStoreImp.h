@@ -114,8 +114,8 @@ private:
     // as of run() or before
     NetworkOPs* netOPs_ = nullptr;
     LedgerMaster* ledgerMaster_ = nullptr;
-    FullBelowCache* fullBelowCache_ = nullptr;
-    TreeNodeCache* treeNodeCache_ = nullptr;
+
+    std::shared_ptr<FullBelowCache> fullBelowCache_;
 
     static constexpr auto nodeStoreName_ = "NodeStore";
 
@@ -188,23 +188,6 @@ private:
     std::unique_ptr<NodeStore::Backend>
     makeBackendRotating(std::string path = std::string());
 
-    template <class CacheInstance>
-    bool
-    freshenCache(CacheInstance& cache)
-    {
-        std::uint64_t check = 0;
-
-        for (auto const& key : cache.getKeys())
-        {
-            dbRotating_->fetchNodeObject(
-                key, 0, NodeStore::FetchType::synchronous, true);
-            if (!(++check % checkHealthInterval_) && healthWait() == stopping)
-                return true;
-        }
-
-        return false;
-    }
-
     /** delete from sqlite table in batches to not lock the db excessively.
      *  Pause briefly to extend access time to other users.
      *  Call with mutex object unlocked.
@@ -217,8 +200,6 @@ private:
         std::function<void(LedgerIndex)> const& deleteBeforeSeq);
     void
     clearCaches(LedgerIndex validatedSeq);
-    void
-    freshenCaches();
     void
     clearPrior(LedgerIndex lastRotated);
 

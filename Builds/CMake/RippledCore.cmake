@@ -742,7 +742,6 @@ if (tests)
     src/test/basics/Expected_test.cpp
     src/test/basics/FileUtilities_test.cpp
     src/test/basics/IOUAmount_test.cpp
-    src/test/basics/KeyCache_test.cpp
     src/test/basics/Number_test.cpp
     src/test/basics/PerfLog_test.cpp
     src/test/basics/RangeSet_test.cpp

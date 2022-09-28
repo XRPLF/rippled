@@ -44,6 +44,39 @@ ShardFamily::ShardFamily(Application& app, CollectorManager& cm)
 {
 }
 
+void
+ShardFamily::resetCacheFor(std::uint32_t ledgerSeq)
+{
+    auto const shardIndex = app_.getShardStore()->seqToShardIndex(ledgerSeq);
+
+    {  // Destroy the cache without a lock
+        std::shared_ptr<FullBelowCache> fbc;
+
+        {
+            std::lock_guard lock(fbCacheMutex_);
+            if (auto const it = fbCache_.find(shardIndex); it != fbCache_.end())
+            {
+                fbc = std::move(it->second);
+                fbCache_.erase(it);
+            }
+        }
+    }
+
+    {  // Destroy the cache without a lock
+        std::shared_ptr<TreeNodeCache> tnc;
+
+        {
+            std::lock_guard lock(tnCacheMutex_);
+
+            if (auto const it = tnCache_.find(shardIndex); it != tnCache_.end())
+            {
+                tnc = std::move(it->second);
+                tnCache_.erase(it);
+            }
+        }
+    }
+}
+
 std::shared_ptr<FullBelowCache>
 ShardFamily::getFullBelowCache(std::uint32_t ledgerSeq)
 {
@@ -54,23 +87,13 @@ ShardFamily::getFullBelowCache(std::uint32_t ledgerSeq)
 
     // Create a cache for the corresponding shard
     auto fbCache{std::make_shared<FullBelowCache>(
-        "Shard family full below cache shard " + std::to_string(shardIndex),
+        "Shard #" + std::to_string(shardIndex),
         stopwatch(),
         j_,
-        cm_.collector(),
         fullBelowTargetSize,
-        fullBelowExpiration)};
+        fullBelowExpiration,
+        cm_.collector())};
     return fbCache_.emplace(shardIndex, std::move(fbCache)).first->second;
-}
-
-int
-ShardFamily::getFullBelowCacheSize()
-{
-    size_t sz{0};
-    std::lock_guard lock(fbCacheMutex_);
-    for (auto const& e : fbCache_)
-        sz += e.second->size();
-    return sz;
 }
 
 std::shared_ptr<TreeNodeCache>
@@ -89,20 +112,6 @@ ShardFamily::getTreeNodeCache(std::uint32_t ledgerSeq)
         stopwatch(),
         j_)};
     return tnCache_.emplace(shardIndex, std::move(tnCache)).first->second;
-}
-
-std::pair<int, int>
-ShardFamily::getTreeNodeCacheSize()
-{
-    int cacheSz{0};
-    int trackSz{0};
-    std::lock_guard lock(tnCacheMutex_);
-    for (auto const& e : tnCache_)
-    {
-        cacheSz += e.second->getCacheSize();
-        trackSz += e.second->getTrackSize();
-    }
-    return {cacheSz, trackSz};
 }
 
 void
@@ -133,23 +142,6 @@ ShardFamily::sweep()
         else
             ++it;
     }
-}
-
-void
-ShardFamily::reset()
-{
-    {
-        std::lock_guard lock(maxSeqMutex_);
-        maxSeq_ = 0;
-    }
-
-    {
-        std::lock_guard lock(fbCacheMutex_);
-        fbCache_.clear();
-    }
-
-    std::lock_guard lock(tnCacheMutex_);
-    tnCache_.clear();
 }
 
 void

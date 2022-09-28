@@ -323,7 +323,7 @@ SHAMap::getMissingNodes(int max, SHAMapSyncFilter* filter)
         max,
         filter,
         512,  // number of async reads per pass
-        f_.getFullBelowCache(ledgerSeq_)->getGeneration());
+        f_.getFullBelowCache(ledgerSeq_)->generation());
 
     if (!root_->isInner() ||
         std::static_pointer_cast<SHAMapInnerNode>(root_)->isFullBelow(
@@ -580,7 +580,7 @@ SHAMap::addKnownNode(
         return SHAMapAddNode::duplicate();
     }
 
-    auto const generation = f_.getFullBelowCache(ledgerSeq_)->getGeneration();
+    auto const generation = f_.getFullBelowCache(ledgerSeq_)->generation();
     SHAMapNodeID iNodeID;
     auto iNode = root_.get();
 

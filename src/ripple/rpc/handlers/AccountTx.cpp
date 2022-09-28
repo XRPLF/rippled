@@ -299,7 +299,8 @@ populateJsonResponse(
                 {
                     Json::Value& jvObj = jvTxns.append(Json::objectValue);
 
-                    jvObj[jss::tx] = txn->getJson(JsonOptions::include_date);
+                    jvObj[jss::tx] =
+                        txn->getJson(context.app, JsonOptions::include_date);
                     if (txnMeta)
                     {
                         jvObj[jss::meta] =

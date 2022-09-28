@@ -21,7 +21,6 @@
 #define RIPPLE_APP_MISC_TRANSACTION_H_INCLUDED
 
 #include <ripple/basics/RangeSet.h>
-#include <ripple/beast/utility/Journal.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/STTx.h>
@@ -42,7 +41,7 @@ class Application;
 class Database;
 class Rules;
 
-enum TransStatus {
+enum TransStatus : std::uint8_t {
     NEW = 0,         // just received / generated
     INVALID = 1,     // no valid signature, insufficient funds
     INCLUDED = 2,    // added to the current ledger
@@ -56,33 +55,28 @@ enum TransStatus {
 
 enum class TxSearched { all, some, unknown };
 
+// The boost::optional parameter is because SOCI requires
+// boost::optional (not std::optional) parameters.
+TransStatus
+sqlTransactionStatus(boost::optional<std::string> const& status);
+
 // This class is for constructing and examining transactions.
 // Transactions are static so manipulation functions are unnecessary.
 class Transaction : public std::enable_shared_from_this<Transaction>,
                     public CountedObject<Transaction>
 {
+    /** Flags used for the state of a transaction. */
+    constexpr static std::uint8_t const applied_ = 1;
+    constexpr static std::uint8_t const broadcast_ = 2;
+    constexpr static std::uint8_t const queued_ = 4;
+    constexpr static std::uint8_t const kept_ = 8;
+    constexpr static std::uint8_t const applying_ = 16;
+
 public:
-    using pointer = std::shared_ptr<Transaction>;
-    using ref = const pointer&;
-
-    Transaction(
-        std::shared_ptr<STTx const> const&,
-        std::string&,
-        Application&) noexcept;
-
-    // The two boost::optional parameters are because SOCI requires
-    // boost::optional (not std::optional) parameters.
-    static Transaction::pointer
-    transactionFromSQL(
-        boost::optional<std::uint64_t> const& ledgerSeq,
-        boost::optional<std::string> const& status,
-        Blob const& rawTxn,
-        Application& app);
-
-    // The boost::optional parameter is because SOCI requires
-    // boost::optional (not std::optional) parameters.
-    static TransStatus
-    sqlTransactionStatus(boost::optional<std::string> const& status);
+    Transaction(std::shared_ptr<STTx const> const& stx) noexcept
+        : mTransaction(stx)
+    {
+    }
 
     std::shared_ptr<STTx const> const&
     getSTransaction()
@@ -90,10 +84,10 @@ public:
         return mTransaction;
     }
 
-    uint256 const&
+    uint256
     getID() const
     {
-        return mTransactionID;
+        return mTransaction->getTransactionID();
     }
 
     LedgerIndex
@@ -111,7 +105,7 @@ public:
     TransStatus
     getStatus() const
     {
-        return mStatus;
+        return status_;
     }
 
     TER
@@ -127,18 +121,16 @@ public:
     }
 
     void
-    setStatus(TransStatus status, std::uint32_t ledgerSeq);
+    setStatus(TransStatus status, std::uint32_t ledgerSeq)
+    {
+        status_ = status;
+        mInLedger = ledgerSeq;
+    }
 
     void
     setStatus(TransStatus status)
     {
-        mStatus = status;
-    }
-
-    void
-    setLedger(LedgerIndex ledger)
-    {
-        mInLedger = ledger;
+        status_ = status;
     }
 
     /**
@@ -147,7 +139,7 @@ public:
     void
     setApplying()
     {
-        mApplying = true;
+        state_ |= applying_;
     }
 
     /**
@@ -158,7 +150,7 @@ public:
     bool
     getApplying()
     {
-        return mApplying;
+        return (state_ & applying_) == applying_;
     }
 
     /**
@@ -167,37 +159,33 @@ public:
     void
     clearApplying()
     {
-        mApplying = false;
+        state_ &= ~applying_;
     }
 
-    struct SubmitResult
+    class SubmitResult
     {
-        /**
-         * @brief clear Clear all states
-         */
-        void
-        clear()
+        friend class Transaction;
+
+        SubmitResult(std::uint8_t state)
+            : applied(state & applied_)
+            , broadcast(state & broadcast_)
+            , queued(state & queued_)
+            , kept(state & kept_)
         {
-            applied = false;
-            broadcast = false;
-            queued = false;
-            kept = false;
         }
 
-        /**
-         * @brief any Get true of any state is true
-         * @return True if any state if true
-         */
+    public:
+        bool const applied;
+        bool const broadcast;
+        bool const queued;
+        bool const kept;
+
+        /** Returns true if any state if true */
         bool
         any() const
         {
             return applied || broadcast || queued || kept;
         }
-
-        bool applied = false;
-        bool broadcast = false;
-        bool queued = false;
-        bool kept = false;
     };
 
     /**
@@ -207,7 +195,7 @@ public:
     SubmitResult
     getSubmitResult() const
     {
-        return submitResult_;
+        return {state_.load()};
     }
 
     /**
@@ -216,43 +204,35 @@ public:
     void
     clearSubmitResult()
     {
-        submitResult_.clear();
+        state_ &= ~(applied_ | broadcast_ | queued_ | kept_);
     }
 
-    /**
-     * @brief setApplied Set this flag once was applied to open ledger
-     */
+    /** Note that the transaction was applied to open ledger */
     void
     setApplied()
     {
-        submitResult_.applied = true;
+        state_ |= applied_;
     }
 
-    /**
-     * @brief setQueued Set this flag once was put into heldtxns queue
-     */
+    /** Note that the trnasaction was put into heldtxns queue */
     void
     setQueued()
     {
-        submitResult_.queued = true;
+        state_ |= queued_;
     }
 
-    /**
-     * @brief setBroadcast Set this flag once was broadcasted via network
-     */
+    /** Note that the transaction was broadcast via network */
     void
     setBroadcast()
     {
-        submitResult_.broadcast = true;
+        state_ |= broadcast_;
     }
 
-    /**
-     * @brief setKept Set this flag once was put to localtxns queue
-     */
+    /** Note that the transaction was put to localtxns queue */
     void
     setKept()
     {
-        submitResult_.kept = true;
+        state_ |= kept_;
     }
 
     struct CurrentLedgerState
@@ -306,7 +286,7 @@ public:
     }
 
     Json::Value
-    getJson(JsonOptions options, bool binary = false) const;
+    getJson(Application& app, JsonOptions options, bool binary = false) const;
 
     // Information used to locate a transaction.
     // Contains a nodestore hash and ledger sequence pair if the transaction was
@@ -384,21 +364,20 @@ private:
         std::optional<ClosedInterval<uint32_t>> const& range,
         error_code_i& ec);
 
-    uint256 mTransactionID;
-
+    /** The ledger in which this transaction appears, or 0. */
     LedgerIndex mInLedger = 0;
-    TransStatus mStatus = INVALID;
+
+    /** The result of applying this transaction. */
     TER mResult = temUNCERTAIN;
-    bool mApplying = false;
 
-    /** different ways for transaction to be accepted */
-    SubmitResult submitResult_;
+    /** The current state of the transaction. */
+    std::atomic<std::uint8_t> state_ = 0;
 
-    std::optional<CurrentLedgerState> currentLedgerState_;
+    /** The status of the transaction. */
+    TransStatus status_ = NEW;
 
     std::shared_ptr<STTx const> mTransaction;
-    Application& mApp;
-    beast::Journal j_;
+    std::optional<CurrentLedgerState> currentLedgerState_;
 };
 
 }  // namespace ripple

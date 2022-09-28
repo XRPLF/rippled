@@ -66,27 +66,17 @@ public:
         return true;
     }
 
+    void
+    resetCacheFor(std::uint32_t ledgerSeq) override;
+
     std::shared_ptr<FullBelowCache>
     getFullBelowCache(std::uint32_t ledgerSeq) override;
-
-    /** Return the number of entries in the cache */
-    int
-    getFullBelowCacheSize();
 
     std::shared_ptr<TreeNodeCache>
     getTreeNodeCache(std::uint32_t ledgerSeq) override;
 
-    /** Return a pair where the first item is the number of items cached
-        and the second item is the number of entries in the cached
-    */
-    std::pair<int, int>
-    getTreeNodeCacheSize();
-
     void
     sweep() override;
-
-    void
-    reset() override;
 
     void
     missingNodeAcquireBySeq(std::uint32_t seq, uint256 const& nodeHash)
@@ -96,6 +86,24 @@ public:
     missingNodeAcquireByHash(uint256 const& hash, std::uint32_t seq) override
     {
         acquire(hash, seq);
+    }
+
+    template <class Func>
+    void
+    forEachFullBelowCache(Func&& f)
+    {
+        std::lock_guard lock(fbCacheMutex_);
+        for (auto const& e : fbCache_)
+            f(e.second.get());
+    }
+
+    template <class Func>
+    void
+    forEachTreeNodeCache(Func&& f)
+    {
+        std::lock_guard lock(tnCacheMutex_);
+        for (auto const& e : tnCache_)
+            f(e.second.get());
     }
 
 private:

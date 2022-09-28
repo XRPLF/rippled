@@ -34,13 +34,13 @@ LedgerHistory::LedgerHistory(
     : app_(app)
     , collector_(collector)
     , mismatch_counter_(collector->make_counter("ledger.history", "mismatch"))
-    , m_ledgers_by_hash(
+    , ledgerCache_(
           "LedgerCache",
           app_.config().getValueFor(SizedItem::ledgerSize),
           std::chrono::seconds{app_.config().getValueFor(SizedItem::ledgerAge)},
           stopwatch(),
           app_.journal("TaggedCache"))
-    , m_consensus_validated(
+    , consensusValidated_(
           "ConsensusValidated",
           64,
           std::chrono::minutes{5},
@@ -60,10 +60,11 @@ LedgerHistory::insert(
 
     assert(ledger->stateMap().getHash().isNonZero());
 
-    std::unique_lock sl(m_ledgers_by_hash.peekMutex());
+    const bool alreadyHad =
+        ledgerCache_.insert_or_assign(ledger->info().hash, ledger);
 
-    const bool alreadyHad = m_ledgers_by_hash.canonicalize_replace_cache(
-        ledger->info().hash, ledger);
+    std::unique_lock sl(mutex_);
+
     if (validated)
         mLedgersByIndex[ledger->info().seq] = ledger->info().hash;
 
@@ -73,9 +74,11 @@ LedgerHistory::insert(
 LedgerHash
 LedgerHistory::getLedgerHash(LedgerIndex index)
 {
-    std::unique_lock sl(m_ledgers_by_hash.peekMutex());
+    std::unique_lock sl(mutex_);
+
     if (auto it = mLedgersByIndex.find(index); it != mLedgersByIndex.end())
         return it->second;
+
     return {};
 }
 
@@ -83,10 +86,9 @@ std::shared_ptr<Ledger const>
 LedgerHistory::getLedgerBySeq(LedgerIndex index)
 {
     {
-        std::unique_lock sl(m_ledgers_by_hash.peekMutex());
-        auto it = mLedgersByIndex.find(index);
+        std::unique_lock sl(mutex_);
 
-        if (it != mLedgersByIndex.end())
+        if (auto it = mLedgersByIndex.find(index); it != mLedgersByIndex.end())
         {
             uint256 hash = it->second;
             sl.unlock();
@@ -100,22 +102,19 @@ LedgerHistory::getLedgerBySeq(LedgerIndex index)
         return ret;
 
     assert(ret->info().seq == index);
+    assert(ret->isImmutable());
+    ledgerCache_.retrieve_or_insert(ret->info().hash, ret);
 
-    {
-        // Add this ledger to the local tracking by index
-        std::unique_lock sl(m_ledgers_by_hash.peekMutex());
-
-        assert(ret->isImmutable());
-        m_ledgers_by_hash.canonicalize_replace_client(ret->info().hash, ret);
-        mLedgersByIndex[ret->info().seq] = ret->info().hash;
-        return (ret->info().seq == index) ? ret : nullptr;
-    }
+    // Add this ledger to the local tracking by index
+    std::lock_guard sl(mutex_);
+    mLedgersByIndex[ret->info().seq] = ret->info().hash;
+    return (ret->info().seq == index) ? ret : nullptr;
 }
 
 std::shared_ptr<Ledger const>
 LedgerHistory::getLedgerByHash(LedgerHash const& hash)
 {
-    auto ret = m_ledgers_by_hash.fetch(hash);
+    auto ret = ledgerCache_.fetch(hash);
 
     if (ret)
     {
@@ -131,7 +130,7 @@ LedgerHistory::getLedgerByHash(LedgerHash const& hash)
 
     assert(ret->isImmutable());
     assert(ret->info().hash == hash);
-    m_ledgers_by_hash.canonicalize_replace_client(ret->info().hash, ret);
+    ledgerCache_.retrieve_or_insert(ret->info().hash, ret);
     assert(ret->info().hash == hash);
 
     return ret;
@@ -299,21 +298,6 @@ log_metadata_difference(
 }
 
 //------------------------------------------------------------------------------
-
-// Return list of leaves sorted by key
-static std::vector<SHAMapItem const*>
-leaves(SHAMap const& sm)
-{
-    std::vector<SHAMapItem const*> v;
-    for (auto const& item : sm)
-        v.push_back(&item);
-    std::sort(
-        v.begin(), v.end(), [](SHAMapItem const* lhs, SHAMapItem const* rhs) {
-            return lhs->key() < rhs->key();
-        });
-    return v;
-}
-
 void
 LedgerHistory::handleMismatch(
     LedgerHash const& built,
@@ -341,9 +325,10 @@ LedgerHistory::handleMismatch(
 
     if (auto stream = j_.debug())
     {
-        stream << "Built: " << getJson({*builtLedger, {}});
-        stream << "Valid: " << getJson({*validLedger, {}});
-        stream << "Consensus: " << consensus;
+        stream << "Mismatch on " << builtLedger->info().seq << ":\n"
+               << "     Built: " << getJson({*builtLedger, {}}) << "\n"
+               << "     Valid: " << getJson({*validLedger, {}}) << "\n"
+               << " Consensus: " << consensus;
     }
 
     // Determine the mismatch reason, distinguishing Byzantine
@@ -374,6 +359,23 @@ LedgerHistory::handleMismatch(
             JLOG(j_.error()) << "MISMATCH with same consensus transaction set: "
                              << to_string(*builtConsensusHash);
     }
+
+    // Grab the leaves from the specified SHAMap and sort them by key:
+    auto leaves = [](SHAMap const& sm) {
+        std::vector<SHAMapItem const*> v;
+
+        for (auto const& item : sm)
+            v.push_back(&item);
+
+        std::sort(
+            v.begin(),
+            v.end(),
+            [](SHAMapItem const* lhs, SHAMapItem const* rhs) {
+                return lhs->key() < rhs->key();
+            });
+
+        return v;
+    };
 
     // Find differences between built and valid ledgers
     auto const builtTx = leaves(builtLedger->txMap());
@@ -432,10 +434,8 @@ LedgerHistory::builtLedger(
     LedgerHash hash = ledger->info().hash;
     assert(!hash.isZero());
 
-    std::unique_lock sl(m_consensus_validated.peekMutex());
-
     auto entry = std::make_shared<cv_entry>();
-    m_consensus_validated.canonicalize_replace_client(index, entry);
+    consensusValidated_.retrieve_or_insert(index, entry);
 
     if (entry->validated && !entry->built)
     {
@@ -472,61 +472,65 @@ LedgerHistory::validatedLedger(
     LedgerHash hash = ledger->info().hash;
     assert(!hash.isZero());
 
-    std::unique_lock sl(m_consensus_validated.peekMutex());
-
     auto entry = std::make_shared<cv_entry>();
-    m_consensus_validated.canonicalize_replace_client(index, entry);
+    consensusValidated_.retrieve_or_insert(index, entry);
 
-    if (entry->built && !entry->validated)
+    if (entry->built && !entry->validated && entry->built.value() != hash)
     {
-        if (entry->built.value() != hash)
-        {
-            JLOG(j_.error())
-                << "MISMATCH: seq=" << index
-                << " built:" << entry->built.value() << " then:" << hash;
-            handleMismatch(
-                entry->built.value(),
-                hash,
-                entry->builtConsensusHash,
-                consensusHash,
-                entry->consensus.value());
-        }
-        else
-        {
-            // We built a ledger locally and then validated it
-            JLOG(j_.debug()) << "MATCH: seq=" << index;
-        }
+        JLOG(j_.error()) << "Mismatch on validated ledger (seq " << index
+                         << "): built is" << entry->built.value()
+                         << ", validated is:" << hash;
+
+        handleMismatch(
+            entry->built.value(),
+            hash,
+            entry->builtConsensusHash,
+            consensusHash,
+            entry->consensus.value());
     }
 
     entry->validated.emplace(hash);
     entry->validatedConsensusHash = consensusHash;
 }
 
-/** Ensure m_ledgers_by_hash doesn't have the wrong hash for a particular index
+/** Ensure ledgerCache_ doesn't have the wrong hash for a particular index
  */
 bool
 LedgerHistory::fixIndex(LedgerIndex ledgerIndex, LedgerHash const& ledgerHash)
 {
-    std::unique_lock sl(m_ledgers_by_hash.peekMutex());
-    auto it = mLedgersByIndex.find(ledgerIndex);
+    std::lock_guard sl(mutex_);
 
-    if ((it != mLedgersByIndex.end()) && (it->second != ledgerHash))
+    if (auto it = mLedgersByIndex.find(ledgerIndex);
+        (it != mLedgersByIndex.end()) && (it->second != ledgerHash))
     {
         it->second = ledgerHash;
         return false;
     }
+
     return true;
 }
 
 void
 LedgerHistory::clearLedgerCachePrior(LedgerIndex seq)
 {
-    for (LedgerHash it : m_ledgers_by_hash.getKeys())
+    ledgerCache_.erase_if(
+        [seq](Ledger const& ledger) { return ledger.info().seq < seq; });
+}
+
+Json::Value
+LedgerHistory::info() const
+{
+    Json::Value ret(Json::objectValue);
+
+    ret["lc"] = ledgerCache_.info();
+    ret["cv"] = consensusValidated_.info();
+
     {
-        auto const ledger = getLedgerByHash(it);
-        if (!ledger || ledger->info().seq < seq)
-            m_ledgers_by_hash.del(it, false);
+        std::lock_guard sl(mutex_);
+        ret["lbi"] = std::to_string(mLedgersByIndex.size());
     }
+
+    return ret;
 }
 
 }  // namespace ripple
