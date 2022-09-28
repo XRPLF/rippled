@@ -31,11 +31,11 @@ class Xrpl(ConanFile):
         'grpc/1.44.0',
         'nudb/2.0.8',
         'openssl/1.1.1m',
-        'protobuf/3.19.2',
+        'protobuf/3.21.4',
         'snappy/1.1.9',
         'soci/4.0.3',
         'sqlite3/3.38.0',
-        'zlib/1.2.11',
+        'zlib/1.2.12',
     ]
 
     default_options = {
@@ -112,10 +112,8 @@ class Xrpl(ConanFile):
 
     def layout(self):
         cmake_layout(self)
-        # Fix this setting to follow the default introduced in Conan 1.48,
-        # so that users with earlier versions can follow our build
-        # instructions. If ever we bump the minimum required version of
-        # Conan to one >= 1.48, then we can remove this line.
+        # Fix this setting to follow the default introduced in Conan 1.48
+        # to align with our build instructions.
         self.folders.generators = 'build/generators'
 
     generators = 'CMakeDeps'
