@@ -42,6 +42,7 @@ jobs:
       - name: configure Conan
         run: |
           conan profile new default --detect
+          conan profile update settings.compiler.cppstd=20 default
           conan profile update settings.compiler.runtime=MT default
           conan profile update settings.compiler.toolset=v141 default
       - name: learn Conan cache directory
@@ -59,7 +60,7 @@ jobs:
         run: |
           mkdir $env:build_dir
           cd $env:build_dir
-          conan install .. --build missing --settings build_type=${{ matrix.configuration }} --profile:build default --profile:host default
+          conan install .. --build missing --settings build_type=${{ matrix.configuration }}
       - name: configure
         run: |
           $env:build_dir

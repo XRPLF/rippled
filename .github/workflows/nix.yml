@@ -52,15 +52,13 @@ jobs:
           cmake --version
           env
       - name: configure Conan
-        run: conan profile new default --detect
+        run: |
+          conan profile new default --detect
+          conan profile update settings.compiler.cppstd=20 default
       - name: configure Conan on Linux
         if: runner.os == 'Linux'
         run: |
           conan profile update settings.compiler.libcxx=libstdc++11 default
-      - name: configure Conan on macOS
-        if: runner.os == 'macOS'
-        run: |
-          conan profile update settings.compiler.cppstd=17 default
       - name: learn Conan cache directory
         id: conan-cache
         run: |

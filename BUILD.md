@@ -47,6 +47,12 @@ there is a crash course at the end of this document.
 [Conan]: https://conan.io/downloads.html
 [CMake]: https://cmake.org/download/
 
+You'll need to compile in the C++20 dialect:
+
+```
+conan profile update settings.cppstd=20 default
+```
+
 Linux developers will commonly have a default Conan [profile][] that compiles
 with GCC and links with libstdc++.
 If you are linking with libstdc++ (see profile setting `compiler.libcxx`),
