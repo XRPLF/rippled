@@ -21,6 +21,7 @@
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/RPCHandler.h>
+#include <ripple/rpc/impl/RPCHelpers.h>
 #include <boost/regex.hpp>
 #include <test/jtx.h>
 #include <test/jtx/AMM.h>
