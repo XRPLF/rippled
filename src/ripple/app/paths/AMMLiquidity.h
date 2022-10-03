@@ -116,26 +116,25 @@ public:
  * there is a limiting step, then the offers are adjusted
  * based on their quality.
  * If there is only one path specified in the payment transaction
- * then the offers are generated based on the current step
- * remainingIn/remainingOut amounts and/or competing CLOB offer.
- * In the latter case, the offer's size is set in such a way
+ * then the offers are generated based on the competing CLOB offer
+ * quality. In this case, the offer's size is set in such a way
  * that the new AMM's pool spot price quality is equal to the CLOB's
  * offer quality.
  */
 class AMMLiquidity
 {
 private:
-    AMMOfferCounter const& offerCounter_;
-    AccountID ammAccountID_;
-    std::uint32_t tradingFee_;
+    AMMOfferCounter& offerCounter_;
+    AccountID const ammAccountID_;
+    std::uint32_t const tradingFee_;
     // Cached AMM pool balances as of last getOffer()
-    mutable Amounts balances_;
+    Amounts balances_;
     // Is seated in case of multi-path. Generates Fibonacci
     // sequence offer.
-    mutable std::optional<detail::FibSeqHelper> fibSeqHelper_;
+    std::optional<detail::FibSeqHelper> fibSeqHelper_;
     // Indicates that the balances may have changed
     // since the last fetchBalances()
-    mutable bool dirty_;
+    bool dirty_;
     beast::Journal const j_;
 
 public:
@@ -145,7 +144,7 @@ public:
         std::uint32_t tradingFee,
         Issue const& in,
         Issue const& out,
-        AMMOfferCounter const& offerCounter,
+        AMMOfferCounter& offerCounter,
         beast::Journal j);
     ~AMMLiquidity() = default;
     AMMLiquidity(AMMLiquidity const&) = delete;
@@ -155,17 +154,10 @@ public:
     /** Generate AMM offer. Returns nullopt if clobQuality is provided
      * and it is better than AMM offer quality. Otherwise returns AMM offer.
      * If clobQuality is provided then AMM offer size is set based on the
-     * quality. If either remainingIn/remainingOut/cache is provided
-     * then the offer size is adjusted based on those amounts.
+     * quality.
      */
-    template <typename TIn, typename TOut>
     std::optional<Amounts>
-    getOffer(
-        ReadView const& view,
-        std::optional<Quality> const& clobQuality = std::nullopt,
-        std::optional<TIn> const& remainingIn = std::nullopt,
-        std::optional<TOut> const& remainingOut = std::nullopt,
-        std::optional<TAmounts<TIn, TOut>> const& cache = std::nullopt) const;
+    getOffer(ReadView const& view, std::optional<Quality> const& clobQuality);
 
     /** Called when AMM offer is consumed. Sets dirty flag
      * to indicate that the balances may have changed and
@@ -179,17 +171,37 @@ public:
         offerCounter_.incrementCounter();
     }
 
-    AccountID
+    AccountID const&
     ammAccount() const
     {
         return ammAccountID_;
+    }
+
+    bool
+    multiPath() const
+    {
+        return offerCounter_.multiPath();
+    }
+
+    template <typename TOut>
+    STAmount
+    swapOut(TOut const& out) const
+    {
+        return swapAssetOut(balances_, out, tradingFee_);
+    }
+
+    template <typename TIn>
+    STAmount
+    swapIn(TIn const& in) const
+    {
+        return swapAssetIn(balances_, in, tradingFee_);
     }
 
 private:
     /** Fetches AMM balances if dirty flag is set.
      */
     Amounts
-    fetchBalances(ReadView const& view) const;
+    fetchBalances(ReadView const& view);
 
     /** Returns total amount held by AMM for the given token.
      */
@@ -203,137 +215,8 @@ private:
      * @param balances current AMM balances
      */
     Amounts
-    generateFibSeqOffer(Amounts const& balances) const;
+    generateFibSeqOffer(Amounts const& balances);
 };
-
-template <typename TIn, typename TOut>
-std::optional<Amounts>
-AMMLiquidity::getOffer(
-    ReadView const& view,
-    std::optional<Quality> const& clobQuality,
-    std::optional<TIn> const& remainingIn,
-    std::optional<TOut> const& remainingOut,
-    std::optional<TAmounts<TIn, TOut>> const& cache) const
-{
-    // Can't generate more offers. Only applies if generating
-    // based on Fibonacci sequence.
-    if (offerCounter_.maxItersReached())
-        return std::nullopt;
-
-    auto const balances = fetchBalances(view);
-
-    JLOG(j_.debug()) << "AMMLiquidity::getOffer balances " << balances_.in
-                     << " " << balances_.out << " new balances " << balances.in
-                     << " " << balances.out;
-
-    // Can't generate AMM offer with a better quality than CLOB's offer quality
-    // if AMM's Spot Price quality is less than CLOB offer quality.
-    if (clobQuality && Quality{balances} < *clobQuality)
-    {
-        JLOG(j_.debug()) << "AMMLiquidity::getOffer, higher clob quality";
-        return std::nullopt;
-    }
-
-    std::optional<STAmount> const saRemIn = remainingIn
-        ? std::optional<STAmount>(toSTAmount(*remainingIn, balances.in.issue()))
-        : std::nullopt;
-    std::optional<STAmount> const saRemOut = remainingOut
-        ? std::optional<STAmount>(
-              toSTAmount(*remainingOut, balances.out.issue()))
-        : std::nullopt;
-    std::optional<STAmount> const saCacheIn = cache
-        ? std::optional<STAmount>(toSTAmount(cache->in, balances.in.issue()))
-        : std::nullopt;
-    std::optional<STAmount> const saCacheOut = cache
-        ? std::optional<STAmount>(toSTAmount(cache->out, balances.out.issue()))
-        : std::nullopt;
-
-    auto const offer = [&]() -> std::optional<Amounts> {
-        if (offerCounter_.multiPath())
-        {
-            auto const offer = generateFibSeqOffer(balances);
-            auto const quality = Quality{offer};
-            if (clobQuality && quality < clobQuality.value())
-                return std::nullopt;
-            // Change offer size proportionally to the quality
-            // to retain the strands order by quality.
-            if (saRemOut && offer.out > *saRemOut)
-                return quality.ceil_out(offer, *saRemOut);
-            if (saRemIn && offer.in > *saRemIn)
-            {
-                auto amounts = quality.ceil_in(offer, *saRemIn);
-                // The step produced more output in the forward pass than the
-                // reverse pass while consuming the same input (or less).
-                if (saCacheOut && amounts.out > *saCacheOut &&
-                    amounts.in <= saCacheIn)
-                {
-                    amounts = quality.ceil_out(offer, *saCacheOut);
-                    if (amounts.in != *saCacheIn)
-                        return std::nullopt;
-                }
-                return amounts;
-            }
-            return offer;
-        }
-        else if (
-            auto const offer = clobQuality
-                ? changeSpotPriceQuality(balances, *clobQuality, tradingFee_)
-                : balances)
-        {
-            // Change offer size based on swap in/out formulas. The stand's
-            // quality changes in this case for the better but since
-            // there is only one strand it doesn't impact the strands order.
-            if (saRemOut && offer->out > *saRemOut)
-                return Amounts{
-                    swapAssetOut(balances, *remainingOut, tradingFee_),
-                    *saRemOut};
-            if (saRemIn && offer->in > *saRemIn)
-            {
-                auto in = *saRemIn;
-                auto out = swapAssetIn(balances, *remainingIn, tradingFee_);
-                // The step produced more output in the forward pass than the
-                // reverse pass while consuming the same input (or less).
-                if (saCacheOut && out > *saCacheOut && in <= *saCacheIn)
-                {
-                    out = *saCacheOut;
-                    in = swapAssetOut(balances, out, tradingFee_);
-                    if (in != *saCacheIn)
-                        return std::nullopt;
-                }
-                return Amounts{in, out};
-            }
-            return offer;
-        }
-        else
-            return std::nullopt;
-    }();
-
-    balances_ = balances;
-
-    if (offer && offer->in > beast::zero && offer->out > beast::zero)
-    {
-        JLOG(j_.debug()) << "AMMLiquidity::getOffer, created " << offer->in
-                         << " " << offer->out;
-        // The new pool product must be greater or equal to the original pool
-        // product. Swap in/out formulas are used in case of one-path, which by
-        // design maintain the product invariant. The FibSeq is also generated
-        // with the swap in/out formulas except when the offer has to
-        // be reduced, in which case it is changed proportionally to
-        // the original offer quality. It can be shown that in this case
-        // the new pool product is greater than the original pool product.
-        // Since the result for XRP is fractional, round downward
-        // out amount and round upward in amount to maintain the invariant.
-        // This is done in Number/STAmount conversion.
-        return offer;
-    }
-    else
-    {
-        JLOG(j_.debug()) << "AMMLiquidity::getOffer, failed "
-                         << offer.has_value();
-    }
-
-    return std::nullopt;
-}
 
 }  // namespace ripple
 

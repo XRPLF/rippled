@@ -37,7 +37,7 @@ private:
     // true if payment has multiple paths
     bool multiPath_{false};
     // Counter of consumed AMM at payment engine iteration
-    mutable std::uint16_t ammCounter_{0};
+    std::uint16_t ammCounter_{0};
     // Counter of payment engine iterations with consumed AMM
     std::uint16_t ammIters_{0};
 
@@ -63,7 +63,7 @@ public:
     }
 
     void
-    incrementCounter() const
+    incrementCounter()
     {
         if (multiPath_)
             ++ammCounter_;

@@ -241,7 +241,7 @@ AMMCreate::applyGuts(Sandbox& sb)
                                 Issue const& issueOut,
                                 std::uint64_t uRate) {
             Book const book{issueIn, issueOut};
-            auto dir = keylet::quality(keylet::book(book), uRate);
+            auto const dir = keylet::quality(keylet::book(book), uRate);
             if (auto const bookExisted = static_cast<bool>(sb.peek(dir));
                 !bookExisted)
                 ctx_.app.getOrderBookDB().addOrderBook(book);
