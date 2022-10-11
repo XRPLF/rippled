@@ -7,6 +7,50 @@ This document contains the release notes for `rippled`, the reference server imp
  
 Have new ideas? Need help with setting up your node? Come visit us [here](https://github.com/xrplf/rippled/issues/new/choose)
 
+# Introducing XRP Ledger version 1.9.4
+
+Version 1.9.4 of `rippled`, the reference implementation of the XRP Ledger protocol is now available. This release introduces an amendment that removes the ability for an NFT issuer to indicate that trust lines should be automatically created for royalty payments from secondary sales of NFTs, in response to a bug report that indicated how this functionality could be abused to mount a denial of service attack against the issuer.
+
+## Action Required
+
+This release introduces a new amendment to the XRP Ledger protocol, **`fixRemoveNFTokenAutoTrustLine`** to mitigate a potential denial-of-service attack against NFT issuers that minted NFTs and allowed secondary trading of those NFTs to create trust lines for any asset.
+
+This amendment is open for voting according to the XRP Ledger's [amendment process](https://xrpl.org/amendments.html), which enables protocol changes following two weeks of >80% support from trusted validators.
+
+If you operate an XRP Ledger server, then you should upgrade to version 1.9.4 within two weeks, to ensure service continuity. The exact time that protocol changes take effect depends on the voting decisions of the decentralized network.
+
+For more information about NFTs on the XRP Ledger, see [NFT Conceptual Overview](https://xrpl.org/nft-conceptual-overview.html).
+
+
+## Install / Upgrade
+
+On supported platforms, see the [instructions on installing or updating `rippled`](https://xrpl.org/install-rippled.html).
+
+## Changelog
+
+## Contributions
+
+The primary change in this release is the following bug fix:
+
+- **Introduce fixRemoveNFTokenAutoTrustLine amendment**: Introduces the `fixRemoveNFTokenAutoTrustLine` amendment, which disables the `tfTrustLine` flag, which a malicious attacker could exploit to mount denial-of-service attacks against NFT issuers that specified the flag on their NFTs. ([#4301](https://github.com/XRPLF/rippled/4301))
+
+
+### GitHub
+
+The public source code repository for `rippled` is hosted on GitHub at <https://github.com/XRPLF/rippled>.
+
+We welcome all contributions and invite everyone to join the community of XRP Ledger developers and help us build the Internet of Value.
+
+### Credits
+
+The following people contributed directly to this release:
+
+- Scott Schurr <scott@ripple.com>
+- Howard Hinnant <howard@ripple.com>
+- Scott Determan <scott.determan@yahoo.com>
+- Ikko Ashimine <eltociear@gmail.com>
+
+
 # Introducing XRP Ledger version 1.9.3
 
 Version 1.9.3 of `rippled`, the reference server implementation of the XRP Ledger protocol is now available. This release corrects minor technical flaws with the code that loads configured amendment votes after a startup and the copy constructor of `PublicKey`.
@@ -19,7 +63,7 @@ On supported platforms, see the [instructions on installing or updating `rippled
 
 ## Contributions
 
-This releases contains the following bug fixes:
+This release contains the following bug fixes:
 
 - **Change by-value to by-reference to persist vote**: A minor technical flaw, caused by use of a copy instead of a reference, resulted in operator-configured "yes" votes to not be properly loaded after a restart. ([#4256](https://github.com/XRPLF/rippled/pull/4256))
 - **Properly handle self-assignment of PublicKey**: The `PublicKey` copy assignment operator mishandled the case where a `PublicKey` would be assigned to itself, and could result in undefined behavior. 

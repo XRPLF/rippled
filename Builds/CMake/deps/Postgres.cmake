@@ -13,7 +13,7 @@ if(reporting)
             ExternalProject_Add(postgres_src
                 PREFIX ${nih_cache_path}
                 GIT_REPOSITORY https://github.com/postgres/postgres.git
-                GIT_TAG master
+                GIT_TAG REL_14_5
                 CONFIGURE_COMMAND ./configure --without-readline > /dev/null
                 BUILD_COMMAND ${CMAKE_COMMAND} -E env --unset=MAKELEVEL make
                 UPDATE_COMMAND ""
