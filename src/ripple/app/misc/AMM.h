@@ -33,22 +33,14 @@ namespace ripple {
 class ReadView;
 class ApplyView;
 class Sandbox;
-class STLedgerEntry;
 class NetClock;
 class STObject;
 class Rules;
 
 /** Calculate AMM account ID.
  */
-template <typename... Args>
 AccountID
-calcAccountID(Args const&... args)
-{
-    ripesha_hasher rsh;
-    auto hash = sha512Half(args...);
-    rsh(hash.data(), hash.size());
-    return AccountID{static_cast<ripesha_hasher::result_type>(rsh)};
-}
+calcAMMAccountID(uint256 const& parentHash, uint256 const& ammID);
 
 /** Calculate AMM group hash. The ltAMM object
  * contains all AMM's for the same issues.
@@ -101,22 +93,13 @@ lpHolds(
  * If zero is false and amount is beast::zero then invalid amount.
  * Return error code if invalid amount.
  */
-std::optional<TEMcodes>
-invalidAmount(std::optional<STAmount> const& a, bool zero = false);
+NotTEC
+invalidAMMAmount(std::optional<STAmount> const& a, bool nonNegative = false);
 
 /** Check if the line is frozen from the issuer.
  */
 bool
 isFrozen(ReadView const& view, std::optional<STAmount> const& a);
-
-/** Get AMM SLE and verify that the AMM account exists.
- * Return null if SLE not found or AMM account doesn't exist.
- */
-std::shared_ptr<STLedgerEntry const>
-getAMMSle(ReadView const& view, uint256 ammID);
-
-std::shared_ptr<STLedgerEntry>
-getAMMSle(Sandbox& view, uint256 ammID);
 
 /** Check if the account requires authorization.
  *  Return terNO_AUTH or terNO_LINE if it does
@@ -130,7 +113,10 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account);
  * accounts.
  */
 std::uint16_t
-getTradingFee(SLE const& ammSle, AccountID const& account);
+getTradingFee(
+    ReadView const& view,
+    SLE const& ammSle,
+    AccountID const& account);
 
 /** Get Issue from sfToken1/sfToken2 fields.
  */
@@ -153,7 +139,7 @@ std::uint16_t
 timeSlot(NetClock::time_point const& clock, STObject const& auctionSlot);
 
 bool
-ammRequiredAmendments(Rules const&);
+ammEnabled(Rules const&);
 
 }  // namespace ripple
 

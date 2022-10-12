@@ -38,7 +38,7 @@ AMMCreate::makeTxConsequences(PreflightContext const& ctx)
 NotTEC
 AMMCreate::preflight(PreflightContext const& ctx)
 {
-    if (!ammRequiredAmendments(ctx.rules))
+    if (!ammEnabled(ctx.rules))
         return temDISABLED;
 
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
@@ -60,16 +60,16 @@ AMMCreate::preflight(PreflightContext const& ctx)
         return temBAD_AMM_TOKENS;
     }
 
-    if (auto const err = invalidAmount(saAsset1))
+    if (auto const err = invalidAMMAmount(saAsset1))
     {
         JLOG(ctx.j.debug()) << "AMM Instance: invalid asset1 amount.";
-        return *err;
+        return err;
     }
 
-    if (auto const err = invalidAmount(saAsset2))
+    if (auto const err = invalidAMMAmount(saAsset2))
     {
         JLOG(ctx.j.debug()) << "AMM Instance: invalid asset2 amount.";
-        return *err;
+        return err;
     }
 
     if (ctx.tx[sfTradingFee] > 65000)
@@ -116,7 +116,18 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
         return tecFROZEN;
     }
 
+    // Check the reserve for LPToken trustline
+    STAmount const xrpBalance = xrpLiquid(ctx.view, accountID, 1, ctx.j);
+    // Insufficient reserve
+    if (xrpBalance <= beast::zero)
+    {
+        JLOG(ctx.j.debug()) << "AMM Instance: insufficient reserves";
+        return tecINSUF_RESERVE_LINE;
+    }
+
     auto insufficientBalance = [&](STAmount const& asset) {
+        if (isXRP(asset))
+            return xrpBalance < asset;
         return accountID != asset.issue().account &&
             accountHolds(
                 ctx.view,
@@ -136,12 +147,6 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-void
-AMMCreate::preCompute()
-{
-    return Transactor::preCompute();
-}
-
 std::pair<TER, bool>
 AMMCreate::applyGuts(Sandbox& sb)
 {
@@ -157,7 +162,7 @@ AMMCreate::applyGuts(Sandbox& sb)
         return {tecAMM_EXISTS, false};
     }
 
-    auto const ammAccountID = calcAccountID(sb.info().parentHash, ammID);
+    auto const ammAccountID = calcAMMAccountID(sb.info().parentHash, ammID);
 
     // AMM account already exists (should not happen)
     if (sb.peek(keylet::account(ammAccountID)))

@@ -264,6 +264,18 @@ accountHolds(
 }
 
 STAmount
+accountHolds(
+    ReadView const& view,
+    AccountID const& account,
+    Issue const& issue,
+    FreezeHandling zeroIfFrozen,
+    beast::Journal j)
+{
+    return accountHolds(
+        view, account, issue.currency, issue.account, zeroIfFrozen, j);
+}
+
+STAmount
 accountFunds(
     ReadView const& view,
     AccountID const& id,

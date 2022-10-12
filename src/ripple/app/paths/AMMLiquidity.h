@@ -42,11 +42,11 @@ class FibSeqHelper
 {
 private:
     // Current sequence amounts.
-    mutable Amounts curSeq_{};
+    Amounts curSeq_{};
     // Latest sequence number.
-    mutable std::uint16_t lastNSeq_{0};
-    mutable Number x_{0};
-    mutable Number y_{0};
+    std::uint16_t lastNSeq_{0};
+    Number x_{0};
+    Number y_{0};
 
 public:
     FibSeqHelper() = default;
@@ -54,22 +54,15 @@ public:
     FibSeqHelper(FibSeqHelper const&) = delete;
     FibSeqHelper&
     operator=(FibSeqHelper const&) = delete;
+
     /** Generate first sequence.
      * @param balances current AMM pool balances.
      * @param tfee trading fee in basis points.
      * @return
      */
     Amounts const&
-    firstSeq(Amounts const& balances, std::uint16_t tfee) const
-    {
-        curSeq_.in = toSTAmount(
-            balances.in.issue(),
-            (Number(5) / 10000) * balances.in / 2,
-            Number::rounding_mode::upward);
-        curSeq_.out = swapAssetIn(balances, curSeq_.in, tfee);
-        y_ = curSeq_.out;
-        return curSeq_;
-    }
+    firstSeq(Amounts const& balances, std::uint16_t tfee);
+
     /** Generate next sequence.
      * @param n sequence to generate
      * @param balances current AMM pool balances.
@@ -77,32 +70,7 @@ public:
      * @return
      */
     Amounts const&
-    nextNthSeq(std::uint16_t n, Amounts const& balances, std::uint16_t tfee)
-        const
-    {
-        // We are at the same payment engine iteration when executing
-        // a limiting step. Have to generate the same sequence.
-        if (n == lastNSeq_)
-            return curSeq_;
-        auto const total = [&]() {
-            if (n < lastNSeq_)
-                Throw<std::runtime_error>(
-                    std::string("nextNthSeq: invalid sequence ") +
-                    std::to_string(n) + " " + std::to_string(lastNSeq_));
-            Number total{};
-            do
-            {
-                total = x_ + y_;
-                x_ = y_;
-                y_ = total;
-            } while (++lastNSeq_ < n);
-            return total;
-        }();
-        curSeq_.out = toSTAmount(
-            balances.out.issue(), total, Number::rounding_mode::downward);
-        curSeq_.in = swapAssetOut(balances, curSeq_.out, tfee);
-        return curSeq_;
-    }
+    nextNthSeq(std::uint16_t n, Amounts const& balances, std::uint16_t tfee);
 };
 
 }  // namespace detail
@@ -127,14 +95,11 @@ private:
     AMMOfferCounter& offerCounter_;
     AccountID const ammAccountID_;
     std::uint32_t const tradingFee_;
-    // Cached AMM pool balances as of last getOffer()
+    // Cached AMM pool balances as of last getOffer() if not empty().
+    // Set to zero if balances have to be re-fetched.
     Amounts balances_;
-    // Is seated in case of multi-path. Generates Fibonacci
-    // sequence offer.
+    // Is seated if multi-path. Generates Fibonacci sequence offer.
     std::optional<detail::FibSeqHelper> fibSeqHelper_;
-    // Indicates that the balances may have changed
-    // since the last fetchBalances()
-    bool dirty_;
     beast::Journal const j_;
 
 public:
@@ -167,7 +132,8 @@ public:
     void
     consumed()
     {
-        dirty_ = true;
+        balances_.in = beast::zero;
+        balances_.out = beast::zero;
         offerCounter_.incrementCounter();
     }
 
@@ -197,11 +163,17 @@ public:
         return swapAssetIn(balances_, in, tradingFee_);
     }
 
+    Amounts const&
+    balances() const
+    {
+        return balances_;
+    }
+
 private:
-    /** Fetches AMM balances if dirty flag is set.
+    /** Fetches AMM balances if balances_ is empty()
      */
     Amounts
-    fetchBalances(ReadView const& view);
+    fetchBalances(ReadView const& view) const;
 
     /** Returns total amount held by AMM for the given token.
      */

@@ -36,7 +36,7 @@ AMMVote::makeTxConsequences(PreflightContext const& ctx)
 NotTEC
 AMMVote::preflight(PreflightContext const& ctx)
 {
-    if (!ammRequiredAmendments(ctx.rules))
+    if (!ammEnabled(ctx.rules))
         return temDISABLED;
 
     auto const ret = preflight1(ctx);
@@ -67,7 +67,7 @@ AMMVote::preclaim(PreclaimContext const& ctx)
         return terNO_ACCOUNT;
     }
 
-    if (!getAMMSle(ctx.view, ctx.tx[sfAMMID]))
+    if (!ctx.view.read(keylet::amm(ctx.tx[sfAMMID])))
     {
         JLOG(ctx.j.debug()) << "AMM Vote: Invalid AMM account.";
         return terNO_ACCOUNT;
@@ -76,20 +76,14 @@ AMMVote::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-void
-AMMVote::preCompute()
-{
-    return Transactor::preCompute();
-}
-
 std::pair<TER, bool>
 AMMVote::applyGuts(Sandbox& sb)
 {
     auto const feeNew = ctx_.tx[sfFeeVal];
-    auto const amm = getAMMSle(sb, ctx_.tx[sfAMMID]);
+    auto const amm = sb.peek(keylet::amm(ctx_.tx[sfAMMID]));
     assert(amm);
-    auto const ammAccount = amm->getAccountID(sfAMMAccount);
-    auto const lptAMMBalance = amm->getFieldAmount(sfLPTokenBalance);
+    auto const ammAccount = (*amm)[sfAMMAccount];
+    STAmount const lptAMMBalance = (*amm)[sfLPTokenBalance];
     auto const lpTokensNew = lpHolds(sb, ammAccount, account_, ctx_.journal);
     if (lpTokensNew == beast::zero)
     {
@@ -112,7 +106,7 @@ AMMVote::applyGuts(Sandbox& sb)
     // has the vote entry.
     for (auto const& entry : amm->getFieldArray(sfVoteSlots))
     {
-        auto const account = entry.getAccountID(sfAccount);
+        auto const account = entry[sfAccount];
         auto lpTokens = lpHolds(sb, ammAccount, account, ctx_.journal);
         if (lpTokens == beast::zero)
         {
@@ -120,7 +114,7 @@ AMMVote::applyGuts(Sandbox& sb)
                 << "AMMVote::applyGuts, account " << account << " is not LP";
             continue;
         }
-        auto feeVal = entry.getFieldU32(sfFeeVal);
+        auto feeVal = entry[sfFeeVal];
         STObject newEntry{sfVoteEntry};
         // The account already has the vote entry.
         if (account == account_)
@@ -179,7 +173,7 @@ AMMVote::applyGuts(Sandbox& sb)
         {
             auto const entry = updatedVoteSlots.begin() + minPos;
             // Remove the least token vote entry.
-            num -= entry->getFieldU32(sfFeeVal) * *minTokens;
+            num -= Number((*entry)[sfFeeVal]) * *minTokens;
             den -= *minTokens;
             updatedVoteSlots.erase(updatedVoteSlots.begin() + minPos);
             update();

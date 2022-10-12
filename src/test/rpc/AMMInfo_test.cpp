@@ -42,9 +42,7 @@ class AMMInfo_test : public beast::unit_test::suite
         std::optional<IOUAmount> const& lpt = {})
     {
         using namespace jtx;
-        std::unique_ptr<Config> config = envconfig(addGrpcConfig);
-        std::string grpcPort = *(*config)["port_grpc"].get<std::string>("port");
-        Env env{*this, std::move(config)};
+        Env env{*this};
 
         env.fund(jtx::XRP(30000), alice, carol, gw);
         env.trust(USD(30000), alice);

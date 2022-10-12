@@ -19,18 +19,26 @@
 #include <ripple/app/misc/AMM.h>
 #include <ripple/app/paths/TrustLine.h>
 #include <ripple/ledger/Sandbox.h>
+#include <ripple/protocol/STAccount.h>
 #include <ripple/protocol/STArray.h>
+#include <ripple/protocol/STObject.h>
 
 namespace ripple {
+
+AccountID
+calcAMMAccountID(uint256 const& parentHash, uint256 const& ammID)
+{
+    ripesha_hasher rsh;
+    auto hash = sha512Half(parentHash, ammID);
+    rsh(hash.data(), hash.size());
+    return AccountID{static_cast<ripesha_hasher::result_type>(rsh)};
+}
 
 uint256
 calcAMMGroupHash(Issue const& issue1, Issue const& issue2)
 {
-    if (issue1 < issue2)
-        return sha512Half(
-            issue1.account, issue1.currency, issue2.account, issue2.currency);
-    return sha512Half(
-        issue2.account, issue2.currency, issue1.account, issue1.currency);
+    auto const& [minI, maxI] = std::minmax(issue1, issue2);
+    return sha512Half(minI.account, minI.currency, maxI.account, maxI.currency);
 }
 
 Currency
@@ -54,19 +62,9 @@ ammPoolHolds(
     beast::Journal const j)
 {
     auto const assetInBalance = accountHolds(
-        view,
-        ammAccountID,
-        issue1.currency,
-        issue1.account,
-        FreezeHandling::fhZERO_IF_FROZEN,
-        j);
+        view, ammAccountID, issue1, FreezeHandling::fhZERO_IF_FROZEN, j);
     auto const assetOutBalance = accountHolds(
-        view,
-        ammAccountID,
-        issue2.currency,
-        issue2.account,
-        FreezeHandling::fhZERO_IF_FROZEN,
-        j);
+        view, ammAccountID, issue2, FreezeHandling::fhZERO_IF_FROZEN, j);
     return std::make_pair(assetInBalance, assetOutBalance);
 }
 
@@ -102,7 +100,7 @@ ammHolds(
     }();
     auto const [asset1, asset2] = ammPoolHolds(
         view, ammSle.getAccountID(sfAMMAccount), issue1, issue2, j);
-    return {asset1, asset2, ammSle.getFieldAmount(sfLPTokenBalance)};
+    return {asset1, asset2, ammSle[sfLPTokenBalance]};
 }
 
 STAmount
@@ -122,44 +120,24 @@ lpHolds(
         j);
 }
 
-std::optional<TEMcodes>
-invalidAmount(std::optional<STAmount> const& a, bool zero)
+NotTEC
+invalidAMMAmount(std::optional<STAmount> const& a, bool nonNegative)
 {
     if (!a)
-        return std::nullopt;
+        return tesSUCCESS;
     if (badCurrency() == a->getCurrency())
         return temBAD_CURRENCY;
     if (a->native() && a->native() != !a->getIssuer())
         return temBAD_ISSUER;
-    if (!zero && *a <= beast::zero)
+    if (!nonNegative && *a <= beast::zero)
         return temBAD_AMOUNT;
-    return std::nullopt;
+    return tesSUCCESS;
 }
 
 bool
 isFrozen(ReadView const& view, std::optional<STAmount> const& a)
 {
     return a && !a->native() && isGlobalFrozen(view, a->getIssuer());
-}
-
-std::shared_ptr<STLedgerEntry const>
-getAMMSle(ReadView const& view, uint256 ammID)
-{
-    if (auto const sle = view.read(keylet::amm(ammID));
-        (!sle || !view.read(keylet::account(sle->getAccountID(sfAMMAccount)))))
-        return nullptr;
-    else
-        return sle;
-}
-
-std::shared_ptr<STLedgerEntry>
-getAMMSle(Sandbox& view, uint256 ammID)
-{
-    if (auto const sle = view.peek(keylet::amm(ammID));
-        (!sle || !view.read(keylet::account(sle->getAccountID(sfAMMAccount)))))
-        return nullptr;
-    else
-        return sle;
 }
 
 TER
@@ -184,23 +162,33 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account)
 }
 
 std::uint16_t
-getTradingFee(SLE const& ammSle, AccountID const& account)
+getTradingFee(ReadView const& view, SLE const& ammSle, AccountID const& account)
 {
+    using namespace std::chrono;
     if (ammSle.isFieldPresent(sfAuctionSlot))
     {
         auto const& auctionSlot =
             static_cast<STObject const&>(ammSle.peekAtField(sfAuctionSlot));
-        if (auctionSlot.isFieldPresent(sfAccount) &&
-            auctionSlot.getAccountID(sfAccount) == account)
-            return auctionSlot.getFieldU32(sfDiscountedFee);
-        if (auctionSlot.isFieldPresent(sfAuthAccounts))
+        if (auto const timeStamp = auctionSlot[~sfTimeStamp])
         {
-            for (auto const& acct : auctionSlot.getFieldArray(sfAuthAccounts))
-                if (acct.getAccountID(sfAccount) == account)
-                    return auctionSlot.getFieldU32(sfDiscountedFee);
+            std::uint32_t constexpr totalSlotTimeSecs = 24 * 3600;
+            auto const notExpired =
+                (duration_cast<seconds>(
+                     view.info().parentCloseTime.time_since_epoch())
+                     .count() -
+                 *timeStamp) <= totalSlotTimeSecs;
+            if (auctionSlot[~sfAccount] == account && notExpired)
+                return auctionSlot[sfDiscountedFee];
+            if (auctionSlot.isFieldPresent(sfAuthAccounts))
+            {
+                for (auto const& acct :
+                     auctionSlot.getFieldArray(sfAuthAccounts))
+                    if (acct[~sfAccount] == account && notExpired)
+                        return auctionSlot[sfDiscountedFee];
+            }
         }
     }
-    return ammSle.getFieldU16(sfTradingFee);
+    return ammSle[sfTradingFee];
 }
 
 std::pair<Issue, Issue>
@@ -212,8 +200,8 @@ getTokensIssue(SLE const& ammSle)
         auto const token =
             static_cast<STObject const&>(ammToken.peekAtField(field));
         Issue issue;
-        issue.currency = token.getFieldH160(sfTokenCurrency);
-        issue.account = token.getFieldH160(sfTokenIssuer);
+        issue.currency = token[sfTokenCurrency];
+        issue.account = token[sfTokenIssuer];
         return issue;
     };
     return {getIssue(sfToken1), getIssue(sfToken2)};
@@ -233,12 +221,7 @@ ammSend(
     auto const issuer = amount.getIssuer();
 
     if (from == issuer || to == issuer || issuer == noAccount())
-    {
-        auto const ter = rippleCredit(view, from, to, amount, false, j);
-        if (view.rules().enabled(featureDeletableAccounts) && ter != tesSUCCESS)
-            return ter;
-        return tesSUCCESS;
-    }
+        return rippleCredit(view, from, to, amount, false, j);
 
     TER terResult = rippleCredit(view, issuer, to, amount, true, j);
 
@@ -256,10 +239,9 @@ timeSlot(NetClock::time_point const& clock, STObject const& auctionSlot)
     std::uint32_t constexpr intervalDuration = totalSlotTimeSecs / 20;
     auto const current =
         duration_cast<seconds>(clock.time_since_epoch()).count();
-    if (auctionSlot.isFieldPresent(sfTimeStamp))
+    if (auto const stamp = auctionSlot[~sfTimeStamp])
     {
-        auto const stamp = auctionSlot.getFieldU32(sfTimeStamp);
-        auto const diff = current - stamp;
+        auto const diff = current - *stamp;
         if (diff < totalSlotTimeSecs)
             return diff / intervalDuration;
     }
@@ -267,10 +249,9 @@ timeSlot(NetClock::time_point const& clock, STObject const& auctionSlot)
 }
 
 bool
-ammRequiredAmendments(Rules const& rules)
+ammEnabled(Rules const& rules)
 {
-    return rules.enabled(featureAMM) && rules.enabled(fixUniversalNumber) &&
-        rules.enabled(featureFlowCross);
+    return rules.enabled(featureAMM) && rules.enabled(fixUniversalNumber);
 }
 
 }  // namespace ripple

@@ -31,11 +31,16 @@
 
 #include <chrono>
 #include <utility>
+#include <vector>
+
+#include <boost/regex.hpp>
 
 namespace ripple {
 namespace test {
 
-#if 0
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-function"
+// Functions used in debugging
 static Json::Value
 readOffers(jtx::Env& env, AccountID const& acct)
 {
@@ -51,7 +56,95 @@ readLines(jtx::Env& env, AccountID const& acctId)
     jv[jss::account] = to_string(acctId);
     return env.rpc("json", "account_lines", to_string(jv));
 }
-#endif
+#pragma GCC diagnostic pop
+
+/* TODO Path finding duplicate */
+/******************************************************************************/
+namespace {
+
+void
+stpath_append_one(STPath& st, jtx::Account const& account)
+{
+    st.push_back(STPathElement({account.id(), std::nullopt, std::nullopt}));
+}
+
+template <class T>
+std::enable_if_t<std::is_constructible<jtx::Account, T>::value>
+stpath_append_one(STPath& st, T const& t)
+{
+    stpath_append_one(st, jtx::Account{t});
+}
+
+void
+stpath_append_one(STPath& st, STPathElement const& pe)
+{
+    st.push_back(pe);
+}
+
+template <class T, class... Args>
+void
+stpath_append(STPath& st, T const& t, Args const&... args)
+{
+    stpath_append_one(st, t);
+    if constexpr (sizeof...(args) > 0)
+        stpath_append(st, args...);
+}
+
+template <class... Args>
+void
+stpathset_append(STPathSet& st, STPath const& p, Args const&... args)
+{
+    st.push_back(p);
+    if constexpr (sizeof...(args) > 0)
+        stpathset_append(st, args...);
+}
+
+bool
+equal(STAmount const& sa1, STAmount const& sa2)
+{
+    return sa1 == sa2 && sa1.issue().account == sa2.issue().account;
+}
+
+// Issue path element
+auto
+IPE(Issue const& iss)
+{
+    return STPathElement(
+        STPathElement::typeCurrency | STPathElement::typeIssuer,
+        xrpAccount(),
+        iss.currency,
+        iss.account);
+}
+
+}  // namespace
+
+template <class... Args>
+STPath
+stpath(Args const&... args)
+{
+    STPath st;
+    stpath_append(st, args...);
+    return st;
+}
+
+template <class... Args>
+bool
+same(STPathSet const& st1, Args const&... args)
+{
+    STPathSet st2;
+    stpathset_append(st2, args...);
+    if (st1.size() != st2.size())
+        return false;
+
+    for (auto const& p : st2)
+    {
+        if (std::find(st1.begin(), st1.end(), p) == st1.end())
+            return false;
+    }
+    return true;
+}
+
+/******************************************************************************/
 
 static XRPAmount
 txfee(jtx::Env const& env, std::uint16_t n)
@@ -158,12 +251,6 @@ expectLedgerEntryRoot(
     auto const jrr = ledgerEntryRoot(env, acct);
     return jrr[jss::node][sfBalance.fieldName] ==
         to_string(expectedValue.xrp());
-}
-
-static bool
-equal(STAmount const& sa1, STAmount const& sa2)
-{
-    return sa1 == sa2 && sa1.issue().account == sa2.issue().account;
 }
 
 class Test : public beast::unit_test::suite
@@ -670,6 +757,42 @@ private:
             AMM ammAlice(env, alice, XRP(10000), USD(10000), ter(tecFROZEN));
             BEAST_EXPECT(!ammAlice.ammExists());
         }
+
+        // Insufficient reserve, XRP/IOU
+        {
+            Env env(*this);
+            auto const starting_xrp =
+                XRP(1000) + reserve(env, 3) + env.current()->fees().base * 4;
+            env.fund(starting_xrp, gw);
+            env.fund(starting_xrp, alice);
+            env.trust(USD(2000), alice);
+            env.close();
+            env(pay(gw, alice, USD(2000)));
+            env.close();
+            env(offer(alice, XRP(101), USD(100)));
+            env(offer(alice, XRP(102), USD(100)));
+            AMM ammAlice(
+                env, alice, XRP(1000), USD(1000), ter(tecUNFUNDED_AMM));
+        }
+
+        // Insufficient reserve, IOU/IOU
+        {
+            Env env(*this);
+            auto const starting_xrp =
+                reserve(env, 4) + env.current()->fees().base * 5;
+            env.fund(starting_xrp, gw);
+            env.fund(starting_xrp, alice);
+            env.trust(USD(2000), alice);
+            env.trust(EUR(2000), alice);
+            env.close();
+            env(pay(gw, alice, USD(2000)));
+            env(pay(gw, alice, EUR(2000)));
+            env.close();
+            env(offer(alice, EUR(101), USD(100)));
+            env(offer(alice, EUR(102), USD(100)));
+            AMM ammAlice(
+                env, alice, EUR(1000), USD(1000), ter(tecINSUF_RESERVE_LINE));
+        }
     }
 
     void
@@ -848,6 +971,62 @@ private:
                 std::nullopt,
                 ter(tecUNFUNDED_AMM));
         });
+
+        // Insufficient reserve, XRP/IOU
+        {
+            Env env(*this);
+            auto const starting_xrp =
+                reserve(env, 4) + env.current()->fees().base * 4;
+            env.fund(XRP(10000), gw);
+            env.fund(XRP(10000), alice);
+            env.fund(starting_xrp, carol);
+            env.trust(USD(2000), alice);
+            env.trust(USD(2000), carol);
+            env.close();
+            env(pay(gw, alice, USD(2000)));
+            env(pay(gw, carol, USD(2000)));
+            env.close();
+            env(offer(carol, XRP(100), USD(101)));
+            env(offer(carol, XRP(100), USD(102)));
+            AMM ammAlice(env, alice, XRP(1000), USD(1000));
+            ammAlice.deposit(
+                carol,
+                XRPAmount(100),
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                ter(tecUNFUNDED_AMM));
+        }
+
+        // Insufficient reserve, IOU/IOU
+        {
+            Env env(*this);
+            auto const starting_xrp =
+                reserve(env, 4) + env.current()->fees().base * 4;
+            env.fund(XRP(10000), gw);
+            env.fund(XRP(10000), alice);
+            env.fund(starting_xrp, carol);
+            env.trust(USD(2000), alice);
+            env.trust(EUR(2000), alice);
+            env.trust(USD(2000), carol);
+            env.trust(EUR(2000), carol);
+            env.close();
+            env(pay(gw, alice, USD(2000)));
+            env(pay(gw, alice, EUR(2000)));
+            env(pay(gw, carol, USD(2000)));
+            env(pay(gw, carol, EUR(2000)));
+            env.close();
+            env(offer(carol, XRP(100), USD(101)));
+            env(offer(carol, XRP(100), USD(102)));
+            AMM ammAlice(env, alice, XRP(1000), USD(1000));
+            ammAlice.deposit(
+                carol,
+                XRPAmount(100),
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                ter(tecINSUF_RESERVE_LINE));
+        }
     }
 
     void
@@ -1591,19 +1770,6 @@ private:
                 ter(temINVALID_FLAG));
         });
 
-        // Invalid bid options with [Min,Max]SlotPrice
-        testAMM([&](AMM& ammAlice, Env& env) {
-            ammAlice.deposit(carol, 1000000);
-            ammAlice.bid(
-                carol,
-                100,
-                100,
-                {},
-                std::nullopt,
-                std::nullopt,
-                ter(temBAD_AMM_OPTIONS));
-        });
-
         // Invalid Bid price 0
         testAMM([&](AMM& ammAlice, Env& env) {
             ammAlice.deposit(carol, 1000000);
@@ -1626,6 +1792,19 @@ private:
                 std::nullopt,
                 std::nullopt,
                 ter(temBAD_AMM_TOKENS));
+        });
+
+        // Invlaid Min/Max combination
+        testAMM([&](AMM& ammAlice, Env& env) {
+            ammAlice.deposit(carol, 1000000);
+            ammAlice.bid(
+                carol,
+                200,
+                100,
+                {},
+                std::nullopt,
+                std::nullopt,
+                ter(tecAMM_INVALID_TOKENS));
         });
 
         // Invalid Account
@@ -1653,6 +1832,18 @@ private:
                 std::nullopt,
                 std::nullopt,
                 ter(terNO_ACCOUNT));
+        });
+
+        // Account is not LP
+        testAMM([&](AMM& ammAlice, Env& env) {
+            ammAlice.bid(
+                carol,
+                100,
+                std::nullopt,
+                {},
+                std::nullopt,
+                std::nullopt,
+                ter(tecAMM_INVALID_TOKENS));
         });
 
         // Auth account is invalid.
@@ -1749,9 +1940,25 @@ private:
                 std::nullopt,
                 std::nullopt,
                 ter(tecAMM_FAILED_BID));
-            // Bid MaxSlotPrice succeeds.
+            // Bid MaxSlotPrice succeeds - pay computed price
             ammAlice.bid(carol, std::nullopt, 135);
-            BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount{135, 0}));
+            BEAST_EXPECT(
+                ammAlice.expectAuctionSlot(0, 0, IOUAmount{121275, -3}));
+
+            // Bid Min/MaxSlotPrice fails because the computed price is not in
+            // range
+            ammAlice.bid(
+                carol,
+                10,
+                100,
+                {},
+                std::nullopt,
+                std::nullopt,
+                ter(tecAMM_FAILED_BID));
+            // Bid Min/MaxSlotPrice succeeds - pay computed price
+            ammAlice.bid(carol, 100, 150);
+            BEAST_EXPECT(
+                ammAlice.expectAuctionSlot(0, 0, IOUAmount{12733875, -5}));
         });
 
         // Slot states.
@@ -1825,6 +2032,35 @@ private:
                 }
                 BEAST_EXPECT(ammAlice.expectBalances(
                     XRP(12000), USD(12000), IOUAmount{1199488908260979, -8}));
+                // Discounted payment
+                ammAlice.deposit(carol, USD(100));
+                auto tokens = ammAlice.getLPTokensBalance();
+                BEAST_EXPECT(
+                    ammAlice.expectBalances(XRP(12000), USD(12100), tokens));
+                env(pay(carol, bob, USD(100)), path(~USD), sendmax(XRP(110)));
+                env.close();
+                BEAST_EXPECT(
+                    ammAlice.expectBalances(XRP(12100), USD(12000), tokens));
+                // Payment with the fee
+                env(pay(alice, carol, XRP(100)), path(~XRP), sendmax(USD(110)));
+                env.close();
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(12000),
+                    STAmount{USD, UINT64_C(121010101010101), -10},
+                    tokens));
+                // Auction slot expired, no discounted fee
+                ammAlice.withdraw(
+                    carol, STAmount{USD, UINT64_C(10101010101), -10});
+                tokens = ammAlice.getLPTokensBalance();
+                BEAST_EXPECT(
+                    ammAlice.expectBalances(XRP(12000), USD(12100), tokens));
+                env.close(seconds(24 * 3600 + 1));
+                // clock is parent's based
+                env.close();
+                env(pay(carol, bob, USD(100)), path(~USD), sendmax(XRP(110)));
+                env.close();
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRPAmount(12101010102), USD(12000), tokens));
             },
             std::nullopt,
             1000);
@@ -1932,7 +2168,7 @@ private:
                 STAmount(EUR, UINT64_C(9982504373906523), -12),
                 ammEUR_XRP.tokens()));
             BEAST_EXPECT(ammUSD_EUR.expectBalances(
-                STAmount(USD, UINT64_C(9982534949910309), -12),
+                STAmount(USD, UINT64_C(9982534949910292), -12),
                 STAmount(EUR, UINT64_C(1001749562609347), -11),
                 ammUSD_EUR.tokens()));
             BEAST_EXPECT(expectOffers(
@@ -1941,7 +2177,7 @@ private:
                 1,
                 {{Amounts{
                     XRPAmount(17639700),
-                    STAmount(USD, UINT64_C(1746505008969044), -14)}}}));
+                    STAmount(USD, UINT64_C(1746505008970784), -14)}}}));
             // Initial 30,000 + 100
             BEAST_EXPECT(expectLine(env, carol, STAmount{USD, 30100}));
             // Initial 1,000 - 17526291(AMM pool) - 83360300(offer) - 10(tx fee)
@@ -2448,7 +2684,7 @@ private:
                     env.close();
                     BEAST_EXPECT(ammAlice.expectBalances(
                         XRP(10900),
-                        STAmount{USD, UINT64_C(9082568807339454), -12},
+                        STAmount{USD, UINT64_C(908256880733945), -11},
                         ammAlice.tokens()));
                     BEAST_EXPECT(expectOffers(env, carol, 0));
                     BEAST_EXPECT(expectOffers(env, alice, 1));
@@ -2681,7 +2917,7 @@ private:
             STAmount{USD, UINT64_C(1818181818181818), -12},
             ammBob.tokens()));
         BEAST_EXPECT(expectLine(
-            env, alice, STAmount{USD, UINT64_C(1818181818181818), -13}));
+            env, alice, STAmount{USD, UINT64_C(181818181818182), -12}));
         BEAST_EXPECT(expectLedgerEntryRoot(env, alice, XRP(250)));
         BEAST_EXPECT(expectOffers(env, alice, 0));
     }
@@ -3368,9 +3604,8 @@ private:
         FeatureBitset const all{supported_amendments()};
         FeatureBitset const noAMM{all - featureAMM};
         FeatureBitset const noNumber{all - fixUniversalNumber};
-        FeatureBitset const noFlowCross{all - featureFlowCross};
 
-        for (auto const& feature : {noAMM, noNumber, noFlowCross})
+        for (auto const& feature : {noAMM, noNumber})
         {
             Env env{*this, feature};
             fund(env, gw, {alice}, {USD(1000)}, Fund::All);
@@ -3445,10 +3680,387 @@ private:
         BEAST_EXPECT(equal(da, bob["USD"](100)));
     }
 
+    // carol holds gateway AUD, sells gateway AUD for XRP
+    // bob will hold gateway AUD
+    // alice pays bob gateway AUD using XRP
+    void
+    via_offers_via_gateway()
+    {
+        testcase("via gateway");
+        using namespace jtx;
+
+        Env env = pathTestEnv();
+        auto const AUD = gw["AUD"];
+        env.fund(XRP(10000), "alice", "bob", "carol", gw);
+        env(rate(gw, 1.1));
+        env.trust(AUD(2000), "bob", "carol");
+        env(pay(gw, "carol", AUD(51)));
+        env.close();
+        AMM ammCarol(env, carol, XRP(40), AUD(51));
+        env(pay("alice", "bob", AUD(10)), sendmax(XRP(100)), paths(XRP));
+        env.close();
+        BEAST_EXPECT(
+            ammCarol.expectBalances(XRP(51), AUD(40), ammCarol.tokens()));
+        BEAST_EXPECT(expectLine(env, bob, AUD(10)));
+
+        auto const result =
+            find_paths(env, "alice", "bob", Account("bob")["USD"](25));
+        BEAST_EXPECT(std::get<0>(result).empty());
+    }
+
+    void
+    receive_max()
+    {
+        testcase("Receive max");
+        using namespace jtx;
+        auto const charlie = Account("charlie");
+        {
+            // XRP -> IOU receive max
+            Env env = pathTestEnv();
+            fund(env, gw, {alice, bob, charlie}, {USD(11)}, Fund::All);
+            AMM ammCharlie(env, charlie, XRP(10), USD(11));
+            auto [st, sa, da] =
+                find_paths(env, alice, bob, USD(-1), XRP(1).value());
+            BEAST_EXPECT(sa == XRP(1));
+            BEAST_EXPECT(equal(da, USD(1)));
+            if (BEAST_EXPECT(st.size() == 1 && st[0].size() == 1))
+            {
+                auto const& pathElem = st[0][0];
+                BEAST_EXPECT(
+                    pathElem.isOffer() && pathElem.getIssuerID() == gw.id() &&
+                    pathElem.getCurrency() == USD.currency);
+            }
+        }
+        {
+            // IOU -> XRP receive max
+            Env env = pathTestEnv();
+            fund(env, gw, {alice, bob, charlie}, {USD(11)}, Fund::All);
+            AMM ammCharlie(env, charlie, XRP(11), USD(10));
+            env.close();
+            auto [st, sa, da] =
+                find_paths(env, alice, bob, drops(-1), USD(1).value());
+            BEAST_EXPECT(sa == USD(1));
+            BEAST_EXPECT(equal(da, XRP(1)));
+            if (BEAST_EXPECT(st.size() == 1 && st[0].size() == 1))
+            {
+                auto const& pathElem = st[0][0];
+                BEAST_EXPECT(
+                    pathElem.isOffer() &&
+                    pathElem.getIssuerID() == xrpAccount() &&
+                    pathElem.getCurrency() == xrpCurrency());
+            }
+        }
+    }
+
+    void
+    path_find_01()
+    {
+        testcase("Path Find: XRP -> XRP and XRP -> IOU");
+        using namespace jtx;
+        Env env = pathTestEnv();
+        Account A1{"A1"};
+        Account A2{"A2"};
+        Account A3{"A3"};
+        Account G1{"G1"};
+        Account G2{"G2"};
+        Account G3{"G3"};
+        Account M1{"M1"};
+
+        env.fund(XRP(100000), A1);
+        env.fund(XRP(10000), A2);
+        env.fund(XRP(1000), A3, G1, G2, G3);
+        env.fund(XRP(20000), M1);
+        env.close();
+
+        env.trust(G1["XYZ"](5000), A1);
+        env.trust(G3["ABC"](5000), A1);
+        env.trust(G2["XYZ"](5000), A2);
+        env.trust(G3["ABC"](5000), A2);
+        env.trust(A2["ABC"](1000), A3);
+        env.trust(G1["XYZ"](100000), M1);
+        env.trust(G2["XYZ"](100000), M1);
+        env.trust(G3["ABC"](100000), M1);
+        env.close();
+
+        env(pay(G1, A1, G1["XYZ"](3500)));
+        env(pay(G3, A1, G3["ABC"](1200)));
+        env(pay(G1, M1, G1["XYZ"](25000)));
+        env(pay(G2, M1, G2["XYZ"](25000)));
+        env(pay(G3, M1, G3["ABC"](25000)));
+        env.close();
+
+        AMM ammM1_G1_G2(env, M1, G1["XYZ"](1000), G2["XYZ"](1000));
+        AMM ammM1_XRP_G3(env, M1, XRP(10000), G3["ABC"](1000));
+
+        STPathSet st;
+        STAmount sa, da;
+
+        {
+            auto const& send_amt = XRP(10);
+            std::tie(st, sa, da) =
+                find_paths(env, A1, A2, send_amt, std::nullopt, xrpCurrency());
+            BEAST_EXPECT(equal(da, send_amt));
+            BEAST_EXPECT(st.empty());
+        }
+
+        {
+            // no path should exist for this since dest account
+            // does not exist.
+            auto const& send_amt = XRP(200);
+            std::tie(st, sa, da) = find_paths(
+                env, A1, Account{"A0"}, send_amt, std::nullopt, xrpCurrency());
+            BEAST_EXPECT(equal(da, send_amt));
+            BEAST_EXPECT(st.empty());
+        }
+
+        {
+            auto const& send_amt = G3["ABC"](10);
+            std::tie(st, sa, da) =
+                find_paths(env, A2, G3, send_amt, std::nullopt, xrpCurrency());
+            BEAST_EXPECT(equal(da, send_amt));
+            BEAST_EXPECT(equal(sa, XRPAmount{101010102}));
+            BEAST_EXPECT(same(st, stpath(IPE(G3["ABC"]))));
+        }
+
+        {
+            auto const& send_amt = A2["ABC"](1);
+            std::tie(st, sa, da) =
+                find_paths(env, A1, A2, send_amt, std::nullopt, xrpCurrency());
+            BEAST_EXPECT(equal(da, send_amt));
+            BEAST_EXPECT(equal(sa, XRPAmount{10010011}));
+            BEAST_EXPECT(same(st, stpath(IPE(G3["ABC"]), G3)));
+        }
+
+        {
+            auto const& send_amt = A3["ABC"](1);
+            std::tie(st, sa, da) =
+                find_paths(env, A1, A3, send_amt, std::nullopt, xrpCurrency());
+            BEAST_EXPECT(equal(da, send_amt));
+            BEAST_EXPECT(equal(sa, XRPAmount{10010011}));
+            BEAST_EXPECT(same(st, stpath(IPE(G3["ABC"]), G3, A2)));
+        }
+    }
+
+    void
+    path_find_02()
+    {
+        testcase("Path Find: non-XRP -> XRP");
+        using namespace jtx;
+        Env env = pathTestEnv();
+        Account A1{"A1"};
+        Account A2{"A2"};
+        Account G3{"G3"};
+        Account M1{"M1"};
+
+        env.fund(XRP(1000), A1, A2, G3);
+        env.fund(XRP(11000), M1);
+        env.close();
+
+        env.trust(G3["ABC"](1000), A1, A2);
+        env.trust(G3["ABC"](100000), M1);
+        env.close();
+
+        env(pay(G3, A1, G3["ABC"](1000)));
+        env(pay(G3, A2, G3["ABC"](1000)));
+        env(pay(G3, M1, G3["ABC"](1200)));
+        env.close();
+
+        AMM ammM1(env, M1, G3["ABC"](1000), XRP(10010));
+
+        STPathSet st;
+        STAmount sa, da;
+
+        auto const& send_amt = XRP(10);
+        std::tie(st, sa, da) =
+            find_paths(env, A1, A2, send_amt, std::nullopt, A2["ABC"].currency);
+        BEAST_EXPECT(equal(da, send_amt));
+        BEAST_EXPECT(equal(sa, A1["ABC"](1)));
+        BEAST_EXPECT(same(st, stpath(G3, IPE(xrpIssue()))));
+    }
+
+    void
+    path_find_05()
+    {
+        testcase("Path Find: non-XRP -> non-XRP, same currency");
+        using namespace jtx;
+        Env env = pathTestEnv();
+        Account A1{"A1"};
+        Account A2{"A2"};
+        Account A3{"A3"};
+        Account A4{"A4"};
+        Account G1{"G1"};
+        Account G2{"G2"};
+        Account G3{"G3"};
+        Account G4{"G4"};
+        Account M1{"M1"};
+        Account M2{"M2"};
+
+        env.fund(XRP(1000), A1, A2, A3, G1, G2, G3, G4);
+        env.fund(XRP(10000), A4);
+        env.fund(XRP(21000), M1, M2);
+        env.close();
+
+        env.trust(G1["HKD"](2000), A1);
+        env.trust(G2["HKD"](2000), A2);
+        env.trust(G1["HKD"](2000), A3);
+        env.trust(G1["HKD"](100000), M1);
+        env.trust(G2["HKD"](100000), M1);
+        env.trust(G1["HKD"](100000), M2);
+        env.trust(G2["HKD"](100000), M2);
+        env.close();
+
+        env(pay(G1, A1, G1["HKD"](1000)));
+        env(pay(G2, A2, G2["HKD"](1000)));
+        env(pay(G1, A3, G1["HKD"](1000)));
+        env(pay(G1, M1, G1["HKD"](1200)));
+        env(pay(G2, M1, G2["HKD"](5000)));
+        env(pay(G1, M2, G1["HKD"](1200)));
+        env(pay(G2, M2, G2["HKD"](5000)));
+        env.close();
+
+        AMM ammM1(env, M1, G1["HKD"](1010), G2["HKD"](1000));
+        AMM ammM2XRP_G2(env, M2, XRP(10000), G2["HKD"](1010));
+        AMM ammM2G1_XRP(env, M2, G1["HKD"](1010), XRP(10000));
+
+        STPathSet st;
+        STAmount sa, da;
+
+        {
+            // A) Borrow or repay --
+            //  Source -> Destination (repay source issuer)
+            auto const& send_amt = G1["HKD"](10);
+            std::tie(st, sa, da) = find_paths(
+                env, A1, G1, send_amt, std::nullopt, G1["HKD"].currency);
+            BEAST_EXPECT(st.empty());
+            BEAST_EXPECT(equal(da, send_amt));
+            BEAST_EXPECT(equal(sa, A1["HKD"](10)));
+        }
+
+        {
+            // A2) Borrow or repay --
+            //  Source -> Destination (repay destination issuer)
+            auto const& send_amt = A1["HKD"](10);
+            std::tie(st, sa, da) = find_paths(
+                env, A1, G1, send_amt, std::nullopt, G1["HKD"].currency);
+            BEAST_EXPECT(st.empty());
+            BEAST_EXPECT(equal(da, send_amt));
+            BEAST_EXPECT(equal(sa, A1["HKD"](10)));
+        }
+
+        {
+            // B) Common gateway --
+            //  Source -> AC -> Destination
+            auto const& send_amt = A3["HKD"](10);
+            std::tie(st, sa, da) = find_paths(
+                env, A1, A3, send_amt, std::nullopt, G1["HKD"].currency);
+            BEAST_EXPECT(equal(da, send_amt));
+            BEAST_EXPECT(equal(sa, A1["HKD"](10)));
+            BEAST_EXPECT(same(st, stpath(G1)));
+        }
+
+        {
+            // C) Gateway to gateway --
+            //  Source -> OB -> Destination
+            auto const& send_amt = G2["HKD"](10);
+            std::tie(st, sa, da) = find_paths(
+                env, G1, G2, send_amt, std::nullopt, G1["HKD"].currency);
+            BEAST_EXPECT(equal(da, send_amt));
+            BEAST_EXPECT(equal(sa, G1["HKD"](10)));
+            BEAST_EXPECT(same(
+                st,
+                stpath(IPE(G2["HKD"])),
+                stpath(M1),
+                stpath(M2),
+                stpath(IPE(xrpIssue()), IPE(G2["HKD"]))));
+        }
+
+        {
+            // D) User to unlinked gateway via order book --
+            //  Source -> AC -> OB -> Destination
+            auto const& send_amt = G2["HKD"](10);
+            std::tie(st, sa, da) = find_paths(
+                env, A1, G2, send_amt, std::nullopt, G1["HKD"].currency);
+            BEAST_EXPECT(equal(da, send_amt));
+            BEAST_EXPECT(equal(sa, A1["HKD"](10)));
+            BEAST_EXPECT(same(
+                st,
+                stpath(G1, M1),
+                stpath(G1, M2),
+                stpath(G1, IPE(G2["HKD"])),
+                stpath(G1, IPE(xrpIssue()), IPE(G2["HKD"]))));
+        }
+
+        {
+            // I4) XRP bridge" --
+            //  Source -> AC -> OB to XRP -> OB from XRP -> AC -> Destination
+            auto const& send_amt = A2["HKD"](10);
+            std::tie(st, sa, da) = find_paths(
+                env, A1, A2, send_amt, std::nullopt, G1["HKD"].currency);
+            BEAST_EXPECT(equal(da, send_amt));
+            BEAST_EXPECT(equal(sa, A1["HKD"](10)));
+            BEAST_EXPECT(same(
+                st,
+                stpath(G1, M1, G2),
+                stpath(G1, M2, G2),
+                stpath(G1, IPE(G2["HKD"]), G2),
+                stpath(G1, IPE(xrpIssue()), IPE(G2["HKD"]), G2)));
+        }
+    }
+
+    void
+    path_find_06()
+    {
+        testcase("Path Find: non-XRP -> non-XRP, same currency)");
+        using namespace jtx;
+        Env env = pathTestEnv();
+        Account A1{"A1"};
+        Account A2{"A2"};
+        Account A3{"A3"};
+        Account G1{"G1"};
+        Account G2{"G2"};
+        Account M1{"M1"};
+
+        env.fund(XRP(11000), M1);
+        env.fund(XRP(1000), A1, A2, A3, G1, G2);
+        env.close();
+
+        env.trust(G1["HKD"](2000), A1);
+        env.trust(G2["HKD"](2000), A2);
+        env.trust(A2["HKD"](2000), A3);
+        env.trust(G1["HKD"](100000), M1);
+        env.trust(G2["HKD"](100000), M1);
+        env.close();
+
+        env(pay(G1, A1, G1["HKD"](1000)));
+        env(pay(G2, A2, G2["HKD"](1000)));
+        env(pay(G1, M1, G1["HKD"](5000)));
+        env(pay(G2, M1, G2["HKD"](5000)));
+        env.close();
+
+        AMM ammM1(env, M1, G1["HKD"](1010), G2["HKD"](1000));
+
+        // E) Gateway to user
+        //  Source -> OB -> AC -> Destination
+        auto const& send_amt = A2["HKD"](10);
+        STPathSet st;
+        STAmount sa, da;
+        std::tie(st, sa, da) =
+            find_paths(env, G1, A2, send_amt, std::nullopt, G1["HKD"].currency);
+        BEAST_EXPECT(equal(da, send_amt));
+        BEAST_EXPECT(equal(sa, G1["HKD"](10)));
+        BEAST_EXPECT(same(st, stpath(M1, G2), stpath(IPE(G2["HKD"]), G2)));
+    }
+
     void
     testPaths()
     {
         path_find_consume_all();
+        via_offers_via_gateway();
+        receive_max();
+        path_find_01();
+        path_find_02();
+        path_find_05();
+        path_find_06();
     }
 
     void
@@ -3479,7 +4091,398 @@ private:
     }
 };
 
+/** AMM Calculator. Uses AMM formulas to simulate the payment engine expected
+ * results. Assuming the formulas are correct some unit-tests can be verified.
+ * Currently supported operations are:
+ * swapIn - find out given in. in can flow through multiple AMM/Offer steps.
+ * swapOut - find in given out. out can flow through multiple AMM/Offer steps.
+ * lptokens - find lptokens given pool composition
+ * changespq - change AMM spot price (SP) quality. given AMM and Offer find out
+ *   AMM offer, which changes AMM's SP quality to the Offer's quality.
+ */
+class AMMCalc_test : public beast::unit_test::suite
+{
+    using token_iter = boost::sregex_token_iterator;
+    using steps = std::vector<std::pair<Amounts, bool>>;
+    using trates = std::map<std::string, std::uint32_t>;
+    using swapargs = std::tuple<steps, STAmount, trates, std::uint32_t>;
+    jtx::Account const gw{jtx::Account("gw")};
+    std::optional<STAmount>
+    getAmt(token_iter& p, bool* delimeted = nullptr)
+    {
+        using namespace jtx;
+        token_iter end;
+        if (p == end)
+            return STAmount{};
+        std::string str = *p++;
+        str = boost::regex_replace(str, boost::regex("^(A|O)[(]"), "");
+        boost::smatch match;
+        // XXX(val))?
+        boost::regex rx("^([^(]+)[(]([^)]+)[)]([)])?$");
+        if (boost::regex_search(str, match, rx))
+        {
+            if (delimeted)
+            {
+                *delimeted = false;
+                if (match[3] != "")
+                    *delimeted = true;
+            }
+            if (match[1] == "XRP")
+                return XRP(std::stoll(match[2]));
+            // drops
+            else if (match[1] == "XRPA")
+                return XRPAmount{std::stoll(match[2])};
+            return amountFromString(gw[match[1]], match[2]);
+        }
+        return std::nullopt;
+    }
+
+    std::optional<std::tuple<std::string, std::uint32_t, bool>>
+    getRate(token_iter& p)
+    {
+        token_iter end;
+        if (p == end)
+            return std::nullopt;
+        std::string str = *p++;
+        str = boost::regex_replace(str, boost::regex("^T[(]"), "");
+        // XXX(rate))?
+        boost::smatch match;
+        boost::regex rx("^([^(]+)[(]([^)]+)[)]([)])?$");
+        if (boost::regex_search(str, match, rx))
+        {
+            std::string const currency = match[1];
+            // input is rate * 100, no fraction
+            std::uint32_t rate = 10'000'000 * std::stoi(match[2].str());
+            // true if delimited - )
+            return {{currency, rate, match[3] != "" ? true : false}};
+        }
+        return std::nullopt;
+    }
+
+    std::uint32_t
+    getFee(token_iter& p)
+    {
+        token_iter end;
+        if (p != end)
+        {
+            std::string const s = *p++;
+            return std::stoll(s);
+        }
+        return 0;
+    }
+
+    std::optional<std::pair<Amounts, bool>>
+    getAmounts(token_iter& p)
+    {
+        token_iter end;
+        if (p == end)
+            return std::nullopt;
+        std::string const s = *p;
+        bool const amm = s[0] == 'O' ? false : true;
+        auto const a1 = getAmt(p);
+        if (!a1 || p == end)
+            return std::nullopt;
+        auto const a2 = getAmt(p);
+        if (!a2)
+            return std::nullopt;
+        return {{{*a1, *a2}, amm}};
+    }
+
+    std::optional<trates>
+    getTransferRate(token_iter& p)
+    {
+        token_iter end;
+        trates rates{};
+        if (p == end)
+            return rates;
+        std::string str = *p;
+        if (str[0] != 'T')
+            return rates;
+        // T(USD(rate),GBP(rate), ...)
+        while (true)
+        {
+            if (auto const rate = getRate(p))
+            {
+                auto const [currency, trate, delimeted] = *rate;
+                rates[currency] = trate;
+                if (delimeted)
+                    break;
+            }
+            else
+                return std::nullopt;
+        }
+        return rates;
+    }
+
+    std::optional<swapargs>
+    getSwap(token_iter& p)
+    {
+        token_iter end;
+        // pairs of amm pool or offer
+        steps pairs;
+        // either amm pool or offer
+        auto isPair = [](auto const& p) {
+            std::string const s = *p;
+            return s[0] == 'A' || s[0] == 'O';
+        };
+        // get AMM or offer
+        while (isPair(p))
+        {
+            auto const res = getAmounts(p);
+            if (!res || p == end)
+                return std::nullopt;
+            pairs.push_back(*res);
+        }
+        // swap in/out amount
+        auto const swap = getAmt(p);
+        if (!swap)
+            return std::nullopt;
+        // optional transfer rate
+        auto const rate = getTransferRate(p);
+        if (!rate)
+            return std::nullopt;
+        auto const fee = getFee(p);
+        return {{pairs, *swap, *rate, fee}};
+    }
+
+    std::string
+    toString(STAmount const& a)
+    {
+        std::stringstream str;
+        str << a.getText() << "/" << to_string(a.issue().currency);
+        return str.str();
+    }
+
+    STAmount
+    mulratio(STAmount const& amt, std::uint32_t a, std::uint32_t b, bool round)
+    {
+        if (a == b)
+            return amt;
+        if (amt.native())
+            return toSTAmount(mulRatio(amt.xrp(), a, b, round), amt.issue());
+        return toSTAmount(mulRatio(amt.iou(), a, b, round), amt.issue());
+    }
+
+    void
+    swapOut(swapargs const& args)
+    {
+        auto const vp = std::get<steps>(args);
+        STAmount sout = std::get<STAmount>(args);
+        auto const fee = std::get<std::uint32_t>(args);
+        auto const rates = std::get<trates>(args);
+        STAmount resultOut = sout;
+        STAmount resultIn{};
+        STAmount sin{};
+        int limitingStep = vp.size();
+        STAmount limitStepOut{};
+        auto trate = [&](auto const& amt) {
+            auto const currency = to_string(amt.issue().currency);
+            return rates.find(currency) != rates.end() ? rates.at(currency)
+                                                       : QUALITY_ONE;
+        };
+        // swap out reverse
+        sin = sout;
+        for (auto it = vp.rbegin(); it != vp.rend(); ++it)
+        {
+            sout = mulratio(sin, trate(sin), QUALITY_ONE, true);
+            auto const [amts, amm] = *it;
+            // assume no amm limit
+            if (amm)
+            {
+                sin = swapAssetOut(amts, sout, fee);
+            }
+            else if (sout <= amts.out)
+            {
+                sin = Quality{amts}.ceil_out(amts, sout).in;
+            }
+            // limiting step
+            else
+            {
+                sin = amts.in;
+                limitingStep = vp.rend() - it - 1;
+                limitStepOut = amts.out;
+            }
+            resultIn = sin;
+        }
+        sin = limitStepOut;
+        // swap in if limiting step
+        for (int i = limitingStep + 1; i < vp.size(); ++i)
+        {
+            auto const [amts, amm] = vp[i];
+            sin = mulratio(sin, QUALITY_ONE, trate(sin), false);
+            if (amm)
+            {
+                sout = swapAssetIn(amts, sin, fee);
+            }
+            // assume there is no limiting step in fwd
+            else
+            {
+                sout = Quality{amts}.ceil_in(amts, sin).out;
+            }
+            sin = sout;
+            resultOut = sout;
+        }
+        std::cout << "in: " << toString(resultIn)
+                  << " out: " << toString(resultOut) << std::endl;
+    }
+
+    void
+    swapIn(swapargs const& args)
+    {
+        auto const vp = std::get<steps>(args);
+        STAmount sin = std::get<STAmount>(args);
+        auto const fee = std::get<std::uint32_t>(args);
+        auto const rates = std::get<trates>(args);
+        STAmount resultIn = sin;
+        STAmount resultOut{};
+        STAmount sout{};
+        int limitingStep = 0;
+        STAmount limitStepIn{};
+        auto trate = [&](auto const& amt) {
+            auto const currency = to_string(amt.issue().currency);
+            return rates.find(currency) != rates.end() ? rates.at(currency)
+                                                       : QUALITY_ONE;
+        };
+        // Swap in forward
+        for (auto it = vp.begin(); it != vp.end(); ++it)
+        {
+            auto const [amts, amm] = *it;
+            sin = mulratio(
+                sin, QUALITY_ONE, trate(sin), false);  // out of the next step
+            // assume no amm limit
+            if (amm)
+            {
+                sout = swapAssetIn(amts, sin, fee);
+            }
+            else if (sin <= amts.in)
+            {
+                sout = Quality{amts}.ceil_in(amts, sin).out;
+            }
+            // limiting step, requested in is greater than the offer
+            // pay exactly amts.in, which gets amts.out
+            else
+            {
+                sout = amts.out;
+                limitingStep = it - vp.begin();
+                limitStepIn = amts.in;
+            }
+            sin = sout;
+            resultOut = sout;
+        }
+        sin = limitStepIn;
+        // swap out if limiting step
+        for (int i = limitingStep - 1; i >= 0; --i)
+        {
+            sout = mulratio(sin, trate(sin), QUALITY_ONE, false);
+            auto const [amts, amm] = vp[i];
+            if (amm)
+            {
+                sin = swapAssetOut(amts, sout, fee);
+            }
+            // assume there is no limiting step
+            else
+            {
+                sin = Quality{amts}.ceil_out(amts, sout).in;
+            }
+            resultIn = sin;
+        }
+        resultOut = mulratio(resultOut, QUALITY_ONE, trate(resultOut), true);
+        std::cout << "in: " << toString(resultIn)
+                  << " out: " << toString(resultOut) << std::endl;
+    }
+
+    void
+    run() override
+    {
+        using namespace jtx;
+        auto const a = arg();
+        boost::regex re(",");
+        token_iter p(a.begin(), a.end(), re, -1);
+        // AMM must be in the order poolGets/poolPays
+        // Offer must be in the order takerPays/takerGets
+        auto const res = [&]() -> bool {
+            // Swap in to the pool
+            // swapin,A(USD(1000),XRP(1000)),T(USD(125)),XRP(10),10 -
+            //   steps,trates,fee
+            // steps are comma separated A():AMM or O():Offer
+            // trates and fee are optional
+            // trates is comma separated rate for each currency
+            // trate is 100 * rate, no fraction
+            if (*p == "swapin")
+            {
+                if (auto const swap = getSwap(++p); swap)
+                {
+                    swapIn(*swap);
+                    return true;
+                }
+            }
+            // Swap out of the pool
+            // swapout,A(USD(1000),XRP(1000)),T(USD(125)),XRP(10),10 -
+            //   steps,trates,fee
+            // steps are comma separated A():AMM or O():Offer
+            // trates and fee are optional
+            // trates is comma separated rate for each currency
+            // trate is 100 * rate, no fraction
+            else if (*p == "swapout")
+            {
+                if (auto const swap = getSwap(++p); swap)
+                {
+                    swapOut(*swap);
+                    return true;
+                }
+            }
+            // Pool's lptokens
+            // lptokens,USD(1000),XRP(1000)
+            else if (*p == "lptokens")
+            {
+                if (auto const pool = getAmounts(++p); pool)
+                {
+                    Account const amm("amm");
+                    auto const LPT = amm["LPT"];
+                    std::cout
+                        << to_string(
+                               calcAMMLPT(pool->first.in, pool->first.out, LPT)
+                                   .iou())
+                        << std::endl;
+                    return true;
+                }
+            }
+            // Change spot price quality
+            // changespq,A(XRP(1000),USD(1000)),O(XRP(100),USD(99)),10 -
+            //   AMM,Offer,fee
+            else if (*p == "changespq")
+            {
+                if (auto const pool = getAmounts(++p))
+                {
+                    if (auto const offer = getAmounts(p))
+                    {
+                        auto const fee = getFee(p);
+                        if (auto const ammOffer = changeSpotPriceQuality(
+                                pool->first, Quality{offer->first}, fee);
+                            ammOffer)
+                            std::cout
+                                << "amm offer: " << toString(ammOffer->in)
+                                << " " << toString(ammOffer->out)
+                                << "\nnew pool: "
+                                << toString(pool->first.in + ammOffer->in)
+                                << " "
+                                << toString(pool->first.out - ammOffer->out)
+                                << std::endl;
+                        else
+                            std::cout << "can't change the pool's SP quality"
+                                      << std::endl;
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }();
+        BEAST_EXPECT(res);
+    }
+};
+
 BEAST_DEFINE_TESTSUITE(AMM, app, ripple);
+BEAST_DEFINE_TESTSUITE_MANUAL(AMMCalc, app, ripple);
 
 }  // namespace test
 }  // namespace ripple

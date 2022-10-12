@@ -246,7 +246,7 @@ class TheoreticalQuality_test : public beast::unit_test::suite
         std::optional<Quality> const& expectedQ = {})
     {
         PaymentSandbox sb(closed.get(), tapNONE);
-        AMMOfferCounter ammOfferCounter(false);
+        AMMOfferCounter ammOfferCounter(rcp.srcAccount, false);
 
         auto const sendMaxIssue = [&rcp]() -> std::optional<Issue> {
             if (rcp.sendMax)

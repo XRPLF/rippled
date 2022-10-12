@@ -80,10 +80,6 @@ public:
     static TER
     preclaim(PreclaimContext const& ctx);
 
-    /** Gather information beyond what the Transactor base class gathers. */
-    void
-    preCompute() override;
-
     /** Attempt to create the AMM instance. */
     TER
     doApply() override;

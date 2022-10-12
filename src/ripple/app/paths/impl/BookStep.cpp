@@ -98,14 +98,15 @@ public:
         , strandDst_(ctx.strandDst)
         , prevStep_(ctx.prevStep)
         , ownerPaysTransferFee_(ctx.ownerPaysTransferFee)
-        , ammLiquidity_{std::nullopt}
+        , ammLiquidity_{}
         , j_(ctx.j)
     {
-        if (auto const ammSle = getAMMSle(ctx.view, calcAMMGroupHash(in, out)))
+        if (auto const ammSle =
+                ctx.view.read(keylet::amm(calcAMMGroupHash(in, out))))
             ammLiquidity_.emplace(
                 ctx.view,
-                ammSle->getAccountID(sfAMMAccount),
-                ammSle->getFieldU16(sfTradingFee),
+                (*ammSle)[sfAMMAccount],
+                getTradingFee(ctx.view, *ammSle, ctx.ammOfferCounter.account()),
                 in,
                 out,
                 ctx.ammOfferCounter,
@@ -246,7 +247,7 @@ private:
     // QualityFunction of the step, and the flag, which is set to true
     // if AMM quality is best.
     std::optional<std::tuple<Quality, QualityFunction, bool>>
-    getAMMOrCLOBQuality(ReadView const& view) const;
+    tipOfferQuality(ReadView const& view) const;
 };
 
 /** Wrapper for AMM and CLOB offer to provide uniform API
@@ -638,7 +639,7 @@ BookStep<TIn, TOut, TDerived>::qualityUpperBound(
 {
     auto const dir = this->debtDirection(v, StrandDirection::forward);
 
-    auto const res = getAMMOrCLOBQuality(v);
+    auto const res = tipOfferQuality(v);
     if (!res)
         return {std::nullopt, dir};
 
@@ -655,7 +656,7 @@ BookStep<TIn, TOut, TDerived>::getQF(
 {
     auto const dir = this->debtDirection(v, StrandDirection::forward);
 
-    auto const res = getAMMOrCLOBQuality(v);
+    auto const res = tipOfferQuality(v);
     if (!res)
         return {std::nullopt, dir};
 
@@ -846,8 +847,7 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
             triedAMM = true;
             if (auto const ammOffer = getAMMOffer(sb, quality))
             {
-                auto eoffer =
-                    EitherOffer<TIn, TOut>(*ammOffer, ammLiquidity_.value());
+                auto eoffer = EitherOffer<TIn, TOut>(*ammOffer, *ammLiquidity_);
                 if (!execOffer(eoffer))
                     return false;
             }
@@ -918,7 +918,7 @@ BookStep<TIn, TOut, TDerived>::getAMMOffer(
 
 template <class TIn, class TOut, class TDerived>
 std::optional<std::tuple<Quality, QualityFunction, bool>>
-BookStep<TIn, TOut, TDerived>::getAMMOrCLOBQuality(ReadView const& view) const
+BookStep<TIn, TOut, TDerived>::tipOfferQuality(ReadView const& view) const
 {
     // This can be simplified (and sped up) if directories are never empty.
     Sandbox sb(&view, tapNONE);

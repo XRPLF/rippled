@@ -44,6 +44,96 @@ getAccount(Json::Value const& v, Json::Value& result)
     return std::optional<AccountID>(accountID);
 }
 
+std::optional<Issue>
+getIssue(
+    Json::Value const& params,
+    std::string const& field,
+    Json::Value& result)
+{
+    if (!params.isMember(field))
+    {
+        result = RPC::missing_field_error(field);
+        return std::nullopt;
+    }
+
+    if (!params[field][jss::currency])
+    {
+        result = RPC::missing_field_error(field + ".currency");
+        return std::nullopt;
+    }
+
+    if (!params[field][jss::currency].isString())
+    {
+        result = RPC::expected_field_error(field + ".currency", "string");
+        return std::nullopt;
+    }
+
+    Currency currency;
+
+    if (!to_currency(currency, params[field][jss::currency].asString()))
+    {
+        result = RPC::make_error(
+            rpcAMM_CUR_MALFORMED,
+            std::string(
+                "Invalid field '" + field + ".currency', bad currency."));
+        return std::nullopt;
+    }
+
+    AccountID issuer;
+
+    if (params[field].isMember(jss::issuer))
+    {
+        if (!params[field][jss::issuer].isString())
+        {
+            result = RPC::expected_field_error(field + ".issuer", "string");
+            return std::nullopt;
+        }
+
+        if (!to_issuer(issuer, params[field][jss::issuer].asString()))
+        {
+            result = RPC::make_error(
+                rpcAMM_ISR_MALFORMED,
+                std::string("Invalid field '") + field +
+                    ".issuer', bad issuer");
+            return std::nullopt;
+        }
+
+        if (issuer == noAccount())
+        {
+            result = RPC::make_error(
+                rpcSRC_ISR_MALFORMED,
+                std::string("Invalid field '") + field +
+                    ".issuer', bad issuer account one");
+            return std::nullopt;
+        }
+    }
+    else
+    {
+        issuer = xrpAccount();
+    }
+
+    if (isXRP(currency) && !isXRP(issuer))
+    {
+        result = RPC::make_error(
+            rpcAMM_ISR_MALFORMED,
+            std::string("Unneeded field '") + field +
+                ".issuer' for "
+                "XRP currency specification.");
+        return std::nullopt;
+    }
+
+    if (!isXRP(currency) && isXRP(issuer))
+    {
+        result = RPC::make_error(
+            rpcAMM_ISR_MALFORMED,
+            std::string("Invalid field '") + field +
+                ".issuer', expected non-XRP issuer.");
+        return std::nullopt;
+    }
+
+    return {{currency, issuer}};
+}
+
 Json::Value
 doAMMInfo(RPC::JsonContext& context)
 {
@@ -52,20 +142,20 @@ doAMMInfo(RPC::JsonContext& context)
     std::optional<AccountID> accountID;
 
     uint256 ammID{};
-    STAmount asset1{noIssue()};
-    STAmount asset2{noIssue()};
+    Issue token1Issue{noIssue()};
+    Issue token2Issue{noIssue()};
     if (!params.isMember(jss::amm_id))
     {
-        // May provide asset1/asset2 as amounts
-        if (!params.isMember(jss::asset1) || !params.isMember(jss::asset2))
-            return RPC::missing_field_error(jss::amm_id);
-        if (!amountFromJsonNoThrow(asset1, params[jss::asset1]) ||
-            !amountFromJsonNoThrow(asset2, params[jss::asset2]))
-        {
-            RPC::inject_error(rpcACT_MALFORMED, result);
+        // May provide issue1 and issue2
+        if (auto const i = getIssue(params, jss::asset1.c_str(), result); !i)
             return result;
-        }
-        ammID = calcAMMGroupHash(asset1.issue(), asset2.issue());
+        else
+            token1Issue = *i;
+        if (auto const i = getIssue(params, jss::asset2.c_str(), result); !i)
+            return result;
+        else
+            token2Issue = *i;
+        ammID = calcAMMGroupHash(token1Issue, token2Issue);
     }
     else if (!ammID.parseHex(params[jss::amm_id].asString()))
     {
@@ -88,14 +178,14 @@ doAMMInfo(RPC::JsonContext& context)
         }
     }
 
-    auto const amm = getAMMSle(*ledger, ammID);
+    auto const amm = ledger->read(keylet::amm(ammID));
     if (!amm)
         return rpcError(rpcACT_NOT_FOUND);
 
     auto const [issue1, issue2] = [&]() {
-        if (asset1.issue() == noIssue())
+        if (token1Issue == noIssue())
             return getTokensIssue(*amm);
-        return std::make_pair(asset1.issue(), asset2.issue());
+        return std::make_pair(token1Issue, token2Issue);
     }();
 
     auto const ammAccountID = amm->getAccountID(sfAMMAccount);

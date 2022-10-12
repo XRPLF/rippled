@@ -217,6 +217,9 @@ public:
         return initialLPTokens_;
     }
 
+    IOUAmount
+    getLPTokensBalance() const;
+
 private:
     void
     create(

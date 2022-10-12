@@ -20,6 +20,52 @@
 
 namespace ripple {
 
+namespace detail {
+
+Amounts const&
+FibSeqHelper::firstSeq(Amounts const& balances, std::uint16_t tfee)
+{
+    curSeq_.in = toSTAmount(
+        balances.in.issue(),
+        (Number(5) / 20000) * balances.in,
+        Number::rounding_mode::upward);
+    curSeq_.out = swapAssetIn(balances, curSeq_.in, tfee);
+    y_ = curSeq_.out;
+    return curSeq_;
+}
+
+Amounts const&
+FibSeqHelper::nextNthSeq(
+    std::uint16_t n,
+    Amounts const& balances,
+    std::uint16_t tfee)
+{
+    // We are at the same payment engine iteration when executing
+    // a limiting step. Have to generate the same sequence.
+    if (n == lastNSeq_)
+        return curSeq_;
+    auto const total = [&]() {
+        if (n < lastNSeq_)
+            Throw<std::runtime_error>(
+                std::string("nextNthSeq: invalid sequence ") +
+                std::to_string(n) + " " + std::to_string(lastNSeq_));
+        Number total{};
+        do
+        {
+            total = x_ + y_;
+            x_ = y_;
+            y_ = total;
+        } while (++lastNSeq_ < n);
+        return total;
+    }();
+    curSeq_.out = toSTAmount(
+        balances.out.issue(), total, Number::rounding_mode::downward);
+    curSeq_.in = swapAssetOut(balances, curSeq_.out, tfee);
+    return curSeq_;
+}
+
+}  // namespace detail
+
 AMMLiquidity::AMMLiquidity(
     ReadView const& view,
     AccountID const& ammAccountID,
@@ -33,7 +79,6 @@ AMMLiquidity::AMMLiquidity(
     , tradingFee_(tradingFee)
     , balances_{STAmount{in}, STAmount{out}}
     , fibSeqHelper_{std::nullopt}
-    , dirty_(true)
     , j_(j)
 {
     balances_ = fetchBalances(view);
@@ -41,22 +86,22 @@ AMMLiquidity::AMMLiquidity(
 
 STAmount
 AMMLiquidity::ammAccountHolds(
-    const ReadView& view,
+    ReadView const& view,
     AccountID const& ammAccountID,
     const Issue& issue) const
 {
     if (isXRP(issue))
     {
         if (auto const sle = view.read(keylet::account(ammAccountID)))
-            return sle->getFieldAmount(sfBalance);
+            return (*sle)[sfBalance];
     }
     else if (auto const sle = view.read(
                  keylet::line(ammAccountID, issue.account, issue.currency));
              sle &&
              !isFrozen(view, ammAccountID, issue.currency, issue.account))
     {
-        auto amount = sle->getFieldAmount(sfBalance);
-        if (amount.negative())
+        auto amount = (*sle)[sfBalance];
+        if (ammAccountID > issue.account)
             amount.negate();
         amount.setIssuer(issue.account);
         return amount;
@@ -66,9 +111,9 @@ AMMLiquidity::ammAccountHolds(
 }
 
 Amounts
-AMMLiquidity::fetchBalances(const ReadView& view)
+AMMLiquidity::fetchBalances(ReadView const& view) const
 {
-    if (dirty_)
+    if (balances_.empty())
     {
         auto const assetIn =
             ammAccountHolds(view, ammAccountID_, balances_.in.issue());
@@ -77,8 +122,6 @@ AMMLiquidity::fetchBalances(const ReadView& view)
         // This should not happen.
         if (assetIn < beast::zero || assetOut < beast::zero)
             Throw<std::runtime_error>("AMMLiquidity: invalid balances");
-
-        dirty_ = false;
 
         return Amounts(assetIn, assetOut);
     }
@@ -93,7 +136,7 @@ AMMLiquidity::generateFibSeqOffer(const Amounts& balances)
     if (!fibSeqHelper_.has_value())
     {
         fibSeqHelper_.emplace();
-        return fibSeqHelper_->firstSeq(balances, tradingFee_);
+        fibSeqHelper_->firstSeq(balances, tradingFee_);
     }
     // advance to next sequence
     return fibSeqHelper_->nextNthSeq(
@@ -128,8 +171,7 @@ AMMLiquidity::getOffer(
         if (offerCounter_.multiPath())
         {
             auto const offer = generateFibSeqOffer(balances);
-            auto const quality = Quality{offer};
-            if (clobQuality && quality < clobQuality.value())
+            if (clobQuality && Quality{offer} < *clobQuality)
                 return std::nullopt;
             return offer;
         }

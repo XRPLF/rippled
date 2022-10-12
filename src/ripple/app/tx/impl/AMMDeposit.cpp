@@ -36,7 +36,7 @@ AMMDeposit::makeTxConsequences(PreflightContext const& ctx)
 NotTEC
 AMMDeposit::preflight(PreflightContext const& ctx)
 {
-    if (!ammRequiredAmendments(ctx.rules))
+    if (!ammEnabled(ctx.rules))
         return temDISABLED;
 
     auto const ret = preflight1(ctx);
@@ -76,22 +76,22 @@ AMMDeposit::preflight(PreflightContext const& ctx)
         return temBAD_AMM_TOKENS;
     }
 
-    if (auto const res = invalidAmount(asset1In, (lpTokens || ePrice)))
+    if (auto const res = invalidAMMAmount(asset1In, (lpTokens || ePrice)))
     {
         JLOG(ctx.j.debug()) << "AMM Deposit: invalid Asset1In";
-        return *res;
+        return res;
     }
 
-    if (auto const res = invalidAmount(asset2In))
+    if (auto const res = invalidAMMAmount(asset2In))
     {
         JLOG(ctx.j.debug()) << "AMM Deposit: invalid Asset2InAmount";
-        return *res;
+        return res;
     }
 
-    if (auto const res = invalidAmount(ePrice))
+    if (auto const res = invalidAMMAmount(ePrice))
     {
         JLOG(ctx.j.debug()) << "AMM Deposit: invalid EPrice";
-        return *res;
+        return res;
     }
 
     return preflight2(ctx);
@@ -108,7 +108,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
         return terNO_ACCOUNT;
     }
 
-    auto const ammSle = getAMMSle(ctx.view, ctx.tx[sfAMMID]);
+    auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAMMID]));
     if (!ammSle)
     {
         JLOG(ctx.j.debug()) << "AMM Deposit: Invalid AMMID.";
@@ -165,13 +165,20 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
         return temBAD_AMM_TOKENS;
     }
 
-    return tesSUCCESS;
-}
+    // Check the reserve for LPToken trustline if not LP
+    if (lpHolds(ctx.view, (*ammSle)[sfAMMAccount], accountID, ctx.j) ==
+        beast::zero)
+    {
+        STAmount const xrpBalance = xrpLiquid(ctx.view, accountID, 1, ctx.j);
+        // Insufficient reserve
+        if (xrpBalance <= beast::zero)
+        {
+            JLOG(ctx.j.debug()) << "AMM Instance: insufficient reserves";
+            return tecINSUF_RESERVE_LINE;
+        }
+    }
 
-void
-AMMDeposit::preCompute()
-{
-    return Transactor::preCompute();
+    return tesSUCCESS;
 }
 
 std::pair<TER, bool>
@@ -181,11 +188,11 @@ AMMDeposit::applyGuts(Sandbox& sb)
     auto const asset2In = ctx_.tx[~sfAsset2In];
     auto const ePrice = ctx_.tx[~sfEPrice];
     auto const lpTokensDeposit = ctx_.tx[~sfLPToken];
-    auto ammSle = getAMMSle(sb, ctx_.tx[sfAMMID]);
+    auto ammSle = sb.peek(keylet::amm(ctx_.tx[sfAMMID]));
     assert(ammSle);
-    auto const ammAccountID = ammSle->getAccountID(sfAMMAccount);
+    auto const ammAccountID = (*ammSle)[sfAMMAccount];
 
-    auto const tfee = getTradingFee(*ammSle, account_);
+    auto const tfee = getTradingFee(ctx_.view(), *ammSle, account_);
 
     auto const [asset1, asset2, lptAMMBalance] = ammHolds(
         sb,
@@ -286,6 +293,14 @@ AMMDeposit::deposit(
 {
     // Check account has sufficient funds
     auto balance = [&](auto const& asset) {
+        if (isXRP(asset))
+        {
+            auto const& lpIssue = lpTokensDeposit.issue();
+            // Adjust the reserve if LP doesn't have LPToken trustline
+            auto const sle = view.read(
+                keylet::line(account_, lpIssue.account, lpIssue.currency));
+            return xrpLiquid(view, account_, !sle, j_) >= asset;
+        }
         return accountHolds(
                    view,
                    account_,
@@ -519,7 +534,7 @@ AMMDeposit::singleDepositEPrice(
 
     auto const asset1In_ = toSTAmount(
         asset1Balance.issue(),
-        power(ePrice * lptAMMBalance, 2) * feeMultHalf(tfee) / asset1Balance -
+        square(ePrice * lptAMMBalance) * feeMultHalf(tfee) / asset1Balance -
             2 * ePrice * lptAMMBalance);
     auto const tokens = toSTAmount(lptAMMBalance.issue(), asset1In_ / ePrice);
     return deposit(view, ammAccount, asset1In_, std::nullopt, tokens);

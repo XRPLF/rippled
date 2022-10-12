@@ -103,6 +103,14 @@ accountHolds(
 // an account can spend while also allowing currency issuers to spend
 // unlimited amounts of their own currency (since they can always issue more).
 [[nodiscard]] STAmount
+accountHolds(
+    ReadView const& view,
+    AccountID const& account,
+    Issue const& issue,
+    FreezeHandling zeroIfFrozen,
+    beast::Journal j);
+
+[[nodiscard]] STAmount
 accountFunds(
     ReadView const& view,
     AccountID const& id,

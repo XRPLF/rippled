@@ -658,7 +658,7 @@ struct PayStrand_test : public beast::unit_test::suite
         using B = ripple::Book;
         using XRPS = XRPEndpointStepInfo;
 
-        AMMOfferCounter ammOfferCounter(false);
+        AMMOfferCounter ammOfferCounter(alice, false);
 
         auto test = [&, this](
                         jtx::Env& env,

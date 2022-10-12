@@ -211,7 +211,7 @@ swapAssetIn(Amounts const& pool, TIn const& assetIn, std::uint16_t tfee)
 {
     auto const res = toSTAmount(
         pool.out.issue(),
-        pool.out * (1 - pool.in / (pool.in + assetIn * feeMult(tfee))),
+        pool.out - (pool.in * pool.out) / (pool.in + assetIn * feeMult(tfee)),
         Number::rounding_mode::downward);
     return res;
 }
@@ -229,7 +229,8 @@ swapAssetOut(Amounts const& pool, TOut const& assetOut, std::uint16_t tfee)
 {
     auto const res = toSTAmount(
         pool.in.issue(),
-        pool.in * (pool.out / (pool.out - assetOut) - 1) / feeMult(tfee),
+        ((pool.in * pool.out) / (pool.out - assetOut) - pool.in) /
+            feeMult(tfee),
         Number::rounding_mode::upward);
     return res;
 }
@@ -247,6 +248,11 @@ get(STAmount const& a)
     else
         return a;
 }
+
+/** Return square of n.
+ */
+Number
+square(Number const& n);
 
 }  // namespace ripple
 

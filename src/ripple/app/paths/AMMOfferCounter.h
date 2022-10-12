@@ -20,6 +20,7 @@
 #ifndef RIPPLE_APP_PATHS_IMPL_AMMOFFERCOUNTER_H_INCLUDED
 #define RIPPLE_APP_PATHS_IMPL_AMMOFFERCOUNTER_H_INCLUDED
 
+#include <ripple/protocol/AccountID.h>
 #include <cstdint>
 
 namespace ripple {
@@ -34,6 +35,8 @@ namespace ripple {
 class AMMOfferCounter
 {
 private:
+    // Tx account owner is required to get the AMM trading fee in BookStep
+    AccountID account_;
     // true if payment has multiple paths
     bool multiPath_{false};
     // Counter of consumed AMM at payment engine iteration
@@ -42,7 +45,8 @@ private:
     std::uint16_t ammIters_{0};
 
 public:
-    AMMOfferCounter(bool fibSeq) : multiPath_(fibSeq)
+    AMMOfferCounter(AccountID const& account, bool multiPath)
+        : account_(account), multiPath_(multiPath)
     {
     }
     ~AMMOfferCounter() = default;
@@ -87,6 +91,12 @@ public:
     curIters() const
     {
         return ammIters_;
+    }
+
+    AccountID
+    account() const
+    {
+        return account_;
     }
 };
 

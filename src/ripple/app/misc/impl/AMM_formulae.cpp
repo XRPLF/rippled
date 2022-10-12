@@ -29,7 +29,7 @@ calcAMMLPT(
     STAmount const& asset2,
     Issue const& lptIssue)
 {
-    auto const tokens = root(asset1 * asset2, 2);
+    auto const tokens = root2(asset1 * asset2);
     return toSTAmount(lptIssue, tokens);
 }
 
@@ -43,7 +43,7 @@ calcLPTokensIn(
     return toSTAmount(
         lpTokensBalance.issue(),
         lpTokensBalance *
-            (root(1 + (asset1Deposit * feeMultHalf(tfee)) / asset1Balance, 2) -
+            (root2(1 + (asset1Deposit * feeMultHalf(tfee)) / asset1Balance) -
              1));
 }
 
@@ -56,7 +56,7 @@ calcAssetIn(
 {
     return toSTAmount(
         asset1Balance.issue(),
-        ((power(lpTokensBalance / lptAMMBalance + 1, 2) - 1) /
+        ((square(lpTokensBalance / lptAMMBalance + 1) - 1) /
          feeMultHalf(tfee)) *
             asset1Balance);
 }
@@ -74,7 +74,7 @@ calcLPTokensOut(
         return STAmount{};
     else
         return toSTAmount(
-            lpTokensBalance.issue(), lpTokensBalance * (1 - root(a, 2)));
+            lpTokensBalance.issue(), lpTokensBalance * (1 - root2(a)));
 }
 
 STAmount
@@ -98,7 +98,7 @@ changeSpotPrice(
     // can't change to a better or same SP
     if (Number(newSP) <= sp)
         return std::nullopt;
-    auto const res = assetInBalance * (root(newSP / sp, 2) - 1);
+    auto const res = assetInBalance * (root2(newSP / sp) - 1);
     if (res > 0)
         return toSTAmount(assetInBalance.issue(), res);
     return std::nullopt;
@@ -113,7 +113,7 @@ calcWithdrawalByTokens(
 {
     return toSTAmount(
         assetBalance.issue(),
-        assetBalance * (1 - power(1 - lpTokens / lptAMMBalance, 2)) *
+        assetBalance * (1 - square(1 - lpTokens / lptAMMBalance)) *
             feeMultHalf(tfee));
 }
 
@@ -125,13 +125,19 @@ changeSpotPriceQuality(
 {
     auto const curQuality = Quality(pool);
     auto const takerPays =
-        pool.in * (root(quality.rate() / curQuality.rate(), 2) - 1);
+        pool.in * (root2(quality.rate() / curQuality.rate()) - 1);
     if (takerPays > 0)
     {
         auto const saTakerPays = toSTAmount(pool.in.issue(), takerPays);
         return Amounts{saTakerPays, swapAssetIn(pool, saTakerPays, tfee)};
     }
     return std::nullopt;
+}
+
+Number
+square(Number const& n)
+{
+    return n * n;
 }
 
 }  // namespace ripple

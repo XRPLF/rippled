@@ -85,8 +85,7 @@ flow(
     if (sendMax)
         sendMaxIssue = sendMax->issue();
 
-    AMMOfferCounter ammOfferCounter(
-        (defaultPaths && paths.size() == 1) || paths.size() > 1);
+    AMMOfferCounter ammOfferCounter(src, false);
 
     // convert the paths to a collection of strands. Each strand is the
     // collection of account->account steps and book steps that may be used in
@@ -111,6 +110,8 @@ flow(
         result.setResult(toStrandsTer);
         return result;
     }
+
+    ammOfferCounter.setMultiPath(strands.size() > 1);
 
     if (j.trace())
     {
