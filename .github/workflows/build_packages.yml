@@ -1,0 +1,74 @@
+name: "Test rippled packaging"
+on:
+  push:
+    branches: ['master', 'release', 'develop', '*-rc*', '*-b*']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build_packages:
+      name: Build packages
+      runs-on: [self-hosted, Linux]
+      strategy:
+        fail-fast: false
+        matrix:
+          type:
+            - suffix: deb
+              image: rippleci/rippled-dpkg-builder:2020-02-10
+              script: dpkg
+            - suffix: rpm
+              image: rippleci/rippled-rpm-builder:2020-02-10
+              script: rpm
+      container:
+        image: ${{ matrix.type.image }}
+
+      steps:
+
+        - name: Checkout
+          uses: actions/checkout@v3
+
+        - name: Build packages
+          uses: ./.github/actions/package
+
+  test_packages:
+      name: Test packages
+      needs: build_packages
+      runs-on: [self-hosted, Linux]
+      strategy:
+        fail-fast: false
+        matrix:
+          type:
+            - suffix: deb
+              image: ubuntu:18.04
+              script: dpkg
+            - suffix: rpm
+              image: centos:7
+              script: rpm
+      container:
+        image: ${{ matrix.type.image }}
+
+      steps:
+        - name: Get rippled
+          uses: actions/download-artifact@v3
+          with:
+            name: rippled_${{ matrix.type.suffix }}_packages
+
+        - name: Test packages
+          run: |
+            . ./build_vars
+            . /etc/os-release
+            if [ $ID = 'centos' ];then
+              rpm_file=$(tail -n1 build_vars | cut -d"=" -f2 ).x86_64.rpm
+              rpm -i ./${rpm_file}
+            else
+              apt-get update && apt-get install -y curl
+              curl -OJL http://ftp.de.debian.org/debian/pool/main/g/gcc-10/gcc-10-base_10.2.1-6_amd64.deb
+              apt-get install -y ./gcc-10-base_10.2.1-6_amd64.deb
+              curl -OJL http://ftp.de.debian.org/debian/pool/main/g/gcc-10/libgcc-s1_10.2.1-6_amd64.deb
+              apt-get install -y ./libgcc-s1_10.2.1-6_amd64.deb
+              apt-get install -y ./rippled_${dpkg_full_version}_amd64.deb
+            fi
+            /usr/local/bin/rippled --unittest 2>> error.txt 1>> output.txt
+            cat build_vars >> $GITHUB_STEP_SUMMARY
+            # cat error.txt >> $GITHUB_STEP_SUMMARY
+            cat output.txt | sed -n -e '/Longest/,$p' >> $GITHUB_STEP_SUMMARY

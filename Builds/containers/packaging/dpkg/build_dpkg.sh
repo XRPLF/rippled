@@ -2,7 +2,12 @@
 set -ex
 
 # make sure pkg source files are up to date with repo
-cd /opt/rippled_bld/pkg
+
+if [ $GITHUB_ACTIONS ];then
+    cd ..
+else
+    cd /opt/rippled_bld/pkg
+fi
 cp -fpru rippled/Builds/containers/packaging/dpkg/debian/. debian/
 cp -fpu rippled/Builds/containers/shared/rippled*.service debian/
 cp -fpu rippled/Builds/containers/shared/update_sources.sh .
@@ -15,14 +20,24 @@ RIPPLED_DPKG_VERSION=$(echo "${RIPPLED_VERSION}" | sed 's!-!~!g')
 # TODO - decide how to handle the trailing/release
 # version here (hardcoded to 1). Does it ever need to change?
 RIPPLED_DPKG_FULL_VERSION="${RIPPLED_DPKG_VERSION}-1"
+<<<<<<< HEAD
 git config --global --add safe.directory /opt/rippled_bld/pkg/rippled
 cd /opt/rippled_bld/pkg/rippled
+=======
+
+git config --global --add safe.directory /__w/rippled/rippled
+if [ -z $GITHUB_ACTIONS ];then
+    cd /opt/rippled_bld/pkg/rippled
+fi
+
+>>>>>>> 3f2367cd30 (update)
 if [[ -n $(git status --porcelain) ]]; then
     git status
     error "Unstaged changes in this repo - please commit first"
 fi
 git archive --format tar.gz --prefix rippled-${RIPPLED_DPKG_VERSION}/ -o ../rippled-${RIPPLED_DPKG_VERSION}.tar.gz HEAD
 cd ..
+
 # dpkg debmake would normally create this link, but we do it manually
 ln -s ./rippled-${RIPPLED_DPKG_VERSION}.tar.gz rippled_${RIPPLED_DPKG_VERSION}.orig.tar.gz
 tar xvf rippled-${RIPPLED_DPKG_VERSION}.tar.gz

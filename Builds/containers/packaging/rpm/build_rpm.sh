@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 set -ex
 
-cd /opt/rippled_bld/pkg
+if [ $GITHUB_ACTIONS ];then
+    cd ..
+else
+    cd /opt/rippled_bld/pkg
+fi
+
 cp -fpu rippled/Builds/containers/packaging/rpm/rippled.spec .
 cp -fpu rippled/Builds/containers/shared/update_sources.sh .
 source update_sources.sh
@@ -28,14 +33,26 @@ if [[ $RPM_PATCH ]]; then
     export RPM_PATCH
 fi
 
-cd /opt/rippled_bld/pkg/rippled
+git config --global --add safe.directory /__w/rippled/rippled
+if [ -z $GITHUB_ACTIONS ];then
+    cd /opt/rippled_bld/pkg/rippled
+fi
+
 if [[ -n $(git status --porcelain) ]]; then
    git status
    error "Unstaged changes in this repo - please commit first"
 fi
-git archive --format tar.gz --prefix rippled/ -o ../rpmbuild/SOURCES/rippled.tar.gz HEAD
 # TODO include validator-keys sources
+if [ -z $GITHUB_ACTIONS ];then
+    git archive --format tar.gz --prefix rippled/ -o ../rpmbuild/SOURCES/rippled.tar.gz HEAD
+fi
 cd ..
+if [ $GITHUB_ACTIONS ];then
+    mkdir -p rpmbuild/SOURCES/
+    tar czvf rpmbuild/SOURCES/rippled.tar.gz rippled
+fi
+
+
 
 source /opt/rh/devtoolset-11/enable
 

@@ -1,0 +1,32 @@
+name: 'Package rippled'
+runs:
+  using: "composite"
+
+  steps:
+    - name: Install latest Git
+      shell: bash
+      run: |
+        source /etc/os-release
+        if [ "${ID}" = "ubuntu" ]; then
+                export DEBIAN_FRONTEND=noninteractive
+                apt-get update || apt-get install -y apt-transport-https
+                add-apt-repository -y ppa:git-core/ppa \
+                && apt-get update \
+                && apt-get install -y git
+        elif [ "${ID}" = "centos" ]; then
+                yum -y install https://packages.endpointdev.com/rhel/7/os/x86_64/endpoint-repo.x86_64.rpm
+                yum install -y git
+        fi
+
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Build
+      shell: bash
+      run: ./Builds/containers/packaging/${{ matrix.type.script }}/build_${{ matrix.type.script }}.sh
+
+    - name: Save packages
+      uses: actions/upload-artifact@v3
+      with:
+        name: rippled_${{ matrix.type.suffix }}_packages
+        path: packages/
