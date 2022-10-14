@@ -138,8 +138,18 @@ ammSend(
 std::uint16_t
 timeSlot(NetClock::time_point const& clock, STObject const& auctionSlot);
 
+/** Return true if required AMM amendments are enabled
+ */
 bool
 ammEnabled(Rules const&);
+
+/** Returns total amount held by AMM for the given token.
+ */
+STAmount
+ammAccountHolds(
+    ReadView const& view,
+    AccountID const& ammAccountID,
+    const Issue& issue);
 
 }  // namespace ripple
 

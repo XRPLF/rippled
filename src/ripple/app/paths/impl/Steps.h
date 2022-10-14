@@ -34,7 +34,7 @@ namespace ripple {
 class PaymentSandbox;
 class ReadView;
 class ApplyView;
-class AMMOfferCounter;
+class AMMContext;
 
 enum class DebtDirection { issues, redeems };
 enum class QualityDirection { in, out };
@@ -379,7 +379,7 @@ normalizePath(
    @param ownerPaysTransferFee false -> charge sender; true -> charge offer
    owner
    @param offerCrossing false -> payment; true -> offer crossing
-   @param ammOfferCounter counts iterations with AMM offers
+   @param ammContext counts iterations with AMM offers
    @param j Journal for logging messages
    @return Error code and constructed Strand
 */
@@ -394,7 +394,7 @@ toStrand(
     STPath const& path,
     bool ownerPaysTransferFee,
     bool offerCrossing,
-    AMMOfferCounter& ammOfferCounter,
+    AMMContext& ammContext,
     beast::Journal j);
 
 /**
@@ -418,7 +418,7 @@ toStrand(
    @param ownerPaysTransferFee false -> charge sender; true -> charge offer
    owner
    @param offerCrossing false -> payment; true -> offer crossing
-   @param ammOfferCounter counts iterations with AMM offers
+   @param ammContext counts iterations with AMM offers
    @param j Journal for logging messages
    @return error code and collection of strands
 */
@@ -434,7 +434,7 @@ toStrands(
     bool addDefaultPath,
     bool ownerPaysTransferFee,
     bool offerCrossing,
-    AMMOfferCounter& ammOfferCounter,
+    AMMContext& ammContext,
     beast::Journal j);
 
 /// @cond INTERNAL
@@ -543,7 +543,7 @@ struct StrandContext
         than once
     */
     boost::container::flat_set<Issue>& seenBookOuts;
-    AMMOfferCounter& ammOfferCounter;
+    AMMContext& ammContext;
     beast::Journal const j;
 
     /** StrandContext constructor. */
@@ -564,7 +564,7 @@ struct StrandContext
             seenDirectIssues_,  ///< For detecting currency loops
         boost::container::flat_set<Issue>&
             seenBookOuts_,  ///< For detecting book loops
-        AMMOfferCounter& ammOfferCounter_,
+        AMMContext& ammContext_,
         beast::Journal j_);  ///< Journal for logging
 };
 

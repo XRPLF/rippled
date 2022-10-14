@@ -135,6 +135,12 @@ public:
     issueIn() const;
     Issue
     issueOut() const;
+
+    TAmounts<TIn, TOut>
+    limitOut(TAmounts<TIn, TOut> const& offrAmt, TOut const& limit) const;
+
+    TAmounts<TIn, TOut>
+    limitIn(TAmounts<TIn, TOut> const& offrAmt, TIn const& limit) const;
 };
 
 using Offer = TOffer<>;
@@ -175,6 +181,23 @@ TOffer<TIn, TOut>::setFieldAmounts()
 #else
     static_assert(sizeof(TOut) == -1, "Must be specialized");
 #endif
+}
+
+template <class TIn, class TOut>
+TAmounts<TIn, TOut>
+TOffer<TIn, TOut>::limitOut(
+    TAmounts<TIn, TOut> const& offrAmt,
+    TOut const& limit) const
+{
+    return m_quality.ceil_out(offrAmt, limit);
+}
+
+template <class TIn, class TOut>
+TAmounts<TIn, TOut>
+TOffer<TIn, TOut>::limitIn(TAmounts<TIn, TOut> const& offrAmt, TIn const& limit)
+    const
+{
+    return m_quality.ceil_in(offrAmt, limit);
 }
 
 template <>

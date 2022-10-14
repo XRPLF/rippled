@@ -17,42 +17,42 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_PATHS_IMPL_AMMOFFERCOUNTER_H_INCLUDED
-#define RIPPLE_APP_PATHS_IMPL_AMMOFFERCOUNTER_H_INCLUDED
+#ifndef RIPPLE_APP_PATHS_IMPL_AMMCONTEXT_H_INCLUDED
+#define RIPPLE_APP_PATHS_IMPL_AMMCONTEXT_H_INCLUDED
 
 #include <ripple/protocol/AccountID.h>
 #include <cstdint>
 
 namespace ripple {
 
-/** Maintains multiPath_ flag for the payment engine for one-path optimization.
- * Maintains counters of amm offers executed at a payment engine iteration
- * and the number of iterations that include AMM offers.
+/** Maintains AMM info per overall payment engine execution and
+ * individual iteration.
  * Only one instance of this class is created in Flow.cpp::flow().
  * The reference is percolated through calls to AMMLiquidity class,
  * which handles AMM offer generation.
  */
-class AMMOfferCounter
+class AMMContext
 {
 private:
+    constexpr inline static std::uint8_t MaxIterations = 4;
     // Tx account owner is required to get the AMM trading fee in BookStep
     AccountID account_;
     // true if payment has multiple paths
     bool multiPath_{false};
-    // Counter of consumed AMM at payment engine iteration
-    std::uint16_t ammCounter_{0};
+    // Is true if AMM offer is consumed at a payment engine iteration.
+    bool ammUsed_{false};
     // Counter of payment engine iterations with consumed AMM
     std::uint16_t ammIters_{0};
 
 public:
-    AMMOfferCounter(AccountID const& account, bool multiPath)
+    AMMContext(AccountID const& account, bool multiPath)
         : account_(account), multiPath_(multiPath)
     {
     }
-    ~AMMOfferCounter() = default;
-    AMMOfferCounter(AMMOfferCounter const&) = delete;
-    AMMOfferCounter&
-    operator=(AMMOfferCounter const&) = delete;
+    ~AMMContext() = default;
+    AMMContext(AMMContext const&) = delete;
+    AMMContext&
+    operator=(AMMContext const&) = delete;
 
     bool
     multiPath() const
@@ -67,24 +67,24 @@ public:
     }
 
     void
-    incrementCounter()
+    setAMMUsed()
     {
         if (multiPath_)
-            ++ammCounter_;
+            ammUsed_ = true;
     }
 
     void
     updateIters()
     {
-        if (ammCounter_ > 0)
+        if (ammUsed_ > 0)
             ++ammIters_;
-        ammCounter_ = 0;
+        ammUsed_ = false;
     }
 
     bool
     maxItersReached() const
     {
-        return ammIters_ >= 4;
+        return multiPath_ && ammIters_ >= MaxIterations;
     }
 
     std::uint16_t
@@ -98,8 +98,17 @@ public:
     {
         return account_;
     }
+
+    /** Stand execution may fail. Reset the flag at the start
+     * of each payment engine iteration.
+     */
+    void
+    clear()
+    {
+        ammUsed_ = false;
+    }
 };
 
 }  // namespace ripple
 
-#endif  // RIPPLE_APP_PATHS_IMPL_AMMOFFERCOUNTER_H_INCLUDED
+#endif  // RIPPLE_APP_PATHS_IMPL_AMMCONTEXT_H_INCLUDED

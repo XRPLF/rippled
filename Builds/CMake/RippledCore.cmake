@@ -410,6 +410,7 @@ target_sources (rippled PRIVATE
   src/ripple/app/paths/RippleLineCache.cpp
   src/ripple/app/paths/TrustLine.cpp
   src/ripple/app/paths/impl/AMMLiquidity.cpp
+  src/ripple/app/paths/impl/AMMOffer.cpp
   src/ripple/app/paths/impl/BookStep.cpp
   src/ripple/app/paths/impl/DirectStep.cpp
   src/ripple/app/paths/impl/PaySteps.cpp

@@ -17,12 +17,12 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_TX_AMMOFFERMAKER_H_INCLUDED
-#define RIPPLE_APP_TX_AMMOFFERMAKER_H_INCLUDED
+#ifndef RIPPLE_APP_TX_AMMLIQUIDITY_H_INCLUDED
+#define RIPPLE_APP_TX_AMMLIQUIDITY_H_INCLUDED
 
 #include "ripple/app/misc/AMM.h"
 #include "ripple/app/misc/AMM_formulae.h"
-#include "ripple/app/paths/AMMOfferCounter.h"
+#include "ripple/app/paths/AMMContext.h"
 #include "ripple/basics/Log.h"
 #include "ripple/ledger/ReadView.h"
 #include "ripple/ledger/View.h"
@@ -31,49 +31,8 @@
 
 namespace ripple {
 
-namespace detail {
-
-/** Generate AMM offers with the offer size based on Fibonacci sequence.
- * The sequence corresponds to the payment engine iterations with AMM
- * liquidity. Iterations that don't consume AMM offers don't count.
- * We max out at four iterations with AMM offers.
- */
-class FibSeqHelper
-{
-private:
-    // Current sequence amounts.
-    Amounts curSeq_{};
-    // Latest sequence number.
-    std::uint16_t lastNSeq_{0};
-    Number x_{0};
-    Number y_{0};
-
-public:
-    FibSeqHelper() = default;
-    ~FibSeqHelper() = default;
-    FibSeqHelper(FibSeqHelper const&) = delete;
-    FibSeqHelper&
-    operator=(FibSeqHelper const&) = delete;
-
-    /** Generate first sequence.
-     * @param balances current AMM pool balances.
-     * @param tfee trading fee in basis points.
-     * @return
-     */
-    Amounts const&
-    firstSeq(Amounts const& balances, std::uint16_t tfee);
-
-    /** Generate next sequence.
-     * @param n sequence to generate
-     * @param balances current AMM pool balances.
-     * @param tfee trading fee in basis points.
-     * @return
-     */
-    Amounts const&
-    nextNthSeq(std::uint16_t n, Amounts const& balances, std::uint16_t tfee);
-};
-
-}  // namespace detail
+template <typename TIn, typename TOut>
+class AMMOffer;
 
 /** AMMLiquidity class provides AMM offers to BookStep class.
  * The offers are generated in two ways. If there are multiple
@@ -85,21 +44,21 @@ public:
  * based on their quality.
  * If there is only one path specified in the payment transaction
  * then the offers are generated based on the competing CLOB offer
- * quality. In this case, the offer's size is set in such a way
+ * quality. In this case the offer's size is set in such a way
  * that the new AMM's pool spot price quality is equal to the CLOB's
  * offer quality.
  */
+template <typename TIn, typename TOut>
 class AMMLiquidity
 {
 private:
-    AMMOfferCounter& offerCounter_;
+    AMMContext& ammContext_;
     AccountID const ammAccountID_;
     std::uint32_t const tradingFee_;
-    // Cached AMM pool balances as of last getOffer() if not empty().
-    // Set to zero if balances have to be re-fetched.
-    Amounts balances_;
-    // Is seated if multi-path. Generates Fibonacci sequence offer.
-    std::optional<detail::FibSeqHelper> fibSeqHelper_;
+    Issue const issueIn_;
+    Issue const issueOut_;
+    // Initial AMM pool balances
+    TAmounts<TIn, TOut> const initialBalances_;
     beast::Journal const j_;
 
 public:
@@ -109,7 +68,7 @@ public:
         std::uint32_t tradingFee,
         Issue const& in,
         Issue const& out,
-        AMMOfferCounter& offerCounter,
+        AMMContext& ammContext,
         beast::Journal j);
     ~AMMLiquidity() = default;
     AMMLiquidity(AMMLiquidity const&) = delete;
@@ -121,21 +80,9 @@ public:
      * If clobQuality is provided then AMM offer size is set based on the
      * quality.
      */
-    std::optional<Amounts>
-    getOffer(ReadView const& view, std::optional<Quality> const& clobQuality);
-
-    /** Called when AMM offer is consumed. Sets dirty flag
-     * to indicate that the balances may have changed and
-     * increments offer counter to indicate that AMM offer
-     * is used in the strand.
-     */
-    void
-    consumed()
-    {
-        balances_.in = beast::zero;
-        balances_.out = beast::zero;
-        offerCounter_.incrementCounter();
-    }
+    std::optional<AMMOffer<TIn, TOut>>
+    getOffer(ReadView const& view, std::optional<Quality> const& clobQuality)
+        const;
 
     AccountID const&
     ammAccount() const
@@ -146,50 +93,48 @@ public:
     bool
     multiPath() const
     {
-        return offerCounter_.multiPath();
+        return ammContext_.multiPath();
     }
 
-    template <typename TOut>
-    STAmount
-    swapOut(TOut const& out) const
+    std::uint32_t
+    tradingFee() const
     {
-        return swapAssetOut(balances_, out, tradingFee_);
+        return tradingFee_;
     }
 
-    template <typename TIn>
-    STAmount
-    swapIn(TIn const& in) const
+    AMMContext&
+    context() const
     {
-        return swapAssetIn(balances_, in, tradingFee_);
+        return ammContext_;
     }
 
-    Amounts const&
-    balances() const
+    Issue const&
+    issueIn() const
     {
-        return balances_;
+        return issueIn_;
+    }
+
+    Issue const&
+    issueOut() const
+    {
+        return issueOut_;
     }
 
 private:
-    /** Fetches AMM balances if balances_ is empty()
+    /** Fetches current AMM balances.
      */
-    Amounts
+    TAmounts<TIn, TOut>
     fetchBalances(ReadView const& view) const;
 
-    /** Returns total amount held by AMM for the given token.
+    /** Generate AMM offers with the offer size based on Fibonacci sequence.
+     * The sequence corresponds to the payment engine iterations with AMM
+     * liquidity. Iterations that don't consume AMM offers don't count.
+     * Max out at four iterations with AMM offers.
      */
-    STAmount
-    ammAccountHolds(
-        ReadView const& view,
-        AccountID const& ammAccountID,
-        Issue const& issue) const;
-
-    /** Generate offer based on Fibonacci sequence.
-     * @param balances current AMM balances
-     */
-    Amounts
-    generateFibSeqOffer(Amounts const& balances);
+    TAmounts<TIn, TOut>
+    generateFibSeqOffer(TAmounts<TIn, TOut> const& balances) const;
 };
 
 }  // namespace ripple
 
-#endif  // RIPPLE_APP_TX_AMMOFFERMAKER_H_INCLUDED
+#endif  // RIPPLE_APP_TX_AMMLIQUIDITY_H_INCLUDED

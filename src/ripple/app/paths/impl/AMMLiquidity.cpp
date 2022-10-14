@@ -17,190 +17,128 @@
 */
 //==============================================================================
 #include <ripple/app/paths/AMMLiquidity.h>
+#include <ripple/app/paths/AMMOffer.h>
 
 namespace ripple {
 
-namespace detail {
-
-Amounts const&
-FibSeqHelper::firstSeq(Amounts const& balances, std::uint16_t tfee)
-{
-    curSeq_.in = toSTAmount(
-        balances.in.issue(),
-        (Number(5) / 20000) * balances.in,
-        Number::rounding_mode::upward);
-    curSeq_.out = swapAssetIn(balances, curSeq_.in, tfee);
-    y_ = curSeq_.out;
-    return curSeq_;
-}
-
-Amounts const&
-FibSeqHelper::nextNthSeq(
-    std::uint16_t n,
-    Amounts const& balances,
-    std::uint16_t tfee)
-{
-    // We are at the same payment engine iteration when executing
-    // a limiting step. Have to generate the same sequence.
-    if (n == lastNSeq_)
-        return curSeq_;
-    auto const total = [&]() {
-        if (n < lastNSeq_)
-            Throw<std::runtime_error>(
-                std::string("nextNthSeq: invalid sequence ") +
-                std::to_string(n) + " " + std::to_string(lastNSeq_));
-        Number total{};
-        do
-        {
-            total = x_ + y_;
-            x_ = y_;
-            y_ = total;
-        } while (++lastNSeq_ < n);
-        return total;
-    }();
-    curSeq_.out = toSTAmount(
-        balances.out.issue(), total, Number::rounding_mode::downward);
-    curSeq_.in = swapAssetOut(balances, curSeq_.out, tfee);
-    return curSeq_;
-}
-
-}  // namespace detail
-
-AMMLiquidity::AMMLiquidity(
+template <typename TIn, typename TOut>
+AMMLiquidity<TIn, TOut>::AMMLiquidity(
     ReadView const& view,
     AccountID const& ammAccountID,
     std::uint32_t tradingFee,
     Issue const& in,
     Issue const& out,
-    AMMOfferCounter& offerCounter,
+    AMMContext& ammContext,
     beast::Journal j)
-    : offerCounter_(offerCounter)
+    : ammContext_(ammContext)
     , ammAccountID_(ammAccountID)
     , tradingFee_(tradingFee)
-    , balances_{STAmount{in}, STAmount{out}}
-    , fibSeqHelper_{std::nullopt}
+    , issueIn_(in)
+    , issueOut_(out)
+    , initialBalances_{fetchBalances(view)}
     , j_(j)
 {
-    balances_ = fetchBalances(view);
 }
 
-STAmount
-AMMLiquidity::ammAccountHolds(
+template <typename TIn, typename TOut>
+TAmounts<TIn, TOut>
+AMMLiquidity<TIn, TOut>::fetchBalances(ReadView const& view) const
+{
+    auto const assetIn = ammAccountHolds(view, ammAccountID_, issueIn_);
+    auto const assetOut = ammAccountHolds(view, ammAccountID_, issueOut_);
+    // This should not happen.
+    if (assetIn < beast::zero || assetOut < beast::zero)
+        Throw<std::runtime_error>("AMMLiquidity: invalid balances");
+
+    return TAmounts{get<TIn>(assetIn), get<TOut>(assetOut)};
+}
+
+template <typename TIn, typename TOut>
+TAmounts<TIn, TOut>
+AMMLiquidity<TIn, TOut>::generateFibSeqOffer(
+    TAmounts<TIn, TOut> const& balances) const
+{
+    auto const n = ammContext_.curIters();
+    TAmounts<TIn, TOut> cur{};
+    Number x{};
+    Number y{};
+
+    cur.in = toAmount<TIn>(
+        getIssue(balances.in),
+        (Number(5) / 20000) * initialBalances_.in,
+        Number::rounding_mode::upward);
+    cur.out = swapAssetIn(initialBalances_, cur.in, tradingFee_);
+    y = cur.out;
+    if (n == 0)
+        return cur;
+
+    std::uint16_t i = 0;
+    auto const total = [&]() {
+        Number total{};
+        do
+        {
+            total = x + y;
+            x = y;
+            y = total;
+        } while (++i < n);
+        return total;
+    }();
+    cur.out = toAmount<TOut>(
+        getIssue(balances.out), total, Number::rounding_mode::downward);
+    cur.in = swapAssetOut(balances, cur.out, tradingFee_);
+    return cur;
+}
+
+template <typename TIn, typename TOut>
+std::optional<AMMOffer<TIn, TOut>>
+AMMLiquidity<TIn, TOut>::getOffer(
     ReadView const& view,
-    AccountID const& ammAccountID,
-    const Issue& issue) const
+    std::optional<Quality> const& clobQuality) const
 {
-    if (isXRP(issue))
-    {
-        if (auto const sle = view.read(keylet::account(ammAccountID)))
-            return (*sle)[sfBalance];
-    }
-    else if (auto const sle = view.read(
-                 keylet::line(ammAccountID, issue.account, issue.currency));
-             sle &&
-             !isFrozen(view, ammAccountID, issue.currency, issue.account))
-    {
-        auto amount = (*sle)[sfBalance];
-        if (ammAccountID > issue.account)
-            amount.negate();
-        amount.setIssuer(issue.account);
-        return amount;
-    }
-
-    return STAmount{issue};
-}
-
-Amounts
-AMMLiquidity::fetchBalances(ReadView const& view) const
-{
-    if (balances_.empty())
-    {
-        auto const assetIn =
-            ammAccountHolds(view, ammAccountID_, balances_.in.issue());
-        auto const assetOut =
-            ammAccountHolds(view, ammAccountID_, balances_.out.issue());
-        // This should not happen.
-        if (assetIn < beast::zero || assetOut < beast::zero)
-            Throw<std::runtime_error>("AMMLiquidity: invalid balances");
-
-        return Amounts(assetIn, assetOut);
-    }
-
-    return balances_;
-}
-
-Amounts
-AMMLiquidity::generateFibSeqOffer(const Amounts& balances)
-{
-    // first sequence
-    if (!fibSeqHelper_.has_value())
-    {
-        fibSeqHelper_.emplace();
-        fibSeqHelper_->firstSeq(balances, tradingFee_);
-    }
-    // advance to next sequence
-    return fibSeqHelper_->nextNthSeq(
-        offerCounter_.curIters(), balances, tradingFee_);
-}
-
-std::optional<Amounts>
-AMMLiquidity::getOffer(
-    ReadView const& view,
-    std::optional<Quality> const& clobQuality)
-{
-    // Can't generate more offers. Only applies if generating
-    // based on Fibonacci sequence.
-    if (offerCounter_.maxItersReached())
+    // Can't generate more offers if multi-path.
+    if (ammContext_.maxItersReached())
         return std::nullopt;
 
     auto const balances = fetchBalances(view);
 
-    JLOG(j_.debug()) << "AMMLiquidity::getOffer balances " << balances_.in
-                     << " " << balances_.out << " new balances " << balances.in
-                     << " " << balances.out;
+    JLOG(j_.debug()) << "AMMLiquidity::getOffer balances "
+                     << to_string(initialBalances_.in) << " "
+                     << to_string(initialBalances_.out) << " new balances "
+                     << to_string(balances.in) << " "
+                     << to_string(balances.out);
 
-    // Can't generate AMM ammOffer with a better quality than CLOB's ammOffer
-    // quality if AMM's Spot Price quality is less than CLOB ammOffer quality.
+    // Can't generate AMM with a better quality than CLOB's
+    // quality if AMM's Spot Price quality is less than CLOB quality.
     if (clobQuality && Quality{balances} < *clobQuality)
     {
         JLOG(j_.debug()) << "AMMLiquidity::getOffer, higher clob quality";
         return std::nullopt;
     }
 
-    auto offer = [&]() -> std::optional<Amounts> {
-        if (offerCounter_.multiPath())
+    auto offer = [&]() -> std::optional<AMMOffer<TIn, TOut>> {
+        if (ammContext_.multiPath())
         {
             auto const offer = generateFibSeqOffer(balances);
             if (clobQuality && Quality{offer} < *clobQuality)
                 return std::nullopt;
-            return offer;
+            return AMMOffer<TIn, TOut>(*this, offer, std::nullopt);
         }
         else if (
             auto const offer = clobQuality
                 ? changeSpotPriceQuality(balances, *clobQuality, tradingFee_)
                 : balances)
         {
-            return offer;
+            return AMMOffer<TIn, TOut>(*this, *offer, balances);
         }
         return std::nullopt;
     }();
 
-    balances_ = balances;
-
-    if (offer && offer->in > beast::zero && offer->out > beast::zero)
+    if (offer && offer->amount().in > beast::zero &&
+        offer->amount().out > beast::zero)
     {
-        JLOG(j_.debug()) << "AMMLiquidity::getOffer, created " << offer->in
-                         << " " << offer->out;
-        // The new pool product must be greater or equal to the original pool
-        // product. Swap in/out formulas are used in case of one-path, which by
-        // design maintain the product invariant. The FibSeq is also generated
-        // with the swap in/out formulas except when the offer has to
-        // be reduced, in which case it is changed proportionally to
-        // the original offer quality. It can be shown that in this case
-        // the new pool product is greater than the original pool product.
-        // Since the result for XRP is fractional, round downward
-        // out amount and round upward in amount to maintain the invariant.
-        // This is done in Number/STAmount conversion.
+        JLOG(j_.debug()) << "AMMLiquidity::getOffer, created "
+                         << to_string(offer->amount().in) << issueIn_ << " "
+                         << to_string(offer->amount().out) << issueOut_;
         return offer;
     }
     else
@@ -211,5 +149,10 @@ AMMLiquidity::getOffer(
 
     return std::nullopt;
 }
+
+template class AMMLiquidity<STAmount, STAmount>;
+template class AMMLiquidity<IOUAmount, IOUAmount>;
+template class AMMLiquidity<XRPAmount, IOUAmount>;
+template class AMMLiquidity<IOUAmount, XRPAmount>;
 
 }  // namespace ripple

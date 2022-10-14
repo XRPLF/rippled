@@ -254,4 +254,30 @@ ammEnabled(Rules const& rules)
     return rules.enabled(featureAMM) && rules.enabled(fixUniversalNumber);
 }
 
+STAmount
+ammAccountHolds(
+    ReadView const& view,
+    AccountID const& ammAccountID,
+    const Issue& issue)
+{
+    if (isXRP(issue))
+    {
+        if (auto const sle = view.read(keylet::account(ammAccountID)))
+            return (*sle)[sfBalance];
+    }
+    else if (auto const sle = view.read(
+                 keylet::line(ammAccountID, issue.account, issue.currency));
+             sle &&
+             !isFrozen(view, ammAccountID, issue.currency, issue.account))
+    {
+        auto amount = (*sle)[sfBalance];
+        if (ammAccountID > issue.account)
+            amount.negate();
+        amount.setIssuer(issue.account);
+        return amount;
+    }
+
+    return STAmount{issue};
+}
+
 }  // namespace ripple

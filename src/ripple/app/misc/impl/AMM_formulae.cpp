@@ -78,33 +78,6 @@ calcLPTokensOut(
 }
 
 STAmount
-calcSpotPrice(
-    STAmount const& asset1Balance,
-    STAmount const& asset2Balance,
-    std::uint16_t tfee)
-{
-    return toSTAmount(
-        noIssue(), Number{asset2Balance} / (asset1Balance * feeMult(tfee)));
-}
-
-std::optional<STAmount>
-changeSpotPrice(
-    STAmount const& assetInBalance,
-    STAmount const& assetOutBalance,
-    STAmount const& newSP,
-    std::uint16_t tfee)
-{
-    auto const sp = calcSpotPrice(assetInBalance, assetOutBalance, tfee);
-    // can't change to a better or same SP
-    if (Number(newSP) <= sp)
-        return std::nullopt;
-    auto const res = assetInBalance * (root2(newSP / sp) - 1);
-    if (res > 0)
-        return toSTAmount(assetInBalance.issue(), res);
-    return std::nullopt;
-}
-
-STAmount
 calcWithdrawalByTokens(
     STAmount const& assetBalance,
     STAmount const& lptAMMBalance,
@@ -115,23 +88,6 @@ calcWithdrawalByTokens(
         assetBalance.issue(),
         assetBalance * (1 - square(1 - lpTokens / lptAMMBalance)) *
             feeMultHalf(tfee));
-}
-
-std::optional<Amounts>
-changeSpotPriceQuality(
-    Amounts const& pool,
-    Quality const& quality,
-    std::uint32_t tfee)
-{
-    auto const curQuality = Quality(pool);
-    auto const takerPays =
-        pool.in * (root2(quality.rate() / curQuality.rate()) - 1);
-    if (takerPays > 0)
-    {
-        auto const saTakerPays = toSTAmount(pool.in.issue(), takerPays);
-        return Amounts{saTakerPays, swapAssetIn(pool, saTakerPays, tfee)};
-    }
-    return std::nullopt;
 }
 
 Number

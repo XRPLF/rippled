@@ -20,7 +20,7 @@
 #ifndef RIPPLE_APP_PATHS_IMPL_STRANDFLOW_H_INCLUDED
 #define RIPPLE_APP_PATHS_IMPL_STRANDFLOW_H_INCLUDED
 
-#include <ripple/app/paths/AMMOfferCounter.h>
+#include <ripple/app/paths/AMMContext.h>
 #include <ripple/app/paths/Credit.h>
 #include <ripple/app/paths/Flow.h>
 #include <ripple/app/paths/impl/AmountSpec.h>
@@ -535,7 +535,7 @@ public:
    @param limitQuality If present, the minimum quality for any strand taken
    @param sendMaxST If present, the maximum STAmount to send
    @param j Journal to write journal messages to
-   @param ammOfferCounter counts iterations with AMM offers
+   @param ammContext counts iterations with AMM offers
    @param flowDebugInfo If pointer is non-null, write flow debug info here
    @return Actual amount in and out from the strands, errors, and payment
    sandbox
@@ -551,7 +551,7 @@ flow(
     std::optional<Quality> const& limitQuality,
     std::optional<STAmount> const& sendMaxST,
     beast::Journal j,
-    AMMOfferCounter& ammOfferCounter,
+    AMMContext& ammContext,
     path::detail::FlowDebugInfo* flowDebugInfo = nullptr)
 {
     // Used to track the strand that offers the best quality (output/input
@@ -633,9 +633,11 @@ flow(
             return {telFAILED_PROCESSING, std::move(ofrsToRmOnFail)};
         }
 
+        ammContext.clear();
+
         activeStrands.activateNext(sb, limitQuality);
 
-        ammOfferCounter.setMultiPath(activeStrands.size() > 1);
+        ammContext.setMultiPath(activeStrands.size() > 1);
 
         // Limit only if one strand and limitQuality
         auto const limitRemainingOut = [&]() {
@@ -768,7 +770,7 @@ flow(
                             << " remainingOut: " << to_string(remainingOut);
 
             best->sb.apply(sb);
-            ammOfferCounter.updateIters();
+            ammContext.updateIters();
         }
         else
         {

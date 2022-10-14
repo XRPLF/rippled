@@ -17,9 +17,10 @@
 */
 //==============================================================================
 
+#include <ripple/app/tx/impl/AMMWithdraw.h>
+
 #include <ripple/app/misc/AMM.h>
 #include <ripple/app/misc/AMM_formulae.h>
-#include <ripple/app/tx/impl/AMMWithdraw.h>
 #include <ripple/basics/Number.h>
 #include <ripple/ledger/Sandbox.h>
 #include <ripple/ledger/View.h>
@@ -107,12 +108,6 @@ TER
 AMMWithdraw::preclaim(PreclaimContext const& ctx)
 {
     auto const accountID = ctx.tx[sfAccount];
-    if (!ctx.view.read(keylet::account(accountID)))
-    {
-        JLOG(ctx.j.debug()) << "AMM Withdraw: Invalid account.";
-        return terNO_ACCOUNT;
-    }
-
     auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAMMID]));
     if (!ammSle)
     {
@@ -186,7 +181,8 @@ AMMWithdraw::applyGuts(Sandbox& sb)
     auto const asset2Out = ctx_.tx[~sfAsset2Out];
     auto const ePrice = ctx_.tx[~sfEPrice];
     auto ammSle = sb.peek(keylet::amm(ctx_.tx[sfAMMID]));
-    assert(ammSle);
+    if (!ammSle)
+        return {tecINTERNAL, false};
     auto const ammAccountID = (*ammSle)[sfAMMAccount];
     auto const lpTokensWithdraw =
         getTxLPTokens(ctx_.view(), ammAccountID, ctx_.tx, ctx_.journal);
@@ -287,12 +283,10 @@ TER
 AMMWithdraw::deleteAccount(Sandbox& view, AccountID const& ammAccountID)
 {
     auto sleAMMRoot = view.peek(keylet::account(ammAccountID));
-    assert(sleAMMRoot);
     auto sleAMM = view.peek(keylet::amm(ctx_.tx[sfAMMID]));
-    assert(sleAMM);
 
     if (!sleAMMRoot || !sleAMM)
-        return tefBAD_LEDGER;
+        return tecINTERNAL;
 
     // Note, the AMM trust lines are deleted since the balance
     // goes to 0. It also means there are no linked
@@ -313,7 +307,8 @@ AMMWithdraw::withdraw(
     STAmount const& lpTokensWithdraw)
 {
     auto const ammSle = view.read(keylet::amm(ctx_.tx[sfAMMID]));
-    assert(ammSle);
+    if (!ammSle)
+        return {tecINTERNAL, STAmount{}};
     auto const lpTokens = lpHolds(view, ammAccount, account_, ctx_.journal);
     auto const [asset1, asset2, _] =
         ammHolds(view, *ammSle, asset1Withdraw.issue(), std::nullopt, j_);

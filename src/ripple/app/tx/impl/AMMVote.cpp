@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#include <ripple/app/misc/AMM.h>
 #include <ripple/app/tx/impl/AMMVote.h>
+
+#include <ripple/app/misc/AMM.h>
 #include <ripple/ledger/Sandbox.h>
-#include <ripple/ledger/View.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/STAccount.h>
 #include <ripple/protocol/TxFlags.h>
@@ -61,12 +61,6 @@ AMMVote::preflight(PreflightContext const& ctx)
 TER
 AMMVote::preclaim(PreclaimContext const& ctx)
 {
-    if (!ctx.view.read(keylet::account(ctx.tx[sfAccount])))
-    {
-        JLOG(ctx.j.debug()) << "AMM Vote: Invalid account.";
-        return terNO_ACCOUNT;
-    }
-
     if (!ctx.view.read(keylet::amm(ctx.tx[sfAMMID])))
     {
         JLOG(ctx.j.debug()) << "AMM Vote: Invalid AMM account.";
@@ -81,7 +75,8 @@ AMMVote::applyGuts(Sandbox& sb)
 {
     auto const feeNew = ctx_.tx[sfFeeVal];
     auto const amm = sb.peek(keylet::amm(ctx_.tx[sfAMMID]));
-    assert(amm);
+    if (!amm)
+        return {tecINTERNAL, false};
     auto const ammAccount = (*amm)[sfAMMAccount];
     STAmount const lptAMMBalance = (*amm)[sfLPTokenBalance];
     auto const lpTokensNew = lpHolds(sb, ammAccount, account_, ctx_.journal);

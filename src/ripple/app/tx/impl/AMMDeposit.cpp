@@ -17,9 +17,10 @@
 */
 //==============================================================================
 
+#include <ripple/app/tx/impl/AMMDeposit.h>
+
 #include <ripple/app/misc/AMM.h>
 #include <ripple/app/misc/AMM_formulae.h>
-#include <ripple/app/tx/impl/AMMDeposit.h>
 #include <ripple/ledger/Sandbox.h>
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/Feature.h>
@@ -102,12 +103,6 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
 {
     auto const accountID = ctx.tx[sfAccount];
 
-    if (!ctx.view.read(keylet::account(accountID)))
-    {
-        JLOG(ctx.j.debug()) << "AMM Deposit: Invalid account.";
-        return terNO_ACCOUNT;
-    }
-
     auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAMMID]));
     if (!ammSle)
     {
@@ -189,7 +184,8 @@ AMMDeposit::applyGuts(Sandbox& sb)
     auto const ePrice = ctx_.tx[~sfEPrice];
     auto const lpTokensDeposit = ctx_.tx[~sfLPToken];
     auto ammSle = sb.peek(keylet::amm(ctx_.tx[sfAMMID]));
-    assert(ammSle);
+    if (!ammSle)
+        return {tecINTERNAL, false};
     auto const ammAccountID = (*ammSle)[sfAMMAccount];
 
     auto const tfee = getTradingFee(ctx_.view(), *ammSle, account_);

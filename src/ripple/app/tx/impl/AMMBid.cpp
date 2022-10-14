@@ -17,9 +17,10 @@
 */
 //==============================================================================
 
+#include <ripple/app/tx/impl/AMMBid.h>
+
 #include <ripple/app/misc/AMM.h>
 #include <ripple/app/misc/AMM_formulae.h>
-#include <ripple/app/tx/impl/AMMBid.h>
 #include <ripple/ledger/Sandbox.h>
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/Feature.h>
@@ -58,18 +59,23 @@ AMMBid::preflight(PreflightContext const& ctx)
         return temBAD_AMM_TOKENS;
     }
 
+    if (ctx.tx.isFieldPresent(sfAuthAccounts))
+    {
+        std::uint8_t constexpr maxAuthAccounts = 4;
+        if (auto const authAccounts = ctx.tx.getFieldArray(sfAuthAccounts);
+            authAccounts.size() > maxAuthAccounts)
+        {
+            JLOG(ctx.j.debug()) << "AMM Bid: Invalid number of AuthAccounts.";
+            return temBAD_AMM_OPTIONS;
+        }
+    }
+
     return preflight2(ctx);
 }
 
 TER
 AMMBid::preclaim(PreclaimContext const& ctx)
 {
-    if (!ctx.view.read(keylet::account(ctx.tx[sfAccount])))
-    {
-        JLOG(ctx.j.debug()) << "AMM Bid: Invalid account.";
-        return terNO_ACCOUNT;
-    }
-
     auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAMMID]));
     if (!ammSle)
     {
@@ -79,15 +85,7 @@ AMMBid::preclaim(PreclaimContext const& ctx)
 
     if (ctx.tx.isFieldPresent(sfAuthAccounts))
     {
-        auto const authAccounts = ctx.tx.getFieldArray(sfAuthAccounts);
-        std::uint8_t constexpr maxAuthAccounts = 4;
-        if (authAccounts.size() > maxAuthAccounts)
-        {
-            JLOG(ctx.j.debug()) << "AMM Bid: Invalid number of AuthAccounts.";
-            return temBAD_AMM_OPTIONS;
-        }
-
-        for (auto& account : authAccounts)
+        for (auto const& account : ctx.tx.getFieldArray(sfAuthAccounts))
         {
             if (!ctx.view.read(keylet::account(account[sfAccount])))
             {
@@ -147,7 +145,8 @@ AMMBid::applyGuts(Sandbox& sb)
 {
     using namespace std::chrono;
     auto const amm = sb.peek(keylet::amm(ctx_.tx[sfAMMID]));
-    assert(amm);
+    if (!amm)
+        return {tecINTERNAL, false};
     auto const ammAccount = (*amm)[sfAMMAccount];
     STAmount const lptAMMBalance = (*amm)[sfLPTokenBalance];
     auto const lpTokens = lpHolds(sb, ammAccount, account_, ctx_.journal);
@@ -198,6 +197,12 @@ AMMBid::applyGuts(Sandbox& sb)
                 sfAuthAccounts, ctx_.tx.getFieldArray(sfAuthAccounts));
         // Burn the remaining bid amount
         auto const saBurn = toSTAmount(lpTokens.issue(), burn);
+        if (saBurn >= lptAMMBalance)
+        {
+            JLOG(ctx_.journal.debug())
+                << "AMM Bid: invalid burn " << burn << " " << lptAMMBalance;
+            return tecAMM_FAILED_BID;
+        }
         auto res =
             redeemIOU(sb, account_, saBurn, lpTokens.issue(), ctx_.journal);
         if (res != tesSUCCESS)
@@ -229,15 +234,14 @@ AMMBid::applyGuts(Sandbox& sb)
         STAmount const pricePurchased = auctionSlot[sfPrice];
         auto const fractionUsed = (Number(*timeSlot) + 1) / nIntervals;
         auto const fractionRemaining = Number(1) - fractionUsed;
-        auto computedPrice = [&]() -> Number {
+        auto const computedPrice = [&]() -> Number {
             auto const p1_05 = Number(105, -2);
             // First interval slot price
             if (*timeSlot == 0)
                 return pricePurchased * p1_05;
             // Other intervals slot price
-            else
-                return pricePurchased * p1_05 * (1 - power(fractionUsed, 60)) +
-                    MinSlotPrice;
+            return pricePurchased * p1_05 * (1 - power(fractionUsed, 60)) +
+                MinSlotPrice;
         }();
 
         auto const payPrice = [&]() -> std::optional<Number> {

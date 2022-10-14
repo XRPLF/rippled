@@ -142,7 +142,7 @@ toStrand(
     STPath const& path,
     bool ownerPaysTransferFee,
     bool offerCrossing,
-    AMMOfferCounter& ammOfferCounter,
+    AMMContext& ammContext,
     beast::Journal j)
 {
     if (isXRP(src) || isXRP(dst) || !isConsistent(deliver) ||
@@ -279,7 +279,7 @@ toStrand(
             isDefaultPath,
             seenDirectIssues,
             seenBookOuts,
-            ammOfferCounter,
+            ammContext,
             j};
     };
 
@@ -476,7 +476,7 @@ toStrands(
     bool addDefaultPath,
     bool ownerPaysTransferFee,
     bool offerCrossing,
-    AMMOfferCounter& ammOfferCounter,
+    AMMContext& ammContext,
     beast::Journal j)
 {
     std::vector<Strand> result;
@@ -502,7 +502,7 @@ toStrands(
             STPath(),
             ownerPaysTransferFee,
             offerCrossing,
-            ammOfferCounter,
+            ammContext,
             j);
         auto const ter = sp.first;
         auto& strand = sp.second;
@@ -546,7 +546,7 @@ toStrands(
             p,
             ownerPaysTransferFee,
             offerCrossing,
-            ammOfferCounter,
+            ammContext,
             j);
         auto ter = sp.first;
         auto& strand = sp.second;
@@ -592,7 +592,7 @@ StrandContext::StrandContext(
     bool isDefaultPath_,
     std::array<boost::container::flat_set<Issue>, 2>& seenDirectIssues_,
     boost::container::flat_set<Issue>& seenBookOuts_,
-    AMMOfferCounter& ammOfferCounter_,
+    AMMContext& ammContext_,
     beast::Journal j_)
     : view(view_)
     , strandSrc(strandSrc_)
@@ -608,7 +608,7 @@ StrandContext::StrandContext(
     , prevStep(!strand_.empty() ? strand_.back().get() : nullptr)
     , seenDirectIssues(seenDirectIssues_)
     , seenBookOuts(seenBookOuts_)
-    , ammOfferCounter(ammOfferCounter_)
+    , ammContext(ammContext_)
     , j(j_)
 {
 }

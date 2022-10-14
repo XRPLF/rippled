@@ -28,7 +28,7 @@
 #include <ripple/ledger/Sandbox.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/jss.h>
-#include "ripple/app/paths/AMMOfferCounter.h"
+#include "ripple/app/paths/AMMContext.h"
 #include <test/jtx.h>
 #include <test/jtx/PathSet.h>
 
@@ -246,7 +246,7 @@ class TheoreticalQuality_test : public beast::unit_test::suite
         std::optional<Quality> const& expectedQ = {})
     {
         PaymentSandbox sb(closed.get(), tapNONE);
-        AMMOfferCounter ammOfferCounter(rcp.srcAccount, false);
+        AMMContext ammContext(rcp.srcAccount, false);
 
         auto const sendMaxIssue = [&rcp]() -> std::optional<Issue> {
             if (rcp.sendMax)
@@ -267,7 +267,7 @@ class TheoreticalQuality_test : public beast::unit_test::suite
             /*defaultPaths*/ rcp.paths.empty(),
             sb.rules().enabled(featureOwnerPaysFee),
             /*offerCrossing*/ false,
-            ammOfferCounter,
+            ammContext,
             dummyJ);
 
         BEAST_EXPECT(sr.first == tesSUCCESS);

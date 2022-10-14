@@ -17,10 +17,11 @@
 */
 //==============================================================================
 
+#include <ripple/app/tx/impl/AMMCreate.h>
+
 #include <ripple/app/ledger/OrderBookDB.h>
 #include <ripple/app/misc/AMM.h>
 #include <ripple/app/misc/AMM_formulae.h>
-#include <ripple/app/tx/impl/AMMCreate.h>
 #include <ripple/ledger/Sandbox.h>
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/Feature.h>
@@ -87,12 +88,6 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
     auto const accountID = ctx.tx[sfAccount];
     auto const saAsset1 = ctx.tx[sfAsset1];
     auto const saAsset2 = ctx.tx[sfAsset2];
-
-    if (!ctx.view.read(keylet::account(accountID)))
-    {
-        JLOG(ctx.j.debug()) << "AMM Instance: Invalid account.";
-        return terNO_ACCOUNT;
-    }
 
     if (auto const ter = requireAuth(ctx.view, saAsset1.issue(), accountID);
         ter != tesSUCCESS)
