@@ -26,20 +26,14 @@ QualityFunction::QualityFunction() : m_(0), b_(0)
 {
 }
 
-QualityFunction::QualityFunction(Quality const& quality)
+QualityFunction::QualityFunction(
+    Quality const& quality,
+    QualityFunction::CLOBLikeTag)
 {
     if (quality.rate() <= beast::zero)
-        Throw<std::runtime_error>("QualityFunction invalid initialization.");
+        Throw<std::runtime_error>("QualityFunction quality rate is 0.");
     m_ = 0;
     b_ = 1 / quality.rate();
-}
-
-QualityFunction::QualityFunction(Amounts const& amounts)
-{
-    if (amounts.in <= beast::zero || amounts.out <= beast::zero)
-        Throw<std::runtime_error>("QualityFunction invalid initialization.");
-    m_ = -1 / amounts.in;
-    b_ = amounts.out / amounts.in;
 }
 
 void

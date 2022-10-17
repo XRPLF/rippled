@@ -76,6 +76,13 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
         return temBAD_AMM_OPTIONS;
     }
 
+    if (asset1Out && asset2Out && asset1Out->issue() == asset2Out->issue())
+    {
+        JLOG(ctx.j.debug()) << "AMM Withdraw: invalid tokens, same issue."
+                            << asset1Out->issue() << " " << asset2Out->issue();
+        return temBAD_AMM_TOKENS;
+    }
+
     if (lpTokens && *lpTokens == beast::zero)
     {
         JLOG(ctx.j.debug()) << "AMM Withdraw: invalid tokens.";
@@ -119,8 +126,18 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
     auto const asset2Out = ctx.tx[~sfAsset2Out];
     auto const ammAccountID = (*ammSle)[sfAMMAccount];
 
+    auto const [issue1, issue2] = getTokensIssue(*ammSle);
+
     if (asset1Out)
     {
+        if (asset1Out->issue() != issue1 && asset1Out->issue() != issue2)
+        {
+            JLOG(ctx.j.debug())
+                << "AMM Withdraw: token mismatch, " << asset1Out->issue() << " "
+                << issue1 << " " << issue2;
+            return temBAD_AMM_TOKENS;
+        }
+
         if (auto const ter =
                 requireAuth(ctx.view, asset1Out->issue(), accountID);
             ter != tesSUCCESS)
@@ -133,6 +150,14 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
 
     if (asset2Out)
     {
+        if (asset2Out->issue() != issue1 && asset2Out->issue() != issue2)
+        {
+            JLOG(ctx.j.debug())
+                << "AMM Deposit: token mismatch, " << asset2Out->issue() << " "
+                << issue1 << " " << issue2;
+            return temBAD_AMM_TOKENS;
+        }
+
         if (auto const ter =
                 requireAuth(ctx.view, asset2Out->issue(), accountID);
             ter != tesSUCCESS)
@@ -189,19 +214,21 @@ AMMWithdraw::applyGuts(Sandbox& sb)
 
     auto const tfee = getTradingFee(ctx_.view(), *ammSle, account_);
 
-    auto const [asset1, asset2, lptAMMBalance] = ammHolds(
+    auto const expected = ammHolds(
         sb,
         *ammSle,
         asset1Out ? asset1Out->issue() : std::optional<Issue>{},
         asset2Out ? asset2Out->issue() : std::optional<Issue>{},
         ctx_.journal);
+    if (!expected)
+        return {expected.error(), false};
+    auto const [asset1, asset2, lptAMMBalance] = *expected;
 
     auto const [result, withdrawnTokens] =
         [&,
-         asset1 = std::ref(asset1),
-         asset2 = std::ref(asset2),
-         lptAMMBalance =
-             std::ref(lptAMMBalance)]() -> std::pair<TER, STAmount> {
+         &asset1 = asset1,
+         &asset2 = asset2,
+         &lptAMMBalance = lptAMMBalance]() -> std::pair<TER, STAmount> {
         if (asset1Out)
         {
             if (asset2Out)
@@ -310,8 +337,11 @@ AMMWithdraw::withdraw(
     if (!ammSle)
         return {tecINTERNAL, STAmount{}};
     auto const lpTokens = lpHolds(view, ammAccount, account_, ctx_.journal);
-    auto const [asset1, asset2, _] =
+    auto const expected =
         ammHolds(view, *ammSle, asset1Withdraw.issue(), std::nullopt, j_);
+    if (!expected)
+        return {expected.error(), STAmount{}};
+    auto const [asset1, asset2, _] = *expected;
     (void)_;
 
     // Invalid tokens or withdrawing more than own.
@@ -478,7 +508,7 @@ AMMWithdraw::singleWithdrawal(
     std::uint16_t tfee)
 {
     auto const tokens =
-        calcLPTokensOut(asset1Balance, asset1Out, lptAMMBalance, tfee);
+        lpTokensOut(asset1Balance, asset1Out, lptAMMBalance, tfee);
     if (tokens == beast::zero)
         return {tecAMM_FAILED_WITHDRAW, STAmount{}};
     return withdraw(
@@ -505,8 +535,8 @@ AMMWithdraw::singleWithdrawalTokens(
     STAmount const& lpTokensWithdraw,
     std::uint16_t tfee)
 {
-    auto const asset1Withdraw = calcWithdrawalByTokens(
-        asset1Balance, lptAMMBalance, lpTokensWithdraw, tfee);
+    auto const asset1Withdraw =
+        withdrawByTokens(asset1Balance, lptAMMBalance, lpTokensWithdraw, tfee);
     if (asset1Out == beast::zero || asset1Withdraw >= asset1Out)
         return withdraw(
             view,

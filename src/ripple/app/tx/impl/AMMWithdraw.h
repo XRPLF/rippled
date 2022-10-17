@@ -63,7 +63,7 @@ class Sandbox;
 class AMMWithdraw : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Custom};
+    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
     explicit AMMWithdraw(ApplyContext& ctx) : Transactor(ctx)
     {
@@ -72,11 +72,9 @@ public:
     static TxConsequences
     makeTxConsequences(PreflightContext const& ctx);
 
-    /** Enforce constraints beyond those of the Transactor base class. */
     static NotTEC
     preflight(PreflightContext const& ctx);
 
-    /** Enforce constraints beyond those of the Transactor base class. */
     static TER
     preclaim(PreclaimContext const& ctx);
 
@@ -90,11 +88,11 @@ private:
 
     /** Withdraw requested assets and token from AMM into LP account.
      * @param view
-     * @param ammAccount AMM account
-     * @param asset1Withdraw withdraw amount
-     * @param asset2Withdraw withdraw amount
-     * @param lptAMMBalance AMM LPT balance
-     * @param lpTokensWithdraw LPT withdraw amount
+     * @param ammAccount
+     * @param asset1Withdraw
+     * @param asset2Withdraw
+     * @param lptAMMBalance current AMM LPT balance
+     * @param lpTokensWithdraw
      * @return
      */
     std::pair<TER, STAmount>
@@ -110,7 +108,7 @@ private:
      * shares represented by the number of LPTokens .
      * The trading fee is not charged.
      * @param view
-     * @param ammAccount AMM account
+     * @param ammAccount
      * @param asset1Balance current LP asset1 balance
      * @param asset2Balance current LP asset2 balance
      * @param lptAMMBalance current AMM LPT balance
@@ -130,7 +128,7 @@ private:
      * on the maximum amount of each asset that the trader is willing
      * to withdraw. The trading fee is not charged.
      * @param view
-     * @param ammAccount AMM account
+     * @param ammAccount
      * @param asset1Balance current AMM asset1 balance
      * @param asset2Balance current AMM asset2 balance
      * @param lptAMMBalance current AMM LPT balance
@@ -152,7 +150,7 @@ private:
      * in Asset1Out. The trading fee is charged.
      * @param ctx
      * @param view
-     * @param ammAccount AMM account
+     * @param ammAccount
      * @param asset1Balance current AMM asset1 balance
      * @param lptAMMBalance current AMM LPT balance
      * @param asset1Out asset1 withdraw amount
@@ -171,7 +169,7 @@ private:
     /** Single asset withdrawal (Asset1Out, LPTokens) proportional
      * to the share specified by tokens. The trading fee is charged.
      * @param view
-     * @param ammAccount AMM account
+     * @param ammAccount
      * @param asset1Balance current AMM asset1 balance
      * @param lptAMMBalance current AMM LPT balance
      * @param asset1Out asset1 withdraw amount
@@ -192,7 +190,7 @@ private:
     /** Withdrawal of single asset (Asset1Out, EPrice) with two constraints.
      * The trading fee is charged.
      * @param view
-     * @param ammAccount AMM account
+     * @param ammAccount
      * @param asset1Balance current AMM asset1 balance
      * @param lptAMMBalance current AMM LPT balance
      * @param asset1Out asset1 withdraw amount

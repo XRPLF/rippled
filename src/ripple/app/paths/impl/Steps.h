@@ -201,7 +201,9 @@ public:
     getQF(ReadView const& v, DebtDirection prevStepDir) const
     {
         if (auto const res = qualityUpperBound(v, prevStepDir); res.first)
-            return {QualityFunction{*res.first}, res.second};
+            return {
+                QualityFunction{*res.first, QualityFunction::CLOBLikeTag{}},
+                res.second};
         else
             return {std::nullopt, res.second};
     }

@@ -18,15 +18,15 @@
 //==============================================================================
 #include <ripple/app/misc/AMM.h>
 #include <ripple/app/paths/TrustLine.h>
+#include <ripple/basics/Log.h>
 #include <ripple/ledger/Sandbox.h>
 #include <ripple/protocol/STAccount.h>
-#include <ripple/protocol/STArray.h>
 #include <ripple/protocol/STObject.h>
 
 namespace ripple {
 
 AccountID
-calcAMMAccountID(uint256 const& parentHash, uint256 const& ammID)
+ammAccountID(uint256 const& parentHash, uint256 const& ammID)
 {
     ripesha_hasher rsh;
     auto hash = sha512Half(parentHash, ammID);
@@ -34,23 +34,16 @@ calcAMMAccountID(uint256 const& parentHash, uint256 const& ammID)
     return AccountID{static_cast<ripesha_hasher::result_type>(rsh)};
 }
 
-uint256
-calcAMMGroupHash(Issue const& issue1, Issue const& issue2)
-{
-    auto const& [minI, maxI] = std::minmax(issue1, issue2);
-    return sha512Half(minI.account, minI.currency, maxI.account, maxI.currency);
-}
-
 Currency
-calcLPTCurrency(AccountID const& ammAccountID)
+lptCurrency(AccountID const& ammAccountID)
 {
     return Currency::fromVoid(ammAccountID.data());
 }
 
 Issue
-calcLPTIssue(AccountID const& ammAccountID)
+lptIssue(AccountID const& ammAccountID)
 {
-    return Issue(calcLPTCurrency(ammAccountID), ammAccountID);
+    return Issue(lptCurrency(ammAccountID), ammAccountID);
 }
 
 std::pair<STAmount, STAmount>
@@ -68,7 +61,7 @@ ammPoolHolds(
     return std::make_pair(assetInBalance, assetOutBalance);
 }
 
-std::tuple<STAmount, STAmount, STAmount>
+Expected<std::tuple<STAmount, STAmount, STAmount>, TER>
 ammHolds(
     ReadView const& view,
     SLE const& ammSle,
@@ -76,31 +69,39 @@ ammHolds(
     std::optional<Issue> const& optIssue2,
     beast::Journal const j)
 {
-    auto const [issue1, issue2] = [&]() -> std::pair<Issue, Issue> {
+    auto const issues = [&]() -> std::optional<std::pair<Issue, Issue>> {
         if (optIssue1 && optIssue2)
-            return {*optIssue1, *optIssue2};
+            return {{*optIssue1, *optIssue2}};
         auto const [issue1, issue2] = getTokensIssue(ammSle);
         if (optIssue1)
         {
             if (*optIssue1 == issue1)
-                return {issue1, issue2};
+                return {{issue1, issue2}};
             else if (*optIssue1 == issue2)
-                return {issue2, issue1};
-            Throw<std::runtime_error>("ammHolds: Invalid optIssue1.");
+                return {{issue2, issue1}};
+            JLOG(j.debug()) << "ammHolds: Invalid optIssue1 " << *optIssue1;
+            return std::nullopt;
         }
         else if (optIssue2)
         {
             if (*optIssue2 == issue2)
-                return {issue2, issue1};
+                return {{issue2, issue1}};
             else if (*optIssue2 == issue1)
-                return {issue1, issue2};
-            Throw<std::runtime_error>("ammHolds: Invalid optIssue2.");
+                return {{issue1, issue2}};
+            JLOG(j.debug()) << "ammHolds: Invalid optIssue2 " << *optIssue2;
+            return std::nullopt;
         }
-        return {issue1, issue2};
+        return {{issue1, issue2}};
     }();
+    if (!issues)
+        return Unexpected(tecAMM_INVALID_TOKENS);
     auto const [asset1, asset2] = ammPoolHolds(
-        view, ammSle.getAccountID(sfAMMAccount), issue1, issue2, j);
-    return {asset1, asset2, ammSle[sfLPTokenBalance]};
+        view,
+        ammSle.getAccountID(sfAMMAccount),
+        issues->first,
+        issues->second,
+        j);
+    return std::make_tuple(asset1, asset2, ammSle[sfLPTokenBalance]);
 }
 
 STAmount
@@ -110,12 +111,12 @@ lpHolds(
     AccountID const& lpAccount,
     beast::Journal const j)
 {
-    auto const lptIssue = calcLPTIssue(ammAccountID);
+    auto const lptIss = lptIssue(ammAccountID);
     return accountHolds(
         view,
         lpAccount,
-        lptIssue.currency,
-        lptIssue.account,
+        lptIss.currency,
+        lptIss.account,
         FreezeHandling::fhZERO_IF_FROZEN,
         j);
 }

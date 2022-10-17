@@ -74,7 +74,7 @@ public:
     }
 
     void
-    updateIters()
+    update()
     {
         if (ammUsed_ > 0)
             ++ammIters_;

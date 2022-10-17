@@ -38,10 +38,18 @@ private:
     Number b_;  // intercept
 
 public:
-    QualityFunction(Quality const& quality);
-    QualityFunction(Amounts const& amounts);
+    struct AMMTag
+    {
+    };
+    // AMMOffer for multi-path is like CLOB, i.e. the offer size
+    // changes proportionally to its quality.
+    struct CLOBLikeTag
+    {
+    };
+    QualityFunction(Quality const& quality, CLOBLikeTag);
+    template <typename TIn, typename TOut>
+    QualityFunction(TAmounts<TIn, TOut> const& amounts, AMMTag);
     QualityFunction();
-    //~QualityFunction() = default;
 
     /** Combines QF with the next step QF
      */
@@ -63,6 +71,17 @@ public:
         return m_ == 0;
     }
 };
+
+template <typename TIn, typename TOut>
+QualityFunction::QualityFunction(
+    TAmounts<TIn, TOut> const& amounts,
+    QualityFunction::AMMTag)
+{
+    if (amounts.in <= beast::zero || amounts.out <= beast::zero)
+        Throw<std::runtime_error>("QualityFunction amounts are 0.");
+    m_ = -1 / amounts.in;
+    b_ = amounts.out / amounts.in;
+}
 
 }  // namespace ripple
 

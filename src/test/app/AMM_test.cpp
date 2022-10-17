@@ -253,6 +253,200 @@ expectLedgerEntryRoot(
         to_string(expectedValue.xrp());
 }
 
+/* TODO Escrow test duplicate */
+/******************************************************************************/
+
+static Json::Value
+escrow(AccountID const& account, AccountID const& to, STAmount const& amount)
+{
+    using namespace jtx;
+    Json::Value jv;
+    jv[jss::TransactionType] = jss::EscrowCreate;
+    jv[jss::Flags] = tfUniversal;
+    jv[jss::Account] = to_string(account);
+    jv[jss::Destination] = to_string(to);
+    jv[jss::Amount] = amount.getJson(JsonOptions::none);
+    return jv;
+}
+
+static Json::Value
+finish(AccountID const& account, AccountID const& from, std::uint32_t seq)
+{
+    Json::Value jv;
+    jv[jss::TransactionType] = jss::EscrowFinish;
+    jv[jss::Flags] = tfUniversal;
+    jv[jss::Account] = to_string(account);
+    jv[sfOwner.jsonName] = to_string(from);
+    jv[sfOfferSequence.jsonName] = seq;
+    return jv;
+}
+
+std::array<std::uint8_t, 39> constexpr cb1 = {
+    {0xA0, 0x25, 0x80, 0x20, 0xE3, 0xB0, 0xC4, 0x42, 0x98, 0xFC,
+     0x1C, 0x14, 0x9A, 0xFB, 0xF4, 0xC8, 0x99, 0x6F, 0xB9, 0x24,
+     0x27, 0xAE, 0x41, 0xE4, 0x64, 0x9B, 0x93, 0x4C, 0xA4, 0x95,
+     0x99, 0x1B, 0x78, 0x52, 0xB8, 0x55, 0x81, 0x01, 0x00}};
+
+// A PreimageSha256 fulfillments and its associated condition.
+std::array<std::uint8_t, 4> const fb1 = {{0xA0, 0x02, 0x80, 0x00}};
+
+/** Set the "FinishAfter" time tag on a JTx */
+struct finish_time
+{
+private:
+    NetClock::time_point value_;
+
+public:
+    explicit finish_time(NetClock::time_point const& value) : value_(value)
+    {
+    }
+
+    void
+    operator()(jtx::Env&, jtx::JTx& jt) const
+    {
+        jt.jv[sfFinishAfter.jsonName] = value_.time_since_epoch().count();
+    }
+};
+
+struct condition
+{
+private:
+    std::string value_;
+
+public:
+    explicit condition(Slice cond) : value_(strHex(cond))
+    {
+    }
+
+    template <size_t N>
+    explicit condition(std::array<std::uint8_t, N> c) : condition(makeSlice(c))
+    {
+    }
+
+    void
+    operator()(jtx::Env&, jtx::JTx& jt) const
+    {
+        jt.jv[sfCondition.jsonName] = value_;
+    }
+};
+
+struct fulfillment
+{
+private:
+    std::string value_;
+
+public:
+    explicit fulfillment(Slice condition) : value_(strHex(condition))
+    {
+    }
+
+    template <size_t N>
+    explicit fulfillment(std::array<std::uint8_t, N> f)
+        : fulfillment(makeSlice(f))
+    {
+    }
+
+    void
+    operator()(jtx::Env&, jtx::JTx& jt) const
+    {
+        jt.jv[sfFulfillment.jsonName] = value_;
+    }
+};
+/******************************************************************************/
+/* TODO Payment Channel test duplicate */
+/******************************************************************************/
+static Json::Value
+create(
+    AccountID const& account,
+    AccountID const& to,
+    STAmount const& amount,
+    NetClock::duration const& settleDelay,
+    PublicKey const& pk,
+    std::optional<NetClock::time_point> const& cancelAfter = std::nullopt,
+    std::optional<std::uint32_t> const& dstTag = std::nullopt)
+{
+    using namespace jtx;
+    Json::Value jv;
+    jv[jss::TransactionType] = jss::PaymentChannelCreate;
+    jv[jss::Flags] = tfUniversal;
+    jv[jss::Account] = to_string(account);
+    jv[jss::Destination] = to_string(to);
+    jv[jss::Amount] = amount.getJson(JsonOptions::none);
+    jv["SettleDelay"] = settleDelay.count();
+    jv["PublicKey"] = strHex(pk.slice());
+    if (cancelAfter)
+        jv["CancelAfter"] = cancelAfter->time_since_epoch().count();
+    if (dstTag)
+        jv["DestinationTag"] = *dstTag;
+    return jv;
+}
+
+static Json::Value
+chfund(
+    AccountID const& account,
+    uint256 const& channel,
+    STAmount const& amount,
+    std::optional<NetClock::time_point> const& expiration = std::nullopt)
+{
+    using namespace jtx;
+    Json::Value jv;
+    jv[jss::TransactionType] = jss::PaymentChannelFund;
+    jv[jss::Flags] = tfUniversal;
+    jv[jss::Account] = to_string(account);
+    jv["Channel"] = to_string(channel);
+    jv[jss::Amount] = amount.getJson(JsonOptions::none);
+    if (expiration)
+        jv["Expiration"] = expiration->time_since_epoch().count();
+    return jv;
+}
+
+static Json::Value
+claim(
+    AccountID const& account,
+    uint256 const& channel,
+    std::optional<STAmount> const& balance = std::nullopt,
+    std::optional<STAmount> const& amount = std::nullopt,
+    std::optional<Slice> const& signature = std::nullopt,
+    std::optional<PublicKey> const& pk = std::nullopt)
+{
+    using namespace jtx;
+    Json::Value jv;
+    jv[jss::TransactionType] = jss::PaymentChannelClaim;
+    jv[jss::Flags] = tfUniversal;
+    jv[jss::Account] = to_string(account);
+    jv["Channel"] = to_string(channel);
+    if (amount)
+        jv[jss::Amount] = amount->getJson(JsonOptions::none);
+    if (balance)
+        jv["Balance"] = balance->getJson(JsonOptions::none);
+    if (signature)
+        jv["Signature"] = strHex(*signature);
+    if (pk)
+        jv["PublicKey"] = strHex(pk->slice());
+    return jv;
+}
+
+static uint256
+channel(
+    AccountID const& account,
+    AccountID const& dst,
+    std::uint32_t seqProxyValue)
+{
+    auto const k = keylet::payChan(account, dst, seqProxyValue);
+    return k.key;
+}
+
+static STAmount
+channelBalance(ReadView const& view, uint256 const& chan)
+{
+    auto const slep = view.read({ltPAYCHAN, chan});
+    if (!slep)
+        return XRPAmount{-1};
+    return (*slep)[sfBalance];
+}
+
+/******************************************************************************/
+
 class Test : public beast::unit_test::suite
 {
 protected:
@@ -846,6 +1040,39 @@ private:
                 alice, 0, std::nullopt, std::nullopt, ter(temBAD_AMM_TOKENS));
         });
 
+        // Depositing mismatched token, invalid Asset1In.issue
+        testAMM([&](AMM& ammAlice, Env& env) {
+            ammAlice.deposit(
+                alice,
+                GBP(100),
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                ter(temBAD_AMM_TOKENS));
+        });
+
+        // Depositing mismatched token, invalid Asset2In.issue
+        testAMM([&](AMM& ammAlice, Env& env) {
+            ammAlice.deposit(
+                alice,
+                USD(100),
+                GBP(100),
+                std::nullopt,
+                std::nullopt,
+                ter(temBAD_AMM_TOKENS));
+        });
+
+        // Depositing mismatched token, Asset1In.issue == Asset2In.issue
+        testAMM([&](AMM& ammAlice, Env& env) {
+            ammAlice.deposit(
+                alice,
+                USD(100),
+                USD(100),
+                std::nullopt,
+                std::nullopt,
+                ter(temBAD_AMM_TOKENS));
+        });
+
         // Invalid amount value
         testAMM([&](AMM& ammAlice, Env& env) {
             ammAlice.deposit(
@@ -1234,6 +1461,36 @@ private:
         testAMM([&](AMM& ammAlice, Env& env) {
             ammAlice.withdraw(
                 alice, 0, std::nullopt, std::nullopt, ter(temBAD_AMM_TOKENS));
+        });
+
+        // Mismatched token, invalid Asset1Out issue
+        testAMM([&](AMM& ammAlice, Env& env) {
+            ammAlice.withdraw(
+                alice,
+                GBP(100),
+                std::nullopt,
+                std::nullopt,
+                ter(temBAD_AMM_TOKENS));
+        });
+
+        // Mismatched token, invalid Asset2Out issue
+        testAMM([&](AMM& ammAlice, Env& env) {
+            ammAlice.withdraw(
+                alice,
+                USD(100),
+                GBP(100),
+                std::nullopt,
+                ter(temBAD_AMM_TOKENS));
+        });
+
+        // Mismatched token, Asset1Out.issue == Asset2Out.issue
+        testAMM([&](AMM& ammAlice, Env& env) {
+            ammAlice.withdraw(
+                alice,
+                USD(100),
+                USD(100),
+                std::nullopt,
+                ter(temBAD_AMM_TOKENS));
         });
 
         // Invalid amount value
@@ -2071,14 +2328,47 @@ private:
     {
         testcase("Invalid AMM Payment");
         using namespace jtx;
+        using namespace std::chrono;
+        using namespace std::literals::chrono_literals;
 
         // Can't pay into AMM account.
         // Can't pay out since there is no keys
         testAMM([&](AMM& ammAlice, Env& env) {
             env(pay(carol, ammAlice.ammAccount(), XRP(10)),
-                ter(tecAMM_DIRECT_PAYMENT));
+                ter(tecNO_PERMISSION));
             env(pay(carol, ammAlice.ammAccount(), USD(10)),
-                ter(tecAMM_DIRECT_PAYMENT));
+                ter(tecNO_PERMISSION));
+        });
+
+        // Can't pay into AMM with escrow.
+        testAMM([&](AMM& ammAlice, Env& env) {
+            auto const seq1 = env.seq(carol);
+            env(escrow(carol, ammAlice.ammAccount(), XRP(1)),
+                condition(cb1),
+                finish_time(env.now() + 1s),
+                fee(1500),
+                ter(tesSUCCESS));
+            env.close();
+            env(finish(carol, carol, seq1),
+                condition(cb1),
+                fulfillment(fb1),
+                fee(1500),
+                ter(tecNO_PERMISSION));
+        });
+
+        // Can't pay into AMM with paychan.
+        testAMM([&](AMM& ammAlice, Env& env) {
+            auto const pk = carol.pk();
+            auto const settleDelay = 100s;
+            auto const chan =
+                channel(carol, ammAlice.ammAccount(), env.seq(carol));
+            env(create(
+                    carol, ammAlice.ammAccount(), XRP(1000), settleDelay, pk),
+                ter(tesSUCCESS));
+            env(chfund(carol, chan, XRP(1000)), ter(tesSUCCESS));
+            auto const reqBal = channelBalance(*env.current(), chan) + XRP(500);
+            auto const authAmt = reqBal + XRP(100);
+            env(claim(carol, chan, reqBal, authAmt), ter(tecNO_PERMISSION));
         });
     }
 
@@ -4441,7 +4731,7 @@ class AMMCalc_test : public beast::unit_test::suite
                     auto const LPT = amm["LPT"];
                     std::cout
                         << to_string(
-                               calcAMMLPT(pool->first.in, pool->first.out, LPT)
+                               ammLPTokens(pool->first.in, pool->first.out, LPT)
                                    .iou())
                         << std::endl;
                     return true;

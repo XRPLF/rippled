@@ -49,7 +49,6 @@ transResults()
         MAKE_ERROR(tecAMM_EXISTS,                    "AMM instance exists."),
         MAKE_ERROR(tecAMM_FAILED_BID,                "AMM failed bid."),
         MAKE_ERROR(tecAMM_FAILED_VOTE,               "AMM failed vote."),
-        MAKE_ERROR(tecAMM_DIRECT_PAYMENT,            "AMM account can not be payment destination."),
         MAKE_ERROR(tecCLAIM,                         "Fee claimed. Sequence used. No action."),
         MAKE_ERROR(tecDIR_FULL,                      "Can not add entry to full directory."),
         MAKE_ERROR(tecFAILED_PROCESSING,             "Failed to correctly process transaction."),

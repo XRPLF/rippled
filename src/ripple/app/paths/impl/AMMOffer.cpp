@@ -18,6 +18,7 @@
 //==============================================================================/
 #include <ripple/app/paths/AMMLiquidity.h>
 #include <ripple/app/paths/AMMOffer.h>
+#include <ripple/protocol/QualityFunction.h>
 
 namespace ripple {
 
@@ -94,6 +95,15 @@ AMMOffer<TIn, TOut>::limitIn(
     if (ammLiquidity_.multiPath())
         return quality().ceil_in(offrAmt, limit);
     return {limit, swapAssetIn(*balances_, limit, ammLiquidity_.tradingFee())};
+}
+
+template <typename TIn, typename TOut>
+QualityFunction
+AMMOffer<TIn, TOut>::getQF() const
+{
+    if (ammLiquidity_.multiPath())
+        return QualityFunction{quality(), QualityFunction::CLOBLikeTag{}};
+    return QualityFunction{amounts_, QualityFunction::AMMTag{}};
 }
 
 template class AMMOffer<STAmount, STAmount>;

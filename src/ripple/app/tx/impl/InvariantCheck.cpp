@@ -141,10 +141,6 @@ XRPNotCreated::finalize(
     ReadView const&,
     beast::Journal const& j)
 {
-    // AMM is created with AMMInstanceCreate, not payment
-    if (tx.getTxnType() == ttAMM_INSTANCE_CREATE)
-        return true;
-
     // The net change should never be positive, as this would mean that the
     // transaction created XRP out of thin air. That's not possible.
     if (drops_ > 0)

@@ -128,7 +128,7 @@ get(STAmount const& a)
  * @return LP Tokens as IOU
  */
 STAmount
-calcAMMLPT(
+ammLPTokens(
     STAmount const& asset1,
     STAmount const& asset2,
     Issue const& lptIssue);
@@ -168,7 +168,7 @@ feeMultHalf(std::uint16_t tfee)
  * @return tokens
  */
 STAmount
-calcLPTokensIn(
+lpTokensIn(
     STAmount const& asset1Balance,
     STAmount const& asset1Deposit,
     STAmount const& lpTokensBalance,
@@ -182,7 +182,7 @@ calcLPTokensIn(
  * @return
  */
 STAmount
-calcAssetIn(
+assetIn(
     STAmount const& asset1Balance,
     STAmount const& lpTokensBalance,
     STAmount const& ammTokensBalance,
@@ -197,7 +197,7 @@ calcAssetIn(
  * @return tokens out amount
  */
 STAmount
-calcLPTokensOut(
+lpTokensOut(
     STAmount const& asset1Balance,
     STAmount const& asset1Withdraw,
     STAmount const& lpTokensBalance,
@@ -211,7 +211,7 @@ calcLPTokensOut(
  * @return calculated asset amount
  */
 STAmount
-calcWithdrawalByTokens(
+withdrawByTokens(
     STAmount const& assetBalance,
     STAmount const& lptAMMBalance,
     STAmount const& lpTokens,

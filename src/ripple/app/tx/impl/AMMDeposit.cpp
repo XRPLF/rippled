@@ -71,6 +71,13 @@ AMMDeposit::preflight(PreflightContext const& ctx)
         return temBAD_AMM_OPTIONS;
     }
 
+    if (asset1In && asset2In && asset1In->issue() == asset2In->issue())
+    {
+        JLOG(ctx.j.debug()) << "AMM Deposit: invalid tokens, same issue."
+                            << asset1In->issue() << " " << asset2In->issue();
+        return temBAD_AMM_TOKENS;
+    }
+
     if (lpTokens && *lpTokens <= beast::zero)
     {
         JLOG(ctx.j.debug()) << "AMM Deposit: invalid LPTokens";
@@ -111,10 +118,20 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
     }
 
     auto const asset1In = ctx.tx[~sfAsset1In];
-    auto const asset2Out = ctx.tx[~sfAsset2Out];
+    auto const asset2In = ctx.tx[~sfAsset2In];
+
+    auto const [issue1, issue2] = getTokensIssue(*ammSle);
 
     if (asset1In)
     {
+        if (asset1In->issue() != issue1 && asset1In->issue() != issue2)
+        {
+            JLOG(ctx.j.debug())
+                << "AMM Deposit: token mismatch, " << asset1In->issue() << " "
+                << issue1 << " " << issue2;
+            return temBAD_AMM_TOKENS;
+        }
+
         if (auto const ter =
                 requireAuth(ctx.view, asset1In->issue(), accountID);
             ter != tesSUCCESS)
@@ -125,26 +142,37 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    if (asset2Out)
+    if (asset2In)
     {
+        if (asset2In->issue() != issue1 && asset2In->issue() != issue2)
+        {
+            JLOG(ctx.j.debug())
+                << "AMM Deposit: token mismatch, " << asset2In->issue() << " "
+                << issue1 << " " << issue2;
+            return temBAD_AMM_TOKENS;
+        }
+
         if (auto const ter =
-                requireAuth(ctx.view, asset2Out->issue(), accountID);
+                requireAuth(ctx.view, asset2In->issue(), accountID);
             ter != tesSUCCESS)
         {
             JLOG(ctx.j.debug()) << "AMM Deposit: account is not authorized, "
-                                << asset2Out->issue();
+                                << asset2In->issue();
             return ter;
         }
     }
 
-    if (isFrozen(ctx.view, asset1In) || isFrozen(ctx.view, asset2Out))
+    if (isFrozen(ctx.view, asset1In) || isFrozen(ctx.view, asset2In))
     {
         JLOG(ctx.j.debug()) << "AMM Deposit involves frozen asset.";
         return tecFROZEN;
     }
 
-    auto const [asset1, asset2, lptAMMBalance] =
+    auto const expected =
         ammHolds(ctx.view, *ammSle, std::nullopt, std::nullopt, ctx.j);
+    if (!expected)
+        return expected.error();
+    auto const [asset1, asset2, lptAMMBalance] = *expected;
     if (asset1 <= beast::zero || asset2 <= beast::zero ||
         lptAMMBalance <= beast::zero)
     {
@@ -190,19 +218,21 @@ AMMDeposit::applyGuts(Sandbox& sb)
 
     auto const tfee = getTradingFee(ctx_.view(), *ammSle, account_);
 
-    auto const [asset1, asset2, lptAMMBalance] = ammHolds(
+    auto const expected = ammHolds(
         sb,
         *ammSle,
         asset1In ? asset1In->issue() : std::optional<Issue>{},
         asset2In ? asset2In->issue() : std::optional<Issue>{},
         ctx_.journal);
+    if (!expected)
+        return {expected.error(), false};
+    auto const [asset1, asset2, lptAMMBalance] = *expected;
 
     auto const [result, depositedTokens] =
         [&,
-         asset1 = std::ref(asset1),
-         asset2 = std::ref(asset2),
-         lptAMMBalance =
-             std::ref(lptAMMBalance)]() -> std::pair<TER, STAmount> {
+         &asset1 = asset1,
+         &asset2 = asset2,
+         &lptAMMBalance = lptAMMBalance]() -> std::pair<TER, STAmount> {
         if (asset1In)
         {
             if (asset2In)
@@ -287,23 +317,24 @@ AMMDeposit::deposit(
     std::optional<STAmount> const& asset2Deposit,
     STAmount const& lpTokensDeposit)
 {
-    // Check account has sufficient funds
-    auto balance = [&](auto const& asset) {
-        if (isXRP(asset))
+    // Check account has sufficient funds.
+    // Return true if it does, false otherwise.
+    auto balance = [&](auto const& assetDeposit) -> bool {
+        if (isXRP(assetDeposit))
         {
             auto const& lpIssue = lpTokensDeposit.issue();
             // Adjust the reserve if LP doesn't have LPToken trustline
             auto const sle = view.read(
                 keylet::line(account_, lpIssue.account, lpIssue.currency));
-            return xrpLiquid(view, account_, !sle, j_) >= asset;
+            return xrpLiquid(view, account_, !sle, j_) >= assetDeposit;
         }
         return accountHolds(
                    view,
                    account_,
-                   asset.issue().currency,
-                   asset.issue().account,
+                   assetDeposit.issue().currency,
+                   assetDeposit.issue().account,
                    FreezeHandling::fhZERO_IF_FROZEN,
-                   ctx_.journal) >= asset;
+                   ctx_.journal) >= assetDeposit;
     };
 
     // Deposit asset1Deposit
@@ -455,7 +486,7 @@ AMMDeposit::singleDeposit(
     std::uint16_t tfee)
 {
     auto const tokens =
-        calcLPTokensIn(asset1Balance, asset1In, lptAMMBalance, tfee);
+        lpTokensIn(asset1Balance, asset1In, lptAMMBalance, tfee);
     if (tokens == beast::zero)
         return {tecAMM_INVALID_TOKENS, STAmount{}};
     return deposit(view, ammAccount, asset1In, std::nullopt, tokens);
@@ -477,7 +508,7 @@ AMMDeposit::singleDepositTokens(
     std::uint16_t tfee)
 {
     auto const asset1Deposit =
-        calcAssetIn(asset1Balance, lpTokensDeposit, lptAMMBalance, tfee);
+        assetIn(asset1Balance, lpTokensDeposit, lptAMMBalance, tfee);
     return deposit(
         view, ammAccount, asset1Deposit, std::nullopt, lpTokensDeposit);
 }
@@ -520,7 +551,7 @@ AMMDeposit::singleDepositEPrice(
     if (asset1In != beast::zero)
     {
         auto const tokens =
-            calcLPTokensIn(asset1Balance, asset1In, lptAMMBalance, tfee);
+            lpTokensIn(asset1Balance, asset1In, lptAMMBalance, tfee);
         if (tokens == beast::zero)
             return {tecAMM_FAILED_DEPOSIT, STAmount{}};
         auto const ep = Number{asset1In} / tokens;

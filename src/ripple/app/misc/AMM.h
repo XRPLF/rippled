@@ -19,6 +19,7 @@
 #ifndef RIPPLE_APP_MISC_AMM_H_INLCUDED
 #define RIPPLE_APP_MISC_AMM_H_INLCUDED
 
+#include <ripple/basics/Expected.h>
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/protocol/Quality.h>
 #include <ripple/protocol/STAmount.h>
@@ -40,23 +41,17 @@ class Rules;
 /** Calculate AMM account ID.
  */
 AccountID
-calcAMMAccountID(uint256 const& parentHash, uint256 const& ammID);
-
-/** Calculate AMM group hash. The ltAMM object
- * contains all AMM's for the same issues.
- */
-uint256
-calcAMMGroupHash(Issue const& issue1, Issue const& issue2);
+ammAccountID(uint256 const& parentHash, uint256 const& ammID);
 
 /** Calculate Liquidity Provider Token (LPT) Currency.
  */
 Currency
-calcLPTCurrency(AccountID const& ammAccountID);
+lptCurrency(AccountID const& ammAccountID);
 
 /** Calculate LPT Issue.
  */
 Issue
-calcLPTIssue(AccountID const& ammAccountID);
+lptIssue(AccountID const& ammAccountID);
 
 /** Get AMM pool balances.
  */
@@ -72,7 +67,7 @@ ammPoolHolds(
  * provided then they are used as the AMM token pair issues.
  * Otherwise the missing issues are fetched from ammSle.
  */
-std::tuple<STAmount, STAmount, STAmount>
+Expected<std::tuple<STAmount, STAmount, STAmount>, TER>
 ammHolds(
     ReadView const& view,
     SLE const& ammSle,

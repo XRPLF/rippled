@@ -27,7 +27,7 @@ namespace ripple {
 class Sandbox;
 
 /** AMMBid implements AMM bid Transactor.
- * This is a novel mechanism for an AMM instance to auction-off
+ * This is a mechanism for an AMM instance to auction-off
  * the trading advantages to users (arbitrageurs) at a discounted
  * TradingFee for a 24 hour slot. Any account that owns corresponding
  * LPTokens can bid for the auction slot of that AMM instance.
@@ -64,7 +64,7 @@ class Sandbox;
 class AMMBid : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Custom};
+    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
     explicit AMMBid(ApplyContext& ctx) : Transactor(ctx)
     {
@@ -73,21 +73,15 @@ public:
     static TxConsequences
     makeTxConsequences(PreflightContext const& ctx);
 
-    /** Enforce constraints beyond those of the Transactor base class. */
     static NotTEC
     preflight(PreflightContext const& ctx);
 
-    /** Enforce constraints beyond those of the Transactor base class. */
     static TER
     preclaim(PreclaimContext const& ctx);
 
     /** Attempt to create the AMM instance. */
     TER
     doApply() override;
-
-private:
-    std::pair<TER, bool>
-    applyGuts(Sandbox& view);
 };
 
 }  // namespace ripple

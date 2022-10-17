@@ -140,8 +140,12 @@ AMMBid::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-std::pair<TER, bool>
-AMMBid::applyGuts(Sandbox& sb)
+static std::pair<TER, bool>
+applyBid(
+    ApplyContext& ctx_,
+    Sandbox& sb,
+    AccountID const& account_,
+    beast::Journal j_)
 {
     using namespace std::chrono;
     auto const amm = sb.peek(keylet::amm(ctx_.tx[sfAMMID]));
@@ -309,7 +313,7 @@ AMMBid::doApply()
     // if the order isn't going to be placed, to avoid wasting the work we did.
     Sandbox sbCancel(&ctx_.view());
 
-    auto const result = applyGuts(sb);
+    auto const result = applyBid(ctx_, sb, account_, j_);
     if (result.second)
         sb.apply(ctx_.rawView());
     else

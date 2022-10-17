@@ -24,7 +24,7 @@
 namespace ripple {
 
 STAmount
-calcAMMLPT(
+ammLPTokens(
     STAmount const& asset1,
     STAmount const& asset2,
     Issue const& lptIssue)
@@ -34,7 +34,7 @@ calcAMMLPT(
 }
 
 STAmount
-calcLPTokensIn(
+lpTokensIn(
     STAmount const& asset1Balance,
     STAmount const& asset1Deposit,
     STAmount const& lpTokensBalance,
@@ -48,7 +48,7 @@ calcLPTokensIn(
 }
 
 STAmount
-calcAssetIn(
+assetIn(
     STAmount const& asset1Balance,
     STAmount const& lpTokensBalance,
     STAmount const& lptAMMBalance,
@@ -62,7 +62,7 @@ calcAssetIn(
 }
 
 STAmount
-calcLPTokensOut(
+lpTokensOut(
     STAmount const& asset1Balance,
     STAmount const& asset1Withdraw,
     STAmount const& lpTokensBalance,
@@ -78,7 +78,7 @@ calcLPTokensOut(
 }
 
 STAmount
-calcWithdrawalByTokens(
+withdrawByTokens(
     STAmount const& assetBalance,
     STAmount const& lptAMMBalance,
     STAmount const& lpTokens,

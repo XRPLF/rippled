@@ -27,7 +27,6 @@ namespace ripple {
 class Sandbox;
 
 /** AMMCreate implements Automatic Market Maker(AMM) creation Transactor.
- * [https://github.com/XRPLF/XRPL-Standards/discussions/78]
  *  It creates a new AMM instance with two tokens. Any trader, or Liquidity
  *  Provider (LP), can create the AMM instance and receive in return shares
  *  of the AMM pool in the form on LPTokens. The number of tokens that LP gets
@@ -58,7 +57,7 @@ class Sandbox;
 class AMMCreate : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Custom};
+    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
     explicit AMMCreate(ApplyContext& ctx) : Transactor(ctx)
     {
@@ -67,21 +66,15 @@ public:
     static TxConsequences
     makeTxConsequences(PreflightContext const& ctx);
 
-    /** Enforce constraints beyond those of the Transactor base class. */
     static NotTEC
     preflight(PreflightContext const& ctx);
 
-    /** Enforce constraints beyond those of the Transactor base class. */
     static TER
     preclaim(PreclaimContext const& ctx);
 
     /** Attempt to create the AMM instance. */
     TER
     doApply() override;
-
-private:
-    std::pair<TER, bool>
-    applyGuts(Sandbox& view);
 };
 
 }  // namespace ripple

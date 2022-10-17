@@ -27,6 +27,7 @@ namespace ripple {
 
 template <typename TIn, typename TOut>
 class AMMLiquidity;
+class QualityFunction;
 
 /** Represents synthetic AMM offer in BookStep. AMMOffer mirrors TOffer
  * methods for use in generic BookStep methods. AMMOffer amounts
@@ -98,6 +99,9 @@ public:
      */
     TAmounts<TIn, TOut>
     limitIn(TAmounts<TIn, TOut> const& offrAmt, TIn const& limit) const;
+
+    QualityFunction
+    getQF() const;
 };
 
 }  // namespace ripple

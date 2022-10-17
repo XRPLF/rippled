@@ -49,7 +49,7 @@ AMM::AMM(
     std::optional<ter> const& ter)
     : env_(env)
     , creatorAccount_(account)
-    , ammID_(ripple::calcAMMGroupHash(asset1.issue(), asset2.issue()))
+    , ammID_(keylet::amm(asset1.issue(), asset2.issue()).key)
     , asset1_(asset1)
     , asset2_(asset2)
     , initialLPTokens_((IOUAmount)root2(number(asset1) * number(asset2)))
@@ -95,11 +95,11 @@ AMM::create(
     env_.close();
     if (!ter_)
     {
-        if (auto const amm = env_.current()->read(keylet::amm(
-                calcAMMGroupHash(asset1_.issue(), asset2_.issue()))))
+        if (auto const amm = env_.current()->read(
+                keylet::amm(asset1_.issue(), asset2_.issue())))
         {
             ammAccount_ = amm->getAccountID(sfAMMAccount);
-            lptIssue_ = ripple::calcLPTIssue(ammAccount_);
+            lptIssue_ = ripple::lptIssue(ammAccount_);
         }
     }
 }
@@ -232,8 +232,8 @@ bool
 AMM::ammExists() const
 {
     return env_.current()->read(keylet::account(ammAccount_)) != nullptr &&
-        env_.current()->read(keylet::amm(
-            calcAMMGroupHash(asset1_.issue(), asset2_.issue()))) != nullptr;
+        env_.current()->read(keylet::amm(asset1_.issue(), asset2_.issue())) !=
+        nullptr;
 }
 
 bool

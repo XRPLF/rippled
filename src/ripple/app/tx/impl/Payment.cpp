@@ -269,14 +269,6 @@ Payment::preclaim(PreclaimContext const& ctx)
 
         return tecDST_TAG_NEEDED;
     }
-    else if (sleDst->getFlags() & lsfAMM)
-    {
-        // Paying directly into the AMM pool is invalid.
-        JLOG(ctx.j.trace())
-            << "Malformed transaction: Direct payment into AMM is invalid.";
-
-        return tecAMM_DIRECT_PAYMENT;
-    }
 
     if (paths || sendMax || !saDstAmount.native())
     {

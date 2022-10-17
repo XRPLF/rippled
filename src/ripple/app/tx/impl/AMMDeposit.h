@@ -63,7 +63,7 @@ class Sandbox;
 class AMMDeposit : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Custom};
+    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
     explicit AMMDeposit(ApplyContext& ctx) : Transactor(ctx)
     {
@@ -72,11 +72,9 @@ public:
     static TxConsequences
     makeTxConsequences(PreflightContext const& ctx);
 
-    /** Enforce constraints beyond those of the Transactor base class. */
     static NotTEC
     preflight(PreflightContext const& ctx);
 
-    /** Enforce constraints beyond those of the Transactor base class. */
     static TER
     preclaim(PreclaimContext const& ctx);
 
@@ -89,16 +87,16 @@ private:
     applyGuts(Sandbox& view);
 
     /** Deposit requested assets and token amount into LP account.
-     * @param view
-     * @param ammAccount AMM account
-     * @param asset1Deposit deposit amount
-     * @param asset2Deposit deposit amount
+     * @param assetDeposit
+     * @param ammAccount
+     * @param asset1Deposit
+     * @param asset2Deposit
      * @param lpTokensDeposit amount of tokens to deposit
      * @return
      */
     std::pair<TER, STAmount>
     deposit(
-        Sandbox& view,
+        Sandbox& assetDeposit,
         AccountID const& ammAccount,
         STAmount const& asset1Deposit,
         std::optional<STAmount> const& asset2Deposit,
@@ -107,7 +105,7 @@ private:
     /** Equal asset deposit (LPTokens) for the specified share of
      * the AMM instance pools. The trading fee is not charged.
      * @param view
-     * @param ammAccount AMM account
+     * @param ammAccount
      * @param asset1Balance current AMM asset1 balance
      * @param asset2Balance current AMM asset2 balance
      * @param lptAMMBalance current AMM LPT balance
@@ -127,7 +125,7 @@ private:
      * the maximum amount of both assets that the trader is willing to deposit.
      * The trading fee is not charged.
      * @param view
-     * @param ammAccount AMM account
+     * @param ammAccount
      * @param asset1Balance current AMM asset1 balance
      * @param asset2Balance current AMM asset2 balance
      * @param lptAMMBalance current AMM LPT balance
@@ -148,7 +146,7 @@ private:
     /** Single asset deposit (Asset1In) by the amount.
      * The trading fee is charged.
      * @param view
-     * @param ammAccount AMM account
+     * @param ammAccount
      * @param asset1Balance current AMM asset1 balance
      * @param lptAMMBalance current AMM LPT balance
      * @param asset1In requested asset1 deposit amount
@@ -167,7 +165,7 @@ private:
     /** Single asset deposit (Asset1In, LPTokens) by the tokens.
      * The trading fee is charged.
      * @param view
-     * @param ammAccount AMM account
+     * @param ammAccount
      * @param asset1Balance current AMM asset1 balance
      * @param lptAMMBalance current AMM LPT balance
      * @param lpTokensDeposit amount of tokens to deposit
@@ -186,7 +184,7 @@ private:
     /** Single asset deposit (Asset1In, EPrice) with two constraints.
      * The trading fee is charged.
      * @param view
-     * @param ammAccount AMM account
+     * @param ammAccount
      * @param asset1Balance current AMM asset1 balance
      * @param asset1In requested asset1 deposit amount
      * @param lptAMMBalance current AMM LPT balance

@@ -770,7 +770,7 @@ flow(
                             << " remainingOut: " << to_string(remainingOut);
 
             best->sb.apply(sb);
-            ammContext.updateIters();
+            ammContext.update();
         }
         else
         {
