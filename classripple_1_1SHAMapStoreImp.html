@@ -68,6 +68,7 @@ $(function() {
   <div class="summary">
 <a href="#nested-classes">Classes</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pri-types">Private Types</a> &#124;
 <a href="#pri-methods">Private Member Functions</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="#pri-static-attribs">Static Private Attributes</a> &#124;
@@ -184,6 +185,14 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a7526140fe1abd6784e9ee844e578f1cb"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapStoreImp.html#a7526140fe1abd6784e9ee844e578f1cb">stop</a> () override</td></tr>
 <tr class="separator:a7526140fe1abd6784e9ee844e578f1cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-types"></a>
+Private Types</h2></td></tr>
+<tr class="memitem:aaef701af5fbfe0fe8d445eddc7ccf7c8"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapStoreImp.html#aaef701af5fbfe0fe8d445eddc7ccf7c8">HealthResult</a> { <a class="el" href="classripple_1_1SHAMapStoreImp.html#aaef701af5fbfe0fe8d445eddc7ccf7c8a648993c73fe27067b143d924a5cf681c">stopping</a>, 
+<a class="el" href="classripple_1_1SHAMapStoreImp.html#aaef701af5fbfe0fe8d445eddc7ccf7c8a9364adacd2f20c7a4c243d76f7dc48f8">keepGoing</a>
+ }</td></tr>
+<tr class="memdesc:aaef701af5fbfe0fe8d445eddc7ccf7c8"><td class="mdescLeft">&#160;</td><td class="mdescRight">This is a health check for online deletion that waits until rippled is stable before returning.  <a href="classripple_1_1SHAMapStoreImp.html#aaef701af5fbfe0fe8d445eddc7ccf7c8">More...</a><br /></td></tr>
+<tr class="separator:aaef701af5fbfe0fe8d445eddc7ccf7c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
 <tr class="memitem:ad702a7e0ba143504fd7fe4bab9952657"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapStoreImp.html#ad702a7e0ba143504fd7fe4bab9952657">copyNode</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> &amp;nodeCount, <a class="el" href="classripple_1_1SHAMapTreeNode.html">SHAMapTreeNode</a> const &amp;node)</td></tr>
@@ -206,9 +215,8 @@ Private Member Functions</h2></td></tr>
 <tr class="separator:ad486e43fe6ea6c304d7cf119fb009894"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2b3b5566e7e19153f06459fced983932"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapStoreImp.html#a2b3b5566e7e19153f06459fced983932">clearPrior</a> (<a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> lastRotated)</td></tr>
 <tr class="separator:a2b3b5566e7e19153f06459fced983932"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a43639e34fbd3cbfee5ed3e6192790df4"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapStoreImp.html#a43639e34fbd3cbfee5ed3e6192790df4">stopping</a> ()</td></tr>
-<tr class="memdesc:a43639e34fbd3cbfee5ed3e6192790df4"><td class="mdescLeft">&#160;</td><td class="mdescRight">This is a health check for online deletion that waits until rippled is stable until returning.  <a href="classripple_1_1SHAMapStoreImp.html#a43639e34fbd3cbfee5ed3e6192790df4">More...</a><br /></td></tr>
-<tr class="separator:a43639e34fbd3cbfee5ed3e6192790df4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aef1374a1b83fa583051e613a6b46be93"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1SHAMapStoreImp.html#aaef701af5fbfe0fe8d445eddc7ccf7c8">HealthResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapStoreImp.html#aef1374a1b83fa583051e613a6b46be93">healthWait</a> ()</td></tr>
+<tr class="separator:aef1374a1b83fa583051e613a6b46be93"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
@@ -261,7 +269,7 @@ Private Attributes</h2></td></tr>
 <tr class="memitem:a892c279b4ed512af158526307a8e32dc"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapStoreImp.html#a892c279b4ed512af158526307a8e32dc">ageThreshold_</a> {60}</td></tr>
 <tr class="separator:a892c279b4ed512af158526307a8e32dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a61afe6de983f363d89c310dfa0058046"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapStoreImp.html#a61afe6de983f363d89c310dfa0058046">recoveryWaitTime_</a> {5}</td></tr>
-<tr class="memdesc:a61afe6de983f363d89c310dfa0058046"><td class="mdescLeft">&#160;</td><td class="mdescRight">If the node is out of sync during an online_delete health check, sleep the thread for this time, and continue checking until recovery.  <a href="classripple_1_1SHAMapStoreImp.html#a61afe6de983f363d89c310dfa0058046">More...</a><br /></td></tr>
+<tr class="memdesc:a61afe6de983f363d89c310dfa0058046"><td class="mdescLeft">&#160;</td><td class="mdescRight">If the node is out of sync during an online_delete <a class="el" href="classripple_1_1SHAMapStoreImp.html#aef1374a1b83fa583051e613a6b46be93">healthWait()</a> call, sleep the thread for this time, and continue checking until recovery.  <a href="classripple_1_1SHAMapStoreImp.html#a61afe6de983f363d89c310dfa0058046">More...</a><br /></td></tr>
 <tr class="separator:a61afe6de983f363d89c310dfa0058046"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a14aaa8478db87f3e4769bc3b2a02e271"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1NetworkOPs.html">NetworkOPs</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapStoreImp.html#a14aaa8478db87f3e4769bc3b2a02e271">netOPs_</a> = nullptr</td></tr>
 <tr class="separator:a14aaa8478db87f3e4769bc3b2a02e271"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -284,7 +292,40 @@ Static Private Attributes</h2></td></tr>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
 <p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00040">40</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
-</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+</div><h2 class="groupheader">Member Enumeration Documentation</h2>
+<a id="aaef701af5fbfe0fe8d445eddc7ccf7c8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaef701af5fbfe0fe8d445eddc7ccf7c8">&#9670;&nbsp;</a></span>HealthResult</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="classripple_1_1SHAMapStoreImp.html#aaef701af5fbfe0fe8d445eddc7ccf7c8">ripple::SHAMapStoreImp::HealthResult</a></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>This is a health check for online deletion that waits until rippled is stable before returning. </p>
+<p>It returns an indication of whether the server is stopping.</p>
+<dl class="section return"><dt>Returns</dt><dd>Whether the server is stopping. </dd></dl>
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="aaef701af5fbfe0fe8d445eddc7ccf7c8a648993c73fe27067b143d924a5cf681c"></a>stopping&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="aaef701af5fbfe0fe8d445eddc7ccf7c8a9364adacd2f20c7a4c243d76f7dc48f8"></a>keepGoing&#160;</td><td class="fielddoc"></td></tr>
+</table>
+
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00232">232</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+
+</div>
+</div>
+<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="afcfb3eb9b0f130dfe1211b8f56f67a55"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#afcfb3eb9b0f130dfe1211b8f56f67a55">&#9670;&nbsp;</a></span>SHAMapStoreImp()</h2>
 
@@ -348,7 +389,7 @@ Static Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1SHAMapStore.html#a6bd103dd779634de40c59681605874e6">ripple::SHAMapStore</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00130">130</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00129">129</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -410,7 +451,7 @@ Static Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1SHAMapStore.html#a2b1a46d6f878575eeea6730c8fc367f2">ripple::SHAMapStore</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00140">140</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00139">139</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -441,7 +482,7 @@ Static Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1SHAMapStore.html#a737537b2e26dd540a14ac7c7a98a0701">ripple::SHAMapStore</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00148">148</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00147">147</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -472,7 +513,7 @@ Static Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1SHAMapStore.html#a7d926beeaf7fe6baf9fa95ee2b4d85d1">ripple::SHAMapStore</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00156">156</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00155">155</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -503,7 +544,7 @@ Static Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1SHAMapStore.html#a90d0d6d4d070628e340c78cd818e9ae0">ripple::SHAMapStore</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00164">164</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00163">163</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -779,7 +820,7 @@ template&lt;class CacheInstance &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00194">194</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00193">193</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -919,8 +960,8 @@ template&lt;class CacheInstance &gt; </div>
 
 </div>
 </div>
-<a id="a43639e34fbd3cbfee5ed3e6192790df4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a43639e34fbd3cbfee5ed3e6192790df4">&#9670;&nbsp;</a></span>stopping()</h2>
+<a id="aef1374a1b83fa583051e613a6b46be93"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aef1374a1b83fa583051e613a6b46be93">&#9670;&nbsp;</a></span>healthWait()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -929,7 +970,7 @@ template&lt;class CacheInstance &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">bool ripple::SHAMapStoreImp::stopping </td>
+          <td class="memname"><a class="el" href="classripple_1_1SHAMapStoreImp.html#aaef701af5fbfe0fe8d445eddc7ccf7c8">SHAMapStoreImp::HealthResult</a> ripple::SHAMapStoreImp::healthWait </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -941,10 +982,6 @@ template&lt;class CacheInstance &gt; </div>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>This is a health check for online deletion that waits until rippled is stable until returning. </p>
-<p>If the server is stopping, then it returns "true" to inform the caller to allow the server to stop.</p>
-<dl class="section return"><dt>Returns</dt><dd>Whether the server is stopping. </dd></dl>
 
 <p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8cpp_source.html#l00680">680</a> of file <a class="el" href="SHAMapStoreImp_8cpp_source.html">SHAMapStoreImp.cpp</a>.</p>
 
@@ -1653,10 +1690,10 @@ template&lt;class CacheInstance &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p>If the node is out of sync during an online_delete health check, sleep the thread for this time, and continue checking until recovery. </p>
+<p>If the node is out of sync during an online_delete <a class="el" href="classripple_1_1SHAMapStoreImp.html#aef1374a1b83fa583051e613a6b46be93">healthWait()</a> call, sleep the thread for this time, and continue checking until recovery. </p>
 <p>See also: "recovery_wait_seconds" in rippled-example.cfg </p>
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00112">112</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00111">111</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -1680,7 +1717,7 @@ template&lt;class CacheInstance &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00116">116</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00115">115</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -1704,7 +1741,7 @@ template&lt;class CacheInstance &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00117">117</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00116">116</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -1728,7 +1765,7 @@ template&lt;class CacheInstance &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00118">118</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00117">117</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -1752,7 +1789,7 @@ template&lt;class CacheInstance &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00119">119</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00118">118</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -1776,7 +1813,7 @@ template&lt;class CacheInstance &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00121">121</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00120">120</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>

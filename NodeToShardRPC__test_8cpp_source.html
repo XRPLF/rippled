@@ -265,217 +265,227 @@ $(function() {
 <div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;                result[jss::status] == <span class="stringliteral">&quot;success&quot;</span> ||</div>
 <div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;                <a class="code" href="classripple_1_1test_1_1NodeToShardRPC__test.html#ad7a472f9a50521e186fb5c903a4a11d2">importCompleted</a>(shardStore, numberOfShards, result));</div>
 <div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160; </div>
-<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> <span class="keyword">const</span> maxWait{60};</div>
-<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> start = <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/system_clock/now.html">std::chrono::system_clock::now</a>();</div>
-<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160; </div>
-<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;            <span class="keywordflow">while</span> (<span class="keyword">true</span>)</div>
-<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;            {</div>
-<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;                <span class="comment">// Verify that the status object accurately</span></div>
-<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;                <span class="comment">// reflects import progress.</span></div>
-<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160; </div>
-<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;                <span class="keyword">auto</span> <span class="keyword">const</span> completeShards =</div>
-<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;                    shardStore-&gt;getShardInfo()-&gt;finalized();</div>
-<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160; </div>
-<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;                <span class="keywordflow">if</span> (!completeShards.empty())</div>
-<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;                {</div>
-<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;                    <span class="keyword">auto</span> <span class="keyword">const</span> result = env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a0f3a59ffc07ea469d2999d1ae0aeea77">rpc</a>(</div>
-<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;                        <span class="stringliteral">&quot;json&quot;</span>,</div>
-<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;                        <span class="stringliteral">&quot;node_to_shard&quot;</span>,</div>
-<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;                        <a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(jvParams))[jss::result];</div>
-<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160; </div>
-<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;                    <span class="keywordflow">if</span> (!<a class="code" href="classripple_1_1test_1_1NodeToShardRPC__test.html#ad7a472f9a50521e186fb5c903a4a11d2">importCompleted</a>(shardStore, numberOfShards, result))</div>
-<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;                    {</div>
-<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;                        BEAST_EXPECT(result[jss::firstShardIndex] == 1);</div>
-<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;                        BEAST_EXPECT(result[jss::lastShardIndex] == 10);</div>
-<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;                    }</div>
-<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;                }</div>
-<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160; </div>
-<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;                <span class="keywordflow">if</span> (boost::icl::contains(completeShards, 1))</div>
-<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;                {</div>
-<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;                    <span class="keyword">auto</span> <span class="keyword">const</span> result = env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a0f3a59ffc07ea469d2999d1ae0aeea77">rpc</a>(</div>
-<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;                        <span class="stringliteral">&quot;json&quot;</span>,</div>
-<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;                        <span class="stringliteral">&quot;node_to_shard&quot;</span>,</div>
-<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;                        <a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(jvParams))[jss::result];</div>
-<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160; </div>
-<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;                    BEAST_EXPECT(</div>
-<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;                        result[jss::currentShardIndex] &gt;= 1 ||</div>
-<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;                        <a class="code" href="classripple_1_1test_1_1NodeToShardRPC__test.html#ad7a472f9a50521e186fb5c903a4a11d2">importCompleted</a>(shardStore, numberOfShards, result));</div>
-<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160; </div>
-<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;                    <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;                }</div>
+<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> <span class="keyword">const</span> maxWait{180};</div>
+<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160; </div>
+<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;            {</div>
+<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;                <span class="keyword">auto</span> <span class="keyword">const</span> start = <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/system_clock/now.html">std::chrono::system_clock::now</a>();</div>
+<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;                <span class="keywordflow">while</span> (<span class="keyword">true</span>)</div>
+<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;                {</div>
+<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;                    <span class="comment">// Verify that the status object accurately</span></div>
+<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;                    <span class="comment">// reflects import progress.</span></div>
+<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160; </div>
+<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;                    <span class="keyword">auto</span> <span class="keyword">const</span> completeShards =</div>
+<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;                        shardStore-&gt;getShardInfo()-&gt;finalized();</div>
+<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160; </div>
+<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;                    <span class="keywordflow">if</span> (!completeShards.empty())</div>
+<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;                    {</div>
+<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;                        <span class="keyword">auto</span> <span class="keyword">const</span> result = env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a0f3a59ffc07ea469d2999d1ae0aeea77">rpc</a>(</div>
+<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;                            <span class="stringliteral">&quot;json&quot;</span>,</div>
+<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;                            <span class="stringliteral">&quot;node_to_shard&quot;</span>,</div>
+<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;                            <a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(jvParams))[jss::result];</div>
+<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160; </div>
+<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;                        <span class="keywordflow">if</span> (!<a class="code" href="classripple_1_1test_1_1NodeToShardRPC__test.html#ad7a472f9a50521e186fb5c903a4a11d2">importCompleted</a>(</div>
+<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;                                shardStore, numberOfShards, result))</div>
+<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;                        {</div>
+<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;                            BEAST_EXPECT(result[jss::firstShardIndex] == 1);</div>
+<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;                            BEAST_EXPECT(result[jss::lastShardIndex] == 10);</div>
+<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;                        }</div>
+<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;                    }</div>
+<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160; </div>
+<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;                    <span class="keywordflow">if</span> (boost::icl::contains(completeShards, 1))</div>
+<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;                    {</div>
+<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;                        <span class="keyword">auto</span> <span class="keyword">const</span> result = env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a0f3a59ffc07ea469d2999d1ae0aeea77">rpc</a>(</div>
+<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;                            <span class="stringliteral">&quot;json&quot;</span>,</div>
+<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;                            <span class="stringliteral">&quot;node_to_shard&quot;</span>,</div>
+<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;                            <a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(jvParams))[jss::result];</div>
+<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160; </div>
+<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;                        BEAST_EXPECT(</div>
+<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;                            result[jss::currentShardIndex] &gt;= 1 ||</div>
+<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;                            <a class="code" href="classripple_1_1test_1_1NodeToShardRPC__test.html#ad7a472f9a50521e186fb5c903a4a11d2">importCompleted</a>(</div>
+<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;                                shardStore, numberOfShards, result));</div>
 <div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160; </div>
-<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;                <span class="keywordflow">if</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/sleep_for.html">std::this_thread::sleep_for</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a>{100});</div>
-<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;                    <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/system_clock/now.html">std::chrono::system_clock::now</a>() - start &gt; maxWait)</div>
-<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;                {</div>
-<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;                    BEAST_EXPECTS(</div>
-<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;                        <span class="keyword">false</span>, <span class="stringliteral">&quot;Import timeout: could just be a slow machine.&quot;</span>);</div>
-<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;                    <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;                }</div>
-<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;            }</div>
-<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160; </div>
-<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;            <span class="comment">// Wait for the import to complete</span></div>
-<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;            <span class="keywordflow">while</span> (!boost::icl::contains(</div>
-<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;                shardStore-&gt;getShardInfo()-&gt;finalized(), 10))</div>
-<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;            {</div>
-<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;                <span class="keywordflow">if</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/sleep_for.html">std::this_thread::sleep_for</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a>{100});</div>
-<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;                    <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/system_clock/now.html">std::chrono::system_clock::now</a>() - start &gt; maxWait)</div>
-<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;                {</div>
-<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;                    BEAST_EXPECT(</div>
-<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;                        <a class="code" href="classripple_1_1test_1_1NodeToShardRPC__test.html#ad7a472f9a50521e186fb5c903a4a11d2">importCompleted</a>(shardStore, numberOfShards, result));</div>
-<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;                    <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;                }</div>
-<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;            }</div>
-<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;        }</div>
-<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;    }</div>
-<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160; </div>
-<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00261"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1NodeToShardRPC__test.html#a69a3213c0543d4428912aa0b5f9c25a4">  261</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1NodeToShardRPC__test.html#a69a3213c0543d4428912aa0b5f9c25a4">testStop</a>()</div>
-<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;    {</div>
-<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;        testcase(<span class="stringliteral">&quot;Stop&quot;</span>);</div>
-<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160; </div>
-<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;        <a class="code" href="classbeast_1_1temp__dir.html">beast::temp_dir</a> tempDir;</div>
-<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160; </div>
-<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html">jtx::Env</a> env = [&amp;] {</div>
-<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;            <span class="keyword">auto</span> c = <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a287cf5b6a71db097fe1678c88926efb4">jtx::envconfig</a>();</div>
-<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;            <span class="keyword">auto</span>&amp; section = c-&gt;section(<a class="code" href="structripple_1_1ConfigSection.html#abab87cd32670610e64b43124c381775c">ConfigSection::shardDatabase</a>());</div>
-<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;            section.set(<span class="stringliteral">&quot;path&quot;</span>, tempDir.<a class="code" href="classbeast_1_1temp__dir.html#a12a24007c243e0739cfc36703a3257bb">path</a>());</div>
-<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;            section.set(<span class="stringliteral">&quot;max_historical_shards&quot;</span>, <span class="stringliteral">&quot;20&quot;</span>);</div>
-<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;            section.set(<span class="stringliteral">&quot;ledgers_per_shard&quot;</span>, <span class="stringliteral">&quot;256&quot;</span>);</div>
-<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;            section.set(<span class="stringliteral">&quot;earliest_seq&quot;</span>, <span class="stringliteral">&quot;257&quot;</span>);</div>
-<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;            <span class="keyword">auto</span>&amp; sectionNode = c-&gt;section(<a class="code" href="structripple_1_1ConfigSection.html#a44ee859a6705ddcac4e318602f8fe6ac">ConfigSection::nodeDatabase</a>());</div>
-<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;            sectionNode.set(<span class="stringliteral">&quot;earliest_seq&quot;</span>, <span class="stringliteral">&quot;257&quot;</span>);</div>
-<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;            sectionNode.set(<span class="stringliteral">&quot;ledgers_per_shard&quot;</span>, <span class="stringliteral">&quot;256&quot;</span>);</div>
-<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;            c-&gt;setupControl(<span class="keyword">true</span>, <span class="keyword">true</span>, <span class="keyword">true</span>);</div>
-<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160; </div>
-<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;            <span class="keywordflow">return</span> <a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html">jtx::Env</a>(</div>
-<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;                *<span class="keyword">this</span>, std::move(c), <span class="keyword">nullptr</span>, <a class="code" href="namespacebeast_1_1severities.html#a069a8a312b9123b77f6aa31733ca73beae13a45640877c138fc59c94443ece6f0">beast::severities::kDisabled</a>);</div>
-<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;        }();</div>
-<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160; </div>
-<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> <span class="keyword">const</span> numberOfShards = 10;</div>
-<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160; </div>
-<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;        <span class="comment">// Create some ledgers so that we can initiate a</span></div>
-<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;        <span class="comment">// shard store database import.</span></div>
-<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;        <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a9e55bbdb66a785bfd0dda93802b514b6">app</a>().<a class="code" href="classripple_1_1Application.html#a5ea4991eb9c4d29e8de734016293ba33">getShardStore</a>()-&gt;<a class="code" href="classripple_1_1NodeStore_1_1Database.html#aa65b806f875f06f0b17c83d987118c63">ledgersPerShard</a>() *</div>
-<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;                 (numberOfShards + 1);</div>
-<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;             ++i)</div>
-<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;        {</div>
-<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a69095691c9bcfab1f3d69c645f2dbe33">close</a>();</div>
-<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;        }</div>
-<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160; </div>
-<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;        <span class="keyword">auto</span> shardStore = env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a9e55bbdb66a785bfd0dda93802b514b6">app</a>().<a class="code" href="classripple_1_1Application.html#a5ea4991eb9c4d29e8de734016293ba33">getShardStore</a>();</div>
-<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;        <span class="keywordflow">if</span> (!BEAST_EXPECT(shardStore))</div>
-<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;            <span class="keywordflow">return</span>;</div>
-<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160; </div>
-<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;        {</div>
-<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;            <span class="comment">// Initiate a shard store import via the RPC</span></div>
-<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;            <span class="comment">// interface.</span></div>
-<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160; </div>
-<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;            <a class="code" href="classJson_1_1Value.html">Json::Value</a> jvParams;</div>
-<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;            jvParams[jss::action] = <span class="stringliteral">&quot;start&quot;</span>;</div>
-<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160; </div>
-<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> result = env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a0f3a59ffc07ea469d2999d1ae0aeea77">rpc</a>(</div>
-<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;                <span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;node_to_shard&quot;</span>, <a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(jvParams))[jss::result];</div>
+<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;                        <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;                    }</div>
+<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160; </div>
+<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;                    <span class="keywordflow">if</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/sleep_for.html">std::this_thread::sleep_for</a>(</div>
+<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;                            <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a>{100});</div>
+<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;                        <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/system_clock/now.html">std::chrono::system_clock::now</a>() - start &gt; maxWait)</div>
+<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;                    {</div>
+<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;                        BEAST_EXPECTS(</div>
+<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;                            <span class="keyword">false</span>,</div>
+<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;                            <span class="stringliteral">&quot;Import timeout: could just be a slow machine.&quot;</span>);</div>
+<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;                        <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;                    }</div>
+<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;                }</div>
+<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;            }</div>
+<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160; </div>
+<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;            {</div>
+<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;                <span class="comment">// Wait for the import to complete</span></div>
+<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;                <span class="keyword">auto</span> <span class="keyword">const</span> start = <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/system_clock/now.html">std::chrono::system_clock::now</a>();</div>
+<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;                <span class="keywordflow">while</span> (!boost::icl::contains(</div>
+<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;                    shardStore-&gt;getShardInfo()-&gt;finalized(), 10))</div>
+<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;                {</div>
+<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;                    <span class="keywordflow">if</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/sleep_for.html">std::this_thread::sleep_for</a>(</div>
+<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;                            <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a>{100});</div>
+<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;                        <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/system_clock/now.html">std::chrono::system_clock::now</a>() - start &gt; maxWait)</div>
+<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;                    {</div>
+<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;                        BEAST_EXPECT(<a class="code" href="classripple_1_1test_1_1NodeToShardRPC__test.html#ad7a472f9a50521e186fb5c903a4a11d2">importCompleted</a>(</div>
+<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;                            shardStore, numberOfShards, result));</div>
+<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;                        <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;                    }</div>
+<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;                }</div>
+<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;            }</div>
+<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;        }</div>
+<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;    }</div>
+<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160; </div>
+<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00271"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1NodeToShardRPC__test.html#a69a3213c0543d4428912aa0b5f9c25a4">  271</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1NodeToShardRPC__test.html#a69a3213c0543d4428912aa0b5f9c25a4">testStop</a>()</div>
+<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;    {</div>
+<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;        testcase(<span class="stringliteral">&quot;Stop&quot;</span>);</div>
+<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160; </div>
+<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;        <a class="code" href="classbeast_1_1temp__dir.html">beast::temp_dir</a> tempDir;</div>
+<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160; </div>
+<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html">jtx::Env</a> env = [&amp;] {</div>
+<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;            <span class="keyword">auto</span> c = <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a287cf5b6a71db097fe1678c88926efb4">jtx::envconfig</a>();</div>
+<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;            <span class="keyword">auto</span>&amp; section = c-&gt;section(<a class="code" href="structripple_1_1ConfigSection.html#abab87cd32670610e64b43124c381775c">ConfigSection::shardDatabase</a>());</div>
+<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;            section.set(<span class="stringliteral">&quot;path&quot;</span>, tempDir.<a class="code" href="classbeast_1_1temp__dir.html#a12a24007c243e0739cfc36703a3257bb">path</a>());</div>
+<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;            section.set(<span class="stringliteral">&quot;max_historical_shards&quot;</span>, <span class="stringliteral">&quot;20&quot;</span>);</div>
+<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;            section.set(<span class="stringliteral">&quot;ledgers_per_shard&quot;</span>, <span class="stringliteral">&quot;256&quot;</span>);</div>
+<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;            section.set(<span class="stringliteral">&quot;earliest_seq&quot;</span>, <span class="stringliteral">&quot;257&quot;</span>);</div>
+<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;            <span class="keyword">auto</span>&amp; sectionNode = c-&gt;section(<a class="code" href="structripple_1_1ConfigSection.html#a44ee859a6705ddcac4e318602f8fe6ac">ConfigSection::nodeDatabase</a>());</div>
+<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;            sectionNode.set(<span class="stringliteral">&quot;earliest_seq&quot;</span>, <span class="stringliteral">&quot;257&quot;</span>);</div>
+<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;            sectionNode.set(<span class="stringliteral">&quot;ledgers_per_shard&quot;</span>, <span class="stringliteral">&quot;256&quot;</span>);</div>
+<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;            c-&gt;setupControl(<span class="keyword">true</span>, <span class="keyword">true</span>, <span class="keyword">true</span>);</div>
+<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160; </div>
+<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;            <span class="keywordflow">return</span> <a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html">jtx::Env</a>(</div>
+<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;                *<span class="keyword">this</span>, std::move(c), <span class="keyword">nullptr</span>, <a class="code" href="namespacebeast_1_1severities.html#a069a8a312b9123b77f6aa31733ca73beae13a45640877c138fc59c94443ece6f0">beast::severities::kDisabled</a>);</div>
+<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;        }();</div>
+<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160; </div>
+<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> <span class="keyword">const</span> numberOfShards = 10;</div>
+<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160; </div>
+<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;        <span class="comment">// Create some ledgers so that we can initiate a</span></div>
+<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;        <span class="comment">// shard store database import.</span></div>
+<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;        <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a9e55bbdb66a785bfd0dda93802b514b6">app</a>().<a class="code" href="classripple_1_1Application.html#a5ea4991eb9c4d29e8de734016293ba33">getShardStore</a>()-&gt;<a class="code" href="classripple_1_1NodeStore_1_1Database.html#aa65b806f875f06f0b17c83d987118c63">ledgersPerShard</a>() *</div>
+<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;                 (numberOfShards + 1);</div>
+<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;             ++i)</div>
+<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;        {</div>
+<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a69095691c9bcfab1f3d69c645f2dbe33">close</a>();</div>
+<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;        }</div>
+<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160; </div>
+<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;        <span class="keyword">auto</span> shardStore = env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a9e55bbdb66a785bfd0dda93802b514b6">app</a>().<a class="code" href="classripple_1_1Application.html#a5ea4991eb9c4d29e8de734016293ba33">getShardStore</a>();</div>
+<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;        <span class="keywordflow">if</span> (!BEAST_EXPECT(shardStore))</div>
+<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;            <span class="keywordflow">return</span>;</div>
 <div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160; </div>
-<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;            BEAST_EXPECT(</div>
-<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;                result[jss::message] == <span class="stringliteral">&quot;Database import initiated...&quot;</span>);</div>
-<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;        }</div>
+<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;        {</div>
+<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;            <span class="comment">// Initiate a shard store import via the RPC</span></div>
+<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;            <span class="comment">// interface.</span></div>
 <div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160; </div>
-<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;        {</div>
-<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;            <span class="comment">// Verify that the import is in progress with</span></div>
-<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;            <span class="comment">// the node_to_shard status RPC command</span></div>
-<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160; </div>
-<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;            <a class="code" href="classJson_1_1Value.html">Json::Value</a> jvParams;</div>
-<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;            jvParams[jss::action] = <span class="stringliteral">&quot;status&quot;</span>;</div>
-<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160; </div>
-<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> result = env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a0f3a59ffc07ea469d2999d1ae0aeea77">rpc</a>(</div>
-<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;                <span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;node_to_shard&quot;</span>, <a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(jvParams))[jss::result];</div>
+<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;            <a class="code" href="classJson_1_1Value.html">Json::Value</a> jvParams;</div>
+<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;            jvParams[jss::action] = <span class="stringliteral">&quot;start&quot;</span>;</div>
+<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160; </div>
+<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> result = env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a0f3a59ffc07ea469d2999d1ae0aeea77">rpc</a>(</div>
+<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;                <span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;node_to_shard&quot;</span>, <a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(jvParams))[jss::result];</div>
+<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160; </div>
+<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;            BEAST_EXPECT(</div>
+<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;                result[jss::message] == <span class="stringliteral">&quot;Database import initiated...&quot;</span>);</div>
+<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;        }</div>
 <div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160; </div>
-<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;            BEAST_EXPECT(</div>
-<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;                result[jss::status] == <span class="stringliteral">&quot;success&quot;</span> ||</div>
-<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;                <a class="code" href="classripple_1_1test_1_1NodeToShardRPC__test.html#ad7a472f9a50521e186fb5c903a4a11d2">importCompleted</a>(shardStore, numberOfShards, result));</div>
+<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;        {</div>
+<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;            <span class="comment">// Verify that the import is in progress with</span></div>
+<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;            <span class="comment">// the node_to_shard status RPC command</span></div>
 <div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160; </div>
-<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> <span class="keyword">const</span> maxWait{10};</div>
-<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> start = <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/system_clock/now.html">std::chrono::system_clock::now</a>();</div>
+<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;            <a class="code" href="classJson_1_1Value.html">Json::Value</a> jvParams;</div>
+<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;            jvParams[jss::action] = <span class="stringliteral">&quot;status&quot;</span>;</div>
 <div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160; </div>
-<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;            <span class="keywordflow">while</span> (shardStore-&gt;getShardInfo()-&gt;finalized().empty())</div>
-<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;            {</div>
-<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;                <span class="comment">// Wait for at least one shard to complete</span></div>
-<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160; </div>
-<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;                <span class="keywordflow">if</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/sleep_for.html">std::this_thread::sleep_for</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a>{100});</div>
-<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;                    <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/system_clock/now.html">std::chrono::system_clock::now</a>() - start &gt; maxWait)</div>
-<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;                {</div>
-<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;                    BEAST_EXPECTS(</div>
-<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;                        <span class="keyword">false</span>, <span class="stringliteral">&quot;Import timeout: could just be a slow machine.&quot;</span>);</div>
-<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;                    <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;                }</div>
-<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;            }</div>
-<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;        }</div>
+<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> result = env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a0f3a59ffc07ea469d2999d1ae0aeea77">rpc</a>(</div>
+<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;                <span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;node_to_shard&quot;</span>, <a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(jvParams))[jss::result];</div>
+<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160; </div>
+<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;            BEAST_EXPECT(</div>
+<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;                result[jss::status] == <span class="stringliteral">&quot;success&quot;</span> ||</div>
+<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;                <a class="code" href="classripple_1_1test_1_1NodeToShardRPC__test.html#ad7a472f9a50521e186fb5c903a4a11d2">importCompleted</a>(shardStore, numberOfShards, result));</div>
+<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160; </div>
+<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> <span class="keyword">const</span> maxWait{30};</div>
+<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> start = <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/system_clock/now.html">std::chrono::system_clock::now</a>();</div>
+<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160; </div>
+<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;            <span class="keywordflow">while</span> (shardStore-&gt;getShardInfo()-&gt;finalized().empty())</div>
+<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;            {</div>
+<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;                <span class="comment">// Wait for at least one shard to complete</span></div>
 <div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160; </div>
-<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;        {</div>
-<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;            <a class="code" href="classJson_1_1Value.html">Json::Value</a> jvParams;</div>
-<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;            jvParams[jss::action] = <span class="stringliteral">&quot;stop&quot;</span>;</div>
-<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160; </div>
-<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> result = env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a0f3a59ffc07ea469d2999d1ae0aeea77">rpc</a>(</div>
-<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;                <span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;node_to_shard&quot;</span>, <a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(jvParams))[jss::result];</div>
-<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160; </div>
-<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;            BEAST_EXPECT(</div>
-<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;                result[jss::message] == <span class="stringliteral">&quot;Database import halt initiated...&quot;</span> ||</div>
-<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;                <a class="code" href="classripple_1_1test_1_1NodeToShardRPC__test.html#ad7a472f9a50521e186fb5c903a4a11d2">importCompleted</a>(shardStore, numberOfShards, result));</div>
-<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;        }</div>
-<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160; </div>
-<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> <span class="keyword">const</span> maxWait{10};</div>
-<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> start = <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/system_clock/now.html">std::chrono::system_clock::now</a>();</div>
-<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160; </div>
-<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;        <span class="keywordflow">while</span> (<span class="keyword">true</span>)</div>
-<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;        {</div>
-<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;            <span class="comment">// Wait until we can verify that the import has</span></div>
-<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;            <span class="comment">// stopped</span></div>
-<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160; </div>
-<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;            <a class="code" href="classJson_1_1Value.html">Json::Value</a> jvParams;</div>
-<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;            jvParams[jss::action] = <span class="stringliteral">&quot;status&quot;</span>;</div>
-<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160; </div>
-<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> result = env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a0f3a59ffc07ea469d2999d1ae0aeea77">rpc</a>(</div>
-<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;                <span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;node_to_shard&quot;</span>, <a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(jvParams))[jss::result];</div>
-<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160; </div>
-<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;            <span class="comment">// When the import has stopped, polling the</span></div>
-<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;            <span class="comment">// status returns an error</span></div>
-<div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160;            <span class="keywordflow">if</span> (result.isMember(jss::error))</div>
-<div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;            {</div>
-<div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160;                <span class="keywordflow">if</span> (BEAST_EXPECT(result.isMember(jss::error_message)))</div>
-<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;                {</div>
-<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;                    BEAST_EXPECT(</div>
-<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160;                        result[jss::error_message] ==</div>
-<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;                        <span class="stringliteral">&quot;Database import not running&quot;</span>);</div>
-<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;                }</div>
-<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160; </div>
-<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;                <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;            }</div>
-<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160; </div>
-<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;            <span class="keywordflow">if</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/sleep_for.html">std::this_thread::sleep_for</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a>{100});</div>
-<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/system_clock/now.html">std::chrono::system_clock::now</a>() - start &gt; maxWait)</div>
-<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160;            {</div>
-<div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;                BEAST_EXPECTS(</div>
-<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160;                    <span class="keyword">false</span>, <span class="stringliteral">&quot;Import timeout: could just be a slow machine.&quot;</span>);</div>
-<div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160;                <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;            }</div>
-<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;        }</div>
-<div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160;    }</div>
+<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;                <span class="keywordflow">if</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/sleep_for.html">std::this_thread::sleep_for</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a>{100});</div>
+<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;                    <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/system_clock/now.html">std::chrono::system_clock::now</a>() - start &gt; maxWait)</div>
+<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;                {</div>
+<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;                    BEAST_EXPECTS(</div>
+<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;                        <span class="keyword">false</span>, <span class="stringliteral">&quot;Import timeout: could just be a slow machine.&quot;</span>);</div>
+<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;                    <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;                }</div>
+<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;            }</div>
+<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;        }</div>
+<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160; </div>
+<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;        {</div>
+<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;            <a class="code" href="classJson_1_1Value.html">Json::Value</a> jvParams;</div>
+<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;            jvParams[jss::action] = <span class="stringliteral">&quot;stop&quot;</span>;</div>
+<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160; </div>
+<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> result = env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a0f3a59ffc07ea469d2999d1ae0aeea77">rpc</a>(</div>
+<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;                <span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;node_to_shard&quot;</span>, <a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(jvParams))[jss::result];</div>
+<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160; </div>
+<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;            BEAST_EXPECT(</div>
+<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;                result[jss::message] == <span class="stringliteral">&quot;Database import halt initiated...&quot;</span> ||</div>
+<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;                <a class="code" href="classripple_1_1test_1_1NodeToShardRPC__test.html#ad7a472f9a50521e186fb5c903a4a11d2">importCompleted</a>(shardStore, numberOfShards, result));</div>
+<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;        }</div>
+<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160; </div>
+<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> <span class="keyword">const</span> maxWait{30};</div>
+<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> start = <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/system_clock/now.html">std::chrono::system_clock::now</a>();</div>
+<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160; </div>
+<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;        <span class="keywordflow">while</span> (<span class="keyword">true</span>)</div>
+<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;        {</div>
+<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;            <span class="comment">// Wait until we can verify that the import has</span></div>
+<div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160;            <span class="comment">// stopped</span></div>
+<div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160; </div>
+<div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160;            <a class="code" href="classJson_1_1Value.html">Json::Value</a> jvParams;</div>
+<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;            jvParams[jss::action] = <span class="stringliteral">&quot;status&quot;</span>;</div>
+<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160; </div>
+<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> result = env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a0f3a59ffc07ea469d2999d1ae0aeea77">rpc</a>(</div>
+<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;                <span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;node_to_shard&quot;</span>, <a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(jvParams))[jss::result];</div>
+<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160; </div>
+<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;            <span class="comment">// When the import has stopped, polling the</span></div>
+<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;            <span class="comment">// status returns an error</span></div>
+<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;            <span class="keywordflow">if</span> (result.isMember(jss::error))</div>
+<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;            {</div>
+<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;                <span class="keywordflow">if</span> (BEAST_EXPECT(result.isMember(jss::error_message)))</div>
+<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;                {</div>
+<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160;                    BEAST_EXPECT(</div>
+<div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;                        result[jss::error_message] ==</div>
+<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160;                        <span class="stringliteral">&quot;Database import not running&quot;</span>);</div>
+<div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160;                }</div>
+<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160; </div>
+<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;                <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160;            }</div>
 <div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160; </div>
-<div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00394"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1NodeToShardRPC__test.html#a1e04641e3d912bdeb7ae3b2dcf9f1ca3">  394</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1NodeToShardRPC__test.html#a1e04641e3d912bdeb7ae3b2dcf9f1ca3">run</a>()<span class="keyword"> override</span></div>
-<div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160;        <a class="code" href="classripple_1_1test_1_1NodeToShardRPC__test.html#ac68a0da71b4d990f3c2c294231df450c">testDisabled</a>();</div>
-<div class="line"><a name="l00397"></a><span class="lineno">  397</span>&#160;        <a class="code" href="classripple_1_1test_1_1NodeToShardRPC__test.html#a756538116aea67355ae49866b72c9dc0">testStart</a>();</div>
-<div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160;        <a class="code" href="classripple_1_1test_1_1NodeToShardRPC__test.html#a69a3213c0543d4428912aa0b5f9c25a4">testStop</a>();</div>
-<div class="line"><a name="l00399"></a><span class="lineno">  399</span>&#160;    }</div>
-<div class="line"><a name="l00400"></a><span class="lineno">  400</span>&#160;};</div>
-<div class="line"><a name="l00401"></a><span class="lineno">  401</span>&#160; </div>
-<div class="line"><a name="l00402"></a><span class="lineno">  402</span>&#160;<a class="code" href="namespaceripple_1_1test.html#a36e90e9cdf2adf7993483b3190ee8e21">BEAST_DEFINE_TESTSUITE</a>(NodeToShardRPC, rpc, <a class="code" href="namespaceripple.html">ripple</a>);</div>
-<div class="line"><a name="l00403"></a><span class="lineno">  403</span>&#160;}  <span class="comment">// namespace test</span></div>
-<div class="line"><a name="l00404"></a><span class="lineno">  404</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;            <span class="keywordflow">if</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/sleep_for.html">std::this_thread::sleep_for</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a>{100});</div>
+<div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/system_clock/now.html">std::chrono::system_clock::now</a>() - start &gt; maxWait)</div>
+<div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160;            {</div>
+<div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160;                BEAST_EXPECTS(</div>
+<div class="line"><a name="l00397"></a><span class="lineno">  397</span>&#160;                    <span class="keyword">false</span>, <span class="stringliteral">&quot;Import timeout: could just be a slow machine.&quot;</span>);</div>
+<div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160;                <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00399"></a><span class="lineno">  399</span>&#160;            }</div>
+<div class="line"><a name="l00400"></a><span class="lineno">  400</span>&#160;        }</div>
+<div class="line"><a name="l00401"></a><span class="lineno">  401</span>&#160;    }</div>
+<div class="line"><a name="l00402"></a><span class="lineno">  402</span>&#160; </div>
+<div class="line"><a name="l00403"></a><span class="lineno">  403</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00404"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1NodeToShardRPC__test.html#a1e04641e3d912bdeb7ae3b2dcf9f1ca3">  404</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1NodeToShardRPC__test.html#a1e04641e3d912bdeb7ae3b2dcf9f1ca3">run</a>()<span class="keyword"> override</span></div>
+<div class="line"><a name="l00405"></a><span class="lineno">  405</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00406"></a><span class="lineno">  406</span>&#160;        <a class="code" href="classripple_1_1test_1_1NodeToShardRPC__test.html#ac68a0da71b4d990f3c2c294231df450c">testDisabled</a>();</div>
+<div class="line"><a name="l00407"></a><span class="lineno">  407</span>&#160;        <a class="code" href="classripple_1_1test_1_1NodeToShardRPC__test.html#a756538116aea67355ae49866b72c9dc0">testStart</a>();</div>
+<div class="line"><a name="l00408"></a><span class="lineno">  408</span>&#160;        <a class="code" href="classripple_1_1test_1_1NodeToShardRPC__test.html#a69a3213c0543d4428912aa0b5f9c25a4">testStop</a>();</div>
+<div class="line"><a name="l00409"></a><span class="lineno">  409</span>&#160;    }</div>
+<div class="line"><a name="l00410"></a><span class="lineno">  410</span>&#160;};</div>
+<div class="line"><a name="l00411"></a><span class="lineno">  411</span>&#160; </div>
+<div class="line"><a name="l00412"></a><span class="lineno">  412</span>&#160;<a class="code" href="namespaceripple_1_1test.html#a36e90e9cdf2adf7993483b3190ee8e21">BEAST_DEFINE_TESTSUITE</a>(NodeToShardRPC, rpc, <a class="code" href="namespaceripple.html">ripple</a>);</div>
+<div class="line"><a name="l00413"></a><span class="lineno">  413</span>&#160;}  <span class="comment">// namespace test</span></div>
+<div class="line"><a name="l00414"></a><span class="lineno">  414</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="asleep_for_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/thread/sleep_for.html">std::this_thread::sleep_for</a></div><div class="ttdeci">T sleep_for(T... args)</div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1NodeToShardRPC__test_html_a69a3213c0543d4428912aa0b5f9c25a4"><div class="ttname"><a href="classripple_1_1test_1_1NodeToShardRPC__test.html#a69a3213c0543d4428912aa0b5f9c25a4">ripple::test::NodeToShardRPC_test::testStop</a></div><div class="ttdeci">void testStop()</div><div class="ttdef"><b>Definition:</b> <a href="NodeToShardRPC__test_8cpp_source.html#l00261">NodeToShardRPC_test.cpp:261</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1NodeToShardRPC__test_html_a69a3213c0543d4428912aa0b5f9c25a4"><div class="ttname"><a href="classripple_1_1test_1_1NodeToShardRPC__test.html#a69a3213c0543d4428912aa0b5f9c25a4">ripple::test::NodeToShardRPC_test::testStop</a></div><div class="ttdeci">void testStop()</div><div class="ttdef"><b>Definition:</b> <a href="NodeToShardRPC__test_8cpp_source.html#l00271">NodeToShardRPC_test.cpp:271</a></div></div>
 <div class="ttc" id="anamespacebeast_1_1severities_html_a069a8a312b9123b77f6aa31733ca73beae13a45640877c138fc59c94443ece6f0"><div class="ttname"><a href="namespacebeast_1_1severities.html#a069a8a312b9123b77f6aa31733ca73beae13a45640877c138fc59c94443ece6f0">beast::severities::kDisabled</a></div><div class="ttdeci">@ kDisabled</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00041">Journal.h:41</a></div></div>
 <div class="ttc" id="astructripple_1_1ConfigSection_html_abab87cd32670610e64b43124c381775c"><div class="ttname"><a href="structripple_1_1ConfigSection.html#abab87cd32670610e64b43124c381775c">ripple::ConfigSection::shardDatabase</a></div><div class="ttdeci">static std::string shardDatabase()</div><div class="ttdef"><b>Definition:</b> <a href="ConfigSections_8h_source.html#l00038">ConfigSections.h:38</a></div></div>
 <div class="ttc" id="aduration_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a></div></div>
@@ -493,7 +503,7 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1test_1_1NodeToShardRPC__test_html_ad7a472f9a50521e186fb5c903a4a11d2"><div class="ttname"><a href="classripple_1_1test_1_1NodeToShardRPC__test.html#ad7a472f9a50521e186fb5c903a4a11d2">ripple::test::NodeToShardRPC_test::importCompleted</a></div><div class="ttdeci">bool importCompleted(NodeStore::DatabaseShard *shardStore, std::uint8_t const numberOfShards, Json::Value const &amp;result)</div><div class="ttdef"><b>Definition:</b> <a href="NodeToShardRPC__test_8cpp_source.html#l00034">NodeToShardRPC_test.cpp:34</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="anamespaceripple_html_af9776f187d3686a7fba4c2d2fbeebdf4"><div class="ttname"><a href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">ripple::to_string</a></div><div class="ttdeci">std::string to_string(Manifest const &amp;m)</div><div class="ttdoc">Format the specified manifest to a string for debugging purposes.</div><div class="ttdef"><b>Definition:</b> <a href="app_2misc_2impl_2Manifest_8cpp_source.html#l00041">app/misc/impl/Manifest.cpp:41</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1NodeToShardRPC__test_html_a1e04641e3d912bdeb7ae3b2dcf9f1ca3"><div class="ttname"><a href="classripple_1_1test_1_1NodeToShardRPC__test.html#a1e04641e3d912bdeb7ae3b2dcf9f1ca3">ripple::test::NodeToShardRPC_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="NodeToShardRPC__test_8cpp_source.html#l00394">NodeToShardRPC_test.cpp:394</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1NodeToShardRPC__test_html_a1e04641e3d912bdeb7ae3b2dcf9f1ca3"><div class="ttname"><a href="classripple_1_1test_1_1NodeToShardRPC__test.html#a1e04641e3d912bdeb7ae3b2dcf9f1ca3">ripple::test::NodeToShardRPC_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="NodeToShardRPC__test_8cpp_source.html#l00404">NodeToShardRPC_test.cpp:404</a></div></div>
 <div class="ttc" id="aclassripple_1_1NodeStore_1_1DatabaseShard_html_a9589fc815aacfaf4a03222ab0751cca2"><div class="ttname"><a href="classripple_1_1NodeStore_1_1DatabaseShard.html#a9589fc815aacfaf4a03222ab0751cca2">ripple::NodeStore::DatabaseShard::getShardInfo</a></div><div class="ttdeci">virtual std::unique_ptr&lt; ShardInfo &gt; getShardInfo() const =0</div><div class="ttdoc">Query information about shards held.</div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Env_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Env.html">ripple::test::jtx::Env</a></div><div class="ttdoc">A transaction testing environment.</div><div class="ttdef"><b>Definition:</b> <a href="Env_8h_source.html#l00116">Env.h:116</a></div></div>
 <div class="ttc" id="astructripple_1_1ConfigSection_html_a44ee859a6705ddcac4e318602f8fe6ac"><div class="ttname"><a href="structripple_1_1ConfigSection.html#a44ee859a6705ddcac4e318602f8fe6ac">ripple::ConfigSection::nodeDatabase</a></div><div class="ttdeci">static std::string nodeDatabase()</div><div class="ttdef"><b>Definition:</b> <a href="ConfigSections_8h_source.html#l00033">ConfigSections.h:33</a></div></div>

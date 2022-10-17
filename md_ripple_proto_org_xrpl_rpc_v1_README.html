@@ -79,7 +79,7 @@ Name Collisions</h4>
 <p>Each message type must have a unique name. To resolve collisions, add a suffix to one or more message types. For instance, ledger objects and transaction types often have the same name (<code>DepositPreauth</code> for example). To resolve this, the <code>DepositPreauth</code> ledger object is named <code>DepositPreauthObject</code>.</p>
 <h4><a class="anchor" id="autotoc_md255"></a>
 To add a field or message type</h4>
-<p>To add a field to a message, define the fields type, name and unique index. To add a new message type, give the message type a unique name. Then, add the appropriate C++ code in <a class="el" href="GRPCHelpers_8cpp_source.html">GRPCHelpers.cpp</a>, or in the handler itself, to serialize/deserialize the new field or message type.</p>
+<p>To add a field to a message, define the fields type, name and unique index. To add a new message type, give the message type a unique name. Then, add the appropriate C++ code in GRPCHelpers.cpp, or in the handler itself, to serialize/deserialize the new field or message type.</p>
 <h4><a class="anchor" id="autotoc_md256"></a>
 To add a new gRPC method</h4>
 <p>To add a new gRPC method, add the gRPC method in xrp_ledger.proto. The method name should begin with a verb. Define the request and response types in their own file. The name of the request type should be the method name suffixed with <code>Request</code>, and the response type name should be the method name suffixed with <code>Response</code>. For example, the <code>GetAccountInfo</code> method has request type <code>GetAccountInfoRequest</code> and response type <code>GetAccountInfoResponse</code>.</p>
@@ -87,7 +87,7 @@ To add a new gRPC method</h4>
 <p>Finally, define the handler itself in the appropriate file under the src/ripple/rpc/handlers folder. If the method already has a JSON/Websocket equivalent, write the gRPC handler in the same file, and abstract common logic into helper functions (see <a class="el" href="Tx_8cpp_source.html">Tx.cpp</a> or <a class="el" href="AccountTx_8cpp_source.html">AccountTx.cpp</a> for an example).</p>
 <h4><a class="anchor" id="autotoc_md257"></a>
 Testing</h4>
-<p>When modifying an existing gRPC method, be sure to test that modification in the corresponding, existing unit test. When creating a new gRPC method, implement a class that derives from GRPCTestClientBase, and use the newly created class to call the new method. See the class <code>GrpcTxClient</code> in the file <a class="el" href="Tx__test_8cpp_source.html">Tx_test.cpp</a> for an example. The gRPC tests are paired with their JSON counterpart, and the tests should mirror the JSON test as much as possible.</p>
+<p>When modifying an existing gRPC method, be sure to test that modification in the corresponding, existing unit test. When creating a new gRPC method, implement a class that derives from GRPCTestClientBase, and use the newly created class to call the new method. See the class <code>GrpcTxClient</code> in the file Tx_test.cpp for an example. The gRPC tests are paired with their JSON counterpart, and the tests should mirror the JSON test as much as possible.</p>
 <p>Refer to the Protocol Buffers <a href="https://developers.google.com/protocol-buffers/docs/proto3">language guide</a> for more detailed information about Protocol Buffers. </p>
 </div></div><!-- contents -->
 </div><!-- PageDoc -->
