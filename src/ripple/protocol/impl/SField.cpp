@@ -250,10 +250,11 @@ CONSTRUCT_TYPED_SFIELD(sfAsset1In,              "Asset1In",             AMOUNT, 
 CONSTRUCT_TYPED_SFIELD(sfAsset2In,              "Asset2In",             AMOUNT,    21);
 CONSTRUCT_TYPED_SFIELD(sfAsset1Out,             "Asset1Out",            AMOUNT,    22);
 CONSTRUCT_TYPED_SFIELD(sfAsset2Out,             "Asset2Out",            AMOUNT,    23);
-CONSTRUCT_TYPED_SFIELD(sfLPToken,               "LPToken",              AMOUNT,    24);
-CONSTRUCT_TYPED_SFIELD(sfEPrice,                "EPrice",               AMOUNT,    25);
-CONSTRUCT_TYPED_SFIELD(sfPrice,                 "Price",                AMOUNT,    26);
-CONSTRUCT_TYPED_SFIELD(sfLPTokenBalance,        "LPTokenBalance",       AMOUNT,    27);
+CONSTRUCT_TYPED_SFIELD(sfLPTokenOut,            "LPTokenOut",           AMOUNT,    24);
+CONSTRUCT_TYPED_SFIELD(sfLPTokenIn,             "LPTokenIn",            AMOUNT,    25);
+CONSTRUCT_TYPED_SFIELD(sfEPrice,                "EPrice",               AMOUNT,    26);
+CONSTRUCT_TYPED_SFIELD(sfPrice,                 "Price",                AMOUNT,    27);
+CONSTRUCT_TYPED_SFIELD(sfLPTokenBalance,        "LPTokenBalance",       AMOUNT,    28);
 
 // Reserve 20 & 21 for Hooks
 

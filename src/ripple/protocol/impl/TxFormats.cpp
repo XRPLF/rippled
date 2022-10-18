@@ -81,7 +81,7 @@ TxFormats::TxFormats()
         },
         commonFields);
 
-    add(jss::AMMInstanceCreate,
+    add(jss::AMMCreate,
         ttAMM_INSTANCE_CREATE,
         {
             {sfAsset1, soeREQUIRED},
@@ -98,7 +98,7 @@ TxFormats::TxFormats()
             {sfAsset1In, soeOPTIONAL},
             {sfAsset2In, soeOPTIONAL},
             {sfEPrice, soeOPTIONAL},
-            {sfLPToken, soeOPTIONAL},
+            {sfLPTokenOut, soeOPTIONAL},
             {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
@@ -110,7 +110,7 @@ TxFormats::TxFormats()
             {sfAsset1Out, soeOPTIONAL},
             {sfAsset2Out, soeOPTIONAL},
             {sfEPrice, soeOPTIONAL},
-            {sfLPToken, soeOPTIONAL},
+            {sfLPTokenIn, soeOPTIONAL},
             {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
@@ -119,7 +119,7 @@ TxFormats::TxFormats()
         ttAMM_VOTE,
         {
             {sfAMMID, soeREQUIRED},
-            {sfFeeVal, soeREQUIRED},
+            {sfTradingFee, soeREQUIRED},
             {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);

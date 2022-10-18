@@ -53,7 +53,7 @@ AMMDeposit::preflight(PreflightContext const& ctx)
     auto const asset1In = ctx.tx[~sfAsset1In];
     auto const asset2In = ctx.tx[~sfAsset2In];
     auto const ePrice = ctx.tx[~sfEPrice];
-    auto const lpTokens = ctx.tx[~sfLPToken];
+    auto const lpTokens = ctx.tx[~sfLPTokenOut];
     // Valid options are:
     //   LPTokens
     //   Asset1In
@@ -181,7 +181,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
         return tecAMM_BALANCE;
     }
 
-    if (auto const lpTokens = ctx.tx[~sfLPToken];
+    if (auto const lpTokens = ctx.tx[~sfLPTokenOut];
         lpTokens && lpTokens->issue() != lptAMMBalance.issue())
     {
         JLOG(ctx.j.debug()) << "AMM Deposit: invalid LPTokens.";
@@ -210,7 +210,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
     auto const asset1In = ctx_.tx[~sfAsset1In];
     auto const asset2In = ctx_.tx[~sfAsset2In];
     auto const ePrice = ctx_.tx[~sfEPrice];
-    auto const lpTokensDeposit = ctx_.tx[~sfLPToken];
+    auto const lpTokensDeposit = ctx_.tx[~sfLPTokenOut];
     auto ammSle = sb.peek(keylet::amm(ctx_.tx[sfAMMID]));
     if (!ammSle)
         return {tecINTERNAL, false};

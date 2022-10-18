@@ -502,7 +502,8 @@ extern SF_AMOUNT const sfMinimumOffer;
 extern SF_AMOUNT const sfRippleEscrow;
 extern SF_AMOUNT const sfDeliveredAmount;
 extern SF_AMOUNT const sfNFTokenBrokerFee;
-extern SF_AMOUNT const sfLPToken;
+extern SF_AMOUNT const sfLPTokenOut;
+extern SF_AMOUNT const sfLPTokenIn;
 
 // currency amount (fees)
 extern SF_AMOUNT const sfBaseFeeDrops;

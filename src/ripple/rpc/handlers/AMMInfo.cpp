@@ -194,12 +194,12 @@ doAMMInfo(RPC::JsonContext& context)
         ammPoolHolds(*ledger, ammAccountID, issue1, issue2, context.j);
     auto const lptAMMBalance = accountID
         ? lpHolds(*ledger, ammAccountID, *accountID, context.j)
-        : amm->getFieldAmount(sfLPTokenBalance);
+        : (*amm)[sfLPTokenBalance];
 
     asset1Balance.setJson(result[jss::Asset1]);
     asset2Balance.setJson(result[jss::Asset2]);
     lptAMMBalance.setJson(result[jss::LPToken]);
-    result[jss::TradingFee] = amm->getFieldU16(sfTradingFee);
+    result[jss::TradingFee] = (*amm)[sfTradingFee];
     result[jss::AMMAccount] = to_string(ammAccountID);
     Json::Value voteSlots(Json::arrayValue);
     if (amm->isFieldPresent(sfVoteSlots))
@@ -207,8 +207,8 @@ doAMMInfo(RPC::JsonContext& context)
         for (auto const& voteEntry : amm->getFieldArray(sfVoteSlots))
         {
             Json::Value vote;
-            vote[jss::FeeVal] = voteEntry.getFieldU32(sfFeeVal);
-            vote[jss::VoteWeight] = voteEntry.getFieldU32(sfVoteWeight);
+            vote[jss::TradingFee] = voteEntry[sfTradingFee];
+            vote[jss::VoteWeight] = voteEntry[sfVoteWeight];
             voteSlots.append(vote);
         }
     }
@@ -223,9 +223,8 @@ doAMMInfo(RPC::JsonContext& context)
             Json::Value auction;
             auction[jss::TimeInterval] =
                 timeSlot(ledger->info().parentCloseTime, auctionSlot);
-            auctionSlot.getFieldAmount(sfPrice).setJson(auction[jss::Price]);
-            auction[jss::DiscountedFee] =
-                auctionSlot.getFieldU32(sfDiscountedFee);
+            auctionSlot[sfPrice].setJson(auction[jss::Price]);
+            auction[jss::DiscountedFee] = auctionSlot[sfDiscountedFee];
             result[jss::AuctionSlot] = auction;
         }
     }

@@ -38,6 +38,8 @@ class NetClock;
 class STObject;
 class Rules;
 
+std::uint16_t constexpr TradingFeeThreshold = 1000;  // 1%
+
 /** Calculate AMM account ID.
  */
 AccountID

@@ -51,7 +51,7 @@ JSS(AMM);                    // ledger type
 JSS(AMMAccount);             // field
 JSS(AMMBid);                 // transaction type
 JSS(AMMID);                  // field
-JSS(AMMInstanceCreate);      // transaction type
+JSS(AMMCreate);              // transaction type
 JSS(AMMDeposit);             // transaction type
 JSS(AMMVote);                // transaction type
 JSS(AMMWithdraw);            // transaction type
@@ -84,7 +84,6 @@ JSS(EscrowCreate);           // transaction type.
 JSS(EscrowFinish);           // transaction type.
 JSS(Fee);                    // in/out: TransactionSign; field.
 JSS(FeeSettings);            // ledger type.
-JSS(FeeVal);                 // in: AMM Vote
 JSS(Flags);                  // in/out: TransactionSign; field.
 JSS(incomplete_shards);      // out: OverlayImpl, PeerImp
 JSS(Invalid);                //
@@ -101,7 +100,9 @@ JSS(NFTokenAcceptOffer);     // transaction type.
 JSS(NFTokenCancelOffer);     // transaction type.
 JSS(NFTokenCreateOffer);     // transaction type.
 JSS(NFTokenPage);            // ledger type.
-JSS(LPToken);                // in: AMM Liquidity Provider tokens
+JSS(LPTokenOut);             // in: AMM Liquidity Provider deposit tokens
+JSS(LPTokenIn);              // in: AMM Liquidity Provider withdraw tokens
+JSS(LPToken);                // out: AMM Liquidity Provider tokens info
 JSS(Offer);                  // ledger type.
 JSS(OfferCancel);            // transaction type.
 JSS(OfferCreate);            // transaction type.

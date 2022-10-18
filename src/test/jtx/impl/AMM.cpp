@@ -81,7 +81,7 @@ AMM::create(
     jv[jss::Asset1] = asset1_.getJson(JsonOptions::none);
     jv[jss::Asset2] = asset2_.getJson(JsonOptions::none);
     jv[jss::TradingFee] = tfee;
-    jv[jss::TransactionType] = jss::AMMInstanceCreate;
+    jv[jss::TransactionType] = jss::AMMCreate;
     if (flags)
         jv[jss::Flags] = *flags;
     if (log_)
@@ -357,7 +357,7 @@ AMM::deposit(
     if (tokens)
     {
         STAmount saTokens{lptIssue_, *tokens, 0};
-        saTokens.setJson(jv[jss::LPToken]);
+        saTokens.setJson(jv[jss::LPTokenOut]);
     }
     if (asset1In)
         asset1In->setJson(jv[jss::Asset1In]);
@@ -445,7 +445,7 @@ AMM::withdraw(
     if (tokens)
     {
         STAmount saTokens{lptIssue_, *tokens, 0};
-        saTokens.setJson(jv[jss::LPToken]);
+        saTokens.setJson(jv[jss::LPTokenIn]);
     }
     if (asset1Out)
         asset1Out->setJson(jv[jss::Asset1Out]);
@@ -472,7 +472,7 @@ AMM::vote(
     Json::Value jv;
     jv[jss::Account] = account ? account->human() : creatorAccount_.human();
     jv[jss::AMMID] = to_string(ammID_);
-    jv[jss::FeeVal] = feeVal;
+    jv[jss::TradingFee] = feeVal;
     jv[jss::TransactionType] = jss::AMMVote;
     if (flags)
         jv[jss::Flags] = *flags;

@@ -174,7 +174,7 @@ applyBid(
         {
             auto const diff = current - *stamp;
             if (diff < totalSlotTimeSecs)
-                return (std::int64_t)(diff / intervalDuration);
+                return static_cast<std::int64_t>(diff / intervalDuration);
         }
         return std::nullopt;
     }();

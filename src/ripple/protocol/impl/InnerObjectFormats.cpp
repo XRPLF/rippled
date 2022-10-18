@@ -64,7 +64,7 @@ InnerObjectFormats::InnerObjectFormats()
         sfVoteEntry.getCode(),
         {
             {sfAccount, soeREQUIRED},
-            {sfFeeVal, soeREQUIRED},
+            {sfTradingFee, soeREQUIRED},
             {sfVoteWeight, soeREQUIRED},
         });
 

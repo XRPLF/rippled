@@ -20,6 +20,7 @@
 #include <ripple/app/tx/impl/AMMVote.h>
 
 #include <ripple/app/misc/AMM.h>
+#include <ripple/app/misc/AMM_formulae.h>
 #include <ripple/ledger/Sandbox.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/STAccount.h>
@@ -49,7 +50,7 @@ AMMVote::preflight(PreflightContext const& ctx)
         return temINVALID_FLAG;
     }
 
-    if (ctx.tx[sfFeeVal] > 65000)
+    if (ctx.tx[sfTradingFee] > TradingFeeThreshold)
     {
         JLOG(ctx.j.debug()) << "AMM Vote: invalid trading fee.";
         return temBAD_FEE;
@@ -77,7 +78,7 @@ applyVote(
     AccountID const& account_,
     beast::Journal j_)
 {
-    auto const feeNew = ctx_.tx[sfFeeVal];
+    auto const feeNew = ctx_.tx[sfTradingFee];
     auto const amm = sb.peek(keylet::amm(ctx_.tx[sfAMMID]));
     if (!amm)
         return {tecINTERNAL, false};
@@ -113,7 +114,7 @@ applyVote(
                 << "AMMVote::applyVote, account " << account << " is not LP";
             continue;
         }
-        auto feeVal = entry[sfFeeVal];
+        auto feeVal = entry[sfTradingFee];
         STObject newEntry{sfVoteEntry};
         // The account already has the vote entry.
         if (account == account_)
@@ -126,11 +127,12 @@ applyVote(
         num += feeVal * lpTokens;
         den += lpTokens;
         newEntry.setAccountID(sfAccount, account);
-        newEntry.setFieldU32(sfFeeVal, feeVal);
+        newEntry.setFieldU16(sfTradingFee, feeVal);
         newEntry.setFieldU32(
             sfVoteWeight,
-            (std::int64_t)(
-                Number(lpTokens) * 100000 / lptAMMBalance + Number(1) / 2));
+            static_cast<std::int64_t>(
+                Number(lpTokens) * 100000 / lptAMMBalance));
+
         // Find an entry with the least tokens/fee. Make the order deterministic
         // if the tokens/fees are equal.
         if (!minTokens ||
@@ -151,12 +153,11 @@ applyVote(
     {
         auto update = [&]() {
             STObject newEntry{sfVoteEntry};
-            newEntry.setFieldU32(sfFeeVal, feeNew);
+            newEntry.setFieldU16(sfTradingFee, feeNew);
             newEntry.setFieldU32(
                 sfVoteWeight,
-                (std::int64_t)(
-                    Number(lpTokensNew) * 100000 / lptAMMBalance +
-                    Number(1) / 2));
+                static_cast<std::int64_t>(
+                    Number(lpTokensNew) * 100000 / lptAMMBalance));
             newEntry.setAccountID(sfAccount, account_);
             num += feeNew * lpTokensNew;
             den += lpTokensNew;
@@ -172,7 +173,7 @@ applyVote(
         {
             auto const entry = updatedVoteSlots.begin() + minPos;
             // Remove the least token vote entry.
-            num -= Number((*entry)[sfFeeVal]) * *minTokens;
+            num -= Number((*entry)[sfTradingFee]) * *minTokens;
             den -= *minTokens;
             updatedVoteSlots.erase(updatedVoteSlots.begin() + minPos);
             update();
@@ -188,7 +189,7 @@ applyVote(
 
     // Update the vote entries and the trading fee.
     amm->setFieldArray(sfVoteSlots, updatedVoteSlots);
-    amm->setFieldU16(sfTradingFee, (std::int64_t)(num / den + Number(1) / 2));
+    amm->setFieldU16(sfTradingFee, static_cast<std::int64_t>(num / den));
     sb.update(amm);
 
     return {tesSUCCESS, true};

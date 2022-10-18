@@ -1880,7 +1880,7 @@ private:
         testAMM([&](AMM& ammAlice, Env& env) {
             ammAlice.vote(
                 std::nullopt,
-                65001,
+                1001,
                 std::nullopt,
                 std::nullopt,
                 ter(temBAD_FEE));
@@ -1921,13 +1921,12 @@ private:
                 Account a(std::to_string(i));
                 fund(env, gw, {a}, {USD(1000)}, Fund::Acct);
                 ammAlice.deposit(a, tokens);
-                ammAlice.vote(
-                    a, 500 * (i + 1), std::nullopt, std::nullopt, ter);
+                ammAlice.vote(a, 50 * (i + 1), std::nullopt, std::nullopt, ter);
             };
             for (int i = 0; i < 8; ++i)
-                vote(i, 10000);
-            BEAST_EXPECT(ammAlice.expectTradingFee(2250));
-            vote(8, 10000, ter(tecAMM_FAILED_VOTE));
+                vote(i, 100);
+            BEAST_EXPECT(ammAlice.expectTradingFee(225));
+            vote(8, 100, ter(tecAMM_FAILED_VOTE));
         });
     }
 
@@ -1943,25 +1942,25 @@ private:
             BEAST_EXPECT(ammAlice.expectTradingFee(1000));
         });
 
-        // Eight votes fill all voting slots, set fee 2.25%.
+        // Eight votes fill all voting slots, set fee 0.225%.
         testAMM([&](AMM& ammAlice, Env& env) {
             for (int i = 0; i < 8; ++i)
             {
                 Account a(std::to_string(i));
                 fund(env, gw, {a}, {USD(1000)}, Fund::Acct);
                 ammAlice.deposit(a, 10000);
-                ammAlice.vote(a, 500 * (i + 1));
+                ammAlice.vote(a, 50 * (i + 1));
             }
-            BEAST_EXPECT(ammAlice.expectTradingFee(2250));
+            BEAST_EXPECT(ammAlice.expectTradingFee(225));
         });
 
-        // Eight votes fill all voting slots, set fee 2.25%.
-        // New vote, same account, sets fee 2.75%
+        // Eight votes fill all voting slots, set fee 0.225%.
+        // New vote, same account, sets fee 0.275%
         testAMM([&](AMM& ammAlice, Env& env) {
             auto vote = [&](Account const& a, int i) {
                 fund(env, gw, {a}, {USD(1000)}, Fund::Acct);
                 ammAlice.deposit(a, 10000);
-                ammAlice.vote(a, 500 * (i + 1));
+                ammAlice.vote(a, 50 * (i + 1));
             };
             Account a("0");
             vote(a, 0);
@@ -1970,41 +1969,41 @@ private:
                 Account a(std::to_string(i));
                 vote(a, i);
             }
-            BEAST_EXPECT(ammAlice.expectTradingFee(2250));
-            ammAlice.vote(a, 4500);
-            BEAST_EXPECT(ammAlice.expectTradingFee(2750));
+            BEAST_EXPECT(ammAlice.expectTradingFee(225));
+            ammAlice.vote(a, 450);
+            BEAST_EXPECT(ammAlice.expectTradingFee(275));
         });
 
-        // Eight votes fill all voting slots, set fee 2.25%.
-        // New vote, new account, higher vote weight, set higher fee 2.945%
+        // Eight votes fill all voting slots, set fee 0.225%.
+        // New vote, new account, higher vote weight, set higher fee 0.294%
         testAMM([&](AMM& ammAlice, Env& env) {
             auto vote = [&](int i, std::uint32_t tokens) {
                 Account a(std::to_string(i));
                 fund(env, gw, {a}, {USD(1000)}, Fund::Acct);
                 ammAlice.deposit(a, tokens);
-                ammAlice.vote(a, 500 * (i + 1));
+                ammAlice.vote(a, 50 * (i + 1));
             };
             for (int i = 0; i < 8; ++i)
-                vote(i, 10000);
-            BEAST_EXPECT(ammAlice.expectTradingFee(2250));
-            vote(8, 20000);
-            BEAST_EXPECT(ammAlice.expectTradingFee(2945));
+                vote(i, 100);
+            BEAST_EXPECT(ammAlice.expectTradingFee(225));
+            vote(8, 200);
+            BEAST_EXPECT(ammAlice.expectTradingFee(294));
         });
 
-        // Eight votes fill all voting slots, set fee 2.75%.
-        // New vote, new account, higher vote weight, set smaller fee 2.056%
+        // Eight votes fill all voting slots, set fee 0.275%.
+        // New vote, new account, higher vote weight, set smaller fee 0.244%
         testAMM([&](AMM& ammAlice, Env& env) {
             auto vote = [&](int i, std::uint32_t tokens) {
                 Account a(std::to_string(i));
                 fund(env, gw, {a}, {USD(1000)}, Fund::Acct);
                 ammAlice.deposit(a, tokens);
-                ammAlice.vote(a, 500 * (i + 1));
+                ammAlice.vote(a, 50 * (i + 1));
             };
             for (int i = 8; i > 0; --i)
-                vote(i, 10000);
-            BEAST_EXPECT(ammAlice.expectTradingFee(2750));
-            vote(0, 20000);
-            BEAST_EXPECT(ammAlice.expectTradingFee(2445));
+                vote(i, 100);
+            BEAST_EXPECT(ammAlice.expectTradingFee(275));
+            vote(0, 200);
+            BEAST_EXPECT(ammAlice.expectTradingFee(244));
         });
     }
 
