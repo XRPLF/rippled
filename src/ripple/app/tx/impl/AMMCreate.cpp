@@ -152,16 +152,16 @@ applyCreate(
     auto const saAsset1 = ctx_.tx[sfAsset1];
     auto const saAsset2 = ctx_.tx[sfAsset2];
 
-    auto const ammKeylet = keylet::amm(saAsset1.issue(), saAsset2.issue());
+    auto const ammID = ammIndex(saAsset1.issue(), saAsset2.issue());
 
     // Check if AMM already exists for the token pair
-    if (sb.read(ammKeylet))
+    if (sb.read(keylet::amm(ammID)))
     {
         JLOG(j_.debug()) << "AMM Instance: ltAMM already exists.";
         return {tecAMM_EXISTS, false};
     }
 
-    auto const ammAccount = ammAccountID(sb.info().parentHash, ammKeylet.key);
+    auto const ammAccount = ammAccountID(sb.info().parentHash, ammID);
 
     // AMM account already exists (should not happen)
     if (sb.read(keylet::account(ammAccount)))
@@ -199,7 +199,7 @@ applyCreate(
     auto const lpTokens = ammLPTokens(saAsset1, saAsset2, lptIss);
 
     // Create ltAMM
-    auto ammSle = std::make_shared<SLE>(ammKeylet);
+    auto ammSle = std::make_shared<SLE>(keylet::amm(ammID));
     ammSle->setFieldU16(sfTradingFee, ctx_.tx[sfTradingFee]);
     ammSle->setAccountID(sfAMMAccount, ammAccount);
     ammSle->setFieldAmount(sfLPTokenBalance, lpTokens);
@@ -240,8 +240,8 @@ applyCreate(
     else
     {
         JLOG(j_.debug()) << "AMM Instance: success " << ammAccount << " "
-                         << ammKeylet.key << " " << lptIss << " " << saAsset1
-                         << " " << saAsset2;
+                         << ammID << " " << lptIss << " " << saAsset1 << " "
+                         << saAsset2;
         auto addOrderBook = [&](Issue const& issueIn,
                                 Issue const& issueOut,
                                 std::uint64_t uRate) {

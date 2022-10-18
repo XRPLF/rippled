@@ -34,6 +34,13 @@ ammAccountID(uint256 const& parentHash, uint256 const& ammID)
     return AccountID{static_cast<ripesha_hasher::result_type>(rsh)};
 }
 
+uint256
+ammIndex(Issue const& issue1, Issue const& issue2)
+{
+    auto const& [minI, maxI] = std::minmax(issue1, issue2);
+    return sha512Half(minI.account, minI.currency, maxI.account, maxI.currency);
+}
+
 Currency
 lptCurrency(AccountID const& ammAccountID)
 {

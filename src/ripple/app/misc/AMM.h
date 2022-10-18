@@ -45,6 +45,11 @@ std::uint16_t constexpr TradingFeeThreshold = 1000;  // 1%
 AccountID
 ammAccountID(uint256 const& parentHash, uint256 const& ammID);
 
+/** Calculate AMM index.
+ */
+uint256
+ammIndex(Issue const& issue1, Issue const& issue2);
+
 /** Calculate Liquidity Provider Token (LPT) Currency.
  */
 Currency

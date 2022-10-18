@@ -155,7 +155,7 @@ doAMMInfo(RPC::JsonContext& context)
             return result;
         else
             token2Issue = *i;
-        ammID = keylet::amm(token1Issue, token2Issue).key;
+        ammID = ammIndex(token1Issue, token2Issue);
     }
     else if (!ammID.parseHex(params[jss::amm_id].asString()))
     {
