@@ -337,6 +337,24 @@ squelch(Number const& x, Number const& limit) noexcept
     return x;
 }
 
+class saveNumberRoundMode
+{
+    Number::rounding_mode mode_;
+
+public:
+    ~saveNumberRoundMode()
+    {
+        Number::setround(mode_);
+    }
+    explicit saveNumberRoundMode(Number::rounding_mode mode) noexcept
+        : mode_{mode}
+    {
+    }
+    saveNumberRoundMode(saveNumberRoundMode const&) = delete;
+    saveNumberRoundMode&
+    operator=(saveNumberRoundMode const&) = delete;
+};
+
 }  // namespace ripple
 
 #endif  // RIPPLE_BASICS_NUMBER_H_INCLUDED

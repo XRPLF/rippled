@@ -26,24 +26,6 @@
 
 namespace ripple {
 
-class saveNumberRoundMode
-{
-    Number::rounding_mode mode_;
-
-public:
-    ~saveNumberRoundMode()
-    {
-        Number::setround(mode_);
-    }
-    explicit saveNumberRoundMode(Number::rounding_mode mode) noexcept
-        : mode_{mode}
-    {
-    }
-    saveNumberRoundMode(saveNumberRoundMode const&) = delete;
-    saveNumberRoundMode&
-    operator=(saveNumberRoundMode const&) = delete;
-};
-
 class Number_test : public beast::unit_test::suite
 {
 public:
@@ -581,6 +563,29 @@ public:
     }
 
     void
+    test_toSTAmount()
+    {
+        NumberSO stNumberSO{true};
+        Issue const issue;
+        Number const n{7'518'783'80596, -5};
+        saveNumberRoundMode const save{Number::setround(Number::to_nearest)};
+        auto res2 = STAmount{issue, n.mantissa(), n.exponent()};
+        BEAST_EXPECT(res2 == STAmount{7518784});
+
+        Number::setround(Number::towards_zero);
+        res2 = STAmount{issue, n.mantissa(), n.exponent()};
+        BEAST_EXPECT(res2 == STAmount{7518783});
+
+        Number::setround(Number::downward);
+        res2 = STAmount{issue, n.mantissa(), n.exponent()};
+        BEAST_EXPECT(res2 == STAmount{7518783});
+
+        Number::setround(Number::upward);
+        res2 = STAmount{issue, n.mantissa(), n.exponent()};
+        BEAST_EXPECT(res2 == STAmount{7518784});
+    }
+
+    void
     run() override
     {
         testZero();
@@ -599,6 +604,7 @@ public:
         test_relationals();
         test_stream();
         test_inc_dec();
+        test_toSTAmount();
     }
 };
 

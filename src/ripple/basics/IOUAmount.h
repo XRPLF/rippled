@@ -186,10 +186,6 @@ mulRatio(
     std::uint32_t den,
     bool roundUp);
 
-// Since IOUAmount and STAmount do not have access to a ledger, this
-// is needed to put low-level routines on an amendment switch. Only
-// transactions need to use this switchover. Outside of a transaction
-// it's safe to unconditionally use the new behavior.
 extern LocalValue<bool> stNumberSwitchover;
 
 /** RAII class to set and restore the Number switchover.
