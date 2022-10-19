@@ -135,14 +135,15 @@ public:
     template <
         typename U,
         typename = std::enable_if_t<std::is_convertible_v<U, T>>>
-    constexpr Expected(U r) : Base(T{std::forward<U>(r)})
+    constexpr Expected(U && r) : Base(T{std::forward<U>(r)})
     {
     }
 
     template <
         typename U,
-        typename = std::enable_if_t<std::is_convertible_v<U, E>>>
-    constexpr Expected(Unexpected<U> e) : Base(E{std::forward<U>(e.value())})
+        typename = std::enable_if_t<
+            std::is_convertible_v<U, E> && !std::is_reference_v<U>>>
+    constexpr Expected(Unexpected<U> e) : Base(E{std::move(e.value())})
     {
     }
 
@@ -217,8 +218,9 @@ public:
 
     template <
         typename U,
-        typename = std::enable_if_t<std::is_convertible_v<U, E>>>
-    constexpr Expected(Unexpected<U> e) : Base(E{std::forward<U>(e.value())})
+        typename = std::enable_if_t<
+            std::is_convertible_v<U, E> && !std::is_reference_v<U>>>
+    constexpr Expected(Unexpected<U> e) : Base(E{std::move(e.value())})
     {
     }
 
