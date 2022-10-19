@@ -725,24 +725,36 @@ STAmount::canonicalize()
                     "Native currency amount out of range");
         }
 
-        while (mOffset < 0)
+        if (*stNumberSwitchover && *stAmountCanonicalizeSwitchover)
         {
-            mValue /= 10;
-            ++mOffset;
+            Number num(
+                mIsNegative ? -mValue : mValue, mOffset, Number::unchecked{});
+            XRPAmount xrp{num};
+            mIsNegative = xrp.drops() < 0;
+            mValue = mIsNegative ? -xrp.drops() : xrp.drops();
+            mOffset = 0;
         }
-
-        while (mOffset > 0)
+        else
         {
-            if (*stAmountCanonicalizeSwitchover)
+            while (mOffset < 0)
             {
-                // N.B. do not move the overflow check to after the
-                // multiplication
-                if (mValue > cMaxNativeN)
-                    Throw<std::runtime_error>(
-                        "Native currency amount out of range");
+                mValue /= 10;
+                ++mOffset;
             }
-            mValue *= 10;
-            --mOffset;
+
+            while (mOffset > 0)
+            {
+                if (*stAmountCanonicalizeSwitchover)
+                {
+                    // N.B. do not move the overflow check to after the
+                    // multiplication
+                    if (mValue > cMaxNativeN)
+                        Throw<std::runtime_error>(
+                            "Native currency amount out of range");
+                }
+                mValue *= 10;
+                --mOffset;
+            }
         }
 
         if (mValue > cMaxNativeN)
