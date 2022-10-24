@@ -857,6 +857,53 @@ r.ripple.com 51235
     }
 
     void
+    testColons()
+    {
+        Config cfg;
+        /* NOTE: this string includes some explicit
+         * space chars in order to verify proper trimming */
+        std::string toLoad(R"(
+[port_rpc])"
+                           "\x20"
+                           R"(
+# comment
+    # indented comment
+)"
+                           "\x20\x20"
+                           R"(
+[ips])"
+                           "\x20"
+                           R"(
+r.ripple.com:51235
+
+  [ips_fixed])"
+                           "\x20\x20"
+                           R"(
+    # COMMENT
+    s1.ripple.com:51235
+    s2.ripple.com 51235
+    anotherserversansport
+
+)");
+        cfg.loadFromString(toLoad);
+        BEAST_EXPECT(
+            cfg.exists("port_rpc") && cfg.section("port_rpc").lines().empty() &&
+            cfg.section("port_rpc").values().empty());
+        BEAST_EXPECT(
+            cfg.exists(SECTION_IPS) &&
+            cfg.section(SECTION_IPS).lines().size() == 1 &&
+            cfg.section(SECTION_IPS).values().size() == 1);
+        BEAST_EXPECT(
+            cfg.exists(SECTION_IPS_FIXED) &&
+            cfg.section(SECTION_IPS_FIXED).lines().size() == 3 &&
+            cfg.section(SECTION_IPS_FIXED).values().size() == 3);
+        BEAST_EXPECT(cfg.IPS[0] == "r.ripple.com 51235");
+        BEAST_EXPECT(cfg.IPS_FIXED[0] == "s1.ripple.com 51235");
+        BEAST_EXPECT(cfg.IPS_FIXED[1] == "s2.ripple.com 51235");
+        BEAST_EXPECT(cfg.IPS_FIXED[2] == "anotherserversansport");
+    }
+
+    void
     testComments()
     {
         struct TestCommentData
@@ -1147,6 +1194,7 @@ r.ripple.com 51235
         testSetup(true);
         testPort();
         testWhitespace();
+        testColons();
         testComments();
         testGetters();
         testAmendment();
