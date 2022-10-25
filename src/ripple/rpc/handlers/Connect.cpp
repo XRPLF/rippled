@@ -66,8 +66,8 @@ doConnect(RPC::JsonContext& context)
         context.app.overlay().connect(ip.at_port(iPort));
 
     return RPC::makeObjectValue(
-        "attempting connection to " + ip_str + ":" +
-        Json::Value{iPort}.asString());
+        "attempting connection to IP:" + ip_str +
+        " port: " + Json::Value{iPort}.asString());
 }
 
 }  // namespace ripple

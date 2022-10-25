@@ -473,10 +473,19 @@ Config::loadFromString(std::string const& fileContents)
     // if the user has specified ip:port then replace : with a space.
     {
         auto replaceColons = [](std::vector<std::string>& strVec) {
-            const std::regex e(":([0-9]+)$");
-
+            const static std::regex e(":([0-9]+)$");
             for (size_t i = 0; i < strVec.size(); ++i)
-                strVec[i] = std::regex_replace(strVec[i], e, " $1");
+            {
+                // skip anything that might be an ipv6 address
+                if (std::count(strVec[i].begin(), strVec[i].end(), ':') != 1)
+                    continue;
+
+                std::string result = std::regex_replace(strVec[i], e, " $1");
+                // sanity check the result of the replace, should be same length
+                // as input
+                if (result.size() == strVec[i].size())
+                    strVec[i] = result;
+            }
         };
 
         replaceColons(IPS_FIXED);
