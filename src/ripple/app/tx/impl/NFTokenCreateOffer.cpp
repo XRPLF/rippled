@@ -280,7 +280,7 @@ NFTokenCreateOffer::doApply()
     }
 
     // Update owner count.
-    adjustOwnerCount(view(), acctRoot, 1, j_);
+    adjustOwnerCount(view(), *acctRoot, 1, j_);
 
     return tesSUCCESS;
 }

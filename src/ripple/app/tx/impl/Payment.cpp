@@ -353,7 +353,7 @@ Payment::doApply()
         // Tell the engine that we are intending to change the destination
         // account.  The source account gets always charged a fee so it's always
         // marked as modified.
-        view().update(acctRootDst);
+        view().update(*acctRootDst);
     }
 
     // Determine whether the destination requires deposit authorization.

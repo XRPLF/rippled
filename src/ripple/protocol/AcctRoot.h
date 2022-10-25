@@ -88,9 +88,8 @@ public:
     }
 
     void
-    setSequence(std::uint32_t seq)
+    setSequence(std::uint32_t seq) requires Writable
     {
-        static_assert(Writable, "Cannot set member of const ledger entry.");
         wrapped_->at(sfSequence) = seq;
     }
 
@@ -101,9 +100,8 @@ public:
     }
 
     void
-    setBalance(STAmount const& amount)
+    setBalance(STAmount const& amount) requires Writable
     {
-        static_assert(Writable, "Cannot set member of const ledger entry.");
         wrapped_->at(sfBalance) = amount;
     }
 
@@ -114,9 +112,8 @@ public:
     }
 
     void
-    setOwnerCount(std::uint32_t newCount)
+    setOwnerCount(std::uint32_t newCount) requires Writable
     {
-        static_assert(Writable, "Cannot set member of const ledger entry.");
         wrapped_->at(sfOwnerCount) = newCount;
     }
 
@@ -127,9 +124,8 @@ public:
     }
 
     void
-    setPreviousTxnID(uint256 prevTxID)
+    setPreviousTxnID(uint256 prevTxID) requires Writable
     {
-        static_assert(Writable, "Cannot set member of const ledger entry.");
         wrapped_->at(sfPreviousTxnID) = prevTxID;
     }
 
@@ -140,9 +136,8 @@ public:
     }
 
     void
-    setPreviousTxnLgrSeq(std::uint32_t prevTxLgrSeq)
+    setPreviousTxnLgrSeq(std::uint32_t prevTxLgrSeq) requires Writable
     {
-        static_assert(Writable, "Cannot set member of const ledger entry.");
         wrapped_->at(sfPreviousTxnLgrSeq) = prevTxLgrSeq;
     }
 
@@ -153,16 +148,14 @@ public:
     }
 
     void
-    setAccountTxnID(uint256 const& newAcctTxnID)
+    setAccountTxnID(uint256 const& newAcctTxnID) requires Writable
     {
-        static_assert(Writable, "Cannot set member of const ledger entry.");
         this->setOptional(sfAccountTxnID, newAcctTxnID);
     }
 
     void
-    clearAccountTxnID()
+    clearAccountTxnID() requires Writable
     {
-        static_assert(Writable, "Cannot set member of const ledger entry.");
         this->clearOptional(sfAccountTxnID);
     }
 
@@ -173,16 +166,14 @@ public:
     }
 
     void
-    setRegularKey(AccountID const& newRegKey)
+    setRegularKey(AccountID const& newRegKey) requires Writable
     {
-        static_assert(Writable, "Cannot set member of const ledger entry.");
         this->setOptional(sfRegularKey, newRegKey);
     }
 
     void
-    clearRegularKey()
+    clearRegularKey() requires Writable
     {
-        static_assert(Writable, "Cannot set member of const ledger entry.");
         this->clearOptional(sfRegularKey);
     }
 
@@ -193,9 +184,8 @@ public:
     }
 
     void
-    setEmailHash(uint128 const& newEmailHash)
+    setEmailHash(uint128 const& newEmailHash) requires Writable
     {
-        static_assert(Writable, "Cannot set member of const ledger entry.");
         this->setOrClearBaseUintIfZero(sfEmailHash, newEmailHash);
     }
 
@@ -206,9 +196,8 @@ public:
     }
 
     void
-    setWalletLocator(uint256 const& newWalletLocator)
+    setWalletLocator(uint256 const& newWalletLocator) requires Writable
     {
-        static_assert(Writable, "Cannot set member of const ledger entry.");
         this->setOrClearBaseUintIfZero(sfWalletLocator, newWalletLocator);
     }
 
@@ -225,9 +214,8 @@ public:
     }
 
     void
-    setMessageKey(Blob const& newMessageKey)
+    setMessageKey(Blob const& newMessageKey) requires Writable
     {
-        static_assert(Writable, "Cannot set member of const ledger entry.");
         this->setOrClearVLIfEmpty(sfMessageKey, newMessageKey);
     }
 
@@ -238,16 +226,14 @@ public:
     }
 
     void
-    setTransferRate(std::uint32_t newTransferRate)
+    setTransferRate(std::uint32_t newTransferRate) requires Writable
     {
-        static_assert(Writable, "Cannot set member of const ledger entry.");
         this->setOptional(sfTransferRate, newTransferRate);
     }
 
     void
-    clearTransferRate()
+    clearTransferRate() requires Writable
     {
-        static_assert(Writable, "Cannot set member of const ledger entry.");
         this->clearOptional(sfTransferRate);
     }
 
@@ -258,9 +244,8 @@ public:
     }
 
     void
-    setDomain(Blob const& newDomain)
+    setDomain(Blob const& newDomain) requires Writable
     {
-        static_assert(Writable, "Cannot set member of const ledger entry.");
         this->setOrClearVLIfEmpty(sfDomain, newDomain);
     }
 
@@ -271,16 +256,14 @@ public:
     }
 
     void
-    setTickSize(std::uint8_t newTickSize)
+    setTickSize(std::uint8_t newTickSize) requires Writable
     {
-        static_assert(Writable, "Cannot set member of const ledger entry.");
         this->setOptional(sfTickSize, newTickSize);
     }
 
     void
-    clearTickSize()
+    clearTickSize() requires Writable
     {
-        static_assert(Writable, "Cannot set member of const ledger entry.");
         this->clearOptional(sfTickSize);
     }
 
@@ -291,16 +274,14 @@ public:
     }
 
     void
-    setTicketCount(std::uint32_t newTicketCount)
+    setTicketCount(std::uint32_t newTicketCount) requires Writable
     {
-        static_assert(Writable, "Cannot set member of const ledger entry.");
         this->setOptional(sfTicketCount, newTicketCount);
     }
 
     void
-    clearTicketCount()
+    clearTicketCount() requires Writable
     {
-        static_assert(Writable, "Cannot set member of const ledger entry.");
         this->clearOptional(sfTicketCount);
     }
 
@@ -311,16 +292,14 @@ public:
     }
 
     void
-    setNFTokenMinter(AccountID const& newMinter)
+    setNFTokenMinter(AccountID const& newMinter) requires Writable
     {
-        static_assert(Writable, "Cannot set member of const ledger entry.");
         this->setOptional(sfNFTokenMinter, newMinter);
     }
 
     void
-    clearNFTokenMinter()
+    clearNFTokenMinter() requires Writable
     {
-        static_assert(Writable, "Cannot set member of const ledger entry.");
         this->clearOptional(sfNFTokenMinter);
     }
 
@@ -331,9 +310,8 @@ public:
     }
 
     void
-    setMintedNFTokens(std::uint32_t newMintedCount)
+    setMintedNFTokens(std::uint32_t newMintedCount) requires Writable
     {
-        static_assert(Writable, "Cannot set member of const ledger entry.");
         this->setOptional(sfMintedNFTokens, newMintedCount);
     }
 
@@ -344,9 +322,8 @@ public:
     }
 
     void
-    setBurnedNFTokens(std::uint32_t newBurnedCount)
+    setBurnedNFTokens(std::uint32_t newBurnedCount) requires Writable
     {
-        static_assert(Writable, "Cannot set member of const ledger entry.");
         this->setOptional(sfBurnedNFTokens, newBurnedCount);
     }
 
@@ -369,19 +346,19 @@ using AcctRoot = AcctRootImpl<true>;
 
 // clang-format off
 #ifndef __INTELLISENSE__
-static_assert(not std::is_default_constructible_v<AcctRootRd>);
-static_assert(    std::is_copy_constructible_v<AcctRootRd>);
-static_assert(    std::is_move_constructible_v<AcctRootRd>);
-static_assert(    std::is_copy_assignable_v<AcctRootRd>);
-static_assert(    std::is_move_assignable_v<AcctRootRd>);
-static_assert(    std::is_nothrow_destructible_v<AcctRootRd>);
+static_assert(! std::is_default_constructible_v<AcctRootRd>);
+static_assert(  std::is_copy_constructible_v<AcctRootRd>);
+static_assert(  std::is_move_constructible_v<AcctRootRd>);
+static_assert(  std::is_copy_assignable_v<AcctRootRd>);
+static_assert(  std::is_move_assignable_v<AcctRootRd>);
+static_assert(  std::is_nothrow_destructible_v<AcctRootRd>);
 
-static_assert(not std::is_default_constructible_v<AcctRoot>);
-static_assert(    std::is_copy_constructible_v<AcctRoot>);
-static_assert(    std::is_move_constructible_v<AcctRoot>);
-static_assert(    std::is_copy_assignable_v<AcctRoot>);
-static_assert(    std::is_move_assignable_v<AcctRoot>);
-static_assert(    std::is_nothrow_destructible_v<AcctRoot>);
+static_assert(! std::is_default_constructible_v<AcctRoot>);
+static_assert(  std::is_copy_constructible_v<AcctRoot>);
+static_assert(  std::is_move_constructible_v<AcctRoot>);
+static_assert(  std::is_copy_assignable_v<AcctRoot>);
+static_assert(  std::is_move_assignable_v<AcctRoot>);
+static_assert(  std::is_nothrow_destructible_v<AcctRoot>);
 #endif  // __INTELLISENSE__
 // clang-format on
 

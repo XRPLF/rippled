@@ -149,7 +149,7 @@ DepositPreauth::doApply()
         slePreauth->setFieldU64(sfOwnerNode, *page);
 
         // If we succeeded, the new entry counts against the creator's reserve.
-        adjustOwnerCount(view(), ownerAcctRoot, 1, viewJ);
+        adjustOwnerCount(view(), *ownerAcctRoot, 1, viewJ);
     }
     else
     {
@@ -192,7 +192,7 @@ DepositPreauth::removeFromLedger(
     if (!ownerAcctRoot)
         return tefINTERNAL;
 
-    adjustOwnerCount(view, ownerAcctRoot, -1, app.journal("View"));
+    adjustOwnerCount(view, *ownerAcctRoot, -1, app.journal("View"));
 
     // Remove DepositPreauth from ledger.
     view.erase(slePreauth);

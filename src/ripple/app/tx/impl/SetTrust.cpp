@@ -247,8 +247,8 @@ SetTrust::doApply()
         std::uint32_t uHighQualityOut;
         auto const& uLowAccountID = !bHigh ? account_ : uDstAccountID;
         auto const& uHighAccountID = bHigh ? account_ : uDstAccountID;
-        std::optional<AcctRoot>& lowAcctRoot = !bHigh ? acctRoot : destAcctRoot;
-        std::optional<AcctRoot>& highAcctRoot = bHigh ? acctRoot : destAcctRoot;
+        AcctRoot& lowAcctRoot = !bHigh ? *acctRoot : *destAcctRoot;
+        AcctRoot& highAcctRoot = bHigh ? *acctRoot : *destAcctRoot;
 
         //
         // Balances
@@ -383,8 +383,8 @@ SetTrust::doApply()
         if (QUALITY_ONE == uHighQualityOut)
             uHighQualityOut = 0;
 
-        bool const bLowDefRipple = lowAcctRoot->isFlag(lsfDefaultRipple);
-        bool const bHighDefRipple = highAcctRoot->isFlag(lsfDefaultRipple);
+        bool const bLowDefRipple = lowAcctRoot.isFlag(lsfDefaultRipple);
+        bool const bHighDefRipple = highAcctRoot.isFlag(lsfDefaultRipple);
 
         bool const bLowReserveSet = uLowQualityIn || uLowQualityOut ||
             ((uFlagsOut & lsfLowNoRipple) == 0) != bLowDefRipple ||
@@ -510,7 +510,7 @@ SetTrust::doApply()
             account_,
             uDstAccountID,
             k.key,
-            acctRoot,
+            *acctRoot,
             bSetAuth,
             bSetNoRipple && !bClearNoRipple,
             bSetFreeze && !bClearFreeze,

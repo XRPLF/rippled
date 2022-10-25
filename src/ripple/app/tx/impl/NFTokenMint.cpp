@@ -172,7 +172,7 @@ NFTokenMint::doApply()
 
                 issuerAcctRoot->setMintedNFTokens(nextTokenSeq);
             }
-            ctx_.view().update(issuerAcctRoot);
+            ctx_.view().update(*issuerAcctRoot);
             return tokenSeq;
         }
 
@@ -221,7 +221,7 @@ NFTokenMint::doApply()
         if (tokenSeq + 1u == 0u || tokenSeq < offset)
             return Unexpected(tecMAX_SEQUENCE_REACHED);
 
-        ctx_.view().update(issuerAcctRoot);
+        ctx_.view().update(*issuerAcctRoot);
         return tokenSeq;
     }();
 

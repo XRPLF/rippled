@@ -152,8 +152,8 @@ closeChannel(
     assert((*slep)[sfAmount] >= (*slep)[sfBalance]);
     acctRoot->setBalance(
         acctRoot->balance() + (*slep)[sfAmount] - (*slep)[sfBalance]);
-    adjustOwnerCount(view, acctRoot, -1, j);
-    view.update(acctRoot);
+    adjustOwnerCount(view, *acctRoot, -1, j);
+    view.update(*acctRoot);
 
     // Remove PayChan from ledger
     view.erase(slep);
@@ -293,8 +293,8 @@ PayChanCreate::doApply()
 
     // Deduct owner's balance, increment owner count
     acctRoot->setBalance(acctRoot->balance() - ctx_.tx[sfAmount]);
-    adjustOwnerCount(ctx_.view(), acctRoot, 1, ctx_.journal);
-    ctx_.view().update(acctRoot);
+    adjustOwnerCount(ctx_.view(), *acctRoot, 1, ctx_.journal);
+    ctx_.view().update(*acctRoot);
 
     return tesSUCCESS;
 }
@@ -390,7 +390,7 @@ PayChanFund::doApply()
     ctx_.view().update(slep);
 
     acctRoot->setBalance(acctRoot->balance() - ctx_.tx[sfAmount]);
-    ctx_.view().update(acctRoot);
+    ctx_.view().update(*acctRoot);
 
     return tesSUCCESS;
 }
@@ -531,7 +531,7 @@ PayChanClaim::doApply()
         XRPAmount const reqDelta = reqBalance - chanBalance;
         assert(reqDelta >= beast::zero);
         destAcctRoot->setBalance(destAcctRoot->balance() + reqDelta);
-        ctx_.view().update(destAcctRoot);
+        ctx_.view().update(*destAcctRoot);
         ctx_.view().update(slep);
     }
 

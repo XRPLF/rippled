@@ -106,7 +106,7 @@ NFTokenBurn::doApply()
     {
         issuerAcctRoot->setBurnedNFTokens(
             issuerAcctRoot->burnedNFTokens().value_or(0) + 1);
-        view().update(issuerAcctRoot);
+        view().update(*issuerAcctRoot);
     }
 
     if (ctx_.view().rules().enabled(fixNonFungibleTokensV1_2))

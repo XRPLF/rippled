@@ -215,7 +215,8 @@ removeSignersFromLedger(
     }
 
     auto acctRoot = view.peek(accountKeylet);
-    adjustOwnerCount(view, acctRoot, removeFromOwnerCount, app.journal("View"));
+    adjustOwnerCount(
+        view, *acctRoot, removeFromOwnerCount, app.journal("View"));
 
     view.erase(signers);
 
@@ -371,7 +372,7 @@ SetSignerList::replaceSignerList()
 
     // If we succeeded, the new entry counts against the
     // creator's reserve.
-    adjustOwnerCount(view(), acctRoot, addedOwnerCount, viewJ);
+    adjustOwnerCount(view(), *acctRoot, addedOwnerCount, viewJ);
     return tesSUCCESS;
 }
 

@@ -142,7 +142,7 @@ CreateTicket::doApply()
     acctRoot->setTicketCount(oldTicketCount + ticketCount);
 
     // Every added Ticket counts against the creator's reserve.
-    adjustOwnerCount(view(), acctRoot, ticketCount, viewJ);
+    adjustOwnerCount(view(), *acctRoot, ticketCount, viewJ);
 
     // TicketCreate is the only transaction that can cause an account root's
     // Sequence field to increase by more than one.  October 2018.

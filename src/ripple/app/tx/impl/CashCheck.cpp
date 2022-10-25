@@ -389,7 +389,7 @@ CashCheck::doApply()
                         issuer,                         // source
                         account_,                       // destination
                         trustLineKey.key,               // ledger index
-                        dstAcctRoot,                    // account to add to
+                        *dstAcctRoot,                   // account to add to
                         false,                          // authorize account
                         !dstAcctRoot->isFlag(lsfDefaultRipple),
                         false,                          // freeze trust line
@@ -404,7 +404,7 @@ CashCheck::doApply()
                 }
                 // clang-format on
 
-                psb.update(dstAcctRoot);
+                psb.update(*dstAcctRoot);
 
                 // Note that we _don't_ need to be careful about destroying
                 // the trust line if the check cashing fails.  The transaction
@@ -508,7 +508,7 @@ CashCheck::doApply()
 
     // If we succeeded, update the check owner's reserve.
     auto srcAcctRoot = psb.peek(keylet::account(srcId));
-    adjustOwnerCount(psb, srcAcctRoot, -1, viewJ);
+    adjustOwnerCount(psb, *srcAcctRoot, -1, viewJ);
 
     // Remove check from ledger.
     psb.erase(sleCheck);

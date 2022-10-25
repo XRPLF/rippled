@@ -211,13 +211,13 @@ Change::activateTrustLinesToSelfFix()
         if (tl->getFlags() & lsfLowReserve)
         {
             auto acctRootLo = sb.peek(keylet::account(lo.getIssuer()));
-            adjustOwnerCount(sb, acctRootLo, -1, j_);
+            adjustOwnerCount(sb, *acctRootLo, -1, j_);
         }
 
         if (tl->getFlags() & lsfHighReserve)
         {
             auto acctRootHi = sb.peek(keylet::account(hi.getIssuer()));
-            adjustOwnerCount(sb, acctRootHi, -1, j_);
+            adjustOwnerCount(sb, *acctRootHi, -1, j_);
         }
 
         sb.erase(tl);

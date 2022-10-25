@@ -236,7 +236,7 @@ CreateCheck::doApply()
         sleCheck->setFieldU64(sfOwnerNode, *page);
     }
     // If we succeeded, the new entry counts against the creator's reserve.
-    adjustOwnerCount(view(), acctRoot, 1, viewJ);
+    adjustOwnerCount(view(), *acctRoot, 1, viewJ);
     return tesSUCCESS;
 }
 

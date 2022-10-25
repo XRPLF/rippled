@@ -265,8 +265,8 @@ EscrowCreate::doApply()
 
     // Deduct owner's balance, increment owner count
     acctRoot->setBalance(acctRoot->balance() - ctx_.tx[sfAmount]);
-    adjustOwnerCount(ctx_.view(), acctRoot, 1, ctx_.journal);
-    ctx_.view().update(acctRoot);
+    adjustOwnerCount(ctx_.view(), *acctRoot, 1, ctx_.journal);
+    ctx_.view().update(*acctRoot);
 
     return tesSUCCESS;
 }
@@ -485,12 +485,12 @@ EscrowFinish::doApply()
 
     // Transfer amount to destination
     destAcctRoot->setBalance(destAcctRoot->balance() + (*slep)[sfAmount]);
-    ctx_.view().update(destAcctRoot);
+    ctx_.view().update(*destAcctRoot);
 
     // Adjust source owner count
     auto acctRoot = ctx_.view().peek(keylet::account(account));
-    adjustOwnerCount(ctx_.view(), acctRoot, -1, ctx_.journal);
-    ctx_.view().update(acctRoot);
+    adjustOwnerCount(ctx_.view(), *acctRoot, -1, ctx_.journal);
+    ctx_.view().update(*acctRoot);
 
     // Remove escrow from ledger
     ctx_.view().erase(slep);
@@ -571,8 +571,8 @@ EscrowCancel::doApply()
     // Transfer amount back to owner, decrement owner count
     auto acctRoot = ctx_.view().peek(keylet::account(account));
     acctRoot->setBalance(acctRoot->balance() + (*slep)[sfAmount]);
-    adjustOwnerCount(ctx_.view(), acctRoot, -1, ctx_.journal);
-    ctx_.view().update(acctRoot);
+    adjustOwnerCount(ctx_.view(), *acctRoot, -1, ctx_.journal);
+    ctx_.view().update(*acctRoot);
 
     // Remove escrow from ledger
     ctx_.view().erase(slep);

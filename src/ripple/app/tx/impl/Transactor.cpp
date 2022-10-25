@@ -423,7 +423,7 @@ Transactor::ticketDelete(
     }
 
     // Update the Ticket owner's reserve.
-    adjustOwnerCount(view, acctRoot, -1, j);
+    adjustOwnerCount(view, *acctRoot, -1, j);
 
     // Remove Ticket from ledger.
     view.erase(sleTicket);
@@ -466,7 +466,7 @@ Transactor::apply()
         if (acctRoot->accountTxnID())
             acctRoot->setAccountTxnID(ctx_.tx.getTransactionID());
 
-        view().update(acctRoot);
+        view().update(*acctRoot);
     }
 
     return doApply();
@@ -788,7 +788,7 @@ Transactor::reset(XRPAmount fee)
     assert(isTesSuccess(ter));
 
     if (isTesSuccess(ter))
-        view().update(txnAcctRoot);
+        view().update(*txnAcctRoot);
 
     return {ter, fee};
 }

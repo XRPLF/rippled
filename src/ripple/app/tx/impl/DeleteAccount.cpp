@@ -382,8 +382,8 @@ DeleteAccount::doApply()
     if (mSourceBalance > XRPAmount(0) && dstAcctRoot->isFlag(lsfPasswordSpent))
         dstAcctRoot->clearFlag(lsfPasswordSpent);
 
-    view().update(dstAcctRoot);
-    view().erase(srcAcctRoot);
+    view().update(*dstAcctRoot);
+    view().erase(*srcAcctRoot);
 
     return tesSUCCESS;
 }

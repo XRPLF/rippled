@@ -69,12 +69,12 @@ public:
 };
 
 #ifndef __INTELLISENSE__
-static_assert(not std::is_default_constructible_v<KeyletBase>);
-static_assert(not std::is_copy_constructible_v<KeyletBase>);
-static_assert(not std::is_move_constructible_v<KeyletBase>);
-static_assert(not std::is_copy_assignable_v<KeyletBase>);
-static_assert(not std::is_move_assignable_v<KeyletBase>);
-static_assert(not std::is_nothrow_destructible_v<KeyletBase>);
+static_assert(!std::is_default_constructible_v<KeyletBase>);
+static_assert(!std::is_copy_constructible_v<KeyletBase>);
+static_assert(!std::is_move_constructible_v<KeyletBase>);
+static_assert(!std::is_copy_assignable_v<KeyletBase>);
+static_assert(!std::is_move_assignable_v<KeyletBase>);
+static_assert(!std::is_nothrow_destructible_v<KeyletBase>);
 #endif
 
 struct Keylet final : public KeyletBase
@@ -87,7 +87,7 @@ struct Keylet final : public KeyletBase
 };
 
 #ifndef __INTELLISENSE__
-static_assert(not std::is_default_constructible_v<Keylet>);
+static_assert(!std::is_default_constructible_v<Keylet>);
 static_assert(std::is_copy_constructible_v<Keylet>);
 static_assert(std::is_move_constructible_v<Keylet>);
 static_assert(std::is_copy_assignable_v<Keylet>);
@@ -111,7 +111,7 @@ struct AccountRootKeylet final : public KeyletBase
 };
 
 #ifndef __INTELLISENSE__
-static_assert(not std::is_default_constructible_v<AccountRootKeylet>);
+static_assert(!std::is_default_constructible_v<AccountRootKeylet>);
 static_assert(std::is_copy_constructible_v<AccountRootKeylet>);
 static_assert(std::is_move_constructible_v<AccountRootKeylet>);
 static_assert(std::is_copy_assignable_v<AccountRootKeylet>);
