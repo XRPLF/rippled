@@ -515,16 +515,16 @@ public:
 
         // All it takes is a large enough XRP payment to resurrect
         // becky's account.  Try too small a payment.
-        env(pay(alice, becky, XRP(19)), ter(tecNO_DST_INSUF_XRP));
+        env(pay(alice, becky, XRP(9)), ter(tecNO_DST_INSUF_XRP));
         env.close();
 
         // Actually resurrect becky's account.
-        env(pay(alice, becky, XRP(20)));
+        env(pay(alice, becky, XRP(10)));
         env.close();
 
         // becky's account root should be back.
         BEAST_EXPECT(env.closed()->exists(beckyAcctKey));
-        BEAST_EXPECT(env.balance(becky) == XRP(20));
+        BEAST_EXPECT(env.balance(becky) == XRP(10));
 
         // becky's resurrected account can be the destination of alice's
         // PayChannel.
@@ -541,7 +541,7 @@ public:
         env(payChanClaim());
         env.close();
 
-        BEAST_EXPECT(env.balance(becky) == XRP(20) + payChanXRP);
+        BEAST_EXPECT(env.balance(becky) == XRP(10) + payChanXRP);
     }
 
     void
