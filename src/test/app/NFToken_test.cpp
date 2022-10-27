@@ -3927,31 +3927,33 @@ class NFToken_test : public beast::unit_test::suite
             env.close();
         }
 
-        // Lambda to set the balance of all passed in accounts to gwXAU(1000).
-        auto setXAUBalance_1000 =
+        // Lambda to set the balance of all passed in accounts to
+        // gwXAU(amount)
+        auto setXAUBalance =
             [this, &gw, &gwXAU, &env](
                 std::initializer_list<std::reference_wrapper<Account const>>
                     accounts,
-                int line) {
+                int line,
+                int amount = 1000) {
                 for (Account const& acct : accounts)
                 {
-                    static const auto xau1000 = gwXAU(1000);
+                    auto const xauAmt = gwXAU(amount);
                     auto const balance = env.balance(acct, gwXAU);
-                    if (balance < xau1000)
+                    if (balance < xauAmt)
                     {
-                        env(pay(gw, acct, xau1000 - balance));
+                        env(pay(gw, acct, xauAmt - balance));
                         env.close();
                     }
-                    else if (balance > xau1000)
+                    else if (balance > xauAmt)
                     {
-                        env(pay(acct, gw, balance - xau1000));
+                        env(pay(acct, gw, balance - xauAmt));
                         env.close();
                     }
-                    if (env.balance(acct, gwXAU) != xau1000)
+                    if (env.balance(acct, gwXAU) != xauAmt)
                     {
                         std::stringstream ss;
                         ss << "Unable to set " << acct.human()
-                           << " account balance to gwXAU(1000)";
+                           << " account balance to gwXAU(" << amount << ")";
                         this->fail(ss.str(), __FILE__, line);
                     }
                 }
@@ -3961,7 +3963,7 @@ class NFToken_test : public beast::unit_test::suite
         // transfer fee.
         {
             checkOwnerCountIsOne({issuer, minter, buyer, broker}, __LINE__);
-            setXAUBalance_1000({issuer, minter, buyer, broker}, __LINE__);
+            setXAUBalance({issuer, minter, buyer, broker}, __LINE__);
 
             uint256 const nftID = mintNFT();
 
@@ -4046,7 +4048,7 @@ class NFToken_test : public beast::unit_test::suite
         // There are both transfer and broker fees.
         {
             checkOwnerCountIsOne({issuer, minter, buyer, broker}, __LINE__);
-            setXAUBalance_1000({issuer, minter, buyer, broker}, __LINE__);
+            setXAUBalance({issuer, minter, buyer, broker}, __LINE__);
 
             uint256 const nftID = mintNFT(maxTransferFee);
 
@@ -4132,7 +4134,7 @@ class NFToken_test : public beast::unit_test::suite
         // the maximum.
         {
             checkOwnerCountIsOne({issuer, minter, buyer, broker}, __LINE__);
-            setXAUBalance_1000({issuer, minter, buyer, broker}, __LINE__);
+            setXAUBalance({issuer, minter, buyer, broker}, __LINE__);
 
             uint256 const nftID = mintNFT(maxTransferFee / 2);  // 25%
 
@@ -4165,6 +4167,48 @@ class NFToken_test : public beast::unit_test::suite
             BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(1712.5));
             BEAST_EXPECT(env.balance(buyer, gwXAU) == gwXAU(0));
             BEAST_EXPECT(env.balance(broker, gwXAU) == gwXAU(1050));
+
+            // Burn the NFT so the next test starts with a clean state.
+            env(token::burn(buyer, nftID));
+            env.close();
+        }
+        // broker has a balance less than the seller offer
+        {
+            checkOwnerCountIsOne({issuer, minter, buyer, broker}, __LINE__);
+            setXAUBalance({issuer, minter, buyer}, __LINE__);
+            setXAUBalance({broker}, __LINE__, 500);
+
+            uint256 const nftID = mintNFT(maxTransferFee / 2);  // 25%
+
+            // minter creates their offer.
+            uint256 const minterOfferIndex =
+                keylet::nftoffer(minter, env.seq(minter)).key;
+            env(token::createOffer(minter, nftID, gwXAU(900)),
+                txflags(tfSellNFToken));
+            env.close();
+
+            // buyer creates a large enough offer.
+            uint256 const buyOfferIndex =
+                keylet::nftoffer(buyer, env.seq(buyer)).key;
+            env(token::createOffer(buyer, nftID, gwXAU(1000)),
+                token::owner(minter));
+            env.close();
+
+            // broker 50 XAU and succeeds.
+            // 25% of the remaining difference goes to issuer.
+            // The rest goes to minter.
+            env(token::brokerOffers(broker, buyOfferIndex, minterOfferIndex),
+                token::brokerFee(gwXAU(50)));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, issuer) == 1);
+            BEAST_EXPECT(ownerCount(env, minter) == 1);
+            BEAST_EXPECT(ownerCount(env, buyer) == 2);
+            BEAST_EXPECT(ownerCount(env, broker) == 1);
+            BEAST_EXPECT(env.balance(issuer, gwXAU) == gwXAU(1237.5));
+            BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(1712.5));
+            BEAST_EXPECT(env.balance(buyer, gwXAU) == gwXAU(0));
+            BEAST_EXPECT(env.balance(broker, gwXAU) == gwXAU(550));
 
             // Burn the NFT so the next test starts with a clean state.
             env(token::burn(buyer, nftID));

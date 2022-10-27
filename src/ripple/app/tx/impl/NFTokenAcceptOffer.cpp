@@ -199,19 +199,18 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
             if (auto const dest = so->at(~sfDestination);
                 dest.has_value() && *dest != ctx.tx[sfAccount])
                 return tecNO_PERMISSION;
+
+            // The account offering to buy must have funds:
+            auto const needed = so->at(sfAmount);
+            if (accountHolds(
+                    ctx.view,
+                    ctx.tx[sfAccount],
+                    needed.getCurrency(),
+                    needed.getIssuer(),
+                    fhZERO_IF_FROZEN,
+                    ctx.j) < needed)
+                return tecINSUFFICIENT_FUNDS;
         }
-
-        // The account offering to buy must have funds:
-        auto const needed = so->at(sfAmount);
-
-        if (accountHolds(
-                ctx.view,
-                ctx.tx[sfAccount],
-                needed.getCurrency(),
-                needed.getIssuer(),
-                fhZERO_IF_FROZEN,
-                ctx.j) < needed)
-            return tecINSUFFICIENT_FUNDS;
     }
 
     return tesSUCCESS;
