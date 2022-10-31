@@ -43,7 +43,7 @@ Some fields have a different meaning for their
 class STAccount;
 class STAmount;
 class STBlob;
-template <std::size_t>
+template <int>
 class STBitString;
 template <class>
 class STInteger;
