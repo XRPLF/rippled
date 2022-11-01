@@ -3933,8 +3933,8 @@ class NFToken_test : public beast::unit_test::suite
             [this, &gw, &gwXAU, &env](
                 std::initializer_list<std::reference_wrapper<Account const>>
                     accounts,
-                int line,
-                int amount = 1000) {
+                int amount,
+                int line) {
                 for (Account const& acct : accounts)
                 {
                     auto const xauAmt = gwXAU(amount);
@@ -3963,7 +3963,7 @@ class NFToken_test : public beast::unit_test::suite
         // transfer fee.
         {
             checkOwnerCountIsOne({issuer, minter, buyer, broker}, __LINE__);
-            setXAUBalance({issuer, minter, buyer, broker}, __LINE__);
+            setXAUBalance({issuer, minter, buyer, broker}, 1000, __LINE__);
 
             uint256 const nftID = mintNFT();
 
@@ -4048,7 +4048,7 @@ class NFToken_test : public beast::unit_test::suite
         // There are both transfer and broker fees.
         {
             checkOwnerCountIsOne({issuer, minter, buyer, broker}, __LINE__);
-            setXAUBalance({issuer, minter, buyer, broker}, __LINE__);
+            setXAUBalance({issuer, minter, buyer, broker}, 1000, __LINE__);
 
             uint256 const nftID = mintNFT(maxTransferFee);
 
@@ -4134,7 +4134,7 @@ class NFToken_test : public beast::unit_test::suite
         // the maximum.
         {
             checkOwnerCountIsOne({issuer, minter, buyer, broker}, __LINE__);
-            setXAUBalance({issuer, minter, buyer, broker}, __LINE__);
+            setXAUBalance({issuer, minter, buyer, broker}, 1000, __LINE__);
 
             uint256 const nftID = mintNFT(maxTransferFee / 2);  // 25%
 
@@ -4175,8 +4175,8 @@ class NFToken_test : public beast::unit_test::suite
         // broker has a balance less than the seller offer
         {
             checkOwnerCountIsOne({issuer, minter, buyer, broker}, __LINE__);
-            setXAUBalance({issuer, minter, buyer}, __LINE__);
-            setXAUBalance({broker}, __LINE__, 500);
+            setXAUBalance({issuer, minter, buyer}, 1000, __LINE__);
+            setXAUBalance({broker}, 500, __LINE__);
 
             uint256 const nftID = mintNFT(maxTransferFee / 2);  // 25%
 
