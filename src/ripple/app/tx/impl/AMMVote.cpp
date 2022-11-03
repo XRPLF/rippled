@@ -44,6 +44,12 @@ AMMVote::preflight(PreflightContext const& ctx)
     if (!isTesSuccess(ret))
         return ret;
 
+    if (auto const res = invalidAMMAssetPair(ctx.tx[sfAsset], ctx.tx[sfAsset2]))
+    {
+        JLOG(ctx.j.debug()) << "AMM Vote: invalid asset pair.";
+        return res;
+    }
+
     if (ctx.tx.getFlags() & tfUniversalMask)
     {
         JLOG(ctx.j.debug()) << "AMM Vote: invalid flags.";
@@ -62,10 +68,12 @@ AMMVote::preflight(PreflightContext const& ctx)
 TER
 AMMVote::preclaim(PreclaimContext const& ctx)
 {
-    if (!ctx.view.read(keylet::amm(ctx.tx[sfAMMID])))
+    if (auto const ammSle =
+            getAMMSle(ctx.view, ctx.tx[sfAsset], ctx.tx[sfAsset2]);
+        !ammSle)
     {
-        JLOG(ctx.j.debug()) << "AMM Vote: Invalid AMM account.";
-        return terNO_ACCOUNT;
+        JLOG(ctx.j.debug()) << "AMM Vote: Invalid asset pair.";
+        return terNO_AMM;
     }
 
     return tesSUCCESS;
@@ -79,12 +87,11 @@ applyVote(
     beast::Journal j_)
 {
     auto const feeNew = ctx_.tx[sfTradingFee];
-    auto const amm = sb.peek(keylet::amm(ctx_.tx[sfAMMID]));
+    auto const amm = getAMMSle(sb, ctx_.tx[sfAsset], ctx_.tx[sfAsset2]);
     if (!amm)
-        return {tecINTERNAL, false};
-    auto const ammAccount = (*amm)[sfAMMAccount];
-    STAmount const lptAMMBalance = (*amm)[sfLPTokenBalance];
-    auto const lpTokensNew = lpHolds(sb, ammAccount, account_, ctx_.journal);
+        return {amm.error(), false};
+    STAmount const lptAMMBalance = (**amm)[sfLPTokenBalance];
+    auto const lpTokensNew = ammLPHolds(sb, **amm, account_, ctx_.journal);
     if (lpTokensNew == beast::zero)
     {
         JLOG(ctx_.journal.debug()) << "AMM Vote: account is not LP.";
@@ -104,10 +111,10 @@ applyVote(
     // per current total tokens balance and each LP tokens balance.
     // Find the entry with the least tokens and whether the account
     // has the vote entry.
-    for (auto const& entry : amm->getFieldArray(sfVoteSlots))
+    for (auto const& entry : (*amm)->getFieldArray(sfVoteSlots))
     {
         auto const account = entry[sfAccount];
-        auto lpTokens = lpHolds(sb, ammAccount, account, ctx_.journal);
+        auto lpTokens = ammLPHolds(sb, **amm, account, ctx_.journal);
         if (lpTokens == beast::zero)
         {
             JLOG(j_.debug())
@@ -188,9 +195,9 @@ applyVote(
     }
 
     // Update the vote entries and the trading fee.
-    amm->setFieldArray(sfVoteSlots, updatedVoteSlots);
-    amm->setFieldU16(sfTradingFee, static_cast<std::int64_t>(num / den));
-    sb.update(amm);
+    (*amm)->setFieldArray(sfVoteSlots, updatedVoteSlots);
+    (*amm)->setFieldU16(sfTradingFee, static_cast<std::int64_t>(num / den));
+    sb.update(*amm);
 
     return {tesSUCCESS, true};
 }

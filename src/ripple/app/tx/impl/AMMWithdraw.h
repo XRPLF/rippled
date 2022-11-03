@@ -89,8 +89,8 @@ private:
     /** Withdraw requested assets and token from AMM into LP account.
      * @param view
      * @param ammAccount
-     * @param asset1Withdraw
-     * @param asset2Withdraw
+     * @param amountWithdraw
+     * @param amount2Withdraw
      * @param lptAMMBalance current AMM LPT balance
      * @param lpTokensWithdraw
      * @return
@@ -99,8 +99,8 @@ private:
     withdraw(
         Sandbox& view,
         AccountID const& ammAccount,
-        STAmount const& asset1Withdraw,
-        std::optional<STAmount> const& asset2Withdraw,
+        STAmount const& amountWithdraw,
+        std::optional<STAmount> const& amount2Withdraw,
         STAmount const& lpAMMBalance,
         STAmount const& lpTokensWithdraw);
 
@@ -109,18 +109,18 @@ private:
      * The trading fee is not charged.
      * @param view
      * @param ammAccount
-     * @param asset1Balance current LP asset1 balance
-     * @param asset2Balance current LP asset2 balance
+     * @param amountBalance current LP asset1 balance
+     * @param amount2Balance current LP asset2 balance
      * @param lptAMMBalance current AMM LPT balance
      * @param lpTokensWithdraw amount of tokens to withdraw
      * @return
      */
     std::pair<TER, STAmount>
-    equalWithdrawalTokens(
+    equalWithdrawTokens(
         Sandbox& view,
         AccountID const& ammAccount,
-        STAmount const& asset1Balance,
-        STAmount const& asset2Balance,
+        STAmount const& amountBalance,
+        STAmount const& amount2Balance,
         STAmount const& lptAMMBalance,
         STAmount const& lpTokensWithdraw);
 
@@ -129,82 +129,82 @@ private:
      * to withdraw. The trading fee is not charged.
      * @param view
      * @param ammAccount
-     * @param asset1Balance current AMM asset1 balance
-     * @param asset2Balance current AMM asset2 balance
+     * @param amountBalance current AMM asset1 balance
+     * @param amount2Balance current AMM asset2 balance
      * @param lptAMMBalance current AMM LPT balance
-     * @param asset1Out asset1 withdraw amount
-     * @param asset2Out max asset2 withdraw amount
+     * @param amount asset1 withdraw amount
+     * @param amount2 max asset2 withdraw amount
      * @return
      */
     std::pair<TER, STAmount>
-    equalWithdrawalLimit(
+    equalWithdrawLimit(
         Sandbox& view,
         AccountID const& ammAccount,
-        STAmount const& asset1Balance,
-        STAmount const& asset2Balance,
+        STAmount const& amountBalance,
+        STAmount const& amount2Balance,
         STAmount const& lptAMMBalance,
-        STAmount const& asset1Out,
-        STAmount const& asset2Out);
+        STAmount const& amount,
+        STAmount const& amount2);
 
     /** Single asset withdrawal (Asset1Out) equivalent to the amount specified
      * in Asset1Out. The trading fee is charged.
      * @param ctx
      * @param view
      * @param ammAccount
-     * @param asset1Balance current AMM asset1 balance
+     * @param amountBalance current AMM asset1 balance
      * @param lptAMMBalance current AMM LPT balance
-     * @param asset1Out asset1 withdraw amount
+     * @param amount asset1 withdraw amount
      * @param tfee trading fee in basis points
      * @return
      */
     std::pair<TER, STAmount>
-    singleWithdrawal(
+    singleWithdraw(
         Sandbox& view,
         AccountID const& ammAccount,
-        STAmount const& asset1Balance,
+        STAmount const& amountBalance,
         STAmount const& lptAMMBalance,
-        STAmount const& asset1Out,
+        STAmount const& amount,
         std::uint16_t tfee);
 
     /** Single asset withdrawal (Asset1Out, LPTokens) proportional
      * to the share specified by tokens. The trading fee is charged.
      * @param view
      * @param ammAccount
-     * @param asset1Balance current AMM asset1 balance
+     * @param amountBalance current AMM asset1 balance
      * @param lptAMMBalance current AMM LPT balance
-     * @param asset1Out asset1 withdraw amount
+     * @param amount asset1 withdraw amount
      * @param lpTokensWithdraw amount of tokens to withdraw
      * @param tfee trading fee in basis points
      * @return
      */
     std::pair<TER, STAmount>
-    singleWithdrawalTokens(
+    singleWithdrawTokens(
         Sandbox& view,
         AccountID const& ammAccount,
-        STAmount const& asset1Balance,
+        STAmount const& amountBalance,
         STAmount const& lptAMMBalance,
-        STAmount const& asset1Out,
+        STAmount const& amount,
         STAmount const& lpTokensWithdraw,
         std::uint16_t tfee);
 
-    /** Withdrawal of single asset (Asset1Out, EPrice) with two constraints.
+    /** Withdraw single asset (Asset1Out, EPrice) with two constraints.
      * The trading fee is charged.
      * @param view
      * @param ammAccount
-     * @param asset1Balance current AMM asset1 balance
+     * @param amountBalance current AMM asset1 balance
      * @param lptAMMBalance current AMM LPT balance
-     * @param asset1Out asset1 withdraw amount
+     * @param amount asset1 withdraw amount
      * @param ePrice maximum asset1 effective price
      * @param tfee trading fee in basis points
      * @return
      */
     std::pair<TER, STAmount>
-    singleWithdrawalEPrice(
+    singleWithdrawEPrice(
         Sandbox& view,
         AccountID const& ammAccount,
-        STAmount const& asset1Balance,
+        STAmount const& amountBalance,
         STAmount const& lptAMMBalance,
-        STAmount const& asset1Out,
+        STAmount const& amount,
         STAmount const& ePrice,
         std::uint16_t tfee);
 
@@ -215,16 +215,6 @@ private:
      */
     TER
     deleteAccount(Sandbox& view, AccountID const& ammAccountID);
-
-    /** Get transaction's LP Tokens. If tfAMMWithdrawAll flag is et
-     * then return all LP Tokens of LP.
-     */
-    static std::optional<STAmount>
-    getTxLPTokens(
-        ReadView const& view,
-        AccountID const& ammAccount,
-        STTx const& tx,
-        beast::Journal const journal);
 };
 
 }  // namespace ripple

@@ -39,7 +39,6 @@ class AMM
 {
     Env& env_;
     Account const creatorAccount_;
-    uint256 const ammID_;
     AccountID ammAccount_;
     Issue lptIssue_;
     STAmount const asset1_;
@@ -47,6 +46,11 @@ class AMM
     IOUAmount const initialLPTokens_;
     std::optional<ter> ter_;
     bool log_ = false;
+    // Predict next purchase price
+    IOUAmount lastPurchasePrice_;
+    Number minSlotPrice_;
+    std::optional<IOUAmount> minBidPrice_;
+    std::optional<IOUAmount> maxBidPrice_;
 
 public:
     AMM(Env& env,
@@ -71,8 +75,7 @@ public:
     ammRpcInfo(
         std::optional<AccountID> const& account = std::nullopt,
         std::optional<std::string> const& ledgerIndex = std::nullopt,
-        std::optional<uint256> const& ammID = std::nullopt,
-        bool useAssets = false) const;
+        std::optional<std::pair<Issue, Issue>> tokens = std::nullopt) const;
 
     /** Verify the AMM balances.
      */
@@ -87,11 +90,15 @@ public:
     bool
     expectLPTokens(AccountID const& account, IOUAmount const& tokens) const;
 
+    /**
+     * @param timeSlot expected time slot
+     * @param purchasedTimeSlot time slot corresponding to the purchased price
+     */
     bool
     expectAuctionSlot(
         std::uint32_t fee,
-        std::uint32_t timeInterval,
-        IOUAmount const& price,
+        std::optional<std::uint8_t> timeSlot,
+        std::optional<std::uint8_t> purchasedTimeSlot = std::nullopt,
         std::optional<std::string> const& ledger_index = std::nullopt) const;
 
     bool
@@ -133,6 +140,7 @@ public:
         std::optional<STAmount> const& asset2In,
         std::optional<STAmount> const& maxEP,
         std::optional<std::uint32_t> const& flags,
+        std::optional<std::pair<Issue, Issue>> const& assets,
         std::optional<jtx::seq> const& seq,
         std::optional<ter> const& ter = std::nullopt);
 
@@ -153,7 +161,7 @@ public:
             account,
             std::nullopt,
             asset1OutDetails,
-            tfAMMWithdrawAll,
+            tfWithdrawAll,
             std::nullopt);
     }
 
@@ -173,6 +181,7 @@ public:
         std::optional<STAmount> const& asset2Out,
         std::optional<IOUAmount> const& maxEP,
         std::optional<std::uint32_t> const& flags,
+        std::optional<std::pair<Issue, Issue>> const& assets,
         std::optional<jtx::seq> const& seq,
         std::optional<ter> const& ter = std::nullopt);
 
@@ -182,6 +191,7 @@ public:
         std::uint32_t feeVal,
         std::optional<std::uint32_t> const& flags = std::nullopt,
         std::optional<jtx::seq> const& seq = std::nullopt,
+        std::optional<std::pair<Issue, Issue>> const& assets = std::nullopt,
         std::optional<ter> const& ter = std::nullopt);
 
     void
@@ -191,18 +201,13 @@ public:
         std::vector<Account> const& authAccounts = {},
         std::optional<std::uint32_t> const& flags = std::nullopt,
         std::optional<jtx::seq> const& seq = std::nullopt,
+        std::optional<std::pair<Issue, Issue>> const& assets = std::nullopt,
         std::optional<ter> const& ter = std::nullopt);
 
     AccountID const&
     ammAccount() const
     {
         return ammAccount_;
-    }
-
-    uint256
-    ammID() const
-    {
-        return ammID_;
     }
 
     Issue
@@ -220,7 +225,20 @@ public:
     IOUAmount
     getLPTokensBalance() const;
 
+    friend std::ostream&
+    operator<<(std::ostream& s, AMM const& amm)
+    {
+        if (auto const res = amm.ammRpcInfo())
+            s << res->toStyledString();
+        return s;
+    }
+
 private:
+    void
+    setTokens(
+        Json::Value& jv,
+        std::optional<std::pair<Issue, Issue>> const& assets = std::nullopt);
+
     void
     create(
         std::uint32_t tfee = 0,
@@ -231,6 +249,7 @@ private:
     deposit(
         std::optional<Account> const& account,
         Json::Value& jv,
+        std::optional<std::pair<Issue, Issue>> const& assets = std::nullopt,
         std::optional<jtx::seq> const& seq = std::nullopt);
 
     void
@@ -238,6 +257,7 @@ private:
         std::optional<Account> const& account,
         Json::Value& jv,
         std::optional<jtx::seq> const& seq,
+        std::optional<std::pair<Issue, Issue>> const& assets = std::nullopt,
         std::optional<ter> const& ter = std::nullopt);
 
     void
@@ -252,6 +272,11 @@ private:
         STAmount const& asset2,
         IOUAmount const& balance,
         Json::Value const& jv) const;
+
+    IOUAmount
+    expectedPurchasePrice(
+        std::optional<std::uint8_t> timeSlot,
+        IOUAmount const& lastPurchasePrice) const;
 };
 
 namespace amm {

@@ -236,7 +236,8 @@ public:
     using DirectStepI<DirectIPaymentStep>::DirectStepI;
     using DirectStepI<DirectIPaymentStep>::check;
 
-    bool verifyPrevStepDebtDirection(DebtDirection) const
+    bool
+    verifyPrevStepDebtDirection(DebtDirection) const
     {
         // A payment doesn't care whether or not prevStepRedeems.
         return true;
@@ -787,7 +788,10 @@ DirectStepI<TDerived>::qualitiesSrcIssues(
     assert(static_cast<TDerived const*>(this)->verifyPrevStepDebtDirection(
         prevStepDebtDirection));
 
-    std::uint32_t const srcQOut = redeems(prevStepDebtDirection)
+    auto const prevStepPaysTrFee =
+        !prevStep_ || !prevStep_->overridesTransferFee(sb);
+    std::uint32_t const srcQOut =
+        redeems(prevStepDebtDirection) && prevStepPaysTrFee
         ? transferRate(sb, src_).value
         : QUALITY_ONE;
     auto dstQIn =

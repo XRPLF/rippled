@@ -479,8 +479,7 @@ ValidNewAccountRoot::finalize(
     }
 
     // From this point on we know exactly one account was created.
-    if ((tx.getTxnType() == ttPAYMENT ||
-         tx.getTxnType() == ttAMM_INSTANCE_CREATE) &&
+    if ((tx.getTxnType() == ttPAYMENT || tx.getTxnType() == ttAMM_CREATE) &&
         result == tesSUCCESS)
     {
         std::uint32_t const startingSeq{

@@ -372,9 +372,23 @@ nft_sells(uint256 const& id) noexcept
 }
 
 Keylet
-amm(uint256 const& amm) noexcept
+amm(Issue const& issue1, Issue const& issue2) noexcept
 {
-    return {ltAMM, indexHash(LedgerNameSpace::AMM, amm)};
+    auto const& [minI, maxI] = std::minmax(issue1, issue2);
+    return {
+        ltAMM,
+        indexHash(
+            LedgerNameSpace::AMM,
+            minI.account,
+            minI.currency,
+            maxI.account,
+            maxI.currency)};
+}
+
+Keylet
+amm(uint256 const& id) noexcept
+{
+    return {ltAMM, id};
 }
 
 }  // namespace keylet

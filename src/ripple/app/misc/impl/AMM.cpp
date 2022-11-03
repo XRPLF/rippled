@@ -26,31 +26,37 @@
 namespace ripple {
 
 AccountID
-ammAccountID(uint256 const& parentHash, uint256 const& ammID)
+ammAccountID(
+    std::uint16_t prefix,
+    uint256 const& parentHash,
+    uint256 const& ammID)
 {
     ripesha_hasher rsh;
-    auto hash = sha512Half(parentHash, ammID);
+    auto const hash = sha512Half(prefix, parentHash, ammID);
     rsh(hash.data(), hash.size());
     return AccountID{static_cast<ripesha_hasher::result_type>(rsh)};
 }
 
-uint256
-ammIndex(Issue const& issue1, Issue const& issue2)
-{
-    auto const& [minI, maxI] = std::minmax(issue1, issue2);
-    return sha512Half(minI.account, minI.currency, maxI.account, maxI.currency);
-}
-
 Currency
-lptCurrency(AccountID const& ammAccountID)
+ammLPTCurrency(Currency const& cur1, Currency const& cur2)
 {
-    return Currency::fromVoid(ammAccountID.data());
+    std::int32_t constexpr AMMCurrencyCode = 0x03;
+    auto const [minC, maxC] = std::minmax(cur1, cur2);
+    auto const hash = sha512Half(minC, maxC);
+    Currency currency;
+    *currency.begin() = AMMCurrencyCode;
+    std::copy(
+        hash.begin(), hash.begin() + currency.size() - 1, currency.begin() + 1);
+    return currency;
 }
 
 Issue
-lptIssue(AccountID const& ammAccountID)
+ammLPTIssue(
+    Currency const& cur1,
+    Currency const& cur2,
+    AccountID const& ammAccountID)
 {
-    return Issue(lptCurrency(ammAccountID), ammAccountID);
+    return Issue(ammLPTCurrency(cur1, cur2), ammAccountID);
 }
 
 std::pair<STAmount, STAmount>
@@ -79,7 +85,8 @@ ammHolds(
     auto const issues = [&]() -> std::optional<std::pair<Issue, Issue>> {
         if (optIssue1 && optIssue2)
             return {{*optIssue1, *optIssue2}};
-        auto const [issue1, issue2] = getTokensIssue(ammSle);
+        auto const issue1 = ammSle[sfAsset];
+        auto const issue2 = ammSle[sfAsset2];
         if (optIssue1)
         {
             if (*optIssue1 == issue1)
@@ -112,13 +119,15 @@ ammHolds(
 }
 
 STAmount
-lpHolds(
+ammLPHolds(
     ReadView const& view,
-    AccountID const& ammAccountID,
+    Currency const& cur1,
+    Currency const& cur2,
+    AccountID const& ammAccount,
     AccountID const& lpAccount,
     beast::Journal const j)
 {
-    auto const lptIss = lptIssue(ammAccountID);
+    auto const lptIss = ammLPTIssue(cur1, cur2, ammAccount);
     return accountHolds(
         view,
         lpAccount,
@@ -128,24 +137,70 @@ lpHolds(
         j);
 }
 
+STAmount
+ammLPHolds(
+    ReadView const& view,
+    SLE const& ammSle,
+    AccountID const& lpAccount,
+    beast::Journal const j)
+{
+    return ammLPHolds(
+        view,
+        ammSle[sfAsset].currency,
+        ammSle[sfAsset2].currency,
+        ammSle[sfAMMAccount],
+        lpAccount,
+        j);
+}
+
 NotTEC
-invalidAMMAmount(std::optional<STAmount> const& a, bool nonNegative)
+invalidAMMAsset(
+    Issue const& issue,
+    std::optional<std::pair<Issue, Issue>> const& pair)
+{
+    if (badCurrency() == issue.currency)
+        return temBAD_CURRENCY;
+    if (isXRP(issue) && true != !issue.account)
+        return temBAD_ISSUER;
+    if (pair && issue != pair->first && issue != pair->second)
+        return temBAD_AMM_TOKENS;
+    return tesSUCCESS;
+}
+
+NotTEC
+invalidAMMAssetPair(
+    Issue const& issue1,
+    Issue const& issue2,
+    std::optional<std::pair<Issue, Issue>> const& pair)
+{
+    if (auto const res = invalidAMMAsset(issue1, pair))
+        return res;
+    if (auto const res = invalidAMMAsset(issue2, pair))
+        return res;
+    if (issue1 == issue2)
+        return temBAD_AMM_TOKENS;
+    return tesSUCCESS;
+}
+
+NotTEC
+invalidAMMAmount(
+    std::optional<STAmount> const& a,
+    std::optional<std::pair<Issue, Issue>> const& pair,
+    bool nonNegative)
 {
     if (!a)
         return tesSUCCESS;
-    if (badCurrency() == a->getCurrency())
-        return temBAD_CURRENCY;
-    if (a->native() && a->native() != !a->getIssuer())
-        return temBAD_ISSUER;
+    if (auto const res = invalidAMMAsset(a->issue(), pair))
+        return res;
     if (!nonNegative && *a <= beast::zero)
         return temBAD_AMOUNT;
     return tesSUCCESS;
 }
 
 bool
-isFrozen(ReadView const& view, std::optional<STAmount> const& a)
+isFrozen(ReadView const& view, STAmount const& a)
 {
-    return a && !a->native() && isGlobalFrozen(view, a->getIssuer());
+    return !a.native() && isGlobalFrozen(view, a.getIssuer());
 }
 
 TER
@@ -177,14 +232,12 @@ getTradingFee(ReadView const& view, SLE const& ammSle, AccountID const& account)
     {
         auto const& auctionSlot =
             static_cast<STObject const&>(ammSle.peekAtField(sfAuctionSlot));
-        if (auto const timeStamp = auctionSlot[~sfTimeStamp])
+        if (auto const expiration = auctionSlot[~sfExpiration])
         {
-            std::uint32_t constexpr totalSlotTimeSecs = 24 * 3600;
             auto const notExpired =
-                (duration_cast<seconds>(
-                     view.info().parentCloseTime.time_since_epoch())
-                     .count() -
-                 *timeStamp) <= totalSlotTimeSecs;
+                duration_cast<seconds>(
+                    view.info().parentCloseTime.time_since_epoch())
+                    .count() < expiration;
             if (auctionSlot[~sfAccount] == account && notExpired)
                 return auctionSlot[sfDiscountedFee];
             if (auctionSlot.isFieldPresent(sfAuthAccounts))
@@ -197,22 +250,6 @@ getTradingFee(ReadView const& view, SLE const& ammSle, AccountID const& account)
         }
     }
     return ammSle[sfTradingFee];
-}
-
-std::pair<Issue, Issue>
-getTokensIssue(SLE const& ammSle)
-{
-    auto const ammToken =
-        static_cast<STObject const&>(ammSle.peekAtField(sfAMMToken));
-    auto getIssue = [&](SField const& field) {
-        auto const token =
-            static_cast<STObject const&>(ammToken.peekAtField(field));
-        Issue issue;
-        issue.currency = token[sfTokenCurrency];
-        issue.account = token[sfTokenIssuer];
-        return issue;
-    };
-    return {getIssue(sfToken1), getIssue(sfToken2)};
 }
 
 TER
@@ -239,21 +276,20 @@ ammSend(
     return terResult;
 }
 
-std::uint16_t
-timeSlot(NetClock::time_point const& clock, STObject const& auctionSlot)
+std::optional<std::uint8_t>
+ammAuctionTimeSlot(std::uint64_t current, STObject const& auctionSlot)
 {
     using namespace std::chrono;
     std::uint32_t constexpr totalSlotTimeSecs = 24 * 3600;
-    std::uint32_t constexpr intervalDuration = totalSlotTimeSecs / 20;
-    auto const current =
-        duration_cast<seconds>(clock.time_since_epoch()).count();
-    if (auto const stamp = auctionSlot[~sfTimeStamp])
+    std::uint32_t constexpr intervals = 20;
+    std::uint32_t constexpr intervalDuration = totalSlotTimeSecs / intervals;
+    if (auto const expiration = auctionSlot[~sfExpiration])
     {
-        auto const diff = current - *stamp;
+        auto const diff = current - (*expiration - totalSlotTimeSecs);
         if (diff < totalSlotTimeSecs)
             return diff / intervalDuration;
     }
-    return 0;
+    return std::nullopt;
 }
 
 bool
@@ -286,6 +322,24 @@ ammAccountHolds(
     }
 
     return STAmount{issue};
+}
+
+Expected<std::shared_ptr<SLE const>, TER>
+getAMMSle(ReadView const& view, Issue const& issue1, Issue const& issue2)
+{
+    if (auto const ammSle = view.read(keylet::amm(issue1, issue2)))
+        return ammSle;
+    else
+        return Unexpected(tecINTERNAL);
+}
+
+Expected<std::shared_ptr<SLE>, TER>
+getAMMSle(Sandbox& sb, Issue const& issue1, Issue const& issue2)
+{
+    if (auto ammSle = sb.peek(keylet::amm(issue1, issue2)))
+        return ammSle;
+    else
+        return Unexpected(tecINTERNAL);
 }
 
 }  // namespace ripple

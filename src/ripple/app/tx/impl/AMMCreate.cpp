@@ -26,6 +26,7 @@
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/STAccount.h>
+#include <ripple/protocol/STIssue.h>
 #include <ripple/protocol/TxFlags.h>
 
 namespace ripple {
@@ -51,23 +52,23 @@ AMMCreate::preflight(PreflightContext const& ctx)
         return temINVALID_FLAG;
     }
 
-    auto const saAsset1 = ctx.tx[sfAsset1];
-    auto const saAsset2 = ctx.tx[sfAsset2];
+    auto const amount = ctx.tx[sfAmount];
+    auto const amount2 = ctx.tx[sfAmount2];
 
-    if (saAsset1.issue() == saAsset2.issue())
+    if (amount.issue() == amount2.issue())
     {
         JLOG(ctx.j.debug())
             << "AMM Instance: tokens can not have the same currency/issuer.";
         return temBAD_AMM_TOKENS;
     }
 
-    if (auto const err = invalidAMMAmount(saAsset1))
+    if (auto const err = invalidAMMAmount(amount))
     {
         JLOG(ctx.j.debug()) << "AMM Instance: invalid asset1 amount.";
         return err;
     }
 
-    if (auto const err = invalidAMMAmount(saAsset2))
+    if (auto const err = invalidAMMAmount(amount2))
     {
         JLOG(ctx.j.debug()) << "AMM Instance: invalid asset2 amount.";
         return err;
@@ -86,26 +87,26 @@ TER
 AMMCreate::preclaim(PreclaimContext const& ctx)
 {
     auto const accountID = ctx.tx[sfAccount];
-    auto const saAsset1 = ctx.tx[sfAsset1];
-    auto const saAsset2 = ctx.tx[sfAsset2];
+    auto const amount = ctx.tx[sfAmount];
+    auto const amount2 = ctx.tx[sfAmount2];
 
-    if (auto const ter = requireAuth(ctx.view, saAsset1.issue(), accountID);
+    if (auto const ter = requireAuth(ctx.view, amount.issue(), accountID);
         ter != tesSUCCESS)
     {
         JLOG(ctx.j.debug())
-            << "AMM Instance: account is not authorized, " << saAsset1.issue();
+            << "AMM Instance: account is not authorized, " << amount.issue();
         return ter;
     }
 
-    if (auto const ter = requireAuth(ctx.view, saAsset2.issue(), accountID);
+    if (auto const ter = requireAuth(ctx.view, amount2.issue(), accountID);
         ter != tesSUCCESS)
     {
         JLOG(ctx.j.debug())
-            << "AMM Instance: account is not authorized, " << saAsset2.issue();
+            << "AMM Instance: account is not authorized, " << amount2.issue();
         return ter;
     }
 
-    if (isFrozen(ctx.view, saAsset1) || isFrozen(ctx.view, saAsset2))
+    if (isFrozen(ctx.view, amount) || isFrozen(ctx.view, amount2))
     {
         JLOG(ctx.j.debug()) << "AMM Instance: involves frozen asset.";
         return tecFROZEN;
@@ -133,9 +134,10 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
                 ctx.j) < asset;
     };
 
-    if (insufficientBalance(saAsset1) || insufficientBalance(saAsset2))
+    if (insufficientBalance(amount) || insufficientBalance(amount2))
     {
-        JLOG(ctx.j.debug()) << "AMM Instance: insufficient funds";
+        JLOG(ctx.j.debug())
+            << "AMM Instance: insufficient funds, " << amount << " " << amount2;
         return tecUNFUNDED_AMM;
     }
 
@@ -149,38 +151,50 @@ applyCreate(
     AccountID const& account_,
     beast::Journal j_)
 {
-    auto const saAsset1 = ctx_.tx[sfAsset1];
-    auto const saAsset2 = ctx_.tx[sfAsset2];
+    auto const amount = ctx_.tx[sfAmount];
+    auto const amount2 = ctx_.tx[sfAmount2];
 
-    auto const ammID = ammIndex(saAsset1.issue(), saAsset2.issue());
+    auto const ammKeylet = keylet::amm(amount.issue(), amount2.issue());
 
     // Check if AMM already exists for the token pair
-    if (sb.read(keylet::amm(ammID)))
+    if (sb.read(ammKeylet))
     {
         JLOG(j_.debug()) << "AMM Instance: ltAMM already exists.";
         return {tecAMM_EXISTS, false};
     }
 
-    auto const ammAccount = ammAccountID(sb.info().parentHash, ammID);
+    // Mitigate same account exists possibility
+    auto const ammAccount = [&]() -> Expected<AccountID, TER> {
+        std::uint16_t constexpr MaxAccountAttempts = 256;
+        for (auto p = 0; p < MaxAccountAttempts; ++p)
+        {
+            auto const ammAccount =
+                ammAccountID(p, sb.info().parentHash, ammKeylet.key);
+            if (!sb.read(keylet::account(ammAccount)))
+                return ammAccount;
+        }
+        return Unexpected(tecAMM_EXISTS);
+    }();
 
     // AMM account already exists (should not happen)
-    if (sb.read(keylet::account(ammAccount)))
+    if (!ammAccount)
     {
         JLOG(j_.debug()) << "AMM Instance: AMM already exists.";
-        return {tecAMM_EXISTS, false};
+        return {ammAccount.error(), false};
     }
 
     // LP Token already exists. (should not happen)
-    auto const lptIss = lptIssue(ammAccount);
-    if (sb.read(keylet::line(ammAccount, lptIss)))
+    auto const lptIss = ammLPTIssue(
+        amount.issue().currency, amount2.issue().currency, *ammAccount);
+    if (sb.read(keylet::line(*ammAccount, lptIss)))
     {
         JLOG(j_.debug()) << "AMM Instance: LP Token already exists.";
         return {tecAMM_EXISTS, false};
     }
 
     // Create AMM Root Account.
-    auto sleAMMRoot = std::make_shared<SLE>(keylet::account(ammAccount));
-    sleAMMRoot->setAccountID(sfAccount, ammAccount);
+    auto sleAMMRoot = std::make_shared<SLE>(keylet::account(*ammAccount));
+    sleAMMRoot->setAccountID(sfAccount, *ammAccount);
     sleAMMRoot->setFieldAmount(sfBalance, STAmount{});
     std::uint32_t const seqno{
         ctx_.view().rules().enabled(featureDeletableAccounts)
@@ -189,36 +203,27 @@ applyCreate(
     sleAMMRoot->setFieldU32(sfSequence, seqno);
     // Ignore reserves requirement, disable the master key, allow default
     // rippling (AMM LPToken can be used as a token in another AMM, which must
-    // support payments and offer crossing), and enable deposit autherization to
+    // support payments and offer crossing), and enable deposit authorization to
     // prevent payments into AMM.
     sleAMMRoot->setFieldU32(
         sfFlags, lsfAMM | lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth);
     sb.insert(sleAMMRoot);
 
     // Calculate initial LPT balance.
-    auto const lpTokens = ammLPTokens(saAsset1, saAsset2, lptIss);
+    auto const lpTokens = ammLPTokens(amount, amount2, lptIss);
 
     // Create ltAMM
-    auto ammSle = std::make_shared<SLE>(keylet::amm(ammID));
+    auto ammSle = std::make_shared<SLE>(ammKeylet);
     ammSle->setFieldU16(sfTradingFee, ctx_.tx[sfTradingFee]);
-    ammSle->setAccountID(sfAMMAccount, ammAccount);
+    ammSle->setAccountID(sfAMMAccount, *ammAccount);
     ammSle->setFieldAmount(sfLPTokenBalance, lpTokens);
-    auto const& [issue1, issue2] =
-        std::minmax(saAsset1.issue(), saAsset2.issue());
-    ammSle->makeFieldPresent(sfAMMToken);
-    auto& ammToken = ammSle->peekFieldObject(sfAMMToken);
-    auto setToken = [&](SField const& field, Issue const& issue) {
-        ammToken.makeFieldPresent(field);
-        auto& token = ammToken.peekFieldObject(field);
-        token.setFieldH160(sfTokenCurrency, issue.currency);
-        token.setFieldH160(sfTokenIssuer, issue.account);
-    };
-    setToken(sfToken1, issue1);
-    setToken(sfToken2, issue2);
+    auto const& [issue1, issue2] = std::minmax(amount.issue(), amount2.issue());
+    ammSle->setFieldIssue(sfAsset, STIssue{sfAsset, issue1});
+    ammSle->setFieldIssue(sfAsset2, STIssue{sfAsset2, issue2});
     sb.insert(ammSle);
 
     // Send LPT to LP.
-    auto res = accountSend(sb, ammAccount, account_, lpTokens, ctx_.journal);
+    auto res = accountSend(sb, *ammAccount, account_, lpTokens, ctx_.journal);
     if (res != tesSUCCESS)
     {
         JLOG(j_.debug()) << "AMM Instance: failed to send LPT " << lpTokens;
@@ -226,22 +231,22 @@ applyCreate(
     }
 
     // Send asset1.
-    res = ammSend(sb, account_, ammAccount, saAsset1, ctx_.journal);
+    res = accountSend(sb, account_, *ammAccount, amount, ctx_.journal);
     if (res != tesSUCCESS)
     {
-        JLOG(j_.debug()) << "AMM Instance: failed to send " << saAsset1;
+        JLOG(j_.debug()) << "AMM Instance: failed to send " << amount;
         return {res, false};
     }
 
     // Send asset2.
-    res = ammSend(sb, account_, ammAccount, saAsset2, ctx_.journal);
+    res = accountSend(sb, account_, *ammAccount, amount2, ctx_.journal);
     if (res != tesSUCCESS)
-        JLOG(j_.debug()) << "AMM Instance: failed to send " << saAsset2;
+        JLOG(j_.debug()) << "AMM Instance: failed to send " << amount2;
     else
     {
-        JLOG(j_.debug()) << "AMM Instance: success " << ammAccount << " "
-                         << ammID << " " << lptIss << " " << saAsset1 << " "
-                         << saAsset2;
+        JLOG(j_.debug()) << "AMM Instance: success " << *ammAccount << " "
+                         << ammKeylet.key << " " << lptIss << " " << amount
+                         << " " << amount2;
         auto addOrderBook = [&](Issue const& issueIn,
                                 Issue const& issueOut,
                                 std::uint64_t uRate) {
@@ -251,10 +256,8 @@ applyCreate(
                 !bookExisted)
                 ctx_.app.getOrderBookDB().addOrderBook(book);
         };
-        addOrderBook(
-            saAsset1.issue(), saAsset2.issue(), getRate(saAsset2, saAsset1));
-        addOrderBook(
-            saAsset2.issue(), saAsset1.issue(), getRate(saAsset1, saAsset2));
+        addOrderBook(amount.issue(), amount2.issue(), getRate(amount2, amount));
+        addOrderBook(amount2.issue(), amount.issue(), getRate(amount, amount2));
     }
 
     return {res, res == tesSUCCESS};

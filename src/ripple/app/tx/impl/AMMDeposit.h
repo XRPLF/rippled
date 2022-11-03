@@ -87,27 +87,27 @@ private:
     applyGuts(Sandbox& view);
 
     /** Deposit requested assets and token amount into LP account.
-     * @param assetDeposit
+     * @param deposit
      * @param ammAccount
-     * @param asset1Deposit
-     * @param asset2Deposit
+     * @param amountDeposit
+     * @param amount2Deposit
      * @param lpTokensDeposit amount of tokens to deposit
      * @return
      */
     std::pair<TER, STAmount>
     deposit(
-        Sandbox& assetDeposit,
+        Sandbox& deposit,
         AccountID const& ammAccount,
-        STAmount const& asset1Deposit,
-        std::optional<STAmount> const& asset2Deposit,
+        STAmount const& amountDeposit,
+        std::optional<STAmount> const& amount2Deposit,
         STAmount const& lpTokensDeposit);
 
     /** Equal asset deposit (LPTokens) for the specified share of
      * the AMM instance pools. The trading fee is not charged.
      * @param view
      * @param ammAccount
-     * @param asset1Balance current AMM asset1 balance
-     * @param asset2Balance current AMM asset2 balance
+     * @param amountBalance current AMM asset1 balance
+     * @param amount2Balance current AMM asset2 balance
      * @param lptAMMBalance current AMM LPT balance
      * @param lpTokensDeposit amount of tokens to deposit
      * @return
@@ -116,8 +116,8 @@ private:
     equalDepositTokens(
         Sandbox& view,
         AccountID const& ammAccount,
-        STAmount const& asset1Balance,
-        STAmount const& asset2Balance,
+        STAmount const& amountBalance,
+        STAmount const& amount2Balance,
         STAmount const& lptAMMBalance,
         STAmount const& lpTokensDeposit);
 
@@ -126,30 +126,30 @@ private:
      * The trading fee is not charged.
      * @param view
      * @param ammAccount
-     * @param asset1Balance current AMM asset1 balance
-     * @param asset2Balance current AMM asset2 balance
+     * @param amountBalance current AMM asset1 balance
+     * @param amount2Balance current AMM asset2 balance
      * @param lptAMMBalance current AMM LPT balance
-     * @param asset1In maximum asset1 deposit amount
-     * @param asset2In maximum asset2 deposit amount
+     * @param amount maximum asset1 deposit amount
+     * @param amount2 maximum asset2 deposit amount
      * @return
      */
     std::pair<TER, STAmount>
     equalDepositLimit(
         Sandbox& view,
         AccountID const& ammAccount,
-        STAmount const& asset1Balance,
-        STAmount const& asset2Balance,
+        STAmount const& amountBalance,
+        STAmount const& amount2Balance,
         STAmount const& lptAMMBalance,
-        STAmount const& asset1In,
-        STAmount const& asset2In);
+        STAmount const& amount,
+        STAmount const& amount2);
 
     /** Single asset deposit (Asset1In) by the amount.
      * The trading fee is charged.
      * @param view
      * @param ammAccount
-     * @param asset1Balance current AMM asset1 balance
+     * @param amountBalance current AMM asset1 balance
      * @param lptAMMBalance current AMM LPT balance
-     * @param asset1In requested asset1 deposit amount
+     * @param amount requested asset1 deposit amount
      * @param tfee trading fee in basis points
      * @return
      */
@@ -157,16 +157,17 @@ private:
     singleDeposit(
         Sandbox& view,
         AccountID const& ammAccount,
-        STAmount const& asset1Balance,
+        STAmount const& amountBalance,
         STAmount const& lptAMMBalance,
-        STAmount const& asset1In,
+        STAmount const& amount,
         std::uint16_t tfee);
 
     /** Single asset deposit (Asset1In, LPTokens) by the tokens.
      * The trading fee is charged.
      * @param view
      * @param ammAccount
-     * @param asset1Balance current AMM asset1 balance
+     * @param amountBalance current AMM asset1 balance
+     * @param amount max asset1 to deposit
      * @param lptAMMBalance current AMM LPT balance
      * @param lpTokensDeposit amount of tokens to deposit
      * @param tfee trading fee in basis points
@@ -176,7 +177,8 @@ private:
     singleDepositTokens(
         Sandbox& view,
         AccountID const& ammAccount,
-        STAmount const& asset1Balance,
+        STAmount const& amountBalance,
+        STAmount const& amount,
         STAmount const& lptAMMBalance,
         STAmount const& lpTokensDeposit,
         std::uint16_t tfee);
@@ -185,8 +187,8 @@ private:
      * The trading fee is charged.
      * @param view
      * @param ammAccount
-     * @param asset1Balance current AMM asset1 balance
-     * @param asset1In requested asset1 deposit amount
+     * @param amountBalance current AMM asset1 balance
+     * @param amount requested asset1 deposit amount
      * @param lptAMMBalance current AMM LPT balance
      * @param ePrice maximum effective price
      * @param tfee
@@ -196,8 +198,8 @@ private:
     singleDepositEPrice(
         Sandbox& view,
         AccountID const& ammAccount,
-        STAmount const& asset1Balance,
-        STAmount const& asset1In,
+        STAmount const& amountBalance,
+        STAmount const& amount,
         STAmount const& lptAMMBalance,
         STAmount const& ePrice,
         std::uint16_t tfee);

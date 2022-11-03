@@ -77,10 +77,12 @@ public:
         testcase("Errors");
 
         using namespace jtx;
-        // Invalid AMM hash
+        // Invalid tokens pair
         proc([&](AMM& ammAlice, Env&) {
-            uint256 hash{1};
-            auto const jv = ammAlice.ammRpcInfo({}, {}, hash);
+            Account const gw("gw");
+            auto const USD = gw["USD"];
+            auto const jv =
+                ammAlice.ammRpcInfo({}, {}, {{USD.issue(), USD.issue()}});
             BEAST_EXPECT(
                 jv.has_value() &&
                 (*jv)[jss::error_message] == "Account not found.");
@@ -105,19 +107,6 @@ public:
         proc([&](AMM& ammAlice, Env&) {
             BEAST_EXPECT(ammAlice.expectAmmRpcInfo(
                 XRP(10000), USD(10000), IOUAmount{10000000, 0}));
-        });
-        proc([&](AMM& ammAlice, Env&) {
-            auto const ammID = [&]() -> std::optional<uint256> {
-                if (auto const jv = ammAlice.ammRpcInfo({}, {}, {}, true);
-                    jv.has_value())
-                {
-                    uint256 ammID;
-                    if (ammID.parseHex((*jv)[jss::AMMID].asString()))
-                        return ammID;
-                }
-                return {};
-            }();
-            BEAST_EXPECT(ammID.has_value() && ammAlice.ammID() == *ammID);
         });
     }
 

@@ -108,8 +108,7 @@ constexpr static ErrorInfo unorderedErrorInfos[]{
     {rpcTOO_BUSY,               "tooBusy",              "The server is too busy to help you now.", 503},
     {rpcTXN_NOT_FOUND,          "txnNotFound",          "Transaction not found.", 404},
     {rpcUNKNOWN_COMMAND,        "unknownCmd",           "Unknown method.", 405},
-    {rpcAMM_CUR_MALFORMED,      "ammCurMalformed",      "AMM asset currency is malformed.", 406},
-    {rpcAMM_ISR_MALFORMED,      "ammIsrMalformed",      "AMM asset issuer is malformed.", 407}};
+    {rpcAMM_ISSUE_MALFORMED,    "ammIssueMalformed",    "AMM issue is malformed.", 406}};
 // clang-format on
 
 // Sort and validate unorderedErrorInfos at compile time.  Should be

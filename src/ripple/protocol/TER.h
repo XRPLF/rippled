@@ -208,6 +208,7 @@ enum TERcodes : TERUnderlyingType {
     terNO_RIPPLE,    // Rippling not allowed
     terQUEUED,       // Transaction is being held in TxQ until fee drops
     terPRE_TICKET,   // Ticket is not yet in ledger but might be on its way
+    terNO_AMM,       // AMM doesn't exist for the asset pair
 };
 
 //------------------------------------------------------------------------------

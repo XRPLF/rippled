@@ -83,6 +83,7 @@ public:
     bool
     fully_consumed() const
     {
+        // AMM offer is always fully consumed
         return true;
     }
 
@@ -102,6 +103,37 @@ public:
 
     QualityFunction
     getQF() const;
+
+    /** Send funds without incurring the transfer fee
+     */
+    template <typename... Args>
+    static TER
+    send(Args&&... args)
+    {
+        return ammSend(std::forward<Args>(args)...);
+    }
+
+    bool
+    unlimitedFunds() const
+    {
+        // AMM offer is fully funded by the pool
+        return true;
+    }
+
+    static std::pair<std::uint32_t, std::uint32_t>
+    adjustRates(std::uint32_t ofrInRate, std::uint32_t ofrOutRate)
+    {
+        // AMM doesn't pay transfer fee on Payment tx
+        return {ofrInRate, QUALITY_ONE};
+    }
+
+    /** AMM offer can not be permanently removed.
+     */
+    static bool
+    removable()
+    {
+        return false;
+    }
 };
 
 }  // namespace ripple

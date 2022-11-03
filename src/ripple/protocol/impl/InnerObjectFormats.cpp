@@ -72,31 +72,10 @@ InnerObjectFormats::InnerObjectFormats()
         sfAuctionSlot.getCode(),
         {
             {sfAccount, soeREQUIRED},
-            {sfTimeStamp, soeREQUIRED},
+            {sfExpiration, soeREQUIRED},
             {sfDiscountedFee, soeREQUIRED},
             {sfPrice, soeREQUIRED},
             {sfAuthAccounts, soeOPTIONAL},
-        });
-
-    add(sfToken1.jsonName.c_str(),
-        sfToken1.getCode(),
-        {
-            {sfTokenCurrency, soeREQUIRED},
-            {sfTokenIssuer, soeREQUIRED},
-        });
-
-    add(sfToken2.jsonName.c_str(),
-        sfToken2.getCode(),
-        {
-            {sfTokenCurrency, soeREQUIRED},
-            {sfTokenIssuer, soeREQUIRED},
-        });
-
-    add(sfAMMToken.jsonName.c_str(),
-        sfAMMToken.getCode(),
-        {
-            {sfToken1, soeREQUIRED},
-            {sfToken2, soeREQUIRED},
         });
 }
 

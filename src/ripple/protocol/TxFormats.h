@@ -140,7 +140,7 @@ enum TxType : std::uint16_t
     ttNFTOKEN_ACCEPT_OFFER = 29,
 
     /** This transaction type creates an AMM instance */
-    ttAMM_INSTANCE_CREATE = 35,
+    ttAMM_CREATE = 35,
 
     /** This transaction type deposits into an AMM instance */
     ttAMM_DEPOSIT = 36,

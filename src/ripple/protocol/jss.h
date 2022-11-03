@@ -57,12 +57,9 @@ JSS(AMMVote);                // transaction type
 JSS(AMMWithdraw);            // transaction type
 JSS(Amendments);             // ledger type.
 JSS(Amount);                 // in: TransactionSign; field.
-JSS(Asset1);                 // in/out: AMM IOU/XRP pool amount
-JSS(Asset2);                 // in/out: AMM IOU pool amount
-JSS(Asset1In);               // in: AMM Deposit option
-JSS(Asset2In);               // in: AMM Deposit option
-JSS(Asset1Out);              // in: AMM Withdraw option
-JSS(Asset2Out);              // in: AMM Withdraw option
+JSS(Amount2);              // in/out: AMM IOU/XRP pool, deposit, withdraw amount
+JSS(Asset);                // in: AMM Asset1
+JSS(Asset2);               // in: AMM Asset2
 JSS(AuctionSlot);            // out: AMM Auction Slot
 JSS(AuthAccount);            // in: AMM Auction Slot
 JSS(AuthAccounts);           // in: AMM Auction Slot
@@ -90,8 +87,8 @@ JSS(Invalid);                //
 JSS(LastLedgerSequence);     // in: TransactionSign; field
 JSS(LedgerHashes);           // ledger type.
 JSS(LimitAmount);            // field.
-JSS(MaxSlotPrice);           // in: AMM Bid
-JSS(MinSlotPrice);           // in: AMM Bid
+JSS(MaxBidPrice);            // in: AMM Bid
+JSS(MinBidPrice);            // in: AMM Bid
 JSS(NetworkID);              // field.
 JSS(NFTokenBurn);            // transaction type.
 JSS(NFTokenMint);            // transaction type.
@@ -166,14 +163,14 @@ JSS(age);                    // out: NetworkOPs, Peers
 JSS(alternatives);           // out: PathRequest, RipplePathFind
 JSS(amendment_blocked);      // out: NetworkOPs
 JSS(amendments);             // in: AccountObjects, out: NetworkOPs
-JSS(amm_id);                 // in: AMMID in amm_info
+JSS(amm);                    // out: amm info
 JSS(amount);                 // out: AccountChannels
 JSS(api_version);            // in: many, out: Version
 JSS(api_version_low);        // out: Version
 JSS(applied);                // out: SubmitTransaction
 JSS(asks);                   // out: Subscribe
-JSS(asset1);                 // in: Asset1 in amm_info
-JSS(asset2);                 // in: Asset2 in amm_info
+JSS(asset);                  // int: AMM info
+JSS(asset2);                 // int: AMM info
 JSS(assets);                 // out: GatewayBalances
 JSS(authorized);             // out: AccountLines
 JSS(auth_change);            // out: AccountInfo

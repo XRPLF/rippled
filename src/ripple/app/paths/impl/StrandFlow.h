@@ -633,8 +633,6 @@ flow(
             return {telFAILED_PROCESSING, std::move(ofrsToRmOnFail)};
         }
 
-        ammContext.clear();
-
         activeStrands.activateNext(sb, limitQuality);
 
         ammContext.setMultiPath(activeStrands.size() > 1);
@@ -666,6 +664,10 @@ flow(
                 // should not happen
                 continue;
             }
+            // Clear AMM liquidity used flag. The flag might still be set if
+            // the previous strand execution failed. It has to be reset
+            // since this strand might not have AMM liquidity.
+            ammContext.clear();
             if (offerCrossing && limitQuality)
             {
                 auto const strandQ = qualityUpperBound(sb, *strand);

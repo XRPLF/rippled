@@ -25,6 +25,7 @@
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/STAccount.h>
+#include <ripple/protocol/STIssue.h>
 #include <ripple/protocol/TER.h>
 #include <ripple/protocol/TxFlags.h>
 
@@ -52,11 +53,22 @@ AMMBid::preflight(PreflightContext const& ctx)
         return temINVALID_FLAG;
     }
 
-    if (invalidAMMAmount(ctx.tx[~sfMinSlotPrice]) ||
-        invalidAMMAmount(ctx.tx[~sfMaxSlotPrice]))
+    if (auto const res = invalidAMMAssetPair(ctx.tx[sfAsset], ctx.tx[sfAsset2]))
+    {
+        JLOG(ctx.j.debug()) << "AMM Bid: Invalid asset pair.";
+        return res;
+    }
+
+    if (auto const res = invalidAMMAmount(ctx.tx[~sfMinBidPrice]))
     {
         JLOG(ctx.j.debug()) << "AMM Bid: invalid min slot price.";
-        return temBAD_AMM_TOKENS;
+        return res;
+    }
+
+    if (auto const res = invalidAMMAmount(ctx.tx[~sfMaxBidPrice]))
+    {
+        JLOG(ctx.j.debug()) << "AMM Bid: invalid max slot price.";
+        return res;
     }
 
     if (ctx.tx.isFieldPresent(sfAuthAccounts))
@@ -76,11 +88,11 @@ AMMBid::preflight(PreflightContext const& ctx)
 TER
 AMMBid::preclaim(PreclaimContext const& ctx)
 {
-    auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAMMID]));
+    auto const ammSle = getAMMSle(ctx.view, ctx.tx[sfAsset], ctx.tx[sfAsset2]);
     if (!ammSle)
     {
-        JLOG(ctx.j.debug()) << "AMM Bid: Invalid AMM account.";
-        return terNO_ACCOUNT;
+        JLOG(ctx.j.debug()) << "AMM Bid: Invalid asset pair.";
+        return terNO_AMM;
     }
 
     if (ctx.tx.isFieldPresent(sfAuthAccounts))
@@ -96,10 +108,10 @@ AMMBid::preclaim(PreclaimContext const& ctx)
     }
 
     auto const lpTokens =
-        lpHolds(ctx.view, (*ammSle)[sfAMMAccount], ctx.tx[sfAccount], ctx.j);
-    auto const lpTokensBalance = (*ammSle)[sfLPTokenBalance];
+        ammLPHolds(ctx.view, **ammSle, ctx.tx[sfAccount], ctx.j);
+    auto const lpTokensBalance = (**ammSle)[sfLPTokenBalance];
 
-    auto const minBidSlotPrice = ctx.tx[~sfMinSlotPrice];
+    auto const minBidSlotPrice = ctx.tx[~sfMinBidPrice];
 
     if (minBidSlotPrice)
     {
@@ -115,7 +127,7 @@ AMMBid::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    auto const maxBidSlotPrice = ctx.tx[~sfMaxSlotPrice];
+    auto const maxBidSlotPrice = ctx.tx[~sfMaxBidPrice];
     if (maxBidSlotPrice)
     {
         if (*maxBidSlotPrice > lpTokens || *maxBidSlotPrice >= lpTokensBalance)
@@ -148,15 +160,14 @@ applyBid(
     beast::Journal j_)
 {
     using namespace std::chrono;
-    auto const amm = sb.peek(keylet::amm(ctx_.tx[sfAMMID]));
+    auto const amm = getAMMSle(sb, ctx_.tx[sfAsset], ctx_.tx[sfAsset2]);
     if (!amm)
-        return {tecINTERNAL, false};
-    auto const ammAccount = (*amm)[sfAMMAccount];
-    STAmount const lptAMMBalance = (*amm)[sfLPTokenBalance];
-    auto const lpTokens = lpHolds(sb, ammAccount, account_, ctx_.journal);
-    if (!amm->isFieldPresent(sfAuctionSlot))
-        amm->makeFieldPresent(sfAuctionSlot);
-    auto& auctionSlot = amm->peekFieldObject(sfAuctionSlot);
+        return {amm.error(), false};
+    STAmount const lptAMMBalance = (**amm)[sfLPTokenBalance];
+    auto const lpTokens = ammLPHolds(sb, **amm, account_, ctx_.journal);
+    if (!(*amm)->isFieldPresent(sfAuctionSlot))
+        (*amm)->makeFieldPresent(sfAuctionSlot);
+    auto& auctionSlot = (*amm)->peekFieldObject(sfAuctionSlot);
     auto const current =
         duration_cast<seconds>(
             ctx_.view().info().parentCloseTime.time_since_epoch())
@@ -165,24 +176,15 @@ applyBid(
     std::uint32_t constexpr totalSlotTimeSecs = 24 * 3600;
     std::uint32_t constexpr nIntervals = 20;
     std::uint32_t constexpr tailingSlot = 19;
-    std::uint32_t constexpr intervalDuration = totalSlotTimeSecs / nIntervals;
 
     // If seated then it is the current slot-holder time slot, otherwise
     // the auction slot is not owned. Slot range is in {0-19}
-    auto const timeSlot = [&]() -> std::optional<std::uint8_t> {
-        if (auto const stamp = auctionSlot[~sfTimeStamp])
-        {
-            auto const diff = current - *stamp;
-            if (diff < totalSlotTimeSecs)
-                return static_cast<std::int64_t>(diff / intervalDuration);
-        }
-        return std::nullopt;
-    }();
+    auto const timeSlot = ammAuctionTimeSlot(current, auctionSlot);
 
     // Account must exist, is LP, and the slot not expired.
     auto validOwner = [&](AccountID const& account) {
         return sb.read(keylet::account(account)) &&
-            lpHolds(sb, ammAccount, account, ctx_.journal) != beast::zero &&
+            ammLPHolds(sb, **amm, account, ctx_.journal) != beast::zero &&
             // Valid range is 0-19 but the tailing slot pays MinSlotPrice
             // and doesn't refund so the check is < instead of <= to optimize.
             timeSlot && *timeSlot < tailingSlot;
@@ -192,7 +194,7 @@ applyBid(
                           Number const& minPrice,
                           Number const& burn) -> TER {
         auctionSlot.setAccountID(sfAccount, account_);
-        auctionSlot.setFieldU32(sfTimeStamp, current);
+        auctionSlot.setFieldU32(sfExpiration, current + totalSlotTimeSecs);
         auctionSlot.setFieldU32(sfDiscountedFee, fee);
         auctionSlot.setFieldAmount(
             sfPrice, toSTAmount(lpTokens.issue(), minPrice));
@@ -214,15 +216,15 @@ applyBid(
             JLOG(ctx_.journal.debug()) << "AMM Bid: failed to redeem.";
             return res;
         }
-        amm->setFieldAmount(sfLPTokenBalance, lptAMMBalance - saBurn);
-        sb.update(amm);
+        (*amm)->setFieldAmount(sfLPTokenBalance, lptAMMBalance - saBurn);
+        sb.update(*amm);
         return tesSUCCESS;
     };
 
     TER res = tesSUCCESS;
 
-    auto const minBidSlotPrice = ctx_.tx[~sfMinSlotPrice];
-    auto const maxBidSlotPrice = ctx_.tx[~sfMaxSlotPrice];
+    auto const minBidSlotPrice = ctx_.tx[~sfMinBidPrice];
+    auto const maxBidSlotPrice = ctx_.tx[~sfMaxBidPrice];
 
     Number const MinSlotPrice = lptAMMBalance / 100000;  // 0.001% TBD
 
@@ -242,7 +244,7 @@ applyBid(
             auto const p1_05 = Number(105, -2);
             // First interval slot price
             if (*timeSlot == 0)
-                return pricePurchased * p1_05;
+                return pricePurchased * p1_05 + MinSlotPrice;
             // Other intervals slot price
             return pricePurchased * p1_05 * (1 - power(fractionUsed, 60)) +
                 MinSlotPrice;

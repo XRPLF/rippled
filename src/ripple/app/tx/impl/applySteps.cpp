@@ -152,7 +152,7 @@ invoke_preflight(PreflightContext const& ctx)
             return invoke_preflight_helper<NFTokenCancelOffer>(ctx);
         case ttNFTOKEN_ACCEPT_OFFER:
             return invoke_preflight_helper<NFTokenAcceptOffer>(ctx);
-        case ttAMM_INSTANCE_CREATE:
+        case ttAMM_CREATE:
             return invoke_preflight_helper<AMMCreate>(ctx);
         case ttAMM_DEPOSIT:
             return invoke_preflight_helper<AMMDeposit>(ctx);
@@ -263,7 +263,7 @@ invoke_preclaim(PreclaimContext const& ctx)
             return invoke_preclaim<NFTokenCancelOffer>(ctx);
         case ttNFTOKEN_ACCEPT_OFFER:
             return invoke_preclaim<NFTokenAcceptOffer>(ctx);
-        case ttAMM_INSTANCE_CREATE:
+        case ttAMM_CREATE:
             return invoke_preclaim<AMMCreate>(ctx);
         case ttAMM_DEPOSIT:
             return invoke_preclaim<AMMDeposit>(ctx);
@@ -336,7 +336,7 @@ invoke_calculateBaseFee(ReadView const& view, STTx const& tx)
             return NFTokenCancelOffer::calculateBaseFee(view, tx);
         case ttNFTOKEN_ACCEPT_OFFER:
             return NFTokenAcceptOffer::calculateBaseFee(view, tx);
-        case ttAMM_INSTANCE_CREATE:
+        case ttAMM_CREATE:
             return AMMCreate::calculateBaseFee(view, tx);
         case ttAMM_DEPOSIT:
             return AMMDeposit::calculateBaseFee(view, tx);
@@ -498,7 +498,7 @@ invoke_apply(ApplyContext& ctx)
             NFTokenAcceptOffer p(ctx);
             return p();
         }
-        case ttAMM_INSTANCE_CREATE: {
+        case ttAMM_CREATE: {
             AMMCreate p(ctx);
             return p();
         }

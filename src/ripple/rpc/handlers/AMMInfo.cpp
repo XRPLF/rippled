@@ -44,94 +44,21 @@ getAccount(Json::Value const& v, Json::Value& result)
     return std::optional<AccountID>(accountID);
 }
 
-std::optional<Issue>
+Expected<Issue, error_code_i>
 getIssue(
     Json::Value const& params,
-    std::string const& field,
-    Json::Value& result)
+    Json::StaticString const& field,
+    beast::Journal j)
 {
-    if (!params.isMember(field))
+    try
     {
-        result = RPC::missing_field_error(field);
-        return std::nullopt;
+        return issueFromJson(params[field]);
     }
-
-    if (!params[field][jss::currency])
+    catch (std::runtime_error const& ex)
     {
-        result = RPC::missing_field_error(field + ".currency");
-        return std::nullopt;
+        JLOG(j.debug()) << ex.what();
     }
-
-    if (!params[field][jss::currency].isString())
-    {
-        result = RPC::expected_field_error(field + ".currency", "string");
-        return std::nullopt;
-    }
-
-    Currency currency;
-
-    if (!to_currency(currency, params[field][jss::currency].asString()))
-    {
-        result = RPC::make_error(
-            rpcAMM_CUR_MALFORMED,
-            std::string(
-                "Invalid field '" + field + ".currency', bad currency."));
-        return std::nullopt;
-    }
-
-    AccountID issuer;
-
-    if (params[field].isMember(jss::issuer))
-    {
-        if (!params[field][jss::issuer].isString())
-        {
-            result = RPC::expected_field_error(field + ".issuer", "string");
-            return std::nullopt;
-        }
-
-        if (!to_issuer(issuer, params[field][jss::issuer].asString()))
-        {
-            result = RPC::make_error(
-                rpcAMM_ISR_MALFORMED,
-                std::string("Invalid field '") + field +
-                    ".issuer', bad issuer");
-            return std::nullopt;
-        }
-
-        if (issuer == noAccount())
-        {
-            result = RPC::make_error(
-                rpcSRC_ISR_MALFORMED,
-                std::string("Invalid field '") + field +
-                    ".issuer', bad issuer account one");
-            return std::nullopt;
-        }
-    }
-    else
-    {
-        issuer = xrpAccount();
-    }
-
-    if (isXRP(currency) && !isXRP(issuer))
-    {
-        result = RPC::make_error(
-            rpcAMM_ISR_MALFORMED,
-            std::string("Unneeded field '") + field +
-                ".issuer' for "
-                "XRP currency specification.");
-        return std::nullopt;
-    }
-
-    if (!isXRP(currency) && isXRP(issuer))
-    {
-        result = RPC::make_error(
-            rpcAMM_ISR_MALFORMED,
-            std::string("Invalid field '") + field +
-                ".issuer', expected non-XRP issuer.");
-        return std::nullopt;
-    }
-
-    return {{currency, issuer}};
+    return Unexpected(rpcAMM_ISSUE_MALFORMED);
 }
 
 Json::Value
@@ -141,27 +68,29 @@ doAMMInfo(RPC::JsonContext& context)
     Json::Value result;
     std::optional<AccountID> accountID;
 
-    uint256 ammID{};
-    Issue token1Issue{noIssue()};
-    Issue token2Issue{noIssue()};
-    if (!params.isMember(jss::amm_id))
+    Issue issue1;
+    Issue issue2;
+
+    if (!params.isMember(jss::asset) || !params.isMember(jss::asset2))
     {
-        // May provide issue1 and issue2
-        if (auto const i = getIssue(params, jss::asset1.c_str(), result); !i)
-            return result;
-        else
-            token1Issue = *i;
-        if (auto const i = getIssue(params, jss::asset2.c_str(), result); !i)
-            return result;
-        else
-            token2Issue = *i;
-        ammID = ammIndex(token1Issue, token2Issue);
-    }
-    else if (!ammID.parseHex(params[jss::amm_id].asString()))
-    {
-        RPC::inject_error(rpcACT_MALFORMED, result);
+        RPC::inject_error(rpcINVALID_PARAMS, result);
         return result;
     }
+
+    if (auto const i = getIssue(params, jss::asset, context.j); !i)
+    {
+        RPC::inject_error(i.error(), result);
+        return result;
+    }
+    else
+        issue1 = *i;
+    if (auto const i = getIssue(params, jss::asset2, context.j); !i)
+    {
+        RPC::inject_error(i.error(), result);
+        return result;
+    }
+    else
+        issue2 = *i;
 
     std::shared_ptr<ReadView const> ledger;
     result = RPC::lookupLedger(ledger, context);
@@ -178,26 +107,21 @@ doAMMInfo(RPC::JsonContext& context)
         }
     }
 
-    auto const amm = ledger->read(keylet::amm(ammID));
+    auto const ammKeylet = keylet::amm(issue1, issue2);
+    auto const amm = ledger->read(ammKeylet);
     if (!amm)
         return rpcError(rpcACT_NOT_FOUND);
-
-    auto const [issue1, issue2] = [&]() {
-        if (token1Issue == noIssue())
-            return getTokensIssue(*amm);
-        return std::make_pair(token1Issue, token2Issue);
-    }();
 
     auto const ammAccountID = amm->getAccountID(sfAMMAccount);
 
     auto const [asset1Balance, asset2Balance] =
         ammPoolHolds(*ledger, ammAccountID, issue1, issue2, context.j);
     auto const lptAMMBalance = accountID
-        ? lpHolds(*ledger, ammAccountID, *accountID, context.j)
+        ? ammLPHolds(*ledger, *amm, *accountID, context.j)
         : (*amm)[sfLPTokenBalance];
 
-    asset1Balance.setJson(result[jss::Asset1]);
-    asset2Balance.setJson(result[jss::Asset2]);
+    asset1Balance.setJson(result[jss::Amount]);
+    asset2Balance.setJson(result[jss::Amount2]);
     lptAMMBalance.setJson(result[jss::LPToken]);
     result[jss::TradingFee] = (*amm)[sfTradingFee];
     result[jss::AMMAccount] = to_string(ammAccountID);
@@ -221,17 +145,21 @@ doAMMInfo(RPC::JsonContext& context)
         if (auctionSlot.isFieldPresent(sfAccount))
         {
             Json::Value auction;
-            auction[jss::TimeInterval] =
-                timeSlot(ledger->info().parentCloseTime, auctionSlot);
+            auto const timeSlot = ammAuctionTimeSlot(
+                ledger->info().parentCloseTime.time_since_epoch().count(),
+                auctionSlot);
+            auction[jss::TimeInterval] = timeSlot ? *timeSlot : 0;
             auctionSlot[sfPrice].setJson(auction[jss::Price]);
             auction[jss::DiscountedFee] = auctionSlot[sfDiscountedFee];
             result[jss::AuctionSlot] = auction;
         }
     }
-    if (!params.isMember(jss::amm_id))
-        result[jss::AMMID] = to_string(ammID);
+    result[jss::AMMID] = to_string(ammKeylet.key);
 
-    return result;
+    Json::Value ammResult;
+    ammResult[jss::amm] = result;
+
+    return ammResult;
 }
 
 }  // namespace ripple

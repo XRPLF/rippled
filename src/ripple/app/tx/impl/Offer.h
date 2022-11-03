@@ -141,6 +141,32 @@ public:
 
     TAmounts<TIn, TOut>
     limitIn(TAmounts<TIn, TOut> const& offrAmt, TIn const& limit) const;
+
+    template <typename... Args>
+    static TER
+    send(Args&&... args);
+
+    bool
+    unlimitedFunds() const
+    {
+        // Offer owner is issuer; they have unlimited funds
+        return m_account == issueOut().account;
+    }
+
+    static std::pair<std::uint32_t, std::uint32_t>
+    adjustRates(std::uint32_t ofrInRate, std::uint32_t ofrOutRate)
+    {
+        // CLOB offer pays the transfer fee
+        return {ofrInRate, ofrOutRate};
+    }
+
+    /** CLOB offer can be permanently removed
+     */
+    static bool
+    removable()
+    {
+        return true;
+    }
 };
 
 using Offer = TOffer<>;
@@ -198,6 +224,14 @@ TOffer<TIn, TOut>::limitIn(TAmounts<TIn, TOut> const& offrAmt, TIn const& limit)
     const
 {
     return m_quality.ceil_in(offrAmt, limit);
+}
+
+template <class TIn, class TOut>
+template <typename... Args>
+TER
+TOffer<TIn, TOut>::send(Args&&... args)
+{
+    return accountSend(std::forward<Args>(args)...);
 }
 
 template <>

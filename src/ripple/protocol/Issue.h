@@ -20,11 +20,13 @@
 #ifndef RIPPLE_PROTOCOL_ISSUE_H_INCLUDED
 #define RIPPLE_PROTOCOL_ISSUE_H_INCLUDED
 
+#include <ripple/json/json_value.h>
+#include <ripple/protocol/SField.h>
+#include <ripple/protocol/UintTypes.h>
+
 #include <cassert>
 #include <functional>
 #include <type_traits>
-
-#include <ripple/protocol/UintTypes.h>
 
 namespace ripple {
 
@@ -34,8 +36,8 @@ namespace ripple {
 class Issue
 {
 public:
-    Currency currency;
-    AccountID account;
+    Currency currency{};
+    AccountID account{};
 
     Issue()
     {
@@ -51,6 +53,12 @@ isConsistent(Issue const& ac);
 
 std::string
 to_string(Issue const& ac);
+
+Json::Value
+to_json(Issue const& is);
+
+Issue
+issueFromJson(Json::Value const& v);
 
 std::ostream&
 operator<<(std::ostream& os, Issue const& x);

@@ -22,6 +22,7 @@
 
 #include <ripple/basics/safe_cast.h>
 #include <ripple/json/json_value.h>
+
 #include <cstdint>
 #include <map>
 #include <utility>
@@ -42,6 +43,7 @@ Some fields have a different meaning for their
 // Forwards
 class STAccount;
 class STAmount;
+class STIssue;
 class STBlob;
 template <int>
 class STBitString;
@@ -76,6 +78,7 @@ enum SerializedTypeID {
     STI_UINT192 = 21,
     STI_UINT384 = 22,
     STI_UINT512 = 23,
+    STI_ISSUE = 24,
 
     // high level types
     // cannot be serialized inside other types
@@ -318,6 +321,7 @@ using SF_UINT512 = TypedField<STBitString<512>>;
 
 using SF_ACCOUNT = TypedField<STAccount>;
 using SF_AMOUNT = TypedField<STAmount>;
+using SF_ISSUE = TypedField<STIssue>;
 using SF_VL = TypedField<STBlob>;
 using SF_VECTOR256 = TypedField<STVector256>;
 
@@ -369,7 +373,6 @@ extern SF_UINT32 const sfTransferRate;
 extern SF_UINT32 const sfWalletSize;
 extern SF_UINT32 const sfOwnerCount;
 extern SF_UINT32 const sfDestinationTag;
-extern SF_UINT32 const sfTimeStamp;
 extern SF_UINT32 const sfDiscountedFee;
 
 // 32-bit integers (uncommon)
@@ -485,15 +488,10 @@ extern SF_AMOUNT const sfHighLimit;
 extern SF_AMOUNT const sfFee;
 extern SF_AMOUNT const sfSendMax;
 extern SF_AMOUNT const sfDeliverMin;
-extern SF_AMOUNT const sfAsset1;
-extern SF_AMOUNT const sfAsset2;
-extern SF_AMOUNT const sfAsset1In;
-extern SF_AMOUNT const sfAsset2In;
-extern SF_AMOUNT const sfAsset1Out;
-extern SF_AMOUNT const sfAsset2Out;
+extern SF_AMOUNT const sfAmount2;
 extern SF_AMOUNT const sfEPrice;
-extern SF_AMOUNT const sfMinSlotPrice;
-extern SF_AMOUNT const sfMaxSlotPrice;
+extern SF_AMOUNT const sfMinBidPrice;
+extern SF_AMOUNT const sfMaxBidPrice;
 extern SF_AMOUNT const sfPrice;
 extern SF_AMOUNT const sfLPTokenBalance;
 
@@ -556,6 +554,10 @@ extern SF_ACCOUNT const sfHookAccount;
 // path set
 extern SField const sfPaths;
 
+// issue
+extern SF_ISSUE const sfAsset;
+extern SF_ISSUE const sfAsset2;
+
 // vector of 256-bit
 extern SF_VECTOR256 const sfIndexes;
 extern SF_VECTOR256 const sfHashes;
@@ -580,9 +582,6 @@ extern SField const sfHook;
 extern SField const sfVoteEntry;
 extern SField const sfAuctionSlot;
 extern SField const sfAuthAccount;
-extern SField const sfAMMToken;
-extern SField const sfToken1;
-extern SField const sfToken2;
 
 extern SField const sfSigner;
 extern SField const sfMajority;
