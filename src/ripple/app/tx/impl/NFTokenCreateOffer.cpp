@@ -165,11 +165,44 @@ NFTokenCreateOffer::preclaim(PreclaimContext const& ctx)
             return tecUNFUNDED_OFFER;
     }
 
-    // If a destination is specified, the destination must already be in
-    // the ledger.
-    if (auto const destination = ctx.tx[~sfDestination];
-        destination && !ctx.view.exists(keylet::account(*destination)))
-        return tecNO_DST;
+    auto const destination = ctx.tx[~sfDestination];
+    if (destination)
+    {
+        // If a destination is specified, the destination must already be in
+        // the ledger.
+        if (!ctx.view.exists(keylet::account(*destination)))
+            return tecNO_DST;
+
+        // check if the destination has disallowed incoming offers
+        if (ctx.view.rules().enabled(featureDisallowIncoming))
+        {
+            // flag cannot be set unless amendment is enabled but
+            // out of an abundance of caution check anyway
+
+            auto const sleDst = ctx.view.read(keylet::account(*destination));
+
+            if (sleDst->getFlags() & lsfDisallowIncomingNFTOffer)
+                return tecNO_PERMISSION;
+        }
+    }
+
+    auto const owner = ctx.tx[~sfOwner];
+    if (owner)
+    {
+        // Check if the owner (buy offer) has disallowed incoming offers
+        if (ctx.view.rules().enabled(featureDisallowIncoming))
+        {
+            auto const sleOwner = ctx.view.read(keylet::account(*owner));
+
+            // defensively check
+            // it should not be possible to specify owner that doesn't exist
+            if (!sleOwner)
+                return tecNO_TARGET;
+
+            if (sleOwner->getFlags() & lsfDisallowIncomingNFTOffer)
+                return tecNO_PERMISSION;
+        }
+    }
 
     return tesSUCCESS;
 }

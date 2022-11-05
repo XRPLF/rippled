@@ -184,6 +184,21 @@ SetAccount::preflight(PreflightContext const& ctx)
             return temMALFORMED;
     }
 
+    if (ctx.rules.enabled(featureDisallowIncoming))
+    {
+        if ((uSetFlag == asfDisallowIncomingNFTOffer &&
+             uClearFlag == asfDisallowIncomingNFTOffer) ||
+            (uSetFlag == asfDisallowIncomingCheck &&
+             uClearFlag == asfDisallowIncomingCheck) ||
+            (uSetFlag == asfDisallowIncomingPayChan &&
+             uClearFlag == asfDisallowIncomingPayChan))
+        {
+            JLOG(j.trace())
+                << "Malformed transaction: Contradictory flags set.";
+            return temINVALID_FLAG;
+        }
+    }
+
     return preflight2(ctx);
 }
 
@@ -536,6 +551,25 @@ SetAccount::doApply()
         if (uClearFlag == asfAuthorizedNFTokenMinter &&
             sle->isFieldPresent(sfNFTokenMinter))
             sle->makeFieldAbsent(sfNFTokenMinter);
+    }
+
+    // Set or clear flags for disallowing various incoming instruments
+    if (ctx_.view().rules().enabled(featureDisallowIncoming))
+    {
+        if (uSetFlag == asfDisallowIncomingNFTOffer)
+            uFlagsOut |= lsfDisallowIncomingNFTOffer;
+        else if (uClearFlag == asfDisallowIncomingNFTOffer)
+            uFlagsOut &= ~lsfDisallowIncomingNFTOffer;
+
+        if (uSetFlag == asfDisallowIncomingCheck)
+            uFlagsOut |= lsfDisallowIncomingCheck;
+        else if (uClearFlag == asfDisallowIncomingCheck)
+            uFlagsOut &= ~lsfDisallowIncomingCheck;
+
+        if (uSetFlag == asfDisallowIncomingPayChan)
+            uFlagsOut |= lsfDisallowIncomingPayChan;
+        else if (uClearFlag == asfDisallowIncomingPayChan)
+            uFlagsOut &= ~lsfDisallowIncomingPayChan;
     }
 
     if (uFlagsIn != uFlagsOut)
