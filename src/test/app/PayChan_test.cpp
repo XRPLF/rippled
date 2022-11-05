@@ -356,6 +356,19 @@ struct PayChan_test : public beast::unit_test::suite
     {
         testcase("Disallow Incoming Flag");
         using namespace jtx;
+
+        // test flag doesn't set unless amendment enabled
+        {
+            Env env{*this, features - disallowIncoming};
+            Account const alice{"alice"};
+            env.fund(XRP(10000), alice);
+            env(fset(alice, asfDisallowIncomingPayChan));
+            env.close();
+            auto const sle = env.le(alice);
+            uint32_t flags = sle->getFlags();
+            BEAST_EXPECT(!(flags & lsfDisallowIncomingPayChan));
+        }
+
         using namespace std::literals::chrono_literals;
         Env env{*this, features | disallowIncoming};
         auto const alice = Account("alice");

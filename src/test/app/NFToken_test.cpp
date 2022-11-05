@@ -2972,6 +2972,18 @@ class NFToken_test : public beast::unit_test::suite
 
         using namespace test::jtx;
 
+        // test flag doesn't set unless amendment enabled
+        {
+            Env env{*this, features - disallowIncoming};
+            Account const alice{"alice"};
+            env.fund(XRP(10000), alice);
+            env(fset(alice, asfDisallowIncomingNFTOffer));
+            env.close();
+            auto const sle = env.le(alice);
+            uint32_t flags = sle->getFlags();
+            BEAST_EXPECT(!(flags & lsfDisallowIncomingNFTOffer));
+        }
+
         Env env{*this, features | disallowIncoming};
 
         Account const issuer{"issuer"};
