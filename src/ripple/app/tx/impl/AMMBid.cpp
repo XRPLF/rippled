@@ -59,13 +59,13 @@ AMMBid::preflight(PreflightContext const& ctx)
         return res;
     }
 
-    if (auto const res = invalidAMMAmount(ctx.tx[~sfMinBidPrice]))
+    if (auto const res = invalidAMMAmount(ctx.tx[~sfBidMin]))
     {
         JLOG(ctx.j.debug()) << "AMM Bid: invalid min slot price.";
         return res;
     }
 
-    if (auto const res = invalidAMMAmount(ctx.tx[~sfMaxBidPrice]))
+    if (auto const res = invalidAMMAmount(ctx.tx[~sfBidMax]))
     {
         JLOG(ctx.j.debug()) << "AMM Bid: invalid max slot price.";
         return res;
@@ -111,39 +111,38 @@ AMMBid::preclaim(PreclaimContext const& ctx)
         ammLPHolds(ctx.view, **ammSle, ctx.tx[sfAccount], ctx.j);
     auto const lpTokensBalance = (**ammSle)[sfLPTokenBalance];
 
-    auto const minBidSlotPrice = ctx.tx[~sfMinBidPrice];
+    auto const bidMin = ctx.tx[~sfBidMin];
 
-    if (minBidSlotPrice)
+    if (bidMin)
     {
-        if (*minBidSlotPrice > lpTokens || *minBidSlotPrice >= lpTokensBalance)
+        if (*bidMin > lpTokens || *bidMin >= lpTokensBalance)
         {
             JLOG(ctx.j.debug()) << "AMM Bid: Invalid Tokens.";
             return tecAMM_INVALID_TOKENS;
         }
-        if (minBidSlotPrice->issue() != lpTokens.issue())
+        if (bidMin->issue() != lpTokens.issue())
         {
             JLOG(ctx.j.debug()) << "AMM Bid: Invalid LPToken.";
             return temBAD_AMM_TOKENS;
         }
     }
 
-    auto const maxBidSlotPrice = ctx.tx[~sfMaxBidPrice];
-    if (maxBidSlotPrice)
+    auto const bidMax = ctx.tx[~sfBidMax];
+    if (bidMax)
     {
-        if (*maxBidSlotPrice > lpTokens || *maxBidSlotPrice >= lpTokensBalance)
+        if (*bidMax > lpTokens || *bidMax >= lpTokensBalance)
         {
             JLOG(ctx.j.debug()) << "AMM Bid: Invalid Tokens.";
             return tecAMM_INVALID_TOKENS;
         }
-        if (maxBidSlotPrice->issue() != lpTokens.issue())
+        if (bidMax->issue() != lpTokens.issue())
         {
             JLOG(ctx.j.debug()) << "AMM Bid: Invalid LPToken.";
             return temBAD_AMM_TOKENS;
         }
     }
 
-    if (minBidSlotPrice && maxBidSlotPrice &&
-        minBidSlotPrice >= maxBidSlotPrice)
+    if (bidMin && bidMax && bidMin >= bidMax)
     {
         JLOG(ctx.j.debug()) << "AMM Bid: Invalid Max/MinSlotPrice.";
         return tecAMM_INVALID_TOKENS;
@@ -223,8 +222,8 @@ applyBid(
 
     TER res = tesSUCCESS;
 
-    auto const minBidSlotPrice = ctx_.tx[~sfMinBidPrice];
-    auto const maxBidSlotPrice = ctx_.tx[~sfMaxBidPrice];
+    auto const bidMin = ctx_.tx[~sfBidMin];
+    auto const bidMax = ctx_.tx[~sfBidMax];
 
     Number const MinSlotPrice = lptAMMBalance / 100000;  // 0.001% TBD
 
@@ -252,27 +251,26 @@ applyBid(
 
         auto const payPrice = [&]() -> std::optional<Number> {
             // Both min/max bid price are defined
-            if (minBidSlotPrice && maxBidSlotPrice)
+            if (bidMin && bidMax)
             {
-                if (computedPrice >= *minBidSlotPrice &&
-                    computedPrice <= *maxBidSlotPrice)
+                if (computedPrice >= *bidMin && computedPrice <= *bidMax)
                     return computedPrice;
                 JLOG(ctx_.journal.debug())
-                    << "AMM Bid: not in range " << computedPrice
-                    << *minBidSlotPrice << " " << *maxBidSlotPrice;
+                    << "AMM Bid: not in range " << computedPrice << *bidMin
+                    << " " << *bidMax;
                 return std::nullopt;
             }
             // Bidder pays max(bidPrice, computedPrice)
-            if (minBidSlotPrice)
+            if (bidMin)
             {
-                return std::max(computedPrice, Number(*minBidSlotPrice));
+                return std::max(computedPrice, Number(*bidMin));
             }
-            else if (maxBidSlotPrice)
+            else if (bidMax)
             {
-                if (computedPrice <= *maxBidSlotPrice)
+                if (computedPrice <= *bidMax)
                     return computedPrice;
-                JLOG(ctx_.journal.debug()) << "AMM Bid: not in range "
-                                           << computedPrice << *maxBidSlotPrice;
+                JLOG(ctx_.journal.debug())
+                    << "AMM Bid: not in range " << computedPrice << *bidMax;
                 return std::nullopt;
             }
             else

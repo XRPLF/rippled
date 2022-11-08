@@ -56,8 +56,8 @@ AMM::AMM(
     , log_(log)
     , lastPurchasePrice_(0)
     , minSlotPrice_(0)
-    , minBidPrice_()
-    , maxBidPrice_()
+    , bidMin_()
+    , bidMax_()
 {
     create(tfee, flags, seq);
 }
@@ -585,8 +585,8 @@ AMM::bid(
         }
         minSlotPrice_ = (*amm)[sfLPTokenBalance].iou() / 100000;
     }
-    minBidPrice_ = std::nullopt;
-    maxBidPrice_ = std::nullopt;
+    bidMin_ = std::nullopt;
+    bidMax_ = std::nullopt;
 
     Json::Value jv;
     jv[jss::Account] = account ? account->human() : creatorAccount_.human();
@@ -594,14 +594,14 @@ AMM::bid(
     if (minSlotPrice)
     {
         STAmount saTokens{lptIssue_, *minSlotPrice, 0};
-        saTokens.setJson(jv[jss::MinBidPrice]);
-        minBidPrice_ = saTokens.iou();
+        saTokens.setJson(jv[jss::BidMin]);
+        bidMin_ = saTokens.iou();
     }
     if (maxSlotPrice)
     {
         STAmount saTokens{lptIssue_, *maxSlotPrice, 0};
-        saTokens.setJson(jv[jss::MaxBidPrice]);
-        maxBidPrice_ = saTokens.iou();
+        saTokens.setJson(jv[jss::BidMax]);
+        bidMax_ = saTokens.iou();
     }
     if (authAccounts.size() > 0)
     {
@@ -652,8 +652,8 @@ AMM::expectedPurchasePrice(
     }();
 
     // assume price is in range
-    if (minBidPrice_ && !maxBidPrice_)
-        return std::max(computedPrice, *minBidPrice_);
+    if (bidMin_ && !bidMax_)
+        return std::max(computedPrice, *bidMin_);
     return computedPrice;
 }
 

@@ -45,20 +45,42 @@ getAccount(Json::Value const& v, Json::Value& result)
 }
 
 Expected<Issue, error_code_i>
-getIssue(
-    Json::Value const& params,
-    Json::StaticString const& field,
-    beast::Journal j)
+getIssue(Json::Value const& v, beast::Journal j)
 {
-    try
+    if (!v.isObject())
     {
-        return issueFromJson(params[field]);
+        JLOG(j.debug())
+            << "getIssue must be specified as an 'object' Json value";
+        return Unexpected(rpcAMM_ISSUE_MALFORMED);
     }
-    catch (std::runtime_error const& ex)
+
+    Issue issue = xrpIssue();
+
+    Json::Value const& currency = v[jss::currency];
+    Json::Value const& issuer = v[jss::issuer];
+    if (!to_currency(issue.currency, currency.asString()))
     {
-        JLOG(j.debug()) << ex.what();
+        JLOG(j.debug()) << "getIssue, invalid currency";
+        return Unexpected(rpcAMM_ISSUE_MALFORMED);
     }
-    return Unexpected(rpcAMM_ISSUE_MALFORMED);
+
+    if (isXRP(issue.currency))
+    {
+        if (!issuer.isNull())
+        {
+            JLOG(j.debug()) << "getIssue, XRP should not have issuer";
+            return Unexpected(rpcAMM_ISSUE_MALFORMED);
+        }
+        return issue;
+    }
+
+    if (!issuer.isString() || !to_issuer(issue.account, issuer.asString()))
+    {
+        JLOG(j.debug()) << "getIssue, invalid issuer";
+        return Unexpected(rpcAMM_ISSUE_MALFORMED);
+    }
+
+    return issue;
 }
 
 Json::Value
@@ -77,14 +99,14 @@ doAMMInfo(RPC::JsonContext& context)
         return result;
     }
 
-    if (auto const i = getIssue(params, jss::asset, context.j); !i)
+    if (auto const i = getIssue(params[jss::asset], context.j); !i)
     {
         RPC::inject_error(i.error(), result);
         return result;
     }
     else
         issue1 = *i;
-    if (auto const i = getIssue(params, jss::asset2, context.j); !i)
+    if (auto const i = getIssue(params[jss::asset2], context.j); !i)
     {
         RPC::inject_error(i.error(), result);
         return result;
@@ -131,6 +153,7 @@ doAMMInfo(RPC::JsonContext& context)
         for (auto const& voteEntry : amm->getFieldArray(sfVoteSlots))
         {
             Json::Value vote;
+            vote[jss::Account] = to_string(voteEntry.getAccountID(sfAccount));
             vote[jss::TradingFee] = voteEntry[sfTradingFee];
             vote[jss::VoteWeight] = voteEntry[sfVoteWeight];
             voteSlots.append(vote);
@@ -151,6 +174,21 @@ doAMMInfo(RPC::JsonContext& context)
             auction[jss::TimeInterval] = timeSlot ? *timeSlot : 0;
             auctionSlot[sfPrice].setJson(auction[jss::Price]);
             auction[jss::DiscountedFee] = auctionSlot[sfDiscountedFee];
+            auction[jss::Account] =
+                to_string(auctionSlot.getAccountID(sfAccount));
+            auction[jss::Expiration] = auctionSlot[sfExpiration];
+            if (auctionSlot.isFieldPresent(sfAuthAccounts))
+            {
+                Json::Value auth;
+                for (auto const& acct :
+                     auctionSlot.getFieldArray(sfAuthAccounts))
+                {
+                    Json::Value jv;
+                    jv[jss::Account] = to_string(acct.getAccountID(sfAccount));
+                    auth.append(jv);
+                }
+                auction = auth[jss::AuthAccounts];
+            }
             result[jss::AuctionSlot] = auction;
         }
     }

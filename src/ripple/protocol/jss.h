@@ -60,54 +60,55 @@ JSS(Amount);                 // in: TransactionSign; field.
 JSS(Amount2);              // in/out: AMM IOU/XRP pool, deposit, withdraw amount
 JSS(Asset);                // in: AMM Asset1
 JSS(Asset2);               // in: AMM Asset2
-JSS(AuctionSlot);            // out: AMM Auction Slot
-JSS(AuthAccount);            // in: AMM Auction Slot
-JSS(AuthAccounts);           // in: AMM Auction Slot
-JSS(Check);                  // ledger type.
-JSS(CheckCancel);            // transaction type.
-JSS(CheckCash);              // transaction type.
-JSS(CheckCreate);            // transaction type.
-JSS(ClearFlag);              // field.
-JSS(DeliverMin);             // in: TransactionSign
-JSS(DepositPreauth);         // transaction and ledger type.
-JSS(Destination);            // in: TransactionSign; field.
-JSS(DiscountedFee);          // out: AMM Auction Slot
-JSS(DirectoryNode);          // ledger type.
-JSS(EnableAmendment);        // transaction type.
-JSS(EPrice);                 // in: AMM Deposit option
-JSS(Escrow);                 // ledger type.
-JSS(EscrowCancel);           // transaction type.
-JSS(EscrowCreate);           // transaction type.
-JSS(EscrowFinish);           // transaction type.
-JSS(Fee);                    // in/out: TransactionSign; field.
-JSS(FeeSettings);            // ledger type.
-JSS(Flags);                  // in/out: TransactionSign; field.
-JSS(incomplete_shards);      // out: OverlayImpl, PeerImp
-JSS(Invalid);                //
-JSS(LastLedgerSequence);     // in: TransactionSign; field
-JSS(LedgerHashes);           // ledger type.
-JSS(LimitAmount);            // field.
-JSS(MaxBidPrice);            // in: AMM Bid
-JSS(MinBidPrice);            // in: AMM Bid
-JSS(NetworkID);              // field.
-JSS(NFTokenBurn);            // transaction type.
-JSS(NFTokenMint);            // transaction type.
-JSS(NFTokenOffer);           // ledger type.
-JSS(NFTokenAcceptOffer);     // transaction type.
-JSS(NFTokenCancelOffer);     // transaction type.
-JSS(NFTokenCreateOffer);     // transaction type.
-JSS(NFTokenPage);            // ledger type.
-JSS(LPTokenOut);             // in: AMM Liquidity Provider deposit tokens
-JSS(LPTokenIn);              // in: AMM Liquidity Provider withdraw tokens
-JSS(LPToken);                // out: AMM Liquidity Provider tokens info
-JSS(Offer);                  // ledger type.
-JSS(OfferCancel);            // transaction type.
-JSS(OfferCreate);            // transaction type.
-JSS(OfferSequence);          // field.
-JSS(Paths);                  // in/out: TransactionSign
-JSS(PayChannel);             // ledger type.
-JSS(Payment);                // transaction type.
-JSS(PaymentChannelClaim);    // transaction type.
+JSS(AuctionSlot);          // out: AMM Auction Slot
+JSS(AuthAccount);          // in: AMM Auction Slot
+JSS(AuthAccounts);         // in: AMM Auction Slot
+JSS(Check);                // ledger type.
+JSS(CheckCancel);          // transaction type.
+JSS(CheckCash);            // transaction type.
+JSS(CheckCreate);          // transaction type.
+JSS(ClearFlag);            // field.
+JSS(DeliverMin);           // in: TransactionSign
+JSS(DepositPreauth);       // transaction and ledger type.
+JSS(Destination);          // in: TransactionSign; field.
+JSS(DiscountedFee);        // out: AMM Auction Slot
+JSS(DirectoryNode);        // ledger type.
+JSS(EnableAmendment);      // transaction type.
+JSS(EPrice);               // in: AMM Deposit option
+JSS(Escrow);               // ledger type.
+JSS(EscrowCancel);         // transaction type.
+JSS(EscrowCreate);         // transaction type.
+JSS(EscrowFinish);         // transaction type.
+JSS(Expiration);           // out: AMM info
+JSS(Fee);                  // in/out: TransactionSign; field.
+JSS(FeeSettings);          // ledger type.
+JSS(Flags);                // in/out: TransactionSign; field.
+JSS(incomplete_shards);    // out: OverlayImpl, PeerImp
+JSS(Invalid);              //
+JSS(LastLedgerSequence);   // in: TransactionSign; field
+JSS(LedgerHashes);         // ledger type.
+JSS(LimitAmount);          // field.
+JSS(BidMax);               // in: AMM Bid
+JSS(BidMin);               // in: AMM Bid
+JSS(NetworkID);            // field.
+JSS(NFTokenBurn);          // transaction type.
+JSS(NFTokenMint);          // transaction type.
+JSS(NFTokenOffer);         // ledger type.
+JSS(NFTokenAcceptOffer);   // transaction type.
+JSS(NFTokenCancelOffer);   // transaction type.
+JSS(NFTokenCreateOffer);   // transaction type.
+JSS(NFTokenPage);          // ledger type.
+JSS(LPTokenOut);           // in: AMM Liquidity Provider deposit tokens
+JSS(LPTokenIn);            // in: AMM Liquidity Provider withdraw tokens
+JSS(LPToken);              // out: AMM Liquidity Provider tokens info
+JSS(Offer);                // ledger type.
+JSS(OfferCancel);          // transaction type.
+JSS(OfferCreate);          // transaction type.
+JSS(OfferSequence);        // field.
+JSS(Paths);                // in/out: TransactionSign
+JSS(PayChannel);           // ledger type.
+JSS(Payment);              // transaction type.
+JSS(PaymentChannelClaim);  // transaction type.
 JSS(PaymentChannelCreate);   // transaction type.
 JSS(PaymentChannelFund);     // transaction type.
 JSS(Price);                  // out: AMM Auction Slot

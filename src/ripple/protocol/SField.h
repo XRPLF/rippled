@@ -490,8 +490,8 @@ extern SF_AMOUNT const sfSendMax;
 extern SF_AMOUNT const sfDeliverMin;
 extern SF_AMOUNT const sfAmount2;
 extern SF_AMOUNT const sfEPrice;
-extern SF_AMOUNT const sfMinBidPrice;
-extern SF_AMOUNT const sfMaxBidPrice;
+extern SF_AMOUNT const sfBidMin;
+extern SF_AMOUNT const sfBidMax;
 extern SF_AMOUNT const sfPrice;
 extern SF_AMOUNT const sfLPTokenBalance;
 

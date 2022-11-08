@@ -92,15 +92,9 @@ Json::Value
 STIssue::getJson(JsonOptions) const
 {
     Json::Value elem = Json::objectValue;
+    elem[jss::currency] = to_string(issue_.currency);
     if (!isXRP(issue_.currency))
-    {
-        elem[jss::currency] = to_string(issue_.currency);
         elem[jss::issuer] = to_string(issue_.account);
-    }
-    else
-    {
-        elem = getText();
-    }
     return elem;
 }
 
@@ -146,37 +140,31 @@ STIssue::move(std::size_t n, void* buf)
 STIssue
 issueFromJson(SField const& name, Json::Value const& v)
 {
-    if (!v.isObject() && !v.isString())
+    if (!v.isObject())
     {
         Throw<std::runtime_error>(
-            "Issue must be specified with either an object or a string Json "
-            "value");
+            "Issue must be specified with as an 'object' Json value");
     }
 
-    if (v.isObject())
+    Issue issue;
+
+    Json::Value const& currency = v[jss::currency];
+    Json::Value const& issuer = v[jss::issuer];
+    if (!to_currency(issue.currency, currency.asString()))
+        Throw<std::runtime_error>("Issue, invalid currency");
+
+    if (isXRP(issue.currency))
     {
-        Issue issue;
-
-        Json::Value const& currency = v[jss::currency];
-        Json::Value const& issuer = v[jss::issuer];
-        if (!to_currency(issue.currency, currency.asString()))
-            Throw<std::runtime_error>("invalid currency");
-
-        if (!issuer.isString() || !to_issuer(issue.account, issuer.asString()))
-            Throw<std::runtime_error>("invalid issuer");
-
-        if (isXRP(issue.currency))
-            Throw<std::runtime_error>("invalid issuer");
+        if (!issuer.isNull())
+            Throw<std::runtime_error>("Issue, XRP should not have issuer");
+        issue.account = xrpAccount();
         return STIssue{name, issue};
     }
 
-    // String
-    if (v.asString() != systemCurrencyCode())
-    {
-        Throw<std::runtime_error>(
-            "If Issue is a string value it must specify XRP");
-    }
-    return STIssue{name, xrpIssue()};
+    if (!issuer.isString() || !to_issuer(issue.account, issuer.asString()))
+        Throw<std::runtime_error>("Issue, invalid issuer");
+
+    return STIssue{name, issue};
 }
 
 }  // namespace ripple

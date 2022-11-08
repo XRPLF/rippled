@@ -237,8 +237,8 @@ CONSTRUCT_TYPED_SFIELD(sfFee,                   "Fee",                  AMOUNT, 
 CONSTRUCT_TYPED_SFIELD(sfSendMax,               "SendMax",              AMOUNT,     9);
 CONSTRUCT_TYPED_SFIELD(sfDeliverMin,            "DeliverMin",           AMOUNT,    10);
 CONSTRUCT_TYPED_SFIELD(sfAmount2,               "Amount2",              AMOUNT,    11);
-CONSTRUCT_TYPED_SFIELD(sfMinBidPrice,           "MinBidPrice",         AMOUNT,    12);
-CONSTRUCT_TYPED_SFIELD(sfMaxBidPrice,           "MaxBidPrice",         AMOUNT,    13);
+CONSTRUCT_TYPED_SFIELD(sfBidMin,                "BidMin",               AMOUNT,    12);
+CONSTRUCT_TYPED_SFIELD(sfBidMax,                "BidMax",               AMOUNT,    13);
 
 // currency amount (uncommon)
 CONSTRUCT_TYPED_SFIELD(sfMinimumOffer,          "MinimumOffer",         AMOUNT,    16);

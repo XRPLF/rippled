@@ -49,8 +49,8 @@ class AMM
     // Predict next purchase price
     IOUAmount lastPurchasePrice_;
     Number minSlotPrice_;
-    std::optional<IOUAmount> minBidPrice_;
-    std::optional<IOUAmount> maxBidPrice_;
+    std::optional<IOUAmount> bidMin_;
+    std::optional<IOUAmount> bidMax_;
 
 public:
     AMM(Env& env,
