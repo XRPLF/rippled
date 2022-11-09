@@ -312,8 +312,8 @@ CONSTRUCT_TYPED_SFIELD(sfNFTokenOffers,         "NFTokenOffers",        VECTOR25
 CONSTRUCT_UNTYPED_SFIELD(sfPaths,               "Paths",                PATHSET,    1);
 
 // issue
-CONSTRUCT_TYPED_SFIELD(sfAsset,                 "Asset",                ISSUE,      1);
-CONSTRUCT_TYPED_SFIELD(sfAsset2,                "Asset2",               ISSUE,      2);
+CONSTRUCT_TYPED_SFIELD(sfAsset,                 "Asset",                ISSUE,      3);
+CONSTRUCT_TYPED_SFIELD(sfAsset2,                "Asset2",               ISSUE,      4);
 
 // inner object
 // OBJECT/1 is reserved for end of object
