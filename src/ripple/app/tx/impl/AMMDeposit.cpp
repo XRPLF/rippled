@@ -61,11 +61,11 @@ AMMDeposit::preflight(PreflightContext const& ctx)
     //   Amount and Amount2
     //   AssetLPToken and LPTokens
     //   Amount and EPrice
-    if (auto const subTxType = std::bitset<32>(flags & tfSubTx);
+    if (auto const subTxType = std::bitset<32>(flags & tfDepositSubTx);
         subTxType.none() || subTxType.count() > 1)
     {
         JLOG(ctx.j.debug()) << "AMM Deposit: invalid flags.";
-        return temINVALID_FLAG;
+        return temBAD_AMM_OPTIONS;
     }
     else if (flags & tfLPToken)
     {
@@ -277,7 +277,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
         return {expected.error(), false};
     auto const [amountBalance, amount2Balance, lptAMMBalance] = *expected;
 
-    auto const subTxType = ctx_.tx.getFlags() & tfSubTx;
+    auto const subTxType = ctx_.tx.getFlags() & tfDepositSubTx;
 
     auto const [result, depositedTokens] =
         [&,

@@ -160,17 +160,21 @@ constexpr std::uint32_t const tfNFTokenCancelOfferMask     = ~(tfUniversal);
 constexpr std::uint32_t const tfNFTokenAcceptOfferMask     = ~tfUniversal;
 
 // AMM Flags:
-constexpr std::uint32_t tfLPToken                      = 0x00000001;
-constexpr std::uint32_t tfSingleAsset                  = 0x00000002;
-constexpr std::uint32_t tfTwoAsset                     = 0x00000004;
-constexpr std::uint32_t tfOneAssetLPToken              = 0x00000008;
-constexpr std::uint32_t tfLimitLPToken                 = 0x00000010;
-constexpr std::uint32_t tfWithdrawAll                  = 0x00000020;
-constexpr std::uint32_t tfSubTx =
-    tfLPToken | tfSingleAsset | tfTwoAsset | tfOneAssetLPToken | tfLimitLPToken;
-constexpr std::uint32_t tfWithdrawMask =
-    ~(tfUniversal | tfSubTx | tfWithdrawAll);
-constexpr std::uint32_t tfDepositMask = ~(tfUniversal | tfSubTx);
+constexpr std::uint32_t tfLPToken                      = 0x00010000;
+constexpr std::uint32_t tfWithdrawAll                  = 0x00020000;
+constexpr std::uint32_t tfOneAssetWithdrawAll          = 0x00040000;
+constexpr std::uint32_t tfSingleAsset                  = 0x00080000;
+constexpr std::uint32_t tfTwoAsset                     = 0x00100000;
+constexpr std::uint32_t tfOneAssetLPToken              = 0x00200000;
+constexpr std::uint32_t tfLimitLPToken                 = 0x00400000;
+constexpr std::uint32_t tfWithdrawSubTx =
+    tfLPToken | tfSingleAsset | tfTwoAsset | tfOneAssetLPToken |
+    tfLimitLPToken | tfWithdrawAll | tfOneAssetWithdrawAll;
+constexpr std::uint32_t tfDepositSubTx =
+    tfLPToken | tfSingleAsset | tfTwoAsset | tfOneAssetLPToken |
+    tfLimitLPToken;
+constexpr std::uint32_t tfWithdrawMask = ~(tfUniversal | tfWithdrawSubTx);
+constexpr std::uint32_t tfDepositMask = ~(tfUniversal | tfDepositSubTx);
 
 // clang-format on
 

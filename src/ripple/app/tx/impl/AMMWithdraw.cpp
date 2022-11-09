@@ -51,49 +51,58 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
         JLOG(ctx.j.debug()) << "AMM Withdraw: invalid flags.";
         return temINVALID_FLAG;
     }
-    bool const withdrawAll = flags & tfWithdrawAll;
 
     auto const amount = ctx.tx[~sfAmount];
     auto const amount2 = ctx.tx[~sfAmount2];
     auto const ePrice = ctx.tx[~sfEPrice];
     auto const lpTokens = ctx.tx[~sfLPTokenIn];
     // Valid combinations are:
-    //   LPTokens|tfWithdrawAll
+    //   LPTokens
+    //   tfWithdrawAll
     //   Amount
+    //   tfOneAssetWithdrawAll & Amount
     //   Amount and Amount2
-    //   AssetLPToken and [LPTokens|tfWithdrawAll]
+    //   Amount and LPTokens
     //   Amount and EPrice
-    if (auto const subTxType = std::bitset<32>(flags & tfSubTx);
+    if (auto const subTxType = std::bitset<32>(flags & tfWithdrawSubTx);
         subTxType.none() || subTxType.count() > 1)
     {
         JLOG(ctx.j.debug()) << "AMM Withdraw: invalid flags.";
-        return temINVALID_FLAG;
+        return temBAD_AMM_OPTIONS;
     }
     else if (flags & tfLPToken)
     {
-        if ((!lpTokens && !withdrawAll) || (lpTokens && withdrawAll) ||
-            amount || amount2 || ePrice)
+        if (!lpTokens || amount || amount2 || ePrice)
+            return temBAD_AMM_OPTIONS;
+    }
+    else if (flags & tfWithdrawAll)
+    {
+        if (lpTokens || amount || amount2 || ePrice)
+            return temBAD_AMM_OPTIONS;
+    }
+    else if (flags & tfOneAssetWithdrawAll)
+    {
+        if (!amount || lpTokens || amount2 || ePrice)
             return temBAD_AMM_OPTIONS;
     }
     else if (flags & tfSingleAsset)
     {
-        if (!amount || lpTokens || withdrawAll || amount2 || ePrice)
+        if (!amount || lpTokens || amount2 || ePrice)
             return temBAD_AMM_OPTIONS;
     }
     else if (flags & tfTwoAsset)
     {
-        if (!amount || !amount2 || lpTokens || withdrawAll || ePrice)
+        if (!amount || !amount2 || lpTokens || ePrice)
             return temBAD_AMM_OPTIONS;
     }
     else if (flags & tfOneAssetLPToken)
     {
-        if (!amount || (!lpTokens && !withdrawAll) ||
-            (lpTokens && withdrawAll) || amount2 || ePrice)
+        if (!amount || !lpTokens || amount2 || ePrice)
             return temBAD_AMM_OPTIONS;
     }
     else if (flags & tfLimitLPToken)
     {
-        if (!amount || !ePrice || lpTokens || withdrawAll || amount2)
+        if (!amount || !ePrice || lpTokens || amount2)
             return temBAD_AMM_OPTIONS;
     }
 
@@ -119,7 +128,9 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
     }
 
     if (auto const res = invalidAMMAmount(
-            amount, {{asset, asset2}}, withdrawAll || lpTokens || ePrice))
+            amount,
+            {{asset, asset2}},
+            (flags & (tfOneAssetWithdrawAll | tfOneAssetLPToken)) || ePrice))
     {
         JLOG(ctx.j.debug()) << "AMM Withdraw: invalid Asset1Out";
         return res;
@@ -214,7 +225,8 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
 
     auto const lptBalance =
         ammLPHolds(ctx.view, **ammSle, ctx.tx[sfAccount], ctx.j);
-    auto const lpTokens = (ctx.tx.getFlags() & tfWithdrawAll)
+    auto const lpTokens =
+        (ctx.tx.getFlags() & (tfWithdrawAll | tfOneAssetWithdrawAll))
         ? std::optional<STAmount>(lptBalance)
         : ctx.tx[~sfLPTokenIn];
 
@@ -258,7 +270,8 @@ AMMWithdraw::applyGuts(Sandbox& sb)
     auto const ammAccountID = (**ammSle)[sfAMMAccount];
     auto const lpTokens =
         ammLPHolds(ctx_.view(), **ammSle, ctx_.tx[sfAccount], ctx_.journal);
-    auto const lpTokensWithdraw = (ctx_.tx.getFlags() & tfWithdrawAll)
+    auto const lpTokensWithdraw =
+        (ctx_.tx.getFlags() & (tfWithdrawAll | tfOneAssetWithdrawAll))
         ? std::optional<STAmount>(lpTokens)
         : ctx_.tx[~sfLPTokenIn];
 
@@ -274,7 +287,7 @@ AMMWithdraw::applyGuts(Sandbox& sb)
         return {expected.error(), false};
     auto const [amountBalance, amount2Balance, lptAMMBalance] = *expected;
 
-    auto const subTxType = ctx_.tx.getFlags() & tfSubTx;
+    auto const subTxType = ctx_.tx.getFlags() & tfWithdrawSubTx;
 
     auto const [result, withdrawnTokens] =
         [&,
@@ -290,7 +303,8 @@ AMMWithdraw::applyGuts(Sandbox& sb)
                 lptAMMBalance,
                 *amount,
                 *amount2);
-        if (subTxType == tfOneAssetLPToken)
+        if (subTxType == tfOneAssetLPToken ||
+            subTxType == tfOneAssetWithdrawAll)
             return singleWithdrawTokens(
                 sb,
                 ammAccountID,
@@ -311,7 +325,7 @@ AMMWithdraw::applyGuts(Sandbox& sb)
         if (subTxType == tfSingleAsset)
             return singleWithdraw(
                 sb, ammAccountID, amountBalance, lptAMMBalance, *amount, tfee);
-        if (subTxType == tfLPToken)
+        if (subTxType == tfLPToken || subTxType == tfWithdrawAll)
             return equalWithdrawTokens(
                 sb,
                 ammAccountID,

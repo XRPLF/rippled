@@ -409,7 +409,7 @@ AMM::deposit(
     std::uint32_t jvflags = 0;
     if (flags)
         jvflags = *flags;
-    if (!(jvflags & tfSubTx))
+    if (!(jvflags & tfDepositSubTx))
     {
         if (tokens && !asset1In)
             jvflags |= tfLPToken;
@@ -417,7 +417,7 @@ AMM::deposit(
             jvflags |= tfOneAssetLPToken;
         else if (asset1In && asset2In)
             jvflags |= tfTwoAsset;
-        else if (maxEP)
+        else if (maxEP && asset1In)
             jvflags |= tfLimitLPToken;
         else if (asset1In)
             jvflags |= tfSingleAsset;
@@ -519,15 +519,15 @@ AMM::withdraw(
     std::uint32_t jvflags = 0;
     if (flags)
         jvflags = *flags;
-    if (!(jvflags & tfSubTx))
+    if (!(jvflags & tfWithdrawSubTx))
     {
-        if ((tokens || (jvflags & tfWithdrawAll)) && !asset1Out)
+        if (tokens && !asset1Out)
             jvflags |= tfLPToken;
-        else if ((tokens || (jvflags & tfWithdrawAll)) && asset1Out)
-            jvflags |= tfOneAssetLPToken;
         else if (asset1Out && asset2Out)
             jvflags |= tfTwoAsset;
-        else if (maxEP)
+        else if (tokens && asset1Out)
+            jvflags |= tfOneAssetLPToken;
+        else if (asset1Out && maxEP)
             jvflags |= tfLimitLPToken;
         else if (asset1Out)
             jvflags |= tfSingleAsset;
