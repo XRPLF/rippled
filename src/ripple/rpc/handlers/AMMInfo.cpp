@@ -22,7 +22,6 @@
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/Issue.h>
 #include <ripple/rpc/Context.h>
-#include <ripple/rpc/impl/GRPCHelpers.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 #include <grpcpp/support/status.h>
 

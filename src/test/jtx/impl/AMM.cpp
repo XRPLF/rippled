@@ -20,7 +20,6 @@
 #include <ripple/app/misc/AMM.h>
 #include <ripple/basics/random.h>
 #include <ripple/protocol/jss.h>
-#include <ripple/rpc/impl/GRPCHelpers.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 #include <test/jtx/AMM.h>
 #include <test/jtx/Env.h>
