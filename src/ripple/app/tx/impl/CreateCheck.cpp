@@ -90,7 +90,7 @@ CreateCheck::preclaim(PreclaimContext const& ctx)
         return tecNO_DST;
     }
 
-    uint32_t flags = sleDst->getFlags();
+    auto const flags = sleDst->getFlags();
 
     // Check if the destination has disallowed incoming checks
     if (ctx.view.rules().enabled(featureDisallowIncoming) &&

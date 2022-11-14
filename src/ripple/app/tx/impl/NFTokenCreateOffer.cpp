@@ -165,8 +165,7 @@ NFTokenCreateOffer::preclaim(PreclaimContext const& ctx)
             return tecUNFUNDED_OFFER;
     }
 
-    auto const destination = ctx.tx[~sfDestination];
-    if (destination)
+    if (auto const destination = ctx.tx[~sfDestination])
     {
         // If a destination is specified, the destination must already be in
         // the ledger.
@@ -186,8 +185,7 @@ NFTokenCreateOffer::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    auto const owner = ctx.tx[~sfOwner];
-    if (owner)
+    if (auto const owner = ctx.tx[~sfOwner])
     {
         // Check if the owner (buy offer) has disallowed incoming offers
         if (ctx.view.rules().enabled(featureDisallowIncoming))

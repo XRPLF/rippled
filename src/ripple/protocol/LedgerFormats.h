@@ -241,6 +241,8 @@ enum LedgerSpecificFlags {
         0x08000000,               // True, reject new checks
     lsfDisallowIncomingPayChan =
         0x10000000,               // True, reject new paychans
+    lsfDisallowIncomingTrustline =
+        0x20000000,               // True, reject new trustlines (only if no issued assets)
 
     // ltOFFER
     lsfPassive = 0x00010000,

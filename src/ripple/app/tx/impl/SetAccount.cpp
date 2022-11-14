@@ -184,21 +184,6 @@ SetAccount::preflight(PreflightContext const& ctx)
             return temMALFORMED;
     }
 
-    if (ctx.rules.enabled(featureDisallowIncoming))
-    {
-        if ((uSetFlag == asfDisallowIncomingNFTOffer &&
-             uClearFlag == asfDisallowIncomingNFTOffer) ||
-            (uSetFlag == asfDisallowIncomingCheck &&
-             uClearFlag == asfDisallowIncomingCheck) ||
-            (uSetFlag == asfDisallowIncomingPayChan &&
-             uClearFlag == asfDisallowIncomingPayChan))
-        {
-            JLOG(j.trace())
-                << "Malformed transaction: Contradictory flags set.";
-            return temINVALID_FLAG;
-        }
-    }
-
     return preflight2(ctx);
 }
 
@@ -570,6 +555,11 @@ SetAccount::doApply()
             uFlagsOut |= lsfDisallowIncomingPayChan;
         else if (uClearFlag == asfDisallowIncomingPayChan)
             uFlagsOut &= ~lsfDisallowIncomingPayChan;
+
+        if (uSetFlag == asfDisallowIncomingTrustline)
+            uFlagsOut |= lsfDisallowIncomingTrustline;
+        else if (uClearFlag == asfDisallowIncomingTrustline)
+            uFlagsOut &= ~lsfDisallowIncomingTrustline;
     }
 
     if (uFlagsIn != uFlagsOut)

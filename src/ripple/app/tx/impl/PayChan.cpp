@@ -217,7 +217,8 @@ PayChanCreate::preclaim(PreclaimContext const& ctx)
         auto const sled = ctx.view.read(keylet::account(dst));
         if (!sled)
             return tecNO_DST;
-        uint32_t flags = sled->getFlags();
+
+        auto const flags = sled->getFlags();
 
         // Check if they have disallowed incoming payment channels
         if (ctx.view.rules().enabled(featureDisallowIncoming) &&
