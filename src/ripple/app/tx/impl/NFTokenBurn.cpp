@@ -77,9 +77,14 @@ NFTokenBurn::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    // If there are too many offers, then burning the token would produce too
-    // much metadata.  Disallow burning a token with too many offers.
-    return nft::notTooManyOffers(ctx.view, ctx.tx[sfNFTokenID]);
+    if (!ctx.view.rules().enabled(fixUnburnableNFToken))
+    {
+        // If there are too many offers, then burning the token would produce
+        // too much metadata.  Disallow burning a token with too many offers.
+        return nft::notTooManyOffers(ctx.view, ctx.tx[sfNFTokenID]);
+    }
+
+    return tesSUCCESS;
 }
 
 TER
@@ -104,9 +109,30 @@ NFTokenBurn::doApply()
         view().update(issuer);
     }
 
-    // Optimized deletion of all offers.
-    nft::removeAllTokenOffers(view(), keylet::nft_sells(ctx_.tx[sfNFTokenID]));
-    nft::removeAllTokenOffers(view(), keylet::nft_buys(ctx_.tx[sfNFTokenID]));
+    if (ctx_.view().rules().enabled(fixUnburnableNFToken))
+    {
+        // Delete up to 500 offers, but prefers buy offers first
+        auto const deletedBuyOffers = nft::removeTokenOffersWithLimit(
+            view(),
+            keylet::nft_buys(ctx_.tx[sfNFTokenID]),
+            maxDeletableTokenOfferEntries);
+
+        if (maxDeletableTokenOfferEntries - deletedBuyOffers > 0)
+        {
+            nft::removeTokenOffersWithLimit(
+                view(),
+                keylet::nft_sells(ctx_.tx[sfNFTokenID]),
+                maxDeletableTokenOfferEntries - deletedBuyOffers);
+        }
+    }
+    else
+    {
+        // Optimized deletion of all offers.
+        nft::removeAllTokenOffers(
+            view(), keylet::nft_sells(ctx_.tx[sfNFTokenID]));
+        nft::removeAllTokenOffers(
+            view(), keylet::nft_buys(ctx_.tx[sfNFTokenID]));
+    }
 
     return tesSUCCESS;
 }

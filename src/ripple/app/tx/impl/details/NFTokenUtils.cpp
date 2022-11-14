@@ -550,6 +550,39 @@ removeAllTokenOffers(ApplyView& view, Keylet const& directory)
     });
 }
 
+std::size_t
+removeTokenOffersWithLimit(
+    ApplyView& view,
+    Keylet const& directory,
+    std::size_t maxDeletableOffers)
+{
+    std::optional<std::uint64_t> pi{0};
+    std::vector<uint256> offers;
+    offers.reserve(maxDeletableOffers);
+
+    do
+    {
+        auto const page = view.peek(keylet::page(directory, *pi));
+        if (!page)
+            break;
+
+        for (auto const& id : page->getFieldV256(sfIndexes))
+        {
+            offers.push_back(id);
+            if (maxDeletableOffers == offers.size())
+                break;
+        }
+        pi = (*page)[~sfIndexNext];
+    } while (pi.value_or(0) && maxDeletableOffers != offers.size());
+
+    for (auto const& id : offers)
+    {
+        if (auto const offer = view.peek(keylet::nftoffer(id)))
+            deleteTokenOffer(view, offer);
+    }
+    return offers.size();
+}
+
 TER
 notTooManyOffers(ReadView const& view, uint256 const& nftokenID)
 {
