@@ -186,7 +186,7 @@ doAMMInfo(RPC::JsonContext& context)
                     jv[jss::Account] = to_string(acct.getAccountID(sfAccount));
                     auth.append(jv);
                 }
-                auction = auth[jss::AuthAccounts];
+                auction[jss::AuthAccounts] = auth;
             }
             result[jss::AuctionSlot] = auction;
         }

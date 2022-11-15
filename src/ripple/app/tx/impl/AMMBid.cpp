@@ -115,30 +115,30 @@ AMMBid::preclaim(PreclaimContext const& ctx)
 
     if (bidMin)
     {
-        if (*bidMin > lpTokens || *bidMin >= lpTokensBalance)
-        {
-            JLOG(ctx.j.debug()) << "AMM Bid: Invalid Tokens.";
-            return tecAMM_INVALID_TOKENS;
-        }
         if (bidMin->issue() != lpTokens.issue())
         {
             JLOG(ctx.j.debug()) << "AMM Bid: Invalid LPToken.";
             return temBAD_AMM_TOKENS;
+        }
+        if (*bidMin > lpTokens || *bidMin >= lpTokensBalance)
+        {
+            JLOG(ctx.j.debug()) << "AMM Bid: Invalid Tokens.";
+            return tecAMM_INVALID_TOKENS;
         }
     }
 
     auto const bidMax = ctx.tx[~sfBidMax];
     if (bidMax)
     {
-        if (*bidMax > lpTokens || *bidMax >= lpTokensBalance)
-        {
-            JLOG(ctx.j.debug()) << "AMM Bid: Invalid Tokens.";
-            return tecAMM_INVALID_TOKENS;
-        }
         if (bidMax->issue() != lpTokens.issue())
         {
             JLOG(ctx.j.debug()) << "AMM Bid: Invalid LPToken.";
             return temBAD_AMM_TOKENS;
+        }
+        if (*bidMax > lpTokens || *bidMax >= lpTokensBalance)
+        {
+            JLOG(ctx.j.debug()) << "AMM Bid: Invalid Tokens.";
+            return tecAMM_INVALID_TOKENS;
         }
     }
 

@@ -565,8 +565,8 @@ AMM::vote(
 void
 AMM::bid(
     std::optional<Account> const& account,
-    std::optional<std::uint64_t> const& minSlotPrice,
-    std::optional<std::uint64_t> const& maxSlotPrice,
+    std::optional<std::variant<int, STAmount>> const& bidMin,
+    std::optional<std::variant<int, STAmount>> const& bidMax,
     std::vector<Account> const& authAccounts,
     std::optional<std::uint32_t> const& flags,
     std::optional<jtx::seq> const& seq,
@@ -590,15 +590,19 @@ AMM::bid(
     Json::Value jv;
     jv[jss::Account] = account ? account->human() : creatorAccount_.human();
     setTokens(jv, assets);
-    if (minSlotPrice)
+    if (bidMin)
     {
-        STAmount saTokens{lptIssue_, *minSlotPrice, 0};
+        STAmount saTokens = std::holds_alternative<int>(*bidMin)
+            ? STAmount{lptIssue_, std::get<int>(*bidMin), 0}
+            : std::get<STAmount>(*bidMin);
         saTokens.setJson(jv[jss::BidMin]);
         bidMin_ = saTokens.iou();
     }
-    if (maxSlotPrice)
+    if (bidMax)
     {
-        STAmount saTokens{lptIssue_, *maxSlotPrice, 0};
+        STAmount saTokens = std::holds_alternative<int>(*bidMax)
+            ? STAmount{lptIssue_, std::get<int>(*bidMax), 0}
+            : std::get<STAmount>(*bidMax);
         saTokens.setJson(jv[jss::BidMax]);
         bidMax_ = saTokens.iou();
     }

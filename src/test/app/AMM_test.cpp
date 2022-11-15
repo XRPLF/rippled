@@ -25,6 +25,7 @@
 #include <boost/regex.hpp>
 #include <test/jtx.h>
 #include <test/jtx/AMM.h>
+#include <test/jtx/AMMTest.h>
 #include <test/jtx/WSClient.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/sendmax.h>
@@ -447,113 +448,14 @@ channelBalance(ReadView const& view, uint256 const& chan)
 
 /******************************************************************************/
 
-class Test : public beast::unit_test::suite
+class Test : public jtx::AMMTest
 {
-protected:
-    enum class Fund { All, Acct, Gw, None };
-    jtx::Account const gw;
-    jtx::Account const carol;
-    jtx::Account const alice;
-    jtx::Account const bob;
-    jtx::IOU const USD;
-    jtx::IOU const EUR;
-    jtx::IOU const GBP;
-    jtx::IOU const BTC;
-    jtx::IOU const BAD;
-
 public:
-    Test()
-        : gw("gateway")
-        , carol("carol")
-        , alice("alice")
-        , bob("bob")
-        , USD(gw["USD"])
-        , EUR(gw["EUR"])
-        , GBP(gw["GBP"])
-        , BTC(gw["BTC"])
-        , BAD(jtx::IOU(gw, badCurrency()))
+    Test() : jtx::AMMTest()
     {
     }
 
 protected:
-    void
-    fund(
-        jtx::Env& env,
-        jtx::Account const& gw,
-        std::vector<jtx::Account> const& accounts,
-        std::vector<STAmount> const& amts,
-        Fund how)
-    {
-        fund(env, gw, accounts, 30000 * jtx::dropsPerXRP, amts, how);
-    }
-    void
-    fund(
-        jtx::Env& env,
-        jtx::Account const& gw,
-        std::vector<jtx::Account> const& accounts,
-        STAmount const& xrp,
-        std::vector<STAmount> const& amts = {},
-        Fund how = Fund::All)
-    {
-        if (how == Fund::All || how == Fund::Gw)
-            env.fund(xrp, gw);
-        env.close();
-        for (auto const& account : accounts)
-        {
-            if (how == Fund::All || how == Fund::Acct)
-            {
-                env.fund(xrp, account);
-                env.close();
-            }
-            for (auto const& amt : amts)
-            {
-                env.trust(amt + amt, account);
-                env.close();
-                env(pay(gw, account, amt));
-                env.close();
-            }
-        }
-    }
-
-    /** testAMM() funds 30,000XRP and 30,000IOU
-     * for each non-XRP asset to Alice and Carol
-     */
-    template <typename F>
-    void
-    testAMM(
-        F&& cb,
-        std::optional<std::pair<STAmount, STAmount>> const& pool = std::nullopt,
-        std::uint32_t fee = 0,
-        std::optional<jtx::ter> const& ter = std::nullopt,
-        std::optional<FeatureBitset> const& features = std::nullopt)
-    {
-        using namespace jtx;
-        auto env = features ? Env{*this, *features} : Env{*this};
-
-        auto const [asset1, asset2] =
-            pool ? *pool : std::make_pair(XRP(10000), USD(10000));
-        auto tofund = [&](STAmount const& a) -> STAmount {
-            if (a.native())
-                return XRP(30000);
-            return STAmount{a.issue(), 30000};
-        };
-        auto const toFund1 = tofund(asset1);
-        auto const toFund2 = tofund(asset2);
-        assert(asset1 <= toFund1 && asset2 <= toFund2);
-
-        if (!asset1.native() && !asset2.native())
-            fund(env, gw, {alice, carol}, {toFund1, toFund2}, Fund::All);
-        else if (asset1.native())
-            fund(env, gw, {alice, carol}, {toFund2}, Fund::All);
-        else if (asset2.native())
-            fund(env, gw, {alice, carol}, {toFund1}, Fund::All);
-
-        AMM ammAlice(env, alice, asset1, asset2, false, fee);
-        BEAST_EXPECT(
-            ammAlice.expectBalances(asset1, asset2, ammAlice.tokens()));
-        cb(ammAlice, env);
-    }
-
     template <typename C>
     void
     stats(C const& t, std::string const& msg)
@@ -2315,6 +2217,28 @@ private:
                 std::nullopt,
                 {{USD, GBP}},
                 ter(terNO_AMM));
+        });
+
+        // Invalid Min/Max issue
+        testAMM([&](AMM& ammAlice, Env&) {
+            ammAlice.bid(
+                alice,
+                std::nullopt,
+                STAmount{USD.issue(), 100},
+                {},
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                ter(temBAD_AMM_TOKENS));
+            ammAlice.bid(
+                alice,
+                STAmount{USD.issue(), 100},
+                std::nullopt,
+                {},
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                ter(temBAD_AMM_TOKENS));
         });
     }
 

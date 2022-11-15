@@ -90,6 +90,14 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
     auto const amount = ctx.tx[sfAmount];
     auto const amount2 = ctx.tx[sfAmount2];
 
+    // Check if AMM already exists for the token pair
+    if (auto const ammKeylet = keylet::amm(amount.issue(), amount2.issue());
+        ctx.view.read(ammKeylet))
+    {
+        JLOG(ctx.j.debug()) << "AMM Instance: ltAMM already exists.";
+        return tecAMM_EXISTS;
+    }
+
     if (auto const ter = requireAuth(ctx.view, amount.issue(), accountID);
         ter != tesSUCCESS)
     {
@@ -155,13 +163,6 @@ applyCreate(
     auto const amount2 = ctx_.tx[sfAmount2];
 
     auto const ammKeylet = keylet::amm(amount.issue(), amount2.issue());
-
-    // Check if AMM already exists for the token pair
-    if (sb.read(ammKeylet))
-    {
-        JLOG(j_.debug()) << "AMM Instance: ltAMM already exists.";
-        return {tecAMM_EXISTS, false};
-    }
 
     // Mitigate same account exists possibility
     auto const ammAccount = [&]() -> Expected<AccountID, TER> {

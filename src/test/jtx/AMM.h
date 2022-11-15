@@ -22,6 +22,7 @@
 
 #include <ripple/json/json_value.h>
 #include <ripple/protocol/STAmount.h>
+#include <ripple/protocol/TxFlags.h>
 #include <ripple/rpc/GRPCHandlers.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
@@ -196,8 +197,8 @@ public:
 
     void
     bid(std::optional<Account> const& account,
-        std::optional<std::uint64_t> const& minSlotPrice = std::nullopt,
-        std::optional<std::uint64_t> const& maxSlotPrice = std::nullopt,
+        std::optional<std::variant<int, STAmount>> const& bidMin = std::nullopt,
+        std::optional<std::variant<int, STAmount>> const& bidMax = std::nullopt,
         std::vector<Account> const& authAccounts = {},
         std::optional<std::uint32_t> const& flags = std::nullopt,
         std::optional<jtx::seq> const& seq = std::nullopt,

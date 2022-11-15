@@ -844,6 +844,7 @@ if (tests)
     src/test/jtx/WSClient_test.cpp
     src/test/jtx/impl/Account.cpp
     src/test/jtx/impl/AMM.cpp
+    src/test/jtx/impl/AMMTest.cpp
     src/test/jtx/impl/Env.cpp
     src/test/jtx/impl/JSONRPCClient.cpp
     src/test/jtx/impl/ManualTimeKeeper.cpp

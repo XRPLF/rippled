@@ -17,58 +17,21 @@
 */
 //==============================================================================
 
-//#include <ripple/app/misc/AMM.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/jss.h>
 #include <test/jtx.h>
 #include <test/jtx/AMM.h>
-//#include <test/jtx/WSClient.h>
+#include <test/jtx/AMMTest.h>
+
+#include <unordered_map>
 
 namespace ripple {
 namespace test {
 
-class AMMInfo_test : public beast::unit_test::suite
+class AMMInfo_test : public jtx::AMMTest
 {
-    jtx::Account const gw;
-    jtx::Account const alice;
-    jtx::Account const carol;
-    jtx::IOU const USD;
-
-    template <typename F>
-    void
-    proc(
-        F&& cb,
-        std::optional<std::pair<std::uint32_t, std::uint32_t>> const& pool = {},
-        std::optional<IOUAmount> const& lpt = {})
-    {
-        using namespace jtx;
-        Env env{*this};
-
-        env.fund(jtx::XRP(30000), alice, carol, gw);
-        env.trust(USD(30000), alice);
-        env.trust(USD(30000), carol);
-
-        env(pay(gw, alice, USD(30000)));
-        env(pay(gw, carol, USD(30000)));
-
-        auto [asset1, asset2] =
-            [&]() -> std::pair<std::uint32_t, std::uint32_t> {
-            if (pool)
-                return *pool;
-            return {10000, 10000};
-        }();
-        auto tokens = [&]() {
-            if (lpt)
-                return *lpt;
-            return IOUAmount{10000000, 0};
-        }();
-        AMM ammAlice(env, alice, XRP(asset1), USD(asset2));
-        BEAST_EXPECT(ammAlice.expectBalances(XRP(asset1), USD(asset2), tokens));
-        cb(ammAlice, env);
-    }
-
 public:
-    AMMInfo_test() : gw("gw"), alice("alice"), carol("carol"), USD(gw["USD"])
+    AMMInfo_test() : jtx::AMMTest()
     {
     }
     void
@@ -78,7 +41,7 @@ public:
 
         using namespace jtx;
         // Invalid tokens pair
-        proc([&](AMM& ammAlice, Env&) {
+        testAMM([&](AMM& ammAlice, Env&) {
             Account const gw("gw");
             auto const USD = gw["USD"];
             auto const jv =
@@ -89,7 +52,7 @@ public:
         });
 
         // Invalid LP account id
-        proc([&](AMM& ammAlice, Env&) {
+        testAMM([&](AMM& ammAlice, Env&) {
             Account bogie("bogie");
             auto const jv = ammAlice.ammRpcInfo(bogie.id());
             BEAST_EXPECT(
@@ -104,9 +67,85 @@ public:
         testcase("RPC simple");
 
         using namespace jtx;
-        proc([&](AMM& ammAlice, Env&) {
+        testAMM([&](AMM& ammAlice, Env&) {
             BEAST_EXPECT(ammAlice.expectAmmRpcInfo(
                 XRP(10000), USD(10000), IOUAmount{10000000, 0}));
+        });
+    }
+
+    void
+    testVoteAndBid()
+    {
+        testcase("Vote and Bid");
+
+        using namespace jtx;
+        testAMM([&](AMM& ammAlice, Env& env) {
+            BEAST_EXPECT(ammAlice.expectAmmRpcInfo(
+                XRP(10000), USD(10000), IOUAmount{10000000, 0}));
+            std::unordered_map<std::string, std::uint16_t> votes;
+            for (int i = 0; i < 8; ++i)
+            {
+                Account a(std::to_string(i));
+                votes.insert({a.human(), 50 * (i + 1)});
+                fund(env, gw, {a}, {USD(1000)}, Fund::Acct);
+                ammAlice.deposit(a, 10000);
+                ammAlice.vote(a, 50 * (i + 1));
+            }
+            BEAST_EXPECT(ammAlice.expectTradingFee(225));
+            Account ed("ed");
+            Account bill("bill");
+            env.fund(XRP(1000), bob, ed, bill);
+            ammAlice.bid(alice, 100, std::nullopt, {carol, bob, ed, bill});
+            BEAST_EXPECT(ammAlice.expectAmmRpcInfo(
+                XRP(10080), USD(10080), IOUAmount{100798992, -1}));
+            std::unordered_set<std::string> authAccounts = {
+                carol.human(), bob.human(), ed.human(), bill.human()};
+            auto const ammInfo = ammAlice.ammRpcInfo();
+            auto const expectAmmInfo = [&](Json::Value const& amm) {
+                try
+                {
+                    // votes
+                    auto const voteSlots = amm["VoteSlots"];
+                    for (std::uint8_t i = 0; i < 8; ++i)
+                    {
+                        if (votes[voteSlots[i]["Account"].asString()] !=
+                                voteSlots[i]["TradingFee"].asUInt() ||
+                            voteSlots[i]["VoteWeight"].asUInt() != 99)
+                            return false;
+                        votes.erase(voteSlots[i]["Account"].asString());
+                    }
+                    if (!votes.empty())
+                        return false;
+
+                    // bid
+                    auto const auctionSlot = amm["AuctionSlot"];
+                    for (std::uint8_t i = 0; i < 4; ++i)
+                    {
+                        if (!authAccounts.contains(
+                                auctionSlot["AuthAccounts"][i]["Account"]
+                                    .asString()))
+                            return false;
+                        authAccounts.erase(
+                            auctionSlot["AuthAccounts"][i]["Account"]
+                                .asString());
+                    }
+                    if (!authAccounts.empty())
+                        return false;
+                    return auctionSlot["Account"].asString() == alice.human() &&
+                        auctionSlot["DiscountedFee"].asUInt() == 0 &&
+                        auctionSlot["Expiration"].asUInt() == 86960 &&
+                        auctionSlot["Price"]["value"].asString() == "100.8" &&
+                        auctionSlot["Price"]["currency"].asString() ==
+                        to_string(ammAlice.lptIssue().currency) &&
+                        auctionSlot["Price"]["issuer"].asString() ==
+                        to_string(ammAlice.lptIssue().account);
+                }
+                catch (...)
+                {
+                    return false;
+                }
+            };
+            BEAST_EXPECT(ammInfo && expectAmmInfo((*ammInfo)["amm"]));
         });
     }
 
@@ -115,6 +154,7 @@ public:
     {
         testErrors();
         testSimpleRpc();
+        testVoteAndBid();
     }
 };
 
