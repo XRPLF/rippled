@@ -40,7 +40,7 @@ Until then, we advise Windows developers to use Visual Studio 2019.
 ## Prerequisites
 
 To build this package, you will need Python (>= 3.7),
-[Conan][] (>= 1.46), and [CMake][] (>= 3.16).
+[Conan][] (>= 1.52), and [CMake][] (>= 3.16).
 If you are unfamiliar with Conan,
 there is a crash course at the end of this document.
 
