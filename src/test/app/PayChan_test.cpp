@@ -1651,8 +1651,7 @@ struct PayChan_test : public beast::unit_test::suite
         {
             // Test without adding the paychan to the recipient's owner
             // directory
-            Env env(
-                *this, features - fixPayChanRecipientOwnerDir);
+            Env env(*this, features - fixPayChanRecipientOwnerDir);
             env.fund(XRP(10000), alice, bob);
             env(create(alice, bob, XRP(1000), settleDelay, pk));
             env.close();
@@ -1695,8 +1694,7 @@ struct PayChan_test : public beast::unit_test::suite
         {
             // Test removing paychans created before adding to the recipient's
             // owner directory
-            Env env(
-                *this, features - fixPayChanRecipientOwnerDir);
+            Env env(*this, features - fixPayChanRecipientOwnerDir);
             env.fund(XRP(10000), alice, bob);
             // create the channel before the amendment activates
             env(create(alice, bob, XRP(1000), settleDelay, pk));
@@ -1857,8 +1855,7 @@ struct PayChan_test : public beast::unit_test::suite
 
         {
             // test resurrected account
-            Env env{
-                *this, features - fixPayChanRecipientOwnerDir};
+            Env env{*this, features - fixPayChanRecipientOwnerDir};
             env.fund(XRP(10000), alice, bob, carol);
             env.close();
             auto const feeDrops = env.current()->fees().base;

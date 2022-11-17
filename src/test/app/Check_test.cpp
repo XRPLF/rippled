@@ -325,7 +325,7 @@ class Check_test : public beast::unit_test::suite
         env.fund(startBalance, gw, alice, bob);
 
         /*
-         * Attempt to create two checks from `from` to `to` and 
+         * Attempt to create two checks from `from` to `to` and
          * require they both result in error/success code `expected`
          */
         auto writeTwoChecksDI = [&env, &USD, this](
