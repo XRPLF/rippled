@@ -727,7 +727,7 @@ struct PayChan_test : public beast::unit_test::suite
         auto const bob = Account("bob");
         {
             // Create a channel where dst disallows XRP
-            Env env(*this, supported_amendments() - featureDepositAuth);
+            Env env(*this, features - featureDepositAuth);
             env.fund(XRP(10000), alice, bob);
             env(fset(bob, asfDisallowXRP));
             auto const chan = channel(alice, bob, env.seq(alice));
@@ -749,7 +749,7 @@ struct PayChan_test : public beast::unit_test::suite
         {
             // Claim to a channel where dst disallows XRP
             // (channel is created before disallow xrp is set)
-            Env env(*this, supported_amendments() - featureDepositAuth);
+            Env env(*this, features - featureDepositAuth);
             env.fund(XRP(10000), alice, bob);
             auto const chan = channel(alice, bob, env.seq(alice));
             env(create(alice, bob, XRP(1000), 3600s, alice.pk()));
@@ -1652,7 +1652,7 @@ struct PayChan_test : public beast::unit_test::suite
             // Test without adding the paychan to the recipient's owner
             // directory
             Env env(
-                *this, supported_amendments() - fixPayChanRecipientOwnerDir);
+                *this, features - fixPayChanRecipientOwnerDir);
             env.fund(XRP(10000), alice, bob);
             env(create(alice, bob, XRP(1000), settleDelay, pk));
             env.close();
@@ -1696,7 +1696,7 @@ struct PayChan_test : public beast::unit_test::suite
             // Test removing paychans created before adding to the recipient's
             // owner directory
             Env env(
-                *this, supported_amendments() - fixPayChanRecipientOwnerDir);
+                *this, features - fixPayChanRecipientOwnerDir);
             env.fund(XRP(10000), alice, bob);
             // create the channel before the amendment activates
             env(create(alice, bob, XRP(1000), settleDelay, pk));
@@ -1764,8 +1764,8 @@ struct PayChan_test : public beast::unit_test::suite
         for (bool const withOwnerDirFix : {false, true})
         {
             auto const amd = withOwnerDirFix
-                ? supported_amendments()
-                : supported_amendments() - fixPayChanRecipientOwnerDir;
+                ? features
+                : features - fixPayChanRecipientOwnerDir;
             Env env{*this, amd};
             env.fund(XRP(10000), alice, bob, carol);
             env.close();
@@ -1858,7 +1858,7 @@ struct PayChan_test : public beast::unit_test::suite
         {
             // test resurrected account
             Env env{
-                *this, supported_amendments() - fixPayChanRecipientOwnerDir};
+                *this, features - fixPayChanRecipientOwnerDir};
             env.fund(XRP(10000), alice, bob, carol);
             env.close();
             auto const feeDrops = env.current()->fees().base;

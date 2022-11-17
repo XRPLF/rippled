@@ -298,7 +298,6 @@ class Check_test : public beast::unit_test::suite
     void
     testCreateDisallowIncoming(FeatureBitset features)
     {
-        // Explore many of the valid ways to create a check.
         testcase("Create valid with disallow incoming");
 
         using namespace test::jtx;
@@ -325,9 +324,10 @@ class Check_test : public beast::unit_test::suite
         STAmount const startBalance{XRP(1000).value()};
         env.fund(startBalance, gw, alice, bob);
 
-        // Note that no trust line has been set up for alice, but alice can
-        // still write a check for USD.  You don't have to have the funds
-        // necessary to cover a check in order to write a check.
+        /*
+         * Attempt to create two checks from `from` to `to` and 
+         * require they both result in error/success code `expected`
+         */
         auto writeTwoChecksDI = [&env, &USD, this](
                                     Account const& from,
                                     Account const& to,
@@ -362,8 +362,8 @@ class Check_test : public beast::unit_test::suite
             env.require(owners(from, fromOwnerCount));
             env.require(owners(to, to == from ? fromOwnerCount : toOwnerCount));
         };
-        //  from     to
 
+        // enable the DisallowIncoming flag on both bob and alice
         env(fset(bob, asfDisallowIncomingCheck));
         env(fset(alice, asfDisallowIncomingCheck));
         env.close();

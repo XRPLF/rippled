@@ -259,7 +259,6 @@ public:
     void
     testDisallowIncoming(FeatureBitset features)
     {
-        // Explore many of the valid ways to create a check.
         testcase("Create trustline with disallow incoming");
 
         using namespace test::jtx;

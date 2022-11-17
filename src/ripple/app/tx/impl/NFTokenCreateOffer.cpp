@@ -169,7 +169,9 @@ NFTokenCreateOffer::preclaim(PreclaimContext const& ctx)
     {
         // If a destination is specified, the destination must already be in
         // the ledger.
-        if (!ctx.view.exists(keylet::account(*destination)))
+        auto const sleDst = ctx.view.read(keylet::account(*destination));
+
+        if (!sleDst)
             return tecNO_DST;
 
         // check if the destination has disallowed incoming offers
@@ -177,8 +179,6 @@ NFTokenCreateOffer::preclaim(PreclaimContext const& ctx)
         {
             // flag cannot be set unless amendment is enabled but
             // out of an abundance of caution check anyway
-
-            auto const sleDst = ctx.view.read(keylet::account(*destination));
 
             if (sleDst->getFlags() & lsfDisallowIncomingNFTOffer)
                 return tecNO_PERMISSION;
