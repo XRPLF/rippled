@@ -35,7 +35,6 @@
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/DeliveredAmount.h>
 #include <ripple/rpc/Role.h>
-#include <ripple/rpc/impl/GRPCHelpers.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 
 #include <grpcpp/grpcpp.h>
@@ -50,69 +49,6 @@ using AccountTxResult = RelationalDatabase::AccountTxResult;
 
 using LedgerShortcut = RelationalDatabase::LedgerShortcut;
 using LedgerSpecifier = RelationalDatabase::LedgerSpecifier;
-
-// parses args into a ledger specifier, or returns a grpc status object on error
-std::variant<std::optional<LedgerSpecifier>, grpc::Status>
-parseLedgerArgs(
-    org::xrpl::rpc::v1::GetAccountTransactionHistoryRequest const& params)
-{
-    grpc::Status status;
-    if (params.has_ledger_range())
-    {
-        uint32_t min = params.ledger_range().ledger_index_min();
-        uint32_t max = params.ledger_range().ledger_index_max();
-
-        // if min is set but not max, need to set max
-        if (min != 0 && max == 0)
-        {
-            max = UINT32_MAX;
-        }
-
-        return LedgerRange{min, max};
-    }
-    else if (params.has_ledger_specifier())
-    {
-        LedgerSpecifier ledger;
-
-        auto& specifier = params.ledger_specifier();
-        using LedgerCase = org::xrpl::rpc::v1::LedgerSpecifier::LedgerCase;
-        LedgerCase ledgerCase = specifier.ledger_case();
-
-        if (ledgerCase == LedgerCase::kShortcut)
-        {
-            using LedgerSpecifier = org::xrpl::rpc::v1::LedgerSpecifier;
-
-            if (specifier.shortcut() == LedgerSpecifier::SHORTCUT_VALIDATED)
-                ledger = LedgerShortcut::VALIDATED;
-            else if (specifier.shortcut() == LedgerSpecifier::SHORTCUT_CLOSED)
-                ledger = LedgerShortcut::CLOSED;
-            else if (specifier.shortcut() == LedgerSpecifier::SHORTCUT_CURRENT)
-                ledger = LedgerShortcut::CURRENT;
-            else
-                return {};
-        }
-        else if (ledgerCase == LedgerCase::kSequence)
-        {
-            ledger = specifier.sequence();
-        }
-        else if (ledgerCase == LedgerCase::kHash)
-        {
-            if (auto hash = uint256::fromVoidChecked(specifier.hash()))
-            {
-                ledger = *hash;
-            }
-            else
-            {
-                grpc::Status errorStatus{
-                    grpc::StatusCode::INVALID_ARGUMENT,
-                    "ledger hash malformed"};
-                return errorStatus;
-            }
-        }
-        return ledger;
-    }
-    return std::optional<LedgerSpecifier>{};
-}
 
 // parses args into a ledger specifier, or returns a Json object on error
 std::variant<std::optional<LedgerSpecifier>, Json::Value>
@@ -331,131 +267,6 @@ doAccountTxHelp(RPC::Context& context, AccountTxArgs const& args)
     return {result, rpcSUCCESS};
 }
 
-std::pair<
-    org::xrpl::rpc::v1::GetAccountTransactionHistoryResponse,
-    grpc::Status>
-populateProtoResponse(
-    std::pair<AccountTxResult, RPC::Status> const& res,
-    AccountTxArgs const& args,
-    RPC::GRPCContext<
-        org::xrpl::rpc::v1::GetAccountTransactionHistoryRequest> const& context)
-{
-    org::xrpl::rpc::v1::GetAccountTransactionHistoryResponse response;
-    grpc::Status status = grpc::Status::OK;
-
-    RPC::Status const& error = res.second;
-    if (error.toErrorCode() != rpcSUCCESS)
-    {
-        if (error.toErrorCode() == rpcLGR_NOT_FOUND)
-        {
-            status = {grpc::StatusCode::NOT_FOUND, error.message()};
-        }
-        else if (error.toErrorCode() == rpcNOT_SYNCED)
-        {
-            status = {grpc::StatusCode::FAILED_PRECONDITION, error.message()};
-        }
-        else
-        {
-            status = {grpc::StatusCode::INVALID_ARGUMENT, error.message()};
-        }
-    }
-    else
-    {
-        AccountTxResult const& result = res.first;
-
-        // account_tx always returns validated data
-        response.set_validated(true);
-        response.set_limit(result.limit);
-        response.mutable_account()->set_address(
-            context.params.account().address());
-        response.set_ledger_index_min(result.ledgerRange.min);
-        response.set_ledger_index_max(result.ledgerRange.max);
-
-        if (auto txnsData = std::get_if<TxnsData>(&result.transactions))
-        {
-            assert(!args.binary);
-            for (auto const& [txn, txnMeta] : *txnsData)
-            {
-                if (txn)
-                {
-                    auto txnProto = response.add_transactions();
-
-                    RPC::convert(
-                        *txnProto->mutable_transaction(),
-                        txn->getSTransaction());
-
-                    // account_tx always returns validated data
-                    txnProto->set_validated(true);
-                    txnProto->set_ledger_index(txn->getLedger());
-                    auto& hash = txn->getID();
-                    txnProto->set_hash(hash.data(), hash.size());
-                    auto closeTime =
-                        context.app.getLedgerMaster().getCloseTimeBySeq(
-                            txn->getLedger());
-                    if (closeTime)
-                        txnProto->mutable_date()->set_value(
-                            closeTime->time_since_epoch().count());
-                    if (txnMeta)
-                    {
-                        RPC::convert(*txnProto->mutable_meta(), txnMeta);
-                        if (!txnProto->meta().has_delivered_amount())
-                        {
-                            if (auto amt = getDeliveredAmount(
-                                    context,
-                                    txn->getSTransaction(),
-                                    *txnMeta,
-                                    txn->getLedger()))
-                            {
-                                RPC::convert(
-                                    *txnProto->mutable_meta()
-                                         ->mutable_delivered_amount(),
-                                    *amt);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        else
-        {
-            assert(args.binary);
-
-            for (auto const& binaryData :
-                 std::get<TxnsDataBinary>(result.transactions))
-            {
-                auto txnProto = response.add_transactions();
-                Blob const& txnBlob = std::get<0>(binaryData);
-                txnProto->set_transaction_binary(
-                    txnBlob.data(), txnBlob.size());
-
-                Blob const& metaBlob = std::get<1>(binaryData);
-                txnProto->set_meta_binary(metaBlob.data(), metaBlob.size());
-
-                txnProto->set_ledger_index(std::get<2>(binaryData));
-
-                // account_tx always returns validated data
-                txnProto->set_validated(true);
-
-                auto closeTime =
-                    context.app.getLedgerMaster().getCloseTimeBySeq(
-                        std::get<2>(binaryData));
-                if (closeTime)
-                    txnProto->mutable_date()->set_value(
-                        closeTime->time_since_epoch().count());
-            }
-        }
-
-        if (result.marker)
-        {
-            response.mutable_marker()->set_ledger_index(
-                result.marker->ledgerSeq);
-            response.mutable_marker()->set_account_sequence(
-                result.marker->txnSeq);
-        }
-    }
-    return {response, status};
-}
-
 Json::Value
 populateJsonResponse(
     std::pair<AccountTxResult, RPC::Status> const& res,
@@ -595,61 +406,6 @@ doAccountTxJson(RPC::JsonContext& context)
     auto res = doAccountTxHelp(context, args);
     JLOG(context.j.debug()) << __func__ << " populating response";
     return populateJsonResponse(res, args, context);
-}
-
-std::pair<
-    org::xrpl::rpc::v1::GetAccountTransactionHistoryResponse,
-    grpc::Status>
-doAccountTxGrpc(
-    RPC::GRPCContext<org::xrpl::rpc::v1::GetAccountTransactionHistoryRequest>&
-        context)
-{
-    if (!context.app.config().useTxTables())
-    {
-        return {
-            {},
-            {grpc::StatusCode::UNIMPLEMENTED, "Not enabled in configuration."}};
-    }
-
-    // return values
-    org::xrpl::rpc::v1::GetAccountTransactionHistoryResponse response;
-    grpc::Status status = grpc::Status::OK;
-    AccountTxArgs args;
-
-    auto& request = context.params;
-
-    auto const account = parseBase58<AccountID>(request.account().address());
-    if (!account)
-    {
-        return {
-            {},
-            {grpc::StatusCode::INVALID_ARGUMENT, "Could not decode account"}};
-    }
-
-    args.account = *account;
-    args.limit = request.limit();
-    args.binary = request.binary();
-    args.forward = request.forward();
-
-    if (request.has_marker())
-    {
-        args.marker = {
-            request.marker().ledger_index(),
-            request.marker().account_sequence()};
-    }
-
-    auto parseRes = parseLedgerArgs(request);
-    if (auto stat = std::get_if<grpc::Status>(&parseRes))
-    {
-        return {response, *stat};
-    }
-    else
-    {
-        args.ledger = std::get<std::optional<LedgerSpecifier>>(parseRes);
-    }
-
-    auto res = doAccountTxHelp(context, args);
-    return populateProtoResponse(res, args, context);
 }
 
 }  // namespace ripple

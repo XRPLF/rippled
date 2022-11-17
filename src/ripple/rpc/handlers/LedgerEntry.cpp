@@ -27,7 +27,6 @@
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/GRPCHandlers.h>
-#include <ripple/rpc/impl/GRPCHelpers.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 
 namespace ripple {

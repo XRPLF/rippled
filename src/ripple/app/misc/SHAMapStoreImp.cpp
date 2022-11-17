@@ -269,7 +269,7 @@ SHAMapStoreImp::copyNode(std::uint64_t& nodeCount, SHAMapTreeNode const& node)
         true);
     if (!(++nodeCount % checkHealthInterval_))
     {
-        if (stopping())
+        if (healthWait() == stopping)
             return false;
     }
 
@@ -327,7 +327,7 @@ SHAMapStoreImp::run()
 
         bool const readyToRotate =
             validatedSeq >= lastRotated + deleteInterval_ &&
-            canDelete_ >= lastRotated - 1 && !stopping();
+            canDelete_ >= lastRotated - 1 && healthWait() == keepGoing;
 
         // Make sure we don't delete ledgers currently being
         // imported into the ShardStore
@@ -359,7 +359,7 @@ SHAMapStoreImp::run()
                 << ledgerMaster_->getValidatedLedgerAge().count() << 's';
 
             clearPrior(lastRotated);
-            if (stopping())
+            if (healthWait() == stopping)
                 return;
 
             JLOG(journal_.debug()) << "copying ledger " << validatedSeq;
@@ -382,7 +382,7 @@ SHAMapStoreImp::run()
                 continue;
             }
 
-            if (stopping())
+            if (healthWait() == stopping)
                 return;
             // Only log if we completed without a "health" abort
             JLOG(journal_.debug()) << "copied ledger " << validatedSeq
@@ -390,7 +390,7 @@ SHAMapStoreImp::run()
 
             JLOG(journal_.debug()) << "freshening caches";
             freshenCaches();
-            if (stopping())
+            if (healthWait() == stopping)
                 return;
             // Only log if we completed without a "health" abort
             JLOG(journal_.debug()) << validatedSeq << " freshened caches";
@@ -401,7 +401,7 @@ SHAMapStoreImp::run()
                 << validatedSeq << " new backend " << newBackend->getName();
 
             clearCaches(validatedSeq);
-            if (stopping())
+            if (healthWait() == stopping)
                 return;
 
             lastRotated = validatedSeq;
@@ -566,7 +566,7 @@ SHAMapStoreImp::clearSql(
         min = *m;
     }
 
-    if (min > lastRotated || stopping())
+    if (min > lastRotated || healthWait() == stopping)
         return;
     if (min == lastRotated)
     {
@@ -587,11 +587,11 @@ SHAMapStoreImp::clearSql(
         JLOG(journal_.trace())
             << "End: Delete up to " << deleteBatch_ << " rows with LedgerSeq < "
             << min << " from: " << TableName;
-        if (stopping())
+        if (healthWait() == stopping)
             return;
         if (min < lastRotated)
             std::this_thread::sleep_for(backOff_);
-        if (stopping())
+        if (healthWait() == stopping)
             return;
     }
     JLOG(journal_.debug()) << "finished deleting from: " << TableName;
@@ -631,7 +631,7 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
     ledgerMaster_->clearPriorLedgers(lastRotated);
     JLOG(journal_.trace()) << "End: Clear internal ledgers up to "
                            << lastRotated;
-    if (stopping())
+    if (healthWait() == stopping)
         return;
 
     SQLiteDatabase* const db =
@@ -645,7 +645,7 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
         "Ledgers",
         [db]() -> std::optional<LedgerIndex> { return db->getMinLedgerSeq(); },
         [db](LedgerIndex min) -> void { db->deleteBeforeLedgerSeq(min); });
-    if (stopping())
+    if (healthWait() == stopping)
         return;
 
     if (!app_.config().useTxTables())
@@ -660,7 +660,7 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
         [&db](LedgerIndex min) -> void {
             db->deleteTransactionsBeforeLedgerSeq(min);
         });
-    if (stopping())
+    if (healthWait() == stopping)
         return;
 
     clearSql(
@@ -672,12 +672,12 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
         [&db](LedgerIndex min) -> void {
             db->deleteAccountTransactionsBeforeLedgerSeq(min);
         });
-    if (stopping())
+    if (healthWait() == stopping)
         return;
 }
 
-bool
-SHAMapStoreImp::stopping()
+SHAMapStoreImp::HealthResult
+SHAMapStoreImp::healthWait()
 {
     auto age = ledgerMaster_->getValidatedLedgerAge();
     OperatingMode mode = netOPs_->getOperatingMode();
@@ -695,7 +695,7 @@ SHAMapStoreImp::stopping()
         lock.lock();
     }
 
-    return stop_;
+    return stop_ ? stopping : keepGoing;
 }
 
 void

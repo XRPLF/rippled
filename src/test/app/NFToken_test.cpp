@@ -1574,7 +1574,6 @@ class NFToken_test : public beast::unit_test::suite
 
         using namespace test::jtx;
 
-        Env env{*this, features};
         Account const alice{"alice"};
         Account const becky{"becky"};
         Account const cheri{"cheri"};
@@ -1583,155 +1582,179 @@ class NFToken_test : public beast::unit_test::suite
         IOU const gwCAD(gw["CAD"]);
         IOU const gwEUR(gw["EUR"]);
 
-        env.fund(XRP(1000), alice, becky, cheri, gw);
-        env.close();
-
-        // Set trust lines so becky and cheri can use gw's currency.
-        env(trust(becky, gwAUD(1000)));
-        env(trust(cheri, gwAUD(1000)));
-        env(trust(becky, gwCAD(1000)));
-        env(trust(cheri, gwCAD(1000)));
-        env(trust(becky, gwEUR(1000)));
-        env(trust(cheri, gwEUR(1000)));
-        env.close();
-        env(pay(gw, becky, gwAUD(500)));
-        env(pay(gw, becky, gwCAD(500)));
-        env(pay(gw, becky, gwEUR(500)));
-        env(pay(gw, cheri, gwAUD(500)));
-        env(pay(gw, cheri, gwCAD(500)));
-        env.close();
-
-        // An nft without flagCreateTrustLines but with a non-zero transfer
-        // fee will not allow creating offers that use IOUs for payment.
-        for (std::uint32_t xferFee : {0, 1})
+        // The behavior of this test changes dramatically based on the
+        // presence (or absence) of the fixRemoveNFTokenAutoTrustLine
+        // amendment.  So we test both cases here.
+        for (auto const& tweakedFeatures :
+             {features - fixRemoveNFTokenAutoTrustLine,
+              features | fixRemoveNFTokenAutoTrustLine})
         {
-            uint256 const nftNoAutoTrustID{
-                token::getNextID(env, alice, 0u, tfTransferable, xferFee)};
-            env(token::mint(alice, 0u),
-                token::xferFee(xferFee),
-                txflags(tfTransferable));
+            Env env{*this, tweakedFeatures};
+            env.fund(XRP(1000), alice, becky, cheri, gw);
             env.close();
 
-            // becky buys the nft for 1 drop.
-            uint256 const beckyBuyOfferIndex =
-                keylet::nftoffer(becky, env.seq(becky)).key;
-            env(token::createOffer(becky, nftNoAutoTrustID, drops(1)),
-                token::owner(alice));
+            // Set trust lines so becky and cheri can use gw's currency.
+            env(trust(becky, gwAUD(1000)));
+            env(trust(cheri, gwAUD(1000)));
+            env(trust(becky, gwCAD(1000)));
+            env(trust(cheri, gwCAD(1000)));
+            env(trust(becky, gwEUR(1000)));
+            env(trust(cheri, gwEUR(1000)));
             env.close();
-            env(token::acceptBuyOffer(alice, beckyBuyOfferIndex));
-            env.close();
-
-            // becky attempts to sell the nft for AUD.
-            TER const createOfferTER =
-                xferFee ? TER(tecNO_LINE) : TER(tesSUCCESS);
-            uint256 const beckyOfferIndex =
-                keylet::nftoffer(becky, env.seq(becky)).key;
-            env(token::createOffer(becky, nftNoAutoTrustID, gwAUD(100)),
-                txflags(tfSellNFToken),
-                ter(createOfferTER));
+            env(pay(gw, becky, gwAUD(500)));
+            env(pay(gw, becky, gwCAD(500)));
+            env(pay(gw, becky, gwEUR(500)));
+            env(pay(gw, cheri, gwAUD(500)));
+            env(pay(gw, cheri, gwCAD(500)));
             env.close();
 
-            // cheri offers to buy the nft for CAD.
-            uint256 const cheriOfferIndex =
-                keylet::nftoffer(cheri, env.seq(cheri)).key;
-            env(token::createOffer(cheri, nftNoAutoTrustID, gwCAD(100)),
-                token::owner(becky),
-                ter(createOfferTER));
-            env.close();
+            // An nft without flagCreateTrustLines but with a non-zero transfer
+            // fee will not allow creating offers that use IOUs for payment.
+            for (std::uint32_t xferFee : {0, 1})
+            {
+                uint256 const nftNoAutoTrustID{
+                    token::getNextID(env, alice, 0u, tfTransferable, xferFee)};
+                env(token::mint(alice, 0u),
+                    token::xferFee(xferFee),
+                    txflags(tfTransferable));
+                env.close();
 
-            // To keep things tidy, cancel the offers.
-            env(token::cancelOffer(becky, {beckyOfferIndex}));
-            env(token::cancelOffer(cheri, {cheriOfferIndex}));
-            env.close();
-        }
-        // An nft with flagCreateTrustLines but with a non-zero transfer
-        // fee allows transfers using IOUs for payment.
-        {
-            std::uint16_t transferFee = 10000;  // 10%
+                // becky buys the nft for 1 drop.
+                uint256 const beckyBuyOfferIndex =
+                    keylet::nftoffer(becky, env.seq(becky)).key;
+                env(token::createOffer(becky, nftNoAutoTrustID, drops(1)),
+                    token::owner(alice));
+                env.close();
+                env(token::acceptBuyOffer(alice, beckyBuyOfferIndex));
+                env.close();
 
-            uint256 const nftAutoTrustID{token::getNextID(
-                env, alice, 0u, tfTransferable | tfTrustLine, transferFee)};
-            env(token::mint(alice, 0u),
-                token::xferFee(transferFee),
-                txflags(tfTransferable | tfTrustLine));
-            env.close();
+                // becky attempts to sell the nft for AUD.
+                TER const createOfferTER =
+                    xferFee ? TER(tecNO_LINE) : TER(tesSUCCESS);
+                uint256 const beckyOfferIndex =
+                    keylet::nftoffer(becky, env.seq(becky)).key;
+                env(token::createOffer(becky, nftNoAutoTrustID, gwAUD(100)),
+                    txflags(tfSellNFToken),
+                    ter(createOfferTER));
+                env.close();
 
-            // becky buys the nft for 1 drop.
-            uint256 const beckyBuyOfferIndex =
-                keylet::nftoffer(becky, env.seq(becky)).key;
-            env(token::createOffer(becky, nftAutoTrustID, drops(1)),
-                token::owner(alice));
-            env.close();
-            env(token::acceptBuyOffer(alice, beckyBuyOfferIndex));
-            env.close();
+                // cheri offers to buy the nft for CAD.
+                uint256 const cheriOfferIndex =
+                    keylet::nftoffer(cheri, env.seq(cheri)).key;
+                env(token::createOffer(cheri, nftNoAutoTrustID, gwCAD(100)),
+                    token::owner(becky),
+                    ter(createOfferTER));
+                env.close();
 
-            // becky sells the nft for AUD.
-            uint256 const beckySellOfferIndex =
-                keylet::nftoffer(becky, env.seq(becky)).key;
-            env(token::createOffer(becky, nftAutoTrustID, gwAUD(100)),
-                txflags(tfSellNFToken));
-            env.close();
-            env(token::acceptSellOffer(cheri, beckySellOfferIndex));
-            env.close();
+                // To keep things tidy, cancel the offers.
+                env(token::cancelOffer(becky, {beckyOfferIndex}));
+                env(token::cancelOffer(cheri, {cheriOfferIndex}));
+                env.close();
+            }
+            // An nft with flagCreateTrustLines but with a non-zero transfer
+            // fee allows transfers using IOUs for payment.
+            {
+                std::uint16_t transferFee = 10000;  // 10%
 
-            // alice should now have a trust line for gwAUD.
-            BEAST_EXPECT(env.balance(alice, gwAUD) == gwAUD(10));
+                uint256 const nftAutoTrustID{token::getNextID(
+                    env, alice, 0u, tfTransferable | tfTrustLine, transferFee)};
 
-            // becky buys the nft back for CAD.
-            uint256 const beckyBuyBackOfferIndex =
-                keylet::nftoffer(becky, env.seq(becky)).key;
-            env(token::createOffer(becky, nftAutoTrustID, gwCAD(50)),
-                token::owner(cheri));
-            env.close();
-            env(token::acceptBuyOffer(cheri, beckyBuyBackOfferIndex));
-            env.close();
+                // If the fixRemoveNFTokenAutoTrustLine amendment is active
+                // then this transaction fails.
+                {
+                    TER const mintTER =
+                        tweakedFeatures[fixRemoveNFTokenAutoTrustLine]
+                        ? static_cast<TER>(temINVALID_FLAG)
+                        : static_cast<TER>(tesSUCCESS);
 
-            // alice should now have a trust line for gwAUD and gwCAD.
-            BEAST_EXPECT(env.balance(alice, gwAUD) == gwAUD(10));
-            BEAST_EXPECT(env.balance(alice, gwCAD) == gwCAD(5));
-        }
-        // Now that alice has trust lines already established, an nft without
-        // flagCreateTrustLines will work for preestablished trust lines.
-        {
-            std::uint16_t transferFee = 5000;  // 5%
-            uint256 const nftNoAutoTrustID{
-                token::getNextID(env, alice, 0u, tfTransferable, transferFee)};
-            env(token::mint(alice, 0u),
-                token::xferFee(transferFee),
-                txflags(tfTransferable));
-            env.close();
+                    env(token::mint(alice, 0u),
+                        token::xferFee(transferFee),
+                        txflags(tfTransferable | tfTrustLine),
+                        ter(mintTER));
+                    env.close();
 
-            // alice sells the nft using AUD.
-            uint256 const aliceSellOfferIndex =
-                keylet::nftoffer(alice, env.seq(alice)).key;
-            env(token::createOffer(alice, nftNoAutoTrustID, gwAUD(200)),
-                txflags(tfSellNFToken));
-            env.close();
-            env(token::acceptSellOffer(cheri, aliceSellOfferIndex));
-            env.close();
+                    // If fixRemoveNFTokenAutoTrustLine is active the rest
+                    // of this test falls on its face.
+                    if (tweakedFeatures[fixRemoveNFTokenAutoTrustLine])
+                        break;
+                }
+                // becky buys the nft for 1 drop.
+                uint256 const beckyBuyOfferIndex =
+                    keylet::nftoffer(becky, env.seq(becky)).key;
+                env(token::createOffer(becky, nftAutoTrustID, drops(1)),
+                    token::owner(alice));
+                env.close();
+                env(token::acceptBuyOffer(alice, beckyBuyOfferIndex));
+                env.close();
 
-            // alice should now have AUD(210):
-            //  o 200 for this sale and
-            //  o 10 for the previous sale's fee.
-            BEAST_EXPECT(env.balance(alice, gwAUD) == gwAUD(210));
+                // becky sells the nft for AUD.
+                uint256 const beckySellOfferIndex =
+                    keylet::nftoffer(becky, env.seq(becky)).key;
+                env(token::createOffer(becky, nftAutoTrustID, gwAUD(100)),
+                    txflags(tfSellNFToken));
+                env.close();
+                env(token::acceptSellOffer(cheri, beckySellOfferIndex));
+                env.close();
 
-            // cheri can't sell the NFT for EUR, but can for CAD.
-            env(token::createOffer(cheri, nftNoAutoTrustID, gwEUR(50)),
-                txflags(tfSellNFToken),
-                ter(tecNO_LINE));
-            env.close();
-            uint256 const cheriSellOfferIndex =
-                keylet::nftoffer(cheri, env.seq(cheri)).key;
-            env(token::createOffer(cheri, nftNoAutoTrustID, gwCAD(100)),
-                txflags(tfSellNFToken));
-            env.close();
-            env(token::acceptSellOffer(becky, cheriSellOfferIndex));
-            env.close();
+                // alice should now have a trust line for gwAUD.
+                BEAST_EXPECT(env.balance(alice, gwAUD) == gwAUD(10));
 
-            // alice should now have CAD(10):
-            //  o 5 from this sale's fee and
-            //  o 5 for the previous sale's fee.
-            BEAST_EXPECT(env.balance(alice, gwCAD) == gwCAD(10));
+                // becky buys the nft back for CAD.
+                uint256 const beckyBuyBackOfferIndex =
+                    keylet::nftoffer(becky, env.seq(becky)).key;
+                env(token::createOffer(becky, nftAutoTrustID, gwCAD(50)),
+                    token::owner(cheri));
+                env.close();
+                env(token::acceptBuyOffer(cheri, beckyBuyBackOfferIndex));
+                env.close();
+
+                // alice should now have a trust line for gwAUD and gwCAD.
+                BEAST_EXPECT(env.balance(alice, gwAUD) == gwAUD(10));
+                BEAST_EXPECT(env.balance(alice, gwCAD) == gwCAD(5));
+            }
+            // Now that alice has trust lines preestablished, an nft without
+            // flagCreateTrustLines will work for preestablished trust lines.
+            {
+                std::uint16_t transferFee = 5000;  // 5%
+                uint256 const nftNoAutoTrustID{token::getNextID(
+                    env, alice, 0u, tfTransferable, transferFee)};
+                env(token::mint(alice, 0u),
+                    token::xferFee(transferFee),
+                    txflags(tfTransferable));
+                env.close();
+
+                // alice sells the nft using AUD.
+                uint256 const aliceSellOfferIndex =
+                    keylet::nftoffer(alice, env.seq(alice)).key;
+                env(token::createOffer(alice, nftNoAutoTrustID, gwAUD(200)),
+                    txflags(tfSellNFToken));
+                env.close();
+                env(token::acceptSellOffer(cheri, aliceSellOfferIndex));
+                env.close();
+
+                // alice should now have AUD(210):
+                //  o 200 for this sale and
+                //  o 10 for the previous sale's fee.
+                BEAST_EXPECT(env.balance(alice, gwAUD) == gwAUD(210));
+
+                // cheri can't sell the NFT for EUR, but can for CAD.
+                env(token::createOffer(cheri, nftNoAutoTrustID, gwEUR(50)),
+                    txflags(tfSellNFToken),
+                    ter(tecNO_LINE));
+                env.close();
+                uint256 const cheriSellOfferIndex =
+                    keylet::nftoffer(cheri, env.seq(cheri)).key;
+                env(token::createOffer(cheri, nftNoAutoTrustID, gwCAD(100)),
+                    txflags(tfSellNFToken));
+                env.close();
+                env(token::acceptSellOffer(becky, cheriSellOfferIndex));
+                env.close();
+
+                // alice should now have CAD(10):
+                //  o 5 from this sale's fee and
+                //  o 5 for the previous sale's fee.
+                BEAST_EXPECT(env.balance(alice, gwCAD) == gwCAD(10));
+            }
         }
     }
 

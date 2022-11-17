@@ -194,64 +194,74 @@ public:
                 result[jss::status] == "success" ||
                 importCompleted(shardStore, numberOfShards, result));
 
-            std::chrono::seconds const maxWait{60};
-            auto const start = std::chrono::system_clock::now();
+            std::chrono::seconds const maxWait{180};
 
-            while (true)
             {
-                // Verify that the status object accurately
-                // reflects import progress.
-
-                auto const completeShards =
-                    shardStore->getShardInfo()->finalized();
-
-                if (!completeShards.empty())
+                auto const start = std::chrono::system_clock::now();
+                while (true)
                 {
-                    auto const result = env.rpc(
-                        "json",
-                        "node_to_shard",
-                        to_string(jvParams))[jss::result];
+                    // Verify that the status object accurately
+                    // reflects import progress.
 
-                    if (!importCompleted(shardStore, numberOfShards, result))
+                    auto const completeShards =
+                        shardStore->getShardInfo()->finalized();
+
+                    if (!completeShards.empty())
                     {
-                        BEAST_EXPECT(result[jss::firstShardIndex] == 1);
-                        BEAST_EXPECT(result[jss::lastShardIndex] == 10);
+                        auto const result = env.rpc(
+                            "json",
+                            "node_to_shard",
+                            to_string(jvParams))[jss::result];
+
+                        if (!importCompleted(
+                                shardStore, numberOfShards, result))
+                        {
+                            BEAST_EXPECT(result[jss::firstShardIndex] == 1);
+                            BEAST_EXPECT(result[jss::lastShardIndex] == 10);
+                        }
                     }
-                }
 
-                if (boost::icl::contains(completeShards, 1))
-                {
-                    auto const result = env.rpc(
-                        "json",
-                        "node_to_shard",
-                        to_string(jvParams))[jss::result];
+                    if (boost::icl::contains(completeShards, 1))
+                    {
+                        auto const result = env.rpc(
+                            "json",
+                            "node_to_shard",
+                            to_string(jvParams))[jss::result];
 
-                    BEAST_EXPECT(
-                        result[jss::currentShardIndex] >= 1 ||
-                        importCompleted(shardStore, numberOfShards, result));
+                        BEAST_EXPECT(
+                            result[jss::currentShardIndex] >= 1 ||
+                            importCompleted(
+                                shardStore, numberOfShards, result));
 
-                    break;
-                }
+                        break;
+                    }
 
-                if (std::this_thread::sleep_for(std::chrono::milliseconds{100});
-                    std::chrono::system_clock::now() - start > maxWait)
-                {
-                    BEAST_EXPECTS(
-                        false, "Import timeout: could just be a slow machine.");
-                    break;
+                    if (std::this_thread::sleep_for(
+                            std::chrono::milliseconds{100});
+                        std::chrono::system_clock::now() - start > maxWait)
+                    {
+                        BEAST_EXPECTS(
+                            false,
+                            "Import timeout: could just be a slow machine.");
+                        break;
+                    }
                 }
             }
 
-            // Wait for the import to complete
-            while (!boost::icl::contains(
-                shardStore->getShardInfo()->finalized(), 10))
             {
-                if (std::this_thread::sleep_for(std::chrono::milliseconds{100});
-                    std::chrono::system_clock::now() - start > maxWait)
+                // Wait for the import to complete
+                auto const start = std::chrono::system_clock::now();
+                while (!boost::icl::contains(
+                    shardStore->getShardInfo()->finalized(), 10))
                 {
-                    BEAST_EXPECT(
-                        importCompleted(shardStore, numberOfShards, result));
-                    break;
+                    if (std::this_thread::sleep_for(
+                            std::chrono::milliseconds{100});
+                        std::chrono::system_clock::now() - start > maxWait)
+                    {
+                        BEAST_EXPECT(importCompleted(
+                            shardStore, numberOfShards, result));
+                        break;
+                    }
                 }
             }
         }
@@ -323,7 +333,7 @@ public:
                 result[jss::status] == "success" ||
                 importCompleted(shardStore, numberOfShards, result));
 
-            std::chrono::seconds const maxWait{10};
+            std::chrono::seconds const maxWait{30};
             auto const start = std::chrono::system_clock::now();
 
             while (shardStore->getShardInfo()->finalized().empty())
@@ -352,7 +362,7 @@ public:
                 importCompleted(shardStore, numberOfShards, result));
         }
 
-        std::chrono::seconds const maxWait{10};
+        std::chrono::seconds const maxWait{30};
         auto const start = std::chrono::system_clock::now();
 
         while (true)

@@ -110,7 +110,7 @@ std::size_t
 getRows(soci::session& session, TableType type);
 
 /**
- * @brief getRowsMinMax Returns minumum ledger sequence,
+ * @brief getRowsMinMax Returns minimum ledger sequence,
  *        maximum ledger sequence and total number of rows in given table.
  * @param session Session with database.
  * @param type Table ID for which the result is returned.

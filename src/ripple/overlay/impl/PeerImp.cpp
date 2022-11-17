@@ -642,11 +642,6 @@ PeerImp::gracefulClose()
     assert(socket_.is_open());
     assert(!gracefulClose_);
     gracefulClose_ = true;
-#if 0
-    // Flush messages
-    while(send_queue_.size() > 1)
-        send_queue_.pop_back();
-#endif
     if (send_queue_.size() > 0)
         return;
     setTimer();
