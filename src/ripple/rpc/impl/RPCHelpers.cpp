@@ -31,7 +31,7 @@
 #include <ripple/rpc/DeliveredAmount.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 #include <boost/algorithm/string/case_conv.hpp>
-
+#include <ripple/protocol/nftPageMask.h>
 #include <ripple/resource/Fees.h>
 
 namespace ripple {
@@ -138,10 +138,85 @@ getAccountObjects(
     AccountID const& account,
     std::optional<std::vector<LedgerEntryType>> const& typeFilter,
     uint256 dirIndex,
-    uint256 const& entryIndex,
+    uint256 entryIndex,
     std::uint32_t const limit,
     Json::Value& jvResult)
 {
+
+    auto typeMatchesFilter =
+        [](std::vector<LedgerEntryType> const& typeFilter,
+           LedgerEntryType ledgerType) {
+            auto it = std::find(
+                typeFilter.begin(), typeFilter.end(), ledgerType);
+            return it != typeFilter.end();
+    };
+
+    bool iterateNFTPages =
+        !typeFilter.has_value() ||
+         typeMatchesFilter(typeFilter.value(), ltNFTOKEN_PAGE);
+        
+    // we need to check the marker to see if it is an NFTTokenPage
+    if (iterateNFTPages &&
+            dirIndex == beast::zero && entryIndex != beast::zero)
+    {
+        // we do this by shifting the accountid left by 12 bytes
+        // if it matches we will try to iterate the pages up to the limit
+        // and then change over to the owner directory
+        std::array<std::uint8_t, 32> buf{};
+        std::memcpy(buf.data(), account.data(), account.size());
+        if (uint256{buf} != (entryIndex & nft::pageMask))
+            iterateNFTPages = false;
+    }
+         
+    auto& jvObjects = (jvResult[jss::account_objects] = Json::arrayValue);
+   
+    // this is a mutable version of limit, used to seemlessly switch
+    // to iterating directory entries when nftokenpages are exhausted 
+    uint32_t mlimit = limit;
+
+    // iterate NFTokenPages preferentially
+    if (iterateNFTPages)
+    {
+        Keylet const first = {ltNFTOKEN_PAGE, entryIndex};
+        Keylet const last = keylet::nftpage_max(account);
+
+        auto cp = ledger.read(Keylet(
+            ltNFTOKEN_PAGE,
+            ledger.succ(first.key, last.key.next()).value_or(last.key)));
+
+        while (cp)
+        {
+
+            jvObjects.append(cp->getJson(JsonOptions::none));
+
+            auto const npm = (*cp)[~sfNextPageMin];
+
+            if (npm)
+                cp = ledger.read(Keylet(ltNFTOKEN_PAGE, *npm));
+            else
+                cp = nullptr;
+            
+            if (mlimit-- == 0)
+            {
+                if (cp)
+                {
+                    jvResult[jss::limit] = limit;
+                    jvResult[jss::marker] =
+                        std::string("0,") + to_string(*npm);
+                    return true;
+                }
+            }
+        }
+
+        // if execution reaches here then we're about to transition
+        // to iterating the root directory (and the conventional
+        // behaviour of this RPC function.) Therefore we should
+        // deliberately zero both dirIndex and entryIndex as not
+        // to terribly confuse it
+        dirIndex = beast::zero;
+        entryIndex = beast::zero;
+    }
+
     auto const root = keylet::ownerDir(account);
     auto found = false;
 
@@ -153,10 +228,18 @@ getAccountObjects(
 
     auto dir = ledger.read({ltDIR_NODE, dirIndex});
     if (!dir)
+    {
+        // it's possible the user had nftoken pages but no
+        // directory entries
+        if (mlimit < limit)
+        {
+            jvResult[jss::limit] = limit;
+            return true;
+        }
         return false;
+    }
 
     std::uint32_t i = 0;
-    auto& jvObjects = (jvResult[jss::account_objects] = Json::arrayValue);
     for (;;)
     {
         auto const& entries = dir->getFieldV256(sfIndexes);
@@ -175,21 +258,13 @@ getAccountObjects(
         {
             auto const sleNode = ledger.read(keylet::child(*iter));
 
-            auto typeMatchesFilter =
-                [](std::vector<LedgerEntryType> const& typeFilter,
-                   LedgerEntryType ledgerType) {
-                    auto it = std::find(
-                        typeFilter.begin(), typeFilter.end(), ledgerType);
-                    return it != typeFilter.end();
-                };
-
             if (!typeFilter.has_value() ||
                 typeMatchesFilter(typeFilter.value(), sleNode->getType()))
             {
                 jvObjects.append(sleNode->getJson(JsonOptions::none));
             }
 
-            if (++i == limit)
+            if (++i == mlimit)
             {
                 if (++iter != entries.end())
                 {
@@ -212,7 +287,7 @@ getAccountObjects(
         if (!dir)
             return true;
 
-        if (i == limit)
+        if (i == mlimit)
         {
             auto const& e = dir->getFieldV256(sfIndexes);
             if (!e.empty())
@@ -883,7 +958,7 @@ chooseLedgerEntryType(Json::Value const& params)
     std::pair<RPC::Status, LedgerEntryType> result{RPC::Status::OK, ltANY};
     if (params.isMember(jss::type))
     {
-        static constexpr std::array<std::pair<char const*, LedgerEntryType>, 14>
+        static constexpr std::array<std::pair<char const*, LedgerEntryType>, 15>
             types{
                 {{jss::account, ltACCOUNT_ROOT},
                  {jss::amendments, ltAMENDMENTS},
@@ -898,7 +973,8 @@ chooseLedgerEntryType(Json::Value const& params)
                  {jss::signer_list, ltSIGNER_LIST},
                  {jss::state, ltRIPPLE_STATE},
                  {jss::ticket, ltTICKET},
-                 {jss::nft_offer, ltNFTOKEN_OFFER}}};
+                 {jss::nft_offer, ltNFTOKEN_OFFER},
+                 {jss::nft_page, ltNFTOKEN_PAGE}}};
 
         auto const& p = params[jss::type];
         if (!p.isString())
