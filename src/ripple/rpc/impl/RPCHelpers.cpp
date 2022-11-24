@@ -27,12 +27,12 @@
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/AccountID.h>
 #include <ripple/protocol/Feature.h>
+#include <ripple/protocol/nftPageMask.h>
+#include <ripple/resource/Fees.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/DeliveredAmount.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 #include <boost/algorithm/string/case_conv.hpp>
-#include <ripple/protocol/nftPageMask.h>
-#include <ripple/resource/Fees.h>
 
 namespace ripple {
 namespace RPC {
@@ -142,54 +142,52 @@ getAccountObjects(
     std::uint32_t const limit,
     Json::Value& jvResult)
 {
-
-    auto typeMatchesFilter =
-        [](std::vector<LedgerEntryType> const& typeFilter,
-           LedgerEntryType ledgerType) {
-            auto it = std::find(
-                typeFilter.begin(), typeFilter.end(), ledgerType);
-            return it != typeFilter.end();
+    auto typeMatchesFilter = [](std::vector<LedgerEntryType> const& typeFilter,
+                                LedgerEntryType ledgerType) {
+        auto it = std::find(typeFilter.begin(), typeFilter.end(), ledgerType);
+        return it != typeFilter.end();
     };
 
+    // if dirIndex != 0, then all NFTs have already been returned.  only
+    // iterate NFT pages if the filter says so AND dirIndex == 0
     bool iterateNFTPages =
-        !typeFilter.has_value() ||
-         typeMatchesFilter(typeFilter.value(), ltNFTOKEN_PAGE);
-        
+        (!typeFilter.has_value() ||
+         typeMatchesFilter(typeFilter.value(), ltNFTOKEN_PAGE)) &&
+        dirIndex == beast::zero;
+
     Keylet const firstNFTPage = keylet::nftpage_min(account);
-    // we need to check the marker to see if it is an NFTTokenPage
-    if (iterateNFTPages &&
-            dirIndex == beast::zero && entryIndex != beast::zero)
+
+    // we need to check the marker to see if it is an NFTTokenPage index.
+    if (iterateNFTPages && entryIndex != beast::zero)
     {
         // we do this by shifting the accountid left by 12 bytes
         // if it matches we will try to iterate the pages up to the limit
         // and then change over to the owner directory
-	
-	    if (firstNFTPage.key != (entryIndex & ~nft::pageMask))
+
+        if (firstNFTPage.key != (entryIndex & ~nft::pageMask))
             iterateNFTPages = false;
     }
-         
+
     auto& jvObjects = (jvResult[jss::account_objects] = Json::arrayValue);
-   
+
     // this is a mutable version of limit, used to seemlessly switch
-    // to iterating directory entries when nftokenpages are exhausted 
+    // to iterating directory entries when nftokenpages are exhausted
     uint32_t mlimit = limit;
 
     // iterate NFTokenPages preferentially
     if (iterateNFTPages)
     {
-        Keylet const first = 
-		entryIndex == beast::zero 
-		? firstNFTPage
-		: Keylet{ltNFTOKEN_PAGE, entryIndex};
-	
+        Keylet const first = entryIndex == beast::zero
+            ? firstNFTPage
+            : Keylet{ltNFTOKEN_PAGE, entryIndex};
+
         Keylet const last = keylet::nftpage_max(account);
 
-    	// current key
-	    uint256 ck = 
-            ledger.succ(first.key, last.key.next()).value_or(last.key);
-        
-	    // current page
-    	auto cp = ledger.read(Keylet{ltNFTOKEN_PAGE, ck});
+        // current key
+        uint256 ck = ledger.succ(first.key, last.key.next()).value_or(last.key);
+
+        // current page
+        auto cp = ledger.read(Keylet{ltNFTOKEN_PAGE, ck});
 
         while (cp)
         {
@@ -199,26 +197,23 @@ getAccountObjects(
                 cp = ledger.read(Keylet(ltNFTOKEN_PAGE, *npm));
             else
                 cp = nullptr;
-            
+
             if (--mlimit == 0)
             {
                 if (cp)
                 {
                     jvResult[jss::limit] = limit;
-                    jvResult[jss::marker] =
-                        std::string("0,") + to_string(ck);
+                    jvResult[jss::marker] = std::string("0,") + to_string(ck);
                     return true;
                 }
             }
-	    ck = *npm;
+            ck = *npm;
         }
 
         // if execution reaches here then we're about to transition
         // to iterating the root directory (and the conventional
         // behaviour of this RPC function.) Therefore we should
-        // deliberately zero both dirIndex and entryIndex as not
-        // to terribly confuse it
-        dirIndex = beast::zero;
+        // zero entryIndex so as not to terribly confuse things.
         entryIndex = beast::zero;
     }
 
@@ -236,12 +231,7 @@ getAccountObjects(
     {
         // it's possible the user had nftoken pages but no
         // directory entries
-        if (mlimit < limit)
-        {
-            jvResult[jss::limit] = limit;
-            return true;
-        }
-        return false;
+        return mlimit < limit;
     }
 
     std::uint32_t i = 0;
@@ -257,6 +247,16 @@ getAccountObjects(
                 return false;
 
             found = true;
+        }
+
+        // it's possible that the returned NFTPages exactly filled the
+        // response.  Check for that condition.
+        if (i == mlimit && mlimit < limit)
+        {
+            jvResult[jss::limit] = limit;
+            jvResult[jss::marker] =
+                to_string(dirIndex) + ',' + to_string(*iter);
+            return true;
         }
 
         for (; iter != entries.end(); ++iter)
