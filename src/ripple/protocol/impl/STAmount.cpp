@@ -1347,7 +1347,7 @@ canonicalizeRoundStrict(
 }
 
 // Pass the canonicalizeRound function as a template parameter.
-template <void (*CANONICALIZE)(bool, std::uint64_t&, int&, bool)>
+template <void (*Canonicalize)(bool, std::uint64_t&, int&, bool)>
 static STAmount
 mulRoundImpl(
     STAmount const& v1,
@@ -1413,7 +1413,7 @@ mulRoundImpl(
     int offset = offset1 + offset2 + 14;
     if (resultNegative != roundUp)
     {
-        CANONICALIZE(xrp, amount, offset, roundUp);
+        Canonicalize(xrp, amount, offset, roundUp);
     }
     STAmount result(issue, amount, offset, resultNegative);
 
