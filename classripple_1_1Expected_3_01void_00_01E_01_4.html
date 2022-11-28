@@ -96,9 +96,9 @@ Collaboration diagram for ripple::Expected&lt; void, E &gt;:</div>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:ac09eba67ca2af549969bdcaeedfb36c4"><td class="memItemLeft" align="right" valign="top">constexpr&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Expected_3_01void_00_01E_01_4.html#ac09eba67ca2af549969bdcaeedfb36c4">Expected</a> ()</td></tr>
 <tr class="separator:ac09eba67ca2af549969bdcaeedfb36c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a57630fe9c888c781402ebdc8731a3c7e"><td class="memTemplParams" colspan="2">template&lt;typename U , typename  = std::enable_if_t&lt;std::is_convertible_v&lt;U, E&gt;&gt;&gt; </td></tr>
-<tr class="memitem:a57630fe9c888c781402ebdc8731a3c7e"><td class="memTemplItemLeft" align="right" valign="top">constexpr&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1Expected_3_01void_00_01E_01_4.html#a57630fe9c888c781402ebdc8731a3c7e">Expected</a> (<a class="el" href="classripple_1_1Unexpected.html">Unexpected</a>&lt; U &gt; e)</td></tr>
-<tr class="separator:a57630fe9c888c781402ebdc8731a3c7e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a04d189412bde856d118e39554c8a0c6c"><td class="memTemplParams" colspan="2">template&lt;typename U &gt; </td></tr>
+<tr class="memitem:a04d189412bde856d118e39554c8a0c6c"><td class="memTemplItemLeft" align="right" valign="top">requires std::convertible_to&lt; U, E &gt; &amp;&amp;!std constexpr ::is_reference_v&lt; U &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1Expected_3_01void_00_01E_01_4.html#a04d189412bde856d118e39554c8a0c6c">Expected</a> (<a class="el" href="classripple_1_1Unexpected.html">Unexpected</a>&lt; U &gt; e)</td></tr>
+<tr class="separator:a04d189412bde856d118e39554c8a0c6c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aadf94a66f574438c007a020fac3cac79"><td class="memItemLeft" align="right" valign="top">constexpr E const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Expected_3_01void_00_01E_01_4.html#aadf94a66f574438c007a020fac3cac79">error</a> () const</td></tr>
 <tr class="separator:aadf94a66f574438c007a020fac3cac79"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a33319f157845b7b209c6f97c682acbf4"><td class="memItemLeft" align="right" valign="top">constexpr E &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Expected_3_01void_00_01E_01_4.html#a33319f157845b7b209c6f97c682acbf4">error</a> ()</td></tr>
@@ -116,7 +116,7 @@ Private Types</h2></td></tr>
 class ripple::Expected&lt; void, E &gt;</h3>
 
 
-<p class="definition">Definition at line <a class="el" href="Expected_8h_source.html#l00206">206</a> of file <a class="el" href="Expected_8h_source.html">Expected.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Expected_8h_source.html#l00208">208</a> of file <a class="el" href="Expected_8h_source.html">Expected.h</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="ab64f7ea889ad57b9d4fb6c12abd03042"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ab64f7ea889ad57b9d4fb6c12abd03042">&#9670;&nbsp;</a></span>Base</h2>
@@ -140,7 +140,7 @@ template&lt;class E &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Expected_8h_source.html#l00209">209</a> of file <a class="el" href="Expected_8h_source.html">Expected.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Expected_8h_source.html#l00211">211</a> of file <a class="el" href="Expected_8h_source.html">Expected.h</a>.</p>
 
 </div>
 </div>
@@ -170,25 +170,25 @@ template&lt;class E &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Expected_8h_source.html#l00214">214</a> of file <a class="el" href="Expected_8h_source.html">Expected.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Expected_8h_source.html#l00216">216</a> of file <a class="el" href="Expected_8h_source.html">Expected.h</a>.</p>
 
 </div>
 </div>
-<a id="a57630fe9c888c781402ebdc8731a3c7e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a57630fe9c888c781402ebdc8731a3c7e">&#9670;&nbsp;</a></span>Expected() <span class="overload">[2/2]</span></h2>
+<a id="a04d189412bde856d118e39554c8a0c6c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a04d189412bde856d118e39554c8a0c6c">&#9670;&nbsp;</a></span>Expected() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
 template&lt;class E &gt; </div>
 <div class="memtemplate">
-template&lt;typename U , typename  = std::enable_if_t&lt;std::is_convertible_v&lt;U, E&gt;&gt;&gt; </div>
+template&lt;typename U &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">constexpr <a class="el" href="classripple_1_1Expected.html">ripple::Expected</a>&lt; void, E &gt;::<a class="el" href="classripple_1_1Expected.html">Expected</a> </td>
+          <td class="memname">requires std::convertible_to&lt;U, E&gt;&amp;&amp; !std constexpr ::is_reference_v&lt;U&gt; <a class="el" href="classripple_1_1Expected.html">ripple::Expected</a>&lt; void, E &gt;::<a class="el" href="classripple_1_1Expected.html">Expected</a> </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classripple_1_1Unexpected.html">Unexpected</a>&lt; U &gt;&#160;</td>
           <td class="paramname"><em>e</em></td><td>)</td>
@@ -202,7 +202,7 @@ template&lt;typename U , typename  = std::enable_if_t&lt;std::is_convertible_v&l
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Expected_8h_source.html#l00221">221</a> of file <a class="el" href="Expected_8h_source.html">Expected.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Expected_8h_source.html#l00222">222</a> of file <a class="el" href="Expected_8h_source.html">Expected.h</a>.</p>
 
 </div>
 </div>
@@ -232,7 +232,7 @@ template&lt;class E &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Expected_8h_source.html#l00225">225</a> of file <a class="el" href="Expected_8h_source.html">Expected.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Expected_8h_source.html#l00227">227</a> of file <a class="el" href="Expected_8h_source.html">Expected.h</a>.</p>
 
 </div>
 </div>
@@ -261,7 +261,7 @@ template&lt;class E &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Expected_8h_source.html#l00230">230</a> of file <a class="el" href="Expected_8h_source.html">Expected.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Expected_8h_source.html#l00232">232</a> of file <a class="el" href="Expected_8h_source.html">Expected.h</a>.</p>
 
 </div>
 </div>
@@ -290,7 +290,7 @@ template&lt;class E &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Expected_8h_source.html#l00235">235</a> of file <a class="el" href="Expected_8h_source.html">Expected.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Expected_8h_source.html#l00237">237</a> of file <a class="el" href="Expected_8h_source.html">Expected.h</a>.</p>
 
 </div>
 </div>
