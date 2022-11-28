@@ -46,7 +46,11 @@ NFTokenCreateOffer::preflight(PreflightContext const& ctx)
     auto const nftFlags = nft::getFlags(ctx.tx[sfNFTokenID]);
 
     {
-        auto const amount = ctx.tx[sfAmount];
+        STAmount const amount = ctx.tx[sfAmount];
+
+        if (amount.negative() && ctx.rules.enabled(fixNFTokenNegOffer))
+            // An offer for a negative amount makes no sense.
+            return temBAD_AMOUNT;
 
         if (!isXRP(amount))
         {
@@ -78,9 +82,14 @@ NFTokenCreateOffer::preflight(PreflightContext const& ctx)
 
     if (auto dest = ctx.tx[~sfDestination])
     {
-        // The destination field is only valid on a sell offer; it makes no
-        // sense in a buy offer.
-        if (!isSellOffer)
+        // Some folks think it makes sense for a buy offer to specify a
+        // specific broker using the Destination field.  This change doesn't
+        // deserve it's own amendment, so we're piggy-backing on
+        // fixNFTokenNegOffer.
+        //
+        // Prior to fixNFTokenNegOffer any use of the Destination field on
+        // a buy offer was malformed.
+        if (!isSellOffer && !ctx.rules.enabled(fixNFTokenNegOffer))
             return temMALFORMED;
 
         // The destination can't be the account executing the transaction.

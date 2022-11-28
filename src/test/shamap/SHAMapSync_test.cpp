@@ -184,7 +184,6 @@ public:
 
         BEAST_EXPECT(source.deepCompare(destination));
 
-        log << "Checking destination invariants..." << std::endl;
         destination.invariants();
     }
 };

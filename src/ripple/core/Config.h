@@ -57,7 +57,8 @@ enum class SizedItem : std::size_t {
     lgrDBCache,
     openFinalLimit,
     burstSize,
-    ramSizeGB
+    ramSizeGB,
+    accountIdCacheSize,
 };
 
 //  This entire derived class is deprecated.

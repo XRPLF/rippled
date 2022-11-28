@@ -239,3 +239,32 @@ change the `/opt/local` module path above to match your chosen installation pref
 `rippled` builds a set of unit tests into the server executable. To run these unit
 tests after building, pass the `--unittest` option to the compiled `rippled`
 executable. The executable will exit with summary info after running the unit tests.
+
+## Workaround for a compile error in soci
+
+Compilation errors have been observed with Apple Clang 13.1.6+ and soci v4.x. soci compiles with the `-Werror` flag which causes warnings to be treated as errors. These warnings pertain to style (not correctness). However, they cause the cmake process to fail.
+
+Here's an example of how this looks:
+```
+.../rippled/.nih_c/unix_makefiles/AppleClang_13.1.6.13160021/Debug/src/soci/src/core/session.cpp:450:66: note: in instantiation of function template specialization 'soci::use<std::string>' requested here
+    return prepare << backEnd_->get_column_descriptions_query(), use(table_name, "t");
+                                                                 ^
+1 error generated.
+```
+
+Please apply the below patch (courtesy of Scott Determan) to remove these errors. `.nih_c/unix_makefiles/AppleClang_13.1.6.13160021/Debug/src/soci/cmake/SociConfig.cmake` file needs to be edited. This file is an example for Mac OS and it might be slightly different for other OS/Architectures.
+
+```
+diff --git a/cmake/SociConfig.cmake b/cmake/SociConfig.cmake
+index 97d907e4..11bcd1f3 100644
+--- a/cmake/SociConfig.cmake
++++ b/cmake/SociConfig.cmake
+@@ -58,8 +58,8 @@ if (MSVC)
+ 
+ else()
+ 
+-  set(SOCI_GCC_CLANG_COMMON_FLAGS
+-    "-pedantic -Werror -Wno-error=parentheses -Wall -Wextra -Wpointer-arith -Wcast-align -Wcast-qual -Wfloat-equal -Woverloaded-virtual -Wredundant-decls -Wno-long-long")
++  set(SOCI_GCC_CLANG_COMMON_FLAGS "")
++    # "-pedantic -Werror -Wno-error=parentheses -Wall -Wextra -Wpointer-arith -Wcast-align -Wcast-qual -Wfloat-equal -Woverloaded-virtual -Wredundant-decls -Wno-long-long")
+```

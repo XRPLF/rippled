@@ -950,9 +950,14 @@ public:
             env(pay(gw, alice, USD(1000)), ter(tesSUCCESS));
 
             // No cross:
-            env(offer(alice, XRP(1000), USD(1000)),
-                txflags(tfImmediateOrCancel),
-                ter(tesSUCCESS));
+            {
+                TER const expectedCode = features[featureImmediateOfferKilled]
+                    ? static_cast<TER>(tecKILLED)
+                    : static_cast<TER>(tesSUCCESS);
+                env(offer(alice, XRP(1000), USD(1000)),
+                    txflags(tfImmediateOrCancel),
+                    ter(expectedCode));
+            }
 
             env.require(
                 balance(alice, startBalance - f - f),
@@ -5165,11 +5170,12 @@ public:
         FeatureBitset const flowCross{featureFlowCross};
         FeatureBitset const takerDryOffer{fixTakerDryOfferRemoval};
         FeatureBitset const rmSmallIncreasedQOffers{fixRmSmallIncreasedQOffers};
+        FeatureBitset const immediateOfferKilled{featureImmediateOfferKilled};
 
-        testAll(all - takerDryOffer);
-        testAll(all - flowCross - takerDryOffer);
-        testAll(all - flowCross);
-        testAll(all - rmSmallIncreasedQOffers);
+        testAll(all - takerDryOffer - immediateOfferKilled);
+        testAll(all - flowCross - takerDryOffer - immediateOfferKilled);
+        testAll(all - flowCross - immediateOfferKilled);
+        testAll(all - rmSmallIncreasedQOffers - immediateOfferKilled);
         testAll(all);
         testFalseAssert();
     }
@@ -5184,11 +5190,12 @@ class Offer_manual_test : public Offer_test
         FeatureBitset const all{supported_amendments()};
         FeatureBitset const flowCross{featureFlowCross};
         FeatureBitset const f1513{fix1513};
+        FeatureBitset const immediateOfferKilled{featureImmediateOfferKilled};
         FeatureBitset const takerDryOffer{fixTakerDryOfferRemoval};
 
-        testAll(all - flowCross - f1513);
-        testAll(all - flowCross);
-        testAll(all - f1513);
+        testAll(all - flowCross - f1513 - immediateOfferKilled);
+        testAll(all - flowCross - immediateOfferKilled);
+        testAll(all - immediateOfferKilled);
         testAll(all);
 
         testAll(all - flowCross - takerDryOffer);

@@ -32,29 +32,23 @@ RCLCxPeerPos::RCLCxPeerPos(
     Slice const& signature,
     uint256 const& suppression,
     Proposal&& proposal)
-    : data_{std::make_shared<Data>(
-          publicKey,
-          signature,
-          suppression,
-          std::move(proposal))}
+    : publicKey_(publicKey)
+    , suppression_(suppression)
+    , proposal_(std::move(proposal))
 {
-}
+    // The maximum allowed size of a signature is 72 bytes; we verify
+    // this elsewhere, but we want to be extra careful here:
+    assert(signature.size() != 0 && signature.size() <= signature_.capacity());
 
-uint256
-RCLCxPeerPos::signingHash() const
-{
-    return sha512Half(
-        HashPrefix::proposal,
-        std::uint32_t(proposal().proposeSeq()),
-        proposal().closeTime().time_since_epoch().count(),
-        proposal().prevLedger(),
-        proposal().position());
+    if (signature.size() != 0 && signature.size() <= signature_.capacity())
+        signature_.assign(signature.begin(), signature.end());
 }
 
 bool
 RCLCxPeerPos::checkSign() const
 {
-    return verifyDigest(publicKey(), signingHash(), signature(), false);
+    return verifyDigest(
+        publicKey(), proposal_.signingHash(), signature(), false);
 }
 
 Json::Value
@@ -86,18 +80,6 @@ proposalUniqueId(
     s.addVL(signature);
 
     return s.getSHA512Half();
-}
-
-RCLCxPeerPos::Data::Data(
-    PublicKey const& publicKey,
-    Slice const& signature,
-    uint256 const& suppress,
-    Proposal&& proposal)
-    : publicKey_{publicKey}
-    , signature_{signature}
-    , suppression_{suppress}
-    , proposal_{std::move(proposal)}
-{
 }
 
 }  // namespace ripple

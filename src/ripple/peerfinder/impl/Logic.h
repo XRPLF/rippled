@@ -782,9 +782,13 @@ public:
         // Must be handshaked!
         assert(slot->state() == Slot::active);
 
-        preprocess(slot, list);
-
         clock_type::time_point const now(m_clock.now());
+
+        // Limit how often we accept new endpoints
+        if (slot->whenAcceptEndpoints > now)
+            return;
+
+        preprocess(slot, list);
 
         for (auto const& ep : list)
         {

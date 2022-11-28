@@ -202,7 +202,7 @@ doAccountChannels(RPC::JsonContext& context)
             to_string(*marker) + "," + std::to_string(nextHint);
     }
 
-    result[jss::account] = context.app.accountIDCache().toBase58(accountID);
+    result[jss::account] = toBase58(accountID);
 
     for (auto const& item : visitData.items)
         addChannel(jsonChannels, *item);

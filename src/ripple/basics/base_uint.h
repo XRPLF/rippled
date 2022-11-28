@@ -26,6 +26,7 @@
 #define RIPPLE_BASICS_BASE_UINT_H_INCLUDED
 
 #include <ripple/basics/Expected.h>
+#include <ripple/basics/Slice.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/hardened_hash.h>
 #include <ripple/basics/strHex.h>
@@ -53,6 +54,11 @@ struct is_contiguous_container<
         decltype(std::declval<Container const>().size()),
         decltype(std::declval<Container const>().data()),
         typename Container::value_type>> : std::true_type
+{
+};
+
+template <>
+struct is_contiguous_container<Slice> : std::true_type
 {
 };
 

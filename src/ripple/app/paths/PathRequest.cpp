@@ -552,9 +552,16 @@ PathRequest::findPaths(
             continueCallback);
         mContext[issue] = ps;
 
-        auto& sourceAccount = !isXRP(issue.account)
-            ? issue.account
-            : isXRP(issue.currency) ? xrpAccount() : *raSrcAccount;
+        auto const& sourceAccount = [&] {
+            if (!isXRP(issue.account))
+                return issue.account;
+
+            if (isXRP(issue.currency))
+                return xrpAccount();
+
+            return *raSrcAccount;
+        }();
+
         STAmount saMaxAmount = saSendMax.value_or(
             STAmount({issue.currency, sourceAccount}, 1u, 0, true));
 
@@ -675,10 +682,8 @@ PathRequest::doUpdate(
             destCurrencies.append(to_string(c));
     }
 
-    newStatus[jss::source_account] =
-        app_.accountIDCache().toBase58(*raSrcAccount);
-    newStatus[jss::destination_account] =
-        app_.accountIDCache().toBase58(*raDstAccount);
+    newStatus[jss::source_account] = toBase58(*raSrcAccount);
+    newStatus[jss::destination_account] = toBase58(*raDstAccount);
     newStatus[jss::destination_amount] = saDstAmount.getJson(JsonOptions::none);
     newStatus[jss::full_reply] = !fast;
 

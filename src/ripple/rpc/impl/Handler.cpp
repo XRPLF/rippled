@@ -72,6 +72,7 @@ Handler const handlerArray[]{
     {"account_offers", byRef(&doAccountOffers), Role::USER, NO_CONDITION},
     {"account_tx", byRef(&doAccountTxJson), Role::USER, NO_CONDITION},
     {"blacklist", byRef(&doBlackList), Role::ADMIN, NO_CONDITION},
+    {"book_changes", byRef(&doBookChanges), Role::USER, NO_CONDITION},
     {"book_offers", byRef(&doBookOffers), Role::USER, NO_CONDITION},
     {"can_delete", byRef(&doCanDelete), Role::ADMIN, NO_CONDITION},
     {"channel_authorize", byRef(&doChannelAuthorize), Role::USER, NO_CONDITION},

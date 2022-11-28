@@ -160,7 +160,7 @@ doAccountNFTs(RPC::JsonContext& context)
             cp = nullptr;
     }
 
-    result[jss::account] = context.app.accountIDCache().toBase58(accountID);
+    result[jss::account] = toBase58(accountID);
     context.loadType = Resource::feeMediumBurdenRPC;
     return result;
 }
@@ -275,7 +275,7 @@ doAccountObjects(RPC::JsonContext& context)
         result[jss::account_objects] = Json::arrayValue;
     }
 
-    result[jss::account] = context.app.accountIDCache().toBase58(accountID);
+    result[jss::account] = toBase58(accountID);
     context.loadType = Resource::feeMediumBurdenRPC;
     return result;
 }

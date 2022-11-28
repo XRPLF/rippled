@@ -1227,10 +1227,7 @@ public:
             int maxParams;
         };
 
-        // FIXME: replace this with a function-static std::map and the lookup
-        // code with std::map::find when the problem with magic statics on
-        // Visual Studio is fixed.
-        static Command const commands[] = {
+        static constexpr Command commands[] = {
             // Request-response methods
             // - Returns an error, or the request.
             // - To modify the method, provide a new method in the request.
@@ -1242,6 +1239,7 @@ public:
             {"account_objects", &RPCParser::parseAccountItems, 1, 5},
             {"account_offers", &RPCParser::parseAccountItems, 1, 4},
             {"account_tx", &RPCParser::parseAccountTransactions, 1, 8},
+            {"book_changes", &RPCParser::parseLedgerId, 1, 1},
             {"book_offers", &RPCParser::parseBookOffers, 2, 7},
             {"can_delete", &RPCParser::parseCanDelete, 0, 1},
             {"channel_authorize", &RPCParser::parseChannelAuthorize, 3, 4},

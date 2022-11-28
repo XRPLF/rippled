@@ -104,9 +104,8 @@ private:
     std::uint32_t deleteBatch_ = 100;
     std::chrono::milliseconds backOff_{100};
     std::chrono::seconds ageThreshold_{60};
-    /// If  the node is out of sync during an
-    /// online_delete health check, sleep the thread
-    /// for this time, and continue checking until
+    /// If  the node is out of sync during an online_delete healthWait()
+    /// call, sleep the thread for this time, and continue checking until
     /// recovery.
     /// See also: "recovery_wait_seconds" in rippled-example.cfg
     std::chrono::seconds recoveryWaitTime_{5};
@@ -199,7 +198,7 @@ private:
         {
             dbRotating_->fetchNodeObject(
                 key, 0, NodeStore::FetchType::synchronous, true);
-            if (!(++check % checkHealthInterval_) && stopping())
+            if (!(++check % checkHealthInterval_) && healthWait() == stopping)
                 return true;
         }
 
@@ -225,13 +224,14 @@ private:
 
     /**
      * This is a health check for online deletion that waits until rippled is
-     * stable until returning. If the server is stopping, then it returns
-     * "true" to inform the caller to allow the server to stop.
+     * stable before returning. It returns an indication of whether the server
+     * is stopping.
      *
      * @return Whether the server is stopping.
      */
-    bool
-    stopping();
+    enum HealthResult { stopping, keepGoing };
+    [[nodiscard]] HealthResult
+    healthWait();
 
 public:
     void

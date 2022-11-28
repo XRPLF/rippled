@@ -31,7 +31,7 @@ if (tests)
     # find_path sets a CACHE variable, so don't try using a "local" variable.
     find_path (${variable} "${name}" ${ARGN})
     if (NOT ${variable})
-      message (WARNING "could not find ${name}")
+      message (NOTICE "could not find ${name}")
     else ()
       message (STATUS "found ${name}: ${${variable}}/${name}")
     endif ()

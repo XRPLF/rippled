@@ -29,18 +29,7 @@ namespace beast {
 //------------------------------------------------------------------------------
 
 template <class Container, bool IsConst>
-class LockFreeStackIterator : public std::iterator<
-                                  std::forward_iterator_tag,
-                                  typename Container::value_type,
-                                  typename Container::difference_type,
-                                  typename std::conditional<
-                                      IsConst,
-                                      typename Container::const_pointer,
-                                      typename Container::pointer>::type,
-                                  typename std::conditional<
-                                      IsConst,
-                                      typename Container::const_reference,
-                                      typename Container::reference>::type>
+class LockFreeStackIterator
 {
 protected:
     using Node = typename Container::Node;
@@ -48,7 +37,9 @@ protected:
         typename std::conditional<IsConst, Node const*, Node*>::type;
 
 public:
+    using iterator_category = std::forward_iterator_tag;
     using value_type = typename Container::value_type;
+    using difference_type = typename Container::difference_type;
     using pointer = typename std::conditional<
         IsConst,
         typename Container::const_pointer,
