@@ -67,6 +67,9 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         -> std::pair<std::shared_ptr<const SLE>, TER> {
         if (id)
         {
+            if (id->isZero())
+                return {nullptr, tecOBJECT_NOT_FOUND};
+
             auto offerSLE = ctx.view.read(keylet::nftoffer(*id));
 
             if (!offerSLE)

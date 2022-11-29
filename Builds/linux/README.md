@@ -7,9 +7,10 @@ the [rippled-package-builder](https://github.com/ripple/rippled-package-builder)
 repository. 
 
 Note: Ubuntu 16.04 users may need to update their compiler (see the dependencies
-section). For non Ubuntu distributions, the steps below should work be
+section). For non Ubuntu distributions, the steps below should work by
 installing the appropriate dependencies using that distribution's package
 management tools.
+
 
 ## Dependencies
 
@@ -28,8 +29,6 @@ $ apt-get install -y autoconf flex bison
 ```
 
 Advanced users can choose to install newer versions of gcc, or the clang compiler.
-At this time, rippled only supports protobuf version 2. Using version 3 of 
-protobuf will give errors.
 
 ### Build Boost
 
@@ -42,7 +41,7 @@ $ tar -xzf boost_1_70_0.tar.gz
 $ cd boost_1_70_0
 $ ./bootstrap.sh
 $ ./b2 headers
-$ ./b2 -j<Num Parallel>
+$ ./b2 -j $(echo $(nproc)-2 | bc)
 ```
 
 ### (Optional) Dependencies for Building Source Documentation
@@ -88,8 +87,8 @@ git checkout develop
 If you didn't persistently set the `BOOST_ROOT` environment variable to the
 directory in which you compiled boost, then you should set it temporarily.
 
-For example, you built Boost in your home directory `~/boost_1_70_0`, you
-would do for any shell in which you want to build:
+For example, if you built Boost in your home directory `~/boost_1_70_0`, you
+would run the following shell command:
 
 ```
 export BOOST_ROOT=~/boost_1_70_0
@@ -104,8 +103,8 @@ All builds should be done in a separate directory from the source tree root
 (a subdirectory is fine). For example, from the root of the ripple source tree:
 
 ```
-mkdir my_build
-cd my_build
+mkdir build
+cd build
 ```
 
 followed by:
@@ -153,7 +152,7 @@ Several other infrequently used options are available - run `ccmake` or
 Once you have generated the build system, you can run the build via cmake:
 
 ```
-cmake --build . -- -j <parallel jobs>
+cmake --build . -- -j $(echo $(nproc)-2 | bc)
 ```
 
 the `-j` parameter in this example tells the build tool to compile several
@@ -174,7 +173,7 @@ building, e.g.:
 
 ```
 cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=/opt/local ..
-cmake --build . --target install -- -j <parallel jobs>
+cmake --build . --target install -- -j $(echo $(nproc)-2 | bc)
 ```
 
 We recommend specifying `CMAKE_INSTALL_PREFIX` when configuring in order to
@@ -184,7 +183,7 @@ the installation by specifying the `DESTDIR` env variable during the install pha
 e.g.:
 
 ```
-DESTDIR=~/mylibs cmake --build . --target install -- -j <parallel jobs>
+DESTDIR=~/mylibs cmake --build . --target install -- -j $(echo $(nproc)-2 | bc)
 ```
 
 in which case, the files would be installed in the `CMAKE_INSTALL_PREFIX` within
@@ -213,13 +212,13 @@ git submodule add -b master https://github.com/ripple/rippled.git vendor/rippled
 change the `vendor/rippled` path as desired for your repo layout. Furthermore,
 change the branch name if you want to track a different rippled branch, such
 as `develop`.
-   
+ 
 Second, to bring this submodule into your project, just add the rippled subdirectory:
 
 ```
 add_subdirectory (vendor/rippled)
 ```
-    
+
 ##### Option 2: installed rippled + find_package
 
 First, follow the "Optional Installation" instructions above to

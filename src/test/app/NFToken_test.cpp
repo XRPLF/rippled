@@ -1130,6 +1130,12 @@ class NFToken_test : public beast::unit_test::suite
         //----------------------------------------------------------------------
         // preclaim
 
+        // The buy offer must be non-zero.
+        env(token::acceptBuyOffer(buyer, beast::zero),
+            ter(tecOBJECT_NOT_FOUND));
+        env.close();
+        BEAST_EXPECT(ownerCount(env, buyer) == 0);
+
         // The buy offer must be present in the ledger.
         uint256 const missingOfferIndex = keylet::nftoffer(alice, 1).key;
         env(token::acceptBuyOffer(buyer, missingOfferIndex),
@@ -1139,6 +1145,12 @@ class NFToken_test : public beast::unit_test::suite
 
         // The buy offer must not have expired.
         env(token::acceptBuyOffer(buyer, aliceExpOfferIndex), ter(tecEXPIRED));
+        env.close();
+        BEAST_EXPECT(ownerCount(env, buyer) == 0);
+
+        // The sell offer must be non-zero.
+        env(token::acceptSellOffer(buyer, beast::zero),
+            ter(tecOBJECT_NOT_FOUND));
         env.close();
         BEAST_EXPECT(ownerCount(env, buyer) == 0);
 
