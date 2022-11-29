@@ -317,6 +317,8 @@ populateJsonResponse(
                     response[jss::meta], context, result.txn, *meta);
             }
         }
+
+        
         response[jss::validated] = result.validated;
     }
     return response;
