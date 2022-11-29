@@ -290,6 +290,26 @@ populateJsonResponse(
         else if (auto m = std::get_if<std::shared_ptr<TxMeta>>(&result.meta))
         {
             auto& meta = *m;
+            auto test = meta->getAsObject();
+            auto test1 = test.getFieldArray(sfAffectedNodes);
+            auto test2 = *dynamic_cast<STArray*>(&test.getField(sfAffectedNodes));
+            for(auto const node: test1){
+              //   auto const mNode = node.getField(sfModifiedNode);
+                 
+                 if(node.getFieldU16(sfLedgerEntryType) == ltNFTOKEN_PAGE && (node.isFieldPresent(sfPreviousFields)|| node.isFieldPresent(sfNewFields))){
+                    std::cout<<"test";
+                //     auto const& previousFields = node.peekAtField(sfPreviousFields).template downcast<STObject>();
+                //     // if(previousFields.isFieldPresent(sfNFToken) ){
+                //     //     auto const& nftokens = previousFields.getFieldArray(sfNFToken);
+                //     // }
+                 }
+            }
+            // for(auto const& node: test2){
+            //     if(node.getFieldU16(sfLedgerEntryType) == ltNFTOKEN_PAGE && node.getField(sfPreviousFields)){
+            //         count<<"hello";
+            //     }
+            // }
+      
             if (meta)
             {
                 response[jss::meta] = meta->getJson(JsonOptions::none);
