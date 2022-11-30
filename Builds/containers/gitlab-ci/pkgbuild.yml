@@ -1,6 +1,6 @@
 #########################################################################
 ##                                                                     ##
-##  gitlab CI defintition for rippled build containers and distro      ##
+##  gitlab CI definition for rippled build containers and distro       ##
 ##  packages (rpm and dpkg).                                           ##
 ##                                                                     ##
 #########################################################################
@@ -58,7 +58,7 @@ stages:
 .only_primary_template: &only_primary
   only:
     refs:
-      - /^(master|release|develop)$/
+      - /^(stable|release|unstable)$/
     variables:
       - $IS_PRIMARY_REPO == "true"
 
