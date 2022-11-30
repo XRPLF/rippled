@@ -627,6 +627,15 @@ STObject::getFieldArray(SField const& field) const
     return getFieldByConstRef<STArray>(field, empty);
 }
 
+const STObject&
+STObject::getFieldObject(SField const& field) const
+{
+    // TODO: No one else users STObject as inner objects
+    // review this!
+    static STObject const empty{sfGeneric};
+    return getFieldByConstRef<STObject>(field, empty);
+}
+
 void
 STObject::set(std::unique_ptr<STBase> v)
 {
