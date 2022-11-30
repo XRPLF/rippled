@@ -6,7 +6,7 @@ on:
 
 jobs:
   job:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     container:
       image: docker://rippleci/rippled-ci-builder:2944b78d22db
     steps:
