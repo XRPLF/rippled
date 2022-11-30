@@ -184,7 +184,16 @@ doGatewayBalances(RPC::JsonContext& context)
                         bal = -rs->getBalance();
                     }
                     else
-                        bal -= rs->getBalance();
+                    {
+                        try
+                        {
+                            bal -= rs->getBalance();
+                        }
+                        catch (std::runtime_error& e)
+                        {
+                            result[jss::overflow] = "true";
+                        }
+                    }
                 }
             });
     }
