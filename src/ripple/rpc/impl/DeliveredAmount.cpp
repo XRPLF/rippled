@@ -74,7 +74,74 @@ getDeliveredAmount(
         if (getLedgerIndex() >= 4594095 ||
             getCloseTime() > NetClock::time_point{446000000s})
         {
-            return serializedTx->getFieldAmount(sfAmount);
+            auto const meta = transactionMeta.getAsObject();
+            auto const txAmt = serializedTx->getFieldAmount(sfAmount);
+
+            // if there are no modified fields (somehow) then nothing was
+            // delivered
+            if (!meta.isFieldPresent(sfAffectedNodes))
+                return {};
+
+            // if it's XRP then it was delivered if the payment was successful
+            if (isXRP(txAmt))
+                return txAmt;
+
+            if (!serializedTx->isFieldPresent(sfDestination))
+                return {};
+
+            // otherwise take the difference between final and initial fields in
+            // the metadata
+            auto const issue = txAmt.issue();
+            auto const txAcc = serializedTx->getAccountID(sfDestination);
+
+            // place the accounts into the canonical ripple state order
+            auto const& accA = issue.account < txAcc ? issue.account : txAcc;
+            auto const& accB = issue.account < txAcc ? txAcc : issue.account;
+
+            for (auto const& node : meta.getFieldArray(sfAffectedNodes))
+            {
+                SField const& metaType = node.getFName();
+                uint16_t nodeType = node.getFieldU16(sfLedgerEntryType);
+                if (nodeType != ltRIPPLE_STATE)
+                    continue;
+
+                if (!node.isFieldPresent(sfFinalFields) ||
+                    !node.isFieldPresent(sfPreviousFields))
+                    continue;
+
+                auto const& ffBase = node.peekAtField(sfFinalFields);
+                auto const& finalFields = ffBase.template downcast<STObject>();
+                auto const& pfBase = node.peekAtField(sfPreviousFields);
+                auto const& previousFields =
+                    pfBase.template downcast<STObject>();
+
+                if (finalFields.getFieldAmount(sfLowLimit).getIssuer() !=
+                        accA ||
+                    finalFields.getFieldAmount(sfHighLimit).getIssuer() != accB)
+                    continue;
+
+                // execution to here means we are on the correct trustline
+                try
+                {
+                    STAmount difference =
+                        finalFields.getFieldAmount(sfBalance) -
+                        previousFields.getFieldAmount(sfBalance);
+
+                    difference.setIssue(issue);
+
+                    if (difference.negative())
+                        difference.negate();
+
+                    return difference;
+                }
+                catch (std::runtime_error& e)
+                {
+                    // overflow computing difference so
+                    // err on the side of caution and
+                    // do not return a delivered amount
+                    return {};
+                }
+            }
         }
     }
 
