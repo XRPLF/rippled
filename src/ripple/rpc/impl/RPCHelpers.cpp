@@ -23,6 +23,7 @@
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/app/paths/TrustLine.h>
 #include <ripple/app/rdb/RelationalDatabase.h>
+#include <ripple/app/tx/impl/details/NFTokenUtils.h>
 #include <ripple/ledger/View.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/AccountID.h>
@@ -109,7 +110,7 @@ getStartHint(std::shared_ptr<SLE const> const& sle, AccountID const& accountID)
 }
 
 bool
-isOwnedByAccount(
+isRelatedToAccount(
     ReadView const& ledger,
     std::shared_ptr<SLE const> const& sle,
     AccountID const& accountID)
@@ -121,12 +122,18 @@ isOwnedByAccount(
     }
     else if (sle->isFieldPresent(sfAccount))
     {
-        return sle->getAccountID(sfAccount) == accountID;
+        return sle->getAccountID(sfAccount) == accountID ||
+            (sle->isFieldPresent(sfDestination) &&
+             sle->getAccountID(sfDestination) == accountID);
     }
     else if (sle->getType() == ltSIGNER_LIST)
     {
         Keylet const accountSignerList = keylet::signers(accountID);
         return sle->key() == accountSignerList.key;
+    }
+    else if (sle->getType() == ltNFTOKEN_OFFER)
+    {
+        return sle->getAccountID(sfOwner) == accountID;
     }
 
     return false;

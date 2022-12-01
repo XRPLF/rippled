@@ -520,6 +520,7 @@ findTokenAndPage(
     }
     return std::nullopt;
 }
+
 void
 removeAllTokenOffers(ApplyView& view, Keylet const& directory)
 {
