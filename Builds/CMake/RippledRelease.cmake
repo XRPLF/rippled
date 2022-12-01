@@ -89,7 +89,7 @@ if (is_root_project)
     add_custom_target (dpkg_container
       docker build
         --pull
-        --build-arg DIST_TAG=18.04
+        --build-arg DIST_TAG=20.04
         --build-arg GIT_COMMIT=${commit_hash}
         -t rippled-dpkg-builder:${container_label}
         $<$<BOOL:${dpkg_cache_from}>:--cache-from=${dpkg_cache_from}>
@@ -182,7 +182,7 @@ if (is_root_project)
     add_custom_target (ci_container
       docker build
         --pull
-        --build-arg DIST_TAG=18.04
+        --build-arg DIST_TAG=20.04
         --build-arg GIT_COMMIT=${commit_hash}
         --build-arg CI_USE=true
         -t rippled-ci-builder:${container_label}

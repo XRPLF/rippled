@@ -3,7 +3,7 @@ set -ex
 
 source /etc/os-release
 
-if [[ ${VERSION_ID} =~ ^20\. || ${VERSION_ID} =~ ^18\. ]] ; then
+if [[ ${VERSION_ID} =~ ^20\. || ${VERSION_ID} =~ ^22\. ]] ; then
     echo "setup for ${PRETTY_NAME}"
 else
     echo "${VERSION} not supported"
@@ -19,12 +19,9 @@ apt-get update -o Acquire::CompressionTypes::Order::=gz
 
 apt-get -y update
 apt-get -y install apt-utils
-apt-get -y install software-properties-common wget
+apt-get -y install software-properties-common wget curl ca-certificates
 apt-get -y upgrade
-if [[ ${VERSION_ID} =~ ^18\. ]] ; then
-    apt-add-repository -y multiverse
-    apt-add-repository -y universe
-fi
+
 add-apt-repository -y ppa:ubuntu-toolchain-r/test
 apt-get -y clean
 apt-get -y update
@@ -34,7 +31,6 @@ apt-get -y --fix-missing install \
     openssl libssl-dev \
     liblzma-dev libbz2-dev zlib1g-dev \
     libjemalloc-dev \
-    python-pip \
     gdb gdbserver \
     libstdc++6 \
     flex bison parallel \
@@ -42,8 +38,13 @@ apt-get -y --fix-missing install \
     java-common javacc \
     dpkg-dev debhelper devscripts fakeroot \
     debmake git-buildpackage dh-make gitpkg debsums gnupg \
-    dh-buildinfo dh-make dh-systemd \
+    dh-buildinfo dh-make  \
     apt-transport-https
+
+if [[ ${VERSION_ID} =~ ^20\. ]] ; then
+apt-get install -y \
+    dh-systemd
+fi
 
 apt-get -y install gcc-11 g++-11
 update-alternatives --install \
@@ -75,13 +76,6 @@ fi
 
 wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
 
-if [[ ${VERSION_ID} =~ ^18\. ]] ; then
-    cat << EOF > /etc/apt/sources.list.d/llvm.list
-
-deb http://apt.llvm.org/focal/ llvm-toolchain-focal-13 main
-deb-src http://apt.llvm.org/focal/ llvm-toolchain-focal-13 main
-EOF
-fi
 if [[ ${VERSION_ID} =~ ^20\. ]] ; then
     cat << EOF > /etc/apt/sources.list.d/llvm.list
 deb http://apt.llvm.org/focal/ llvm-toolchain-focal main
@@ -91,9 +85,7 @@ deb-src http://apt.llvm.org/focal/ llvm-toolchain-focal-13 main
 deb http://apt.llvm.org/focal/ llvm-toolchain-focal-14 main
 deb-src http://apt.llvm.org/focal/ llvm-toolchain-focal-14 main
 EOF
-    apt-get -y install binutils
-elif [[ ${VERSION_ID} =~ ^18\. ]] ; then
-    apt-get -y install  binutils-gold
+    apt-get -y install binutils clang-12
 fi
 
 
@@ -102,8 +94,8 @@ if [[ ${VERSION_ID} =~ ^20\. ]] ; then
 
 apt-get -y install \
     clang-12 libclang-common-12-dev libclang-12-dev libllvm12 llvm-12 \
-    llvm-12-dev llvm-12-runtime clang-format-12 python-clang-12 \
-    lld-12 libfuzzer-12-dev libc++-12-dev
+    llvm-12-dev llvm-12-runtime clang-format-12 python3-clang-12 \
+    lld-12 libfuzzer-12-dev libc++-12-dev python-is-python3
 update-alternatives --install \
     /usr/bin/clang clang /usr/bin/clang-12 40 \
     --slave /usr/bin/clang++ clang++ /usr/bin/clang++-12 \
@@ -114,10 +106,12 @@ update-alternatives --install \
     --slave /usr/bin/llvm-ar llvm-ar /usr/bin/llvm-ar-12 \
     --slave /usr/bin/llvm-cov llvm-cov /usr/bin/llvm-cov-12 \
     --slave /usr/bin/llvm-nm llvm-nm /usr/bin/llvm-nm-12
+
 apt-get -y install \
     clang-14 libclang-common-14-dev libclang-14-dev libllvm14 llvm-14 \
-    llvm-14-dev llvm-14-runtime clang-format-14 python-clang-14 \
+    llvm-14-dev llvm-14-runtime clang-format-14 python3-clang-14 \
     lld-14 libfuzzer-14-dev libc++-14-dev
+
 update-alternatives --install \
     /usr/bin/clang clang /usr/bin/clang-14 20 \
     --slave /usr/bin/clang++ clang++ /usr/bin/clang++-14 \
