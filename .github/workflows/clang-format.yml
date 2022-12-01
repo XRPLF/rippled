@@ -11,7 +11,7 @@ jobs:
     - uses: actions/checkout@v2
     - name: Install clang-format
       run: |
-        codename=$( lsb_release -cs )
+        codename=$( lsb_release --codename --short )
         sudo tee /etc/apt/sources.list.d/llvm.list >/dev/null <<EOF
         deb http://apt.llvm.org/${codename}/ llvm-toolchain-${codename}-${CLANG_VERSION} main
         deb-src http://apt.llvm.org/${codename}/ llvm-toolchain-${codename}-${CLANG_VERSION} main
