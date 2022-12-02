@@ -75,41 +75,48 @@ getDeliveredAmount(
             getCloseTime() > NetClock::time_point{446000000s})
         {
             auto const meta = transactionMeta.getAsObject();
-            auto const txAmt = serializedTx->getFieldAmount(sfAmount);
 
             // if there are no modified fields (somehow) then nothing was
             // delivered
             if (!meta.isFieldPresent(sfAffectedNodes))
                 return {};
 
-            // if it's XRP then it was delivered if the payment was successful
-            if (isXRP(txAmt))
-                return txAmt;
-
-            // otherwise take the difference between final and initial fields in
-            // the metadata
+            bool const hasDeliverMin =
+                serializedTx->isFieldPresent(sfDeliverMin);
+            bool const hasAmount = serializedTx->isFieldPresent(sfAmount);
             bool const isCheckCash =
                 serializedTx->getFieldU16(sfTransactionType) == ttCHECK_CASH;
 
-            if (isCheckCash)
-            {
-                // use sfAccount
-            }
-            else if (serializedTx->isFieldPresent(sfDestination))
-            {
-                // use sfDestination
-            }
-            else
+            if (!hasDeliverMin && !hasAmount)
                 return {};
 
-            auto const issue = txAmt.issue();
+            // CheckCash may specify DeliverMin instead of Amount
+            auto const txAmt = serializedTx->getFieldAmount(
+                hasAmount ? sfAmount : sfDeliverMin);
+
+            // if it's XRP then it was all delivered if the payment was
+            // successful otherwise take the difference between final and
+            // initial fields in the metadata
+            if (isXRP(txAmt))
+                return txAmt;
+
+            // In a CheckCash txn the destination is the sender
+            if (!isCheckCash && !serializedTx->isFieldPresent(sfDestination))
+                return {};
+
+            // get the destination
             auto const txAcc = serializedTx->getAccountID(
                 isCheckCash ? sfAccount : sfDestination);
+
+            // get the issuer/currency
+            auto const issue = txAmt.issue();
 
             // place the accounts into the canonical ripple state order
             auto const& accA = issue.account < txAcc ? issue.account : txAcc;
             auto const& accB = issue.account < txAcc ? txAcc : issue.account;
 
+            // search the Affected nodes in the metadata to find the receiving
+            // trustline
             for (auto const& node : meta.getFieldArray(sfAffectedNodes))
             {
                 SField const& metaType = node.getFName();
@@ -135,6 +142,7 @@ getDeliveredAmount(
                 // execution to here means we are on the correct trustline
                 try
                 {
+                    // compute and return the balance mutation on this trustline
                     STAmount difference =
                         finalFields.getFieldAmount(sfBalance) -
                         previousFields.getFieldAmount(sfBalance);
