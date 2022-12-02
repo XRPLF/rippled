@@ -60,6 +60,8 @@ jobs:
             if [ $ID = 'centos' ];then
               rpm_file=$(tail -n1 build_vars | cut -d"=" -f2 ).x86_64.rpm
               rpm -i ./${rpm_file}
+            else
+              apt-get install -y ./rippled_${dpkg_full_version}_amd64.deb
             fi
             /usr/local/bin/rippled --unittest 2>> error.txt 1>> output.txt
             cat build_vars >> $GITHUB_STEP_SUMMARY
