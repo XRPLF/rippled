@@ -12,10 +12,10 @@ variables:
   # cmake build (container targets) and tagged/pushed so they
   # can be used here
   RPM_CONTAINER_TAG: "2022-08-26"
-  RPM_CONTAINER_NAME: "rippled-rpm-builder"
+  RPM_CONTAINER_NAME: "rippleci/rippled-rpm-builder"
   RPM_CONTAINER_FULLNAME: "${RPM_CONTAINER_NAME}:${RPM_CONTAINER_TAG}"
-  DPKG_CONTAINER_TAG: "2022-08-26"
-  DPKG_CONTAINER_NAME: "rippled-dpkg-builder"
+  DPKG_CONTAINER_TAG: "2022-12-01"
+  DPKG_CONTAINER_NAME: "rippleci/rippled-dpkg-builder"
   DPKG_CONTAINER_FULLNAME: "${DPKG_CONTAINER_NAME}:${DPKG_CONTAINER_TAG}"
   ARTIFACTORY_HOST: "artifactory.ops.ripple.com"
   ARTIFACTORY_HUB: "${ARTIFACTORY_HOST}:6555"
