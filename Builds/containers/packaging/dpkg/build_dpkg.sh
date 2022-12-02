@@ -20,17 +20,12 @@ RIPPLED_DPKG_VERSION=$(echo "${RIPPLED_VERSION}" | sed 's!-!~!g')
 # TODO - decide how to handle the trailing/release
 # version here (hardcoded to 1). Does it ever need to change?
 RIPPLED_DPKG_FULL_VERSION="${RIPPLED_DPKG_VERSION}-1"
-<<<<<<< HEAD
-git config --global --add safe.directory /opt/rippled_bld/pkg/rippled
-cd /opt/rippled_bld/pkg/rippled
-=======
 
 git config --global --add safe.directory /__w/rippled/rippled
 if [ -z $GITHUB_ACTIONS ];then
     cd /opt/rippled_bld/pkg/rippled
 fi
 
->>>>>>> 3f2367cd30 (update)
 if [[ -n $(git status --porcelain) ]]; then
     git status
     error "Unstaged changes in this repo - please commit first"
