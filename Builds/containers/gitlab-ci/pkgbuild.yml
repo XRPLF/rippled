@@ -231,15 +231,6 @@ ubuntu_22_smoketest:
     name: artifactory.ops.ripple.com/ubuntu:22.04
   <<: *run_local_smoketest
 
-debian_10_smoketest:
-  stage: smoketest
-  dependencies:
-    - dpkg_build
-    - dpkg_sign
-  image:
-    name: artifactory.ops.ripple.com/debian:10
-  <<: *run_local_smoketest
-
 debian_11_smoketest:
   stage: smoketest
   dependencies:
@@ -402,18 +393,6 @@ ubuntu_22_verify_repo_test:
   <<: *only_primary
   <<: *run_repo_smoketest
 
-debian_10_verify_repo_test:
-  stage: verify_from_test
-  variables:
-    DISTRO: "buster"
-    DEB_REPO: "rippled-deb-test-mirror"
-  image:
-    name: artifactory.ops.ripple.com/debian:10
-  dependencies:
-    - dpkg_sign
-  <<: *only_primary
-  <<: *run_repo_smoketest
-
 debian_11_verify_repo_test:
   stage: verify_from_test
   variables:
@@ -543,18 +522,6 @@ ubuntu_22_verify_repo_prod:
     DEB_REPO: "rippled-deb"
   image:
     name: artifactory.ops.ripple.com/ubuntu:22.04
-  dependencies:
-    - dpkg_sign
-  <<: *only_primary
-  <<: *run_repo_smoketest
-
-debian_10_verify_repo_prod:
-  stage: verify_from_prod
-  variables:
-    DISTRO: "buster"
-    DEB_REPO: "rippled-deb"
-  image:
-    name: artifactory.ops.ripple.com/debian:10
   dependencies:
     - dpkg_sign
   <<: *only_primary
