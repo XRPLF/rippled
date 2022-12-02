@@ -17,10 +17,10 @@ RIPPLED_DPKG_VERSION=$(echo "${RIPPLED_VERSION}" | sed 's!-!~!g')
 RIPPLED_DPKG_FULL_VERSION="${RIPPLED_DPKG_VERSION}-1"
 git config --global --add safe.directory /opt/rippled_bld/pkg/rippled
 cd /opt/rippled_bld/pkg/rippled
-# if [[ -n $(git status --porcelain) ]]; then
-#     git status
-#     error "Unstaged changes in this repo - please commit first"
-# fi
+if [[ -n $(git status --porcelain) ]]; then
+    git status
+    error "Unstaged changes in this repo - please commit first"
+fi
 git archive --format tar.gz --prefix rippled-${RIPPLED_DPKG_VERSION}/ -o ../rippled-${RIPPLED_DPKG_VERSION}.tar.gz HEAD
 cd ..
 # dpkg debmake would normally create this link, but we do it manually
