@@ -86,13 +86,25 @@ getDeliveredAmount(
             if (isXRP(txAmt))
                 return txAmt;
 
-            if (!serializedTx->isFieldPresent(sfDestination))
-                return {};
-
             // otherwise take the difference between final and initial fields in
             // the metadata
+            bool const isCheckCash =
+                serializedTx->getFieldU16(sfTransactionType) == ttCHECK_CASH;
+
+            if (isCheckCash)
+            {
+                // use sfAccount
+            }
+            else if (serializedTx->isFieldPresent(sfDestination))
+            {
+                // use sfDestination
+            }
+            else
+                return {};
+
             auto const issue = txAmt.issue();
-            auto const txAcc = serializedTx->getAccountID(sfDestination);
+            auto const txAcc = serializedTx->getAccountID(
+                isCheckCash ? sfAccount : sfDestination);
 
             // place the accounts into the canonical ripple state order
             auto const& accA = issue.account < txAcc ? issue.account : txAcc;
