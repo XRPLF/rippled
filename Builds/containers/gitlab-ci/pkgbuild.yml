@@ -11,7 +11,7 @@ variables:
   # these containers are built manually using the rippled
   # cmake build (container targets) and tagged/pushed so they
   # can be used here
-  RPM_CONTAINER_TAG: "2022-08-25"
+  RPM_CONTAINER_TAG: "2022-08-20"
   RPM_CONTAINER_NAME: "rippleci/rippled-rpm-builder"
   RPM_CONTAINER_FULLNAME: "${RPM_CONTAINER_NAME}:${RPM_CONTAINER_TAG}"
   DPKG_CONTAINER_TAG: "2022-12-01"
