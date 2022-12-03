@@ -1,4 +1,4 @@
-ARG DIST_TAG=18.04
+ARG DIST_TAG=20.04
 FROM ubuntu:$DIST_TAG
 ARG GIT_COMMIT=unknown
 ARG CI_USE=false
@@ -15,7 +15,7 @@ RUN chmod +x /tmp/ubuntu_setup.sh && \
     chmod +x /tmp/install_cmake.sh
 RUN /tmp/ubuntu_setup.sh
 
-RUN /tmp/install_cmake.sh 3.16.1 /opt/local/cmake-3.16
+RUN /tmp/install_cmake.sh 3.16.3 /opt/local/cmake-3.16
 RUN ln -s /opt/local/cmake-3.16 /opt/local/cmake
 ENV PATH="/opt/local/cmake/bin:$PATH"
 # also install min supported cmake for testing
@@ -27,10 +27,9 @@ ENV BOOST_ROOT="/opt/local/boost/_INSTALLED_"
 ENV OPENSSL_ROOT="/opt/local/openssl"
 
 # prep files for package building
-RUN mkdir -m 777 -p /opt/rippled_bld/pkg/debian
-RUN update-alternatives --set gcc /usr/bin/gcc-8
+RUN update-alternatives --set gcc /usr/bin/gcc-11
+RUN mkdir -m 777 -p /opt/rippled_bld/pkg/
 WORKDIR /opt/rippled_bld/pkg
 
 COPY packaging/dpkg/build_dpkg.sh ./
 CMD ./build_dpkg.sh
-

@@ -27,9 +27,9 @@ if (is_root_project)
         OUTPUT_STRIP_TRAILING_WHITESPACE)
       message (STATUS "docker local group id: ${DOCKER_GROUP_ID}")
     endif ()
-    if (DOCKER_USER_ID AND DOCKER_GROUP_ID)
-      set(map_user TRUE)
-    endif ()
+    # if (DOCKER_USER_ID AND DOCKER_GROUP_ID)
+      set(map_user FALSE)
+    # endif ()
     #[===================================================================[
         rpm
     #]===================================================================]
@@ -37,7 +37,7 @@ if (is_root_project)
       docker build
         --pull
         --build-arg GIT_COMMIT=${commit_hash}
-        -t rippled-rpm-builder:${container_label}
+        -t rippleci/rippled-rpm-builder:${container_label}
         $<$<BOOL:${rpm_cache_from}>:--cache-from=${rpm_cache_from}>
         -f centos-builder/Dockerfile .
       WORKING_DIRECTORY  ${CMAKE_CURRENT_SOURCE_DIR}/Builds/containers
@@ -67,7 +67,7 @@ if (is_root_project)
         -v ${CMAKE_CURRENT_SOURCE_DIR}:/opt/rippled_bld/pkg/rippled
         -v ${CMAKE_CURRENT_BINARY_DIR}/packages:/opt/rippled_bld/pkg/out
         "$<$<BOOL:${map_user}>:--volume=/etc/passwd:/etc/passwd;--volume=/etc/group:/etc/group;--user=${DOCKER_USER_ID}:${DOCKER_GROUP_ID}>"
-        -t rippled-rpm-builder:${container_label}
+        -t rippleci/rippled-rpm-builder:${container_label}
         /bin/bash -c "cp -fpu rippled/Builds/containers/packaging/rpm/build_rpm.sh . && ./build_rpm.sh"
       VERBATIM
       USES_TERMINAL
@@ -89,9 +89,9 @@ if (is_root_project)
     add_custom_target (dpkg_container
       docker build
         --pull
-        --build-arg DIST_TAG=18.04
+        --build-arg DIST_TAG=20.04
         --build-arg GIT_COMMIT=${commit_hash}
-        -t rippled-dpkg-builder:${container_label}
+        -t rippleci/rippled-dpkg-builder:${container_label}
         $<$<BOOL:${dpkg_cache_from}>:--cache-from=${dpkg_cache_from}>
         -f ubuntu-builder/Dockerfile .
       WORKING_DIRECTORY  ${CMAKE_CURRENT_SOURCE_DIR}/Builds/containers
@@ -142,7 +142,7 @@ if (is_root_project)
         -v ${CMAKE_CURRENT_SOURCE_DIR}:/opt/rippled_bld/pkg/rippled
         -v ${CMAKE_CURRENT_BINARY_DIR}/packages:/opt/rippled_bld/pkg/out
         "$<$<BOOL:${map_user}>:--volume=/etc/passwd:/etc/passwd;--volume=/etc/group:/etc/group;--user=${DOCKER_USER_ID}:${DOCKER_GROUP_ID}>"
-        -t rippled-dpkg-builder:${container_label}
+        -t rippleci/rippled-dpkg-builder:${container_label}
         /bin/bash -c "cp -fpu rippled/Builds/containers/packaging/dpkg/build_dpkg.sh . && ./build_dpkg.sh"
       VERBATIM
       USES_TERMINAL
@@ -182,7 +182,7 @@ if (is_root_project)
     add_custom_target (ci_container
       docker build
         --pull
-        --build-arg DIST_TAG=18.04
+        --build-arg DIST_TAG=20.04
         --build-arg GIT_COMMIT=${commit_hash}
         --build-arg CI_USE=true
         -t rippled-ci-builder:${container_label}

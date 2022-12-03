@@ -17,12 +17,12 @@ function build_boost()
     fi
 }
 
-build_boost "1.70.0" true
+build_boost "1.77.0" true
 
 # installed in opt, so won't be used
 # unless specified by OPENSSL_ROOT_DIR
 cd /tmp
-OPENSSL_VER=1.1.1d
+OPENSSL_VER=1.1.1q
 wget https://www.openssl.org/source/openssl-${OPENSSL_VER}.tar.gz
 tar xf openssl-${OPENSSL_VER}.tar.gz
 cd openssl-${OPENSSL_VER}
@@ -30,41 +30,41 @@ cd openssl-${OPENSSL_VER}
 SSLDIR=$(openssl version -d | cut -d: -f2 | tr -d [:space:]\")
 ./config -fPIC --prefix=/opt/local/openssl --openssldir=${SSLDIR} zlib shared
 make -j$(nproc) >> make_output.txt 2>&1
-make install >> make_output.txt 2>&1
+make install_sw >> make_output.txt 2>&1
 cd ..
 rm -f openssl-${OPENSSL_VER}.tar.gz
 rm -rf openssl-${OPENSSL_VER}
 LD_LIBRARY_PATH=${LD_LIBRARY_PATH:-}:/opt/local/openssl/lib /opt/local/openssl/bin/openssl version -a
 
 cd /tmp
-wget https://libarchive.org/downloads/libarchive-3.4.1.tar.gz
-tar xzf libarchive-3.4.1.tar.gz
-cd libarchive-3.4.1
+wget https://libarchive.org/downloads/libarchive-3.6.1.tar.gz
+tar xzf libarchive-3.6.1.tar.gz
+cd libarchive-3.6.1
 mkdir _bld && cd _bld
 cmake -DCMAKE_BUILD_TYPE=Release ..
 make -j$(nproc) >> make_output.txt 2>&1
 make install >> make_output.txt 2>&1
 cd ../..
-rm -f libarchive-3.4.1.tar.gz
-rm -rf libarchive-3.4.1
+rm -f libarchive-3.6.1.tar.gz
+rm -rf libarchive-3.6.1
 
 cd /tmp
-wget https://github.com/protocolbuffers/protobuf/releases/download/v3.10.1/protobuf-all-3.10.1.tar.gz
-tar xf protobuf-all-3.10.1.tar.gz
-cd protobuf-3.10.1
+wget https://github.com/protocolbuffers/protobuf/releases/download/v21.5/protobuf-all-21.5.tar.gz
+tar xf protobuf-all-21.5.tar.gz
+cd protobuf-21.5
 ./autogen.sh
 ./configure
 make -j$(nproc) >> make_output.txt 2>&1
 make install >> make_output.txt 2>&1
 ldconfig
 cd ..
-rm -f protobuf-all-3.10.1.tar.gz
-rm -rf protobuf-3.10.1
+rm -f protobuf-all-2.5.tar.gz
+rm -rf protobuf-21.5
 
 cd /tmp
-wget https://c-ares.haxx.se/download/c-ares-1.15.0.tar.gz
-tar xf c-ares-1.15.0.tar.gz
-cd c-ares-1.15.0
+wget https://c-ares.haxx.se/download/c-ares-1.18.1.tar.gz
+tar xf c-ares-1.18.1.tar.gz
+cd c-ares-1.18.1
 mkdir _bld && cd _bld
 cmake \
   -DHAVE_LIBNSL=OFF \
@@ -80,8 +80,8 @@ cmake \
 make -j$(nproc) >> make_output.txt 2>&1
 make install >> make_output.txt 2>&1
 cd ../..
-rm -f c-ares-1.15.0.tar.gz
-rm -rf c-ares-1.15.0
+rm -f c-ares-1.18.1.tar.gz
+rm -rf c-ares-1.18.1
 
 cd /tmp
 wget https://github.com/grpc/grpc/archive/v1.25.0.tar.gz
@@ -105,7 +105,7 @@ rm -rf grpc-1.25.0
 
 if [ "${CI_USE}" = true ] ; then
 
-    build_boost "1.71.0" false
+    build_boost "1.77.0" false
 
     cd /tmp
     wget https://github.com/doxygen/doxygen/archive/Release_1_8_16.tar.gz
