@@ -426,7 +426,7 @@ public:
     // Execute a pretend consensus round for a flag ledger
     void
     doRound(
-        uint256 const& feat,
+        std::unordered_set<base_uint<256>, beast::uhash<>> const features,
         AmendmentTable& table,
         weeks week,
         std::vector<std::pair<PublicKey, SecretKey>> const& validators,
@@ -460,7 +460,8 @@ public:
 
             for (auto const& [hash, nVotes] : votes)
             {
-                if (feat == fixAmendmentMajorityCalc ? nVotes >= i : nVotes > i)
+                if (features.contains(fixAmendmentMajorityCalc) ? nVotes >= i
+                                                                : nVotes > i)
                 {
                     // We vote yes on this amendment
                     field.push_back(hash);
@@ -485,7 +486,7 @@ public:
         ourVotes = table.doValidation(enabled);
 
         auto actions = table.doVoting(
-            Rules({feat}), roundTime, enabled, majority, validations);
+            Rules{features}, roundTime, enabled, majority, validations);
         for (auto const& [hash, action] : actions)
         {
             // This code assumes other validators do as we do
@@ -524,7 +525,7 @@ public:
 
     // No vote on unknown amendment
     void
-    testNoOnUnknown(uint256 const& feat)
+    testNoOnUnknown(std::unordered_set<uint256, beast::uhash<>> const& features)
     {
         testcase("Vote NO on unknown");
 
@@ -541,7 +542,7 @@ public:
         majorityAmendments_t majority;
 
         doRound(
-            feat,
+            features,
             *table,
             weeks{1},
             validators,
@@ -556,7 +557,7 @@ public:
         votes.emplace_back(testAmendment, validators.size());
 
         doRound(
-            feat,
+            features,
             *table,
             weeks{2},
             validators,
@@ -572,7 +573,7 @@ public:
         // Note that the simulation code assumes others behave as we do,
         // so the amendment won't get enabled
         doRound(
-            feat,
+            features,
             *table,
             weeks{5},
             validators,
@@ -586,7 +587,7 @@ public:
 
     // No vote on vetoed amendment
     void
-    testNoOnVetoed(uint256 const& feat)
+    testNoOnVetoed(std::unordered_set<uint256, beast::uhash<>> const& features)
     {
         testcase("Vote NO on vetoed");
 
@@ -604,7 +605,7 @@ public:
         majorityAmendments_t majority;
 
         doRound(
-            feat,
+            features,
             *table,
             weeks{1},
             validators,
@@ -619,7 +620,7 @@ public:
         votes.emplace_back(testAmendment, validators.size());
 
         doRound(
-            feat,
+            features,
             *table,
             weeks{2},
             validators,
@@ -633,7 +634,7 @@ public:
         majority[testAmendment] = weekTime(weeks{1});
 
         doRound(
-            feat,
+            features,
             *table,
             weeks{5},
             validators,
@@ -647,7 +648,7 @@ public:
 
     // Vote on and enable known, not-enabled amendment
     void
-    testVoteEnable(uint256 const& feat)
+    testVoteEnable(std::unordered_set<uint256, beast::uhash<>> const& features)
     {
         testcase("voteEnable");
 
@@ -667,7 +668,7 @@ public:
 
         // Week 1: We should vote for all known amendments not enabled
         doRound(
-            feat,
+            features,
             *table,
             weeks{1},
             validators,
@@ -686,7 +687,7 @@ public:
 
         // Week 2: We should recognize a majority
         doRound(
-            feat,
+            features,
             *table,
             weeks{2},
             validators,
@@ -702,7 +703,7 @@ public:
 
         // Week 5: We should enable the amendment
         doRound(
-            feat,
+            features,
             *table,
             weeks{5},
             validators,
@@ -714,7 +715,7 @@ public:
 
         // Week 6: We should remove it from our votes and from having a majority
         doRound(
-            feat,
+            features,
             *table,
             weeks{6},
             validators,
@@ -730,7 +731,8 @@ public:
 
     // Detect majority at 80%, enable later
     void
-    testDetectMajority(uint256 const& feat)
+    testDetectMajority(
+        std::unordered_set<uint256, beast::uhash<>> const& features)
     {
         testcase("detectMajority");
 
@@ -757,7 +759,7 @@ public:
                 votes.emplace_back(testAmendment, i);
 
             doRound(
-                feat,
+                features,
                 *table,
                 weeks{i},
                 validators,
@@ -799,7 +801,8 @@ public:
 
     // Detect loss of majority
     void
-    testLostMajority(uint256 const& feat)
+    testLostMajority(
+        std::unordered_set<uint256, beast::uhash<>> const& features)
     {
         testcase("lostMajority");
 
@@ -807,6 +810,7 @@ public:
         auto const validators = makeValidators(16);
 
         test::jtx::Env env{*this};
+
         auto table = makeTable(
             env,
             weeks(8),
@@ -825,7 +829,7 @@ public:
             votes.emplace_back(testAmendment, validators.size());
 
             doRound(
-                feat,
+                features,
                 *table,
                 weeks{1},
                 validators,
@@ -847,7 +851,7 @@ public:
             votes.emplace_back(testAmendment, validators.size() - i);
 
             doRound(
-                feat,
+                features,
                 *table,
                 weeks{i + 1},
                 validators,
@@ -856,8 +860,11 @@ public:
                 enabled,
                 majority);
 
-            if (i < 4)  // 16 - 3 = 13 => 13/16 = 0.8125 => > 80%
-            {           // 16 - 4 = 12 => 12/16 = 0.75 => < 80%
+            // For 80% cut off is 4: (16-4)/16 < 0.80 < (16-3)/16
+            int lim = 4;
+
+            if (i < lim)
+            {
                 // We are voting yes, not enabled, majority
                 BEAST_EXPECT(!ourVotes.empty());
                 BEAST_EXPECT(enabled.empty());
@@ -917,13 +924,13 @@ public:
     }
 
     void
-    testFeature(uint256 const& feat)
+    testFeature(std::unordered_set<uint256, beast::uhash<>> const& features)
     {
-        testNoOnUnknown(feat);
-        testNoOnVetoed(feat);
-        testVoteEnable(feat);
-        testDetectMajority(feat);
-        testLostMajority(feat);
+        testNoOnUnknown(features);
+        testNoOnVetoed(features);
+        testVoteEnable(features);
+        testDetectMajority(features);
+        testLostMajority(features);
     }
 
     void
@@ -935,7 +942,8 @@ public:
         testEnableVeto();
         testHasUnsupported();
         testFeature({});
-        testFeature(fixAmendmentMajorityCalc);
+        testFeature({fixAmendmentMajorityCalc});
+        testFeature({fixAmendmentMajorityCalc, fixAmendmentFlapping});
     }
 };
 

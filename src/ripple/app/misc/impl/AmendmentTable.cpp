@@ -98,11 +98,17 @@ class AmendmentSet
 private:
     // How many yes votes each amendment received
     hash_map<uint256, int> votes_;
+
     Rules const& rules_;
+
     // number of trusted validations
     int trustedValidations_ = 0;
-    // number of votes needed
-    int threshold_ = 0;
+
+    // minimum number of votes needed to begin activation countdown
+    int activationThreshold_ = 0;
+
+    // minimum number of votes needed to continue activate countdown
+    int deactivationThreshold_ = 0;
 
 public:
     AmendmentSet(
@@ -128,23 +134,25 @@ public:
             }
         }
 
-        threshold_ = !rules_.enabled(fixAmendmentMajorityCalc)
+        activationThreshold_ = !rules_.enabled(fixAmendmentMajorityCalc)
             ? std::max(
-                  1L,
-                  static_cast<long>(
+                  1,
+                  static_cast<int>(
                       (trustedValidations_ *
                        preFixAmendmentMajorityCalcThreshold.num) /
                       preFixAmendmentMajorityCalcThreshold.den))
             : std::max(
-                  1L,
-                  static_cast<long>(
+                  1,
+                  static_cast<int>(
                       (trustedValidations_ *
                        postFixAmendmentMajorityCalcThreshold.num) /
                       postFixAmendmentMajorityCalcThreshold.den));
+
+        deactivationThreshold_ = activationThreshold_;
     }
 
     bool
-    passes(uint256 const& amendment) const
+    passes(uint256 const& amendment, int threshold) const
     {
         auto const& it = votes_.find(amendment);
 
@@ -158,9 +166,9 @@ public:
         // to gain majority.
         if (!rules_.enabled(fixAmendmentMajorityCalc) ||
             trustedValidations_ == 1)
-            return it->second >= threshold_;
+            return it->second >= threshold;
 
-        return it->second > threshold_;
+        return it->second > threshold;
     }
 
     int
@@ -181,9 +189,15 @@ public:
     }
 
     int
-    threshold() const
+    activationThreshold() const
     {
-        return threshold_;
+        return activationThreshold_;
+    }
+
+    int
+    deactivationThreshold() const
+    {
+        return deactivationThreshold_;
     }
 };
 
@@ -619,8 +633,9 @@ AmendmentTableImpl::doVoting(
     auto vote = std::make_unique<AmendmentSet>(rules, valSet);
 
     JLOG(j_.debug()) << "Received " << vote->trustedValidations()
-                     << " trusted validations, threshold is: "
-                     << vote->threshold();
+                     << " trusted validations. Thresholds are: "
+                     << vote->activationThreshold() << " and "
+                     << vote->deactivationThreshold();
 
     // Map of amendments to the action to be taken for each one. The action is
     // the value of the flags in the pseudo-transaction
@@ -633,7 +648,8 @@ AmendmentTableImpl::doVoting(
     {
         NetClock::time_point majorityTime = {};
 
-        bool const hasValMajority = vote->passes(entry.first);
+        bool const hasValMajority =
+            vote->passes(entry.first, vote->activationThreshold());
 
         {
             auto const it = majorityAmendments.find(entry.first);
@@ -653,7 +669,9 @@ AmendmentTableImpl::doVoting(
             JLOG(j_.debug()) << entry.first << ": amendment got majority";
             actions[entry.first] = tfGotMajority;
         }
-        else if (!hasValMajority && (majorityTime != NetClock::time_point{}))
+        else if (
+            !hasValMajority && (majorityTime != NetClock::time_point{}) &&
+            !vote->passes(entry.first, vote->deactivationThreshold()))
         {
             // Ledger says majority, validators say no
             JLOG(j_.debug()) << entry.first << ": amendment lost majority";
@@ -740,7 +758,7 @@ AmendmentTableImpl::injectJson(
     if (!fs.enabled && lastVote_)
     {
         auto const votesTotal = lastVote_->trustedValidations();
-        auto const votesNeeded = lastVote_->threshold();
+        auto const votesNeeded = lastVote_->activationThreshold();
         auto const votesFor = lastVote_->votes(id);
 
         v[jss::count] = votesFor;

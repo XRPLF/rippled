@@ -207,7 +207,7 @@ Change::activateTrustLinesToSelfFix()
 TER
 Change::applyAmendment()
 {
-    uint256 amendment(ctx_.tx.getFieldH256(sfAmendment));
+    uint256 const amendment(ctx_.tx.getFieldH256(sfAmendment));
 
     auto const k = keylet::amendments();
 
@@ -233,40 +233,66 @@ Change::applyAmendment()
     if (gotMajority && lostMajority)
         return temINVALID_FLAG;
 
-    STArray newMajorities(sfMajorities);
+    STArray majorities = amendmentObject->getFieldArray(sfMajorities);
 
-    bool found = false;
-    if (amendmentObject->isFieldPresent(sfMajorities))
+    auto it = std::find_if(
+        majorities.begin(), majorities.end(), [&amendment](STObject const& o) {
+            return o[sfAmendment] == amendment;
+        });
+
+    if (it == majorities.end() && lostMajority)
+        return tefALREADY;
+
+    if (it != majorities.end())
     {
-        const STArray& oldMajorities =
-            amendmentObject->getFieldArray(sfMajorities);
-        for (auto const& majority : oldMajorities)
-        {
-            if (majority.getFieldH256(sfAmendment) == amendment)
-            {
-                if (gotMajority)
-                    return tefALREADY;
-                found = true;
-            }
-            else
-            {
-                // pass through
-                newMajorities.push_back(majority);
-            }
-        }
+        if (gotMajority)
+            return tefALREADY;
+
+        majorities.erase(it);
     }
 
-    if (!found && lostMajority)
-        return tefALREADY;
+    if (view().rules().enabled(fixAmendmentFlapping))
+    {
+        STVector256 flappingAmendments =
+            amendmentObject->getFieldV256(sfFlappingAmendments);
+
+        auto it = std::find(
+            flappingAmendments.begin(), flappingAmendments.end(), amendment);
+
+        // When amendment loses a majority and is not already on the list we
+        // add it and give it second chance.
+        if (lostMajority && it == flappingAmendments.end())
+        {
+            flappingAmendments.push_back(amendment);
+            amendmentObject->setFieldV256(
+                sfFlappingAmendments, flappingAmendments);
+            view().update(amendmentObject);
+            return tesSUCCESS;
+        }
+
+        // Remove the amendment now because the tracking is
+        // not needed any more.
+        if (it != flappingAmendments.end())
+        {
+            flappingAmendments.erase(it);
+
+            if (flappingAmendments.empty())
+                amendmentObject->makeFieldAbsent(sfFlappingAmendments);
+            else
+                amendmentObject->setFieldV256(
+                    sfFlappingAmendments, flappingAmendments);
+        }
+    }
 
     if (gotMajority)
     {
         // This amendment now has a majority
-        newMajorities.push_back(STObject(sfMajority));
-        auto& entry = newMajorities.back();
-        entry.emplace_back(STUInt256(sfAmendment, amendment));
-        entry.emplace_back(STUInt32(
+        STObject maj(sfMajority);
+        maj.emplace_back(STUInt256(sfAmendment, amendment));
+        maj.emplace_back(STUInt32(
             sfCloseTime, view().parentCloseTime().time_since_epoch().count()));
+
+        majorities.push_back(std::move(maj));
 
         if (!ctx_.app.getAmendmentTable().isSupported(amendment))
         {
@@ -293,10 +319,10 @@ Change::applyAmendment()
         }
     }
 
-    if (newMajorities.empty())
+    if (majorities.empty())
         amendmentObject->makeFieldAbsent(sfMajorities);
     else
-        amendmentObject->setFieldArray(sfMajorities, newMajorities);
+        amendmentObject->setFieldArray(sfMajorities, majorities);
 
     view().update(amendmentObject);
 

@@ -533,6 +533,7 @@ extern SF_VECTOR256 const sfIndexes;
 extern SF_VECTOR256 const sfHashes;
 extern SF_VECTOR256 const sfAmendments;
 extern SF_VECTOR256 const sfNFTokenOffers;
+extern SF_VECTOR256 const sfFlappingAmendments;
 
 // inner object
 // OBJECT/1 is reserved for end of object

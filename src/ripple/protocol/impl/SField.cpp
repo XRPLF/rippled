@@ -282,6 +282,7 @@ CONSTRUCT_TYPED_SFIELD(sfIndexes,               "Indexes",              VECTOR25
 CONSTRUCT_TYPED_SFIELD(sfHashes,                "Hashes",               VECTOR256,  2);
 CONSTRUCT_TYPED_SFIELD(sfAmendments,            "Amendments",           VECTOR256,  3);
 CONSTRUCT_TYPED_SFIELD(sfNFTokenOffers,         "NFTokenOffers",        VECTOR256,  4);
+CONSTRUCT_TYPED_SFIELD(sfFlappingAmendments,    "FlappingAmendments",   VECTOR256,  5);
 
 // path set
 CONSTRUCT_UNTYPED_SFIELD(sfPaths,               "Paths",                PATHSET,    1);
