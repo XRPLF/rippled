@@ -164,7 +164,8 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
             JLOG(context.j.error())
                 << __func__ << " - Error deserializing transaction in ledger "
                 << ledger->info().seq
-                << " . skipping transaction. you should look into this further";
+                << " . skipping transaction and following transactions. You "
+                   "should look into this further";
         }
     }
 
