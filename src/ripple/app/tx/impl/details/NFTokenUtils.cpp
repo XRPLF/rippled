@@ -556,13 +556,13 @@ removeTokenOffersWithLimit(
     Keylet const& directory,
     std::size_t maxDeletableOffers)
 {
-    std::optional<std::uint64_t> pi{0};
+    std::optional<std::uint64_t> pageIndex{0};
     std::vector<uint256> offers;
     offers.reserve(maxDeletableOffers);
 
     do
     {
-        auto const page = view.peek(keylet::page(directory, *pi));
+        auto const page = view.peek(keylet::page(directory, *pageIndex));
         if (!page)
             break;
 
@@ -572,8 +572,8 @@ removeTokenOffersWithLimit(
             if (maxDeletableOffers == offers.size())
                 break;
         }
-        pi = (*page)[~sfIndexNext];
-    } while (pi.value_or(0) && maxDeletableOffers != offers.size());
+        pageIndex = (*page)[~sfIndexNext];
+    } while (pageIndex.value_or(0) && maxDeletableOffers != offers.size());
 
     for (auto const& id : offers)
     {
