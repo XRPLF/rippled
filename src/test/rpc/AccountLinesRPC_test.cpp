@@ -618,6 +618,25 @@ public:
         env(token::createOffer(becky, aliceNFtokenID, drops(1)),
             token::owner(alice));
 
+        env(token::createOffer(becky, beckyNFtokenID, drops(1)),
+            txflags(tfSellNFToken),
+            token::destination(alice));
+        env(token::createOffer(alice, aliceNFtokenID, drops(1)),
+            txflags(tfSellNFToken),
+            token::destination(becky));
+
+        env(token::createOffer(gw1, beckyNFtokenID, drops(1)),
+            token::owner(becky),
+            token::destination(alice));
+        env(token::createOffer(gw1, aliceNFtokenID, drops(1)),
+            token::owner(alice),
+            token::destination(becky));
+
+        env(token::createOffer(becky, beckyNFtokenID, drops(1)),
+            txflags(tfSellNFToken));
+        env(token::createOffer(alice, aliceNFtokenID, drops(1)),
+            txflags(tfSellNFToken));
+
         // Checks, in each direction
         env(check::create(alice, becky, XRP(50)));
         env(check::create(becky, alice, XRP(50)));
@@ -645,11 +664,21 @@ public:
             // Now make repeated calls to `account_lines` with a limit of 1.
             // That should iterate all of alice's relevant objects, even though
             // the list will be empty for most calls.
-            auto aliceLines = env.rpc(
-                "json",
-                "account_lines",
-                R"({"account": ")" + alice.human() + R"(", "limit": 1})");
-            std::size_t const expectedLines = 2;
+            auto getNextLine = [](Env& env,
+                                  Account const& alice,
+                                  std::optional<std::string> const marker) {
+                Json::Value params(Json::objectValue);
+                params[jss::account] = alice.human();
+                params[jss::limit] = 1;
+                if (marker)
+                    params[jss::marker] = *marker;
+
+                return env.rpc("json", "account_lines", to_string(params));
+            };
+
+            auto aliceLines = getNextLine(env, alice, std::nullopt);
+            constexpr std::size_t expectedIterations = 16;
+            constexpr std::size_t expectedLines = 2;
             std::size_t foundLines = 0;
 
             auto hasMarker = [](auto const& aliceLines) {
@@ -675,11 +704,7 @@ public:
             while (hasMarker(aliceLines))
             {
                 // Iterate through the markers
-                aliceLines = env.rpc(
-                    "json",
-                    "account_lines",
-                    R"({"account": ")" + alice.human() + R"(", "marker": ")" +
-                        marker(aliceLines) + R"(", "limit": 1})");
+                aliceLines = getNextLine(env, alice, marker(aliceLines));
                 BEAST_EXPECT(checkLines(aliceLines));
                 foundLines += aliceLines[jss::result][jss::lines].size();
                 ++iterations;
@@ -707,7 +732,28 @@ public:
                 iterations);
             // If ledger object association ever changes, for whatever
             // reason, this test will need to be updated.
-            BEAST_EXPECTS(iterations == 14, std::to_string(iterations));
+            BEAST_EXPECTS(
+                iterations == expectedIterations, std::to_string(iterations));
+
+            // Get becky's objects just to confirm that they're symmetrical
+            Json::Value const beckyObjects = env.rpc(
+                "json",
+                "account_objects",
+                R"({"account": ")" + becky.human() +
+                    R"(", )"
+                    R"("limit": 200})");
+            BEAST_EXPECT(beckyObjects.isMember(jss::result));
+            BEAST_EXPECT(
+                !beckyObjects[jss::result].isMember(jss::error_message));
+            BEAST_EXPECT(
+                beckyObjects[jss::result].isMember(jss::account_objects));
+            BEAST_EXPECT(
+                beckyObjects[jss::result][jss::account_objects].isArray());
+            // becky should have the same number of objects as alice, except the
+            // 2 tickets that only alice created.
+            BEAST_EXPECT(
+                beckyObjects[jss::result][jss::account_objects].size() ==
+                aliceObjects[jss::result][jss::account_objects].size() - 2);
         }
     }
 

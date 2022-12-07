@@ -122,6 +122,12 @@ isRelatedToAccount(
     }
     else if (sle->isFieldPresent(sfAccount))
     {
+        // If there's an sfAccount present, also test the sfDestination, if
+        // present. This will match objects such as Escrows (ltESCROW), Payment
+        // Channels (ltPAYCHAN), and Checks (ltCHECK) because those are added to
+        // the Destination account's directory. It intentionally EXCLUDES
+        // NFToken Offers (ltNFTOKEN_OFFER). NFToken Offers are NOT added to the
+        // Destination account's directory.
         return sle->getAccountID(sfAccount) == accountID ||
             (sle->isFieldPresent(sfDestination) &&
              sle->getAccountID(sfDestination) == accountID);
@@ -133,6 +139,8 @@ isRelatedToAccount(
     }
     else if (sle->getType() == ltNFTOKEN_OFFER)
     {
+        // Do not check the sfDestination field. NFToken Offers are NOT added to
+        // the Destination account's directory.
         return sle->getAccountID(sfOwner) == accountID;
     }
 
