@@ -206,12 +206,12 @@ target_link_libraries (my-signing-app Ripple::xrpl_core)
 First, add the rippled repo as a submodule to your project repo:
 
 ```
-git submodule add -b master https://github.com/ripple/rippled.git vendor/rippled
+git submodule add -b stable https://github.com/ripple/rippled.git vendor/rippled
 ```
 
 change the `vendor/rippled` path as desired for your repo layout. Furthermore,
 change the branch name if you want to track a different rippled branch, such
-as `develop`.
+as `unstable`.
 
 Second, to bring this submodule into your project, just add the rippled subdirectory:
 
