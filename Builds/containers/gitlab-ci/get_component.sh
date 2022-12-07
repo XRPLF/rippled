@@ -1,12 +1,12 @@
 #!/usr/bin/env sh
 case ${CI_COMMIT_REF_NAME} in
-    develop)
+    unstable)
         export COMPONENT="nightly"
         ;;
     release)
         export COMPONENT="unstable"
         ;;
-    master)
+    stable)
         export COMPONENT="stable"
         ;;
     *)
