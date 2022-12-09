@@ -257,7 +257,7 @@ var searchData=
   ['setbuildingledger_8598',['setBuildingLedger',['../classripple_1_1LedgerMaster.html#a07b039ad7b58f43b8587e57c49e596f0',1,'ripple::LedgerMaster']]],
   ['setcachelimiting_8599',['setCacheLimiting',['../classripple_1_1DirectStepI.html#a592ddeaeb2ad7b0d7bbf4b1d31cdbe00',1,'ripple::DirectStepI']]],
   ['setcandelete_8600',['setCanDelete',['../classripple_1_1SHAMapStore.html#a2b1a46d6f878575eeea6730c8fc367f2',1,'ripple::SHAMapStore::setCanDelete()'],['../classripple_1_1SHAMapStoreImp_1_1SavedStateDB.html#a2daf6933e39fef00c2004ea292a5655c',1,'ripple::SHAMapStoreImp::SavedStateDB::setCanDelete()'],['../classripple_1_1SHAMapStoreImp.html#a3be2b951362ba4c182e2a75dae4805f3',1,'ripple::SHAMapStoreImp::setCanDelete()'],['../namespaceripple.html#aab972dc5eb4ccbbb4a0a0d0b83042723',1,'ripple::setCanDelete()']]],
-  ['setchild_8601',['setChild',['../classripple_1_1SHAMapInnerNode.html#a816fb1a18b49832dcffccc073a5dd929',1,'ripple::SHAMapInnerNode']]],
+  ['setchild_8601',['setChild',['../classripple_1_1SHAMapInnerNode.html#a7fb5fc0e5d65ed4c3c77537a8fda8d32',1,'ripple::SHAMapInnerNode']]],
   ['setclusterfee_8602',['setClusterFee',['../classripple_1_1LoadFeeTrack.html#aed4bb323d4e737576185213517baaeca',1,'ripple::LoadFeeTrack']]],
   ['setclustertimer_8603',['setClusterTimer',['../classripple_1_1NetworkOPsImp.html#a312a6368f14118216b064f292349db31',1,'ripple::NetworkOPsImp']]],
   ['setconfig_8604',['setConfig',['../classripple_1_1PeerFinder_1_1ManagerImp.html#abf2ab8c369f806ad780ffc2cb198fdc1',1,'ripple::PeerFinder::ManagerImp::setConfig()'],['../classripple_1_1PeerFinder_1_1Manager.html#a2da6f9a40efac1c2ac0cef79ae3a0e18',1,'ripple::PeerFinder::Manager::setConfig()']]],
