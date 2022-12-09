@@ -83,6 +83,22 @@ AMMCreate::preflight(PreflightContext const& ctx)
     return preflight2(ctx);
 }
 
+FeeUnit64
+AMMCreate::calculateBaseFee(ReadView const& view, STTx const& tx)
+{
+    // The fee required for AccountDelete is one owner reserve.  But the
+    // owner reserve is stored in drops.  We need to convert it to fee units.
+    Fees const& fees{view.fees()};
+    std::pair<bool, FeeUnit64> const mulDivResult{
+        mulDiv(fees.increment, safe_cast<FeeUnit64>(fees.units), fees.base)};
+    if (mulDivResult.first)
+        return mulDivResult.second;
+
+    // If mulDiv returns false then overflow happened.  Punt by using the
+    // standard calculation.
+    return Transactor::calculateBaseFee(view, tx);
+}
+
 TER
 AMMCreate::preclaim(PreclaimContext const& ctx)
 {
@@ -231,8 +247,29 @@ applyCreate(
         return {res, false};
     }
 
+    auto sendAndTrustSet = [&](STAmount const& amount) -> TER {
+        if (auto const res =
+                accountSend(sb, account_, *ammAccount, amount, ctx_.journal))
+            return res;
+        // Set AMM flag on AMM trustline
+        if (!isXRP(amount))
+        {
+            if (SLE::pointer sleRippleState =
+                    sb.peek(keylet::line(*ammAccount, amount.issue()));
+                !sleRippleState)
+                return tecINTERNAL;
+            else
+            {
+                auto const flags = sleRippleState->getFlags();
+                sleRippleState->setFieldU32(sfFlags, flags | lsfAMMNode);
+                sb.update(sleRippleState);
+            }
+        }
+        return tesSUCCESS;
+    };
+
     // Send asset1.
-    res = accountSend(sb, account_, *ammAccount, amount, ctx_.journal);
+    res = sendAndTrustSet(amount);
     if (res != tesSUCCESS)
     {
         JLOG(j_.debug()) << "AMM Instance: failed to send " << amount;
@@ -240,26 +277,26 @@ applyCreate(
     }
 
     // Send asset2.
-    res = accountSend(sb, account_, *ammAccount, amount2, ctx_.journal);
+    res = sendAndTrustSet(amount2);
     if (res != tesSUCCESS)
-        JLOG(j_.debug()) << "AMM Instance: failed to send " << amount2;
-    else
     {
-        JLOG(j_.debug()) << "AMM Instance: success " << *ammAccount << " "
-                         << ammKeylet.key << " " << lptIss << " " << amount
-                         << " " << amount2;
-        auto addOrderBook = [&](Issue const& issueIn,
-                                Issue const& issueOut,
-                                std::uint64_t uRate) {
+        JLOG(j_.debug()) << "AMM Instance: failed to send " << amount2;
+        return {res, false};
+    }
+
+    JLOG(j_.debug()) << "AMM Instance: success " << *ammAccount << " "
+                     << ammKeylet.key << " " << lptIss << " " << amount << " "
+                     << amount2;
+    auto addOrderBook =
+        [&](Issue const& issueIn, Issue const& issueOut, std::uint64_t uRate) {
             Book const book{issueIn, issueOut};
             auto const dir = keylet::quality(keylet::book(book), uRate);
             if (auto const bookExisted = static_cast<bool>(sb.peek(dir));
                 !bookExisted)
                 ctx_.app.getOrderBookDB().addOrderBook(book);
         };
-        addOrderBook(amount.issue(), amount2.issue(), getRate(amount2, amount));
-        addOrderBook(amount2.issue(), amount.issue(), getRate(amount, amount2));
-    }
+    addOrderBook(amount.issue(), amount2.issue(), getRate(amount2, amount));
+    addOrderBook(amount2.issue(), amount.issue(), getRate(amount, amount2));
 
     return {res, res == tesSUCCESS};
 }

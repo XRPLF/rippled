@@ -24,8 +24,6 @@
 
 namespace ripple {
 
-class Sandbox;
-
 /** AMMBid implements AMM bid Transactor.
  * This is a mechanism for an AMM instance to auction-off
  * the trading advantages to users (arbitrageurs) at a discounted

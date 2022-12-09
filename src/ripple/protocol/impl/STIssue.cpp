@@ -91,11 +91,7 @@ STIssue::getText() const
 Json::Value
 STIssue::getJson(JsonOptions) const
 {
-    Json::Value elem = Json::objectValue;
-    elem[jss::currency] = to_string(issue_.currency);
-    if (!isXRP(issue_.currency))
-        elem[jss::issuer] = to_string(issue_.account);
-    return elem;
+    return to_json(issue_);
 }
 
 void
@@ -140,31 +136,7 @@ STIssue::move(std::size_t n, void* buf)
 STIssue
 issueFromJson(SField const& name, Json::Value const& v)
 {
-    if (!v.isObject())
-    {
-        Throw<std::runtime_error>(
-            "Issue must be specified with as an 'object' Json value");
-    }
-
-    Issue issue;
-
-    Json::Value const& currency = v[jss::currency];
-    Json::Value const& issuer = v[jss::issuer];
-    if (!to_currency(issue.currency, currency.asString()))
-        Throw<std::runtime_error>("Issue, invalid currency");
-
-    if (isXRP(issue.currency))
-    {
-        if (!issuer.isNull())
-            Throw<std::runtime_error>("Issue, XRP should not have issuer");
-        issue.account = xrpAccount();
-        return STIssue{name, issue};
-    }
-
-    if (!issuer.isString() || !to_issuer(issue.account, issuer.asString()))
-        Throw<std::runtime_error>("Issue, invalid issuer");
-
-    return STIssue{name, issue};
+    return STIssue{name, issueFromJson(v)};
 }
 
 }  // namespace ripple

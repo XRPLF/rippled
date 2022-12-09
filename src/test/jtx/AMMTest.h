@@ -48,6 +48,14 @@ fund(
     std::vector<STAmount> const& amts = {},
     Fund how = Fund::All);
 
+void
+fund(
+    jtx::Env& env,
+    std::vector<jtx::Account> const& accounts,
+    STAmount const& xrp,
+    std::vector<STAmount> const& amts = {},
+    Fund how = Fund::All);
+
 class AMMTest : public beast::unit_test::suite
 {
 protected:

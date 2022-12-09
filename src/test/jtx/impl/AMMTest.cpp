@@ -40,6 +40,31 @@ fund(
 void
 fund(
     jtx::Env& env,
+    std::vector<jtx::Account> const& accounts,
+    STAmount const& xrp,
+    std::vector<STAmount> const& amts,
+    Fund how)
+{
+    for (auto const& account : accounts)
+    {
+        if (how == Fund::All || how == Fund::Acct)
+        {
+            env.fund(xrp, account);
+            env.close();
+        }
+        for (auto const& amt : amts)
+        {
+            env.trust(amt + amt, account);
+            env.close();
+            env(pay(amt.issue().account, account, amt));
+            env.close();
+        }
+    }
+}
+
+void
+fund(
+    jtx::Env& env,
     jtx::Account const& gw,
     std::vector<jtx::Account> const& accounts,
     STAmount const& xrp,

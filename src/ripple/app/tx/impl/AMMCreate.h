@@ -24,8 +24,6 @@
 
 namespace ripple {
 
-class Sandbox;
-
 /** AMMCreate implements Automatic Market Maker(AMM) creation Transactor.
  *  It creates a new AMM instance with two tokens. Any trader, or Liquidity
  *  Provider (LP), can create the AMM instance and receive in return shares
@@ -68,6 +66,9 @@ public:
 
     static NotTEC
     preflight(PreflightContext const& ctx);
+
+    static FeeUnit64
+    calculateBaseFee(ReadView const& view, STTx const& tx);
 
     static TER
     preclaim(PreclaimContext const& ctx);

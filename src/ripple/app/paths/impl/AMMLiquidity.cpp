@@ -65,7 +65,7 @@ AMMLiquidity<TIn, TOut>::generateFibSeqOffer(
 
     cur.in = toAmount<TIn>(
         getIssue(balances.in),
-        (Number(5) / 20000) * initialBalances_.in,
+        InitialFibSeqPct * initialBalances_.in,
         Number::rounding_mode::upward);
     cur.out = swapAssetIn(initialBalances_, cur.in, tradingFee_);
     y = cur.out;
@@ -89,6 +89,20 @@ AMMLiquidity<TIn, TOut>::generateFibSeqOffer(
     return cur;
 }
 
+/** "Infinite" amount.
+ */
+template <typename T>
+T
+infAmount()
+{
+    if constexpr (std::is_same_v<T, XRPAmount>)
+        return XRPAmount(STAmount::cMaxNative);
+    else if constexpr (std::is_same_v<T, IOUAmount>)
+        return IOUAmount(STAmount::cMaxValue / 2, STAmount::cMaxOffset);
+    else if constexpr (std::is_same_v<T, STAmount>)
+        return STAmount(STAmount::cMaxValue / 2, STAmount::cMaxOffset);
+}
+
 template <typename TIn, typename TOut>
 std::optional<AMMOffer<TIn, TOut>>
 AMMLiquidity<TIn, TOut>::getOffer(
@@ -100,6 +114,13 @@ AMMLiquidity<TIn, TOut>::getOffer(
         return std::nullopt;
 
     auto const balances = fetchBalances(view);
+
+    // Frozen accounts
+    if (balances.in == beast::zero || balances.out == beast::zero)
+    {
+        JLOG(j_.debug()) << "AMMLiquidity::getOffer, frozen accounts";
+        return std::nullopt;
+    }
 
     JLOG(j_.debug()) << "AMMLiquidity::getOffer balances "
                      << to_string(initialBalances_.in) << " "
@@ -118,17 +139,32 @@ AMMLiquidity<TIn, TOut>::getOffer(
     auto offer = [&]() -> std::optional<AMMOffer<TIn, TOut>> {
         if (ammContext_.multiPath())
         {
-            auto const offer = generateFibSeqOffer(balances);
-            if (clobQuality && Quality{offer} < *clobQuality)
+            auto const amounts = generateFibSeqOffer(balances);
+            if (clobQuality && Quality{amounts} < clobQuality)
                 return std::nullopt;
-            return AMMOffer<TIn, TOut>(*this, offer, std::nullopt);
+            return AMMOffer<TIn, TOut>(
+                *this, amounts, std::nullopt, Quality{amounts});
         }
         else if (
-            auto const offer = clobQuality
+            auto const amounts = clobQuality
                 ? changeSpotPriceQuality(balances, *clobQuality, tradingFee_)
                 : balances)
         {
-            return AMMOffer<TIn, TOut>(*this, *offer, balances);
+            // If the offer size is equal to the balances then change the size
+            // to simulate output equal to the entire pool's amount and
+            // "infinite" input. The size is going to be changed in BookStep
+            // per either deliver amount limit, or sendmax, or available
+            // output or input funds.
+            if (balances == amounts)
+            {
+                return AMMOffer<TIn, TOut>(
+                    *this,
+                    TAmounts<TIn, TOut>{infAmount<TIn>(), balances.out},
+                    balances,
+                    Quality{balances});
+            }
+            return AMMOffer<TIn, TOut>(
+                *this, *amounts, balances, Quality{*amounts});
         }
         return std::nullopt;
     }();
@@ -137,8 +173,9 @@ AMMLiquidity<TIn, TOut>::getOffer(
         offer->amount().out > beast::zero)
     {
         JLOG(j_.debug()) << "AMMLiquidity::getOffer, created "
-                         << to_string(offer->amount().in) << issueIn_ << " "
-                         << to_string(offer->amount().out) << issueOut_;
+                         << to_string(offer->amount().in) << "/" << issueIn_
+                         << " " << to_string(offer->amount().out) << "/"
+                         << issueOut_;
         return offer;
     }
     else

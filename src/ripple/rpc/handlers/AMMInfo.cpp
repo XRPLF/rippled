@@ -135,31 +135,38 @@ doAMMInfo(RPC::JsonContext& context)
 
     auto const ammAccountID = amm->getAccountID(sfAMMAccount);
 
-    auto const [asset1Balance, asset2Balance] =
-        ammPoolHolds(*ledger, ammAccountID, issue1, issue2, context.j);
+    // provide funds if frozen, specify asset_frozen flag
+    auto const [asset1Balance, asset2Balance] = ammPoolHolds(
+        *ledger,
+        ammAccountID,
+        issue1,
+        issue2,
+        FreezeHandling::fhIGNORE_FREEZE,
+        context.j);
     auto const lptAMMBalance = accountID
         ? ammLPHolds(*ledger, *amm, *accountID, context.j)
         : (*amm)[sfLPTokenBalance];
 
-    asset1Balance.setJson(result[jss::Amount]);
-    asset2Balance.setJson(result[jss::Amount2]);
-    lptAMMBalance.setJson(result[jss::LPToken]);
-    result[jss::TradingFee] = (*amm)[sfTradingFee];
-    result[jss::AMMAccount] = to_string(ammAccountID);
+    Json::Value ammResult;
+    asset1Balance.setJson(ammResult[jss::amount]);
+    asset2Balance.setJson(ammResult[jss::amount2]);
+    lptAMMBalance.setJson(ammResult[jss::lp_token]);
+    ammResult[jss::trading_fee] = (*amm)[sfTradingFee];
+    ammResult[jss::amm_account] = to_string(ammAccountID);
     Json::Value voteSlots(Json::arrayValue);
     if (amm->isFieldPresent(sfVoteSlots))
     {
         for (auto const& voteEntry : amm->getFieldArray(sfVoteSlots))
         {
             Json::Value vote;
-            vote[jss::Account] = to_string(voteEntry.getAccountID(sfAccount));
-            vote[jss::TradingFee] = voteEntry[sfTradingFee];
-            vote[jss::VoteWeight] = voteEntry[sfVoteWeight];
+            vote[jss::account] = to_string(voteEntry.getAccountID(sfAccount));
+            vote[jss::trading_fee] = voteEntry[sfTradingFee];
+            vote[jss::vote_weight] = voteEntry[sfVoteWeight];
             voteSlots.append(vote);
         }
     }
     if (voteSlots.size() > 0)
-        result[jss::VoteSlots] = voteSlots;
+        ammResult[jss::vote_slots] = voteSlots;
     if (amm->isFieldPresent(sfAuctionSlot))
     {
         auto const& auctionSlot =
@@ -170,12 +177,13 @@ doAMMInfo(RPC::JsonContext& context)
             auto const timeSlot = ammAuctionTimeSlot(
                 ledger->info().parentCloseTime.time_since_epoch().count(),
                 auctionSlot);
-            auction[jss::TimeInterval] = timeSlot ? *timeSlot : 0;
-            auctionSlot[sfPrice].setJson(auction[jss::Price]);
-            auction[jss::DiscountedFee] = auctionSlot[sfDiscountedFee];
-            auction[jss::Account] =
+            auction[jss::time_interval] = timeSlot ? *timeSlot : 0;
+            auctionSlot[sfPrice].setJson(auction[jss::price]);
+            auction[jss::discounted_fee] = auctionSlot[sfDiscountedFee];
+            auction[jss::account] =
                 to_string(auctionSlot.getAccountID(sfAccount));
-            auction[jss::Expiration] = auctionSlot[sfExpiration];
+            auction[jss::expiration] = to_string(NetClock::time_point{
+                NetClock::duration{auctionSlot[sfExpiration]}});
             if (auctionSlot.isFieldPresent(sfAuthAccounts))
             {
                 Json::Value auth;
@@ -183,20 +191,30 @@ doAMMInfo(RPC::JsonContext& context)
                      auctionSlot.getFieldArray(sfAuthAccounts))
                 {
                     Json::Value jv;
-                    jv[jss::Account] = to_string(acct.getAccountID(sfAccount));
+                    jv[jss::account] = to_string(acct.getAccountID(sfAccount));
                     auth.append(jv);
                 }
-                auction[jss::AuthAccounts] = auth;
+                auction[jss::auth_accounts] = auth;
             }
-            result[jss::AuctionSlot] = auction;
+            ammResult[jss::auction_slot] = auction;
         }
     }
-    result[jss::AMMID] = to_string(ammKeylet.key);
 
-    Json::Value ammResult;
-    ammResult[jss::amm] = result;
+    if (!isXRP(asset1Balance))
+        ammResult[jss::asset_frozen] =
+            isFrozen(*ledger, ammAccountID, issue1.currency, issue1.account);
+    if (!isXRP(asset2Balance))
+        ammResult[jss::asset2_frozen] =
+            isFrozen(*ledger, ammAccountID, issue2.currency, issue2.account);
 
-    return ammResult;
+    result[jss::amm] = ammResult;
+    if (!result.isMember(jss::ledger_index) &&
+        !result.isMember(jss::ledger_hash))
+        result[jss::ledger_current_index] = ledger->info().seq;
+    result[jss::validated] =
+        RPC::isValidated(context.ledgerMaster, *ledger, context.app);
+
+    return result;
 }
 
 }  // namespace ripple

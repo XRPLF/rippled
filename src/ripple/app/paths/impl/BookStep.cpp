@@ -245,11 +245,19 @@ private:
     getAMMOffer(ReadView const& view, std::optional<Quality> const& clobQuality)
         const;
 
-    // If seated then it is either AMM or CLOB quality (whichever is best),
-    // QualityFunction of the step, and the flag, which is set to true
-    // if AMM quality is best.
-    std::optional<std::tuple<Quality, QualityFunction, bool>>
+    // If seated then it is either order book tip quality or AMMOffer,
+    // whichever is a better quality.
+    std::optional<std::variant<Quality, AMMOffer<TIn, TOut>>>
+    tip(ReadView const& view) const;
+    // If seated then it is either AMM or CLOB quality,
+    // whichever is a better quality. The flag is true
+    // if AMM quality is better.
+    std::optional<std::pair<Quality, bool>>
     tipOfferQuality(ReadView const& view) const;
+    // If seated then it is either AMM or CLOB quality function,
+    // whichever is a better quality.
+    std::optional<QualityFunction>
+    tipOfferQualityF(ReadView const& view) const;
 };
 
 //------------------------------------------------------------------------------
@@ -455,11 +463,9 @@ public:
         auto const srcAcct =
             prevStep ? prevStep->directStepSrcAcct() : std::nullopt;
 
-        return                     // If offer crossing
-            srcAcct &&             // && prevStep is DirectI
-                owner == *srcAcct  // && src is offer owner
-            ? QUALITY_ONE
-            : trIn;  // then rate = QUALITY_ONE
+        return owner == srcAcct  // If offer crossing && prevStep is DirectI
+            ? QUALITY_ONE        // && src is offer owner
+            : trIn;              // then rate = QUALITY_ONE
     }
 
     // See comment on getOfrInRate().
@@ -539,16 +545,16 @@ BookStep<TIn, TOut, TDerived>::getQF(
 {
     auto const dir = this->debtDirection(v, StrandDirection::forward);
 
-    auto const res = tipOfferQuality(v);
+    auto const res = tipOfferQualityF(v);
     if (!res)
         return {std::nullopt, dir};
 
     // AMM - no fee adjustment
-    if (std::get<bool>(*res))
-        return {std::get<QualityFunction>(*res), dir};
+    if (!res->isConst())
+        return {*res, dir};
 
     Quality const q = static_cast<TDerived const*>(this)->adjustQualityWithFees(
-        v, std::get<Quality>(*res), prevStepDir);
+        v, *(res->quality()), prevStepDir);
     return {QualityFunction{q, QualityFunction::CLOBLikeTag{}}, dir};
 }
 
@@ -604,6 +610,26 @@ limitStepOut(
         stpAmt.in =
             mulRatio(ofrAmt.in, transferRateIn, QUALITY_ONE, /*roundUp*/ true);
     }
+}
+
+template <typename F>
+auto
+ammExcepHandler(F&& f) -> decltype(f())
+{
+    try
+    {
+        return f();
+    }
+    catch (std::overflow_error const& ex)
+    {
+        // Number overflow, possible on swap
+        // and other AMM formulas
+        if (std::string(ex.what()).starts_with("Number"))
+            throw FlowException(tecPATH_DRY, ex.what());
+        throw ex;
+    }
+    decltype(f()) res{};
+    return res;
 }
 
 template <class TIn, class TOut, class TDerived>
@@ -730,15 +756,17 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
 
     // At any payment engine iteration, AMM offer can only be consumed once.
     bool triedAMM = false;
-    auto tryAMM = [&](std::optional<Quality> const& quality) {
-        if (!triedAMM)
-        {
-            triedAMM = true;
-            if (auto ammOffer = getAMMOffer(sb, quality);
-                ammOffer && !execOffer(*ammOffer))
-                return false;
-        }
-        return true;
+    auto tryAMM = [&](std::optional<Quality> const& quality) -> bool {
+        return ammExcepHandler([&]() -> bool {
+            if (!triedAMM)
+            {
+                triedAMM = true;
+                if (auto ammOffer = getAMMOffer(sb, quality);
+                    ammOffer && !execOffer(*ammOffer))
+                    return false;
+            }
+            return true;
+        });
     };
     while (offers.step())
     {
@@ -796,13 +824,16 @@ BookStep<TIn, TOut, TDerived>::getAMMOffer(
     ReadView const& view,
     std::optional<Quality> const& clobQuality) const
 {
-    return ammLiquidity_ ? ammLiquidity_->getOffer(view, clobQuality)
-                         : std::nullopt;
+    return ammExcepHandler([&]() -> std::optional<AMMOffer<TIn, TOut>> {
+        return ammLiquidity_ ? std::optional<AMMOffer<TIn, TOut>>(
+                                   ammLiquidity_->getOffer(view, clobQuality))
+                             : std::nullopt;
+    });
 }
 
 template <class TIn, class TOut, class TDerived>
-std::optional<std::tuple<Quality, QualityFunction, bool>>
-BookStep<TIn, TOut, TDerived>::tipOfferQuality(ReadView const& view) const
+std::optional<std::variant<Quality, AMMOffer<TIn, TOut>>>
+BookStep<TIn, TOut, TDerived>::tip(ReadView const& view) const
 {
     // This can be simplified (and sped up) if directories are never empty.
     Sandbox sb(&view, tapNONE);
@@ -814,19 +845,41 @@ BookStep<TIn, TOut, TDerived>::tipOfferQuality(ReadView const& view) const
     // For multi-path it returns the actual offer.
     if (auto const ammOffer = getAMMOffer(view, std::nullopt))
     {
-        auto const ammQ{ammOffer->quality()};
         // AMM quality is better or no CLOB offer
-        if ((clobQuality && ammQ > clobQuality) || !clobQuality)
-            return std::make_tuple(ammQ, ammOffer->getQF(), true);
+        if ((clobQuality && ammOffer->quality() > clobQuality) || !clobQuality)
+            return ammOffer;
     }
     // CLOB quality is better or no AMM offer
     if (clobQuality)
-        return std::make_tuple(
-            *clobQuality,
-            QualityFunction{*clobQuality, QualityFunction::CLOBLikeTag{}},
-            false);
+        return *clobQuality;
     // Neither CLOB nor AMM offer is available
     return std::nullopt;
+}
+
+template <class TIn, class TOut, class TDerived>
+std::optional<std::pair<Quality, bool>>
+BookStep<TIn, TOut, TDerived>::tipOfferQuality(ReadView const& view) const
+{
+    if (auto const res = tip(view); !res)
+        return std::nullopt;
+    else if (std::holds_alternative<Quality>(*res))
+        return std::make_pair(std::get<Quality>(*res), false);
+    else
+        return std::make_pair(
+            std::get<AMMOffer<TIn, TOut>>(*res).quality(), true);
+}
+
+template <class TIn, class TOut, class TDerived>
+std::optional<QualityFunction>
+BookStep<TIn, TOut, TDerived>::tipOfferQualityF(ReadView const& view) const
+{
+    if (auto const res = tip(view); !res)
+        return std::nullopt;
+    else if (std::holds_alternative<Quality>(*res))
+        return QualityFunction{
+            std::get<Quality>(*res), QualityFunction::CLOBLikeTag{}};
+    else
+        return std::get<AMMOffer<TIn, TOut>>(*res).getQF();
 }
 
 template <class TIn, class TOut, class TDerived>

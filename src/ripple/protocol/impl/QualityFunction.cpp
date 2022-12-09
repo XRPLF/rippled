@@ -56,7 +56,7 @@ QualityFunction::outFromAvgQ(Quality const& quality)
 {
     if (m_ != 0 && quality.rate() != beast::zero)
     {
-        auto const out = (b_ - 1 / quality.rate()) / m_;
+        auto const out = (1 / quality.rate() - b_) / m_;
         if (out <= 0)
             return std::nullopt;
         return out;

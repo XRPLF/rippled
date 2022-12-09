@@ -152,7 +152,7 @@ applyVote(
             minAccount = account;
             minFee = feeVal;
         }
-        updatedVoteSlots.emplace_back(newEntry);
+        updatedVoteSlots.push_back(std::move(newEntry));
     }
 
     // The account doesn't have the vote entry.
@@ -168,7 +168,7 @@ applyVote(
             newEntry.setAccountID(sfAccount, account_);
             num += feeNew * lpTokensNew;
             den += lpTokensNew;
-            updatedVoteSlots.emplace_back(newEntry);
+            updatedVoteSlots.push_back(std::move(newEntry));
         };
         // Add new entry if the number of the vote entries
         // is less than 8.

@@ -34,7 +34,7 @@ namespace ripple {
 class AMMContext
 {
 private:
-    constexpr inline static std::uint8_t MaxIterations = 4;
+    constexpr static std::uint8_t MaxIterations = 4;
     // Tx account owner is required to get the AMM trading fee in BookStep
     AccountID account_;
     // true if payment has multiple paths

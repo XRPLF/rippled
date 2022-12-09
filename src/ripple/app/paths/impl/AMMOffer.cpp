@@ -25,9 +25,13 @@ namespace ripple {
 template <typename TIn, typename TOut>
 AMMOffer<TIn, TOut>::AMMOffer(
     AMMLiquidity<TIn, TOut> const& ammLiquidity,
-    TAmounts<TIn, TOut> const& offer,
-    std::optional<TAmounts<TIn, TOut>> const& balances)
-    : ammLiquidity_(ammLiquidity), amounts_(offer), balances_(balances)
+    TAmounts<TIn, TOut> const& amounts,
+    std::optional<TAmounts<TIn, TOut>> const& balances,
+    Quality const& quality)
+    : ammLiquidity_(ammLiquidity)
+    , amounts_(amounts)
+    , balances_(balances)
+    , quality_(quality)
 {
 }
 
@@ -103,7 +107,8 @@ AMMOffer<TIn, TOut>::getQF() const
 {
     if (ammLiquidity_.multiPath())
         return QualityFunction{quality(), QualityFunction::CLOBLikeTag{}};
-    return QualityFunction{amounts_, QualityFunction::AMMTag{}};
+    return QualityFunction{
+        *balances_, ammLiquidity_.tradingFee(), QualityFunction::AMMTag{}};
 }
 
 template class AMMOffer<STAmount, STAmount>;

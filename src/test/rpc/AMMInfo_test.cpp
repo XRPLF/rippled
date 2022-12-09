@@ -97,7 +97,7 @@ public:
             env.fund(XRP(1000), bob, ed, bill);
             ammAlice.bid(alice, 100, std::nullopt, {carol, bob, ed, bill});
             BEAST_EXPECT(ammAlice.expectAmmRpcInfo(
-                XRP(10080), USD(10080), IOUAmount{100798992, -1}));
+                XRP(10080), USD(10080), IOUAmount{10079900}));
             std::unordered_set<std::string> authAccounts = {
                 carol.human(), bob.human(), ed.human(), bill.human()};
             auto const ammInfo = ammAlice.ammRpcInfo();
@@ -105,39 +105,40 @@ public:
                 try
                 {
                     // votes
-                    auto const voteSlots = amm["VoteSlots"];
+                    auto const voteSlots = amm[jss::vote_slots];
                     for (std::uint8_t i = 0; i < 8; ++i)
                     {
-                        if (votes[voteSlots[i]["Account"].asString()] !=
-                                voteSlots[i]["TradingFee"].asUInt() ||
-                            voteSlots[i]["VoteWeight"].asUInt() != 99)
+                        if (votes[voteSlots[i][jss::account].asString()] !=
+                                voteSlots[i][jss::trading_fee].asUInt() ||
+                            voteSlots[i][jss::vote_weight].asUInt() != 99)
                             return false;
-                        votes.erase(voteSlots[i]["Account"].asString());
+                        votes.erase(voteSlots[i][jss::account].asString());
                     }
                     if (!votes.empty())
                         return false;
 
                     // bid
-                    auto const auctionSlot = amm["AuctionSlot"];
+                    auto const auctionSlot = amm[jss::auction_slot];
                     for (std::uint8_t i = 0; i < 4; ++i)
                     {
                         if (!authAccounts.contains(
-                                auctionSlot["AuthAccounts"][i]["Account"]
+                                auctionSlot[jss::auth_accounts][i][jss::account]
                                     .asString()))
                             return false;
                         authAccounts.erase(
-                            auctionSlot["AuthAccounts"][i]["Account"]
+                            auctionSlot[jss::auth_accounts][i][jss::account]
                                 .asString());
                     }
                     if (!authAccounts.empty())
                         return false;
-                    return auctionSlot["Account"].asString() == alice.human() &&
-                        auctionSlot["DiscountedFee"].asUInt() == 0 &&
-                        auctionSlot["Expiration"].asUInt() == 86960 &&
-                        auctionSlot["Price"]["value"].asString() == "100.8" &&
-                        auctionSlot["Price"]["currency"].asString() ==
+                    return auctionSlot[jss::account].asString() ==
+                        alice.human() &&
+                        auctionSlot[jss::discounted_fee].asUInt() == 0 &&
+                        auctionSlot[jss::price][jss::value].asString() ==
+                        "100" &&
+                        auctionSlot[jss::price][jss::currency].asString() ==
                         to_string(ammAlice.lptIssue().currency) &&
-                        auctionSlot["Price"]["issuer"].asString() ==
+                        auctionSlot[jss::price][jss::issuer].asString() ==
                         to_string(ammAlice.lptIssue().account);
                 }
                 catch (...)
@@ -150,11 +151,32 @@ public:
     }
 
     void
+    testFreeze()
+    {
+        using namespace jtx;
+        testAMM([&](AMM& ammAlice, Env& env) {
+            env(fset(gw, asfGlobalFreeze));
+            env.close();
+            auto test = [&](bool freeze) {
+                auto const info = ammAlice.ammRpcInfo();
+                BEAST_EXPECT(
+                    info &&
+                    (*info)[jss::amm][jss::asset2_frozen].asBool() == freeze);
+            };
+            test(true);
+            env(fclear(gw, asfGlobalFreeze));
+            env.close();
+            test(false);
+        });
+    }
+
+    void
     run() override
     {
         testErrors();
         testSimpleRpc();
         testVoteAndBid();
+        testFreeze();
     }
 };
 

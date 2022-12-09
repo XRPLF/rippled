@@ -26,6 +26,7 @@
 #include <ripple/rpc/GRPCHandlers.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/multisign.h>
 #include <test/jtx/seq.h>
 #include <test/jtx/ter.h>
 #include <test/rpc/GRPCTestClientBase.h>
@@ -52,6 +53,10 @@ class AMM
     Number minSlotPrice_;
     std::optional<IOUAmount> bidMin_;
     std::optional<IOUAmount> bidMax_;
+    // Multi-signature
+    std::optional<msig> msig_;
+    // Transaction fee
+    std::uint32_t fee_;
 
 public:
     AMM(Env& env,
@@ -60,8 +65,10 @@ public:
         STAmount const& asset2,
         bool log = false,
         std::uint32_t tfee = 0,
+        std::uint32_t fee = 0,
         std::optional<std::uint32_t> flags = std::nullopt,
         std::optional<jtx::seq> seq = std::nullopt,
+        std::optional<jtx::msig> ms = std::nullopt,
         std::optional<ter> const& ter = std::nullopt);
     AMM(Env& env,
         Account const& account,
@@ -278,6 +285,12 @@ private:
     expectedPurchasePrice(
         std::optional<std::uint8_t> timeSlot,
         IOUAmount const& lastPurchasePrice) const;
+
+    void
+    submit(
+        Json::Value const& jv,
+        std::optional<jtx::seq> const& seq,
+        std::optional<ter> const& ter);
 };
 
 namespace amm {

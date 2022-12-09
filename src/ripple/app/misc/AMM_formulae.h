@@ -134,7 +134,8 @@ ammLPTokens(
     Issue const& lptIssue);
 
 /** Convert to the fee from the basis points
- * @param tfee  trading fee in basis points
+ * @param tfee  trading fee in {0, 1000}
+ * 1 = 1/10bps or 0.001%, 1000 = 1%
  */
 inline Number
 getFee(std::uint16_t tfee)

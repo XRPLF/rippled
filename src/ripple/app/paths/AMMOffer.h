@@ -39,24 +39,33 @@ class AMMOffer
 private:
     AMMLiquidity<TIn, TOut> const& ammLiquidity_;
     // Initial offer amounts. It is fibonacci seq generated for multi-path.
-    // For one-path it is either the pool balances or the size such that
-    // if the offer is consumed then its pool SP quality is equal to
-    // competing CLOB offer quality.
+    // If the offer size is set based on the competing CLOB offer then
+    // the AMM offer size is such that if the offer is consumed then
+    // the updated AMM pool SP quality is going to be equal to competing
+    // CLOB offer quality. If there is no competing CLOB offer then
+    // the initial size is set to in=cMax[Native,Value],balances.out.
+    // While this is not a "real" offer it simulates the case of
+    // the swap out of the entire side of the pool, in which case
+    // the swap in amount is infinite.
     TAmounts<TIn, TOut> const amounts_;
     // If seated then current pool balances. Used in one-path limiting steps
     // to swap in/out.
     std::optional<TAmounts<TIn, TOut>> const balances_;
+    // The Spot Price quality if balances != amounts
+    // else the amounts quality
+    Quality const quality_;
 
 public:
     AMMOffer(
         AMMLiquidity<TIn, TOut> const& ammLiquidity,
-        TAmounts<TIn, TOut> const& offer,
-        std::optional<TAmounts<TIn, TOut>> const& balances);
+        TAmounts<TIn, TOut> const& amounts,
+        std::optional<TAmounts<TIn, TOut>> const& balances,
+        Quality const& quality);
 
     Quality const
     quality() const noexcept
     {
-        return Quality{amounts_};
+        return quality_;
     }
 
     Issue

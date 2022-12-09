@@ -225,13 +225,44 @@ applyBid(
     auto const bidMin = ctx_.tx[~sfBidMin];
     auto const bidMax = ctx_.tx[~sfBidMax];
 
-    Number const MinSlotPrice = lptAMMBalance / 100000;  // 0.001% TBD
+    Number const MinSlotPrice = 0;
+
+    auto getPayPrice =
+        [&](Number const& computedPrice) -> std::optional<Number> {
+        // Both min/max bid price are defined
+        if (bidMin && bidMax)
+        {
+            if (computedPrice >= *bidMin && computedPrice <= *bidMax)
+                return computedPrice;
+            JLOG(ctx_.journal.debug())
+                << "AMM Bid: not in range " << computedPrice << *bidMin << " "
+                << *bidMax;
+            return std::nullopt;
+        }
+        // Bidder pays max(bidPrice, computedPrice)
+        if (bidMin)
+        {
+            return std::max(computedPrice, Number(*bidMin));
+        }
+        else if (bidMax)
+        {
+            if (computedPrice <= *bidMax)
+                return computedPrice;
+            JLOG(ctx_.journal.debug())
+                << "AMM Bid: not in range " << computedPrice << *bidMax;
+            return std::nullopt;
+        }
+        else
+            return computedPrice;
+    };
 
     // No one owns the slot or expired slot.
-    // The bidder pays MinSlotPrice
     if (auto const acct = auctionSlot[~sfAccount]; !acct || !validOwner(*acct))
     {
-        res = updateSlot(0, MinSlotPrice, MinSlotPrice);
+        if (auto const payPrice = getPayPrice(MinSlotPrice); !payPrice)
+            return {tecAMM_FAILED_BID, false};
+        else
+            res = updateSlot(0, *payPrice, *payPrice);
     }
     else
     {
@@ -249,33 +280,7 @@ applyBid(
                 MinSlotPrice;
         }();
 
-        auto const payPrice = [&]() -> std::optional<Number> {
-            // Both min/max bid price are defined
-            if (bidMin && bidMax)
-            {
-                if (computedPrice >= *bidMin && computedPrice <= *bidMax)
-                    return computedPrice;
-                JLOG(ctx_.journal.debug())
-                    << "AMM Bid: not in range " << computedPrice << *bidMin
-                    << " " << *bidMax;
-                return std::nullopt;
-            }
-            // Bidder pays max(bidPrice, computedPrice)
-            if (bidMin)
-            {
-                return std::max(computedPrice, Number(*bidMin));
-            }
-            else if (bidMax)
-            {
-                if (computedPrice <= *bidMax)
-                    return computedPrice;
-                JLOG(ctx_.journal.debug())
-                    << "AMM Bid: not in range " << computedPrice << *bidMax;
-                return std::nullopt;
-            }
-            else
-                return computedPrice;
-        }();
+        auto const payPrice = getPayPrice(computedPrice);
 
         if (!payPrice)
             return {tecAMM_FAILED_BID, false};

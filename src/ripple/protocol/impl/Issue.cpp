@@ -43,31 +43,16 @@ to_string(Issue const& ac)
 Json::Value
 to_json(Issue const& is)
 {
-    if (isXRP(is.account))
-        return Json::Value{to_string(is.currency)};
-
     Json::Value jv;
     jv[jss::currency] = to_string(is.currency);
-    jv[jss::issuer] = toBase58(is.account);
+    if (!isXRP(is.currency))
+        jv[jss::issuer] = toBase58(is.account);
     return jv;
 }
 
 Issue
 issueFromJson(Json::Value const& v)
 {
-    if (v.isString())
-    {
-        if (v.asString() == "XRP")
-        {
-            return xrpIssue();
-        }
-        else
-        {
-            Throw<std::runtime_error>(
-                "issueFromJson string values can only be 'XRP'");
-        }
-    }
-
     if (!v.isObject())
     {
         Throw<std::runtime_error>(
@@ -83,24 +68,34 @@ issueFromJson(Json::Value const& v)
         Throw<std::runtime_error>(
             "issueFromJson currency must be a string Json value");
     }
+
+    auto const currency = to_currency(curStr.asString());
+    if (currency == badCurrency() || currency == noCurrency())
+    {
+        Throw<std::runtime_error>(
+            "issueFromJson currency must be a valid currency");
+    }
+
+    if (isXRP(currency))
+    {
+        if (!issStr.isNull())
+        {
+            Throw<std::runtime_error>("Issue, XRP should not have issuer");
+        }
+        return xrpIssue();
+    }
+
     if (!issStr.isString())
     {
         Throw<std::runtime_error>(
             "issueFromJson issuer must be a string Json value");
     }
     auto const issuer = parseBase58<AccountID>(issStr.asString());
-    auto const currency = to_currency(curStr.asString());
 
     if (!issuer)
     {
         Throw<std::runtime_error>(
             "issueFromJson issuer must be a valid account");
-    }
-
-    if (currency == badCurrency() || currency == noCurrency())
-    {
-        Throw<std::runtime_error>(
-            "issueFromJson currency must be a valid currency");
     }
 
     return Issue{currency, *issuer};

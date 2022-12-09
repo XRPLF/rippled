@@ -393,7 +393,7 @@ limitOut(
             return STAmount{
                 remainingOut.issue(), out->mantissa(), out->exponent()};
     }();
-    return out < remainingOut ? out : remainingOut;
+    return std::min(out, remainingOut);
 };
 /// @endcond
 

@@ -40,6 +40,7 @@ ammAccountID(
 Currency
 ammLPTCurrency(Currency const& cur1, Currency const& cur2)
 {
+    // AMM LPToken is 0x03 plus 19 bytes of the hash
     std::int32_t constexpr AMMCurrencyCode = 0x03;
     auto const [minC, maxC] = std::minmax(cur1, cur2);
     auto const hash = sha512Half(minC, maxC);
@@ -65,12 +66,13 @@ ammPoolHolds(
     AccountID const& ammAccountID,
     Issue const& issue1,
     Issue const& issue2,
+    FreezeHandling freezeHandling,
     beast::Journal const j)
 {
-    auto const assetInBalance = accountHolds(
-        view, ammAccountID, issue1, FreezeHandling::fhZERO_IF_FROZEN, j);
-    auto const assetOutBalance = accountHolds(
-        view, ammAccountID, issue2, FreezeHandling::fhZERO_IF_FROZEN, j);
+    auto const assetInBalance =
+        accountHolds(view, ammAccountID, issue1, freezeHandling, j);
+    auto const assetOutBalance =
+        accountHolds(view, ammAccountID, issue2, freezeHandling, j);
     return std::make_pair(assetInBalance, assetOutBalance);
 }
 
@@ -80,6 +82,7 @@ ammHolds(
     SLE const& ammSle,
     std::optional<Issue> const& optIssue1,
     std::optional<Issue> const& optIssue2,
+    FreezeHandling freezeHandling,
     beast::Journal const j)
 {
     auto const issues = [&]() -> std::optional<std::pair<Issue, Issue>> {
@@ -90,22 +93,22 @@ ammHolds(
         if (optIssue1)
         {
             if (*optIssue1 == issue1)
-                return {{issue1, issue2}};
+                return std::make_optional(std::make_pair(issue1, issue2));
             else if (*optIssue1 == issue2)
-                return {{issue2, issue1}};
+                return std::make_optional(std::make_pair(issue2, issue1));
             JLOG(j.debug()) << "ammHolds: Invalid optIssue1 " << *optIssue1;
             return std::nullopt;
         }
         else if (optIssue2)
         {
             if (*optIssue2 == issue2)
-                return {{issue2, issue1}};
+                return std::make_optional(std::make_pair(issue2, issue1));
             else if (*optIssue2 == issue1)
-                return {{issue1, issue2}};
+                return std::make_optional(std::make_pair(issue1, issue2));
             JLOG(j.debug()) << "ammHolds: Invalid optIssue2 " << *optIssue2;
             return std::nullopt;
         }
-        return {{issue1, issue2}};
+        return std::make_optional(std::make_pair(issue1, issue2));
     }();
     if (!issues)
         return Unexpected(tecAMM_INVALID_TOKENS);
@@ -114,6 +117,7 @@ ammHolds(
         ammSle.getAccountID(sfAMMAccount),
         issues->first,
         issues->second,
+        freezeHandling,
         j);
     return std::make_tuple(asset1, asset2, ammSle[sfLPTokenBalance]);
 }
@@ -184,15 +188,15 @@ invalidAMMAssetPair(
 
 NotTEC
 invalidAMMAmount(
-    std::optional<STAmount> const& a,
+    std::optional<STAmount> const& amount,
     std::optional<std::pair<Issue, Issue>> const& pair,
     bool nonNegative)
 {
-    if (!a)
+    if (!amount)
         return tesSUCCESS;
-    if (auto const res = invalidAMMAsset(a->issue(), pair))
+    if (auto const res = invalidAMMAsset(amount->issue(), pair))
         return res;
-    if (!nonNegative && *a <= beast::zero)
+    if (!nonNegative && *amount <= beast::zero)
         return temBAD_AMOUNT;
     return tesSUCCESS;
 }
