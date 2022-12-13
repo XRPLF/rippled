@@ -586,16 +586,16 @@ $(function() {
 <div class="line"><a name="l00515"></a><span class="lineno">  515</span>&#160; </div>
 <div class="line"><a name="l00516"></a><span class="lineno">  516</span>&#160;        <span class="comment">// All it takes is a large enough XRP payment to resurrect</span></div>
 <div class="line"><a name="l00517"></a><span class="lineno">  517</span>&#160;        <span class="comment">// becky&#39;s account.  Try too small a payment.</span></div>
-<div class="line"><a name="l00518"></a><span class="lineno">  518</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a7816b23daf9b325ea1f88cc121a53d05">pay</a>(alice, becky, <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(19)), <a class="code" href="classripple_1_1test_1_1jtx_1_1ter.html">ter</a>(<a class="code" href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38caf30c1d76d9aca04b89314307a476b2bd">tecNO_DST_INSUF_XRP</a>));</div>
+<div class="line"><a name="l00518"></a><span class="lineno">  518</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a7816b23daf9b325ea1f88cc121a53d05">pay</a>(alice, becky, <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(9)), <a class="code" href="classripple_1_1test_1_1jtx_1_1ter.html">ter</a>(<a class="code" href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38caf30c1d76d9aca04b89314307a476b2bd">tecNO_DST_INSUF_XRP</a>));</div>
 <div class="line"><a name="l00519"></a><span class="lineno">  519</span>&#160;        env.close();</div>
 <div class="line"><a name="l00520"></a><span class="lineno">  520</span>&#160; </div>
 <div class="line"><a name="l00521"></a><span class="lineno">  521</span>&#160;        <span class="comment">// Actually resurrect becky&#39;s account.</span></div>
-<div class="line"><a name="l00522"></a><span class="lineno">  522</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a7816b23daf9b325ea1f88cc121a53d05">pay</a>(alice, becky, <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(20)));</div>
+<div class="line"><a name="l00522"></a><span class="lineno">  522</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a7816b23daf9b325ea1f88cc121a53d05">pay</a>(alice, becky, <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(10)));</div>
 <div class="line"><a name="l00523"></a><span class="lineno">  523</span>&#160;        env.close();</div>
 <div class="line"><a name="l00524"></a><span class="lineno">  524</span>&#160; </div>
 <div class="line"><a name="l00525"></a><span class="lineno">  525</span>&#160;        <span class="comment">// becky&#39;s account root should be back.</span></div>
 <div class="line"><a name="l00526"></a><span class="lineno">  526</span>&#160;        BEAST_EXPECT(env.closed()-&gt;exists(beckyAcctKey));</div>
-<div class="line"><a name="l00527"></a><span class="lineno">  527</span>&#160;        BEAST_EXPECT(env.balance(becky) == <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(20));</div>
+<div class="line"><a name="l00527"></a><span class="lineno">  527</span>&#160;        BEAST_EXPECT(env.balance(becky) == <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(10));</div>
 <div class="line"><a name="l00528"></a><span class="lineno">  528</span>&#160; </div>
 <div class="line"><a name="l00529"></a><span class="lineno">  529</span>&#160;        <span class="comment">// becky&#39;s resurrected account can be the destination of alice&#39;s</span></div>
 <div class="line"><a name="l00530"></a><span class="lineno">  530</span>&#160;        <span class="comment">// PayChannel.</span></div>
@@ -612,7 +612,7 @@ $(function() {
 <div class="line"><a name="l00541"></a><span class="lineno">  541</span>&#160;        env(payChanClaim());</div>
 <div class="line"><a name="l00542"></a><span class="lineno">  542</span>&#160;        env.close();</div>
 <div class="line"><a name="l00543"></a><span class="lineno">  543</span>&#160; </div>
-<div class="line"><a name="l00544"></a><span class="lineno">  544</span>&#160;        BEAST_EXPECT(env.balance(becky) == <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(20) + payChanXRP);</div>
+<div class="line"><a name="l00544"></a><span class="lineno">  544</span>&#160;        BEAST_EXPECT(env.balance(becky) == <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(10) + payChanXRP);</div>
 <div class="line"><a name="l00545"></a><span class="lineno">  545</span>&#160;    }</div>
 <div class="line"><a name="l00546"></a><span class="lineno">  546</span>&#160; </div>
 <div class="line"><a name="l00547"></a><span class="lineno">  547</span>&#160;    <span class="keywordtype">void</span></div>
