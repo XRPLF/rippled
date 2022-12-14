@@ -26,7 +26,7 @@
 #include <ripple/protocol/digest.h>
 #include <ripple/protocol/impl/secp256k1.h>
 #include <cstring>
-#include <ed25519-donna/ed25519.h>
+#include <ed25519.h>
 
 namespace ripple {
 

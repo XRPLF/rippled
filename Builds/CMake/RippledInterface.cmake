@@ -35,17 +35,10 @@ target_link_libraries (opts
     $<$<BOOL:${profile}>:-pg>
     $<$<AND:$<BOOL:${is_gcc}>,$<BOOL:${profile}>>:-p>)
 
-if (jemalloc)
-  if (static)
-    set(JEMALLOC_USE_STATIC ON CACHE BOOL "" FORCE)
-  endif ()
-  find_package (jemalloc REQUIRED)
-  target_compile_definitions (opts INTERFACE PROFILE_JEMALLOC)
-  target_include_directories (opts SYSTEM INTERFACE ${JEMALLOC_INCLUDE_DIRS})
-  target_link_libraries (opts INTERFACE ${JEMALLOC_LIBRARIES})
-  get_filename_component (JEMALLOC_LIB_PATH ${JEMALLOC_LIBRARIES} DIRECTORY)
-  ## TODO see if we can use the BUILD_RPATH target property (is it transitive?)
-  set (CMAKE_BUILD_RPATH ${CMAKE_BUILD_RPATH} ${JEMALLOC_LIB_PATH})
+if(jemalloc)
+  find_package(jemalloc REQUIRED)
+  target_compile_definitions(opts INTERFACE PROFILE_JEMALLOC)
+  target_link_libraries(opts INTERFACE jemalloc::jemalloc)
 endif ()
 
 if (san)

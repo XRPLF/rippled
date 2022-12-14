@@ -1,0 +1,89 @@
+name: windows
+# We have disabled this workflow because it fails in our CI Windows
+# environment, but we cannot replicate the failure in our personal Windows
+# test environments, nor have we gone through the trouble of setting up an
+# interactive CI Windows environment.
+# We welcome contributions to diagnose or debug the problems on Windows. Until
+# then, we leave this tombstone as a reminder that we have tried (but failed)
+# to write a reliable test for Windows.
+# on: [push, pull_request]
+
+jobs:
+
+  test:
+    strategy:
+      matrix:
+        generator:
+          - Visual Studio 16 2019
+        configuration:
+          - Release
+    runs-on: windows-2019
+    env:
+      build_dir: .build
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+      - name: choose Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: 3.9
+      - name: learn Python cache directory
+        id: pip-cache
+        run: |
+          pip install --upgrade pip
+          echo "::set-output name=dir::$(pip cache dir)"
+      - name: restore Python cache directory
+        uses: actions/cache@v2
+        with:
+            path: ${{ steps.pip-cache.outputs.dir }}
+            key: ${{ runner.os }}-${{ hashFiles('.github/workflows/windows.yml') }}
+      - name: install Conan
+        run: pip install wheel 'conan>=1.52.0'
+      - name: check environment
+        run: |
+          $env:PATH -split ';'
+          python --version
+          conan --version
+          cmake --version
+          dir env:
+      - name: configure Conan
+        run: |
+          conan profile new default --detect
+          conan profile update settings.compiler.cppstd=20 default
+          conan profile update settings.compiler.runtime=MT default
+          conan profile update settings.compiler.toolset=v141 default
+      - name: learn Conan cache directory
+        id: conan-cache
+        run: |
+          echo "::set-output name=dir::$(conan config get storage.path)"
+      - name: restore Conan cache directory
+        uses: actions/cache@v2
+        with:
+            path: ${{ steps.conan-cache.outputs.dir }}
+            key: ${{ hashFiles('~/.conan/profiles/default', 'conanfile.py', 'external/rocksdb/*', '.github/workflows/windows.yml') }}
+      - name: export RocksDB
+        run: conan export external/rocksdb
+      - name: install dependencies
+        run: |
+          mkdir $env:build_dir
+          cd $env:build_dir
+          conan install .. --build missing --settings build_type=${{ matrix.configuration }}
+      - name: configure
+        run: |
+          $env:build_dir
+          cd $env:build_dir
+          pwd
+          ls
+          cmake `
+            -G "${{ matrix.generator }}" `
+            -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake `
+            -Dassert=ON `
+            -Dreporting=OFF `
+            -Dunity=OFF `
+            ..
+      - name: build
+        run: |
+          cmake --build $env:build_dir --target rippled --config ${{ matrix.configuration }} --parallel $env:NUMBER_OF_PROCESSORS
+      - name: test
+        run: |
+          & "$env:build_dir\${{ matrix.configuration }}\rippled.exe" --unittest
