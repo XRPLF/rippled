@@ -7,13 +7,13 @@ jobs:
     strategy:
       matrix:
         platform:
-          - ubuntu
-          - macos
+          - ubuntu-latest
+          - macos-12
         generator:
           - Ninja
         configuration:
           - Release
-    runs-on: ${{ matrix.platform }}-latest
+    runs-on: ${{ matrix.platform }}
     env:
       build_dir: .build
     steps:
