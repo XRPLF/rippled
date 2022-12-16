@@ -23,7 +23,8 @@
 #include <ripple/protocol/digest.h>
 #include <ripple/protocol/impl/secp256k1.h>
 #include <boost/multiprecision/cpp_int.hpp>
-#include <ed25519-donna/ed25519.h>
+#include <ed25519.h>
+#include <type_traits>
 
 namespace ripple {
 
