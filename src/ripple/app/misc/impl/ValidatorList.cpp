@@ -1758,7 +1758,7 @@ ValidatorList::calculateQuorum(
     // Use lower quorum specified via command line if the normal quorum
     // appears unreachable based on the number of recently received
     // validations.
-    if (minimumQuorum_ && *minimumQuorum_ < quorum && seenSize < quorum)
+    if (minimumQuorum_)// < quorum && seenSize < quorum)
     {
         quorum = *minimumQuorum_;
 
