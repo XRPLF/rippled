@@ -101,6 +101,7 @@ struct ConfigSection
 #define SECTION_LEDGER_REPLAY "ledger_replay"
 #define SECTION_BETA_RPC_API "beta_rpc_api"
 #define SECTION_SWEEP_INTERVAL "sweep_interval"
+#define SECTION_NETWORK_ID "network_id"
 
 }  // namespace ripple
 

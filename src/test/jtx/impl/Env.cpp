@@ -163,7 +163,10 @@ Env::lookup(AccountID const& id) const
 {
     auto const iter = map_.find(id);
     if (iter == map_.end())
+    {
+        std::cout << "Unknown account: " << id << "\n";
         Throw<std::runtime_error>("Env::lookup:: unknown account ID");
+    }
     return iter->second;
 }
 

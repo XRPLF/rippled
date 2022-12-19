@@ -700,6 +700,7 @@ if (tests)
     src/test/app/LoadFeeTrack_test.cpp
     src/test/app/Manifest_test.cpp
     src/test/app/MultiSign_test.cpp
+    src/test/app/NetworkID_test.cpp
     src/test/app/NFToken_test.cpp
     src/test/app/NFTokenBurn_test.cpp
     src/test/app/NFTokenDir_test.cpp

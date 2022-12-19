@@ -138,6 +138,7 @@ public:
     std::string START_LEDGER;
 
     // Network parameters
+    uint32_t NETWORK_ID = 0;
 
     // The number of fee units a reference transaction costs
     static constexpr FeeUnit32 TRANSACTION_FEE_BASE{10};

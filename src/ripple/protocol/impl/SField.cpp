@@ -104,6 +104,7 @@ CONSTRUCT_TYPED_SFIELD(sfHookExecutionIndex,    "HookExecutionIndex",   UINT16, 
 CONSTRUCT_TYPED_SFIELD(sfHookApiVersion,        "HookApiVersion",       UINT16,    20);
 
 // 32-bit integers (common)
+CONSTRUCT_TYPED_SFIELD(sfNetworkID,             "NetworkID",            UINT32,     1);
 CONSTRUCT_TYPED_SFIELD(sfFlags,                 "Flags",                UINT32,     2);
 CONSTRUCT_TYPED_SFIELD(sfSourceTag,             "SourceTag",            UINT32,     3);
 CONSTRUCT_TYPED_SFIELD(sfSequence,              "Sequence",             UINT32,     4);
