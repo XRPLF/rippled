@@ -412,6 +412,71 @@ port_wss_admin
     }
 
     void
+    testNetworkID()
+    {
+        testcase("network id");
+        std::string error;
+        Config c;
+        try
+        {
+            c.loadFromString(R"rippleConfig(
+[network_id]
+main
+)rippleConfig");
+        }
+        catch (std::runtime_error& e)
+        {
+            error = e.what();
+        }
+
+        BEAST_EXPECT(error == "");
+        BEAST_EXPECT(c.NETWORK_ID == 0);
+
+        try
+        {
+            c.loadFromString(R"rippleConfig(
+)rippleConfig");
+        }
+        catch (std::runtime_error& e)
+        {
+            error = e.what();
+        }
+
+        BEAST_EXPECT(error == "");
+        BEAST_EXPECT(c.NETWORK_ID == 0);
+
+        try
+        {
+            c.loadFromString(R"rippleConfig(
+[network_id]
+255
+)rippleConfig");
+        }
+        catch (std::runtime_error& e)
+        {
+            error = e.what();
+        }
+
+        BEAST_EXPECT(error == "");
+        BEAST_EXPECT(c.NETWORK_ID == 255);
+
+        try
+        {
+            c.loadFromString(R"rippleConfig(
+[network_id]
+10000
+)rippleConfig");
+        }
+        catch (std::runtime_error& e)
+        {
+            error = e.what();
+        }
+
+        BEAST_EXPECT(error == "");
+        BEAST_EXPECT(c.NETWORK_ID == 10000);
+    }
+
+    void
     testValidatorsFile()
     {
         testcase("validators_file");
@@ -1151,6 +1216,7 @@ r.ripple.com 51235
         testGetters();
         testAmendment();
         testOverlay();
+        testNetworkID();
     }
 };
 
