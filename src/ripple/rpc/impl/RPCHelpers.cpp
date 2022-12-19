@@ -160,8 +160,7 @@ getAccountObjects(
     // we need to check the marker to see if it is an NFTTokenPage index.
     if (iterateNFTPages && entryIndex != beast::zero)
     {
-        // we do this by shifting the accountid left by 12 bytes
-        // if it matches we will try to iterate the pages up to the limit
+        // if it is we will try to iterate the pages up to the limit
         // and then change over to the owner directory
 
         if (firstNFTPage.key != (entryIndex & ~nft::pageMask))
@@ -207,6 +206,10 @@ getAccountObjects(
                     return true;
                 }
             }
+
+            if (!npm)
+                break;
+
             ck = *npm;
         }
 
