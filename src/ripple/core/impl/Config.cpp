@@ -474,17 +474,17 @@ Config::loadFromString(std::string const& fileContents)
     {
         auto replaceColons = [](std::vector<std::string>& strVec) {
             const static std::regex e(":([0-9]+)$");
-            for (size_t i = 0; i < strVec.size(); ++i)
+            for (auto& line : strVec)
             {
                 // skip anything that might be an ipv6 address
-                if (std::count(strVec[i].begin(), strVec[i].end(), ':') != 1)
+                if (std::count(line.begin(), line.end(), ':') != 1)
                     continue;
 
-                std::string result = std::regex_replace(strVec[i], e, " $1");
+                std::string result = std::regex_replace(line, e, " $1");
                 // sanity check the result of the replace, should be same length
                 // as input
-                if (result.size() == strVec[i].size())
-                    strVec[i] = result;
+                if (result.size() == line.size())
+                    line = result;
             }
         };
 

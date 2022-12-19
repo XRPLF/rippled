@@ -67,7 +67,7 @@ doConnect(RPC::JsonContext& context)
 
     return RPC::makeObjectValue(
         "attempting connection to IP:" + ip_str +
-        " port: " + Json::Value{iPort}.asString());
+        " port: " + std::to_string(iPort));
 }
 
 }  // namespace ripple
