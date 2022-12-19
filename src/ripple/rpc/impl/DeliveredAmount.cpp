@@ -119,7 +119,6 @@ getDeliveredAmount(
             // trustline
             for (auto const& node : meta.getFieldArray(sfAffectedNodes))
             {
-                SField const& metaType = node.getFName();
                 uint16_t nodeType = node.getFieldU16(sfLedgerEntryType);
                 if (nodeType != ltRIPPLE_STATE)
                     continue;
