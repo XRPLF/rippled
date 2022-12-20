@@ -128,6 +128,20 @@ SetTrust::preclaim(PreclaimContext const& ctx)
         }
     }
 
+    // If the destination has opted to disallow incoming trustlines
+    // then honour that flag
+    if (ctx.view.rules().enabled(featureDisallowIncoming))
+    {
+        auto const sleDst = ctx.view.read(keylet::account(uDstAccountID));
+
+        if (!sleDst)
+            return tecNO_DST;
+
+        auto const dstFlags = sleDst->getFlags();
+        if (dstFlags & lsfDisallowIncomingTrustline)
+            return tecNO_PERMISSION;
+    }
+
     return tesSUCCESS;
 }
 

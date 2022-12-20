@@ -79,6 +79,13 @@ constexpr std::uint32_t asfGlobalFreeze                =  7;
 constexpr std::uint32_t asfDefaultRipple               =  8;
 constexpr std::uint32_t asfDepositAuth                 =  9;
 constexpr std::uint32_t asfAuthorizedNFTokenMinter     = 10;
+/*  // reserved for Hooks amendment
+constexpr std::uint32_t asfTshCollect                  = 11;
+*/
+constexpr std::uint32_t asfDisallowIncomingNFTOffer    = 12;
+constexpr std::uint32_t asfDisallowIncomingCheck       = 13;
+constexpr std::uint32_t asfDisallowIncomingPayChan     = 14;
+constexpr std::uint32_t asfDisallowIncomingTrustline   = 15;
 
 // OfferCreate flags:
 constexpr std::uint32_t tfPassive                      = 0x00010000;
