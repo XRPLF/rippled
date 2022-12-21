@@ -1,4 +1,6 @@
 <map id="ripple::test::PayChan_test" name="ripple::test::PayChan_test">
-<area shape="rect" id="node1" title=" " alt="" coords="5,80,193,107"/>
-<area shape="rect" id="node2" title=" " alt="" coords="72,5,127,32"/>
+<area shape="rect" id="node1" title=" " alt="" coords="5,185,193,212"/>
+<area shape="rect" id="node2" title=" " alt="" coords="29,96,84,123"/>
+<area shape="rect" id="node3" href="$classripple_1_1FeatureBitset.html" title=" " alt="" coords="108,96,261,123"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/bitset.html" title=" " alt="" coords="115,5,254,47"/>
 </map>

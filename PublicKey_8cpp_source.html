@@ -94,280 +94,281 @@ $(function() {
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/digest.h&gt;</span></div>
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/impl/secp256k1.h&gt;</span></div>
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;boost/multiprecision/cpp_int.hpp&gt;</span></div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;ed25519-donna/ed25519.h&gt;</span></div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160; </div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/io/basic_ostream.html">std::ostream</a>&amp;</div>
-<div class="line"><a name="l00031"></a><span class="lineno"><a class="line" href="namespaceripple.html#a604aa9a9a7286cd6a1116fda173f4cc6">   31</a></span>&#160;<a class="code" href="namespaceripple.html#ad2cbc273400d06e5ff80501de15410e3">operator&lt;&lt;</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/io/basic_ostream.html">std::ostream</a>&amp; os, <a class="code" href="classripple_1_1PublicKey.html">PublicKey</a> <span class="keyword">const</span>&amp; pk)</div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;{</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    os &lt;&lt; <a class="code" href="namespaceripple.html#a86e358ce3f06ff049af13c2342791cf8">strHex</a>(pk);</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    <span class="keywordflow">return</span> os;</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;}</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160; </div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;<span class="keyword">template</span> &lt;&gt;</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;PublicKey&gt;</a></div>
-<div class="line"><a name="l00039"></a><span class="lineno"><a class="line" href="namespaceripple.html#a8c63e5f8332f6cb8da90c476d4d2f541">   39</a></span>&#160;<a class="code" href="namespaceripple.html#a6ed6129376e1d37ef607c2697f5b9d6a">parseBase58</a>(<a class="code" href="namespaceripple.html#a1bf8df553d36589191c8057c136cce03">TokenType</a> type, <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; s)</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;{</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> result = <a class="code" href="namespaceripple.html#a9952e5a413358e9a647b31c86c5835ff">decodeBase58Token</a>(s, type);</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> pks = <a class="code" href="namespaceripple.html#aabe37451093c21757855542d68fba3ce">makeSlice</a>(result);</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    <span class="keywordflow">if</span> (!<a class="code" href="namespaceripple.html#adc1f8a2c9b47d7c08e671ad3473e9d3a">publicKeyType</a>(pks))</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;        <span class="keywordflow">return</span> std::nullopt;</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="classripple_1_1PublicKey.html">PublicKey</a>(pks);</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;}</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160; </div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;<span class="comment">//------------------------------------------------------------------------------</span></div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;<span class="comment">// Parse a length-prefixed number</span></div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;<span class="comment">//  Format: 0x02 &lt;length-byte&gt; &lt;number&gt;</span></div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;<span class="keyword">static</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;Slice&gt;</a></div>
-<div class="line"><a name="l00053"></a><span class="lineno"><a class="line" href="namespaceripple.html#a59452e879568893c848735af1dc3c002">   53</a></span>&#160;<a class="code" href="namespaceripple.html#a59452e879568893c848735af1dc3c002">sigPart</a>(<a class="code" href="classripple_1_1Slice.html">Slice</a>&amp; buf)</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;{</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    <span class="keywordflow">if</span> (buf.<a class="code" href="classripple_1_1Slice.html#aa6faa586508e0f849d4591d807353825">size</a>() &lt; 3 || buf[0] != 0x02)</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;        <span class="keywordflow">return</span> std::nullopt;</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> len = buf[1];</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    buf += 2;</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    <span class="keywordflow">if</span> (len &gt; buf.<a class="code" href="classripple_1_1Slice.html#aa6faa586508e0f849d4591d807353825">size</a>() || len &lt; 1 || len &gt; 33)</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;        <span class="keywordflow">return</span> std::nullopt;</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    <span class="comment">// Can&#39;t be negative</span></div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <span class="keywordflow">if</span> ((buf[0] &amp; 0x80) != 0)</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;        <span class="keywordflow">return</span> std::nullopt;</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    <span class="keywordflow">if</span> (buf[0] == 0)</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    {</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;        <span class="comment">// Can&#39;t be zero</span></div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        <span class="keywordflow">if</span> (len == 1)</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;            <span class="keywordflow">return</span> std::nullopt;</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;        <span class="comment">// Can&#39;t be padded</span></div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;        <span class="keywordflow">if</span> ((buf[1] &amp; 0x80) == 0)</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;            <span class="keywordflow">return</span> std::nullopt;</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    }</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;Slice&gt;</a> number = <a class="code" href="classripple_1_1Slice.html">Slice</a>(buf.<a class="code" href="classripple_1_1Slice.html#a9d49708cd15d24841b78dc0a9ecaac26">data</a>(), len);</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    buf += len;</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    <span class="keywordflow">return</span> number;</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;}</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160; </div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;<span class="keyword">static</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div>
-<div class="line"><a name="l00079"></a><span class="lineno"><a class="line" href="namespaceripple.html#a3da1781bb9795989b8fcee62bbad358a">   79</a></span>&#160;<a class="code" href="namespaceripple.html#a3da1781bb9795989b8fcee62bbad358a">sliceToHex</a>(<a class="code" href="classripple_1_1Slice.html">Slice</a> <span class="keyword">const</span>&amp; slice)</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;{</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> s;</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    <span class="keywordflow">if</span> (slice[0] &amp; 0x80)</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;    {</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;        s.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/reserve.html">reserve</a>(2 * (slice.<a class="code" href="classripple_1_1Slice.html#aa6faa586508e0f849d4591d807353825">size</a>() + 2));</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;        s = <span class="stringliteral">&quot;0x00&quot;</span>;</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;    }</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    {</div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;        s.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/reserve.html">reserve</a>(2 * (slice.<a class="code" href="classripple_1_1Slice.html#aa6faa586508e0f849d4591d807353825">size</a>() + 1));</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;        s = <span class="stringliteral">&quot;0x&quot;</span>;</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    }</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;    <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; slice.<a class="code" href="classripple_1_1Slice.html#aa6faa586508e0f849d4591d807353825">size</a>(); ++i)</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;    {</div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;        s += <span class="stringliteral">&quot;0123456789ABCDEF&quot;</span>[((slice[i] &amp; 0xf0) &gt;&gt; 4)];</div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;        s += <span class="stringliteral">&quot;0123456789ABCDEF&quot;</span>[((slice[i] &amp; 0x0f) &gt;&gt; 0)];</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;    }</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;    <span class="keywordflow">return</span> s;</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;}</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160; </div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;ECDSACanonicality&gt;</a></div>
-<div class="line"><a name="l00113"></a><span class="lineno"><a class="line" href="namespaceripple.html#a06c04baee32e460076ce4d9df3ffd98f">  113</a></span>&#160;<a class="code" href="namespaceripple.html#a06c04baee32e460076ce4d9df3ffd98f">ecdsaCanonicality</a>(<a class="code" href="classripple_1_1Slice.html">Slice</a> <span class="keyword">const</span>&amp; sig)</div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;{</div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;    <span class="keyword">using</span> uint264 =</div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;        boost::multiprecision::number&lt;boost::multiprecision::cpp_int_backend&lt;</div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;            264,</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;ed25519.h&gt;</span></div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/type_traits.html">type_traits</a>&gt;</span></div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160; </div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160; </div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/io/basic_ostream.html">std::ostream</a>&amp;</div>
+<div class="line"><a name="l00032"></a><span class="lineno"><a class="line" href="namespaceripple.html#a604aa9a9a7286cd6a1116fda173f4cc6">   32</a></span>&#160;<a class="code" href="namespaceripple.html#ad2cbc273400d06e5ff80501de15410e3">operator&lt;&lt;</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/io/basic_ostream.html">std::ostream</a>&amp; os, <a class="code" href="classripple_1_1PublicKey.html">PublicKey</a> <span class="keyword">const</span>&amp; pk)</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;{</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    os &lt;&lt; <a class="code" href="namespaceripple.html#a86e358ce3f06ff049af13c2342791cf8">strHex</a>(pk);</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    <span class="keywordflow">return</span> os;</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;}</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160; </div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;<span class="keyword">template</span> &lt;&gt;</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;PublicKey&gt;</a></div>
+<div class="line"><a name="l00040"></a><span class="lineno"><a class="line" href="namespaceripple.html#a8c63e5f8332f6cb8da90c476d4d2f541">   40</a></span>&#160;<a class="code" href="namespaceripple.html#a6ed6129376e1d37ef607c2697f5b9d6a">parseBase58</a>(<a class="code" href="namespaceripple.html#a1bf8df553d36589191c8057c136cce03">TokenType</a> type, <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; s)</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;{</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> result = <a class="code" href="namespaceripple.html#a9952e5a413358e9a647b31c86c5835ff">decodeBase58Token</a>(s, type);</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> pks = <a class="code" href="namespaceripple.html#aabe37451093c21757855542d68fba3ce">makeSlice</a>(result);</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    <span class="keywordflow">if</span> (!<a class="code" href="namespaceripple.html#adc1f8a2c9b47d7c08e671ad3473e9d3a">publicKeyType</a>(pks))</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;        <span class="keywordflow">return</span> std::nullopt;</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="classripple_1_1PublicKey.html">PublicKey</a>(pks);</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;}</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160; </div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;<span class="comment">//------------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160; </div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;<span class="comment">// Parse a length-prefixed number</span></div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;<span class="comment">//  Format: 0x02 &lt;length-byte&gt; &lt;number&gt;</span></div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;<span class="keyword">static</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;Slice&gt;</a></div>
+<div class="line"><a name="l00054"></a><span class="lineno"><a class="line" href="namespaceripple.html#a59452e879568893c848735af1dc3c002">   54</a></span>&#160;<a class="code" href="namespaceripple.html#a59452e879568893c848735af1dc3c002">sigPart</a>(<a class="code" href="classripple_1_1Slice.html">Slice</a>&amp; buf)</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;{</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    <span class="keywordflow">if</span> (buf.<a class="code" href="classripple_1_1Slice.html#aa6faa586508e0f849d4591d807353825">size</a>() &lt; 3 || buf[0] != 0x02)</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;        <span class="keywordflow">return</span> std::nullopt;</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> len = buf[1];</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    buf += 2;</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    <span class="keywordflow">if</span> (len &gt; buf.<a class="code" href="classripple_1_1Slice.html#aa6faa586508e0f849d4591d807353825">size</a>() || len &lt; 1 || len &gt; 33)</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;        <span class="keywordflow">return</span> std::nullopt;</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <span class="comment">// Can&#39;t be negative</span></div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    <span class="keywordflow">if</span> ((buf[0] &amp; 0x80) != 0)</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        <span class="keywordflow">return</span> std::nullopt;</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    <span class="keywordflow">if</span> (buf[0] == 0)</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    {</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        <span class="comment">// Can&#39;t be zero</span></div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;        <span class="keywordflow">if</span> (len == 1)</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;            <span class="keywordflow">return</span> std::nullopt;</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;        <span class="comment">// Can&#39;t be padded</span></div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;        <span class="keywordflow">if</span> ((buf[1] &amp; 0x80) == 0)</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;            <span class="keywordflow">return</span> std::nullopt;</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    }</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;Slice&gt;</a> number = <a class="code" href="classripple_1_1Slice.html">Slice</a>(buf.<a class="code" href="classripple_1_1Slice.html#a9d49708cd15d24841b78dc0a9ecaac26">data</a>(), len);</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    buf += len;</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    <span class="keywordflow">return</span> number;</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;}</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160; </div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;<span class="keyword">static</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div>
+<div class="line"><a name="l00080"></a><span class="lineno"><a class="line" href="namespaceripple.html#a3da1781bb9795989b8fcee62bbad358a">   80</a></span>&#160;<a class="code" href="namespaceripple.html#a3da1781bb9795989b8fcee62bbad358a">sliceToHex</a>(<a class="code" href="classripple_1_1Slice.html">Slice</a> <span class="keyword">const</span>&amp; slice)</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;{</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> s;</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;    <span class="keywordflow">if</span> (slice[0] &amp; 0x80)</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    {</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;        s.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/reserve.html">reserve</a>(2 * (slice.<a class="code" href="classripple_1_1Slice.html#aa6faa586508e0f849d4591d807353825">size</a>() + 2));</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;        s = <span class="stringliteral">&quot;0x00&quot;</span>;</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    }</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    {</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;        s.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/reserve.html">reserve</a>(2 * (slice.<a class="code" href="classripple_1_1Slice.html#aa6faa586508e0f849d4591d807353825">size</a>() + 1));</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;        s = <span class="stringliteral">&quot;0x&quot;</span>;</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;    }</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;    <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; slice.<a class="code" href="classripple_1_1Slice.html#aa6faa586508e0f849d4591d807353825">size</a>(); ++i)</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;    {</div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;        s += <span class="stringliteral">&quot;0123456789ABCDEF&quot;</span>[((slice[i] &amp; 0xf0) &gt;&gt; 4)];</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;        s += <span class="stringliteral">&quot;0123456789ABCDEF&quot;</span>[((slice[i] &amp; 0x0f) &gt;&gt; 0)];</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;    }</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;    <span class="keywordflow">return</span> s;</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;}</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160; </div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;ECDSACanonicality&gt;</a></div>
+<div class="line"><a name="l00114"></a><span class="lineno"><a class="line" href="namespaceripple.html#a06c04baee32e460076ce4d9df3ffd98f">  114</a></span>&#160;<a class="code" href="namespaceripple.html#a06c04baee32e460076ce4d9df3ffd98f">ecdsaCanonicality</a>(<a class="code" href="classripple_1_1Slice.html">Slice</a> <span class="keyword">const</span>&amp; sig)</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;{</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;    <span class="keyword">using</span> uint264 =</div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;        boost::multiprecision::number&lt;boost::multiprecision::cpp_int_backend&lt;</div>
 <div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;            264,</div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;            boost::multiprecision::signed_magnitude,</div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;            boost::multiprecision::unchecked,</div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;            <span class="keywordtype">void</span>&gt;&gt;;</div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160; </div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;    <span class="keyword">static</span> uint264 <span class="keyword">const</span> G(</div>
-<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;        <span class="stringliteral">&quot;0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141&quot;</span>);</div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160; </div>
-<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;    <span class="comment">// The format of a signature should be:</span></div>
-<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;    <span class="comment">// &lt;30&gt; &lt;len&gt; [ &lt;02&gt; &lt;lenR&gt; &lt;R&gt; ] [ &lt;02&gt; &lt;lenS&gt; &lt;S&gt; ]</span></div>
-<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;    <span class="keywordflow">if</span> ((sig.<a class="code" href="classripple_1_1Slice.html#aa6faa586508e0f849d4591d807353825">size</a>() &lt; 8) || (sig.<a class="code" href="classripple_1_1Slice.html#aa6faa586508e0f849d4591d807353825">size</a>() &gt; 72))</div>
-<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;        <span class="keywordflow">return</span> std::nullopt;</div>
-<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;    <span class="keywordflow">if</span> ((sig[0] != 0x30) || (sig[1] != (sig.<a class="code" href="classripple_1_1Slice.html#aa6faa586508e0f849d4591d807353825">size</a>() - 2)))</div>
-<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;        <span class="keywordflow">return</span> std::nullopt;</div>
-<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;    <a class="code" href="classripple_1_1Slice.html">Slice</a> p = sig + 2;</div>
-<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;    <span class="keyword">auto</span> r = <a class="code" href="namespaceripple.html#a59452e879568893c848735af1dc3c002">sigPart</a>(p);</div>
-<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;    <span class="keyword">auto</span> s = <a class="code" href="namespaceripple.html#a59452e879568893c848735af1dc3c002">sigPart</a>(p);</div>
-<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;    <span class="keywordflow">if</span> (!r || !s || !p.<a class="code" href="classripple_1_1Slice.html#a38d951bc2f27aaf89c3fdb5914c7e169">empty</a>())</div>
-<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;        <span class="keywordflow">return</span> std::nullopt;</div>
-<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160; </div>
-<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;    uint264 R(<a class="code" href="namespaceripple.html#a3da1781bb9795989b8fcee62bbad358a">sliceToHex</a>(*r));</div>
-<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;    <span class="keywordflow">if</span> (R &gt;= G)</div>
-<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;        <span class="keywordflow">return</span> std::nullopt;</div>
-<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160; </div>
-<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;    uint264 S(<a class="code" href="namespaceripple.html#a3da1781bb9795989b8fcee62bbad358a">sliceToHex</a>(*s));</div>
-<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;    <span class="keywordflow">if</span> (S &gt;= G)</div>
-<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;        <span class="keywordflow">return</span> std::nullopt;</div>
-<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160; </div>
-<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;    <span class="comment">// (R,S) and (R,G-S) are canonical,</span></div>
-<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;    <span class="comment">// but is fully canonical when S &lt;= G-S</span></div>
-<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> Sp = G - S;</div>
-<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;    <span class="keywordflow">if</span> (S &gt; Sp)</div>
-<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a286745fec5429abb3893001b4982522ba9f3fda2fef6dda85970e12ce9a9b8cbe">ECDSACanonicality::canonical</a>;</div>
-<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a286745fec5429abb3893001b4982522ba3e23eeda3fe3fb70d1e274eab59199d1">ECDSACanonicality::fullyCanonical</a>;</div>
-<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;}</div>
-<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160; </div>
-<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;<span class="keyword">static</span> <span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00155"></a><span class="lineno"><a class="line" href="namespaceripple.html#ae301df62c738814e031244626b80c8d4">  155</a></span>&#160;<a class="code" href="namespaceripple.html#ae301df62c738814e031244626b80c8d4">ed25519Canonical</a>(<a class="code" href="classripple_1_1Slice.html">Slice</a> <span class="keyword">const</span>&amp; sig)</div>
-<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;{</div>
-<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;    <span class="keywordflow">if</span> (sig.<a class="code" href="classripple_1_1Slice.html#aa6faa586508e0f849d4591d807353825">size</a>() != 64)</div>
-<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;    <span class="comment">// Big-endian Order, the Ed25519 subgroup order</span></div>
-<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> <span class="keyword">const</span> Order[] = {</div>
-<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;        0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,</div>
-<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;        0x00, 0x00, 0x00, 0x00, 0x00, 0x14, 0xDE, 0xF9, 0xDE, 0xA2, 0xF7,</div>
-<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;        0x9C, 0xD6, 0x58, 0x12, 0x63, 0x1A, 0x5C, 0xF5, 0xD3, 0xED,</div>
-<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;    };</div>
-<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;    <span class="comment">// Take the second half of signature</span></div>
-<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;    <span class="comment">// and byte-reverse it to big-endian.</span></div>
-<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> le = sig.<a class="code" href="classripple_1_1Slice.html#a9d49708cd15d24841b78dc0a9ecaac26">data</a>() + 32;</div>
-<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> S[32];</div>
-<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/reverse_copy.html">std::reverse_copy</a>(le, le + 32, S);</div>
-<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;    <span class="comment">// Must be less than Order</span></div>
-<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;    <span class="keywordflow">return</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/lexicographical_compare.html">std::lexicographical_compare</a>(S, S + 32, Order, Order + 32);</div>
-<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;}</div>
-<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160; </div>
-<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;<span class="comment">//------------------------------------------------------------------------------</span></div>
-<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160; </div>
-<div class="line"><a name="l00176"></a><span class="lineno"><a class="line" href="classripple_1_1PublicKey.html#acb4fa15eaeda4e975f987b285dda1010">  176</a></span>&#160;<a class="code" href="classripple_1_1PublicKey.html#aad64117b4e26a12355ea8b1f36ee2e9f">PublicKey::PublicKey</a>(<a class="code" href="classripple_1_1Slice.html">Slice</a> <span class="keyword">const</span>&amp; slice)</div>
-<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;{</div>
-<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;    <span class="keywordflow">if</span> (!<a class="code" href="namespaceripple.html#adc1f8a2c9b47d7c08e671ad3473e9d3a">publicKeyType</a>(<a class="code" href="classripple_1_1PublicKey.html#ae0bcc607176a440ec63a86bae5767036">slice</a>))</div>
-<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;        <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<span class="stringliteral">&quot;PublicKey::PublicKey invalid type&quot;</span>);</div>
-<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;    <a class="code" href="classripple_1_1PublicKey.html#abde91bc576c672a5277f90421f4216f1">size_</a> = <a class="code" href="classripple_1_1PublicKey.html#ae0bcc607176a440ec63a86bae5767036">slice</a>.<a class="code" href="classripple_1_1Slice.html#aa6faa586508e0f849d4591d807353825">size</a>();</div>
-<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/byte/memcpy.html">std::memcpy</a>(<a class="code" href="classripple_1_1PublicKey.html#a3f836209995c87a57de02511dc1a5dd0">buf_</a>, <a class="code" href="classripple_1_1PublicKey.html#ae0bcc607176a440ec63a86bae5767036">slice</a>.<a class="code" href="classripple_1_1Slice.html#a9d49708cd15d24841b78dc0a9ecaac26">data</a>(), <a class="code" href="classripple_1_1PublicKey.html#abde91bc576c672a5277f90421f4216f1">size_</a>);</div>
-<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;}</div>
-<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160; </div>
-<div class="line"><a name="l00184"></a><span class="lineno"><a class="line" href="classripple_1_1PublicKey.html#a7378bc4e4389bb993a5c721c35f7f61d">  184</a></span>&#160;<a class="code" href="classripple_1_1PublicKey.html#aad64117b4e26a12355ea8b1f36ee2e9f">PublicKey::PublicKey</a>(<a class="code" href="classripple_1_1PublicKey.html">PublicKey</a> <span class="keyword">const</span>&amp; other) : size_(other.size_)</div>
-<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;{</div>
-<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;    <span class="keywordflow">if</span> (<a class="code" href="classripple_1_1PublicKey.html#abde91bc576c672a5277f90421f4216f1">size_</a>)</div>
-<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/byte/memcpy.html">std::memcpy</a>(<a class="code" href="classripple_1_1PublicKey.html#a3f836209995c87a57de02511dc1a5dd0">buf_</a>, other.<a class="code" href="classripple_1_1PublicKey.html#a3f836209995c87a57de02511dc1a5dd0">buf_</a>, <a class="code" href="classripple_1_1PublicKey.html#abde91bc576c672a5277f90421f4216f1">size_</a>);</div>
-<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;}</div>
-<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160; </div>
-<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;<a class="code" href="classripple_1_1PublicKey.html">PublicKey</a>&amp;</div>
-<div class="line"><a name="l00191"></a><span class="lineno"><a class="line" href="classripple_1_1PublicKey.html#ae50ae98c3dce17d9b41e47a174b6a901">  191</a></span>&#160;<a class="code" href="classripple_1_1PublicKey.html#ae50ae98c3dce17d9b41e47a174b6a901">PublicKey::operator=</a>(<a class="code" href="classripple_1_1PublicKey.html">PublicKey</a> <span class="keyword">const</span>&amp; other)</div>
-<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;{</div>
-<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;    <span class="keywordflow">if</span> (<span class="keyword">this</span> != &amp;other)</div>
-<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;    {</div>
-<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;        <a class="code" href="classripple_1_1PublicKey.html#abde91bc576c672a5277f90421f4216f1">size_</a> = other.<a class="code" href="classripple_1_1PublicKey.html#abde91bc576c672a5277f90421f4216f1">size_</a>;</div>
-<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;        <span class="keywordflow">if</span> (<a class="code" href="classripple_1_1PublicKey.html#abde91bc576c672a5277f90421f4216f1">size_</a>)</div>
-<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/byte/memcpy.html">std::memcpy</a>(<a class="code" href="classripple_1_1PublicKey.html#a3f836209995c87a57de02511dc1a5dd0">buf_</a>, other.<a class="code" href="classripple_1_1PublicKey.html#a3f836209995c87a57de02511dc1a5dd0">buf_</a>, <a class="code" href="classripple_1_1PublicKey.html#abde91bc576c672a5277f90421f4216f1">size_</a>);</div>
-<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;    }</div>
-<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160; </div>
-<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;    <span class="keywordflow">return</span> *<span class="keyword">this</span>;</div>
-<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;}</div>
-<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160; </div>
-<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;<span class="comment">//------------------------------------------------------------------------------</span></div>
-<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160; </div>
-<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;KeyType&gt;</a></div>
-<div class="line"><a name="l00206"></a><span class="lineno"><a class="line" href="namespaceripple.html#adc1f8a2c9b47d7c08e671ad3473e9d3a">  206</a></span>&#160;<a class="code" href="namespaceripple.html#adc1f8a2c9b47d7c08e671ad3473e9d3a">publicKeyType</a>(<a class="code" href="classripple_1_1Slice.html">Slice</a> <span class="keyword">const</span>&amp; slice)</div>
-<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;{</div>
-<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;    <span class="keywordflow">if</span> (slice.<a class="code" href="classripple_1_1Slice.html#aa6faa586508e0f849d4591d807353825">size</a>() == 33)</div>
-<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;    {</div>
-<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;        <span class="keywordflow">if</span> (slice[0] == 0xED)</div>
-<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;            <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a9de744cfdefe1132969eb982e57e4ddea8183aa2c95dc1385c8f58bf1917fcb0b">KeyType::ed25519</a>;</div>
-<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160; </div>
-<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;        <span class="keywordflow">if</span> (slice[0] == 0x02 || slice[0] == 0x03)</div>
-<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;            <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a9de744cfdefe1132969eb982e57e4ddea82c2b7829b8129e5a2d53665ba4b4757">KeyType::secp256k1</a>;</div>
-<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;    }</div>
-<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160; </div>
-<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;    <span class="keywordflow">return</span> std::nullopt;</div>
-<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;}</div>
-<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160; </div>
-<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;<span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00221"></a><span class="lineno"><a class="line" href="namespaceripple.html#a52366e572b1b40e5e913cf14e1d51ce3">  221</a></span>&#160;<a class="code" href="namespaceripple.html#a52366e572b1b40e5e913cf14e1d51ce3">verifyDigest</a>(</div>
-<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;    <a class="code" href="classripple_1_1PublicKey.html">PublicKey</a> <span class="keyword">const</span>&amp; publicKey,</div>
-<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; <a class="code" href="namespaceripple.html#a91e9fe7a4e92dba79c3812fd3edcaacc">digest</a>,</div>
-<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;    <a class="code" href="classripple_1_1Slice.html">Slice</a> <span class="keyword">const</span>&amp; sig,</div>
-<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;    <span class="keywordtype">bool</span> mustBeFullyCanonical) noexcept</div>
-<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;{</div>
-<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;    <span class="keywordflow">if</span> (<a class="code" href="namespaceripple.html#adc1f8a2c9b47d7c08e671ad3473e9d3a">publicKeyType</a>(publicKey) != <a class="code" href="namespaceripple.html#a9de744cfdefe1132969eb982e57e4ddea82c2b7829b8129e5a2d53665ba4b4757">KeyType::secp256k1</a>)</div>
-<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;        <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<span class="stringliteral">&quot;sign: secp256k1 required for digest signing&quot;</span>);</div>
-<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> canonicality = <a class="code" href="namespaceripple.html#a06c04baee32e460076ce4d9df3ffd98f">ecdsaCanonicality</a>(sig);</div>
-<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;    <span class="keywordflow">if</span> (!canonicality)</div>
-<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;    <span class="keywordflow">if</span> (mustBeFullyCanonical &amp;&amp;</div>
-<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;        (*canonicality != <a class="code" href="namespaceripple.html#a286745fec5429abb3893001b4982522ba3e23eeda3fe3fb70d1e274eab59199d1">ECDSACanonicality::fullyCanonical</a>))</div>
-<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160; </div>
-<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;    secp256k1_pubkey pubkey_imp;</div>
-<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;    <span class="keywordflow">if</span> (secp256k1_ec_pubkey_parse(</div>
-<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;            <a class="code" href="namespaceripple.html#a27a5877cd080b3340f60ddeeb7e40f06">secp256k1Context</a>(),</div>
-<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;            &amp;pubkey_imp,</div>
-<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;            <span class="keyword">reinterpret_cast&lt;</span><span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> const*<span class="keyword">&gt;</span>(publicKey.data()),</div>
-<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;            publicKey.size()) != 1)</div>
-<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160; </div>
-<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;    secp256k1_ecdsa_signature sig_imp;</div>
-<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;    <span class="keywordflow">if</span> (secp256k1_ecdsa_signature_parse_der(</div>
-<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;            <a class="code" href="namespaceripple.html#a27a5877cd080b3340f60ddeeb7e40f06">secp256k1Context</a>(),</div>
-<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;            &amp;sig_imp,</div>
-<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;            <span class="keyword">reinterpret_cast&lt;</span><span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> const*<span class="keyword">&gt;</span>(sig.data()),</div>
-<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;            sig.size()) != 1)</div>
-<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;    <span class="keywordflow">if</span> (*canonicality != <a class="code" href="namespaceripple.html#a286745fec5429abb3893001b4982522ba3e23eeda3fe3fb70d1e274eab59199d1">ECDSACanonicality::fullyCanonical</a>)</div>
-<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;    {</div>
-<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;        secp256k1_ecdsa_signature sig_norm;</div>
-<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;        <span class="keywordflow">if</span> (secp256k1_ecdsa_signature_normalize(</div>
-<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;                <a class="code" href="namespaceripple.html#a27a5877cd080b3340f60ddeeb7e40f06">secp256k1Context</a>(), &amp;sig_norm, &amp;sig_imp) != 1)</div>
-<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;        <span class="keywordflow">return</span> secp256k1_ecdsa_verify(</div>
-<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;                   <a class="code" href="namespaceripple.html#a27a5877cd080b3340f60ddeeb7e40f06">secp256k1Context</a>(),</div>
-<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;                   &amp;sig_norm,</div>
-<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;                   <span class="keyword">reinterpret_cast&lt;</span><span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> const*<span class="keyword">&gt;</span>(<a class="code" href="namespaceripple.html#a91e9fe7a4e92dba79c3812fd3edcaacc">digest</a>.data()),</div>
-<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;                   &amp;pubkey_imp) == 1;</div>
-<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;    }</div>
-<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;    <span class="keywordflow">return</span> secp256k1_ecdsa_verify(</div>
-<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;               <a class="code" href="namespaceripple.html#a27a5877cd080b3340f60ddeeb7e40f06">secp256k1Context</a>(),</div>
-<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;               &amp;sig_imp,</div>
-<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;               <span class="keyword">reinterpret_cast&lt;</span><span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> const*<span class="keyword">&gt;</span>(<a class="code" href="namespaceripple.html#a91e9fe7a4e92dba79c3812fd3edcaacc">digest</a>.data()),</div>
-<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;               &amp;pubkey_imp) == 1;</div>
-<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;}</div>
-<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160; </div>
-<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;<span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00271"></a><span class="lineno"><a class="line" href="namespaceripple.html#ace4dd4a2d63cd976adb9fac9754ae785">  271</a></span>&#160;<a class="code" href="namespaceripple.html#ace4dd4a2d63cd976adb9fac9754ae785">verify</a>(</div>
-<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;    <a class="code" href="classripple_1_1PublicKey.html">PublicKey</a> <span class="keyword">const</span>&amp; publicKey,</div>
-<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;    <a class="code" href="classripple_1_1Slice.html">Slice</a> <span class="keyword">const</span>&amp; m,</div>
-<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;    <a class="code" href="classripple_1_1Slice.html">Slice</a> <span class="keyword">const</span>&amp; sig,</div>
-<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;    <span class="keywordtype">bool</span> mustBeFullyCanonical) noexcept</div>
-<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;{</div>
-<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;    <span class="keywordflow">if</span> (<span class="keyword">auto</span> <span class="keyword">const</span> type = <a class="code" href="namespaceripple.html#adc1f8a2c9b47d7c08e671ad3473e9d3a">publicKeyType</a>(publicKey))</div>
-<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;    {</div>
-<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;        <span class="keywordflow">if</span> (*type == <a class="code" href="namespaceripple.html#a9de744cfdefe1132969eb982e57e4ddea82c2b7829b8129e5a2d53665ba4b4757">KeyType::secp256k1</a>)</div>
-<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;        {</div>
-<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;            <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a52366e572b1b40e5e913cf14e1d51ce3">verifyDigest</a>(</div>
-<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;                publicKey, <a class="code" href="namespaceripple.html#ae3f5bc352766a1a8dbf5270eb7dbc2e7">sha512Half</a>(m), sig, mustBeFullyCanonical);</div>
-<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;        }</div>
-<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;        <span class="keywordflow">else</span> <span class="keywordflow">if</span> (*type == <a class="code" href="namespaceripple.html#a9de744cfdefe1132969eb982e57e4ddea8183aa2c95dc1385c8f58bf1917fcb0b">KeyType::ed25519</a>)</div>
-<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;        {</div>
-<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;            <span class="keywordflow">if</span> (!<a class="code" href="namespaceripple.html#ae301df62c738814e031244626b80c8d4">ed25519Canonical</a>(sig))</div>
-<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;                <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160; </div>
-<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;            <span class="comment">// We internally prefix Ed25519 keys with a 0xED</span></div>
-<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;            <span class="comment">// byte to distinguish them from secp256k1 keys</span></div>
-<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;            <span class="comment">// so when verifying the signature, we need to</span></div>
-<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;            <span class="comment">// first strip that prefix.</span></div>
-<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;            <span class="keywordflow">return</span> ed25519_sign_open(</div>
-<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;                       m.data(), m.size(), publicKey.data() + 1, sig.data()) ==</div>
-<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;                0;</div>
-<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;        }</div>
-<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;    }</div>
-<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;}</div>
-<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160; </div>
-<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160;<a class="code" href="namespaceripple.html#a4e412a5834900d9affa8db3ac1a27209">NodeID</a></div>
-<div class="line"><a name="l00302"></a><span class="lineno"><a class="line" href="namespaceripple.html#a984ddd646f1e1a5032a9a17f96c6fc55">  302</a></span>&#160;<a class="code" href="namespaceripple.html#a984ddd646f1e1a5032a9a17f96c6fc55">calcNodeID</a>(<a class="code" href="classripple_1_1PublicKey.html">PublicKey</a> <span class="keyword">const</span>&amp; pk)</div>
-<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;{</div>
-<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;    static_assert(<a class="code" href="classripple_1_1base__uint.html#a4b9e8d36a37963d48be8f081d99257bf">NodeID::bytes</a> == <span class="keyword">sizeof</span>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array.html">ripesha_hasher::result_type</a>));</div>
-<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160; </div>
-<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;    <a class="code" href="structripple_1_1ripesha__hasher.html">ripesha_hasher</a> h;</div>
-<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;    h(pk.<a class="code" href="classripple_1_1PublicKey.html#a46e654e5021f7a037dbacd14db86fc5e">data</a>(), pk.<a class="code" href="classripple_1_1PublicKey.html#a663437215503b159ed33b1664e4213a3">size</a>());</div>
-<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="classripple_1_1base__uint.html">NodeID</a>{<span class="keyword">static_cast&lt;</span><a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array.html">ripesha_hasher::result_type</a><span class="keyword">&gt;</span>(h)};</div>
-<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;}</div>
-<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160; </div>
-<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;            264,</div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;            boost::multiprecision::signed_magnitude,</div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;            boost::multiprecision::unchecked,</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;            <span class="keywordtype">void</span>&gt;&gt;;</div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160; </div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;    <span class="keyword">static</span> uint264 <span class="keyword">const</span> G(</div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;        <span class="stringliteral">&quot;0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141&quot;</span>);</div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160; </div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;    <span class="comment">// The format of a signature should be:</span></div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;    <span class="comment">// &lt;30&gt; &lt;len&gt; [ &lt;02&gt; &lt;lenR&gt; &lt;R&gt; ] [ &lt;02&gt; &lt;lenS&gt; &lt;S&gt; ]</span></div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;    <span class="keywordflow">if</span> ((sig.<a class="code" href="classripple_1_1Slice.html#aa6faa586508e0f849d4591d807353825">size</a>() &lt; 8) || (sig.<a class="code" href="classripple_1_1Slice.html#aa6faa586508e0f849d4591d807353825">size</a>() &gt; 72))</div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;        <span class="keywordflow">return</span> std::nullopt;</div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;    <span class="keywordflow">if</span> ((sig[0] != 0x30) || (sig[1] != (sig.<a class="code" href="classripple_1_1Slice.html#aa6faa586508e0f849d4591d807353825">size</a>() - 2)))</div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;        <span class="keywordflow">return</span> std::nullopt;</div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;    <a class="code" href="classripple_1_1Slice.html">Slice</a> p = sig + 2;</div>
+<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;    <span class="keyword">auto</span> r = <a class="code" href="namespaceripple.html#a59452e879568893c848735af1dc3c002">sigPart</a>(p);</div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;    <span class="keyword">auto</span> s = <a class="code" href="namespaceripple.html#a59452e879568893c848735af1dc3c002">sigPart</a>(p);</div>
+<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;    <span class="keywordflow">if</span> (!r || !s || !p.<a class="code" href="classripple_1_1Slice.html#a38d951bc2f27aaf89c3fdb5914c7e169">empty</a>())</div>
+<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;        <span class="keywordflow">return</span> std::nullopt;</div>
+<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160; </div>
+<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;    uint264 R(<a class="code" href="namespaceripple.html#a3da1781bb9795989b8fcee62bbad358a">sliceToHex</a>(*r));</div>
+<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;    <span class="keywordflow">if</span> (R &gt;= G)</div>
+<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;        <span class="keywordflow">return</span> std::nullopt;</div>
+<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160; </div>
+<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;    uint264 S(<a class="code" href="namespaceripple.html#a3da1781bb9795989b8fcee62bbad358a">sliceToHex</a>(*s));</div>
+<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;    <span class="keywordflow">if</span> (S &gt;= G)</div>
+<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;        <span class="keywordflow">return</span> std::nullopt;</div>
+<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160; </div>
+<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;    <span class="comment">// (R,S) and (R,G-S) are canonical,</span></div>
+<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;    <span class="comment">// but is fully canonical when S &lt;= G-S</span></div>
+<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> Sp = G - S;</div>
+<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;    <span class="keywordflow">if</span> (S &gt; Sp)</div>
+<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a286745fec5429abb3893001b4982522ba9f3fda2fef6dda85970e12ce9a9b8cbe">ECDSACanonicality::canonical</a>;</div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a286745fec5429abb3893001b4982522ba3e23eeda3fe3fb70d1e274eab59199d1">ECDSACanonicality::fullyCanonical</a>;</div>
+<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;}</div>
+<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160; </div>
+<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;<span class="keyword">static</span> <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00156"></a><span class="lineno"><a class="line" href="namespaceripple.html#ae301df62c738814e031244626b80c8d4">  156</a></span>&#160;<a class="code" href="namespaceripple.html#ae301df62c738814e031244626b80c8d4">ed25519Canonical</a>(<a class="code" href="classripple_1_1Slice.html">Slice</a> <span class="keyword">const</span>&amp; sig)</div>
+<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;{</div>
+<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;    <span class="keywordflow">if</span> (sig.<a class="code" href="classripple_1_1Slice.html#aa6faa586508e0f849d4591d807353825">size</a>() != 64)</div>
+<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;    <span class="comment">// Big-endian Order, the Ed25519 subgroup order</span></div>
+<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> <span class="keyword">const</span> Order[] = {</div>
+<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;        0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,</div>
+<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;        0x00, 0x00, 0x00, 0x00, 0x00, 0x14, 0xDE, 0xF9, 0xDE, 0xA2, 0xF7,</div>
+<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;        0x9C, 0xD6, 0x58, 0x12, 0x63, 0x1A, 0x5C, 0xF5, 0xD3, 0xED,</div>
+<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;    };</div>
+<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;    <span class="comment">// Take the second half of signature</span></div>
+<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;    <span class="comment">// and byte-reverse it to big-endian.</span></div>
+<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> le = sig.<a class="code" href="classripple_1_1Slice.html#a9d49708cd15d24841b78dc0a9ecaac26">data</a>() + 32;</div>
+<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> S[32];</div>
+<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/reverse_copy.html">std::reverse_copy</a>(le, le + 32, S);</div>
+<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;    <span class="comment">// Must be less than Order</span></div>
+<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;    <span class="keywordflow">return</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/lexicographical_compare.html">std::lexicographical_compare</a>(S, S + 32, Order, Order + 32);</div>
+<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;}</div>
+<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160; </div>
+<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;<span class="comment">//------------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160; </div>
+<div class="line"><a name="l00177"></a><span class="lineno"><a class="line" href="classripple_1_1PublicKey.html#acb4fa15eaeda4e975f987b285dda1010">  177</a></span>&#160;<a class="code" href="classripple_1_1PublicKey.html#aad64117b4e26a12355ea8b1f36ee2e9f">PublicKey::PublicKey</a>(<a class="code" href="classripple_1_1Slice.html">Slice</a> <span class="keyword">const</span>&amp; slice)</div>
+<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;{</div>
+<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;    <span class="keywordflow">if</span> (!<a class="code" href="namespaceripple.html#adc1f8a2c9b47d7c08e671ad3473e9d3a">publicKeyType</a>(<a class="code" href="classripple_1_1PublicKey.html#ae0bcc607176a440ec63a86bae5767036">slice</a>))</div>
+<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;        <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<span class="stringliteral">&quot;PublicKey::PublicKey invalid type&quot;</span>);</div>
+<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;    <a class="code" href="classripple_1_1PublicKey.html#abde91bc576c672a5277f90421f4216f1">size_</a> = <a class="code" href="classripple_1_1PublicKey.html#ae0bcc607176a440ec63a86bae5767036">slice</a>.<a class="code" href="classripple_1_1Slice.html#aa6faa586508e0f849d4591d807353825">size</a>();</div>
+<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/byte/memcpy.html">std::memcpy</a>(<a class="code" href="classripple_1_1PublicKey.html#a3f836209995c87a57de02511dc1a5dd0">buf_</a>, <a class="code" href="classripple_1_1PublicKey.html#ae0bcc607176a440ec63a86bae5767036">slice</a>.<a class="code" href="classripple_1_1Slice.html#a9d49708cd15d24841b78dc0a9ecaac26">data</a>(), <a class="code" href="classripple_1_1PublicKey.html#abde91bc576c672a5277f90421f4216f1">size_</a>);</div>
+<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;}</div>
+<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160; </div>
+<div class="line"><a name="l00185"></a><span class="lineno"><a class="line" href="classripple_1_1PublicKey.html#a7378bc4e4389bb993a5c721c35f7f61d">  185</a></span>&#160;<a class="code" href="classripple_1_1PublicKey.html#aad64117b4e26a12355ea8b1f36ee2e9f">PublicKey::PublicKey</a>(<a class="code" href="classripple_1_1PublicKey.html">PublicKey</a> <span class="keyword">const</span>&amp; other) : size_(other.size_)</div>
+<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;{</div>
+<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;    <span class="keywordflow">if</span> (<a class="code" href="classripple_1_1PublicKey.html#abde91bc576c672a5277f90421f4216f1">size_</a>)</div>
+<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/byte/memcpy.html">std::memcpy</a>(<a class="code" href="classripple_1_1PublicKey.html#a3f836209995c87a57de02511dc1a5dd0">buf_</a>, other.<a class="code" href="classripple_1_1PublicKey.html#a3f836209995c87a57de02511dc1a5dd0">buf_</a>, <a class="code" href="classripple_1_1PublicKey.html#abde91bc576c672a5277f90421f4216f1">size_</a>);</div>
+<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;}</div>
+<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160; </div>
+<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;<a class="code" href="classripple_1_1PublicKey.html">PublicKey</a>&amp;</div>
+<div class="line"><a name="l00192"></a><span class="lineno"><a class="line" href="classripple_1_1PublicKey.html#ae50ae98c3dce17d9b41e47a174b6a901">  192</a></span>&#160;<a class="code" href="classripple_1_1PublicKey.html#ae50ae98c3dce17d9b41e47a174b6a901">PublicKey::operator=</a>(<a class="code" href="classripple_1_1PublicKey.html">PublicKey</a> <span class="keyword">const</span>&amp; other)</div>
+<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;{</div>
+<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;    <span class="keywordflow">if</span> (<span class="keyword">this</span> != &amp;other)</div>
+<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;    {</div>
+<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;        <a class="code" href="classripple_1_1PublicKey.html#abde91bc576c672a5277f90421f4216f1">size_</a> = other.<a class="code" href="classripple_1_1PublicKey.html#abde91bc576c672a5277f90421f4216f1">size_</a>;</div>
+<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;        <span class="keywordflow">if</span> (<a class="code" href="classripple_1_1PublicKey.html#abde91bc576c672a5277f90421f4216f1">size_</a>)</div>
+<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/byte/memcpy.html">std::memcpy</a>(<a class="code" href="classripple_1_1PublicKey.html#a3f836209995c87a57de02511dc1a5dd0">buf_</a>, other.<a class="code" href="classripple_1_1PublicKey.html#a3f836209995c87a57de02511dc1a5dd0">buf_</a>, <a class="code" href="classripple_1_1PublicKey.html#abde91bc576c672a5277f90421f4216f1">size_</a>);</div>
+<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;    }</div>
+<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160; </div>
+<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;    <span class="keywordflow">return</span> *<span class="keyword">this</span>;</div>
+<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;}</div>
+<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160; </div>
+<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;<span class="comment">//------------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160; </div>
+<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;KeyType&gt;</a></div>
+<div class="line"><a name="l00207"></a><span class="lineno"><a class="line" href="namespaceripple.html#adc1f8a2c9b47d7c08e671ad3473e9d3a">  207</a></span>&#160;<a class="code" href="namespaceripple.html#adc1f8a2c9b47d7c08e671ad3473e9d3a">publicKeyType</a>(<a class="code" href="classripple_1_1Slice.html">Slice</a> <span class="keyword">const</span>&amp; slice)</div>
+<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;{</div>
+<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;    <span class="keywordflow">if</span> (slice.<a class="code" href="classripple_1_1Slice.html#aa6faa586508e0f849d4591d807353825">size</a>() == 33)</div>
+<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;    {</div>
+<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;        <span class="keywordflow">if</span> (slice[0] == 0xED)</div>
+<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;            <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a9de744cfdefe1132969eb982e57e4ddea8183aa2c95dc1385c8f58bf1917fcb0b">KeyType::ed25519</a>;</div>
+<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160; </div>
+<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;        <span class="keywordflow">if</span> (slice[0] == 0x02 || slice[0] == 0x03)</div>
+<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;            <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a9de744cfdefe1132969eb982e57e4ddea82c2b7829b8129e5a2d53665ba4b4757">KeyType::secp256k1</a>;</div>
+<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;    }</div>
+<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160; </div>
+<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;    <span class="keywordflow">return</span> std::nullopt;</div>
+<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;}</div>
+<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160; </div>
+<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;<span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00222"></a><span class="lineno"><a class="line" href="namespaceripple.html#a52366e572b1b40e5e913cf14e1d51ce3">  222</a></span>&#160;<a class="code" href="namespaceripple.html#a52366e572b1b40e5e913cf14e1d51ce3">verifyDigest</a>(</div>
+<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;    <a class="code" href="classripple_1_1PublicKey.html">PublicKey</a> <span class="keyword">const</span>&amp; publicKey,</div>
+<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; <a class="code" href="namespaceripple.html#a91e9fe7a4e92dba79c3812fd3edcaacc">digest</a>,</div>
+<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;    <a class="code" href="classripple_1_1Slice.html">Slice</a> <span class="keyword">const</span>&amp; sig,</div>
+<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;    <span class="keywordtype">bool</span> mustBeFullyCanonical) noexcept</div>
+<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;{</div>
+<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;    <span class="keywordflow">if</span> (<a class="code" href="namespaceripple.html#adc1f8a2c9b47d7c08e671ad3473e9d3a">publicKeyType</a>(publicKey) != <a class="code" href="namespaceripple.html#a9de744cfdefe1132969eb982e57e4ddea82c2b7829b8129e5a2d53665ba4b4757">KeyType::secp256k1</a>)</div>
+<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;        <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<span class="stringliteral">&quot;sign: secp256k1 required for digest signing&quot;</span>);</div>
+<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> canonicality = <a class="code" href="namespaceripple.html#a06c04baee32e460076ce4d9df3ffd98f">ecdsaCanonicality</a>(sig);</div>
+<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;    <span class="keywordflow">if</span> (!canonicality)</div>
+<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;    <span class="keywordflow">if</span> (mustBeFullyCanonical &amp;&amp;</div>
+<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;        (*canonicality != <a class="code" href="namespaceripple.html#a286745fec5429abb3893001b4982522ba3e23eeda3fe3fb70d1e274eab59199d1">ECDSACanonicality::fullyCanonical</a>))</div>
+<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160; </div>
+<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;    secp256k1_pubkey pubkey_imp;</div>
+<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;    <span class="keywordflow">if</span> (secp256k1_ec_pubkey_parse(</div>
+<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;            <a class="code" href="namespaceripple.html#a27a5877cd080b3340f60ddeeb7e40f06">secp256k1Context</a>(),</div>
+<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;            &amp;pubkey_imp,</div>
+<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;            <span class="keyword">reinterpret_cast&lt;</span><span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> const*<span class="keyword">&gt;</span>(publicKey.data()),</div>
+<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;            publicKey.size()) != 1)</div>
+<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160; </div>
+<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;    secp256k1_ecdsa_signature sig_imp;</div>
+<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;    <span class="keywordflow">if</span> (secp256k1_ecdsa_signature_parse_der(</div>
+<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;            <a class="code" href="namespaceripple.html#a27a5877cd080b3340f60ddeeb7e40f06">secp256k1Context</a>(),</div>
+<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;            &amp;sig_imp,</div>
+<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;            <span class="keyword">reinterpret_cast&lt;</span><span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> const*<span class="keyword">&gt;</span>(sig.data()),</div>
+<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;            sig.size()) != 1)</div>
+<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;    <span class="keywordflow">if</span> (*canonicality != <a class="code" href="namespaceripple.html#a286745fec5429abb3893001b4982522ba3e23eeda3fe3fb70d1e274eab59199d1">ECDSACanonicality::fullyCanonical</a>)</div>
+<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;    {</div>
+<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;        secp256k1_ecdsa_signature sig_norm;</div>
+<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;        <span class="keywordflow">if</span> (secp256k1_ecdsa_signature_normalize(</div>
+<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;                <a class="code" href="namespaceripple.html#a27a5877cd080b3340f60ddeeb7e40f06">secp256k1Context</a>(), &amp;sig_norm, &amp;sig_imp) != 1)</div>
+<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;        <span class="keywordflow">return</span> secp256k1_ecdsa_verify(</div>
+<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;                   <a class="code" href="namespaceripple.html#a27a5877cd080b3340f60ddeeb7e40f06">secp256k1Context</a>(),</div>
+<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;                   &amp;sig_norm,</div>
+<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;                   <span class="keyword">reinterpret_cast&lt;</span><span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> const*<span class="keyword">&gt;</span>(<a class="code" href="namespaceripple.html#a91e9fe7a4e92dba79c3812fd3edcaacc">digest</a>.data()),</div>
+<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;                   &amp;pubkey_imp) == 1;</div>
+<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;    }</div>
+<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;    <span class="keywordflow">return</span> secp256k1_ecdsa_verify(</div>
+<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;               <a class="code" href="namespaceripple.html#a27a5877cd080b3340f60ddeeb7e40f06">secp256k1Context</a>(),</div>
+<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;               &amp;sig_imp,</div>
+<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;               <span class="keyword">reinterpret_cast&lt;</span><span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> const*<span class="keyword">&gt;</span>(<a class="code" href="namespaceripple.html#a91e9fe7a4e92dba79c3812fd3edcaacc">digest</a>.data()),</div>
+<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;               &amp;pubkey_imp) == 1;</div>
+<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;}</div>
+<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160; </div>
+<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;<span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00272"></a><span class="lineno"><a class="line" href="namespaceripple.html#ace4dd4a2d63cd976adb9fac9754ae785">  272</a></span>&#160;<a class="code" href="namespaceripple.html#ace4dd4a2d63cd976adb9fac9754ae785">verify</a>(</div>
+<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;    <a class="code" href="classripple_1_1PublicKey.html">PublicKey</a> <span class="keyword">const</span>&amp; publicKey,</div>
+<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;    <a class="code" href="classripple_1_1Slice.html">Slice</a> <span class="keyword">const</span>&amp; m,</div>
+<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;    <a class="code" href="classripple_1_1Slice.html">Slice</a> <span class="keyword">const</span>&amp; sig,</div>
+<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;    <span class="keywordtype">bool</span> mustBeFullyCanonical) noexcept</div>
+<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;{</div>
+<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;    <span class="keywordflow">if</span> (<span class="keyword">auto</span> <span class="keyword">const</span> type = <a class="code" href="namespaceripple.html#adc1f8a2c9b47d7c08e671ad3473e9d3a">publicKeyType</a>(publicKey))</div>
+<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;    {</div>
+<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;        <span class="keywordflow">if</span> (*type == <a class="code" href="namespaceripple.html#a9de744cfdefe1132969eb982e57e4ddea82c2b7829b8129e5a2d53665ba4b4757">KeyType::secp256k1</a>)</div>
+<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;        {</div>
+<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;            <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a52366e572b1b40e5e913cf14e1d51ce3">verifyDigest</a>(</div>
+<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;                publicKey, <a class="code" href="namespaceripple.html#ae3f5bc352766a1a8dbf5270eb7dbc2e7">sha512Half</a>(m), sig, mustBeFullyCanonical);</div>
+<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;        }</div>
+<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;        <span class="keywordflow">else</span> <span class="keywordflow">if</span> (*type == <a class="code" href="namespaceripple.html#a9de744cfdefe1132969eb982e57e4ddea8183aa2c95dc1385c8f58bf1917fcb0b">KeyType::ed25519</a>)</div>
+<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;        {</div>
+<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;            <span class="keywordflow">if</span> (!<a class="code" href="namespaceripple.html#ae301df62c738814e031244626b80c8d4">ed25519Canonical</a>(sig))</div>
+<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;                <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160; </div>
+<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;            <span class="comment">// We internally prefix Ed25519 keys with a 0xED</span></div>
+<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;            <span class="comment">// byte to distinguish them from secp256k1 keys</span></div>
+<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;            <span class="comment">// so when verifying the signature, we need to</span></div>
+<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;            <span class="comment">// first strip that prefix.</span></div>
+<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;            <span class="keywordflow">return</span> ed25519_sign_open(</div>
+<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;                       m.data(), m.size(), publicKey.data() + 1, sig.data()) ==</div>
+<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;                0;</div>
+<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;        }</div>
+<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;    }</div>
+<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;}</div>
+<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160; </div>
+<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;<a class="code" href="namespaceripple.html#a4e412a5834900d9affa8db3ac1a27209">NodeID</a></div>
+<div class="line"><a name="l00303"></a><span class="lineno"><a class="line" href="namespaceripple.html#a984ddd646f1e1a5032a9a17f96c6fc55">  303</a></span>&#160;<a class="code" href="namespaceripple.html#a984ddd646f1e1a5032a9a17f96c6fc55">calcNodeID</a>(<a class="code" href="classripple_1_1PublicKey.html">PublicKey</a> <span class="keyword">const</span>&amp; pk)</div>
+<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;{</div>
+<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;    static_assert(<a class="code" href="classripple_1_1base__uint.html#a4b9e8d36a37963d48be8f081d99257bf">NodeID::bytes</a> == <span class="keyword">sizeof</span>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array.html">ripesha_hasher::result_type</a>));</div>
+<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160; </div>
+<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;    <a class="code" href="structripple_1_1ripesha__hasher.html">ripesha_hasher</a> h;</div>
+<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;    h(pk.<a class="code" href="classripple_1_1PublicKey.html#a46e654e5021f7a037dbacd14db86fc5e">data</a>(), pk.<a class="code" href="classripple_1_1PublicKey.html#a663437215503b159ed33b1664e4213a3">size</a>());</div>
+<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="classripple_1_1base__uint.html">NodeID</a>{<span class="keyword">static_cast&lt;</span><a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array.html">ripesha_hasher::result_type</a><span class="keyword">&gt;</span>(h)};</div>
+<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;}</div>
+<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160; </div>
+<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aclassripple_1_1PublicKey_html_a46e654e5021f7a037dbacd14db86fc5e"><div class="ttname"><a href="classripple_1_1PublicKey.html#a46e654e5021f7a037dbacd14db86fc5e">ripple::PublicKey::data</a></div><div class="ttdeci">std::uint8_t const  * data() const noexcept</div><div class="ttdef"><b>Definition:</b> <a href="PublicKey_8h_source.html#l00081">PublicKey.h:81</a></div></div>
 <div class="ttc" id="aclassripple_1_1Slice_html_aa6faa586508e0f849d4591d807353825"><div class="ttname"><a href="classripple_1_1Slice.html#aa6faa586508e0f849d4591d807353825">ripple::Slice::size</a></div><div class="ttdeci">std::size_t size() const noexcept</div><div class="ttdoc">Returns the number of bytes in the storage.</div><div class="ttdef"><b>Definition:</b> <a href="Slice_8h_source.html#l00080">Slice.h:80</a></div></div>
@@ -375,13 +376,13 @@ $(function() {
 <div class="ttc" id="anamespaceripple_html_aabe37451093c21757855542d68fba3ce"><div class="ttname"><a href="namespaceripple.html#aabe37451093c21757855542d68fba3ce">ripple::makeSlice</a></div><div class="ttdeci">std::enable_if_t&lt; std::is_same&lt; T, char &gt;::value||std::is_same&lt; T, unsigned char &gt;::value, Slice &gt; makeSlice(std::array&lt; T, N &gt; const &amp;a)</div><div class="ttdef"><b>Definition:</b> <a href="Slice_8h_source.html#l00241">Slice.h:241</a></div></div>
 <div class="ttc" id="aclassripple_1_1PublicKey_html_aad64117b4e26a12355ea8b1f36ee2e9f"><div class="ttname"><a href="classripple_1_1PublicKey.html#aad64117b4e26a12355ea8b1f36ee2e9f">ripple::PublicKey::PublicKey</a></div><div class="ttdeci">PublicKey()=default</div></div>
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div><div class="ttdoc">STL class.</div></div>
-<div class="ttc" id="anamespaceripple_html_a984ddd646f1e1a5032a9a17f96c6fc55"><div class="ttname"><a href="namespaceripple.html#a984ddd646f1e1a5032a9a17f96c6fc55">ripple::calcNodeID</a></div><div class="ttdeci">NodeID calcNodeID(PublicKey const &amp;pk)</div><div class="ttdoc">Calculate the 160-bit node ID from a node public key.</div><div class="ttdef"><b>Definition:</b> <a href="PublicKey_8cpp_source.html#l00302">PublicKey.cpp:302</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a984ddd646f1e1a5032a9a17f96c6fc55"><div class="ttname"><a href="namespaceripple.html#a984ddd646f1e1a5032a9a17f96c6fc55">ripple::calcNodeID</a></div><div class="ttdeci">NodeID calcNodeID(PublicKey const &amp;pk)</div><div class="ttdoc">Calculate the 160-bit node ID from a node public key.</div><div class="ttdef"><b>Definition:</b> <a href="PublicKey_8cpp_source.html#l00303">PublicKey.cpp:303</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a4e412a5834900d9affa8db3ac1a27209"><div class="ttname"><a href="namespaceripple.html#a4e412a5834900d9affa8db3ac1a27209">ripple::NodeID</a></div><div class="ttdeci">base_uint&lt; 160, detail::NodeIDTag &gt; NodeID</div><div class="ttdoc">NodeID is a 160-bit hash representing one node.</div><div class="ttdef"><b>Definition:</b> <a href="UintTypes_8h_source.html#l00059">UintTypes.h:59</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a3da1781bb9795989b8fcee62bbad358a"><div class="ttname"><a href="namespaceripple.html#a3da1781bb9795989b8fcee62bbad358a">ripple::sliceToHex</a></div><div class="ttdeci">static std::string sliceToHex(Slice const &amp;slice)</div><div class="ttdef"><b>Definition:</b> <a href="PublicKey_8cpp_source.html#l00079">PublicKey.cpp:79</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a3da1781bb9795989b8fcee62bbad358a"><div class="ttname"><a href="namespaceripple.html#a3da1781bb9795989b8fcee62bbad358a">ripple::sliceToHex</a></div><div class="ttdeci">static std::string sliceToHex(Slice const &amp;slice)</div><div class="ttdef"><b>Definition:</b> <a href="PublicKey_8cpp_source.html#l00080">PublicKey.cpp:80</a></div></div>
 <div class="ttc" id="aclassripple_1_1Slice_html"><div class="ttname"><a href="classripple_1_1Slice.html">ripple::Slice</a></div><div class="ttdoc">An immutable linear range of bytes.</div><div class="ttdef"><b>Definition:</b> <a href="Slice_8h_source.html#l00044">Slice.h:44</a></div></div>
 <div class="ttc" id="areserve_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string/reserve.html">std::string::reserve</a></div><div class="ttdeci">T reserve(T... args)</div></div>
-<div class="ttc" id="anamespaceripple_html_ace4dd4a2d63cd976adb9fac9754ae785"><div class="ttname"><a href="namespaceripple.html#ace4dd4a2d63cd976adb9fac9754ae785">ripple::verify</a></div><div class="ttdeci">bool verify(PublicKey const &amp;publicKey, Slice const &amp;m, Slice const &amp;sig, bool mustBeFullyCanonical) noexcept</div><div class="ttdoc">Verify a signature on a message.</div><div class="ttdef"><b>Definition:</b> <a href="PublicKey_8cpp_source.html#l00271">PublicKey.cpp:271</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a59452e879568893c848735af1dc3c002"><div class="ttname"><a href="namespaceripple.html#a59452e879568893c848735af1dc3c002">ripple::sigPart</a></div><div class="ttdeci">static std::optional&lt; Slice &gt; sigPart(Slice &amp;buf)</div><div class="ttdef"><b>Definition:</b> <a href="PublicKey_8cpp_source.html#l00053">PublicKey.cpp:53</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ace4dd4a2d63cd976adb9fac9754ae785"><div class="ttname"><a href="namespaceripple.html#ace4dd4a2d63cd976adb9fac9754ae785">ripple::verify</a></div><div class="ttdeci">bool verify(PublicKey const &amp;publicKey, Slice const &amp;m, Slice const &amp;sig, bool mustBeFullyCanonical) noexcept</div><div class="ttdoc">Verify a signature on a message.</div><div class="ttdef"><b>Definition:</b> <a href="PublicKey_8cpp_source.html#l00272">PublicKey.cpp:272</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a59452e879568893c848735af1dc3c002"><div class="ttname"><a href="namespaceripple.html#a59452e879568893c848735af1dc3c002">ripple::sigPart</a></div><div class="ttdeci">static std::optional&lt; Slice &gt; sigPart(Slice &amp;buf)</div><div class="ttdef"><b>Definition:</b> <a href="PublicKey_8cpp_source.html#l00054">PublicKey.cpp:54</a></div></div>
 <div class="ttc" id="aclassripple_1_1Slice_html_a9d49708cd15d24841b78dc0a9ecaac26"><div class="ttname"><a href="classripple_1_1Slice.html#a9d49708cd15d24841b78dc0a9ecaac26">ripple::Slice::data</a></div><div class="ttdeci">std::uint8_t const  * data() const noexcept</div><div class="ttdoc">Return a pointer to beginning of the storage.</div><div class="ttdef"><b>Definition:</b> <a href="Slice_8h_source.html#l00097">Slice.h:97</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a9952e5a413358e9a647b31c86c5835ff"><div class="ttname"><a href="namespaceripple.html#a9952e5a413358e9a647b31c86c5835ff">ripple::decodeBase58Token</a></div><div class="ttdeci">std::string decodeBase58Token(std::string const &amp;s, TokenType type)</div><div class="ttdoc">Decode a token of given type encoded using Base58Check and the XRPL alphabet.</div><div class="ttdef"><b>Definition:</b> <a href="tokens_8cpp_source.html#l00223">tokens.cpp:223</a></div></div>
 <div class="ttc" id="aclassripple_1_1PublicKey_html_ae0bcc607176a440ec63a86bae5767036"><div class="ttname"><a href="classripple_1_1PublicKey.html#ae0bcc607176a440ec63a86bae5767036">ripple::PublicKey::slice</a></div><div class="ttdeci">Slice slice() const noexcept</div><div class="ttdef"><b>Definition:</b> <a href="PublicKey_8h_source.html#l00123">PublicKey.h:123</a></div></div>
@@ -391,7 +392,7 @@ $(function() {
 <div class="ttc" id="anamespaceripple_html_a27a5877cd080b3340f60ddeeb7e40f06"><div class="ttname"><a href="namespaceripple.html#a27a5877cd080b3340f60ddeeb7e40f06">ripple::secp256k1Context</a></div><div class="ttdeci">secp256k1_context const  * secp256k1Context()</div><div class="ttdef"><b>Definition:</b> <a href="secp256k1_8h_source.html#l00029">secp256k1.h:29</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a91e9fe7a4e92dba79c3812fd3edcaacc"><div class="ttname"><a href="namespaceripple.html#a91e9fe7a4e92dba79c3812fd3edcaacc">ripple::digest</a></div><div class="ttdeci">static Hasher::result_type digest(void const *data, std::size_t size) noexcept</div><div class="ttdef"><b>Definition:</b> <a href="tokens_8cpp_source.html#l00047">tokens.cpp:47</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a9de744cfdefe1132969eb982e57e4ddea8183aa2c95dc1385c8f58bf1917fcb0b"><div class="ttname"><a href="namespaceripple.html#a9de744cfdefe1132969eb982e57e4ddea8183aa2c95dc1385c8f58bf1917fcb0b">ripple::KeyType::ed25519</a></div><div class="ttdeci">@ ed25519</div></div>
-<div class="ttc" id="anamespaceripple_html_adc1f8a2c9b47d7c08e671ad3473e9d3a"><div class="ttname"><a href="namespaceripple.html#adc1f8a2c9b47d7c08e671ad3473e9d3a">ripple::publicKeyType</a></div><div class="ttdeci">std::optional&lt; KeyType &gt; publicKeyType(Slice const &amp;slice)</div><div class="ttdoc">Returns the type of public key.</div><div class="ttdef"><b>Definition:</b> <a href="PublicKey_8cpp_source.html#l00206">PublicKey.cpp:206</a></div></div>
+<div class="ttc" id="anamespaceripple_html_adc1f8a2c9b47d7c08e671ad3473e9d3a"><div class="ttname"><a href="namespaceripple.html#adc1f8a2c9b47d7c08e671ad3473e9d3a">ripple::publicKeyType</a></div><div class="ttdeci">std::optional&lt; KeyType &gt; publicKeyType(Slice const &amp;slice)</div><div class="ttdoc">Returns the type of public key.</div><div class="ttdef"><b>Definition:</b> <a href="PublicKey_8cpp_source.html#l00207">PublicKey.cpp:207</a></div></div>
 <div class="ttc" id="aclassripple_1_1base__uint_html"><div class="ttname"><a href="classripple_1_1base__uint.html">ripple::base_uint</a></div><div class="ttdoc">Integers of any length that is a multiple of 32-bits.</div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00081">base_uint.h:81</a></div></div>
 <div class="ttc" id="aclassripple_1_1base__uint_html_a4b9e8d36a37963d48be8f081d99257bf"><div class="ttname"><a href="classripple_1_1base__uint.html#a4b9e8d36a37963d48be8f081d99257bf">ripple::base_uint&lt; 160, detail::NodeIDTag &gt;::bytes</a></div><div class="ttdeci">static constexpr std::size_t bytes</div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00104">base_uint.h:104</a></div></div>
 <div class="ttc" id="astructripple_1_1ripesha__hasher_html"><div class="ttname"><a href="structripple_1_1ripesha__hasher.html">ripple::ripesha_hasher</a></div><div class="ttdoc">Returns the RIPEMD-160 digest of the SHA256 hash of the message.</div><div class="ttdef"><b>Definition:</b> <a href="digest_8h_source.html#l00131">digest.h:131</a></div></div>
@@ -401,22 +402,23 @@ $(function() {
 <div class="ttc" id="abasic_ostream_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/io/basic_ostream.html">std::ostream</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="aclassripple_1_1PublicKey_html_abde91bc576c672a5277f90421f4216f1"><div class="ttname"><a href="classripple_1_1PublicKey.html#abde91bc576c672a5277f90421f4216f1">ripple::PublicKey::size_</a></div><div class="ttdeci">std::size_t size_</div><div class="ttdef"><b>Definition:</b> <a href="PublicKey_8h_source.html#l00062">PublicKey.h:62</a></div></div>
 <div class="ttc" id="alexicographical_compare_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/algorithm/lexicographical_compare.html">std::lexicographical_compare</a></div><div class="ttdeci">T lexicographical_compare(T... args)</div></div>
-<div class="ttc" id="anamespaceripple_html_a06c04baee32e460076ce4d9df3ffd98f"><div class="ttname"><a href="namespaceripple.html#a06c04baee32e460076ce4d9df3ffd98f">ripple::ecdsaCanonicality</a></div><div class="ttdeci">std::optional&lt; ECDSACanonicality &gt; ecdsaCanonicality(Slice const &amp;sig)</div><div class="ttdoc">Determine whether a signature is canonical.</div><div class="ttdef"><b>Definition:</b> <a href="PublicKey_8cpp_source.html#l00113">PublicKey.cpp:113</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a06c04baee32e460076ce4d9df3ffd98f"><div class="ttname"><a href="namespaceripple.html#a06c04baee32e460076ce4d9df3ffd98f">ripple::ecdsaCanonicality</a></div><div class="ttdeci">std::optional&lt; ECDSACanonicality &gt; ecdsaCanonicality(Slice const &amp;sig)</div><div class="ttdoc">Determine whether a signature is canonical.</div><div class="ttdef"><b>Definition:</b> <a href="PublicKey_8cpp_source.html#l00114">PublicKey.cpp:114</a></div></div>
 <div class="ttc" id="aarray_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/array.html">std::array</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="ainteger_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a></div></div>
-<div class="ttc" id="aclassripple_1_1PublicKey_html_ae50ae98c3dce17d9b41e47a174b6a901"><div class="ttname"><a href="classripple_1_1PublicKey.html#ae50ae98c3dce17d9b41e47a174b6a901">ripple::PublicKey::operator=</a></div><div class="ttdeci">PublicKey &amp; operator=(PublicKey const &amp;other)</div><div class="ttdef"><b>Definition:</b> <a href="PublicKey_8cpp_source.html#l00191">PublicKey.cpp:191</a></div></div>
+<div class="ttc" id="aclassripple_1_1PublicKey_html_ae50ae98c3dce17d9b41e47a174b6a901"><div class="ttname"><a href="classripple_1_1PublicKey.html#ae50ae98c3dce17d9b41e47a174b6a901">ripple::PublicKey::operator=</a></div><div class="ttdeci">PublicKey &amp; operator=(PublicKey const &amp;other)</div><div class="ttdef"><b>Definition:</b> <a href="PublicKey_8cpp_source.html#l00192">PublicKey.cpp:192</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a286745fec5429abb3893001b4982522ba9f3fda2fef6dda85970e12ce9a9b8cbe"><div class="ttname"><a href="namespaceripple.html#a286745fec5429abb3893001b4982522ba9f3fda2fef6dda85970e12ce9a9b8cbe">ripple::ECDSACanonicality::canonical</a></div><div class="ttdeci">@ canonical</div></div>
 <div class="ttc" id="anamespaceripple_html_a9de744cfdefe1132969eb982e57e4ddea82c2b7829b8129e5a2d53665ba4b4757"><div class="ttname"><a href="namespaceripple.html#a9de744cfdefe1132969eb982e57e4ddea82c2b7829b8129e5a2d53665ba4b4757">ripple::KeyType::secp256k1</a></div><div class="ttdeci">@ secp256k1</div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="anamespaceripple_html_aefd2f77338ce3c9a2fffc4f0b289b483"><div class="ttname"><a href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">ripple::LogicError</a></div><div class="ttdeci">void LogicError(std::string const &amp;how) noexcept</div><div class="ttdoc">Called when faulty logic causes a broken invariant.</div><div class="ttdef"><b>Definition:</b> <a href="contract_8cpp_source.html#l00048">contract.cpp:48</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a52366e572b1b40e5e913cf14e1d51ce3"><div class="ttname"><a href="namespaceripple.html#a52366e572b1b40e5e913cf14e1d51ce3">ripple::verifyDigest</a></div><div class="ttdeci">bool verifyDigest(PublicKey const &amp;publicKey, uint256 const &amp;digest, Slice const &amp;sig, bool mustBeFullyCanonical) noexcept</div><div class="ttdoc">Verify a secp256k1 signature on the digest of a message.</div><div class="ttdef"><b>Definition:</b> <a href="PublicKey_8cpp_source.html#l00221">PublicKey.cpp:221</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a52366e572b1b40e5e913cf14e1d51ce3"><div class="ttname"><a href="namespaceripple.html#a52366e572b1b40e5e913cf14e1d51ce3">ripple::verifyDigest</a></div><div class="ttdeci">bool verifyDigest(PublicKey const &amp;publicKey, uint256 const &amp;digest, Slice const &amp;sig, bool mustBeFullyCanonical) noexcept</div><div class="ttdoc">Verify a secp256k1 signature on the digest of a message.</div><div class="ttdef"><b>Definition:</b> <a href="PublicKey_8cpp_source.html#l00222">PublicKey.cpp:222</a></div></div>
 <div class="ttc" id="anamespaceripple_html_ae3f5bc352766a1a8dbf5270eb7dbc2e7"><div class="ttname"><a href="namespaceripple.html#ae3f5bc352766a1a8dbf5270eb7dbc2e7">ripple::sha512Half</a></div><div class="ttdeci">sha512_half_hasher::result_type sha512Half(Args const &amp;... args)</div><div class="ttdoc">Returns the SHA512-Half of a series of objects.</div><div class="ttdef"><b>Definition:</b> <a href="digest_8h_source.html#l00216">digest.h:216</a></div></div>
 <div class="ttc" id="aoptional_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a></div></div>
 <div class="ttc" id="aclassripple_1_1PublicKey_html_a3f836209995c87a57de02511dc1a5dd0"><div class="ttname"><a href="classripple_1_1PublicKey.html#a3f836209995c87a57de02511dc1a5dd0">ripple::PublicKey::buf_</a></div><div class="ttdeci">std::uint8_t buf_[33]</div><div class="ttdef"><b>Definition:</b> <a href="PublicKey_8h_source.html#l00063">PublicKey.h:63</a></div></div>
 <div class="ttc" id="amemcpy_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/byte/memcpy.html">std::memcpy</a></div><div class="ttdeci">T memcpy(T... args)</div></div>
 <div class="ttc" id="anamespaceripple_html_a86e358ce3f06ff049af13c2342791cf8"><div class="ttname"><a href="namespaceripple.html#a86e358ce3f06ff049af13c2342791cf8">ripple::strHex</a></div><div class="ttdeci">std::string strHex(FwdIt begin, FwdIt end)</div><div class="ttdef"><b>Definition:</b> <a href="strHex_8h_source.html#l00030">strHex.h:30</a></div></div>
-<div class="ttc" id="anamespaceripple_html_ae301df62c738814e031244626b80c8d4"><div class="ttname"><a href="namespaceripple.html#ae301df62c738814e031244626b80c8d4">ripple::ed25519Canonical</a></div><div class="ttdeci">static bool ed25519Canonical(Slice const &amp;sig)</div><div class="ttdef"><b>Definition:</b> <a href="PublicKey_8cpp_source.html#l00155">PublicKey.cpp:155</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ae301df62c738814e031244626b80c8d4"><div class="ttname"><a href="namespaceripple.html#ae301df62c738814e031244626b80c8d4">ripple::ed25519Canonical</a></div><div class="ttdeci">static bool ed25519Canonical(Slice const &amp;sig)</div><div class="ttdef"><b>Definition:</b> <a href="PublicKey_8cpp_source.html#l00156">PublicKey.cpp:156</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a6ed6129376e1d37ef607c2697f5b9d6a"><div class="ttname"><a href="namespaceripple.html#a6ed6129376e1d37ef607c2697f5b9d6a">ripple::parseBase58</a></div><div class="ttdeci">std::optional&lt; AccountID &gt; parseBase58(std::string const &amp;s)</div><div class="ttdoc">Parse AccountID from checked, base58 string.</div><div class="ttdef"><b>Definition:</b> <a href="AccountID_8cpp_source.html#l00114">AccountID.cpp:114</a></div></div>
+<div class="ttc" id="atype_traits_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/type_traits.html">type_traits</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">
