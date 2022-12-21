@@ -45,7 +45,7 @@ preflight0(PreflightContext const& ctx)
 
     if (nodeNID <= 1024)
     {
-        // legacy networks have ids less than 1024, these networks cannot
+        // legacy networks have IDs 1024 and below. These networks cannot
         // specify NetworkID in txn
         if (txNID)
             return telNETWORK_ID_MAKES_TX_NON_CANONICAL;
