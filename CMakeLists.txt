@@ -58,6 +58,12 @@ endif ()
 include(RippledCompiler)
 include(RippledInterface)
 
+option(only_docs "Include only the docs target?" FALSE)
+include(RippledDocs)
+if(only_docs)
+  return()
+endif()
+
 ###
 
 include(deps/Boost)
@@ -119,5 +125,4 @@ include(RippledCore)
 include(RippledInstall)
 include(RippledCov)
 include(RippledMultiConfig)
-include(RippledDocs)
 include(RippledValidatorKeys)
