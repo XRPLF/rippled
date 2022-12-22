@@ -17,7 +17,11 @@ runs:
       run: |
         mkdir ${build_dir}
         cd ${build_dir}
-        conan install .. --build missing --settings build_type=${{ inputs.configuration }}
+        conan install \
+          --output-folder . \
+          --build missing \
+          --settings build_type=${{ inputs.configuration }} \
+          ..
     - name: configure
       shell: bash
       run: |
@@ -26,7 +30,7 @@ runs:
           ${{ inputs.generator && format('-G {0}', inputs.generator) || '' }} \
           -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
           -DCMAKE_BUILD_TYPE=${{ inputs.configuration }} \
-          ${{ inputs.cmake-args }}
+          ${{ inputs.cmake-args }} \
           ..
     - name: build
       shell: bash
