@@ -150,25 +150,94 @@ public:
     {
         testcase("test_mul");
         using Case = std::tuple<Number, Number, Number>;
-        Case c[]{
-            {Number{7}, Number{8}, Number{56}},
-            {Number{1414213562373095, -15},
-             Number{1414213562373095, -15},
-             Number{2000000000000000, -15}},
-            {Number{-1414213562373095, -15},
-             Number{1414213562373095, -15},
-             Number{-2000000000000000, -15}},
-            {Number{-1414213562373095, -15},
-             Number{-1414213562373095, -15},
-             Number{2000000000000000, -15}},
-            {Number{3214285714285706, -15},
-             Number{3111111111111119, -15},
-             Number{1000000000000000, -14}},
-            {Number{1000000000000000, -32768},
-             Number{1000000000000000, -32768},
-             Number{0}}};
-        for (auto const& [x, y, z] : c)
-            BEAST_EXPECT(x * y == z);
+        saveNumberRoundMode save{Number::setround(Number::to_nearest)};
+        {
+            Case c[]{
+                {Number{7}, Number{8}, Number{56}},
+                {Number{1414213562373095, -15},
+                 Number{1414213562373095, -15},
+                 Number{2000000000000000, -15}},
+                {Number{-1414213562373095, -15},
+                 Number{1414213562373095, -15},
+                 Number{-2000000000000000, -15}},
+                {Number{-1414213562373095, -15},
+                 Number{-1414213562373095, -15},
+                 Number{2000000000000000, -15}},
+                {Number{3214285714285706, -15},
+                 Number{3111111111111119, -15},
+                 Number{1000000000000000, -14}},
+                {Number{1000000000000000, -32768},
+                 Number{1000000000000000, -32768},
+                 Number{0}}};
+            for (auto const& [x, y, z] : c)
+                BEAST_EXPECT(x * y == z);
+        }
+        Number::setround(Number::towards_zero);
+        {
+            Case c[]{
+                {Number{7}, Number{8}, Number{56}},
+                {Number{1414213562373095, -15},
+                 Number{1414213562373095, -15},
+                 Number{1999999999999999, -15}},
+                {Number{-1414213562373095, -15},
+                 Number{1414213562373095, -15},
+                 Number{-1999999999999999, -15}},
+                {Number{-1414213562373095, -15},
+                 Number{-1414213562373095, -15},
+                 Number{1999999999999999, -15}},
+                {Number{3214285714285706, -15},
+                 Number{3111111111111119, -15},
+                 Number{9999999999999999, -15}},
+                {Number{1000000000000000, -32768},
+                 Number{1000000000000000, -32768},
+                 Number{0}}};
+            for (auto const& [x, y, z] : c)
+                BEAST_EXPECT(x * y == z);
+        }
+        Number::setround(Number::downward);
+        {
+            Case c[]{
+                {Number{7}, Number{8}, Number{56}},
+                {Number{1414213562373095, -15},
+                 Number{1414213562373095, -15},
+                 Number{1999999999999999, -15}},
+                {Number{-1414213562373095, -15},
+                 Number{1414213562373095, -15},
+                 Number{-2000000000000000, -15}},
+                {Number{-1414213562373095, -15},
+                 Number{-1414213562373095, -15},
+                 Number{1999999999999999, -15}},
+                {Number{3214285714285706, -15},
+                 Number{3111111111111119, -15},
+                 Number{9999999999999999, -15}},
+                {Number{1000000000000000, -32768},
+                 Number{1000000000000000, -32768},
+                 Number{0}}};
+            for (auto const& [x, y, z] : c)
+                BEAST_EXPECT(x * y == z);
+        }
+        Number::setround(Number::upward);
+        {
+            Case c[]{
+                {Number{7}, Number{8}, Number{56}},
+                {Number{1414213562373095, -15},
+                 Number{1414213562373095, -15},
+                 Number{2000000000000000, -15}},
+                {Number{-1414213562373095, -15},
+                 Number{1414213562373095, -15},
+                 Number{-1999999999999999, -15}},
+                {Number{-1414213562373095, -15},
+                 Number{-1414213562373095, -15},
+                 Number{2000000000000000, -15}},
+                {Number{3214285714285706, -15},
+                 Number{3111111111111119, -15},
+                 Number{1000000000000000, -14}},
+                {Number{1000000000000000, -32768},
+                 Number{1000000000000000, -32768},
+                 Number{0}}};
+            for (auto const& [x, y, z] : c)
+                BEAST_EXPECT(x * y == z);
+        }
         bool caught = false;
         try
         {
@@ -187,13 +256,78 @@ public:
     {
         testcase("test_div");
         using Case = std::tuple<Number, Number, Number>;
-        Case c[]{
-            {Number{1}, Number{2}, Number{5, -1}},
-            {Number{1}, Number{10}, Number{1, -1}},
-            {Number{1}, Number{-10}, Number{-1, -1}},
-            {Number{0}, Number{100}, Number{0}}};
-        for (auto const& [x, y, z] : c)
-            BEAST_EXPECT(x / y == z);
+        saveNumberRoundMode save{Number::setround(Number::to_nearest)};
+        {
+            Case c[]{
+                {Number{1}, Number{2}, Number{5, -1}},
+                {Number{1}, Number{10}, Number{1, -1}},
+                {Number{1}, Number{-10}, Number{-1, -1}},
+                {Number{0}, Number{100}, Number{0}},
+                {Number{1414213562373095, -10},
+                 Number{1414213562373095, -10},
+                 Number{1}},
+                {Number{9'999'999'999'999'999},
+                 Number{1'000'000'000'000'000},
+                 Number{9'999'999'999'999'999, -15}},
+                {Number{2}, Number{3}, Number{6'666'666'666'666'667, -16}},
+                {Number{-2}, Number{3}, Number{-6'666'666'666'666'667, -16}}};
+            for (auto const& [x, y, z] : c)
+                BEAST_EXPECT(x / y == z);
+        }
+        Number::setround(Number::towards_zero);
+        {
+            Case c[]{
+                {Number{1}, Number{2}, Number{5, -1}},
+                {Number{1}, Number{10}, Number{1, -1}},
+                {Number{1}, Number{-10}, Number{-1, -1}},
+                {Number{0}, Number{100}, Number{0}},
+                {Number{1414213562373095, -10},
+                 Number{1414213562373095, -10},
+                 Number{1}},
+                {Number{9'999'999'999'999'999},
+                 Number{1'000'000'000'000'000},
+                 Number{9'999'999'999'999'999, -15}},
+                {Number{2}, Number{3}, Number{6'666'666'666'666'666, -16}},
+                {Number{-2}, Number{3}, Number{-6'666'666'666'666'666, -16}}};
+            for (auto const& [x, y, z] : c)
+                BEAST_EXPECT(x / y == z);
+        }
+        Number::setround(Number::downward);
+        {
+            Case c[]{
+                {Number{1}, Number{2}, Number{5, -1}},
+                {Number{1}, Number{10}, Number{1, -1}},
+                {Number{1}, Number{-10}, Number{-1, -1}},
+                {Number{0}, Number{100}, Number{0}},
+                {Number{1414213562373095, -10},
+                 Number{1414213562373095, -10},
+                 Number{1}},
+                {Number{9'999'999'999'999'999},
+                 Number{1'000'000'000'000'000},
+                 Number{9'999'999'999'999'999, -15}},
+                {Number{2}, Number{3}, Number{6'666'666'666'666'666, -16}},
+                {Number{-2}, Number{3}, Number{-6'666'666'666'666'667, -16}}};
+            for (auto const& [x, y, z] : c)
+                BEAST_EXPECT(x / y == z);
+        }
+        Number::setround(Number::upward);
+        {
+            Case c[]{
+                {Number{1}, Number{2}, Number{5, -1}},
+                {Number{1}, Number{10}, Number{1, -1}},
+                {Number{1}, Number{-10}, Number{-1, -1}},
+                {Number{0}, Number{100}, Number{0}},
+                {Number{1414213562373095, -10},
+                 Number{1414213562373095, -10},
+                 Number{1}},
+                {Number{9'999'999'999'999'999},
+                 Number{1'000'000'000'000'000},
+                 Number{9'999'999'999'999'999, -15}},
+                {Number{2}, Number{3}, Number{6'666'666'666'666'667, -16}},
+                {Number{-2}, Number{3}, Number{-6'666'666'666'666'666, -16}}};
+            for (auto const& [x, y, z] : c)
+                BEAST_EXPECT(x / y == z);
+        }
         bool caught = false;
         try
         {
