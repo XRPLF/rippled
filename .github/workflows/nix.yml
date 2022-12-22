@@ -6,10 +6,19 @@ jobs:
   test:
     strategy:
       matrix:
-        generator:
-          - Ninja
+        compiler:
+          - name: gcc
+            version: 11
+            stdlib: libstdc++11
+          - name: clang
+            version: 14
+            stdlib: libc++
         configuration:
+          - Debug
           - Release
+        cmake-args:
+          -
+          - "-Dunity=ON"
     runs-on: [self-hosted, linux, rippled-runner-dind]
     container: thejohnfreeman/rippled-build-ubuntu:12e19cd9034b
     env:
@@ -27,14 +36,15 @@ jobs:
         run: |
           conan profile new default --detect
           conan profile update settings.compiler.cppstd=20 default
-          conan profile update settings.compiler=gcc default
-          conan profile update settings.compiler.version=11 default
-          conan profile update settings.compiler.libcxx=libstdc++11 default
+          conan profile update settings.compiler=${{ matrix.compiler.name }} default
+          conan profile update settings.compiler.version=${{ matrix.compiler.version }} default
+          conan profile update settings.compiler.libcxx=${{ matrix.compiler.stdlib }} default
       - name: build
         uses: ./.github/actions/build
         with:
-          generator: ${{ matrix.generator }}
+          generator: Ninja
           configuration: ${{ matrix.configuration }}
+          cmake-args: ${{ matrix.cmake-args }}
       - name: test
         run: |
           ${build_dir}/rippled --unittest --unittest-jobs $(nproc)
