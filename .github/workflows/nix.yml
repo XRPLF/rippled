@@ -10,7 +10,7 @@ jobs:
           - Ninja
         configuration:
           - Release
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, rippled-runner-dind]
     container: thejohnfreeman/rippled-build-ubuntu:12e19cd9034b
     env:
       build_dir: .build
