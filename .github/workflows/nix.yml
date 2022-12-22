@@ -7,20 +7,25 @@ jobs:
     strategy:
       matrix:
         compiler:
-          - name: gcc
-            version: 11
-            cc: /usr/bin/gcc
-            cxx: /usr/bin/g++
-          - name: clang
-            version: 14
-            cc: /usr/bin/clang
-            cxx: /usr/bin/clang++
+          - gcc
+          - clang
         configuration:
           - Debug
           - Release
         cmake-args:
           -
           - "-Dunity=ON"
+        include:
+          - compiler: gcc
+            profile:
+              version: 11
+              cc: /usr/bin/gcc
+              cxx: /usr/bin/g++
+          - compiler: clang
+            profile:
+              version: 14
+              cc: /usr/bin/clang
+              cxx: /usr/bin/clang++
     runs-on: [self-hosted, linux, rippled-runner-dind]
     container: thejohnfreeman/rippled-build-ubuntu:12e19cd9034b
     env:
@@ -38,11 +43,11 @@ jobs:
         run: |
           conan profile new default --detect
           conan profile update settings.compiler.cppstd=20 default
-          conan profile update settings.compiler=${{ matrix.compiler.name }} default
-          conan profile update settings.compiler.version=${{ matrix.compiler.version }} default
+          conan profile update settings.compiler=${{ matrix.compiler }} default
+          conan profile update settings.compiler.version=${{ matrix.profile.version }} default
           conan profile update settings.compiler.libcxx=libstdc++11 default
-          conan profile update env.CC=${{ matrix.compiler.cc }} default
-          conan profile update env.CXX=${{ matrix.compiler.cxx }} default
+          conan profile update env.CC=${{ matrix.profile.cc }} default
+          conan profile update env.CXX=${{ matrix.profile.cxx }} default
       - name: build
         uses: ./.github/actions/build
         with:
