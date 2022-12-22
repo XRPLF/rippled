@@ -9,10 +9,12 @@ jobs:
         compiler:
           - name: gcc
             version: 11
-            stdlib: libstdc++11
+            cc: /usr/bin/gcc
+            cxx: /usr/bin/g++
           - name: clang
             version: 14
-            stdlib: libc++
+            cc: /usr/bin/clang
+            cxx: /usr/bin/clang++
         configuration:
           - Debug
           - Release
@@ -38,7 +40,9 @@ jobs:
           conan profile update settings.compiler.cppstd=20 default
           conan profile update settings.compiler=${{ matrix.compiler.name }} default
           conan profile update settings.compiler.version=${{ matrix.compiler.version }} default
-          conan profile update settings.compiler.libcxx=${{ matrix.compiler.stdlib }} default
+          conan profile update settings.compiler.libcxx=libstdc++11 default
+          conan profile update env.CC=${{ matrix.compiler.cc }}
+          conan profile update env.CXX=${{ matrix.compiler.cxx }}
       - name: build
         uses: ./.github/actions/build
         with:
