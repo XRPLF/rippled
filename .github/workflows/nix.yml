@@ -41,8 +41,8 @@ jobs:
           conan profile update settings.compiler=${{ matrix.compiler.name }} default
           conan profile update settings.compiler.version=${{ matrix.compiler.version }} default
           conan profile update settings.compiler.libcxx=libstdc++11 default
-          conan profile update env.CC=${{ matrix.compiler.cc }}
-          conan profile update env.CXX=${{ matrix.compiler.cxx }}
+          conan profile update env.CC=${{ matrix.compiler.cc }} default
+          conan profile update env.CXX=${{ matrix.compiler.cxx }} default
       - name: build
         uses: ./.github/actions/build
         with:
