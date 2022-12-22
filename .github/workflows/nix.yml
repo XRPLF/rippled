@@ -20,7 +20,6 @@ jobs:
       - name: check environment
         run: |
           echo ${PATH} | tr ':' '\n'
-          python --version
           conan --version
           cmake --version
           env
