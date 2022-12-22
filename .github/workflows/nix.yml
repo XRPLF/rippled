@@ -27,8 +27,8 @@ jobs:
         run: |
           conan profile new default --detect
           conan profile update settings.compiler.cppstd=20 default
-          conan profile update settings.compiler=gcc
-          conan profile update settings.compiler.version=11
+          conan profile update settings.compiler=gcc default
+          conan profile update settings.compiler.version=11 default
           conan profile update settings.compiler.libcxx=libstdc++11 default
       - name: build
         uses: ./.github/actions/build
