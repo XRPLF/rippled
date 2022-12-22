@@ -185,6 +185,8 @@ Number::normalize()
         --exponent_;
     }
     Guard g;
+    if (negative)
+        g.set_negative();
     while (m > maxMantissa)
     {
         if (exponent_ >= maxExponent)
@@ -364,6 +366,8 @@ Number::operator*=(Number const& y)
     auto ze = xe + ye;
     auto zn = xn * yn;
     Guard g;
+    if (zn == -1)
+        g.set_negative();
     while (zm > maxMantissa)
     {
         g.push(static_cast<unsigned>(zm % 10));
@@ -402,8 +406,11 @@ Number::operator/=(Number const& y)
 {
     if (y == Number{})
         throw std::overflow_error("Number: divide by 0");
+    if (*this == Number{})
+        return *this;
     int np = 1;
     auto nm = mantissa();
+    auto ne = exponent();
     if (nm < 0)
     {
         nm = -nm;
@@ -411,35 +418,19 @@ Number::operator/=(Number const& y)
     }
     int dp = 1;
     auto dm = y.mantissa();
+    auto de = y.exponent();
     if (dm < 0)
     {
         dm = -dm;
         dp = -1;
     }
-    // Divide numerator and denominator such that the
-    //     denominator is in the range [1, 10).
-    const int offset = -15 - y.exponent();
-    Number n{nm * (np * dp), exponent() + offset};
-    Number d{dm, y.exponent() + offset};
-    // Quadratic least squares fit to 1/x in the range [1, 10]
-    constexpr Number a0{9178756872006464, -16, unchecked{}};
-    constexpr Number a1{-2149215784206187, -16, unchecked{}};
-    constexpr Number a2{1405502114116773, -17, unchecked{}};
-    static_assert(a0.isnormal());
-    static_assert(a1.isnormal());
-    static_assert(a2.isnormal());
-    Number rm2{};
-    Number rm1{};
-    Number r = (a2 * d + a1) * d + a0;
-    //  Newton–Raphson iteration of 1/x - d with initial guess r
-    //  halt when r stops changing, checking for bouncing on the last iteration
-    do
-    {
-        rm2 = rm1;
-        rm1 = r;
-        r = r + r * (one - d * r);
-    } while (r != rm1 && r != rm2);
-    *this = n * r;
+    // Shift by 10^17 gives greatest precision while not overflowing uint128_t
+    // or the cast back to int64_t
+    const uint128_t f = 100'000'000'000'000'000;
+    mantissa_ = static_cast<std::int64_t>(uint128_t(nm) * f / uint128_t(dm));
+    exponent_ = ne - de - 17;
+    mantissa_ *= np * dp;
+    normalize();
     return *this;
 }
 
