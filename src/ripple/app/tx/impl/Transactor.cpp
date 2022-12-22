@@ -40,8 +40,8 @@ namespace ripple {
 NotTEC
 preflight0(PreflightContext const& ctx)
 {
-    uint32_t nodeNID = ctx.app.config().NETWORK_ID;
-    std::optional<uint32_t> txNID = ctx.tx[~sfNetworkID];
+    uint32_t const nodeNID = ctx.app.config().NETWORK_ID;
+    std::optional<uint32_t> const txNID = ctx.tx[~sfNetworkID];
 
     if (nodeNID <= 1024)
     {
