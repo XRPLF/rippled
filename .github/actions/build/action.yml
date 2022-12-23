@@ -6,6 +6,7 @@ inputs:
     required: true
   cmake-args:
     default: null
+# An implicit input is the environment variable `build_dir`.
 runs:
   using: composite
   steps:

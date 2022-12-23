@@ -3,18 +3,17 @@ on: [push, pull_request]
 
 jobs:
 
-  test:
+  dependencies:
     strategy:
       matrix:
+        platform:
+          - linux
         compiler:
           - gcc
           - clang
         configuration:
           - Debug
           - Release
-        cmake-args:
-          -
-          - "-Dunity=ON"
         include:
           - compiler: gcc
             profile:
@@ -24,15 +23,11 @@ jobs:
           - compiler: clang
             profile:
               version: 14
-              cc: /usr/bin/clang
-              cxx: /usr/bin/clang++
+              cc: /usr/bin/clang-14
+              cxx: /usr/bin/clang++-14
     runs-on: [self-hosted, linux, rippled-runner-dind]
     container: thejohnfreeman/rippled-build-ubuntu:12e19cd9034b
-    env:
-      build_dir: .build
     steps:
-      - name: checkout
-        uses: actions/checkout@v3
       - name: check environment
         run: |
           echo ${PATH} | tr ':' '\n'
@@ -46,8 +41,63 @@ jobs:
           conan profile update settings.compiler=${{ matrix.compiler }} default
           conan profile update settings.compiler.version=${{ matrix.profile.version }} default
           conan profile update settings.compiler.libcxx=libstdc++11 default
+          conan profile update env.CC=${{ matrix.profile.cc }} default
+          conan profile update env.CXX=${{ matrix.profile.cxx }} default
           conan profile update buildenv.CC=${{ matrix.profile.cc }} default
           conan profile update buildenv.CXX=${{ matrix.profile.cxx }} default
+          conan profile update conf.tools.build:compiler_executables={"c": "${{ matrix.profile.cc }}", "cpp": "${{ matrix.profile.cxx }}"}
+      - name: checkout
+        uses: actions/checkout@v3
+      - name: build dependencies
+        run: |
+          mkdir ${build_dir}
+          cd ${build_dir}
+          conan install \
+            --output-folder . \
+            --build missing \
+            --settings build_type=${{ matrix.configuration }} \
+            ..
+      - name: upload cache
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
+          path: ~/.conan
+
+
+  test:
+    strategy:
+      matrix:
+        platform:
+          - linux
+        compiler:
+          - gcc
+          - clang
+        configuration:
+          - Debug
+          - Release
+        cmake-args:
+          -
+          - "-Dunity=ON"
+    needs: dependencies
+    runs-on: [self-hosted, linux, rippled-runner-dind]
+    container: thejohnfreeman/rippled-build-ubuntu:12e19cd9034b
+    env:
+      build_dir: .build
+    steps:
+      - name: download cache
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
+          path: ~/.conan
+      - name: check environment
+        run: |
+          echo ${PATH} | tr ':' '\n'
+          conan --version
+          cmake --version
+          env
+          ls ~/.conan
+      - name: checkout
+        uses: actions/checkout@v3
       - name: build
         uses: ./.github/actions/build
         with:
