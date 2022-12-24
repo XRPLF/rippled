@@ -55,11 +55,13 @@ jobs:
             --build missing \
             --settings build_type=${{ matrix.configuration }} \
             ..
+      - name: archive cache
+        run: tar -czf conan.tar -C ~/.conan .
       - name: upload cache
         uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
-          path: ~/.conan
+          path: conan.tar
 
 
   test:
@@ -86,7 +88,11 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
-          path: ~/.conan
+          path: conan.tar
+      - name: extract cache
+        run: |
+          mkdir -p ~/.conan
+          tar -xzf conan.tar -C ~/.conan
       - name: check environment
         run: |
           echo ${PATH} | tr ':' '\n'
