@@ -43,8 +43,6 @@ jobs:
           conan profile update settings.compiler.libcxx=libstdc++11 default
           conan profile update env.CC=${{ matrix.profile.cc }} default
           conan profile update env.CXX=${{ matrix.profile.cxx }} default
-          conan profile update buildenv.CC=${{ matrix.profile.cc }} default
-          conan profile update buildenv.CXX=${{ matrix.profile.cxx }} default
           conan profile update conf.tools.build:compiler_executables={"c": "${{ matrix.profile.cc }}", "cpp": "${{ matrix.profile.cxx }}"}
       - name: checkout
         uses: actions/checkout@v3
