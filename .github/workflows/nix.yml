@@ -88,7 +88,6 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
-          path: conan.tar
       - name: extract cache
         run: |
           mkdir -p ~/.conan
