@@ -236,8 +236,7 @@ public:
     using DirectStepI<DirectIPaymentStep>::DirectStepI;
     using DirectStepI<DirectIPaymentStep>::check;
 
-    bool
-    verifyPrevStepDebtDirection(DebtDirection) const
+    bool verifyPrevStepDebtDirection(DebtDirection) const
     {
         // A payment doesn't care whether or not prevStepRedeems.
         return true;

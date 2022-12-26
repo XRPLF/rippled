@@ -92,8 +92,16 @@ protected:
             pool ? *pool : std::make_pair(XRP(10000), USD(10000));
         auto tofund = [&](STAmount const& a) -> STAmount {
             if (a.native())
-                return XRP(30000);
-            return STAmount{a.issue(), 30000};
+            {
+                auto const defXRP = XRP(30000);
+                if (a <= defXRP)
+                    return defXRP;
+                return a + XRP(1000);
+            }
+            auto const defIOU = STAmount{a.issue(), 30000};
+            if (a <= defIOU)
+                return defIOU;
+            return a + STAmount{a.issue(), 1000};
         };
         auto const toFund1 = tofund(asset1);
         auto const toFund2 = tofund(asset2);
@@ -102,9 +110,9 @@ protected:
         if (!asset1.native() && !asset2.native())
             fund(env, gw, {alice, carol}, {toFund1, toFund2}, Fund::All);
         else if (asset1.native())
-            fund(env, gw, {alice, carol}, {toFund2}, Fund::All);
+            fund(env, gw, {alice, carol}, toFund1, {toFund2}, Fund::All);
         else if (asset2.native())
-            fund(env, gw, {alice, carol}, {toFund1}, Fund::All);
+            fund(env, gw, {alice, carol}, toFund2, {toFund1}, Fund::All);
 
         AMM ammAlice(env, alice, asset1, asset2, false, fee);
         BEAST_EXPECT(

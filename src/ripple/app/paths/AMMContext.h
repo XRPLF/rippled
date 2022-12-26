@@ -34,7 +34,10 @@ namespace ripple {
 class AMMContext
 {
 private:
-    constexpr static std::uint8_t MaxIterations = 4;
+    // Restrict number of AMM fibseq offers. If this restriction is removed
+    // then need to restrict in some other way because AMM offers are
+    // not counted in the BookStep offer counter.
+    constexpr static std::uint8_t MaxIterations = 10;
     // Tx account owner is required to get the AMM trading fee in BookStep
     AccountID account_;
     // true if payment has multiple paths

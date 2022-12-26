@@ -31,12 +31,6 @@
 
 namespace ripple {
 
-TxConsequences
-AMMBid::makeTxConsequences(PreflightContext const& ctx)
-{
-    return TxConsequences{ctx.tx};
-}
-
 NotTEC
 AMMBid::preflight(PreflightContext const& ctx)
 {
@@ -78,7 +72,7 @@ AMMBid::preflight(PreflightContext const& ctx)
             authAccounts.size() > maxAuthAccounts)
         {
             JLOG(ctx.j.debug()) << "AMM Bid: Invalid number of AuthAccounts.";
-            return temBAD_AMM_OPTIONS;
+            return temMALFORMED;
         }
     }
 
@@ -118,7 +112,7 @@ AMMBid::preclaim(PreclaimContext const& ctx)
         if (bidMin->issue() != lpTokens.issue())
         {
             JLOG(ctx.j.debug()) << "AMM Bid: Invalid LPToken.";
-            return temBAD_AMM_TOKENS;
+            return temAMM_BAD_TOKENS;
         }
         if (*bidMin > lpTokens || *bidMin >= lpTokensBalance)
         {
@@ -133,7 +127,7 @@ AMMBid::preclaim(PreclaimContext const& ctx)
         if (bidMax->issue() != lpTokens.issue())
         {
             JLOG(ctx.j.debug()) << "AMM Bid: Invalid LPToken.";
-            return temBAD_AMM_TOKENS;
+            return temAMM_BAD_TOKENS;
         }
         if (*bidMax > lpTokens || *bidMax >= lpTokensBalance)
         {

@@ -54,9 +54,6 @@ public:
     {
     }
 
-    static TxConsequences
-    makeTxConsequences(PreflightContext const& ctx);
-
     static NotTEC
     preflight(PreflightContext const& ctx);
 

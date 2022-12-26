@@ -69,9 +69,6 @@ public:
     {
     }
 
-    static TxConsequences
-    makeTxConsequences(PreflightContext const& ctx);
-
     static NotTEC
     preflight(PreflightContext const& ctx);
 
@@ -87,10 +84,12 @@ private:
     applyGuts(Sandbox& view);
 
     /** Deposit requested assets and token amount into LP account.
+     * Return new total LPToken balance.
      * @param deposit
      * @param ammAccount
      * @param amountDeposit
      * @param amount2Deposit
+     * @param lptTokensAMMBalance current AMM LPT balance
      * @param lpTokensDeposit amount of tokens to deposit
      * @return
      */
@@ -100,6 +99,7 @@ private:
         AccountID const& ammAccount,
         STAmount const& amountDeposit,
         std::optional<STAmount> const& amount2Deposit,
+        STAmount const& lptTokensAMMBalance,
         STAmount const& lpTokensDeposit);
 
     /** Equal asset deposit (LPTokens) for the specified share of

@@ -46,40 +46,15 @@ getAccount(Json::Value const& v, Json::Value& result)
 Expected<Issue, error_code_i>
 getIssue(Json::Value const& v, beast::Journal j)
 {
-    if (!v.isObject())
+    try
     {
-        JLOG(j.debug())
-            << "getIssue must be specified as an 'object' Json value";
-        return Unexpected(rpcAMM_ISSUE_MALFORMED);
+        return issueFromJson(v);
     }
-
-    Issue issue = xrpIssue();
-
-    Json::Value const& currency = v[jss::currency];
-    Json::Value const& issuer = v[jss::issuer];
-    if (!to_currency(issue.currency, currency.asString()))
+    catch (std::runtime_error const& ex)
     {
-        JLOG(j.debug()) << "getIssue, invalid currency";
-        return Unexpected(rpcAMM_ISSUE_MALFORMED);
+        JLOG(j.debug()) << "getIssue " << ex.what();
     }
-
-    if (isXRP(issue.currency))
-    {
-        if (!issuer.isNull())
-        {
-            JLOG(j.debug()) << "getIssue, XRP should not have issuer";
-            return Unexpected(rpcAMM_ISSUE_MALFORMED);
-        }
-        return issue;
-    }
-
-    if (!issuer.isString() || !to_issuer(issue.account, issuer.asString()))
-    {
-        JLOG(j.debug()) << "getIssue, invalid issuer";
-        return Unexpected(rpcAMM_ISSUE_MALFORMED);
-    }
-
-    return issue;
+    return Unexpected(rpcAMM_ISSUE_MALFORMED);
 }
 
 Json::Value

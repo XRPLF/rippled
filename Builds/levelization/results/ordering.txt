@@ -4,7 +4,6 @@ ripple.app > ripple.conditions
 ripple.app > ripple.consensus
 ripple.app > ripple.crypto
 ripple.app > ripple.json
-ripple.app > ripple.protocol
 ripple.app > ripple.resource
 ripple.app > test.unit_test
 ripple.basics > ripple.beast

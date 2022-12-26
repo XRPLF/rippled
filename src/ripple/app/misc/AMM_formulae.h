@@ -100,7 +100,7 @@ toSTAmount(
 
 template <typename T>
 STAmount
-toSTAmount(T const& a, Issue const& issue)
+toSTAmount(Issue const& issue, T const& a)
 {
     if constexpr (std::is_same_v<IOUAmount, T>)
         return toSTAmount(a, issue);
@@ -111,7 +111,7 @@ toSTAmount(T const& a, Issue const& issue)
 }
 
 template <typename T>
-T
+constexpr T
 get(STAmount const& a)
 {
     if constexpr (std::is_same_v<IOUAmount, T>)
@@ -140,7 +140,7 @@ ammLPTokens(
 inline Number
 getFee(std::uint16_t tfee)
 {
-    return Number{tfee} / Number{100000};
+    return Number{tfee} / 100000;
 }
 
 /** Get fee multiplier (1 - tfee)

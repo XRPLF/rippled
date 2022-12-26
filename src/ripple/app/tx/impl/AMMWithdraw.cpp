@@ -29,12 +29,6 @@
 
 namespace ripple {
 
-TxConsequences
-AMMWithdraw::makeTxConsequences(PreflightContext const& ctx)
-{
-    return TxConsequences{ctx.tx};
-}
-
 NotTEC
 AMMWithdraw::preflight(PreflightContext const& ctx)
 {
@@ -68,42 +62,42 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
         subTxType.none() || subTxType.count() > 1)
     {
         JLOG(ctx.j.debug()) << "AMM Withdraw: invalid flags.";
-        return temBAD_AMM_OPTIONS;
+        return temMALFORMED;
     }
     else if (flags & tfLPToken)
     {
         if (!lpTokens || amount || amount2 || ePrice)
-            return temBAD_AMM_OPTIONS;
+            return temMALFORMED;
     }
     else if (flags & tfWithdrawAll)
     {
         if (lpTokens || amount || amount2 || ePrice)
-            return temBAD_AMM_OPTIONS;
+            return temMALFORMED;
     }
     else if (flags & tfOneAssetWithdrawAll)
     {
         if (!amount || lpTokens || amount2 || ePrice)
-            return temBAD_AMM_OPTIONS;
+            return temMALFORMED;
     }
     else if (flags & tfSingleAsset)
     {
         if (!amount || lpTokens || amount2 || ePrice)
-            return temBAD_AMM_OPTIONS;
+            return temMALFORMED;
     }
     else if (flags & tfTwoAsset)
     {
         if (!amount || !amount2 || lpTokens || ePrice)
-            return temBAD_AMM_OPTIONS;
+            return temMALFORMED;
     }
     else if (flags & tfOneAssetLPToken)
     {
         if (!amount || !lpTokens || amount2 || ePrice)
-            return temBAD_AMM_OPTIONS;
+            return temMALFORMED;
     }
     else if (flags & tfLimitLPToken)
     {
         if (!amount || !ePrice || lpTokens || amount2)
-            return temBAD_AMM_OPTIONS;
+            return temMALFORMED;
     }
 
     auto const asset = ctx.tx[sfAsset];
@@ -118,13 +112,13 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
     {
         JLOG(ctx.j.debug()) << "AMM Withdraw: invalid tokens, same issue."
                             << amount->issue() << " " << amount2->issue();
-        return temBAD_AMM_TOKENS;
+        return temAMM_BAD_TOKENS;
     }
 
-    if (lpTokens && *lpTokens == beast::zero)
+    if (lpTokens && *lpTokens <= beast::zero)
     {
         JLOG(ctx.j.debug()) << "AMM Withdraw: invalid tokens.";
-        return temBAD_AMM_TOKENS;
+        return temAMM_BAD_TOKENS;
     }
 
     if (auto const res = invalidAMMAmount(
@@ -202,39 +196,33 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
         return tecAMM_BALANCE;
     }
 
-    if (amount)
-    {
-        if (auto const ter = requireAuth(ctx.view, amount->issue(), accountID))
+    auto checkAmount = [&](auto const& amount, auto const& balance) -> TER {
+        if (amount)
         {
-            JLOG(ctx.j.debug()) << "AMM Instance: account is not authorized, "
-                                << amount->issue();
-            return ter;
+            if (auto const ter =
+                    requireAuth(ctx.view, amount->issue(), accountID))
+            {
+                JLOG(ctx.j.debug())
+                    << "AMM Withdraw: account is not authorized, "
+                    << amount->issue();
+                return ter;
+            }
+            if (amount > balance)
+            {
+                JLOG(ctx.j.debug())
+                    << "AMM Withdraw: withdrawing more than the balance, "
+                    << *amount;
+                return tecAMM_BALANCE;
+            }
         }
-        if (amount > amountBalance)
-        {
-            JLOG(ctx.j.debug())
-                << "AMM Withdraw: withdrawing more than the balance, "
-                << *amount;
-            return tecAMM_BALANCE;
-        }
-    }
+        return tesSUCCESS;
+    };
 
-    if (amount2)
-    {
-        if (auto const ter = requireAuth(ctx.view, amount2->issue(), accountID))
-        {
-            JLOG(ctx.j.debug()) << "AMM Instance: account is not authorized, "
-                                << amount2->issue();
-            return ter;
-        }
-        if (amount2 > amount2Balance)
-        {
-            JLOG(ctx.j.debug())
-                << "AMM Withdraw: withdrawing more than the balance, "
-                << *amount2;
-            return tecAMM_BALANCE;
-        }
-    }
+    if (auto const ter = checkAmount(amount, amountBalance))
+        return ter;
+
+    if (auto const ter = checkAmount(amount2, amount2Balance))
+        return ter;
 
     auto const lpTokens =
         ammLPHolds(ctx.view, **ammSle, ctx.tx[sfAccount], ctx.j);
@@ -250,7 +238,7 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
     if (lpTokensWithdraw && lpTokensWithdraw->issue() != lpTokens.issue())
     {
         JLOG(ctx.j.debug()) << "AMM Withdraw: invalid LPTokens.";
-        return temBAD_AMM_TOKENS;
+        return temAMM_BAD_TOKENS;
     }
 
     if (lpTokensWithdraw && *lpTokensWithdraw > lpTokens)
@@ -263,7 +251,7 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
         ePrice && ePrice->issue() != lpTokens.issue())
     {
         JLOG(ctx.j.debug()) << "AMM Withdraw: invalid EPrice.";
-        return temBAD_AMM_TOKENS;
+        return temAMM_BAD_TOKENS;
     }
 
     return tesSUCCESS;
@@ -299,7 +287,7 @@ AMMWithdraw::applyGuts(Sandbox& sb)
 
     auto const subTxType = ctx_.tx.getFlags() & tfWithdrawSubTx;
 
-    auto const [result, withdrawnTokens] =
+    auto const [result, newLPTokenBalance] =
         [&,
          &amountBalance = amountBalance,
          &amount2Balance = amount2Balance,
@@ -341,36 +329,23 @@ AMMWithdraw::applyGuts(Sandbox& sb)
                 amountBalance,
                 amount2Balance,
                 lptAMMBalance,
+                lpTokens,
                 *lpTokensWithdraw);
         // should not happen.
         JLOG(j_.error()) << "AMM Withdraw: invalid options.";
         return std::make_pair(tecAMM_FAILED_WITHDRAW, STAmount{});
     }();
 
-    if (result == tesSUCCESS && withdrawnTokens != beast::zero)
+    // AMM is deleted if zero tokens balance
+    if (result == tesSUCCESS && newLPTokenBalance != beast::zero)
     {
-        auto const lptBalance =
-            ammLPHolds(sb, **ammSle, account_, ctx_.journal);
-        auto newAMMLPTBalance = lptAMMBalance - withdrawnTokens;
-        // Handle round-off
-        if (lptBalance > newAMMLPTBalance)
-        {
-            newAMMLPTBalance = lptBalance;
-            JLOG(ctx_.journal.debug())
-                << "AMM Withdraw: tokens round-off adjust "
-                << to_string(lptBalance.iou()) << " "
-                << to_string(newAMMLPTBalance.iou()) << " "
-                << to_string(withdrawnTokens.iou());
-        }
-
-        (*ammSle)->setFieldAmount(sfLPTokenBalance, newAMMLPTBalance);
+        (*ammSle)->setFieldAmount(sfLPTokenBalance, newLPTokenBalance);
         sb.update(*ammSle);
 
         JLOG(ctx_.journal.trace())
-            << "AMM Withdraw: tokens " << to_string(withdrawnTokens.iou())
+            << "AMM Withdraw: tokens " << to_string(newLPTokenBalance.iou())
             << " " << to_string(lpTokens.iou()) << " "
-            << to_string(lptAMMBalance.iou()) << " "
-            << to_string(newAMMLPTBalance.iou());
+            << to_string(lptAMMBalance.iou());
     }
 
     return {result, result == tesSUCCESS};
@@ -421,7 +396,7 @@ AMMWithdraw::withdraw(
     AccountID const& ammAccount,
     STAmount const& amountWithdraw,
     std::optional<STAmount> const& amount2Withdraw,
-    STAmount const& lptAMMBalance,
+    STAmount const& lpTokensAMMBalance,
     STAmount const& lpTokensWithdraw)
 {
     auto const ammSle =
@@ -438,91 +413,82 @@ AMMWithdraw::withdraw(
         j_);
     if (!expected)
         return {expected.error(), STAmount{}};
-    auto const [amountBalance, amount2Balance, _] = *expected;
+    auto const [curBalance, curBalance2, _] = *expected;
     (void)_;
 
-    // Invalid tokens or withdrawing more than own.
-    if (lpTokensWithdraw == beast::zero || lpTokensWithdraw > lpTokens)
-    {
-        JLOG(ctx_.journal.debug())
-            << "AMM Withdraw: failed to withdraw, invalid LP tokens "
-            << " tokens: " << lpTokensWithdraw << " " << lpTokens;
-        return {tecAMM_FAILED_WITHDRAW, STAmount{}};
-    }
-
-    auto actualAmountWithdraw = amountWithdraw;
-    auto actualAmount2Withdraw = amount2Withdraw;
-    auto actualLPTokensWithdraw = lpTokensWithdraw;
-    // Because of the round-off, withdraw amount may exceed/be less
-    // than the balance. Withdraw the balance in this case.
-    if (lpTokensWithdraw >= lptAMMBalance)
-    {
-        actualLPTokensWithdraw = lptAMMBalance;
-        actualAmountWithdraw = amountBalance;
-        if (amount2Withdraw)
-            actualAmount2Withdraw = amount2Balance;
-        JLOG(ctx_.journal.debug())
-            << "AMM Withdraw: adjusting withdraw amounts " << lpTokensWithdraw
-            << " " << lptAMMBalance << " " << amountWithdraw << " "
-            << amountBalance << " "
-            << (amount2Withdraw ? to_string(*amount2Withdraw) : "") << " "
-            << amount2Balance;
-    }
-    if (amountWithdraw > amountBalance)
-    {
-        actualAmountWithdraw = amountBalance;
-        JLOG(ctx_.journal.debug())
-            << "AMM Withdraw: adjusting withdraw amounts " << amountWithdraw
-            << " " << amountBalance;
-    }
-    if (amount2Withdraw > amount2Balance)
-    {
-        actualAmount2Withdraw = amount2Balance;
-        JLOG(ctx_.journal.debug())
-            << "AMM Withdraw: adjusting withdraw amounts " << *amount2Withdraw
-            << " " << amount2Balance;
-    }
-
     // Withdrawing one side of the pool
-    if (actualAmountWithdraw == amountBalance && !actualAmount2Withdraw)
+    if (amountWithdraw == curBalance && !amount2Withdraw)
     {
         JLOG(ctx_.journal.debug())
             << "AMM Withdraw: failed to withdraw one side of the pool "
-            << " amountBalance: " << amountBalance << " " << amountWithdraw
-            << " lpTokens: " << lpTokensWithdraw << " lptBalance "
-            << lptAMMBalance;
+            << " curBalance: " << curBalance << " " << amountWithdraw
+            << " lpTokensBalance: " << lpTokensWithdraw << " lptBalance "
+            << lpTokensAMMBalance;
+        return {tecAMM_FAILED_WITHDRAW, STAmount{}};
+    }
+
+    // Withdrawing more than the pool's balance
+    if (amountWithdraw > curBalance || amount2Withdraw > curBalance2)
+    {
+        JLOG(ctx_.journal.debug())
+            << "AMM Withdraw: withdrawing more than the pool's balance "
+            << " curBalance: " << curBalance << " " << amountWithdraw
+            << " curBalance2: " << curBalance2 << " "
+            << (amount2Withdraw ? *amount2Withdraw : STAmount{})
+            << " lpTokensBalance: " << lpTokensWithdraw << " lptBalance "
+            << lpTokensAMMBalance;
         return {tecAMM_FAILED_WITHDRAW, STAmount{}};
     }
 
     // Withdraw amountWithdraw
     auto res =
-        ammSend(view, ammAccount, account_, actualAmountWithdraw, ctx_.journal);
+        ammSend(view, ammAccount, account_, amountWithdraw, ctx_.journal);
     if (res != tesSUCCESS)
     {
         JLOG(ctx_.journal.debug())
-            << "AMM Withdraw: failed to withdraw " << actualAmountWithdraw;
+            << "AMM Withdraw: failed to withdraw " << amountWithdraw;
         return {res, STAmount{}};
     }
 
     // Withdraw amount2Withdraw
-    if (actualAmount2Withdraw)
+    if (amount2Withdraw)
     {
-        res = ammSend(
-            view, ammAccount, account_, *actualAmount2Withdraw, ctx_.journal);
+        res =
+            ammSend(view, ammAccount, account_, *amount2Withdraw, ctx_.journal);
         if (res != tesSUCCESS)
         {
-            JLOG(ctx_.journal.debug()) << "AMM Withdraw: failed to withdraw "
-                                       << *actualAmount2Withdraw;
+            JLOG(ctx_.journal.debug())
+                << "AMM Withdraw: failed to withdraw " << *amount2Withdraw;
             return {res, STAmount{}};
         }
+    }
+
+    auto const actualTokensWithdraw = [&]() {
+        if (!(ctx_.tx[sfFlags] & (tfWithdrawAll | tfOneAssetWithdrawAll)))
+        {
+            // New pool LPToken balance
+            auto const newLPTokenBalance =
+                lpTokensAMMBalance - lpTokensWithdraw;
+            // Actual withdraw. Adjust for the loss of significant digit.
+            return lpTokensAMMBalance - newLPTokenBalance;
+        }
+        return lpTokensWithdraw;
+    }();
+    if (actualTokensWithdraw <= beast::zero || actualTokensWithdraw > lpTokens)
+    {
+        JLOG(ctx_.journal.debug())
+            << "AMM Withdraw: failed to withdraw, invalid LP tokens "
+            << " tokens: " << actualTokensWithdraw << " " << lpTokens << " "
+            << lpTokensAMMBalance;
+        return {tecAMM_FAILED_WITHDRAW, STAmount{}};
     }
 
     // Withdraw LP tokens
     res = redeemIOU(
         view,
         account_,
-        actualLPTokensWithdraw,
-        actualLPTokensWithdraw.issue(),
+        actualTokensWithdraw,
+        actualTokensWithdraw.issue(),
         ctx_.journal);
     if (res != tesSUCCESS)
     {
@@ -531,10 +497,10 @@ AMMWithdraw::withdraw(
         return {res, STAmount{}};
     }
 
-    if (actualLPTokensWithdraw == lptAMMBalance)
+    if (actualTokensWithdraw == lpTokensAMMBalance)
         return {deleteAccount(view, ammAccount), STAmount{}};
 
-    return {tesSUCCESS, actualLPTokensWithdraw};
+    return {tesSUCCESS, lpTokensAMMBalance - actualTokensWithdraw};
 }
 
 /** Proportional withdrawal of pool assets for the amount of LPTokens.
@@ -546,16 +512,74 @@ AMMWithdraw::equalWithdrawTokens(
     STAmount const& amountBalance,
     STAmount const& amount2Balance,
     STAmount const& lptAMMBalance,
+    STAmount const& lpTokens,
     STAmount const& lpTokensWithdraw)
 {
-    auto const frac = divide(lpTokensWithdraw, lptAMMBalance, noIssue());
-    return withdraw(
-        view,
-        ammAccount,
-        multiply(amountBalance, frac, amountBalance.issue()),
-        multiply(amount2Balance, frac, amount2Balance.issue()),
-        lptAMMBalance,
-        lpTokensWithdraw);
+    try
+    {
+        // Withdrawing all tokens in the pool
+        if ((ctx_.tx[sfFlags] & tfWithdrawAll) &&
+            lpTokensWithdraw == lptAMMBalance)
+            return withdraw(
+                view,
+                ammAccount,
+                amountBalance,
+                amount2Balance,
+                lptAMMBalance,
+                lpTokensWithdraw);
+        auto const frac = divide(lpTokensWithdraw, lptAMMBalance, noIssue());
+        auto getAmounts = [&](auto const& frac) {
+            return std::make_pair(
+                multiply(amountBalance, frac, amountBalance.issue()),
+                multiply(amount2Balance, frac, amount2Balance.issue()));
+        };
+        auto const [withdrawAmount, withdraw2Amount] = getAmounts(frac);
+        // The amount of requested tokens to withdraw results
+        // in one-sided pool withdrawal
+        if (withdrawAmount == beast::zero || withdraw2Amount == beast::zero)
+        {
+            // LP can request more tokens to withdraw, which doesn't result
+            // in single pool withdrawal
+            if (lpTokensWithdraw < lpTokens)
+            {
+                auto const frac = divide(lpTokens, lptAMMBalance, noIssue());
+                auto const [withdrawAmount, withdraw2Amount] = getAmounts(frac);
+                if (withdrawAmount != beast::zero &&
+                    withdraw2Amount != beast::zero)
+                    return {tecAMM_FAILED_WITHDRAW, STAmount{}};
+                // Total LP tokens withdrawal still result in single pool
+                // withdrawal
+            }
+            // LP withdrawing all tokens, treat as the single tokens withdraw
+            // with no fee
+            auto const amount = withdrawAmount != beast::zero ? withdrawAmount
+                                                              : withdraw2Amount;
+            auto const balance = amount.issue() == amountBalance.issue()
+                ? amountBalance
+                : amount2Balance;
+            return singleWithdrawTokens(
+                view,
+                ammAccount,
+                balance,
+                lptAMMBalance,
+                amount,
+                lpTokensWithdraw,
+                0);
+        }
+        return withdraw(
+            view,
+            ammAccount,
+            withdrawAmount,
+            withdraw2Amount,
+            lptAMMBalance,
+            lpTokensWithdraw);
+    }
+    catch (std::exception const& e)
+    {
+        JLOG(j_.error()) << "AMMWithdraw::equalWithdrawTokens exception "
+                         << e.what();
+    }
+    return {tecINTERNAL, STAmount{}};
 }
 
 /** All assets withdrawal with the constraints on the maximum amount
@@ -660,7 +684,7 @@ AMMWithdraw::singleWithdrawTokens(
         return withdraw(
             view,
             ammAccount,
-            toSTAmount(amount.issue(), amountWithdraw),
+            amountWithdraw,
             std::nullopt,
             lptAMMBalance,
             lpTokensWithdraw);

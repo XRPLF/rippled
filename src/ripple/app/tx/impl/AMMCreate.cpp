@@ -31,12 +31,6 @@
 
 namespace ripple {
 
-TxConsequences
-AMMCreate::makeTxConsequences(PreflightContext const& ctx)
-{
-    return TxConsequences{ctx.tx};
-}
-
 NotTEC
 AMMCreate::preflight(PreflightContext const& ctx)
 {
@@ -59,7 +53,7 @@ AMMCreate::preflight(PreflightContext const& ctx)
     {
         JLOG(ctx.j.debug())
             << "AMM Instance: tokens can not have the same currency/issuer.";
-        return temBAD_AMM_TOKENS;
+        return temAMM_BAD_TOKENS;
     }
 
     if (auto const err = invalidAMMAmount(amount))
@@ -111,7 +105,7 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
         ctx.view.read(ammKeylet))
     {
         JLOG(ctx.j.debug()) << "AMM Instance: ltAMM already exists.";
-        return tecAMM_EXISTS;
+        return tecDUPLICATE;
     }
 
     if (auto const ter = requireAuth(ctx.view, amount.issue(), accountID);
@@ -162,7 +156,7 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
     {
         JLOG(ctx.j.debug())
             << "AMM Instance: insufficient funds, " << amount << " " << amount2;
-        return tecUNFUNDED_AMM;
+        return tecAMM_UNFUNDED;
     }
 
     return tesSUCCESS;
@@ -190,7 +184,7 @@ applyCreate(
             if (!sb.read(keylet::account(ammAccount)))
                 return ammAccount;
         }
-        return Unexpected(tecAMM_EXISTS);
+        return Unexpected(tecDUPLICATE);
     }();
 
     // AMM account already exists (should not happen)
@@ -206,7 +200,7 @@ applyCreate(
     if (sb.read(keylet::line(*ammAccount, lptIss)))
     {
         JLOG(j_.debug()) << "AMM Instance: LP Token already exists.";
-        return {tecAMM_EXISTS, false};
+        return {tecDUPLICATE, false};
     }
 
     // Create AMM Root Account.

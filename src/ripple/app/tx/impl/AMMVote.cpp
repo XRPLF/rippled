@@ -28,12 +28,6 @@
 
 namespace ripple {
 
-TxConsequences
-AMMVote::makeTxConsequences(PreflightContext const& ctx)
-{
-    return TxConsequences{ctx.tx};
-}
-
 NotTEC
 AMMVote::preflight(PreflightContext const& ctx)
 {
@@ -171,8 +165,9 @@ applyVote(
             updatedVoteSlots.push_back(std::move(newEntry));
         };
         // Add new entry if the number of the vote entries
-        // is less than 8.
-        if (updatedVoteSlots.size() < 8)
+        // is less than Max.
+        constexpr std::uint8_t MaxVoteSlots = 8;
+        if (updatedVoteSlots.size() < MaxVoteSlots)
             update();
         // Add the entry if the account has more tokens than
         // the least token holder.

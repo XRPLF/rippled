@@ -89,11 +89,9 @@ AMMLiquidity<TIn, TOut>::generateFibSeqOffer(
     return cur;
 }
 
-/** "Infinite" amount.
- */
 template <typename T>
-T
-infAmount()
+constexpr T
+maxAmount()
 {
     if constexpr (std::is_same_v<T, XRPAmount>)
         return XRPAmount(STAmount::cMaxNative);
@@ -151,15 +149,16 @@ AMMLiquidity<TIn, TOut>::getOffer(
                 : balances)
         {
             // If the offer size is equal to the balances then change the size
-            // to simulate output equal to the entire pool's amount and
-            // "infinite" input. The size is going to be changed in BookStep
+            // to the largest amount, which doesn't overflow.
+            // The size is going to be changed in BookStep
             // per either deliver amount limit, or sendmax, or available
             // output or input funds.
             if (balances == amounts)
             {
                 return AMMOffer<TIn, TOut>(
                     *this,
-                    TAmounts<TIn, TOut>{infAmount<TIn>(), balances.out},
+                    {maxAmount<TIn>(),
+                     swapAssetIn(balances, maxAmount<TIn>(), tradingFee_)},
                     balances,
                     Quality{balances});
             }

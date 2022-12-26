@@ -16,6 +16,9 @@ Loop: ripple.app ripple.overlay
 Loop: ripple.app ripple.peerfinder
   ripple.app > ripple.peerfinder
 
+Loop: ripple.app ripple.protocol
+  ripple.app > ripple.protocol
+
 Loop: ripple.app ripple.rpc
   ripple.rpc > ripple.app
 

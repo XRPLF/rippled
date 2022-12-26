@@ -88,8 +88,7 @@ STIssue::getText() const
     return ret;
 }
 
-Json::Value
-STIssue::getJson(JsonOptions) const
+Json::Value STIssue::getJson(JsonOptions) const
 {
     return to_json(issue_);
 }

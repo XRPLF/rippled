@@ -167,7 +167,7 @@ invalidAMMAsset(
     if (isXRP(issue) && true != !issue.account)
         return temBAD_ISSUER;
     if (pair && issue != pair->first && issue != pair->second)
-        return temBAD_AMM_TOKENS;
+        return temAMM_BAD_TOKENS;
     return tesSUCCESS;
 }
 
@@ -182,7 +182,7 @@ invalidAMMAssetPair(
     if (auto const res = invalidAMMAsset(issue2, pair))
         return res;
     if (issue1 == issue2)
-        return temBAD_AMM_TOKENS;
+        return temAMM_BAD_TOKENS;
     return tesSUCCESS;
 }
 

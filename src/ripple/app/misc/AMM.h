@@ -132,7 +132,7 @@ bool
 isFrozen(ReadView const& view, STAmount const& a);
 
 /** Check if the account requires authorization.
- *  Return terNO_AUTH or terNO_LINE if it does
+ *  Return tecNO_AUTH or tecNO_LINE if it does
  *  and tsSUCCESS otherwise.
  */
 TER

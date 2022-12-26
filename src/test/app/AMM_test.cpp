@@ -846,7 +846,7 @@ private:
             Env env{*this};
             fund(env, gw, {alice}, {USD(30000)}, Fund::All);
             AMM ammAlice(
-                env, alice, XRP(10000), XRP(10000), ter(temBAD_AMM_TOKENS));
+                env, alice, XRP(10000), XRP(10000), ter(temAMM_BAD_TOKENS));
             BEAST_EXPECT(!ammAlice.ammExists());
         }
 
@@ -855,7 +855,7 @@ private:
             Env env{*this};
             fund(env, gw, {alice}, {USD(30000)}, Fund::All);
             AMM ammAlice(
-                env, alice, USD(10000), USD(10000), ter(temBAD_AMM_TOKENS));
+                env, alice, USD(10000), USD(10000), ter(temAMM_BAD_TOKENS));
             BEAST_EXPECT(!ammAlice.ammExists());
         }
 
@@ -881,7 +881,7 @@ private:
             Env env{*this};
             fund(env, gw, {alice}, {USD(30000)}, Fund::All);
             AMM ammAlice(
-                env, alice, XRP(10000), USD(40000), ter(tecUNFUNDED_AMM));
+                env, alice, XRP(10000), USD(40000), ter(tecAMM_UNFUNDED));
             BEAST_EXPECT(!ammAlice.ammExists());
         }
 
@@ -890,7 +890,7 @@ private:
             Env env{*this};
             fund(env, gw, {alice}, {USD(30000)}, Fund::All);
             AMM ammAlice(
-                env, alice, XRP(40000), USD(10000), ter(tecUNFUNDED_AMM));
+                env, alice, XRP(40000), USD(10000), ter(tecAMM_UNFUNDED));
             BEAST_EXPECT(!ammAlice.ammExists());
         }
 
@@ -915,8 +915,7 @@ private:
 
         // AMM already exists
         testAMM([&](AMM& ammAlice, Env& env) {
-            AMM ammCarol(
-                env, carol, XRP(10000), USD(10000), ter(tecAMM_EXISTS));
+            AMM ammCarol(env, carol, XRP(10000), USD(10000), ter(tecDUPLICATE));
         });
 
         // Invalid flags
@@ -998,7 +997,7 @@ private:
             env(offer(alice, XRP(101), USD(100)));
             env(offer(alice, XRP(102), USD(100)));
             AMM ammAlice(
-                env, alice, XRP(1000), USD(1000), ter(tecUNFUNDED_AMM));
+                env, alice, XRP(1000), USD(1000), ter(tecAMM_UNFUNDED));
         }
 
         // Insufficient reserve, IOU/IOU
@@ -1081,14 +1080,14 @@ private:
                     std::nullopt,
                     std::nullopt,
                     std::nullopt,
-                    ter(temBAD_AMM_OPTIONS));
+                    ter(temMALFORMED));
             });
         }
 
         // Invalid tokens
         testAMM([&](AMM& ammAlice, Env& env) {
             ammAlice.deposit(
-                alice, 0, std::nullopt, std::nullopt, ter(temBAD_AMM_TOKENS));
+                alice, 0, std::nullopt, std::nullopt, ter(temAMM_BAD_TOKENS));
         });
 
         // Depositing mismatched token, invalid Asset1In.issue
@@ -1099,7 +1098,7 @@ private:
                 std::nullopt,
                 std::nullopt,
                 std::nullopt,
-                ter(temBAD_AMM_TOKENS));
+                ter(temAMM_BAD_TOKENS));
         });
 
         // Depositing mismatched token, invalid Asset2In.issue
@@ -1110,7 +1109,7 @@ private:
                 GBP(100),
                 std::nullopt,
                 std::nullopt,
-                ter(temBAD_AMM_TOKENS));
+                ter(temAMM_BAD_TOKENS));
         });
 
         // Depositing mismatched token, Asset1In.issue == Asset2In.issue
@@ -1121,7 +1120,7 @@ private:
                 USD(100),
                 std::nullopt,
                 std::nullopt,
-                ter(temBAD_AMM_TOKENS));
+                ter(temAMM_BAD_TOKENS));
         });
 
         // Invalid amount value
@@ -1212,7 +1211,7 @@ private:
                 std::nullopt,
                 std::nullopt,
                 std::nullopt,
-                ter(tecUNFUNDED_AMM));
+                ter(tecAMM_UNFUNDED));
         });
 
         // Insufficient USD balance
@@ -1225,7 +1224,7 @@ private:
                 std::nullopt,
                 std::nullopt,
                 std::nullopt,
-                ter(tecUNFUNDED_AMM));
+                ter(tecAMM_UNFUNDED));
         });
 
         // Insufficient USD balance by tokens
@@ -1241,7 +1240,7 @@ private:
                 std::nullopt,
                 std::nullopt,
                 std::nullopt,
-                ter(tecUNFUNDED_AMM));
+                ter(tecAMM_UNFUNDED));
         });
 
         // Insufficient XRP balance by tokens
@@ -1260,7 +1259,7 @@ private:
                 std::nullopt,
                 std::nullopt,
                 std::nullopt,
-                ter(tecUNFUNDED_AMM));
+                ter(tecAMM_UNFUNDED));
         });
 
         // Insufficient reserve, XRP/IOU
@@ -1319,6 +1318,36 @@ private:
                 ter(tecINSUF_RESERVE_LINE));
         }
 
+        // Single deposit: 100000 tokens worth of USD
+        // Amount to deposit exceeds Max
+        testAMM([&](AMM& ammAlice, Env&) {
+            ammAlice.deposit(
+                carol,
+                100000,
+                USD(200),
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                ter(tecAMM_FAILED_DEPOSIT));
+        });
+
+        // Single deposit: 100000 tokens worth of XRP
+        // Amount to deposit exceeds Max
+        testAMM([&](AMM& ammAlice, Env&) {
+            ammAlice.deposit(
+                carol,
+                100000,
+                XRP(200),
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                ter(tecAMM_FAILED_DEPOSIT));
+        });
+
         // Deposit amount is invalid
         testAMM([&](AMM& ammAlice, Env&) {
             // Calculated amount to deposit is 98,000,000
@@ -1328,13 +1357,32 @@ private:
                 std::nullopt,
                 STAmount{USD, 1, -1},
                 std::nullopt,
-                ter(tecUNFUNDED_AMM));
+                ter(tecAMM_UNFUNDED));
             // Calculated amount is 0
             ammAlice.deposit(
                 alice,
                 USD(0),
                 std::nullopt,
                 STAmount{USD, 2000, -6},
+                std::nullopt,
+                ter(tecAMM_FAILED_DEPOSIT));
+        });
+
+        // Tiny deposit
+        testAMM([&](AMM& ammAlice, Env&) {
+            ammAlice.deposit(
+                carol,
+                IOUAmount{1, -4},
+                std::nullopt,
+                std::nullopt,
+                ter(tecAMM_FAILED_DEPOSIT));
+        });
+        testAMM([&](AMM& ammAlice, Env&) {
+            ammAlice.deposit(
+                carol,
+                STAmount{USD, 1, -11},
+                std::nullopt,
+                std::nullopt,
                 std::nullopt,
                 ter(tecAMM_FAILED_DEPOSIT));
         });
@@ -1402,36 +1450,6 @@ private:
                 XRP(10201), USD(10000), IOUAmount{10100000, 0}));
         });
 
-        // Single deposit: 100000 tokens worth of USD
-        // Amount to deposit exceeds Max
-        testAMM([&](AMM& ammAlice, Env&) {
-            ammAlice.deposit(
-                carol,
-                100000,
-                USD(200),
-                std::nullopt,
-                std::nullopt,
-                std::nullopt,
-                std::nullopt,
-                std::nullopt,
-                ter(tecAMM_FAILED_DEPOSIT));
-        });
-
-        // Single deposit: 100000 tokens worth of XRP
-        // Amount to deposit exceeds Max
-        testAMM([&](AMM& ammAlice, Env&) {
-            ammAlice.deposit(
-                carol,
-                100000,
-                XRP(200),
-                std::nullopt,
-                std::nullopt,
-                std::nullopt,
-                std::nullopt,
-                std::nullopt,
-                ter(tecAMM_FAILED_DEPOSIT));
-        });
-
         // Single deposit with EP not exceeding specified:
         // 100USD with EP not to exceed 0.1 (AssetIn/TokensOut)
         testAMM([&](AMM& ammAlice, Env&) {
@@ -1483,6 +1501,32 @@ private:
             // 0.0625 - 0.05(AMM) - 0.25*0.05=0.0125(fee)=0
             BEAST_EXPECT(expectLine(env, carol, BTC(0)));
         }
+
+        // Tiny deposits
+        testAMM([&](AMM& ammAlice, Env&) {
+            ammAlice.deposit(carol, IOUAmount{1, -3});
+            BEAST_EXPECT(ammAlice.expectBalances(
+                XRPAmount{10000000001},
+                STAmount{USD, UINT64_C(10000000001), -6},
+                IOUAmount{10000000001, -3}));
+            BEAST_EXPECT(ammAlice.expectLPTokens(carol, IOUAmount{1, -3}));
+        });
+        testAMM([&](AMM& ammAlice, Env&) {
+            ammAlice.deposit(carol, XRPAmount{1});
+            BEAST_EXPECT(ammAlice.expectBalances(
+                XRPAmount{10000000001},
+                USD(10000),
+                IOUAmount{100000000005, -4}));
+            BEAST_EXPECT(ammAlice.expectLPTokens(carol, IOUAmount{5, -4}));
+        });
+        testAMM([&](AMM& ammAlice, Env&) {
+            ammAlice.deposit(carol, STAmount{USD, 1, -10});
+            BEAST_EXPECT(ammAlice.expectBalances(
+                XRP(10000),
+                STAmount{USD, UINT64_C(100000000000001), -10},
+                IOUAmount{1000000000000005, -8}));
+            BEAST_EXPECT(ammAlice.expectLPTokens(carol, IOUAmount{5, -8}));
+        });
     }
 
     void
@@ -1521,91 +1565,91 @@ private:
                  std::nullopt,
                  std::nullopt,
                  std::nullopt,
-                 temBAD_AMM_OPTIONS},
+                 temMALFORMED},
                 {std::nullopt,
                  std::nullopt,
                  std::nullopt,
                  std::nullopt,
                  tfSingleAsset | tfTwoAsset,
-                 temBAD_AMM_OPTIONS},
+                 temMALFORMED},
                 {1000,
                  std::nullopt,
                  std::nullopt,
                  std::nullopt,
                  tfWithdrawAll,
-                 temBAD_AMM_OPTIONS},
+                 temMALFORMED},
                 {std::nullopt,
                  USD(0),
                  XRP(100),
                  std::nullopt,
                  tfWithdrawAll | tfLPToken,
-                 temBAD_AMM_OPTIONS},
+                 temMALFORMED},
                 {std::nullopt,
                  std::nullopt,
                  USD(100),
                  std::nullopt,
                  tfWithdrawAll,
-                 temBAD_AMM_OPTIONS},
+                 temMALFORMED},
                 {std::nullopt,
                  std::nullopt,
                  std::nullopt,
                  std::nullopt,
                  tfWithdrawAll | tfOneAssetWithdrawAll,
-                 temBAD_AMM_OPTIONS},
+                 temMALFORMED},
                 {std::nullopt,
                  USD(100),
                  std::nullopt,
                  std::nullopt,
                  tfWithdrawAll,
-                 temBAD_AMM_OPTIONS},
+                 temMALFORMED},
                 {std::nullopt,
                  std::nullopt,
                  std::nullopt,
                  std::nullopt,
                  tfOneAssetWithdrawAll,
-                 temBAD_AMM_OPTIONS},
+                 temMALFORMED},
                 {1000,
                  std::nullopt,
                  USD(100),
                  std::nullopt,
                  std::nullopt,
-                 temBAD_AMM_OPTIONS},
+                 temMALFORMED},
                 {std::nullopt,
                  std::nullopt,
                  std::nullopt,
                  IOUAmount{250, 0},
                  tfWithdrawAll,
-                 temBAD_AMM_OPTIONS},
+                 temMALFORMED},
                 {1000,
                  std::nullopt,
                  std::nullopt,
                  IOUAmount{250, 0},
                  std::nullopt,
-                 temBAD_AMM_OPTIONS},
+                 temMALFORMED},
                 {std::nullopt,
                  std::nullopt,
                  USD(100),
                  IOUAmount{250, 0},
                  std::nullopt,
-                 temBAD_AMM_OPTIONS},
+                 temMALFORMED},
                 {std::nullopt,
                  XRP(100),
                  USD(100),
                  IOUAmount{250, 0},
                  std::nullopt,
-                 temBAD_AMM_OPTIONS},
+                 temMALFORMED},
                 {1000,
                  XRP(100),
                  USD(100),
                  std::nullopt,
                  std::nullopt,
-                 temBAD_AMM_OPTIONS},
+                 temMALFORMED},
                 {std::nullopt,
                  XRP(100),
                  USD(100),
                  std::nullopt,
                  tfWithdrawAll,
-                 temBAD_AMM_OPTIONS}};
+                 temMALFORMED}};
         for (auto const& it : invalidOptions)
         {
             testAMM([&](AMM& ammAlice, Env& env) {
@@ -1625,7 +1669,7 @@ private:
         // Invalid tokens
         testAMM([&](AMM& ammAlice, Env& env) {
             ammAlice.withdraw(
-                alice, 0, std::nullopt, std::nullopt, ter(temBAD_AMM_TOKENS));
+                alice, 0, std::nullopt, std::nullopt, ter(temAMM_BAD_TOKENS));
         });
 
         // Mismatched token, invalid Asset1Out issue
@@ -1635,7 +1679,7 @@ private:
                 GBP(100),
                 std::nullopt,
                 std::nullopt,
-                ter(temBAD_AMM_TOKENS));
+                ter(temAMM_BAD_TOKENS));
         });
 
         // Mismatched token, invalid Asset2Out issue
@@ -1645,7 +1689,7 @@ private:
                 USD(100),
                 GBP(100),
                 std::nullopt,
-                ter(temBAD_AMM_TOKENS));
+                ter(temAMM_BAD_TOKENS));
         });
 
         // Mismatched token, Asset1Out.issue == Asset2Out.issue
@@ -1655,7 +1699,7 @@ private:
                 USD(100),
                 USD(100),
                 std::nullopt,
-                ter(temBAD_AMM_TOKENS));
+                ter(temAMM_BAD_TOKENS));
         });
 
         // Invalid amount value
@@ -1822,14 +1866,59 @@ private:
                 ter(tecAMM_FAILED_WITHDRAW));
         });
 
-        // Single deposit/withdrawal 1000USD. Fails due to round-off error,
-        // tokens to withdraw exceeds the LP tokens balance.
+        // Deposit/Withdraw the same amount with the trading fee
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                ammAlice.deposit(carol, USD(1000));
+                ammAlice.withdraw(
+                    carol,
+                    USD(1000),
+                    std::nullopt,
+                    std::nullopt,
+                    ter(tecAMM_FAILED_WITHDRAW));
+            },
+            std::nullopt,
+            1000);
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                ammAlice.deposit(carol, XRP(1000));
+                ammAlice.withdraw(
+                    carol,
+                    XRP(1000),
+                    std::nullopt,
+                    std::nullopt,
+                    ter(tecAMM_FAILED_WITHDRAW));
+            },
+            std::nullopt,
+            1000);
+
+        // Tiny withdraw
         testAMM([&](AMM& ammAlice, Env&) {
-            ammAlice.deposit(carol, USD(10000));
+            // XRP amount to withdraw is 0
+            ammAlice.withdraw(
+                alice,
+                IOUAmount{1, -5},
+                std::nullopt,
+                std::nullopt,
+                ter(tecAMM_FAILED_WITHDRAW));
+            // Calculated tokens to withdraw are 0
+            ammAlice.withdraw(
+                alice,
+                std::nullopt,
+                STAmount{USD, 1, -11},
+                std::nullopt,
+                ter(tecAMM_FAILED_WITHDRAW));
+            ammAlice.deposit(carol, STAmount{USD, 1, -10});
             ammAlice.withdraw(
                 carol,
-                USD(10000),
                 std::nullopt,
+                STAmount{USD, 1, -9},
+                std::nullopt,
+                ter(tecAMM_FAILED_WITHDRAW));
+            ammAlice.withdraw(
+                carol,
+                std::nullopt,
+                XRPAmount{1},
                 std::nullopt,
                 ter(tecAMM_FAILED_WITHDRAW));
         });
@@ -1910,6 +1999,7 @@ private:
         });
 
         // Single deposit 1000USD, withdraw all tokens in USD
+        // Note round-off on USD
         testAMM([&](AMM& ammAlice, Env& env) {
             ammAlice.deposit(carol, USD(1000));
             ammAlice.withdrawAll(carol, USD(0));
@@ -1929,15 +2019,20 @@ private:
                 XRPAmount(9090909091), USD(11000), IOUAmount{10000000, 0}));
         });
 
-        // Single deposit/withdrawal 1000USD
-        // There is a round-off error. There remains
-        // a dust amount of tokens
+        // Single deposit/withdrawal
         testAMM([&](AMM& ammAlice, Env&) {
             ammAlice.deposit(carol, USD(1000));
             ammAlice.withdraw(carol, USD(1000));
+            ammAlice.deposit(carol, STAmount(USD, 1, -6));
+            ammAlice.withdraw(carol, STAmount(USD, 1, -6));
+            ammAlice.deposit(carol, XRPAmount(1));
+            ammAlice.withdraw(carol, XRPAmount(1));
+            auto const roundoff = IOUAmount{1, -8};
             BEAST_EXPECT(ammAlice.expectBalances(
-                XRP(10000), USD(10000), IOUAmount{1000000000000001, -8}));
-            BEAST_EXPECT(ammAlice.expectLPTokens(carol, IOUAmount{63, -10}));
+                XRP(10000), USD(10000), IOUAmount{10000000} + roundoff));
+            BEAST_EXPECT(ammAlice.expectLPTokens(carol, roundoff));
+            ammAlice.withdrawAll(carol);
+            BEAST_EXPECT(ammAlice.expectLPTokens(carol, IOUAmount{0}));
         });
 
         // Single deposit by different accounts and then withdraw
@@ -1948,9 +2043,12 @@ private:
             ammAlice.deposit(alice, USD(1000));
             ammAlice.withdraw(alice, USD(1000));
             ammAlice.withdraw(carol, USD(1000));
+            auto const roundoff = IOUAmount{1, -8};
             BEAST_EXPECT(ammAlice.expectBalances(
-                XRP(10000), USD(10000), IOUAmount{1000000000000001, -8}));
-            BEAST_EXPECT(ammAlice.expectLPTokens(carol, IOUAmount{63, -10}));
+                XRP(10000), USD(10000), IOUAmount{10000000} + roundoff));
+            BEAST_EXPECT(ammAlice.expectLPTokens(carol, roundoff));
+            ammAlice.withdrawAll(carol);
+            BEAST_EXPECT(ammAlice.expectLPTokens(carol, IOUAmount{0}));
         });
 
         // Equal deposit 10%, withdraw all tokens
@@ -1988,7 +2086,9 @@ private:
                     XRPAmount(11000000000),
                     STAmount{USD, UINT64_C(9372781065088756), -12},
                     IOUAmount{1015384615384615, -8}) &&
-                ammAlice.expectLPTokens(carol, IOUAmount{153846153846153, -9}));
+                ammAlice.expectLPTokens(carol, IOUAmount{15384615384615, -8}));
+            ammAlice.withdrawAll(carol);
+            ammAlice.expectLPTokens(carol, IOUAmount{0});
         });
 
         // Withdraw with EPrice limit. AssetOut is 0.
@@ -2000,7 +2100,7 @@ private:
                     XRPAmount(11000000000),
                     STAmount{USD, UINT64_C(9372781065088756), -12},
                     IOUAmount{1015384615384615, -8}) &&
-                ammAlice.expectLPTokens(carol, IOUAmount{153846153846153, -9}));
+                ammAlice.expectLPTokens(carol, IOUAmount{15384615384615, -8}));
         });
 
         // TODO there should be a limit on a single withdraw amount.
@@ -2037,6 +2137,30 @@ private:
             // 0.0625 - 0.025*0.5=0.0125(deposit fee)=0.05
             BEAST_EXPECT(expectLine(env, carol, BTC(0.05)));
         }
+
+        // Tiny withdraw
+        testAMM([&](AMM& ammAlice, Env&) {
+            // By tokens
+            ammAlice.withdraw(alice, IOUAmount{1, -3});
+            BEAST_EXPECT(ammAlice.expectBalances(
+                XRPAmount{9999999999},
+                STAmount{USD, UINT64_C(9999999999), -6},
+                IOUAmount{9999999999, -3}));
+        });
+        testAMM([&](AMM& ammAlice, Env&) {
+            // Single XRP pool
+            ammAlice.withdraw(alice, std::nullopt, XRPAmount{1});
+            BEAST_EXPECT(ammAlice.expectBalances(
+                XRPAmount{9999999999}, USD(10000), IOUAmount{99999999995, -4}));
+        });
+        testAMM([&](AMM& ammAlice, Env&) {
+            // Single USD pool
+            ammAlice.withdraw(alice, std::nullopt, STAmount{USD, 1, -10});
+            BEAST_EXPECT(ammAlice.expectBalances(
+                XRP(10000),
+                STAmount{USD, UINT64_C(99999999999999), -10},
+                IOUAmount{999999999999995, -8}));
+        });
     }
 
     void
@@ -2347,7 +2471,7 @@ private:
                 std::nullopt,
                 std::nullopt,
                 std::nullopt,
-                ter(temBAD_AMM_OPTIONS));
+                ter(temMALFORMED));
         });
 
         // Bid price exceeds LP owned tokens
@@ -2396,7 +2520,7 @@ private:
                 std::nullopt,
                 std::nullopt,
                 std::nullopt,
-                ter(temBAD_AMM_TOKENS));
+                ter(temAMM_BAD_TOKENS));
             ammAlice.bid(
                 alice,
                 STAmount{USD, 100},
@@ -2405,7 +2529,7 @@ private:
                 std::nullopt,
                 std::nullopt,
                 std::nullopt,
-                ter(temBAD_AMM_TOKENS));
+                ter(temAMM_BAD_TOKENS));
         });
     }
 
@@ -2511,13 +2635,15 @@ private:
         // Other accounts trade at 1% fee.
         testAMM(
             [&](AMM& ammAlice, Env& env) {
-                fund(env, gw, {bob}, {USD(10000)}, Fund::Acct);
+                Account const dan("dan");
+                fund(env, gw, {bob, dan}, {USD(10000)}, Fund::Acct);
                 ammAlice.deposit(bob, 1000000);
-                ammAlice.deposit(carol, 1000000);
+                ammAlice.deposit(carol, 500000);
+                ammAlice.deposit(dan, 500000);
                 ammAlice.bid(carol, 120, std::nullopt, {bob});
                 BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0));
                 BEAST_EXPECT(ammAlice.expectBalances(
-                    XRP(12000), USD(12000), IOUAmount{11999880, 0}));
+                    XRP(12000), USD(12000), IOUAmount{11999880}));
                 // Discounted trade
                 for (int i = 0; i < 10; ++i)
                 {
@@ -2527,15 +2653,19 @@ private:
                     ammAlice.withdraw(bob, USD(100));
                 }
                 BEAST_EXPECT(ammAlice.expectBalances(
-                    XRP(12000), USD(12000), IOUAmount{119998799999998, -7}));
+                    XRP(12000), USD(12000), IOUAmount{11999880}));
+                auto const danTokens = ammAlice.getLPTokensBalance(dan);
+                auto const ammTokens = ammAlice.getLPTokensBalance();
                 // Trade with the fee
                 for (int i = 0; i < 10; ++i)
                 {
-                    ammAlice.deposit(alice, USD(100));
-                    ammAlice.withdraw(alice, USD(100));
+                    ammAlice.deposit(dan, USD(100));
+                    ammAlice.withdraw(dan, USD(100));
                 }
+                auto const danFees =
+                    danTokens - ammAlice.getLPTokensBalance(dan);
                 BEAST_EXPECT(ammAlice.expectBalances(
-                    XRP(12000), USD(12000), IOUAmount{1199488908260979, -8}));
+                    XRP(12000), USD(12000), ammTokens - danFees));
                 // Discounted payment
                 ammAlice.deposit(carol, USD(100));
                 auto tokens = ammAlice.getLPTokensBalance();
@@ -2568,6 +2698,27 @@ private:
             },
             std::nullopt,
             1000);
+
+        // Bid tiny amount
+        testAMM([&](AMM& ammAlice, Env&) {
+            // Can bid a tiny amount
+            auto const tiny = Number{STAmount::cMinValue, STAmount::cMinOffset};
+            ammAlice.bid(alice, IOUAmount{tiny});
+            // Auction slot purchase price is equal to the tiny amount
+            BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount{tiny}));
+            // The purchase price is too small to affect the total tokens
+            BEAST_EXPECT(ammAlice.expectBalances(
+                XRP(10000), USD(10000), ammAlice.tokens()));
+            // Bid the tiny amount
+            ammAlice.bid(
+                alice, IOUAmount{STAmount::cMinValue, STAmount::cMinOffset});
+            // Pay slightly higher price
+            BEAST_EXPECT(ammAlice.expectAuctionSlot(
+                0, 0, IOUAmount{tiny * Number{105, -2}}));
+            // The purchase price is still too small to affect the total tokens
+            BEAST_EXPECT(ammAlice.expectBalances(
+                XRP(10000), USD(10000), ammAlice.tokens()));
+        });
     }
 
     void
@@ -2618,7 +2769,7 @@ private:
             env(claim(carol, chan, reqBal, authAmt), ter(tecNO_PERMISSION));
         });
 
-        // Deliver amounts close to one side of the pool
+        // Pay amounts close to one side of the pool
         testAMM(
             [&](AMM& ammAlice, Env& env) {
                 // Can't consume whole pool
@@ -2652,17 +2803,6 @@ private:
                     path(~XRP),
                     sendmax(USD(1000000000)),
                     ter(tecPATH_PARTIAL));
-#if 0  // TBD
-       // This works, because of the sendmax limit
-                env(pay(alice, carol, USD(99.99)),
-                    path(~USD),
-                    sendmax(XRP(1)),
-                    ter(tesSUCCESS));
-                env(pay(alice, carol, USD(100)),
-                    path(~USD),
-                    sendmax(XRP(1)),
-                    ter(tesSUCCESS));
-#endif
             },
             {{XRP(100), USD(100)}});
     }
@@ -2731,7 +2871,7 @@ private:
 
         // Non-default path (with AMM) has a better quality than default path.
         // The max possible liquidity is taken out of non-default
-        // path ~17.5XRP/17.5EUR, 17.5EUR/~17.47USD. The rest
+        // path ~29.9XRP/29.9EUR, ~29.9EUR/~29.99USD. The rest
         // is taken from the offer.
         {
             Env env(*this);
@@ -2749,33 +2889,33 @@ private:
                 txflags(tfPartialPayment));
             env.close();
             BEAST_EXPECT(ammEUR_XRP.expectBalances(
-                XRPAmount(10017526291),
-                STAmount(EUR, UINT64_C(9982504373906523), -12),
+                XRPAmount(10030082730),
+                STAmount(EUR, UINT64_C(9970007498125468), -12),
                 ammEUR_XRP.tokens()));
             BEAST_EXPECT(ammUSD_EUR.expectBalances(
-                STAmount(USD, UINT64_C(9982534949910292), -12),
-                STAmount(EUR, UINT64_C(1001749562609347), -11),
+                STAmount(USD, UINT64_C(9970097277662122), -12),
+                STAmount(EUR, UINT64_C(1002999250187452), -11),
                 ammUSD_EUR.tokens()));
             BEAST_EXPECT(expectOffers(
                 env,
                 alice,
                 1,
                 {{Amounts{
-                    XRPAmount(17639700),
-                    STAmount(USD, UINT64_C(1746505008970784), -14)}}}));
+                    XRPAmount(30201749),
+                    STAmount(USD, UINT64_C(2990272233787818), -14)}}}));
             // Initial 30,000 + 100
             BEAST_EXPECT(expectLine(env, carol, STAmount{USD, 30100}));
-            // Initial 1,000 - 17526291(AMM pool) - 83360300(offer) - 10(tx fee)
+            // Initial 1,000 - 30082730(AMM pool) - 70798251(offer) - 10(tx fee)
             BEAST_EXPECT(expectLedgerEntryRoot(
                 env,
                 bob,
-                XRP(1000) - XRPAmount{17526291} - XRPAmount{83360300} -
+                XRP(1000) - XRPAmount{30082730} - XRPAmount{70798251} -
                     txfee(env, 1)));
         }
 
         // Default path (with AMM) has a better quality than a non-default path.
         // The max possible liquidity is taken out of default
-        // path ~17.5XRP/17.5USD. The rest is taken from the offer.
+        // path ~49XRP/49USD. The rest is taken from the offer.
         testAMM([&](AMM& ammAlice, Env& env) {
             env.fund(XRP(1000), bob);
             env.close();
@@ -2792,28 +2932,28 @@ private:
                 txflags(tfPartialPayment));
             env.close();
             BEAST_EXPECT(ammAlice.expectBalances(
-                XRPAmount(10017526291),
-                STAmount(USD, UINT64_C(9982504373906523), -12),
+                XRPAmount(10050238637),
+                STAmount(USD, UINT64_C(995001249687578), -11),
                 ammAlice.tokens()));
             BEAST_EXPECT(expectOffers(
                 env,
                 alice,
                 2,
                 {{Amounts{
-                      XRPAmount(17670582),
-                      STAmount(EUR, UINT64_C(17495626093477), -12)},
+                      XRPAmount(50487378),
+                      STAmount(EUR, UINT64_C(4998750312422), -11)},
                   Amounts{
-                      STAmount(EUR, UINT64_C(17495626093477), -12),
-                      STAmount(USD, UINT64_C(17495626093477), -12)}}}));
+                      STAmount(EUR, UINT64_C(4998750312422), -11),
+                      STAmount(USD, UINT64_C(4998750312422), -11)}}}));
             // Initial 30,000 + 99.99999999999
             BEAST_EXPECT(expectLine(
                 env, carol, STAmount{USD, UINT64_C(3009999999999999), -11}));
-            // Initial 1,000 - 10017526291(AMM pool) - 83329418(offer) - 10(tx
+            // Initial 1,000 - 50238637(AMM pool) - 50512622(offer) - 10(tx
             // fee)
             BEAST_EXPECT(expectLedgerEntryRoot(
                 env,
                 bob,
-                XRP(1000) - XRPAmount{17526291} - XRPAmount{83329418} -
+                XRP(1000) - XRPAmount{50238637} - XRPAmount{50512622} -
                     txfee(env, 1)));
         });
 
@@ -2955,6 +3095,32 @@ private:
                 BEAST_EXPECT(expectLine(env, carol, USD(100)));
             },
             {{GBP(10000), EUR(10125)}});
+
+        // Pay amounts close to one side of the pool
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                env(pay(alice, carol, USD(99.99)),
+                    path(~USD),
+                    sendmax(XRP(1)),
+                    txflags(tfPartialPayment),
+                    ter(tesSUCCESS));
+                env(pay(alice, carol, USD(100)),
+                    path(~USD),
+                    sendmax(XRP(1)),
+                    txflags(tfPartialPayment),
+                    ter(tesSUCCESS));
+                env(pay(alice, carol, XRP(100)),
+                    path(~XRP),
+                    sendmax(USD(1)),
+                    txflags(tfPartialPayment),
+                    ter(tesSUCCESS));
+                env(pay(alice, carol, STAmount{xrpIssue(), 99999900}),
+                    path(~XRP),
+                    sendmax(USD(1)),
+                    txflags(tfPartialPayment),
+                    ter(tesSUCCESS));
+            },
+            {{XRP(100), USD(100)}});
     }
 
     void
@@ -3949,7 +4115,7 @@ private:
             env.close();
             BEAST_EXPECT(ammBob.expectBalances(
                 XRP(20220),
-                STAmount{USD, UINT64_C(1978239366963402), -13},
+                STAmount{USD, UINT64_C(1978239366963403), -13},
                 ammBob.tokens()));
             BEAST_EXPECT(expectLine(
                 env, alice, STAmount{USD, UINT64_C(100217606330366), -11}));
@@ -4436,7 +4602,7 @@ private:
         // Alice doesn't have the funds
         {
             AMM ammAlice(
-                env, alice, USD(1000), XRP(1000), ter(tecUNFUNDED_AMM));
+                env, alice, USD(1000), XRP(1000), ter(tecAMM_UNFUNDED));
         }
 
         env(fset(gw, asfRequireAuth));
@@ -5595,7 +5761,7 @@ private:
         // offer, removes 999 more as unfunded, then hits the step limit.
         env(offer(alice, USD(1000), XRP(1000)));
         env.require(
-            balance(alice, STAmount{USD, UINT64_C(2050126257867565), -15}));
+            balance(alice, STAmount{USD, UINT64_C(2050126257867561), -15}));
         env.require(owners(alice, 2));
         env.require(balance(bob, USD(0)));
         env.require(owners(bob, 1001));
@@ -5689,8 +5855,7 @@ private:
                 sendmax(XRP(1100)));
             BEAST_EXPECT(
                 ammBob.expectBalances(XRP(6600), USD(1000), ammBob.tokens()));
-            env.require(
-                balance(carol, STAmount{USD, UINT64_C(2000000000000001), -13}));
+            env.require(balance(carol, USD(200)));
         }
 
         {
@@ -6979,8 +7144,102 @@ class AMMCalc_test : public beast::unit_test::suite
     }
 };
 
+class AMMPerf_test : public beast::unit_test::suite
+{
+public:
+    void
+    testSwapPerformance()
+    {
+        testcase("Swap1");
+        using namespace jtx;
+
+        std::uint16_t tfee = 1000;
+        auto const gw = Account("gw");
+        auto const USD = gw["USD"];
+        auto const GBP = gw["GBP"];
+        auto const issueIn = USD;
+        auto const issueOut = GBP;
+        auto const in = STAmount{USD, 1000};
+        auto const out = STAmount{GBP, 1000};
+        auto const assetIn = STAmount{USD, 1};
+        auto const assetOut = STAmount{GBP, 1};
+
+        auto start = std::chrono::high_resolution_clock::now();
+        for (int i = 0; i < 100; ++i)
+        {
+            auto const res = swapAssetIn(Amounts{in, out}, assetIn, 0);
+            (void)res;
+        }
+        auto elapsed = std::chrono::high_resolution_clock::now() - start;
+        std::cout << "Number(swapIn) math: "
+                  << std::chrono::duration_cast<std::chrono::microseconds>(
+                         elapsed)
+                         .count()
+                  << std::endl;
+
+        start = std::chrono::high_resolution_clock::now();
+        for (int i = 0; i < 100; ++i)
+        {
+            auto const n1 = STAmount{1};
+            auto const feeMult =
+                n1 - divide(STAmount{tfee}, STAmount{100000}, n1.issue());
+            auto const en = multiply(in, out, issueOut);
+            auto const den = in + multiply(assetIn, feeMult, issueIn);
+            auto const res = out - divide(en, den, issueOut);
+            (void)res;
+        }
+        elapsed = std::chrono::high_resolution_clock::now() - start;
+        std::cout << "STAmount(swapIn) math: "
+                  << std::chrono::duration_cast<std::chrono::microseconds>(
+                         elapsed)
+                         .count()
+                  << std::endl;
+
+        start = std::chrono::high_resolution_clock::now();
+        for (int i = 0; i < 100; ++i)
+        {
+            auto const res = swapAssetOut(Amounts{in, out}, assetOut, 0);
+            (void)res;
+        }
+        elapsed = std::chrono::high_resolution_clock::now() - start;
+        std::cout << "Number(swapOut) math: "
+                  << std::chrono::duration_cast<std::chrono::microseconds>(
+                         elapsed)
+                         .count()
+                  << std::endl;
+
+        start = std::chrono::high_resolution_clock::now();
+        for (int i = 0; i < 100; ++i)
+        {
+            auto const n1 = STAmount{1};
+            auto const feeMult =
+                n1 - divide(STAmount{tfee}, STAmount{100000}, n1.issue());
+            auto const en = multiply(in, out, issueIn);
+            auto const den = out + assetOut;
+            auto const res =
+                divide(divide(en, den, issueIn) - in, feeMult, issueIn);
+            (void)res;
+        }
+        elapsed = std::chrono::high_resolution_clock::now() - start;
+        std::cout << "STAmount(swapOut) math: "
+                  << std::chrono::duration_cast<std::chrono::microseconds>(
+                         elapsed)
+                         .count()
+                  << std::endl;
+
+        BEAST_EXPECT(true);
+    }
+
+    void
+    run() override
+    {
+        testSwapPerformance();
+    }
+};
+
 BEAST_DEFINE_TESTSUITE(AMM, app, ripple);
 BEAST_DEFINE_TESTSUITE_MANUAL(AMMCalc, app, ripple);
+BEAST_DEFINE_TESTSUITE_MANUAL(AMMPerf, app, ripple);
 
 }  // namespace test
 }  // namespace ripple
