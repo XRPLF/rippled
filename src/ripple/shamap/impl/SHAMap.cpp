@@ -66,28 +66,28 @@ SHAMap::SHAMap(SHAMapType t, uint256 const& hash, Family& f)
     root_ = std::make_shared<SHAMapInnerNode>(cowid_);
 }
 
+SHAMap::SHAMap(SHAMap const& other, bool isMutable)
+    : f_(other.f_)
+    , journal_(other.f_.journal())
+    , cowid_(other.cowid_ + 1)
+    , ledgerSeq_(other.ledgerSeq_)
+    , root_(other.root_)
+    , state_(isMutable ? SHAMapState::Modifying : SHAMapState::Immutable)
+    , type_(other.type_)
+    , backed_(other.backed_)
+{
+    // If either map may change, they cannot share nodes
+    if ((state_ != SHAMapState::Immutable) ||
+        (other.state_ != SHAMapState::Immutable))
+    {
+        unshare();
+    }
+}
+
 std::shared_ptr<SHAMap>
 SHAMap::snapShot(bool isMutable) const
 {
-    auto ret = std::make_shared<SHAMap>(type_, f_);
-    SHAMap& newMap = *ret;
-
-    if (!isMutable)
-        newMap.state_ = SHAMapState::Immutable;
-
-    newMap.cowid_ = cowid_ + 1;
-    newMap.ledgerSeq_ = ledgerSeq_;
-    newMap.root_ = root_;
-    newMap.backed_ = backed_;
-
-    if ((state_ != SHAMapState::Immutable) ||
-        (newMap.state_ != SHAMapState::Immutable))
-    {
-        // If either map may change, they cannot share nodes
-        newMap.unshare();
-    }
-
-    return ret;
+    return std::make_shared<SHAMap>(*this, isMutable);
 }
 
 void
@@ -174,7 +174,6 @@ SHAMap::finishFetch(
 {
     assert(backed_);
 
-    std::shared_ptr<SHAMapTreeNode> node;
     try
     {
         if (!object)
@@ -187,27 +186,23 @@ SHAMap::finishFetch(
             return {};
         }
 
-        node =
+        auto node =
             SHAMapTreeNode::makeFromPrefix(makeSlice(object->getData()), hash);
         if (node)
             canonicalize(hash, node);
         return node;
     }
-
-    catch (SHAMapMissingNode const& e)
-    {
-        JLOG(journal_.warn()) << "Missing node: " << hash << " : " << e.what();
-    }
     catch (std::runtime_error const& e)
     {
-        JLOG(journal_.warn()) << __func__ << " : " << e.what();
+        JLOG(journal_.warn()) << "finishFetch exception: " << e.what();
     }
     catch (...)
     {
-        JLOG(journal_.warn()) << "Invalid DB node " << hash;
+        JLOG(journal_.warn())
+            << "finishFetch exception: unknonw exception: " << hash;
     }
 
-    return std::shared_ptr<SHAMapTreeNode>();
+    return {};
 }
 
 // See if a sync filter has a node

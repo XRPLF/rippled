@@ -124,9 +124,13 @@ public:
         boost::intrusive_ptr<SHAMapItem const>>;
     using Delta = std::map<uint256, DeltaItem>;
 
+    SHAMap() = delete;
     SHAMap(SHAMap const&) = delete;
     SHAMap&
     operator=(SHAMap const&) = delete;
+
+    // Take a snapshot of the given map:
+    SHAMap(SHAMap const& other, bool isMutable);
 
     // build new map
     SHAMap(SHAMapType t, Family& f);
