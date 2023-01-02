@@ -112,20 +112,44 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         if ((*so)[sfAmount] > (*bo)[sfAmount])
             return tecINSUFFICIENT_PAYMENT;
 
-        // If the buyer specified a destination, that destination must be
-        // the seller or the broker.
+        // If the buyer specified a destination
         if (auto const dest = bo->at(~sfDestination))
         {
-            if (*dest != so->at(sfOwner) && *dest != ctx.tx[sfAccount])
+            // fixUnburnableNFToken: Disabled
+            // the destination must be the seller or the broker.
+            if (!ctx.view.rules().enabled(fixUnburnableNFToken) &&
+                *dest != so->at(sfOwner) && *dest != ctx.tx[sfAccount])
+            {
                 return tecNFTOKEN_BUY_SELL_MISMATCH;
+            }
+
+            // fixUnburnableNFToken: Enabled
+            // the destination may only be the account brokering the offer
+            if (ctx.view.rules().enabled(fixUnburnableNFToken) &&
+                *dest != ctx.tx[sfAccount])
+            {
+                return tecNO_PERMISSION;
+            }
         }
 
-        // If the seller specified a destination, that destination must be
-        // the buyer or the broker.
+        // If the seller specified a destination
         if (auto const dest = so->at(~sfDestination))
         {
-            if (*dest != bo->at(sfOwner) && *dest != ctx.tx[sfAccount])
+            // fixUnburnableNFToken: Disabled
+            // the destination must be the buyer or the broker.
+            if (!ctx.view.rules().enabled(fixUnburnableNFToken) &&
+                *dest != bo->at(sfOwner) && *dest != ctx.tx[sfAccount])
+            {
                 return tecNFTOKEN_BUY_SELL_MISMATCH;
+            }
+
+            // fixUnburnableNFToken: Enabled
+            // the destination may only be the account brokering the offer
+            if (ctx.view.rules().enabled(fixUnburnableNFToken) &&
+                *dest != ctx.tx[sfAccount])
+            {
+                return tecNO_PERMISSION;
+            }
         }
 
         // The broker can specify an amount that represents their cut; if they
