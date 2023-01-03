@@ -97,7 +97,7 @@ Classes</h2></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">The context of information needed to call an <a class="el" href="namespaceripple_1_1RPC.html">RPC</a>.  <a href="structripple_1_1RPC_1_1Context.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1RPC_1_1ErrorInfo.html">ErrorInfo</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maps an rpc error code to its token and default message.  <a href="structripple_1_1RPC_1_1ErrorInfo.html#details">More...</a><br /></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maps an rpc error code to its token, default message, and HTTP status.  <a href="structripple_1_1RPC_1_1ErrorInfo.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RPC_1_1fillJson__test.html">fillJson_test</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -160,11 +160,14 @@ Enumerations</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:aa01c09044342d3707e231b3ede5086f0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structripple_1_1RPC_1_1ErrorInfo.html">ErrorInfo</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#aa01c09044342d3707e231b3ede5086f0">get_error_info</a> (<a class="el" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932">error_code_i</a> code)</td></tr>
-<tr class="memdesc:aa01c09044342d3707e231b3ede5086f0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns an <a class="el" href="structripple_1_1RPC_1_1ErrorInfo.html" title="Maps an rpc error code to its token and default message.">ErrorInfo</a> that reflects the error code.  <a href="namespaceripple_1_1RPC.html#aa01c09044342d3707e231b3ede5086f0">More...</a><br /></td></tr>
+<tr class="memdesc:aa01c09044342d3707e231b3ede5086f0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns an <a class="el" href="structripple_1_1RPC_1_1ErrorInfo.html" title="Maps an rpc error code to its token, default message, and HTTP status.">ErrorInfo</a> that reflects the error code.  <a href="namespaceripple_1_1RPC.html#aa01c09044342d3707e231b3ede5086f0">More...</a><br /></td></tr>
 <tr class="separator:aa01c09044342d3707e231b3ede5086f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1a79f0c33d1405fe85c40d63a49658bd"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">contains_error</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;json)</td></tr>
 <tr class="memdesc:a1a79f0c33d1405fe85c40d63a49658bd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns <code>true</code> if the json contains an rpc error specification.  <a href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">More...</a><br /></td></tr>
 <tr class="separator:a1a79f0c33d1405fe85c40d63a49658bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a73e0accbac78ba2dda7a2ba0f3889800"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a73e0accbac78ba2dda7a2ba0f3889800">error_code_http_status</a> (<a class="el" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932">error_code_i</a> code)</td></tr>
+<tr class="memdesc:a73e0accbac78ba2dda7a2ba0f3889800"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns http status that corresponds to the error code.  <a href="namespaceripple_1_1RPC.html#a73e0accbac78ba2dda7a2ba0f3889800">More...</a><br /></td></tr>
+<tr class="separator:a73e0accbac78ba2dda7a2ba0f3889800"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2e549c81edcbd0befcfa4ee871c6f27e"><td class="memTemplParams" colspan="2">template&lt;class L &gt; </td></tr>
 <tr class="memitem:a2e549c81edcbd0befcfa4ee871c6f27e"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a2e549c81edcbd0befcfa4ee871c6f27e">computeBookChanges</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; L const &gt; const &amp;lpAccepted)</td></tr>
 <tr class="separator:a2e549c81edcbd0befcfa4ee871c6f27e"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -437,9 +440,9 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Returns an <a class="el" href="structripple_1_1RPC_1_1ErrorInfo.html" title="Maps an rpc error code to its token and default message.">ErrorInfo</a> that reflects the error code. </p>
+<p>Returns an <a class="el" href="structripple_1_1RPC_1_1ErrorInfo.html" title="Maps an rpc error code to its token, default message, and HTTP status.">ErrorInfo</a> that reflects the error code. </p>
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8cpp_source.html#l00180">180</a> of file <a class="el" href="ErrorCodes_8cpp_source.html">ErrorCodes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8cpp_source.html#l00170">170</a> of file <a class="el" href="ErrorCodes_8cpp_source.html">ErrorCodes.cpp</a>.</p>
 
 </div>
 </div>
@@ -473,7 +476,7 @@ template&lt;class JsonValue &gt; </div>
 
 <p>Add or update the json update to reflect the error code. </p>
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00196">196</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00212">212</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
 
 </div>
 </div>
@@ -505,7 +508,7 @@ template&lt;class JsonValue &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00206">206</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00222">222</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
 
 </div>
 </div>
@@ -543,7 +546,7 @@ template&lt;class JsonValue &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00213">213</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00229">229</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
 
 </div>
 </div>
@@ -565,7 +568,7 @@ template&lt;class JsonValue &gt; </div>
 
 <p>Returns a new json object that reflects the error code. </p>
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8cpp_source.html#l00188">188</a> of file <a class="el" href="ErrorCodes_8cpp_source.html">ErrorCodes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8cpp_source.html#l00178">178</a> of file <a class="el" href="ErrorCodes_8cpp_source.html">ErrorCodes.cpp</a>.</p>
 
 </div>
 </div>
@@ -595,7 +598,7 @@ template&lt;class JsonValue &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8cpp_source.html#l00196">196</a> of file <a class="el" href="ErrorCodes_8cpp_source.html">ErrorCodes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8cpp_source.html#l00186">186</a> of file <a class="el" href="ErrorCodes_8cpp_source.html">ErrorCodes.cpp</a>.</p>
 
 </div>
 </div>
@@ -617,7 +620,7 @@ template&lt;class JsonValue &gt; </div>
 
 <p>Returns a new json object that indicates invalid parameters. </p>
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00234">234</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00250">250</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
 
 </div>
 </div>
@@ -637,7 +640,7 @@ template&lt;class JsonValue &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00240">240</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00256">256</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
 
 </div>
 </div>
@@ -657,7 +660,7 @@ template&lt;class JsonValue &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00246">246</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00262">262</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
 
 </div>
 </div>
@@ -677,7 +680,7 @@ template&lt;class JsonValue &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00252">252</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00268">268</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
 
 </div>
 </div>
@@ -697,7 +700,7 @@ template&lt;class JsonValue &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00258">258</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00274">274</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
 
 </div>
 </div>
@@ -717,7 +720,7 @@ template&lt;class JsonValue &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00264">264</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00280">280</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
 
 </div>
 </div>
@@ -737,7 +740,7 @@ template&lt;class JsonValue &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00270">270</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00286">286</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
 
 </div>
 </div>
@@ -757,7 +760,7 @@ template&lt;class JsonValue &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00276">276</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00292">292</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
 
 </div>
 </div>
@@ -777,7 +780,7 @@ template&lt;class JsonValue &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00282">282</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00298">298</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
 
 </div>
 </div>
@@ -797,7 +800,7 @@ template&lt;class JsonValue &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00288">288</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00304">304</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
 
 </div>
 </div>
@@ -817,7 +820,7 @@ template&lt;class JsonValue &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00294">294</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00310">310</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
 
 </div>
 </div>
@@ -847,7 +850,7 @@ template&lt;class JsonValue &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00300">300</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00316">316</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
 
 </div>
 </div>
@@ -877,7 +880,7 @@ template&lt;class JsonValue &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00306">306</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00322">322</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
 
 </div>
 </div>
@@ -907,7 +910,7 @@ template&lt;class JsonValue &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00312">312</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00328">328</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
 
 </div>
 </div>
@@ -937,7 +940,7 @@ template&lt;class JsonValue &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00318">318</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00334">334</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
 
 </div>
 </div>
@@ -956,7 +959,7 @@ template&lt;class JsonValue &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00324">324</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00340">340</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
 
 </div>
 </div>
@@ -978,7 +981,29 @@ template&lt;class JsonValue &gt; </div>
 
 <p>Returns <code>true</code> if the json contains an rpc error specification. </p>
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8cpp_source.html#l00204">204</a> of file <a class="el" href="ErrorCodes_8cpp_source.html">ErrorCodes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8cpp_source.html#l00194">194</a> of file <a class="el" href="ErrorCodes_8cpp_source.html">ErrorCodes.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a73e0accbac78ba2dda7a2ba0f3889800"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a73e0accbac78ba2dda7a2ba0f3889800">&#9670;&nbsp;</a></span>error_code_http_status()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int ripple::RPC::error_code_http_status </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932">error_code_i</a>&#160;</td>
+          <td class="paramname"><em>code</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns http status that corresponds to the error code. </p>
+
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8cpp_source.html#l00202">202</a> of file <a class="el" href="ErrorCodes_8cpp_source.html">ErrorCodes.cpp</a>.</p>
 
 </div>
 </div>

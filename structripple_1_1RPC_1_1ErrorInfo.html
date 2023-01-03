@@ -74,14 +74,14 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 
-<p>Maps an rpc error code to its token and default message.  
+<p>Maps an rpc error code to its token, default message, and HTTP status.  
  <a href="structripple_1_1RPC_1_1ErrorInfo.html#details">More...</a></p>
 <div class="dynheader">
 Collaboration diagram for ripple::RPC::ErrorInfo:</div>
 <div class="dyncontent">
 <div class="center"><img src="structripple_1_1RPC_1_1ErrorInfo__coll__graph.png" border="0" usemap="#ripple_1_1RPC_1_1ErrorInfo_coll__map" alt="Collaboration graph"/></div>
 <map name="ripple_1_1RPC_1_1ErrorInfo_coll__map" id="ripple_1_1RPC_1_1ErrorInfo_coll__map">
-<area shape="rect" title="Maps an rpc error code to its token and default message." alt="" coords="5,109,163,136"/>
+<area shape="rect" title="Maps an rpc error code to its token, default message, and HTTP status." alt="" coords="5,109,163,136"/>
 <area shape="rect" href="classJson_1_1StaticString.html" title="Lightweight wrapper to tag static string." alt="" coords="18,5,150,32"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
@@ -92,6 +92,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a47cdbe8044639c7f7caf595c32332d89"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a51d565c582c370606a801cca4f51812a"><td class="memItemLeft" align="right" valign="top">constexpr&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1RPC_1_1ErrorInfo.html#a51d565c582c370606a801cca4f51812a">ErrorInfo</a> (<a class="el" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932">error_code_i</a> code_, char const *token_, char const *message_)</td></tr>
 <tr class="separator:a51d565c582c370606a801cca4f51812a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adcd795113e89e9228b6904742515a9fa"><td class="memItemLeft" align="right" valign="top">constexpr&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1RPC_1_1ErrorInfo.html#adcd795113e89e9228b6904742515a9fa">ErrorInfo</a> (<a class="el" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932">error_code_i</a> code_, char const *token_, char const *message_, int http_status_)</td></tr>
+<tr class="separator:adcd795113e89e9228b6904742515a9fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -101,14 +103,16 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a8e9f8835d2e92985ab09e927ef569c76"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7da2ca0fedad1eb20f8a492eebc55d67"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1StaticString.html">Json::StaticString</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1RPC_1_1ErrorInfo.html#a7da2ca0fedad1eb20f8a492eebc55d67">message</a></td></tr>
 <tr class="separator:a7da2ca0fedad1eb20f8a492eebc55d67"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a08285f5655ec9e56b914d8d699820a93"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1RPC_1_1ErrorInfo.html#a08285f5655ec9e56b914d8d699820a93">http_status</a></td></tr>
+<tr class="separator:a08285f5655ec9e56b914d8d699820a93"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Maps an rpc error code to its token and default message. </p>
+<div class="textblock"><p>Maps an rpc error code to its token, default message, and HTTP status. </p>
 
 <p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00167">167</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a47cdbe8044639c7f7caf595c32332d89"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a47cdbe8044639c7f7caf595c32332d89">&#9670;&nbsp;</a></span>ErrorInfo() <span class="overload">[1/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a47cdbe8044639c7f7caf595c32332d89">&#9670;&nbsp;</a></span>ErrorInfo() <span class="overload">[1/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -135,7 +139,7 @@ Public Attributes</h2></td></tr>
 </div>
 </div>
 <a id="a51d565c582c370606a801cca4f51812a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a51d565c582c370606a801cca4f51812a">&#9670;&nbsp;</a></span>ErrorInfo() <span class="overload">[2/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a51d565c582c370606a801cca4f51812a">&#9670;&nbsp;</a></span>ErrorInfo() <span class="overload">[2/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -174,7 +178,57 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00175">175</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00178">178</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
+
+</div>
+</div>
+<a id="adcd795113e89e9228b6904742515a9fa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adcd795113e89e9228b6904742515a9fa">&#9670;&nbsp;</a></span>ErrorInfo() <span class="overload">[3/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr ripple::RPC::ErrorInfo::ErrorInfo </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932">error_code_i</a>&#160;</td>
+          <td class="paramname"><em>code_</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">char const *&#160;</td>
+          <td class="paramname"><em>token_</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">char const *&#160;</td>
+          <td class="paramname"><em>message_</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>http_status_</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00186">186</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
 
 </div>
 </div>
@@ -191,7 +245,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00183">183</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00198">198</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
 
 </div>
 </div>
@@ -207,7 +261,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00184">184</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00199">199</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
 
 </div>
 </div>
@@ -223,7 +277,23 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00185">185</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00200">200</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
+
+</div>
+</div>
+<a id="a08285f5655ec9e56b914d8d699820a93"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a08285f5655ec9e56b914d8d699820a93">&#9670;&nbsp;</a></span>http_status</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int ripple::RPC::ErrorInfo::http_status</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00201">201</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
 
 </div>
 </div>

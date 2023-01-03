@@ -1,3 +1,6 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classripple_1_1Workers.html" title="Workers is effectively a thread pool." alt="" coords="5,5,125,32"/>
+<area shape="rect" id="node1" href="$structripple_1_1Workers_1_1Callback.html" title="Called to perform tasks as needed." alt="" coords="5,64,189,91"/>
+<area shape="rect" id="node2" href="$classripple_1_1JobQueue.html" title="A pool of threads to perform work." alt="" coords="249,5,378,32"/>
+<area shape="rect" id="node3" href="$classripple_1_1NodeStore_1_1TaskQueue.html" title=" " alt="" coords="242,57,385,98"/>
+<area shape="rect" id="node4" href="$structripple_1_1Workers__test_1_1TestCallback.html" title=" " alt="" coords="237,122,389,163"/>
 </map>
