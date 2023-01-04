@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['building_20documentation_27071',['Building documentation',['../md____w_rippled_rippled_docs_README.html',1,'']]],
-  ['basics_27072',['Basics',['../md_ripple_basics_README.html',1,'']]]
+  ['building_20documentation_27075',['Building documentation',['../md____w_rippled_rippled_docs_README.html',1,'']]],
+  ['basics_27076',['Basics',['../md_ripple_basics_README.html',1,'']]]
 ];
