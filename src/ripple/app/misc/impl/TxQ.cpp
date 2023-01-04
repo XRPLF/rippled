@@ -78,8 +78,6 @@ increase(FeeLevel64 level, std::uint32_t increasePercent)
 
 //////////////////////////////////////////////////////////////////////////
 
-constexpr FeeLevel64 TxQ::baseLevel;
-
 std::size_t
 TxQ::FeeMetrics::update(
     Application& app,

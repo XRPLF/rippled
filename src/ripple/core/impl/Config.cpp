@@ -263,8 +263,6 @@ getEnvVar(char const* name)
     return value;
 }
 
-constexpr FeeUnit32 Config::TRANSACTION_FEE_BASE;
-
 Config::Config()
     : j_(beast::Journal::getNullSink()), ramSize_(detail::getMemorySize())
 {

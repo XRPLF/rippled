@@ -58,7 +58,7 @@ Existing maintainers can resign, or be subject to a vote for removal at the behe
 * [JoelKatz](https://github.com/JoelKatz) (Ripple)
 * [Manojsdoshi](https://github.com/manojsdoshi) (Ripple)
 * [N3tc4t](https://github.com/n3tc4t) (XRPL Labs)
-* [Nikolaos D Bougalis](https://github.com/nbougalis) (Ripple)
+* [Nikolaos D Bougalis](https://github.com/nbougalis)
 * [Nixer89](https://github.com/nixer89) (XRP Ledger Foundation)
 * [RichardAH](https://github.com/RichardAH) (XRPL Labs + XRP Ledger Foundation)
 * [Seelabs](https://github.com/seelabs) (Ripple)

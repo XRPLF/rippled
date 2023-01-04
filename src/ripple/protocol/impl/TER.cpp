@@ -77,7 +77,7 @@ transResults()
         MAKE_ERROR(tecINVARIANT_FAILED,              "One or more invariants for the transaction were not satisfied."),
         MAKE_ERROR(tecEXPIRED,                       "Expiration time is passed."),
         MAKE_ERROR(tecDUPLICATE,                     "Ledger object already exists."),
-        MAKE_ERROR(tecKILLED,                        "FillOrKill offer killed."),
+        MAKE_ERROR(tecKILLED,                        "No funds transferred and no offer created."),
         MAKE_ERROR(tecHAS_OBLIGATIONS,               "The account cannot be deleted since it has obligations."),
         MAKE_ERROR(tecTOO_SOON,                      "It is too early to attempt the requested operation. Please wait."),
         MAKE_ERROR(tecMAX_SEQUENCE_REACHED,          "The maximum sequence number was reached."),

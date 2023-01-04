@@ -25,9 +25,15 @@
 
 namespace ripple {
 
-template <std::size_t Bits>
+// The template parameter could be an unsigned type, however there's a bug in
+// gdb (last checked in gdb 12.1) that prevents gdb from finding the RTTI
+// information of a template parameterized by an unsigned type. This RTTI
+// information is needed to write gdb pretty printers.
+template <int Bits>
 class STBitString final : public STBase
 {
+    static_assert(Bits > 0, "Number of bits must be positive");
+
 public:
     using value_type = base_uint<Bits>;
 
@@ -79,36 +85,36 @@ using STUInt128 = STBitString<128>;
 using STUInt160 = STBitString<160>;
 using STUInt256 = STBitString<256>;
 
-template <std::size_t Bits>
+template <int Bits>
 inline STBitString<Bits>::STBitString(SField const& n) : STBase(n)
 {
 }
 
-template <std::size_t Bits>
+template <int Bits>
 inline STBitString<Bits>::STBitString(const value_type& v) : value_(v)
 {
 }
 
-template <std::size_t Bits>
+template <int Bits>
 inline STBitString<Bits>::STBitString(SField const& n, const value_type& v)
     : STBase(n), value_(v)
 {
 }
 
-template <std::size_t Bits>
+template <int Bits>
 inline STBitString<Bits>::STBitString(SerialIter& sit, SField const& name)
     : STBitString(name, sit.getBitString<Bits>())
 {
 }
 
-template <std::size_t Bits>
+template <int Bits>
 STBase*
 STBitString<Bits>::copy(std::size_t n, void* buf) const
 {
     return emplace(n, buf, *this);
 }
 
-template <std::size_t Bits>
+template <int Bits>
 STBase*
 STBitString<Bits>::move(std::size_t n, void* buf)
 {
@@ -136,14 +142,14 @@ STUInt256::getSType() const
     return STI_UINT256;
 }
 
-template <std::size_t Bits>
+template <int Bits>
 std::string
 STBitString<Bits>::getText() const
 {
     return to_string(value_);
 }
 
-template <std::size_t Bits>
+template <int Bits>
 bool
 STBitString<Bits>::isEquivalent(const STBase& t) const
 {
@@ -151,7 +157,7 @@ STBitString<Bits>::isEquivalent(const STBase& t) const
     return v && (value_ == v->value_);
 }
 
-template <std::size_t Bits>
+template <int Bits>
 void
 STBitString<Bits>::add(Serializer& s) const
 {
@@ -160,7 +166,7 @@ STBitString<Bits>::add(Serializer& s) const
     s.addBitString<Bits>(value_);
 }
 
-template <std::size_t Bits>
+template <int Bits>
 template <typename Tag>
 void
 STBitString<Bits>::setValue(base_uint<Bits, Tag> const& v)
@@ -168,20 +174,20 @@ STBitString<Bits>::setValue(base_uint<Bits, Tag> const& v)
     value_ = v;
 }
 
-template <std::size_t Bits>
+template <int Bits>
 typename STBitString<Bits>::value_type const&
 STBitString<Bits>::value() const
 {
     return value_;
 }
 
-template <std::size_t Bits>
+template <int Bits>
 STBitString<Bits>::operator value_type() const
 {
     return value_;
 }
 
-template <std::size_t Bits>
+template <int Bits>
 bool
 STBitString<Bits>::isDefault() const
 {

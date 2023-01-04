@@ -284,7 +284,7 @@ SHAMapInnerNode::getString(const SHAMapNodeID& id) const
 
 // We are modifying an inner node
 void
-SHAMapInnerNode::setChild(int m, std::shared_ptr<SHAMapTreeNode> const& child)
+SHAMapInnerNode::setChild(int m, std::shared_ptr<SHAMapTreeNode> child)
 {
     assert((m >= 0) && (m < branchFactor));
     assert(cowid_ != 0);
@@ -310,7 +310,7 @@ SHAMapInnerNode::setChild(int m, std::shared_ptr<SHAMapTreeNode> const& child)
         auto const childIndex = *getChildIndex(m);
         auto [_, hashes, children] = hashesAndChildren_.getHashesAndChildren();
         hashes[childIndex].zero();
-        children[childIndex] = child;
+        children[childIndex] = std::move(child);
     }
 
     hash_.zero();

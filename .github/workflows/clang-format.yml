@@ -4,16 +4,17 @@ on: [push, pull_request]
 
 jobs:
   check:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     env:
       CLANG_VERSION: 10
     steps:
     - uses: actions/checkout@v2
     - name: Install clang-format
       run: |
+        codename=$( lsb_release --codename --short )
         sudo tee /etc/apt/sources.list.d/llvm.list >/dev/null <<EOF
-        deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-${CLANG_VERSION} main
-        deb-src http://apt.llvm.org/bionic/ llvm-toolchain-bionic-${CLANG_VERSION} main
+        deb http://apt.llvm.org/${codename}/ llvm-toolchain-${codename}-${CLANG_VERSION} main
+        deb-src http://apt.llvm.org/${codename}/ llvm-toolchain-${codename}-${CLANG_VERSION} main
         EOF
         wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add
         sudo apt-get update

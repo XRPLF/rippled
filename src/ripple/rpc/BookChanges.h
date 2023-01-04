@@ -88,13 +88,10 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
                 !node.isFieldPresent(sfPreviousFields))
                 continue;
 
-            STObject& finalFields = (const_cast<STObject&>(node))
-                                        .getField(sfFinalFields)
-                                        .downcast<STObject>();
-
-            STObject& previousFields = (const_cast<STObject&>(node))
-                                           .getField(sfPreviousFields)
-                                           .downcast<STObject>();
+            auto const& ffBase = node.peekAtField(sfFinalFields);
+            auto const& finalFields = ffBase.template downcast<STObject>();
+            auto const& pfBase = node.peekAtField(sfPreviousFields);
+            auto const& previousFields = pfBase.template downcast<STObject>();
 
             // defensive case that should never be hit
             if (!finalFields.isFieldPresent(sfTakerGets) ||

@@ -113,7 +113,6 @@ test.consensus > ripple.basics
 test.consensus > ripple.beast
 test.consensus > ripple.consensus
 test.consensus > ripple.ledger
-test.consensus > ripple.rpc
 test.consensus > test.csf
 test.consensus > test.toplevel
 test.consensus > test.unit_test

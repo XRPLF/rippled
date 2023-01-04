@@ -27,7 +27,6 @@
 #include <ripple/rpc/GRPCHandlers.h>
 #include <ripple/rpc/Role.h>
 #include <ripple/rpc/handlers/LedgerHandler.h>
-#include <ripple/rpc/impl/GRPCHelpers.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 
 namespace ripple {
@@ -134,27 +133,38 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
 
     if (request.transactions())
     {
-        for (auto& i : ledger->txs)
+        try
         {
-            assert(i.first);
-            if (request.expand())
+            for (auto& i : ledger->txs)
             {
-                auto txn =
-                    response.mutable_transactions_list()->add_transactions();
-                Serializer sTxn = i.first->getSerializer();
-                txn->set_transaction_blob(sTxn.data(), sTxn.getLength());
-                if (i.second)
+                assert(i.first);
+                if (request.expand())
                 {
-                    Serializer sMeta = i.second->getSerializer();
-                    txn->set_metadata_blob(sMeta.data(), sMeta.getLength());
+                    auto txn = response.mutable_transactions_list()
+                                   ->add_transactions();
+                    Serializer sTxn = i.first->getSerializer();
+                    txn->set_transaction_blob(sTxn.data(), sTxn.getLength());
+                    if (i.second)
+                    {
+                        Serializer sMeta = i.second->getSerializer();
+                        txn->set_metadata_blob(sMeta.data(), sMeta.getLength());
+                    }
+                }
+                else
+                {
+                    auto const& hash = i.first->getTransactionID();
+                    response.mutable_hashes_list()->add_hashes(
+                        hash.data(), hash.size());
                 }
             }
-            else
-            {
-                auto const& hash = i.first->getTransactionID();
-                response.mutable_hashes_list()->add_hashes(
-                    hash.data(), hash.size());
-            }
+        }
+        catch (std::exception const& e)
+        {
+            JLOG(context.j.error())
+                << __func__ << " - Error deserializing transaction in ledger "
+                << ledger->info().seq
+                << " . skipping transaction and following transactions. You "
+                   "should look into this further";
         }
     }
 
