@@ -12,7 +12,7 @@ jobs:
             datacenter: "site-a"
           - site: "staging"
             datacenter: "site-b"
-    runs-on: ubuntu-latest
+    runs-on: x-heavy
     steps:
       - name: checkout
         uses: actions/checkout@v3
