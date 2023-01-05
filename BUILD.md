@@ -92,7 +92,7 @@ This setting will set the correct variables (`CMAKE_<LANG>_COMPILER`) in the
 generated CMake toolchain file:
 
 ```
-conan profile update "conf.tools.build:compiler_executables={'c': '<path>', 'cpp': '<path>'}" default
+conan profile update 'conf.tools.build:compiler_executables={"c": "<path>", "cpp": "<path>"}' default
 ```
 
 It should choose the compiler for dependencies as well,
@@ -240,10 +240,13 @@ rm -rf ~/.conan/data
 
 If your compiler version is recent enough to have removed `std::result_of` as
 part of C++20, e.g. Apple Clang 15.0,
-then you might need to add a preprocessor definition when you configure CMake:
+then you might need to add a preprocessor definition to your bulid:
 
 ```
-cmake -DCMAKE_CXX_FLAGS=-DBOOST_ASIO_HAS_STD_INVOKE_RESULT=1 ...
+conan profile update 'env.CFLAGS="-DCMAKE_CXX_FLAGS=-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"' default
+conan profile update 'env.CXXFLAGS="-DCMAKE_CXX_FLAGS=-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"' default
+conan profile update 'tools.build:cflags+=["-DCMAKE_CXX_FLAGS=-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"]' default
+conan profile update 'tools.build:cxxflags+=["-DCMAKE_CXX_FLAGS=-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"]' default
 ```
 
 
