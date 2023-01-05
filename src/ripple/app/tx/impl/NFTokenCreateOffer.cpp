@@ -161,7 +161,14 @@ NFTokenCreateOffer::preclaim(PreclaimContext const& ctx)
             FreezeHandling::fhZERO_IF_FROZEN,
             ctx.j);
 
-        if (funds.signum() <= 0)
+        // After this amendment, we allow an IOU issuer to make a buy offer
+        // using their own currency.
+        if (!ctx.view.rules().enabled(fixUnburnableNFToken))
+        {
+            if (funds.signum() <= 0)
+                return tecUNFUNDED_OFFER;
+        }
+        else if (ctx.tx[sfAccount] != amount.getIssuer() && funds.signum() <= 0)
             return tecUNFUNDED_OFFER;
     }
 

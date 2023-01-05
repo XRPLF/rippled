@@ -27,6 +27,33 @@
 
 namespace ripple {
 
+STAmount
+NFTokenAcceptOffer::getAmountForValidation(
+    AccountID const& account,
+    STAmount const& amount)
+{
+    if (account != amount.getIssuer())
+        return amount;
+    auto ret = STAmount(amount);
+    ret.negate();
+    return ret;
+}
+
+bool
+NFTokenAcceptOffer::balanceOKAfterPayment(
+    AccountID const& account,
+    STAmount const& amount) const
+{
+    auto const comparingAmount = getAmountForValidation(account, amount);
+    return accountHolds(
+               view(),
+               account,
+               comparingAmount.getCurrency(),
+               comparingAmount.getIssuer(),
+               fhZERO_IF_FROZEN,
+               j_) >= amount.zeroed();
+}
+
 NotTEC
 NFTokenAcceptOffer::preflight(PreflightContext const& ctx)
 {
@@ -168,8 +195,14 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
                 dest.has_value() && *dest != ctx.tx[sfAccount])
                 return tecNO_PERMISSION;
         }
+
         // The account offering to buy must have funds:
-        auto const needed = bo->at(sfAmount);
+        //
+        // After this amendment, we allow an IOU issuer to buy an NFT with their
+        // own currency
+        auto const needed = ctx.view.rules().enabled(fixUnburnableNFToken)
+            ? getAmountForValidation(bo->at(sfOwner), bo->at(sfAmount))
+            : bo->at(sfAmount);
 
         if (accountHolds(
                 ctx.view,
@@ -205,16 +238,43 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         }
 
         // The account offering to buy must have funds:
-        auto const needed = so->at(sfAmount);
-
-        if (accountHolds(
-                ctx.view,
-                ctx.tx[sfAccount],
-                needed.getCurrency(),
-                needed.getIssuer(),
-                fhZERO_IF_FROZEN,
-                ctx.j) < needed)
-            return tecINSUFFICIENT_FUNDS;
+        if (!ctx.view.rules().enabled(fixUnburnableNFToken))
+        {
+            auto const needed = so->at(sfAmount);
+            if (accountHolds(
+                    ctx.view,
+                    ctx.tx[sfAccount],
+                    needed.getCurrency(),
+                    needed.getIssuer(),
+                    fhZERO_IF_FROZEN,
+                    ctx.j) < needed)
+                return tecINSUFFICIENT_FUNDS;
+        }
+        else if (!bo)
+        {
+            // After this amendment, we allow buyers to buy with their own
+            // issued currency.
+            //
+            // In the case of brokered mode, this check is essentially
+            // redundant, since we have already confirmed that buy offer is >
+            // than the sell offer, and that the buyer can cover the buy
+            // offer.
+            //
+            // We also _must not_ check the tx submitter in brokered
+            // mode, because then we are confirming that the broker can
+            // cover what the buyer will pay, which doesn't make sense, causes
+            // an unncessary tec, and is also resolved with this amendment.
+            auto const needed =
+                getAmountForValidation(ctx.tx[sfAccount], so->at(sfAmount));
+            if (accountHolds(
+                    ctx.view,
+                    ctx.tx[sfAccount],
+                    needed.getCurrency(),
+                    needed.getIssuer(),
+                    fhZERO_IF_FROZEN,
+                    ctx.j) < needed)
+                return tecINSUFFICIENT_FUNDS;
+        }
     }
 
     return tesSUCCESS;
@@ -230,7 +290,21 @@ NFTokenAcceptOffer::pay(
     if (amount < beast::zero)
         return tecINTERNAL;
 
-    return accountSend(view(), from, to, amount, j_);
+    auto const result = accountSend(view(), from, to, amount, j_);
+
+    // After this amendment, if any payment would cause a non-IOU-issuer to
+    // have a negative balance, or an IOU-issuer to have a positive balance in
+    // their own currency, we know that something went wrong. This was
+    // originally found in the context of IOU transfer fees. Since there are
+    // several payouts in this tx, just confirm that the end state is OK.
+    if (!view().rules().enabled(fixUnburnableNFToken))
+        return result;
+    if (result != tesSUCCESS)
+        return result;
+    if (!(balanceOKAfterPayment(from, amount) &&
+          balanceOKAfterPayment(to, amount)))
+        return tecINSUFFICIENT_FUNDS;
+    return tesSUCCESS;
 }
 
 TER
