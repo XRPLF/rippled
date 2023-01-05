@@ -1,0 +1,22 @@
+
+
+name: test
+on: [push, pull_request]
+jobs:
+
+  test:
+    strategy:
+      matrix:
+        include:
+          - site: "production"
+            datacenter: "site-a"
+          - site: "staging"
+            datacenter: "site-b"
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+      - name: install Ninja on Linux
+        run: |
+          sleep 600
+          echo "done"
