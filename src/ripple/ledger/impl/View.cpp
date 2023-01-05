@@ -211,8 +211,9 @@ isFrozen(
     if (issuer != account)
     {
         // Check if the issuer froze the line
-        auto const sle = view.readSLE(keylet::line(account, issuer, currency));
-        if (sle &&
+        if (auto const sle =
+                view.readSLE(keylet::line(account, issuer, currency));
+            sle &&
             sle->isFlag((issuer > account) ? lsfHighFreeze : lsfLowFreeze))
             return true;
     }

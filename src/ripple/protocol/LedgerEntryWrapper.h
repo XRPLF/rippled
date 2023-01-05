@@ -66,13 +66,10 @@ protected:
     // Helper functions that are useful to some derived classes.
     template <typename SF, typename T>
     void
-    setOptional(SF const& field, T const& value)
+    setOptional(
+        SF const& field,
+        T const& value) requires Writable&& std::is_base_of_v<SField, SF>
     {
-        static_assert(Writable, "Cannot set member of const ledger entry.");
-        static_assert(
-            std::is_base_of_v<SField, SF>,
-            "setOptional()requires an SField as its first argument.");
-
         if (!wrapped_->isFieldPresent(field))
             wrapped_->makeFieldPresent(field);
 
@@ -81,13 +78,9 @@ protected:
 
     template <typename SF>
     void
-    clearOptional(SF const& field)
+    clearOptional(
+        SF const& field) requires Writable&& std::is_base_of_v<SField, SF>
     {
-        static_assert(Writable, "Cannot set member of const ledger entry.");
-        static_assert(
-            std::is_base_of_v<SField, SF>,
-            "clearOptional()requires an SField as its argument.");
-
         if (wrapped_->isFieldPresent(field))
             wrapped_->makeFieldAbsent(field);
     }
@@ -103,13 +96,11 @@ protected:
 
     template <typename SF, std::size_t Bits, class Tag>
     void
-    setOrClearBaseUintIfZero(SF const& field, base_uint<Bits, Tag> const& value)
+    setOrClearBaseUintIfZero(
+        SF const& field,
+        base_uint<Bits, Tag> const&
+            value) requires Writable&& std::is_base_of_v<SField, SF>
     {
-        static_assert(Writable, "Cannot set member of const ledger entry.");
-        static_assert(
-            std::is_base_of_v<SField, SF>,
-            "setOrClearBaseUintIfZero()requires an SField as its argument.");
-
         if (value.signum() == 0)
             return clearOptional(field);
 
@@ -120,10 +111,8 @@ protected:
     }
 
     void
-    setOrClearVLIfEmpty(SF_VL const& field, Blob const& value)
+    setOrClearVLIfEmpty(SF_VL const& field, Blob const& value) requires Writable
     {
-        static_assert(Writable, "Cannot set member of const ledger entry.");
-
         if (value.empty())
             return clearOptional(field);
 
@@ -148,10 +137,8 @@ public:
     }
 
     [[nodiscard]] std::shared_ptr<STLedgerEntry> const&
-    slePtr()
+    slePtr() requires Writable
     {
-        static_assert(
-            Writable, "Cannot access non-const SLE of const ledger entry.");
         return wrapped_;
     }
 
@@ -168,23 +155,20 @@ public:
     }
 
     void
-    replaceAllFlags(std::uint32_t newFlags)
+    replaceAllFlags(std::uint32_t newFlags) requires Writable
     {
-        static_assert(Writable, "Cannot set member of const ledger entry.");
         wrapped_->at(sfFlags) = newFlags;
     }
 
     void
-    setFlag(std::uint32_t flagsToSet)
+    setFlag(std::uint32_t flagsToSet) requires Writable
     {
-        static_assert(Writable, "Cannot set member of const ledger entry.");
         replaceAllFlags(flags() | flagsToSet);
     }
 
     void
-    clearFlag(std::uint32_t flagsToClear)
+    clearFlag(std::uint32_t flagsToClear) requires Writable
     {
-        static_assert(Writable, "Cannot set member of const ledger entry.");
         replaceAllFlags(flags() & ~flagsToClear);
     }
 };
