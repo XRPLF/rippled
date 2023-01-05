@@ -21,7 +21,10 @@
 #define RIPPLE_BASICS_EXPECTED_H_INCLUDED
 
 #include <ripple/basics/contract.h>
+
 #include <boost/outcome.hpp>
+
+#include <concepts>
 #include <stdexcept>
 #include <type_traits>
 
@@ -132,17 +135,16 @@ class [[nodiscard]] Expected
     using Base = boost::outcome_v2::result<T, E, detail::throw_policy>;
 
 public:
-    template <
-        typename U,
-        typename = std::enable_if_t<std::is_convertible_v<U, T>>>
-    constexpr Expected(U r) : Base(T{std::forward<U>(r)})
+    template <typename U>
+    requires std::convertible_to<U, T> constexpr Expected(U && r)
+        : Base(T{std::forward<U>(r)})
     {
     }
 
-    template <
-        typename U,
-        typename = std::enable_if_t<std::is_convertible_v<U, E>>>
-    constexpr Expected(Unexpected<U> e) : Base(E{std::forward<U>(e.value())})
+    template <typename U>
+        requires std::convertible_to<U, E> &&
+        (!std::is_reference_v<U>)constexpr Expected(Unexpected<U> e)
+        : Base(E{std::move(e.value())})
     {
     }
 
@@ -215,10 +217,10 @@ public:
     {
     }
 
-    template <
-        typename U,
-        typename = std::enable_if_t<std::is_convertible_v<U, E>>>
-    constexpr Expected(Unexpected<U> e) : Base(E{std::forward<U>(e.value())})
+    template <typename U>
+        requires std::convertible_to<U, E> &&
+        (!std::is_reference_v<U>)constexpr Expected(Unexpected<U> e)
+        : Base(E{std::move(e.value())})
     {
     }
 

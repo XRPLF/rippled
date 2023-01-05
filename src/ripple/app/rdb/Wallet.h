@@ -87,10 +87,19 @@ saveManifests(
 void
 addValidatorManifest(soci::session& session, std::string const& serialized);
 
-/**
- * @brief getNodeIdentity Returns the public and private keys of this node.
- * @param session Session with the database.
- * @return Pair of public and private keys.
+/** Delete any saved public/private key associated with this node. */
+void
+clearNodeIdentity(soci::session& session);
+
+/** Returns a stable public and private key for this node.
+
+    The node's public identity is defined by a secp256k1 keypair
+    that is (normally) randomly generated. This function will
+    return such a keypair, securely generating one if needed.
+
+    @param session Session with the database.
+
+    @return Pair of public and private secp256k1 keys.
  */
 std::pair<PublicKey, SecretKey>
 getNodeIdentity(soci::session& session);

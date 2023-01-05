@@ -1,0 +1,95 @@
+name: nix
+on: [push, pull_request]
+
+jobs:
+
+  test:
+    strategy:
+      matrix:
+        platform:
+          - ubuntu-latest
+          - macos-12
+        generator:
+          - Ninja
+        configuration:
+          - Release
+    runs-on: ${{ matrix.platform }}
+    env:
+      build_dir: .build
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+      - name: install Ninja on Linux
+        if: matrix.generator == 'Ninja' && runner.os == 'Linux'
+        run: sudo apt install ninja-build
+      - name: install Ninja on OSX
+        if: matrix.generator == 'Ninja' && runner.os == 'macOS'
+        run: brew install ninja
+      - name: install nproc on OSX
+        if: runner.os == 'macOS'
+        run: brew install coreutils
+      - name: choose Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: 3.9
+      - name: learn Python cache directory
+        id: pip-cache
+        run: |
+          sudo pip install --upgrade pip
+          echo "::set-output name=dir::$(pip cache dir)"
+      - name: restore Python cache directory
+        uses: actions/cache@v2
+        with:
+            path: ${{ steps.pip-cache.outputs.dir }}
+            key: ${{ runner.os }}-${{ hashFiles('.github/workflows/nix.yml') }}
+      - name: install Conan
+        run: pip install wheel 'conan>=1.52.0'
+      - name: check environment
+        run: |
+          echo ${PATH} | tr ':' '\n'
+          python --version
+          conan --version
+          cmake --version
+          env
+      - name: configure Conan
+        run: |
+          conan profile new default --detect
+          conan profile update settings.compiler.cppstd=20 default
+      - name: configure Conan on Linux
+        if: runner.os == 'Linux'
+        run: |
+          conan profile update settings.compiler.libcxx=libstdc++11 default
+      - name: learn Conan cache directory
+        id: conan-cache
+        run: |
+          echo "::set-output name=dir::$(conan config get storage.path)"
+      - name: restore Conan cache directory
+        uses: actions/cache@v2
+        with:
+            path: ${{ steps.conan-cache.outputs.dir }}
+            key: ${{ hashFiles('~/.conan/profiles/default', 'conanfile.py', 'external/rocksdb/*', '.github/workflows/nix.yml') }}
+      - name: export RocksDB
+        run: conan export external/rocksdb
+      - name: install dependencies
+        run: |
+          mkdir ${build_dir}
+          cd ${build_dir}
+          conan install .. --build missing --settings build_type=${{ matrix.configuration }}
+      - name: configure
+        run: |
+          cd ${build_dir}
+          cmake \
+            -G ${{ matrix.generator }} \
+            -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
+            -DCMAKE_BUILD_TYPE=${{ matrix.configuration }} \
+            -Dassert=ON \
+            -Dcoverage=OFF \
+            -Dreporting=OFF \
+            -Dunity=OFF \
+            ..
+      - name: build
+        run: |
+          cmake --build ${build_dir} --target rippled --parallel $(nproc)
+      - name: test
+        run: |
+          ${build_dir}/rippled --unittest --unittest-jobs $(nproc)

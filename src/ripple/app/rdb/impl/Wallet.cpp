@@ -119,6 +119,12 @@ addValidatorManifest(soci::session& session, std::string const& serialized)
     tr.commit();
 }
 
+void
+clearNodeIdentity(soci::session& session)
+{
+    session << "DELETE FROM NodeIdentity;";
+}
+
 std::pair<PublicKey, SecretKey>
 getNodeIdentity(soci::session& session)
 {
@@ -254,7 +260,10 @@ readAmendments(
 
     soci::transaction tr(session);
     std::string sql =
-        "SELECT AmendmentHash, AmendmentName, Veto FROM FeatureVotes";
+        "SELECT AmendmentHash, AmendmentName, Veto FROM "
+        "( SELECT AmendmentHash, AmendmentName, Veto, RANK() OVER "
+        "(  PARTITION BY AmendmentHash ORDER BY ROWID DESC ) "
+        "as rnk FROM FeatureVotes ) WHERE rnk = 1";
     // SOCI requires boost::optional (not std::optional) as parameters.
     boost::optional<std::string> amendment_hash;
     boost::optional<std::string> amendment_name;

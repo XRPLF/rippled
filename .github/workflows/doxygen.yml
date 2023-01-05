@@ -1,4 +1,5 @@
 name: Build and publish Doxygen documentation
+# To test this workflow, push your changes to your fork's `develop` branch.
 on:
   push:
     branches:
@@ -6,17 +7,23 @@ on:
 
 jobs:
   job:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     container:
       image: docker://rippleci/rippled-ci-builder:2944b78d22db
     steps:
       - name: checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+      - name: check environment
+        run: |
+          echo ${PATH} | tr ':' '\n'
+          cmake --version
+          doxygen --version
+          env
       - name: build
         run: |
           mkdir build
           cd build
-          cmake -DBoost_NO_BOOST_CMAKE=ON ..
+          cmake -Donly_docs=TRUE ..
           cmake --build . --target docs --parallel $(nproc)
       - name: publish
         uses: peaceiris/actions-gh-pages@v3

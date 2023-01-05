@@ -77,7 +77,7 @@ doAccountOffers(RPC::JsonContext& context)
     }
 
     // Get info on account.
-    result[jss::account] = context.app.accountIDCache().toBase58(accountID);
+    result[jss::account] = toBase58(accountID);
 
     if (!ledger->exists(keylet::account(accountID)))
         return rpcError(rpcACT_NOT_FOUND);

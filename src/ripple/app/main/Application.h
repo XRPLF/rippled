@@ -28,6 +28,7 @@
 #include <ripple/shamap/FullBelowCache.h>
 #include <ripple/shamap/TreeNodeCache.h>
 #include <boost/asio.hpp>
+#include <boost/program_options.hpp>
 #include <memory>
 #include <mutex>
 
@@ -89,7 +90,6 @@ class PathRequests;
 class PendingSaves;
 class PublicKey;
 class SecretKey;
-class AccountIDCache;
 class STLedgerEntry;
 class TimeKeeper;
 class TransactionMaster;
@@ -136,13 +136,14 @@ public:
     virtual ~Application() = default;
 
     virtual bool
-    setup() = 0;
+    setup(boost::program_options::variables_map const& options) = 0;
+
     virtual void
     start(bool withTimers) = 0;
     virtual void
     run() = 0;
     virtual void
-    signalStop() = 0;
+    signalStop(std::string msg = "") = 0;
     virtual bool
     checkSigs() const = 0;
     virtual void
@@ -153,6 +154,10 @@ public:
     //
     // ---
     //
+
+    /** Returns a 64-bit instance identifier, generated at startup */
+    virtual std::uint64_t
+    instanceID() const = 0;
 
     virtual Logs&
     logs() = 0;
@@ -245,8 +250,6 @@ public:
     getSHAMapStore() = 0;
     virtual PendingSaves&
     pendingSaves() = 0;
-    virtual AccountIDCache const&
-    accountIDCache() const = 0;
     virtual OpenLedger&
     openLedger() = 0;
     virtual OpenLedger const&

@@ -1125,10 +1125,10 @@ bookStepEqual(Step const& step, ripple::Book const& book)
     bool const inXRP = isXRP(book.in.currency);
     bool const outXRP = isXRP(book.out.currency);
     if (inXRP && outXRP)
-        return equalHelper<
-            XRPAmount,
-            XRPAmount,
-            BookPaymentStep<XRPAmount, XRPAmount>>(step, book);
+    {
+        assert(0);
+        return false;  // no such thing as xrp/xrp book step
+    }
     if (inXRP && !outXRP)
         return equalHelper<
             XRPAmount,

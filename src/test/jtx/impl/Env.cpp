@@ -83,7 +83,7 @@ Env::AppBundle::AppBundle(
         std::move(config), std::move(logs), std::move(timeKeeper_));
     app = owned.get();
     app->logs().threshold(thresh);
-    if (!app->setup())
+    if (!app->setup({}))
         Throw<std::runtime_error>("Env::AppBundle: setup failed");
     timeKeeper->set(app->getLedgerMaster().getClosedLedger()->info().closeTime);
     app->start(false /*don't start timers*/);

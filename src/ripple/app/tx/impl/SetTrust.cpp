@@ -104,20 +104,42 @@ SetTrust::preclaim(PreclaimContext const& ctx)
     auto const currency = saLimitAmount.getCurrency();
     auto const uDstAccountID = saLimitAmount.getIssuer();
 
-    if (id == uDstAccountID)
+    if (ctx.view.rules().enabled(fixTrustLinesToSelf))
     {
-        // Prevent trustline to self from being created,
-        // unless one has somehow already been created
-        // (in which case doApply will clean it up).
-        auto const sleDelete =
-            ctx.view.read(keylet::line(id, uDstAccountID, currency));
-
-        if (!sleDelete)
-        {
-            JLOG(ctx.j.trace())
-                << "Malformed transaction: Can not extend credit to self.";
+        if (id == uDstAccountID)
             return temDST_IS_SRC;
+    }
+    else
+    {
+        if (id == uDstAccountID)
+        {
+            // Prevent trustline to self from being created,
+            // unless one has somehow already been created
+            // (in which case doApply will clean it up).
+            auto const sleDelete =
+                ctx.view.read(keylet::line(id, uDstAccountID, currency));
+
+            if (!sleDelete)
+            {
+                JLOG(ctx.j.trace())
+                    << "Malformed transaction: Can not extend credit to self.";
+                return temDST_IS_SRC;
+            }
         }
+    }
+
+    // If the destination has opted to disallow incoming trustlines
+    // then honour that flag
+    if (ctx.view.rules().enabled(featureDisallowIncoming))
+    {
+        auto const sleDst = ctx.view.read(keylet::account(uDstAccountID));
+
+        if (!sleDst)
+            return tecNO_DST;
+
+        auto const dstFlags = sleDst->getFlags();
+        if (dstFlags & lsfDisallowIncomingTrustline)
+            return tecNO_PERMISSION;
     }
 
     return tesSUCCESS;
@@ -183,18 +205,19 @@ SetTrust::doApply()
 
     auto viewJ = ctx_.app.journal("View");
 
-    if (account_ == uDstAccountID)
+    // Trust lines to self are impossible but because of the old bug there are
+    // two on 19-02-2022. This code was here to allow those trust lines to be
+    // deleted. The fixTrustLinesToSelf fix amendment will remove them when it
+    // enables so this code will no longer be needed.
+    if (!view().rules().enabled(fixTrustLinesToSelf) &&
+        account_ == uDstAccountID)
     {
-        // The only purpose here is to allow a mistakenly created
-        // trust line to oneself to be deleted. If no such trust
-        // lines exist now, why not remove this code and simply
-        // return an error?
-        SLE::pointer sleDelete =
-            view().peek(keylet::line(account_, uDstAccountID, currency));
-
-        JLOG(j_.warn()) << "Clearing redundant line.";
-
-        return trustDelete(view(), sleDelete, account_, uDstAccountID, viewJ);
+        return trustDelete(
+            view(),
+            view().peek(keylet::line(account_, uDstAccountID, currency)),
+            account_,
+            uDstAccountID,
+            viewJ);
     }
 
     SLE::pointer sleDst = view().peek(keylet::account(uDstAccountID));

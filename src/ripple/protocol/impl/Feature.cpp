@@ -52,7 +52,7 @@ enum class Supported : bool { no = false, yes };
 // enabled using run-time conditionals based on the state of the amendment.
 // There is value in retaining that conditional code for some time after
 // the amendment is enabled to make it simple to replay old transactions.
-// However, once an Amendment has been enabled for, say, more than two years
+// However, once an amendment has been enabled for, say, more than two years
 // then retaining that conditional code has less value since it is
 // uncommon to replay such old transactions.
 //
@@ -61,10 +61,15 @@ enum class Supported : bool { no = false, yes };
 // 2018 needs to happen on an older version of the server code.  There's
 // a log message in Application.cpp that warns about replaying old ledgers.
 //
-// At some point in the future someone may wish to remove Amendment
-// conditional code for Amendments that were enabled after January 2018.
+// At some point in the future someone may wish to remove amendment
+// conditional code for amendments that were enabled after January 2018.
 // When that happens then the log message in Application.cpp should be
 // updated.
+//
+// Generally, amendments which introduce new features should be set as
+// "DefaultVote::no" whereas in rare cases, amendments that fix critical
+// bugs should be set as "DefaultVote::yes", if off-chain consensus is
+// reached amongst reviewers, validator operators, and other participants.
 
 class FeatureCollections
 {
@@ -431,7 +436,7 @@ REGISTER_FEATURE(RequireFullyCanonicalSig,      Supported::yes, DefaultVote::yes
 REGISTER_FIX    (fix1781,                       Supported::yes, DefaultVote::yes);
 REGISTER_FEATURE(HardenedValidations,           Supported::yes, DefaultVote::yes);
 REGISTER_FIX    (fixAmendmentMajorityCalc,      Supported::yes, DefaultVote::yes);
-REGISTER_FEATURE(NegativeUNL,                   Supported::yes, DefaultVote::no);
+REGISTER_FEATURE(NegativeUNL,                   Supported::yes, DefaultVote::yes);
 REGISTER_FEATURE(TicketBatch,                   Supported::yes, DefaultVote::yes);
 REGISTER_FEATURE(FlowSortStrands,               Supported::yes, DefaultVote::yes);
 REGISTER_FIX    (fixSTAmountCanonicalize,       Supported::yes, DefaultVote::yes);
@@ -440,6 +445,12 @@ REGISTER_FEATURE(CheckCashMakesTrustLine,       Supported::yes, DefaultVote::no)
 REGISTER_FEATURE(NonFungibleTokensV1,           Supported::yes, DefaultVote::no);
 REGISTER_FEATURE(ExpandedSignerList,            Supported::yes, DefaultVote::no);
 REGISTER_FIX    (fixNFTokenDirV1,               Supported::yes, DefaultVote::no);
+REGISTER_FIX    (fixNFTokenNegOffer,            Supported::yes, DefaultVote::no);
+REGISTER_FEATURE(NonFungibleTokensV1_1,         Supported::yes, DefaultVote::no);
+REGISTER_FIX    (fixTrustLinesToSelf,           Supported::yes, DefaultVote::no);
+REGISTER_FIX    (fixRemoveNFTokenAutoTrustLine, Supported::yes, DefaultVote::yes);
+REGISTER_FEATURE(ImmediateOfferKilled,          Supported::yes, DefaultVote::no);
+REGISTER_FEATURE(DisallowIncoming,              Supported::yes, DefaultVote::no);
 
 // The following amendments have been active for at least two years. Their
 // pre-amendment code has been removed and the identifiers are deprecated.

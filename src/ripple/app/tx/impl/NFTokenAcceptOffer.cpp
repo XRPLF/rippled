@@ -67,6 +67,9 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         -> std::pair<std::shared_ptr<const SLE>, TER> {
         if (id)
         {
+            if (id->isZero())
+                return {nullptr, tecOBJECT_NOT_FOUND};
+
             auto offerSLE = ctx.view.read(keylet::nftoffer(*id));
 
             if (!offerSLE)
@@ -74,6 +77,12 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
 
             if (hasExpired(ctx.view, (*offerSLE)[~sfExpiration]))
                 return {nullptr, tecEXPIRED};
+
+            // The initial implementation had a bug that allowed a negative
+            // amount.  The fixNFTokenNegOffer amendment fixes that.
+            if ((*offerSLE)[sfAmount].negative() &&
+                ctx.view.rules().enabled(fixNFTokenNegOffer))
+                return {nullptr, temBAD_OFFER};
 
             return {std::move(offerSLE), tesSUCCESS};
         }
@@ -102,6 +111,14 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         // seller is requesting:
         if ((*so)[sfAmount] > (*bo)[sfAmount])
             return tecINSUFFICIENT_PAYMENT;
+
+        // If the buyer specified a destination, that destination must be
+        // the seller or the broker.
+        if (auto const dest = bo->at(~sfDestination))
+        {
+            if (*dest != so->at(sfOwner) && *dest != ctx.tx[sfAccount])
+                return tecNFTOKEN_BUY_SELL_MISMATCH;
+        }
 
         // If the seller specified a destination, that destination must be
         // the buyer or the broker.
@@ -142,6 +159,15 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
             !nft::findToken(ctx.view, ctx.tx[sfAccount], (*bo)[sfNFTokenID]))
             return tecNO_PERMISSION;
 
+        // If not in bridged mode...
+        if (!so)
+        {
+            // If the offer has a Destination field, the acceptor must be the
+            // Destination.
+            if (auto const dest = bo->at(~sfDestination);
+                dest.has_value() && *dest != ctx.tx[sfAccount])
+                return tecNO_PERMISSION;
+        }
         // The account offering to buy must have funds:
         auto const needed = bo->at(sfAmount);
 

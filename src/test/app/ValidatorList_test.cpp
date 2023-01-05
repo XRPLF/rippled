@@ -29,8 +29,9 @@
 #include <ripple/protocol/digest.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/protocol/messages.h>
-#include <boost/beast/core/multi_buffer.hpp>
 #include <test/jtx.h>
+
+#include <boost/beast/core/multi_buffer.hpp>
 
 namespace ripple {
 namespace test {
@@ -217,7 +218,8 @@ private:
     {
         testcase("Config Load");
 
-        jtx::Env env(*this);
+        jtx::Env env(
+            *this, jtx::envconfig(), nullptr, beast::severities::kDisabled);
         auto& app = env.app();
         PublicKey emptyLocalKey;
         std::vector<std::string> const emptyCfgKeys;

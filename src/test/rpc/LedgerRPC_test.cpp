@@ -1250,13 +1250,10 @@ class LedgerRPC_test : public beast::unit_test::suite
                                           // no amendments
         env.fund(XRP(10000), "alice");
         env.close();
-        log << env.closed()->info().hash;
         env.fund(XRP(10000), "bob");
         env.close();
-        log << env.closed()->info().hash;
         env.fund(XRP(10000), "jim");
         env.close();
-        log << env.closed()->info().hash;
         env.fund(XRP(10000), "jill");
 
         {
@@ -1678,7 +1675,7 @@ class LedgerRPC_test : public beast::unit_test::suite
     void
     testLedgerAccountsOption()
     {
-        testcase("Ledger Request, Accounts Option");
+        testcase("Ledger Request, Accounts Hashes");
         using namespace test::jtx;
 
         Env env{*this};

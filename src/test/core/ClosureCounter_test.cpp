@@ -19,9 +19,10 @@
 
 #include <ripple/beast/unit_test.h>
 #include <ripple/core/ClosureCounter.h>
+#include <test/jtx/Env.h>
+
 #include <atomic>
 #include <chrono>
-#include <test/jtx/Env.h>
 #include <thread>
 
 namespace ripple {
@@ -31,9 +32,14 @@ namespace test {
 
 class ClosureCounter_test : public beast::unit_test::suite
 {
-    // We're only using Env for its Journal.
-    jtx::Env env{*this};
-    beast::Journal j{env.app().journal("ClosureCounter_test")};
+    // We're only using Env for its Journal.  That Journal gives better
+    // coverage in unit tests.
+    test::jtx::Env env_{
+        *this,
+        jtx::envconfig(),
+        nullptr,
+        beast::severities::kDisabled};
+    beast::Journal j{env_.app().journal("ClosureCounter_test")};
 
     void
     testConstruction()

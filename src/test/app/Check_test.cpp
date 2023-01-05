@@ -85,6 +85,8 @@ public:
 
 class Check_test : public beast::unit_test::suite
 {
+    FeatureBitset const disallowIncoming{featureDisallowIncoming};
+
     static uint256
     getCheckIndex(AccountID const& account, std::uint32_t uSequence)
     {
@@ -291,6 +293,100 @@ class Check_test : public beast::unit_test::suite
         env.close();
         BEAST_EXPECT(checksOnAccount(env, alice).size() == aliceCount + 7);
         BEAST_EXPECT(checksOnAccount(env, bob).size() == bobCount + 7);
+    }
+
+    void
+    testCreateDisallowIncoming(FeatureBitset features)
+    {
+        testcase("Create valid with disallow incoming");
+
+        using namespace test::jtx;
+
+        // test flag doesn't set unless amendment enabled
+        {
+            Env env{*this, features - disallowIncoming};
+            Account const alice{"alice"};
+            env.fund(XRP(10000), alice);
+            env(fset(alice, asfDisallowIncomingCheck));
+            env.close();
+            auto const sle = env.le(alice);
+            uint32_t flags = sle->getFlags();
+            BEAST_EXPECT(!(flags & lsfDisallowIncomingCheck));
+        }
+
+        Account const gw{"gateway"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        IOU const USD{gw["USD"]};
+
+        Env env{*this, features | disallowIncoming};
+
+        STAmount const startBalance{XRP(1000).value()};
+        env.fund(startBalance, gw, alice, bob);
+
+        /*
+         * Attempt to create two checks from `from` to `to` and
+         * require they both result in error/success code `expected`
+         */
+        auto writeTwoChecksDI = [&env, &USD, this](
+                                    Account const& from,
+                                    Account const& to,
+                                    TER expected) {
+            std::uint32_t const fromOwnerCount{ownerCount(env, from)};
+            std::uint32_t const toOwnerCount{ownerCount(env, to)};
+
+            std::size_t const fromCkCount{checksOnAccount(env, from).size()};
+            std::size_t const toCkCount{checksOnAccount(env, to).size()};
+
+            env(check::create(from, to, XRP(2000)), ter(expected));
+            env.close();
+
+            env(check::create(from, to, USD(50)), ter(expected));
+            env.close();
+
+            if (expected == tesSUCCESS)
+            {
+                BEAST_EXPECT(
+                    checksOnAccount(env, from).size() == fromCkCount + 2);
+                BEAST_EXPECT(checksOnAccount(env, to).size() == toCkCount + 2);
+
+                env.require(owners(from, fromOwnerCount + 2));
+                env.require(
+                    owners(to, to == from ? fromOwnerCount + 2 : toOwnerCount));
+                return;
+            }
+
+            BEAST_EXPECT(checksOnAccount(env, from).size() == fromCkCount);
+            BEAST_EXPECT(checksOnAccount(env, to).size() == toCkCount);
+
+            env.require(owners(from, fromOwnerCount));
+            env.require(owners(to, to == from ? fromOwnerCount : toOwnerCount));
+        };
+
+        // enable the DisallowIncoming flag on both bob and alice
+        env(fset(bob, asfDisallowIncomingCheck));
+        env(fset(alice, asfDisallowIncomingCheck));
+        env.close();
+
+        // both alice and bob can't receive checks
+        writeTwoChecksDI(alice, bob, tecNO_PERMISSION);
+        writeTwoChecksDI(gw, alice, tecNO_PERMISSION);
+
+        // remove the flag from alice but not from bob
+        env(fclear(alice, asfDisallowIncomingCheck));
+        env.close();
+
+        // now bob can send alice a cheque but not visa-versa
+        writeTwoChecksDI(bob, alice, tesSUCCESS);
+        writeTwoChecksDI(alice, bob, tecNO_PERMISSION);
+
+        // remove bob's flag too
+        env(fclear(bob, asfDisallowIncomingCheck));
+        env.close();
+
+        // now they can send checks freely
+        writeTwoChecksDI(bob, alice, tesSUCCESS);
+        writeTwoChecksDI(alice, bob, tesSUCCESS);
     }
 
     void
@@ -2602,6 +2698,7 @@ class Check_test : public beast::unit_test::suite
     {
         testEnabled(features);
         testCreateValid(features);
+        testCreateDisallowIncoming(features);
         testCreateInvalid(features);
         testCashXRP(features);
         testCashIOU(features);
@@ -2621,6 +2718,7 @@ public:
         using namespace test::jtx;
         auto const sa = supported_amendments();
         testWithFeats(sa - featureCheckCashMakesTrustLine);
+        testWithFeats(sa - disallowIncoming);
         testWithFeats(sa);
 
         testTrustLineCreation(sa);  // Test with featureCheckCashMakesTrustLine
