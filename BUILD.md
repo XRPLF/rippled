@@ -23,9 +23,21 @@ git checkout develop
 
 ## Platforms
 
-We do not recommend Windows for rippled production use at this time. Currently,
-the Ubuntu platform has received the highest level of quality assurance,
-testing, and support. Additionally, 32-bit Windows development is not supported.
+rippled is written in the C++20 dialect and includes the `<concepts>` header.
+The [minimum compiler versions][2] that can compile this dialect are given
+below:
+
+| Compiler | Minimum Version
+|---|---
+| GCC         | 10
+| Clang       | 13
+| Apple Clang | 13.1.6
+| MSVC        | 19.23
+
+We do not recommend Windows for rippled production use at this time.
+As of January 2023, the Ubuntu platform has received the highest level of
+quality assurance, testing, and support.
+Additionally, 32-bit Windows development is not supported.
 
 Visual Studio 2022 is not yet supported.
 This is because rippled is not compatible with [Boost][] versions 1.78 or 1.79,
@@ -50,7 +62,7 @@ there is a crash course at the end of this document.
 You'll need to compile in the C++20 dialect:
 
 ```
-conan profile update settings.cppstd=20 default
+conan profile update settings.compiler.cppstd=20 default
 ```
 
 Linux developers will commonly have a default Conan [profile][] that compiles
@@ -71,6 +83,25 @@ architecture:
 
 ```
 conan profile update settings.arch=x86_64 default
+```
+
+If you have multiple compilers installed on your platform,
+then you'll need to make sure that Conan and CMake select the one you want to
+use.
+This setting will set the correct variables (`CMAKE_<LANG>_COMPILER`) in the
+generated CMake toolchain file:
+
+```
+conan profile update 'conf.tools.build:compiler_executables={"c": "<path>", "cpp": "<path>"}' default
+```
+
+It should choose the compiler for dependencies as well,
+but not all of them have a Conan recipe that respects this setting (yet).
+For the rest, you can set these environment variables:
+
+```
+conan profile update env.CC=<path> default
+conan profile update env.CXX=<path> default
 ```
 
 
@@ -190,20 +221,52 @@ with their default values in parentheses.
 - `reporting` (OFF): Build the reporting mode feature.
 - `tests` (ON): Build tests.
 - `unity` (ON): Configure a [unity build][5].
+- `san` (): Enable a sanitizer with Clang. Choices are `thread` and `address`.
 
 
 ### Troubleshooting
 
-If you get a linker error like the one below suggesting that you recompile
+#### Conan
+
+If you find trouble building dependencies after changing Conan settings,
+then you should retry after removing the Conan cache:
+
+```
+rm -rf ~/.conan/data
+```
+
+
+#### no std::result_of
+
+If your compiler version is recent enough to have removed `std::result_of` as
+part of C++20, e.g. Apple Clang 15.0,
+then you might need to add a preprocessor definition to your bulid:
+
+```
+conan profile update 'env.CFLAGS="-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"' default
+conan profile update 'env.CXXFLAGS="-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"' default
+conan profile update 'tools.build:cflags+=["-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"]' default
+conan profile update 'tools.build:cxxflags+=["-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"]' default
+```
+
+
+#### recompile with -fPIC
+
+```
+/usr/bin/ld.gold: error: /home/username/.conan/data/boost/1.77.0/_/_/package/.../lib/libboost_container.a(alloc_lib.o):
+  requires unsupported dynamic reloc 11; recompile with -fPIC
+```
+
+If you get a linker error like the one above suggesting that you recompile
 Boost with position-independent code, the reason is most likely that Conan
 downloaded a bad binary distribution of the dependency.
 For now, this seems to be a [bug][1] in Conan just for Boost 1.77.0 compiled
 with GCC for Linux.
 The solution is to build the dependency locally by passing `--build boost`
-when calling `conan install`.
+when calling `conan install`:
 
 ```
-/usr/bin/ld.gold: error: /home/username/.conan/data/boost/1.77.0/_/_/package/dc8aedd23a0f0a773a5fcdcfe1ae3e89c4205978/lib/libboost_container.a(alloc_lib.o): requires unsupported dynamic reloc 11; recompile with -fPIC
+conan install --build boost ...
 ```
 
 
@@ -336,9 +399,16 @@ For options, each package recipe defines its own defaults.
 You can pass every parameter to Conan on the command line,
 but it is more convenient to put them in a [profile][profile].
 **All we must do to properly configure Conan is edit and pass the profile.**
+By default, Conan will use the profile named "default".
+You can let Conan create the default profile with this command:
+
+```
+conan profile new default --detect
+```
 
 
 [1]: https://github.com/conan-io/conan-center-index/issues/13168
+[2]: https://en.cppreference.com/w/cpp/compiler_support/20
 [5]: https://en.wikipedia.org/wiki/Unity_build
 [build_type]: https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html
 [runtime]: https://cmake.org/cmake/help/latest/variable/CMAKE_MSVC_RUNTIME_LIBRARY.html
