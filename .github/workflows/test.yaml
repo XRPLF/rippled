@@ -18,5 +18,5 @@ jobs:
         uses: actions/checkout@v3
       - name: install Ninja on Linux
         run: |
-          sleep 300
+          sleep 301
           echo "done"
