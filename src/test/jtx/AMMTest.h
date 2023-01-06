@@ -29,7 +29,7 @@ namespace ripple {
 namespace test {
 namespace jtx {
 
-enum class Fund { All, Acct, Gw, None };
+enum class Fund { All, Acct, Gw, IOUOnly };
 
 void
 fund(

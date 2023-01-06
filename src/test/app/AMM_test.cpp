@@ -19,6 +19,8 @@
 #include <ripple/app/misc/AMM.h>
 #include <ripple/app/misc/AMM_formulae.h>
 #include <ripple/app/paths/AMMContext.h>
+#include <ripple/app/paths/AMMLiquidity.h>
+#include <ripple/app/paths/AMMOffer.h>
 #include <ripple/app/paths/Flow.h>
 #include <ripple/app/paths/impl/StrandFlow.h>
 #include <ripple/ledger/PaymentSandbox.h>
@@ -3121,6 +3123,162 @@ private:
                     ter(tesSUCCESS));
             },
             {{XRP(100), USD(100)}});
+
+        // Multiple paths/steps
+        {
+            Env env(*this);
+            auto const ETH = gw["ETH"];
+            fund(
+                env,
+                gw,
+                {alice},
+                XRP(100000),
+                {EUR(50000), BTC(50000), ETH(50000), USD(50000)});
+            fund(env, gw, {carol, bob}, XRP(1000), {USD(200)}, Fund::Acct);
+            AMM xrp_eur(env, alice, XRP(10100), EUR(10000));
+            AMM eur_btc(env, alice, EUR(10000), BTC(10200));
+            AMM btc_usd(env, alice, BTC(10100), USD(10000));
+            AMM xrp_usd(env, alice, XRP(10150), USD(10200));
+            AMM xrp_eth(env, alice, XRP(10000), ETH(10100));
+            AMM eth_eur(env, alice, ETH(10900), EUR(11000));
+            AMM eur_usd(env, alice, EUR(10100), USD(10000));
+            env(pay(bob, carol, USD(100)),
+                path(~EUR, ~BTC, ~USD),
+                path(~USD),
+                path(~ETH, ~EUR, ~USD),
+                sendmax(XRP(200)));
+            // XRP-ETH-EUR-USD
+            // This path provides ~26.06USD/26.2XRP
+            BEAST_EXPECT(xrp_eth.expectBalances(
+                XRPAmount(10026208900),
+                STAmount{ETH, UINT64_C(1007365779244494), -11},
+                xrp_eth.tokens()));
+            BEAST_EXPECT(eth_eur.expectBalances(
+                STAmount{ETH, UINT64_C(1092634220755506), -11},
+                STAmount{EUR, UINT64_C(1097354232078752), -11},
+                eth_eur.tokens()));
+            BEAST_EXPECT(eur_usd.expectBalances(
+                STAmount{EUR, UINT64_C(1012645767921248), -11},
+                STAmount{USD, UINT64_C(997393151712086), -11},
+                eur_usd.tokens()));
+
+            // XRP-USD path
+            // This path provides ~73.9USD/74.1XRP
+            BEAST_EXPECT(xrp_usd.expectBalances(
+                XRPAmount(10224106246),
+                STAmount{USD, UINT64_C(1012606848287914), -11},
+                xrp_usd.tokens()));
+
+            // XRP-EUR-BTC-USD
+            // This path doesn't provide any liquidity due to how
+            // offers are generated in multi-path. Analytical solution
+            // shows a different distribution:
+            // XRP-EUR-BTC-USD 11.6USD/11.64XRP, XRP-USD 60.7USD/60.8XRP,
+            // XRP-ETH-EUR-USD 27.6USD/27.6XRP
+            BEAST_EXPECT(xrp_eur.expectBalances(
+                XRP(10100), EUR(10000), xrp_eur.tokens()));
+            BEAST_EXPECT(eur_btc.expectBalances(
+                EUR(10000), BTC(10200), eur_btc.tokens()));
+            BEAST_EXPECT(btc_usd.expectBalances(
+                BTC(10100), USD(10000), btc_usd.tokens()));
+
+            BEAST_EXPECT(expectLine(env, carol, USD(300)));
+        }
+
+        // Dependent AMM
+        {
+            Env env(*this);
+            auto const ETH = gw["ETH"];
+            fund(
+                env,
+                gw,
+                {alice},
+                XRP(40000),
+                {EUR(50000), BTC(50000), ETH(50000), USD(50000)});
+            fund(env, gw, {carol, bob}, XRP(1000), {USD(200)}, Fund::Acct);
+            AMM xrp_eur(env, alice, XRP(10100), EUR(10000));
+            AMM eur_btc(env, alice, EUR(10000), BTC(10200));
+            AMM btc_usd(env, alice, BTC(10100), USD(10000));
+            AMM xrp_eth(env, alice, XRP(10000), ETH(10100));
+            AMM eth_eur(env, alice, ETH(10900), EUR(11000));
+            env(pay(bob, carol, USD(100)),
+                path(~EUR, ~BTC, ~USD),
+                path(~ETH, ~EUR, ~BTC, ~USD),
+                sendmax(XRP(200)));
+            // XRP-EUR-BTC-USD path provides ~17.8USD/~18.7XRP
+            // XRP-ETH-EUR-BTC-USD path provides ~82.2USD/82.4XRP
+            BEAST_EXPECT(xrp_eur.expectBalances(
+                XRPAmount(10118738472),
+                STAmount{EUR, UINT64_C(9981544436337968), -12},
+                xrp_eur.tokens()));
+            BEAST_EXPECT(eur_btc.expectBalances(
+                STAmount{EUR, UINT64_C(1010116096785173), -11},
+                STAmount{BTC, UINT64_C(1009791426968066), -11},
+                eur_btc.tokens()));
+            BEAST_EXPECT(btc_usd.expectBalances(
+                STAmount{BTC, UINT64_C(1020208573031934), -11},
+                USD(9900),
+                btc_usd.tokens()));
+            BEAST_EXPECT(xrp_eth.expectBalances(
+                XRPAmount(10082446396),
+                STAmount{ETH, UINT64_C(1001741072778012), -11},
+                xrp_eth.tokens()));
+            BEAST_EXPECT(eth_eur.expectBalances(
+                STAmount{ETH, UINT64_C(1098258927221988), -11},
+                STAmount{EUR, UINT64_C(109172945958103), -10},
+                eth_eur.tokens()));
+            BEAST_EXPECT(expectLine(env, carol, USD(300)));
+        }
+
+        // AMM offers limit
+        // Consuming 30 CLOB offers, results in hitting 30 AMM offers limit.
+        testAMM([&](AMM& ammAlice, Env& env) {
+            env.fund(XRP(1000), bob);
+            fund(env, gw, {bob}, {EUR(400)}, Fund::IOUOnly);
+            env(trust(alice, EUR(200)));
+            for (int i = 0; i < 30; ++i)
+                env(offer(alice, EUR(1.0 + 0.01 * i), XRP(1)));
+            // This is worse quality offer than 30 offers above.
+            // It will not be consumed because of AMM offers limit.
+            env(offer(alice, EUR(140), XRP(100)));
+            env(pay(bob, carol, USD(100)),
+                path(~XRP, ~USD),
+                sendmax(EUR(400)),
+                txflags(tfPartialPayment | tfNoRippleDirect));
+            // Carol gets ~29.91USD because of the AMM offers limit
+            BEAST_EXPECT(ammAlice.expectBalances(
+                XRP(10030),
+                STAmount{USD, UINT64_C(9970089730807577), -12},
+                ammAlice.tokens()));
+            BEAST_EXPECT(expectLine(
+                env, carol, STAmount{USD, UINT64_C(3002991026919241), -11}));
+            BEAST_EXPECT(expectOffers(env, alice, 1, {{{EUR(140), XRP(100)}}}));
+        });
+        // This payment is fulfilled
+        testAMM([&](AMM& ammAlice, Env& env) {
+            env.fund(XRP(1000), bob);
+            fund(env, gw, {bob}, {EUR(400)}, Fund::IOUOnly);
+            env(trust(alice, EUR(200)));
+            for (int i = 0; i < 29; ++i)
+                env(offer(alice, EUR(1.0 + 0.01 * i), XRP(1)));
+            // This is worse quality offer than 30 offers above.
+            // It will not be consumed because of AMM offers limit.
+            env(offer(alice, EUR(140), XRP(100)));
+            env(pay(bob, carol, USD(100)),
+                path(~XRP, ~USD),
+                sendmax(EUR(400)),
+                txflags(tfPartialPayment | tfNoRippleDirect));
+            BEAST_EXPECT(ammAlice.expectBalances(
+                XRPAmount{10101010102}, USD(9900), ammAlice.tokens()));
+            // Carol gets ~100USD
+            BEAST_EXPECT(expectLine(
+                env, carol, STAmount{USD, UINT64_C(3009999999999999), -11}));
+            BEAST_EXPECT(expectOffers(
+                env,
+                alice,
+                1,
+                {{{STAmount{EUR, 391858572, -7}, XRPAmount{27989898}}}}));
+        });
     }
 
     void
@@ -3131,7 +3289,7 @@ private:
 
         // AMM with one LPToken from another AMM.
         testAMM([&](AMM& ammAlice, Env& env) {
-            fund(env, gw, {alice}, {EUR(10000)}, Fund::None);
+            fund(env, gw, {alice}, {EUR(10000)}, Fund::IOUOnly);
             AMM ammAMMToken(
                 env, alice, EUR(10000), STAmount{ammAlice.lptIssue(), 1000000});
             BEAST_EXPECT(ammAMMToken.expectBalances(
@@ -3142,7 +3300,7 @@ private:
 
         // AMM with two LPTokens from other AMMs.
         testAMM([&](AMM& ammAlice, Env& env) {
-            fund(env, gw, {alice}, {EUR(10000)}, Fund::None);
+            fund(env, gw, {alice}, {EUR(10000)}, Fund::IOUOnly);
             AMM ammAlice1(env, alice, XRP(10000), EUR(10000));
             auto const token1 = ammAlice.lptIssue();
             auto const token2 = ammAlice1.lptIssue();
@@ -3160,7 +3318,7 @@ private:
         // AMM with two LPTokens from other AMMs.
         // LP deposits/withdraws.
         testAMM([&](AMM& ammAlice, Env& env) {
-            fund(env, gw, {alice}, {EUR(10000)}, Fund::None);
+            fund(env, gw, {alice}, {EUR(10000)}, Fund::IOUOnly);
             AMM ammAlice1(env, alice, XRP(10000), EUR(10000));
             auto const token1 = ammAlice.lptIssue();
             auto const token2 = ammAlice1.lptIssue();
@@ -3184,7 +3342,7 @@ private:
         // Offer crossing with two AMM LPtokens.
         testAMM([&](AMM& ammAlice, Env& env) {
             ammAlice.deposit(carol, 1000000);
-            fund(env, gw, {alice, carol}, {EUR(10000)}, Fund::None);
+            fund(env, gw, {alice, carol}, {EUR(10000)}, Fund::IOUOnly);
             AMM ammAlice1(env, alice, XRP(10000), EUR(10000));
             ammAlice1.deposit(carol, 1000000);
             auto const token1 = ammAlice.lptIssue();
@@ -3208,7 +3366,7 @@ private:
         // Offer crossing with two AMM LPTokens via AMM.
         testAMM([&](AMM& ammAlice, Env& env) {
             ammAlice.deposit(carol, 1000000);
-            fund(env, gw, {alice, carol}, {EUR(10000)}, Fund::None);
+            fund(env, gw, {alice, carol}, {EUR(10000)}, Fund::IOUOnly);
             AMM ammAlice1(env, alice, XRP(10000), EUR(10000));
             ammAlice1.deposit(carol, 1000000);
             auto const token1 = ammAlice.lptIssue();
@@ -3252,7 +3410,7 @@ private:
         // LP pays LPTokens to non-LP via AMM.
         // Non-LP must trust set for LPTokens.
         testAMM([&](AMM& ammAlice, Env& env) {
-            fund(env, gw, {alice}, {EUR(10000)}, Fund::None);
+            fund(env, gw, {alice}, {EUR(10000)}, Fund::IOUOnly);
             AMM ammAlice1(env, alice, XRP(10000), EUR(10000));
             auto const token1 = ammAlice.lptIssue();
             auto const token2 = ammAlice1.lptIssue();
@@ -4751,7 +4909,7 @@ private:
         Env env = pathTestEnv();
         env.fund(XRP(100000250), alice);
         fund(env, gw, {carol, bob}, {USD(100)}, Fund::All);
-        fund(env, gw, {alice}, {USD(100)}, Fund::None);
+        fund(env, gw, {alice}, {USD(100)}, Fund::IOUOnly);
         AMM ammCarol(env, carol, XRP(100), USD(100));
 
         STPathSet st;
@@ -6527,7 +6685,12 @@ private:
             fund(env, gw, {alice, bob}, XRP(10000));
             env.trust(USD(1000), alice, bob);
             env.trust(EUR(1000), alice, bob);
-            fund(env, bob, {alice, gw}, {BobUSD(100), BobEUR(100)}, Fund::None);
+            fund(
+                env,
+                bob,
+                {alice, gw},
+                {BobUSD(100), BobEUR(100)},
+                Fund::IOUOnly);
 
             AMM ammBobXRP_USD(env, bob, XRP(100), BobUSD(100));
             env(offer(gw, XRP(100), USD(100)), txflags(tfPassive));
@@ -7237,9 +7400,44 @@ public:
     }
 };
 
+class AMMFib_test : public Test
+{
+public:
+    void
+    run() override
+    {
+        using namespace jtx;
+
+        testAMM([&](AMM& ammAlice, Env& env) {
+            AMMContext ammCtx(alice, true);
+            AMMLiquidity<STAmount, STAmount> ammLiquidity(
+                *env.current(),
+                ammAlice.ammAccount(),
+                0,
+                USD,
+                XRP,
+                ammCtx,
+                env.journal);
+
+            for (int nIters = 0; nIters < 10; ++nIters)
+            {
+                auto const offer =
+                    ammLiquidity.getOffer(*env.current(), std::nullopt)
+                        ->amount();
+                std::cout << ammCtx.curIters() << " "
+                          << to_string(offer.in.iou()) << " " << offer.out.xrp()
+                          << std::endl;
+                ammCtx.setAMMUsed();
+                ammCtx.update();
+            }
+        });
+    }
+};
+
 BEAST_DEFINE_TESTSUITE(AMM, app, ripple);
 BEAST_DEFINE_TESTSUITE_MANUAL(AMMCalc, app, ripple);
 BEAST_DEFINE_TESTSUITE_MANUAL(AMMPerf, app, ripple);
+BEAST_DEFINE_TESTSUITE_MANUAL(AMMFib, app, ripple);
 
 }  // namespace test
 }  // namespace ripple

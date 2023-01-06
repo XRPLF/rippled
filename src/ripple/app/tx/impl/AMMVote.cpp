@@ -22,6 +22,7 @@
 #include <ripple/app/misc/AMM.h>
 #include <ripple/app/misc/AMM_formulae.h>
 #include <ripple/ledger/Sandbox.h>
+#include <ripple/protocol/AMM.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/STAccount.h>
 #include <ripple/protocol/TxFlags.h>

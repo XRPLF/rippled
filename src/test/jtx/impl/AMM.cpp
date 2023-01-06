@@ -18,7 +18,8 @@
 //==============================================================================
 
 #include <ripple/app/misc/AMM.h>
-#include <ripple/basics/random.h>
+#include <ripple/protocol/AMM.h>
+#include <ripple/protocol/AmountConversions.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 #include <test/jtx/AMM.h>

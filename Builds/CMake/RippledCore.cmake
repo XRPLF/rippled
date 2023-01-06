@@ -74,6 +74,7 @@ target_sources (xrpl_core PRIVATE
       subdir: protocol
   #]===============================]
   src/ripple/protocol/impl/AccountID.cpp
+  src/ripple/protocol/impl/AMM.cpp
   src/ripple/protocol/impl/Book.cpp
   src/ripple/protocol/impl/BuildInfo.cpp
   src/ripple/protocol/impl/ErrorCodes.cpp
@@ -202,6 +203,7 @@ install (
 install (
   FILES
     src/ripple/protocol/AccountID.h
+    src/ripple/protocol/AMM.h
     src/ripple/protocol/AmountConversions.h
     src/ripple/protocol/Book.h
     src/ripple/protocol/BuildInfo.h

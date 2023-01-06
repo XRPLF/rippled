@@ -22,13 +22,9 @@
 #include <ripple/basics/Expected.h>
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/ledger/View.h>
-#include <ripple/protocol/Quality.h>
 #include <ripple/protocol/STAmount.h>
-#include <ripple/protocol/STArray.h>
 #include <ripple/protocol/STLedgerEntry.h>
 #include <ripple/protocol/TER.h>
-#include <ripple/protocol/TxFlags.h>
-#include <ripple/protocol/digest.h>
 
 namespace ripple {
 
@@ -36,31 +32,6 @@ class ReadView;
 class ApplyView;
 class Sandbox;
 class NetClock;
-class STObject;
-class Rules;
-
-std::uint16_t constexpr TradingFeeThreshold = 1000;  // 1%
-
-/** Calculate AMM account ID.
- */
-AccountID
-ammAccountID(
-    std::uint16_t prefix,
-    uint256 const& parentHash,
-    uint256 const& ammID);
-
-/** Calculate Liquidity Provider Token (LPT) Currency.
- */
-Currency
-ammLPTCurrency(Currency const& cur1, Currency const& cur2);
-
-/** Calculate LPT Issue from AMM asset pair.
- */
-Issue
-ammLPTIssue(
-    Currency const& cur1,
-    Currency const& cur2,
-    AccountID const& ammAccountID);
 
 /** Get AMM pool balances.
  */
@@ -104,28 +75,6 @@ ammLPHolds(
     AccountID const& lpAccount,
     beast::Journal const j);
 
-/** Validate the amount.
- * If zero is false and amount is beast::zero then invalid amount.
- * Return error code if invalid amount.
- * If pair then validate amount's issue matches one of the pair's issue.
- */
-NotTEC
-invalidAMMAmount(
-    std::optional<STAmount> const& amount,
-    std::optional<std::pair<Issue, Issue>> const& pair = std::nullopt,
-    bool nonNegative = false);
-
-NotTEC
-invalidAMMAsset(
-    Issue const& issue,
-    std::optional<std::pair<Issue, Issue>> const& pair = std::nullopt);
-
-NotTEC
-invalidAMMAssetPair(
-    Issue const& issue1,
-    Issue const& issue2,
-    std::optional<std::pair<Issue, Issue>> const& pair = std::nullopt);
-
 /** Check if the line is frozen from the issuer.
  */
 bool
@@ -157,16 +106,6 @@ ammSend(
     AccountID const& to,
     STAmount const& amount,
     beast::Journal j);
-
-/** Get time slot of the auction slot.
- */
-std::optional<std::uint8_t>
-ammAuctionTimeSlot(std::uint64_t current, STObject const& auctionSlot);
-
-/** Return true if required AMM amendments are enabled
- */
-bool
-ammEnabled(Rules const&);
 
 /** Returns total amount held by AMM for the given token.
  */
