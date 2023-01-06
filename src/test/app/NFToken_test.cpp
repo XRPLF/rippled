@@ -5138,14 +5138,11 @@ class NFToken_test : public beast::unit_test::suite
     }
 
     void
-    testIOUEdgeCases(FeatureBitset features)
+    testIOUWithTransferFee(FeatureBitset features)
     {
         using namespace test::jtx;
 
-        testcase("IOU Edge Cases");
-
-        // TODO need to add complex cases with NFT transfer fees and broker
-        // fees
+        testcase("Payments with IOU transfer fees");
 
         for (auto const& tweakedFeatures :
              {features - fixUnburnableNFToken, features | fixUnburnableNFToken})
@@ -5153,15 +5150,19 @@ class NFToken_test : public beast::unit_test::suite
             Env env{*this, tweakedFeatures};
 
             Account const minter{"minter"};
+            Account const secondarySeller{"seller"};
             Account const buyer{"buyer"};
             Account const gw{"gateway"};
+            Account const broker{"broker"};
             IOU const gwXAU(gw["XAU"]);
             IOU const gwXPB(gw["XPB"]);
 
-            env.fund(XRP(1000), gw, minter, buyer);
+            env.fund(XRP(1000), gw, minter, secondarySeller, buyer, broker);
             env.close();
 
             env(trust(minter, gwXAU(2000)));
+            env(trust(secondarySeller, gwXAU(2000)));
+            env(trust(broker, gwXAU(10000)));
             env(trust(buyer, gwXAU(2000)));
             env(trust(buyer, gwXPB(2000)));
             env.close();
@@ -5170,27 +5171,48 @@ class NFToken_test : public beast::unit_test::suite
             env(rate(gw, 1.02));
             env.close();
 
-            auto expectInitialState =
-                [this, &env, &buyer, &minter, &gw, &gwXAU, &gwXPB]() {
-                    BEAST_EXPECT(env.balance(buyer, gwXAU) == gwXAU(1000));
-                    BEAST_EXPECT(env.balance(buyer, gwXPB) == gwXPB(0));
-                    BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(0));
-                    BEAST_EXPECT(env.balance(minter, gwXPB) == gwXPB(0));
-                    BEAST_EXPECT(env.balance(gw, buyer["XAU"]) == gwXAU(-1000));
-                    BEAST_EXPECT(env.balance(gw, buyer["XPB"]) == gwXPB(0));
-                    BEAST_EXPECT(env.balance(gw, minter["XAU"]) == gwXAU(0));
-                    BEAST_EXPECT(env.balance(gw, minter["XPB"]) == gwXPB(0));
-                };
+            auto expectInitialState = [this,
+                                       &env,
+                                       &buyer,
+                                       &minter,
+                                       &secondarySeller,
+                                       &broker,
+                                       &gw,
+                                       &gwXAU,
+                                       &gwXPB]() {
+                // Buyer should have XAU 1000, XPB 0
+                // Minter should have XAU 0, XPB 0
+                // Secondary seller should have XAU 0, XPB 0
+                // Broker should have XAU 5000, XPB 0
+                BEAST_EXPECT(env.balance(buyer, gwXAU) == gwXAU(1000));
+                BEAST_EXPECT(env.balance(buyer, gwXPB) == gwXPB(0));
+                BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(0));
+                BEAST_EXPECT(env.balance(minter, gwXPB) == gwXPB(0));
+                BEAST_EXPECT(env.balance(secondarySeller, gwXAU) == gwXAU(0));
+                BEAST_EXPECT(env.balance(secondarySeller, gwXPB) == gwXPB(0));
+                BEAST_EXPECT(env.balance(broker, gwXAU) == gwXAU(5000));
+                BEAST_EXPECT(env.balance(broker, gwXPB) == gwXPB(0));
+                BEAST_EXPECT(env.balance(gw, buyer["XAU"]) == gwXAU(-1000));
+                BEAST_EXPECT(env.balance(gw, buyer["XPB"]) == gwXPB(0));
+                BEAST_EXPECT(env.balance(gw, minter["XAU"]) == gwXAU(0));
+                BEAST_EXPECT(env.balance(gw, minter["XPB"]) == gwXPB(0));
+                BEAST_EXPECT(
+                    env.balance(gw, secondarySeller["XAU"]) == gwXAU(0));
+                BEAST_EXPECT(
+                    env.balance(gw, secondarySeller["XPB"]) == gwXPB(0));
+                BEAST_EXPECT(env.balance(gw, broker["XAU"]) == gwXAU(-5000));
+                BEAST_EXPECT(env.balance(gw, broker["XPB"]) == gwXPB(0));
+            };
 
             auto reinitializeTrustLineBalances = [&expectInitialState,
                                                   &env,
                                                   &buyer,
                                                   &minter,
+                                                  &secondarySeller,
+                                                  &broker,
                                                   &gw,
                                                   &gwXAU,
                                                   &gwXPB]() {
-                // Buyer should have XAU 1000, XPB 0
-                // Minter should have XAU 0, XPB 0
                 if (auto const difference =
                         gwXAU(1000) - env.balance(buyer, gwXAU);
                     difference > gwXAU(0))
@@ -5201,14 +5223,36 @@ class NFToken_test : public beast::unit_test::suite
                     env(pay(minter, gw, env.balance(minter, gwXAU)));
                 if (env.balance(minter, gwXPB) > gwXPB(0))
                     env(pay(minter, gw, env.balance(minter, gwXPB)));
+                if (env.balance(secondarySeller, gwXAU) > gwXAU(0))
+                    env(
+                        pay(secondarySeller,
+                            gw,
+                            env.balance(secondarySeller, gwXAU)));
+                if (env.balance(secondarySeller, gwXPB) > gwXPB(0))
+                    env(
+                        pay(secondarySeller,
+                            gw,
+                            env.balance(secondarySeller, gwXPB)));
+                auto brokerDiff = gwXAU(5000) - env.balance(broker, gwXAU);
+                if (brokerDiff > gwXAU(0))
+                    env(pay(gw, broker, brokerDiff));
+                else if (brokerDiff < gwXAU(0))
+                {
+                    brokerDiff.negate();
+                    env(pay(broker, gw, brokerDiff));
+                }
+                if (env.balance(broker, gwXPB) > gwXPB(0))
+                    env(pay(broker, gw, env.balance(broker, gwXPB)));
                 env.close();
                 expectInitialState();
             };
 
-            auto mintNFT = [&env](Account const& minter) {
-                uint256 const nftID =
-                    token::getNextID(env, minter, 0, tfTransferable);
-                env(token::mint(minter), txflags(tfTransferable));
+            auto mintNFT = [&env](Account const& minter, int transferFee = 0) {
+                uint256 const nftID = token::getNextID(
+                    env, minter, 0, tfTransferable, transferFee);
+                env(token::mint(minter),
+                    token::xferFee(transferFee),
+                    txflags(tfTransferable));
                 env.close();
                 return nftID;
             };
@@ -5632,6 +5676,215 @@ class NFToken_test : public beast::unit_test::suite
                 BEAST_EXPECT(env.balance(gw, minter["XPB"]) == gwXPB(-10));
                 BEAST_EXPECT(env.balance(gw, buyer["XPB"]) == gwXPB(-89.8));
             }
+            {
+                // There is a transfer fee on the NFT and buyer has exact
+                // amount (sellside)
+                reinitializeTrustLineBalances();
+
+                // secondarySeller has to sell it because transfer fees only
+                // happen on secondary sales
+                auto const nftID = mintNFT(minter, 3000);  // 3%
+                auto const primaryOfferID =
+                    createSellOffer(minter, nftID, XRP(0));
+                env(token::acceptSellOffer(secondarySeller, primaryOfferID));
+                env.close();
+
+                // now we can do a secondary sale
+                auto const offerID =
+                    createSellOffer(secondarySeller, nftID, gwXAU(1000));
+                auto const sellTER = tweakedFeatures[fixUnburnableNFToken]
+                    ? static_cast<TER>(tecINSUFFICIENT_FUNDS)
+                    : static_cast<TER>(tesSUCCESS);
+                env(token::acceptSellOffer(buyer, offerID), ter(sellTER));
+                env.close();
+
+                if (tweakedFeatures[fixUnburnableNFToken])
+                    expectInitialState();
+                else
+                {
+                    BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(30));
+                    BEAST_EXPECT(
+                        env.balance(secondarySeller, gwXAU) == gwXAU(970));
+                    BEAST_EXPECT(env.balance(buyer, gwXAU) == gwXAU(-20));
+                    BEAST_EXPECT(env.balance(gw, minter["XAU"]) == gwXAU(-30));
+                    BEAST_EXPECT(
+                        env.balance(gw, secondarySeller["XAU"]) == gwXAU(-970));
+                    BEAST_EXPECT(env.balance(gw, buyer["XAU"]) == gwXAU(20));
+                }
+            }
+            {
+                // There is a transfer fee on the NFT and buyer has exact
+                // amount (buyside)
+                reinitializeTrustLineBalances();
+
+                // secondarySeller has to sell it because transfer fees only
+                // happen on secondary sales
+                auto const nftID = mintNFT(minter, 3000);  // 3%
+                auto const primaryOfferID =
+                    createSellOffer(minter, nftID, XRP(0));
+                env(token::acceptSellOffer(secondarySeller, primaryOfferID));
+                env.close();
+
+                // now we can do a secondary sale
+                auto const offerID =
+                    createBuyOffer(buyer, secondarySeller, nftID, gwXAU(1000));
+                auto const sellTER = tweakedFeatures[fixUnburnableNFToken]
+                    ? static_cast<TER>(tecINSUFFICIENT_FUNDS)
+                    : static_cast<TER>(tesSUCCESS);
+                env(token::acceptBuyOffer(secondarySeller, offerID),
+                    ter(sellTER));
+                env.close();
+
+                if (tweakedFeatures[fixUnburnableNFToken])
+                    expectInitialState();
+                else
+                {
+                    BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(30));
+                    BEAST_EXPECT(
+                        env.balance(secondarySeller, gwXAU) == gwXAU(970));
+                    BEAST_EXPECT(env.balance(buyer, gwXAU) == gwXAU(-20));
+                    BEAST_EXPECT(env.balance(gw, minter["XAU"]) == gwXAU(-30));
+                    BEAST_EXPECT(
+                        env.balance(gw, secondarySeller["XAU"]) == gwXAU(-970));
+                    BEAST_EXPECT(env.balance(gw, buyer["XAU"]) == gwXAU(20));
+                }
+            }
+            {
+                // There is a transfer fee on the NFT and buyer has enough
+                // (sellside)
+                reinitializeTrustLineBalances();
+
+                // secondarySeller has to sell it because transfer fees only
+                // happen on secondary sales
+                auto const nftID = mintNFT(minter, 3000);  // 3%
+                auto const primaryOfferID =
+                    createSellOffer(minter, nftID, XRP(0));
+                env(token::acceptSellOffer(secondarySeller, primaryOfferID));
+                env.close();
+
+                // now we can do a secondary sale
+                auto const offerID =
+                    createSellOffer(secondarySeller, nftID, gwXAU(900));
+                env(token::acceptSellOffer(buyer, offerID));
+                env.close();
+
+                BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(27));
+                BEAST_EXPECT(env.balance(secondarySeller, gwXAU) == gwXAU(873));
+                BEAST_EXPECT(env.balance(buyer, gwXAU) == gwXAU(82));
+                BEAST_EXPECT(env.balance(gw, minter["XAU"]) == gwXAU(-27));
+                BEAST_EXPECT(
+                    env.balance(gw, secondarySeller["XAU"]) == gwXAU(-873));
+                BEAST_EXPECT(env.balance(gw, buyer["XAU"]) == gwXAU(-82));
+            }
+            {
+                // There is a transfer fee on the NFT and buyer has enough
+                // (buyside)
+                reinitializeTrustLineBalances();
+
+                // secondarySeller has to sell it because transfer fees only
+                // happen on secondary sales
+                auto const nftID = mintNFT(minter, 3000);  // 3%
+                auto const primaryOfferID =
+                    createSellOffer(minter, nftID, XRP(0));
+                env(token::acceptSellOffer(secondarySeller, primaryOfferID));
+                env.close();
+
+                // now we can do a secondary sale
+                auto const offerID =
+                    createBuyOffer(buyer, secondarySeller, nftID, gwXAU(900));
+                env(token::acceptBuyOffer(secondarySeller, offerID));
+                env.close();
+
+                // receives 3% of 900 - 27
+                BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(27));
+                // receives 97% of 900 - 873
+                BEAST_EXPECT(env.balance(secondarySeller, gwXAU) == gwXAU(873));
+                // pays 900 plus 2% transfer fee on XAU - 918
+                BEAST_EXPECT(env.balance(buyer, gwXAU) == gwXAU(82));
+                BEAST_EXPECT(env.balance(gw, minter["XAU"]) == gwXAU(-27));
+                BEAST_EXPECT(
+                    env.balance(gw, secondarySeller["XAU"]) == gwXAU(-873));
+                BEAST_EXPECT(env.balance(gw, buyer["XAU"]) == gwXAU(-82));
+            }
+            {
+                // There is a broker fee on the NFT. XAU transfer fee is only
+                // calculated from the buyer's output, not deducted from
+                // broker fee.
+                //
+                // For a payment of 500 with a 2% IOU transfee fee and 100
+                // broker fee:
+                //
+                // A) Total sale amount + IOU transfer fee is paid by buyer
+                //      (Buyer pays (1.02 * 500) = 510)
+                // B) GW receives the additional IOU transfer fee
+                //      (GW receives 10 from buyer calculated above)
+                // C) Broker receives broker fee (no IOU transfer fee)
+                //      (Broker receives 100 from buyer)
+                // D) Seller receives balance (no IOU transfer fee)
+                //      (Seller receives (510 - 10 - 100) = 400)
+                reinitializeTrustLineBalances();
+
+                auto const nftID = mintNFT(minter);
+                auto const sellOffer =
+                    createSellOffer(minter, nftID, gwXAU(300));
+                auto const buyOffer =
+                    createBuyOffer(buyer, minter, nftID, gwXAU(500));
+                env(token::brokerOffers(broker, buyOffer, sellOffer),
+                    token::brokerFee(gwXAU(100)));
+                env.close();
+
+                BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(400));
+                BEAST_EXPECT(env.balance(buyer, gwXAU) == gwXAU(490));
+                BEAST_EXPECT(env.balance(broker, gwXAU) == gwXAU(5100));
+                BEAST_EXPECT(env.balance(gw, minter["XAU"]) == gwXAU(-400));
+                BEAST_EXPECT(env.balance(gw, buyer["XAU"]) == gwXAU(-490));
+                BEAST_EXPECT(env.balance(gw, broker["XAU"]) == gwXAU(-5100));
+            }
+            {
+                // There is broker and transfer fee on the NFT
+                //
+                // For a payment of 500 with a 2% IOU transfer fee, 3% NFT
+                // transfer fee, and 100 broker fee:
+                //
+                // A) Total sale amount + IOU transfer fee is paid by buyer
+                //      (Buyer pays (1.02 * 500) = 510)
+                // B) GW receives the additional IOU transfer fee
+                //      (GW receives 10 from buyer calculated above)
+                // C) Broker receives broker fee (no IOU transfer fee)
+                //      (Broker receives 100 from buyer)
+                // D) Minter receives transfer fee (no IOU transfer fee)
+                //      (Minter receives 0.03 * (510 - 10 - 100) = 12)
+                // E) Seller receives balance (no IOU transfer fee)
+                //      (Seller receives (510 - 10 - 100 - 12) = 388)
+                reinitializeTrustLineBalances();
+
+                // secondarySeller has to sell it because transfer fees only
+                // happen on secondary sales
+                auto const nftID = mintNFT(minter, 3000);  // 3%
+                auto const primaryOfferID =
+                    createSellOffer(minter, nftID, XRP(0));
+                env(token::acceptSellOffer(secondarySeller, primaryOfferID));
+                env.close();
+
+                // now we can do a secondary sale
+                auto const sellOffer =
+                    createSellOffer(secondarySeller, nftID, gwXAU(300));
+                auto const buyOffer =
+                    createBuyOffer(buyer, secondarySeller, nftID, gwXAU(500));
+                env(token::brokerOffers(broker, buyOffer, sellOffer),
+                    token::brokerFee(gwXAU(100)));
+                env.close();
+
+                BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(12));
+                BEAST_EXPECT(env.balance(buyer, gwXAU) == gwXAU(490));
+                BEAST_EXPECT(env.balance(secondarySeller, gwXAU) == gwXAU(388));
+                BEAST_EXPECT(env.balance(broker, gwXAU) == gwXAU(5100));
+                BEAST_EXPECT(env.balance(gw, minter["XAU"]) == gwXAU(-12));
+                BEAST_EXPECT(env.balance(gw, buyer["XAU"]) == gwXAU(-490));
+                BEAST_EXPECT(
+                    env.balance(gw, secondarySeller["XAU"]) == gwXAU(-388));
+                BEAST_EXPECT(env.balance(gw, broker["XAU"]) == gwXAU(-5100));
+            }
         }
     }
 
@@ -5664,7 +5917,7 @@ class NFToken_test : public beast::unit_test::suite
         testNFTokenDeleteAccount(features);
         testNftXxxOffers(features);
         testFixNFTokenNegOffer(features);
-        testIOUEdgeCases(features);
+        testIOUWithTransferFee(features);
     }
 
 public:
