@@ -1,0 +1,1725 @@
+@startuml
+title Class Diagram for proto
+enum "org::xrpl::rpc::v1::CurrencyAmount::AmountCase" as C_0001038726607561629830
+enum C_0001038726607561629830 {
+kXrpAmount
+kIssuedCurrencyAmount
+AMOUNT_NOT_SET
+}
+class "org::xrpl::rpc::v1::CancelAfterDefaultTypeInternal" as C_0001566907142541924087
+class C_0001566907142541924087 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<CancelAfter>
+}
+class "org::xrpl::rpc::v1::ClearFlagDefaultTypeInternal" as C_0001302274201456252906
+class C_0001302274201456252906 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<ClearFlag>
+}
+class "org::xrpl::rpc::v1::CloseTimeDefaultTypeInternal" as C_0002032740883502734504
+class C_0002032740883502734504 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<CloseTime>
+}
+class "org::xrpl::rpc::v1::DateDefaultTypeInternal" as C_0001768918102727851451
+class C_0001768918102727851451 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<Date>
+}
+class "org::xrpl::rpc::v1::DestinationTagDefaultTypeInternal" as C_0000867619242281995521
+class C_0000867619242281995521 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<DestinationTag>
+}
+class "org::xrpl::rpc::v1::ExpirationDefaultTypeInternal" as C_0001531142518923842453
+class C_0001531142518923842453 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<Expiration>
+}
+class "org::xrpl::rpc::v1::FinishAfterDefaultTypeInternal" as C_0001036961778080051123
+class C_0001036961778080051123 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<FinishAfter>
+}
+class "org::xrpl::rpc::v1::FlagsDefaultTypeInternal" as C_0001857742867199291911
+class C_0001857742867199291911 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<Flags>
+}
+class "org::xrpl::rpc::v1::HighQualityInDefaultTypeInternal" as C_0001217892459829436083
+class C_0001217892459829436083 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<HighQualityIn>
+}
+class "org::xrpl::rpc::v1::HighQualityOutDefaultTypeInternal" as C_0001948537880260349486
+class C_0001948537880260349486 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<HighQualityOut>
+}
+class "org::xrpl::rpc::v1::FirstLedgerSequenceDefaultTypeInternal" as C_0001638283537804952245
+class C_0001638283537804952245 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<FirstLedgerSequence>
+}
+class "org::xrpl::rpc::v1::LastLedgerSequenceDefaultTypeInternal" as C_0001654191651938177077
+class C_0001654191651938177077 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<LastLedgerSequence>
+}
+class "org::xrpl::rpc::v1::LowQualityInDefaultTypeInternal" as C_0002135929535148998969
+class C_0002135929535148998969 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<LowQualityIn>
+}
+class "org::xrpl::rpc::v1::LowQualityOutDefaultTypeInternal" as C_0001202526872104560769
+class C_0001202526872104560769 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<LowQualityOut>
+}
+class "org::xrpl::rpc::v1::OfferSequenceDefaultTypeInternal" as C_0001030298276522571828
+class C_0001030298276522571828 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<OfferSequence>
+}
+class "org::xrpl::rpc::v1::OwnerCountDefaultTypeInternal" as C_0001572315200395698169
+class C_0001572315200395698169 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<OwnerCount>
+}
+class "org::xrpl::rpc::v1::PreviousTransactionLedgerSequenceDefaultTypeInternal" as C_0002302728420170310340
+class C_0002302728420170310340 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<PreviousTransactionLedgerSequence>
+}
+class "org::xrpl::rpc::v1::QualityInDefaultTypeInternal" as C_0000349694033188812227
+class C_0000349694033188812227 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<QualityIn>
+}
+class "org::xrpl::rpc::v1::QualityOutDefaultTypeInternal" as C_0002132219965833290964
+class C_0002132219965833290964 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<QualityOut>
+}
+class "org::xrpl::rpc::v1::ReferenceFeeUnitsDefaultTypeInternal" as C_0001049522921924072034
+class C_0001049522921924072034 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<ReferenceFeeUnits>
+}
+class "org::xrpl::rpc::v1::ReserveBaseDefaultTypeInternal" as C_0000065286529358287993
+class C_0000065286529358287993 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<ReserveBase>
+}
+class "org::xrpl::rpc::v1::ReserveIncrementDefaultTypeInternal" as C_0001229335182507391245
+class C_0001229335182507391245 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<ReserveIncrement>
+}
+class "org::xrpl::rpc::v1::SequenceDefaultTypeInternal" as C_0000581176227731267761
+class C_0000581176227731267761 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<Sequence>
+}
+class "org::xrpl::rpc::v1::SetFlagDefaultTypeInternal" as C_0000107483295615594661
+class C_0000107483295615594661 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<SetFlag>
+}
+class "org::xrpl::rpc::v1::SettleDelayDefaultTypeInternal" as C_0001206707240524461518
+class C_0001206707240524461518 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<SettleDelay>
+}
+class "org::xrpl::rpc::v1::SignerListIDDefaultTypeInternal" as C_0000653949458627646438
+class C_0000653949458627646438 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<SignerListID>
+}
+class "org::xrpl::rpc::v1::SignerQuorumDefaultTypeInternal" as C_0001564107560165429314
+class C_0001564107560165429314 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<SignerQuorum>
+}
+class "org::xrpl::rpc::v1::SignerWeightDefaultTypeInternal" as C_0000152340529299139557
+class C_0000152340529299139557 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<SignerWeight>
+}
+class "org::xrpl::rpc::v1::SourceTagDefaultTypeInternal" as C_0000616999227971152787
+class C_0000616999227971152787 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<SourceTag>
+}
+class "org::xrpl::rpc::v1::TickSizeDefaultTypeInternal" as C_0000594050356835487678
+class C_0000594050356835487678 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<TickSize>
+}
+class "org::xrpl::rpc::v1::TicketDefaultTypeInternal" as C_0000532706297272719432
+class C_0000532706297272719432 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<Ticket>
+}
+class "org::xrpl::rpc::v1::TicketCountDefaultTypeInternal" as C_0001666409957120828906
+class C_0001666409957120828906 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<TicketCount>
+}
+class "org::xrpl::rpc::v1::TicketSequenceDefaultTypeInternal" as C_0000806190925718384365
+class C_0000806190925718384365 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<TicketSequence>
+}
+class "org::xrpl::rpc::v1::TransferRateDefaultTypeInternal" as C_0001259003088860744434
+class C_0001259003088860744434 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<TransferRate>
+}
+class "org::xrpl::rpc::v1::BaseFeeDefaultTypeInternal" as C_0000058493521493632047
+class C_0000058493521493632047 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<BaseFee>
+}
+class "org::xrpl::rpc::v1::BookNodeDefaultTypeInternal" as C_0000301739925679006214
+class C_0000301739925679006214 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<BookNode>
+}
+class "org::xrpl::rpc::v1::DestinationNodeDefaultTypeInternal" as C_0000363288921026787068
+class C_0000363288921026787068 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<DestinationNode>
+}
+class "org::xrpl::rpc::v1::HighNodeDefaultTypeInternal" as C_0000903269746005118974
+class C_0000903269746005118974 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<HighNode>
+}
+class "org::xrpl::rpc::v1::IndexNextDefaultTypeInternal" as C_0001416961056172809927
+class C_0001416961056172809927 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<IndexNext>
+}
+class "org::xrpl::rpc::v1::IndexPreviousDefaultTypeInternal" as C_0001148592887615063190
+class C_0001148592887615063190 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<IndexPrevious>
+}
+class "org::xrpl::rpc::v1::LowNodeDefaultTypeInternal" as C_0000060054409978218343
+class C_0000060054409978218343 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<LowNode>
+}
+class "org::xrpl::rpc::v1::OwnerNodeDefaultTypeInternal" as C_0000195097134582045315
+class C_0000195097134582045315 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<OwnerNode>
+}
+class "org::xrpl::rpc::v1::EmailHashDefaultTypeInternal" as C_0000911380887929980769
+class C_0000911380887929980769 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<EmailHash>
+}
+class "org::xrpl::rpc::v1::TakerGetsIssuerDefaultTypeInternal" as C_0001273078410662509333
+class C_0001273078410662509333 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<TakerGetsIssuer>
+}
+class "org::xrpl::rpc::v1::TakerPaysIssuerDefaultTypeInternal" as C_0000187350163500842521
+class C_0000187350163500842521 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<TakerPaysIssuer>
+}
+class "org::xrpl::rpc::v1::AccountTransactionIDDefaultTypeInternal" as C_0001066655628214794306
+class C_0001066655628214794306 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<AccountTransactionID>
+}
+class "org::xrpl::rpc::v1::BookDirectoryDefaultTypeInternal" as C_0001064605362442995897
+class C_0001064605362442995897 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<BookDirectory>
+}
+class "org::xrpl::rpc::v1::ChannelDefaultTypeInternal" as C_0000188481972006245189
+class C_0000188481972006245189 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<Channel>
+}
+class "org::xrpl::rpc::v1::CheckIDDefaultTypeInternal" as C_0001766324526051422627
+class C_0001766324526051422627 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<CheckID>
+}
+class "org::xrpl::rpc::v1::HashDefaultTypeInternal" as C_0001963195973773833335
+class C_0001963195973773833335 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<Hash>
+}
+class "org::xrpl::rpc::v1::IndexDefaultTypeInternal" as C_0002300392811365374106
+class C_0002300392811365374106 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<Index>
+}
+class "org::xrpl::rpc::v1::InvoiceIDDefaultTypeInternal" as C_0000104537005730395536
+class C_0000104537005730395536 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<InvoiceID>
+}
+class "org::xrpl::rpc::v1::PreviousTransactionIDDefaultTypeInternal" as C_0002169853387024944968
+class C_0002169853387024944968 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<PreviousTransactionID>
+}
+class "org::xrpl::rpc::v1::RootIndexDefaultTypeInternal" as C_0000798429860105242852
+class C_0000798429860105242852 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<RootIndex>
+}
+class "org::xrpl::rpc::v1::ConditionDefaultTypeInternal" as C_0000589249567219715017
+class C_0000589249567219715017 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<Condition>
+}
+class "org::xrpl::rpc::v1::FulfillmentDefaultTypeInternal" as C_0002157859129724130074
+class C_0002157859129724130074 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<Fulfillment>
+}
+class "org::xrpl::rpc::v1::MemoDataDefaultTypeInternal" as C_0000946710615982290703
+class C_0000946710615982290703 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<MemoData>
+}
+class "org::xrpl::rpc::v1::MemoFormatDefaultTypeInternal" as C_0000269727691320313864
+class C_0000269727691320313864 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<MemoFormat>
+}
+class "org::xrpl::rpc::v1::MemoTypeDefaultTypeInternal" as C_0001558978796540454671
+class C_0001558978796540454671 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<MemoType>
+}
+class "org::xrpl::rpc::v1::MessageKeyDefaultTypeInternal" as C_0002236487460058947167
+class C_0002236487460058947167 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<MessageKey>
+}
+class "org::xrpl::rpc::v1::PublicKeyDefaultTypeInternal" as C_0001811457553734392457
+class C_0001811457553734392457 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<PublicKey>
+}
+class "org::xrpl::rpc::v1::PaymentChannelSignatureDefaultTypeInternal" as C_0001962208947550619557
+class C_0001962208947550619557 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<PaymentChannelSignature>
+}
+class "org::xrpl::rpc::v1::SigningPublicKeyDefaultTypeInternal" as C_0000211696473123403467
+class C_0000211696473123403467 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<SigningPublicKey>
+}
+class "org::xrpl::rpc::v1::TransactionSignatureDefaultTypeInternal" as C_0001783404242129440720
+class C_0001783404242129440720 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<TransactionSignature>
+}
+class "org::xrpl::rpc::v1::ValidatorToDisableDefaultTypeInternal" as C_0001037525709006647156
+class C_0001037525709006647156 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<ValidatorToDisable>
+}
+class "org::xrpl::rpc::v1::ValidatorToReEnableDefaultTypeInternal" as C_0001177839883863361487
+class C_0001177839883863361487 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<ValidatorToReEnable>
+}
+class "org::xrpl::rpc::v1::TakerGetsCurrenyDefaultTypeInternal" as C_0001860808422220669134
+class C_0001860808422220669134 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<TakerGetsCurreny>
+}
+class "org::xrpl::rpc::v1::TakerPaysCurrencyDefaultTypeInternal" as C_0001739632895624384883
+class C_0001739632895624384883 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<TakerPaysCurrency>
+}
+class "org::xrpl::rpc::v1::AmountDefaultTypeInternal" as C_0002276269304027852007
+class C_0002276269304027852007 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<Amount>
+}
+class "org::xrpl::rpc::v1::BalanceDefaultTypeInternal" as C_0002190615174137947055
+class C_0002190615174137947055 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<Balance>
+}
+class "org::xrpl::rpc::v1::DeliverMinDefaultTypeInternal" as C_0001578246426476643718
+class C_0001578246426476643718 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<DeliverMin>
+}
+class "org::xrpl::rpc::v1::DeliveredAmountDefaultTypeInternal" as C_0000713088931821236516
+class C_0000713088931821236516 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<DeliveredAmount>
+}
+class "org::xrpl::rpc::v1::HighLimitDefaultTypeInternal" as C_0000332279367122096622
+class C_0000332279367122096622 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<HighLimit>
+}
+class "org::xrpl::rpc::v1::LimitAmountDefaultTypeInternal" as C_0000163600534541308978
+class C_0000163600534541308978 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<LimitAmount>
+}
+class "org::xrpl::rpc::v1::LowLimitDefaultTypeInternal" as C_0001664403489266152994
+class C_0001664403489266152994 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<LowLimit>
+}
+class "org::xrpl::rpc::v1::SendMaxDefaultTypeInternal" as C_0000990798425446844627
+class C_0000990798425446844627 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<SendMax>
+}
+class "org::xrpl::rpc::v1::TakerGetsDefaultTypeInternal" as C_0000785081764788072522
+class C_0000785081764788072522 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<TakerGets>
+}
+class "org::xrpl::rpc::v1::TakerPaysDefaultTypeInternal" as C_0002244135840104893667
+class C_0002244135840104893667 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<TakerPays>
+}
+class "org::xrpl::rpc::v1::AccountDefaultTypeInternal" as C_0000588210978668675449
+class C_0000588210978668675449 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<Account>
+}
+class "org::xrpl::rpc::v1::AuthorizeDefaultTypeInternal" as C_0000046182928238440861
+class C_0000046182928238440861 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<Authorize>
+}
+class "org::xrpl::rpc::v1::DestinationDefaultTypeInternal" as C_0000184498666253756739
+class C_0000184498666253756739 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<Destination>
+}
+class "org::xrpl::rpc::v1::OwnerDefaultTypeInternal" as C_0001310124644133342911
+class C_0001310124644133342911 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<Owner>
+}
+class "org::xrpl::rpc::v1::RegularKeyDefaultTypeInternal" as C_0000513734685006590369
+class C_0000513734685006590369 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<RegularKey>
+}
+class "org::xrpl::rpc::v1::UnauthorizeDefaultTypeInternal" as C_0001510348525358676552
+class C_0001510348525358676552 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<Unauthorize>
+}
+class "org::xrpl::rpc::v1::DomainDefaultTypeInternal" as C_0001846684455585390362
+class C_0001846684455585390362 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<Domain>
+}
+class "org::xrpl::rpc::v1::SignerEntryDefaultTypeInternal" as C_0001118515846830376898
+class C_0001118515846830376898 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<SignerEntry>
+}
+class "org::xrpl::rpc::v1::DisabledValidatorDefaultTypeInternal" as C_0000218172841308235224
+class C_0000218172841308235224 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<DisabledValidator>
+}
+class "org::xrpl::rpc::v1::CancelAfter::HasBitSetters" as C_0000261265990100393543
+class C_0000261265990100393543 {
+}
+class "org::xrpl::rpc::v1::ClearFlag::HasBitSetters" as C_0000492635834491060732
+class C_0000492635834491060732 {
+}
+class "org::xrpl::rpc::v1::CloseTime::HasBitSetters" as C_0000296911146327476894
+class C_0000296911146327476894 {
+}
+class "org::xrpl::rpc::v1::Date::HasBitSetters" as C_0000527177071294844127
+class C_0000527177071294844127 {
+}
+class "org::xrpl::rpc::v1::DestinationTag::HasBitSetters" as C_0002017507362754869094
+class C_0002017507362754869094 {
+}
+class "org::xrpl::rpc::v1::Expiration::HasBitSetters" as C_0001512245492327869398
+class C_0001512245492327869398 {
+}
+class "org::xrpl::rpc::v1::FinishAfter::HasBitSetters" as C_0000573175072452978887
+class C_0000573175072452978887 {
+}
+class "org::xrpl::rpc::v1::Flags::HasBitSetters" as C_0000976920400447825828
+class C_0000976920400447825828 {
+}
+class "org::xrpl::rpc::v1::HighQualityIn::HasBitSetters" as C_0000782804920917604993
+class C_0000782804920917604993 {
+}
+class "org::xrpl::rpc::v1::HighQualityOut::HasBitSetters" as C_0000059882071689971539
+class C_0000059882071689971539 {
+}
+class "org::xrpl::rpc::v1::FirstLedgerSequence::HasBitSetters" as C_0000008662125609962734
+class C_0000008662125609962734 {
+}
+class "org::xrpl::rpc::v1::LastLedgerSequence::HasBitSetters" as C_0001770827018357941630
+class C_0001770827018357941630 {
+}
+class "org::xrpl::rpc::v1::LowQualityIn::HasBitSetters" as C_0001641886436643383152
+class C_0001641886436643383152 {
+}
+class "org::xrpl::rpc::v1::LowQualityOut::HasBitSetters" as C_0002244319425007774930
+class C_0002244319425007774930 {
+}
+class "org::xrpl::rpc::v1::OfferSequence::HasBitSetters" as C_0002026752125652793368
+class C_0002026752125652793368 {
+}
+class "org::xrpl::rpc::v1::OwnerCount::HasBitSetters" as C_0001336014653302764182
+class C_0001336014653302764182 {
+}
+class "org::xrpl::rpc::v1::PreviousTransactionLedgerSequence::HasBitSetters" as C_0000139389236807478856
+class C_0000139389236807478856 {
+}
+class "org::xrpl::rpc::v1::QualityIn::HasBitSetters" as C_0001835961590566925988
+class C_0001835961590566925988 {
+}
+class "org::xrpl::rpc::v1::QualityOut::HasBitSetters" as C_0002057637271684799230
+class C_0002057637271684799230 {
+}
+class "org::xrpl::rpc::v1::ReferenceFeeUnits::HasBitSetters" as C_0001441949066042695639
+class C_0001441949066042695639 {
+}
+class "org::xrpl::rpc::v1::ReserveBase::HasBitSetters" as C_0001740075922893792263
+class C_0001740075922893792263 {
+}
+class "org::xrpl::rpc::v1::ReserveIncrement::HasBitSetters" as C_0000807825486017471422
+class C_0000807825486017471422 {
+}
+class "org::xrpl::rpc::v1::Sequence::HasBitSetters" as C_0001839530765007214924
+class C_0001839530765007214924 {
+}
+class "org::xrpl::rpc::v1::SetFlag::HasBitSetters" as C_0002063600924432228097
+class C_0002063600924432228097 {
+}
+class "org::xrpl::rpc::v1::SettleDelay::HasBitSetters" as C_0000045906195563893690
+class C_0000045906195563893690 {
+}
+class "org::xrpl::rpc::v1::SignerListID::HasBitSetters" as C_0000249107428479743785
+class C_0000249107428479743785 {
+}
+class "org::xrpl::rpc::v1::SignerQuorum::HasBitSetters" as C_0002212005981662249946
+class C_0002212005981662249946 {
+}
+class "org::xrpl::rpc::v1::SignerWeight::HasBitSetters" as C_0001932905985980843214
+class C_0001932905985980843214 {
+}
+class "org::xrpl::rpc::v1::SourceTag::HasBitSetters" as C_0001246538106440005196
+class C_0001246538106440005196 {
+}
+class "org::xrpl::rpc::v1::TickSize::HasBitSetters" as C_0000475316822970758796
+class C_0000475316822970758796 {
+}
+class "org::xrpl::rpc::v1::Ticket::HasBitSetters" as C_0001733294910135991864
+class C_0001733294910135991864 {
+}
+class "org::xrpl::rpc::v1::TicketCount::HasBitSetters" as C_0001623049205772032117
+class C_0001623049205772032117 {
+}
+class "org::xrpl::rpc::v1::TicketSequence::HasBitSetters" as C_0001533809469730979442
+class C_0001533809469730979442 {
+}
+class "org::xrpl::rpc::v1::TransferRate::HasBitSetters" as C_0002208167157583499098
+class C_0002208167157583499098 {
+}
+class "org::xrpl::rpc::v1::BaseFee::HasBitSetters" as C_0001771053842636730304
+class C_0001771053842636730304 {
+}
+class "org::xrpl::rpc::v1::BookNode::HasBitSetters" as C_0002078496318827031366
+class C_0002078496318827031366 {
+}
+class "org::xrpl::rpc::v1::DestinationNode::HasBitSetters" as C_0002081029303459805484
+class C_0002081029303459805484 {
+}
+class "org::xrpl::rpc::v1::HighNode::HasBitSetters" as C_0000766662436526894048
+class C_0000766662436526894048 {
+}
+class "org::xrpl::rpc::v1::IndexNext::HasBitSetters" as C_0001936257923713880180
+class C_0001936257923713880180 {
+}
+class "org::xrpl::rpc::v1::IndexPrevious::HasBitSetters" as C_0000249313563984460772
+class C_0000249313563984460772 {
+}
+class "org::xrpl::rpc::v1::LowNode::HasBitSetters" as C_0002120177786903993010
+class C_0002120177786903993010 {
+}
+class "org::xrpl::rpc::v1::OwnerNode::HasBitSetters" as C_0000087299030921344988
+class C_0000087299030921344988 {
+}
+class "org::xrpl::rpc::v1::EmailHash::HasBitSetters" as C_0001310858672173391879
+class C_0001310858672173391879 {
+}
+class "org::xrpl::rpc::v1::TakerGetsIssuer::HasBitSetters" as C_0001903968890536838620
+class C_0001903968890536838620 {
+}
+class "org::xrpl::rpc::v1::TakerPaysIssuer::HasBitSetters" as C_0001429789191249320445
+class C_0001429789191249320445 {
+}
+class "org::xrpl::rpc::v1::AccountTransactionID::HasBitSetters" as C_0000098394547494212604
+class C_0000098394547494212604 {
+}
+class "org::xrpl::rpc::v1::BookDirectory::HasBitSetters" as C_0000198073662088387984
+class C_0000198073662088387984 {
+}
+class "org::xrpl::rpc::v1::Channel::HasBitSetters" as C_0000602754743373818627
+class C_0000602754743373818627 {
+}
+class "org::xrpl::rpc::v1::CheckID::HasBitSetters" as C_0002233359311259973549
+class C_0002233359311259973549 {
+}
+class "org::xrpl::rpc::v1::Hash::HasBitSetters" as C_0000630609964048709058
+class C_0000630609964048709058 {
+}
+class "org::xrpl::rpc::v1::Index::HasBitSetters" as C_0000840205514940390366
+class C_0000840205514940390366 {
+}
+class "org::xrpl::rpc::v1::InvoiceID::HasBitSetters" as C_0001683985399359404897
+class C_0001683985399359404897 {
+}
+class "org::xrpl::rpc::v1::PreviousTransactionID::HasBitSetters" as C_0001071913029374421507
+class C_0001071913029374421507 {
+}
+class "org::xrpl::rpc::v1::RootIndex::HasBitSetters" as C_0001002011747139358789
+class C_0001002011747139358789 {
+}
+class "org::xrpl::rpc::v1::Condition::HasBitSetters" as C_0001276419408926027308
+class C_0001276419408926027308 {
+}
+class "org::xrpl::rpc::v1::Fulfillment::HasBitSetters" as C_0000259688672184904268
+class C_0000259688672184904268 {
+}
+class "org::xrpl::rpc::v1::MemoData::HasBitSetters" as C_0000450610929428110103
+class C_0000450610929428110103 {
+}
+class "org::xrpl::rpc::v1::MemoFormat::HasBitSetters" as C_0002088308310425151631
+class C_0002088308310425151631 {
+}
+class "org::xrpl::rpc::v1::MemoType::HasBitSetters" as C_0000279208382042104707
+class C_0000279208382042104707 {
+}
+class "org::xrpl::rpc::v1::MessageKey::HasBitSetters" as C_0001514662031164537299
+class C_0001514662031164537299 {
+}
+class "org::xrpl::rpc::v1::PublicKey::HasBitSetters" as C_0000802295148043894955
+class C_0000802295148043894955 {
+}
+class "org::xrpl::rpc::v1::PaymentChannelSignature::HasBitSetters" as C_0000155265369142942599
+class C_0000155265369142942599 {
+}
+class "org::xrpl::rpc::v1::SigningPublicKey::HasBitSetters" as C_0000337935710043722528
+class C_0000337935710043722528 {
+}
+class "org::xrpl::rpc::v1::TransactionSignature::HasBitSetters" as C_0001972455229594458924
+class C_0001972455229594458924 {
+}
+class "org::xrpl::rpc::v1::ValidatorToDisable::HasBitSetters" as C_0000452105269427945321
+class C_0000452105269427945321 {
+}
+class "org::xrpl::rpc::v1::ValidatorToReEnable::HasBitSetters" as C_0001740276680276665635
+class C_0001740276680276665635 {
+}
+class "org::xrpl::rpc::v1::TakerGetsCurreny::HasBitSetters" as C_0000114986130989646819
+class C_0000114986130989646819 {
+{static} +value() : const ::org::xrpl::rpc::v1::Currency &
+}
+class "org::xrpl::rpc::v1::TakerPaysCurrency::HasBitSetters" as C_0000125187990244440333
+class C_0000125187990244440333 {
+{static} +value() : const ::org::xrpl::rpc::v1::Currency &
+}
+class "org::xrpl::rpc::v1::Amount::HasBitSetters" as C_0000151786120029353106
+class C_0000151786120029353106 {
+{static} +value() : const ::org::xrpl::rpc::v1::CurrencyAmount &
+}
+class "org::xrpl::rpc::v1::Balance::HasBitSetters" as C_0002145452615370380774
+class C_0002145452615370380774 {
+{static} +value() : const ::org::xrpl::rpc::v1::CurrencyAmount &
+}
+class "org::xrpl::rpc::v1::DeliverMin::HasBitSetters" as C_0001420398232325949307
+class C_0001420398232325949307 {
+{static} +value() : const ::org::xrpl::rpc::v1::CurrencyAmount &
+}
+class "org::xrpl::rpc::v1::DeliveredAmount::HasBitSetters" as C_0000767106619689849534
+class C_0000767106619689849534 {
+{static} +value() : const ::org::xrpl::rpc::v1::CurrencyAmount &
+}
+class "org::xrpl::rpc::v1::HighLimit::HasBitSetters" as C_0001721026075266303317
+class C_0001721026075266303317 {
+{static} +value() : const ::org::xrpl::rpc::v1::CurrencyAmount &
+}
+class "org::xrpl::rpc::v1::LimitAmount::HasBitSetters" as C_0000657741262105368116
+class C_0000657741262105368116 {
+{static} +value() : const ::org::xrpl::rpc::v1::CurrencyAmount &
+}
+class "org::xrpl::rpc::v1::LowLimit::HasBitSetters" as C_0002117506226856336259
+class C_0002117506226856336259 {
+{static} +value() : const ::org::xrpl::rpc::v1::CurrencyAmount &
+}
+class "org::xrpl::rpc::v1::SendMax::HasBitSetters" as C_0002051389407446082484
+class C_0002051389407446082484 {
+{static} +value() : const ::org::xrpl::rpc::v1::CurrencyAmount &
+}
+class "org::xrpl::rpc::v1::TakerGets::HasBitSetters" as C_0001647449361709504875
+class C_0001647449361709504875 {
+{static} +value() : const ::org::xrpl::rpc::v1::CurrencyAmount &
+}
+class "org::xrpl::rpc::v1::TakerPays::HasBitSetters" as C_0000366931186668158428
+class C_0000366931186668158428 {
+{static} +value() : const ::org::xrpl::rpc::v1::CurrencyAmount &
+}
+class "org::xrpl::rpc::v1::Account::HasBitSetters" as C_0000244623703232276700
+class C_0000244623703232276700 {
+{static} +value() : const ::org::xrpl::rpc::v1::AccountAddress &
+}
+class "org::xrpl::rpc::v1::Authorize::HasBitSetters" as C_0000295320101703176574
+class C_0000295320101703176574 {
+{static} +value() : const ::org::xrpl::rpc::v1::AccountAddress &
+}
+class "org::xrpl::rpc::v1::Destination::HasBitSetters" as C_0001710533663452864650
+class C_0001710533663452864650 {
+{static} +value() : const ::org::xrpl::rpc::v1::AccountAddress &
+}
+class "org::xrpl::rpc::v1::Owner::HasBitSetters" as C_0002252204206719924998
+class C_0002252204206719924998 {
+{static} +value() : const ::org::xrpl::rpc::v1::AccountAddress &
+}
+class "org::xrpl::rpc::v1::RegularKey::HasBitSetters" as C_0000637715653105833739
+class C_0000637715653105833739 {
+{static} +value() : const ::org::xrpl::rpc::v1::AccountAddress &
+}
+class "org::xrpl::rpc::v1::Unauthorize::HasBitSetters" as C_0001216374646870042147
+class C_0001216374646870042147 {
+{static} +value() : const ::org::xrpl::rpc::v1::AccountAddress &
+}
+class "org::xrpl::rpc::v1::Domain::HasBitSetters" as C_0002095178784601447330
+class C_0002095178784601447330 {
+}
+class "org::xrpl::rpc::v1::SignerEntry::HasBitSetters" as C_0000097141239181995199
+class C_0000097141239181995199 {
+{static} +account() : const ::org::xrpl::rpc::v1::Account &
+{static} +signer_weight() : const ::org::xrpl::rpc::v1::SignerWeight &
+}
+class "org::xrpl::rpc::v1::DisabledValidator::HasBitSetters" as C_0001568876554022217385
+class C_0001568876554022217385 {
+{static} +public_key() : const ::org::xrpl::rpc::v1::PublicKey &
+{static} +ledger_sequence() : const ::org::xrpl::rpc::v1::FirstLedgerSequence &
+}
+enum "org::xrpl::rpc::v1::LedgerSpecifier_Shortcut" as C_0000435258290399770400
+enum C_0000435258290399770400 {
+LedgerSpecifier_Shortcut_SHORTCUT_UNSPECIFIED
+LedgerSpecifier_Shortcut_SHORTCUT_VALIDATED
+LedgerSpecifier_Shortcut_SHORTCUT_CLOSED
+LedgerSpecifier_Shortcut_SHORTCUT_CURRENT
+LedgerSpecifier_Shortcut_LedgerSpecifier_Shortcut_INT_MIN_SENTINEL_DO_NOT_USE_
+LedgerSpecifier_Shortcut_LedgerSpecifier_Shortcut_INT_MAX_SENTINEL_DO_NOT_USE_
+}
+enum "org::xrpl::rpc::v1::RawLedgerObject_ModificationType" as C_0001011224684338104374
+enum C_0001011224684338104374 {
+RawLedgerObject_ModificationType_UNSPECIFIED
+RawLedgerObject_ModificationType_CREATED
+RawLedgerObject_ModificationType_MODIFIED
+RawLedgerObject_ModificationType_DELETED
+RawLedgerObject_ModificationType_RawLedgerObject_ModificationType_INT_MIN_SENTINEL_DO_NOT_USE_
+RawLedgerObject_ModificationType_RawLedgerObject_ModificationType_INT_MAX_SENTINEL_DO_NOT_USE_
+}
+enum "org::xrpl::rpc::v1::LedgerSpecifier::LedgerCase" as C_0001089541699563059390
+enum C_0001089541699563059390 {
+kShortcut
+kSequence
+kHash
+LEDGER_NOT_SET
+}
+enum "org::xrpl::rpc::v1::LedgerEntryType" as C_0001209023526533400662
+enum C_0001209023526533400662 {
+LEDGER_ENTRY_TYPE_UNSPECIFIED
+LEDGER_ENTRY_TYPE_ACCOUNT_ROOT
+LEDGER_ENTRY_TYPE_AMENDMENTS
+LEDGER_ENTRY_TYPE_CHECK
+LEDGER_ENTRY_TYPE_DEPOSIT_PREAUTH
+LEDGER_ENTRY_TYPE_DIRECTORY_NODE
+LEDGER_ENTRY_TYPE_ESCROW
+LEDGER_ENTRY_TYPE_FEE_SETTINGS
+LEDGER_ENTRY_TYPE_LEDGER_HASHES
+LEDGER_ENTRY_TYPE_OFFER
+LEDGER_ENTRY_TYPE_PAY_CHANNEL
+LEDGER_ENTRY_TYPE_RIPPLE_STATE
+LEDGER_ENTRY_TYPE_SIGNER_LIST
+LEDGER_ENTRY_TYPE_NEGATIVE_UNL
+LEDGER_ENTRY_TYPE_TICKET
+LedgerEntryType_INT_MIN_SENTINEL_DO_NOT_USE_
+LedgerEntryType_INT_MAX_SENTINEL_DO_NOT_USE_
+}
+enum "org::xrpl::rpc::v1::LedgerObject::ObjectCase" as C_0000095763028430654485
+enum C_0000095763028430654485 {
+kAccountRoot
+kAmendments
+kCheck
+kDepositPreauth
+kDirectoryNode
+kEscrow
+kFeeSettings
+kLedgerHashes
+kOffer
+kPayChannel
+kRippleState
+kSignerList
+kNegativeUnl
+kTicket
+OBJECT_NOT_SET
+}
+enum "org::xrpl::rpc::v1::TransactionResult_ResultType" as C_0001518037698177578631
+enum C_0001518037698177578631 {
+TransactionResult_ResultType_RESULT_TYPE_UNSPECIFIED
+TransactionResult_ResultType_RESULT_TYPE_TEC
+TransactionResult_ResultType_RESULT_TYPE_TEF
+TransactionResult_ResultType_RESULT_TYPE_TEL
+TransactionResult_ResultType_RESULT_TYPE_TEM
+TransactionResult_ResultType_RESULT_TYPE_TER
+TransactionResult_ResultType_RESULT_TYPE_TES
+TransactionResult_ResultType_TransactionResult_ResultType_INT_MIN_SENTINEL_DO_NOT_USE_
+TransactionResult_ResultType_TransactionResult_ResultType_INT_MAX_SENTINEL_DO_NOT_USE_
+}
+enum "org::xrpl::rpc::v1::AffectedNode::NodeCase" as C_0001703627792111696801
+enum C_0001703627792111696801 {
+kCreatedNode
+kDeletedNode
+kModifiedNode
+NODE_NOT_SET
+}
+class "org::xrpl::rpc::v1::SubmitTransactionRequestDefaultTypeInternal" as C_0002144932302862329989
+class C_0002144932302862329989 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<SubmitTransactionRequest>
+}
+class "org::xrpl::rpc::v1::SubmitTransactionResponseDefaultTypeInternal" as C_0000608568522657465848
+class C_0000608568522657465848 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<SubmitTransactionResponse>
+}
+class "org::xrpl::rpc::v1::SubmitTransactionRequest::HasBitSetters" as C_0000743475337630207290
+class C_0000743475337630207290 {
+}
+class "org::xrpl::rpc::v1::SubmitTransactionResponse::HasBitSetters" as C_0001848230408569619189
+class C_0001848230408569619189 {
+{static} +engine_result() : const ::org::xrpl::rpc::v1::TransactionResult &
+}
+class "org::xrpl::rpc::v1::CurrencyAmountDefaultTypeInternal" as C_0000304749329033945844
+class C_0000304749329033945844 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<CurrencyAmount>
++xrp_amount_ : const ::org::xrpl::rpc::v1::XRPDropsAmount *
++issued_currency_amount_ : const ::org::xrpl::rpc::v1::IssuedCurrencyAmount *
+}
+class "org::xrpl::rpc::v1::XRPDropsAmountDefaultTypeInternal" as C_0000973392846309678899
+class C_0000973392846309678899 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<XRPDropsAmount>
+}
+class "org::xrpl::rpc::v1::IssuedCurrencyAmountDefaultTypeInternal" as C_0002033016965749076593
+class C_0002033016965749076593 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<IssuedCurrencyAmount>
+}
+class "org::xrpl::rpc::v1::CurrencyDefaultTypeInternal" as C_0001082786920359110079
+class C_0001082786920359110079 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<Currency>
+}
+class "org::xrpl::rpc::v1::CurrencyAmount::HasBitSetters" as C_0001041193141690774515
+class C_0001041193141690774515 {
+{static} +xrp_amount() : const ::org::xrpl::rpc::v1::XRPDropsAmount &
+{static} +issued_currency_amount() : const ::org::xrpl::rpc::v1::IssuedCurrencyAmount &
+}
+class "org::xrpl::rpc::v1::XRPDropsAmount::HasBitSetters" as C_0000101874433733596206
+class C_0000101874433733596206 {
+}
+class "org::xrpl::rpc::v1::IssuedCurrencyAmount::HasBitSetters" as C_0000746268704229934903
+class C_0000746268704229934903 {
+{static} +currency() : const ::org::xrpl::rpc::v1::Currency &
+{static} +issuer() : const ::org::xrpl::rpc::v1::AccountAddress &
+}
+class "org::xrpl::rpc::v1::Currency::HasBitSetters" as C_0002295302818806349871
+class C_0002295302818806349871 {
+}
+class "org::xrpl::rpc::v1::GetLedgerDiffRequestDefaultTypeInternal" as C_0001816518951666773532
+class C_0001816518951666773532 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<GetLedgerDiffRequest>
+}
+class "org::xrpl::rpc::v1::GetLedgerDiffResponseDefaultTypeInternal" as C_0001838501242891031962
+class C_0001838501242891031962 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<GetLedgerDiffResponse>
+}
+class "org::xrpl::rpc::v1::GetLedgerDiffRequest::HasBitSetters" as C_0001282157565734961051
+class C_0001282157565734961051 {
+{static} +base_ledger() : const ::org::xrpl::rpc::v1::LedgerSpecifier &
+{static} +desired_ledger() : const ::org::xrpl::rpc::v1::LedgerSpecifier &
+}
+class "org::xrpl::rpc::v1::GetLedgerDiffResponse::HasBitSetters" as C_0002151689927954541204
+class C_0002151689927954541204 {
+{static} +ledger_objects() : const ::org::xrpl::rpc::v1::RawLedgerObjects &
+}
+class "org::xrpl::rpc::v1::AccountAddressDefaultTypeInternal" as C_0001235112367287367472
+class C_0001235112367287367472 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<AccountAddress>
+}
+class "org::xrpl::rpc::v1::AccountAddress::HasBitSetters" as C_0000185566747283318811
+class C_0000185566747283318811 {
+}
+enum "org::xrpl::rpc::v1::Transaction::TransactionDataCase" as C_0002056023122857173840
+enum C_0002056023122857173840 {
+kPayment
+kAccountSet
+kAccountDelete
+kCheckCancel
+kCheckCash
+kCheckCreate
+kDepositPreauth
+kEscrowCancel
+kEscrowCreate
+kEscrowFinish
+kOfferCancel
+kOfferCreate
+kPaymentChannelClaim
+kPaymentChannelCreate
+kPaymentChannelFund
+kSetRegularKey
+kSignerListSet
+kTicketCreate
+kTrustSet
+TRANSACTION_DATA_NOT_SET
+}
+enum "org::xrpl::rpc::v1::CheckCash::AmountOneofCase" as C_0001871097173849230932
+enum C_0001871097173849230932 {
+kAmount
+kDeliverMin
+AMOUNT_ONEOF_NOT_SET
+}
+enum "org::xrpl::rpc::v1::DepositPreauth::AuthorizationOneofCase" as C_0002175221747330917584
+enum C_0002175221747330917584 {
+kAuthorize
+kUnauthorize
+AUTHORIZATION_ONEOF_NOT_SET
+}
+enum "org::xrpl::rpc::v1::GetTransactionResponse::SerializedTransactionCase" as C_0001181093574547218502
+enum C_0001181093574547218502 {
+kTransaction
+kTransactionBinary
+SERIALIZED_TRANSACTION_NOT_SET
+}
+enum "org::xrpl::rpc::v1::GetTransactionResponse::SerializedMetaCase" as C_0001192100466761847826
+enum C_0001192100466761847826 {
+kMeta
+kMetaBinary
+SERIALIZED_META_NOT_SET
+}
+enum "org::xrpl::rpc::v1::GetAccountTransactionHistoryRequest::LedgerCase" as C_0002031551153859598262
+enum C_0002031551153859598262 {
+kLedgerSpecifier
+kLedgerRange
+LEDGER_NOT_SET
+}
+class "org::xrpl::rpc::v1::GetAccountTransactionHistoryRequestDefaultTypeInternal" as C_0001938792359717146561
+class C_0001938792359717146561 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<GetAccountTransactionHistoryRequest>
++ledger_specifier_ : const ::org::xrpl::rpc::v1::LedgerSpecifier *
++ledger_range_ : const ::org::xrpl::rpc::v1::LedgerRange *
+}
+class "org::xrpl::rpc::v1::GetAccountTransactionHistoryResponseDefaultTypeInternal" as C_0000500762100494882454
+class C_0000500762100494882454 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<GetAccountTransactionHistoryResponse>
+}
+class "org::xrpl::rpc::v1::MarkerDefaultTypeInternal" as C_0001343111174852164456
+class C_0001343111174852164456 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<Marker>
+}
+class "org::xrpl::rpc::v1::GetAccountTransactionHistoryRequest::HasBitSetters" as C_0000197764566375553121
+class C_0000197764566375553121 {
+{static} +account() : const ::org::xrpl::rpc::v1::AccountAddress &
+{static} +ledger_specifier() : const ::org::xrpl::rpc::v1::LedgerSpecifier &
+{static} +ledger_range() : const ::org::xrpl::rpc::v1::LedgerRange &
+{static} +marker() : const ::org::xrpl::rpc::v1::Marker &
+}
+class "org::xrpl::rpc::v1::GetAccountTransactionHistoryResponse::HasBitSetters" as C_0000145220225314967055
+class C_0000145220225314967055 {
+{static} +account() : const ::org::xrpl::rpc::v1::AccountAddress &
+{static} +marker() : const ::org::xrpl::rpc::v1::Marker &
+}
+class "org::xrpl::rpc::v1::Marker::HasBitSetters" as C_0001795214028558784150
+class C_0001795214028558784150 {
+}
+class "org::xrpl::rpc::v1::SubmitMetadataRequestDefaultTypeInternal" as C_0000090730624861999483
+class C_0000090730624861999483 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<SubmitMetadataRequest>
+}
+class "org::xrpl::rpc::v1::SubmitMetadataResponseDefaultTypeInternal" as C_0002214207492658650761
+class C_0002214207492658650761 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<SubmitMetadataResponse>
+}
+class "org::xrpl::rpc::v1::PrepareLedgerRequestDefaultTypeInternal" as C_0001292767257834503313
+class C_0001292767257834503313 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<PrepareLedgerRequest>
+}
+class "org::xrpl::rpc::v1::PrepareLedgerResponseDefaultTypeInternal" as C_0000028896136345843566
+class C_0000028896136345843566 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<PrepareLedgerResponse>
+}
+class "org::xrpl::rpc::v1::MetaDefaultTypeInternal" as C_0000738230746218882835
+class C_0000738230746218882835 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<Meta>
+}
+class "org::xrpl::rpc::v1::TransactionResultDefaultTypeInternal" as C_0001984873179321253791
+class C_0001984873179321253791 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<TransactionResult>
+}
+class "org::xrpl::rpc::v1::AffectedNodeDefaultTypeInternal" as C_0002225108001214497632
+class C_0002225108001214497632 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<AffectedNode>
++created_node_ : const ::org::xrpl::rpc::v1::CreatedNode *
++deleted_node_ : const ::org::xrpl::rpc::v1::DeletedNode *
++modified_node_ : const ::org::xrpl::rpc::v1::ModifiedNode *
+}
+class "org::xrpl::rpc::v1::CreatedNodeDefaultTypeInternal" as C_0001315885515999870119
+class C_0001315885515999870119 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<CreatedNode>
+}
+class "org::xrpl::rpc::v1::DeletedNodeDefaultTypeInternal" as C_0001890427527442027089
+class C_0001890427527442027089 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<DeletedNode>
+}
+class "org::xrpl::rpc::v1::ModifiedNodeDefaultTypeInternal" as C_0002255458512902088098
+class C_0002255458512902088098 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<ModifiedNode>
+}
+class "org::xrpl::rpc::v1::SubmitMetadataRequest::HasBitSetters" as C_0000866412389304000925
+class C_0000866412389304000925 {
+}
+class "org::xrpl::rpc::v1::SubmitMetadataResponse::HasBitSetters" as C_0001979914933701852592
+class C_0001979914933701852592 {
+}
+class "org::xrpl::rpc::v1::PrepareLedgerRequest::HasBitSetters" as C_0001137494215008345811
+class C_0001137494215008345811 {
+}
+class "org::xrpl::rpc::v1::PrepareLedgerResponse::HasBitSetters" as C_0000401565650070793501
+class C_0000401565650070793501 {
+}
+class "org::xrpl::rpc::v1::Meta::HasBitSetters" as C_0000452591037816738159
+class C_0000452591037816738159 {
+{static} +transaction_result() : const ::org::xrpl::rpc::v1::TransactionResult &
+{static} +delivered_amount() : const ::org::xrpl::rpc::v1::DeliveredAmount &
+}
+class "org::xrpl::rpc::v1::TransactionResult::HasBitSetters" as C_0000488203674668162256
+class C_0000488203674668162256 {
+}
+class "org::xrpl::rpc::v1::AffectedNode::HasBitSetters" as C_0002276990014284702426
+class C_0002276990014284702426 {
+{static} +created_node() : const ::org::xrpl::rpc::v1::CreatedNode &
+{static} +deleted_node() : const ::org::xrpl::rpc::v1::DeletedNode &
+{static} +modified_node() : const ::org::xrpl::rpc::v1::ModifiedNode &
+}
+class "org::xrpl::rpc::v1::CreatedNode::HasBitSetters" as C_0000992720678792434054
+class C_0000992720678792434054 {
+{static} +new_fields() : const ::org::xrpl::rpc::v1::LedgerObject &
+}
+class "org::xrpl::rpc::v1::DeletedNode::HasBitSetters" as C_0001727488770554155191
+class C_0001727488770554155191 {
+{static} +final_fields() : const ::org::xrpl::rpc::v1::LedgerObject &
+}
+class "org::xrpl::rpc::v1::ModifiedNode::HasBitSetters" as C_0000730853472247773088
+class C_0000730853472247773088 {
+{static} +final_fields() : const ::org::xrpl::rpc::v1::LedgerObject &
+{static} +previous_fields() : const ::org::xrpl::rpc::v1::LedgerObject &
+{static} +previous_transaction_id() : const ::org::xrpl::rpc::v1::PreviousTransactionID &
+{static} +previous_transaction_ledger_sequence() : const ::org::xrpl::rpc::v1::PreviousTransactionLedgerSequence &
+}
+class "org::xrpl::rpc::v1::LedgerObjectDefaultTypeInternal" as C_0001215978419572819583
+class C_0001215978419572819583 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<LedgerObject>
++account_root_ : const ::org::xrpl::rpc::v1::AccountRoot *
++amendments_ : const ::org::xrpl::rpc::v1::Amendments *
++check_ : const ::org::xrpl::rpc::v1::Check *
++deposit_preauth_ : const ::org::xrpl::rpc::v1::DepositPreauthObject *
++directory_node_ : const ::org::xrpl::rpc::v1::DirectoryNode *
++escrow_ : const ::org::xrpl::rpc::v1::Escrow *
++fee_settings_ : const ::org::xrpl::rpc::v1::FeeSettings *
++ledger_hashes_ : const ::org::xrpl::rpc::v1::LedgerHashes *
++offer_ : const ::org::xrpl::rpc::v1::Offer *
++pay_channel_ : const ::org::xrpl::rpc::v1::PayChannel *
++ripple_state_ : const ::org::xrpl::rpc::v1::RippleState *
++signer_list_ : const ::org::xrpl::rpc::v1::SignerList *
++negative_unl_ : const ::org::xrpl::rpc::v1::NegativeUNL *
++ticket_ : const ::org::xrpl::rpc::v1::TicketObject *
+}
+class "org::xrpl::rpc::v1::AccountRootDefaultTypeInternal" as C_0000021337707327487592
+class C_0000021337707327487592 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<AccountRoot>
+}
+class "org::xrpl::rpc::v1::Amendments_AmendmentDefaultTypeInternal" as C_0001881700009404208695
+class C_0001881700009404208695 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<Amendments_Amendment>
+}
+class "org::xrpl::rpc::v1::Amendments_MajorityDefaultTypeInternal" as C_0002034804686216731017
+class C_0002034804686216731017 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<Amendments_Majority>
+}
+class "org::xrpl::rpc::v1::AmendmentsDefaultTypeInternal" as C_0002282685923508424196
+class C_0002282685923508424196 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<Amendments>
+}
+class "org::xrpl::rpc::v1::CheckDefaultTypeInternal" as C_0001804488905270412276
+class C_0001804488905270412276 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<Check>
+}
+class "org::xrpl::rpc::v1::DepositPreauthObjectDefaultTypeInternal" as C_0000382788537569120959
+class C_0000382788537569120959 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<DepositPreauthObject>
+}
+class "org::xrpl::rpc::v1::DirectoryNodeDefaultTypeInternal" as C_0001729031312131058164
+class C_0001729031312131058164 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<DirectoryNode>
+}
+class "org::xrpl::rpc::v1::EscrowDefaultTypeInternal" as C_0002069673417956610925
+class C_0002069673417956610925 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<Escrow>
+}
+class "org::xrpl::rpc::v1::FeeSettingsDefaultTypeInternal" as C_0001997737374426359666
+class C_0001997737374426359666 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<FeeSettings>
+}
+class "org::xrpl::rpc::v1::LedgerHashesDefaultTypeInternal" as C_0002079426309767814171
+class C_0002079426309767814171 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<LedgerHashes>
+}
+class "org::xrpl::rpc::v1::OfferDefaultTypeInternal" as C_0001038782619096634558
+class C_0001038782619096634558 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<Offer>
+}
+class "org::xrpl::rpc::v1::PayChannelDefaultTypeInternal" as C_0000406670086719178007
+class C_0000406670086719178007 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<PayChannel>
+}
+class "org::xrpl::rpc::v1::RippleStateDefaultTypeInternal" as C_0000203937485755625472
+class C_0000203937485755625472 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<RippleState>
+}
+class "org::xrpl::rpc::v1::SignerListDefaultTypeInternal" as C_0000204269637865119986
+class C_0000204269637865119986 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<SignerList>
+}
+class "org::xrpl::rpc::v1::TicketObjectDefaultTypeInternal" as C_0000733245316138371338
+class C_0000733245316138371338 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<TicketObject>
+}
+class "org::xrpl::rpc::v1::NegativeUNLDefaultTypeInternal" as C_0000785033010789632076
+class C_0000785033010789632076 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<NegativeUNL>
+}
+class "org::xrpl::rpc::v1::LedgerObject::HasBitSetters" as C_0001235509015126114612
+class C_0001235509015126114612 {
+{static} +account_root() : const ::org::xrpl::rpc::v1::AccountRoot &
+{static} +amendments() : const ::org::xrpl::rpc::v1::Amendments &
+{static} +check() : const ::org::xrpl::rpc::v1::Check &
+{static} +deposit_preauth() : const ::org::xrpl::rpc::v1::DepositPreauthObject &
+{static} +directory_node() : const ::org::xrpl::rpc::v1::DirectoryNode &
+{static} +escrow() : const ::org::xrpl::rpc::v1::Escrow &
+{static} +fee_settings() : const ::org::xrpl::rpc::v1::FeeSettings &
+{static} +ledger_hashes() : const ::org::xrpl::rpc::v1::LedgerHashes &
+{static} +offer() : const ::org::xrpl::rpc::v1::Offer &
+{static} +pay_channel() : const ::org::xrpl::rpc::v1::PayChannel &
+{static} +ripple_state() : const ::org::xrpl::rpc::v1::RippleState &
+{static} +signer_list() : const ::org::xrpl::rpc::v1::SignerList &
+{static} +negative_unl() : const ::org::xrpl::rpc::v1::NegativeUNL &
+{static} +ticket() : const ::org::xrpl::rpc::v1::TicketObject &
+}
+class "org::xrpl::rpc::v1::AccountRoot::HasBitSetters" as C_0000587504960031291491
+class C_0000587504960031291491 {
+{static} +account() : const ::org::xrpl::rpc::v1::Account &
+{static} +balance() : const ::org::xrpl::rpc::v1::Balance &
+{static} +sequence() : const ::org::xrpl::rpc::v1::Sequence &
+{static} +flags() : const ::org::xrpl::rpc::v1::Flags &
+{static} +owner_count() : const ::org::xrpl::rpc::v1::OwnerCount &
+{static} +previous_transaction_id() : const ::org::xrpl::rpc::v1::PreviousTransactionID &
+{static} +previous_transaction_ledger_sequence() : const ::org::xrpl::rpc::v1::PreviousTransactionLedgerSequence &
+{static} +account_transaction_id() : const ::org::xrpl::rpc::v1::AccountTransactionID &
+{static} +domain() : const ::org::xrpl::rpc::v1::Domain &
+{static} +email_hash() : const ::org::xrpl::rpc::v1::EmailHash &
+{static} +message_key() : const ::org::xrpl::rpc::v1::MessageKey &
+{static} +regular_key() : const ::org::xrpl::rpc::v1::RegularKey &
+{static} +tick_size() : const ::org::xrpl::rpc::v1::TickSize &
+{static} +transfer_rate() : const ::org::xrpl::rpc::v1::TransferRate &
+{static} +ticket_count() : const ::org::xrpl::rpc::v1::TicketCount &
+}
+class "org::xrpl::rpc::v1::Amendments_Amendment::HasBitSetters" as C_0001493137704025268811
+class C_0001493137704025268811 {
+}
+class "org::xrpl::rpc::v1::Amendments_Majority::HasBitSetters" as C_0000898980845476011279
+class C_0000898980845476011279 {
+{static} +amendment() : const ::org::xrpl::rpc::v1::Amendments_Amendment &
+{static} +close_time() : const ::org::xrpl::rpc::v1::CloseTime &
+}
+class "org::xrpl::rpc::v1::Amendments::HasBitSetters" as C_0000808143947493133161
+class C_0000808143947493133161 {
+{static} +flags() : const ::org::xrpl::rpc::v1::Flags &
+}
+class "org::xrpl::rpc::v1::Check::HasBitSetters" as C_0000677730106596090534
+class C_0000677730106596090534 {
+{static} +account() : const ::org::xrpl::rpc::v1::Account &
+{static} +destination() : const ::org::xrpl::rpc::v1::Destination &
+{static} +flags() : const ::org::xrpl::rpc::v1::Flags &
+{static} +owner_node() : const ::org::xrpl::rpc::v1::OwnerNode &
+{static} +previous_transaction_id() : const ::org::xrpl::rpc::v1::PreviousTransactionID &
+{static} +previous_transaction_ledger_sequence() : const ::org::xrpl::rpc::v1::PreviousTransactionLedgerSequence &
+{static} +send_max() : const ::org::xrpl::rpc::v1::SendMax &
+{static} +sequence() : const ::org::xrpl::rpc::v1::Sequence &
+{static} +destination_node() : const ::org::xrpl::rpc::v1::DestinationNode &
+{static} +destination_tag() : const ::org::xrpl::rpc::v1::DestinationTag &
+{static} +expiration() : const ::org::xrpl::rpc::v1::Expiration &
+{static} +invoice_id() : const ::org::xrpl::rpc::v1::InvoiceID &
+{static} +source_tag() : const ::org::xrpl::rpc::v1::SourceTag &
+}
+class "org::xrpl::rpc::v1::DepositPreauthObject::HasBitSetters" as C_0000753984047077993738
+class C_0000753984047077993738 {
+{static} +account() : const ::org::xrpl::rpc::v1::Account &
+{static} +authorize() : const ::org::xrpl::rpc::v1::Authorize &
+{static} +flags() : const ::org::xrpl::rpc::v1::Flags &
+{static} +owner_node() : const ::org::xrpl::rpc::v1::OwnerNode &
+{static} +previous_transaction_id() : const ::org::xrpl::rpc::v1::PreviousTransactionID &
+{static} +previous_transaction_ledger_sequence() : const ::org::xrpl::rpc::v1::PreviousTransactionLedgerSequence &
+}
+class "org::xrpl::rpc::v1::DirectoryNode::HasBitSetters" as C_0001175121781508191595
+class C_0001175121781508191595 {
+{static} +flags() : const ::org::xrpl::rpc::v1::Flags &
+{static} +root_index() : const ::org::xrpl::rpc::v1::RootIndex &
+{static} +index_next() : const ::org::xrpl::rpc::v1::IndexNext &
+{static} +index_previous() : const ::org::xrpl::rpc::v1::IndexPrevious &
+{static} +owner() : const ::org::xrpl::rpc::v1::Owner &
+{static} +taker_pays_currency() : const ::org::xrpl::rpc::v1::TakerPaysCurrency &
+{static} +taker_pays_issuer() : const ::org::xrpl::rpc::v1::TakerPaysIssuer &
+{static} +taker_gets_currency() : const ::org::xrpl::rpc::v1::TakerGetsCurreny &
+{static} +taker_gets_issuer() : const ::org::xrpl::rpc::v1::TakerGetsIssuer &
+}
+class "org::xrpl::rpc::v1::Escrow::HasBitSetters" as C_0001923741934374302733
+class C_0001923741934374302733 {
+{static} +account() : const ::org::xrpl::rpc::v1::Account &
+{static} +destination() : const ::org::xrpl::rpc::v1::Destination &
+{static} +amount() : const ::org::xrpl::rpc::v1::Amount &
+{static} +condition() : const ::org::xrpl::rpc::v1::Condition &
+{static} +cancel_after() : const ::org::xrpl::rpc::v1::CancelAfter &
+{static} +finish_after() : const ::org::xrpl::rpc::v1::FinishAfter &
+{static} +flags() : const ::org::xrpl::rpc::v1::Flags &
+{static} +source_tag() : const ::org::xrpl::rpc::v1::SourceTag &
+{static} +destination_tag() : const ::org::xrpl::rpc::v1::DestinationTag &
+{static} +owner_node() : const ::org::xrpl::rpc::v1::OwnerNode &
+{static} +destination_node() : const ::org::xrpl::rpc::v1::DestinationNode &
+{static} +previous_transaction_id() : const ::org::xrpl::rpc::v1::PreviousTransactionID &
+{static} +previous_transaction_ledger_sequence() : const ::org::xrpl::rpc::v1::PreviousTransactionLedgerSequence &
+}
+class "org::xrpl::rpc::v1::FeeSettings::HasBitSetters" as C_0001153562182567129731
+class C_0001153562182567129731 {
+{static} +base_fee() : const ::org::xrpl::rpc::v1::BaseFee &
+{static} +reference_fee_units() : const ::org::xrpl::rpc::v1::ReferenceFeeUnits &
+{static} +reserve_base() : const ::org::xrpl::rpc::v1::ReserveBase &
+{static} +reserve_increment() : const ::org::xrpl::rpc::v1::ReserveIncrement &
+{static} +flags() : const ::org::xrpl::rpc::v1::Flags &
+}
+class "org::xrpl::rpc::v1::LedgerHashes::HasBitSetters" as C_0000028475978759848847
+class C_0000028475978759848847 {
+{static} +last_ledger_sequence() : const ::org::xrpl::rpc::v1::LastLedgerSequence &
+{static} +flags() : const ::org::xrpl::rpc::v1::Flags &
+}
+class "org::xrpl::rpc::v1::Offer::HasBitSetters" as C_0001169809571235748725
+class C_0001169809571235748725 {
+{static} +account() : const ::org::xrpl::rpc::v1::Account &
+{static} +sequence() : const ::org::xrpl::rpc::v1::Sequence &
+{static} +flags() : const ::org::xrpl::rpc::v1::Flags &
+{static} +taker_pays() : const ::org::xrpl::rpc::v1::TakerPays &
+{static} +taker_gets() : const ::org::xrpl::rpc::v1::TakerGets &
+{static} +book_directory() : const ::org::xrpl::rpc::v1::BookDirectory &
+{static} +book_node() : const ::org::xrpl::rpc::v1::BookNode &
+{static} +owner_node() : const ::org::xrpl::rpc::v1::OwnerNode &
+{static} +expiration() : const ::org::xrpl::rpc::v1::Expiration &
+{static} +previous_transaction_id() : const ::org::xrpl::rpc::v1::PreviousTransactionID &
+{static} +previous_transaction_ledger_sequence() : const ::org::xrpl::rpc::v1::PreviousTransactionLedgerSequence &
+}
+class "org::xrpl::rpc::v1::PayChannel::HasBitSetters" as C_0000795994140416845878
+class C_0000795994140416845878 {
+{static} +account() : const ::org::xrpl::rpc::v1::Account &
+{static} +destination() : const ::org::xrpl::rpc::v1::Destination &
+{static} +amount() : const ::org::xrpl::rpc::v1::Amount &
+{static} +balance() : const ::org::xrpl::rpc::v1::Balance &
+{static} +public_key() : const ::org::xrpl::rpc::v1::PublicKey &
+{static} +settle_delay() : const ::org::xrpl::rpc::v1::SettleDelay &
+{static} +owner_node() : const ::org::xrpl::rpc::v1::OwnerNode &
+{static} +previous_transaction_id() : const ::org::xrpl::rpc::v1::PreviousTransactionID &
+{static} +previous_transaction_ledger_sequence() : const ::org::xrpl::rpc::v1::PreviousTransactionLedgerSequence &
+{static} +flags() : const ::org::xrpl::rpc::v1::Flags &
+{static} +expiration() : const ::org::xrpl::rpc::v1::Expiration &
+{static} +cancel_after() : const ::org::xrpl::rpc::v1::CancelAfter &
+{static} +source_tag() : const ::org::xrpl::rpc::v1::SourceTag &
+{static} +destination_tag() : const ::org::xrpl::rpc::v1::DestinationTag &
+{static} +destination_node() : const ::org::xrpl::rpc::v1::DestinationNode &
+}
+class "org::xrpl::rpc::v1::RippleState::HasBitSetters" as C_0001554545449845472086
+class C_0001554545449845472086 {
+{static} +balance() : const ::org::xrpl::rpc::v1::Balance &
+{static} +flags() : const ::org::xrpl::rpc::v1::Flags &
+{static} +low_limit() : const ::org::xrpl::rpc::v1::LowLimit &
+{static} +high_limit() : const ::org::xrpl::rpc::v1::HighLimit &
+{static} +low_node() : const ::org::xrpl::rpc::v1::LowNode &
+{static} +high_node() : const ::org::xrpl::rpc::v1::HighNode &
+{static} +low_quality_in() : const ::org::xrpl::rpc::v1::LowQualityIn &
+{static} +low_quality_out() : const ::org::xrpl::rpc::v1::LowQualityOut &
+{static} +high_quality_in() : const ::org::xrpl::rpc::v1::HighQualityIn &
+{static} +high_quality_out() : const ::org::xrpl::rpc::v1::HighQualityOut &
+{static} +previous_transaction_id() : const ::org::xrpl::rpc::v1::PreviousTransactionID &
+{static} +previous_transaction_ledger_sequence() : const ::org::xrpl::rpc::v1::PreviousTransactionLedgerSequence &
+}
+class "org::xrpl::rpc::v1::SignerList::HasBitSetters" as C_0000178860117213984490
+class C_0000178860117213984490 {
+{static} +flags() : const ::org::xrpl::rpc::v1::Flags &
+{static} +previous_transaction_id() : const ::org::xrpl::rpc::v1::PreviousTransactionID &
+{static} +previous_transaction_ledger_sequence() : const ::org::xrpl::rpc::v1::PreviousTransactionLedgerSequence &
+{static} +owner_node() : const ::org::xrpl::rpc::v1::OwnerNode &
+{static} +signer_list_id() : const ::org::xrpl::rpc::v1::SignerListID &
+{static} +signer_quorum() : const ::org::xrpl::rpc::v1::SignerQuorum &
+}
+class "org::xrpl::rpc::v1::TicketObject::HasBitSetters" as C_0001490309085233093418
+class C_0001490309085233093418 {
+{static} +flags() : const ::org::xrpl::rpc::v1::Flags &
+{static} +account() : const ::org::xrpl::rpc::v1::Account &
+{static} +owner_node() : const ::org::xrpl::rpc::v1::OwnerNode &
+{static} +previous_transaction_id() : const ::org::xrpl::rpc::v1::PreviousTransactionID &
+{static} +previous_transaction_ledger_sequence() : const ::org::xrpl::rpc::v1::PreviousTransactionLedgerSequence &
+{static} +ticket_sequence() : const ::org::xrpl::rpc::v1::TicketSequence &
+}
+class "org::xrpl::rpc::v1::NegativeUNL::HasBitSetters" as C_0001740401368422012898
+class C_0001740401368422012898 {
+{static} +validator_to_disable() : const ::org::xrpl::rpc::v1::ValidatorToDisable &
+{static} +validator_to_re_enable() : const ::org::xrpl::rpc::v1::ValidatorToReEnable &
+{static} +flags() : const ::org::xrpl::rpc::v1::Flags &
+}
+class "org::xrpl::rpc::v1::GetLedgerDataRequestDefaultTypeInternal" as C_0000659165797518864520
+class C_0000659165797518864520 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<GetLedgerDataRequest>
+}
+class "org::xrpl::rpc::v1::GetLedgerDataResponseDefaultTypeInternal" as C_0000442213361997418182
+class C_0000442213361997418182 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<GetLedgerDataResponse>
+}
+class "org::xrpl::rpc::v1::GetLedgerDataRequest::HasBitSetters" as C_0000621777257263542455
+class C_0000621777257263542455 {
+{static} +ledger() : const ::org::xrpl::rpc::v1::LedgerSpecifier &
+}
+class "org::xrpl::rpc::v1::GetLedgerDataResponse::HasBitSetters" as C_0000767059611646979115
+class C_0000767059611646979115 {
+{static} +ledger_objects() : const ::org::xrpl::rpc::v1::RawLedgerObjects &
+}
+class "org::xrpl::rpc::v1::GetLedgerEntryRequestDefaultTypeInternal" as C_0001860706950270768679
+class C_0001860706950270768679 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<GetLedgerEntryRequest>
+}
+class "org::xrpl::rpc::v1::GetLedgerEntryResponseDefaultTypeInternal" as C_0001717170640227709050
+class C_0001717170640227709050 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<GetLedgerEntryResponse>
+}
+class "org::xrpl::rpc::v1::GetLedgerEntryRequest::HasBitSetters" as C_0001668282517063042883
+class C_0001668282517063042883 {
+{static} +ledger() : const ::org::xrpl::rpc::v1::LedgerSpecifier &
+}
+class "org::xrpl::rpc::v1::GetLedgerEntryResponse::HasBitSetters" as C_0002165790583244388332
+class C_0002165790583244388332 {
+{static} +ledger_object() : const ::org::xrpl::rpc::v1::RawLedgerObject &
+{static} +ledger() : const ::org::xrpl::rpc::v1::LedgerSpecifier &
+}
+class "org::xrpl::rpc::v1::LedgerSpecifierDefaultTypeInternal" as C_0002236502770249125608
+class C_0002236502770249125608 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<LedgerSpecifier>
++shortcut_ : int
++sequence_ : ::google::protobuf::uint32
++hash_ : ::google::protobuf::internal::ArenaStringPtr
+}
+class "org::xrpl::rpc::v1::LedgerRangeDefaultTypeInternal" as C_0000142880426647895760
+class C_0000142880426647895760 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<LedgerRange>
+}
+class "org::xrpl::rpc::v1::RawLedgerObjectDefaultTypeInternal" as C_0002092840875383931309
+class C_0002092840875383931309 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<RawLedgerObject>
+}
+class "org::xrpl::rpc::v1::RawLedgerObjectsDefaultTypeInternal" as C_0001705613690937342531
+class C_0001705613690937342531 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<RawLedgerObjects>
+}
+class "org::xrpl::rpc::v1::LedgerSpecifier::HasBitSetters" as C_0001410797892762309443
+class C_0001410797892762309443 {
+}
+class "org::xrpl::rpc::v1::LedgerRange::HasBitSetters" as C_0001533177830541454274
+class C_0001533177830541454274 {
+}
+class "org::xrpl::rpc::v1::RawLedgerObject::HasBitSetters" as C_0001302494457557651704
+class C_0001302494457557651704 {
+}
+class "org::xrpl::rpc::v1::RawLedgerObjects::HasBitSetters" as C_0000713112473825374914
+class C_0000713112473825374914 {
+}
+class "org::xrpl::rpc::v1::TransactionDefaultTypeInternal" as C_0000942802958384168299
+class C_0000942802958384168299 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<Transaction>
++payment_ : const ::org::xrpl::rpc::v1::Payment *
++account_set_ : const ::org::xrpl::rpc::v1::AccountSet *
++account_delete_ : const ::org::xrpl::rpc::v1::AccountDelete *
++check_cancel_ : const ::org::xrpl::rpc::v1::CheckCancel *
++check_cash_ : const ::org::xrpl::rpc::v1::CheckCash *
++check_create_ : const ::org::xrpl::rpc::v1::CheckCreate *
++deposit_preauth_ : const ::org::xrpl::rpc::v1::DepositPreauth *
++escrow_cancel_ : const ::org::xrpl::rpc::v1::EscrowCancel *
++escrow_create_ : const ::org::xrpl::rpc::v1::EscrowCreate *
++escrow_finish_ : const ::org::xrpl::rpc::v1::EscrowFinish *
++offer_cancel_ : const ::org::xrpl::rpc::v1::OfferCancel *
++offer_create_ : const ::org::xrpl::rpc::v1::OfferCreate *
++payment_channel_claim_ : const ::org::xrpl::rpc::v1::PaymentChannelClaim *
++payment_channel_create_ : const ::org::xrpl::rpc::v1::PaymentChannelCreate *
++payment_channel_fund_ : const ::org::xrpl::rpc::v1::PaymentChannelFund *
++set_regular_key_ : const ::org::xrpl::rpc::v1::SetRegularKey *
++signer_list_set_ : const ::org::xrpl::rpc::v1::SignerListSet *
++ticket_create_ : const ::org::xrpl::rpc::v1::TicketCreate *
++trust_set_ : const ::org::xrpl::rpc::v1::TrustSet *
+}
+class "org::xrpl::rpc::v1::MemoDefaultTypeInternal" as C_0001210691880408526259
+class C_0001210691880408526259 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<Memo>
+}
+class "org::xrpl::rpc::v1::SignerDefaultTypeInternal" as C_0001718726834151865581
+class C_0001718726834151865581 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<Signer>
+}
+class "org::xrpl::rpc::v1::AccountSetDefaultTypeInternal" as C_0001509443825953690208
+class C_0001509443825953690208 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<AccountSet>
+}
+class "org::xrpl::rpc::v1::AccountDeleteDefaultTypeInternal" as C_0002160273739731875076
+class C_0002160273739731875076 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<AccountDelete>
+}
+class "org::xrpl::rpc::v1::CheckCancelDefaultTypeInternal" as C_0000981258636207547682
+class C_0000981258636207547682 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<CheckCancel>
+}
+class "org::xrpl::rpc::v1::CheckCashDefaultTypeInternal" as C_0000300208809592423257
+class C_0000300208809592423257 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<CheckCash>
++amount_ : const ::org::xrpl::rpc::v1::Amount *
++deliver_min_ : const ::org::xrpl::rpc::v1::DeliverMin *
+}
+class "org::xrpl::rpc::v1::CheckCreateDefaultTypeInternal" as C_0000215858158576614972
+class C_0000215858158576614972 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<CheckCreate>
+}
+class "org::xrpl::rpc::v1::DepositPreauthDefaultTypeInternal" as C_0001288259760609875634
+class C_0001288259760609875634 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<DepositPreauth>
++authorize_ : const ::org::xrpl::rpc::v1::Authorize *
++unauthorize_ : const ::org::xrpl::rpc::v1::Unauthorize *
+}
+class "org::xrpl::rpc::v1::EscrowCancelDefaultTypeInternal" as C_0001070835041190038178
+class C_0001070835041190038178 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<EscrowCancel>
+}
+class "org::xrpl::rpc::v1::EscrowCreateDefaultTypeInternal" as C_0001835246769463759069
+class C_0001835246769463759069 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<EscrowCreate>
+}
+class "org::xrpl::rpc::v1::EscrowFinishDefaultTypeInternal" as C_0000927648304902789210
+class C_0000927648304902789210 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<EscrowFinish>
+}
+class "org::xrpl::rpc::v1::OfferCancelDefaultTypeInternal" as C_0001528792058245615354
+class C_0001528792058245615354 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<OfferCancel>
+}
+class "org::xrpl::rpc::v1::OfferCreateDefaultTypeInternal" as C_0000612513161542698160
+class C_0000612513161542698160 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<OfferCreate>
+}
+class "org::xrpl::rpc::v1::Payment_PathElementDefaultTypeInternal" as C_0001181266453966792554
+class C_0001181266453966792554 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<Payment_PathElement>
+}
+class "org::xrpl::rpc::v1::Payment_PathDefaultTypeInternal" as C_0000782704640518362824
+class C_0000782704640518362824 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<Payment_Path>
+}
+class "org::xrpl::rpc::v1::PaymentDefaultTypeInternal" as C_0002036237269258586788
+class C_0002036237269258586788 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<Payment>
+}
+class "org::xrpl::rpc::v1::PaymentChannelClaimDefaultTypeInternal" as C_0002055688319823098703
+class C_0002055688319823098703 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<PaymentChannelClaim>
+}
+class "org::xrpl::rpc::v1::PaymentChannelCreateDefaultTypeInternal" as C_0002048749337071745590
+class C_0002048749337071745590 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<PaymentChannelCreate>
+}
+class "org::xrpl::rpc::v1::PaymentChannelFundDefaultTypeInternal" as C_0000190685885827409850
+class C_0000190685885827409850 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<PaymentChannelFund>
+}
+class "org::xrpl::rpc::v1::SetRegularKeyDefaultTypeInternal" as C_0001823810582913472871
+class C_0001823810582913472871 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<SetRegularKey>
+}
+class "org::xrpl::rpc::v1::SignerListSetDefaultTypeInternal" as C_0001441546447063231460
+class C_0001441546447063231460 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<SignerListSet>
+}
+class "org::xrpl::rpc::v1::TicketCreateDefaultTypeInternal" as C_0001512642665524938201
+class C_0001512642665524938201 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<TicketCreate>
+}
+class "org::xrpl::rpc::v1::TrustSetDefaultTypeInternal" as C_0001655668110959288801
+class C_0001655668110959288801 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<TrustSet>
+}
+class "org::xrpl::rpc::v1::Transaction::HasBitSetters" as C_0002060644207114224734
+class C_0002060644207114224734 {
+{static} +account() : const ::org::xrpl::rpc::v1::Account &
+{static} +fee() : const ::org::xrpl::rpc::v1::XRPDropsAmount &
+{static} +sequence() : const ::org::xrpl::rpc::v1::Sequence &
+{static} +payment() : const ::org::xrpl::rpc::v1::Payment &
+{static} +account_set() : const ::org::xrpl::rpc::v1::AccountSet &
+{static} +account_delete() : const ::org::xrpl::rpc::v1::AccountDelete &
+{static} +check_cancel() : const ::org::xrpl::rpc::v1::CheckCancel &
+{static} +check_cash() : const ::org::xrpl::rpc::v1::CheckCash &
+{static} +check_create() : const ::org::xrpl::rpc::v1::CheckCreate &
+{static} +deposit_preauth() : const ::org::xrpl::rpc::v1::DepositPreauth &
+{static} +escrow_cancel() : const ::org::xrpl::rpc::v1::EscrowCancel &
+{static} +escrow_create() : const ::org::xrpl::rpc::v1::EscrowCreate &
+{static} +escrow_finish() : const ::org::xrpl::rpc::v1::EscrowFinish &
+{static} +offer_cancel() : const ::org::xrpl::rpc::v1::OfferCancel &
+{static} +offer_create() : const ::org::xrpl::rpc::v1::OfferCreate &
+{static} +payment_channel_claim() : const ::org::xrpl::rpc::v1::PaymentChannelClaim &
+{static} +payment_channel_create() : const ::org::xrpl::rpc::v1::PaymentChannelCreate &
+{static} +payment_channel_fund() : const ::org::xrpl::rpc::v1::PaymentChannelFund &
+{static} +set_regular_key() : const ::org::xrpl::rpc::v1::SetRegularKey &
+{static} +signer_list_set() : const ::org::xrpl::rpc::v1::SignerListSet &
+{static} +ticket_create() : const ::org::xrpl::rpc::v1::TicketCreate &
+{static} +trust_set() : const ::org::xrpl::rpc::v1::TrustSet &
+{static} +signing_public_key() : const ::org::xrpl::rpc::v1::SigningPublicKey &
+{static} +transaction_signature() : const ::org::xrpl::rpc::v1::TransactionSignature &
+{static} +flags() : const ::org::xrpl::rpc::v1::Flags &
+{static} +last_ledger_sequence() : const ::org::xrpl::rpc::v1::LastLedgerSequence &
+{static} +source_tag() : const ::org::xrpl::rpc::v1::SourceTag &
+{static} +account_transaction_id() : const ::org::xrpl::rpc::v1::AccountTransactionID &
+{static} +ticket_sequence() : const ::org::xrpl::rpc::v1::TicketSequence &
+}
+class "org::xrpl::rpc::v1::Memo::HasBitSetters" as C_0002193950148386515526
+class C_0002193950148386515526 {
+{static} +memo_data() : const ::org::xrpl::rpc::v1::MemoData &
+{static} +memo_format() : const ::org::xrpl::rpc::v1::MemoFormat &
+{static} +memo_type() : const ::org::xrpl::rpc::v1::MemoType &
+}
+class "org::xrpl::rpc::v1::Signer::HasBitSetters" as C_0000057017241881366996
+class C_0000057017241881366996 {
+{static} +account() : const ::org::xrpl::rpc::v1::Account &
+{static} +transaction_signature() : const ::org::xrpl::rpc::v1::TransactionSignature &
+{static} +signing_public_key() : const ::org::xrpl::rpc::v1::SigningPublicKey &
+}
+class "org::xrpl::rpc::v1::AccountSet::HasBitSetters" as C_0001587986513275126494
+class C_0001587986513275126494 {
+{static} +clear_flag() : const ::org::xrpl::rpc::v1::ClearFlag &
+{static} +domain() : const ::org::xrpl::rpc::v1::Domain &
+{static} +email_hash() : const ::org::xrpl::rpc::v1::EmailHash &
+{static} +message_key() : const ::org::xrpl::rpc::v1::MessageKey &
+{static} +set_flag() : const ::org::xrpl::rpc::v1::SetFlag &
+{static} +transfer_rate() : const ::org::xrpl::rpc::v1::TransferRate &
+{static} +tick_size() : const ::org::xrpl::rpc::v1::TickSize &
+}
+class "org::xrpl::rpc::v1::AccountDelete::HasBitSetters" as C_0000720127943542722356
+class C_0000720127943542722356 {
+{static} +destination() : const ::org::xrpl::rpc::v1::Destination &
+{static} +destination_tag() : const ::org::xrpl::rpc::v1::DestinationTag &
+}
+class "org::xrpl::rpc::v1::CheckCancel::HasBitSetters" as C_0000986993499850229848
+class C_0000986993499850229848 {
+{static} +check_id() : const ::org::xrpl::rpc::v1::CheckID &
+}
+class "org::xrpl::rpc::v1::CheckCash::HasBitSetters" as C_0000301226485763995379
+class C_0000301226485763995379 {
+{static} +check_id() : const ::org::xrpl::rpc::v1::CheckID &
+{static} +amount() : const ::org::xrpl::rpc::v1::Amount &
+{static} +deliver_min() : const ::org::xrpl::rpc::v1::DeliverMin &
+}
+class "org::xrpl::rpc::v1::CheckCreate::HasBitSetters" as C_0000789797364816692643
+class C_0000789797364816692643 {
+{static} +destination() : const ::org::xrpl::rpc::v1::Destination &
+{static} +send_max() : const ::org::xrpl::rpc::v1::SendMax &
+{static} +destination_tag() : const ::org::xrpl::rpc::v1::DestinationTag &
+{static} +expiration() : const ::org::xrpl::rpc::v1::Expiration &
+{static} +invoice_id() : const ::org::xrpl::rpc::v1::InvoiceID &
+}
+class "org::xrpl::rpc::v1::DepositPreauth::HasBitSetters" as C_0000327433266390594244
+class C_0000327433266390594244 {
+{static} +authorize() : const ::org::xrpl::rpc::v1::Authorize &
+{static} +unauthorize() : const ::org::xrpl::rpc::v1::Unauthorize &
+}
+class "org::xrpl::rpc::v1::EscrowCancel::HasBitSetters" as C_0001571342877660335584
+class C_0001571342877660335584 {
+{static} +owner() : const ::org::xrpl::rpc::v1::Owner &
+{static} +offer_sequence() : const ::org::xrpl::rpc::v1::OfferSequence &
+}
+class "org::xrpl::rpc::v1::EscrowCreate::HasBitSetters" as C_0000190264885568358121
+class C_0000190264885568358121 {
+{static} +amount() : const ::org::xrpl::rpc::v1::Amount &
+{static} +destination() : const ::org::xrpl::rpc::v1::Destination &
+{static} +cancel_after() : const ::org::xrpl::rpc::v1::CancelAfter &
+{static} +finish_after() : const ::org::xrpl::rpc::v1::FinishAfter &
+{static} +condition() : const ::org::xrpl::rpc::v1::Condition &
+{static} +destination_tag() : const ::org::xrpl::rpc::v1::DestinationTag &
+}
+class "org::xrpl::rpc::v1::EscrowFinish::HasBitSetters" as C_0001627939622270523686
+class C_0001627939622270523686 {
+{static} +owner() : const ::org::xrpl::rpc::v1::Owner &
+{static} +offer_sequence() : const ::org::xrpl::rpc::v1::OfferSequence &
+{static} +condition() : const ::org::xrpl::rpc::v1::Condition &
+{static} +fulfillment() : const ::org::xrpl::rpc::v1::Fulfillment &
+}
+class "org::xrpl::rpc::v1::OfferCancel::HasBitSetters" as C_0002194781288130802240
+class C_0002194781288130802240 {
+{static} +offer_sequence() : const ::org::xrpl::rpc::v1::OfferSequence &
+}
+class "org::xrpl::rpc::v1::OfferCreate::HasBitSetters" as C_0001958019625629059124
+class C_0001958019625629059124 {
+{static} +expiration() : const ::org::xrpl::rpc::v1::Expiration &
+{static} +offer_sequence() : const ::org::xrpl::rpc::v1::OfferSequence &
+{static} +taker_gets() : const ::org::xrpl::rpc::v1::TakerGets &
+{static} +taker_pays() : const ::org::xrpl::rpc::v1::TakerPays &
+}
+class "org::xrpl::rpc::v1::Payment_PathElement::HasBitSetters" as C_0000480493469698391838
+class C_0000480493469698391838 {
+{static} +account() : const ::org::xrpl::rpc::v1::AccountAddress &
+{static} +currency() : const ::org::xrpl::rpc::v1::Currency &
+{static} +issuer() : const ::org::xrpl::rpc::v1::AccountAddress &
+}
+class "org::xrpl::rpc::v1::Payment_Path::HasBitSetters" as C_0000879942722622125050
+class C_0000879942722622125050 {
+}
+class "org::xrpl::rpc::v1::Payment::HasBitSetters" as C_0000619896351435843404
+class C_0000619896351435843404 {
+{static} +amount() : const ::org::xrpl::rpc::v1::Amount &
+{static} +destination() : const ::org::xrpl::rpc::v1::Destination &
+{static} +destination_tag() : const ::org::xrpl::rpc::v1::DestinationTag &
+{static} +invoice_id() : const ::org::xrpl::rpc::v1::InvoiceID &
+{static} +send_max() : const ::org::xrpl::rpc::v1::SendMax &
+{static} +deliver_min() : const ::org::xrpl::rpc::v1::DeliverMin &
+}
+class "org::xrpl::rpc::v1::PaymentChannelClaim::HasBitSetters" as C_0000543060810162282673
+class C_0000543060810162282673 {
+{static} +channel() : const ::org::xrpl::rpc::v1::Channel &
+{static} +balance() : const ::org::xrpl::rpc::v1::Balance &
+{static} +amount() : const ::org::xrpl::rpc::v1::Amount &
+{static} +payment_channel_signature() : const ::org::xrpl::rpc::v1::PaymentChannelSignature &
+{static} +public_key() : const ::org::xrpl::rpc::v1::PublicKey &
+}
+class "org::xrpl::rpc::v1::PaymentChannelCreate::HasBitSetters" as C_0000863388398992318859
+class C_0000863388398992318859 {
+{static} +amount() : const ::org::xrpl::rpc::v1::Amount &
+{static} +destination() : const ::org::xrpl::rpc::v1::Destination &
+{static} +settle_delay() : const ::org::xrpl::rpc::v1::SettleDelay &
+{static} +public_key() : const ::org::xrpl::rpc::v1::PublicKey &
+{static} +cancel_after() : const ::org::xrpl::rpc::v1::CancelAfter &
+{static} +destination_tag() : const ::org::xrpl::rpc::v1::DestinationTag &
+}
+class "org::xrpl::rpc::v1::PaymentChannelFund::HasBitSetters" as C_0001843892356754232114
+class C_0001843892356754232114 {
+{static} +channel() : const ::org::xrpl::rpc::v1::Channel &
+{static} +amount() : const ::org::xrpl::rpc::v1::Amount &
+{static} +expiration() : const ::org::xrpl::rpc::v1::Expiration &
+}
+class "org::xrpl::rpc::v1::SetRegularKey::HasBitSetters" as C_0001959934337828609787
+class C_0001959934337828609787 {
+{static} +regular_key() : const ::org::xrpl::rpc::v1::RegularKey &
+}
+class "org::xrpl::rpc::v1::SignerListSet::HasBitSetters" as C_0000174215737439698017
+class C_0000174215737439698017 {
+{static} +signer_quorum() : const ::org::xrpl::rpc::v1::SignerQuorum &
+}
+class "org::xrpl::rpc::v1::TicketCreate::HasBitSetters" as C_0000387451145169539985
+class C_0000387451145169539985 {
+{static} +count() : const ::org::xrpl::rpc::v1::TicketCount &
+}
+class "org::xrpl::rpc::v1::TrustSet::HasBitSetters" as C_0002292249306025879605
+class C_0002292249306025879605 {
+{static} +limit_amount() : const ::org::xrpl::rpc::v1::LimitAmount &
+{static} +quality_in() : const ::org::xrpl::rpc::v1::QualityIn &
+{static} +quality_out() : const ::org::xrpl::rpc::v1::QualityOut &
+}
+class "org::xrpl::rpc::v1::GetFeeRequestDefaultTypeInternal" as C_0002198778658045453722
+class C_0002198778658045453722 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<GetFeeRequest>
+}
+class "org::xrpl::rpc::v1::GetFeeResponseDefaultTypeInternal" as C_0000688567679777585087
+class C_0000688567679777585087 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<GetFeeResponse>
+}
+class "org::xrpl::rpc::v1::FeeDefaultTypeInternal" as C_0000598433102639696342
+class C_0000598433102639696342 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<Fee>
+}
+class "org::xrpl::rpc::v1::FeeLevelsDefaultTypeInternal" as C_0001125114259831063591
+class C_0001125114259831063591 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<FeeLevels>
+}
+class "org::xrpl::rpc::v1::GetFeeRequest::HasBitSetters" as C_0000165734285097137547
+class C_0000165734285097137547 {
+}
+class "org::xrpl::rpc::v1::GetFeeResponse::HasBitSetters" as C_0001074350779641488350
+class C_0001074350779641488350 {
+{static} +fee() : const ::org::xrpl::rpc::v1::Fee &
+{static} +levels() : const ::org::xrpl::rpc::v1::FeeLevels &
+}
+class "org::xrpl::rpc::v1::Fee::HasBitSetters" as C_0001867688327623955018
+class C_0001867688327623955018 {
+{static} +base_fee() : const ::org::xrpl::rpc::v1::XRPDropsAmount &
+{static} +median_fee() : const ::org::xrpl::rpc::v1::XRPDropsAmount &
+{static} +minimum_fee() : const ::org::xrpl::rpc::v1::XRPDropsAmount &
+{static} +open_ledger_fee() : const ::org::xrpl::rpc::v1::XRPDropsAmount &
+}
+class "org::xrpl::rpc::v1::FeeLevels::HasBitSetters" as C_0000162436215042135757
+class C_0000162436215042135757 {
+}
+class "org::xrpl::rpc::v1::GetAccountInfoRequestDefaultTypeInternal" as C_0001462873815555302203
+class C_0001462873815555302203 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<GetAccountInfoRequest>
+}
+class "org::xrpl::rpc::v1::GetAccountInfoResponseDefaultTypeInternal" as C_0000564339020983698811
+class C_0000564339020983698811 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<GetAccountInfoResponse>
+}
+class "org::xrpl::rpc::v1::QueueDataDefaultTypeInternal" as C_0001143662738225280620
+class C_0001143662738225280620 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<QueueData>
+}
+class "org::xrpl::rpc::v1::QueuedTransactionDefaultTypeInternal" as C_0000900001631831896466
+class C_0000900001631831896466 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<QueuedTransaction>
+}
+class "org::xrpl::rpc::v1::GetAccountInfoRequest::HasBitSetters" as C_0000579239679975940115
+class C_0000579239679975940115 {
+{static} +account() : const ::org::xrpl::rpc::v1::AccountAddress &
+{static} +ledger() : const ::org::xrpl::rpc::v1::LedgerSpecifier &
+}
+class "org::xrpl::rpc::v1::GetAccountInfoResponse::HasBitSetters" as C_0000009380274580488454
+class C_0000009380274580488454 {
+{static} +account_data() : const ::org::xrpl::rpc::v1::AccountRoot &
+{static} +signer_list() : const ::org::xrpl::rpc::v1::SignerList &
+{static} +queue_data() : const ::org::xrpl::rpc::v1::QueueData &
+}
+class "org::xrpl::rpc::v1::QueueData::HasBitSetters" as C_0001146009186286839849
+class C_0001146009186286839849 {
+{static} +max_spend_drops_total() : const ::org::xrpl::rpc::v1::XRPDropsAmount &
+}
+class "org::xrpl::rpc::v1::QueuedTransaction::HasBitSetters" as C_0000553189089146665793
+class C_0000553189089146665793 {
+{static} +fee() : const ::org::xrpl::rpc::v1::XRPDropsAmount &
+{static} +max_spend_drops() : const ::org::xrpl::rpc::v1::XRPDropsAmount &
+{static} +sequence() : const ::org::xrpl::rpc::v1::Sequence &
+{static} +last_ledger_sequence() : const ::org::xrpl::rpc::v1::LastLedgerSequence &
+{static} +ticket() : const ::org::xrpl::rpc::v1::Ticket &
+}
+class "org::xrpl::rpc::v1::GetTransactionRequestDefaultTypeInternal" as C_0000070254223192422085
+class C_0000070254223192422085 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<GetTransactionRequest>
+}
+class "org::xrpl::rpc::v1::GetTransactionResponseDefaultTypeInternal" as C_0000562614772101131423
+class C_0000562614772101131423 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<GetTransactionResponse>
++transaction_ : const ::org::xrpl::rpc::v1::Transaction *
++transaction_binary_ : ::google::protobuf::internal::ArenaStringPtr
++meta_ : const ::org::xrpl::rpc::v1::Meta *
++meta_binary_ : ::google::protobuf::internal::ArenaStringPtr
+}
+class "org::xrpl::rpc::v1::GetTransactionRequest::HasBitSetters" as C_0001077186708448834837
+class C_0001077186708448834837 {
+{static} +ledger_range() : const ::org::xrpl::rpc::v1::LedgerRange &
+}
+class "org::xrpl::rpc::v1::GetTransactionResponse::HasBitSetters" as C_0000507007230175714846
+class C_0000507007230175714846 {
+{static} +transaction() : const ::org::xrpl::rpc::v1::Transaction &
+{static} +meta() : const ::org::xrpl::rpc::v1::Meta &
+{static} +date() : const ::org::xrpl::rpc::v1::Date &
+}
+enum "org::xrpl::rpc::v1::GetLedgerResponse::TransactionsCase" as C_0001982834756970867448
+enum C_0001982834756970867448 {
+kHashesList
+kTransactionsList
+TRANSACTIONS_NOT_SET
+}
+class "org::xrpl::rpc::v1::GetLedgerRequestDefaultTypeInternal" as C_0001582124783511837400
+class C_0001582124783511837400 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<GetLedgerRequest>
+}
+class "org::xrpl::rpc::v1::GetLedgerResponseDefaultTypeInternal" as C_0001992856585734173043
+class C_0001992856585734173043 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<GetLedgerResponse>
++hashes_list_ : const ::org::xrpl::rpc::v1::TransactionHashList *
++transactions_list_ : const ::org::xrpl::rpc::v1::TransactionAndMetadataList *
+}
+class "org::xrpl::rpc::v1::TransactionHashListDefaultTypeInternal" as C_0000980675581375930492
+class C_0000980675581375930492 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<TransactionHashList>
+}
+class "org::xrpl::rpc::v1::TransactionAndMetadataDefaultTypeInternal" as C_0001233079899320126085
+class C_0001233079899320126085 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<TransactionAndMetadata>
+}
+class "org::xrpl::rpc::v1::TransactionAndMetadataListDefaultTypeInternal" as C_0001679806665518221395
+class C_0001679806665518221395 {
++_instance : ::google::protobuf::internal::ExplicitlyConstructed<TransactionAndMetadataList>
+}
+class "org::xrpl::rpc::v1::GetLedgerRequest::HasBitSetters" as C_0000666551226698236971
+class C_0000666551226698236971 {
+{static} +ledger() : const ::org::xrpl::rpc::v1::LedgerSpecifier &
+}
+class "org::xrpl::rpc::v1::GetLedgerResponse::HasBitSetters" as C_0001822238064019913114
+class C_0001822238064019913114 {
+{static} +hashes_list() : const ::org::xrpl::rpc::v1::TransactionHashList &
+{static} +transactions_list() : const ::org::xrpl::rpc::v1::TransactionAndMetadataList &
+{static} +ledger_objects() : const ::org::xrpl::rpc::v1::RawLedgerObjects &
+}
+class "org::xrpl::rpc::v1::TransactionHashList::HasBitSetters" as C_0000761059462697707760
+class C_0000761059462697707760 {
+}
+class "org::xrpl::rpc::v1::TransactionAndMetadata::HasBitSetters" as C_0002004336073387624514
+class C_0002004336073387624514 {
+}
+class "org::xrpl::rpc::v1::TransactionAndMetadataList::HasBitSetters" as C_0000271939495778290362
+class C_0000271939495778290362 {
+}
+@enduml

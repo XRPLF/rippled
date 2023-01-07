@@ -1,0 +1,28 @@
+diagrams:
+  app_consensus:
+    type: class
+    generate_method_arguments: none
+    include_relations_also_as_members: false
+    glob:
+      - src/ripple/app/consensus/*.h
+      - src/ripple/app/consensus/*.cpp
+      - src/ripple/app/consensus/impl/*.h
+      - src/ripple/app/consensus/impl/*.cpp
+    using_namespace:
+      - ripple
+    include:
+      namespaces:
+        - ripple
+      context:
+        - ripple::RCLCensorshipDetector
+        - ripple::RCLConsensus
+        - ripple::RCLCxLedger
+        - ripple::RCLCxPeerPos
+        - ripple::RCLCxTx
+        - ripple::RCLValidations
+    exclude:
+      access:
+        - private
+    plantuml:
+      before:
+        - 'title Class Diagram for app/consensus'

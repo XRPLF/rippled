@@ -1,0 +1,90 @@
+diagrams:
+  protocol:
+    type: class
+    generate_method_arguments: none
+    include_relations_also_as_members: false
+    glob:
+      - src/ripple/protocol/*.h
+      - src/ripple/protocol/*.cpp
+      - src/ripple/protocol/impl/*.h
+      - src/ripple/protocol/impl/*.cpp
+    using_namespace:
+      - ripple
+    include:
+      namespaces:
+        - ripple
+        - ripple
+        - ripple::BuildInfo
+        - ripple::detail
+        - ripple::keylet
+        - ripple::nft
+      context:
+        - ripple::AccountID
+        - ripple::AmountConversions
+        - ripple::Book
+        - ripple::BuildInfo
+        - ripple::ErrorCodes
+        - ripple::Feature
+        - ripple::HashPrefix
+        - ripple::Indexes
+        - ripple::InnerObjectFormats
+        - ripple::Issue
+        - ripple::KeyType
+        - ripple::Keylet
+        - ripple::KnownFormats
+        - ripple::LedgerFormats
+        - ripple::PayChan
+        - ripple::Protocol
+        - ripple::PublicKey
+        - ripple::Quality
+        - ripple::Rate
+        - ripple::Rate2
+        - ripple::RippleLedgerHash
+        - ripple::Rules
+        - ripple::SField
+        - ripple::SOTemplate
+        - ripple::STAccount
+        - ripple::STAmount
+        - ripple::STArray
+        - ripple::STBase
+        - ripple::STBitString
+        - ripple::STBlob
+        - ripple::STExchange
+        - ripple::STInteger
+        - ripple::STLedgerEntry
+        - ripple::STObject
+        - ripple::STParsedJSON
+        - ripple::STPathSet
+        - ripple::STTx
+        - ripple::STValidation
+        - ripple::STVar
+        - ripple::STVector256
+        - ripple::SecretKey
+        - ripple::Seed
+        - ripple::SeqProxy
+        - ripple::Serializer
+        - ripple::Sign
+        - ripple::SystemParameters
+        - ripple::TER
+        - ripple::TxFlags
+        - ripple::TxFormats
+        - ripple::TxMeta
+    exclude:
+      access:
+        - private
+      namespaces:
+        - std
+        - boost
+        - beast
+        - date
+        - Json
+        - openssl
+        - __gnu_cxx
+        - __cxxabiv1
+        - ripple::STParsedJSONDetail
+        - ripple::jss
+        - ripple::RPC
+        - ripple::RPC::detail
+    plantuml:
+      before:
+        - 'title Class Diagram for protocol'

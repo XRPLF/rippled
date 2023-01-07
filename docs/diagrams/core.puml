@@ -1,0 +1,558 @@
+@startuml
+title Class Diagram for core
+class "Logs" as C_0000063424147859364572
+class C_0000063424147859364572 {
++Logs() : void
++Logs() : void
++operator=() : Logs &
++~Logs() = default : void
++open() : bool
++get() : beast::Journal::Sink &
++operator[]() : beast::Journal::Sink &
++journal() : beast::Journal
++threshold() const : beast::severities::Severity
++threshold() : void
++partition_severities() const : std::vector<std::pair<std::string,std::string>>
++write() : void
++rotate() : std::string
++silent() : void
++makeSink() : std::unique_ptr<beast::Journal::Sink>
+{static} +fromSeverity() : LogSeverity
+{static} +toSeverity() : beast::severities::Severity
+{static} +toString() : std::string
+{static} +fromString() : LogSeverity
+}
+abstract "SNTPClock" as C_0000509041674914351273
+abstract C_0000509041674914351273 {
+{abstract} +run() = 0 : void
+{abstract} +offset() const = 0 : beast::abstract_clock<std::chrono::system_clock>::duration
+}
+class "SNTPClientImp" as C_0001129830100067346974
+class C_0001129830100067346974 {
++SNTPClientImp() : void
++~SNTPClientImp() : void
++run() : void
++now() const : std::chrono::time_point<std::chrono::system_clock>::time_point
++offset() const : beast::abstract_clock<std::chrono::system_clock>::duration
++doRun() : void
++onTimer() : void
++onRead() : void
++addServer() : void
++queryAll() : void
++doQuery() : bool
++resolveComplete() : void
++onSend() : void
++processReply() : void
+}
+class "LoadEvent" as C_0001354813340857466867
+class C_0001354813340857466867 {
++LoadEvent() : void
++LoadEvent() : void
++~LoadEvent() : void
++name() const : const std::string &
++waitTime() const : std::chrono::steady_clock::duration
++runTime() const : std::chrono::steady_clock::duration
++setName() : void
++start() : void
++stop() : void
+}
+class "UptimeClock" as C_0001472880491539920613
+class C_0001472880491539920613 {
++UptimeClock() = default : void
+{static} +now() : UptimeClock::time_point
+{static} +is_steady : const bool
+}
+class "LoadMonitor" as C_0000196021603135645429
+class C_0000196021603135645429 {
++LoadMonitor() : void
++addLoadSample() : void
++addSamples() : void
++setTargetLatency() : void
++isOverTarget() : bool
++getStats() : LoadMonitor::Stats
++isOver() : bool
+}
+class "LoadMonitor::Stats" as C_0002223949738955380616
+class C_0002223949738955380616 {
++Stats() : void
++count : std::uint64_t
++latencyAvg : std::chrono::milliseconds
++latencyPeak : std::chrono::milliseconds
++isOverloaded : bool
+}
+class "BasicConfig" as C_0000523676121508856554
+class C_0000523676121508856554 {
++exists() const : bool
++section() : Section &
++section() const : const Section &
++operator[]() const : const Section &
++operator[]() : Section &
++overwrite() : void
++deprecatedClearSection() : void
++legacy() : void
++legacy() const : std::string
++had_trailing_comments() const : bool
+#build() : void
+}
+class "XRPAmount" as C_0000437628577035957607
+class C_0000437628577035957607 {
++XRPAmount() = default : void
++XRPAmount() = default : void
++operator=() = default : XRPAmount &
++XRPAmount() : void
++operator=() : XRPAmount &
++XRPAmount() : void
++operator=() : XRPAmount &
++operator*() const : XRPAmount
++operator+=() : XRPAmount &
++operator-=() : XRPAmount &
++operator+=() : XRPAmount &
++operator-=() : XRPAmount &
++operator*=() : XRPAmount &
++operator-() const : XRPAmount
++operator==() const : bool
++operator==() const : bool
++operator<() const : bool
++operator bool() const : bool
++signum() const : int
++drops() const : XRPAmount::value_type
++decimalXRP() const : double
++jsonClipped() const : Json::Value
++value() const : XRPAmount::value_type
+{static} +minPositiveAmount() : XRPAmount
++dropsAs() : std::optional<Dest>
++dropsAs() : Dest
++dropsAs() : Dest
+}
+enum "SizedItem" as C_0001986492512850237626
+enum C_0001986492512850237626 {
+sweepInterval
+treeCacheSize
+treeCacheAge
+ledgerSize
+ledgerAge
+ledgerFetch
+hashNodeDBCache
+txnDBCache
+lgrDBCache
+openFinalLimit
+burstSize
+ramSizeGB
+}
+class "base_uint<256>" as C_0000434356742846908842
+class C_0000434356742846908842 {
+}
+class "Config" as C_0002213387511391991779
+class C_0002213387511391991779 {
++getDebugLogFile() const : boost::filesystem::path
++Config() : void
++setup() : void
++setupControl() : void
++loadFromString() : void
++quiet() const : bool
++silent() const : bool
++standalone() const : bool
++reporting() const : bool
++useTxTables() const : bool
++reportingReadOnly() const : bool
++setReportingReadOnly() : void
++canSign() const : bool
++getValueFor() const : int
++CONFIG_DIR : boost::filesystem::path
++doImport : bool
++nodeToShard : bool
++ELB_SUPPORT : bool
++IPS : std::vector<std::string>
++IPS_FIXED : std::vector<std::string>
++SNTP_SERVERS : std::vector<std::string>
++START_UP : Config::StartUpType
++START_VALID : bool
++START_LEDGER : std::string
++NETWORK_QUORUM : std::size_t
++RELAY_UNTRUSTED_VALIDATIONS : int
++RELAY_UNTRUSTED_PROPOSALS : int
++PEER_PRIVATE : bool
++PEERS_MAX : std::size_t
++PEERS_OUT_MAX : std::size_t
++PEERS_IN_MAX : std::size_t
++PATH_SEARCH_OLD : int
++PATH_SEARCH : int
++PATH_SEARCH_FAST : int
++PATH_SEARCH_MAX : int
++VALIDATION_QUORUM : std::optional<std::size_t>
++LEDGER_HISTORY : std::uint32_t
++FETCH_DEPTH : std::uint32_t
++NODE_SIZE : std::size_t
++SSL_VERIFY : bool
++SSL_VERIFY_FILE : std::string
++SSL_VERIFY_DIR : std::string
++COMPRESSION : bool
++LEDGER_REPLAY : bool
++MAX_TRANSACTIONS : int
++AMENDMENT_MAJORITY_TIME : std::chrono::seconds
++WORKERS : int
++IO_WORKERS : int
++PREFETCH_WORKERS : int
++FORCE_MULTI_THREAD : bool
++SWEEP_INTERVAL : std::optional<int>
++VP_REDUCE_RELAY_ENABLE : bool
++VP_REDUCE_RELAY_SQUELCH : bool
++TX_REDUCE_RELAY_ENABLE : bool
++TX_REDUCE_RELAY_METRICS : bool
++TX_REDUCE_RELAY_MIN_PEERS : std::size_t
++TX_RELAY_PERCENTAGE : std::size_t
++rpc_ip : std::optional<beast::IP::Endpoint>
++SERVER_DOMAIN : std::string
++MAX_UNKNOWN_TIME : std::chrono::seconds
++MAX_DIVERGED_TIME : std::chrono::seconds
++BETA_RPC_API : bool
++FAST_LOAD : bool
+{static} +configFileName : const char *const
+{static} +databaseDirName : const char *const
+{static} +validatorsFileName : const char *const
+{static} +TRANSACTION_FEE_BASE : const FeeUnit32
+{static} +MAX_JOB_QUEUE_TX : const int
+{static} +MIN_JOB_QUEUE_TX : const int
+}
+enum "Config::StartUpType" as C_0001981503244669540621
+enum C_0001981503244669540621 {
+FRESH
+NORMAL
+LOAD
+LOAD_FILE
+REPLAY
+NETWORK
+}
+enum "JobType" as C_0000409655138865794884
+enum C_0000409655138865794884 {
+jtINVALID
+jtPACK
+jtPUBOLDLEDGER
+jtCLIENT
+jtCLIENT_SUBSCRIBE
+jtCLIENT_FEE_CHANGE
+jtCLIENT_CONSENSUS
+jtCLIENT_ACCT_HIST
+jtCLIENT_SHARD
+jtCLIENT_RPC
+jtCLIENT_WEBSOCKET
+jtRPC
+jtSWEEP
+jtVALIDATION_ut
+jtMANIFEST
+jtUPDATE_PF
+jtTRANSACTION_l
+jtREPLAY_REQ
+jtLEDGER_REQ
+jtPROPOSAL_ut
+jtREPLAY_TASK
+jtTRANSACTION
+jtMISSING_TXN
+jtREQUESTED_TXN
+jtBATCH
+jtLEDGER_DATA
+jtADVANCE
+jtPUBLEDGER
+jtTXN_DATA
+jtWAL
+jtVALIDATION_t
+jtWRITE
+jtACCEPT
+jtPROPOSAL_t
+jtNETOP_CLUSTER
+jtNETOP_TIMER
+jtADMIN
+jtPEER
+jtDISK
+jtTXN_PROC
+jtOB_SETUP
+jtPATH_FIND
+jtHO_READ
+jtHO_WRITE
+jtGENERIC
+jtNS_SYNC_READ
+jtNS_ASYNC_READ
+jtNS_WRITE
+}
+class "Job" as C_0000222779757420984018
+class C_0000222779757420984018 {
++Job() : void
++Job() : void
++Job() : void
++getType() const : JobType
++queue_time() const : const clock_type::time_point &
++doJob() : void
++operator<() const : bool
++operator>() const : bool
++operator<=() const : bool
++operator>=() const : bool
+}
+class "JobTypeInfo" as C_0001319612046379478113
+class C_0001319612046379478113 {
++JobTypeInfo() : void
++JobTypeInfo() : void
++type() const : JobType
++name() const : const std::string &
++limit() const : int
++special() const : bool
++getAverageLatency() const : std::chrono::milliseconds
++getPeakLatency() const : std::chrono::milliseconds
+}
+class "JobTypes" as C_0000437965670459841460
+class C_0000437965670459841460 {
+{static} +instance() : const JobTypes &
+{static} +name() : const std::string &
++get() const : const JobTypeInfo &
++getInvalid() const : const JobTypeInfo &
++size() const : Map::size_type
++begin() const : JobTypes::const_iterator
++cbegin() const : JobTypes::const_iterator
++end() const : JobTypes::const_iterator
++cend() const : JobTypes::const_iterator
+}
+abstract "perf::PerfLog" as C_0000342087071238639980
+abstract C_0000342087071238639980 {
++~PerfLog() = default : void
++start() : void
++stop() : void
+{abstract} +rpcStart() = 0 : void
+{abstract} +rpcFinish() = 0 : void
+{abstract} +rpcError() = 0 : void
+{abstract} +jobQueue() = 0 : void
+{abstract} +jobStart() = 0 : void
+{abstract} +jobFinish() = 0 : void
+{abstract} +countersJson() const = 0 : Json::Value
+{abstract} +currentJson() const = 0 : Json::Value
+{abstract} +resizeJobs() = 0 : void
+{abstract} +rotate() = 0 : void
+}
+class "basic_semaphore<std::mutex,std::condition_variable>" as C_0001485797715291860849
+class C_0001485797715291860849 {
+}
+class "Workers" as C_0001567567837593137931
+class C_0001567567837593137931 {
++Workers() : void
++~Workers() : void
++getNumberOfThreads() const : int
++setNumberOfThreads() : void
++stop() : void
++addTask() : void
++numberOfCurrentlyRunningTasks() const : int
+}
+abstract "Workers::Callback" as C_0001235312074761866160
+abstract C_0001235312074761866160 {
++~Callback() = default : void
++Callback() = default : void
++Callback() : void
++operator=() : Workers::Callback &
+{abstract} +processTask() = 0 : void
+}
+class "Workers::PausedTag" as C_0002121660424784593347
+class C_0002121660424784593347 {
++PausedTag() = default : void
+}
+class "Workers::Worker" as C_0001350013000164401313
+class C_0001350013000164401313 {
++Worker() : void
++~Worker() : void
++notify() : void
+}
+class "HTTPClient" as C_0002264265661328364095
+class C_0002264265661328364095 {
++HTTPClient() = default : void
+{static} +initializeSSLContext() : void
+{static} +get() : void
+{static} +get() : void
+{static} +request() : void
+{static} +maxClientHeaderBytes : const int
+}
+class "JobTypeData" as C_0000626778165949066009
+class C_0000626778165949066009 {
++JobTypeData() : void
++JobTypeData() : void
++operator=() : JobTypeData &
++name() const : std::string
++type() const : JobType
++load() : LoadMonitor &
++stats() : LoadMonitor::Stats
++waiting : int
++running : int
++deferred : int
++dequeue : beast::insight::Event
++execute : beast::insight::Event
+}
+class "ClosureCounter<void>" as C_0001295866947017305642
+class C_0001295866947017305642 {
+}
+class "JobQueue" as C_0000039290920578616174
+class C_0000039290920578616174 {
++JobQueue() : void
++~JobQueue() : void
++getJobCount() const : int
++getJobCountTotal() const : int
++getJobCountGE() const : int
++makeLoadEvent() : std::unique_ptr<LoadEvent>
++addLoadEvents() : void
++isOverloaded() : bool
++getJson() : Json::Value
++rendezvous() : void
++stop() : void
++isStopping() const : bool
++isStopped() const : bool
++addJob() : _Bool
++postCoro() : std::shared_ptr<Coro>
+}
+class "JobQueue::Coro" as C_0000853250692622845409
+class C_0000853250692622845409 {
++Coro() : void
++operator=() : JobQueue::Coro &
++~Coro() : void
++yield() const : void
++post() : bool
++resume() : void
++runnable() const : bool
++expectEarlyExit() : void
++join() : void
++Coro() : void
+}
+abstract "Checkpointer" as C_0000569937243258670919
+abstract C_0000569937243258670919 {
+{abstract} +id() const = 0 : std::uintptr_t
++~Checkpointer() = default : void
+{abstract} +schedule() = 0 : void
+{abstract} +checkpoint() = 0 : void
+}
+class "DatabaseCon" as C_0001720628919043616139
+class C_0001720628919043616139 {
++~DatabaseCon() : void
++getSession() : soci::session &
++checkoutDb() : LockedSociSession
++DatabaseCon() : void
++DatabaseCon() : void
++DatabaseCon() : void
++DatabaseCon() : void
+}
+class "DatabaseCon::Setup" as C_0000990130060530736693
+class C_0000990130060530736693 {
++Setup() = default : void
++commonPragma() const : const std::vector<std::string> *
++startUp : Config::StartUpType
++standAlone : bool
++reporting : bool
++dataDir : boost::filesystem::path
++useGlobalPragma : bool
+{static} +globalPragma : std::unique_ptr<const std::vector<std::string>>
+}
+class "DatabaseCon::CheckpointerSetup" as C_0001558422091197112939
+class C_0001558422091197112939 {
+}
+class "CheckpointersCollection" as C_0000231212780479529114
+class C_0000231212780479529114 {
++fromId() : std::shared_ptr<Checkpointer>
++erase() : void
++create() : std::shared_ptr<Checkpointer>
+}
+class "WALCheckpointer" as C_0001082513461812494029
+class C_0001082513461812494029 {
++WALCheckpointer() : void
++getConnection() const : std::pair<sqlite_api::sqlite3 *,std::shared_ptr<soci::session>>
++id() const : std::uintptr_t
++~WALCheckpointer() = default : void
++schedule() : void
++checkpoint() : void
+{static} #sqliteWALHook() : int
+#id_ : const std::uintptr_t
+#session_ : std::weak_ptr<soci::session>
+#mutex_ : std::mutex
+#running_ : bool
+#j_ : const beast::Journal
+}
+abstract "TimeKeeper" as C_0000302295299406755007
+abstract C_0000302295299406755007 {
++~TimeKeeper() = default : void
+{abstract} +run() = 0 : void
+{abstract} +now() const = 0 : std::chrono::time_point<NetClock>::time_point
+{abstract} +closeTime() const = 0 : std::chrono::time_point<NetClock>::time_point
+{abstract} +adjustCloseTime() = 0 : void
+{abstract} +nowOffset() const = 0 : std::chrono::duration<std::int32_t>
+{abstract} +closeOffset() const = 0 : std::chrono::duration<std::int32_t>
+}
+class "TimeKeeperImpl" as C_0002299804490352473380
+class C_0002299804490352473380 {
++TimeKeeperImpl() : void
++run() : void
++now() const : std::chrono::time_point<NetClock>::time_point
++closeTime() const : std::chrono::time_point<NetClock>::time_point
++adjustCloseTime() : void
++nowOffset() const : std::chrono::duration<std::int32_t>
++closeOffset() const : std::chrono::duration<std::int32_t>
+}
+C_0000509041674914351273 <|-- C_0001129830100067346974
+C_0001354813340857466867 ..> C_0000196021603135645429
+C_0001354813340857466867 --> C_0000196021603135645429 : -monitor_
+C_0000196021603135645429 ..> C_0001354813340857466867
+C_0000196021603135645429 o-- C_0001472880491539920613 : -mLastUpdate
+C_0002223949738955380616 --+ C_0000196021603135645429
+C_0002213387511391991779 ..> C_0001986492512850237626
+C_0002213387511391991779 o-- C_0000437628577035957607 : +FEE_DEFAULT
+C_0002213387511391991779 o-- C_0000437628577035957607 : +FEE_ACCOUNT_RESERVE
+C_0002213387511391991779 o-- C_0000437628577035957607 : +FEE_OWNER_RESERVE
+C_0002213387511391991779 ..> C_0000434356742846908842
+C_0002213387511391991779 o-- C_0000434356742846908842 : +features
+C_0000523676121508856554 <|-- C_0002213387511391991779
+C_0001981503244669540621 --+ C_0002213387511391991779
+C_0000222779757420984018 ..> C_0000409655138865794884
+C_0000222779757420984018 ..> C_0000196021603135645429
+C_0000222779757420984018 o-- C_0000409655138865794884 : -mType
+C_0000222779757420984018 --> C_0001354813340857466867 : -m_loadEvent
+C_0001319612046379478113 ..> C_0000409655138865794884
+C_0001319612046379478113 o-- C_0000409655138865794884 : -m_type
+C_0000437965670459841460 ..> C_0000409655138865794884
+C_0000437965670459841460 o-- C_0001319612046379478113 : +m_unknown
+C_0000437965670459841460 o-- C_0001319612046379478113 : +m_map
+C_0000342087071238639980 ..> C_0000409655138865794884
+C_0001567567837593137931 ..> C_0000342087071238639980
+C_0001567567837593137931 --> C_0000342087071238639980 : -perfLog_
+C_0001567567837593137931 o-- C_0001485797715291860849 : -m_semaphore
+C_0001235312074761866160 --+ C_0001567567837593137931
+C_0002121660424784593347 --+ C_0001567567837593137931
+C_0001350013000164401313 --+ C_0001567567837593137931
+C_0001350013000164401313 ..> C_0001567567837593137931
+C_0001350013000164401313 --> C_0001567567837593137931 : -m_workers
+C_0002264265661328364095 ..> C_0002213387511391991779
+C_0000626778165949066009 ..> C_0001319612046379478113
+C_0000626778165949066009 ..> C_0000063424147859364572
+C_0000626778165949066009 o-- C_0000196021603135645429 : -m_load
+C_0000626778165949066009 --> C_0001319612046379478113 : +info
+C_0000039290920578616174 ..> C_0000063424147859364572
+C_0000039290920578616174 ..> C_0000342087071238639980
+C_0000039290920578616174 ..> C_0000409655138865794884
+C_0000039290920578616174 ..> C_0000222779757420984018
+C_0000039290920578616174 o-- C_0000222779757420984018 : -m_jobSet
+C_0000039290920578616174 o-- C_0001295866947017305642 : -jobCounter_
+C_0000039290920578616174 o-- C_0000626778165949066009 : -m_jobData
+C_0000039290920578616174 o-- C_0000626778165949066009 : -m_invalidJobData
+C_0000039290920578616174 o-- C_0001567567837593137931 : -m_workers
+C_0000039290920578616174 --> C_0000342087071238639980 : -perfLog_
+C_0000853250692622845409 --+ C_0000039290920578616174
+C_0000853250692622845409 ..> C_0000039290920578616174
+C_0000853250692622845409 ..> C_0000409655138865794884
+C_0000853250692622845409 --> C_0000039290920578616174 : -jq_
+C_0000853250692622845409 o-- C_0000409655138865794884 : -type_
+C_0001720628919043616139 ..> C_0000039290920578616174
+C_0001720628919043616139 ..> C_0000063424147859364572
+C_0001720628919043616139 --> C_0000569937243258670919 : -checkpointer_
+C_0000990130060530736693 --+ C_0001720628919043616139
+C_0001558422091197112939 --+ C_0001720628919043616139
+C_0001558422091197112939 --> C_0000039290920578616174 : +jobQueue
+C_0001558422091197112939 --> C_0000063424147859364572 : +logs
+C_0000231212780479529114 ..> C_0000039290920578616174
+C_0000231212780479529114 ..> C_0000063424147859364572
+C_0000231212780479529114 o-- C_0000569937243258670919 : -checkpointers_
+C_0001082513461812494029 ..> C_0000039290920578616174
+C_0001082513461812494029 ..> C_0000063424147859364572
+C_0001082513461812494029 --> C_0000039290920578616174 : #jobQueue_
+C_0000569937243258670919 <|-- C_0001082513461812494029
+C_0002299804490352473380 o-- C_0000509041674914351273 : -clock_
+C_0000302295299406755007 <|-- C_0002299804490352473380
+@enduml

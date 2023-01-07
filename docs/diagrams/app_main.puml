@@ -1,0 +1,792 @@
+@startuml
+title Class Diagram for app/main
+abstract "NodeStore::Task" as C_0000281534548078175472
+abstract C_0000281534548078175472 {
++~Task() = default : void
+{abstract} +performScheduledTask() = 0 : void
+}
+class "NodeStore::FetchReport" as C_0001870530643219159631
+class C_0001870530643219159631 {
++FetchReport() : void
++elapsed : std::chrono::milliseconds
++wasFound : bool
+}
+class "NodeStore::BatchWriteReport" as C_0000536597006121896563
+class C_0000536597006121896563 {
++BatchWriteReport() = default : void
++elapsed : std::chrono::milliseconds
++writeCount : int
+}
+class "NodeStore::ShardInfo" as C_0001113216765856705435
+class C_0001113216765856705435 {
++msgTimestamp() const : const NetClock::time_point &
++setMsgTimestamp() : void
++finalizedToString() const : std::string
++setFinalizedFromString() : bool
++finalized() const : const boost::icl::interval_set<std::uint32_t> &
++incompleteToString() const : std::string
++incomplete() const : const std::map<std::uint32_t,Incomplete> &
++update() : bool
++makeMessage() : protocol::TMPeerShardInfoV2
+}
+class "RPC::ShardArchiveHandler" as C_0001901273733117020423
+class C_0001901273733117020423 {
+{static} +getDownloadDirectory() : boost::filesystem::path
+{static} +makeShardArchiveHandler() : std::unique_ptr<ShardArchiveHandler>
+{static} +tryMakeRecoveryHandler() : std::unique_ptr<ShardArchiveHandler>
++ShardArchiveHandler() : void
++~ShardArchiveHandler() = default : void
++init() : bool
++add() : bool
++start() : bool
++stop() : void
++release() : void
+}
+class "RPC::Context" as C_0002247987867926704610
+class C_0002247987867926704610 {
++j : const beast::Journal
++coro : std::shared_ptr<JobQueue::Coro>
++apiVersion : unsigned int
+}
+class "RPC::ShardVerificationScheduler" as C_0002226908842344096367
+class C_0002226908842344096367 {
++ShardVerificationScheduler() = default : void
++ShardVerificationScheduler() : void
++retry() : bool
++reset() : void
+}
+class "RPC::RecoveryHandler" as C_0002256837674236284241
+class C_0002256837674236284241 {
++RecoveryHandler() : void
+}
+abstract "Application" as C_0000024089222317618888
+abstract C_0000024089222317618888 {
+{abstract} +getMasterMutex() = 0 : Application::MutexType &
++Application() : void
++~Application() = default : void
+{abstract} +setup() = 0 : bool
+{abstract} +start() = 0 : void
+{abstract} +run() = 0 : void
+{abstract} +signalStop() = 0 : void
+{abstract} +checkSigs() const = 0 : bool
+{abstract} +checkSigs() = 0 : void
+{abstract} +isStopping() const = 0 : bool
+{abstract} +logs() = 0 : Logs &
+{abstract} +config() = 0 : Config &
+{abstract} +getIOService() = 0 : boost::asio::io_service &
+{abstract} +getCollectorManager() = 0 : CollectorManager &
+{abstract} +getNodeFamily() = 0 : Family &
+{abstract} +getShardFamily() = 0 : Family *
+{abstract} +timeKeeper() = 0 : TimeKeeper &
+{abstract} +getJobQueue() = 0 : JobQueue &
+{abstract} +getTempNodeCache() = 0 : NodeCache &
+{abstract} +cachedSLEs() = 0 : CachedSLEs &
+{abstract} +getAmendmentTable() = 0 : AmendmentTable &
+{abstract} +getHashRouter() = 0 : HashRouter &
+{abstract} +getFeeTrack() = 0 : LoadFeeTrack &
+{abstract} +getLoadManager() = 0 : LoadManager &
+{abstract} +overlay() = 0 : Overlay &
+{abstract} +getTxQ() = 0 : TxQ &
+{abstract} +validators() = 0 : ValidatorList &
+{abstract} +validatorSites() = 0 : ValidatorSite &
+{abstract} +validatorManifests() = 0 : ManifestCache &
+{abstract} +publisherManifests() = 0 : ManifestCache &
+{abstract} +cluster() = 0 : Cluster &
+{abstract} +peerReservations() = 0 : PeerReservationTable &
+{abstract} +getValidations() = 0 : RCLValidations &
+{abstract} +getNodeStore() = 0 : NodeStore::Database &
+{abstract} +getShardStore() = 0 : NodeStore::DatabaseShard *
+{abstract} +getShardArchiveHandler() = 0 : RPC::ShardArchiveHandler *
+{abstract} +getInboundLedgers() = 0 : InboundLedgers &
+{abstract} +getInboundTransactions() = 0 : InboundTransactions &
+{abstract} +getAcceptedLedgerCache() = 0 : TaggedCache<uint256,AcceptedLedger> &
+{abstract} +getLedgerMaster() = 0 : LedgerMaster &
+{abstract} +getLedgerCleaner() = 0 : LedgerCleaner &
+{abstract} +getLedgerReplayer() = 0 : LedgerReplayer &
+{abstract} +getOPs() = 0 : NetworkOPs &
+{abstract} +getOrderBookDB() = 0 : OrderBookDB &
+{abstract} +getMasterTransaction() = 0 : TransactionMaster &
+{abstract} +getPerfLog() = 0 : perf::PerfLog &
+{abstract} +nodeIdentity() = 0 : const std::pair<PublicKey,SecretKey> &
+{abstract} +getValidationPublicKey() const = 0 : const PublicKey &
+{abstract} +getResourceManager() = 0 : Resource::Manager &
+{abstract} +getPathRequests() = 0 : PathRequests &
+{abstract} +getSHAMapStore() = 0 : SHAMapStore &
+{abstract} +pendingSaves() = 0 : PendingSaves &
+{abstract} +accountIDCache() const = 0 : const AccountIDCache &
+{abstract} +openLedger() = 0 : OpenLedger &
+{abstract} +openLedger() const = 0 : const OpenLedger &
+{abstract} +getRelationalDatabase() = 0 : RelationalDatabase &
+{abstract} +getIOLatency() = 0 : std::chrono::milliseconds
+{abstract} +getReportingETL() = 0 : ReportingETL &
+{abstract} +serverOkay() = 0 : bool
+{abstract} +journal() = 0 : beast::Journal
+{abstract} +fdRequired() const = 0 : int
+{abstract} +getWalletDB() = 0 : DatabaseCon &
+{abstract} +getMaxDisallowedLedger() = 0 : LedgerIndex
+}
+class "JobQueue" as C_0000039290920578616174
+class C_0000039290920578616174 {
++JobQueue() : void
++~JobQueue() : void
++getJobCount() const : int
++getJobCountTotal() const : int
++getJobCountGE() const : int
++makeLoadEvent() : std::unique_ptr<LoadEvent>
++addLoadEvents() : void
++isOverloaded() : bool
++getJson() : Json::Value
++rendezvous() : void
++stop() : void
++isStopping() const : bool
++isStopped() const : bool
++addJob() : _Bool
++postCoro() : std::shared_ptr<Coro>
+}
+class "PathRequests" as C_0000103345728156072797
+class C_0000103345728156072797 {
++PathRequests() : void
++updateAll() : void
++requestsPending() const : bool
++getLineCache() : std::shared_ptr<RippleLineCache>
++makePathRequest() : Json::Value
++makeLegacyPathRequest() : Json::Value
++doLegacyPathRequest() : Json::Value
++reportFast() : void
++reportFull() : void
+}
+class "ReportingETL" as C_0000126805538221204880
+class C_0000126805538221204880 {
++ReportingETL() : void
++~ReportingETL() : void
++getNetworkValidatedLedgers() : NetworkValidatedLedgers &
++isStopping() const : bool
++getNumMarkers() : uint32_t
++getApplication() : Application &
++getJournal() : beast::Journal &
++getInfo() : Json::Value
++start() : void
++stop() : void
++getETLLoadBalancer() : ETLLoadBalancer &
+}
+class "RCLValidationsAdaptor" as C_0000147010926590317441
+class C_0000147010926590317441 {
++RCLValidationsAdaptor() : void
++now() const : NetClock::time_point
++acquire() : std::optional<RCLValidatedLedger>
++journal() const : beast::Journal
+}
+class "TransactionMaster" as C_0000284720737453888618
+class C_0000284720737453888618 {
++TransactionMaster() : void
++TransactionMaster() : void
++operator=() : TransactionMaster &
++fetch_from_cache() : std::shared_ptr<Transaction>
++fetch() : std::variant<std::pair<std::shared_ptr<Transaction>,std::shared_ptr<TxMeta>>,TxSearched>
++fetch() : std::variant<std::pair<std::shared_ptr<Transaction>,std::shared_ptr<TxMeta>>,TxSearched>
++fetch() : std::shared_ptr<const STTx>
++inLedger() : bool
++canonicalize() : void
++sweep() : void
++getCache() : TaggedCache<uint256,Transaction> &
+}
+class "OrderBookDB" as C_0000679693681362435265
+class C_0000679693681362435265 {
++OrderBookDB() : void
++setup() : void
++update() : void
++addOrderBook() : void
++getBooksByTakerPays() : std::vector<Book>
++getBookSize() : int
++isBookToXRP() : bool
++getBookListeners() : BookListeners::pointer
++makeBookListeners() : BookListeners::pointer
++processTxn() : void
+}
+abstract "RelationalDatabase" as C_0000682638725828424623
+abstract C_0000682638725828424623 {
+{static} +init() : std::unique_ptr<RelationalDatabase>
++~RelationalDatabase() = default : void
+{abstract} +getMinLedgerSeq() = 0 : std::optional<LedgerIndex>
+{abstract} +getMaxLedgerSeq() = 0 : std::optional<LedgerIndex>
+{abstract} +getLedgerInfoByIndex() = 0 : std::optional<LedgerInfo>
+{abstract} +getNewestLedgerInfo() = 0 : std::optional<LedgerInfo>
+{abstract} +getLedgerInfoByHash() = 0 : std::optional<LedgerInfo>
+{abstract} +getHashByIndex() = 0 : uint256
+{abstract} +getHashesByIndex() = 0 : std::optional<LedgerHashPair>
+{abstract} +getHashesByIndex() = 0 : std::map<LedgerIndex,LedgerHashPair>
+{abstract} +getTxHistory() = 0 : std::vector<std::shared_ptr<Transaction>>
+{abstract} +ledgerDbHasSpace() = 0 : bool
+{abstract} +transactionDbHasSpace() = 0 : bool
+}
+class "LoadManager" as C_0000888340824797535146
+class C_0000888340824797535146 {
++LoadManager() : void
++LoadManager() : void
++operator=() : LoadManager &
++~LoadManager() : void
++activateDeadlockDetector() : void
++resetDeadlockDetector() : void
++start() : void
++stop() : void
+}
+class "TxQ" as C_0001142458048136722349
+class C_0001142458048136722349 {
++TxQ() : void
++~TxQ() : void
++apply() : std::pair<TER,bool>
++accept() : bool
++processClosedLedger() : void
++nextQueuableSeq() const : SeqProxy
++getMetrics() const : TxQ::Metrics
++getTxRequiredFeeAndSeq() const : TxQ::FeeAndSeq
++getAccountTxs() const : std::vector<TxDetails>
++getTxs() const : std::vector<TxDetails>
++doRPC() const : Json::Value
+{static} +baseLevel : const FeeLevel64
+}
+class "OpenLedger" as C_0001215980675277779235
+class C_0001215980675277779235 {
++OpenLedger() : void
++OpenLedger() : void
++operator=() : OpenLedger &
++OpenLedger() : void
++empty() const : bool
++current() const : std::shared_ptr<const OpenView>
++modify() : bool
++accept() : void
+}
+class "LedgerReplayer" as C_0001580885893775458218
+class C_0001580885893775458218 {
++LedgerReplayer() : void
++~LedgerReplayer() : void
++replay() : void
++createDeltas() : void
++gotSkipList() : void
++gotReplayDelta() : void
++sweep() : void
++stop() : void
+}
+class "ValidatorSite" as C_0001944946701653211573
+class C_0001944946701653211573 {
++ValidatorSite() : void
++~ValidatorSite() : void
++load() : bool
++start() : void
++join() : void
++stop() : void
++getJson() const : Json::Value
+}
+class "LedgerMaster" as C_0002246434513325121300
+class C_0002246434513325121300 {
++LedgerMaster() : void
++~LedgerMaster() = default : void
++getCurrentLedgerIndex() : LedgerIndex
++getValidLedgerIndex() : LedgerIndex
++isCompatible() : bool
++peekMutex() : std::recursive_mutex &
++getCurrentLedger() : std::shared_ptr<const ReadView>
++getClosedLedger() : std::shared_ptr<const Ledger>
++getValidatedLedger() : std::shared_ptr<const Ledger>
++getValidatedRules() : Rules
++getPublishedLedger() : std::shared_ptr<const ReadView>
++getPublishedLedgerAge() : std::chrono::seconds
++getValidatedLedgerAge() : std::chrono::seconds
++isCaughtUp() : bool
++getEarliestFetch() : std::uint32_t
++storeLedger() : bool
++setFullLedger() : void
++canBeCurrent() : bool
++switchLCL() : void
++failedSave() : void
++getCompleteLedgers() : std::string
++applyHeldTransactions() : void
++popAcctTransaction() : std::shared_ptr<const STTx>
++getHashBySeq() : uint256
++walkHashBySeq() : std::optional<LedgerHash>
++walkHashBySeq() : std::optional<LedgerHash>
++getLedgerBySeq() : std::shared_ptr<const Ledger>
++getLedgerByHash() : std::shared_ptr<const Ledger>
++setLedgerRangePresent() : void
++getCloseTimeBySeq() : std::optional<NetClock::time_point>
++getCloseTimeByHash() : std::optional<NetClock::time_point>
++addHeldTransaction() : void
++fixMismatch() : void
++haveLedger() : bool
++clearLedger() : void
++getValidatedRange() : bool
++getFullValidatedRange() : bool
++sweep() : void
++getCacheHitRate() : float
++checkAccept() : void
++checkAccept() : void
++consensusBuilt() : void
++setBuildingLedger() : void
++tryAdvance() : void
++newPathRequest() : bool
++isNewPathRequest() : bool
++newOrderBookDB() : bool
++fixIndex() : bool
++clearPriorLedgers() : void
++clearLedgerCachePrior() : void
++takeReplay() : void
++releaseReplay() : std::unique_ptr<LedgerReplay>
++gotFetchPack() : void
++addFetchPack() : void
++getFetchPack() : std::optional<Blob>
++makeFetchPack() : void
++getFetchPackCacheSize() const : std::size_t
++haveValidated() : bool
++minSqlSeq() : std::optional<LedgerIndex>
+}
+abstract "CollectorManager" as C_0002271710163381574598
+abstract C_0002271710163381574598 {
++~CollectorManager() = default : void
+{abstract} +collector() = 0 : const beast::insight::Collector::ptr &
+{abstract} +group() = 0 : const beast::insight::Group::ptr &
+}
+abstract "TimeoutCounter" as C_0000650534416943043353
+abstract C_0000650534416943043353 {
++cancel() : void
+#TimeoutCounter() : void
+#~TimeoutCounter() = default : void
+#setTimer() : void
+#queueJob() : void
+{abstract} #onTimer() = 0 : void
+{abstract} #pmDowncast() = 0 : std::weak_ptr<TimeoutCounter>
+#isDone() const : bool
+#journal_ : beast::Journal
+#mtx_ : std::recursive_mutex
+#timeouts_ : int
+#complete_ : bool
+#failed_ : bool
+#progress_ : bool
+#timerInterval_ : std::chrono::milliseconds
+#queueJobParameter_ : TimeoutCounter::QueueJobParameter
+}
+class "InboundLedger" as C_0001323284880194368582
+class C_0001323284880194368582 {
++InboundLedger() : void
++~InboundLedger() : void
++update() : void
++isComplete() const : bool
++isFailed() const : bool
++getLedger() const : std::shared_ptr<const Ledger>
++getSeq() const : std::uint32_t
++checkLocal() : bool
++init() : void
++gotData() : bool
++getJson() : Json::Value
++runData() : void
++touch() : void
++getLastAction() const : clock_type::time_point
+}
+class "LedgerHistory" as C_0001080701881189203362
+class C_0001080701881189203362 {
++LedgerHistory() : void
++insert() : bool
++getCacheHitRate() : float
++getLedgerBySeq() : std::shared_ptr<const Ledger>
++getLedgerByHash() : std::shared_ptr<const Ledger>
++getLedgerHash() : LedgerHash
++sweep() : void
++builtLedger() : void
++validatedLedger() : void
++fixIndex() : bool
++clearLedgerCachePrior() : void
+}
+class "TxQ::FeeMetrics" as C_0001214529026798807856
+class C_0001214529026798807856 {
++FeeMetrics() : void
++update() : std::size_t
++getSnapshot() const : TxQ::FeeMetrics::Snapshot
+{static} +scaleFeeLevel() : FeeLevel64
+{static} +escalatedSeriesFeeLevel() : std::pair<bool,FeeLevel64>
+}
+class "TxQ::MaybeTx" as C_0000437387475632557219
+class C_0000437387475632557219 {
++MaybeTx() : void
++apply() : std::pair<TER,bool>
++consequences() const : const TxConsequences &
++getTxDetails() const : TxQ::TxDetails
++byFeeListHook : boost::intrusive::set_member_hook<>
++lastValid : const std::optional<LedgerIndex>
++retriesRemaining : int
+{static} +retriesAllowed : const int
+{static} +parentHashComp : LedgerHash
+}
+class "GRPCServerImpl" as C_0002098942948197994008
+class C_0002098942948197994008 {
++GRPCServerImpl() : void
++GRPCServerImpl() : void
++operator=() : GRPCServerImpl &
++shutdown() : void
++start() : bool
++handleRpcs() : void
++setupListeners() : std::vector<std::shared_ptr<Processor>>
+}
+class "GRPCServer" as C_0001371824597438488203
+class C_0001371824597438488203 {
++GRPCServer() : void
++GRPCServer() : void
++operator=() : GRPCServer &
++start() : void
++stop() : void
++~GRPCServer() : void
+}
+class "Transaction" as C_0000423847783102818573
+class C_0000423847783102818573 {
++Transaction() : void
+{static} +transactionFromSQL() : Transaction::pointer
+{static} +sqlTransactionStatus() : TransStatus
++getSTransaction() : const std::shared_ptr<const STTx> &
++getID() const : const uint256 &
++getLedger() const : LedgerIndex
++isValidated() const : bool
++getStatus() const : TransStatus
++getResult() : TER
++setResult() : void
++setStatus() : void
++setStatus() : void
++setLedger() : void
++setApplying() : void
++getApplying() : bool
++clearApplying() : void
++getSubmitResult() const : Transaction::SubmitResult
++clearSubmitResult() : void
++setApplied() : void
++setQueued() : void
++setBroadcast() : void
++setKept() : void
++getCurrentLedgerState() const : std::optional<CurrentLedgerState>
++setCurrentLedgerState() : void
++getJson() const : Json::Value
+{static} +locate() : Transaction::Locator
+{static} +load() : std::variant<std::pair<std::shared_ptr<Transaction>,std::shared_ptr<TxMeta>>,TxSearched>
+{static} +load() : std::variant<std::pair<std::shared_ptr<Transaction>,std::shared_ptr<TxMeta>>,TxSearched>
+}
+class "CollectorManagerImp" as C_0001046335132306147914
+class C_0001046335132306147914 {
++CollectorManagerImp() : void
++~CollectorManagerImp() = default : void
++collector() : const beast::insight::Collector::ptr &
++group() : const beast::insight::Group::ptr &
++m_journal : beast::Journal
++m_collector : beast::insight::Collector::ptr
++m_groups : std::unique_ptr<beast::insight::Groups>
+}
+class "LedgerReplayTask" as C_0001346317836221119227
+class C_0001346317836221119227 {
++LedgerReplayTask() : void
++~LedgerReplayTask() : void
++init() : void
++addDelta() : void
++getTaskParameter() const : const LedgerReplayTask::TaskParameter &
++finished() const : bool
+}
+class "NodeStoreScheduler" as C_0000428913419843737371
+class C_0000428913419843737371 {
++NodeStoreScheduler() : void
++scheduleTask() : void
++onFetch() : void
++onBatchWrite() : void
+}
+class "Pathfinder" as C_0001924320498053409531
+class C_0001924320498053409531 {
++Pathfinder() : void
++Pathfinder() : void
++operator=() : Pathfinder &
++~Pathfinder() = default : void
+{static} +initPathTable() : void
++findPaths() : bool
++computePathRanks() : void
++getBestPaths() : STPathSet
+}
+class "PathRequest" as C_0000596980965426872369
+class C_0000596980965426872369 {
++PathRequest() : void
++PathRequest() : void
++~PathRequest() : void
++isNew() : bool
++needsUpdate() : bool
++updateComplete() : void
++doCreate() : std::pair<bool,Json::Value>
++doClose() : Json::Value
++doStatus() : Json::Value
++doAborting() const : void
++doUpdate() : Json::Value
++getSubscriber() const : InfoSub::pointer
++hasCompletion() : bool
+}
+class "ETLSource" as C_0002178712016612181138
+class C_0002178712016612181138 {
++isConnected() const : bool
++getLastMsgTime() const : std::chrono::system_clock::time_point
++setLastMsgTime() : void
++ETLSource() : void
++ETLSource() : void
++hasLedger() const : bool
++setValidatedRange() : void
++getValidatedRange() const : std::string
++stop() : void
++fetchLedger() : std::pair<grpc::Status,org::xrpl::rpc::v1::GetLedgerResponse>
++toString() const : std::string
++toJson() const : Json::Value
++loadInitialLedger() : bool
++start() : void
++reconnect() : void
++onResolve() : void
++onConnect() : void
++onHandshake() : void
++onWrite() : void
++onRead() : void
++handleMessage() : bool
++close() : void
++getP2pForwardingStub() const : std::unique_ptr<org::xrpl::rpc::v1::XRPLedgerAPIService::Stub>
++forwardToP2p() const : Json::Value
+}
+class "ServerHandlerImp" as C_0001673046963523766836
+class C_0001673046963523766836 {
++ServerHandlerImp() : void
++~ServerHandlerImp() : void
++setup() : void
++setup() const : const ServerHandlerImp::Setup &
++stop() : void
++onAccept() : bool
++onHandoff() : Handoff
++onHandoff() : Handoff
++onRequest() : void
++onWSMessage() : void
++onClose() : void
++onStopped() : void
+}
+class "NodeFamily" as C_0000270686227163905566
+class C_0000270686227163905566 {
++NodeFamily() : void
++NodeFamily() : void
++NodeFamily() : void
++operator=() : NodeFamily &
++operator=() : NodeFamily &
++NodeFamily() : void
++db() : NodeStore::Database &
++db() const : const NodeStore::Database &
++journal() : const beast::Journal &
++isShardBacked() const : bool
++getFullBelowCache() : std::shared_ptr<FullBelowCache>
++getTreeNodeCache() : std::shared_ptr<TreeNodeCache>
++sweep() : void
++reset() : void
++missingNode() : void
++missingNode() : void
+}
+class "ShardFamily" as C_0001346361835780913175
+class C_0001346361835780913175 {
++ShardFamily() : void
++ShardFamily() : void
++ShardFamily() : void
++operator=() : ShardFamily &
++operator=() : ShardFamily &
++ShardFamily() : void
++db() : NodeStore::Database &
++db() const : const NodeStore::Database &
++journal() : const beast::Journal &
++isShardBacked() const : bool
++getFullBelowCache() : std::shared_ptr<FullBelowCache>
++getFullBelowCacheSize() : int
++getTreeNodeCache() : std::shared_ptr<TreeNodeCache>
++getTreeNodeCacheSize() : std::pair<int,int>
++sweep() : void
++reset() : void
++missingNode() : void
++missingNode() : void
+}
+class "ApplicationImp" as C_0000389152361731804288
+class C_0000389152361731804288 {
+{static} +numberOfThreads() : std::size_t
++ApplicationImp() : void
++setup() : bool
++start() : void
++run() : void
++signalStop() : void
++checkSigs() const : bool
++checkSigs() : void
++isStopping() const : bool
++fdRequired() const : int
++logs() : Logs &
++config() : Config &
++getCollectorManager() : CollectorManager &
++getNodeFamily() : Family &
++getShardFamily() : Family *
++timeKeeper() : TimeKeeper &
++getJobQueue() : JobQueue &
++nodeIdentity() : const std::pair<PublicKey,SecretKey> &
++getValidationPublicKey() const : const PublicKey &
++getOPs() : NetworkOPs &
++getIOService() : boost::asio::io_service &
++getIOLatency() : std::chrono::milliseconds
++getLedgerMaster() : LedgerMaster &
++getLedgerCleaner() : LedgerCleaner &
++getLedgerReplayer() : LedgerReplayer &
++getInboundLedgers() : InboundLedgers &
++getInboundTransactions() : InboundTransactions &
++getAcceptedLedgerCache() : TaggedCache<uint256,AcceptedLedger> &
++gotTXSet() : void
++getMasterTransaction() : TransactionMaster &
++getPerfLog() : perf::PerfLog &
++getTempNodeCache() : NodeCache &
++getNodeStore() : NodeStore::Database &
++getShardStore() : NodeStore::DatabaseShard *
++getShardArchiveHandler() : RPC::ShardArchiveHandler *
++getMasterMutex() : Application::MutexType &
++getLoadManager() : LoadManager &
++getResourceManager() : Resource::Manager &
++getOrderBookDB() : OrderBookDB &
++getPathRequests() : PathRequests &
++cachedSLEs() : CachedSLEs &
++getAmendmentTable() : AmendmentTable &
++getFeeTrack() : LoadFeeTrack &
++getHashRouter() : HashRouter &
++getValidations() : RCLValidations &
++validators() : ValidatorList &
++validatorSites() : ValidatorSite &
++validatorManifests() : ManifestCache &
++publisherManifests() : ManifestCache &
++cluster() : Cluster &
++peerReservations() : PeerReservationTable &
++getSHAMapStore() : SHAMapStore &
++pendingSaves() : PendingSaves &
++accountIDCache() const : const AccountIDCache &
++openLedger() : OpenLedger &
++openLedger() const : const OpenLedger &
++overlay() : Overlay &
++getTxQ() : TxQ &
++getRelationalDatabase() : RelationalDatabase &
++getWalletDB() : DatabaseCon &
++getReportingETL() : ReportingETL &
++serverOkay() : bool
++journal() : beast::Journal
++initRelationalDatabase() : bool
++initNodeStore() : bool
++onWrite() : void
++setSweepTimer() : void
++setEntropyTimer() : void
++doSweep() : void
++getMaxDisallowedLedger() : LedgerIndex
++m_journal : beast::Journal
++m_masterMutex : Application::MutexType
++sweepTimer_ : boost::asio::steady_timer
++entropyTimer_ : boost::asio::steady_timer
++m_signals : boost::asio::signal_set
++stoppingCondition_ : std::condition_variable
++stoppingMutex_ : std::mutex
++isTimeToStop : std::atomic<bool>
++checkSigs_ : std::atomic<bool>
++m_io_latency_sampler : ApplicationImp::io_latency_sampler
+}
+C_0001113216765856705435 ..> C_0000024089222317618888
+C_0001901273733117020423 ..> C_0000024089222317618888
+C_0001901273733117020423 --> C_0000024089222317618888 : -app_
+C_0001901273733117020423 o-- C_0002226908842344096367 : -verificationScheduler_
+C_0002247987867926704610 --> C_0000024089222317618888 : +app
+C_0002247987867926704610 --> C_0002246434513325121300 : +ledgerMaster
+C_0002226908842344096367 ..> C_0000024089222317618888
+C_0002256837674236284241 ..> C_0000024089222317618888
+C_0001901273733117020423 <|-- C_0002256837674236284241
+C_0000103345728156072797 ..> C_0000024089222317618888
+C_0000103345728156072797 ..> C_0000596980965426872369
+C_0000103345728156072797 --> C_0000024089222317618888 : -app_
+C_0000103345728156072797 o-- C_0000596980965426872369 : -requests_
+C_0000126805538221204880 ..> C_0000024089222317618888
+C_0000126805538221204880 --> C_0000024089222317618888 : -app_
+C_0000147010926590317441 ..> C_0000024089222317618888
+C_0000147010926590317441 --> C_0000024089222317618888 : -app_
+C_0000284720737453888618 ..> C_0000024089222317618888
+C_0000284720737453888618 ..> C_0000423847783102818573
+C_0000284720737453888618 --> C_0000024089222317618888 : -mApp
+C_0000679693681362435265 ..> C_0000024089222317618888
+C_0000679693681362435265 --> C_0000024089222317618888 : -app_
+C_0000682638725828424623 ..> C_0000024089222317618888
+C_0000682638725828424623 ..> C_0000039290920578616174
+C_0000888340824797535146 ..> C_0000024089222317618888
+C_0000888340824797535146 --> C_0000024089222317618888 : -app_
+C_0001142458048136722349 ..> C_0000024089222317618888
+C_0001215980675277779235 ..> C_0000024089222317618888
+C_0001580885893775458218 ..> C_0000024089222317618888
+C_0001580885893775458218 ..> C_0001346317836221119227
+C_0001580885893775458218 o-- C_0001346317836221119227 : -tasks_
+C_0001580885893775458218 --> C_0000024089222317618888 : -app_
+C_0001944946701653211573 ..> C_0000024089222317618888
+C_0001944946701653211573 --> C_0000024089222317618888 : -app_
+C_0002246434513325121300 ..> C_0000024089222317618888
+C_0002246434513325121300 ..> C_0000423847783102818573
+C_0002246434513325121300 --> C_0000024089222317618888 : -app_
+C_0002246434513325121300 o-- C_0001080701881189203362 : -mLedgerHistory
+C_0000650534416943043353 ..> C_0000024089222317618888
+C_0000650534416943043353 --> C_0000024089222317618888 : #app_
+C_0001323284880194368582 ..> C_0000024089222317618888
+C_0000650534416943043353 <|-- C_0001323284880194368582
+C_0001080701881189203362 ..> C_0000024089222317618888
+C_0001080701881189203362 --> C_0000024089222317618888 : -app_
+C_0001214529026798807856 --+ C_0001142458048136722349
+C_0001214529026798807856 ..> C_0000024089222317618888
+C_0000437387475632557219 --+ C_0001142458048136722349
+C_0000437387475632557219 ..> C_0000024089222317618888
+C_0002098942948197994008 ..> C_0000024089222317618888
+C_0002098942948197994008 --> C_0000024089222317618888 : -app_
+C_0001371824597438488203 ..> C_0000024089222317618888
+C_0001371824597438488203 o-- C_0002098942948197994008 : -impl_
+C_0000423847783102818573 ..> C_0000024089222317618888
+C_0000423847783102818573 --> C_0000024089222317618888 : -mApp
+C_0002271710163381574598 <|-- C_0001046335132306147914
+C_0001346317836221119227 ..> C_0000024089222317618888
+C_0001346317836221119227 ..> C_0001580885893775458218
+C_0001346317836221119227 --> C_0001580885893775458218 : -replayer_
+C_0000650534416943043353 <|-- C_0001346317836221119227
+C_0000428913419843737371 ..> C_0000039290920578616174
+C_0000428913419843737371 ..> C_0000281534548078175472
+C_0000428913419843737371 ..> C_0001870530643219159631
+C_0000428913419843737371 ..> C_0000536597006121896563
+C_0000428913419843737371 --> C_0000039290920578616174 : -jobQueue_
+C_0001924320498053409531 ..> C_0000024089222317618888
+C_0001924320498053409531 --> C_0000024089222317618888 : -app_
+C_0000596980965426872369 ..> C_0000024089222317618888
+C_0000596980965426872369 ..> C_0000103345728156072797
+C_0000596980965426872369 ..> C_0001924320498053409531
+C_0000596980965426872369 --> C_0000024089222317618888 : -app_
+C_0000596980965426872369 --> C_0000103345728156072797 : -mOwner
+C_0002178712016612181138 ..> C_0000126805538221204880
+C_0002178712016612181138 --> C_0000126805538221204880 : -etl_
+C_0002178712016612181138 --> C_0000024089222317618888 : -app_
+C_0001673046963523766836 ..> C_0000024089222317618888
+C_0001673046963523766836 ..> C_0000039290920578616174
+C_0001673046963523766836 ..> C_0002271710163381574598
+C_0001673046963523766836 --> C_0000024089222317618888 : -app_
+C_0001673046963523766836 --> C_0000039290920578616174 : -m_jobQueue
+C_0000270686227163905566 ..> C_0000024089222317618888
+C_0000270686227163905566 ..> C_0002271710163381574598
+C_0000270686227163905566 --> C_0000024089222317618888 : -app_
+C_0001346361835780913175 ..> C_0000024089222317618888
+C_0001346361835780913175 ..> C_0002271710163381574598
+C_0001346361835780913175 --> C_0000024089222317618888 : -app_
+C_0001346361835780913175 --> C_0002271710163381574598 : -cm_
+C_0000389152361731804288 o-- C_0000284720737453888618 : +m_txMaster
+C_0000389152361731804288 o-- C_0002271710163381574598 : +m_collectorManager
+C_0000389152361731804288 o-- C_0000039290920578616174 : +m_jobQueue
+C_0000389152361731804288 o-- C_0000428913419843737371 : +m_nodeStoreScheduler
+C_0000389152361731804288 o-- C_0001215980675277779235 : +openLedger_
+C_0000389152361731804288 o-- C_0000270686227163905566 : +nodeFamily_
+C_0000389152361731804288 o-- C_0001346361835780913175 : +shardFamily_
+C_0000389152361731804288 o-- C_0001901273733117020423 : +shardArchiveHandler_
+C_0000389152361731804288 o-- C_0000679693681362435265 : +m_orderBookDB
+C_0000389152361731804288 o-- C_0000103345728156072797 : +m_pathRequests
+C_0000389152361731804288 o-- C_0002246434513325121300 : +m_ledgerMaster
+C_0000389152361731804288 o-- C_0001580885893775458218 : +m_ledgerReplayer
+C_0000389152361731804288 o-- C_0001944946701653211573 : +validatorSites_
+C_0000389152361731804288 o-- C_0001673046963523766836 : +serverHandler_
+C_0000389152361731804288 o-- C_0000888340824797535146 : +m_loadManager
+C_0000389152361731804288 o-- C_0001142458048136722349 : +txQ_
+C_0000389152361731804288 o-- C_0000682638725828424623 : +mRelationalDatabase
+C_0000389152361731804288 o-- C_0001371824597438488203 : +grpcServer_
+C_0000389152361731804288 o-- C_0000126805538221204880 : +reportingETL_
+C_0000024089222317618888 <|-- C_0000389152361731804288
+@enduml

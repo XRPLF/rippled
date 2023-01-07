@@ -1,0 +1,22 @@
+diagrams:
+  proto:
+    type: class
+    generate_method_arguments: none
+    include_relations_also_as_members: false
+    glob:
+      - ./*/proto_gen/*.h
+      - ./*/proto_gen/*.cc
+      - ./*/proto_gen_grpc/org/xrpl/rpc/impl/*.h
+      - ./*/proto_gen_grpc/org/xrpl/rpc/*/*.cc
+    using_namespace:
+      - protocol
+      - org::xrpl::rpc::v1
+    include:
+      namespaces:
+        - org::xrpl::rpc::v1
+    exclude:
+      access:
+        - private
+    plantuml:
+      before:
+        - 'title Class Diagram for proto'

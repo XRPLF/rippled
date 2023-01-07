@@ -1,0 +1,1949 @@
+@startuml
+title Class Diagram for app/ledger
+class "XRPAmount" as C_0000437628577035957607
+class C_0000437628577035957607 {
++XRPAmount() = default : void
++XRPAmount() = default : void
++operator=() = default : XRPAmount &
++XRPAmount() : void
++operator=() : XRPAmount &
++XRPAmount() : void
++operator=() : XRPAmount &
++operator*() const : XRPAmount
++operator+=() : XRPAmount &
++operator-=() : XRPAmount &
++operator+=() : XRPAmount &
++operator-=() : XRPAmount &
++operator*=() : XRPAmount &
++operator-() const : XRPAmount
++operator==() const : bool
++operator==() const : bool
++operator<() const : bool
++operator bool() const : bool
++signum() const : int
++drops() const : XRPAmount::value_type
++decimalXRP() const : double
++jsonClipped() const : Json::Value
++value() const : XRPAmount::value_type
+{static} +minPositiveAmount() : XRPAmount
++dropsAs() : std::optional<Dest>
++dropsAs() : Dest
++dropsAs() : Dest
+}
+class "NetClock" as C_0000673331345305095894
+class C_0000673331345305095894 {
++NetClock() = default : void
+{static} +is_steady : const bool
+}
+class "base_uint<256>" as C_0000434356742846908842
+class C_0000434356742846908842 {
+}
+class "Config" as C_0002213387511391991779
+class C_0002213387511391991779 {
++getDebugLogFile() const : boost::filesystem::path
++Config() : void
++setup() : void
++setupControl() : void
++loadFromString() : void
++quiet() const : bool
++silent() const : bool
++standalone() const : bool
++reporting() const : bool
++useTxTables() const : bool
++reportingReadOnly() const : bool
++setReportingReadOnly() : void
++canSign() const : bool
++getValueFor() const : int
++CONFIG_DIR : boost::filesystem::path
++doImport : bool
++nodeToShard : bool
++ELB_SUPPORT : bool
++IPS : std::vector<std::string>
++IPS_FIXED : std::vector<std::string>
++SNTP_SERVERS : std::vector<std::string>
++START_UP : Config::StartUpType
++START_VALID : bool
++START_LEDGER : std::string
++NETWORK_QUORUM : std::size_t
++RELAY_UNTRUSTED_VALIDATIONS : int
++RELAY_UNTRUSTED_PROPOSALS : int
++PEER_PRIVATE : bool
++PEERS_MAX : std::size_t
++PEERS_OUT_MAX : std::size_t
++PEERS_IN_MAX : std::size_t
++PATH_SEARCH_OLD : int
++PATH_SEARCH : int
++PATH_SEARCH_FAST : int
++PATH_SEARCH_MAX : int
++VALIDATION_QUORUM : std::optional<std::size_t>
++LEDGER_HISTORY : std::uint32_t
++FETCH_DEPTH : std::uint32_t
++NODE_SIZE : std::size_t
++SSL_VERIFY : bool
++SSL_VERIFY_FILE : std::string
++SSL_VERIFY_DIR : std::string
++COMPRESSION : bool
++LEDGER_REPLAY : bool
++MAX_TRANSACTIONS : int
++AMENDMENT_MAJORITY_TIME : std::chrono::seconds
++WORKERS : int
++IO_WORKERS : int
++PREFETCH_WORKERS : int
++FORCE_MULTI_THREAD : bool
++SWEEP_INTERVAL : std::optional<int>
++VP_REDUCE_RELAY_ENABLE : bool
++VP_REDUCE_RELAY_SQUELCH : bool
++TX_REDUCE_RELAY_ENABLE : bool
++TX_REDUCE_RELAY_METRICS : bool
++TX_REDUCE_RELAY_MIN_PEERS : std::size_t
++TX_RELAY_PERCENTAGE : std::size_t
++rpc_ip : std::optional<beast::IP::Endpoint>
++SERVER_DOMAIN : std::string
++MAX_UNKNOWN_TIME : std::chrono::seconds
++MAX_DIVERGED_TIME : std::chrono::seconds
++BETA_RPC_API : bool
++FAST_LOAD : bool
+{static} +configFileName : const char *const
+{static} +databaseDirName : const char *const
+{static} +validatorsFileName : const char *const
+{static} +TRANSACTION_FEE_BASE : const FeeUnit32
+{static} +MAX_JOB_QUEUE_TX : const int
+{static} +MIN_JOB_QUEUE_TX : const int
+}
+class "Slice" as C_0001602748540838302362
+class C_0001602748540838302362 {
++Slice() = default : void
++Slice() = default : void
++operator=() = default : Slice &
++Slice() : void
++empty() const : bool
++size() const : std::size_t
++length() const : std::size_t
++data() const : const std::uint8_t *
++operator[]() const : std::uint8_t
++operator+=() : Slice &
++operator+() const : Slice
++remove_prefix() : void
++remove_suffix() : void
++begin() const : Slice::const_iterator
++cbegin() const : Slice::const_iterator
++end() const : Slice::const_iterator
++cend() const : Slice::const_iterator
++substr() const : Slice
+}
+class "Serializer" as C_0002102861226093968575
+class C_0002102861226093968575 {
++Serializer() : void
++Serializer() : void
++slice() const : Slice
++size() const : std::size_t
++data() const : const void *
++add8() : int
++add16() : int
++add32() : int
++add32() : int
++add64() : int
++addRaw() : int
++addRaw() : int
++addRaw() : int
++addRaw() : int
++addVL() : int
++addVL() : int
++addVL() : int
++get8() const : bool
++addFieldID() : int
++addFieldID() : int
++getSHA512Half() const : uint256
++peekData() const : const Blob &
++getData() const : Blob
++modData() : Blob &
++getDataLength() const : int
++getDataPtr() const : const void *
++getDataPtr() : void *
++getLength() const : int
++getString() const : std::string
++erase() : void
++chop() : bool
++begin() : Blob::iterator
++end() : Blob::iterator
++begin() const : Blob::const_iterator
++end() const : Blob::const_iterator
++reserve() : void
++resize() : void
++capacity() const : size_t
++operator==() : bool
++operator!=() : bool
++operator==() : bool
++operator!=() : bool
+{static} +decodeLengthLength() : int
+{static} +decodeVLLength() : int
+{static} +decodeVLLength() : int
+{static} +decodeVLLength() : int
++addInteger() : int
++addBitString() : int
++addVL() : int
++getInteger() : _Bool
++getBitString() : _Bool
+}
+class "base_uint<160,detail::AccountIDTag>" as C_0002185921478450888283
+class C_0002185921478450888283 {
+}
+class "AccountIDCache" as C_0002030638720120112117
+class C_0002030638720120112117 {
++AccountIDCache() : void
++operator=() : AccountIDCache &
++AccountIDCache() : void
++toBase58() const : std::string
+}
+class "Issue" as C_0000486101097040278900
+class C_0000486101097040278900 {
++Issue() : void
++Issue() : void
+}
+class "STObject" as C_0001368282348178883598
+class C_0001368282348178883598 {
++~STObject() = default : void
++STObject() = default : void
++operator=() = default : STObject &
++STObject() : void
++operator=() : STObject &
++STObject() : void
++STObject() : void
++STObject() : void
++STObject() : void
++STObject() : void
++begin() const : STObject::iterator
++end() const : STObject::iterator
++empty() const : bool
++reserve() : void
++applyTemplate() : void
++applyTemplateFromSField() : void
++isFree() const : bool
++set() : void
++set() : bool
++getSType() const : SerializedTypeID
++isEquivalent() const : bool
++isDefault() const : bool
++add() const : void
++getFullText() const : std::string
++getText() const : std::string
++getJson() const : Json::Value
++addWithoutSigningFields() const : void
++getSerializer() const : Serializer
++getCount() const : int
++setFlag() : bool
++clearFlag() : bool
++isFlag() const : bool
++getFlags() const : std::uint32_t
++getHash() const : uint256
++getSigningHash() const : uint256
++peekAtIndex() const : const STBase &
++getIndex() : STBase &
++peekAtPIndex() const : const STBase *
++getPIndex() : STBase *
++getFieldIndex() const : int
++getFieldSType() const : const SField &
++peekAtField() const : const STBase &
++getField() : STBase &
++peekAtPField() const : const STBase *
++getPField() : STBase *
++getFieldU8() const : unsigned char
++getFieldU16() const : std::uint16_t
++getFieldU32() const : std::uint32_t
++getFieldU64() const : std::uint64_t
++getFieldH128() const : uint128
++getFieldH160() const : uint160
++getFieldH256() const : uint256
++getAccountID() const : AccountID
++getFieldVL() const : Blob
++getFieldAmount() const : const STAmount &
++getFieldPathSet() const : const STPathSet &
++getFieldV256() const : const STVector256 &
++getFieldArray() const : const STArray &
++set() : void
++set() : void
++setFieldU8() : void
++setFieldU16() : void
++setFieldU32() : void
++setFieldU64() : void
++setFieldH128() : void
++setFieldH256() : void
++setFieldVL() : void
++setFieldVL() : void
++setAccountID() : void
++setFieldAmount() : void
++setFieldPathSet() : void
++setFieldV256() : void
++setFieldArray() : void
++peekFieldObject() : STObject &
++peekFieldArray() : STArray &
++isFieldPresent() const : bool
++makeFieldPresent() : STBase *
++makeFieldAbsent() : void
++delField() : bool
++delField() : void
++hasMatchingEntry() : bool
++operator==() const : bool
++operator!=() const : bool
++STObject() : void
++emplace_back() : std::size_t
++operator[]() : typename T::value_type
++operator[]() : std::optional<std::decay_t<typename T::value_type> >
++operator[]() : ValueProxy<T>
++operator[]() : OptionalProxy<T>
++at() : typename T::value_type
++at() : std::optional<std::decay_t<typename T::value_type> >
++at() : ValueProxy<T>
++at() : OptionalProxy<T>
++setFieldH160() : void
+}
+class "SHAMapHash" as C_0002091303208209235402
+class C_0002091303208209235402 {
++SHAMapHash() = default : void
++SHAMapHash() : void
++as_uint256() const : const uint256 &
++as_uint256() : uint256 &
++isZero() const : bool
++isNonZero() const : bool
++signum() const : int
++zero() : void
+}
+class "SHAMapItem" as C_0001136101212854410998
+class C_0001136101212854410998 {
++SHAMapItem() : void
++SHAMapItem() : void
++key() const : const uint256 &
++slice() const : Slice
++size() const : std::size_t
++data() const : const void *
+}
+class "SHAMapNodeID" as C_0000834632250980288795
+class C_0000834632250980288795 {
++SHAMapNodeID() = default : void
++SHAMapNodeID() = default : void
++SHAMapNodeID() : void
++operator=() = default : SHAMapNodeID &
++isRoot() const : bool
++getRawString() const : std::string
++getDepth() const : unsigned int
++getNodeID() const : const uint256 &
++getChildNodeID() const : SHAMapNodeID
+{static} +createID() : SHAMapNodeID
++operator<() const : bool
++operator>() const : bool
++operator<=() const : bool
++operator>=() const : bool
++operator==() const : bool
++operator!=() const : bool
+}
+enum "SHAMapNodeType" as C_0001863653737358297178
+enum C_0001863653737358297178 {
+tnINNER
+tnTRANSACTION_NM
+tnTRANSACTION_MD
+tnACCOUNT_STATE
+}
+abstract "NodeStore::Database" as C_0002069443800464145931
+abstract C_0002069443800464145931 {
++Database() : void
++Database() : void
++~Database() : void
+{abstract} +getName() const = 0 : std::string
+{abstract} +importDatabase() = 0 : void
+{abstract} +getWriteLoad() const = 0 : std::int32_t
+{abstract} +store() = 0 : void
+{abstract} +isSameDB() = 0 : bool
+{abstract} +sync() = 0 : void
++fetchNodeObject() : std::shared_ptr<NodeObject>
++asyncFetch() : void
+{abstract} +storeLedger() = 0 : bool
+{abstract} +sweep() = 0 : void
++getStoreCount() const : std::uint64_t
++getFetchTotalCount() const : std::uint32_t
++getFetchHitCount() const : std::uint32_t
++getStoreSize() const : std::uint64_t
++getFetchSize() const : std::uint32_t
++getCountsJson() : void
++fdRequired() const : int
++stop() : void
++isStopping() const : bool
++ledgersPerShard() const : std::uint32_t
++earliestLedgerSeq() const : std::uint32_t
++earliestShardIndex() const : std::uint32_t
++firstLedgerSeq() const : std::uint32_t
++lastLedgerSeq() const : std::uint32_t
++seqToShardIndex() const : std::uint32_t
++maxLedgers() const : std::uint32_t
+#storeStats() : void
+#importInternal() : void
+#storeLedger() : bool
+#updateFetchMetrics() : void
+#j_ : const beast::Journal
+#fdRequired_ : int
+#fetchHitCount_ : std::atomic<std::uint32_t>
+#fetchSz_ : std::atomic<std::uint32_t>
+#ledgersPerShard_ : const std::uint32_t
+#earliestLedgerSeq_ : const std::uint32_t
+#earliestShardIndex_ : const std::uint32_t
+#requestBundle_ : const int
+}
+abstract "NodeStore::DatabaseShard" as C_0000341166486872739549
+abstract C_0000341166486872739549 {
++DatabaseShard() : void
+{abstract} +init() = 0 : bool
+{abstract} +prepareLedger() = 0 : std::optional<std::uint32_t>
+{abstract} +prepareShards() = 0 : bool
+{abstract} +removePreShard() = 0 : void
+{abstract} +getPreShards() = 0 : std::string
+{abstract} +importShard() = 0 : bool
+{abstract} +fetchLedger() = 0 : std::shared_ptr<Ledger>
+{abstract} +setStored() = 0 : void
+{abstract} +callForLedgerSQLByLedgerSeq() = 0 : bool
+{abstract} +callForLedgerSQLByShardIndex() = 0 : bool
+{abstract} +callForTransactionSQLByLedgerSeq() = 0 : bool
+{abstract} +callForTransactionSQLByShardIndex() = 0 : bool
+{abstract} +iterateLedgerSQLsForward() = 0 : bool
+{abstract} +iterateTransactionSQLsForward() = 0 : bool
+{abstract} +iterateLedgerSQLsBack() = 0 : bool
+{abstract} +iterateTransactionSQLsBack() = 0 : bool
+{abstract} +getShardInfo() const = 0 : std::unique_ptr<ShardInfo>
+{abstract} +getRootDir() const = 0 : const boost::filesystem::path &
+{abstract} +getDatabaseImportStatus() const = 0 : Json::Value
+{abstract} +startNodeToShard() = 0 : Json::Value
+{abstract} +stopNodeToShard() = 0 : Json::Value
+{abstract} +getDatabaseImportSequence() const = 0 : std::optional<std::uint32_t>
+{abstract} +getNumTasks() const = 0 : size_t
+}
+class "NodeStore::DatabaseNodeImp" as C_0001089131121863903009
+class C_0001089131121863903009 {
++DatabaseNodeImp() : void
++DatabaseNodeImp() : void
++operator=() : NodeStore::DatabaseNodeImp &
++DatabaseNodeImp() : void
++~DatabaseNodeImp() : void
++getName() const : std::string
++getWriteLoad() const : std::int32_t
++importDatabase() : void
++store() : void
++isSameDB() : bool
++sync() : void
++fetchBatch() : std::vector<std::shared_ptr<NodeObject>>
++asyncFetch() : void
++storeLedger() : bool
++sweep() : void
+}
+class "RPC::Context" as C_0002247987867926704610
+class C_0002247987867926704610 {
++j : const beast::Journal
++coro : std::shared_ptr<JobQueue::Coro>
++apiVersion : unsigned int
+}
+abstract "Application" as C_0000024089222317618888
+abstract C_0000024089222317618888 {
+{abstract} +getMasterMutex() = 0 : Application::MutexType &
++Application() : void
++~Application() = default : void
+{abstract} +setup() = 0 : bool
+{abstract} +start() = 0 : void
+{abstract} +run() = 0 : void
+{abstract} +signalStop() = 0 : void
+{abstract} +checkSigs() const = 0 : bool
+{abstract} +checkSigs() = 0 : void
+{abstract} +isStopping() const = 0 : bool
+{abstract} +logs() = 0 : Logs &
+{abstract} +config() = 0 : Config &
+{abstract} +getIOService() = 0 : boost::asio::io_service &
+{abstract} +getCollectorManager() = 0 : CollectorManager &
+{abstract} +getNodeFamily() = 0 : Family &
+{abstract} +getShardFamily() = 0 : Family *
+{abstract} +timeKeeper() = 0 : TimeKeeper &
+{abstract} +getJobQueue() = 0 : JobQueue &
+{abstract} +getTempNodeCache() = 0 : NodeCache &
+{abstract} +cachedSLEs() = 0 : CachedSLEs &
+{abstract} +getAmendmentTable() = 0 : AmendmentTable &
+{abstract} +getHashRouter() = 0 : HashRouter &
+{abstract} +getFeeTrack() = 0 : LoadFeeTrack &
+{abstract} +getLoadManager() = 0 : LoadManager &
+{abstract} +overlay() = 0 : Overlay &
+{abstract} +getTxQ() = 0 : TxQ &
+{abstract} +validators() = 0 : ValidatorList &
+{abstract} +validatorSites() = 0 : ValidatorSite &
+{abstract} +validatorManifests() = 0 : ManifestCache &
+{abstract} +publisherManifests() = 0 : ManifestCache &
+{abstract} +cluster() = 0 : Cluster &
+{abstract} +peerReservations() = 0 : PeerReservationTable &
+{abstract} +getValidations() = 0 : RCLValidations &
+{abstract} +getNodeStore() = 0 : NodeStore::Database &
+{abstract} +getShardStore() = 0 : NodeStore::DatabaseShard *
+{abstract} +getShardArchiveHandler() = 0 : RPC::ShardArchiveHandler *
+{abstract} +getInboundLedgers() = 0 : InboundLedgers &
+{abstract} +getInboundTransactions() = 0 : InboundTransactions &
+{abstract} +getAcceptedLedgerCache() = 0 : TaggedCache<uint256,AcceptedLedger> &
+{abstract} +getLedgerMaster() = 0 : LedgerMaster &
+{abstract} +getLedgerCleaner() = 0 : LedgerCleaner &
+{abstract} +getLedgerReplayer() = 0 : LedgerReplayer &
+{abstract} +getOPs() = 0 : NetworkOPs &
+{abstract} +getOrderBookDB() = 0 : OrderBookDB &
+{abstract} +getMasterTransaction() = 0 : TransactionMaster &
+{abstract} +getPerfLog() = 0 : perf::PerfLog &
+{abstract} +nodeIdentity() = 0 : const std::pair<PublicKey,SecretKey> &
+{abstract} +getValidationPublicKey() const = 0 : const PublicKey &
+{abstract} +getResourceManager() = 0 : Resource::Manager &
+{abstract} +getPathRequests() = 0 : PathRequests &
+{abstract} +getSHAMapStore() = 0 : SHAMapStore &
+{abstract} +pendingSaves() = 0 : PendingSaves &
+{abstract} +accountIDCache() const = 0 : const AccountIDCache &
+{abstract} +openLedger() = 0 : OpenLedger &
+{abstract} +openLedger() const = 0 : const OpenLedger &
+{abstract} +getRelationalDatabase() = 0 : RelationalDatabase &
+{abstract} +getIOLatency() = 0 : std::chrono::milliseconds
+{abstract} +getReportingETL() = 0 : ReportingETL &
+{abstract} +serverOkay() = 0 : bool
+{abstract} +journal() = 0 : beast::Journal
+{abstract} +fdRequired() const = 0 : int
+{abstract} +getWalletDB() = 0 : DatabaseCon &
+{abstract} +getMaxDisallowedLedger() = 0 : LedgerIndex
+}
+abstract "SHAMapSyncFilter" as C_0000432554318320614669
+abstract C_0000432554318320614669 {
++~SHAMapSyncFilter() = default : void
++SHAMapSyncFilter() = default : void
++SHAMapSyncFilter() : void
++operator=() : SHAMapSyncFilter &
+{abstract} +gotNode() const = 0 : void
+{abstract} +getNode() const = 0 : std::optional<Blob>
+}
+class "TaggedCache<SHAMapHash,std::vector<unsigned char>>" as C_0001375956901355770205
+class C_0001375956901355770205 {
+}
+class "ConsensusTransSetSF" as C_0000474074067123165241
+class C_0000474074067123165241 {
++ConsensusTransSetSF() : void
++gotNode() const : void
++getNode() const : std::optional<Blob>
+}
+class "Book" as C_0002294399890504248264
+class C_0002294399890504248264 {
++Book() : void
++Book() : void
+}
+class "Keylet" as C_0001972271628408927151
+class C_0001972271628408927151 {
++Keylet() : void
++check() const : bool
+}
+class "STLedgerEntry" as C_0001270395620897132534
+class C_0001270395620897132534 {
++STLedgerEntry() : void
++STLedgerEntry() : void
++STLedgerEntry() : void
++STLedgerEntry() : void
++STLedgerEntry() : void
++getSType() const : SerializedTypeID
++getFullText() const : std::string
++getText() const : std::string
++getJson() const : Json::Value
++key() const : const uint256 &
++getType() const : LedgerEntryType
++isThreadedType() const : bool
++thread() : bool
+}
+class "Rules" as C_0001992233408632539458
+class C_0001992233408632539458 {
++Rules() = default : void
++operator=() = default : Rules &
++Rules() : void
++Rules() : void
++enabled() const : bool
++operator==() const : bool
++operator!=() const : bool
+}
+class "STTx" as C_0001059260590421798558
+class C_0001059260590421798558 {
+{static} +maxMultiSigners() : std::size_t
++STTx() : void
++STTx() = default : void
++operator=() : STTx &
++STTx() : void
++STTx() : void
++STTx() : void
++STTx() : void
++getSType() const : SerializedTypeID
++getFullText() const : std::string
++getSignature() const : Blob
++getSigningHash() const : uint256
++getTxnType() const : TxType
++getSigningPubKey() const : Blob
++getSeqProxy() const : SeqProxy
++getMentionedAccounts() const : boost::container::flat_set<AccountID>
++getTransactionID() const : uint256
++getJson() const : Json::Value
++getJson() const : Json::Value
++sign() : void
++checkSign() const : Expected<void,std::string>
+{static} +getMetaSQLInsertReplaceHeader() : const std::string &
++getMetaSQL() const : std::string
++getMetaSQL() const : std::string
+{static} +minMultiSigners : const std::size_t
+}
+class "Fees" as C_0001865612077954784567
+class C_0001865612077954784567 {
++Fees() = default : void
++Fees() = default : void
++operator=() = default : Fees &
++accountReserve() const : XRPAmount
++toDrops() const : XRPAmount
+}
+class "LedgerInfo" as C_0001589739806501844085
+class C_0001589739806501844085 {
++LedgerInfo() = default : void
++seq : LedgerIndex
++validated : bool
++accepted : bool
++closeFlags : int
++closeTimeResolution : NetClock::duration
+}
+abstract "ReadView" as C_0000719484062983967559
+abstract C_0000719484062983967559 {
++~ReadView() = default : void
++operator=() : ReadView &
++operator=() : ReadView &
++ReadView() : void
++ReadView() : void
++ReadView() : void
+{abstract} +info() const = 0 : const LedgerInfo &
+{abstract} +open() const = 0 : bool
++parentCloseTime() const : NetClock::time_point
++seq() const : LedgerIndex
+{abstract} +fees() const = 0 : const Fees &
+{abstract} +rules() const = 0 : const Rules &
+{abstract} +exists() const = 0 : bool
+{abstract} +succ() const = 0 : std::optional<key_type>
+{abstract} +read() const = 0 : std::shared_ptr<const SLE>
++balanceHook() const : STAmount
++ownerCountHook() const : std::uint32_t
+{abstract} +slesBegin() const = 0 : std::unique_ptr<sles_type::iter_base>
+{abstract} +slesEnd() const = 0 : std::unique_ptr<sles_type::iter_base>
+{abstract} +slesUpperBound() const = 0 : std::unique_ptr<sles_type::iter_base>
+{abstract} +txsBegin() const = 0 : std::unique_ptr<txs_type::iter_base>
+{abstract} +txsEnd() const = 0 : std::unique_ptr<txs_type::iter_base>
+{abstract} +txExists() const = 0 : bool
+{abstract} +txRead() const = 0 : ReadView::tx_type
++sles : ReadView::sles_type
++txs : ReadView::txs_type
+}
+abstract "DigestAwareReadView" as C_0001733920990952249567
+abstract C_0001733920990952249567 {
++DigestAwareReadView() = default : void
++DigestAwareReadView() = default : void
+{abstract} +digest() const = 0 : std::optional<digest_type>
+}
+class "TaggedCache<base_uint<256>,const SLE>" as C_0001223992980195076950
+class C_0001223992980195076950 {
+}
+class "hardened_hash" as C_0001256845861208769956
+class C_0001256845861208769956 {
+}
+abstract "TxsRawView" as C_0001279314584255786005
+abstract C_0001279314584255786005 {
+{abstract} +rawTxInsert() = 0 : void
+}
+enum "ApplyFlags" as C_0000461717163604842131
+enum C_0000461717163604842131 {
+tapNONE
+tapFAIL_HARD
+tapRETRY
+tapUNLIMITED
+}
+class "OpenView" as C_0001016063512578111556
+class C_0001016063512578111556 {
++OpenView() : void
++operator=() : OpenView &
++operator=() : OpenView &
++OpenView() = default : void
++OpenView() : void
++OpenView() : void
++OpenView() : void
++OpenView() : void
++open() const : bool
++txCount() const : std::size_t
++apply() const : void
++info() const : const LedgerInfo &
++fees() const : const Fees &
++rules() const : const Rules &
++exists() const : bool
++succ() const : std::optional<key_type>
++read() const : std::shared_ptr<const SLE>
++slesBegin() const : std::unique_ptr<sles_type::iter_base>
++slesEnd() const : std::unique_ptr<sles_type::iter_base>
++slesUpperBound() const : std::unique_ptr<sles_type::iter_base>
++txsBegin() const : std::unique_ptr<txs_type::iter_base>
++txsEnd() const : std::unique_ptr<txs_type::iter_base>
++txExists() const : bool
++txRead() const : ReadView::tx_type
++rawErase() : void
++rawInsert() : void
++rawReplace() : void
++rawDestroyXRP() : void
++rawTxInsert() : void
+}
+class "TxMeta" as C_0000731257509254601273
+class C_0000731257509254601273 {
++TxMeta() : void
++TxMeta() : void
++TxMeta() : void
++TxMeta() : void
++getTxID() const : const uint256 &
++getLgrSeq() const : std::uint32_t
++getResult() const : int
++getResultTER() const : TER
++getIndex() const : std::uint32_t
++setAffectedNode() : void
++getAffectedNode() : STObject &
++getAffectedNode() : STObject &
++getAffectedAccounts() const : boost::container::flat_set<AccountID>
++getJson() const : Json::Value
++addRaw() : void
++getAsObject() const : STObject
++getNodes() : STArray &
++getNodes() const : const STArray &
++setDeliveredAmount() : void
++getDeliveredAmount() const : STAmount
++hasDeliveredAmount() const : bool
+}
+abstract "Family" as C_0000897641405694038531
+abstract C_0000897641405694038531 {
++Family() : void
++Family() : void
++operator=() : Family &
++operator=() : Family &
++Family() = default : void
++~Family() = default : void
+{abstract} +db() = 0 : NodeStore::Database &
+{abstract} +db() const = 0 : const NodeStore::Database &
+{abstract} +journal() = 0 : const beast::Journal &
+{abstract} +getFullBelowCache() = 0 : std::shared_ptr<FullBelowCache>
+{abstract} +getTreeNodeCache() = 0 : std::shared_ptr<TreeNodeCache>
+{abstract} +sweep() = 0 : void
+{abstract} +isShardBacked() const = 0 : bool
+{abstract} +missingNode() = 0 : void
+{abstract} +missingNode() = 0 : void
+{abstract} +reset() = 0 : void
+}
+class "SHAMapAddNode" as C_0001079758390404568931
+class C_0001079758390404568931 {
++SHAMapAddNode() : void
++incInvalid() : void
++incUseful() : void
++incDuplicate() : void
++reset() : void
++getGood() const : int
++isGood() const : bool
++isInvalid() const : bool
++isUseful() const : bool
++get() const : std::string
++operator+=() : SHAMapAddNode &
+{static} +duplicate() : SHAMapAddNode
+{static} +useful() : SHAMapAddNode
+{static} +invalid() : SHAMapAddNode
+}
+class "SHAMap" as C_0001060376113924291884
+class C_0001060376113924291884 {
++SHAMap() : void
++operator=() : SHAMap &
++SHAMap() : void
++SHAMap() : void
++~SHAMap() = default : void
++family() const : const Family &
++family() : Family &
++begin() const : SHAMap::const_iterator
++end() const : SHAMap::const_iterator
++snapShot() const : std::shared_ptr<SHAMap>
++setFull() : void
++setLedgerSeq() : void
++fetchRoot() : bool
++hasItem() const : bool
++delItem() : bool
++addItem() : bool
++getHash() const : SHAMapHash
++updateGiveItem() : bool
++addGiveItem() : bool
++peekItem() const : const std::shared_ptr<const SHAMapItem> &
++peekItem() const : const std::shared_ptr<const SHAMapItem> &
++upper_bound() const : SHAMap::const_iterator
++lower_bound() const : SHAMap::const_iterator
++visitNodes() const : void
++visitDifferences() const : void
++visitLeaves() const : void
++getMissingNodes() : std::vector<std::pair<SHAMapNodeID,uint256>>
++getNodeFat() const : bool
++getProofPath() const : std::optional<std::vector<Blob>>
+{static} +verifyProofPath() : bool
++serializeRoot() const : void
++addRootNode() : SHAMapAddNode
++addKnownNode() : SHAMapAddNode
++setImmutable() : void
++isSynching() const : bool
++setSynching() : void
++clearSynching() : void
++isValid() const : bool
++compare() const : bool
++unshare() : int
++flushDirty() : int
++walkMap() const : void
++walkMapParallel() const : bool
++deepCompare() const : bool
++setUnbacked() : void
++dump() const : void
++invariants() const : void
+{static} +branchFactor : const unsigned int
+{static} +leafDepth : const unsigned int
+}
+class "create_genesis_t" as C_0001503182669539204061
+class C_0001503182669539204061 {
++create_genesis_t() = default : void
+}
+class "Ledger" as C_0000364313548677557109
+class C_0000364313548677557109 {
++Ledger() : void
++operator=() : Ledger &
++Ledger() : void
++Ledger() : void
++Ledger() : void
++Ledger() : void
++Ledger() : void
++~Ledger() = default : void
++open() const : bool
++info() const : const LedgerInfo &
++setLedgerInfo() : void
++fees() const : const Fees &
++rules() const : const Rules &
++exists() const : bool
++exists() const : bool
++succ() const : std::optional<uint256>
++read() const : std::shared_ptr<const SLE>
++slesBegin() const : std::unique_ptr<sles_type::iter_base>
++slesEnd() const : std::unique_ptr<sles_type::iter_base>
++slesUpperBound() const : std::unique_ptr<sles_type::iter_base>
++txsBegin() const : std::unique_ptr<txs_type::iter_base>
++txsEnd() const : std::unique_ptr<txs_type::iter_base>
++txExists() const : bool
++txRead() const : ReadView::tx_type
++digest() const : std::optional<digest_type>
++rawErase() : void
++rawInsert() : void
++rawErase() : void
++rawReplace() : void
++rawDestroyXRP() : void
++rawTxInsert() : void
++rawTxInsertWithHash() : uint256
++setValidated() const : void
++setAccepted() : void
++setImmutable() : void
++isImmutable() const : bool
++setFull() const : void
++setTotalDrops() : void
++stateMap() const : const SHAMap &
++stateMap() : SHAMap &
++txMap() const : const SHAMap &
++txMap() : SHAMap &
++addSLE() : bool
++updateSkipList() : void
++walkLedger() const : bool
++assertSensible() const : bool
++invariants() const : void
++unshare() const : void
++negativeUNL() const : std::unordered_set<PublicKey>
++validatorToDisable() const : std::optional<PublicKey>
++validatorToReEnable() const : std::optional<PublicKey>
++updateNegativeUNL() : void
++isFlagLedger() const : bool
++isVotingLedger() const : bool
++peek() const : std::shared_ptr<SLE>
+}
+class "UptimeClock" as C_0001472880491539920613
+class C_0001472880491539920613 {
++UptimeClock() = default : void
+{static} +now() : UptimeClock::time_point
+{static} +is_steady : const bool
+}
+abstract "TimeoutCounter" as C_0000650534416943043353
+abstract C_0000650534416943043353 {
++cancel() : void
+#TimeoutCounter() : void
+#~TimeoutCounter() = default : void
+#setTimer() : void
+#queueJob() : void
+{abstract} #onTimer() = 0 : void
+{abstract} #pmDowncast() = 0 : std::weak_ptr<TimeoutCounter>
+#isDone() const : bool
+#journal_ : beast::Journal
+#mtx_ : std::recursive_mutex
+#timeouts_ : int
+#complete_ : bool
+#failed_ : bool
+#progress_ : bool
+#timerInterval_ : std::chrono::milliseconds
+#queueJobParameter_ : TimeoutCounter::QueueJobParameter
+}
+class "TimeoutCounter::QueueJobParameter" as C_0000516281695793951968
+class C_0000516281695793951968 {
++jobName : std::string
++jobLimit : std::optional<std::uint32_t>
+}
+abstract "Peer" as C_0000175546699848340697
+abstract C_0000175546699848340697 {
++~Peer() = default : void
+{abstract} +send() = 0 : void
+{abstract} +getRemoteAddress() const = 0 : beast::IP::Endpoint
+{abstract} +sendTxQueue() = 0 : void
+{abstract} +addTxQueue() = 0 : void
+{abstract} +removeTxQueue() = 0 : void
+{abstract} +charge() = 0 : void
+{abstract} +id() const = 0 : Peer::id_t
+{abstract} +cluster() const = 0 : bool
+{abstract} +isHighLatency() const = 0 : bool
+{abstract} +getScore() const = 0 : int
+{abstract} +getNodePublic() const = 0 : const PublicKey &
+{abstract} +json() = 0 : Json::Value
+{abstract} +supportsFeature() const = 0 : bool
+{abstract} +publisherListSequence() const = 0 : std::optional<std::size_t>
+{abstract} +setPublisherListSequence() = 0 : void
+{abstract} +getClosedLedgerHash() const = 0 : const uint256 &
+{abstract} +hasLedger() const = 0 : bool
+{abstract} +ledgerRange() const = 0 : void
+{abstract} +hasTxSet() const = 0 : bool
+{abstract} +cycleStatus() = 0 : void
+{abstract} +hasRange() = 0 : bool
+{abstract} +compressionEnabled() const = 0 : bool
+{abstract} +txReduceRelayEnabled() const = 0 : bool
+}
+abstract "PeerSet" as C_0000478678506029225167
+abstract C_0000478678506029225167 {
++~PeerSet() = default : void
+{abstract} +addPeers() = 0 : void
+{abstract} +sendRequest() = 0 : void
+{abstract} +getPeerIds() const = 0 : const std::set<Peer::id_t> &
++sendRequest() : void
+}
+abstract "PeerSetBuilder" as C_0002246354714488110977
+abstract C_0002246354714488110977 {
++~PeerSetBuilder() = default : void
+{abstract} +build() = 0 : std::unique_ptr<PeerSet>
+}
+class "InboundLedger" as C_0001323284880194368582
+class C_0001323284880194368582 {
++InboundLedger() : void
++~InboundLedger() : void
++update() : void
++isComplete() const : bool
++isFailed() const : bool
++getLedger() const : std::shared_ptr<const Ledger>
++getSeq() const : std::uint32_t
++checkLocal() : bool
++init() : void
++gotData() : bool
++getJson() : Json::Value
++runData() : void
++touch() : void
++getLastAction() const : clock_type::time_point
+}
+enum "InboundLedger::Reason" as C_0001602158263094346107
+enum C_0001602158263094346107 {
+HISTORY
+SHARD
+GENERIC
+CONSENSUS
+}
+enum "InboundLedger::TriggerReason" as C_0001661176449129566093
+enum C_0001661176449129566093 {
+added
+reply
+timeout
+}
+abstract "InboundLedgers" as C_0000271542537597816241
+abstract C_0000271542537597816241 {
++~InboundLedgers() = default : void
+{abstract} +acquire() = 0 : std::shared_ptr<const Ledger>
+{abstract} +find() = 0 : std::shared_ptr<InboundLedger>
+{abstract} +gotLedgerData() = 0 : bool
+{abstract} +gotStaleData() = 0 : void
+{abstract} +logFailure() = 0 : void
+{abstract} +isFailure() = 0 : bool
+{abstract} +clearFailures() = 0 : void
+{abstract} +getInfo() = 0 : Json::Value
+{abstract} +fetchRate() = 0 : std::size_t
+{abstract} +onLedgerFetched() = 0 : void
+{abstract} +gotFetchPack() = 0 : void
+{abstract} +sweep() = 0 : void
+{abstract} +stop() = 0 : void
+}
+abstract "InboundTransactions" as C_0001368347001801858838
+abstract C_0001368347001801858838 {
++InboundTransactions() = default : void
++InboundTransactions() : void
++operator=() : InboundTransactions &
+{abstract} +~InboundTransactions() = 0 : void
+{abstract} +getSet() = 0 : std::shared_ptr<SHAMap>
+{abstract} +gotData() = 0 : void
+{abstract} +giveSet() = 0 : void
+{abstract} +newRound() = 0 : void
+{abstract} +stop() = 0 : void
+}
+class "TransactionAcquire" as C_0000258199591919059432
+class C_0000258199591919059432 {
++TransactionAcquire() : void
++~TransactionAcquire() = default : void
++takeNodes() : SHAMapAddNode
++init() : void
++stillNeed() : void
+}
+enum "error_code_i" as C_0002074515049518838110
+enum C_0002074515049518838110 {
+rpcUNKNOWN
+rpcSUCCESS
+rpcBAD_SYNTAX
+rpcJSON_RPC
+rpcFORBIDDEN
+rpcNO_PERMISSION
+rpcNO_EVENTS
+rpcTOO_BUSY
+rpcSLOW_DOWN
+rpcHIGH_FEE
+rpcNOT_ENABLED
+rpcNOT_READY
+rpcAMENDMENT_BLOCKED
+rpcNO_CLOSED
+rpcNO_CURRENT
+rpcNO_NETWORK
+rpcNOT_SYNCED
+rpcACT_NOT_FOUND
+rpcLGR_NOT_FOUND
+rpcLGR_NOT_VALIDATED
+rpcMASTER_DISABLED
+rpcTXN_NOT_FOUND
+rpcINVALID_PARAMS
+rpcUNKNOWN_COMMAND
+rpcNO_PF_REQUEST
+rpcACT_MALFORMED
+rpcALREADY_MULTISIG
+rpcALREADY_SINGLE_SIG
+rpcBAD_FEATURE
+rpcBAD_ISSUER
+rpcBAD_MARKET
+rpcBAD_SECRET
+rpcBAD_SEED
+rpcCHANNEL_MALFORMED
+rpcCHANNEL_AMT_MALFORMED
+rpcCOMMAND_MISSING
+rpcDST_ACT_MALFORMED
+rpcDST_ACT_MISSING
+rpcDST_ACT_NOT_FOUND
+rpcDST_AMT_MALFORMED
+rpcDST_AMT_MISSING
+rpcDST_ISR_MALFORMED
+rpcLGR_IDXS_INVALID
+rpcLGR_IDX_MALFORMED
+rpcPUBLIC_MALFORMED
+rpcSIGNING_MALFORMED
+rpcSENDMAX_MALFORMED
+rpcSRC_ACT_MALFORMED
+rpcSRC_ACT_MISSING
+rpcSRC_ACT_NOT_FOUND
+rpcSRC_CUR_MALFORMED
+rpcSRC_ISR_MALFORMED
+rpcSTREAM_MALFORMED
+rpcATX_DEPRECATED
+rpcINTERNAL
+rpcNOT_IMPL
+rpcNOT_SUPPORTED
+rpcBAD_KEY_TYPE
+rpcDB_DESERIALIZATION
+rpcEXCESSIVE_LGR_RANGE
+rpcINVALID_LGR_RANGE
+rpcEXPIRED_VALIDATOR_LIST
+rpcFAILED_TO_FORWARD
+rpcREPORTING_UNSUPPORTED
+rpcOBJECT_NOT_FOUND
+rpcLAST
+}
+abstract "InfoSub" as C_0000355011254015740536
+abstract C_0000355011254015740536 {
++InfoSub() : void
++InfoSub() : void
++~InfoSub() : void
++getConsumer() : InfoSub::Consumer &
+{abstract} +send() = 0 : void
++getSeq() : std::uint64_t
++onSendEmpty() : void
++insertSubAccountInfo() : void
++deleteSubAccountInfo() : void
++insertSubAccountHistory() : bool
++deleteSubAccountHistory() : void
++clearRequest() : void
++setRequest() : void
++getRequest() : const std::shared_ptr<InfoSubRequest> &
+#mLock : std::mutex
+}
+class "TransactionMaster" as C_0000284720737453888618
+class C_0000284720737453888618 {
++TransactionMaster() : void
++TransactionMaster() : void
++operator=() : TransactionMaster &
++fetch_from_cache() : std::shared_ptr<Transaction>
++fetch() : std::variant<std::pair<std::shared_ptr<Transaction>,std::shared_ptr<TxMeta>>,TxSearched>
++fetch() : std::variant<std::pair<std::shared_ptr<Transaction>,std::shared_ptr<TxMeta>>,TxSearched>
++fetch() : std::shared_ptr<const STTx>
++inLedger() : bool
++canonicalize() : void
++sweep() : void
++getCache() : TaggedCache<uint256,Transaction> &
+}
+class "Transaction" as C_0000423847783102818573
+class C_0000423847783102818573 {
++Transaction() : void
+{static} +transactionFromSQL() : Transaction::pointer
+{static} +sqlTransactionStatus() : TransStatus
++getSTransaction() : const std::shared_ptr<const STTx> &
++getID() const : const uint256 &
++getLedger() const : LedgerIndex
++isValidated() const : bool
++getStatus() const : TransStatus
++getResult() : TER
++setResult() : void
++setStatus() : void
++setStatus() : void
++setLedger() : void
++setApplying() : void
++getApplying() : bool
++clearApplying() : void
++getSubmitResult() const : Transaction::SubmitResult
++clearSubmitResult() : void
++setApplied() : void
++setQueued() : void
++setBroadcast() : void
++setKept() : void
++getCurrentLedgerState() const : std::optional<CurrentLedgerState>
++setCurrentLedgerState() : void
++getJson() const : Json::Value
+{static} +locate() : Transaction::Locator
+{static} +load() : std::variant<std::pair<std::shared_ptr<Transaction>,std::shared_ptr<TxMeta>>,TxSearched>
+{static} +load() : std::variant<std::pair<std::shared_ptr<Transaction>,std::shared_ptr<TxMeta>>,TxSearched>
+}
+class "OrderBookDB" as C_0000679693681362435265
+class C_0000679693681362435265 {
++OrderBookDB() : void
++setup() : void
++update() : void
++addOrderBook() : void
++getBooksByTakerPays() : std::vector<Book>
++getBookSize() : int
++isBookToXRP() : bool
++getBookListeners() : BookListeners::pointer
++makeBookListeners() : BookListeners::pointer
++processTxn() : void
+}
+abstract "SHAMapStore" as C_0000689301953063348249
+abstract C_0000689301953063348249 {
++~SHAMapStore() = default : void
+{abstract} +onLedgerClosed() = 0 : void
+{abstract} +start() = 0 : void
+{abstract} +rendezvous() const = 0 : void
+{abstract} +stop() = 0 : void
+{abstract} +clampFetchDepth() const = 0 : std::uint32_t
+{abstract} +makeNodeStore() = 0 : std::unique_ptr<NodeStore::Database>
+{abstract} +setCanDelete() = 0 : LedgerIndex
+{abstract} +advisoryDelete() const = 0 : bool
+{abstract} +getLastRotated() = 0 : LedgerIndex
+{abstract} +getCanDelete() = 0 : LedgerIndex
+{abstract} +fdRequired() const = 0 : int
+{abstract} +minimumOnline() const = 0 : std::optional<LedgerIndex>
+}
+class "PendingSaves" as C_0001064025601942109834
+class C_0001064025601942109834 {
++startWork() : bool
++finishWork() : void
++pending() : bool
++shouldWork() : bool
++getSnapshot() const : std::map<LedgerIndex,bool>
+}
+class "AcceptedLedger" as C_0001116570339441660634
+class C_0001116570339441660634 {
++AcceptedLedger() : void
++getLedger() const : const std::shared_ptr<const ReadView> &
++size() const : std::size_t
++begin() const : __gnu_cxx::__normal_iterator<const std::unique_ptr<AcceptedLedgerTx> *,std::vector<std::unique_ptr<AcceptedLedgerTx>>>
++end() const : __gnu_cxx::__normal_iterator<const std::unique_ptr<AcceptedLedgerTx> *,std::vector<std::unique_ptr<AcceptedLedgerTx>>>
+}
+class "OpenLedger" as C_0001215980675277779235
+class C_0001215980675277779235 {
++OpenLedger() : void
++OpenLedger() : void
++operator=() : OpenLedger &
++OpenLedger() : void
++empty() const : bool
++current() const : std::shared_ptr<const OpenView>
++modify() : bool
++accept() : void
+}
+class "LedgerReplayer" as C_0001580885893775458218
+class C_0001580885893775458218 {
++LedgerReplayer() : void
++~LedgerReplayer() : void
++replay() : void
++createDeltas() : void
++gotSkipList() : void
++gotReplayDelta() : void
++sweep() : void
++stop() : void
+}
+abstract "LedgerCleaner" as C_0001722331209588077982
+abstract C_0001722331209588077982 {
+#LedgerCleaner() : void
++~LedgerCleaner() = default : void
+{abstract} +start() = 0 : void
+{abstract} +stop() = 0 : void
+{abstract} +clean() = 0 : void
+}
+class "Ledger::txs_iter_impl" as C_0002022784058992969959
+class C_0002022784058992969959 {
++txs_iter_impl() : void
++operator=() : Ledger::txs_iter_impl &
++txs_iter_impl() = default : void
++txs_iter_impl() : void
++copy() const : std::unique_ptr<base_type>
++equal() const : bool
++increment() : void
++dereference() const : txs_type::value_type
+}
+class "Ledger::sles_iter_impl" as C_0002170889353299486839
+class C_0002170889353299486839 {
++sles_iter_impl() : void
++operator=() : Ledger::sles_iter_impl &
++sles_iter_impl() = default : void
++sles_iter_impl() : void
++copy() const : std::unique_ptr<base_type>
++equal() const : bool
++increment() : void
++dereference() const : sles_type::value_type
+}
+class "LedgerMaster" as C_0002246434513325121300
+class C_0002246434513325121300 {
++LedgerMaster() : void
++~LedgerMaster() = default : void
++getCurrentLedgerIndex() : LedgerIndex
++getValidLedgerIndex() : LedgerIndex
++isCompatible() : bool
++peekMutex() : std::recursive_mutex &
++getCurrentLedger() : std::shared_ptr<const ReadView>
++getClosedLedger() : std::shared_ptr<const Ledger>
++getValidatedLedger() : std::shared_ptr<const Ledger>
++getValidatedRules() : Rules
++getPublishedLedger() : std::shared_ptr<const ReadView>
++getPublishedLedgerAge() : std::chrono::seconds
++getValidatedLedgerAge() : std::chrono::seconds
++isCaughtUp() : bool
++getEarliestFetch() : std::uint32_t
++storeLedger() : bool
++setFullLedger() : void
++canBeCurrent() : bool
++switchLCL() : void
++failedSave() : void
++getCompleteLedgers() : std::string
++applyHeldTransactions() : void
++popAcctTransaction() : std::shared_ptr<const STTx>
++getHashBySeq() : uint256
++walkHashBySeq() : std::optional<LedgerHash>
++walkHashBySeq() : std::optional<LedgerHash>
++getLedgerBySeq() : std::shared_ptr<const Ledger>
++getLedgerByHash() : std::shared_ptr<const Ledger>
++setLedgerRangePresent() : void
++getCloseTimeBySeq() : std::optional<NetClock::time_point>
++getCloseTimeByHash() : std::optional<NetClock::time_point>
++addHeldTransaction() : void
++fixMismatch() : void
++haveLedger() : bool
++clearLedger() : void
++getValidatedRange() : bool
++getFullValidatedRange() : bool
++sweep() : void
++getCacheHitRate() : float
++checkAccept() : void
++checkAccept() : void
++consensusBuilt() : void
++setBuildingLedger() : void
++tryAdvance() : void
++newPathRequest() : bool
++isNewPathRequest() : bool
++newOrderBookDB() : bool
++fixIndex() : bool
++clearPriorLedgers() : void
++clearLedgerCachePrior() : void
++takeReplay() : void
++releaseReplay() : std::unique_ptr<LedgerReplay>
++gotFetchPack() : void
++addFetchPack() : void
++getFetchPack() : std::optional<Blob>
++makeFetchPack() : void
++getFetchPackCacheSize() const : std::size_t
++haveValidated() : bool
++minSqlSeq() : std::optional<LedgerIndex>
+}
+abstract "AbstractFetchPackContainer" as C_0001750551353688720674
+abstract C_0001750551353688720674 {
++~AbstractFetchPackContainer() = default : void
+{abstract} +getFetchPack() = 0 : std::optional<Blob>
+}
+class "AccountStateSF" as C_0001922489646569293641
+class C_0001922489646569293641 {
++AccountStateSF() : void
++gotNode() const : void
++getNode() const : std::optional<Blob>
+}
+class "InboundTransactionSet" as C_0000806694117512257161
+class C_0000806694117512257161 {
++InboundTransactionSet() : void
++InboundTransactionSet() : void
++mSeq : std::uint32_t
+}
+class "InboundTransactionsImp" as C_0000869084296551946611
+class C_0000869084296551946611 {
++InboundTransactionsImp() : void
++getAcquire() : TransactionAcquire::pointer
++getSet() : std::shared_ptr<SHAMap>
++gotData() : void
++giveSet() : void
++newRound() : void
++stop() : void
+}
+class "AcceptedLedgerTx" as C_0000896437865260805025
+class C_0000896437865260805025 {
++AcceptedLedgerTx() : void
++getTxn() const : const std::shared_ptr<const STTx> &
++getMeta() const : const TxMeta &
++getAffected() const : const boost::container::flat_set<AccountID> &
++getTransactionID() const : TxID
++getTxnType() const : TxType
++getResult() const : TER
++getTxnSeq() const : std::uint32_t
++getEscMeta() const : std::string
++getJson() const : const Json::Value &
+}
+class "TaggedCache<base_uint<256>,const Ledger>" as C_0001754881055800019543
+class C_0001754881055800019543 {
+}
+class "TaggedCache<LedgerIndex,LedgerHistory::cv_entry>" as C_0000619874246361339414
+class C_0000619874246361339414 {
+}
+class "LedgerHistory" as C_0001080701881189203362
+class C_0001080701881189203362 {
++LedgerHistory() : void
++insert() : bool
++getCacheHitRate() : float
++getLedgerBySeq() : std::shared_ptr<const Ledger>
++getLedgerByHash() : std::shared_ptr<const Ledger>
++getLedgerHash() : LedgerHash
++sweep() : void
++builtLedger() : void
++validatedLedger() : void
++fixIndex() : bool
++clearLedgerCachePrior() : void
+}
+class "LedgerHistory::cv_entry" as C_0001699802080015215661
+class C_0001699802080015215661 {
++consensus : std::optional<Json::Value>
+}
+class "LedgerHolder" as C_0000866388681751669865
+class C_0000866388681751669865 {
++set() : void
++get() : std::shared_ptr<const Ledger>
++empty() : bool
+}
+class "LedgerReplay" as C_0000611234321966746344
+class C_0000611234321966746344 {
++LedgerReplay() : void
++LedgerReplay() : void
++parent() const : const std::shared_ptr<const Ledger> &
++replay() const : const std::shared_ptr<const Ledger> &
++orderedTxns() const : const std::map<std::uint32_t,std::shared_ptr<const STTx>> &
+}
+class "CanonicalTXSet" as C_0001127362610482011157
+class C_0001127362610482011157 {
++CanonicalTXSet() : void
++insert() : void
++popAcctTransaction() : std::shared_ptr<const STTx>
++reset() : void
++erase() : CanonicalTXSet::const_iterator
++begin() const : CanonicalTXSet::const_iterator
++end() const : CanonicalTXSet::const_iterator
++size() const : size_t
++empty() const : bool
++key() const : const uint256 &
+}
+class "TaggedCache<base_uint<256>,std::vector<unsigned char>>" as C_0001986895531693185190
+class C_0001986895531693185190 {
+}
+class "LedgerMaster::Stats" as C_0001488528538385534685
+class C_0001488528538385534685 {
++Stats() : void
++hook : beast::insight::Hook
++validatedLedgerAge : beast::insight::Gauge
++publishedLedgerAge : beast::insight::Gauge
+}
+class "TransactionStateSF" as C_0001726756502929628600
+class C_0001726756502929628600 {
++TransactionStateSF() : void
++gotNode() const : void
++getNode() const : std::optional<Blob>
+}
+class "BookListeners" as C_0002238904378392383936
+class C_0002238904378392383936 {
++BookListeners() : void
++addSubscriber() : void
++removeSubscriber() : void
++publish() : void
+}
+class "test::LedgerReplayClient" as C_0000805048324189403449
+class C_0000805048324189403449 {
+}
+class "LedgerReplayTask" as C_0001346317836221119227
+class C_0001346317836221119227 {
++LedgerReplayTask() : void
++~LedgerReplayTask() : void
++init() : void
++addDelta() : void
++getTaskParameter() const : const LedgerReplayTask::TaskParameter &
++finished() const : bool
+}
+class "LedgerReplayTask::TaskParameter" as C_0000735653827315056182
+class C_0000735653827315056182 {
++TaskParameter() : void
++update() : bool
++canMergeInto() const : bool
++reason_ : InboundLedger::Reason
++totalLedgers_ : std::uint32_t
++finishSeq_ : std::uint32_t
++startSeq_ : std::uint32_t
++full_ : bool
+}
+class "SkipListAcquire" as C_0001101151042820876482
+class C_0001101151042820876482 {
++SkipListAcquire() : void
++~SkipListAcquire() : void
++init() : void
++processData() : void
++addDataCallback() : void
++getData() const : std::shared_ptr<const SkipListData>
+}
+class "SkipListAcquire::SkipListData" as C_0002270793546955727769
+class C_0002270793546955727769 {
++SkipListData() : void
++ledgerSeq : const std::uint32_t
+}
+class "LedgerDeltaAcquire" as C_0000808316421022339788
+class C_0000808316421022339788 {
++LedgerDeltaAcquire() : void
++~LedgerDeltaAcquire() : void
++init() : void
++processData() : void
++tryBuild() : std::shared_ptr<const Ledger>
++addDataCallback() : void
+}
+class "TaggedCache<base_uint<256>,Transaction>" as C_0001538332733333409696
+class C_0001538332733333409696 {
+}
+abstract "SQLiteDatabase" as C_0001364993699718634102
+abstract C_0001364993699718634102 {
+{abstract} +getTransactionsMinLedgerSeq() = 0 : std::optional<LedgerIndex>
+{abstract} +getAccountTransactionsMinLedgerSeq() = 0 : std::optional<LedgerIndex>
+{abstract} +deleteTransactionByLedgerSeq() = 0 : void
+{abstract} +deleteBeforeLedgerSeq() = 0 : void
+{abstract} +deleteTransactionsBeforeLedgerSeq() = 0 : void
+{abstract} +deleteAccountTransactionsBeforeLedgerSeq() = 0 : void
+{abstract} +getTransactionCount() = 0 : std::size_t
+{abstract} +getAccountTransactionCount() = 0 : std::size_t
+{abstract} +getLedgerCountMinMax() = 0 : struct CountMinMax
+{abstract} +saveValidatedLedger() = 0 : bool
+{abstract} +getLimitedOldestLedgerInfo() = 0 : std::optional<LedgerInfo>
+{abstract} +getLimitedNewestLedgerInfo() = 0 : std::optional<LedgerInfo>
+{abstract} +getOldestAccountTxs() = 0 : RelationalDatabase::AccountTxs
+{abstract} +getNewestAccountTxs() = 0 : RelationalDatabase::AccountTxs
+{abstract} +getOldestAccountTxsB() = 0 : RelationalDatabase::MetaTxsList
+{abstract} +getNewestAccountTxsB() = 0 : RelationalDatabase::MetaTxsList
+{abstract} +oldestAccountTxPage() = 0 : std::pair<AccountTxs,std::optional<AccountTxMarker>>
+{abstract} +newestAccountTxPage() = 0 : std::pair<AccountTxs,std::optional<AccountTxMarker>>
+{abstract} +oldestAccountTxPageB() = 0 : std::pair<MetaTxsList,std::optional<AccountTxMarker>>
+{abstract} +newestAccountTxPageB() = 0 : std::pair<MetaTxsList,std::optional<AccountTxMarker>>
+{abstract} +getTransaction() = 0 : std::variant<AccountTx,TxSearched>
+{abstract} +getKBUsedAll() = 0 : uint32_t
+{abstract} +getKBUsedLedger() = 0 : uint32_t
+{abstract} +getKBUsedTransaction() = 0 : uint32_t
+{abstract} +closeLedgerDB() = 0 : void
+{abstract} +closeTransactionDB() = 0 : void
+}
+class "RCLValidatedLedger" as C_0001452972662677524122
+class C_0001452972662677524122 {
++RCLValidatedLedger() : void
++RCLValidatedLedger() : void
++seq() const : RCLValidatedLedger::Seq
++id() const : RCLValidatedLedger::ID
++operator[]() const : RCLValidatedLedger::ID
++minSeq() const : RCLValidatedLedger::Seq
+}
+enum "OpenLedger::Result" as C_0001648829429360601236
+enum C_0001648829429360601236 {
+success
+failure
+retry
+}
+class "LedgerCleanerImp" as C_0000233255785436601873
+class C_0000233255785436601873 {
++LedgerCleanerImp() : void
++~LedgerCleanerImp() : void
++start() : void
++stop() : void
++onWrite() : void
++clean() : void
+}
+class "InboundLedgersImp" as C_0000143862039220874082
+class C_0000143862039220874082 {
++InboundLedgersImp() : void
++acquire() : std::shared_ptr<const Ledger>
++find() : std::shared_ptr<InboundLedger>
++gotLedgerData() : bool
++logFailure() : void
++isFailure() : bool
++gotStaleData() : void
++clearFailures() : void
++fetchRate() : std::size_t
++onLedgerFetched() : void
++getInfo() : Json::Value
++gotFetchPack() : void
++sweep() : void
++stop() : void
+{static} +kReacquireInterval : const std::chrono::minutes
+}
+class "LedgerReplayMsgHandler" as C_0000567800362104935169
+class C_0000567800362104935169 {
++LedgerReplayMsgHandler() : void
++~LedgerReplayMsgHandler() = default : void
++processProofPathRequest() : protocol::TMProofPathResponse
++processProofPathResponse() : bool
++processReplayDeltaRequest() : protocol::TMReplayDeltaResponse
++processReplayDeltaResponse() : bool
+}
+abstract "LocalTxs" as C_0000971306214360254825
+abstract C_0000971306214360254825 {
++~LocalTxs() = default : void
+{abstract} +push_back() = 0 : void
+{abstract} +getTxSet() = 0 : CanonicalTXSet
+{abstract} +sweep() = 0 : void
+{abstract} +size() = 0 : std::size_t
+}
+class "LocalTxsImp" as C_0001203750604360426795
+class C_0001203750604360426795 {
++LocalTxsImp() = default : void
++push_back() : void
++getTxSet() : CanonicalTXSet
++sweep() : void
++size() : std::size_t
+}
+C_0002213387511391991779 o-- C_0000437628577035957607 : +FEE_DEFAULT
+C_0002213387511391991779 o-- C_0000437628577035957607 : +FEE_ACCOUNT_RESERVE
+C_0002213387511391991779 o-- C_0000437628577035957607 : +FEE_OWNER_RESERVE
+C_0002213387511391991779 ..> C_0000434356742846908842
+C_0002213387511391991779 o-- C_0000434356742846908842 : +features
+C_0002102861226093968575 ..> C_0001602748540838302362
+C_0002030638720120112117 ..> C_0002185921478450888283
+C_0000486101097040278900 ..> C_0002185921478450888283
+C_0000486101097040278900 o-- C_0002185921478450888283 : +account
+C_0001368282348178883598 ..> C_0002102861226093968575
+C_0001368282348178883598 ..> C_0000434356742846908842
+C_0001368282348178883598 ..> C_0001602748540838302362
+C_0001368282348178883598 ..> C_0002185921478450888283
+C_0002091303208209235402 ..> C_0000434356742846908842
+C_0002091303208209235402 o-- C_0000434356742846908842 : -hash_
+C_0001136101212854410998 ..> C_0000434356742846908842
+C_0001136101212854410998 ..> C_0001602748540838302362
+C_0001136101212854410998 o-- C_0000434356742846908842 : -tag_
+C_0000834632250980288795 ..> C_0000434356742846908842
+C_0000834632250980288795 o-- C_0000434356742846908842 : -id_
+C_0002069443800464145931 ..> C_0000434356742846908842
+C_0002069443800464145931 ..> C_0000364313548677557109
+C_0002069443800464145931 o-- C_0000434356742846908842 : -read_
+C_0000341166486872739549 ..> C_0000434356742846908842
+C_0000341166486872739549 ..> C_0000364313548677557109
+C_0002069443800464145931 <|-- C_0000341166486872739549
+C_0001089131121863903009 ..> C_0002069443800464145931
+C_0001089131121863903009 ..> C_0000434356742846908842
+C_0001089131121863903009 ..> C_0000364313548677557109
+C_0002069443800464145931 <|-- C_0001089131121863903009
+C_0002247987867926704610 --> C_0000024089222317618888 : +app
+C_0002247987867926704610 --> C_0002246434513325121300 : +ledgerMaster
+C_0002247987867926704610 o-- C_0000355011254015740536 : +infoSub
+C_0000432554318320614669 ..> C_0002091303208209235402
+C_0000432554318320614669 ..> C_0001863653737358297178
+C_0001375956901355770205 ..> C_0002091303208209235402
+C_0000474074067123165241 ..> C_0000024089222317618888
+C_0000474074067123165241 ..> C_0002091303208209235402
+C_0000474074067123165241 ..> C_0001375956901355770205
+C_0000474074067123165241 ..> C_0001863653737358297178
+C_0000474074067123165241 --> C_0000024089222317618888 : -app_
+C_0000474074067123165241 --> C_0002091303208209235402 : -m_nodeCache
+C_0000474074067123165241 --> C_0001375956901355770205 : -m_nodeCache
+C_0000432554318320614669 <|-- C_0000474074067123165241
+C_0002294399890504248264 ..> C_0000486101097040278900
+C_0002294399890504248264 o-- C_0000486101097040278900 : +in
+C_0002294399890504248264 o-- C_0000486101097040278900 : +out
+C_0001972271628408927151 ..> C_0000434356742846908842
+C_0001972271628408927151 ..> C_0001270395620897132534
+C_0001972271628408927151 o-- C_0000434356742846908842 : +key
+C_0001270395620897132534 ..> C_0001972271628408927151
+C_0001270395620897132534 ..> C_0000434356742846908842
+C_0001270395620897132534 ..> C_0001368282348178883598
+C_0001270395620897132534 o-- C_0000434356742846908842 : -key_
+C_0001368282348178883598 <|-- C_0001270395620897132534
+C_0001992233408632539458 ..> C_0000434356742846908842
+C_0001059260590421798558 ..> C_0001992233408632539458
+C_0001059260590421798558 ..> C_0001368282348178883598
+C_0001059260590421798558 ..> C_0002102861226093968575
+C_0001059260590421798558 o-- C_0000434356742846908842 : -tid_
+C_0001368282348178883598 <|-- C_0001059260590421798558
+C_0001865612077954784567 o-- C_0000437628577035957607 : +base
+C_0001865612077954784567 o-- C_0000437628577035957607 : +reserve
+C_0001865612077954784567 o-- C_0000437628577035957607 : +increment
+C_0001589739806501844085 o-- C_0000673331345305095894 : +parentCloseTime
+C_0001589739806501844085 o-- C_0000434356742846908842 : +hash
+C_0001589739806501844085 o-- C_0000434356742846908842 : +txHash
+C_0001589739806501844085 o-- C_0000434356742846908842 : +accountHash
+C_0001589739806501844085 o-- C_0000434356742846908842 : +parentHash
+C_0001589739806501844085 o-- C_0000437628577035957607 : +drops
+C_0001589739806501844085 o-- C_0000673331345305095894 : +closeTime
+C_0000719484062983967559 ..> C_0001972271628408927151
+C_0000719484062983967559 ..> C_0000434356742846908842
+C_0000719484062983967559 ..> C_0002185921478450888283
+C_0001733920990952249567 ..> C_0000434356742846908842
+C_0000719484062983967559 <|-- C_0001733920990952249567
+C_0001223992980195076950 ..> C_0000434356742846908842
+C_0001223992980195076950 ..> C_0001270395620897132534
+C_0001279314584255786005 ..> C_0000434356742846908842
+C_0001279314584255786005 ..> C_0002102861226093968575
+C_0001016063512578111556 ..> C_0000719484062983967559
+C_0001016063512578111556 ..> C_0001992233408632539458
+C_0001016063512578111556 ..> C_0001279314584255786005
+C_0001016063512578111556 ..> C_0001972271628408927151
+C_0001016063512578111556 ..> C_0000434356742846908842
+C_0001016063512578111556 ..> C_0001270395620897132534
+C_0001016063512578111556 ..> C_0000437628577035957607
+C_0001016063512578111556 ..> C_0002102861226093968575
+C_0001016063512578111556 o-- C_0000434356742846908842 : -txs_
+C_0001016063512578111556 o-- C_0001992233408632539458 : -rules_
+C_0001016063512578111556 o-- C_0001589739806501844085 : -info_
+C_0001016063512578111556 --> C_0000719484062983967559 : -base_
+C_0000719484062983967559 <|-- C_0001016063512578111556
+C_0001279314584255786005 <|-- C_0001016063512578111556
+C_0000731257509254601273 ..> C_0000434356742846908842
+C_0000731257509254601273 ..> C_0001368282348178883598
+C_0000731257509254601273 ..> C_0001270395620897132534
+C_0000731257509254601273 ..> C_0002102861226093968575
+C_0000731257509254601273 o-- C_0000434356742846908842 : -mTransactionID
+C_0000897641405694038531 ..> C_0000434356742846908842
+C_0001060376113924291884 ..> C_0000897641405694038531
+C_0001060376113924291884 ..> C_0000434356742846908842
+C_0001060376113924291884 ..> C_0002091303208209235402
+C_0001060376113924291884 ..> C_0000432554318320614669
+C_0001060376113924291884 ..> C_0001863653737358297178
+C_0001060376113924291884 ..> C_0001136101212854410998
+C_0001060376113924291884 ..> C_0000834632250980288795
+C_0001060376113924291884 ..> C_0002102861226093968575
+C_0001060376113924291884 ..> C_0001602748540838302362
+C_0001060376113924291884 --> C_0000897641405694038531 : -f_
+C_0000364313548677557109 ..> C_0001503182669539204061
+C_0000364313548677557109 ..> C_0002213387511391991779
+C_0000364313548677557109 ..> C_0000897641405694038531
+C_0000364313548677557109 ..> C_0001589739806501844085
+C_0000364313548677557109 ..> C_0000673331345305095894
+C_0000364313548677557109 ..> C_0001972271628408927151
+C_0000364313548677557109 ..> C_0000434356742846908842
+C_0000364313548677557109 ..> C_0001270395620897132534
+C_0000364313548677557109 ..> C_0000437628577035957607
+C_0000364313548677557109 ..> C_0002102861226093968575
+C_0000364313548677557109 --> C_0001060376113924291884 : -txMap_
+C_0000364313548677557109 --> C_0001060376113924291884 : -stateMap_
+C_0000364313548677557109 o-- C_0001865612077954784567 : -fees_
+C_0000364313548677557109 o-- C_0001992233408632539458 : -rules_
+C_0000364313548677557109 o-- C_0001589739806501844085 : -info_
+C_0001733920990952249567 <|-- C_0000364313548677557109
+C_0001279314584255786005 <|-- C_0000364313548677557109
+C_0000650534416943043353 ..> C_0000024089222317618888
+C_0000650534416943043353 ..> C_0000434356742846908842
+C_0000650534416943043353 --> C_0000024089222317618888 : #app_
+C_0000650534416943043353 o-- C_0000434356742846908842 : #hash_
+C_0000516281695793951968 --+ C_0000650534416943043353
+C_0000175546699848340697 ..> C_0000434356742846908842
+C_0000478678506029225167 ..> C_0000175546699848340697
+C_0001323284880194368582 ..> C_0000024089222317618888
+C_0001323284880194368582 ..> C_0000434356742846908842
+C_0001323284880194368582 ..> C_0000478678506029225167
+C_0001323284880194368582 ..> C_0000175546699848340697
+C_0001323284880194368582 ..> C_0000834632250980288795
+C_0001323284880194368582 ..> C_0002069443800464145931
+C_0001323284880194368582 ..> C_0001079758390404568931
+C_0001323284880194368582 ..> C_0001602748540838302362
+C_0001323284880194368582 ..> C_0000432554318320614669
+C_0001323284880194368582 --> C_0000364313548677557109 : -mLedger
+C_0001323284880194368582 o-- C_0000434356742846908842 : -mRecentNodes
+C_0001323284880194368582 o-- C_0001079758390404568931 : -mStats
+C_0001323284880194368582 o-- C_0000175546699848340697 : -mReceivedData
+C_0001323284880194368582 o-- C_0000478678506029225167 : -mPeerSet
+C_0000650534416943043353 <|-- C_0001323284880194368582
+C_0001602158263094346107 --+ C_0001323284880194368582
+C_0001661176449129566093 --+ C_0001323284880194368582
+C_0000271542537597816241 ..> C_0000434356742846908842
+C_0000271542537597816241 ..> C_0000175546699848340697
+C_0001368347001801858838 ..> C_0000434356742846908842
+C_0001368347001801858838 ..> C_0000175546699848340697
+C_0001368347001801858838 ..> C_0001060376113924291884
+C_0000258199591919059432 ..> C_0000024089222317618888
+C_0000258199591919059432 ..> C_0000434356742846908842
+C_0000258199591919059432 ..> C_0000478678506029225167
+C_0000258199591919059432 ..> C_0000834632250980288795
+C_0000258199591919059432 ..> C_0001602748540838302362
+C_0000258199591919059432 ..> C_0000175546699848340697
+C_0000258199591919059432 --> C_0001060376113924291884 : -mMap
+C_0000258199591919059432 o-- C_0000478678506029225167 : -mPeerSet
+C_0000650534416943043353 <|-- C_0000258199591919059432
+C_0000355011254015740536 ..> C_0002185921478450888283
+C_0000284720737453888618 ..> C_0000024089222317618888
+C_0000284720737453888618 ..> C_0000434356742846908842
+C_0000284720737453888618 ..> C_0002074515049518838110
+C_0000284720737453888618 ..> C_0001136101212854410998
+C_0000284720737453888618 ..> C_0001863653737358297178
+C_0000284720737453888618 ..> C_0000423847783102818573
+C_0000284720737453888618 --> C_0000024089222317618888 : -mApp
+C_0000284720737453888618 o-- C_0001538332733333409696 : -mCache
+C_0000423847783102818573 ..> C_0001059260590421798558
+C_0000423847783102818573 ..> C_0000024089222317618888
+C_0000423847783102818573 ..> C_0000437628577035957607
+C_0000423847783102818573 ..> C_0000434356742846908842
+C_0000423847783102818573 ..> C_0002074515049518838110
+C_0000423847783102818573 o-- C_0000434356742846908842 : -mTransactionID
+C_0000423847783102818573 --> C_0001059260590421798558 : -mTransaction
+C_0000423847783102818573 --> C_0000024089222317618888 : -mApp
+C_0000679693681362435265 ..> C_0000024089222317618888
+C_0000679693681362435265 ..> C_0000719484062983967559
+C_0000679693681362435265 ..> C_0002294399890504248264
+C_0000679693681362435265 ..> C_0000486101097040278900
+C_0000679693681362435265 ..> C_0000896437865260805025
+C_0000679693681362435265 --> C_0000024089222317618888 : -app_
+C_0000679693681362435265 o-- C_0000486101097040278900 : -allBooks_
+C_0000679693681362435265 o-- C_0001256845861208769956 : -allBooks_
+C_0000679693681362435265 o-- C_0000486101097040278900 : -xrpBooks_
+C_0000679693681362435265 o-- C_0002294399890504248264 : -mListeners
+C_0000679693681362435265 o-- C_0002238904378392383936 : -mListeners
+C_0000689301953063348249 ..> C_0000364313548677557109
+C_0001116570339441660634 ..> C_0000719484062983967559
+C_0001116570339441660634 ..> C_0000024089222317618888
+C_0001116570339441660634 --> C_0000719484062983967559 : -mLedger
+C_0001116570339441660634 o-- C_0000896437865260805025 : -transactions_
+C_0001215980675277779235 ..> C_0000364313548677557109
+C_0001215980675277779235 ..> C_0001270395620897132534
+C_0001215980675277779235 ..> C_0001223992980195076950
+C_0001215980675277779235 ..> C_0001016063512578111556
+C_0001215980675277779235 ..> C_0000024089222317618888
+C_0001215980675277779235 ..> C_0001992233408632539458
+C_0001215980675277779235 ..> C_0001127362610482011157
+C_0001215980675277779235 ..> C_0000461717163604842131
+C_0001215980675277779235 ..> C_0001059260590421798558
+C_0001215980675277779235 ..> C_0000719484062983967559
+C_0001215980675277779235 --> C_0000434356742846908842 : -cache_
+C_0001215980675277779235 --> C_0001223992980195076950 : -cache_
+C_0001215980675277779235 --> C_0001270395620897132534 : -cache_
+C_0001215980675277779235 --> C_0001016063512578111556 : -current_
+C_0001580885893775458218 ..> C_0000024089222317618888
+C_0001580885893775458218 ..> C_0000271542537597816241
+C_0001580885893775458218 ..> C_0002246354714488110977
+C_0001580885893775458218 ..> C_0000434356742846908842
+C_0001580885893775458218 ..> C_0001346317836221119227
+C_0001580885893775458218 ..> C_0001589739806501844085
+C_0001580885893775458218 ..> C_0001136101212854410998
+C_0001580885893775458218 ..> C_0001059260590421798558
+C_0001580885893775458218 o-- C_0001346317836221119227 : -tasks_
+C_0001580885893775458218 o-- C_0000808316421022339788 : -deltas_
+C_0001580885893775458218 o-- C_0001101151042820876482 : -skipLists_
+C_0001580885893775458218 --> C_0000024089222317618888 : -app_
+C_0001580885893775458218 --> C_0000271542537597816241 : -inboundLedgers_
+C_0001580885893775458218 o-- C_0002246354714488110977 : -peerSetBuilder_
+C_0001580885893775458218 <.. C_0000805048324189403449 : +<<friend>>
+C_0002022784058992969959 --+ C_0000364313548677557109
+C_0002170889353299486839 --+ C_0000364313548677557109
+C_0002246434513325121300 ..> C_0000024089222317618888
+C_0002246434513325121300 ..> C_0000719484062983967559
+C_0002246434513325121300 ..> C_0000364313548677557109
+C_0002246434513325121300 ..> C_0000434356742846908842
+C_0002246434513325121300 ..> C_0001059260590421798558
+C_0002246434513325121300 ..> C_0000423847783102818573
+C_0002246434513325121300 ..> C_0000611234321966746344
+C_0002246434513325121300 ..> C_0000175546699848340697
+C_0002246434513325121300 ..> C_0001472880491539920613
+C_0002246434513325121300 --> C_0000024089222317618888 : -app_
+C_0002246434513325121300 o-- C_0000866388681751669865 : -mClosedLedger
+C_0002246434513325121300 o-- C_0000866388681751669865 : -mValidLedger
+C_0002246434513325121300 --> C_0000364313548677557109 : -mPubLedger
+C_0002246434513325121300 --> C_0000364313548677557109 : -mPathLedger
+C_0002246434513325121300 --> C_0000364313548677557109 : -mHistLedger
+C_0002246434513325121300 --> C_0000364313548677557109 : -mShardLedger
+C_0002246434513325121300 o-- C_0000434356742846908842 : -mLastValidLedger
+C_0002246434513325121300 o-- C_0001080701881189203362 : -mLedgerHistory
+C_0002246434513325121300 o-- C_0001127362610482011157 : -mHeldTransactions
+C_0002246434513325121300 o-- C_0000611234321966746344 : -replayData
+C_0002246434513325121300 o-- C_0001986895531693185190 : -fetch_packs_
+C_0002246434513325121300 o-- C_0000673331345305095894 : -upgradeWarningPrevTime_
+C_0001750551353688720674 <|-- C_0002246434513325121300
+C_0001750551353688720674 ..> C_0000434356742846908842
+C_0001922489646569293641 ..> C_0002069443800464145931
+C_0001922489646569293641 ..> C_0001750551353688720674
+C_0001922489646569293641 ..> C_0002091303208209235402
+C_0001922489646569293641 ..> C_0001863653737358297178
+C_0001922489646569293641 --> C_0002069443800464145931 : -db_
+C_0001922489646569293641 --> C_0001750551353688720674 : -fp_
+C_0000432554318320614669 <|-- C_0001922489646569293641
+C_0000806694117512257161 ..> C_0001060376113924291884
+C_0000806694117512257161 o-- C_0000258199591919059432 : +mAcquire
+C_0000806694117512257161 --> C_0001060376113924291884 : +mSet
+C_0000869084296551946611 ..> C_0000024089222317618888
+C_0000869084296551946611 ..> C_0001060376113924291884
+C_0000869084296551946611 ..> C_0002246354714488110977
+C_0000869084296551946611 ..> C_0000434356742846908842
+C_0000869084296551946611 ..> C_0000175546699848340697
+C_0000869084296551946611 --> C_0000024089222317618888 : -app_
+C_0000869084296551946611 o-- C_0000806694117512257161 : -m_map
+C_0000869084296551946611 --> C_0000806694117512257161 : -m_zeroSet
+C_0000869084296551946611 --> C_0001060376113924291884 : -m_gotSet
+C_0000869084296551946611 o-- C_0002246354714488110977 : -m_peerSetBuilder
+C_0001368347001801858838 <|-- C_0000869084296551946611
+C_0000896437865260805025 ..> C_0000719484062983967559
+C_0000896437865260805025 ..> C_0001059260590421798558
+C_0000896437865260805025 ..> C_0001368282348178883598
+C_0000896437865260805025 ..> C_0002030638720120112117
+C_0000896437865260805025 --> C_0001059260590421798558 : -mTxn
+C_0000896437865260805025 o-- C_0000731257509254601273 : -mMeta
+C_0000896437865260805025 ..> C_0002185921478450888283
+C_0000896437865260805025 o-- C_0002185921478450888283 : -mAffected
+C_0001754881055800019543 ..> C_0000434356742846908842
+C_0001754881055800019543 ..> C_0000364313548677557109
+C_0001080701881189203362 ..> C_0000024089222317618888
+C_0001080701881189203362 ..> C_0000364313548677557109
+C_0001080701881189203362 ..> C_0000434356742846908842
+C_0001080701881189203362 --> C_0000024089222317618888 : -app_
+C_0001080701881189203362 o-- C_0001754881055800019543 : -m_ledgers_by_hash
+C_0001080701881189203362 o-- C_0000619874246361339414 : -m_consensus_validated
+C_0001080701881189203362 o-- C_0000434356742846908842 : -mLedgersByIndex
+C_0001699802080015215661 --+ C_0001080701881189203362
+C_0001699802080015215661 ..> C_0000434356742846908842
+C_0001699802080015215661 o-- C_0000434356742846908842 : +built
+C_0001699802080015215661 o-- C_0000434356742846908842 : +validated
+C_0001699802080015215661 o-- C_0000434356742846908842 : +builtConsensusHash
+C_0001699802080015215661 o-- C_0000434356742846908842 : +validatedConsensusHash
+C_0000866388681751669865 ..> C_0000364313548677557109
+C_0000866388681751669865 --> C_0000364313548677557109 : -m_heldLedger
+C_0000611234321966746344 ..> C_0000364313548677557109
+C_0000611234321966746344 ..> C_0001059260590421798558
+C_0000611234321966746344 --> C_0000364313548677557109 : -parent_
+C_0000611234321966746344 --> C_0000364313548677557109 : -replay_
+C_0000611234321966746344 o-- C_0001059260590421798558 : -orderedTxns_
+C_0001127362610482011157 ..> C_0002185921478450888283
+C_0001127362610482011157 ..> C_0000434356742846908842
+C_0001127362610482011157 ..> C_0001059260590421798558
+C_0001127362610482011157 o-- C_0001059260590421798558 : -map_
+C_0001127362610482011157 o-- C_0000434356742846908842 : -salt_
+C_0001986895531693185190 ..> C_0000434356742846908842
+C_0001488528538385534685 --+ C_0002246434513325121300
+C_0001726756502929628600 ..> C_0002069443800464145931
+C_0001726756502929628600 ..> C_0001750551353688720674
+C_0001726756502929628600 ..> C_0002091303208209235402
+C_0001726756502929628600 ..> C_0001863653737358297178
+C_0001726756502929628600 --> C_0002069443800464145931 : -db_
+C_0001726756502929628600 --> C_0001750551353688720674 : -fp_
+C_0000432554318320614669 <|-- C_0001726756502929628600
+C_0002238904378392383936 ..> C_0000355011254015740536
+C_0002238904378392383936 o-- C_0000355011254015740536 : -mListeners
+C_0001346317836221119227 ..> C_0000024089222317618888
+C_0001346317836221119227 ..> C_0000271542537597816241
+C_0001346317836221119227 ..> C_0001580885893775458218
+C_0001346317836221119227 ..> C_0001101151042820876482
+C_0001346317836221119227 ..> C_0000808316421022339788
+C_0001346317836221119227 ..> C_0000434356742846908842
+C_0001346317836221119227 --> C_0000271542537597816241 : -inboundLedgers_
+C_0001346317836221119227 --> C_0001580885893775458218 : -replayer_
+C_0001346317836221119227 --> C_0001101151042820876482 : -skipListAcquirer_
+C_0001346317836221119227 --> C_0000364313548677557109 : -parent_
+C_0001346317836221119227 o-- C_0000808316421022339788 : -deltas_
+C_0001346317836221119227 <.. C_0000805048324189403449 : +<<friend>>
+C_0000650534416943043353 <|-- C_0001346317836221119227
+C_0000735653827315056182 --+ C_0001346317836221119227
+C_0000735653827315056182 ..> C_0000434356742846908842
+C_0000735653827315056182 o-- C_0000434356742846908842 : +finishHash_
+C_0000735653827315056182 o-- C_0000434356742846908842 : +skipList_
+C_0000735653827315056182 o-- C_0000434356742846908842 : +startHash_
+C_0001101151042820876482 ..> C_0000024089222317618888
+C_0001101151042820876482 ..> C_0000271542537597816241
+C_0001101151042820876482 ..> C_0000434356742846908842
+C_0001101151042820876482 ..> C_0000478678506029225167
+C_0001101151042820876482 ..> C_0001136101212854410998
+C_0001101151042820876482 ..> C_0000364313548677557109
+C_0001101151042820876482 --> C_0000271542537597816241 : -inboundLedgers_
+C_0001101151042820876482 o-- C_0000478678506029225167 : -peerSet_
+C_0001101151042820876482 <.. C_0000805048324189403449 : +<<friend>>
+C_0000650534416943043353 <|-- C_0001101151042820876482
+C_0002270793546955727769 --+ C_0001101151042820876482
+C_0002270793546955727769 ..> C_0000434356742846908842
+C_0002270793546955727769 o-- C_0000434356742846908842 : +skipList
+C_0000808316421022339788 ..> C_0000024089222317618888
+C_0000808316421022339788 ..> C_0000271542537597816241
+C_0000808316421022339788 ..> C_0000434356742846908842
+C_0000808316421022339788 ..> C_0000478678506029225167
+C_0000808316421022339788 ..> C_0001589739806501844085
+C_0000808316421022339788 ..> C_0001059260590421798558
+C_0000808316421022339788 ..> C_0000364313548677557109
+C_0000808316421022339788 --> C_0000271542537597816241 : -inboundLedgers_
+C_0000808316421022339788 o-- C_0000478678506029225167 : -peerSet_
+C_0000808316421022339788 --> C_0000364313548677557109 : -replayTemp_
+C_0000808316421022339788 --> C_0000364313548677557109 : -fullLedger_
+C_0000808316421022339788 o-- C_0001059260590421798558 : -orderedTxns_
+C_0000808316421022339788 <.. C_0000805048324189403449 : +<<friend>>
+C_0000808316421022339788 <.. C_0001346317836221119227 : +<<friend>>
+C_0000650534416943043353 <|-- C_0000808316421022339788
+C_0001538332733333409696 ..> C_0000434356742846908842
+C_0001538332733333409696 ..> C_0000423847783102818573
+C_0001364993699718634102 ..> C_0000364313548677557109
+C_0001364993699718634102 ..> C_0000434356742846908842
+C_0001364993699718634102 ..> C_0002074515049518838110
+C_0001452972662677524122 ..> C_0000364313548677557109
+C_0001452972662677524122 o-- C_0000434356742846908842 : -ledgerID_
+C_0001452972662677524122 ..> C_0000434356742846908842
+C_0001452972662677524122 o-- C_0000434356742846908842 : -ancestors_
+C_0001648829429360601236 --+ C_0001215980675277779235
+C_0000233255785436601873 ..> C_0000024089222317618888
+C_0000233255785436601873 ..> C_0000719484062983967559
+C_0000233255785436601873 ..> C_0000434356742846908842
+C_0000233255785436601873 --> C_0000024089222317618888 : -app_
+C_0001722331209588077982 <|-- C_0000233255785436601873
+C_0000143862039220874082 ..> C_0000024089222317618888
+C_0000143862039220874082 ..> C_0002246354714488110977
+C_0000143862039220874082 ..> C_0000434356742846908842
+C_0000143862039220874082 ..> C_0000175546699848340697
+C_0000143862039220874082 --> C_0000024089222317618888 : -app_
+C_0000143862039220874082 o-- C_0001323284880194368582 : -mLedgers
+C_0000143862039220874082 o-- C_0002246354714488110977 : -mPeerSetBuilder
+C_0000271542537597816241 <|-- C_0000143862039220874082
+C_0000567800362104935169 ..> C_0000024089222317618888
+C_0000567800362104935169 ..> C_0001580885893775458218
+C_0000567800362104935169 --> C_0000024089222317618888 : -app_
+C_0000567800362104935169 --> C_0001580885893775458218 : -replayer_
+C_0000971306214360254825 ..> C_0001059260590421798558
+C_0000971306214360254825 ..> C_0000719484062983967559
+C_0001203750604360426795 ..> C_0001059260590421798558
+C_0001203750604360426795 ..> C_0000719484062983967559
+C_0000971306214360254825 <|-- C_0001203750604360426795
+@enduml

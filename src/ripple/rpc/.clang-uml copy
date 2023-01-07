@@ -1,0 +1,110 @@
+diagrams:
+  rpc:
+    type: class
+    generate_method_arguments: none
+    include_relations_also_as_members: false
+    glob:
+      - src/ripple/rpc/*.h
+      - src/ripple/rpc/*.cpp
+      - src/ripple/rpc/impl/*.h
+      - src/ripple/rpc/impl/*.cpp
+    using_namespace:
+      - ripple
+    include:
+      namespaces:
+        - ripple
+        - ripple::RPC
+      context:
+        - ripple::AccountChannels
+        - ripple::AccountCurrenciesHandler
+        - ripple::AccountInfo
+        - ripple::AccountLines
+        - ripple::AccountObjects
+        - ripple::AccountOffers
+        - ripple::AccountTx
+        - ripple::AccountTxOld
+        - ripple::BlackList
+        - ripple::BookOffers
+        - ripple::CanDelete
+        - ripple::Connect
+        - ripple::ConsensusInfo
+        - ripple::Context
+        - ripple::CrawlShards
+        - ripple::DeliveredAmount
+        - ripple::DepositAuthorized
+        - ripple::DownloadShard
+        - ripple::Feature1
+        - ripple::Fee1
+        - ripple::FetchInfo
+        - ripple::GRPCHandlers
+        - ripple::GRPCHelpers
+        - ripple::GatewayBalances
+        - ripple::GetCounts
+        - ripple::Handler
+        - ripple::Handlers
+        - ripple::LedgerAccept
+        - ripple::LedgerCleanerHandler
+        - ripple::LedgerClosed
+        - ripple::LedgerCurrent
+        - ripple::LedgerData
+        - ripple::LedgerDiff
+        - ripple::LedgerEntry
+        - ripple::LedgerHandler
+        - ripple::LedgerHeader
+        - ripple::LedgerRequest
+        - ripple::LegacyPathFind
+        - ripple::LogLevel
+        - ripple::LogRotate
+        - ripple::Manifest
+        - ripple::NFTOffers
+        - ripple::NoRippleCheck
+        - ripple::NodeToShard
+        - ripple::NodeToShardStatus
+        - ripple::Output
+        - ripple::OwnerInfo
+        - ripple::PathFind
+        - ripple::PayChanClaim
+        - ripple::Peers
+        - ripple::Ping
+        - ripple::Print
+        - ripple::RPCHandler
+        - ripple::RPCHelpers
+        - ripple::Random
+        - ripple::Request
+        - ripple::Reservations
+        - ripple::RipplePathFind
+        - ripple::Role
+        - ripple::ServerHandler
+        - ripple::ServerHandlerImp
+        - ripple::ServerInfo
+        - ripple::ServerState
+        - ripple::ShardArchiveHandler
+        - ripple::ShardVerificationScheduler
+        - ripple::SignFor
+        - ripple::SignHandler
+        - ripple::Status
+        - ripple::Stop
+        - ripple::Submit
+        - ripple::SubmitMultiSigned
+        - ripple::Subscribe
+        - ripple::TransactionEntry
+        - ripple::TransactionSign
+        - ripple::Tuning
+        - ripple::Tx
+        - ripple::TxHistory
+        - ripple::TxReduceRelay
+        - ripple::UnlList
+        - ripple::Unsubscribe
+        - ripple::ValidationCreate
+        - ripple::ValidatorInfo
+        - ripple::ValidatorListSites
+        - ripple::Validators
+        - ripple::Version
+        - ripple::WSInfoSub
+        - ripple::WalletPropose
+    exclude:
+      access:
+        - private
+    plantuml:
+      before:
+        - 'title Class Diagram for rpc'

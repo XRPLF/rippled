@@ -1,0 +1,31 @@
+diagrams:
+  app_main:
+    type: class
+    generate_method_arguments: none
+    include_relations_also_as_members: false
+    glob:
+      - src/ripple/app/main/*.h
+      - src/ripple/app/main/*.cpp
+      - src/ripple/app/main/impl/*.h
+      - src/ripple/app/main/impl/*.cpp
+    using_namespace:
+      - ripple
+    include:
+      namespaces:
+        - ripple
+      context:
+        - ripple::Application
+        - ripple::BasicApp
+        - ripple::CollectorManager
+        - ripple::DBInit
+        - ripple::GRPCServer
+        - ripple::LoadManager
+        - ripple::NodeIdentity
+        - ripple::NodeStoreScheduler
+        - ripple::Tuning
+    exclude:
+      access:
+        - private
+    plantuml:
+      before:
+        - 'title Class Diagram for app/main'

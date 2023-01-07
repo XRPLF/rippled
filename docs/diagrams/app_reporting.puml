@@ -1,0 +1,236 @@
+@startuml
+title Class Diagram for app/reporting
+class "STLedgerEntry" as C_0001270395620897132534
+class C_0001270395620897132534 {
++STLedgerEntry() : void
++STLedgerEntry() : void
++STLedgerEntry() : void
++STLedgerEntry() : void
++STLedgerEntry() : void
++getSType() const : SerializedTypeID
++getFullText() const : std::string
++getText() const : std::string
++getJson() const : Json::Value
++key() const : const uint256 &
++getType() const : LedgerEntryType
++isThreadedType() const : bool
++thread() : bool
+}
+class "Ledger" as C_0000364313548677557109
+class C_0000364313548677557109 {
++Ledger() : void
++operator=() : Ledger &
++Ledger() : void
++Ledger() : void
++Ledger() : void
++Ledger() : void
++Ledger() : void
++~Ledger() = default : void
++open() const : bool
++info() const : const LedgerInfo &
++setLedgerInfo() : void
++fees() const : const Fees &
++rules() const : const Rules &
++exists() const : bool
++exists() const : bool
++succ() const : std::optional<uint256>
++read() const : std::shared_ptr<const SLE>
++slesBegin() const : std::unique_ptr<sles_type::iter_base>
++slesEnd() const : std::unique_ptr<sles_type::iter_base>
++slesUpperBound() const : std::unique_ptr<sles_type::iter_base>
++txsBegin() const : std::unique_ptr<txs_type::iter_base>
++txsEnd() const : std::unique_ptr<txs_type::iter_base>
++txExists() const : bool
++txRead() const : ReadView::tx_type
++digest() const : std::optional<digest_type>
++rawErase() : void
++rawInsert() : void
++rawErase() : void
++rawReplace() : void
++rawDestroyXRP() : void
++rawTxInsert() : void
++rawTxInsertWithHash() : uint256
++setValidated() const : void
++setAccepted() : void
++setImmutable() : void
++isImmutable() const : bool
++setFull() const : void
++setTotalDrops() : void
++stateMap() const : const SHAMap &
++stateMap() : SHAMap &
++txMap() const : const SHAMap &
++txMap() : SHAMap &
++addSLE() : bool
++updateSkipList() : void
++walkLedger() const : bool
++assertSensible() const : bool
++invariants() const : void
++unshare() const : void
++negativeUNL() const : std::unordered_set<PublicKey>
++validatorToDisable() const : std::optional<PublicKey>
++validatorToReEnable() const : std::optional<PublicKey>
++updateNegativeUNL() : void
++isFlagLedger() const : bool
++isVotingLedger() const : bool
++peek() const : std::shared_ptr<SLE>
+}
+class "RPC::JsonContext" as C_0000539094050509181559
+class C_0000539094050509181559 {
++params : Json::Value
++headers : RPC::JsonContext::Headers
+}
+abstract "Application" as C_0000024089222317618888
+abstract C_0000024089222317618888 {
+{abstract} +getMasterMutex() = 0 : Application::MutexType &
++Application() : void
++~Application() = default : void
+{abstract} +setup() = 0 : bool
+{abstract} +start() = 0 : void
+{abstract} +run() = 0 : void
+{abstract} +signalStop() = 0 : void
+{abstract} +checkSigs() const = 0 : bool
+{abstract} +checkSigs() = 0 : void
+{abstract} +isStopping() const = 0 : bool
+{abstract} +logs() = 0 : Logs &
+{abstract} +config() = 0 : Config &
+{abstract} +getIOService() = 0 : boost::asio::io_service &
+{abstract} +getCollectorManager() = 0 : CollectorManager &
+{abstract} +getNodeFamily() = 0 : Family &
+{abstract} +getShardFamily() = 0 : Family *
+{abstract} +timeKeeper() = 0 : TimeKeeper &
+{abstract} +getJobQueue() = 0 : JobQueue &
+{abstract} +getTempNodeCache() = 0 : NodeCache &
+{abstract} +cachedSLEs() = 0 : CachedSLEs &
+{abstract} +getAmendmentTable() = 0 : AmendmentTable &
+{abstract} +getHashRouter() = 0 : HashRouter &
+{abstract} +getFeeTrack() = 0 : LoadFeeTrack &
+{abstract} +getLoadManager() = 0 : LoadManager &
+{abstract} +overlay() = 0 : Overlay &
+{abstract} +getTxQ() = 0 : TxQ &
+{abstract} +validators() = 0 : ValidatorList &
+{abstract} +validatorSites() = 0 : ValidatorSite &
+{abstract} +validatorManifests() = 0 : ManifestCache &
+{abstract} +publisherManifests() = 0 : ManifestCache &
+{abstract} +cluster() = 0 : Cluster &
+{abstract} +peerReservations() = 0 : PeerReservationTable &
+{abstract} +getValidations() = 0 : RCLValidations &
+{abstract} +getNodeStore() = 0 : NodeStore::Database &
+{abstract} +getShardStore() = 0 : NodeStore::DatabaseShard *
+{abstract} +getShardArchiveHandler() = 0 : RPC::ShardArchiveHandler *
+{abstract} +getInboundLedgers() = 0 : InboundLedgers &
+{abstract} +getInboundTransactions() = 0 : InboundTransactions &
+{abstract} +getAcceptedLedgerCache() = 0 : TaggedCache<uint256,AcceptedLedger> &
+{abstract} +getLedgerMaster() = 0 : LedgerMaster &
+{abstract} +getLedgerCleaner() = 0 : LedgerCleaner &
+{abstract} +getLedgerReplayer() = 0 : LedgerReplayer &
+{abstract} +getOPs() = 0 : NetworkOPs &
+{abstract} +getOrderBookDB() = 0 : OrderBookDB &
+{abstract} +getMasterTransaction() = 0 : TransactionMaster &
+{abstract} +getPerfLog() = 0 : perf::PerfLog &
+{abstract} +nodeIdentity() = 0 : const std::pair<PublicKey,SecretKey> &
+{abstract} +getValidationPublicKey() const = 0 : const PublicKey &
+{abstract} +getResourceManager() = 0 : Resource::Manager &
+{abstract} +getPathRequests() = 0 : PathRequests &
+{abstract} +getSHAMapStore() = 0 : SHAMapStore &
+{abstract} +pendingSaves() = 0 : PendingSaves &
+{abstract} +accountIDCache() const = 0 : const AccountIDCache &
+{abstract} +openLedger() = 0 : OpenLedger &
+{abstract} +openLedger() const = 0 : const OpenLedger &
+{abstract} +getRelationalDatabase() = 0 : RelationalDatabase &
+{abstract} +getIOLatency() = 0 : std::chrono::milliseconds
+{abstract} +getReportingETL() = 0 : ReportingETL &
+{abstract} +serverOkay() = 0 : bool
+{abstract} +journal() = 0 : beast::Journal
+{abstract} +fdRequired() const = 0 : int
+{abstract} +getWalletDB() = 0 : DatabaseCon &
+{abstract} +getMaxDisallowedLedger() = 0 : LedgerIndex
+}
+class "NetworkValidatedLedgers" as C_0001749398618357613571
+class C_0001749398618357613571 {
++push() : void
++getMostRecent() const : std::optional<uint32_t>
++tryGetMostRecent() const : std::optional<uint32_t>
++waitUntilValidatedByNetwork() : bool
++stop() : void
+}
+class "ThreadSafeQueue<std::shared_ptr<SLE>>" as C_0001377976586182950689
+class C_0001377976586182950689 {
+}
+class "ETLSource" as C_0002178712016612181138
+class C_0002178712016612181138 {
++isConnected() const : bool
++getLastMsgTime() const : std::chrono::system_clock::time_point
++setLastMsgTime() : void
++ETLSource() : void
++ETLSource() : void
++hasLedger() const : bool
++setValidatedRange() : void
++getValidatedRange() const : std::string
++stop() : void
++fetchLedger() : std::pair<grpc::Status,org::xrpl::rpc::v1::GetLedgerResponse>
++toString() const : std::string
++toJson() const : Json::Value
++loadInitialLedger() : bool
++start() : void
++reconnect() : void
++onResolve() : void
++onConnect() : void
++onHandshake() : void
++onWrite() : void
++onRead() : void
++handleMessage() : bool
++close() : void
++getP2pForwardingStub() const : std::unique_ptr<org::xrpl::rpc::v1::XRPLedgerAPIService::Stub>
++forwardToP2p() const : Json::Value
+}
+class "ETLLoadBalancer" as C_0000721489797754593790
+class C_0000721489797754593790 {
++ETLLoadBalancer() : void
++add() : void
++add() : void
++loadInitialLedger() : void
++fetchLedger() : std::optional<org::xrpl::rpc::v1::GetLedgerResponse>
++start() : void
++stop() : void
++shouldPropagateStream() const : bool
++toJson() const : Json::Value
++getP2pForwardingStub() const : std::unique_ptr<org::xrpl::rpc::v1::XRPLedgerAPIService::Stub>
++forwardToP2p() const : Json::Value
+}
+class "ReportingETL" as C_0000126805538221204880
+class C_0000126805538221204880 {
++ReportingETL() : void
++~ReportingETL() : void
++getNetworkValidatedLedgers() : NetworkValidatedLedgers &
++isStopping() const : bool
++getNumMarkers() : uint32_t
++getApplication() : Application &
++getJournal() : beast::Journal &
++getInfo() : Json::Value
++start() : void
++stop() : void
++getETLLoadBalancer() : ETLLoadBalancer &
+}
+C_0000364313548677557109 ..> C_0001270395620897132534
+C_0002178712016612181138 ..> C_0000126805538221204880
+C_0002178712016612181138 ..> C_0001270395620897132534
+C_0002178712016612181138 ..> C_0001377976586182950689
+C_0002178712016612181138 ..> C_0000539094050509181559
+C_0002178712016612181138 --> C_0000126805538221204880 : -etl_
+C_0002178712016612181138 --> C_0001749398618357613571 : -networkValidatedLedgers_
+C_0002178712016612181138 --> C_0000024089222317618888 : -app_
+C_0000721489797754593790 ..> C_0000126805538221204880
+C_0000721489797754593790 ..> C_0001270395620897132534
+C_0000721489797754593790 ..> C_0001377976586182950689
+C_0000721489797754593790 ..> C_0002178712016612181138
+C_0000721489797754593790 ..> C_0000539094050509181559
+C_0000721489797754593790 --> C_0000126805538221204880 : -etl_
+C_0000721489797754593790 o-- C_0002178712016612181138 : -sources_
+C_0000126805538221204880 ..> C_0000364313548677557109
+C_0000126805538221204880 ..> C_0001270395620897132534
+C_0000126805538221204880 ..> C_0001377976586182950689
+C_0000126805538221204880 ..> C_0000024089222317618888
+C_0000126805538221204880 --> C_0000024089222317618888 : -app_
+C_0000126805538221204880 o-- C_0000721489797754593790 : -loadBalancer_
+C_0000126805538221204880 o-- C_0001749398618357613571 : -networkValidatedLedgers_
+@enduml

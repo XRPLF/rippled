@@ -1,0 +1,43 @@
+diagrams:
+  app_misc:
+    type: class
+    generate_method_arguments: none
+    include_relations_also_as_members: false
+    glob:
+      - src/ripple/app/misc/*.h
+      - src/ripple/app/misc/*.cpp
+      - src/ripple/app/misc/impl/*.h
+      - src/ripple/app/misc/impl/*.cpp
+    using_namespace:
+      - ripple
+    include:
+      namespaces:
+        - ripple
+      context:
+        - ripple::AccountTxPaging
+        - ripple::AmendmentTable
+        - ripple::CanonicalTXSet
+        - ripple::FeeVote
+        - ripple::HashRouter
+        - ripple::LoadFeeTrack
+        - ripple::Manifest
+        - ripple::NegativeUNLVote
+        - ripple::NetworkOPs
+        - ripple::SHAMapStore
+        - ripple::SHAMapStoreImp
+        - ripple::Transaction
+        - ripple::TxQ
+        - ripple::ValidatorKeys
+        - ripple::ValidatorList
+        - ripple::ValidatorSite
+        - ripple::Work
+        - ripple::WorkBase
+        - ripple::WorkFile
+        - ripple::WorkPlain
+        - ripple::WorkSSL
+    exclude:
+      access:
+        - private
+    plantuml:
+      before:
+        - 'title Class Diagram for app/misc'

@@ -1,0 +1,40 @@
+@startuml
+title Class Diagram for consensus
+class "ConsensusParms" as C_0001246296997010850462
+class C_0001246296997010850462 {
++ConsensusParms() = default : void
++validationVALID_WALL : std::chrono::seconds
++validationVALID_LOCAL : std::chrono::seconds
++validationVALID_EARLY : std::chrono::seconds
++proposeFRESHNESS : std::chrono::seconds
++proposeINTERVAL : std::chrono::seconds
++minCONSENSUS_PCT : std::size_t
++ledgerIDLE_INTERVAL : std::chrono::milliseconds
++ledgerMIN_CONSENSUS : std::chrono::milliseconds
++ledgerMAX_CONSENSUS : std::chrono::milliseconds
++ledgerMIN_CLOSE : std::chrono::milliseconds
++ledgerGRANULARITY : std::chrono::milliseconds
++avMIN_CONSENSUS_TIME : std::chrono::milliseconds
++avINIT_CONSENSUS_PCT : std::size_t
++avMID_CONSENSUS_TIME : std::size_t
++avMID_CONSENSUS_PCT : std::size_t
++avLATE_CONSENSUS_TIME : std::size_t
++avLATE_CONSENSUS_PCT : std::size_t
++avSTUCK_CONSENSUS_TIME : std::size_t
++avSTUCK_CONSENSUS_PCT : std::size_t
++avCT_CONSENSUS_PCT : std::size_t
+}
+class "DisputedTx<Tx_t,NodeID_t>" as C_0002084909879430630243
+class C_0002084909879430630243 {
++DisputedTx<Tx_t, NodeID_t>() : void
++ID() const : const DisputedTx::TxID_t &
++getOurVote() const : bool
++tx() const : const Tx_t &
++setOurVote() : void
++setVote() : void
++unVote() : void
++updateVote() : bool
++getJson() const : Json::Value
+}
+C_0002084909879430630243 ..> C_0001246296997010850462
+@enduml

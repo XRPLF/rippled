@@ -1,0 +1,26 @@
+diagrams:
+  app_reporting:
+    type: class
+    generate_method_arguments: none
+    include_relations_also_as_members: false
+    glob:
+      - src/ripple/app/reporting/*.h
+      - src/ripple/app/reporting/*.cpp
+      - src/ripple/app/reporting/impl/*.h
+      - src/ripple/app/reporting/impl/*.cpp
+    using_namespace:
+      - ripple
+    include:
+      namespaces:
+        - ripple
+      context:
+        - ripple::ETLHelpers
+        - ripple::ETLSource
+        - ripple::P2pProxy
+        - ripple::ReportingETL
+    exclude:
+      access:
+        - private
+    plantuml:
+      before:
+        - 'title Class Diagram for app/reporting'

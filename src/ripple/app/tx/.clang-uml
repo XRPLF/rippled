@@ -1,0 +1,51 @@
+diagrams:
+  app_tx:
+    type: class
+    generate_method_arguments: none
+    include_relations_also_as_members: false
+    glob:
+      - src/ripple/app/tx/*.h
+      - src/ripple/app/tx/*.cpp
+      - src/ripple/app/tx/impl/*.h
+      - src/ripple/app/tx/impl/*.cpp
+    using_namespace:
+      - ripple
+    include:
+      namespaces:
+        - ripple
+      context:
+        - ripple::ApplyContext
+        - ripple::BookTip
+        - ripple::CancelCheck
+        - ripple::CancelOffer
+        - ripple::CashCheck
+        - ripple::Change
+        - ripple::CreateCheck
+        - ripple::CreateOffer
+        - ripple::CreateTicket
+        - ripple::DeleteAccount
+        - ripple::DepositPreauth
+        - ripple::Escrow
+        - ripple::InvariantCheck
+        - ripple::NFTokenAcceptOffer
+        - ripple::NFTokenBurn
+        - ripple::NFTokenCancelOffer
+        - ripple::NFTokenCreateOffer
+        - ripple::NFTokenMint
+        - ripple::Offer
+        - ripple::OfferStream
+        - ripple::PayChan
+        - ripple::Payment
+        - ripple::SetAccount
+        - ripple::SetRegularKey
+        - ripple::SetSignerList
+        - ripple::SetTrust
+        - ripple::SignerEntries
+        - ripple::Taker
+        - ripple::Transactor
+    exclude:
+      access:
+        - private
+    plantuml:
+      before:
+        - 'title Class Diagram for app/tx'

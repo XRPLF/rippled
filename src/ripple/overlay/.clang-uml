@@ -1,0 +1,146 @@
+diagrams:
+  overlay:
+    type: class
+    generate_method_arguments: none
+    include_relations_also_as_members: false
+    glob:
+      - src/ripple/overlay/*.h
+      - src/ripple/overlay/*.cpp
+      - src/ripple/overlay/impl/*.h
+      - src/ripple/overlay/impl/*.cpp
+    using_namespace:
+      - ripple
+    include:
+      namespaces:
+        - ripple
+      context:
+        - ripple::Cluster
+        - ripple::ClusterNode
+        - ripple::Compression
+        - ripple::ConnectAttempt
+        - ripple::Handshake
+        - ripple::Message
+        - ripple::Overlay
+        - ripple::OverlayImpl
+        - ripple::Peer
+        - ripple::PeerImp
+        - ripple::PeerReservationTable
+        - ripple::PeerSet
+        - ripple::ProtocolMessage
+        - ripple::ProtocolVersion
+        - ripple::ReduceRelayCommon
+        - ripple::Slot
+        - ripple::Squelch
+        - ripple::TrafficCount
+        - ripple::Tuning
+        - ripple::TxMetrics
+        - ripple::ZeroCopyStream
+    exclude:
+      access:
+        - private
+      namespaces:
+        - ripple::test
+        - ripple::detail
+        - metrics
+        - ripple::metrics
+        - std
+        - boost
+        - beast
+        - date
+        - Json
+        - openssl
+        - __gnu_cxx
+        - __cxxabiv1
+    plantuml:
+      before:
+        - 'title Class Diagram for overlay'
+  Overlay_processRequest:
+    type: sequence
+    title: Sequence Diagram for Overlay::processRequest
+    combine_free_functions_into_file_participants: true
+    glob:
+      - src/ripple/overlay/*.h
+      - src/ripple/overlay/*.cpp
+      - src/ripple/overlay/impl/*.h
+      - src/ripple/overlay/impl/*.cpp
+    using_namespace:
+      - ripple
+    include:
+      namespaces:
+        - ripple
+      context:
+        - ripple::Cluster
+        - ripple::ClusterNode
+        - ripple::Compression
+        - ripple::ConnectAttempt
+        - ripple::Handshake
+        - ripple::Message
+        - ripple::Overlay
+        - ripple::OverlayImpl
+        - ripple::Peer
+        - ripple::PeerImp
+        - ripple::PeerReservationTable
+        - ripple::PeerSet
+        - ripple::ProtocolMessage
+        - ripple::ProtocolVersion
+        - ripple::ReduceRelayCommon
+        - ripple::Slot
+        - ripple::Squelch
+        - ripple::TrafficCount
+        - ripple::Tuning
+        - ripple::TxMetrics
+        - ripple::ZeroCopyStream
+    exclude:
+      namespaces:
+        - ripple::test
+        - ripple::detail
+        - metrics
+        - ripple::metrics
+        - std
+        - boost
+        - beast
+        - date
+        - Json
+        - openssl
+        - __gnu_cxx
+        - __cxxabiv1
+    start_from:
+      - function: "ripple::OverlayImpl::processRequest(const http_request_type &,Handoff &)"
+  Overlay_broadcast:
+    type: sequence
+    title: Sequence Diagram for Overlay::broadcast
+    combine_free_functions_into_file_participants: true
+    glob:
+      - src/ripple/overlay/*.h
+      - src/ripple/overlay/*.cpp
+      - src/ripple/overlay/impl/*.h
+      - src/ripple/overlay/impl/*.cpp
+    using_namespace:
+      - ripple
+    include:
+      namespaces:
+        - ripple
+      context:
+        - ripple::Cluster
+        - ripple::ClusterNode
+        - ripple::Compression
+        - ripple::ConnectAttempt
+        - ripple::Handshake
+        - ripple::Message
+        - ripple::Overlay
+        - ripple::OverlayImpl
+        - ripple::Peer
+        - ripple::PeerImp
+        - ripple::PeerReservationTable
+        - ripple::PeerSet
+        - ripple::ProtocolMessage
+        - ripple::ProtocolVersion
+        - ripple::ReduceRelayCommon
+        - ripple::Slot
+        - ripple::Squelch
+        - ripple::TrafficCount
+        - ripple::Tuning
+        - ripple::TxMetrics
+        - ripple::ZeroCopyStream
+    start_from:
+      - function: "ripple::OverlayImpl::broadcast(protocol::TMProposeSet &)"

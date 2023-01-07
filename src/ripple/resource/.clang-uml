@@ -1,0 +1,36 @@
+diagrams:
+  resource:
+    type: class
+    generate_method_arguments: none
+    include_relations_also_as_members: false
+    glob:
+      - src/ripple/resource/*.h
+      - src/ripple/resource/*.cpp
+      - src/ripple/resource/impl/*.h
+      - src/ripple/resource/impl/*.cpp
+    using_namespace:
+      - ripple
+    include:
+      namespaces:
+        - ripple
+        - ripple::Resource
+      context:
+        - ripple::Resource::Charge
+        - ripple::Resource::Consumer
+        - ripple::Resource::Disposition
+        - ripple::Resource::Entry
+        - ripple::Resource::Fees
+        - ripple::Resource::Gossip
+        - ripple::Resource::Import
+        - ripple::Resource::Key
+        - ripple::Resource::Kind
+        - ripple::Resource::Logic
+        - ripple::Resource::ResourceManager
+        - ripple::Resource::Tuning
+        - ripple::Resource::Types
+    exclude:
+      access:
+        - private
+    plantuml:
+      before:
+        - 'title Class Diagram for resource'

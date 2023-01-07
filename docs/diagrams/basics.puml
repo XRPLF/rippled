@@ -1,0 +1,158 @@
+@startuml
+title Class Diagram for basics
+abstract "Resolver" as C_0001927026177791066667
+abstract C_0001927026177791066667 {
+{abstract} +~Resolver() = 0 : void
+{abstract} +stop_async() = 0 : void
+{abstract} +stop() = 0 : void
+{abstract} +start() = 0 : void
+{abstract} +resolve() = 0 : void
++resolve() : void
+}
+class "ResolverAsio" as C_0000402213617266332336
+class C_0000402213617266332336 {
++ResolverAsio() = default : void
+{static} +New() : std::unique_ptr<ResolverAsio>
+}
+class "ResolverAsioImpl" as C_0000525595014241869424
+class C_0000525595014241869424 {
++ResolverAsioImpl() : void
++~ResolverAsioImpl() : void
++asyncHandlersComplete() : void
++start() : void
++stop_async() : void
++stop() : void
++resolve() : void
++do_stop() : void
++do_finish() : void
++parseName() : ResolverAsioImpl::HostAndPort
++do_work() : void
++do_resolve() : void
++m_journal : beast::Journal
++m_io_service : boost::asio::io_service &
++m_strand : boost::asio::io_service::strand
++m_resolver : boost::asio::ip::tcp::resolver
++m_cv : std::condition_variable
++m_mut : std::mutex
++m_asyncHandlersCompleted : bool
++m_stop_called : std::atomic<bool>
++m_stopped : std::atomic<bool>
++m_work : std::deque<Work>
+}
+class "UptimeClock" as C_0001472880491539920613
+class C_0001472880491539920613 {
++UptimeClock() = default : void
+{static} +now() : UptimeClock::time_point
+{static} +is_steady : const bool
+}
+class "UptimeClock::update_thread" as C_0001654867306283817272
+class C_0001654867306283817272 {
++~update_thread() : void
++update_thread() = default : void
++thread() : void
+}
+class "Slice" as C_0001602748540838302362
+class C_0001602748540838302362 {
++Slice() = default : void
++Slice() = default : void
++operator=() = default : Slice &
++Slice() : void
++empty() const : bool
++size() const : std::size_t
++length() const : std::size_t
++data() const : const std::uint8_t *
++operator[]() const : std::uint8_t
++operator+=() : Slice &
++operator+() const : Slice
++remove_prefix() : void
++remove_suffix() : void
++begin() const : Slice::const_iterator
++cbegin() const : Slice::const_iterator
++end() const : Slice::const_iterator
++cend() const : Slice::const_iterator
++substr() const : Slice
+}
+class "IOUAmount" as C_0001929501441132184687
+class C_0001929501441132184687 {
++IOUAmount() = default : void
++IOUAmount() = default : void
++operator=() = default : IOUAmount &
++IOUAmount() : void
++IOUAmount() : void
++operator=() : IOUAmount &
++operator+=() : IOUAmount &
++operator-=() : IOUAmount &
++operator-() const : IOUAmount
++operator==() const : bool
++operator<() const : bool
++operator bool() const : bool
++signum() const : int
++exponent() const : int
++mantissa() const : std::int64_t
+{static} +minPositiveAmount() : IOUAmount
+}
+class "Section" as C_0001196237645647586305
+class C_0001196237645647586305 {
++Section() : void
++name() const : const std::string &
++lines() const : const std::vector<std::string> &
++values() const : const std::vector<std::string> &
++legacy() : void
++legacy() const : std::string
++set() : void
++append() : void
++append() : void
++exists() const : bool
++had_trailing_comments() const : bool
++empty() const : bool
++size() const : std::size_t
++begin() const : Section::const_iterator
++cbegin() const : Section::const_iterator
++end() const : Section::const_iterator
++cend() const : Section::const_iterator
++get() : std::optional<T>
++value_or() : T
+}
+class "BasicConfig" as C_0000523676121508856554
+class C_0000523676121508856554 {
++exists() const : bool
++section() : Section &
++section() const : const Section &
++operator[]() const : const Section &
++operator[]() : Section &
++overwrite() : void
++deprecatedClearSection() : void
++legacy() : void
++legacy() const : std::string
++had_trailing_comments() const : bool
+#build() : void
+}
+class "Expected" as C_0001769343459678893400
+class C_0001769343459678893400 {
++Expected<void, type-parameter-0-0>() : void
++error() const : const E &
++error() : E &
++operator bool() const : bool
++Expected<void, type-parameter-0-0>() : void
+}
+class "base_uint<256>" as C_0000434356742846908842
+class C_0000434356742846908842 {
+}
+class "SHAMapHash" as C_0002091303208209235402
+class C_0002091303208209235402 {
++SHAMapHash() = default : void
++SHAMapHash() : void
++as_uint256() const : const uint256 &
++as_uint256() : uint256 &
++isZero() const : bool
++isNonZero() const : bool
++signum() const : int
++zero() : void
+}
+C_0001927026177791066667 <|-- C_0000402213617266332336
+C_0000402213617266332336 <|-- C_0000525595014241869424
+C_0001654867306283817272 --+ C_0001472880491539920613
+C_0000523676121508856554 o-- C_0001196237645647586305 : -map_
+C_0002091303208209235402 ..> C_0000434356742846908842
+C_0002091303208209235402 o-- C_0000434356742846908842 : -hash_
+@enduml

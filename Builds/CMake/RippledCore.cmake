@@ -138,7 +138,8 @@ target_link_libraries (xrpl_core
     secp256k1::secp256k1
     ed25519::ed25519
     date::date
-    Ripple::opts)
+    Ripple::opts
+    gmp)
 #[=================================[
    main/core headers installation
 #]=================================]

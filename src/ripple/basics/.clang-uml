@@ -1,0 +1,59 @@
+diagrams:
+  basics:
+    type: class
+    generate_method_arguments: none
+    include_relations_also_as_members: false
+    glob:
+      - src/ripple/basics/*.h
+      - src/ripple/basics/*.cpp
+      - src/ripple/basics/impl/*.h
+      - src/ripple/basics/impl/*.cpp
+    using_namespace:
+      - ripple
+    include:
+      namespaces:
+        - ripple
+      context:
+        - ripple::Archive
+        - ripple::BasicConfig
+        - ripple::Blob
+        - ripple::Buffer
+        - ripple::ByteUtilities
+        - ripple::CompressionAlgorithms
+        - ripple::CountedObject
+        - ripple::DecayingSample
+        - ripple::Expected
+        - ripple::FeeUnits
+        - ripple::FileUtilities
+        - ripple::IOUAmount
+        - ripple::KeyCache
+        - ripple::LocalValue
+        - ripple::Log
+        - ripple::MathUtilities
+        - ripple::PerfLog
+        - ripple::RangeSet
+        - ripple::Resolver
+        - ripple::ResolverAsio
+        - ripple::SHAMapHash
+        - ripple::Slice
+        - ripple::StringUtilities
+        - ripple::TaggedCache
+        - ripple::ToString
+        - ripple::UnorderedContainers
+        - ripple::UptimeClock
+        - ripple::XRPAmount
+    exclude:
+      access:
+        - private
+      namespaces:
+        - std
+        - boost
+        - beast
+        - date
+        - Json
+        - openssl
+        - __gnu_cxx
+        - __cxxabiv1
+    plantuml:
+      before:
+        - 'title Class Diagram for basics'

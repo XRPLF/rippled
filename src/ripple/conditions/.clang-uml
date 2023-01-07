@@ -1,0 +1,22 @@
+diagrams:
+  conditions:
+    type: class
+    generate_method_arguments: none
+    include_relations_also_as_members: false
+    glob:
+      - src/ripple/conditions/*.h
+      - src/ripple/conditions/*.cpp
+      - src/ripple/conditions/impl/*.h
+      - src/ripple/conditions/impl/*.cpp
+    using_namespace:
+      - ripple
+    include:
+      namespaces:
+        - ripple
+        - ripple::cryptoconditions
+    exclude:
+      access:
+        - private
+    plantuml:
+      before:
+        - 'title Class Diagram for conditions'

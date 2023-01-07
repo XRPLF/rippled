@@ -1,0 +1,30 @@
+@startuml
+title Class Diagram for server
+class "Port" as C_0000770708100160436539
+class C_0000770708100160436539 {
++Port() = default : void
++websockets() const : bool
++secure() const : bool
++protocols() const : std::string
++name : std::string
++ip : boost::asio::ip::address
++port : std::uint16_t
++protocol : std::set<std::string,boost::beast::iless>
++admin_nets_v4 : std::vector<boost::asio::ip::network_v4>
++admin_nets_v6 : std::vector<boost::asio::ip::network_v6>
++secure_gateway_nets_v4 : std::vector<boost::asio::ip::network_v4>
++secure_gateway_nets_v6 : std::vector<boost::asio::ip::network_v6>
++user : std::string
++password : std::string
++admin_user : std::string
++admin_password : std::string
++ssl_key : std::string
++ssl_cert : std::string
++ssl_chain : std::string
++ssl_ciphers : std::string
++pmd_options : boost::beast::websocket::permessage_deflate
++context : std::shared_ptr<boost::asio::ssl::context>
++limit : int
++ws_queue_limit : std::uint16_t
+}
+@enduml

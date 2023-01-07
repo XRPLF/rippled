@@ -1,0 +1,42 @@
+diagrams:
+  basics:
+    type: class
+    generate_method_arguments: none
+    include_relations_also_as_members: false
+    glob:
+      - src/ripple/basics/*.h
+      - src/ripple/basics/*.cpp
+      - src/ripple/basics/impl/*.h
+      - src/ripple/basics/impl/*.cpp
+    using_namespace:
+      - ripple
+    include:
+      namespaces:
+        - ripple
+      context:
+        - ripple::Family
+        - ripple::FullBelowCache
+        - ripple::NodeFamily
+        - ripple::SHAMap
+        - ripple::SHAMapAccountStateLeafNode
+        - ripple::SHAMapAddNode
+        - ripple::SHAMapDelta
+        - ripple::SHAMapInnerNode
+        - ripple::SHAMapItem
+        - ripple::SHAMapLeafNode
+        - ripple::SHAMapMissingNode
+        - ripple::SHAMapNodeID
+        - ripple::SHAMapSync
+        - ripple::SHAMapSyncFilter
+        - ripple::SHAMapTreeNode
+        - ripple::SHAMapTxLeafNode
+        - ripple::SHAMapTxPlusMetaLeafNode
+        - ripple::ShardFamily
+        - ripple::TaggedPointer
+        - ripple::TreeNodeCache
+    exclude:
+      access:
+        - private
+    plantuml:
+      before:
+        - 'title Class Diagram for basics'

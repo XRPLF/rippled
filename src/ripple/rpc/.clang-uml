@@ -1,0 +1,44 @@
+diagrams:
+  rpc:
+    type: class
+    generate_method_arguments: none
+    include_relations_also_as_members: false
+    glob:
+      - src/ripple/rpc/*.h
+      - src/ripple/rpc/*.cpp
+      - src/ripple/rpc/impl/*.h
+      - src/ripple/rpc/impl/*.cpp
+    using_namespace:
+      - ripple
+    include:
+      namespaces:
+        - ripple
+        - ripple::nft
+        - ripple::RPC
+        - org::xrpl::rpc::v1
+      context:
+        - ripple::Context
+        - ripple::DeliveredAmount
+        - ripple::GRPCHandlers
+        - ripple::GRPCHelpers
+        - ripple::Handler
+        - ripple::LegacyPathFind
+        - ripple::Output
+        - ripple::RPCHandler
+        - ripple::RPCHelpers
+        - ripple::Request
+        - ripple::Role
+        - ripple::ServerHandler
+        - ripple::ServerHandlerImp
+        - ripple::ShardArchiveHandler
+        - ripple::ShardVerificationScheduler
+        - ripple::Status
+        - ripple::TransactionSign
+        - ripple::Tuning
+        - ripple::WSInfoSub
+    exclude:
+      access:
+        - private
+    plantuml:
+      before:
+        - 'title Class Diagram for rpc'

@@ -1,0 +1,431 @@
+@startuml
+title Class Diagram for peerfinder
+class "BasicConfig" as C_0000523676121508856554
+class C_0000523676121508856554 {
++exists() const : bool
++section() : Section &
++section() const : const Section &
++operator[]() const : const Section &
++operator[]() : Section &
++overwrite() : void
++deprecatedClearSection() : void
++legacy() : void
++legacy() const : std::string
++had_trailing_comments() const : bool
+#build() : void
+}
+class "PublicKey" as C_0000572563999667803355
+class C_0000572563999667803355 {
++PublicKey() = default : void
++PublicKey() : void
++operator=() : PublicKey &
++PublicKey() : void
++data() const : const std::uint8_t *
++size() const : std::size_t
++begin() const : PublicKey::const_iterator
++cbegin() const : PublicKey::const_iterator
++end() const : PublicKey::const_iterator
++cend() const : PublicKey::const_iterator
++empty() const : bool
++slice() const : Slice
++operator Slice() const : Slice
+#size_ : std::size_t
+#buf_ : std::uint8_t [33]
+}
+abstract "PeerFinder::Slot" as C_0002039135395342803340
+abstract C_0002039135395342803340 {
+{abstract} +~Slot() = 0 : void
+{abstract} +inbound() const = 0 : bool
+{abstract} +fixed() const = 0 : bool
+{abstract} +reserved() const = 0 : bool
+{abstract} +state() const = 0 : PeerFinder::Slot::State
+{abstract} +remote_endpoint() const = 0 : const beast::IP::Endpoint &
+{abstract} +local_endpoint() const = 0 : const std::optional<beast::IP::Endpoint> &
+{abstract} +listening_port() const = 0 : std::optional<std::uint16_t>
+{abstract} +public_key() const = 0 : const std::optional<PublicKey> &
+}
+enum "PeerFinder::Slot::State" as C_0001068513096375076877
+enum C_0001068513096375076877 {
+accept
+connect
+connected
+active
+closing
+}
+class "PeerFinder::Config" as C_0001137467807464441014
+class C_0001137467807464441014 {
++Config() : void
++calcOutPeers() const : std::size_t
++applyTuning() : void
++onWrite() : void
+{static} +makeConfig() : PeerFinder::Config
++maxPeers : std::size_t
++outPeers : std::size_t
++inPeers : std::size_t
++peerPrivate : bool
++wantIncoming : bool
++autoConnect : bool
++listeningPort : std::uint16_t
++features : std::string
++ipLimit : int
+}
+class "PeerFinder::Endpoint" as C_0000440036123109777479
+class C_0000440036123109777479 {
++Endpoint() = default : void
++Endpoint() : void
++hops : std::uint32_t
++address : beast::IP::Endpoint
+}
+abstract "PeerFinder::Manager" as C_0000410889634548511449
+abstract C_0000410889634548511449 {
+#Manager() : void
++~Manager() = default : void
+{abstract} +setConfig() = 0 : void
+{abstract} +start() = 0 : void
+{abstract} +stop() = 0 : void
+{abstract} +config() = 0 : PeerFinder::Config
+{abstract} +addFixedPeer() = 0 : void
+{abstract} +addFallbackStrings() = 0 : void
+{abstract} +new_inbound_slot() = 0 : std::shared_ptr<Slot>
+{abstract} +new_outbound_slot() = 0 : std::shared_ptr<Slot>
+{abstract} +on_endpoints() = 0 : void
+{abstract} +on_closed() = 0 : void
+{abstract} +on_failure() = 0 : void
+{abstract} +onRedirects() = 0 : void
+{abstract} +onConnected() = 0 : bool
+{abstract} +activate() = 0 : PeerFinder::Result
+{abstract} +redirect() = 0 : std::vector<Endpoint>
+{abstract} +autoconnect() = 0 : std::vector<beast::IP::Endpoint>
+{abstract} +buildEndpointsForPeers() = 0 : std::vector<std::pair<std::shared_ptr<Slot>,std::vector<Endpoint>>>
+{abstract} +once_per_second() = 0 : void
+}
+class "PeerFinder::SlotImp" as C_0000513858897493305819
+class C_0000513858897493305819 {
++SlotImp() : void
++SlotImp() : void
++inbound() const : bool
++fixed() const : bool
++reserved() const : bool
++state() const : PeerFinder::Slot::State
++remote_endpoint() const : const beast::IP::Endpoint &
++local_endpoint() const : const std::optional<beast::IP::Endpoint> &
++public_key() const : const std::optional<PublicKey> &
++listening_port() const : std::optional<std::uint16_t>
++set_listening_port() : void
++local_endpoint() : void
++remote_endpoint() : void
++public_key() : void
++reserved() : void
++state() : void
++activate() : void
++expire() : void
++recent : class recent_t
++checked : bool
++canAccept : bool
++connectivityCheckInProgress : bool
++whenAcceptEndpoints : clock_type::time_point
+}
+class "PeerFinder::SlotImp::recent_t" as C_0000761449249234488936
+class C_0000761449249234488936 {
++recent_t() : void
++insert() : void
++filter() : bool
+}
+abstract "PeerFinder::Source" as C_0002159235394551863221
+abstract C_0002159235394551863221 {
++~Source() : void
+{abstract} +name() = 0 : const std::string &
++cancel() : void
+{abstract} +fetch() = 0 : void
+}
+class "PeerFinder::Source::Results" as C_0001036090473802044001
+class C_0001036090473802044001 {
++Results() = default : void
++error : boost::system::error_code
++addresses : PeerFinder::IPAddresses
+}
+class "PeerFinder::SourceStrings" as C_0002138742543044607149
+class C_0002138742543044607149 {
++SourceStrings() = default : void
+{static} +New() : std::shared_ptr<Source>
+}
+class "PeerFinder::SourceStringsImp" as C_0000486501855151117426
+class C_0000486501855151117426 {
++SourceStringsImp() : void
++~SourceStringsImp() = default : void
++name() : const std::string &
++fetch() : void
+}
+abstract "PeerFinder::Store" as C_0000398581762361280329
+abstract C_0000398581762361280329 {
++~Store() : void
+{abstract} +load() = 0 : std::size_t
+{abstract} +save() = 0 : void
+}
+class "PeerFinder::Store::Entry" as C_0001970591096562226244
+class C_0001970591096562226244 {
++Entry() = default : void
++endpoint : beast::IP::Endpoint
++valence : int
+}
+class "PeerFinder::Bootcache" as C_0001697917539941155042
+class C_0001697917539941155042 {
++Bootcache() : void
++~Bootcache() : void
++empty() const : bool
++size() const : map_type::size_type
++begin() const : PeerFinder::Bootcache::const_iterator
++cbegin() const : PeerFinder::Bootcache::const_iterator
++end() const : PeerFinder::Bootcache::const_iterator
++cend() const : PeerFinder::Bootcache::const_iterator
++clear() : void
++load() : void
++insert() : bool
++insertStatic() : bool
++on_success() : void
++on_failure() : void
++periodicActivity() : void
++onWrite() : void
+{static} +staticValence : const int
+}
+class "PeerFinder::Bootcache::Entry" as C_0002226561213819114516
+class C_0002226561213819114516 {
++Entry() : void
++valence() : int &
++valence() const : int
+}
+class "PeerFinder::Bootcache::Transform" as C_0001406097717004298179
+class C_0001406097717004298179 {
++Transform() = default : void
++operator()() const : const beast::IP::Endpoint &
+}
+class "PeerFinder::Counts" as C_0001265767640962292931
+class C_0001265767640962292931 {
++Counts() : void
++add() : void
++remove() : void
++can_activate() const : bool
++attempts_needed() const : std::size_t
++attempts() const : std::size_t
++out_max() const : int
++out_active() const : int
++fixed() const : std::size_t
++fixed_active() const : std::size_t
++onConfig() : void
++acceptCount() const : int
++connectCount() const : int
++closingCount() const : int
++inboundSlots() const : int
++inboundActive() const : int
++totalActive() const : int
++inboundSlotsFree() const : int
++outboundSlotsFree() const : int
++isConnectedToNetwork() const : bool
++onWrite() : void
++state_string() const : std::string
+}
+class "PeerFinder::Fixed" as C_0002071534843377390781
+class C_0002071534843377390781 {
++Fixed() : void
++Fixed() = default : void
++when() const : const clock_type::time_point &
++failure() : void
++success() : void
+}
+class "PeerFinder::detail::LivecacheBase::Element" as C_0002030972119386747442
+class C_0002030972119386747442 {
++Element() : void
+}
+class "PeerFinder::RedirectHandouts" as C_0000978101351554179479
+class C_0000978101351554179479 {
++full() const : bool
++slot() const : const SlotImp::ptr &
++list() : std::vector<Endpoint> &
++list() const : const std::vector<Endpoint> &
++RedirectHandouts() : void
++try_insert() : _Bool
+}
+class "PeerFinder::SlotHandouts" as C_0000979934121247634601
+class C_0000979934121247634601 {
++full() const : bool
++insert() : void
++slot() const : const SlotImp::ptr &
++list() const : const std::vector<Endpoint> &
++SlotHandouts() : void
++try_insert() : _Bool
+}
+class "PeerFinder::ConnectHandouts" as C_0000483256317612473121
+class C_0000483256317612473121 {
++empty() const : bool
++full() const : bool
++try_insert() : bool
++list() : PeerFinder::ConnectHandouts::list_type &
++list() const : const PeerFinder::ConnectHandouts::list_type &
++ConnectHandouts() : void
++try_insert() : _Bool
+}
+class "PeerFinder::Livecache<Allocator>" as C_0002197115904357070217
+class C_0002197115904357070217 {
++Livecache<type-parameter-0-0>() : void
++empty() const : bool
++size() const : typename cache_type::size_type
++expire() : void
++insert() : void
++onWrite() : void
++hops : class hops_t
+}
+class "PeerFinder::Reporting" as C_0001628633158310408826
+class C_0001628633158310408826 {
++Reporting() = default : void
+{static} +params : const bool
+{static} +crawl : const bool
+{static} +nodes : const bool
+{static} +dump_nodes : const bool
+}
+class "PeerFinder::Livecache" as C_0001234124870487221753
+class C_0001234124870487221753 {
+}
+class "PeerFinder::Logic<Checker>" as C_0000537042874122919575
+class C_0000537042874122919575 {
++Logic<Checker>() : void
++load() : void
++stop() : void
++config() : void
++config() : PeerFinder::Config
++addFixedPeer() : void
++addFixedPeer() : void
++checkComplete() : void
++new_inbound_slot() : SlotImp::ptr
++new_outbound_slot() : SlotImp::ptr
++onConnected() : bool
++activate() : PeerFinder::Result
++redirect() : std::vector<Endpoint>
++autoconnect() : std::vector<beast::IP::Endpoint>
++buildEndpointsForPeers() : std::vector<std::pair<std::shared_ptr<Slot>,std::vector<Endpoint>>>
++once_per_second() : void
++preprocess() : void
++on_endpoints() : void
++remove() : void
++on_closed() : void
++on_failure() : void
++fixed() const : bool
++fixed() const : bool
++addStaticSource() : void
++addSource() : void
++addBootcacheAddresses() : int
++fetch() : void
++is_valid_address() : bool
++writeSlots() : void
++onWrite() : void
++counts() const : const PeerFinder::Counts &
+{static} +stateString() : std::string
++onRedirects() : void
++get_fixed() : void
++m_journal : beast::Journal
++m_clock : PeerFinder::clock_type &
++m_checker : Checker &
++lock_ : std::recursive_mutex
++stopping_ : bool
++connectedAddresses_ : std::multiset<beast::IP::Address>
++m_whenBroadcast : clock_type::time_point
++m_squelches : ConnectHandouts::Squelches
+}
+class "PeerFinder::StoreSqdb" as C_0002174187701327339694
+class C_0002174187701327339694 {
++StoreSqdb() : void
++~StoreSqdb() : void
++open() : void
++load() : std::size_t
++save() : void
++update() : void
++currentSchemaVersion : enum
+}
+class "PeerFinder::ManagerImp" as C_0000490959721313143525
+class C_0000490959721313143525 {
++ManagerImp() : void
++~ManagerImp() : void
++stop() : void
++setConfig() : void
++config() : PeerFinder::Config
++addFixedPeer() : void
++addFallbackStrings() : void
++addFallbackURL() : void
++new_inbound_slot() : std::shared_ptr<Slot>
++new_outbound_slot() : std::shared_ptr<Slot>
++on_endpoints() : void
++on_closed() : void
++on_failure() : void
++onRedirects() : void
++onConnected() : bool
++activate() : PeerFinder::Result
++redirect() : std::vector<Endpoint>
++autoconnect() : std::vector<beast::IP::Endpoint>
++once_per_second() : void
++buildEndpointsForPeers() : std::vector<std::pair<std::shared_ptr<Slot>,std::vector<Endpoint>>>
++start() : void
++onWrite() : void
++io_service_ : boost::asio::io_service &
++work_ : std::optional<boost::asio::io_service::work>
++m_clock : PeerFinder::clock_type &
++m_journal : beast::Journal
+}
+C_0001068513096375076877 --+ C_0002039135395342803340
+C_0000410889634548511449 ..> C_0001137467807464441014
+C_0000410889634548511449 ..> C_0002039135395342803340
+C_0000410889634548511449 ..> C_0000440036123109777479
+C_0000410889634548511449 ..> C_0000572563999667803355
+C_0000513858897493305819 ..> C_0000572563999667803355
+C_0000513858897493305819 o-- C_0000572563999667803355 : -m_public_key
+C_0002039135395342803340 <|-- C_0000513858897493305819
+C_0000761449249234488936 --+ C_0000513858897493305819
+C_0000761449249234488936 <.. C_0000513858897493305819 : +<<friend>>
+C_0001036090473802044001 --+ C_0002159235394551863221
+C_0002159235394551863221 <|-- C_0002138742543044607149
+C_0002138742543044607149 <|-- C_0000486501855151117426
+C_0001970591096562226244 --+ C_0000398581762361280329
+C_0001697917539941155042 ..> C_0000398581762361280329
+C_0001697917539941155042 --> C_0000398581762361280329 : -m_store
+C_0002226561213819114516 --+ C_0001697917539941155042
+C_0001406097717004298179 --+ C_0001697917539941155042
+C_0001265767640962292931 ..> C_0002039135395342803340
+C_0001265767640962292931 ..> C_0001137467807464441014
+C_0002030972119386747442 ..> C_0000440036123109777479
+C_0002030972119386747442 o-- C_0000440036123109777479 : +endpoint
+C_0000978101351554179479 ..> C_0000513858897493305819
+C_0000978101351554179479 ..> C_0000440036123109777479
+C_0000978101351554179479 o-- C_0000513858897493305819 : -slot_
+C_0000978101351554179479 o-- C_0000440036123109777479 : -list_
+C_0000979934121247634601 ..> C_0000440036123109777479
+C_0000979934121247634601 ..> C_0000513858897493305819
+C_0000979934121247634601 o-- C_0000513858897493305819 : -slot_
+C_0000979934121247634601 o-- C_0000440036123109777479 : -list_
+C_0000483256317612473121 ..> C_0000440036123109777479
+C_0002197115904357070217 ..> C_0000440036123109777479
+C_0001234124870487221753 ..|> C_0002197115904357070217
+C_0000537042874122919575 ..> C_0000398581762361280329
+C_0000537042874122919575 ..> C_0001137467807464441014
+C_0000537042874122919575 ..> C_0000513858897493305819
+C_0000537042874122919575 ..> C_0000572563999667803355
+C_0000537042874122919575 ..> C_0000440036123109777479
+C_0000537042874122919575 ..> C_0002159235394551863221
+C_0000537042874122919575 --> C_0000398581762361280329 : +m_store
+C_0000537042874122919575 --> C_0002159235394551863221 : +fetchSource_
+C_0000537042874122919575 o-- C_0001137467807464441014 : +config_
+C_0000537042874122919575 o-- C_0001265767640962292931 : +counts_
+C_0000537042874122919575 o-- C_0002071534843377390781 : +fixed_
+C_0000537042874122919575 o-- C_0001234124870487221753 : +livecache_
+C_0000537042874122919575 o-- C_0001697917539941155042 : +bootcache_
+C_0000537042874122919575 o-- C_0000513858897493305819 : +slots_
+C_0000537042874122919575 o-- C_0000572563999667803355 : +keys_
+C_0000537042874122919575 o-- C_0002159235394551863221 : +m_sources
+C_0002174187701327339694 ..> C_0000523676121508856554
+C_0000398581762361280329 <|-- C_0002174187701327339694
+C_0000490959721313143525 ..> C_0000523676121508856554
+C_0000490959721313143525 ..> C_0001137467807464441014
+C_0000490959721313143525 ..> C_0002039135395342803340
+C_0000490959721313143525 ..> C_0000440036123109777479
+C_0000490959721313143525 ..> C_0000572563999667803355
+C_0000490959721313143525 o-- C_0002174187701327339694 : +m_store
+C_0000490959721313143525 --> C_0000523676121508856554 : +m_config
+C_0000410889634548511449 <|-- C_0000490959721313143525
+@enduml

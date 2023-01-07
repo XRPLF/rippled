@@ -1,0 +1,519 @@
+@startuml
+title Class Diagram for app/paths
+class "detail::AccountIDTag" as C_0000219725434573906145
+class C_0000219725434573906145 {
++AccountIDTag() = default : void
+}
+class "detail::CurrencyTag" as C_0000783488903388592446
+class C_0000783488903388592446 {
++CurrencyTag() = default : void
+}
+class "base_uint<160,detail::AccountIDTag>" as C_0002185921478450888283
+class C_0002185921478450888283 {
+}
+class "base_uint<160,detail::CurrencyTag>" as C_0000195139423902199171
+class C_0000195139423902199171 {
+}
+class "Issue" as C_0000486101097040278900
+class C_0000486101097040278900 {
++Issue() : void
++Issue() : void
+}
+class "STAmount" as C_0000215260707563711311
+class C_0000215260707563711311 {
++STAmount() : void
++STAmount() : void
++STAmount() : void
++STAmount() : void
++STAmount() : void
++STAmount() : void
++STAmount() : void
++STAmount() : void
++STAmount() : void
++STAmount() : void
++STAmount() : void
++STAmount() : void
++STAmount() : void
++STAmount() : void
++exponent() const : int
++native() const : bool
++negative() const : bool
++mantissa() const : std::uint64_t
++issue() const : const Issue &
++getCurrency() const : const Currency &
++getIssuer() const : const AccountID &
++signum() const : int
++zeroed() const : STAmount
++setJson() const : void
++value() const : const STAmount &
++operator bool() const : bool
++operator+=() : STAmount &
++operator-=() : STAmount &
++operator=() : STAmount &
++operator=() : STAmount &
++negate() : void
++clear() : void
++clear() : void
++clear() : void
++setIssuer() : void
++setIssue() : void
++getSType() const : SerializedTypeID
++getFullText() const : std::string
++getText() const : std::string
++getJson() const : Json::Value
++add() const : void
++isEquivalent() const : bool
++isDefault() const : bool
++xrp() const : XRPAmount
++iou() const : IOUAmount
+{static} +cMinOffset : const int
+{static} +cMaxOffset : const int
+{static} +cMinValue : const std::uint64_t
+{static} +cMaxValue : const std::uint64_t
+{static} +cMaxNative : const std::uint64_t
+{static} +cMaxNativeN : const std::uint64_t
+{static} +cNotNative : const std::uint64_t
+{static} +cPosNative : const std::uint64_t
+{static} +uRateOne : const std::uint64_t
+}
+class "STPathElement" as C_0000701980984535122036
+class C_0000701980984535122036 {
++STPathElement() : void
++STPathElement() = default : void
++operator=() = default : STPathElement &
++STPathElement() : void
++STPathElement() : void
++STPathElement() : void
++getNodeType() const : unsigned int
++isOffer() const : bool
++isAccount() const : bool
++hasIssuer() const : bool
++hasCurrency() const : bool
++isNone() const : bool
++getAccountID() const : const AccountID &
++getCurrency() const : const Currency &
++getIssuerID() const : const AccountID &
++operator==() const : bool
++operator!=() const : bool
+}
+class "STPath" as C_0002090219904681437360
+class C_0002090219904681437360 {
++STPath() = default : void
++STPath() : void
++size() const : unsigned long<STPathElement>::size_type
++empty() const : bool
++push_back() : void
++hasSeen() const : bool
++getJson() const : Json::Value
++begin() const : __gnu_cxx::__normal_iterator<STPathElement>::const_iterator
++end() const : __gnu_cxx::__normal_iterator<STPathElement>::const_iterator
++operator==() const : bool
++back() const : const STPathElement &<STPathElement>::const_reference
++front() const : const STPathElement &<STPathElement>::const_reference
++operator[]() : STPathElement &
++operator[]() const : const STPathElement &
++reserve() : void
++emplace_back() : void
+}
+class "STPathSet" as C_0001137099220781535867
+class C_0001137099220781535867 {
++STPathSet() = default : void
++STPathSet() : void
++STPathSet() : void
++add() const : void
++getJson() const : Json::Value
++getSType() const : SerializedTypeID
++assembleAdd() : bool
++isEquivalent() const : bool
++isDefault() const : bool
++operator[]() const : const STPath &<STPath>::const_reference
++operator[]() : STPath &<STPath>::reference
++begin() const : __gnu_cxx::__normal_iterator<STPath>::const_iterator
++end() const : __gnu_cxx::__normal_iterator<STPath>::const_iterator
++size() const : unsigned long<STPath>::size_type
++empty() const : bool
++push_back() : void
++emplace_back() : void
+}
+abstract "ReadView" as C_0000719484062983967559
+abstract C_0000719484062983967559 {
++~ReadView() = default : void
++operator=() : ReadView &
++operator=() : ReadView &
++ReadView() : void
++ReadView() : void
++ReadView() : void
+{abstract} +info() const = 0 : const LedgerInfo &
+{abstract} +open() const = 0 : bool
++parentCloseTime() const : NetClock::time_point
++seq() const : LedgerIndex
+{abstract} +fees() const = 0 : const Fees &
+{abstract} +rules() const = 0 : const Rules &
+{abstract} +exists() const = 0 : bool
+{abstract} +succ() const = 0 : std::optional<key_type>
+{abstract} +read() const = 0 : std::shared_ptr<const SLE>
++balanceHook() const : STAmount
++ownerCountHook() const : std::uint32_t
+{abstract} +slesBegin() const = 0 : std::unique_ptr<sles_type::iter_base>
+{abstract} +slesEnd() const = 0 : std::unique_ptr<sles_type::iter_base>
+{abstract} +slesUpperBound() const = 0 : std::unique_ptr<sles_type::iter_base>
+{abstract} +txsBegin() const = 0 : std::unique_ptr<txs_type::iter_base>
+{abstract} +txsEnd() const = 0 : std::unique_ptr<txs_type::iter_base>
+{abstract} +txExists() const = 0 : bool
+{abstract} +txRead() const = 0 : ReadView::tx_type
++sles : ReadView::sles_type
++txs : ReadView::txs_type
+}
+class "AmountSpec" as C_0000847569281915749777
+class C_0000847569281915749777 {
++AmountSpec() = default : void
++native : bool
++ : AmountSpec::(anonymous union at /home/bramv/src/projects/rippled/src/ripple/app/paths/impl/AmountSpec.h:36:5)
+}
+class "AmountSpec::()" as C_0000735421584279473883
+class C_0000735421584279473883 {
+}
+class "EitherAmount" as C_0001393889043713946551
+class C_0001393889043713946551 {
++EitherAmount() = default : void
++EitherAmount() : void
++EitherAmount() : void
++EitherAmount() : void
++native : bool
++ : EitherAmount::(anonymous union at /home/bramv/src/projects/rippled/src/ripple/app/paths/impl/AmountSpec.h:65:5)
+}
+class "hardened_hash" as C_0001256845861208769956
+class C_0001256845861208769956 {
+}
+enum "LineDirection" as C_0000307769250106404157
+enum C_0000307769250106404157 {
+incoming
+outgoing
+}
+class "PathFindTrustLine" as C_0001468537777400828736
+class C_0001468537777400828736 {
++PathFindTrustLine() : void
+{static} +makeItem() : std::optional<PathFindTrustLine>
+{static} +getItems() : std::vector<PathFindTrustLine>
+}
+class "RippleLineCache" as C_0002118014379553012054
+class C_0002118014379553012054 {
++RippleLineCache() : void
++~RippleLineCache() : void
++getLedger() const : const std::shared_ptr<const ReadView> &
++getRippleLines() : std::shared_ptr<std::vector<PathFindTrustLine>>
+}
+class "RippleLineCache::AccountKey" as C_0000019822216283815626
+class C_0000019822216283815626 {
++AccountKey() : void
++AccountKey() = default : void
++operator=() = default : RippleLineCache::AccountKey &
++operator==() const : bool
++get_hash() const : std::size_t
++hash_value_ : std::size_t
+}
+abstract "Application" as C_0000024089222317618888
+abstract C_0000024089222317618888 {
+{abstract} +getMasterMutex() = 0 : Application::MutexType &
++Application() : void
++~Application() = default : void
+{abstract} +setup() = 0 : bool
+{abstract} +start() = 0 : void
+{abstract} +run() = 0 : void
+{abstract} +signalStop() = 0 : void
+{abstract} +checkSigs() const = 0 : bool
+{abstract} +checkSigs() = 0 : void
+{abstract} +isStopping() const = 0 : bool
+{abstract} +logs() = 0 : Logs &
+{abstract} +config() = 0 : Config &
+{abstract} +getIOService() = 0 : boost::asio::io_service &
+{abstract} +getCollectorManager() = 0 : CollectorManager &
+{abstract} +getNodeFamily() = 0 : Family &
+{abstract} +getShardFamily() = 0 : Family *
+{abstract} +timeKeeper() = 0 : TimeKeeper &
+{abstract} +getJobQueue() = 0 : JobQueue &
+{abstract} +getTempNodeCache() = 0 : NodeCache &
+{abstract} +cachedSLEs() = 0 : CachedSLEs &
+{abstract} +getAmendmentTable() = 0 : AmendmentTable &
+{abstract} +getHashRouter() = 0 : HashRouter &
+{abstract} +getFeeTrack() = 0 : LoadFeeTrack &
+{abstract} +getLoadManager() = 0 : LoadManager &
+{abstract} +overlay() = 0 : Overlay &
+{abstract} +getTxQ() = 0 : TxQ &
+{abstract} +validators() = 0 : ValidatorList &
+{abstract} +validatorSites() = 0 : ValidatorSite &
+{abstract} +validatorManifests() = 0 : ManifestCache &
+{abstract} +publisherManifests() = 0 : ManifestCache &
+{abstract} +cluster() = 0 : Cluster &
+{abstract} +peerReservations() = 0 : PeerReservationTable &
+{abstract} +getValidations() = 0 : RCLValidations &
+{abstract} +getNodeStore() = 0 : NodeStore::Database &
+{abstract} +getShardStore() = 0 : NodeStore::DatabaseShard *
+{abstract} +getShardArchiveHandler() = 0 : RPC::ShardArchiveHandler *
+{abstract} +getInboundLedgers() = 0 : InboundLedgers &
+{abstract} +getInboundTransactions() = 0 : InboundTransactions &
+{abstract} +getAcceptedLedgerCache() = 0 : TaggedCache<uint256,AcceptedLedger> &
+{abstract} +getLedgerMaster() = 0 : LedgerMaster &
+{abstract} +getLedgerCleaner() = 0 : LedgerCleaner &
+{abstract} +getLedgerReplayer() = 0 : LedgerReplayer &
+{abstract} +getOPs() = 0 : NetworkOPs &
+{abstract} +getOrderBookDB() = 0 : OrderBookDB &
+{abstract} +getMasterTransaction() = 0 : TransactionMaster &
+{abstract} +getPerfLog() = 0 : perf::PerfLog &
+{abstract} +nodeIdentity() = 0 : const std::pair<PublicKey,SecretKey> &
+{abstract} +getValidationPublicKey() const = 0 : const PublicKey &
+{abstract} +getResourceManager() = 0 : Resource::Manager &
+{abstract} +getPathRequests() = 0 : PathRequests &
+{abstract} +getSHAMapStore() = 0 : SHAMapStore &
+{abstract} +pendingSaves() = 0 : PendingSaves &
+{abstract} +accountIDCache() const = 0 : const AccountIDCache &
+{abstract} +openLedger() = 0 : OpenLedger &
+{abstract} +openLedger() const = 0 : const OpenLedger &
+{abstract} +getRelationalDatabase() = 0 : RelationalDatabase &
+{abstract} +getIOLatency() = 0 : std::chrono::milliseconds
+{abstract} +getReportingETL() = 0 : ReportingETL &
+{abstract} +serverOkay() = 0 : bool
+{abstract} +journal() = 0 : beast::Journal
+{abstract} +fdRequired() const = 0 : int
+{abstract} +getWalletDB() = 0 : DatabaseCon &
+{abstract} +getMaxDisallowedLedger() = 0 : LedgerIndex
+}
+class "Resource::Consumer" as C_0000062221471159367414
+class C_0000062221471159367414 {
++Consumer() : void
++~Consumer() : void
++Consumer() : void
++operator=() : Resource::Consumer &
++to_string() const : std::string
++isUnlimited() const : bool
++elevate() : void
++disposition() const : Resource::Disposition
++charge() : Resource::Disposition
++warn() : bool
++disconnect() : bool
++balance() : int
++entry() : Resource::Entry &
+}
+abstract "InfoSubRequest" as C_0001227864600475226239
+abstract C_0001227864600475226239 {
++~InfoSubRequest() = default : void
+{abstract} +doClose() = 0 : Json::Value
+{abstract} +doStatus() = 0 : Json::Value
+}
+abstract "InfoSub" as C_0000355011254015740536
+abstract C_0000355011254015740536 {
++InfoSub() : void
++InfoSub() : void
++~InfoSub() : void
++getConsumer() : InfoSub::Consumer &
+{abstract} +send() = 0 : void
++getSeq() : std::uint64_t
++onSendEmpty() : void
++insertSubAccountInfo() : void
++deleteSubAccountInfo() : void
++insertSubAccountHistory() : bool
++deleteSubAccountHistory() : void
++clearRequest() : void
++setRequest() : void
++getRequest() : const std::shared_ptr<InfoSubRequest> &
+#mLock : std::mutex
+}
+class "LoadEvent" as C_0001354813340857466867
+class C_0001354813340857466867 {
++LoadEvent() : void
++LoadEvent() : void
++~LoadEvent() : void
++name() const : const std::string &
++waitTime() const : std::chrono::steady_clock::duration
++runTime() const : std::chrono::steady_clock::duration
++setName() : void
++start() : void
++stop() : void
+}
+class "Pathfinder" as C_0001924320498053409531
+class C_0001924320498053409531 {
++Pathfinder() : void
++Pathfinder() : void
++operator=() : Pathfinder &
++~Pathfinder() = default : void
+{static} +initPathTable() : void
++findPaths() : bool
++computePathRanks() : void
++getBestPaths() : STPathSet
+}
+enum "Pathfinder::NodeType" as C_0000575830947634341149
+enum C_0000575830947634341149 {
+nt_SOURCE
+nt_ACCOUNTS
+nt_BOOKS
+nt_XRP_BOOK
+nt_DEST_BOOK
+nt_DESTINATION
+}
+enum "Pathfinder::PaymentType" as C_0001441682428487287014
+enum C_0001441682428487287014 {
+pt_XRP_to_XRP
+pt_XRP_to_nonXRP
+pt_nonXRP_to_XRP
+pt_nonXRP_to_same
+pt_nonXRP_to_nonXRP
+}
+class "Pathfinder::PathRank" as C_0001936731720156636074
+class C_0001936731720156636074 {
++quality : std::uint64_t
++length : std::uint64_t
++index : int
+}
+class "PathRequests" as C_0000103345728156072797
+class C_0000103345728156072797 {
++PathRequests() : void
++updateAll() : void
++requestsPending() const : bool
++getLineCache() : std::shared_ptr<RippleLineCache>
++makePathRequest() : Json::Value
++makeLegacyPathRequest() : Json::Value
++doLegacyPathRequest() : Json::Value
++reportFast() : void
++reportFull() : void
+}
+class "PathRequest" as C_0000596980965426872369
+class C_0000596980965426872369 {
++PathRequest() : void
++PathRequest() : void
++~PathRequest() : void
++isNew() : bool
++needsUpdate() : bool
++updateComplete() : void
++doCreate() : std::pair<bool,Json::Value>
++doClose() : Json::Value
++doStatus() : Json::Value
++doAborting() const : void
++doUpdate() : Json::Value
++getSubscriber() const : InfoSub::pointer
++hasCompletion() : bool
+}
+C_0002185921478450888283 ..> C_0000219725434573906145
+C_0000195139423902199171 ..> C_0000783488903388592446
+C_0000486101097040278900 ..> C_0000783488903388592446
+C_0000486101097040278900 ..> C_0000195139423902199171
+C_0000486101097040278900 ..> C_0000219725434573906145
+C_0000486101097040278900 ..> C_0002185921478450888283
+C_0000486101097040278900 o-- C_0000195139423902199171 : +currency
+C_0000486101097040278900 o-- C_0002185921478450888283 : +account
+C_0000215260707563711311 ..> C_0000486101097040278900
+C_0000215260707563711311 ..> C_0000219725434573906145
+C_0000215260707563711311 ..> C_0002185921478450888283
+C_0000215260707563711311 o-- C_0000486101097040278900 : -mIssue
+C_0000701980984535122036 ..> C_0000219725434573906145
+C_0000701980984535122036 ..> C_0000783488903388592446
+C_0000701980984535122036 ..> C_0002185921478450888283
+C_0000701980984535122036 ..> C_0000195139423902199171
+C_0000701980984535122036 o-- C_0002185921478450888283 : -mAccountID
+C_0000701980984535122036 o-- C_0000195139423902199171 : -mCurrencyID
+C_0000701980984535122036 o-- C_0002185921478450888283 : -mIssuerID
+C_0002090219904681437360 ..> C_0000701980984535122036
+C_0002090219904681437360 ..> C_0000219725434573906145
+C_0002090219904681437360 ..> C_0002185921478450888283
+C_0002090219904681437360 ..> C_0000783488903388592446
+C_0002090219904681437360 ..> C_0000195139423902199171
+C_0002090219904681437360 o-- C_0000701980984535122036 : -mPath
+C_0001137099220781535867 ..> C_0002090219904681437360
+C_0001137099220781535867 ..> C_0000701980984535122036
+C_0001137099220781535867 o-- C_0002090219904681437360 : -value
+C_0000719484062983967559 ..> C_0000219725434573906145
+C_0000719484062983967559 ..> C_0002185921478450888283
+C_0000719484062983967559 ..> C_0000215260707563711311
+C_0000847569281915749777 ..> C_0002185921478450888283
+C_0000847569281915749777 o-- C_0002185921478450888283 : +issuer
+C_0000847569281915749777 ..> C_0000195139423902199171
+C_0000847569281915749777 o-- C_0000195139423902199171 : +currency
+C_0000847569281915749777 o-- C_0000735421584279473883
+C_0001393889043713946551 ..> C_0000847569281915749777
+C_0001468537777400828736 ..> C_0000219725434573906145
+C_0001468537777400828736 ..> C_0002185921478450888283
+C_0001468537777400828736 ..> C_0000719484062983967559
+C_0001468537777400828736 ..> C_0000307769250106404157
+C_0002118014379553012054 ..> C_0000719484062983967559
+C_0002118014379553012054 ..> C_0000219725434573906145
+C_0002118014379553012054 ..> C_0002185921478450888283
+C_0002118014379553012054 ..> C_0000307769250106404157
+C_0002118014379553012054 o-- C_0001256845861208769956 : -hasher_
+C_0002118014379553012054 --> C_0000719484062983967559 : -ledger_
+C_0002118014379553012054 o-- C_0001468537777400828736 : -lines_
+C_0000019822216283815626 --+ C_0002118014379553012054
+C_0000019822216283815626 ..> C_0000219725434573906145
+C_0000019822216283815626 ..> C_0002185921478450888283
+C_0000019822216283815626 ..> C_0000307769250106404157
+C_0000019822216283815626 o-- C_0002185921478450888283 : +account_
+C_0000019822216283815626 o-- C_0000307769250106404157 : +direction_
+C_0000355011254015740536 ..> C_0000062221471159367414
+C_0000355011254015740536 ..> C_0000219725434573906145
+C_0000355011254015740536 ..> C_0002185921478450888283
+C_0000355011254015740536 ..> C_0001227864600475226239
+C_0000355011254015740536 o-- C_0000062221471159367414 : -m_consumer
+C_0000355011254015740536 o-- C_0000219725434573906145 : -realTimeSubscriptions_
+C_0000355011254015740536 o-- C_0000219725434573906145 : -normalSubscriptions_
+C_0000355011254015740536 --> C_0001227864600475226239 : -request_
+C_0000355011254015740536 o-- C_0000219725434573906145 : -accountHistorySubscriptions_
+C_0001924320498053409531 ..> C_0002118014379553012054
+C_0001924320498053409531 ..> C_0000219725434573906145
+C_0001924320498053409531 ..> C_0002185921478450888283
+C_0001924320498053409531 ..> C_0000783488903388592446
+C_0001924320498053409531 ..> C_0000195139423902199171
+C_0001924320498053409531 ..> C_0000215260707563711311
+C_0001924320498053409531 ..> C_0000024089222317618888
+C_0001924320498053409531 ..> C_0002090219904681437360
+C_0001924320498053409531 ..> C_0001137099220781535867
+C_0001924320498053409531 ..> C_0000486101097040278900
+C_0001924320498053409531 ..> C_0000307769250106404157
+C_0001924320498053409531 o-- C_0002185921478450888283 : -mSrcAccount
+C_0001924320498053409531 o-- C_0002185921478450888283 : -mDstAccount
+C_0001924320498053409531 o-- C_0002185921478450888283 : -mEffectiveDst
+C_0001924320498053409531 o-- C_0000215260707563711311 : -mDstAmount
+C_0001924320498053409531 o-- C_0000195139423902199171 : -mSrcCurrency
+C_0001924320498053409531 o-- C_0002185921478450888283 : -mSrcIssuer
+C_0001924320498053409531 o-- C_0000215260707563711311 : -mSrcAmount
+C_0001924320498053409531 o-- C_0000215260707563711311 : -mRemainingAmount
+C_0001924320498053409531 --> C_0000719484062983967559 : -mLedger
+C_0001924320498053409531 o-- C_0001354813340857466867 : -m_loadEvent
+C_0001924320498053409531 --> C_0002118014379553012054 : -mRLCache
+C_0001924320498053409531 o-- C_0000701980984535122036 : -mSource
+C_0001924320498053409531 o-- C_0001137099220781535867 : -mCompletePaths
+C_0001924320498053409531 o-- C_0001137099220781535867 : -mPaths
+C_0001924320498053409531 o-- C_0000486101097040278900 : -mPathsOutCountMap
+C_0001924320498053409531 --> C_0000024089222317618888 : -app_
+C_0000575830947634341149 --+ C_0001924320498053409531
+C_0001441682428487287014 --+ C_0001924320498053409531
+C_0001936731720156636074 --+ C_0001924320498053409531
+C_0001936731720156636074 o-- C_0000215260707563711311 : +liquidity
+C_0000103345728156072797 ..> C_0000024089222317618888
+C_0000103345728156072797 ..> C_0000719484062983967559
+C_0000103345728156072797 ..> C_0000355011254015740536
+C_0000103345728156072797 ..> C_0000596980965426872369
+C_0000103345728156072797 ..> C_0000062221471159367414
+C_0000103345728156072797 --> C_0000024089222317618888 : -app_
+C_0000103345728156072797 o-- C_0000596980965426872369 : -requests_
+C_0000103345728156072797 --> C_0002118014379553012054 : -lineCache_
+C_0000596980965426872369 ..> C_0000024089222317618888
+C_0000596980965426872369 ..> C_0000355011254015740536
+C_0000596980965426872369 ..> C_0000103345728156072797
+C_0000596980965426872369 ..> C_0000062221471159367414
+C_0000596980965426872369 ..> C_0002118014379553012054
+C_0000596980965426872369 ..> C_0000783488903388592446
+C_0000596980965426872369 ..> C_0001924320498053409531
+C_0000596980965426872369 ..> C_0000195139423902199171
+C_0000596980965426872369 ..> C_0000215260707563711311
+C_0000596980965426872369 --> C_0000024089222317618888 : -app_
+C_0000596980965426872369 --> C_0000103345728156072797 : -mOwner
+C_0000596980965426872369 --> C_0000355011254015740536 : -wpSubscriber
+C_0000596980965426872369 --> C_0000062221471159367414 : -consumer_
+C_0000596980965426872369 ..> C_0002185921478450888283
+C_0000596980965426872369 o-- C_0002185921478450888283 : -raSrcAccount
+C_0000596980965426872369 o-- C_0002185921478450888283 : -raDstAccount
+C_0000596980965426872369 o-- C_0000215260707563711311 : -saDstAmount
+C_0000596980965426872369 o-- C_0000215260707563711311 : -saSendMax
+C_0000596980965426872369 o-- C_0000486101097040278900 : -sciSourceCurrencies
+C_0000596980965426872369 o-- C_0000486101097040278900 : -mContext
+C_0000596980965426872369 o-- C_0001137099220781535867 : -mContext
+C_0001227864600475226239 <|-- C_0000596980965426872369
+@enduml

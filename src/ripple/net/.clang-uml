@@ -1,0 +1,34 @@
+diagrams:
+  net:
+    type: class
+    generate_method_arguments: none
+    include_relations_also_as_members: false
+    glob:
+      - src/ripple/net/*.h
+      - src/ripple/net/*.cpp
+      - src/ripple/net/impl/*.h
+      - src/ripple/net/impl/*.cpp
+    using_namespace:
+      - ripple
+    include:
+      namespaces:
+        - ripple
+      context:
+        - ripple::AutoSocket
+        - ripple::DatabaseBody
+        - ripple::DatabaseDownloader
+        - ripple::HTTPClient
+        - ripple::HTTPClientSSLContext
+        - ripple::HTTPDownloader
+        - ripple::HTTPStream
+        - ripple::InfoSub
+        - ripple::RPCCall
+        - ripple::RPCErr
+        - ripple::RPCSub
+        - ripple::RegisterSSLCerts
+    exclude:
+      access:
+        - private
+    plantuml:
+      before:
+        - 'title Class Diagram for net'

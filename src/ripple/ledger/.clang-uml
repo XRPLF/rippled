@@ -1,0 +1,38 @@
+diagrams:
+  ledger:
+    type: class
+    generate_method_arguments: none
+    include_relations_also_as_members: false
+    glob:
+      - src/ripple/ledger/*.h
+      - src/ripple/ledger/*.cpp
+      - src/ripple/ledger/impl/*.h
+      - src/ripple/ledger/impl/*.cpp
+    using_namespace:
+      - ripple
+    include:
+      namespaces:
+        - ripple
+      context:
+        - ripple::ApplyStateTable
+        - ripple::ApplyView
+        - ripple::ApplyViewBase
+        - ripple::ApplyViewImpl
+        - ripple::BookDirs
+        - ripple::CachedSLEs
+        - ripple::CachedView
+        - ripple::Directory
+        - ripple::OpenView
+        - ripple::PaymentSandbox
+        - ripple::RawStateTable
+        - ripple::RawView
+        - ripple::ReadView
+        - ripple::ReadViewFwdRange
+        - ripple::Sandbox
+        - ripple::View
+    exclude:
+      access:
+        - private
+    plantuml:
+      before:
+        - 'title Class Diagram for ledger'

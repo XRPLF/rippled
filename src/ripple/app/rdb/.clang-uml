@@ -1,0 +1,32 @@
+diagrams:
+  app_rdb:
+    type: class
+    generate_method_arguments: none
+    include_relations_also_as_members: false
+    glob:
+      - src/ripple/app/rdb/*.h
+      - src/ripple/app/rdb/*.cpp
+      - src/ripple/app/rdb/impl/*.h
+      - src/ripple/app/rdb/impl/*.cpp
+    using_namespace:
+      - ripple
+    include:
+      namespaces:
+        - ripple
+      context:
+        - ripple::Download
+        - ripple::PeerFinder
+        - ripple::PostgresDatabase
+        - ripple::RelationalDatabase
+        - ripple::SQLiteDatabase
+        - ripple::ShardArchive
+        - ripple::State
+        - ripple::UnitaryShard
+        - ripple::Vacuum
+        - ripple::Wallet
+    exclude:
+      access:
+        - private
+    plantuml:
+      before:
+        - 'title Class Diagram for app/rdb'

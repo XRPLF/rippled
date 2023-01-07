@@ -1,0 +1,38 @@
+diagrams:
+  app_paths:
+    type: class
+    generate_method_arguments: none
+    include_relations_also_as_members: false
+    glob:
+      - src/ripple/app/paths/*.h
+      - src/ripple/app/paths/*.cpp
+      - src/ripple/app/paths/impl/*.h
+      - src/ripple/app/paths/impl/*.cpp
+    using_namespace:
+      - ripple
+    include:
+      namespaces:
+        - ripple
+      context:
+        - ripple::AccountCurrencies
+        - ripple::AmountSpec
+        - ripple::Credit
+        - ripple::FlatSets
+        - ripple::Flow
+        - ripple::FlowDebugInfo
+        - ripple::PathRequest
+        - ripple::PathRequests
+        - ripple::Pathfinder
+        - ripple::PathfinderUtils
+        - ripple::RippleCalc
+        - ripple::RippleLineCache
+        - ripple::StepChecks
+        - ripple::Steps
+        - ripple::StrandFlow
+        - ripple::TrustLine
+    exclude:
+      access:
+        - private
+    plantuml:
+      before:
+        - 'title Class Diagram for app/paths'

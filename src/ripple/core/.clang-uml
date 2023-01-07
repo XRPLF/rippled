@@ -1,0 +1,39 @@
+diagrams:
+  core:
+    type: class
+    generate_method_arguments: none
+    include_relations_also_as_members: false
+    glob:
+      - src/ripple/core/*.h
+      - src/ripple/core/*.cpp
+      - src/ripple/core/impl/*.h
+      - src/ripple/core/impl/*.cpp
+    using_namespace:
+      - ripple
+    include:
+      namespaces:
+        - ripple
+      context:
+        - ripple::ClosureCounter
+        - ripple::Config
+        - ripple::ConfigSections
+        - ripple::DatabaseCon
+        - ripple::Job
+        - ripple::JobQueue
+        - ripple::JobTypeData
+        - ripple::JobTypeInfo
+        - ripple::JobTypes
+        - ripple::LoadEvent
+        - ripple::LoadMonitor
+        - ripple::Pg
+        - ripple::SNTPClock
+        - ripple::SociDB
+        - ripple::TimeKeeper
+        - ripple::Workers
+        - ripple::semaphore
+    exclude:
+      access:
+        - private
+    plantuml:
+      before:
+        - 'title Class Diagram for core'

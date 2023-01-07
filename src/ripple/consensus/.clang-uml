@@ -1,0 +1,30 @@
+diagrams:
+  consensus:
+    type: class
+    generate_method_arguments: none
+    include_relations_also_as_members: false
+    glob:
+      - src/ripple/consensus/*.h
+      - src/ripple/consensus/*.cpp
+      - src/ripple/consensus/impl/*.h
+      - src/ripple/consensus/impl/*.cpp
+    using_namespace:
+      - ripple
+    include:
+      namespaces:
+        - ripple
+      context:
+        - ripple::Consensus
+        - ripple::ConsensusParms
+        - ripple::ConsensusProposal
+        - ripple::ConsensusTypes
+        - ripple::DisputedTx
+        - ripple::LedgerTiming
+        - ripple::LedgerTrie
+        - ripple::Validations
+    exclude:
+      access:
+        - private
+    plantuml:
+      before:
+        - 'title Class Diagram for consensus'

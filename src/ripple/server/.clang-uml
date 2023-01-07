@@ -1,0 +1,40 @@
+diagrams:
+  server:
+    type: class
+    generate_method_arguments: none
+    include_relations_also_as_members: false
+    glob:
+      - src/ripple/server/*.h
+      - src/ripple/server/*.cpp
+      - src/ripple/server/impl/*.h
+      - src/ripple/server/impl/*.cpp
+    using_namespace:
+      - ripple
+    include:
+      namespaces:
+        - ripple
+      context:
+        - ripple::BaseHTTPPeer
+        - ripple::BasePeer
+        - ripple::BaseWSPeer
+        - ripple::Door
+        - ripple::Handoff
+        - ripple::JSONRPCUtil
+        - ripple::LowestLayer
+        - ripple::PlainHTTPPeer
+        - ripple::PlainWSPeer
+        - ripple::Port
+        - ripple::SSLHTTPPeer
+        - ripple::SSLWSPeer
+        - ripple::Server
+        - ripple::ServerImpl
+        - ripple::Session
+        - ripple::SimpleWriter
+        - ripple::WSSession
+        - ripple::Writer
+    exclude:
+      access:
+        - private
+    plantuml:
+      before:
+        - 'title Class Diagram for server'

@@ -1,0 +1,49 @@
+diagrams:
+  nodestore:
+    type: class
+    generate_method_arguments: none
+    include_relations_also_as_members: false
+    glob:
+      - src/ripple/nodestore/*.h
+      - src/ripple/nodestore/*.cpp
+      - src/ripple/nodestore/impl/*.h
+      - src/ripple/nodestore/impl/*.cpp
+    using_namespace:
+      - ripple
+    include:
+      namespaces:
+        - ripple
+      context:
+        - ripple::Backend
+        - ripple::BatchWriter
+        - ripple::CassandraFactory
+        - ripple::Database
+        - ripple::DatabaseNodeImp
+        - ripple::DatabaseRotating
+        - ripple::DatabaseRotatingImp
+        - ripple::DatabaseShard
+        - ripple::DatabaseShardImp
+        - ripple::DecodedBlob
+        - ripple::DeterministicShard
+        - ripple::DummyScheduler
+        - ripple::EncodedBlob
+        - ripple::Factory
+        - ripple::Manager
+        - ripple::ManagerImp
+        - ripple::MemoryFactory
+        - ripple::NodeObject
+        - ripple::NuDBFactory
+        - ripple::NullFactory
+        - ripple::RocksDBFactory
+        - ripple::Scheduler
+        - ripple::Shard
+        - ripple::ShardInfo
+        - ripple::Task
+        - ripple::TaskQueue
+        - ripple::Types
+    exclude:
+      access:
+        - private
+    plantuml:
+      before:
+        - 'title Class Diagram for nodestore'

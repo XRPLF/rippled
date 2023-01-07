@@ -1,0 +1,296 @@
+@startuml
+title Class Diagram for conditions
+class "Slice" as C_0001602748540838302362
+class C_0001602748540838302362 {
++Slice() = default : void
++Slice() = default : void
++operator=() = default : Slice &
++Slice() : void
++empty() const : bool
++size() const : std::size_t
++length() const : std::size_t
++data() const : const std::uint8_t *
++operator[]() const : std::uint8_t
++operator+=() : Slice &
++operator+() const : Slice
++remove_prefix() : void
++remove_suffix() : void
++begin() const : Slice::const_iterator
++cbegin() const : Slice::const_iterator
++end() const : Slice::const_iterator
++cend() const : Slice::const_iterator
++substr() const : Slice
+}
+class "Buffer" as C_0002153069467650067693
+class C_0002153069467650067693 {
++Buffer() = default : void
++Buffer() : void
++Buffer() : void
++Buffer() : void
++operator=() : Buffer &
++Buffer() : void
++operator=() : Buffer &
++Buffer() : void
++operator=() : Buffer &
++size() const : std::size_t
++empty() const : bool
++operator Slice() const : Slice
++data() const : const std::uint8_t *
++data() : std::uint8_t *
++clear() : void
++alloc() : std::uint8_t *
++operator()() : void *
++begin() const : Buffer::const_iterator
++cbegin() const : Buffer::const_iterator
++end() const : Buffer::const_iterator
++cend() const : Buffer::const_iterator
+}
+enum "cryptoconditions::error" as C_0000110916603091449172
+enum C_0000110916603091449172 {
+generic
+unsupported_type
+unsupported_subtype
+unknown_type
+unknown_subtype
+fingerprint_size
+incorrect_encoding
+trailing_garbage
+buffer_empty
+buffer_overfull
+buffer_underfull
+malformed_encoding
+short_preamble
+unexpected_tag
+long_tag
+large_size
+preimage_too_long
+}
+class "cryptoconditions::der::Preamble" as C_0001162300429665963796
+class C_0001162300429665963796 {
++Preamble() = default : void
++type : std::uint8_t
++tag : std::size_t
++length : std::size_t
+}
+enum "cryptoconditions::Type" as C_0001857952901522980788
+enum C_0001857952901522980788 {
+preimageSha256
+prefixSha256
+thresholdSha256
+rsaSha256
+ed25519Sha256
+}
+class "cryptoconditions::Condition" as C_0000623272287488884477
+class C_0000623272287488884477 {
+{static} +deserialize() : std::unique_ptr<Condition>
++Condition() : void
++Condition() : void
++~Condition() = default : void
++Condition() = default : void
++Condition() = default : void
++Condition() : void
++cost : std::uint32_t
+{static} +maxSerializedCondition : const std::size_t
+}
+abstract "cryptoconditions::Fulfillment" as C_0000141408528822188088
+abstract C_0000141408528822188088 {
+{static} +deserialize() : std::unique_ptr<Fulfillment>
++~Fulfillment() = default : void
+{abstract} +fingerprint() const = 0 : Buffer
+{abstract} +type() const = 0 : cryptoconditions::Type
+{abstract} +validate() const = 0 : bool
+{abstract} +cost() const = 0 : std::uint32_t
+{abstract} +condition() const = 0 : cryptoconditions::Condition
+{static} +maxSerializedFulfillment : const std::size_t
+}
+class "cryptoconditions::PreimageSha256" as C_0001004919123456394230
+class C_0001004919123456394230 {
+{static} +deserialize() : std::unique_ptr<Fulfillment>
++PreimageSha256() : void
++PreimageSha256() : void
++type() const : cryptoconditions::Type
++fingerprint() const : Buffer
++cost() const : std::uint32_t
++condition() const : cryptoconditions::Condition
++validate() const : bool
+{static} +maxPreimageLength : const std::size_t
+}
+class "cryptoconditions::detail::cryptoconditions_error_category" as C_0001180273605615681717
+class C_0001180273605615681717 {
++cryptoconditions_error_category() = default : void
++name() const : const char *
++message() const : std::string
++default_error_condition() const : std::error_condition
++equivalent() const : bool
++equivalent() const : bool
+}
+class "bad_expected_access" as C_0001596544969333807924
+class C_0001596544969333807924 {
++bad_expected_access() : void
+}
+class "detail::throw_policy" as C_0002219031497374695928
+class C_0002219031497374695928 {
+{static} +wide_value_check() : void
+{static} +wide_error_check() : void
+{static} +wide_exception_check() : void
+}
+class "detail::is_contiguous_container<Container,>" as C_0000051815775375752491
+class C_0000051815775375752491 {
+}
+class "detail::is_contiguous_container" as C_0000770976208116654116
+class C_0000770976208116654116 {
+}
+class "detail::is_contiguous_container<Container,void>" as C_0000898949948555513083
+class C_0000898949948555513083 {
+}
+class "detail::basic_sha512_half_hasher<_Bool Secure>" as C_0000304197526022160872
+class C_0000304197526022160872 {
++~basic_sha512_half_hasher<Secure>() : void
++operator()() : void
++operator base_uint() : detail::basic_sha512_half_hasher::result_type
+{static} +endian : const boost::endian::order
+}
+class "Unexpected<E>" as C_0000704939383398036480
+class C_0000704939383398036480 {
++Unexpected<E>() : void
++Unexpected<E>() : void
++Unexpected<E>() : void
++value() const : const E &
++value() : E &
++value() : E &&
++value() const : const E &&
+}
+class "Expected<T,E>" as C_0002158785723697762442
+class C_0002158785723697762442 {
++has_value() const : bool
++value() const : const T &
++value() : T &
++error() const : const E &
++error() : E &
++operator bool() const : bool
++operator*() : T &
++operator*() const : const T &
++operator->() : T *
++operator->() const : const T *
++Expected<T, E>() : void
++Expected<T, E>() : void
+}
+class "Expected" as C_0001769343459678893400
+class C_0001769343459678893400 {
++Expected<void, type-parameter-0-0>() : void
++error() const : const E &
++error() : E &
++operator bool() const : bool
++Expected<void, type-parameter-0-0>() : void
+}
+class "Expected<void,E>" as C_0001240110423953243598
+class C_0001240110423953243598 {
++Expected<void, type-parameter-0-0>() : void
++error() const : const E &
++error() : E &
++operator bool() const : bool
++Expected<void, type-parameter-0-0>() : void
+}
+class "hardened_hash<HashAlgorithm>" as C_0000558025235825628270
+class C_0000558025235825628270 {
++hardened_hash<HashAlgorithm>() : void
++operator()() : hardened_hash::result_type
+}
+class "base_uint<std::size_t Bits,Tag>" as C_0001428376619557242556
+class C_0001428376619557242556 {
++data() : base_uint::pointer
++data() const : base_uint::const_pointer
++begin() : base_uint::iterator
++end() : base_uint::iterator
++begin() const : base_uint::const_iterator
++end() const : base_uint::const_iterator
++cbegin() const : base_uint::const_iterator
++cend() const : base_uint::const_iterator
++base_uint<Bits, Tag>() : void
++base_uint<Bits, Tag>() : void
++base_uint<Bits, Tag>() : void
++base_uint<Bits, Tag>() : void
+{static} +fromVoid() : base_uint<Bits,Tag>
++signum() const : int
++operator!() const : bool
++operator~() const : base_uint<Bits,Tag>
++operator=() : base_uint<Bits,Tag> &
++operator^=() : base_uint<Bits,Tag> &
++operator&=() : base_uint<Bits,Tag> &
++operator|=() : base_uint<Bits,Tag> &
++operator++() : base_uint<Bits,Tag> &
++operator++() : const base_uint<Bits,Tag>
++operator--() : base_uint<Bits,Tag> &
++operator--() : const base_uint<Bits,Tag>
++next() const : base_uint<Bits,Tag>
++prev() const : base_uint<Bits,Tag>
++operator+=() : base_uint<Bits,Tag> &
++parseHex() : bool
++parseHex() : bool
++parseHex() : bool
+{static} +size() : std::size_t
++operator=() : base_uint<Bits,Tag> &
++isZero() const : bool
++isNonZero() const : bool
++zero() : void
++base_uint<Bits, Tag>() : void
++operator=() : std::enable_if_t<detail::is_contiguous_container<Container>::value && std::is_trivially_copyable<typename Container::value_type>::value, base_uint<Bits, Tag> &>
+{static} +fromVoidChecked() : std::optional<base_uint<Bits, Tag> >
+{static} +bytes : const std::size_t
+}
+class "base_uint::VoidHelper" as C_0000108394786559681415
+class C_0000108394786559681415 {
++VoidHelper() = default : void
+}
+enum "base_uint::ParseResult" as C_0001679892294318045758
+enum C_0001679892294318045758 {
+okay
+badLength
+badChar
+}
+class "openssl_ripemd160_hasher" as C_0000483100618119517780
+class C_0000483100618119517780 {
++openssl_ripemd160_hasher() : void
++operator()() : void
++operator array() : openssl_ripemd160_hasher::result_type
+{static} +endian : const boost::endian::order
+}
+class "openssl_sha512_hasher" as C_0000172642286500493838
+class C_0000172642286500493838 {
++openssl_sha512_hasher() : void
++operator()() : void
++operator array() : openssl_sha512_hasher::result_type
+{static} +endian : const boost::endian::order
+}
+class "openssl_sha256_hasher" as C_0000756487702076707832
+class C_0000756487702076707832 {
++openssl_sha256_hasher() : void
++operator()() : void
++operator array() : openssl_sha256_hasher::result_type
+{static} +endian : const boost::endian::order
+}
+class "ripesha_hasher" as C_0000009444761906305918
+class C_0000009444761906305918 {
++operator()() : void
++operator array() : ripesha_hasher::result_type
+{static} +endian : const boost::endian::order
+}
+C_0002153069467650067693 ..> C_0001602748540838302362
+C_0000623272287488884477 ..> C_0001602748540838302362
+C_0000623272287488884477 ..> C_0001857952901522980788
+C_0000623272287488884477 ..> C_0002153069467650067693
+C_0000623272287488884477 o-- C_0001857952901522980788 : +type
+C_0000623272287488884477 o-- C_0002153069467650067693 : +fingerprint
+C_0000623272287488884477 o-- C_0001857952901522980788 : +subtypes
+C_0000141408528822188088 ..> C_0001602748540838302362
+C_0001004919123456394230 ..> C_0001602748540838302362
+C_0001004919123456394230 ..> C_0002153069467650067693
+C_0001004919123456394230 o-- C_0002153069467650067693 : -payload_
+C_0000141408528822188088 <|-- C_0001004919123456394230
+C_0000898949948555513083 ..|> C_0000051815775375752491
+C_0000304197526022160872 o-- C_0000172642286500493838 : -h_
+C_0001240110423953243598 ..|> C_0002158785723697762442
+C_0000108394786559681415 --+ C_0001428376619557242556
+C_0001679892294318045758 --+ C_0001428376619557242556
+C_0000009444761906305918 o-- C_0000756487702076707832 : -h_
+@enduml

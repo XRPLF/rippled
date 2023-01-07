@@ -1,0 +1,720 @@
+@startuml
+title Class Diagram for ledger
+class "XRPAmount" as C_0000437628577035957607
+class C_0000437628577035957607 {
++XRPAmount() = default : void
++XRPAmount() = default : void
++operator=() = default : XRPAmount &
++XRPAmount() : void
++operator=() : XRPAmount &
++XRPAmount() : void
++operator=() : XRPAmount &
++operator*() const : XRPAmount
++operator+=() : XRPAmount &
++operator-=() : XRPAmount &
++operator+=() : XRPAmount &
++operator-=() : XRPAmount &
++operator*=() : XRPAmount &
++operator-() const : XRPAmount
++operator==() const : bool
++operator==() const : bool
++operator<() const : bool
++operator bool() const : bool
++signum() const : int
++drops() const : XRPAmount::value_type
++decimalXRP() const : double
++jsonClipped() const : Json::Value
++value() const : XRPAmount::value_type
+{static} +minPositiveAmount() : XRPAmount
++dropsAs() : std::optional<Dest>
++dropsAs() : Dest
++dropsAs() : Dest
+}
+class "detail::ReadViewFwdRange<ValueType>" as C_0000966327273497233177
+class C_0000966327273497233177 {
++ReadViewFwdRange<ValueType>() : void
++ReadViewFwdRange<ValueType>() = default : void
++operator=() = default : ReadViewFwdRange<ValueType> &
++ReadViewFwdRange<ValueType>() : void
+}
+class "detail::ReadViewFwdRange::iterator" as C_0000078640967225625063
+class C_0000078640967225625063 {
++iterator() = default : void
++iterator() : void
++iterator() : void
++iterator() : void
++operator=() : detail::ReadViewFwdRange::iterator &
++operator=() : detail::ReadViewFwdRange::iterator &
++operator==() const : bool
++operator!=() const : bool
++operator*() const : detail::ReadViewFwdRange::iterator::reference
++operator->() const : detail::ReadViewFwdRange::iterator::pointer
++operator++() : detail::ReadViewFwdRange::iterator &
++operator++() : detail::ReadViewFwdRange::iterator
+}
+class "detail::AccountIDTag" as C_0000219725434573906145
+class C_0000219725434573906145 {
++AccountIDTag() = default : void
+}
+class "detail::RawStateTable" as C_0000394810589194524926
+class C_0000394810589194524926 {
++RawStateTable() : void
++RawStateTable() : void
++RawStateTable() = default : void
++operator=() : detail::RawStateTable &
++operator=() : detail::RawStateTable &
++apply() const : void
++exists() const : bool
++succ() const : std::optional<key_type>
++erase() : void
++insert() : void
++replace() : void
++read() const : std::shared_ptr<const SLE>
++destroyXRP() : void
++slesBegin() const : std::unique_ptr<ReadView::sles_type::iter_base>
++slesEnd() const : std::unique_ptr<ReadView::sles_type::iter_base>
++slesUpperBound() const : std::unique_ptr<ReadView::sles_type::iter_base>
+{static} +initialBufferSize : const size_t
+}
+class "detail::ApplyStateTable" as C_0001016177997753328101
+class C_0001016177997753328101 {
++ApplyStateTable() = default : void
++ApplyStateTable() = default : void
++ApplyStateTable() : void
++operator=() : detail::ApplyStateTable &
++operator=() : detail::ApplyStateTable &
++apply() const : void
++apply() : void
++exists() const : bool
++succ() const : std::optional<key_type>
++read() const : std::shared_ptr<const SLE>
++peek() : std::shared_ptr<SLE>
++size() const : std::size_t
++visit() const : void
++erase() : void
++rawErase() : void
++insert() : void
++update() : void
++replace() : void
++destroyXRP() : void
++dropsDestroyed() const : const XRPAmount &
+}
+class "detail::ApplyViewBase" as C_0002263001139912497034
+class C_0002263001139912497034 {
++ApplyViewBase() : void
++ApplyViewBase() : void
++operator=() : detail::ApplyViewBase &
++operator=() : detail::ApplyViewBase &
++ApplyViewBase() = default : void
++ApplyViewBase() : void
++open() const : bool
++info() const : const LedgerInfo &
++fees() const : const Fees &
++rules() const : const Rules &
++exists() const : bool
++succ() const : std::optional<key_type>
++read() const : std::shared_ptr<const SLE>
++slesBegin() const : std::unique_ptr<sles_type::iter_base>
++slesEnd() const : std::unique_ptr<sles_type::iter_base>
++slesUpperBound() const : std::unique_ptr<sles_type::iter_base>
++txsBegin() const : std::unique_ptr<txs_type::iter_base>
++txsEnd() const : std::unique_ptr<txs_type::iter_base>
++txExists() const : bool
++txRead() const : ReadView::tx_type
++flags() const : ApplyFlags
++peek() : std::shared_ptr<SLE>
++erase() : void
++insert() : void
++update() : void
++rawErase() : void
++rawInsert() : void
++rawReplace() : void
++rawDestroyXRP() : void
+}
+class "detail::DeferredCredits" as C_0001159344348922254258
+class C_0001159344348922254258 {
++adjustments() const : std::optional<Adjustment>
++credit() : void
++ownerCount() : void
++ownerCount() const : std::optional<std::uint32_t>
++apply() : void
+}
+class "base_uint<160,detail::AccountIDTag>" as C_0002185921478450888283
+class C_0002185921478450888283 {
+}
+class "Book" as C_0002294399890504248264
+class C_0002294399890504248264 {
++Book() : void
++Book() : void
+}
+class "base_uint<256>" as C_0000434356742846908842
+class C_0000434356742846908842 {
+}
+class "Keylet" as C_0001972271628408927151
+class C_0001972271628408927151 {
++Keylet() : void
++check() const : bool
+}
+class "Serializer" as C_0002102861226093968575
+class C_0002102861226093968575 {
++Serializer() : void
++Serializer() : void
++slice() const : Slice
++size() const : std::size_t
++data() const : const void *
++add8() : int
++add16() : int
++add32() : int
++add32() : int
++add64() : int
++addRaw() : int
++addRaw() : int
++addRaw() : int
++addRaw() : int
++addVL() : int
++addVL() : int
++addVL() : int
++get8() const : bool
++addFieldID() : int
++addFieldID() : int
++getSHA512Half() const : uint256
++peekData() const : const Blob &
++getData() const : Blob
++modData() : Blob &
++getDataLength() const : int
++getDataPtr() const : const void *
++getDataPtr() : void *
++getLength() const : int
++getString() const : std::string
++erase() : void
++chop() : bool
++begin() : Blob::iterator
++end() : Blob::iterator
++begin() const : Blob::const_iterator
++end() const : Blob::const_iterator
++reserve() : void
++resize() : void
++capacity() const : size_t
++operator==() : bool
++operator!=() : bool
++operator==() : bool
++operator!=() : bool
+{static} +decodeLengthLength() : int
+{static} +decodeVLLength() : int
+{static} +decodeVLLength() : int
+{static} +decodeVLLength() : int
++addInteger() : int
++addBitString() : int
++addVL() : int
++getInteger() : _Bool
++getBitString() : _Bool
+}
+class "STAmount" as C_0000215260707563711311
+class C_0000215260707563711311 {
++STAmount() : void
++STAmount() : void
++STAmount() : void
++STAmount() : void
++STAmount() : void
++STAmount() : void
++STAmount() : void
++STAmount() : void
++STAmount() : void
++STAmount() : void
++STAmount() : void
++STAmount() : void
++STAmount() : void
++STAmount() : void
++exponent() const : int
++native() const : bool
++negative() const : bool
++mantissa() const : std::uint64_t
++issue() const : const Issue &
++getCurrency() const : const Currency &
++getIssuer() const : const AccountID &
++signum() const : int
++zeroed() const : STAmount
++setJson() const : void
++value() const : const STAmount &
++operator bool() const : bool
++operator+=() : STAmount &
++operator-=() : STAmount &
++operator=() : STAmount &
++operator=() : STAmount &
++negate() : void
++clear() : void
++clear() : void
++clear() : void
++setIssuer() : void
++setIssue() : void
++getSType() const : SerializedTypeID
++getFullText() const : std::string
++getText() const : std::string
++getJson() const : Json::Value
++add() const : void
++isEquivalent() const : bool
++isDefault() const : bool
++xrp() const : XRPAmount
++iou() const : IOUAmount
+{static} +cMinOffset : const int
+{static} +cMaxOffset : const int
+{static} +cMinValue : const std::uint64_t
+{static} +cMaxValue : const std::uint64_t
+{static} +cMaxNative : const std::uint64_t
+{static} +cMaxNativeN : const std::uint64_t
+{static} +cNotNative : const std::uint64_t
+{static} +cPosNative : const std::uint64_t
+{static} +uRateOne : const std::uint64_t
+}
+class "Rules" as C_0001992233408632539458
+class C_0001992233408632539458 {
++Rules() = default : void
++operator=() = default : Rules &
++Rules() : void
++Rules() : void
++enabled() const : bool
++operator==() const : bool
++operator!=() const : bool
+}
+class "STLedgerEntry" as C_0001270395620897132534
+class C_0001270395620897132534 {
++STLedgerEntry() : void
++STLedgerEntry() : void
++STLedgerEntry() : void
++STLedgerEntry() : void
++STLedgerEntry() : void
++getSType() const : SerializedTypeID
++getFullText() const : std::string
++getText() const : std::string
++getJson() const : Json::Value
++key() const : const uint256 &
++getType() const : LedgerEntryType
++isThreadedType() const : bool
++thread() : bool
+}
+class "STTx" as C_0001059260590421798558
+class C_0001059260590421798558 {
+{static} +maxMultiSigners() : std::size_t
++STTx() : void
++STTx() = default : void
++operator=() : STTx &
++STTx() : void
++STTx() : void
++STTx() : void
++STTx() : void
++getSType() const : SerializedTypeID
++getFullText() const : std::string
++getSignature() const : Blob
++getSigningHash() const : uint256
++getTxnType() const : TxType
++getSigningPubKey() const : Blob
++getSeqProxy() const : SeqProxy
++getMentionedAccounts() const : boost::container::flat_set<AccountID>
++getTransactionID() const : uint256
++getJson() const : Json::Value
++getJson() const : Json::Value
++sign() : void
++checkSign() const : Expected<void,std::string>
+{static} +getMetaSQLInsertReplaceHeader() : const std::string &
++getMetaSQL() const : std::string
++getMetaSQL() const : std::string
+{static} +minMultiSigners : const std::size_t
+}
+class "LedgerInfo" as C_0001589739806501844085
+class C_0001589739806501844085 {
++LedgerInfo() = default : void
++seq : LedgerIndex
++validated : bool
++accepted : bool
++closeFlags : int
++closeTimeResolution : NetClock::duration
+}
+abstract "ReadView" as C_0000719484062983967559
+abstract C_0000719484062983967559 {
++~ReadView() = default : void
++operator=() : ReadView &
++operator=() : ReadView &
++ReadView() : void
++ReadView() : void
++ReadView() : void
+{abstract} +info() const = 0 : const LedgerInfo &
+{abstract} +open() const = 0 : bool
++parentCloseTime() const : NetClock::time_point
++seq() const : LedgerIndex
+{abstract} +fees() const = 0 : const Fees &
+{abstract} +rules() const = 0 : const Rules &
+{abstract} +exists() const = 0 : bool
+{abstract} +succ() const = 0 : std::optional<key_type>
+{abstract} +read() const = 0 : std::shared_ptr<const SLE>
++balanceHook() const : STAmount
++ownerCountHook() const : std::uint32_t
+{abstract} +slesBegin() const = 0 : std::unique_ptr<sles_type::iter_base>
+{abstract} +slesEnd() const = 0 : std::unique_ptr<sles_type::iter_base>
+{abstract} +slesUpperBound() const = 0 : std::unique_ptr<sles_type::iter_base>
+{abstract} +txsBegin() const = 0 : std::unique_ptr<txs_type::iter_base>
+{abstract} +txsEnd() const = 0 : std::unique_ptr<txs_type::iter_base>
+{abstract} +txExists() const = 0 : bool
+{abstract} +txRead() const = 0 : ReadView::tx_type
++sles : ReadView::sles_type
++txs : ReadView::txs_type
+}
+class "ReadView::sles_type" as C_0000968233506249022341
+class C_0000968233506249022341 {
++sles_type() : void
++begin() const : detail::ReadViewFwdRange<std::shared_ptr<const STLedgerEntry>>::iterator
++end() const : detail::ReadViewFwdRange<std::shared_ptr<const STLedgerEntry>>::iterator
++upper_bound() const : detail::ReadViewFwdRange<std::shared_ptr<const STLedgerEntry>>::iterator
+}
+class "ReadView::txs_type" as C_0001228155025630572998
+class C_0001228155025630572998 {
++txs_type() : void
++empty() const : bool
++begin() const : detail::ReadViewFwdRange<std::pair<std::shared_ptr<const STTx>,std::shared_ptr<const STObject>>>::iterator
++end() const : detail::ReadViewFwdRange<std::pair<std::shared_ptr<const STTx>,std::shared_ptr<const STObject>>>::iterator
+}
+abstract "DigestAwareReadView" as C_0001733920990952249567
+abstract C_0001733920990952249567 {
++DigestAwareReadView() = default : void
++DigestAwareReadView() = default : void
+{abstract} +digest() const = 0 : std::optional<digest_type>
+}
+abstract "RawView" as C_0001342101724707877860
+abstract C_0001342101724707877860 {
++~RawView() = default : void
++RawView() = default : void
++RawView() = default : void
++operator=() : RawView &
+{abstract} +rawErase() = 0 : void
+{abstract} +rawInsert() = 0 : void
+{abstract} +rawReplace() = 0 : void
+{abstract} +rawDestroyXRP() = 0 : void
+}
+abstract "TxsRawView" as C_0001279314584255786005
+abstract C_0001279314584255786005 {
+{abstract} +rawTxInsert() = 0 : void
+}
+enum "ApplyFlags" as C_0000461717163604842131
+enum C_0000461717163604842131 {
+tapNONE
+tapFAIL_HARD
+tapRETRY
+tapUNLIMITED
+}
+abstract "ApplyView" as C_0000368611166212330145
+abstract C_0000368611166212330145 {
++ApplyView() = default : void
+{abstract} +flags() const = 0 : ApplyFlags
+{abstract} +peek() = 0 : std::shared_ptr<SLE>
+{abstract} +erase() = 0 : void
+{abstract} +insert() = 0 : void
+{abstract} +update() = 0 : void
++creditHook() : void
++adjustOwnerCountHook() : void
++dirAppend() : std::optional<std::uint64_t>
++dirInsert() : std::optional<std::uint64_t>
++dirInsert() : std::optional<std::uint64_t>
++dirRemove() : bool
++dirRemove() : bool
++dirDelete() : bool
++emptyDirDelete() : bool
+}
+class "open_ledger_t" as C_0001197764833897327061
+class C_0001197764833897327061 {
++open_ledger_t() = default : void
+}
+class "OpenView" as C_0001016063512578111556
+class C_0001016063512578111556 {
++OpenView() : void
++operator=() : OpenView &
++operator=() : OpenView &
++OpenView() = default : void
++OpenView() : void
++OpenView() : void
++OpenView() : void
++OpenView() : void
++open() const : bool
++txCount() const : std::size_t
++apply() const : void
++info() const : const LedgerInfo &
++fees() const : const Fees &
++rules() const : const Rules &
++exists() const : bool
++succ() const : std::optional<key_type>
++read() const : std::shared_ptr<const SLE>
++slesBegin() const : std::unique_ptr<sles_type::iter_base>
++slesEnd() const : std::unique_ptr<sles_type::iter_base>
++slesUpperBound() const : std::unique_ptr<sles_type::iter_base>
++txsBegin() const : std::unique_ptr<txs_type::iter_base>
++txsEnd() const : std::unique_ptr<txs_type::iter_base>
++txExists() const : bool
++txRead() const : ReadView::tx_type
++rawErase() : void
++rawInsert() : void
++rawReplace() : void
++rawDestroyXRP() : void
++rawTxInsert() : void
+}
+class "OpenView::txData" as C_0000325186817224958647
+class C_0000325186817224958647 {
++txData() : void
+}
+class "TERSubset<CanCvtToTER>" as C_0000387912696222928946
+class C_0000387912696222928946 {
+}
+class "OpenView::txs_iter_impl" as C_0000413962743774471683
+class C_0000413962743774471683 {
++txs_iter_impl() : void
++copy() const : std::unique_ptr<base_type>
++equal() const : bool
++increment() : void
++dereference() const : detail::ReadViewFwdIter<std::pair<std::shared_ptr<const STTx>,std::shared_ptr<const STObject>>>::value_type
+}
+class "ApplyViewImpl" as C_0000477867256527986724
+class C_0000477867256527986724 {
++ApplyViewImpl() : void
++ApplyViewImpl() : void
++operator=() : ApplyViewImpl &
++operator=() : ApplyViewImpl &
++ApplyViewImpl() = default : void
++ApplyViewImpl() : void
++apply() : void
++deliver() : void
++size() : std::size_t
++visit() : void
+}
+class "Sandbox" as C_0001499303678521053477
+class C_0001499303678521053477 {
++Sandbox() : void
++Sandbox() : void
++operator=() : Sandbox &
++operator=() : Sandbox &
++Sandbox() = default : void
++Sandbox() : void
++Sandbox() : void
++apply() : void
+}
+class "PaymentSandbox" as C_0000568262759563672206
+class C_0000568262759563672206 {
++PaymentSandbox() : void
++PaymentSandbox() : void
++operator=() : PaymentSandbox &
++operator=() : PaymentSandbox &
++PaymentSandbox() = default : void
++PaymentSandbox() : void
++PaymentSandbox() : void
++PaymentSandbox() : void
++PaymentSandbox() : void
++balanceHook() const : STAmount
++creditHook() : void
++adjustOwnerCountHook() : void
++ownerCountHook() const : std::uint32_t
++apply() : void
++apply() : void
++balanceChanges() const : std::map<std::tuple<AccountID,AccountID,Currency>,STAmount>
++xrpDestroyed() const : XRPAmount
+}
+class "BookDirs" as C_0000029495990696529094
+class C_0000029495990696529094 {
++BookDirs() : void
++begin() const : BookDirs::const_iterator
++end() const : BookDirs::const_iterator
+}
+class "BookDirs::const_iterator" as C_0000140239779594139226
+class C_0000140239779594139226 {
++const_iterator() = default : void
++operator==() const : bool
++operator!=() const : bool
++operator*() const : BookDirs::const_iterator::reference
++operator->() const : BookDirs::const_iterator::pointer
++operator++() : BookDirs::const_iterator &
++operator++() : BookDirs::const_iterator
+}
+class "Dir" as C_0001859122778588532998
+class C_0001859122778588532998 {
++Dir() : void
++begin() const : Dir::const_iterator
++end() const : Dir::const_iterator
+}
+class "Dir::const_iterator" as C_0001415447963351752502
+class C_0001415447963351752502 {
++operator==() const : bool
++operator!=() const : bool
++operator*() const : Dir::const_iterator::reference
++operator->() const : Dir::const_iterator::pointer
++operator++() : Dir::const_iterator &
++operator++() : Dir::const_iterator
++next_page() : Dir::const_iterator &
++page_size() : std::size_t
++page() const : const Keylet &
++index() const : uint256
+}
+C_0000966327273497233177 ..> C_0000719484062983967559
+C_0000966327273497233177 --> C_0000719484062983967559 : #view_
+C_0000078640967225625063 --+ C_0000966327273497233177
+C_0000078640967225625063 ..> C_0000719484062983967559
+C_0000078640967225625063 --> C_0000719484062983967559 : -view_
+C_0000394810589194524926 ..> C_0001342101724707877860
+C_0000394810589194524926 ..> C_0000719484062983967559
+C_0000394810589194524926 ..> C_0001972271628408927151
+C_0000394810589194524926 ..> C_0000434356742846908842
+C_0000394810589194524926 ..> C_0001270395620897132534
+C_0000394810589194524926 ..> C_0000437628577035957607
+C_0000394810589194524926 o-- C_0000434356742846908842 : -items_
+C_0000394810589194524926 o-- C_0000437628577035957607 : -dropsDestroyed_
+C_0001016177997753328101 ..> C_0001342101724707877860
+C_0001016177997753328101 ..> C_0001016063512578111556
+C_0001016177997753328101 ..> C_0001059260590421798558
+C_0001016177997753328101 ..> C_0000387912696222928946
+C_0001016177997753328101 ..> C_0000215260707563711311
+C_0001016177997753328101 ..> C_0000719484062983967559
+C_0001016177997753328101 ..> C_0001972271628408927151
+C_0001016177997753328101 ..> C_0000434356742846908842
+C_0001016177997753328101 ..> C_0001270395620897132534
+C_0001016177997753328101 ..> C_0000437628577035957607
+C_0001016177997753328101 ..> C_0000219725434573906145
+C_0001016177997753328101 ..> C_0002185921478450888283
+C_0001016177997753328101 o-- C_0000434356742846908842 : -items_
+C_0001016177997753328101 o-- C_0001270395620897132534 : -items_
+C_0001016177997753328101 o-- C_0000437628577035957607 : -dropsDestroyed_
+C_0002263001139912497034 ..> C_0000719484062983967559
+C_0002263001139912497034 ..> C_0000461717163604842131
+C_0002263001139912497034 ..> C_0001972271628408927151
+C_0002263001139912497034 ..> C_0000434356742846908842
+C_0002263001139912497034 ..> C_0001270395620897132534
+C_0002263001139912497034 ..> C_0000437628577035957607
+C_0002263001139912497034 o-- C_0000461717163604842131 : #flags_
+C_0002263001139912497034 --> C_0000719484062983967559 : #base_
+C_0002263001139912497034 o-- C_0001016177997753328101 : #items_
+C_0000368611166212330145 <|-- C_0002263001139912497034
+C_0001342101724707877860 <|-- C_0002263001139912497034
+C_0001159344348922254258 ..> C_0000219725434573906145
+C_0001159344348922254258 ..> C_0002185921478450888283
+C_0001159344348922254258 ..> C_0000215260707563711311
+C_0001159344348922254258 o-- C_0002185921478450888283 : -credits_
+C_0001159344348922254258 o-- C_0002185921478450888283 : -ownerCounts_
+C_0001159344348922254258 o-- C_0000219725434573906145 : -ownerCounts_
+C_0002185921478450888283 ..> C_0000219725434573906145
+C_0001972271628408927151 ..> C_0000434356742846908842
+C_0001972271628408927151 ..> C_0001270395620897132534
+C_0001972271628408927151 o-- C_0000434356742846908842 : +key
+C_0000215260707563711311 ..> C_0000437628577035957607
+C_0000215260707563711311 ..> C_0000219725434573906145
+C_0000215260707563711311 ..> C_0002185921478450888283
+C_0000215260707563711311 ..> C_0002102861226093968575
+C_0001992233408632539458 ..> C_0000434356742846908842
+C_0001270395620897132534 ..> C_0001972271628408927151
+C_0001270395620897132534 ..> C_0000434356742846908842
+C_0001270395620897132534 o-- C_0000434356742846908842 : -key_
+C_0001059260590421798558 ..> C_0001992233408632539458
+C_0001059260590421798558 ..> C_0002102861226093968575
+C_0001059260590421798558 o-- C_0000434356742846908842 : -tid_
+C_0001589739806501844085 o-- C_0000434356742846908842 : +hash
+C_0001589739806501844085 o-- C_0000434356742846908842 : +txHash
+C_0001589739806501844085 o-- C_0000434356742846908842 : +accountHash
+C_0001589739806501844085 o-- C_0000434356742846908842 : +parentHash
+C_0001589739806501844085 o-- C_0000437628577035957607 : +drops
+C_0000719484062983967559 ..> C_0001972271628408927151
+C_0000719484062983967559 ..> C_0000434356742846908842
+C_0000719484062983967559 ..> C_0000219725434573906145
+C_0000719484062983967559 ..> C_0002185921478450888283
+C_0000719484062983967559 ..> C_0000215260707563711311
+C_0000968233506249022341 --+ C_0000719484062983967559
+C_0000968233506249022341 ..> C_0000719484062983967559
+C_0000968233506249022341 ..> C_0000434356742846908842
+C_0001228155025630572998 --+ C_0000719484062983967559
+C_0001228155025630572998 ..> C_0000719484062983967559
+C_0001733920990952249567 ..> C_0000434356742846908842
+C_0000719484062983967559 <|-- C_0001733920990952249567
+C_0001342101724707877860 ..> C_0001270395620897132534
+C_0001342101724707877860 ..> C_0000437628577035957607
+C_0001279314584255786005 ..> C_0000434356742846908842
+C_0001279314584255786005 ..> C_0002102861226093968575
+C_0001342101724707877860 <|-- C_0001279314584255786005
+C_0000368611166212330145 ..> C_0001972271628408927151
+C_0000368611166212330145 ..> C_0000434356742846908842
+C_0000368611166212330145 ..> C_0001270395620897132534
+C_0000368611166212330145 ..> C_0000219725434573906145
+C_0000368611166212330145 ..> C_0002185921478450888283
+C_0000368611166212330145 ..> C_0000215260707563711311
+C_0000719484062983967559 <|-- C_0000368611166212330145
+C_0001016063512578111556 ..> C_0001197764833897327061
+C_0001016063512578111556 ..> C_0000719484062983967559
+C_0001016063512578111556 ..> C_0001992233408632539458
+C_0001016063512578111556 ..> C_0001279314584255786005
+C_0001016063512578111556 ..> C_0001972271628408927151
+C_0001016063512578111556 ..> C_0000434356742846908842
+C_0001016063512578111556 ..> C_0001270395620897132534
+C_0001016063512578111556 ..> C_0000437628577035957607
+C_0001016063512578111556 ..> C_0002102861226093968575
+C_0001016063512578111556 o-- C_0000434356742846908842 : -txs_
+C_0001016063512578111556 o-- C_0001992233408632539458 : -rules_
+C_0001016063512578111556 o-- C_0001589739806501844085 : -info_
+C_0001016063512578111556 --> C_0000719484062983967559 : -base_
+C_0001016063512578111556 o-- C_0000394810589194524926 : -items_
+C_0000719484062983967559 <|-- C_0001016063512578111556
+C_0001279314584255786005 <|-- C_0001016063512578111556
+C_0000325186817224958647 --+ C_0001016063512578111556
+C_0000325186817224958647 ..> C_0002102861226093968575
+C_0000325186817224958647 --> C_0002102861226093968575 : +txn
+C_0000325186817224958647 --> C_0002102861226093968575 : +meta
+C_0000413962743774471683 --+ C_0001016063512578111556
+C_0000477867256527986724 ..> C_0000719484062983967559
+C_0000477867256527986724 ..> C_0000461717163604842131
+C_0000477867256527986724 ..> C_0001016063512578111556
+C_0000477867256527986724 ..> C_0001059260590421798558
+C_0000477867256527986724 ..> C_0000387912696222928946
+C_0000477867256527986724 ..> C_0000215260707563711311
+C_0000477867256527986724 ..> C_0001270395620897132534
+C_0000477867256527986724 o-- C_0000215260707563711311 : -deliver_
+C_0002263001139912497034 <|-- C_0000477867256527986724
+C_0001499303678521053477 ..> C_0000719484062983967559
+C_0001499303678521053477 ..> C_0000461717163604842131
+C_0001499303678521053477 ..> C_0000368611166212330145
+C_0001499303678521053477 ..> C_0001342101724707877860
+C_0002263001139912497034 <|-- C_0001499303678521053477
+C_0000568262759563672206 ..> C_0000719484062983967559
+C_0000568262759563672206 ..> C_0000461717163604842131
+C_0000568262759563672206 ..> C_0000368611166212330145
+C_0000568262759563672206 ..> C_0000219725434573906145
+C_0000568262759563672206 ..> C_0002185921478450888283
+C_0000568262759563672206 ..> C_0000215260707563711311
+C_0000568262759563672206 ..> C_0001342101724707877860
+C_0000568262759563672206 o-- C_0001159344348922254258 : -tab_
+C_0000568262759563672206 --> C_0000568262759563672206 : -ps_
+C_0002263001139912497034 <|-- C_0000568262759563672206
+C_0000029495990696529094 ..> C_0000719484062983967559
+C_0000029495990696529094 ..> C_0002294399890504248264
+C_0000029495990696529094 --> C_0000719484062983967559 : -view_
+C_0000029495990696529094 o-- C_0000434356742846908842 : -root_
+C_0000029495990696529094 o-- C_0000434356742846908842 : -next_quality_
+C_0000029495990696529094 o-- C_0000434356742846908842 : -key_
+C_0000029495990696529094 --> C_0001270395620897132534 : -sle_
+C_0000029495990696529094 o-- C_0000434356742846908842 : -index_
+C_0000140239779594139226 --+ C_0000029495990696529094
+C_0000140239779594139226 ..> C_0000719484062983967559
+C_0000140239779594139226 ..> C_0000434356742846908842
+C_0000140239779594139226 --> C_0000719484062983967559 : -view_
+C_0000140239779594139226 o-- C_0000434356742846908842 : -root_
+C_0000140239779594139226 o-- C_0000434356742846908842 : -next_quality_
+C_0000140239779594139226 o-- C_0000434356742846908842 : -key_
+C_0000140239779594139226 o-- C_0000434356742846908842 : -cur_key_
+C_0000140239779594139226 --> C_0001270395620897132534 : -sle_
+C_0000140239779594139226 o-- C_0000434356742846908842 : -index_
+C_0000140239779594139226 o-- C_0001270395620897132534 : -cache_
+C_0000140239779594139226 <.. C_0000029495990696529094 : +<<friend>>
+C_0001859122778588532998 ..> C_0000719484062983967559
+C_0001859122778588532998 ..> C_0001972271628408927151
+C_0001859122778588532998 --> C_0000719484062983967559 : -view_
+C_0001859122778588532998 o-- C_0001972271628408927151 : -root_
+C_0001859122778588532998 --> C_0001270395620897132534 : -sle_
+C_0001415447963351752502 --+ C_0001859122778588532998
+C_0001415447963351752502 ..> C_0000719484062983967559
+C_0001415447963351752502 ..> C_0001972271628408927151
+C_0001415447963351752502 --> C_0000719484062983967559 : -view_
+C_0001415447963351752502 o-- C_0001972271628408927151 : -root_
+C_0001415447963351752502 o-- C_0001972271628408927151 : -page_
+C_0001415447963351752502 o-- C_0000434356742846908842 : -index_
+C_0001415447963351752502 o-- C_0001270395620897132534 : -cache_
+C_0001415447963351752502 --> C_0001270395620897132534 : -sle_
+C_0001415447963351752502 <.. C_0001859122778588532998 : +<<friend>>
+@enduml

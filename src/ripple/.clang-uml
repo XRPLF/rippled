@@ -1,0 +1,40 @@
+# 1. Clone and build clang-uml: https://github.com/bkryza/clang-uml.git (see build instructions there)
+# 2. Build rippled
+# Ensure working dir is the 'rippled' git repo root folder
+# mkdir build_gcc && cd build_gcc
+# cmake .. -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=Debug -Dunity=OFF
+# cd -
+# 3. Install plantuml and graphviz:
+# sudo apt-get install plantuml graphviz
+# 4. Execute clang-uml:
+# Ensure working dir is the 'rippled' git repo root folder
+# find ./ -iname .clang-uml -type f -exec /path/to/clang-uml -t 4 -c {} -d build_gcc -o docs/diagrams \;
+# 5. Generate .svg images
+# plantuml -tsvg docs/diagrams/*.puml
+
+# Get classnames for diagrams comtext using:
+# basename -a src/ripple/app/misc/*.h src/ripple/app/misc/*.cpp src/ripple/app/misc/impl/*.h src/ripple/app/misc/impl/*.cpp | cut -d. -f1 | sort -u
+
+diagrams:
+  rippled_package_diagram:
+    type: package
+    glob:
+      - src/ripple/*/*.h
+      - src/ripple/*/*.cpp
+      - src/ripple/*/*/*.h
+      - src/ripple/*/*/*.cpp
+    using_namespace:
+      - ripple
+    include:
+      namespaces:
+        - ripple
+    exclude:
+      namespaces:
+        - std
+        - boost
+        - beast
+        - date
+        - Json
+        - openssl
+        - __gnu_cxx
+        - __cxxabiv1

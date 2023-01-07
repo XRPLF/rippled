@@ -1,0 +1,321 @@
+@startuml
+title Class Diagram for net
+class "detail::AccountIDTag" as C_0000219725434573906145
+class C_0000219725434573906145 {
++AccountIDTag() = default : void
+}
+class "base_uint<160,detail::AccountIDTag>" as C_0002185921478450888283
+class C_0002185921478450888283 {
+}
+class "RPC::Context" as C_0002247987867926704610
+class C_0002247987867926704610 {
++j : const beast::Journal
++coro : std::shared_ptr<JobQueue::Coro>
++apiVersion : unsigned int
+}
+class "Resource::Consumer" as C_0000062221471159367414
+class C_0000062221471159367414 {
++Consumer() : void
++~Consumer() : void
++Consumer() : void
++operator=() : Resource::Consumer &
++to_string() const : std::string
++isUnlimited() const : bool
++elevate() : void
++disposition() const : Resource::Disposition
++charge() : Resource::Disposition
++warn() : bool
++disconnect() : bool
++balance() : int
++entry() : Resource::Entry &
+}
+abstract "InfoSubRequest" as C_0001227864600475226239
+abstract C_0001227864600475226239 {
++~InfoSubRequest() = default : void
+{abstract} +doClose() = 0 : Json::Value
+{abstract} +doStatus() = 0 : Json::Value
+}
+abstract "InfoSub" as C_0000355011254015740536
+abstract C_0000355011254015740536 {
++InfoSub() : void
++InfoSub() : void
++~InfoSub() : void
++getConsumer() : InfoSub::Consumer &
+{abstract} +send() = 0 : void
++getSeq() : std::uint64_t
++onSendEmpty() : void
++insertSubAccountInfo() : void
++deleteSubAccountInfo() : void
++insertSubAccountHistory() : bool
++deleteSubAccountHistory() : void
++clearRequest() : void
++setRequest() : void
++getRequest() : const std::shared_ptr<InfoSubRequest> &
+#mLock : std::mutex
+}
+abstract "InfoSub::Source" as C_0001169353605278832887
+abstract C_0001169353605278832887 {
++~Source() = default : void
+{abstract} +subAccount() = 0 : void
+{abstract} +unsubAccount() = 0 : void
+{abstract} +unsubAccountInternal() = 0 : void
+{abstract} +subAccountHistory() = 0 : error_code_i
+{abstract} +unsubAccountHistory() = 0 : void
+{abstract} +unsubAccountHistoryInternal() = 0 : void
+{abstract} +subLedger() = 0 : bool
+{abstract} +unsubLedger() = 0 : bool
+{abstract} +subManifests() = 0 : bool
+{abstract} +unsubManifests() = 0 : bool
+{abstract} +pubManifest() = 0 : void
+{abstract} +subServer() = 0 : bool
+{abstract} +unsubServer() = 0 : bool
+{abstract} +subBook() = 0 : bool
+{abstract} +unsubBook() = 0 : bool
+{abstract} +subTransactions() = 0 : bool
+{abstract} +unsubTransactions() = 0 : bool
+{abstract} +subRTTransactions() = 0 : bool
+{abstract} +unsubRTTransactions() = 0 : bool
+{abstract} +subValidations() = 0 : bool
+{abstract} +unsubValidations() = 0 : bool
+{abstract} +subPeerStatus() = 0 : bool
+{abstract} +unsubPeerStatus() = 0 : bool
+{abstract} +pubPeerStatus() = 0 : void
+{abstract} +subConsensus() = 0 : bool
+{abstract} +unsubConsensus() = 0 : bool
+{abstract} +findRpcSub() = 0 : InfoSub::pointer
+{abstract} +addRpcSub() = 0 : InfoSub::pointer
+{abstract} +tryRemoveRpcSub() = 0 : bool
+}
+class "Config" as C_0002213387511391991779
+class C_0002213387511391991779 {
++getDebugLogFile() const : boost::filesystem::path
++Config() : void
++setup() : void
++setupControl() : void
++loadFromString() : void
++quiet() const : bool
++silent() const : bool
++standalone() const : bool
++reporting() const : bool
++useTxTables() const : bool
++reportingReadOnly() const : bool
++setReportingReadOnly() : void
++canSign() const : bool
++getValueFor() const : int
++CONFIG_DIR : boost::filesystem::path
++doImport : bool
++nodeToShard : bool
++ELB_SUPPORT : bool
++IPS : std::vector<std::string>
++IPS_FIXED : std::vector<std::string>
++SNTP_SERVERS : std::vector<std::string>
++START_UP : Config::StartUpType
++START_VALID : bool
++START_LEDGER : std::string
++NETWORK_QUORUM : std::size_t
++RELAY_UNTRUSTED_VALIDATIONS : int
++RELAY_UNTRUSTED_PROPOSALS : int
++PEER_PRIVATE : bool
++PEERS_MAX : std::size_t
++PEERS_OUT_MAX : std::size_t
++PEERS_IN_MAX : std::size_t
++PATH_SEARCH_OLD : int
++PATH_SEARCH : int
++PATH_SEARCH_FAST : int
++PATH_SEARCH_MAX : int
++VALIDATION_QUORUM : std::optional<std::size_t>
++LEDGER_HISTORY : std::uint32_t
++FETCH_DEPTH : std::uint32_t
++NODE_SIZE : std::size_t
++SSL_VERIFY : bool
++SSL_VERIFY_FILE : std::string
++SSL_VERIFY_DIR : std::string
++COMPRESSION : bool
++LEDGER_REPLAY : bool
++MAX_TRANSACTIONS : int
++AMENDMENT_MAJORITY_TIME : std::chrono::seconds
++WORKERS : int
++IO_WORKERS : int
++PREFETCH_WORKERS : int
++FORCE_MULTI_THREAD : bool
++SWEEP_INTERVAL : std::optional<int>
++VP_REDUCE_RELAY_ENABLE : bool
++VP_REDUCE_RELAY_SQUELCH : bool
++TX_REDUCE_RELAY_ENABLE : bool
++TX_REDUCE_RELAY_METRICS : bool
++TX_REDUCE_RELAY_MIN_PEERS : std::size_t
++TX_RELAY_PERCENTAGE : std::size_t
++rpc_ip : std::optional<beast::IP::Endpoint>
++SERVER_DOMAIN : std::string
++MAX_UNKNOWN_TIME : std::chrono::seconds
++MAX_DIVERGED_TIME : std::chrono::seconds
++BETA_RPC_API : bool
++FAST_LOAD : bool
+{static} +configFileName : const char *const
+{static} +databaseDirName : const char *const
+{static} +validatorsFileName : const char *const
+{static} +TRANSACTION_FEE_BASE : const FeeUnit32
+{static} +MAX_JOB_QUEUE_TX : const int
+{static} +MIN_JOB_QUEUE_TX : const int
+}
+class "HTTPClient" as C_0002264265661328364095
+class C_0002264265661328364095 {
++HTTPClient() = default : void
+{static} +initializeSSLContext() : void
+{static} +get() : void
+{static} +get() : void
+{static} +request() : void
+{static} +maxClientHeaderBytes : const int
+}
+class "HTTPClientSSLContext" as C_0000977553314762696778
+class C_0000977553314762696778 {
++HTTPClientSSLContext() : void
++context() : boost::asio::ssl::context &
++sslVerify() const : bool
+{static} +rfc2818_verify() : bool
++preConnectVerify() : boost::system::error_code
++postConnectVerify() : boost::system::error_code
+}
+class "HTTPClientImp" as C_0000232339243288637918
+class C_0000232339243288637918 {
++HTTPClientImp() : void
++makeGet() : void
++request() : void
++get() : void
++httpsNext() : void
++handleDeadline() : void
++handleShutdown() : void
++handleResolve() : void
++handleConnect() : void
++handleRequest() : void
++handleWrite() : void
++handleHeader() : void
++handleData() : void
++invokeComplete() : void
+}
+class "WSInfoSub" as C_0001962546240366972442
+class C_0001962546240366972442 {
++WSInfoSub() : void
++user() const : boost::string_view
++forwarded_for() const : boost::string_view
++send() : void
+}
+class "DatabaseBody" as C_0001427983413924985694
+class C_0001427983413924985694 {
+{static} +size() : std::uint64_t
+}
+class "DatabaseBody::value_type" as C_0000335846541225050302
+class C_0000335846541225050302 {
++~value_type() = default : void
++value_type() = default : void
++is_open() const : bool
++size() const : std::uint64_t
++close() : void
++open() : void
+}
+class "DatabaseBody::reader" as C_0000219728437616170297
+class C_0000219728437616170297 {
++init() : void
++do_put() : void
++finish() : void
++reader() : void
++put() : std::size_t
+}
+abstract "HTTPStream" as C_0002049754990331719662
+abstract C_0002049754990331719662 {
++~HTTPStream() = default : void
+{abstract} +getStream() = 0 : boost::asio::ip::tcp::socket &
+{abstract} +connect() = 0 : bool
+{abstract} +asyncWrite() = 0 : void
+{abstract} +asyncRead() = 0 : void
+{abstract} +asyncReadSome() = 0 : void
+}
+class "SSLStream" as C_0001362700210492716967
+class C_0001362700210492716967 {
++SSLStream() : void
++~SSLStream() = default : void
++getStream() : boost::asio::ip::tcp::socket &
++connect() : bool
++asyncWrite() : void
++asyncRead() : void
++asyncReadSome() : void
+}
+class "RawStream" as C_0001608540173468234882
+class C_0001608540173468234882 {
++RawStream() : void
++~RawStream() = default : void
++getStream() : boost::asio::ip::tcp::socket &
++connect() : bool
++asyncWrite() : void
++asyncRead() : void
++asyncReadSome() : void
+}
+abstract "HTTPDownloader" as C_0000437466113524949360
+abstract C_0000437466113524949360 {
++download() : bool
++stop() : void
++~HTTPDownloader() = default : void
++sessionIsActive() const : bool
++isStopping() const : bool
+#HTTPDownloader() : void
+#fail() : void
+#j_ : const beast::Journal
+}
+class "DatabaseDownloader" as C_0000064249668507306918
+class C_0000064249668507306918 {
++~DatabaseDownloader() = default : void
+}
+class "RPCErr" as C_0000835041308410312068
+class C_0000835041308410312068 {
+}
+abstract "RPCSub" as C_0002014855593175939636
+abstract C_0002014855593175939636 {
+{abstract} +setUsername() = 0 : void
+{abstract} +setPassword() = 0 : void
+#RPCSub() : void
+}
+class "RPCSubImp" as C_0000141627362544122375
+class C_0000141627362544122375 {
++RPCSubImp() : void
++~RPCSubImp() = default : void
++send() : void
++setUsername() : void
++setPassword() : void
+}
+C_0002185921478450888283 ..> C_0000219725434573906145
+C_0002247987867926704610 --> C_0000062221471159367414 : +consumer
+C_0002247987867926704610 o-- C_0000355011254015740536 : +infoSub
+C_0000355011254015740536 ..> C_0000062221471159367414
+C_0000355011254015740536 ..> C_0000219725434573906145
+C_0000355011254015740536 ..> C_0002185921478450888283
+C_0000355011254015740536 ..> C_0001227864600475226239
+C_0000355011254015740536 o-- C_0000062221471159367414 : -m_consumer
+C_0000355011254015740536 o-- C_0000219725434573906145 : -realTimeSubscriptions_
+C_0000355011254015740536 o-- C_0000219725434573906145 : -normalSubscriptions_
+C_0000355011254015740536 --> C_0001227864600475226239 : -request_
+C_0000355011254015740536 o-- C_0000219725434573906145 : -accountHistorySubscriptions_
+C_0001169353605278832887 --+ C_0000355011254015740536
+C_0001169353605278832887 ..> C_0000355011254015740536
+C_0001169353605278832887 ..> C_0000219725434573906145
+C_0001169353605278832887 ..> C_0002185921478450888283
+C_0002264265661328364095 ..> C_0002213387511391991779
+C_0000977553314762696778 ..> C_0002213387511391991779
+C_0002264265661328364095 <|-- C_0000232339243288637918
+C_0000355011254015740536 <|-- C_0001962546240366972442
+C_0000335846541225050302 --+ C_0001427983413924985694
+C_0000335846541225050302 ..> C_0002213387511391991779
+C_0000335846541225050302 <.. C_0001427983413924985694 : +<<friend>>
+C_0000219728437616170297 --+ C_0001427983413924985694
+C_0001362700210492716967 ..> C_0002213387511391991779
+C_0001362700210492716967 o-- C_0000977553314762696778 : -ssl_ctx_
+C_0002049754990331719662 <|-- C_0001362700210492716967
+C_0002049754990331719662 <|-- C_0001608540173468234882
+C_0000437466113524949360 ..> C_0002213387511391991779
+C_0000437466113524949360 --> C_0002213387511391991779 : -config_
+C_0000437466113524949360 o-- C_0002049754990331719662 : -stream_
+C_0000064249668507306918 ..> C_0002213387511391991779
+C_0000064249668507306918 --> C_0002213387511391991779 : -config_
+C_0000437466113524949360 <|-- C_0000064249668507306918
+C_0000355011254015740536 <|-- C_0002014855593175939636
+C_0002014855593175939636 <|-- C_0000141627362544122375
+@enduml

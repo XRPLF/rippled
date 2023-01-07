@@ -1,0 +1,179 @@
+@startuml
+title Class Diagram for resource
+class "Resource::Charge" as C_0000253637917185643600
+class C_0000253637917185643600 {
++Charge() : void
++Charge() : void
++label() const : const std::string &
++cost() const : Resource::Charge::value_type
++to_string() const : std::string
++operator==() const : bool
++operator!=() const : bool
+}
+class "Resource::Consumer" as C_0000062221471159367414
+class C_0000062221471159367414 {
++Consumer() : void
++~Consumer() : void
++Consumer() : void
++operator=() : Resource::Consumer &
++to_string() const : std::string
++isUnlimited() const : bool
++elevate() : void
++disposition() const : Resource::Disposition
++charge() : Resource::Disposition
++warn() : bool
++disconnect() : bool
++balance() : int
++entry() : Resource::Entry &
+}
+class "Resource::Gossip" as C_0001451332876977542188
+class C_0001451332876977542188 {
++Gossip() = default : void
++items : std::vector<Item>
+}
+class "Resource::Gossip::Item" as C_0002081276720007034236
+class C_0002081276720007034236 {
++Item() = default : void
++balance : int
++address : beast::IP::Endpoint
+}
+abstract "Resource::Manager" as C_0002239834536044887777
+abstract C_0002239834536044887777 {
+#Manager() : void
+{abstract} +~Manager() = 0 : void
+{abstract} +newInboundEndpoint() = 0 : Resource::Consumer
+{abstract} +newInboundEndpoint() = 0 : Resource::Consumer
+{abstract} +newOutboundEndpoint() = 0 : Resource::Consumer
+{abstract} +newUnlimitedEndpoint() = 0 : Resource::Consumer
+{abstract} +exportConsumers() = 0 : Resource::Gossip
+{abstract} +getJson() = 0 : Json::Value
+{abstract} +getJson() = 0 : Json::Value
+{abstract} +importConsumers() = 0 : void
+}
+enum "Resource::Kind" as C_0000908667361104268955
+enum C_0000908667361104268955 {
+kindInbound
+kindOutbound
+kindUnlimited
+}
+class "Resource::Key" as C_0002009592020058514954
+class C_0002009592020058514954 {
++Key() : void
++Key() : void
++address : beast::IP::Endpoint
+}
+class "Resource::Key::hasher" as C_0002236073571112380001
+class C_0002236073571112380001 {
++operator()() const : std::size_t
+}
+class "Resource::Key::key_equal" as C_0000603214845818032417
+class C_0000603214845818032417 {
++key_equal() = default : void
++operator()() const : bool
+}
+class "Resource::Entry" as C_0001922857239110131244
+class C_0001922857239110131244 {
++Entry() : void
++Entry() : void
++to_string() const : std::string
++isUnlimited() const : bool
++balance() : int
++add() : int
++refcount : int
++remote_balance : int
++lastWarningTime : clock_type::time_point
++whenExpires : clock_type::time_point
+}
+class "Resource::Import" as C_0001291936686129808677
+class C_0001291936686129808677 {
++Import() : void
++whenExpires : clock_type::time_point
++items : std::vector<Item>
+}
+class "Resource::Import::Item" as C_0000553565227342579114
+class C_0000553565227342579114 {
++Item() = default : void
++balance : int
+}
+class "Resource::Logic" as C_0000210178746362794481
+class C_0000210178746362794481 {
++Logic() : void
++~Logic() : void
++newInboundEndpoint() : Resource::Consumer
++newOutboundEndpoint() : Resource::Consumer
++newUnlimitedEndpoint() : Resource::Consumer
++getJson() : Json::Value
++getJson() : Json::Value
++exportConsumers() : Resource::Gossip
++importConsumers() : void
++periodicActivity() : void
+{static} +disposition() : Resource::Disposition
++erase() : void
++acquire() : void
++release() : void
++charge() : Resource::Disposition
++warn() : bool
++disconnect() : bool
++balance() : int
++writeList() : void
++onWrite() : void
+}
+class "Resource::Logic::Stats" as C_0000053023985211531711
+class C_0000053023985211531711 {
++Stats() : void
++warn : beast::insight::Meter
++drop : beast::insight::Meter
+}
+class "Resource::ManagerImp" as C_0002104993459739792110
+class C_0002104993459739792110 {
++ManagerImp() : void
++ManagerImp() : void
++ManagerImp() : void
++operator=() : Resource::ManagerImp &
++~ManagerImp() : void
++newInboundEndpoint() : Resource::Consumer
++newInboundEndpoint() : Resource::Consumer
++newOutboundEndpoint() : Resource::Consumer
++newUnlimitedEndpoint() : Resource::Consumer
++exportConsumers() : Resource::Gossip
++importConsumers() : void
++getJson() : Json::Value
++getJson() : Json::Value
++onWrite() : void
+}
+class "DecayingSample<decayWindowSeconds,beast::abstract_clock<std::chrono::steady_clock>>" as C_0002198279020674726636
+class C_0002198279020674726636 {
+}
+C_0000062221471159367414 ..> C_0000210178746362794481
+C_0000062221471159367414 ..> C_0001922857239110131244
+C_0000062221471159367414 ..> C_0000253637917185643600
+C_0000062221471159367414 --> C_0000210178746362794481 : -m_logic
+C_0000062221471159367414 --> C_0001922857239110131244 : -m_entry
+C_0000062221471159367414 <.. C_0000210178746362794481 : +<<friend>>
+C_0002081276720007034236 --+ C_0001451332876977542188
+C_0002239834536044887777 ..> C_0001451332876977542188
+C_0002009592020058514954 ..> C_0000908667361104268955
+C_0002009592020058514954 o-- C_0000908667361104268955 : +kind
+C_0002236073571112380001 --+ C_0002009592020058514954
+C_0002236073571112380001 ..> C_0002009592020058514954
+C_0000603214845818032417 --+ C_0002009592020058514954
+C_0000603214845818032417 ..> C_0002009592020058514954
+C_0001922857239110131244 --> C_0002009592020058514954 : +key
+C_0001922857239110131244 o-- C_0002198279020674726636 : +local_balance
+C_0000553565227342579114 --+ C_0001291936686129808677
+C_0000553565227342579114 o-- C_0000062221471159367414 : +consumer
+C_0000210178746362794481 ..> C_0001451332876977542188
+C_0000210178746362794481 ..> C_0001922857239110131244
+C_0000210178746362794481 ..> C_0000253637917185643600
+C_0000210178746362794481 o-- C_0002009592020058514954 : -table_
+C_0000210178746362794481 o-- C_0001922857239110131244 : -table_
+C_0000210178746362794481 o-- C_0001922857239110131244 : -inbound_
+C_0000210178746362794481 o-- C_0001922857239110131244 : -outbound_
+C_0000210178746362794481 o-- C_0001922857239110131244 : -admin_
+C_0000210178746362794481 o-- C_0001922857239110131244 : -inactive_
+C_0000210178746362794481 o-- C_0001291936686129808677 : -importTable_
+C_0000053023985211531711 --+ C_0000210178746362794481
+C_0002104993459739792110 ..> C_0001451332876977542188
+C_0002104993459739792110 o-- C_0000210178746362794481 : -logic_
+C_0002239834536044887777 <|-- C_0002104993459739792110
+@enduml

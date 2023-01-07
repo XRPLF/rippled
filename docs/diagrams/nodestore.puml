@@ -1,0 +1,342 @@
+@startuml
+title Class Diagram for nodestore
+enum "NodeObjectType" as C_0000855875579524244872
+enum C_0000855875579524244872 {
+hotUNKNOWN
+hotLEDGER
+hotACCOUNT_NODE
+hotTRANSACTION_NODE
+hotDUMMY
+}
+class "base_uint<256>" as C_0000434356742846908842
+class C_0000434356742846908842 {
+}
+class "NodeObject" as C_0000259095379643657367
+class C_0000259095379643657367 {
++NodeObject() : void
+{static} +createObject() : std::shared_ptr<NodeObject>
++getType() const : NodeObjectType
++getHash() const : const uint256 &
++getData() const : const Blob &
+{static} +keyBytes : const std::size_t
+}
+class "NodeObject::PrivateAccess" as C_0000536634694005451753
+class C_0000536634694005451753 {
++PrivateAccess() = default : void
+}
+abstract "NodeStore::Backend" as C_0002214970677431989731
+abstract C_0002214970677431989731 {
++~Backend() = default : void
+{abstract} +getName() = 0 : std::string
+{abstract} +open() = 0 : void
+{abstract} +isOpen() = 0 : bool
++open() : void
+{abstract} +close() = 0 : void
+{abstract} +fetch() = 0 : NodeStore::Status
+{abstract} +fetchBatch() = 0 : std::pair<std::vector<std::shared_ptr<NodeObject>>,Status>
+{abstract} +store() = 0 : void
+{abstract} +storeBatch() = 0 : void
+{abstract} +sync() = 0 : void
+{abstract} +for_each() = 0 : void
+{abstract} +getWriteLoad() = 0 : int
+{abstract} +setDeletePath() = 0 : void
++verify() : void
+{abstract} +fdRequired() const = 0 : int
++counters() const : std::optional<Counters<std::uint64_t>>
+}
+abstract "NodeStore::Database" as C_0002069443800464145931
+abstract C_0002069443800464145931 {
++Database() : void
++Database() : void
++~Database() : void
+{abstract} +getName() const = 0 : std::string
+{abstract} +importDatabase() = 0 : void
+{abstract} +getWriteLoad() const = 0 : std::int32_t
+{abstract} +store() = 0 : void
+{abstract} +isSameDB() = 0 : bool
+{abstract} +sync() = 0 : void
++fetchNodeObject() : std::shared_ptr<NodeObject>
++asyncFetch() : void
+{abstract} +storeLedger() = 0 : bool
+{abstract} +sweep() = 0 : void
++getStoreCount() const : std::uint64_t
++getFetchTotalCount() const : std::uint32_t
++getFetchHitCount() const : std::uint32_t
++getStoreSize() const : std::uint64_t
++getFetchSize() const : std::uint32_t
++getCountsJson() : void
++fdRequired() const : int
++stop() : void
++isStopping() const : bool
++ledgersPerShard() const : std::uint32_t
++earliestLedgerSeq() const : std::uint32_t
++earliestShardIndex() const : std::uint32_t
++firstLedgerSeq() const : std::uint32_t
++lastLedgerSeq() const : std::uint32_t
++seqToShardIndex() const : std::uint32_t
++maxLedgers() const : std::uint32_t
+#storeStats() : void
+#importInternal() : void
+#storeLedger() : bool
+#updateFetchMetrics() : void
+#j_ : const beast::Journal
+#fdRequired_ : int
+#fetchHitCount_ : std::atomic<std::uint32_t>
+#fetchSz_ : std::atomic<std::uint32_t>
+#ledgersPerShard_ : const std::uint32_t
+#earliestLedgerSeq_ : const std::uint32_t
+#earliestShardIndex_ : const std::uint32_t
+#requestBundle_ : const int
+}
+class "NodeStore::DatabaseNodeImp" as C_0001089131121863903009
+class C_0001089131121863903009 {
++DatabaseNodeImp() : void
++DatabaseNodeImp() : void
++operator=() : NodeStore::DatabaseNodeImp &
++DatabaseNodeImp() : void
++~DatabaseNodeImp() : void
++getName() const : std::string
++getWriteLoad() const : std::int32_t
++importDatabase() : void
++store() : void
++isSameDB() : bool
++sync() : void
++fetchBatch() : std::vector<std::shared_ptr<NodeObject>>
++asyncFetch() : void
++storeLedger() : bool
++sweep() : void
+}
+class "NodeStore::DeterministicShard" as C_0000240241992813306142
+class C_0000240241992813306142 {
++~DeterministicShard() : void
++close() : void
++getDir() const : const boost::filesystem::path &
++store() : bool
+}
+class "NodeStore::Shard" as C_0001343369207418016912
+class C_0001343369207418016912 {
++Shard() : void
++Shard() : void
++operator=() : NodeStore::Shard &
++operator=() : NodeStore::Shard &
++Shard() : void
++Shard() : void
++~Shard() : void
++init() : bool
++isOpen() const : bool
++tryClose() : bool
++stop() : void
++prepare() : std::optional<std::uint32_t>
++storeNodeObject() : bool
++fetchNodeObject() : std::shared_ptr<NodeObject>
++storeLedger() : NodeStore::Shard::StoreLedgerResult
++setLedgerStored() : bool
++containsLedger() const : bool
++index() const : std::uint32_t
++getDir() const : const boost::filesystem::path &
++getLastUse() const : std::chrono::steady_clock::time_point
++getFileInfo() const : std::pair<std::uint64_t,std::uint32_t>
++getState() const : ShardState
++getPercentProgress() const : std::uint32_t
++getWriteLoad() : std::int32_t
++isLegacy() const : bool
++finalize() : bool
++removeOnDestroy() : void
++getStoredSeqs() : std::string
++callForLedgerSQL() : _Bool
++callForTransactionSQL() : _Bool
+{static} +version : const std::uint32_t
+{static} +finalKey : const uint256
+}
+class "NodeStore::BatchWriter" as C_0000286650811473765618
+class C_0000286650811473765618 {
++BatchWriter() : void
++~BatchWriter() : void
++store() : void
++getWriteLoad() : int
+}
+abstract "NodeStore::BatchWriter::Callback" as C_0000948563456986781213
+abstract C_0000948563456986781213 {
++~Callback() = default : void
++Callback() = default : void
++Callback() : void
++operator=() : NodeStore::BatchWriter::Callback &
+{abstract} +writeBatch() = 0 : void
+}
+class "NodeStore::EncodedBlob" as C_0000312573841898533211
+class C_0000312573841898533211 {
++prepare() : void
++getKey() const : const void *
++getSize() const : std::size_t
++getData() const : const void *
+}
+class "NodeStore::DatabaseRotatingImp" as C_0002032177822726797791
+class C_0002032177822726797791 {
++DatabaseRotatingImp() : void
++DatabaseRotatingImp() : void
++operator=() : NodeStore::DatabaseRotatingImp &
++DatabaseRotatingImp() : void
++~DatabaseRotatingImp() : void
++rotateWithLock() : void
++getName() const : std::string
++getWriteLoad() const : std::int32_t
++importDatabase() : void
++isSameDB() : bool
++store() : void
++sync() : void
++storeLedger() : bool
++sweep() : void
+}
+class "NodeStore::DatabaseShardImp" as C_0002003532416511686684
+class C_0002003532416511686684 {
++DatabaseShardImp() : void
++DatabaseShardImp() : void
++DatabaseShardImp() : void
++operator=() : NodeStore::DatabaseShardImp &
++operator=() : NodeStore::DatabaseShardImp &
++DatabaseShardImp() : void
++~DatabaseShardImp() : void
++init() : bool
++prepareLedger() : std::optional<std::uint32_t>
++prepareShards() : bool
++removePreShard() : void
++getPreShards() : std::string
++importShard() : bool
++fetchLedger() : std::shared_ptr<Ledger>
++setStored() : void
++getShardInfo() const : std::unique_ptr<ShardInfo>
++getNumTasks() const : size_t
++getRootDir() const : const boost::filesystem::path &
++getName() const : std::string
++stop() : void
++importDatabase() : void
++doImportDatabase() : void
++getWriteLoad() const : std::int32_t
++isSameDB() : bool
++store() : void
++sync() : void
++storeLedger() : bool
++sweep() : void
++getDatabaseImportStatus() const : Json::Value
++startNodeToShard() : Json::Value
++stopNodeToShard() : Json::Value
++getDatabaseImportSequence() const : std::optional<std::uint32_t>
++callForLedgerSQLByLedgerSeq() : bool
++callForLedgerSQLByShardIndex() : bool
++callForTransactionSQLByLedgerSeq() : bool
++callForTransactionSQLByShardIndex() : bool
++iterateLedgerSQLsForward() : bool
++iterateTransactionSQLsForward() : bool
++iterateLedgerSQLsBack() : bool
++iterateTransactionSQLsBack() : bool
+}
+class "TaggedCache<base_uint<256>,NodeObject>" as C_0000450662133949096416
+class C_0000450662133949096416 {
+}
+class "SHAMap" as C_0001060376113924291884
+class C_0001060376113924291884 {
++SHAMap() : void
++operator=() : SHAMap &
++SHAMap() : void
++SHAMap() : void
++~SHAMap() = default : void
++family() const : const Family &
++family() : Family &
++begin() const : SHAMap::const_iterator
++end() const : SHAMap::const_iterator
++snapShot() const : std::shared_ptr<SHAMap>
++setFull() : void
++setLedgerSeq() : void
++fetchRoot() : bool
++hasItem() const : bool
++delItem() : bool
++addItem() : bool
++getHash() const : SHAMapHash
++updateGiveItem() : bool
++addGiveItem() : bool
++peekItem() const : const std::shared_ptr<const SHAMapItem> &
++peekItem() const : const std::shared_ptr<const SHAMapItem> &
++upper_bound() const : SHAMap::const_iterator
++lower_bound() const : SHAMap::const_iterator
++visitNodes() const : void
++visitDifferences() const : void
++visitLeaves() const : void
++getMissingNodes() : std::vector<std::pair<SHAMapNodeID,uint256>>
++getNodeFat() const : bool
++getProofPath() const : std::optional<std::vector<Blob>>
+{static} +verifyProofPath() : bool
++serializeRoot() const : void
++addRootNode() : SHAMapAddNode
++addKnownNode() : SHAMapAddNode
++setImmutable() : void
++isSynching() const : bool
++setSynching() : void
++clearSynching() : void
++isValid() const : bool
++compare() const : bool
++unshare() : int
++flushDirty() : int
++walkMap() const : void
++walkMapParallel() const : bool
++deepCompare() const : bool
++setUnbacked() : void
++dump() const : void
++invariants() const : void
+{static} +branchFactor : const unsigned int
+{static} +leafDepth : const unsigned int
+}
+class "Database" as C_0002085680201683292019
+class C_0002085680201683292019 {
+}
+C_0000259095379643657367 ..> C_0000855875579524244872
+C_0000259095379643657367 ..> C_0000434356742846908842
+C_0000259095379643657367 o-- C_0000855875579524244872 : -mType
+C_0000259095379643657367 o-- C_0000434356742846908842 : -mHash
+C_0000536634694005451753 --+ C_0000259095379643657367
+C_0002214970677431989731 ..> C_0000259095379643657367
+C_0002069443800464145931 ..> C_0000855875579524244872
+C_0002069443800464145931 ..> C_0000434356742846908842
+C_0002069443800464145931 ..> C_0000259095379643657367
+C_0002069443800464145931 ..> C_0002214970677431989731
+C_0002069443800464145931 o-- C_0000434356742846908842 : -read_
+C_0002069443800464145931 --> C_0000259095379643657367 : -read_
+C_0001089131121863903009 ..> C_0002214970677431989731
+C_0001089131121863903009 ..> C_0002069443800464145931
+C_0001089131121863903009 ..> C_0000855875579524244872
+C_0001089131121863903009 ..> C_0000434356742846908842
+C_0001089131121863903009 ..> C_0000259095379643657367
+C_0001089131121863903009 ..> C_0000450662133949096416
+C_0001089131121863903009 --> C_0000450662133949096416 : -cache_
+C_0001089131121863903009 --> C_0000259095379643657367 : -cache_
+C_0001089131121863903009 --> C_0002214970677431989731 : -backend_
+C_0002069443800464145931 <|-- C_0001089131121863903009
+C_0000240241992813306142 ..> C_0000259095379643657367
+C_0000240241992813306142 --> C_0002214970677431989731 : -backend_
+C_0001343369207418016912 ..> C_0000259095379643657367
+C_0001343369207418016912 ..> C_0000434356742846908842
+C_0001343369207418016912 ..> C_0000240241992813306142
+C_0001343369207418016912 o-- C_0002214970677431989731 : -backend_
+C_0000286650811473765618 ..> C_0000259095379643657367
+C_0000286650811473765618 o-- C_0000259095379643657367 : -mWriteSet
+C_0000948563456986781213 --+ C_0000286650811473765618
+C_0000948563456986781213 ..> C_0000259095379643657367
+C_0000312573841898533211 ..> C_0000259095379643657367
+C_0002032177822726797791 ..> C_0002214970677431989731
+C_0002032177822726797791 ..> C_0002069443800464145931
+C_0002032177822726797791 ..> C_0000855875579524244872
+C_0002032177822726797791 ..> C_0000434356742846908842
+C_0002032177822726797791 ..> C_0000259095379643657367
+C_0002032177822726797791 --> C_0002214970677431989731 : -writableBackend_
+C_0002032177822726797791 --> C_0002214970677431989731 : -archiveBackend_
+C_0002003532416511686684 ..> C_0000434356742846908842
+C_0002003532416511686684 ..> C_0002069443800464145931
+C_0002003532416511686684 ..> C_0000855875579524244872
+C_0002003532416511686684 ..> C_0000259095379643657367
+C_0002003532416511686684 ..> C_0001343369207418016912
+C_0002003532416511686684 o-- C_0001343369207418016912 : -shards_
+C_0000450662133949096416 ..> C_0000434356742846908842
+C_0000450662133949096416 ..> C_0000259095379643657367
+C_0001060376113924291884 ..> C_0000434356742846908842
+C_0001060376113924291884 ..> C_0000855875579524244872
+C_0001060376113924291884 ..> C_0000259095379643657367
+@enduml

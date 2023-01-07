@@ -1,0 +1,50 @@
+diagrams:
+  peerfinder:
+    type: class
+    generate_method_arguments: none
+    include_relations_also_as_members: false
+    glob:
+      - src/ripple/peerfinder/*.h
+      - src/ripple/peerfinder/*.cpp
+      - src/ripple/peerfinder/impl/*.h
+      - src/ripple/peerfinder/impl/*.cpp
+      - src/ripple/peerfinder/sim/*.h
+      - src/ripple/peerfinder/sim/*.cpp
+    using_namespace:
+      - ripple
+    include:
+      namespaces:
+        - ripple
+        - ripple::PeerFinder
+        - ripple::PeerFinder::Sim
+      context:
+        - ripple::PeerFinder::Bootcache
+        - ripple::PeerFinder::Checker
+        - ripple::PeerFinder::Counts
+        - ripple::PeerFinder::Endpoint
+        - ripple::PeerFinder::Fixed
+        - ripple::PeerFinder::Sim::FunctionQueue
+        - ripple::PeerFinder::Sim::GraphAlgorithms
+        - ripple::PeerFinder::Handouts
+        - ripple::PeerFinder::Livecache
+        - ripple::PeerFinder::Logic
+        - ripple::PeerFinder::Sim::Message
+        - ripple::PeerFinder::Sim::NodeSnapshot
+        - ripple::PeerFinder::Sim::Params
+        - ripple::PeerFinder::PeerfinderConfig
+        - ripple::PeerFinder::PeerfinderManager
+        - ripple::PeerFinder::Sim::Predicates
+        - ripple::PeerFinder::Reporting
+        - ripple::PeerFinder::Slot
+        - ripple::PeerFinder::SlotImp
+        - ripple::PeerFinder::Source
+        - ripple::PeerFinder::SourceStrings
+        - ripple::PeerFinder::Store
+        - ripple::PeerFinder::StoreSqdb
+        - ripple::PeerFinder::Tuning
+    exclude:
+      access:
+        - private
+    plantuml:
+      before:
+        - 'title Class Diagram for peerfinder'

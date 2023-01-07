@@ -1,0 +1,52 @@
+diagrams:
+  app_ledger:
+    type: class
+    generate_method_arguments: none
+    include_relations_also_as_members: false
+    glob:
+      - src/ripple/app/ledger/*.h
+      - src/ripple/app/ledger/*.cpp
+      - src/ripple/app/ledger/impl/*.h
+      - src/ripple/app/ledger/impl/*.cpp
+    using_namespace:
+      - ripple
+    include:
+      namespaces:
+        - ripple
+      context:
+        - ripple::AbstractFetchPackContainer
+        - ripple::AcceptedLedger
+        - ripple::AcceptedLedgerTx
+        - ripple::AccountStateSF
+        - ripple::BookListeners
+        - ripple::BuildLedger
+        - ripple::ConsensusTransSetSF
+        - ripple::InboundLedger
+        - ripple::InboundLedgers
+        - ripple::InboundTransactions
+        - ripple::Ledger
+        - ripple::LedgerCleaner
+        - ripple::LedgerDeltaAcquire
+        - ripple::LedgerHistory
+        - ripple::LedgerHolder
+        - ripple::LedgerMaster
+        - ripple::LedgerReplay
+        - ripple::LedgerReplayMsgHandler
+        - ripple::LedgerReplayTask
+        - ripple::LedgerReplayer
+        - ripple::LedgerToJson
+        - ripple::LocalTxs
+        - ripple::OpenLedger
+        - ripple::OrderBookDB
+        - ripple::PendingSaves
+        - ripple::SkipListAcquire
+        - ripple::TimeoutCounter
+        - ripple::TransactionAcquire
+        - ripple::TransactionMaster
+        - ripple::TransactionStateSF
+    exclude:
+      access:
+        - private
+    plantuml:
+      before:
+        - 'title Class Diagram for app/ledger'
