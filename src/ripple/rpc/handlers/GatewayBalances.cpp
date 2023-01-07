@@ -189,9 +189,16 @@ doGatewayBalances(RPC::JsonContext& context)
                         {
                             bal -= rs->getBalance();
                         }
-                        catch (std::runtime_error& e)
+                        catch (std::runtime_error const&)
                         {
-                            result[jss::overflow] = "true";
+                            // Presumably the exception was caused by overflow.
+                            // On overflow return the largest valid STAmount.
+                            // Very large sums of STAmount are approximations
+                            // anyway.
+                            bal = STAmount(
+                                bal.issue(),
+                                STAmount::cMaxValue,
+                                STAmount::cMaxOffset);
                         }
                     }
                 }

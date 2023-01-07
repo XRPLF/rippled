@@ -438,7 +438,6 @@ JSS(open);                       // out: handlers/Ledger
 JSS(open_ledger_cost);           // out: SubmitTransaction
 JSS(open_ledger_fee);            // out: TxQ
 JSS(open_ledger_level);          // out: TxQ
-JSS(overflow);                   // out: gateway_balances
 JSS(owner);                      // in: LedgerEntry, out: NetworkOPs
 JSS(owner_funds);                // in/out: Ledger, NetworkOPs, AcceptedLedgerTx
 JSS(page_index);
