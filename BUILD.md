@@ -193,7 +193,7 @@ To build this package, you will need Python (>= 3.7),
 You'll need to compile in the C++20 dialect:
 
 ```
-conan profile update settings.compiler.cppstd=20 <profile>
+conan profile update settings.compiler.cppstd=20 default
 ```
 
 Linux developers will commonly have a default Conan [profile][] that compiles
@@ -202,7 +202,7 @@ If you are linking with libstdc++ (see profile setting `compiler.libcxx`),
 then you will need to choose the `libstdc++11` ABI:
 
 ```
-conan profile update settings.compiler.libcxx=libstdc++11 <profile>
+conan profile update settings.compiler.libcxx=libstdc++11 default
 ```
 
 We find it necessary to use the x64 native build tools on Windows.
@@ -213,7 +213,7 @@ Windows developers must build rippled and its dependencies for the x64
 architecture:
 
 ```
-conan profile update settings.arch=x86_64 <profile>
+conan profile update settings.arch=x86_64 default
 ```
 
 If you have multiple compilers installed on your platform,
@@ -223,7 +223,7 @@ This setting will set the correct variables (`CMAKE_<LANG>_COMPILER`) in the
 generated CMake toolchain file:
 
 ```
-conan profile update 'conf.tools.build:compiler_executables={"c": "<path>", "cpp": "<path>"}' <profile>
+conan profile update 'conf.tools.build:compiler_executables={"c": "<path>", "cpp": "<path>"}' default
 ```
 
 It should choose the compiler for dependencies as well,
@@ -231,8 +231,8 @@ but not all of them have a Conan recipe that respects this setting (yet).
 For the rest, you can set these environment variables:
 
 ```
-conan profile update env.CC=<path> <profile>
-conan profile update env.CXX=<path> <profile>
+conan profile update env.CC=<path> default
+conan profile update env.CXX=<path> default
 ```
 
 
@@ -374,10 +374,10 @@ part of C++20, e.g. Apple Clang 15.0,
 then you might need to add a preprocessor definition to your bulid:
 
 ```
-conan profile update 'env.CFLAGS="-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"' <profile>
-conan profile update 'env.CXXFLAGS="-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"' <profile>
-conan profile update 'tools.build:cflags+=["-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"]' <profile>
-conan profile update 'tools.build:cxxflags+=["-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"]' <profile>
+conan profile update 'env.CFLAGS="-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"' default
+conan profile update 'env.CXXFLAGS="-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"' default
+conan profile update 'tools.build:cflags+=["-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"]' default
+conan profile update 'tools.build:cxxflags+=["-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"]' default
 ```
 
 
