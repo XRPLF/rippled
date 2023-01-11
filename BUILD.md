@@ -183,7 +183,8 @@ To build this package, you will need Python (>= 3.7),
 >
 > These instructions assume a basic familiarity with Conan and CMake.
 > If you are unfamiliar with Conan,
-> then please read the crash course at the end of this document,
+> then please read the [crash course](#a-crash-course-in-cmake-and-conan)
+> at the beginning of this document,
 > or the official [Getting Started][3] walkthrough.
 
 [Conan]: https://conan.io/downloads.html
