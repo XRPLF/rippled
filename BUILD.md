@@ -52,9 +52,20 @@ Until then, we advise Windows developers to use Visual Studio 2019.
 ## Prerequisites
 
 To build this package, you will need Python (>= 3.7),
-[Conan][] (>= 1.52), and [CMake][] (>= 3.16).
-If you are unfamiliar with Conan,
-there is a crash course at the end of this document.
+[Conan][] (>= 1.55), and [CMake][] (>= 3.16).
+
+> **Warning**
+> The commands in this document are not meant to be blindly copied and pasted.
+> This document is written for multiple audiences,
+> meaning that your particular circumstances may require some commands and not
+> others.
+> You should never run any commands without understanding what they do
+> and why you are running them.
+>
+> These instructions assume a basic familiarity with Conan and CMake.
+> If you are unfamiliar with Conan,
+> then please read the crash course at the end of this document,
+> or the official [Getting Started][3] walkthrough.
 
 [Conan]: https://conan.io/downloads.html
 [CMake]: https://cmake.org/download/
@@ -62,7 +73,7 @@ there is a crash course at the end of this document.
 You'll need to compile in the C++20 dialect:
 
 ```
-conan profile update settings.compiler.cppstd=20 default
+conan profile update settings.compiler.cppstd=20 <profile>
 ```
 
 Linux developers will commonly have a default Conan [profile][] that compiles
@@ -71,7 +82,7 @@ If you are linking with libstdc++ (see profile setting `compiler.libcxx`),
 then you will need to choose the `libstdc++11` ABI:
 
 ```
-conan profile update settings.compiler.libcxx=libstdc++11 default
+conan profile update settings.compiler.libcxx=libstdc++11 <profile>
 ```
 
 We find it necessary to use the x64 native build tools on Windows.
@@ -82,7 +93,7 @@ Windows developers must build rippled and its dependencies for the x64
 architecture:
 
 ```
-conan profile update settings.arch=x86_64 default
+conan profile update settings.arch=x86_64 <profile>
 ```
 
 If you have multiple compilers installed on your platform,
@@ -92,7 +103,7 @@ This setting will set the correct variables (`CMAKE_<LANG>_COMPILER`) in the
 generated CMake toolchain file:
 
 ```
-conan profile update 'conf.tools.build:compiler_executables={"c": "<path>", "cpp": "<path>"}' default
+conan profile update 'conf.tools.build:compiler_executables={"c": "<path>", "cpp": "<path>"}' <profile>
 ```
 
 It should choose the compiler for dependencies as well,
@@ -100,8 +111,8 @@ but not all of them have a Conan recipe that respects this setting (yet).
 For the rest, you can set these environment variables:
 
 ```
-conan profile update env.CC=<path> default
-conan profile update env.CXX=<path> default
+conan profile update env.CC=<path> <profile>
+conan profile update env.CXX=<path> <profile>
 ```
 
 
@@ -137,7 +148,7 @@ cmake --build . --config Debug
 ./Debug/rippled --unittest
 ```
 
-Here we explain the individual steps:
+Now to explain the individual steps in each example:
 
 1. Export our [Conan recipe for RocksDB](./external/rocksdb).
 
@@ -243,10 +254,10 @@ part of C++20, e.g. Apple Clang 15.0,
 then you might need to add a preprocessor definition to your bulid:
 
 ```
-conan profile update 'env.CFLAGS="-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"' default
-conan profile update 'env.CXXFLAGS="-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"' default
-conan profile update 'tools.build:cflags+=["-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"]' default
-conan profile update 'tools.build:cxxflags+=["-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"]' default
+conan profile update 'env.CFLAGS="-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"' <profile>
+conan profile update 'env.CXXFLAGS="-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"' <profile>
+conan profile update 'tools.build:cflags+=["-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"]' <profile>
+conan profile update 'tools.build:cxxflags+=["-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"]' <profile>
 ```
 
 
@@ -409,6 +420,7 @@ conan profile new default --detect
 
 [1]: https://github.com/conan-io/conan-center-index/issues/13168
 [2]: https://en.cppreference.com/w/cpp/compiler_support/20
+[3]: https://docs.conan.io/en/latest/getting_started.html
 [5]: https://en.wikipedia.org/wiki/Unity_build
 [build_type]: https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html
 [runtime]: https://cmake.org/cmake/help/latest/variable/CMAKE_MSVC_RUNTIME_LIBRARY.html
