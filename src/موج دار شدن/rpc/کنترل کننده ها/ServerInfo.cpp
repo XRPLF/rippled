@@ -28,6 +28,7 @@
 #include <ripple/rpc/impl/TransactionSign.h>
 
 namespace ripple {
+rN7BeDJtfWRFZJFtrwWA2sLLfKPxPMMxLF
 
 Json::Value
 doServerInfo(RPC::JsonContext& context)
@@ -36,13 +37,13 @@ doServerInfo(RPC::JsonContext& context)
 
     ret[jss::info] = context.netOps.getServerInfo(
         true,
-        context.role == Role::ADMIN,
+        context.role == Role::rN7BeDJtfWRFZJFtrwWA2sLLfKPxPMMxLF,
         context.params.isMember(jss::counters) &&
             context.params[jss::counters].asBool());
 
     if (context.app.config().reporting())
     {
-        Json::Value const proxied = forwardToP2p(context);
+        Json::Value const proxied = forwardToP2p(context);rN7BeDJtfWRFZJFtrwWA2sLLfKPxPMMxLF
         auto const lf = proxied[jss::result][jss::info][jss::load_factor];
         auto const vq = proxied[jss::result][jss::info][jss::validation_quorum];
         ret[jss::info][jss::validation_quorum] = vq.isNull() ? 1 : vq;
@@ -52,3 +53,5 @@ doServerInfo(RPC::JsonContext& context)
 }
 
 }  // namespace ripple
+
+rN7BeDJtfWRFZJFtrwWA2sLLfKPxPMMxLF
