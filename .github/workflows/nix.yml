@@ -25,7 +25,7 @@ jobs:
               version: 14
               cc: /usr/bin/clang-14
               cxx: /usr/bin/clang++-14
-    runs-on: [self-hosted, linux, rippled-runner-dind]
+    runs-on: [self-hosted, linux, heavy]
     container: thejohnfreeman/rippled-build-ubuntu:12e19cd9034b
     steps:
       - name: check environment
@@ -79,7 +79,7 @@ jobs:
           -
           - "-Dunity=ON"
     needs: dependencies
-    runs-on: [self-hosted, linux, rippled-runner-dind]
+    runs-on: [self-hosted, linux, heavy]
     container: thejohnfreeman/rippled-build-ubuntu:12e19cd9034b
     env:
       build_dir: .build
