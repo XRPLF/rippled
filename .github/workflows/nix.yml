@@ -6,14 +6,12 @@ jobs:
   test:
     strategy:
       matrix:
-        platform:
-          - ubuntu-latest
-          - macos-12
+        platform: ['["self-hosted","heavy"]','["macos-12"]']
         generator:
           - Ninja
         configuration:
           - Release
-    runs-on: ${{ matrix.platform }}
+    runs-on: ${{ fromJson(matrix.platform) }}
     env:
       build_dir: .build
     steps:
