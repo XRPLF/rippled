@@ -54,40 +54,57 @@ getDeliveredAmount(
     if (!serializedTx)
         return {};
 
-    if (transactionMeta.hasDeliveredAmount())
+    // The field transactionMeta.hasDeliveredAmount value is always correct
+    // for partial payments, but is not 100% guaranteed to be correct for
+    // CheckCash.
+    bool const isCheckCash =
+        serializedTx->getFieldU16(sfTransactionType) == ttCHECK_CASH;
+
+    if (transactionMeta.hasDeliveredAmount() && !isCheckCash)
     {
         return transactionMeta.getDeliveredAmount();
     }
 
-    if (serializedTx->isFieldPresent(sfAmount))
-    {
-        using namespace std::chrono_literals;
+    using namespace std::chrono_literals;
 
-        // Ledger 4594095 is the first ledger in which the DeliveredAmount field
-        // was present when a partial payment was made and its absence indicates
-        // that the amount delivered is listed in the Amount field.
-        //
-        // If the ledger closed long after the DeliveredAmount code was deployed
-        // then its absence indicates that the amount delivered is listed in the
-        // Amount field. DeliveredAmount went live January 24, 2014.
-        // 446000000 is in Feb 2014, well after DeliveredAmount went live
-        if (getLedgerIndex() >= 4594095 ||
-            getCloseTime() > NetClock::time_point{446000000s})
+    // Ledger 4594095 is the first ledger in which the DeliveredAmount field
+    // was present when a partial payment was made and its absence indicates
+    // that the amount delivered is listed in the Amount field.
+    //
+    // If the ledger closed long after the DeliveredAmount code was deployed
+    // then its absence indicates that the amount delivered is listed in the
+    // Amount field. DeliveredAmount went live January 24, 2014.
+    // 446000000 is in Feb 2014, well after DeliveredAmount went live
+    if (isCheckCash || getLedgerIndex() >= 4594095 ||
+        getCloseTime() > NetClock::time_point{446000000s})
+    {
+        bool const hasAmount = serializedTx->isFieldPresent(sfAmount);
+        bool const hasDeliverMin = serializedTx->isFieldPresent(sfDeliverMin);
+
+        if (hasAmount || hasDeliverMin)
         {
-            auto const meta = transactionMeta.getAsObject();
+            // This code previously simply returned the Amount field of the
+            // transaction.  However there are corner cases where that fails,
+            // in part because of the floating-point like limitations of
+            // non-XRP STAmounts.
+            //
+            // Consider an account with a very large IOU balance on a trust
+            // line receiving a tiny IOU payment.  If the payment is small
+            // enough, then the very large IOU balance may not change at all.
+            // So, in effect, no money changed hands.
+            //
+            // To accommodate this, we compute the actual difference between
+            // the Previous and Final fields of the relevant RippleState
+            // object according to the transaction metadata. If for some
+            // reason this can't be calculated then an empty optional is
+            // returned and the RPC caller sees: "delivered_amount":
+            // "unavailable".
+
+            STObject const meta = transactionMeta.getAsObject();
 
             // if there are no modified fields (somehow) then nothing was
             // delivered
             if (!meta.isFieldPresent(sfAffectedNodes))
-                return {};
-
-            bool const hasDeliverMin =
-                serializedTx->isFieldPresent(sfDeliverMin);
-            bool const hasAmount = serializedTx->isFieldPresent(sfAmount);
-            bool const isCheckCash =
-                serializedTx->getFieldU16(sfTransactionType) == ttCHECK_CASH;
-
-            if (!hasDeliverMin && !hasAmount)
                 return {};
 
             // CheckCash may specify DeliverMin instead of Amount
@@ -95,12 +112,17 @@ getDeliveredAmount(
                 hasAmount ? sfAmount : sfDeliverMin);
 
             // if it's XRP then it was all delivered if the payment was
-            // successful otherwise take the difference between final and
-            // initial fields in the metadata
+            // successful
             if (isXRP(txAmt))
-                return txAmt;
+                return transactionMeta.hasDeliveredAmount()
+                    ? transactionMeta.getDeliveredAmount()
+                    : txAmt;
 
-            // In a CheckCash txn the destination is the sender
+            // It's not XRP.  Return the difference between final and initial
+            // fields in the metadata.
+
+            // in a CheckCash txn the destination is the sender.  Otherwise
+            // we need an explicit destination.
             if (!isCheckCash && !serializedTx->isFieldPresent(sfDestination))
                 return {};
 
@@ -123,6 +145,31 @@ getDeliveredAmount(
                 if (nodeType != ltRIPPLE_STATE)
                     continue;
 
+                // if newly created RippleState
+                if (node.isFieldPresent(sfNewFields) &&
+                    !node.isFieldPresent(sfFinalFields) &&
+                    !node.isFieldPresent(sfPreviousFields))
+                {
+                    auto const& nfBase = node.peekAtField(sfNewFields);
+                    auto const& newFields =
+                        nfBase.template downcast<STObject>();
+
+                    if (newFields.getFieldAmount(sfLowLimit).getIssuer() !=
+                            accA ||
+                        newFields.getFieldAmount(sfHighLimit).getIssuer() !=
+                            accB)
+                        continue;
+
+                    STAmount balance = newFields.getFieldAmount(sfBalance);
+                    balance.setIssue(issue);
+
+                    if (balance.negative())
+                        balance.negate();
+
+                    return balance;
+                }
+
+                // if RippleState not modified then keep looking
                 if (!node.isFieldPresent(sfFinalFields) ||
                     !node.isFieldPresent(sfPreviousFields))
                     continue;
