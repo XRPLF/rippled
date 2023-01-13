@@ -329,8 +329,7 @@ public:
 
                 BEAST_EXPECT(aobj == bobj[i]);
 
-                auto resume_marker = resp[jss::result][jss::marker];
-                params[jss::marker] = resume_marker;
+                params[jss::marker] = resp[jss::result][jss::marker];
             }
         }
     }
@@ -413,6 +412,7 @@ public:
             BEAST_EXPECT(aobjs.size() == 1);
             auto& aobj = aobjs[0U];
             BEAST_EXPECT(!resp[jss::result].isMember(jss::limit));
+            BEAST_EXPECT(!resp[jss::result].isMember(jss::marker));
 
             BEAST_EXPECT(aobj == unpaged[0u]);
         }
@@ -464,14 +464,19 @@ public:
                 BEAST_EXPECT(aobjs.size() == 1);
                 auto& aobj = aobjs[0U];
                 if (i < 4)
+                {
                     BEAST_EXPECT(resp[jss::result][jss::limit] == 1);
+                    BEAST_EXPECT(resp[jss::result].isMember(jss::marker));
+                }
                 else
+                {
                     BEAST_EXPECT(!resp[jss::result].isMember(jss::limit));
+                    BEAST_EXPECT(!resp[jss::result].isMember(jss::marker));
+                }
 
                 BEAST_EXPECT(aobj == unpaged[i]);
 
-                auto resume_marker = resp[jss::result][jss::marker];
-                params[jss::marker] = resume_marker;
+                params[jss::marker] = resp[jss::result][jss::marker];
             }
         }
 
@@ -514,14 +519,19 @@ public:
                 BEAST_EXPECT(aobjs.size() == 1);
                 auto& aobj = aobjs[0U];
                 if (i < 5)
+                {
                     BEAST_EXPECT(resp[jss::result][jss::limit] == 1);
+                    BEAST_EXPECT(resp[jss::result].isMember(jss::marker));
+                }
                 else
+                {
                     BEAST_EXPECT(!resp[jss::result].isMember(jss::limit));
+                    BEAST_EXPECT(!resp[jss::result].isMember(jss::marker));
+                }
 
                 BEAST_EXPECT(aobj == unpaged[i]);
 
-                auto resume_marker = resp[jss::result][jss::marker];
-                params[jss::marker] = resume_marker;
+                params[jss::marker] = resp[jss::result][jss::marker];
             }
         }
     }
