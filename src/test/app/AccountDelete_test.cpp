@@ -89,7 +89,7 @@ private:
     incLgrSeqForAccDel(
         jtx::Env& env,
         jtx::Account const& acc,
-        std::uint32_t margin = 0)
+        std::uint32_t margin = 0.)
     {
         int const delta = [&]() -> int {
             if (env.seq(acc) + 255 > openLedgerSeq(env))
@@ -101,6 +101,8 @@ private:
             env.close();
         BEAST_EXPECT(openLedgerSeq(env) == env.seq(acc) + 255 - margin);
     }
+
+    
 
 public:
     void
@@ -906,6 +908,93 @@ public:
         env(acctdelete(becky, alice), fee(acctDelFee));
         verifyDeliveredAmount(env, beckyOldBalance - acctDelFee);
         env.close();
+    }
+    void
+    testRemintAmendmentEnable()
+    {
+        // Start with the featureDeletableAccounts amendment disabled.
+        // Then enable the amendment and delete an account.
+        using namespace jtx;
+
+        testcase("Remint Amendment enable");
+
+        Env env{*this, supported_amendments() - featureDeletableAccounts};
+        Account const alice("alice");
+        Account const becky("becky");
+
+        env.fund(XRP(10000), alice, becky);
+        env.close();
+
+        std::vector<uint256> nftIDs;
+        nftIDs.reserve(200);
+        for(int i = 0; i<200; i++){
+            uint256 const nftokenID =
+                token::getNextID(env, alice, 0, tfTransferable);
+            nftIDs.push_back(nftokenID);
+            env(token::mint(alice, 0),
+                token::uri(std::string(maxTokenURILength, 'u')),
+                txflags(tfTransferable));
+            env.close();
+        }
+
+        for(auto const nftokenID: nftIDs){
+            env(token::burn(alice, nftokenID));
+        }
+       
+        env.close();
+
+        {
+            // Close enough ledgers to be able to delete alice's account.
+            incLgrSeqForAccDel(env, alice);
+
+            // Verify that alice's account root is present.
+            Keylet const aliceAcctKey{keylet::account(alice.id())};
+            BEAST_EXPECT(env.closed()->exists(aliceAcctKey));
+
+            auto const alicePreDelBal{env.balance(alice)};
+            auto const beckyPreDelBal{env.balance(becky)};
+
+            auto const acctDelFee{drops(env.current()->fees().increment)};
+            env(acctdelete(alice, becky), fee(acctDelFee));
+            env.close();
+
+            BEAST_EXPECT(!env.current()->exists(aliceAcctKey));
+        }
+
+        {
+            env.enableFeature(featureDeletableAccounts);
+            env.close();
+            // Close enough ledgers to be able to delete alice's account.
+            incLgrSeqForAccDel(env, alice);
+
+            // Verify that alice's account root is present.
+            Keylet const aliceAcctKey{keylet::account(alice.id())};
+            BEAST_EXPECT(env.closed()->exists(aliceAcctKey));
+
+            auto const alicePreDelBal{env.balance(alice)};
+            auto const beckyPreDelBal{env.balance(becky)};
+
+            auto const acctDelFee{drops(env.current()->fees().increment)};
+            env(acctdelete(alice, becky), fee(acctDelFee), ter(tecTOO_SOON));
+            env.close();
+
+            BEAST_EXPECT(env.current()->exists(aliceAcctKey));
+
+
+            auto incLgrSeqForNFTokenAccDel = [&](  jtx::Account const& acc) {
+                int delta = 0;
+                auto t = (*env.le(acc))[sfSequence];
+                auto t2 = (*env.le(acc))[sfMintedNFTokens]
+                if((*env.le(acc))[sfSequence] + (*env.le(acc))[sfMintedNFTokens]+ 255 > openLedgerSeq(env))
+                    delta = (*env.le(acc))[sfSequence] + (*env.le(acc))[sfMintedNFTokens]+ 255 - openLedgerSeq(env);
+       
+                BEAST_EXPECT(margin == 0 || delta >= 0);
+                for (int i = 0; i < delta; ++i)
+                    env.close();
+                BEAST_EXPECT(openLedgerSeq(env) == env.seq(acc) + 255 - margin);
+        };
+        }
+
     }
 
     void
