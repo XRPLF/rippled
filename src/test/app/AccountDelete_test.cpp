@@ -89,7 +89,7 @@ private:
     incLgrSeqForAccDel(
         jtx::Env& env,
         jtx::Account const& acc,
-        std::uint32_t margin = 0.)
+        std::uint32_t margin = 0)
     {
         int const delta = [&]() -> int {
             if (env.seq(acc) + 255 > openLedgerSeq(env))
@@ -101,8 +101,6 @@ private:
             env.close();
         BEAST_EXPECT(openLedgerSeq(env) == env.seq(acc) + 255 - margin);
     }
-
-    
 
 public:
     void
@@ -908,126 +906,6 @@ public:
         env(acctdelete(becky, alice), fee(acctDelFee));
         verifyDeliveredAmount(env, beckyOldBalance - acctDelFee);
         env.close();
-    }
-    void
-    testRemintAmendmentEnable()
-    {
-        // Start with the featureDeletableAccounts amendment disabled.
-        // Then enable the amendment and delete an account.
-        using namespace jtx;
-
-        testcase("Remint Amendment enable");
-
-        Env env{*this, supported_amendments() - featureDeletableAccounts};
-        Account const alice("alice");
-        Account const becky("becky");
-
-        env.fund(XRP(10000), alice, becky);
-        env.close();
-
-        std::vector<uint256> nftIDs;
-        nftIDs.reserve(200);
-        for(int i = 0; i<200; i++){
-            uint256 const nftokenID =
-                token::getNextID(env, alice, 0, tfTransferable);
-            nftIDs.push_back(nftokenID);
-            env(token::mint(alice, 0),
-                token::uri(std::string(maxTokenURILength, 'u')),
-                txflags(tfTransferable));
-            env.close();
-        }
-
-        for(auto const nftokenID: nftIDs){
-            env(token::burn(alice, nftokenID));
-        }
-       
-        env.close();
-
-        {
-            // Close enough ledgers to be able to delete alice's account.
-            incLgrSeqForAccDel(env, alice);
-
-            // Verify that alice's account root is present.
-            Keylet const aliceAcctKey{keylet::account(alice.id())};
-            BEAST_EXPECT(env.closed()->exists(aliceAcctKey));
-
-            auto const alicePreDelBal{env.balance(alice)};
-            auto const beckyPreDelBal{env.balance(becky)};
-
-            auto const acctDelFee{drops(env.current()->fees().increment)};
-            env(acctdelete(alice, becky), fee(acctDelFee));
-            env.close();
-
-            BEAST_EXPECT(!env.current()->exists(aliceAcctKey));
-        }
-
-        {
-            env.enableFeature(featureDeletableAccounts);
-            env.close();
-
-            // Close enough ledgers to be able to delete alice's account.
-            incLgrSeqForAccDel(env, alice);
-
-            // Verify that alice's account root is present.
-            Keylet const aliceAcctKey{keylet::account(alice.id())};
-            BEAST_EXPECT(env.closed()->exists(aliceAcctKey));
-
-            auto const alicePreDelBal{env.balance(alice)};
-            auto const beckyPreDelBal{env.balance(becky)};
-
-            auto const acctDelFee1{drops(env.current()->fees().increment)};
-            env(acctdelete(alice, becky), fee(acctDelFee1), ter(tecTOO_SOON));
-            env.close();
-
-            BEAST_EXPECT(env.current()->exists(aliceAcctKey));
-
-            auto const alicePreDelBal{env.balance(alice)};
-            auto const beckyPreDelBal{env.balance(becky)};
-
-            // Verify that alice's account root is still present and alice and
-            // becky both have their XRP.
-            BEAST_EXPECT(env.current()->exists(aliceAcctKey));
-            BEAST_EXPECT(env.balance(alice) == alicePreDelBal);
-            BEAST_EXPECT(env.balance(becky) == beckyPreDelBal);
-
-            // Close the ledger until the ledger sequence is large enough to close
-            // the account, which has minted NFTs
-            auto incLgrSeqForNFTokenAccDel = [&](jtx::Account const& acc) {
-                int delta = 0;
-                auto const deletableLgrSeq = (*env.le(acc))[sfSequence] + (*env.le(acc))[sfMintedNFTokens]+ 255;
-
-                if(deletableLgrSeq > openLedgerSeq(env))
-                    delta = deletableLgrSeq - openLedgerSeq(env);
-       
-                BEAST_EXPECT(delta >= 0);
-                for (int i = 0; i < delta; ++i)
-                    env.close();
-
-                BEAST_EXPECT(openLedgerSeq(env) == deletableLgrSeq + 255);
-            };
-
-            // Close more ledgers to be able to delete alice's account 
-            incLgrSeqForNFTokenAccDel(alice);
-
-            auto const acctDelFee2{drops(env.current()->fees().increment)};
-            env(acctdelete(alice, becky), fee(acctDelFee2));
-            env.close();
-
-
-            // alice's account is still in the most recently closed ledger.
-            BEAST_EXPECT(env.closed()->exists(aliceAcctKey));
-
-            // Verify that alice's account root is gone from the current ledger
-            // and becky has alice's XRP.
-            BEAST_EXPECT(!env.current()->exists(aliceAcctKey));
-            BEAST_EXPECT(
-                env.balance(becky) == alicePreDelBal + beckyPreDelBal - acctDelFee2);
-
-            env.close();
-            BEAST_EXPECT(!env.closed()->exists(aliceAcctKey));
-
-        }
-
     }
 
     void

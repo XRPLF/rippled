@@ -65,10 +65,20 @@ getNextID(
     std::uint16_t flags,
     std::uint16_t xferFee)
 {
-    // Get the nftSeq from the account root of the issuer.
-    std::uint32_t const nftSeq = {
-        env.le(issuer)->at(~sfMintedNFTokens).value_or(0)};
-    return getID(issuer, nfTokenTaxon, nftSeq, flags, xferFee);
+    std::uint32_t nftSeq;
+
+    // If fixUnburnableNFToken amendment is on, we must
+    // generate the NFT sequence using new construct
+    if (env.current()->rules().enabled(fixUnburnableNFToken))
+        nftSeq = {
+            env.le(issuer)
+                ->at(~sfFirstNFTokenSequence)
+                .value_or(env.seq(issuer)) +
+            env.le(issuer)->at(~sfMintedNFTokens).value_or(0)};
+    else
+        nftSeq = {env.le(issuer)->at(~sfMintedNFTokens).value_or(0)};
+
+    return token::getID(issuer, nfTokenTaxon, nftSeq, flags, xferFee);
 }
 
 uint256
