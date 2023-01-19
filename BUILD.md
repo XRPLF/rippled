@@ -170,16 +170,12 @@ Until then, we advise Windows developers to use Visual Studio 2019.
 
 ## Prerequisites
 
-To build this package, you will need Python (>= 3.7),
-[Conan][] (>= 1.55), and [CMake][] (>= 3.16).
-
 > **Warning**
-> The commands in this document are not meant to be blindly copied and pasted.
+> The commands in this document are guidelines which cannot always be successfully copy and pasted.
 > This document is written for multiple audiences,
 > meaning that your particular circumstances may require some commands and not
 > others.
-> You should never run any commands without understanding what they do
-> and why you are running them.
+> It is recommended to fully understand what the following commands do before running them.
 >
 > These instructions assume a basic familiarity with Conan and CMake.
 > If you are unfamiliar with Conan,
@@ -187,15 +183,30 @@ To build this package, you will need Python (>= 3.7),
 > at the beginning of this document,
 > or the official [Getting Started][3] walkthrough.
 
+### All Platforms
+
+To build this package, you will need [Python][] (>= 3.7),
+[Conan][] (>= 1.52), and [CMake][] (>= 3.16).
+If you are unfamiliar with Conan,
+there is a crash course at the end of this document.
+
 [Conan]: https://conan.io/downloads.html
 [CMake]: https://cmake.org/download/
+[Python]: https://www.python.org/downloads/
+
+If you've never used Conan before, use autodetect to setup a default profile:
+
+```
+conan profile new default --detect
+```
 
 You'll need to compile in the C++20 dialect:
 
 ```
-conan profile update settings.compiler.cppstd=20 default
+conan profile update settings.cppstd=20 default
 ```
 
+### Linux
 Linux developers will commonly have a default Conan [profile][] that compiles
 with GCC and links with libstdc++.
 If you are linking with libstdc++ (see profile setting `compiler.libcxx`),
@@ -204,6 +215,12 @@ then you will need to choose the `libstdc++11` ABI:
 ```
 conan profile update settings.compiler.libcxx=libstdc++11 default
 ```
+
+### Windows
+
+[Visual Studio 2019]: https://visualstudio.microsoft.com/vs/older-downloads/
+
+It is recommended to utilize PowerShell in administrator mode to run commands. See an [example script](./Builds/windows/install.ps1) that utilizes the [chocolately](https://chocolatey.org/) package manager.
 
 We find it necessary to use the x64 native build tools on Windows.
 An easy way to do that is to run the shortcut "x64 Native Tools Command
@@ -215,6 +232,8 @@ architecture:
 ```
 conan profile update settings.arch=x86_64 default
 ```
+
+### A note about multiple compilers
 
 If you have multiple compilers installed on your platform,
 then you'll need to make sure that Conan and CMake select the one you want to
@@ -235,40 +254,7 @@ conan profile update env.CC=<path> default
 conan profile update env.CXX=<path> default
 ```
 
-
-## How to build and test
-
-Let's start with a couple of examples of common workflows.
-The first is for a single-configuration generator (e.g. Unix Makefiles) on
-Linux or MacOS:
-
-```
-conan export external/rocksdb
-mkdir .build
-cd .build
-conan install .. --output-folder . --build missing --settings build_type=Release
-cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release ..
-cmake --build .
-./rippled --unittest
-```
-
-The second is for a multi-configuration generator (e.g. Visual Studio) on
-Windows:
-
-```
-conan export external/rocksdb
-mkdir .build
-cd .build
-conan install .. --output-folder . --build missing --settings build_type=Release --settings compiler.runtime=MT
-conan install .. --output-folder . --build missing --settings build_type=Debug --settings compiler.runtime=MTd
-cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake ..
-cmake --build . --config Release
-cmake --build . --config Debug
-./Release/rippled --unittest
-./Debug/rippled --unittest
-```
-
-Now to explain the individual steps in each example:
+## Explanation of build steps
 
 1. Export our [Conan recipe for RocksDB](./external/rocksdb).
 

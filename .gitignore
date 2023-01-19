@@ -3,6 +3,7 @@
 bin/boostbook_catalog.xml
 bin/config.log
 bin/project-cache.jam
+.build
 
 # Ignore vim swap files.
 *.swp
@@ -102,6 +103,7 @@ Builds/VisualStudio2015/*.sdf
 *.pdb
 .vs/
 CMakeSettings.json
+CMakeUserPresets.json 
 compile_commands.json
 .clangd
 packages
