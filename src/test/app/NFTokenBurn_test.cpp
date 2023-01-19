@@ -542,8 +542,7 @@ class NFTokenBurn_test : public beast::unit_test::suite
             //
             // 1. alice mints an nft with a full-sized URI.
             // 2. We create 1000 new accounts, each of which creates an offer
-            // for
-            //    alice's nft.
+            //    for alice's nft.
             // 3. becky creates one more offer for alice's NFT
             // 4. Attempt to burn the nft which fails because there are too
             //    many offers.
