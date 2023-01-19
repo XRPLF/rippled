@@ -697,7 +697,7 @@ class NFTokenBurn_test : public beast::unit_test::suite
             env.close();
 
             uint32_t offerDeletedCount = 0;
-            // Count the number of buy offers that have been deleted 
+            // Count the number of buy offers that have been deleted
             for (uint256 const& offerIndex : offerIndexes)
             {
                 if (!env.le(keylet::nftoffer(offerIndex)))
