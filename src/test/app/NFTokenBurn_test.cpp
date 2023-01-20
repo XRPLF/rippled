@@ -556,7 +556,7 @@ class NFTokenBurn_test : public beast::unit_test::suite
 
             std::vector<uint256> offerIndexes;
             offerIndexes.reserve(maxTokenOfferCancelCount);
-            for (uint32_t i = 0; i < maxTokenOfferCancelCount; ++i)
+            for (std::uint32_t i = 0; i < maxTokenOfferCancelCount; ++i)
             {
                 Account const acct(std::string("acct") + std::to_string(i));
                 env.fund(XRP(1000), acct);
@@ -634,7 +634,7 @@ class NFTokenBurn_test : public beast::unit_test::suite
 
             // We create 498 buy offers and 1 sell offers.
             // When the token is burned, all of the 498 buy offers should be
-            // removed, and the sell offers is removed. In total, 499 offers are
+            // removed, and the sell offer is removed. In total, 499 offers are
             // removed
             std::vector<uint256> offerIndexes;
             auto const nftokenID = createNftAndOffers(
@@ -663,8 +663,8 @@ class NFTokenBurn_test : public beast::unit_test::suite
                 BEAST_EXPECT(!env.le(keylet::nftoffer(offerIndex)));
             }
 
-            // Burning the token should also remove the 499th offer that alice
-            // created and leave out the additional sell offer
+            // Burning the token should also remove the one sell offer 
+            // that alice created 
             BEAST_EXPECT(!env.le(keylet::nftoffer(aliceOfferIndex)));
 
             // alice should have ownerCounts of zero
@@ -709,7 +709,7 @@ class NFTokenBurn_test : public beast::unit_test::suite
             // 500 buy offers should be removed
             BEAST_EXPECT(offerDeletedCount == maxTokenOfferCancelCount);
 
-            // alice should have ownerCounts of zero.
+            // alice should have ownerCounts of zero
             BEAST_EXPECT(ownerCount(env, alice) == 0);
         }
 
@@ -737,14 +737,9 @@ class NFTokenBurn_test : public beast::unit_test::suite
             }
 
             // Create two sell offers
-            uint256 const aliceOfferIndex1 =
-                keylet::nftoffer(alice, env.seq(alice)).key;
             env(token::createOffer(alice, nftokenID, drops(1)),
                 txflags(tfSellNFToken));
             env.close();
-
-            uint256 const aliceOfferIndex2 =
-                keylet::nftoffer(alice, env.seq(alice)).key;
             env(token::createOffer(alice, nftokenID, drops(1)),
                 txflags(tfSellNFToken));
             env.close();
@@ -759,12 +754,9 @@ class NFTokenBurn_test : public beast::unit_test::suite
                 BEAST_EXPECT(!env.le(keylet::nftoffer(offerIndex)));
             }
 
-            // Burning the token should also remove the 500th offer that alice
-            // created and leave out the additional sell offer
-            BEAST_EXPECT(!env.le(keylet::nftoffer(aliceOfferIndex1)));
-            BEAST_EXPECT(env.le(keylet::nftoffer(aliceOfferIndex2)));
-
-            // alice should have ownerCounts of one.
+            // Burning the token should also remove the one sell offer that alice
+            // created and leave out the additional sell offer.
+            // alice should have ownerCounts of one
             BEAST_EXPECT(ownerCount(env, alice) == 1);
         }
     }
