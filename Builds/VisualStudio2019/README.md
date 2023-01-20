@@ -6,6 +6,12 @@ We do not recommend Windows for rippled production use at this time. Currently,
 the Ubuntu platform has received the highest level of quality assurance,
 testing, and support. Additionally, 32-bit Windows versions are not supported.
 
+While there are several options for building `rippled` on Windows, we recommend using
+[Chocolatey, Conan, CMake and Visual Studio](README.md#build-using-chocolatey-conan-cmake-and-visual-studio-recommended).
+If using this option, you can skip the section [Install Software](README.md#install-software)
+because Conan automatically installs all dependencies for `rippled`.
+
+
 ## Prerequisites
 
 To clone the source code repository, create branches for inspection or
@@ -232,6 +238,64 @@ or
 .\build\cmake\Debug\rippled.exe
 ```
 These paths are relative to your cloned git repository.
+
+# Build using Chocolatey, Conan, CMake and Visual Studio (Recommended)
+
+Open a PowerShell as Administrator and execute a
+[setup script](https://gist.github.com/ximinez/1678229f97831c602a9a42a1ea03c9c4).
+Alternatively, [install Chocolatey](https://chocolatey.org/install) and run the following commands
+in a PowerShell as Administrator:
+
+```powershell
+choco install -y git conan
+choco install -y cmake.install --installargs '"ADD_CMAKE_TO_PATH=System"'
+choco install -y visualstudio2019-workload-vctools
+choco install -y visualstudio2019community
+choco install -y visualstudio2019-workload-nativedesktop
+
+```
+
+
+If you do not have a Conan profile already, create a default profile:
+
+```powershell
+conan profile new default --detect
+```
+
+Set Conan options to compile in the C++20 dialect and for the x64 architecture:
+
+```powershell
+conan profile update settings.compiler.cppstd=20 default
+conan profile update settings.arch=x86_64 default
+```
+
+Clone the `rippled` repository:
+```powershell
+git clone git@github.com:XRPLF/rippled.git
+cd rippled
+```
+
+Run the following commands to create a release build:
+```powershell
+conan export external/rocksdb
+mkdir .build
+cd .build
+conan install .. --output-folder . --build missing --settings build_type=Release --settings compiler.runtime=MT
+cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake ..
+cmake --build . --config Release
+./Release/rippled --unittest
+```
+
+Alternatively, run the following commands to create a debug build:
+```powershell
+conan export external/rocksdb
+mkdir .build
+cd .build
+conan install .. --output-folder . --build missing --settings build_type=Debug --settings compiler.runtime=MTd
+cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake ..
+cmake --build . --config Debug
+./Debug/rippled --unittest
+```
 
 # Unity/No-Unity Builds
 
