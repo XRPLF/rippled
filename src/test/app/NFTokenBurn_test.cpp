@@ -528,7 +528,8 @@ class NFTokenBurn_test : public beast::unit_test::suite
 
         // Test what happens if a NFT is unburnable when there are
         // more than 500 offers, before fixUnburnableNFToken goes live
-        if (!features[fixUnburnableNFToken]){
+        if (!features[fixUnburnableNFToken])
+        {
             Env env{*this, features};
 
             Account const alice("alice");
@@ -625,7 +626,8 @@ class NFTokenBurn_test : public beast::unit_test::suite
         // burned after fixUnburnableNFToken is enabled. This is to test that we
         // can successfully remove all offers if the number of offers is less
         // than 500.
-        if (features[fixUnburnableNFToken]){
+        if (features[fixUnburnableNFToken])
+        {
             Env env{*this, features};
 
             Account const alice("alice");
@@ -673,8 +675,9 @@ class NFTokenBurn_test : public beast::unit_test::suite
 
         // Test that up to 500 buy offers are removed when NFT is burned
         // after fixUnburnableNFToken is enabled
-        if (features[fixUnburnableNFToken]){
-            Env env{*this, features };
+        if (features[fixUnburnableNFToken])
+        {
+            Env env{*this, features};
 
             Account const alice("alice");
             env.fund(XRP(1000), alice);
@@ -715,7 +718,8 @@ class NFTokenBurn_test : public beast::unit_test::suite
 
         // Test that up to 500 buy/sell offers are removed when NFT is burned
         // after fixUnburnableNFToken is enabled
-        if (features[fixUnburnableNFToken]){
+        if (features[fixUnburnableNFToken])
+        {
             Env env{*this, features};
 
             Account const alice("alice");
@@ -777,8 +781,8 @@ public:
         FeatureBitset const all{supported_amendments()};
         FeatureBitset const fixNFTDir{fixNFTokenDirV1};
 
-        testWithFeats(all - fixUnburnableNFToken - fixNFTDir); 
-        testWithFeats(all - fixUnburnableNFToken); 
+        testWithFeats(all - fixUnburnableNFToken - fixNFTDir);
+        testWithFeats(all - fixUnburnableNFToken);
         testWithFeats(all);
     }
 };
