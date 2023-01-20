@@ -663,8 +663,8 @@ class NFTokenBurn_test : public beast::unit_test::suite
                 BEAST_EXPECT(!env.le(keylet::nftoffer(offerIndex)));
             }
 
-            // Burning the token should also remove the one sell offer 
-            // that alice created 
+            // Burning the token should also remove the one sell offer
+            // that alice created
             BEAST_EXPECT(!env.le(keylet::nftoffer(aliceOfferIndex)));
 
             // alice should have ownerCounts of zero
@@ -754,9 +754,9 @@ class NFTokenBurn_test : public beast::unit_test::suite
                 BEAST_EXPECT(!env.le(keylet::nftoffer(offerIndex)));
             }
 
-            // Burning the token should also remove the one sell offer that alice
-            // created and leave out the additional sell offer.
-            // alice should have ownerCounts of one
+            // Burning the token should also remove the one sell offer that
+            // alice created and leave out the additional sell offer. alice
+            // should have ownerCounts of one
             BEAST_EXPECT(ownerCount(env, alice) == 1);
         }
     }
