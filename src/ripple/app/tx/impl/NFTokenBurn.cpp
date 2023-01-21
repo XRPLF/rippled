@@ -129,14 +129,14 @@ NFTokenBurn::doApply()
     {
         // Deletion of all offers.
         nft::removeTokenOffersWithLimit(
-                view(),
-                keylet::nft_sells(ctx_.tx[sfNFTokenID]),
-                std::numeric_limits<int>::max());
+            view(),
+            keylet::nft_sells(ctx_.tx[sfNFTokenID]),
+            std::numeric_limits<int>::max());
 
         nft::removeTokenOffersWithLimit(
-                view(),
-                keylet::nft_buys(ctx_.tx[sfNFTokenID]),
-                std::numeric_limits<int>::max());
+            view(),
+            keylet::nft_buys(ctx_.tx[sfNFTokenID]),
+            std::numeric_limits<int>::max());
     }
 
     return tesSUCCESS;
