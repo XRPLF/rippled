@@ -520,45 +520,18 @@ findTokenAndPage(
     }
     return std::nullopt;
 }
-void
-removeAllTokenOffers(ApplyView& view, Keylet const& directory)
-{
-    view.dirDelete(directory, [&view](uint256 const& id) {
-        auto offer = view.peek(Keylet{ltNFTOKEN_OFFER, id});
 
-        if (!offer)
-            Throw<std::runtime_error>(
-                "Offer " + to_string(id) + " not found in ledger!");
-
-        auto const owner = (*offer)[sfOwner];
-
-        if (!view.dirRemove(
-                keylet::ownerDir(owner),
-                (*offer)[sfOwnerNode],
-                offer->key(),
-                false))
-            Throw<std::runtime_error>(
-                "Offer " + to_string(id) + " not found in owner directory!");
-
-        adjustOwnerCount(
-            view,
-            view.peek(keylet::account(owner)),
-            -1,
-            beast::Journal{beast::Journal::getNullSink()});
-
-        view.erase(offer);
-    });
-}
-
-std::size_t
+int
 removeTokenOffersWithLimit(
     ApplyView& view,
     Keylet const& directory,
-    std::size_t maxDeletableOffers)
+    int maxDeletableOffers)
 {
+    if(maxDeletableOffers == 0)
+        return 0;
+
     std::optional<std::uint64_t> pageIndex{0};
-    std::vector<uint256> offers;
-    offers.reserve(maxDeletableOffers);
+    int deletedOffersCount = 0;
 
     do
     {
@@ -566,21 +539,30 @@ removeTokenOffersWithLimit(
         if (!page)
             break;
 
-        for (auto const& id : page->getFieldV256(sfIndexes))
-        {
-            offers.push_back(id);
-            if (maxDeletableOffers == offers.size())
+        auto offerIndexes = page->getFieldV256(sfIndexes);
+
+        // We reverse-iterate the offer directory page to delete all entries.
+        // Deleting an entry in a NFTokenOffer directory page won't cause entries 
+        // from other pages to move to the current, so, it is safe to delete entries
+        // one by one in the page.
+        // It is required to iterate backwards to handle iterator invalidation for vector, 
+        // as we are deleting during iteration.
+        for (int i = offerIndexes.size() - 1; i >= 0; --i) {
+            if (auto const offer = view.peek(keylet::nftoffer(offerIndexes[i]))){
+                if(deleteTokenOffer(view, offer))
+                    ++deletedOffersCount;
+                else
+                    Throw<std::runtime_error>(
+                        "Offer " + to_string(offerIndexes[i]) + " cannot be deleted!");
+            }
+
+            if (maxDeletableOffers == deletedOffersCount)
                 break;
         }
         pageIndex = (*page)[~sfIndexNext];
-    } while (pageIndex.value_or(0) && maxDeletableOffers != offers.size());
+    } while (pageIndex.value_or(0) && maxDeletableOffers != deletedOffersCount);
 
-    for (auto const& id : offers)
-    {
-        if (auto const offer = view.peek(keylet::nftoffer(id)))
-            deleteTokenOffer(view, offer);
-    }
-    return offers.size();
+    return deletedOffersCount;
 }
 
 TER
