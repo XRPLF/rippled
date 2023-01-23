@@ -20,6 +20,7 @@
 #ifndef RIPPLE_APP_LEDGER_TRANSACTIONACQUIRE_H_INCLUDED
 #define RIPPLE_APP_LEDGER_TRANSACTIONACQUIRE_H_INCLUDED
 
+#include <ripple/app/ledger/impl/TimeoutCounter.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/overlay/PeerSet.h>
 #include <ripple/shamap/SHAMap.h>
@@ -55,12 +56,16 @@ public:
 
 private:
     std::shared_ptr<SHAMap> mMap;
-    bool mHaveRoot;
     std::unique_ptr<PeerSet> mPeerSet;
 
     void
     onTimer(bool progress, ScopedLockType& peerSetLock) override;
 
+    /** The have acquired the tx set we were looking to.
+
+        @note Note that this function is called with the PeerSet lock
+              held, so we cannot do real work in it.
+     */
     void
     done();
 
@@ -69,6 +74,7 @@ private:
 
     void
     trigger(std::shared_ptr<Peer> const&);
+
     std::weak_ptr<TimeoutCounter>
     pmDowncast() override;
 };

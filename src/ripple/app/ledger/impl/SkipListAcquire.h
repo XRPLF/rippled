@@ -157,8 +157,6 @@ private:
     std::unique_ptr<PeerSet> peerSet_;
     std::vector<OnSkipListDataCB> dataReadyCallbacks_;
     std::shared_ptr<SkipListData const> data_;
-    std::uint32_t noFeaturePeerCount_ = 0;
-    bool fallBack_ = false;
 
     friend class test::LedgerReplayClient;
 };

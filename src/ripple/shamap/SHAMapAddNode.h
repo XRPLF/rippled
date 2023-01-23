@@ -20,6 +20,7 @@
 #ifndef RIPPLE_SHAMAP_SHAMAPADDNODE_H_INCLUDED
 #define RIPPLE_SHAMAP_SHAMAPADDNODE_H_INCLUDED
 
+#include <cstdint>
 #include <string>
 
 namespace ripple {
@@ -28,102 +29,97 @@ namespace ripple {
 class SHAMapAddNode
 {
 private:
-    int mGood;
-    int mBad;
-    int mDuplicate;
+    std::uint32_t good_;
+    std::uint32_t bad_;
+    std::uint32_t duplicate_;
+
+    constexpr SHAMapAddNode(int good, int bad, int duplicate)
+        : good_(good), bad_(bad), duplicate_(duplicate)
+    {
+    }
 
 public:
-    SHAMapAddNode();
+    constexpr SHAMapAddNode() : SHAMapAddNode(0, 0, 0)
+    {
+    }
+
     void
     incInvalid();
     void
     incUseful();
     void
     incDuplicate();
-    void
-    reset();
-    int
+
+    [[nodiscard]] std::uint32_t
     getGood() const;
-    bool
+
+    [[nodiscard]] bool
     isGood() const;
-    bool
+
+    [[nodiscard]] bool
     isInvalid() const;
-    bool
+
+    [[nodiscard]] bool
     isUseful() const;
-    std::string
+
+    [[nodiscard]] std::string
     get() const;
 
     SHAMapAddNode&
     operator+=(SHAMapAddNode const& n);
 
-    static SHAMapAddNode
+    [[nodiscard]] static SHAMapAddNode
     duplicate();
-    static SHAMapAddNode
+
+    [[nodiscard]] static SHAMapAddNode
     useful();
-    static SHAMapAddNode
+
+    [[nodiscard]] static SHAMapAddNode
     invalid();
-
-private:
-    SHAMapAddNode(int good, int bad, int duplicate);
 };
-
-inline SHAMapAddNode::SHAMapAddNode() : mGood(0), mBad(0), mDuplicate(0)
-{
-}
-
-inline SHAMapAddNode::SHAMapAddNode(int good, int bad, int duplicate)
-    : mGood(good), mBad(bad), mDuplicate(duplicate)
-{
-}
 
 inline void
 SHAMapAddNode::incInvalid()
 {
-    ++mBad;
+    ++bad_;
 }
 
 inline void
 SHAMapAddNode::incUseful()
 {
-    ++mGood;
+    ++good_;
 }
 
 inline void
 SHAMapAddNode::incDuplicate()
 {
-    ++mDuplicate;
+    ++duplicate_;
 }
 
-inline void
-SHAMapAddNode::reset()
-{
-    mGood = mBad = mDuplicate = 0;
-}
-
-inline int
+inline std::uint32_t
 SHAMapAddNode::getGood() const
 {
-    return mGood;
+    return good_;
 }
 
 inline bool
 SHAMapAddNode::isInvalid() const
 {
-    return mBad > 0;
+    return bad_ != 0;
 }
 
 inline bool
 SHAMapAddNode::isUseful() const
 {
-    return mGood > 0;
+    return good_ != 0;
 }
 
 inline SHAMapAddNode&
 SHAMapAddNode::operator+=(SHAMapAddNode const& n)
 {
-    mGood += n.mGood;
-    mBad += n.mBad;
-    mDuplicate += n.mDuplicate;
+    good_ += n.good_;
+    bad_ += n.bad_;
+    duplicate_ += n.duplicate_;
 
     return *this;
 }
@@ -131,53 +127,33 @@ SHAMapAddNode::operator+=(SHAMapAddNode const& n)
 inline bool
 SHAMapAddNode::isGood() const
 {
-    return (mGood + mDuplicate) > mBad;
+    return (good_ + duplicate_) > bad_;
 }
 
 inline SHAMapAddNode
 SHAMapAddNode::duplicate()
 {
-    return SHAMapAddNode(0, 0, 1);
+    return {0, 0, 1};
 }
 
 inline SHAMapAddNode
 SHAMapAddNode::useful()
 {
-    return SHAMapAddNode(1, 0, 0);
+    return {1, 0, 0};
 }
 
 inline SHAMapAddNode
 SHAMapAddNode::invalid()
 {
-    return SHAMapAddNode(0, 1, 0);
+    return {0, 1, 0};
 }
 
 inline std::string
 SHAMapAddNode::get() const
 {
-    std::string ret;
-    if (mGood > 0)
-    {
-        ret.append("good:");
-        ret.append(std::to_string(mGood));
-    }
-    if (mBad > 0)
-    {
-        if (!ret.empty())
-            ret.append(" ");
-        ret.append("bad:");
-        ret.append(std::to_string(mBad));
-    }
-    if (mDuplicate > 0)
-    {
-        if (!ret.empty())
-            ret.append(" ");
-        ret.append("dupe:");
-        ret.append(std::to_string(mDuplicate));
-    }
-    if (ret.empty())
-        ret = "no nodes processed";
-    return ret;
+    return "{ good: " + std::to_string(good_) +
+        ", bad: " + std::to_string(bad_) +
+        ", dup: " + std::to_string(duplicate_) + " }";
 }
 
 }  // namespace ripple

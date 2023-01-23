@@ -25,6 +25,7 @@
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/core/Job.h>
 #include <boost/asio/basic_waitable_timer.hpp>
+#include <atomic>
 #include <mutex>
 
 namespace ripple {
@@ -40,11 +41,11 @@ namespace ripple {
     1. The entry point is `setTimer`.
 
     2. After `mTimerInterval`, `queueJob` is called, which schedules a job to
-       call `invokeOnTimer` (or loops back to setTimer if there are too many
-       concurrent jobs).
+       do some housekeeping and invoke the timer callback (or loops back to
+       setTimer if there are too many concurrent jobs).
 
-    3. The job queue calls `invokeOnTimer` which either breaks the loop if
-       `isDone` or calls `onTimer`.
+    3. The job queue performs housekeeping and either breaks the loop if
+       `isDone` or calls the virtual `onTimer`.
 
     4. `onTimer` is the only "real" virtual method in this class. It is the
        callback for when the timeout expires. Generally, its only responsibility
@@ -53,7 +54,7 @@ namespace ripple {
        timeouts.
 
     5. Once `onTimer` returns, if the object is still not `isDone`, then
-       `invokeOnTimer` sets another timeout by looping back to setTimer.
+       we set another timeout by looping back to `setTimer`.
 
    This loop executes concurrently with another asynchronous sequence,
    implemented by the subtype, that is trying to make progress and eventually
@@ -77,14 +78,32 @@ public:
     virtual void
     cancel();
 
+    bool
+    hasFailed() const
+    {
+        return (state_ & FAILED) == FAILED;
+    }
+
+    /** True if the object has completed its work. */
+    bool
+    hasCompleted() const
+    {
+        return (state_ & COMPLETED) == COMPLETED;
+    }
+
 protected:
     using ScopedLockType = std::unique_lock<std::recursive_mutex>;
 
     struct QueueJobParameter
     {
-        JobType jobType;
-        std::string jobName;
-        std::optional<std::uint32_t> jobLimit;
+        JobType const jobType;
+
+        // The maximum number of jobs of this type already queued for us to
+        // queue a job.
+        std::uint32_t const jobLimit;
+
+        // The description of the job
+        std::string const jobName;
     };
 
     TimeoutCounter(
@@ -92,6 +111,7 @@ protected:
         uint256 const& targetHash,
         std::chrono::milliseconds timeoutInterval,
         QueueJobParameter&& jobParameter,
+        std::uint8_t userdata,
         beast::Journal journal);
 
     virtual ~TimeoutCounter() = default;
@@ -100,11 +120,11 @@ protected:
     void
     setTimer(ScopedLockType&);
 
-    /** Queue a job to call invokeOnTimer(). */
+    /** Queue a job to call the timer callback. */
     void
     queueJob(ScopedLockType&);
 
-    /** Hook called from invokeOnTimer(). */
+    /** Hook called from when the timer. */
     virtual void
     onTimer(bool progress, ScopedLockType&) = 0;
 
@@ -115,34 +135,68 @@ protected:
     bool
     isDone() const
     {
-        return complete_ || failed_;
+        return (state_ & (COMPLETED | FAILED)) != 0;
+    }
+
+    /** True if the object has made progress since the last time we checked. */
+    bool
+    hasProgressed() const
+    {
+        return PROGRESSING == (state_ & PROGRESSING);
+    }
+
+    /** Indicate that this object has completed its work. */
+    void
+    markComplete()
+    {
+        state_ = (state_ & ~FAILED) | COMPLETED;
+    }
+
+    void
+    markFailed()
+    {
+        state_ = (state_ & ~COMPLETED) | FAILED;
+    }
+
+    /** Indicate that this object made progress. */
+    void
+    makeProgress()
+    {
+        state_ |= PROGRESSING;
     }
 
     // Used in this class for access to boost::asio::io_service and
     // ripple::Overlay. Used in subtypes for the kitchen sink.
     Application& app_;
     beast::Journal journal_;
-    mutable std::recursive_mutex mtx_;
 
-    /** The hash of the object (in practice, always a ledger) we are trying to
-     * fetch. */
-    uint256 const hash_;
-    int timeouts_;
-    bool complete_;
-    bool failed_;
-    /** Whether forward progress has been made. */
-    bool progress_;
     /** The minimum time to wait between calls to execute(). */
     std::chrono::milliseconds timerInterval_;
 
     QueueJobParameter queueJobParameter_;
 
+    /** The hash of the object (typically a ledger) we are trying to fetch. */
+    uint256 const hash_;
+
+    mutable std::recursive_mutex mtx_;
+
+    std::uint16_t timeouts_ = 0;
+
+    /** A small amount of data for derived classes to use as needed. */
+    std::atomic<std::uint8_t> userdata_ = 0;
+
 private:
-    /** Calls onTimer() if in the right state.
-     *  Only called by queueJob().
-     */
-    void
-    invokeOnTimer();
+    /** Used to track the current state of the object. */
+    std::atomic<std::uint8_t> state_ = 0;
+
+    /** If set, the acquisition has been completed. */
+    static constexpr std::uint8_t const COMPLETED = 0x01;
+
+    /** If set, the acquisition has failed. */
+    static constexpr std::uint8_t const FAILED = 0x02;
+
+    /** If set, the acquisition has made some progress. */
+    static constexpr std::uint8_t const PROGRESSING = 0x04;
 
     boost::asio::basic_waitable_timer<std::chrono::steady_clock> timer_;
 };

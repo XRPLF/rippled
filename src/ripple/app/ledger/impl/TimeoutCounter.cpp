@@ -31,16 +31,14 @@ TimeoutCounter::TimeoutCounter(
     uint256 const& hash,
     std::chrono::milliseconds interval,
     QueueJobParameter&& jobParameter,
+    std::uint8_t userdata,
     beast::Journal journal)
     : app_(app)
     , journal_(journal)
-    , hash_(hash)
-    , timeouts_(0)
-    , complete_(false)
-    , failed_(false)
-    , progress_(false)
     , timerInterval_(interval)
     , queueJobParameter_(std::move(jobParameter))
+    , hash_(hash)
+    , userdata_(userdata)
     , timer_(app_.getIOService())
 {
     assert((timerInterval_ > 10ms) && (timerInterval_ < 30s));
@@ -70,6 +68,7 @@ TimeoutCounter::queueJob(ScopedLockType& sl)
 {
     if (isDone())
         return;
+
     if (queueJobParameter_.jobLimit &&
         app_.getJobQueue().getJobCountTotal(queueJobParameter_.jobType) >=
             queueJobParameter_.jobLimit)
@@ -85,33 +84,32 @@ TimeoutCounter::queueJob(ScopedLockType& sl)
         queueJobParameter_.jobName,
         [wptr = pmDowncast()]() {
             if (auto sptr = wptr.lock(); sptr)
-                sptr->invokeOnTimer();
+            {
+                ScopedLockType sl(sptr->mtx_);
+
+                if (sptr->isDone())
+                    return;
+
+                auto const progress = [&sptr]() {
+                    if (sptr->state_.fetch_and(~PROGRESSING) & PROGRESSING)
+                        return true;
+                    return false;
+                }();
+
+                if (!progress)
+                {
+                    ++sptr->timeouts_;
+                    JLOG(sptr->journal_.debug())
+                        << "Acquiring " << sptr->hash_ << ": timeout ("
+                        << sptr->timeouts_ << ")";
+                }
+
+                sptr->onTimer(progress, sl);
+
+                if (!sptr->isDone())
+                    sptr->setTimer(sl);
+            }
         });
-}
-
-void
-TimeoutCounter::invokeOnTimer()
-{
-    ScopedLockType sl(mtx_);
-
-    if (isDone())
-        return;
-
-    if (!progress_)
-    {
-        ++timeouts_;
-        JLOG(journal_.debug()) << "Timeout(" << timeouts_ << ") "
-                               << " acquiring " << hash_;
-        onTimer(false, sl);
-    }
-    else
-    {
-        progress_ = false;
-        onTimer(true, sl);
-    }
-
-    if (!isDone())
-        setTimer(sl);
 }
 
 void
@@ -120,7 +118,7 @@ TimeoutCounter::cancel()
     ScopedLockType sl(mtx_);
     if (!isDone())
     {
-        failed_ = true;
+        markFailed();
         JLOG(journal_.info()) << "Cancel " << hash_;
     }
 }

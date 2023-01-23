@@ -17,49 +17,42 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/InboundTransactions.h>
 #include <ripple/app/ledger/impl/TransactionAcquire.h>
 #include <ripple/app/main/Application.h>
-#include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/basics/Log.h>
-#include <ripple/core/JobQueue.h>
-#include <ripple/protocol/RippleLedgerHash.h>
 #include <ripple/resource/Fees.h>
+#include <cassert>
 #include <memory>
 #include <mutex>
 
 namespace ripple {
 
-enum {
-    // Ideal number of peers to start with
-    startPeers = 2,
-
-    // How many rounds to keep a set
-    setKeepRounds = 3,
-};
-
-class InboundTransactionSet
+struct InboundTransactionSet
 {
     // A transaction set we generated, acquired, or are acquiring
-public:
-    std::uint32_t mSeq;
-    TransactionAcquire::pointer mAcquire;
-    std::shared_ptr<SHAMap> mSet;
+    std::shared_ptr<TransactionAcquire> acquire;
+    std::shared_ptr<SHAMap> txset;
+    std::uint32_t seq = 0;
 
-    InboundTransactionSet(std::uint32_t seq, std::shared_ptr<SHAMap> const& set)
-        : mSeq(seq), mSet(set)
-    {
-        ;
-    }
-    InboundTransactionSet() : mSeq(0)
-    {
-        ;
-    }
+    InboundTransactionSet() = default;
+    InboundTransactionSet(InboundTransactionSet&& other) = default;
+
+    InboundTransactionSet&
+    operator=(InboundTransactionSet&& other) = delete;
+
+    InboundTransactionSet(InboundTransactionSet const& other) = delete;
+    InboundTransactionSet&
+    operator=(InboundTransactionSet const& other) = delete;
 };
 
 class InboundTransactionsImp : public InboundTransactions
 {
+    /** The initial number of peers to query when fetching a transaction set. */
+    static constexpr int const startPeers = 2;
+
+    /** How many rounds to keep an inbound transaction set for */
+    static constexpr std::uint32_t const setKeepRounds = 3;
+
 public:
     InboundTransactionsImp(
         Application& app,
@@ -67,112 +60,78 @@ public:
         std::function<void(std::shared_ptr<SHAMap> const&, bool)> gotSet,
         std::unique_ptr<PeerSetBuilder> peerSetBuilder)
         : app_(app)
-        , m_seq(0)
-        , m_zeroSet(m_map[uint256()])
         , m_gotSet(std::move(gotSet))
-        , m_peerSetBuilder(std::move(peerSetBuilder))
-        , j_(app_.journal("InboundTransactions"))
+        , peerSetBuilder_(std::move(peerSetBuilder))
     {
-        m_zeroSet.mSet = std::make_shared<SHAMap>(
+        emptyMap_ = std::make_shared<SHAMap>(
             SHAMapType::TRANSACTION, uint256(), app_.getNodeFamily());
-        m_zeroSet.mSet->setUnbacked();
-    }
-
-    TransactionAcquire::pointer
-    getAcquire(uint256 const& hash)
-    {
-        {
-            std::lock_guard sl(mLock);
-
-            auto it = m_map.find(hash);
-
-            if (it != m_map.end())
-                return it->second.mAcquire;
-        }
-        return {};
+        emptyMap_->setUnbacked();
     }
 
     std::shared_ptr<SHAMap>
     getSet(uint256 const& hash, bool acquire) override
     {
-        TransactionAcquire::pointer ta;
+        if (hash.isZero())
+            return emptyMap_;
+
+        std::shared_ptr<TransactionAcquire> ta;
 
         {
-            std::lock_guard sl(mLock);
+            std::lock_guard sl(lock_);
+
+            if (stopping_)
+                return {};
 
             if (auto it = m_map.find(hash); it != m_map.end())
             {
                 if (acquire)
                 {
-                    it->second.mSeq = m_seq;
-                    if (it->second.mAcquire)
-                    {
-                        it->second.mAcquire->stillNeed();
-                    }
+                    it->second.seq = m_seq;
+
+                    if (it->second.acquire)
+                        it->second.acquire->stillNeed();
                 }
-                return it->second.mSet;
+
+                return it->second.txset;
             }
 
-            if (!acquire || stopping_)
-                return std::shared_ptr<SHAMap>();
+            if (acquire)
+            {
+                ta = std::make_shared<TransactionAcquire>(
+                    app_, hash, peerSetBuilder_->build());
 
-            ta = std::make_shared<TransactionAcquire>(
-                app_, hash, m_peerSetBuilder->build());
-
-            auto& obj = m_map[hash];
-            obj.mAcquire = ta;
-            obj.mSeq = m_seq;
+                auto& obj = m_map[hash];
+                obj.acquire = ta;
+                obj.seq = m_seq;
+            }
         }
 
-        ta->init(startPeers);
+        if (ta)
+            ta->init(startPeers);
 
         return {};
     }
 
-    /** We received a TMLedgerData from a peer.
-     */
+    /** We received data from a peer. */
     void
     gotData(
-        LedgerHash const& hash,
+        uint256 const& hash,
         std::shared_ptr<Peer> peer,
-        std::shared_ptr<protocol::TMLedgerData> packet_ptr) override
+        std::vector<std::pair<SHAMapNodeID, Slice>> const& data) override
     {
-        protocol::TMLedgerData& packet = *packet_ptr;
+        assert(!data.empty());
 
-        JLOG(j_.trace()) << "Got data (" << packet.nodes().size()
-                         << ") for acquiring ledger: " << hash;
-
-        TransactionAcquire::pointer ta = getAcquire(hash);
-
-        if (ta == nullptr)
-        {
-            peer->charge(Resource::feeUnwantedData);
+        if (hash.isZero())
             return;
-        }
 
-        std::vector<std::pair<SHAMapNodeID, Slice>> data;
-        data.reserve(packet.nodes().size());
+        auto ta = [this, &hash]() -> std::shared_ptr<TransactionAcquire> {
+            std::lock_guard sl(lock_);
+            if (auto it = m_map.find(hash); it != m_map.end())
+                return it->second.acquire;
+            return {};
+        }();
 
-        for (auto const& node : packet.nodes())
-        {
-            if (!node.has_nodeid() || !node.has_nodedata())
-            {
-                peer->charge(Resource::feeInvalidRequest);
-                return;
-            }
-
-            auto const id = deserializeSHAMapNodeID(node.nodeid());
-
-            if (!id)
-            {
-                peer->charge(Resource::feeBadData);
-                return;
-            }
-
-            data.emplace_back(std::make_pair(*id, makeSlice(node.nodedata())));
-        }
-
-        if (!ta->takeNodes(data, peer).isUseful())
+        if (!ta || !ta->takeNodes(data, peer).isUseful())
             peer->charge(Resource::feeUnwantedData);
     }
 
@@ -182,22 +141,28 @@ public:
         std::shared_ptr<SHAMap> const& set,
         bool fromAcquire) override
     {
+        if (hash.isZero())
+            return;
+
         bool isNew = true;
 
         {
-            std::lock_guard sl(mLock);
+            std::lock_guard sl(lock_);
+
+            if (stopping_)
+                return;
 
             auto& inboundSet = m_map[hash];
 
-            if (inboundSet.mSeq < m_seq)
-                inboundSet.mSeq = m_seq;
+            if (inboundSet.seq < m_seq)
+                inboundSet.seq = m_seq;
 
-            if (inboundSet.mSet)
+            if (inboundSet.txset)
                 isNew = false;
             else
-                inboundSet.mSet = set;
+                inboundSet.txset = set;
 
-            inboundSet.mAcquire.reset();
+            inboundSet.acquire.reset();
         }
 
         if (isNew)
@@ -207,24 +172,23 @@ public:
     void
     newRound(std::uint32_t seq) override
     {
-        std::lock_guard lock(mLock);
+        assert(
+            seq <= std::numeric_limits<std::uint32_t>::max() - setKeepRounds);
 
-        // Protect zero set from expiration
-        m_zeroSet.mSeq = seq;
+        std::lock_guard lock(lock_);
 
-        if (m_seq != seq)
+        if (!stopping_ && m_seq != seq)
         {
             m_seq = seq;
 
             auto it = m_map.begin();
 
-            std::uint32_t const minSeq =
-                (seq < setKeepRounds) ? 0 : (seq - setKeepRounds);
-            std::uint32_t maxSeq = seq + setKeepRounds;
+            std::uint32_t const maxSeq = seq + setKeepRounds;
+            std::uint32_t const minSeq = seq - std::min(seq, setKeepRounds);
 
             while (it != m_map.end())
             {
-                if (it->second.mSeq < minSeq || it->second.mSeq > maxSeq)
+                if (it->second.seq < minSeq || it->second.seq > maxSeq)
                     it = m_map.erase(it);
                 else
                     ++it;
@@ -235,35 +199,31 @@ public:
     void
     stop() override
     {
-        std::lock_guard lock(mLock);
+        std::lock_guard lock(lock_);
         stopping_ = true;
         m_map.clear();
     }
 
 private:
-    using MapType = hash_map<uint256, InboundTransactionSet>;
-
     Application& app_;
 
-    std::recursive_mutex mLock;
+    std::mutex lock_;
 
-    bool stopping_{false};
-    MapType m_map;
-    std::uint32_t m_seq;
+    hash_map<uint256, InboundTransactionSet> m_map;
 
-    // The empty transaction set whose hash is zero
-    InboundTransactionSet& m_zeroSet;
+    // The empty transaction set (whose hash is zero)
+    std::shared_ptr<SHAMap> emptyMap_;
 
     std::function<void(std::shared_ptr<SHAMap> const&, bool)> m_gotSet;
 
-    std::unique_ptr<PeerSetBuilder> m_peerSetBuilder;
+    std::unique_ptr<PeerSetBuilder> peerSetBuilder_;
 
-    beast::Journal j_;
+    std::uint32_t m_seq = 0;
+
+    bool stopping_ = false;
 };
 
 //------------------------------------------------------------------------------
-
-InboundTransactions::~InboundTransactions() = default;
 
 std::unique_ptr<InboundTransactions>
 make_InboundTransactions(

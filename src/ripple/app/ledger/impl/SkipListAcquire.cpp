@@ -36,8 +36,9 @@ SkipListAcquire::SkipListAcquire(
           ledgerHash,
           LedgerReplayParameters::SUB_TASK_TIMEOUT,
           {jtREPLAY_TASK,
-           "SkipListAcquire",
-           LedgerReplayParameters::MAX_QUEUED_TASKS},
+           LedgerReplayParameters::MAX_QUEUED_TASKS,
+           "SkipListAcquire"},
+          0,
           app.journal("LedgerReplaySkipList"))
     , inboundLedgers_(inboundLedgers)
     , peerSet_(std::move(peerSet))
@@ -71,7 +72,7 @@ SkipListAcquire::trigger(std::size_t limit, ScopedLockType& sl)
         return;
     }
 
-    if (!fallBack_)
+    if (userdata_ <= LedgerReplayParameters::MAX_NO_FEATURE_PEER_COUNT)
     {
         peerSet_->addPeers(
             limit,
@@ -91,24 +92,22 @@ SkipListAcquire::trigger(std::size_t limit, ScopedLockType& sl)
                     request.set_type(
                         protocol::TMLedgerMapType::lmACCOUNT_STATE);
                     peerSet_->sendRequest(request, peer);
+                    return;
                 }
-                else
+
+                JLOG(journal_.trace()) << "Add a no feature peer " << peer->id()
+                                       << " for " << hash_;
+                if (++userdata_ ==
+                    LedgerReplayParameters::MAX_NO_FEATURE_PEER_COUNT)
                 {
-                    JLOG(journal_.trace()) << "Add a no feature peer "
-                                           << peer->id() << " for " << hash_;
-                    if (++noFeaturePeerCount_ >=
-                        LedgerReplayParameters::MAX_NO_FEATURE_PEER_COUNT)
-                    {
-                        JLOG(journal_.debug()) << "Fall back for " << hash_;
-                        timerInterval_ =
-                            LedgerReplayParameters::SUB_TASK_FALLBACK_TIMEOUT;
-                        fallBack_ = true;
-                    }
+                    JLOG(journal_.debug()) << "Fall back for " << hash_;
+                    timerInterval_ =
+                        LedgerReplayParameters::SUB_TASK_FALLBACK_TIMEOUT;
                 }
             });
     }
 
-    if (fallBack_)
+    if (userdata_ > LedgerReplayParameters::MAX_NO_FEATURE_PEER_COUNT)
         inboundLedgers_.acquire(hash_, 0, InboundLedger::Reason::GENERIC);
 }
 
@@ -118,7 +117,7 @@ SkipListAcquire::onTimer(bool progress, ScopedLockType& sl)
     JLOG(journal_.trace()) << "mTimeouts=" << timeouts_ << " for " << hash_;
     if (timeouts_ > LedgerReplayParameters::SUB_TASK_MAX_TIMEOUTS)
     {
-        failed_ = true;
+        markFailed();
         JLOG(journal_.debug()) << "too many timeouts " << hash_;
         notify(sl);
     }
@@ -161,7 +160,7 @@ SkipListAcquire::processData(
     {
     }
 
-    failed_ = true;
+    markFailed();
     JLOG(journal_.error()) << "failed to retrieve Skip list from verified data "
                            << hash_;
     notify(sl);
@@ -203,7 +202,7 @@ SkipListAcquire::retrieveSkipList(
         }
     }
 
-    failed_ = true;
+    markFailed();
     JLOG(journal_.error()) << "failed to retrieve Skip list from a ledger "
                            << hash_;
     notify(sl);
@@ -215,7 +214,7 @@ SkipListAcquire::onSkipListAcquired(
     std::uint32_t ledgerSeq,
     ScopedLockType& sl)
 {
-    complete_ = true;
+    markComplete();
     data_ = std::make_shared<SkipListData>(ledgerSeq, skipList);
     JLOG(journal_.debug()) << "Skip list acquired " << hash_;
     notify(sl);
@@ -227,7 +226,7 @@ SkipListAcquire::notify(ScopedLockType& sl)
     assert(isDone());
     std::vector<OnSkipListDataCB> toCall;
     std::swap(toCall, dataReadyCallbacks_);
-    auto const good = !failed_;
+    auto const good = !hasFailed();
     sl.unlock();
 
     for (auto& cb : toCall)

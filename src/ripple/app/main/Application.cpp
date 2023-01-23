@@ -395,7 +395,8 @@ public:
               *this,
               m_collectorManager->collector(),
               [this](std::shared_ptr<SHAMap> const& set, bool fromAcquire) {
-                  gotTXSet(set, fromAcquire);
+                  if (set)
+                      m_networkOPs->mapComplete(set, fromAcquire);
               }))
 
         , m_ledgerReplayer(std::make_unique<LedgerReplayer>(
@@ -648,13 +649,6 @@ public:
     getAcceptedLedgerCache() override
     {
         return m_acceptedLedgerCache;
-    }
-
-    void
-    gotTXSet(std::shared_ptr<SHAMap> const& set, bool fromAcquire)
-    {
-        if (set)
-            m_networkOPs->mapComplete(set, fromAcquire);
     }
 
     TransactionMaster&

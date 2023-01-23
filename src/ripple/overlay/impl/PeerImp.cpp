@@ -157,7 +157,7 @@ void
 PeerImp::run()
 {
     if (!strand_.running_in_this_thread())
-        return post(strand_, std::bind(&PeerImp::run, shared_from_this()));
+        return post(strand_, [p = shared_from_this()]() { p->run(); });
 
     auto parseLedgerHash =
         [](std::string const& value) -> std::optional<uint256> {
@@ -215,7 +215,7 @@ void
 PeerImp::stop()
 {
     if (!strand_.running_in_this_thread())
-        return post(strand_, std::bind(&PeerImp::stop, shared_from_this()));
+        return post(strand_, [p = shared_from_this()]() { p->stop(); });
     if (socket_.is_open())
     {
         // The rationale for using different severity levels is that
@@ -241,7 +241,7 @@ void
 PeerImp::send(std::shared_ptr<Message> const& m)
 {
     if (!strand_.running_in_this_thread())
-        return post(strand_, std::bind(&PeerImp::send, shared_from_this(), m));
+        return post(strand_, [p = shared_from_this(), m]() { p->send(m); });
     if (gracefulClose_)
         return;
     if (detaching_)
@@ -295,8 +295,7 @@ void
 PeerImp::sendTxQueue()
 {
     if (!strand_.running_in_this_thread())
-        return post(
-            strand_, std::bind(&PeerImp::sendTxQueue, shared_from_this()));
+        return post(strand_, [p = shared_from_this()]() { p->sendTxQueue(); });
 
     if (!txQueue_.empty())
     {
@@ -315,7 +314,7 @@ PeerImp::addTxQueue(uint256 const& hash)
 {
     if (!strand_.running_in_this_thread())
         return post(
-            strand_, std::bind(&PeerImp::addTxQueue, shared_from_this(), hash));
+            strand_, [p = shared_from_this(), hash]() { p->addTxQueue(hash); });
 
     if (txQueue_.size() == reduce_relay::MAX_TX_QUEUE_SIZE)
     {
@@ -331,9 +330,9 @@ void
 PeerImp::removeTxQueue(uint256 const& hash)
 {
     if (!strand_.running_in_this_thread())
-        return post(
-            strand_,
-            std::bind(&PeerImp::removeTxQueue, shared_from_this(), hash));
+        return post(strand_, [p = shared_from_this(), hash]() {
+            p->removeTxQueue(hash);
+        });
 
     auto removed = txQueue_.erase(hash);
     JLOG(p_journal_.trace()) << "removeTxQueue " << removed;
@@ -601,11 +600,7 @@ PeerImp::fail(std::string const& reason)
 {
     if (!strand_.running_in_this_thread())
         return post(
-            strand_,
-            std::bind(
-                (void (Peer::*)(std::string const&)) & PeerImp::fail,
-                shared_from_this(),
-                reason));
+            strand_, [p = shared_from_this(), reason]() { p->fail(reason); });
     if (journal_.active(beast::severities::kWarning) && socket_.is_open())
     {
         std::string const n = name();
@@ -1893,14 +1888,38 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
     // Otherwise check if received data for a candidate transaction set
     if (m->type() == protocol::liTS_CANDIDATE)
     {
-        std::weak_ptr<PeerImp> weak{shared_from_this()};
+        std::vector<std::pair<SHAMapNodeID, Slice>> data;
+        data.reserve(m->nodes().size());
+
+        for (auto const& node : m->nodes())
+        {
+            if (!node.has_nodeid() || !node.has_nodedata())
+            {
+                charge(Resource::feeInvalidRequest);
+                return;
+            }
+
+            auto const id = deserializeSHAMapNodeID(node.nodeid());
+
+            if (!id)
+            {
+                charge(Resource::feeBadData);
+                return;
+            }
+
+            data.emplace_back(*id, makeSlice(node.nodedata()));
+        }
+
         app_.getJobQueue().addJob(
-            jtTXN_DATA, "recvPeerData", [weak, ledgerHash, m]() {
-                if (auto peer = weak.lock())
-                {
-                    peer->app_.getInboundTransactions().gotData(
-                        ledgerHash, peer, m);
-                }
+            jtTXN_DATA,
+            "recvPeerData",
+            [w = weak_from_this(), ledgerHash, d = std::move(data), m]() {
+                // We capture `m` to keep its data alive, because we're
+                // implicitly referencing it from `d` (it holds slices!)
+                (void)m;
+
+                if (auto p = w.lock())
+                    p->app_.getInboundTransactions().gotData(ledgerHash, p, d);
             });
         return;
     }
@@ -2887,13 +2906,9 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMTransactions> const& m)
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMSquelch> const& m)
 {
-    using on_message_fn =
-        void (PeerImp::*)(std::shared_ptr<protocol::TMSquelch> const&);
     if (!strand_.running_in_this_thread())
         return post(
-            strand_,
-            std::bind(
-                (on_message_fn)&PeerImp::onMessage, shared_from_this(), m));
+            strand_, [p = shared_from_this(), m]() { p->onMessage(m); });
 
     if (!m->has_validatorpubkey())
     {
