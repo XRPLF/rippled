@@ -21,7 +21,10 @@ These are the only branches that may ever exist in the main project:
 - `master`: The latest stable release.
 - `gh-pages`: The documentation for this project, built by Doxygen.
 
-All of your commits must be signed,
+The tip of each branch must be signed.
+In order for GitHub to sign a squashed commit that it builds from your pull
+request,
+all of your commits must be signed,
 and GitHub must know your verifying key.
 Please walk through the excellent documentation from GitHub to set
 up [signature verification][signing].
@@ -38,8 +41,14 @@ Go to [XRPL-Standards](https://github.com/XRPLF/XRPL-Standards/discussions),
 choose the next available standard number, and
 open a discussion with an appropriate title to propose your draft standard.
 
-When you submit a PR for this change, please link the corresponding XLS in the
+When you submit a pull request, please link the corresponding XLS in the
 description.
+An XLS still in draft status is considered a work-in-progress and open for
+discussion.
+Please do not submit a pull request before allowing due time for questions,
+suggestions, and changes to the XLS draft.
+It is the responsibility of the XLS author to update the draft to match the
+final implementation when its corresponding pull request is merged.
 
 
 ## Before making a pull request
@@ -108,6 +117,9 @@ this:
 ...
 // clang-format on
 ```
+
+You can format individual files in place by running `clang-format -i <file>...`
+from any directory within this project.
 
 
 ## Avoid
