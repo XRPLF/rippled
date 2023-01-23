@@ -722,9 +722,9 @@ public:
     TaskStatus
     taskStatus(std::shared_ptr<T> const& t)
     {
-        if (t->failed_)
+        if (t->hasFailed())
             return TaskStatus::Failed;
-        if (t->complete_)
+        if (t->hasCompleted())
             return TaskStatus::Completed;
         return TaskStatus::NotDone;
     }

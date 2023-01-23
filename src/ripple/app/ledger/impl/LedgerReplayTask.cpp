@@ -92,8 +92,9 @@ LedgerReplayTask::LedgerReplayTask(
           parameter.finishHash_,
           LedgerReplayParameters::TASK_TIMEOUT,
           {jtREPLAY_TASK,
-           "LedgerReplayTask",
-           LedgerReplayParameters::MAX_QUEUED_TASKS},
+           LedgerReplayParameters::MAX_QUEUED_TASKS,
+           "LedgerReplayTask"},
+          0,
           app.journal("LedgerReplayTask"))
     , inboundLedgers_(inboundLedgers)
     , replayer_(replayer)
@@ -213,12 +214,12 @@ LedgerReplayTask::tryAdvance(ScopedLockType& sl)
                 return;
         }
 
-        complete_ = true;
+        markComplete();
         JLOG(journal_.info()) << "Completed " << hash_;
     }
     catch (std::runtime_error const&)
     {
-        failed_ = true;
+        markFailed();
     }
 }
 
@@ -235,7 +236,7 @@ LedgerReplayTask::updateSkipList(
         if (!parameter_.update(hash, seq, sList))
         {
             JLOG(journal_.error()) << "Parameter update failed " << hash_;
-            failed_ = true;
+            markFailed();
             return;
         }
     }
@@ -252,7 +253,7 @@ LedgerReplayTask::onTimer(bool progress, ScopedLockType& sl)
     JLOG(journal_.trace()) << "mTimeouts=" << timeouts_ << " for " << hash_;
     if (timeouts_ > maxTimeouts_)
     {
-        failed_ = true;
+        markFailed();
         JLOG(journal_.debug())
             << "LedgerReplayTask Failed, too many timeouts " << hash_;
     }

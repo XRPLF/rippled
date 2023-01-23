@@ -42,7 +42,7 @@ public:
     InboundTransactions&
     operator=(InboundTransactions const&) = delete;
 
-    virtual ~InboundTransactions() = 0;
+    virtual ~InboundTransactions() = default;
 
     /** Find and return a transaction set, or nullptr if it is missing.
      *
@@ -59,13 +59,13 @@ public:
      *
      * @param setHash The transaction set ID (digest of the SHAMap root node).
      * @param peer The peer that sent the message.
-     * @param message The LedgerData message.
+     * @param data The data we received.
      */
     virtual void
     gotData(
         uint256 const& setHash,
         std::shared_ptr<Peer> peer,
-        std::shared_ptr<protocol::TMLedgerData> message) = 0;
+        std::vector<std::pair<SHAMapNodeID, Slice>> const& data) = 0;
 
     /** Add a transaction set.
      *

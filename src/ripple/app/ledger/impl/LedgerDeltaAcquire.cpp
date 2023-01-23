@@ -39,8 +39,9 @@ LedgerDeltaAcquire::LedgerDeltaAcquire(
           ledgerHash,
           LedgerReplayParameters::SUB_TASK_TIMEOUT,
           {jtREPLAY_TASK,
-           "LedgerReplayDelta",
-           LedgerReplayParameters::MAX_QUEUED_TASKS},
+           LedgerReplayParameters::MAX_QUEUED_TASKS,
+           "LedgerReplayDelta"},
+          0,
           app.journal("LedgerReplayDelta"))
     , inboundLedgers_(inboundLedgers)
     , ledgerSeq_(ledgerSeq)
@@ -71,13 +72,13 @@ LedgerDeltaAcquire::trigger(std::size_t limit, ScopedLockType& sl)
     fullLedger_ = app_.getLedgerMaster().getLedgerByHash(hash_);
     if (fullLedger_)
     {
-        complete_ = true;
+        markComplete();
         JLOG(journal_.trace()) << "existing ledger " << hash_;
         notify(sl);
         return;
     }
 
-    if (!fallBack_)
+    if (userdata_ <= LedgerReplayParameters::MAX_NO_FEATURE_PEER_COUNT)
     {
         peerSet_->addPeers(
             limit,
@@ -93,22 +94,20 @@ LedgerDeltaAcquire::trigger(std::size_t limit, ScopedLockType& sl)
                     protocol::TMReplayDeltaRequest request;
                     request.set_ledgerhash(hash_.data(), hash_.size());
                     peerSet_->sendRequest(request, peer);
+                    return;
                 }
-                else
+
+                if (++userdata_ ==
+                    LedgerReplayParameters::MAX_NO_FEATURE_PEER_COUNT)
                 {
-                    if (++noFeaturePeerCount >=
-                        LedgerReplayParameters::MAX_NO_FEATURE_PEER_COUNT)
-                    {
-                        JLOG(journal_.debug()) << "Fall back for " << hash_;
-                        timerInterval_ =
-                            LedgerReplayParameters::SUB_TASK_FALLBACK_TIMEOUT;
-                        fallBack_ = true;
-                    }
+                    JLOG(journal_.debug()) << "Fall back for " << hash_;
+                    timerInterval_ =
+                        LedgerReplayParameters::SUB_TASK_FALLBACK_TIMEOUT;
                 }
             });
     }
 
-    if (fallBack_)
+    if (userdata_ > LedgerReplayParameters::MAX_NO_FEATURE_PEER_COUNT)
         inboundLedgers_.acquire(
             hash_, ledgerSeq_, InboundLedger::Reason::GENERIC);
 }
@@ -119,7 +118,7 @@ LedgerDeltaAcquire::onTimer(bool progress, ScopedLockType& sl)
     JLOG(journal_.trace()) << "mTimeouts=" << timeouts_ << " for " << hash_;
     if (timeouts_ > LedgerReplayParameters::SUB_TASK_MAX_TIMEOUTS)
     {
-        failed_ = true;
+        markFailed();
         JLOG(journal_.debug()) << "too many timeouts " << hash_;
         notify(sl);
     }
@@ -152,7 +151,7 @@ LedgerDeltaAcquire::processData(
             std::make_shared<Ledger>(info, app_.config(), app_.getNodeFamily());
         if (replayTemp_)
         {
-            complete_ = true;
+            markComplete();
             orderedTxns_ = std::move(orderedTxns);
             JLOG(journal_.debug()) << "ready to replay " << hash_;
             notify(sl);
@@ -160,7 +159,7 @@ LedgerDeltaAcquire::processData(
         }
     }
 
-    failed_ = true;
+    markFailed();
     JLOG(journal_.error())
         << "failed to create a (info only) ledger from verified data " << hash_;
     notify(sl);
@@ -196,7 +195,7 @@ LedgerDeltaAcquire::tryBuild(std::shared_ptr<Ledger const> const& parent)
     if (fullLedger_)
         return fullLedger_;
 
-    if (failed_ || !complete_ || !replayTemp_)
+    if (hasFailed() || !hasCompleted() || !replayTemp_)
         return {};
 
     assert(parent->seq() + 1 == replayTemp_->seq());
@@ -212,8 +211,7 @@ LedgerDeltaAcquire::tryBuild(std::shared_ptr<Ledger const> const& parent)
     }
     else
     {
-        failed_ = true;
-        complete_ = false;
+        markFailed();
         JLOG(journal_.error()) << "tryBuild failed " << hash_ << " with parent "
                                << parent->info().hash;
         Throw<std::runtime_error>("Cannot replay ledger");
@@ -265,7 +263,7 @@ LedgerDeltaAcquire::notify(ScopedLockType& sl)
     assert(isDone());
     std::vector<OnDeltaDataCB> toCall;
     std::swap(toCall, dataReadyCallbacks_);
-    auto const good = !failed_;
+    auto const good = !hasFailed();
     sl.unlock();
 
     for (auto& cb : toCall)

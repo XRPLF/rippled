@@ -35,10 +35,11 @@ using namespace std::chrono_literals;
 // Timeout interval in milliseconds
 auto constexpr TX_ACQUIRE_TIMEOUT = 250ms;
 
-enum {
-    NORM_TIMEOUTS = 4,
-    MAX_TIMEOUTS = 20,
-};
+// If set, we have acquired the root of the TX SHAMap
+static constexpr std::uint8_t const TX_HAVE_ROOT = 0x01;
+
+static constexpr std::uint16_t const TX_NORM_TIMEOUTS = 4;
+static constexpr std::uint16_t const TX_MAX_TIMEOUTS = 20;
 
 TransactionAcquire::TransactionAcquire(
     Application& app,
@@ -48,9 +49,9 @@ TransactionAcquire::TransactionAcquire(
           app,
           hash,
           TX_ACQUIRE_TIMEOUT,
-          {jtTXN_DATA, "TransactionAcquire", {}},
+          {jtTXN_DATA, 0, "TransactionAcquire"},
+          0,
           app.journal("TransactionAcquire"))
-    , mHaveRoot(false)
     , mPeerSet(std::move(peerSet))
 {
     mMap = std::make_shared<SHAMap>(
@@ -61,43 +62,36 @@ TransactionAcquire::TransactionAcquire(
 void
 TransactionAcquire::done()
 {
-    // We hold a PeerSet lock and so cannot do real work here
-
-    if (failed_)
+    if (hasFailed())
     {
         JLOG(journal_.debug()) << "Failed to acquire TX set " << hash_;
+        return;
     }
-    else
-    {
-        JLOG(journal_.debug()) << "Acquired TX set " << hash_;
-        mMap->setImmutable();
 
-        uint256 const& hash(hash_);
-        std::shared_ptr<SHAMap> const& map(mMap);
-        auto const pap = &app_;
-        // Note that, when we're in the process of shutting down, addJob()
-        // may reject the request.  If that happens then giveSet() will
-        // not be called.  That's fine.  According to David the giveSet() call
-        // just updates the consensus and related structures when we acquire
-        // a transaction set. No need to update them if we're shutting down.
-        app_.getJobQueue().addJob(
-            jtTXN_DATA, "completeAcquire", [pap, hash, map]() {
-                pap->getInboundTransactions().giveSet(hash, map, true);
-            });
-    }
+    JLOG(journal_.debug()) << "Acquired TX set " << hash_;
+    mMap->setImmutable();
+
+    // If we are in the process of shutting down, the job queue may refuse
+    // to queue the job; that's fine.
+    app_.getJobQueue().addJob(
+        jtTXN_DATA,
+        "completeAcquire",
+        [&app = app_, hash = hash_, map = mMap]() {
+            app.getInboundTransactions().giveSet(hash, map, true);
+        });
 }
 
 void
 TransactionAcquire::onTimer(bool progress, ScopedLockType& psl)
 {
-    if (timeouts_ > MAX_TIMEOUTS)
+    if (timeouts_ > TX_MAX_TIMEOUTS)
     {
-        failed_ = true;
+        markFailed();
         done();
         return;
     }
 
-    if (timeouts_ >= NORM_TIMEOUTS)
+    if (timeouts_ >= TX_NORM_TIMEOUTS)
         trigger(nullptr);
 
     addPeers(1);
@@ -112,18 +106,18 @@ TransactionAcquire::pmDowncast()
 void
 TransactionAcquire::trigger(std::shared_ptr<Peer> const& peer)
 {
-    if (complete_)
+    if (hasCompleted())
     {
         JLOG(journal_.info()) << "trigger after complete";
         return;
     }
-    if (failed_)
+    if (hasFailed())
     {
         JLOG(journal_.info()) << "trigger after fail";
         return;
     }
 
-    if (!mHaveRoot)
+    if (!(userdata_ & TX_HAVE_ROOT))
     {
         JLOG(journal_.trace()) << "TransactionAcquire::trigger "
                                << (peer ? "havePeer" : "noPeer") << " no root";
@@ -140,7 +134,7 @@ TransactionAcquire::trigger(std::shared_ptr<Peer> const& peer)
     }
     else if (!mMap->isValid())
     {
-        failed_ = true;
+        markFailed();
         done();
     }
     else
@@ -151,9 +145,9 @@ TransactionAcquire::trigger(std::shared_ptr<Peer> const& peer)
         if (nodes.empty())
         {
             if (mMap->isValid())
-                complete_ = true;
+                markComplete();
             else
-                failed_ = true;
+                markFailed();
 
             done();
             return;
@@ -181,16 +175,16 @@ TransactionAcquire::takeNodes(
 {
     ScopedLockType sl(mtx_);
 
-    if (complete_)
+    if (hasCompleted())
     {
         JLOG(journal_.trace()) << "TX set complete";
-        return SHAMapAddNode();
+        return {};
     }
 
-    if (failed_)
+    if (hasFailed())
     {
         JLOG(journal_.trace()) << "TX set failed";
-        return SHAMapAddNode();
+        return {};
     }
 
     try
@@ -204,7 +198,7 @@ TransactionAcquire::takeNodes(
         {
             if (d.first.isRoot())
             {
-                if (mHaveRoot)
+                if (userdata_ & TX_HAVE_ROOT)
                     JLOG(journal_.debug())
                         << "Got root TXS node, already have it";
                 else if (!mMap->addRootNode(
@@ -214,7 +208,7 @@ TransactionAcquire::takeNodes(
                     JLOG(journal_.warn()) << "TX acquire got bad root node";
                 }
                 else
-                    mHaveRoot = true;
+                    userdata_ |= TX_HAVE_ROOT;
             }
             else if (!mMap->addKnownNode(d.first, d.second, &sf).isGood())
             {
@@ -224,7 +218,7 @@ TransactionAcquire::takeNodes(
         }
 
         trigger(peer);
-        progress_ = true;
+        makeProgress();
         return SHAMapAddNode::useful();
     }
     catch (std::exception const& ex)
@@ -260,8 +254,8 @@ TransactionAcquire::stillNeed()
 {
     ScopedLockType sl(mtx_);
 
-    if (timeouts_ > NORM_TIMEOUTS)
-        timeouts_ = NORM_TIMEOUTS;
+    if (timeouts_ > TX_NORM_TIMEOUTS)
+        timeouts_ = TX_NORM_TIMEOUTS;
 }
 
 }  // namespace ripple

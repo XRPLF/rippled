@@ -52,7 +52,8 @@ std::uint32_t constexpr SUB_TASK_MAX_TIMEOUTS = 10;
 
 // max number of peers that do not support the ledger replay feature
 // returned by the PeerSet before switch to fallback
-auto constexpr MAX_NO_FEATURE_PEER_COUNT = 2;
+std::uint8_t constexpr MAX_NO_FEATURE_PEER_COUNT = 2;
+
 // subtask timeout value after fallback
 auto constexpr SUB_TASK_FALLBACK_TIMEOUT = std::chrono::milliseconds{1000};
 

@@ -249,8 +249,8 @@ PeerImp::send(std::shared_ptr<Message> const& m)
     if (detaching_)
         return;
 
-    auto validator = m->getValidatorKey();
-    if (validator && !squelch_.expireSquelch(*validator))
+    if (auto validator = m->getValidatorKey();
+        validator && !squelch_.expireSquelch(*validator))
         return;
 
     overlay_.reportTraffic(
@@ -267,30 +267,21 @@ PeerImp::send(std::shared_ptr<Message> const& m)
         // a small senq periodically
         large_sendq_ = 0;
     }
-    else if (auto sink = journal_.debug();
-             sink && (sendq_size % Tuning::sendQueueLogFreq) == 0)
-    {
-        std::string const n = name();
-        sink << (n.empty() ? remote_address_.to_string() : n)
-             << " sendq: " << sendq_size;
-    }
 
     send_queue_.push(m);
 
-    if (sendq_size != 0)
-        return;
-
-    boost::asio::async_write(
-        stream_,
-        boost::asio::buffer(
-            send_queue_.front()->getBuffer(compressionEnabled_)),
-        bind_executor(
-            strand_,
-            std::bind(
-                &PeerImp::onWriteMessage,
-                shared_from_this(),
-                std::placeholders::_1,
-                std::placeholders::_2)));
+    if (sendq_size == 0)
+        boost::asio::async_write(
+            stream_,
+            boost::asio::buffer(
+                send_queue_.front()->getBuffer(compressionEnabled_)),
+            bind_executor(
+                strand_,
+                std::bind(
+                    &PeerImp::onWriteMessage,
+                    shared_from_this(),
+                    std::placeholders::_1,
+                    std::placeholders::_2)));
 }
 
 void
@@ -359,10 +350,9 @@ PeerImp::charge(Resource::Charge const& fee)
 bool
 PeerImp::crawl() const
 {
-    auto const iter = headers_.find("Crawl");
-    if (iter == headers_.end())
-        return false;
-    return boost::iequals(iter->value(), "public");
+    if (auto const iter = headers_.find("Crawl"); iter != headers_.end())
+        return boost::iequals(iter->value(), "public");
+    return false;
 }
 
 bool
@@ -1969,14 +1959,38 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
     // Otherwise check if received data for a candidate transaction set
     if (m->type() == protocol::liTS_CANDIDATE)
     {
-        std::weak_ptr<PeerImp> weak{shared_from_this()};
+        std::vector<std::pair<SHAMapNodeID, Slice>> data;
+        data.reserve(m->nodes().size());
+
+        for (auto const& node : m->nodes())
+        {
+            if (!node.has_nodeid() || !node.has_nodedata())
+            {
+                charge(Resource::feeInvalidRequest);
+                return;
+            }
+
+            auto const id = deserializeSHAMapNodeID(node.nodeid());
+
+            if (!id)
+            {
+                charge(Resource::feeBadData);
+                return;
+            }
+
+            data.emplace_back(*id, makeSlice(node.nodedata()));
+        }
+
         app_.getJobQueue().addJob(
-            jtTXN_DATA, "recvPeerData", [weak, ledgerHash, m]() {
-                if (auto peer = weak.lock())
-                {
-                    peer->app_.getInboundTransactions().gotData(
-                        ledgerHash, peer, m);
-                }
+            jtTXN_DATA,
+            "recvPeerData",
+            [w = weak_from_this(), ledgerHash, d = std::move(data), m]() {
+                // We capture `m` to keep its data alive, because we're
+                // implicitly referencing it from `d` (it holds slices!)
+                (void)m;
+
+                if (auto p = w.lock())
+                    p->app_.getInboundTransactions().gotData(ledgerHash, p, d);
             });
         return;
     }

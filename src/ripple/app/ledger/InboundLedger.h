@@ -61,24 +61,10 @@ public:
     void
     update(std::uint32_t seq);
 
-    /** Returns true if we got all the data. */
-    bool
-    isComplete() const
-    {
-        return complete_;
-    }
-
-    /** Returns false if we failed to get the data. */
-    bool
-    isFailed() const
-    {
-        return failed_;
-    }
-
     std::shared_ptr<Ledger const>
     getLedger() const
     {
-        return mLedger;
+        return ledger_;
     }
 
     std::uint32_t
@@ -175,14 +161,9 @@ private:
     clock_type& m_clock;
     clock_type::time_point mLastAction;
 
-    std::shared_ptr<Ledger> mLedger;
-    bool mHaveHeader;
-    bool mHaveState;
-    bool mHaveTransactions;
-    bool mSignaled;
-    bool mByHash;
+    std::shared_ptr<Ledger> ledger_;
     std::uint32_t mSeq;
-    Reason const mReason;
+    Reason const reason_;
 
     std::set<uint256> mRecentNodes;
 
@@ -193,7 +174,6 @@ private:
     std::vector<
         std::pair<std::weak_ptr<Peer>, std::shared_ptr<protocol::TMLedgerData>>>
         mReceivedData;
-    bool mReceiveDispatched;
     std::unique_ptr<PeerSet> mPeerSet;
 };
 
