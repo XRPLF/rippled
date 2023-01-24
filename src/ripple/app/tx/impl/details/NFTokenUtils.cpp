@@ -539,6 +539,10 @@ removeTokenOffersWithLimit(
         if (!page)
             break;
 
+        // We get the index of the next page in case the current
+        // page is deleted after all of its entries have been removed
+        pageIndex = (*page)[~sfIndexNext];
+
         auto offerIndexes = page->getFieldV256(sfIndexes);
 
         // We reverse-iterate the offer directory page to delete all entries.
@@ -562,7 +566,6 @@ removeTokenOffersWithLimit(
             if (maxDeletableOffers == deletedOffersCount)
                 break;
         }
-        pageIndex = (*page)[~sfIndexNext];
     } while (pageIndex.value_or(0) && maxDeletableOffers != deletedOffersCount);
 
     return deletedOffersCount;
