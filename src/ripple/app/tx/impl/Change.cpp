@@ -93,12 +93,16 @@ Change::preclaim(PreclaimContext const& ctx)
         case ttFEE:
             if (ctx.view.rules().enabled(featureXRPFees))
             {
+                // The ttFEE transaction format defines these fields as
+                // optional, but once the XRPFees feature is enabled, they are
+                // forbidden.
                 if (!ctx.tx.isFieldPresent(sfBaseFeeDrops) ||
                     !ctx.tx.isFieldPresent(sfReserveBaseDrops) ||
                     !ctx.tx.isFieldPresent(sfReserveIncrementDrops))
                     return temMALFORMED;
-                // The transaction should only have one set of fields or the
-                // other.
+                // The ttFEE transaction format defines these fields as
+                // optional, but once the XRPFees feature is enabled, they are
+                // required.
                 if (ctx.tx.isFieldPresent(sfBaseFee) ||
                     ctx.tx.isFieldPresent(sfReferenceFeeUnits) ||
                     ctx.tx.isFieldPresent(sfReserveBase) ||
@@ -107,18 +111,18 @@ Change::preclaim(PreclaimContext const& ctx)
             }
             else
             {
-                // The transaction format formerly enforced these fields as
-                // required. With featureXRPFees, those fields were made
-                // optional with the expectation that they won't be used once
-                // the feature is enabled. Since the feature hasn't yet
-                // been enabled, they should all still be here.
+                // The ttFEE transaction format formerly defined these fields
+                // as required. When the XRPFees feature was implemented, they
+                // were changed to be optional. Until the feature has been
+                // enabled, they are required.
                 if (!ctx.tx.isFieldPresent(sfBaseFee) ||
                     !ctx.tx.isFieldPresent(sfReferenceFeeUnits) ||
                     !ctx.tx.isFieldPresent(sfReserveBase) ||
                     !ctx.tx.isFieldPresent(sfReserveIncrement))
                     return temMALFORMED;
-                // The transaction should only have one or the other. If the new
-                // fields are present without the amendment, that's bad, too.
+                // The ttFEE transaction format defines these fields as
+                // optional, but without the XRPFees feature, they are
+                // forbidden.
                 if (ctx.tx.isFieldPresent(sfBaseFeeDrops) ||
                     ctx.tx.isFieldPresent(sfReserveBaseDrops) ||
                     ctx.tx.isFieldPresent(sfReserveIncrementDrops))
