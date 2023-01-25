@@ -111,7 +111,9 @@ NFTokenBurn::doApply()
 
     if (ctx_.view().rules().enabled(fixUnburnableNFToken))
     {
-        // Delete up to 500 offers, but prefers buy offers first
+        // Delete up to 500 offers. 
+        // Delete buy offers first to minimize a buyer's effort
+        // to manually delete leftover offers.
         int const deletedBuyOffers = nft::removeTokenOffersWithLimit(
             view(),
             keylet::nft_buys(ctx_.tx[sfNFTokenID]),
