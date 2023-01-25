@@ -95,14 +95,14 @@ Change::preclaim(PreclaimContext const& ctx)
             {
                 // The ttFEE transaction format defines these fields as
                 // optional, but once the XRPFees feature is enabled, they are
-                // forbidden.
+                // required.
                 if (!ctx.tx.isFieldPresent(sfBaseFeeDrops) ||
                     !ctx.tx.isFieldPresent(sfReserveBaseDrops) ||
                     !ctx.tx.isFieldPresent(sfReserveIncrementDrops))
                     return temMALFORMED;
                 // The ttFEE transaction format defines these fields as
                 // optional, but once the XRPFees feature is enabled, they are
-                // required.
+                // forbidden.
                 if (ctx.tx.isFieldPresent(sfBaseFee) ||
                     ctx.tx.isFieldPresent(sfReferenceFeeUnits) ||
                     ctx.tx.isFieldPresent(sfReserveBase) ||
