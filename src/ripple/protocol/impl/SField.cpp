@@ -215,6 +215,7 @@ CONSTRUCT_TYPED_SFIELD(sfHookStateKey,          "HookStateKey",         UINT256,
 CONSTRUCT_TYPED_SFIELD(sfHookHash,              "HookHash",             UINT256,   31);
 CONSTRUCT_TYPED_SFIELD(sfHookNamespace,         "HookNamespace",        UINT256,   32);
 CONSTRUCT_TYPED_SFIELD(sfHookSetTxnID,          "HookSetTxnID",         UINT256,   33);
+CONSTRUCT_TYPED_SFIELD(sfURITokenID,            "URITokenID",           UINT256,   36);
 
 // currency amount (common)
 CONSTRUCT_TYPED_SFIELD(sfAmount,                "Amount",               AMOUNT,     1);

@@ -263,6 +263,9 @@ nft_buys(uint256 const& id) noexcept;
 Keylet
 nft_sells(uint256 const& id) noexcept;
 
+Keylet
+uritoken(AccountID const& issuer, Blob const& uri);
+
 }  // namespace keylet
 
 // Everything below is deprecated and should be removed in favor of keylets:

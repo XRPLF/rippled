@@ -133,6 +133,36 @@ removeNFTokenOfferFromLedger(
     return tesSUCCESS;
 }
 
+/** Remove a generic object that only lives in the owner's directory */
+TER
+removeGeneric(
+    Application& app,
+    ApplyView& view,
+    AccountID const& account,
+    uint256 const& delIndex,
+    std::shared_ptr<SLE> const& sleDel,
+    beast::Journal)
+{
+    if (!sleDel)
+        return tesSUCCESS;
+
+    if (!view.dirRemove(
+            keylet::ownerDir(account),
+            (*sleDel)[sfOwnerNode],
+            sleDel->key(),
+            false))
+        return tefBAD_LEDGER;
+
+    adjustOwnerCount(
+        view,
+        view.peek(keylet::account(account)),
+        -1,
+        beast::Journal{beast::Journal::getNullSink()});
+
+    view.erase(sleDel);
+    return tesSUCCESS;
+}
+
 // Return nullptr if the LedgerEntryType represents an obligation that can't
 // be deleted.  Otherwise return the pointer to the function that can delete
 // the non-obligation
@@ -151,6 +181,8 @@ nonObligationDeleter(LedgerEntryType t)
             return removeDepositPreauthFromLedger;
         case ltNFTOKEN_OFFER:
             return removeNFTokenOfferFromLedger;
+        case ltURI_TOKEN:
+            return removeGeneric;
         default:
             return nullptr;
     }

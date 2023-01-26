@@ -205,6 +205,7 @@ doAccountObjects(RPC::JsonContext& context)
             {jss::check, ltCHECK},
             {jss::escrow, ltESCROW},
             {jss::payment_channel, ltPAYCHAN},
+            {jss::uri_token, ltURI_TOKEN},
             {jss::state, ltRIPPLE_STATE}};
 
         typeFilter.emplace();

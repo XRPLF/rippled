@@ -1220,6 +1220,58 @@ class LedgerRPC_test : public beast::unit_test::suite
     }
 
     void
+    testLedgerEntryURIToken()
+    {
+        testcase("ledger_entry Request URIToken");
+        using namespace test::jtx;
+        Env env{*this};
+        Account const alice{"alice"};
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        // Lambda to create an uritoken.
+        auto mint = [](test::jtx::Account const& account,
+                       std::string const& uri) {
+            Json::Value jv;
+            jv[jss::TransactionType] = jss::URITokenMint;
+            jv[jss::Flags] = tfBurnable;
+            jv[jss::Account] = account.human();
+            jv[sfURI.jsonName] = strHex(uri);
+            return jv;
+        };
+
+        using namespace std::chrono_literals;
+        std::string const uri(maxTokenURILength, '?');
+        env(mint(alice, uri));
+        env.close();
+
+        std::string const ledgerHash{to_string(env.closed()->info().hash)};
+
+        uint256 const uritokenIndex{
+            keylet::uritoken(alice, Blob(uri.begin(), uri.end())).key};
+        {
+            // Request the uritoken using its index.
+            Json::Value jvParams;
+            jvParams[jss::uri_token] = to_string(uritokenIndex);
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::node][sfOwner.jsonName] == alice.human());
+            BEAST_EXPECT(jrr[jss::node][sfURI.jsonName] == strHex(uri));
+            BEAST_EXPECT(jrr[jss::node][sfFlags.jsonName] == 1);
+        }
+        {
+            // Request an index that is not a uritoken.
+            Json::Value jvParams;
+            jvParams[jss::uri_token] = ledgerHash;
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "entryNotFound", "");
+        }
+    }
+
+    void
     testLedgerEntryUnknownOption()
     {
         testcase("ledger_entry Request Unknown Option");
@@ -1734,6 +1786,7 @@ public:
         testLedgerEntryPayChan();
         testLedgerEntryRippleState();
         testLedgerEntryTicket();
+        testLedgerEntryURIToken();
         testLedgerEntryUnknownOption();
         testLookupLedger();
         testNoQueue();

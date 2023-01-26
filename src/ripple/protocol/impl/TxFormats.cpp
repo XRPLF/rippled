@@ -327,6 +327,50 @@ TxFormats::TxFormats()
             {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
+
+    add(jss::URITokenMint,
+        ttURITOKEN_MINT,
+        {
+            {sfURI, soeREQUIRED},
+            {sfDigest, soeOPTIONAL},
+            {sfTicketSequence, soeOPTIONAL},
+        },
+        commonFields);
+
+    add(jss::URITokenBurn,
+        ttURITOKEN_BURN,
+        {
+            {sfURITokenID, soeREQUIRED},
+            {sfTicketSequence, soeOPTIONAL},
+        },
+        commonFields);
+
+    add(jss::URITokenBuy,
+        ttURITOKEN_BUY,
+        {
+            {sfURITokenID, soeREQUIRED},
+            {sfAmount, soeREQUIRED},
+            {sfTicketSequence, soeOPTIONAL},
+        },
+        commonFields);
+
+    add(jss::URITokenCreateSellOffer,
+        ttURITOKEN_CREATE_SELL_OFFER,
+        {
+            {sfURITokenID, soeREQUIRED},
+            {sfAmount, soeREQUIRED},
+            {sfDestination, soeOPTIONAL},
+            {sfTicketSequence, soeOPTIONAL},
+        },
+        commonFields);
+
+    add(jss::URITokenCancelSellOffer,
+        ttURITOKEN_CANCEL_SELL_OFFER,
+        {
+            {sfURITokenID, soeREQUIRED},
+            {sfTicketSequence, soeOPTIONAL},
+        },
+        commonFields);
 }
 
 TxFormats const&

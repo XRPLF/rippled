@@ -20,12 +20,14 @@
 #ifndef RIPPLE_LEDGER_VIEW_H_INCLUDED
 #define RIPPLE_LEDGER_VIEW_H_INCLUDED
 
+#include <ripple/basics/Log.h>
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/core/Config.h>
 #include <ripple/ledger/ApplyView.h>
 #include <ripple/ledger/OpenView.h>
 #include <ripple/ledger/RawView.h>
 #include <ripple/ledger/ReadView.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/Rate.h>
 #include <ripple/protocol/STLedgerEntry.h>
@@ -36,8 +38,8 @@
 #include <functional>
 #include <map>
 #include <memory>
+#include <type_traits>
 #include <utility>
-
 #include <vector>
 
 namespace ripple {
@@ -418,6 +420,128 @@ transferXRP(
     STAmount const& amount,
     beast::Journal j);
 
+/** Check if a set of accounts can freely exchange the specified token.
+    Read only, does not change any ledger object.
+    May be called with ApplyView or ReadView.
+    (including unlocking) is forbidden by any flag or condition.
+    If parties contains 1 entry then noRipple is not a bar to xfer.
+    If parties contains more than 1 entry then any party with noRipple
+    on issuer side is a bar to xfer.
+*/
+template <class V>
+[[nodiscard]] TER
+trustTransferAllowed(
+    V& view,
+    std::vector<AccountID> const& parties,
+    Issue const& issue,
+    beast::Journal const& j)
+{
+    static_assert(
+        std::is_same<V, ReadView const>::value ||
+        std::is_same<V, ApplyView>::value);
+
+    typedef typename std::conditional<
+        std::is_same<V, ApplyView>::value,
+        std::shared_ptr<SLE>,
+        std::shared_ptr<SLE const>>::type SLEPtr;
+
+    if (issue.currency == badCurrency())
+        return tecNO_PERMISSION;
+
+    auto const sleIssuerAcc = view.read(keylet::account(issue.account));
+
+    // missing issuer is always a bar to xfer
+    if (!sleIssuerAcc)
+        return tecNO_ISSUER;
+
+    // issuer global freeze is always a bar to xfer
+    if (isGlobalFrozen(view, issue.account))
+        return tecFROZEN;
+
+    uint32_t issuerFlags = sleIssuerAcc->getFieldU32(sfFlags);
+
+    bool requireAuth = issuerFlags & lsfRequireAuth;
+
+    for (AccountID const& p : parties)
+    {
+        if (p == issue.account)
+            continue;
+
+        auto const line =
+            view.read(keylet::line(p, issue.account, issue.currency));
+        if (!line)
+        {
+            if (requireAuth)
+            {
+                // the line doesn't exist, i.e. it is in default state
+                // default state means the line has not been authed
+                // therefore if auth is required by issuer then
+                // this is now a bar to xfer
+                return tecNO_AUTH;
+            }
+
+            // missing line is a line in default state, this is not
+            // a general bar to xfer, however additional conditions
+            // do attach to completing an xfer into a default line
+            // but these are checked in trustTransferLockedBalance at
+            // the point of transfer.
+            continue;
+        }
+
+        // da: insert paychan guard here
+
+        // check the bars to xfer ... these are:
+        // any TL in the set has noRipple on the issuer's side
+        // any TL in the set has a freeze on the issuer's side
+        // any TL in the set has RequireAuth and the TL lacks lsf*Auth
+        {
+            bool pHigh = p > issue.account;
+
+            auto const flagIssuerNoRipple{
+                pHigh ? lsfLowNoRipple : lsfHighNoRipple};
+            auto const flagIssuerFreeze{pHigh ? lsfLowFreeze : lsfHighFreeze};
+            auto const flagIssuerAuth{pHigh ? lsfLowAuth : lsfHighAuth};
+
+            uint32_t flags = line->getFieldU32(sfFlags);
+
+            if (flags & flagIssuerFreeze)
+            {
+                JLOG(j.trace()) << "trustTransferAllowed: "
+                                // << "parties=[" << parties << "], "
+                                << "issuer: " << issue.account << " "
+                                << "has freeze on party: " << p;
+                return tecFROZEN;
+            }
+
+            // if called with more than one party then any party
+            // that has a noripple on the issuer side of their tl
+            // blocks any possible xfer
+            if (parties.size() > 1 && (flags & flagIssuerNoRipple))
+            {
+                JLOG(j.trace()) << "trustTransferAllowed: "
+                                // << "parties=[" << parties << "], "
+                                << "issuer: " << issue.account << " "
+                                << "has noRipple on party: " << p;
+                return tecPATH_DRY;
+            }
+
+            // every party involved must be on an authed trustline if
+            // the issuer has specified lsfRequireAuth
+            if (requireAuth && !(flags & flagIssuerAuth))
+            {
+                JLOG(j.trace()) << "trustTransferAllowed: "
+                                // << "parties=[" << parties << "], "
+                                << "issuer: " << issue.account << " "
+                                << "requires TL auth which "
+                                << "party: " << p << " "
+                                << "does not possess.";
+                return tecNO_AUTH;
+            }
+        }
+    }
+
+    return tesSUCCESS;
+}
 }  // namespace ripple
 
 #endif
