@@ -410,6 +410,7 @@ private:
     Fees fees_;
     Rules rules_;
     LedgerInfo info_;
+    beast::Journal j_;
 };
 
 /** A ledger wrapped in a CachedView. */
