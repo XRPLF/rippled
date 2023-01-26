@@ -147,6 +147,8 @@ invoke_preflight(PreflightContext const& ctx)
             return invoke_preflight_helper<NFTokenCancelOffer>(ctx);
         case ttNFTOKEN_ACCEPT_OFFER:
             return invoke_preflight_helper<NFTokenAcceptOffer>(ctx);
+        case ttURI_TOKEN:
+            return invoke_preflight_helper<URIToken>(ctx);
         default:
             assert(false);
             return {temUNKNOWN, TxConsequences{temUNKNOWN}};
@@ -248,6 +250,8 @@ invoke_preclaim(PreclaimContext const& ctx)
             return invoke_preclaim<NFTokenCancelOffer>(ctx);
         case ttNFTOKEN_ACCEPT_OFFER:
             return invoke_preclaim<NFTokenAcceptOffer>(ctx);
+        case ttURI_TOKEN:
+            return invoke_preclaim<URIToken>(ctx);
         default:
             assert(false);
             return temUNKNOWN;
@@ -311,6 +315,8 @@ invoke_calculateBaseFee(ReadView const& view, STTx const& tx)
             return NFTokenCancelOffer::calculateBaseFee(view, tx);
         case ttNFTOKEN_ACCEPT_OFFER:
             return NFTokenAcceptOffer::calculateBaseFee(view, tx);
+        case ttURI_TOKEN:
+            return URIToken::calculateBaseFee(view, tx);
         default:
             assert(false);
             return FeeUnit64{0};
@@ -461,6 +467,10 @@ invoke_apply(ApplyContext& ctx)
         }
         case ttNFTOKEN_ACCEPT_OFFER: {
             NFTokenAcceptOffer p(ctx);
+            return p();
+        }
+        case ttURI_TOKEN: {
+            URIToken p(ctx);
             return p();
         }
         default:

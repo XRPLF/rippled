@@ -261,6 +261,21 @@ LedgerFormats::LedgerFormats()
             {sfPreviousTxnLgrSeq,    soeREQUIRED}
         },
         commonFields);
+
+    add(jss::URIToken,
+        ltURI_TOKEN,
+        {
+            {sfOwner,                soeREQUIRED},
+            {sfOwnerNode,            soeREQUIRED},
+            {sfIssuer,               soeREQUIRED},
+            {sfURI,                  soeREQUIRED},
+            {sfAmount,               soeOPTIONAL},
+            {sfDestination,          soeOPTIONAL},
+            {sfPreviousTxnID,        soeREQUIRED},
+            {sfPreviousTxnLgrSeq,    soeREQUIRED}
+        },
+        commonFields);
+
     // clang-format on
 }
 
