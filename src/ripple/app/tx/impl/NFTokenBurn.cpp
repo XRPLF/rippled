@@ -111,20 +111,21 @@ NFTokenBurn::doApply()
 
     if (ctx_.view().rules().enabled(fixUnburnableNFToken))
     {
-        // Delete up to 500 offers.
-        // Delete buy offers first to minimize a buyer's effort
-        // to manually delete leftover offers.
-        int const deletedBuyOffers = nft::removeTokenOffersWithLimit(
+        // Delete up to 500 offers in total.
+        // Because the number of sell offers is likely to be less than
+        // the number of buy offers, we prioritize the deletion of sell
+        // offers in order to clean up sell offer directory 
+        int const deletedSellOffers = nft::removeTokenOffersWithLimit(
             view(),
-            keylet::nft_buys(ctx_.tx[sfNFTokenID]),
+            keylet::nft_sells(ctx_.tx[sfNFTokenID]),
             maxDeletableTokenOfferEntries);
 
-        if (maxDeletableTokenOfferEntries - deletedBuyOffers > 0)
+        if (maxDeletableTokenOfferEntries - deletedSellOffers > 0)
         {
             nft::removeTokenOffersWithLimit(
                 view(),
-                keylet::nft_sells(ctx_.tx[sfNFTokenID]),
-                maxDeletableTokenOfferEntries - deletedBuyOffers);
+                keylet::nft_buys(ctx_.tx[sfNFTokenID]),
+                maxDeletableTokenOfferEntries - deletedSellOffers);
         }
     }
     else

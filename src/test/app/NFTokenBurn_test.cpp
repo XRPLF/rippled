@@ -50,7 +50,7 @@ class NFTokenBurn_test : public beast::unit_test::suite
     };
 
     // Helper function that returns new nft id for an account and create
-    // specified number of buy offers
+    // specified number of sell offers
     uint256
     createNftAndOffers(
         test::jtx::Env& env,
@@ -70,13 +70,10 @@ class NFTokenBurn_test : public beast::unit_test::suite
 
         for (uint32_t i = 0; i < tokenCancelCount; ++i)
         {
-            Account const acct(std::string("acct") + std::to_string(i));
-            env.fund(XRP(1000), acct);
-            env.close();
-
-            offerIndexes.push_back(keylet::nftoffer(acct, env.seq(acct)).key);
-            env(token::createOffer(acct, nftokenID, drops(1)),
-                token::owner(owner));
+            // Create sell offer
+            offerIndexes.push_back(keylet::nftoffer(owner, env.seq(owner)).key);
+            env(token::createOffer(owner, nftokenID, drops(1)),
+                txflags(tfSellNFToken));
             env.close();
         }
 
@@ -631,46 +628,48 @@ class NFTokenBurn_test : public beast::unit_test::suite
             Env env{*this, features};
 
             Account const alice("alice");
-            env.fund(XRP(1000), alice);
+            Account const becky("becky");
+            env.fund(XRP(100000), alice, becky);
             env.close();
 
-            // We create 498 buy offers and 1 sell offers.
-            // When the token is burned, all of the 498 buy offers should be
-            // removed, and the sell offer is removed. In total, 499 offers are
-            // removed
+            // alice creates 498 sell offers and becky creates 1 buy offers.
+            // When the token is burned, 498 sell offers and 1 buy offer are removed. 
+            // In total, 499 offers are removed
             std::vector<uint256> offerIndexes;
             auto const nftokenID = createNftAndOffers(
                 env, alice, offerIndexes, maxDeletableTokenOfferEntries - 2);
 
-            // Verify all offers are present in the ledger.
+            // Verify all sell offers are present in the ledger.
             for (uint256 const& offerIndex : offerIndexes)
             {
                 BEAST_EXPECT(env.le(keylet::nftoffer(offerIndex)));
             }
 
-            // Create sell offer
-            uint256 const aliceOfferIndex =
-                keylet::nftoffer(alice, env.seq(alice)).key;
-            env(token::createOffer(alice, nftokenID, drops(1)),
-                txflags(tfSellNFToken));
+            // Becky creates a buy offer
+            uint256 const beckyOfferIndex =
+                keylet::nftoffer(becky, env.seq(becky)).key;
+            env(token::createOffer(becky, nftokenID, drops(1)),
+                token::owner(alice));
             env.close();
 
+            // Burn the token
             env(token::burn(alice, nftokenID));
             env.close();
 
-            // Burning the token should remove all 498 buy-offers from the
-            // ledger.
+            // Burning the token should remove all 498 sell offers 
+            // that alice created
             for (uint256 const& offerIndex : offerIndexes)
             {
                 BEAST_EXPECT(!env.le(keylet::nftoffer(offerIndex)));
             }
 
-            // Burning the token should also remove the one sell offer
-            // that alice created
-            BEAST_EXPECT(!env.le(keylet::nftoffer(aliceOfferIndex)));
+            // Burning the token should also remove the one buy offer
+            // that becky created
+            BEAST_EXPECT(!env.le(keylet::nftoffer(beckyOfferIndex)));
 
-            // alice should have ownerCounts of zero
+            // alice and becky should have ownerCounts of zero
             BEAST_EXPECT(ownerCount(env, alice) == 0);
+            BEAST_EXPECT(ownerCount(env, becky) == 0);
         }
 
         // Test that up to 500 buy offers are removed when NFT is burned
@@ -680,27 +679,29 @@ class NFTokenBurn_test : public beast::unit_test::suite
             Env env{*this, features};
 
             Account const alice("alice");
-            env.fund(XRP(1000), alice);
+            Account const becky("becky");
+            env.fund(XRP(100000), alice, becky);
             env.close();
 
-            // We create 501 buy offers for the token
-            // When we burn the token, 500 of the buy offers should be removed,
+            // alice creates 501 sell offers for the token
+            // After we burn the token, 500 of the sell offers should be removed,
             // and one is left over
             std::vector<uint256> offerIndexes;
             auto const nftokenID = createNftAndOffers(
                 env, alice, offerIndexes, maxDeletableTokenOfferEntries + 1);
 
-            // Verify all offers are present in the ledger.
+            // Verify all sell offers are present in the ledger.
             for (uint256 const& offerIndex : offerIndexes)
             {
                 BEAST_EXPECT(env.le(keylet::nftoffer(offerIndex)));
             }
 
+            // Burn the token
             env(token::burn(alice, nftokenID));
             env.close();
 
             uint32_t offerDeletedCount = 0;
-            // Count the number of buy offers that have been deleted
+            // Count the number of sell offers that have been deleted
             for (uint256 const& offerIndex : offerIndexes)
             {
                 if (!env.le(keylet::nftoffer(offerIndex)))
@@ -709,11 +710,11 @@ class NFTokenBurn_test : public beast::unit_test::suite
 
             BEAST_EXPECT(offerIndexes.size() == maxTokenOfferCancelCount + 1);
 
-            // 500 buy offers should be removed
+            // 500 sell offers should be removed
             BEAST_EXPECT(offerDeletedCount == maxTokenOfferCancelCount);
 
-            // alice should have ownerCounts of zero
-            BEAST_EXPECT(ownerCount(env, alice) == 0);
+            // alice should have ownerCounts of one for the orphaned sell offer
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
         }
 
         // Test that up to 500 buy/sell offers are removed when NFT is burned
@@ -723,45 +724,49 @@ class NFTokenBurn_test : public beast::unit_test::suite
             Env env{*this, features};
 
             Account const alice("alice");
-            env.fund(XRP(1000), alice);
+            Account const becky("becky");
+            env.fund(XRP(100000), alice, becky);
             env.close();
 
-            // We create 499 buy offers and 2 sell offers.
-            // When the token is burned, all of the 499 buy offers should be
-            // removed, and only one of the sell offers is removed. In total,
-            // 500 offers are removed
+            // alice creates 499 sell offers and becky creates 2 buy offers.
+            // When the token is burned, 499 sell offers and 1 buy offer
+            // are removed.
+            // In total, 500 offers are removed
             std::vector<uint256> offerIndexes;
             auto const nftokenID = createNftAndOffers(
                 env, alice, offerIndexes, maxDeletableTokenOfferEntries - 1);
 
-            // Verify all offers are present in the ledger.
+            // Verify all sell offers are present in the ledger.
             for (uint256 const& offerIndex : offerIndexes)
             {
                 BEAST_EXPECT(env.le(keylet::nftoffer(offerIndex)));
             }
 
-            // Create two sell offers
-            env(token::createOffer(alice, nftokenID, drops(1)),
-                txflags(tfSellNFToken));
+            //becky creates 2 buy offers
+            env(token::createOffer(becky, nftokenID, drops(1)),
+                token::owner(alice));
             env.close();
-            env(token::createOffer(alice, nftokenID, drops(1)),
-                txflags(tfSellNFToken));
+            env(token::createOffer(becky, nftokenID, drops(1)),
+                token::owner(alice));
             env.close();
 
+            // Burn the token
             env(token::burn(alice, nftokenID));
             env.close();
 
-            // Burning the token should remove all 499 buy-offers from the
+            // Burning the token should remove all 499 sell offers from the
             // ledger.
             for (uint256 const& offerIndex : offerIndexes)
             {
                 BEAST_EXPECT(!env.le(keylet::nftoffer(offerIndex)));
             }
 
-            // Burning the token should also remove the one sell offer that
-            // alice created and leave out the additional sell offer. alice
-            // should have ownerCounts of one
-            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            // alice should have ownerCount of zero because all her
+            // sell offers have been deleted
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+
+            // becky has ownerCount of one due to an orphaned buy offer
+            BEAST_EXPECT(ownerCount(env, becky) == 1);
         }
     }
 
