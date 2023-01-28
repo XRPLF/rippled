@@ -329,6 +329,7 @@ TxFormats::TxFormats()
             {sfURI, soeOPTIONAL},
             {sfURITokenID, soeOPTIONAL},
             {sfAmount, soeOPTIONAL},
+            {sfDigest, soeOPTIONAL},
             {sfDestination, soeOPTIONAL}
         },
         commonFields);

@@ -41,6 +41,7 @@ namespace ripple {
 inline URIOperation inferOperation(STTx const& tx)
 {
     uint32_t const flags = tx.getFlags();
+    bool const hasDigest = tx.isFieldPresent(sfDigest);
     bool const hasURI = tx.isFieldPresent(sfURI);
     bool const blankURI = hasURI && tx.getFieldVL(sfURI).empty();
     bool const hasID  = tx.isFieldPresent(sfURITokenID);
@@ -50,29 +51,32 @@ inline URIOperation inferOperation(STTx const& tx)
     bool const hasBurnFlag = flags == tfBurnable;
     bool const blankFlags = flags == 0;
 
-    uint8_t combination =
-        (hasURI         ? 0b10000000U : 0) +
-        (blankURI       ? 0b01000000U : 0) +
-        (hasID          ? 0b00100000U : 0) +
-        (hasAmt         ? 0b00010000U : 0) +
-        (hasDst         ? 0b00001000U : 0) +
-        (hasSellFlag    ? 0b00000100U : 0) +
-        (hasBurnFlag    ? 0b00000010U : 0) +
-        (blankFlags     ? 0b00000001U : 0);
+    uint16_t combination =
+        (hasDigest      ? 0b100000000U : 0) +
+        (hasURI         ? 0b010000000U : 0) +
+        (blankURI       ? 0b001000000U : 0) +
+        (hasID          ? 0b000100000U : 0) +
+        (hasAmt         ? 0b000010000U : 0) +
+        (hasDst         ? 0b000001000U : 0) +
+        (hasSellFlag    ? 0b000000100U : 0) +
+        (hasBurnFlag    ? 0b000000010U : 0) +
+        (blankFlags     ? 0b000000001U : 0);
 
     switch (combination)
     {
-        case 0b10000001U:
-        case 0b10000010U:
+        case 0b110000001U:
+        case 0b110000010U:
+        case 0b010000001U:
+        case 0b010000010U:
             return URIOperation::Mint;
-        case 0b11100001U:
+        case 0b011100001U:
             return URIOperation::Burn;
-        case 0b00110001U:
+        case 0b000110001U:
             return URIOperation::Buy;
-        case 0b00110100U:
-        case 0b00111100U:
+        case 0b000110100U:
+        case 0b000111100U:
             return URIOperation::Sell;
-        case 0b00100001U:
+        case 0b000100001U:
             return URIOperation::Clear;
         default:
             return URIOperation::Invalid;
@@ -352,6 +356,9 @@ URIToken::doApply()
             sleU->setAccountID(sfOwner, account_);
             sleU->setAccountID(sfIssuer, account_);
             sleU->setFieldVL(sfURI, ctx_.tx.getFieldVL(sfURI));
+
+            if (ctx_.tx.isFieldPresent(sfDigest))
+                sleU->setFieldH256(sfDigest, ctx_.tx.getFieldH256(sfDigest));
 
             auto const page = view().dirInsert(
                 keylet::ownerDir(account_),
