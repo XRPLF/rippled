@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/basics/Number.h>
+#include <boost/predef.h>
 #include <algorithm>
 #include <cassert>
 #include <numeric>
@@ -335,6 +336,34 @@ Number::operator+=(Number const& y)
     return *this;
 }
 
+// Optimization equivalent to:
+// auto r = static_cast<unsigned>(u % 10);
+// u /= 10;
+// return r;
+// Derived from Hacker's Delight Second Edition Chapter 10
+// by Henry S. Warren, Jr.
+static inline unsigned
+divu10(uint128_t& u)
+{
+    // q = u * 0.75
+    auto q = (u >> 1) + (u >> 2);
+    // iterate towards q = u * 0.8
+    q += q >> 4;
+    q += q >> 8;
+    q += q >> 16;
+    q += q >> 32;
+    q += q >> 64;
+    // q /= 8 approximately == u / 10
+    q >>= 3;
+    // r = u - q * 10  approximately == u % 10
+    auto r = static_cast<unsigned>(u - ((q << 3) + (q << 1)));
+    // correction c is 1 if r >= 10 else 0
+    auto c = (r + 6) >> 4;
+    u = q + c;
+    r -= c * 10;
+    return r;
+}
+
 Number&
 Number::operator*=(Number const& y)
 {
@@ -370,8 +399,10 @@ Number::operator*=(Number const& y)
         g.set_negative();
     while (zm > maxMantissa)
     {
-        g.push(static_cast<unsigned>(zm % 10));
-        zm /= 10;
+        // The following is optimization for:
+        // g.push(static_cast<unsigned>(zm % 10));
+        // zm /= 10;
+        g.push(divu10(zm));
         ++ze;
     }
     xm = static_cast<rep>(zm);

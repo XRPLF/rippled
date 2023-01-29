@@ -53,7 +53,7 @@ IOUAmount::normalize()
 
     if (*stNumberSwitchover)
     {
-        Number v{mantissa_, exponent_};
+        const Number v{mantissa_, exponent_};
         mantissa_ = v.mantissa();
         exponent_ = v.exponent();
         if (exponent_ > maxExponent)
