@@ -48,6 +48,7 @@ class STBitString;
 template <class>
 class STInteger;
 class STVector256;
+class Definitions;
 
 enum SerializedTypeID {
     // special types
@@ -261,9 +262,10 @@ public:
     static int
     compare(const SField& f1, const SField& f2);
 
+    static std::map<int, SField const*> knownCodeToField;
+
 private:
     static int num;
-    static std::map<int, SField const*> knownCodeToField;
 };
 
 /** A field with a type known at compile time. */

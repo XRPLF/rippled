@@ -125,6 +125,8 @@ doPeerReservationsList(RPC::JsonContext&);
 Json::Value
 doRipplePathFind(RPC::JsonContext&);
 Json::Value
+doServerDefinitions(RPC::JsonContext&);
+Json::Value
 doServerInfo(RPC::JsonContext&);  // for humans
 Json::Value
 doServerState(RPC::JsonContext&);  // for machines

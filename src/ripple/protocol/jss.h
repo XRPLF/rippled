@@ -65,8 +65,12 @@ JSS(EscrowCreate);           // transaction type.
 JSS(EscrowFinish);           // transaction type.
 JSS(Fee);                    // in/out: TransactionSign; field.
 JSS(FeeSettings);            // ledger type.
+JSS(FIELDS);                 // out: RPC server_definitions
 JSS(Flags);                  // in/out: TransactionSign; field.
 JSS(incomplete_shards);      // out: OverlayImpl, PeerImp
+JSS(isSerialized);           // out: RPC server_definitions
+JSS(isSigningField);         // out: RPC server_definitions
+JSS(isVLEncoded);            // out: RPC server_definitions
 JSS(Invalid);                //
 JSS(LastLedgerSequence);     // in: TransactionSign; field
 JSS(LedgerHashes);           // ledger type.
@@ -347,6 +351,7 @@ JSS(ledger_index_min);            // in, out: AccountTx*
 JSS(ledger_max);                  // in, out: AccountTx*
 JSS(ledger_min);                  // in, out: AccountTx*
 JSS(ledger_time);                 // out: NetworkOPs
+JSS(LEDGER_ENTRY_TYPES);          // out: RPC server_definitions
 JSS(levels);                      // LogLevels
 JSS(limit);                       // in/out: AccountTx*, AccountOffers,
                                   //         AccountLines, AccountObjects
@@ -429,6 +434,7 @@ JSS(node_written_bytes);         // out: GetCounts
 JSS(node_writes_duration_us);    // out: GetCounts
 JSS(node_write_retries);         // out: GetCounts
 JSS(node_writes_delayed);        // out::GetCounts
+JSS(nth);                        // out: RPC server_definitions
 JSS(obligations);                // out: GatewayBalances
 JSS(offer);                      // in: LedgerEntry
 JSS(offers);                     // out: NetworkOPs, AccountOffers, Subscribe
@@ -614,8 +620,11 @@ JSS(txr_not_enabled_cnt);     // out: peers with tx reduce-relay disabled count
 JSS(txr_missing_tx_freq);     // out: missing tx frequency average
 JSS(txs);                     // out: TxHistory
 JSS(type);                    // in: AccountObjects
-                              // out: NetworkOPs
+                              // out: NetworkOPs RPC server_definitions
                               //      OverlayImpl, Logic
+JSS(TRANSACTION_RESULTS);     // out: RPC server_definitions
+JSS(TRANSACTION_TYPES);       // out: RPC server_definitions
+JSS(TYPES);                   // out: RPC server_definitions
 JSS(type_hex);                // out: STPathSet
 JSS(unl);                     // out: UnlList
 JSS(unlimited);               // out: Connection.h
