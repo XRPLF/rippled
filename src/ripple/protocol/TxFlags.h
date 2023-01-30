@@ -127,6 +127,9 @@ constexpr std::uint32_t const tfOnlyXRP                = 0x00000002;
 constexpr std::uint32_t const tfTrustLine              = 0x00000004;
 constexpr std::uint32_t const tfTransferable           = 0x00000008;
 
+// URIToken flags:
+constexpr std::uint32_t const tfBurn                   = 0x00000002;
+
 // Prior to fixRemoveNFTokenAutoTrustLine, transfer of an NFToken between
 // accounts allowed a TrustLine to be added to the issuer of that token
 // without explicit permission from that issuer.  This was enabled by

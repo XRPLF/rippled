@@ -43,24 +43,24 @@ inline URIOperation inferOperation(STTx const& tx)
     uint32_t const flags = tx.getFlags();
     bool const hasDigest = tx.isFieldPresent(sfDigest);
     bool const hasURI = tx.isFieldPresent(sfURI);
-    bool const blankURI = hasURI && tx.getFieldVL(sfURI).empty();
+    bool const hasBurnFlag = flags == tfBurn;
     bool const hasID  = tx.isFieldPresent(sfURITokenID);
     bool const hasAmt = tx.isFieldPresent(sfAmount);
     bool const hasDst = tx.isFieldPresent(sfDestination);
     bool const hasSellFlag = flags == tfSell;
-    bool const hasBurnFlag = flags == tfBurnable;
+    bool const hasBurnableFlag = flags == tfBurnable;
     bool const blankFlags = flags == 0;
 
     uint16_t combination =
-        (hasDigest      ? 0b100000000U : 0) +
-        (hasURI         ? 0b010000000U : 0) +
-        (blankURI       ? 0b001000000U : 0) +
-        (hasID          ? 0b000100000U : 0) +
-        (hasAmt         ? 0b000010000U : 0) +
-        (hasDst         ? 0b000001000U : 0) +
-        (hasSellFlag    ? 0b000000100U : 0) +
-        (hasBurnFlag    ? 0b000000010U : 0) +
-        (blankFlags     ? 0b000000001U : 0);
+        (hasDigest       ? 0b100000000U : 0) +
+        (hasURI          ? 0b010000000U : 0) +
+        (hasBurnFlag     ? 0b001000000U : 0) +
+        (hasID           ? 0b000100000U : 0) +
+        (hasAmt          ? 0b000010000U : 0) +
+        (hasDst          ? 0b000001000U : 0) +
+        (hasSellFlag     ? 0b000000100U : 0) +
+        (hasBurnableFlag ? 0b000000010U : 0) +
+        (blankFlags      ? 0b000000001U : 0);
 
     switch (combination)
     {
