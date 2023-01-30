@@ -71,6 +71,13 @@ path::append_one(Account const& account)
 }
 
 void
+path::append_one(AccountID const& account)
+{
+    auto& jv = create();
+    jv["account"] = toBase58(account);
+}
+
+void
 path::append_one(IOU const& iou)
 {
     auto& jv = create();

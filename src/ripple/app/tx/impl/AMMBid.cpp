@@ -279,22 +279,31 @@ applyBid(
         if (!payPrice)
             return {tecAMM_FAILED_BID, false};
 
-        res = updateSlot(0, *payPrice, *payPrice * (1 - fractionRemaining));
-        if (res != tesSUCCESS)
-            return {res, false};
         // Refund the previous owner. If the time slot is 0 then
         // the owner is refunded full amount.
+        auto const refund = fractionRemaining * pricePurchased;
+        if (refund > *payPrice)
+        {
+            JLOG(ctx_.journal.debug())
+                << "AMM Bid: invalid refund " << refund << " " << *payPrice;
+            return {tecAMM_FAILED_BID, false};
+        }
         res = accountSend(
             sb,
             account_,
             auctionSlot[sfAccount],
-            toSTAmount(lpTokens.issue(), fractionRemaining * *payPrice),
+            toSTAmount(lpTokens.issue(), refund),
             ctx_.journal);
         if (res != tesSUCCESS)
         {
             JLOG(ctx_.journal.debug()) << "AMM Bid: failed to refund.";
             return {res, false};
         }
+
+        auto const burn = *payPrice - refund;
+        res = updateSlot(0, *payPrice, burn);
+        if (res != tesSUCCESS)
+            return {res, false};
     }
 
     return {tesSUCCESS, true};

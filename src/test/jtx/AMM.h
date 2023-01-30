@@ -118,6 +118,14 @@ public:
         std::optional<AccountID> const& account = std::nullopt,
         std::optional<std::string> const& ledger_index = std::nullopt) const;
 
+    /** Get AMM balances
+     */
+    std::tuple<STAmount, STAmount, STAmount>
+    balances(
+        Issue const& issue1,
+        Issue const& issue2,
+        std::optional<AccountID> const& account = std::nullopt) const;
+
     bool
     expectLPTokens(AccountID const& account, IOUAmount const& tokens) const;
 

@@ -86,7 +86,11 @@ protected:
         std::optional<FeatureBitset> const& features = std::nullopt)
     {
         using namespace jtx;
-        auto env = features ? Env{*this, *features} : Env{*this};
+        auto env = [&]() {
+            if (features)
+                return Env{*this, *features};
+            return Env{*this};
+        }();
 
         auto const [asset1, asset2] =
             pool ? *pool : std::make_pair(XRP(10000), USD(10000));

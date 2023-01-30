@@ -83,21 +83,22 @@ public:
             BEAST_EXPECT(ammAlice.expectAmmRpcInfo(
                 XRP(10000), USD(10000), IOUAmount{10000000, 0}));
             std::unordered_map<std::string, std::uint16_t> votes;
-            for (int i = 0; i < 8; ++i)
+            votes.insert({alice.human(), 0});
+            for (int i = 0; i < 7; ++i)
             {
                 Account a(std::to_string(i));
                 votes.insert({a.human(), 50 * (i + 1)});
-                fund(env, gw, {a}, {USD(1000)}, Fund::Acct);
-                ammAlice.deposit(a, 10000);
+                fund(env, gw, {a}, {USD(10000)}, Fund::Acct);
+                ammAlice.deposit(a, 10000000);
                 ammAlice.vote(a, 50 * (i + 1));
             }
-            BEAST_EXPECT(ammAlice.expectTradingFee(225));
+            BEAST_EXPECT(ammAlice.expectTradingFee(175));
             Account ed("ed");
             Account bill("bill");
             env.fund(XRP(1000), bob, ed, bill);
             ammAlice.bid(alice, 100, std::nullopt, {carol, bob, ed, bill});
             BEAST_EXPECT(ammAlice.expectAmmRpcInfo(
-                XRP(10080), USD(10080), IOUAmount{10079900}));
+                XRP(80000), USD(80000), IOUAmount{79999900}));
             std::unordered_set<std::string> authAccounts = {
                 carol.human(), bob.human(), ed.human(), bill.human()};
             auto const ammInfo = ammAlice.ammRpcInfo();
@@ -110,7 +111,7 @@ public:
                     {
                         if (votes[voteSlots[i][jss::account].asString()] !=
                                 voteSlots[i][jss::trading_fee].asUInt() ||
-                            voteSlots[i][jss::vote_weight].asUInt() != 99)
+                            voteSlots[i][jss::vote_weight].asUInt() != 12500)
                             return false;
                         votes.erase(voteSlots[i][jss::account].asString());
                     }

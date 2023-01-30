@@ -127,8 +127,19 @@ AMMLiquidity<TIn, TOut>::getOffer(
                      << to_string(balances.out);
 
     // Can't generate AMM with a better quality than CLOB's
-    // quality if AMM's Spot Price quality is less than CLOB quality.
-    if (clobQuality && Quality{balances} < *clobQuality)
+    // quality if AMM's Spot Price quality is less than CLOB quality or is
+    // within a threshold.
+    // Spot price quality (SPQ) is calculated within some precision threshold.
+    // On the next iteration, after SPQ is changed, the new SPQ might be close
+    // to the requested clobQuality but not exactly and potentially SPQ may keep
+    // on approaching clobQuality for many iterations. Checking for the quality
+    // threshold prevents this scenario.
+    auto const spotPriceQ = Quality{balances};
+    if (clobQuality &&
+        (spotPriceQ <= clobQuality ||
+         ((Number(clobQuality->rate()) - spotPriceQ.rate()) /
+              clobQuality->rate() <
+          Number(1, -7))))
     {
         JLOG(j_.debug()) << "AMMLiquidity::getOffer, higher clob quality";
         return std::nullopt;

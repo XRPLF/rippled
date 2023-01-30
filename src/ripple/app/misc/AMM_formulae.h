@@ -233,13 +233,20 @@ changeSpotPriceQuality(
     std::uint32_t tfee)
 {
     if (auto const nTakerPays =
-            pool.in * (root2(quality.rate() / Quality(pool).rate()) - 1);
+            (root2(pool.in * pool.out * quality.rate() / feeMult(tfee)) -
+             pool.in / feeMult(tfee));
         nTakerPays > 0)
     {
         auto const takerPays = toAmount<TIn>(
             getIssue(pool.in), nTakerPays, Number::rounding_mode::upward);
-        return TAmounts<TIn, TOut>{
-            takerPays, swapAssetIn(pool, takerPays, tfee)};
+        // should not fail
+        if (auto const amounts =
+                TAmounts<TIn, TOut>{
+                    takerPays, swapAssetIn(pool, takerPays, tfee)};
+            Quality{amounts} < quality)
+            Throw<std::runtime_error>("changeSpotPriceQuality failed");
+        else
+            return amounts;
     }
     return std::nullopt;
 }

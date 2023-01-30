@@ -217,6 +217,10 @@ applyCreate(
     // rippling (AMM LPToken can be used as a token in another AMM, which must
     // support payments and offer crossing), and enable deposit authorization to
     // prevent payments into AMM.
+    // Note, that the trustlines created by AMM have 0 credit limit. This
+    // prevents shifting the balance between accounts via AMM. This is
+    // a desired behavior, though not an ideal solution; i.e. 0 means no
+    // trust except for AMMs where it means infinite trust.
     sleAMMRoot->setFieldU32(
         sfFlags, lsfAMM | lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth);
     sb.insert(sleAMMRoot);
@@ -232,6 +236,26 @@ applyCreate(
     auto const& [issue1, issue2] = std::minmax(amount.issue(), amount2.issue());
     ammSle->setFieldIssue(sfAsset, STIssue{sfAsset, issue1});
     ammSle->setFieldIssue(sfAsset2, STIssue{sfAsset2, issue2});
+    // AMM creator gets the voting slot.
+    STArray voteSlots;
+    STObject voteEntry{sfVoteEntry};
+    voteEntry.setFieldU16(sfTradingFee, ctx_.tx[sfTradingFee]);
+    voteEntry.setFieldU32(sfVoteWeight, 100000);
+    voteEntry.setAccountID(sfAccount, account_);
+    voteSlots.push_back(voteEntry);
+    ammSle->setFieldArray(sfVoteSlots, voteSlots);
+    // AMM creator gets the auction slot for free.
+    auto& auctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
+    auctionSlot.setAccountID(sfAccount, account_);
+    // current + sec in 24h
+    auto const expiration =
+        std::chrono::duration_cast<std::chrono::seconds>(
+            ctx_.view().info().parentCloseTime.time_since_epoch())
+            .count() +
+        24 * 3600;
+    auctionSlot.setFieldU32(sfExpiration, expiration);
+    auctionSlot.setFieldU32(sfDiscountedFee, 0);
+    auctionSlot.setFieldAmount(sfPrice, STAmount{lpTokens.issue(), 0});
     sb.insert(ammSle);
 
     // Send LPT to LP.

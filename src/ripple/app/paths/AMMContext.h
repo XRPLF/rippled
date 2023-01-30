@@ -78,7 +78,7 @@ public:
     void
     update()
     {
-        if (ammUsed_ > 0)
+        if (ammUsed_)
             ++ammIters_;
         ammUsed_ = false;
     }
