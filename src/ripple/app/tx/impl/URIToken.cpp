@@ -40,13 +40,14 @@ namespace ripple {
 
 inline URIOperation inferOperation(STTx const& tx)
 {
-    uint32_t const flags = tx.getFlags();
     bool const hasDigest = tx.isFieldPresent(sfDigest);
     bool const hasURI = tx.isFieldPresent(sfURI);
-    bool const hasBurnFlag = flags == tfBurn;
     bool const hasID  = tx.isFieldPresent(sfURITokenID);
     bool const hasAmt = tx.isFieldPresent(sfAmount);
     bool const hasDst = tx.isFieldPresent(sfDestination);
+
+    uint32_t const flags = tx.getFlags();
+    bool const hasBurnFlag = flags == tfBurn;
     bool const hasSellFlag = flags == tfSell;
     bool const hasBurnableFlag = flags == tfBurnable;
     bool const blankFlags = flags == 0;
@@ -69,7 +70,7 @@ inline URIOperation inferOperation(STTx const& tx)
         case 0b010000001U:
         case 0b010000010U:
             return URIOperation::Mint;
-        case 0b011100001U:
+        case 0b001100000U:
             return URIOperation::Burn;
         case 0b000110001U:
             return URIOperation::Buy;
@@ -156,7 +157,7 @@ URIToken::preclaim(PreclaimContext const& ctx)
     std::optional<AccountID> dest;
 
     std::shared_ptr<SLE const> sleOwner;
-
+    
     if (sleU)
     {
         if (sleU->getFieldU16(sfLedgerEntryType) != ltURI_TOKEN)
@@ -269,8 +270,9 @@ URIToken::preclaim(PreclaimContext const& ctx)
             if (acc != *owner)
                 return tecNO_PERMISSION;
 
-            if (!isXRP(*saleAmount))
+            if (!saleAmount->native())
             {
+                std::cout << "NOT isXRP: " << "\n";
                 AccountID const iouIssuer = saleAmount->getIssuer();
                 if (!ctx.view.exists(keylet::account(iouIssuer)))
                         return tecNO_ISSUER;
@@ -736,7 +738,6 @@ URIToken::doApply()
             sleU->setFieldAmount(sfAmount, ctx_.tx[sfAmount]);
 
             view().update(sleU);
-            std::cout << "sleU on sell: " << (*sleU) << "\n";
             return tesSUCCESS;
         }
 
