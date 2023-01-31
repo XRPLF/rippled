@@ -46,19 +46,19 @@ doAccountCurrencies(RPC::JsonContext& context)
         params.isMember(jss::account) ? params[jss::account].asString()
                                       : params[jss::ident].asString());
 
-    bool const bStrict =
-        params.isMember(jss::strict) && params[jss::strict].asBool();
-
     // Get info on account.
-    AccountID accountID;  // out param
-    if (auto jvAccepted = RPC::accountFromString(accountID, strIdent, bStrict))
-        return jvAccepted;
+    auto const accountID = RPC::accountFromStringStrict(strIdent);
+    if (!accountID)
+    {
+        RPC::inject_error(rpcACT_MALFORMED, result);
+        return result;
+    }
 
-    if (!ledger->exists(keylet::account(accountID)))
+    if (!ledger->exists(keylet::account(*accountID)))
         return rpcError(rpcACT_NOT_FOUND);
 
     std::set<Currency> send, receive;
-    for (auto const& rspEntry : RPCTrustLine::getItems(accountID, *ledger))
+    for (auto const& rspEntry : RPCTrustLine::getItems(*accountID, *ledger))
     {
         STAmount const& saBalance = rspEntry.getBalance();
 

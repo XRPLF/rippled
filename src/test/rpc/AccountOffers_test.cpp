@@ -248,15 +248,15 @@ public:
                 "json",
                 "account_offers",
                 jvParams.toStyledString())[jss::result];
-            BEAST_EXPECT(jrr[jss::error] == "badSeed");
+            BEAST_EXPECT(jrr[jss::error] == "actMalformed");
             BEAST_EXPECT(jrr[jss::status] == "error");
-            BEAST_EXPECT(jrr[jss::error_message] == "Disallowed seed.");
+            BEAST_EXPECT(jrr[jss::error_message] == "Account malformed.");
         }
 
         {
             // bogus account value
-            auto const jrr =
-                env.rpc("account_offers", "rNOT_AN_ACCOUNT")[jss::result];
+            auto const jrr = env.rpc(
+                "account_offers", toBase58(Account("bogus").id()))[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "actNotFound");
             BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error_message] == "Account not found.");
@@ -265,7 +265,7 @@ public:
         {
             // bad limit
             Json::Value jvParams;
-            jvParams[jss::account] = bob.human();
+            jvParams[jss::account] = toBase58(bob.id());
             jvParams[jss::limit] = "0";  // NOT an integer
             auto const jrr = env.rpc(
                 "json",
@@ -281,7 +281,7 @@ public:
         {
             // invalid marker
             Json::Value jvParams;
-            jvParams[jss::account] = bob.human();
+            jvParams[jss::account] = toBase58(bob.id());
             jvParams[jss::marker] = "NOT_A_MARKER";
             auto const jrr = env.rpc(
                 "json",
@@ -295,7 +295,7 @@ public:
         {
             // invalid marker - not a string
             Json::Value jvParams;
-            jvParams[jss::account] = bob.human();
+            jvParams[jss::account] = toBase58(bob.id());
             jvParams[jss::marker] = 1;
             auto const jrr = env.rpc(
                 "json",
@@ -311,7 +311,7 @@ public:
         {
             // ask for a bad ledger index
             Json::Value jvParams;
-            jvParams[jss::account] = bob.human();
+            jvParams[jss::account] = toBase58(bob.id());
             jvParams[jss::ledger_index] = 10u;
             auto const jrr = env.rpc(
                 "json",
@@ -334,6 +334,7 @@ public:
 };
 
 BEAST_DEFINE_TESTSUITE(AccountOffers, app, ripple);
+
 
 }  // namespace test
 }  // namespace ripple

@@ -53,7 +53,7 @@ public:
                 R"("n9MJkEKHDhy5eTLuHUQeAAjo382frHNbFK4C8hcwN4nwM2SrLdBj"})");
             BEAST_EXPECT(
                 lines[jss::result][jss::error_message] ==
-                RPC::make_error(rpcBAD_SEED)[jss::error_message]);
+                RPC::make_error(rpcACT_MALFORMED)[jss::error_message]);
         }
         Account const alice{"alice"};
         {
@@ -61,7 +61,7 @@ public:
             auto const lines = env.rpc(
                 "json",
                 "account_lines",
-                R"({"account": ")" + alice.human() + R"("})");
+                R"({"account": ")" + toBase58(alice.id()) + R"("})");
             BEAST_EXPECT(
                 lines[jss::result][jss::error_message] ==
                 RPC::make_error(rpcACT_NOT_FOUND)[jss::error_message]);
@@ -76,7 +76,7 @@ public:
             auto const lines = env.rpc(
                 "json",
                 "account_lines",
-                R"({"account": ")" + alice.human() + R"("})");
+                R"({"account": ")" + toBase58(alice.id()) + R"("})");
             BEAST_EXPECT(lines[jss::result][jss::lines].isArray());
             BEAST_EXPECT(lines[jss::result][jss::lines].size() == 0);
         }
@@ -85,7 +85,7 @@ public:
             auto const lines = env.rpc(
                 "json",
                 "account_lines",
-                R"({"account": ")" + alice.human() +
+                R"({"account": ")" + toBase58(alice.id()) +
                     R"(", )"
                     R"("ledger_index": "nonsense"})");
             BEAST_EXPECT(
@@ -97,7 +97,7 @@ public:
             auto const lines = env.rpc(
                 "json",
                 "account_lines",
-                R"({"account": ")" + alice.human() +
+                R"({"account": ")" + toBase58(alice.id()) +
                     R"(", )"
                     R"("ledger_index": 50000})");
             BEAST_EXPECT(
@@ -197,7 +197,7 @@ public:
             auto const lines = env.rpc(
                 "json",
                 "account_lines",
-                R"({"account": ")" + alice.human() +
+                R"({"account": ")" + toBase58(alice.id()) +
                     R"(", )"
                     R"("ledger_hash": ")" +
                     to_string(ledger4Info.hash) +
@@ -212,7 +212,7 @@ public:
             auto const lines = env.rpc(
                 "json",
                 "account_lines",
-                R"({"account": ")" + alice.human() + R"("})");
+                R"({"account": ")" + toBase58(alice.id()) + R"("})");
             BEAST_EXPECT(lines[jss::result][jss::lines].isArray());
             BEAST_EXPECT(lines[jss::result][jss::lines].size() == 52);
         }
@@ -221,7 +221,7 @@ public:
             auto const lines = env.rpc(
                 "json",
                 "account_lines",
-                R"({"account": ")" + alice.human() +
+                R"({"account": ")" + toBase58(alice.id()) +
                     R"(", )"
                     R"("peer": ")" +
                     gw1.human() + R"("})");
@@ -233,20 +233,20 @@ public:
             auto const lines = env.rpc(
                 "json",
                 "account_lines",
-                R"({"account": ")" + alice.human() +
+                R"({"account": ")" + toBase58(alice.id()) +
                     R"(", )"
                     R"("peer": )"
                     R"("n9MJkEKHDhy5eTLuHUQeAAjo382frHNbFK4C8hcwN4nwM2SrLdBj"})");
             BEAST_EXPECT(
                 lines[jss::result][jss::error_message] ==
-                RPC::make_error(rpcBAD_SEED)[jss::error_message]);
+                RPC::make_error(rpcACT_MALFORMED)[jss::error_message]);
         }
         {
             // A negative limit should fail.
             auto const lines = env.rpc(
                 "json",
                 "account_lines",
-                R"({"account": ")" + alice.human() +
+                R"({"account": ")" + toBase58(alice.id()) +
                     R"(", )"
                     R"("limit": -1})");
             BEAST_EXPECT(
@@ -258,7 +258,7 @@ public:
             auto const linesA = env.rpc(
                 "json",
                 "account_lines",
-                R"({"account": ")" + alice.human() +
+                R"({"account": ")" + toBase58(alice.id()) +
                     R"(", )"
                     R"("limit": 1})");
             BEAST_EXPECT(linesA[jss::result][jss::lines].isArray());
@@ -269,7 +269,7 @@ public:
             auto const linesB = env.rpc(
                 "json",
                 "account_lines",
-                R"({"account": ")" + alice.human() +
+                R"({"account": ")" + toBase58(alice.id()) +
                     R"(", )"
                     R"("marker": ")" +
                     marker + R"("})");
@@ -280,7 +280,7 @@ public:
             auto const linesC = env.rpc(
                 "json",
                 "account_lines",
-                R"({"account": ")" + alice.human() +
+                R"({"account": ")" + toBase58(alice.id()) +
                     R"(", )"
                     R"("limit": 3, )"
                     R"("marker": ")" +
@@ -293,7 +293,7 @@ public:
             auto const linesD = env.rpc(
                 "json",
                 "account_lines",
-                R"({"account": ")" + alice.human() +
+                R"({"account": ")" + toBase58(alice.id()) +
                     R"(", )"
                     R"("marker": ")" +
                     marker + R"("})");
@@ -306,7 +306,7 @@ public:
             auto const lines = env.rpc(
                 "json",
                 "account_lines",
-                R"({"account": ")" + alice.human() +
+                R"({"account": ")" + toBase58(alice.id()) +
                     R"(", )"
                     R"("marker": true})");
             BEAST_EXPECT(
@@ -318,7 +318,7 @@ public:
             auto const lines = env.rpc(
                 "json",
                 "account_lines",
-                R"({"account": ")" + alice.human() +
+                R"({"account": ")" + toBase58(alice.id()) +
                     R"(", )"
                     R"("limit": 10, )"
                     R"("peer": ")" +
@@ -337,7 +337,7 @@ public:
                     R"(", )"
                     R"("limit": 1, )"
                     R"("peer": ")" +
-                    alice.human() + R"("})");
+                    toBase58(alice.id()) + R"("})");
             auto const& lineA = linesA[jss::result][jss::lines][0u];
             BEAST_EXPECT(lineA[jss::freeze_peer].asBool() == true);
             BEAST_EXPECT(lineA[jss::no_ripple_peer].asBool() == true);
@@ -356,7 +356,7 @@ public:
                     marker +
                     R"(", )"
                     R"("peer": ")" +
-                    alice.human() + R"("})");
+                    toBase58(alice.id()) + R"("})");
             BEAST_EXPECT(linesB[jss::result][jss::lines].isArray());
             BEAST_EXPECT(linesB[jss::result][jss::lines].size() == 25);
             BEAST_EXPECT(!linesB[jss::result].isMember(jss::marker));
@@ -399,7 +399,7 @@ public:
         Json::Value const aliceObjects = env.rpc(
             "json",
             "account_objects",
-            R"({"account": ")" + alice.human() +
+            R"({"account": ")" + toBase58(alice.id()) +
                 R"(", )"
                 R"("limit": 10})");
         Json::Value const& aliceSignerList =
@@ -419,7 +419,7 @@ public:
         auto const aliceLines1 = env.rpc(
             "json",
             "account_lines",
-            R"({"account": ")" + alice.human() + R"(", "limit": 1})");
+            R"({"account": ")" + toBase58(alice.id()) + R"(", "limit": 1})");
         BEAST_EXPECT(aliceLines1[jss::result].isMember(jss::marker));
 
         // Verify that the marker points at the signer list.
@@ -433,7 +433,7 @@ public:
         auto const aliceLines2 = env.rpc(
             "json",
             "account_lines",
-            R"({"account": ")" + alice.human() + R"(", "marker": ")" +
+            R"({"account": ")" + toBase58(alice.id()) + R"(", "marker": ")" +
                 aliceMarker + R"("})");
         BEAST_EXPECT(aliceLines2[jss::result][jss::lines].size() == 1);
         BEAST_EXPECT(!aliceLines2[jss::result].isMember(jss::marker));
@@ -499,7 +499,7 @@ public:
         auto const linesBeg = env.rpc(
             "json",
             "account_lines",
-            R"({"account": ")" + alice.human() +
+            R"({"account": ")" + toBase58(alice.id()) +
                 R"(", )"
                 R"("limit": 2})");
         BEAST_EXPECT(
@@ -515,7 +515,7 @@ public:
         auto const linesEnd = env.rpc(
             "json",
             "account_lines",
-            R"({"account": ")" + alice.human() +
+            R"({"account": ")" + toBase58(alice.id()) +
                 R"(", )"
                 R"("marker": ")" +
                 linesBeg[jss::result][jss::marker].asString() + R"("})");
@@ -814,7 +814,7 @@ public:
                 R"("n9MJkEKHDhy5eTLuHUQeAAjo382frHNbFK4C8hcwN4nwM2SrLdBj"}})");
             BEAST_EXPECT(
                 lines[jss::error][jss::message] ==
-                RPC::make_error(rpcBAD_SEED)[jss::error_message]);
+                RPC::make_error(rpcACT_MALFORMED)[jss::error_message]);
             BEAST_EXPECT(
                 lines.isMember(jss::jsonrpc) && lines[jss::jsonrpc] == "2.0");
             BEAST_EXPECT(
@@ -834,7 +834,7 @@ public:
                 R"("id" : 5,)"
                 R"("params": )"
                 R"({"account": ")" +
-                    alice.human() + R"("}})");
+                    toBase58(alice.id()) + R"("}})");
             BEAST_EXPECT(
                 lines[jss::error][jss::message] ==
                 RPC::make_error(rpcACT_NOT_FOUND)[jss::error_message]);
@@ -861,7 +861,7 @@ public:
                 R"("id" : 5,)"
                 R"("params": )"
                 R"({"account": ")" +
-                    alice.human() + R"("}})");
+                    toBase58(alice.id()) + R"("}})");
             BEAST_EXPECT(lines[jss::result][jss::lines].isArray());
             BEAST_EXPECT(lines[jss::result][jss::lines].size() == 0);
             BEAST_EXPECT(
@@ -882,7 +882,7 @@ public:
                 R"("id" : 5,)"
                 R"("params": )"
                 R"({"account": ")" +
-                    alice.human() +
+                    toBase58(alice.id()) +
                     R"(", )"
                     R"("ledger_index": "nonsense"}})");
             BEAST_EXPECT(
@@ -905,7 +905,7 @@ public:
                 R"("id" : 5,)"
                 R"("params": )"
                 R"({"account": ")" +
-                    alice.human() +
+                    toBase58(alice.id()) +
                     R"(", )"
                     R"("ledger_index": 50000}})");
             BEAST_EXPECT(lines[jss::error][jss::message] == "ledgerNotFound");
@@ -1043,7 +1043,7 @@ public:
                 R"("id" : 5,)"
                 R"("params": )"
                 R"({"account": ")" +
-                    alice.human() +
+                    toBase58(alice.id()) +
                     R"(", )"
                     R"("ledger_hash": ")" +
                     to_string(ledger4Info.hash) +
@@ -1070,7 +1070,7 @@ public:
                 R"("id" : 5,)"
                 R"("params": )"
                 R"({"account": ")" +
-                    alice.human() + R"("}})");
+                    toBase58(alice.id()) + R"("}})");
             BEAST_EXPECT(lines[jss::result][jss::lines].isArray());
             BEAST_EXPECT(lines[jss::result][jss::lines].size() == 52);
             BEAST_EXPECT(
@@ -1091,7 +1091,7 @@ public:
                 R"("id" : 5,)"
                 R"("params": )"
                 R"({"account": ")" +
-                    alice.human() +
+                    toBase58(alice.id()) +
                     R"(", )"
                     R"("peer": ")" +
                     gw1.human() + R"("}})");
@@ -1115,13 +1115,13 @@ public:
                 R"("id" : 5,)"
                 R"("params": )"
                 R"({"account": ")" +
-                    alice.human() +
+                    toBase58(alice.id()) +
                     R"(", )"
                     R"("peer": )"
                     R"("n9MJkEKHDhy5eTLuHUQeAAjo382frHNbFK4C8hcwN4nwM2SrLdBj"}})");
             BEAST_EXPECT(
                 lines[jss::error][jss::message] ==
-                RPC::make_error(rpcBAD_SEED)[jss::error_message]);
+                RPC::make_error(rpcACT_MALFORMED)[jss::error_message]);
             BEAST_EXPECT(
                 lines.isMember(jss::jsonrpc) && lines[jss::jsonrpc] == "2.0");
             BEAST_EXPECT(
@@ -1140,7 +1140,7 @@ public:
                 R"("id" : 5,)"
                 R"("params": )"
                 R"({"account": ")" +
-                    alice.human() +
+                    toBase58(alice.id()) +
                     R"(", )"
                     R"("limit": -1}})");
             BEAST_EXPECT(
@@ -1164,7 +1164,7 @@ public:
                 R"("id" : 5,)"
                 R"("params": )"
                 R"({"account": ")" +
-                    alice.human() +
+                    toBase58(alice.id()) +
                     R"(", )"
                     R"("limit": 1}})");
             BEAST_EXPECT(linesA[jss::result][jss::lines].isArray());
@@ -1187,7 +1187,7 @@ public:
                 R"("id" : 5,)"
                 R"("params": )"
                 R"({"account": ")" +
-                    alice.human() +
+                    toBase58(alice.id()) +
                     R"(", )"
                     R"("marker": ")" +
                     marker + R"("}})");
@@ -1210,7 +1210,7 @@ public:
                 R"("id" : 5,)"
                 R"("params": )"
                 R"({"account": ")" +
-                    alice.human() +
+                    toBase58(alice.id()) +
                     R"(", )"
                     R"("limit": 3, )"
                     R"("marker": ")" +
@@ -1235,7 +1235,7 @@ public:
                 R"("id" : 5,)"
                 R"("params": )"
                 R"({"account": ")" +
-                    alice.human() +
+                    toBase58(alice.id()) +
                     R"(", )"
                     R"("marker": ")" +
                     marker + R"("}})");
@@ -1260,7 +1260,7 @@ public:
                 R"("id" : 5,)"
                 R"("params": )"
                 R"({"account": ")" +
-                    alice.human() +
+                    toBase58(alice.id()) +
                     R"(", )"
                     R"("marker": true}})");
             BEAST_EXPECT(
@@ -1284,7 +1284,7 @@ public:
                 R"("id" : 5,)"
                 R"("params": )"
                 R"({"account": ")" +
-                    alice.human() +
+                    toBase58(alice.id()) +
                     R"(", )"
                     R"("limit": 10, )"
                     R"("peer": ")" +
@@ -1315,7 +1315,7 @@ public:
                     R"(", )"
                     R"("limit": 1, )"
                     R"("peer": ")" +
-                    alice.human() + R"("}})");
+                    toBase58(alice.id()) + R"("}})");
             auto const& lineA = linesA[jss::result][jss::lines][0u];
             BEAST_EXPECT(lineA[jss::freeze_peer].asBool() == true);
             BEAST_EXPECT(lineA[jss::no_ripple_peer].asBool() == true);
@@ -1346,7 +1346,7 @@ public:
                     marker +
                     R"(", )"
                     R"("peer": ")" +
-                    alice.human() + R"("}})");
+                    toBase58(alice.id()) + R"("}})");
             BEAST_EXPECT(linesB[jss::result][jss::lines].isArray());
             BEAST_EXPECT(linesB[jss::result][jss::lines].size() == 25);
             BEAST_EXPECT(!linesB[jss::result].isMember(jss::marker));
@@ -1418,7 +1418,7 @@ public:
             R"("id" : 5,)"
             R"("params": )"
             R"({"account": ")" +
-                alice.human() +
+                toBase58(alice.id()) +
                 R"(", )"
                 R"("limit": 2}})");
         BEAST_EXPECT(
@@ -1446,7 +1446,7 @@ public:
             R"("id" : 5,)"
             R"("params": )"
             R"({"account": ")" +
-                alice.human() +
+                toBase58(alice.id()) +
                 R"(", )"
                 R"("marker": ")" +
                 linesBeg[jss::result][jss::marker].asString() + R"("}})");

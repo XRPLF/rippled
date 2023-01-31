@@ -65,21 +65,18 @@ doAccountOffers(RPC::JsonContext& context)
     if (!ledger)
         return result;
 
-    std::string strIdent(params[jss::account].asString());
-    AccountID accountID;
-
-    if (auto jv = RPC::accountFromString(accountID, strIdent))
+    std::string const strIdent(params[jss::account].asString());
+    auto const accountID = RPC::accountFromStringStrict(strIdent);
+    if (!accountID)
     {
-        for (auto it = jv.begin(); it != jv.end(); ++it)
-            result[it.memberName()] = (*it);
-
+        RPC::inject_error(rpcACT_MALFORMED, result);
         return result;
     }
 
     // Get info on account.
-    result[jss::account] = toBase58(accountID);
+    result[jss::account] = toBase58(*accountID);
 
-    if (!ledger->exists(keylet::account(accountID)))
+    if (!ledger->exists(keylet::account(*accountID)))
         return rpcError(rpcACT_NOT_FOUND);
 
     unsigned int limit;
@@ -137,11 +134,11 @@ doAccountOffers(RPC::JsonContext& context)
     std::uint64_t nextHint = 0;
     if (!forEachItemAfter(
             *ledger,
-            accountID,
+            *accountID,
             startAfter,
             startHint,
             limit + 1,
-            [&offers, &count, &marker, &limit, &nextHint, &accountID](
+            [&offers, &count, &marker, &limit, &nextHint, accountID](
                 std::shared_ptr<SLE const> const& sle) {
                 if (!sle)
                 {
@@ -152,7 +149,7 @@ doAccountOffers(RPC::JsonContext& context)
                 if (++count == limit)
                 {
                     marker = sle->key();
-                    nextHint = RPC::getStartHint(sle, accountID);
+                    nextHint = RPC::getStartHint(sle, *accountID);
                 }
 
                 if (count <= limit && sle->getType() == ltOFFER)

@@ -60,19 +60,15 @@ doAccountNFTs(RPC::JsonContext& context)
     if (ledger == nullptr)
         return result;
 
-    AccountID accountID;
+    auto const strIdent = params[jss::account].asString();
+    auto const accountID = parseBase58<AccountID>(strIdent);
+    if (!accountID)
     {
-        auto const strIdent = params[jss::account].asString();
-        if (auto jv = RPC::accountFromString(accountID, strIdent))
-        {
-            for (auto it = jv.begin(); it != jv.end(); ++it)
-                result[it.memberName()] = *it;
-
-            return result;
-        }
+        RPC::inject_error(rpcACT_MALFORMED, result);
+        return result;
     }
 
-    if (!ledger->exists(keylet::account(accountID)))
+    if (!ledger->exists(keylet::account(*accountID)))
         return rpcError(rpcACT_NOT_FOUND);
 
     unsigned int limit;
@@ -91,8 +87,8 @@ doAccountNFTs(RPC::JsonContext& context)
             return RPC::invalid_field_error(jss::marker);
     }
 
-    auto const first = keylet::nftpage(keylet::nftpage_min(accountID), marker);
-    auto const last = keylet::nftpage_max(accountID);
+    auto const first = keylet::nftpage(keylet::nftpage_min(*accountID), marker);
+    auto const last = keylet::nftpage_max(*accountID);
 
     auto cp = ledger->read(Keylet(
         ltNFTOKEN_PAGE,
@@ -160,7 +156,7 @@ doAccountNFTs(RPC::JsonContext& context)
             cp = nullptr;
     }
 
-    result[jss::account] = toBase58(accountID);
+    result[jss::account] = toBase58(*accountID);
     context.loadType = Resource::feeMediumBurdenRPC;
     return result;
 }
@@ -177,19 +173,15 @@ doAccountObjects(RPC::JsonContext& context)
     if (ledger == nullptr)
         return result;
 
-    AccountID accountID;
+    auto const strIdent = params[jss::account].asString();
+    auto const accountID = parseBase58<AccountID>(strIdent);
+    if (!accountID)
     {
-        auto const strIdent = params[jss::account].asString();
-        if (auto jv = RPC::accountFromString(accountID, strIdent))
-        {
-            for (auto it = jv.begin(); it != jv.end(); ++it)
-                result[it.memberName()] = *it;
-
-            return result;
-        }
+        RPC::inject_error(rpcACT_MALFORMED, result);
+        return result;
     }
 
-    if (!ledger->exists(keylet::account(accountID)))
+    if (!ledger->exists(keylet::account(*accountID)))
         return rpcError(rpcACT_NOT_FOUND);
 
     std::optional<std::vector<LedgerEntryType>> typeFilter;
@@ -265,7 +257,7 @@ doAccountObjects(RPC::JsonContext& context)
 
     if (!RPC::getAccountObjects(
             *ledger,
-            accountID,
+            *accountID,
             typeFilter,
             dirIndex,
             entryIndex,
@@ -275,7 +267,7 @@ doAccountObjects(RPC::JsonContext& context)
         result[jss::account_objects] = Json::arrayValue;
     }
 
-    result[jss::account] = toBase58(accountID);
+    result[jss::account] = toBase58(*accountID);
     context.loadType = Resource::feeMediumBurdenRPC;
     return result;
 }

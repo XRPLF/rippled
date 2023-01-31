@@ -56,11 +56,22 @@ class AccountCurrencies_test : public beast::unit_test::suite
                 result[jss::error_message] == "Missing field 'account'.");
         }
 
-        {  // strict mode, invalid bitcoin token
+        {
             Json::Value params;
             params[jss::account] =
                 "llIIOO";  // these are invalid in bitcoin alphabet
-            params[jss::strict] = true;
+            auto const result = env.rpc(
+                "json",
+                "account_currencies",
+                boost::lexical_cast<std::string>(params))[jss::result];
+            BEAST_EXPECT(result[jss::error] == "actMalformed");
+            BEAST_EXPECT(result[jss::error_message] == "Account malformed.");
+        }
+
+        {
+            // Cannot use a seed as account
+            Json::Value params;
+            params[jss::account] = "Bob";
             auto const result = env.rpc(
                 "json",
                 "account_currencies",
@@ -71,7 +82,7 @@ class AccountCurrencies_test : public beast::unit_test::suite
 
         {  // ask for nonexistent account
             Json::Value params;
-            params[jss::account] = Account{"bob"}.human();
+            params[jss::account] = toBase58(Account{"bob"}.id());
             auto const result = env.rpc(
                 "json",
                 "account_currencies",
@@ -102,7 +113,7 @@ class AccountCurrencies_test : public beast::unit_test::suite
         env.close();
 
         Json::Value params;
-        params[jss::account] = alice.human();
+        params[jss::account] = toBase58(alice.id());
         auto result = env.rpc(
             "json",
             "account_currencies",
@@ -141,7 +152,7 @@ class AccountCurrencies_test : public beast::unit_test::suite
         // freeze the USD trust line and verify that the receive currencies
         // does not change
         env(trust(alice, gw["USD"](100), tfSetFreeze));
-        result = env.rpc("account_lines", alice.human());
+        result = env.rpc("account_lines", toBase58(alice.id()));
         for (auto const& l : result[jss::lines])
             BEAST_EXPECT(
                 l[jss::freeze].asBool() == (l[jss::currency] == "USD"));

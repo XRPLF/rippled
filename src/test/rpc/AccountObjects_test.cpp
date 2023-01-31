@@ -131,7 +131,7 @@ public:
                 "n94JNrQYkDrpt62bbSR7nVEhdyAvcJXRAsjEkFYyqRkh9SUTYEqV";
             auto resp = env.rpc("json", "account_objects", to_string(params));
             BEAST_EXPECT(
-                resp[jss::result][jss::error_message] == "Disallowed seed.");
+                resp[jss::result][jss::error_message] == "Account malformed.");
         }
         // test error on account that's not in the ledger.
         {
