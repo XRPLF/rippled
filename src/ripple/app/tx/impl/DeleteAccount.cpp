@@ -155,23 +155,23 @@ removeGeneric(
     if (!sleDel)
         return tesSUCCESS;
 
-    auto const owner = (*offer)[sfOwner];
+    // auto const owner = (*offer)[sfOwner];
 
-    if (!view.dirRemove(
-            keylet::ownerDir(account),
-            (*sleDel)[sfOwnerNode],
-            sleDel->key(),
-            false))
-        return false;
+    // if (!view.dirRemove(
+    //         keylet::ownerDir(account),
+    //         (*sleDel)[sfOwnerNode],
+    //         sleDel->key(),
+    //         false))
+    //     return false;
 
-    adjustOwnerCount(
-        view,
-        view.peek(keylet::account(account)),
-        -1,
-        beast::Journal{beast::Journal::getNullSink()});
+    // adjustOwnerCount(
+    //     view,
+    //     view.peek(keylet::account(account)),
+    //     -1,
+    //     beast::Journal{beast::Journal::getNullSink()});
 
-    view.erase(sleDel);
-    return true;
+    // view.erase(sleDel);
+    return tesSUCCESS;
 }
 
 // Return nullptr if the LedgerEntryType represents an obligation that can't
