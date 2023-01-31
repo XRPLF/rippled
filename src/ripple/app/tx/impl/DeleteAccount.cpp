@@ -155,22 +155,20 @@ removeGeneric(
     if (!sleDel)
         return tesSUCCESS;
 
-    // auto const owner = (*offer)[sfOwner];
+    if (!view.dirRemove(
+            keylet::ownerDir(account),
+            (*sleDel)[sfOwnerNode],
+            sleDel->key(),
+            false))
+        return tecINTERNAL;
 
-    // if (!view.dirRemove(
-    //         keylet::ownerDir(account),
-    //         (*sleDel)[sfOwnerNode],
-    //         sleDel->key(),
-    //         false))
-    //     return false;
+    adjustOwnerCount(
+        view,
+        view.peek(keylet::account(account)),
+        -1,
+        beast::Journal{beast::Journal::getNullSink()});
 
-    // adjustOwnerCount(
-    //     view,
-    //     view.peek(keylet::account(account)),
-    //     -1,
-    //     beast::Journal{beast::Journal::getNullSink()});
-
-    // view.erase(sleDel);
+    view.erase(sleDel);
     return tesSUCCESS;
 }
 
