@@ -335,6 +335,5 @@ public:
 
 BEAST_DEFINE_TESTSUITE(AccountOffers, app, ripple);
 
-
 }  // namespace test
 }  // namespace ripple
