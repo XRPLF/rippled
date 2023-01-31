@@ -67,7 +67,7 @@ std::size_t constexpr maxDeletableDirEntries = 1000;
 std::size_t constexpr maxTokenOfferCancelCount = 500;
 
 /** The maximum number of offers in an offer directory for NFT to be burnable */
-int constexpr maxDeletableTokenOfferEntries = 500;
+std::size_t constexpr maxDeletableTokenOfferEntries = 500;
 
 /** The maximum token transfer fee allowed.
 

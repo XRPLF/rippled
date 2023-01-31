@@ -521,17 +521,17 @@ findTokenAndPage(
     return std::nullopt;
 }
 
-int
+std::size_t
 removeTokenOffersWithLimit(
     ApplyView& view,
     Keylet const& directory,
-    int maxDeletableOffers)
+    std::size_t maxDeletableOffers)
 {
     if (maxDeletableOffers == 0)
         return 0;
 
     std::optional<std::uint64_t> pageIndex{0};
-    int deletedOffersCount = 0;
+    std::size_t deletedOffersCount = 0;
 
     do
     {

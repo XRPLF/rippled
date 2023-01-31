@@ -55,11 +55,11 @@ constexpr std::uint16_t const flagTransferable = 0x0008;
 
 /** Delete up to a specified number of offers from the specified token offer
  * directory. */
-int
+std::size_t
 removeTokenOffersWithLimit(
     ApplyView& view,
     Keylet const& directory,
-    int maxDeletableOffers);
+    std::size_t maxDeletableOffers);
 
 /** Returns tesSUCCESS if NFToken has few enough offers that it can be burned */
 TER

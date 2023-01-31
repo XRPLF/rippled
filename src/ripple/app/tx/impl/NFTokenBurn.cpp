@@ -115,12 +115,12 @@ NFTokenBurn::doApply()
         // Because the number of sell offers is likely to be less than
         // the number of buy offers, we prioritize the deletion of sell
         // offers in order to clean up sell offer directory
-        int const deletedSellOffers = nft::removeTokenOffersWithLimit(
+        std::size_t const deletedSellOffers = nft::removeTokenOffersWithLimit(
             view(),
             keylet::nft_sells(ctx_.tx[sfNFTokenID]),
             maxDeletableTokenOfferEntries);
 
-        if (maxDeletableTokenOfferEntries - deletedSellOffers > 0)
+        if (maxDeletableTokenOfferEntries > deletedSellOffers)
         {
             nft::removeTokenOffersWithLimit(
                 view(),
