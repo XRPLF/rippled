@@ -38,13 +38,6 @@ private:
         std::shared_ptr<SLE> const& buy,
         std::shared_ptr<SLE> const& sell);
 
-    bool
-    balanceOKAfterPayment(AccountID const& account, STAmount const& amount)
-        const;
-
-    static STAmount
-    getAmountForValidation(AccountID const& account, STAmount const& amount);
-
 public:
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 

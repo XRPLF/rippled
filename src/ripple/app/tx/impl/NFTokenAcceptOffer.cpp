@@ -27,33 +27,6 @@
 
 namespace ripple {
 
-STAmount
-NFTokenAcceptOffer::getAmountForValidation(
-    AccountID const& account,
-    STAmount const& amount)
-{
-    if (account != amount.getIssuer())
-        return amount;
-    auto ret = STAmount(amount);
-    ret.negate();
-    return ret;
-}
-
-bool
-NFTokenAcceptOffer::balanceOKAfterPayment(
-    AccountID const& account,
-    STAmount const& amount) const
-{
-    auto const comparingAmount = getAmountForValidation(account, amount);
-    return accountHolds(
-               view(),
-               account,
-               comparingAmount.getCurrency(),
-               comparingAmount.getIssuer(),
-               fhZERO_IF_FROZEN,
-               j_) >= amount.zeroed();
-}
-
 NotTEC
 NFTokenAcceptOffer::preflight(PreflightContext const& ctx)
 {
@@ -200,11 +173,16 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         //
         // After this amendment, we allow an IOU issuer to buy an NFT with their
         // own currency
-        auto const needed = ctx.view.rules().enabled(fixUnburnableNFToken)
-            ? getAmountForValidation(bo->at(sfOwner), bo->at(sfAmount))
-            : bo->at(sfAmount);
-
-        if (accountHolds(
+        auto const needed = bo->at(sfAmount);
+        if (ctx.view.rules().enabled(fixUnburnableNFToken))
+        {
+            if (accountFunds(
+                    ctx.view, (*bo)[sfOwner], needed, fhZERO_IF_FROZEN, ctx.j) <
+                needed)
+                return tecINSUFFICIENT_FUNDS;
+        }
+        else if (
+            accountHolds(
                 ctx.view,
                 (*bo)[sfOwner],
                 needed.getCurrency(),
@@ -238,9 +216,9 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         }
 
         // The account offering to buy must have funds:
+        auto const needed = so->at(sfAmount);
         if (!ctx.view.rules().enabled(fixUnburnableNFToken))
         {
-            auto const needed = so->at(sfAmount);
             if (accountHolds(
                     ctx.view,
                     ctx.tx[sfAccount],
@@ -264,13 +242,10 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
             // mode, because then we are confirming that the broker can
             // cover what the buyer will pay, which doesn't make sense, causes
             // an unncessary tec, and is also resolved with this amendment.
-            auto const needed =
-                getAmountForValidation(ctx.tx[sfAccount], so->at(sfAmount));
-            if (accountHolds(
+            if (accountFunds(
                     ctx.view,
                     ctx.tx[sfAccount],
-                    needed.getCurrency(),
-                    needed.getIssuer(),
+                    needed,
                     fhZERO_IF_FROZEN,
                     ctx.j) < needed)
                 return tecINSUFFICIENT_FUNDS;
@@ -301,8 +276,11 @@ NFTokenAcceptOffer::pay(
         return result;
     if (result != tesSUCCESS)
         return result;
-    if (!(balanceOKAfterPayment(from, amount) &&
-          balanceOKAfterPayment(to, amount)))
+    if (accountFunds(view(), from, amount, fhZERO_IF_FROZEN, j_) <
+        amount.zeroed())
+        return tecINSUFFICIENT_FUNDS;
+    if (accountFunds(view(), to, amount, fhZERO_IF_FROZEN, j_) <
+        amount.zeroed())
         return tecINSUFFICIENT_FUNDS;
     return tesSUCCESS;
 }
