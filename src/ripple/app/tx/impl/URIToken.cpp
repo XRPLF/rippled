@@ -272,7 +272,6 @@ URIToken::preclaim(PreclaimContext const& ctx)
 
             if (!saleAmount->native())
             {
-                std::cout << "NOT isXRP: " << "\n";
                 AccountID const iouIssuer = saleAmount->getIssuer();
                 if (!ctx.view.exists(keylet::account(iouIssuer)))
                         return tecNO_ISSUER;
