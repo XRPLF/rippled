@@ -276,11 +276,9 @@ NFTokenAcceptOffer::pay(
         return result;
     if (result != tesSUCCESS)
         return result;
-    if (accountFunds(view(), from, amount, fhZERO_IF_FROZEN, j_) <
-        amount.zeroed())
+    if (accountFunds(view(), from, amount, fhZERO_IF_FROZEN, j_).signum() < 0)
         return tecINSUFFICIENT_FUNDS;
-    if (accountFunds(view(), to, amount, fhZERO_IF_FROZEN, j_) <
-        amount.zeroed())
+    if (accountFunds(view(), to, amount, fhZERO_IF_FROZEN, j_).signum() < 0)
         return tecINSUFFICIENT_FUNDS;
     return tesSUCCESS;
 }
