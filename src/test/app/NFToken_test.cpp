@@ -463,8 +463,8 @@ class NFToken_test : public beast::unit_test::suite
         // minter has one more NFT to burn.  Should take her owner count to
         // 0.
         if (features[fixUnburnableNFToken])
-            // If fixUnburnableNFToken is enabled, we must add FirstNFTokenSequence
-            // to offset the starting NFT sequence number
+            // If fixUnburnableNFToken is enabled, we must add
+            // FirstNFTokenSequence to offset the starting NFT sequence number
             env(token::burn(
                 minter,
                 token::getID(
@@ -5139,8 +5139,8 @@ class NFToken_test : public beast::unit_test::suite
             BEAST_EXPECT(openLedgerSeq(env) == deletableLgrSeq);
         };
 
-        // If fixUnburnableNFToken is not enabled, we test if the issuer account can
-        // be deleted after an authorized minter mints and burns a batch of
+        // If fixUnburnableNFToken is not enabled, we test if the issuer account
+        // can be deleted after an authorized minter mints and burns a batch of
         // NFTokens.
         if (!features[fixUnburnableNFToken])
         {
@@ -5557,7 +5557,7 @@ class NFToken_test : public beast::unit_test::suite
             env(token::burn(alice, remintNftokenID));
             env.close();
 
-            if(features[fixUnburnableNFToken])
+            if (features[fixUnburnableNFToken])
                 // Check that two NFTs don't have the same ID
                 BEAST_EXPECT(remintNftokenID != prevNftokenID);
             else

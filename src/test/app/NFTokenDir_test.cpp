@@ -650,8 +650,8 @@ class NFTokenDir_test : public beast::unit_test::suite
 
         // If fixUnburnableNFToken is not enabled, accounts can be created in
         // different ledgers.
-        // If fixUnburnableNFToken is enabled, all accounts must be created in the
-        // same ledger in order to initialize all accounts with the same
+        // If fixUnburnableNFToken is enabled, all accounts must be created in
+        // the same ledger in order to initialize all accounts with the same
         // account sequence.
         for (std::string_view const& seed : seeds)
         {
