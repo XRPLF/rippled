@@ -236,11 +236,9 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     // authorized minter minted in a previous ledger.
     if (ctx.view.rules().enabled(fixUnburnableNFToken) &&
         ((*sleAccount)[~sfFirstNFTokenSequence].value_or(0) +
-             (*sleAccount)[sfMintedNFTokens] + seqDelta >
+             (*sleAccount)[~sfMintedNFTokens].value_or(0) + seqDelta >
          ctx.view.seq()))
-    {
         return tecTOO_SOON;
-    }
 
     // Verify that the account does not own any objects that would prevent
     // the account from being deleted.

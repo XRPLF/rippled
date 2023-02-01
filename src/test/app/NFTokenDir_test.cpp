@@ -190,8 +190,16 @@ class NFTokenDir_test : public beast::unit_test::suite
                     Account const& account = accounts.emplace_back(
                         Account::base58Seed, std::string(seed));
                     env.fund(XRP(10000), account);
-                    env.close();
+
+                    // Should not advance ledger if fixUnburnableNFToken is
+                    // enabled. Because otherwise, accounts are initialized at
+                    // different ledgers, and will have different account
+                    // sequences, which then cause the sequence number of
+                    // NFTokenIDs to be different
+                    if (!features[fixUnburnableNFToken])
+                        env.close();
                 }
+                env.close();
 
                 // All of the accounts create one NFT and and offer that NFT to
                 // buyer.
@@ -408,8 +416,16 @@ class NFTokenDir_test : public beast::unit_test::suite
                     Account const& account = accounts.emplace_back(
                         Account::base58Seed, std::string(seed));
                     env.fund(XRP(10000), account);
-                    env.close();
+
+                    // Should not advance ledger if fixUnburnableNFToken is
+                    // enabled. Because otherwise, accounts are initialized at
+                    // different ledgers, and will have different account
+                    // sequences, which then cause the sequence number of
+                    // NFTokenIDs to be different
+                    if (!features[fixUnburnableNFToken])
+                        env.close();
                 }
+                env.close();
 
                 // All of the accounts create one NFT and and offer that NFT to
                 // buyer.
