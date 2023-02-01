@@ -81,6 +81,13 @@ public:
     Number&
     operator/=(Number const& x);
 
+    static constexpr Number
+    min() noexcept;
+    static constexpr Number
+    max() noexcept;
+    static constexpr Number
+    lowest() noexcept;
+
     explicit operator XRPAmount() const;  // round to nearest, even on tie
     explicit operator rep() const;        // round to nearest, even on tie
 
@@ -288,6 +295,24 @@ operator/(Number const& x, Number const& y)
     auto z = x;
     z /= y;
     return z;
+}
+
+inline constexpr Number
+Number::min() noexcept
+{
+    return Number{minMantissa, minExponent, unchecked{}};
+}
+
+inline constexpr Number
+Number::max() noexcept
+{
+    return Number{maxMantissa, maxExponent, unchecked{}};
+}
+
+inline constexpr Number
+Number::lowest() noexcept
+{
+    return -Number{maxMantissa, maxExponent, unchecked{}};
 }
 
 inline constexpr bool
