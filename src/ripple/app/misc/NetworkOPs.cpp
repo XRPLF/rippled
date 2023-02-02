@@ -1450,9 +1450,9 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
 
             if (addLocal && !enforceFailHard)
             {
-                m_localTX->push_back(
-                    m_ledgerMaster.getCurrentLedgerIndex(),
-                    e.transaction->getSTransaction());
+                m_localTX->track(
+                    e.transaction->getSTransaction(),
+                    m_ledgerMaster.getCurrentLedgerIndex());
                 e.transaction->setKept();
             }
 
@@ -1761,7 +1761,7 @@ NetworkOPsImp::switchLastClosedLedger(
         // Apply tx in old open ledger to new
         // open ledger. Then apply local tx.
 
-        auto retries = m_localTX->getTxSet();
+        auto retries = m_localTX->getTransactions();
         auto const lastVal = app_.getLedgerMaster().getValidatedLedger();
         std::optional<Rules> rules;
         if (lastVal)

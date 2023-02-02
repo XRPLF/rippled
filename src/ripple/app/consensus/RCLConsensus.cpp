@@ -641,7 +641,7 @@ RCLConsensus::Adaptor::doAccept(
             app_,
             *rules,
             built.ledger_,
-            localTxs_.getTxSet(),
+            localTxs_.getTransactions(),
             anyDisputes,
             retriableTxs,
             tapNONE,
