@@ -77,9 +77,14 @@ NFTokenBurn::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    // If there are too many offers, then burning the token would produce too
-    // much metadata.  Disallow burning a token with too many offers.
-    return nft::notTooManyOffers(ctx.view, ctx.tx[sfNFTokenID]);
+    if (!ctx.view.rules().enabled(fixUnburnableNFToken))
+    {
+        // If there are too many offers, then burning the token would produce
+        // too much metadata.  Disallow burning a token with too many offers.
+        return nft::notTooManyOffers(ctx.view, ctx.tx[sfNFTokenID]);
+    }
+
+    return tesSUCCESS;
 }
 
 TER
@@ -104,9 +109,38 @@ NFTokenBurn::doApply()
         view().update(issuer);
     }
 
-    // Optimized deletion of all offers.
-    nft::removeAllTokenOffers(view(), keylet::nft_sells(ctx_.tx[sfNFTokenID]));
-    nft::removeAllTokenOffers(view(), keylet::nft_buys(ctx_.tx[sfNFTokenID]));
+    if (ctx_.view().rules().enabled(fixUnburnableNFToken))
+    {
+        // Delete up to 500 offers in total.
+        // Because the number of sell offers is likely to be less than
+        // the number of buy offers, we prioritize the deletion of sell
+        // offers in order to clean up sell offer directory
+        std::size_t const deletedSellOffers = nft::removeTokenOffersWithLimit(
+            view(),
+            keylet::nft_sells(ctx_.tx[sfNFTokenID]),
+            maxDeletableTokenOfferEntries);
+
+        if (maxDeletableTokenOfferEntries > deletedSellOffers)
+        {
+            nft::removeTokenOffersWithLimit(
+                view(),
+                keylet::nft_buys(ctx_.tx[sfNFTokenID]),
+                maxDeletableTokenOfferEntries - deletedSellOffers);
+        }
+    }
+    else
+    {
+        // Deletion of all offers.
+        nft::removeTokenOffersWithLimit(
+            view(),
+            keylet::nft_sells(ctx_.tx[sfNFTokenID]),
+            std::numeric_limits<int>::max());
+
+        nft::removeTokenOffersWithLimit(
+            view(),
+            keylet::nft_buys(ctx_.tx[sfNFTokenID]),
+            std::numeric_limits<int>::max());
+    }
 
     return tesSUCCESS;
 }
