@@ -26,24 +26,45 @@
 
 namespace ripple {
 
-// Track transactions issued by local clients
-// Ensure we always apply them to our open ledger
-// Hold them until we see them in a fully-validated ledger
+/** Tracks transactions so we can apply them to the open ledger until seen in a
+    fully validated ledger.
+
+    This code prevents scenarios like the following:
+
+    1) A client submits a transaction.
+    2) The transaction gets into the ledger this server believes will be the
+       consensus ledger.
+    3) The server builds a succeeding open ledger without the transaction
+       because it is in the prior ledger.
+    4) The local consensus ledger is not the majority ledger (due to network
+       conditions, Byzantine fault, etc.) and the majority ledger does not
+       include the transaction.
+    5) The server builds a new open ledger that does not include the transaction
+       or have it in a prior ledger.
+    6) The client submits another transaction and gets a terPRE_SEQ preliminary
+       result.
+    7) The server does not relay that second transaction, at least not yet.
+
+    With this code, when step 5 happens, the first transaction will be applied
+    to that open ledger so the second transaction will succeed normally at step
+    6. Transactions remain tracked and test-applied to all new open ledgers
+    until seen in a fully-validated ledger
+ */
 
 class LocalTxs
 {
 public:
     virtual ~LocalTxs() = default;
 
-    // Add a new local transaction
+    /** Add a new local transaction. */
     virtual void
-    push_back(LedgerIndex index, std::shared_ptr<STTx const> const& txn) = 0;
+    track(std::shared_ptr<STTx const> const& txn, LedgerIndex index) = 0;
 
-    // Return the set of local transactions to a new open ledger
+    /** Return the set of local transactions. */
     virtual CanonicalTXSet
-    getTxSet() = 0;
+    getTransactions() = 0;
 
-    // Remove obsolete transactions based on a new fully-valid ledger
+    /** Remove obsolete transactions based on a new fully-valid ledger. */
     virtual void
     sweep(ReadView const& view) = 0;
 
