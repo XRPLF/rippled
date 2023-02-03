@@ -67,6 +67,113 @@ parseSection(Section const& section)
     return names;
 }
 
+/** TrustedVotes records the most recent votes from trusted validators.
+    We keep a record in an effort to avoid "flapping" while amendment voting
+    is in process.
+
+    If a trusted validator loses synchronization near a flag ledger their
+    amendment votes may be lost during that round.  If the validator is a
+    bit flaky, then this can cause an amendment to appear to repeatedly
+    gain and lose support.
+
+    TrustedVotes addresses the problem by holding on to the last vote seen
+    from every trusted validator.  So if any given validator is off line near
+    a flag ledger we can assume that they did not change their vote.
+*/
+class TrustedVotes
+{
+private:
+    // Associates each trusted validator with the last votes we saw from them.
+    hash_map<PublicKey, std::vector<uint256>> recordedVotes_;
+
+public:
+    TrustedVotes() = default;
+    TrustedVotes(TrustedVotes const& rhs) = delete;
+    TrustedVotes&
+    operator=(TrustedVotes const& rhs) = delete;
+
+    // Called when the list of trusted validators changes.
+    //
+    // Call with AmendmentTable::mutex_ locked.
+    void
+    trustChanged(
+        hash_set<PublicKey> const& allTrusted,
+        std::lock_guard<std::mutex> const& lock)
+    {
+        decltype(recordedVotes_) newRecordedVotes;
+        newRecordedVotes.reserve(allTrusted.size());
+
+        // Make sure every PublicKey in allTrusted is represented in
+        // recordedVotes_.  Also make sure recordedVotes_ contains
+        // no additional PublicKeys.
+        for (auto& trusted : allTrusted)
+        {
+            if (recordedVotes_.contains(trusted))
+            {
+                // Preserve this validator's previously saved voting state.
+                newRecordedVotes.insert(recordedVotes_.extract(trusted));
+            }
+            else
+            {
+                // New validators have a starting position of no on everything.
+                // Add the entry with an empty vector.
+                newRecordedVotes[trusted];
+            }
+        }
+        // The votes of any no-longer-trusted validators will be destroyed
+        // when changedTrustedVotes goes out of scope.
+        recordedVotes_.swap(newRecordedVotes);
+    }
+
+    // Called when we receive the latest votes.
+    //
+    // Call with AmendmentTable::mutex_ locked.
+    void
+    recordVotes(
+        Rules const& rules,
+        std::vector<std::shared_ptr<STValidation>> const& valSet,
+        std::lock_guard<std::mutex> const& lock)
+    {
+        // Walk all validations and replace previous votes from trusted
+        // validators with these newest votes.
+        for (auto const& val : valSet)
+        {
+            // If this validation comes from one of our trusted validators...
+            if (auto const iter = recordedVotes_.find(val->getSignerPublic());
+                iter != recordedVotes_.end())
+            {
+                if (val->isFieldPresent(sfAmendments))
+                {
+                    auto const& choices = val->getFieldV256(sfAmendments);
+                    iter->second.assign(choices.begin(), choices.end());
+                }
+                else
+                {
+                    // This validator does not support any amendments right now.
+                    iter->second.clear();
+                }
+            }
+        }
+    }
+
+    // Return the information needed by AmendmentSet to determine votes.
+    //
+    // Call with AmendmentTable::mutex_ locked.
+    [[nodiscard]] std::pair<int, hash_map<uint256, int>>
+    getVotes(Rules const& rules, std::lock_guard<std::mutex> const& lock) const
+    {
+        hash_map<uint256, int> ret;
+        for (auto& validatorVotes : recordedVotes_)
+        {
+            for (uint256 const& amendment : validatorVotes.second)
+            {
+                ret[amendment] += 1;
+            }
+        }
+        return {recordedVotes_.size(), ret};
+    }
+};
+
 /** Current state of an amendment.
     Tells if a amendment is supported, enabled or vetoed. A vetoed amendment
     means the node will never announce its support.
@@ -104,6 +211,24 @@ private:
     // number of votes needed
     int threshold_ = 0;
 
+    void
+    computeThreshold(int trustedValidations, Rules const& rules)
+    {
+        threshold_ = !rules_.enabled(fixAmendmentMajorityCalc)
+            ? std::max(
+                  1L,
+                  static_cast<long>(
+                      (trustedValidations_ *
+                       preFixAmendmentMajorityCalcThreshold.num) /
+                      preFixAmendmentMajorityCalcThreshold.den))
+            : std::max(
+                  1L,
+                  static_cast<long>(
+                      (trustedValidations_ *
+                       postFixAmendmentMajorityCalcThreshold.num) /
+                      postFixAmendmentMajorityCalcThreshold.den));
+    }
+
 public:
     AmendmentSet(
         Rules const& rules,
@@ -127,20 +252,22 @@ public:
                 ++trustedValidations_;
             }
         }
+        computeThreshold(trustedValidations_, rules);
+    }
 
-        threshold_ = !rules_.enabled(fixAmendmentMajorityCalc)
-            ? std::max(
-                  1L,
-                  static_cast<long>(
-                      (trustedValidations_ *
-                       preFixAmendmentMajorityCalcThreshold.num) /
-                      preFixAmendmentMajorityCalcThreshold.den))
-            : std::max(
-                  1L,
-                  static_cast<long>(
-                      (trustedValidations_ *
-                       postFixAmendmentMajorityCalcThreshold.num) /
-                      postFixAmendmentMajorityCalcThreshold.den));
+    AmendmentSet(
+        Rules const& rules,
+        TrustedVotes const& trustedVotes,
+        std::lock_guard<std::mutex> const& lock)
+        : rules_(rules)
+    {
+        // process validations for ledger before flag ledger.
+        auto [trustedCount, newVotes] = trustedVotes.getVotes(rules, lock);
+
+        trustedValidations_ = trustedCount;
+        votes_.swap(newVotes);
+
+        computeThreshold(trustedValidations_, rules);
     }
 
     bool
@@ -202,6 +329,9 @@ private:
 
     hash_map<uint256, AmendmentState> amendmentMap_;
     std::uint32_t lastUpdateSeq_;
+
+    // Record of the last votes seen from trusted validators.
+    TrustedVotes previousTrustedVotes_;
 
     // Time that an amendment must hold a majority for
     std::chrono::seconds const majorityTime_;
@@ -293,6 +423,9 @@ public:
         LedgerIndex seq,
         std::set<uint256> const& enabled,
         majorityAmendments_t const& majority) override;
+
+    void
+    trustChanged(hash_set<PublicKey> const& allTrusted) override;
 
     std::vector<uint256>
     doValidation(std::set<uint256> const& enabledAmendments) const override;
@@ -633,8 +766,16 @@ AmendmentTableImpl::doVoting(
                      << ": " << enabledAmendments.size() << ", "
                      << majorityAmendments.size() << ", " << valSet.size();
 
-    auto vote = std::make_unique<AmendmentSet>(rules, valSet);
+    std::lock_guard lock(mutex_);
 
+    // We need to call recordVotes() before fixAmendmentFlapping is enabled
+    // so we have current state when it does enable.
+    previousTrustedVotes_.recordVotes(rules, valSet, lock);
+
+    // The way we compute votes changes based on fixAmendmentFlapping.
+    auto vote = rules.enabled(fixAmendmentFlapping)
+        ? std::make_unique<AmendmentSet>(rules, previousTrustedVotes_, lock)
+        : std::make_unique<AmendmentSet>(rules, valSet);
     JLOG(j_.debug()) << "Received " << vote->trustedValidations()
                      << " trusted validations, threshold is: "
                      << vote->threshold();
@@ -642,8 +783,6 @@ AmendmentTableImpl::doVoting(
     // Map of amendments to the action to be taken for each one. The action is
     // the value of the flags in the pseudo-transaction
     std::map<uint256, std::uint32_t> actions;
-
-    std::lock_guard lock(mutex_);
 
     // process all amendments we know of
     for (auto const& entry : amendmentMap_)
@@ -738,6 +877,13 @@ AmendmentTableImpl::doValidatedLedger(
     }
     if (firstUnsupportedExpected_)
         firstUnsupportedExpected_ = *firstUnsupportedExpected_ + majorityTime_;
+}
+
+void
+AmendmentTableImpl::trustChanged(hash_set<PublicKey> const& allTrusted)
+{
+    std::lock_guard lock(mutex_);
+    previousTrustedVotes_.trustChanged(allTrusted, lock);
 }
 
 void
