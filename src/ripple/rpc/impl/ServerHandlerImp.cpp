@@ -30,6 +30,7 @@
 #include <ripple/json/to_string.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/overlay/Overlay.h>
+#include <ripple/protocol/ErrorCodes.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/resource/ResourceManager.h>
 #include <ripple/rpc/RPCHandler.h>
@@ -970,6 +971,29 @@ ServerHandlerImp::processRequest(
             }
         }
     }
+
+    // If we're returning an error_code, use that to determine the HTTP status.
+    int const httpStatus = [&reply]() {
+        // This feature is enabled with ripplerpc version 3.0 and above.
+        // Before ripplerpc version 3.0 always return 200.
+        if (reply.isMember(jss::ripplerpc) &&
+            reply[jss::ripplerpc].isString() &&
+            reply[jss::ripplerpc].asString() >= "3.0")
+        {
+            // If there's an error_code, use that to determine the HTTP Status.
+            if (reply.isMember(jss::error) &&
+                reply[jss::error].isMember(jss::error_code) &&
+                reply[jss::error][jss::error_code].isInt())
+            {
+                int const errCode = reply[jss::error][jss::error_code].asInt();
+                return RPC::error_code_http_status(
+                    static_cast<error_code_i>(errCode));
+            }
+        }
+        // Return OK.
+        return 200;
+    }();
+
     auto response = to_string(reply);
 
     rpc_time_.notify(std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -988,7 +1012,7 @@ ServerHandlerImp::processRequest(
             stream << "Reply: " << response.substr(0, maxSize);
     }
 
-    HTTPReply(200, response, output, rpcJ);
+    HTTPReply(httpStatus, response, output, rpcJ);
 }
 
 //------------------------------------------------------------------------------
