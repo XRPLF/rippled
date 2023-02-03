@@ -194,7 +194,7 @@ class NFTokenDir_test : public beast::unit_test::suite
                     // Should not advance ledger if fixUnburnableNFToken is
                     // enabled. Because otherwise, accounts are initialized at
                     // different ledgers, and will have different account
-                    // sequences, which then cause the sequence number of
+                    // sequences, which then causes the sequence number of
                     // NFTokenIDs to be different
                     if (!features[fixUnburnableNFToken])
                         env.close();
@@ -420,7 +420,7 @@ class NFTokenDir_test : public beast::unit_test::suite
                     // Should not advance ledger if fixUnburnableNFToken is
                     // enabled. Because otherwise, accounts are initialized at
                     // different ledgers, and will have different account
-                    // sequences, which then cause the sequence number of
+                    // sequences, which then causes the sequence number of
                     // NFTokenIDs to be different
                     if (!features[fixUnburnableNFToken])
                         env.close();
