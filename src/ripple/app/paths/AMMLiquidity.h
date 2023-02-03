@@ -20,8 +20,8 @@
 #ifndef RIPPLE_APP_TX_AMMLIQUIDITY_H_INCLUDED
 #define RIPPLE_APP_TX_AMMLIQUIDITY_H_INCLUDED
 
-#include "ripple/app/misc/AMM.h"
-#include "ripple/app/misc/AMM_formulae.h"
+#include "ripple/app/misc/AMMHelpers.h"
+#include "ripple/app/misc/AMMUtils.h"
 #include "ripple/app/paths/AMMContext.h"
 #include "ripple/basics/Log.h"
 #include "ripple/ledger/ReadView.h"
@@ -38,7 +38,7 @@ class AMMOffer;
  * The offers are generated in two ways. If there are multiple
  * paths specified to the payment transaction then the offers
  * are generated based on the Fibonacci sequence with
- * at most four payment engine iterations consuming AMM offers.
+ * a limited number of payment engine iterations consuming AMM offers.
  * These offers behave the same way as CLOB offers in that if
  * there is a limiting step, then the offers are adjusted
  * based on their quality.
@@ -130,10 +130,15 @@ private:
     /** Generate AMM offers with the offer size based on Fibonacci sequence.
      * The sequence corresponds to the payment engine iterations with AMM
      * liquidity. Iterations that don't consume AMM offers don't count.
-     * Max out at four iterations with AMM offers.
+     * The number of iterations with AMM offers is limited.
      */
     TAmounts<TIn, TOut>
     generateFibSeqOffer(TAmounts<TIn, TOut> const& balances) const;
+
+    /** Generate max offer
+     */
+    AMMOffer<TIn, TOut>
+    maxOffer(TAmounts<TIn, TOut> const& balances) const;
 };
 
 }  // namespace ripple

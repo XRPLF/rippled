@@ -19,12 +19,12 @@
 
 #include <ripple/app/tx/impl/AMMWithdraw.h>
 
-#include <ripple/app/misc/AMM.h>
-#include <ripple/app/misc/AMM_formulae.h>
+#include <ripple/app/misc/AMMHelpers.h>
+#include <ripple/app/misc/AMMUtils.h>
 #include <ripple/basics/Number.h>
 #include <ripple/ledger/Sandbox.h>
 #include <ripple/ledger/View.h>
-#include <ripple/protocol/AMM.h>
+#include <ripple/protocol/AMMCore.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/STAccount.h>
 #include <ripple/protocol/TxFlags.h>
@@ -60,8 +60,7 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
     //   Amount and Amount2
     //   Amount and LPTokens
     //   Amount and EPrice
-    if (auto const subTxType = std::bitset<32>(flags & tfWithdrawSubTx);
-        subTxType.none() || subTxType.count() > 1)
+    if (std::bitset<32>(flags & tfWithdrawSubTx).count() != 1)
     {
         JLOG(ctx.j.debug()) << "AMM Withdraw: invalid flags.";
         return temMALFORMED;
@@ -123,26 +122,36 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
         return temAMM_BAD_TOKENS;
     }
 
-    if (auto const res = invalidAMMAmount(
-            amount,
-            std::make_optional(std::make_pair(asset, asset2)),
-            (flags & (tfOneAssetWithdrawAll | tfOneAssetLPToken)) || ePrice))
+    if (amount)
     {
-        JLOG(ctx.j.debug()) << "AMM Withdraw: invalid Asset1Out";
-        return res;
+        if (auto const res = invalidAMMAmount(
+                *amount,
+                std::make_optional(std::make_pair(asset, asset2)),
+                (flags & (tfOneAssetWithdrawAll | tfOneAssetLPToken)) ||
+                    ePrice))
+        {
+            JLOG(ctx.j.debug()) << "AMM Withdraw: invalid Asset1Out";
+            return res;
+        }
     }
 
-    if (auto const res = invalidAMMAmount(
-            amount2, std::make_optional(std::make_pair(asset, asset2))))
+    if (amount2)
     {
-        JLOG(ctx.j.debug()) << "AMM Withdraw: invalid Asset2OutAmount";
-        return res;
+        if (auto const res = invalidAMMAmount(
+                *amount2, std::make_optional(std::make_pair(asset, asset2))))
+        {
+            JLOG(ctx.j.debug()) << "AMM Withdraw: invalid Asset2OutAmount";
+            return res;
+        }
     }
 
-    if (auto const res = invalidAMMAmount(ePrice))
+    if (ePrice)
     {
-        JLOG(ctx.j.debug()) << "AMM Withdraw: invalid EPrice";
-        return res;
+        if (auto const res = invalidAMMAmount(*ePrice))
+        {
+            JLOG(ctx.j.debug()) << "AMM Withdraw: invalid EPrice";
+            return res;
+        }
     }
 
     return preflight2(ctx);
@@ -164,7 +173,8 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
 {
     auto const accountID = ctx.tx[sfAccount];
 
-    auto const ammSle = getAMMSle(ctx.view, ctx.tx[sfAsset], ctx.tx[sfAsset2]);
+    auto const ammSle =
+        ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
     if (!ammSle)
     {
         JLOG(ctx.j.debug()) << "AMM Withdraw: Invalid asset pair.";
@@ -176,7 +186,7 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
 
     auto const expected = ammHolds(
         ctx.view,
-        **ammSle,
+        *ammSle,
         amount ? amount->issue() : std::optional<Issue>{},
         amount2 ? amount2->issue() : std::optional<Issue>{},
         FreezeHandling::fhZERO_IF_FROZEN,
@@ -187,8 +197,8 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
     if (amountBalance <= beast::zero || amount2Balance <= beast::zero ||
         lptAMMBalance <= beast::zero)
     {
-        if (isFrozen(ctx.view, amountBalance) ||
-            isFrozen(ctx.view, amount2Balance))
+        if (isGlobalFrozen(ctx.view, amountBalance.getIssuer()) ||
+            isGlobalFrozen(ctx.view, amount2Balance.getIssuer()))
         {
             JLOG(ctx.j.debug()) << "AMM Withdraw involves frozen asset.";
             return tecFROZEN;
@@ -198,7 +208,8 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
         return tecAMM_BALANCE;
     }
 
-    auto checkAmount = [&](auto const& amount, auto const& balance) -> TER {
+    auto checkAmount = [&](std::optional<STAmount> const& amount,
+                           auto const& balance) -> TER {
         if (amount)
         {
             if (auto const ter =
@@ -227,7 +238,7 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
         return ter;
 
     auto const lpTokens =
-        ammLPHolds(ctx.view, **ammSle, ctx.tx[sfAccount], ctx.j);
+        ammLPHolds(ctx.view, *ammSle, ctx.tx[sfAccount], ctx.j);
     auto const lpTokensWithdraw =
         tokensWithdraw(lpTokens, ctx.tx[~sfLPTokenIn], ctx.tx.getFlags());
 
@@ -265,20 +276,20 @@ AMMWithdraw::applyGuts(Sandbox& sb)
     auto const amount = ctx_.tx[~sfAmount];
     auto const amount2 = ctx_.tx[~sfAmount2];
     auto const ePrice = ctx_.tx[~sfEPrice];
-    auto ammSle = getAMMSle(sb, ctx_.tx[sfAsset], ctx_.tx[sfAsset2]);
+    auto ammSle = sb.peek(keylet::amm(ctx_.tx[sfAsset], ctx_.tx[sfAsset2]));
     if (!ammSle)
-        return {ammSle.error(), false};
-    auto const ammAccountID = (**ammSle)[sfAMMAccount];
+        return {tecINTERNAL, false};
+    auto const ammAccountID = (*ammSle)[sfAMMAccount];
     auto const lpTokens =
-        ammLPHolds(ctx_.view(), **ammSle, ctx_.tx[sfAccount], ctx_.journal);
+        ammLPHolds(ctx_.view(), *ammSle, ctx_.tx[sfAccount], ctx_.journal);
     auto const lpTokensWithdraw =
         tokensWithdraw(lpTokens, ctx_.tx[~sfLPTokenIn], ctx_.tx.getFlags());
 
-    auto const tfee = getTradingFee(ctx_.view(), **ammSle, account_);
+    auto const tfee = getTradingFee(ctx_.view(), *ammSle, account_);
 
     auto const expected = ammHolds(
         sb,
-        **ammSle,
+        *ammSle,
         amount ? amount->issue() : std::optional<Issue>{},
         amount2 ? amount2->issue() : std::optional<Issue>{},
         FreezeHandling::fhZERO_IF_FROZEN,
@@ -341,8 +352,8 @@ AMMWithdraw::applyGuts(Sandbox& sb)
     // AMM is deleted if zero tokens balance
     if (result == tesSUCCESS && newLPTokenBalance != beast::zero)
     {
-        (*ammSle)->setFieldAmount(sfLPTokenBalance, newLPTokenBalance);
-        sb.update(*ammSle);
+        ammSle->setFieldAmount(sfLPTokenBalance, newLPTokenBalance);
+        sb.update(ammSle);
 
         JLOG(ctx_.journal.trace())
             << "AMM Withdraw: tokens " << to_string(newLPTokenBalance.iou())
@@ -378,15 +389,15 @@ TER
 AMMWithdraw::deleteAccount(Sandbox& sb, AccountID const& ammAccountID)
 {
     auto sleAMMRoot = sb.peek(keylet::account(ammAccountID));
-    auto sleAMM = getAMMSle(sb, ctx_.tx[sfAsset], ctx_.tx[sfAsset2]);
+    auto ammSle = sb.peek(keylet::amm(ctx_.tx[sfAsset], ctx_.tx[sfAsset2]));
 
-    if (!sleAMMRoot || !sleAMM)
+    if (!sleAMMRoot || !ammSle)
         return tecINTERNAL;
 
     // Note, the AMM trust lines are deleted since the balance
     // goes to 0. It also means there are no linked
     // ledger objects.
-    sb.erase(*sleAMM);
+    sb.erase(ammSle);
     sb.erase(sleAMMRoot);
 
     return tesSUCCESS;
@@ -402,13 +413,13 @@ AMMWithdraw::withdraw(
     STAmount const& lpTokensWithdraw)
 {
     auto const ammSle =
-        getAMMSle(ctx_.view(), ctx_.tx[sfAsset], ctx_.tx[sfAsset2]);
+        ctx_.view().read(keylet::amm(ctx_.tx[sfAsset], ctx_.tx[sfAsset2]));
     if (!ammSle)
-        return {ammSle.error(), STAmount{}};
-    auto const lpTokens = ammLPHolds(view, **ammSle, account_, ctx_.journal);
+        return {tecINTERNAL, STAmount{}};
+    auto const lpTokens = ammLPHolds(view, *ammSle, account_, ctx_.journal);
     auto const expected = ammHolds(
         view,
-        **ammSle,
+        *ammSle,
         amountWithdraw.issue(),
         std::nullopt,
         FreezeHandling::fhZERO_IF_FROZEN,

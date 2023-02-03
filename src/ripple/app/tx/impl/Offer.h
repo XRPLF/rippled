@@ -125,7 +125,7 @@ public:
         return to_string(m_entry->key());
     }
 
-    uint256
+    std::optional<uint256>
     key() const
     {
         return m_entry->key();
@@ -147,7 +147,7 @@ public:
     send(Args&&... args);
 
     bool
-    unlimitedFunds() const
+    isFunded() const
     {
         // Offer owner is issuer; they have unlimited funds
         return m_account == issueOut().account;
@@ -158,14 +158,6 @@ public:
     {
         // CLOB offer pays the transfer fee
         return {ofrInRate, ofrOutRate};
-    }
-
-    /** CLOB offer can be permanently removed
-     */
-    static bool
-    removable()
-    {
-        return true;
     }
 };
 

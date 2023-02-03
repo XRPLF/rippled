@@ -16,9 +16,6 @@ Loop: ripple.app ripple.overlay
 Loop: ripple.app ripple.peerfinder
   ripple.app > ripple.peerfinder
 
-Loop: ripple.app ripple.protocol
-  ripple.app > ripple.protocol
-
 Loop: ripple.app ripple.rpc
   ripple.rpc > ripple.app
 
@@ -45,9 +42,6 @@ Loop: ripple.nodestore ripple.overlay
 
 Loop: ripple.overlay ripple.rpc
   ripple.rpc ~= ripple.overlay
-
-Loop: test.jtx test.rpc
-  test.rpc > test.jtx
 
 Loop: test.jtx test.toplevel
   test.toplevel > test.jtx

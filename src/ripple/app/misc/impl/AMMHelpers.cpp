@@ -17,9 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/app/misc/AMM_formulae.h>
-
-#include <cmath>
+#include <ripple/app/misc/AMMHelpers.h>
 
 namespace ripple {
 
@@ -48,7 +46,7 @@ lpTokensIn(
 }
 
 STAmount
-assetIn(
+ammAssetIn(
     STAmount const& asset1Balance,
     STAmount const& lpTokensBalance,
     STAmount const& lptAMMBalance,

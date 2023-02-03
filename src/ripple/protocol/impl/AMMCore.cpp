@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/AMM.h>
+#include <ripple/protocol/AMMCore.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Rules.h>
 #include <ripple/protocol/STAmount.h>
@@ -68,7 +68,7 @@ invalidAMMAsset(
 {
     if (badCurrency() == issue.currency)
         return temBAD_CURRENCY;
-    if (isXRP(issue) && true != !issue.account)
+    if (isXRP(issue) && issue.account.isNonZero())
         return temBAD_ISSUER;
     if (pair && issue != pair->first && issue != pair->second)
         return temAMM_BAD_TOKENS;
@@ -92,15 +92,13 @@ invalidAMMAssetPair(
 
 NotTEC
 invalidAMMAmount(
-    std::optional<STAmount> const& amount,
+    STAmount const& amount,
     std::optional<std::pair<Issue, Issue>> const& pair,
     bool nonNegative)
 {
-    if (!amount)
-        return tesSUCCESS;
-    if (auto const res = invalidAMMAsset(amount->issue(), pair))
+    if (auto const res = invalidAMMAsset(amount.issue(), pair))
         return res;
-    if (!nonNegative && *amount <= beast::zero)
+    if (!nonNegative && amount <= beast::zero)
         return temBAD_AMOUNT;
     return tesSUCCESS;
 }

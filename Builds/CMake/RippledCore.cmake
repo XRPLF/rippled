@@ -74,7 +74,7 @@ target_sources (xrpl_core PRIVATE
       subdir: protocol
   #]===============================]
   src/ripple/protocol/impl/AccountID.cpp
-  src/ripple/protocol/impl/AMM.cpp
+  src/ripple/protocol/impl/AMMCore.cpp
   src/ripple/protocol/impl/Book.cpp
   src/ripple/protocol/impl/BuildInfo.cpp
   src/ripple/protocol/impl/ErrorCodes.cpp
@@ -386,8 +386,8 @@ target_sources (rippled PRIVATE
   src/ripple/app/reporting/ReportingETL.cpp
   src/ripple/app/reporting/ETLSource.cpp
   src/ripple/app/reporting/P2pProxy.cpp
-  src/ripple/app/misc/impl/AMM.cpp
-  src/ripple/app/misc/impl/AMM_formulae.cpp
+  src/ripple/app/misc/impl/AMMHelpers.cpp
+  src/ripple/app/misc/impl/AMMUtils.cpp
   src/ripple/app/misc/CanonicalTXSet.cpp
   src/ripple/app/misc/FeeVoteImpl.cpp
   src/ripple/app/misc/HashRouter.cpp

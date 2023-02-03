@@ -54,6 +54,8 @@ private:
     // The Spot Price quality if balances != amounts
     // else the amounts quality
     Quality const quality_;
+    // AMM offer can be consumed once at a given iteration
+    bool consumed_;
 
 public:
     AMMOffer(
@@ -77,10 +79,10 @@ public:
     AccountID const&
     owner() const;
 
-    uint256
+    std::optional<uint256>
     key() const
     {
-        return uint256{beast::zero};
+        return std::nullopt;
     }
 
     TAmounts<TIn, TOut> const&
@@ -92,8 +94,7 @@ public:
     bool
     fully_consumed() const
     {
-        // AMM offer is always fully consumed
-        return true;
+        return consumed_;
     }
 
     /** Limit out of the provided offer. If one-path then swapOut
@@ -111,7 +112,7 @@ public:
     limitIn(TAmounts<TIn, TOut> const& offrAmt, TIn const& limit) const;
 
     QualityFunction
-    getQF() const;
+    getQualityF() const;
 
     /** Send funds without incurring the transfer fee
      */
@@ -123,7 +124,7 @@ public:
     }
 
     bool
-    unlimitedFunds() const
+    isFunded() const
     {
         // AMM offer is fully funded by the pool
         return true;
@@ -134,14 +135,6 @@ public:
     {
         // AMM doesn't pay transfer fee on Payment tx
         return {ofrInRate, QUALITY_ONE};
-    }
-
-    /** AMM offer can not be permanently removed.
-     */
-    static bool
-    removable()
-    {
-        return false;
     }
 };
 

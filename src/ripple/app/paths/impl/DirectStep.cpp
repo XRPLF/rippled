@@ -788,7 +788,7 @@ DirectStepI<TDerived>::qualitiesSrcIssues(
         prevStepDebtDirection));
 
     auto const prevStepPaysTrFee =
-        !prevStep_ || !prevStep_->overridesTransferFee(sb);
+        !prevStep_ || !prevStep_->wavesTransferFee(sb);
     std::uint32_t const srcQOut =
         redeems(prevStepDebtDirection) && prevStepPaysTrFee
         ? transferRate(sb, src_).value

@@ -102,6 +102,18 @@ maxAmount()
 }
 
 template <typename TIn, typename TOut>
+AMMOffer<TIn, TOut>
+AMMLiquidity<TIn, TOut>::maxOffer(TAmounts<TIn, TOut> const& balances) const
+{
+    return AMMOffer<TIn, TOut>(
+        *this,
+        {maxAmount<TIn>(),
+         swapAssetIn(balances, maxAmount<TIn>(), tradingFee_)},
+        balances,
+        Quality{balances});
+}
+
+template <typename TIn, typename TOut>
 std::optional<AMMOffer<TIn, TOut>>
 AMMLiquidity<TIn, TOut>::getOffer(
     ReadView const& view,
@@ -146,35 +158,40 @@ AMMLiquidity<TIn, TOut>::getOffer(
     }
 
     auto offer = [&]() -> std::optional<AMMOffer<TIn, TOut>> {
-        if (ammContext_.multiPath())
+        try
         {
-            auto const amounts = generateFibSeqOffer(balances);
-            if (clobQuality && Quality{amounts} < clobQuality)
-                return std::nullopt;
-            return AMMOffer<TIn, TOut>(
-                *this, amounts, std::nullopt, Quality{amounts});
-        }
-        else if (
-            auto const amounts = clobQuality
-                ? changeSpotPriceQuality(balances, *clobQuality, tradingFee_)
-                : balances)
-        {
-            // If the offer size is equal to the balances then change the size
-            // to the largest amount, which doesn't overflow.
-            // The size is going to be changed in BookStep
-            // per either deliver amount limit, or sendmax, or available
-            // output or input funds.
-            if (balances == amounts)
+            if (ammContext_.multiPath())
             {
+                auto const amounts = generateFibSeqOffer(balances);
+                if (clobQuality && Quality{amounts} < clobQuality)
+                    return std::nullopt;
                 return AMMOffer<TIn, TOut>(
-                    *this,
-                    {maxAmount<TIn>(),
-                     swapAssetIn(balances, maxAmount<TIn>(), tradingFee_)},
-                    balances,
-                    Quality{balances});
+                    *this, amounts, std::nullopt, Quality{amounts});
             }
-            return AMMOffer<TIn, TOut>(
-                *this, *amounts, balances, Quality{*amounts});
+            else if (
+                auto const amounts = clobQuality
+                    ? changeSpotPriceQuality(
+                          balances, *clobQuality, tradingFee_)
+                    : balances)
+            {
+                // If the offer size is equal to the balances then change the
+                // size to the largest amount, which doesn't overflow. The size
+                // is going to be changed in BookStep per either deliver amount
+                // limit, or sendmax, or available output or input funds.
+                if (balances == amounts)
+                    return maxOffer(balances);
+                return AMMOffer<TIn, TOut>(
+                    *this, *amounts, balances, Quality{*amounts});
+            }
+        }
+        catch (std::overflow_error const& e)
+        {
+            JLOG(j_.error()) << "AMMLiquidity::getOffer overflow " << e.what();
+            return maxOffer(balances);
+        }
+        catch (std::runtime_error const& e)
+        {
+            JLOG(j_.error()) << "AMMLiquidity::getOffer runtime " << e.what();
         }
         return std::nullopt;
     }();

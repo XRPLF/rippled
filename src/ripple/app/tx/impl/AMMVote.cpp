@@ -19,10 +19,10 @@
 
 #include <ripple/app/tx/impl/AMMVote.h>
 
-#include <ripple/app/misc/AMM.h>
-#include <ripple/app/misc/AMM_formulae.h>
+#include <ripple/app/misc/AMMHelpers.h>
+#include <ripple/app/misc/AMMUtils.h>
 #include <ripple/ledger/Sandbox.h>
-#include <ripple/protocol/AMM.h>
+#include <ripple/protocol/AMMCore.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/STAccount.h>
 #include <ripple/protocol/TxFlags.h>
@@ -64,7 +64,7 @@ TER
 AMMVote::preclaim(PreclaimContext const& ctx)
 {
     if (auto const ammSle =
-            getAMMSle(ctx.view, ctx.tx[sfAsset], ctx.tx[sfAsset2]);
+            ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
         !ammSle)
     {
         JLOG(ctx.j.debug()) << "AMM Vote: Invalid asset pair.";
@@ -82,11 +82,11 @@ applyVote(
     beast::Journal j_)
 {
     auto const feeNew = ctx_.tx[sfTradingFee];
-    auto const amm = getAMMSle(sb, ctx_.tx[sfAsset], ctx_.tx[sfAsset2]);
-    if (!amm)
-        return {amm.error(), false};
-    STAmount const lptAMMBalance = (**amm)[sfLPTokenBalance];
-    auto const lpTokensNew = ammLPHolds(sb, **amm, account_, ctx_.journal);
+    auto ammSle = sb.peek(keylet::amm(ctx_.tx[sfAsset], ctx_.tx[sfAsset2]));
+    if (!ammSle)
+        return {tecINTERNAL, false};
+    STAmount const lptAMMBalance = (*ammSle)[sfLPTokenBalance];
+    auto const lpTokensNew = ammLPHolds(sb, *ammSle, account_, ctx_.journal);
     if (lpTokensNew == beast::zero)
     {
         JLOG(ctx_.journal.debug()) << "AMM Vote: account is not LP.";
@@ -106,10 +106,10 @@ applyVote(
     // per current total tokens balance and each LP tokens balance.
     // Find the entry with the least tokens and whether the account
     // has the vote entry.
-    for (auto const& entry : (*amm)->getFieldArray(sfVoteSlots))
+    for (auto const& entry : ammSle->getFieldArray(sfVoteSlots))
     {
         auto const account = entry[sfAccount];
-        auto lpTokens = ammLPHolds(sb, **amm, account, ctx_.journal);
+        auto lpTokens = ammLPHolds(sb, *ammSle, account, ctx_.journal);
         if (lpTokens == beast::zero)
         {
             JLOG(j_.debug())
@@ -191,9 +191,9 @@ applyVote(
     }
 
     // Update the vote entries and the trading fee.
-    (*amm)->setFieldArray(sfVoteSlots, updatedVoteSlots);
-    (*amm)->setFieldU16(sfTradingFee, static_cast<std::int64_t>(num / den));
-    sb.update(*amm);
+    ammSle->setFieldArray(sfVoteSlots, updatedVoteSlots);
+    ammSle->setFieldU16(sfTradingFee, static_cast<std::int64_t>(num / den));
+    sb.update(ammSle);
 
     return {tesSUCCESS, true};
 }

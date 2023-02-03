@@ -22,10 +22,6 @@
 
 namespace ripple {
 
-QualityFunction::QualityFunction() : m_(0), b_(0)
-{
-}
-
 QualityFunction::QualityFunction(
     Quality const& quality,
     QualityFunction::CLOBLikeTag)
@@ -39,16 +35,8 @@ QualityFunction::QualityFunction(
 void
 QualityFunction::combineWithNext(QualityFunction const& qf)
 {
-    if (m_ == 0 && b_ == 0)
-    {
-        m_ = qf.m_;
-        b_ = qf.b_;
-    }
-    else
-    {
-        m_ += b_ * qf.m_;
-        b_ *= qf.b_;
-    }
+    m_ += b_ * qf.m_;
+    b_ *= qf.b_;
 }
 
 std::optional<Number>

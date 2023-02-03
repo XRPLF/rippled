@@ -20,11 +20,11 @@
 #include <ripple/app/tx/impl/AMMCreate.h>
 
 #include <ripple/app/ledger/OrderBookDB.h>
-#include <ripple/app/misc/AMM.h>
-#include <ripple/app/misc/AMM_formulae.h>
+#include <ripple/app/misc/AMMHelpers.h>
+#include <ripple/app/misc/AMMUtils.h>
 #include <ripple/ledger/Sandbox.h>
 #include <ripple/ledger/View.h>
-#include <ripple/protocol/AMM.h>
+#include <ripple/protocol/AMMCore.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/STAccount.h>
 #include <ripple/protocol/STIssue.h>
@@ -125,7 +125,8 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
         return ter;
     }
 
-    if (isFrozen(ctx.view, amount) || isFrozen(ctx.view, amount2))
+    if (isGlobalFrozen(ctx.view, amount.getIssuer()) ||
+        isGlobalFrozen(ctx.view, amount2.getIssuer()))
     {
         JLOG(ctx.j.debug()) << "AMM Instance: involves frozen asset.";
         return tecFROZEN;
@@ -177,8 +178,8 @@ applyCreate(
 
     // Mitigate same account exists possibility
     auto const ammAccount = [&]() -> Expected<AccountID, TER> {
-        std::uint16_t constexpr MaxAccountAttempts = 256;
-        for (auto p = 0; p < MaxAccountAttempts; ++p)
+        std::uint16_t constexpr maxAccountAttempts = 256;
+        for (auto p = 0; p < maxAccountAttempts; ++p)
         {
             auto const ammAccount =
                 ammAccountID(p, sb.info().parentHash, ammKeylet.key);
@@ -191,7 +192,7 @@ applyCreate(
     // AMM account already exists (should not happen)
     if (!ammAccount)
     {
-        JLOG(j_.debug()) << "AMM Instance: AMM already exists.";
+        JLOG(j_.error()) << "AMM Instance: AMM already exists.";
         return {ammAccount.error(), false};
     }
 
@@ -200,7 +201,7 @@ applyCreate(
         amount.issue().currency, amount2.issue().currency, *ammAccount);
     if (sb.read(keylet::line(*ammAccount, lptIss)))
     {
-        JLOG(j_.debug()) << "AMM Instance: LP Token already exists.";
+        JLOG(j_.error()) << "AMM Instance: LP Token already exists.";
         return {tecDUPLICATE, false};
     }
 
@@ -310,7 +311,7 @@ applyCreate(
         [&](Issue const& issueIn, Issue const& issueOut, std::uint64_t uRate) {
             Book const book{issueIn, issueOut};
             auto const dir = keylet::quality(keylet::book(book), uRate);
-            if (auto const bookExisted = static_cast<bool>(sb.peek(dir));
+            if (auto const bookExisted = static_cast<bool>(sb.read(dir));
                 !bookExisted)
                 ctx_.app.getOrderBookDB().addOrderBook(book);
         };

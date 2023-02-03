@@ -19,11 +19,11 @@
 
 #include <ripple/app/tx/impl/AMMDeposit.h>
 
-#include <ripple/app/misc/AMM.h>
-#include <ripple/app/misc/AMM_formulae.h>
+#include <ripple/app/misc/AMMHelpers.h>
+#include <ripple/app/misc/AMMUtils.h>
 #include <ripple/ledger/Sandbox.h>
 #include <ripple/ledger/View.h>
-#include <ripple/protocol/AMM.h>
+#include <ripple/protocol/AMMCore.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/STAccount.h>
 #include <ripple/protocol/TxFlags.h>
@@ -57,8 +57,7 @@ AMMDeposit::preflight(PreflightContext const& ctx)
     //   Amount and Amount2
     //   AssetLPToken and LPTokens
     //   Amount and EPrice
-    if (auto const subTxType = std::bitset<32>(flags & tfDepositSubTx);
-        subTxType.none() || subTxType.count() > 1)
+    if (std::bitset<32>(flags & tfDepositSubTx).count() != 1)
     {
         JLOG(ctx.j.debug()) << "AMM Deposit: invalid flags.";
         return temMALFORMED;
@@ -110,27 +109,33 @@ AMMDeposit::preflight(PreflightContext const& ctx)
         return temAMM_BAD_TOKENS;
     }
 
-    if (auto const res = invalidAMMAmount(
-            amount,
-            std::make_optional(std::make_pair(asset, asset2)),
-            ePrice.has_value()))
-    {
-        JLOG(ctx.j.debug()) << "AMM Deposit: invalid Asset1In";
-        return res;
-    }
-
-    if (auto const res = invalidAMMAmount(
-            amount2, std::make_optional(std::make_pair(asset, asset2))))
-    {
-        JLOG(ctx.j.debug()) << "AMM Deposit: invalid Asset2InAmount";
-        return res;
-    }
-
-    // must be amount issue
     if (amount)
     {
         if (auto const res = invalidAMMAmount(
-                ePrice,
+                *amount,
+                std::make_optional(std::make_pair(asset, asset2)),
+                ePrice.has_value()))
+        {
+            JLOG(ctx.j.debug()) << "AMM Deposit: invalid Asset1In";
+            return res;
+        }
+    }
+
+    if (amount2)
+    {
+        if (auto const res = invalidAMMAmount(
+                *amount2, std::make_optional(std::make_pair(asset, asset2))))
+        {
+            JLOG(ctx.j.debug()) << "AMM Deposit: invalid Asset2InAmount";
+            return res;
+        }
+    }
+
+    // must be amount issue
+    if (amount && ePrice)
+    {
+        if (auto const res = invalidAMMAmount(
+                *ePrice,
                 std::make_optional(
                     std::make_pair(amount->issue(), amount->issue()))))
         {
@@ -147,7 +152,8 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
 {
     auto const accountID = ctx.tx[sfAccount];
 
-    auto const ammSle = getAMMSle(ctx.view, ctx.tx[sfAsset], ctx.tx[sfAsset2]);
+    auto const ammSle =
+        ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
     if (!ammSle)
     {
         JLOG(ctx.j.debug()) << "AMM Deposit: Invalid asset pair.";
@@ -156,7 +162,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
 
     auto const expected = ammHolds(
         ctx.view,
-        **ammSle,
+        *ammSle,
         std::nullopt,
         std::nullopt,
         FreezeHandling::fhZERO_IF_FROZEN,
@@ -167,8 +173,8 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
     if (amountBalance <= beast::zero || amount2Balance <= beast::zero ||
         lptAMMBalance <= beast::zero)
     {
-        if (isFrozen(ctx.view, amountBalance) ||
-            isFrozen(ctx.view, amount2Balance))
+        if (isGlobalFrozen(ctx.view, amountBalance.getIssuer()) ||
+            isGlobalFrozen(ctx.view, amount2Balance.getIssuer()))
         {
             JLOG(ctx.j.debug()) << "AMM Withdraw involves frozen asset.";
             return tecFROZEN;
@@ -186,7 +192,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
     auto balance = [&](auto const& deposit) -> TER {
         if (isXRP(deposit))
         {
-            auto const lpIssue = (**ammSle)[sfLPTokenBalance].issue();
+            auto const lpIssue = (*ammSle)[sfLPTokenBalance].issue();
             // Adjust the reserve if LP doesn't have LPToken trustline
             auto const sle = ctx.view.read(
                 keylet::line(accountID, lpIssue.account, lpIssue.currency));
@@ -207,7 +213,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
     auto const amount = ctx.tx[~sfAmount];
     auto const amount2 = ctx.tx[~sfAmount2];
 
-    auto checkAmount = [&](auto const& amount) -> TER {
+    auto checkAmount = [&](std::optional<STAmount> const& amount) -> TER {
         if (amount)
         {
             // This normally should not happen.
@@ -247,7 +253,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
 
     // Check the reserve for LPToken trustline if not LP.
     // We checked above but need to check again if depositing IOU only.
-    if (ammLPHolds(ctx.view, **ammSle, accountID, ctx.j) == beast::zero)
+    if (ammLPHolds(ctx.view, *ammSle, accountID, ctx.j) == beast::zero)
     {
         STAmount const xrpBalance = xrpLiquid(ctx.view, accountID, 1, ctx.j);
         // Insufficient reserve
@@ -268,16 +274,16 @@ AMMDeposit::applyGuts(Sandbox& sb)
     auto const amount2 = ctx_.tx[~sfAmount2];
     auto const ePrice = ctx_.tx[~sfEPrice];
     auto const lpTokensDeposit = ctx_.tx[~sfLPTokenOut];
-    auto ammSle = getAMMSle(sb, ctx_.tx[sfAsset], ctx_.tx[sfAsset2]);
+    auto ammSle = sb.peek(keylet::amm(ctx_.tx[sfAsset], ctx_.tx[sfAsset2]));
     if (!ammSle)
-        return {ammSle.error(), false};
-    auto const ammAccountID = (**ammSle)[sfAMMAccount];
+        return {tecINTERNAL, false};
+    auto const ammAccountID = (*ammSle)[sfAMMAccount];
 
-    auto const tfee = getTradingFee(ctx_.view(), **ammSle, account_);
+    auto const tfee = getTradingFee(ctx_.view(), *ammSle, account_);
 
     auto const expected = ammHolds(
         sb,
-        **ammSle,
+        *ammSle,
         amount ? amount->issue() : std::optional<Issue>{},
         amount2 ? amount2->issue() : std::optional<Issue>{},
         FreezeHandling::fhZERO_IF_FROZEN,
@@ -338,8 +344,8 @@ AMMDeposit::applyGuts(Sandbox& sb)
 
     if (result == tesSUCCESS && newLPTokenBalance > beast::zero)
     {
-        (*ammSle)->setFieldAmount(sfLPTokenBalance, newLPTokenBalance);
-        sb.update(*ammSle);
+        ammSle->setFieldAmount(sfLPTokenBalance, newLPTokenBalance);
+        sb.update(ammSle);
     }
 
     return {result, result == tesSUCCESS};
@@ -602,7 +608,7 @@ AMMDeposit::singleDepositTokens(
     std::uint16_t tfee)
 {
     auto const amountDeposit =
-        assetIn(amountBalance, lpTokensDeposit, lptAMMBalance, tfee);
+        ammAssetIn(amountBalance, lpTokensDeposit, lptAMMBalance, tfee);
     if (amountDeposit > amount)
         return {tecAMM_FAILED_DEPOSIT, STAmount{}};
     return deposit(

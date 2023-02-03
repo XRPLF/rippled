@@ -16,10 +16,10 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#include <ripple/app/misc/AMM.h>
+#include <ripple/app/misc/AMMUtils.h>
 #include <ripple/basics/Log.h>
 #include <ripple/ledger/Sandbox.h>
-#include <ripple/protocol/AMM.h>
+#include <ripple/protocol/AMMCore.h>
 #include <ripple/protocol/STAccount.h>
 #include <ripple/protocol/STObject.h>
 
@@ -51,10 +51,21 @@ ammHolds(
     beast::Journal const j)
 {
     auto const issues = [&]() -> std::optional<std::pair<Issue, Issue>> {
-        if (optIssue1 && optIssue2)
-            return {{*optIssue1, *optIssue2}};
         auto const issue1 = ammSle[sfAsset];
         auto const issue2 = ammSle[sfAsset2];
+        if (optIssue1 && optIssue2)
+        {
+            if (invalidAMMAssetPair(
+                    *optIssue1,
+                    *optIssue2,
+                    std::make_optional(std::make_pair(issue1, issue2))))
+            {
+                JLOG(j.debug()) << "ammHolds: Invalid optIssue1 or optIssue2 "
+                                << *optIssue1 << " " << *optIssue2;
+                return std::nullopt;
+            }
+            return std::make_optional(std::make_pair(*optIssue1, *optIssue2));
+        }
         if (optIssue1)
         {
             if (*optIssue1 == issue1)
@@ -122,33 +133,6 @@ ammLPHolds(
         j);
 }
 
-bool
-isFrozen(ReadView const& view, STAmount const& a)
-{
-    return !a.native() && isGlobalFrozen(view, a.getIssuer());
-}
-
-TER
-requireAuth(ReadView const& view, Issue const& issue, AccountID const& account)
-{
-    if (isXRP(issue) || issue.account == account)
-        return tesSUCCESS;
-    if (auto const issuerAccount = view.read(keylet::account(issue.account));
-        issuerAccount && (*issuerAccount)[sfFlags] & lsfRequireAuth)
-    {
-        if (auto const trustLine =
-                view.read(keylet::line(account, issue.account, issue.currency));
-            trustLine)
-            return !((*trustLine)[sfFlags] &
-                     ((account > issue.account) ? lsfLowAuth : lsfHighAuth))
-                ? TER{tecNO_AUTH}
-                : tesSUCCESS;
-        return TER{tecNO_LINE};
-    }
-
-    return tesSUCCESS;
-}
-
 std::uint16_t
 getTradingFee(ReadView const& view, SLE const& ammSle, AccountID const& account)
 {
@@ -195,7 +179,7 @@ ammSend(
 
     TER terResult = rippleCredit(view, issuer, to, amount, true, j);
 
-    if (tesSUCCESS == terResult)
+    if (terResult == tesSUCCESS)
         terResult = rippleCredit(view, from, issuer, amount, true, j);
 
     return terResult;
@@ -225,24 +209,6 @@ ammAccountHolds(
     }
 
     return STAmount{issue};
-}
-
-Expected<std::shared_ptr<SLE const>, TER>
-getAMMSle(ReadView const& view, Issue const& issue1, Issue const& issue2)
-{
-    if (auto const ammSle = view.read(keylet::amm(issue1, issue2)))
-        return ammSle;
-    else
-        return Unexpected(tecINTERNAL);
-}
-
-Expected<std::shared_ptr<SLE>, TER>
-getAMMSle(Sandbox& sb, Issue const& issue1, Issue const& issue2)
-{
-    if (auto ammSle = sb.peek(keylet::amm(issue1, issue2)))
-        return ammSle;
-    else
-        return Unexpected(tecINTERNAL);
 }
 
 }  // namespace ripple

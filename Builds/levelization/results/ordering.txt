@@ -4,6 +4,7 @@ ripple.app > ripple.conditions
 ripple.app > ripple.consensus
 ripple.app > ripple.crypto
 ripple.app > ripple.json
+ripple.app > ripple.protocol
 ripple.app > ripple.resource
 ripple.app > test.unit_test
 ripple.basics > ripple.beast
@@ -203,6 +204,7 @@ test.rpc > ripple.overlay
 test.rpc > ripple.protocol
 test.rpc > ripple.resource
 test.rpc > ripple.rpc
+test.rpc > test.jtx
 test.rpc > test.nodestore
 test.rpc > test.toplevel
 test.server > ripple.app

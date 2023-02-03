@@ -32,6 +32,7 @@ AMMOffer<TIn, TOut>::AMMOffer(
     , amounts_(amounts)
     , balances_(balances)
     , quality_(quality)
+    , consumed_(false)
 {
 }
 
@@ -75,6 +76,8 @@ AMMOffer<TIn, TOut>::consume(
     // AMM pool is updated when the amounts are transferred
     // in BookStep::consumeOffer().
 
+    consumed_ = true;
+
     // Let the context know AMM offer is consumed
     ammLiquidity_.context().setAMMUsed();
 }
@@ -103,7 +106,7 @@ AMMOffer<TIn, TOut>::limitIn(
 
 template <typename TIn, typename TOut>
 QualityFunction
-AMMOffer<TIn, TOut>::getQF() const
+AMMOffer<TIn, TOut>::getQualityF() const
 {
     if (ammLiquidity_.multiPath())
         return QualityFunction{quality(), QualityFunction::CLOBLikeTag{}};

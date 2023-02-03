@@ -29,7 +29,6 @@
 #include <test/jtx/multisign.h>
 #include <test/jtx/seq.h>
 #include <test/jtx/ter.h>
-#include <test/rpc/GRPCTestClientBase.h>
 
 namespace ripple {
 namespace test {

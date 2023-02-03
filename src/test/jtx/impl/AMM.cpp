@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/app/misc/AMM.h>
-#include <ripple/protocol/AMM.h>
+#include <ripple/app/misc/AMMUtils.h>
+#include <ripple/protocol/AMMCore.h>
 #include <ripple/protocol/AmountConversions.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/impl/RPCHelpers.h>

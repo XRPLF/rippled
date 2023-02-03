@@ -367,26 +367,32 @@ limitOut(
     TOutAmt const& remainingOut,
     Quality const& limitQuality)
 {
-    std::optional<QualityFunction> stepQF;
-    QualityFunction qf;
+    std::optional<QualityFunction> stepQualityF;
+    std::optional<QualityFunction> qf;
     DebtDirection dir = DebtDirection::issues;
     for (auto const& step : strand)
     {
-        if (std::tie(stepQF, dir) = step->getQF(v, dir); stepQF)
-            qf.combineWithNext(*stepQF);
+        if (std::tie(stepQualityF, dir) = step->getQualityF(v, dir);
+            stepQualityF)
+        {
+            if (!qf)
+                qf = stepQualityF;
+            else
+                qf->combineWithNext(*stepQualityF);
+        }
         else
             return remainingOut;
     }
 
     // QualityFunction is constant
-    if (qf.isConst())
+    if (!qf || qf->isConst())
         return remainingOut;
 
     auto const out = [&]() {
-        if (auto const out = qf.outFromAvgQ(limitQuality); !out)
+        if (auto const out = qf->outFromAvgQ(limitQuality); !out)
             return remainingOut;
         else if constexpr (std::is_same_v<TOutAmt, XRPAmount>)
-            return (XRPAmount)*out;
+            return XRPAmount{*out};
         else if constexpr (std::is_same_v<TOutAmt, IOUAmount>)
             return IOUAmount{*out};
         else

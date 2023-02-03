@@ -426,6 +426,13 @@ transferXRP(
     STAmount const& amount,
     beast::Journal j);
 
+/** Check if the account requires authorization.
+ *   Return tecNO_AUTH or tecNO_LINE if it does
+ *   and tsSUCCESS otherwise.
+ */
+[[nodiscard]] TER
+requireAuth(ReadView const& view, Issue const& issue, AccountID const& account);
+
 }  // namespace ripple
 
 #endif

@@ -22,6 +22,7 @@
 
 #include <ripple/basics/IOUAmount.h>
 #include <ripple/basics/Number.h>
+#include <ripple/protocol/AmountConversions.h>
 #include <ripple/protocol/Issue.h>
 #include <ripple/protocol/Quality.h>
 #include <ripple/protocol/STAccount.h>
@@ -30,97 +31,6 @@
 #include <type_traits>
 
 namespace ripple {
-
-namespace {
-
-/** Save, set, restore Number rounding mode.
- * Applies to XRP only.
- */
-class RoundingMode
-{
-    bool xrp_;
-    Number::rounding_mode mode_;
-
-public:
-    RoundingMode(Issue const& issue, Number::rounding_mode mode)
-        : xrp_(isXRP(issue)), mode_(Number::getround())
-    {
-        if (xrp_)
-            Number::setround(mode);
-    }
-    ~RoundingMode()
-    {
-        if (xrp_)
-            Number::setround(mode_);
-    }
-};
-
-}  // namespace
-
-template <typename T>
-Issue
-getIssue(T const& amt)
-{
-    if constexpr (std::is_same_v<IOUAmount, T>)
-        return noIssue();
-    if constexpr (std::is_same_v<XRPAmount, T>)
-        return xrpIssue();
-    if constexpr (std::is_same_v<STAmount, T>)
-        return amt.issue();
-}
-
-template <typename T>
-T
-toAmount(
-    Issue const& issue,
-    Number const& n,
-    Number::rounding_mode mode = Number::getround())
-{
-    RoundingMode rm(issue, mode);
-    if constexpr (std::is_same_v<IOUAmount, T>)
-        return IOUAmount(n);
-    if constexpr (std::is_same_v<XRPAmount, T>)
-        return XRPAmount(static_cast<std::int64_t>(n));
-    if constexpr (std::is_same_v<STAmount, T>)
-    {
-        if (isXRP(issue))
-            return STAmount(issue, static_cast<std::int64_t>(n));
-        return STAmount(issue, n.mantissa(), n.exponent());
-    }
-}
-
-inline STAmount
-toSTAmount(
-    Issue const& issue,
-    Number const& n,
-    Number::rounding_mode mode = Number::getround())
-{
-    return toAmount<STAmount>(issue, n, mode);
-}
-
-template <typename T>
-STAmount
-toSTAmount(Issue const& issue, T const& a)
-{
-    if constexpr (std::is_same_v<IOUAmount, T>)
-        return toSTAmount(a, issue);
-    if constexpr (std::is_same_v<XRPAmount, T>)
-        return toSTAmount(a);
-    if constexpr (std::is_same_v<STAmount, T>)
-        return a;
-}
-
-template <typename T>
-constexpr T
-get(STAmount const& a)
-{
-    if constexpr (std::is_same_v<IOUAmount, T>)
-        return a.iou();
-    if constexpr (std::is_same_v<XRPAmount, T>)
-        return a.xrp();
-    if constexpr (std::is_same_v<STAmount, T>)
-        return a;
-}
 
 /** Calculate LP Tokens given AMM pool reserves.
  * @param asset1 AMM one side of the pool reserve
@@ -183,7 +93,7 @@ lpTokensIn(
  * @return
  */
 STAmount
-assetIn(
+ammAssetIn(
     STAmount const& asset1Balance,
     STAmount const& lpTokensBalance,
     STAmount const& ammTokensBalance,
@@ -219,7 +129,8 @@ withdrawByTokens(
     std::uint32_t tfee);
 
 /** Find in/out amounts to change the spot price quality to the requested
- * quality.
+ * quality. Implements AMM Swap equation (11) and calls swapAssetIn
+ * to find the required offer size to change the spot price quality.
  * @param pool AMM pool balances
  * @param quality requested quality
  * @param tfee trading fee in basis points
@@ -233,8 +144,7 @@ changeSpotPriceQuality(
     std::uint32_t tfee)
 {
     if (auto const nTakerPays =
-            (root2(pool.in * pool.out * quality.rate() / feeMult(tfee)) -
-             pool.in / feeMult(tfee));
+            (root2(pool.in * pool.out * quality.rate()) - pool.in);
         nTakerPays > 0)
     {
         auto const takerPays = toAmount<TIn>(
@@ -264,7 +174,7 @@ changeSpotPriceQuality(
  */
 
 /** Swap assetIn into the pool and swap out a proportional amount
- * of the other asset.
+ * of the other asset. Implements AMM Swap equation (9).
  * @param pool current AMM pool balances
  * @param assetIn amount to swap in
  * @param tfee trading fee in basis points
@@ -284,7 +194,7 @@ swapAssetIn(
 }
 
 /** Swap assetOut out of the pool and swap in a proportional amount
- * of the other asset.
+ * of the other asset. Implements AMM Swap equation (10).
  * @param pool current AMM pool balances
  * @param assetOut amount to swap out
  * @param tfee trading fee in basis points

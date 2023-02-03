@@ -198,15 +198,7 @@ public:
      * implementation.
      */
     virtual std::pair<std::optional<QualityFunction>, DebtDirection>
-    getQF(ReadView const& v, DebtDirection prevStepDir) const
-    {
-        if (auto const res = qualityUpperBound(v, prevStepDir); res.first)
-            return {
-                QualityFunction{*res.first, QualityFunction::CLOBLikeTag{}},
-                res.second};
-        else
-            return {std::nullopt, res.second};
-    }
+    getQualityF(ReadView const& v, DebtDirection prevStepDir) const;
 
     /** Return the number of offers consumed or partially consumed the last time
         the step ran, including expired and unfunded offers.
@@ -309,7 +301,7 @@ public:
      * fee.
      */
     virtual bool
-    overridesTransferFee(ReadView const&) const
+    wavesTransferFee(ReadView const&) const
     {
         return false;
     }
@@ -321,6 +313,17 @@ private:
     virtual bool
     equal(Step const& rhs) const = 0;
 };
+
+inline std::pair<std::optional<QualityFunction>, DebtDirection>
+Step::getQualityF(ReadView const& v, DebtDirection prevStepDir) const
+{
+    if (auto const res = qualityUpperBound(v, prevStepDir); res.first)
+        return {
+            QualityFunction{*res.first, QualityFunction::CLOBLikeTag{}},
+            res.second};
+    else
+        return {std::nullopt, res.second};
+}
 
 /// @cond INTERNAL
 using Strand = std::vector<std::unique_ptr<Step>>;
