@@ -139,8 +139,9 @@ public:
 
     // Network parameters
 
-    // The number of fee units a reference transaction costs
-    static constexpr FeeUnit32 TRANSACTION_FEE_BASE{10};
+    // DEPRECATED - Fee units for a reference transction.
+    // Only provided for backwards compatibility in a couple of places
+    static constexpr std::uint32_t FEE_UNITS_DEPRECATED = 10;
 
     // Note: The following parameters do not relate to the UNL or trust at all
     // Minimum number of nodes to consider the network present

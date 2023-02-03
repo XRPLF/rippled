@@ -720,8 +720,7 @@ checkFee(
         }
     }
 
-    // Default fee in fee units.
-    FeeUnit32 const feeDefault = config.TRANSACTION_FEE_BASE;
+    XRPAmount const feeDefault = config.FEE_DEFAULT;
 
     auto ledger = app.openLedger().current();
     // Administrative and identified endpoints are exempt from local fees.
@@ -738,11 +737,7 @@ checkFee(
 
     auto const limit = [&]() {
         // Scale fee units to drops:
-        auto const drops =
-            mulDiv(feeDefault, ledger->fees().base, ledger->fees().units);
-        if (!drops.first)
-            Throw<std::overflow_error>("mulDiv");
-        auto const result = mulDiv(drops.second, mult, div);
+        auto const result = mulDiv(feeDefault, mult, div);
         if (!result.first)
             Throw<std::overflow_error>("mulDiv");
         return result.second;

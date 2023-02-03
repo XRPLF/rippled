@@ -146,10 +146,15 @@ LedgerFormats::LedgerFormats()
     add(jss::FeeSettings,
         ltFEE_SETTINGS,
         {
-            {sfBaseFee,              soeREQUIRED},
-            {sfReferenceFeeUnits,    soeREQUIRED},
-            {sfReserveBase,          soeREQUIRED},
-            {sfReserveIncrement,     soeREQUIRED},
+            // Old version uses raw numbers
+            {sfBaseFee,              soeOPTIONAL},
+            {sfReferenceFeeUnits,    soeOPTIONAL},
+            {sfReserveBase,          soeOPTIONAL},
+            {sfReserveIncrement,     soeOPTIONAL},
+            // New version uses Amounts
+            {sfBaseFeeDrops,           soeOPTIONAL},
+            {sfReserveBaseDrops,       soeOPTIONAL},
+            {sfReserveIncrementDrops,  soeOPTIONAL},
         },
         commonFields);
 

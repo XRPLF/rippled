@@ -38,14 +38,18 @@ static FeeLevel64
 getFeeLevelPaid(ReadView const& view, STTx const& tx)
 {
     auto const [baseFee, effectiveFeePaid] = [&view, &tx]() {
-        XRPAmount baseFee = view.fees().toDrops(calculateBaseFee(view, tx));
+        XRPAmount baseFee = calculateBaseFee(view, tx);
         XRPAmount feePaid = tx[sfFee].xrp();
 
-        // If baseFee is 0 then the cost of a basic transaction is free.
-        XRPAmount const ref = baseFee.signum() > 0
-            ? XRPAmount{0}
-            : calculateDefaultBaseFee(view, tx);
-        return std::pair{baseFee + ref, feePaid + ref};
+        // If baseFee is 0 then the cost of a basic transaction is free, but we
+        // need the effective fee level to be non-zero.
+        XRPAmount const mod = [&view, &tx, baseFee]() {
+            if (baseFee.signum() > 0)
+                return XRPAmount{0};
+            auto def = calculateDefaultBaseFee(view, tx);
+            return def.signum() == 0 ? XRPAmount{1} : def;
+        }();
+        return std::pair{baseFee + mod, feePaid + mod};
     }();
 
     assert(baseFee.signum() > 0);
@@ -1072,19 +1076,27 @@ TxQ::apply(
                 LastLedgerSeq and MaybeTx::retriesRemaining.
             */
             auto const balance = (*sleAccount)[sfBalance].xrp();
-            /* Get the minimum possible reserve. If fees exceed
+            /* Get the minimum possible account reserve. If it
+               is at least 10 * the base fee, and fees exceed
                this amount, the transaction can't be queued.
-                Considering that typical fees are several orders
+
+               Currently typical fees are several orders
                of magnitude smaller than any current or expected
-               future reserve, this calculation is simpler than
+               future reserve. This calculation is simpler than
                trying to figure out the potential changes to
                the ownerCount that may occur to the account
-                as a result of these transactions, and removes
+               as a result of these transactions, and removes
                any need to account for other transactions that
                may affect the owner count while these are queued.
+
+               However, in case the account reserve is on a
+               comparable scale to the base fee, ignore the
+               reserve. Only check the account balance.
             */
             auto const reserve = view.fees().accountReserve(0);
-            if (totalFee >= balance || totalFee >= reserve)
+            auto const base = view.fees().base;
+            if (totalFee >= balance ||
+                (reserve > 10 * base && totalFee >= reserve))
             {
                 // Drop the current transaction
                 JLOG(j_.trace()) << "Ignoring transaction " << transactionID
@@ -1104,7 +1116,10 @@ TxQ::apply(
             // inserted in the middle from fouling up later transactions.
             auto const potentialTotalSpend = totalFee +
                 std::min(balance - std::min(balance, reserve), potentialSpend);
-            assert(potentialTotalSpend > XRPAmount{0});
+            assert(
+                potentialTotalSpend > XRPAmount{0} ||
+                (potentialTotalSpend == XRPAmount{0} &&
+                 multiTxn->applyView.fees().base == 0));
             sleBump->setFieldAmount(sfBalance, balance - potentialTotalSpend);
             // The transaction's sequence/ticket will be valid when the other
             // transactions in the queue have been processed. If the tx has a
@@ -1758,7 +1773,7 @@ TxQ::getTxRequiredFeeAndSeq(
     std::lock_guard lock(mutex_);
 
     auto const snapshot = feeMetrics_.getSnapshot();
-    auto const baseFee = view.fees().toDrops(calculateBaseFee(view, *tx));
+    auto const baseFee = calculateBaseFee(view, *tx);
     auto const fee = FeeMetrics::scaleFeeLevel(snapshot, view);
 
     auto const sle = view.read(keylet::account(account));
@@ -1834,15 +1849,26 @@ TxQ::doRPC(Application& app) const
     levels[jss::open_ledger_level] = to_string(metrics.openLedgerFeeLevel);
 
     auto const baseFee = view->fees().base;
+    // If the base fee is 0 drops, but escalation has kicked in, treat the
+    // base fee as if it is 1 drop, which makes the rest of the math
+    // work.
+    auto const effectiveBaseFee = [&baseFee, &metrics]() {
+        if (!baseFee && metrics.openLedgerFeeLevel != metrics.referenceFeeLevel)
+            return XRPAmount{1};
+        return baseFee;
+    }();
     auto& drops = ret[jss::drops] = Json::Value();
 
-    drops[jss::base_fee] =
-        to_string(toDrops(metrics.referenceFeeLevel, baseFee));
-    drops[jss::minimum_fee] =
-        to_string(toDrops(metrics.minProcessingFeeLevel, baseFee));
+    drops[jss::base_fee] = to_string(baseFee);
     drops[jss::median_fee] = to_string(toDrops(metrics.medFeeLevel, baseFee));
-    drops[jss::open_ledger_fee] = to_string(
-        toDrops(metrics.openLedgerFeeLevel - FeeLevel64{1}, baseFee) + 1);
+    drops[jss::minimum_fee] = to_string(toDrops(
+        metrics.minProcessingFeeLevel,
+        metrics.txCount >= metrics.txQMaxSize ? effectiveBaseFee : baseFee));
+    auto openFee = toDrops(metrics.openLedgerFeeLevel, effectiveBaseFee);
+    if (effectiveBaseFee &&
+        toFeeLevel(openFee, effectiveBaseFee) < metrics.openLedgerFeeLevel)
+        openFee += 1;
+    drops[jss::open_ledger_fee] = to_string(openFee);
 
     return ret;
 }
