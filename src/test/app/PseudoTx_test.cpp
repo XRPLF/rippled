@@ -16,6 +16,7 @@
 //==============================================================================
 
 #include <ripple/app/tx/apply.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/STAccount.h>
 #include <string>
 #include <test/jtx.h>
@@ -27,17 +28,26 @@ namespace test {
 struct PseudoTx_test : public beast::unit_test::suite
 {
     std::vector<STTx>
-    getPseudoTxs(std::uint32_t seq)
+    getPseudoTxs(Rules const& rules, std::uint32_t seq)
     {
         std::vector<STTx> res;
 
         res.emplace_back(STTx(ttFEE, [&](auto& obj) {
             obj[sfAccount] = AccountID();
             obj[sfLedgerSequence] = seq;
-            obj[sfBaseFee] = 0;
-            obj[sfReserveBase] = 0;
-            obj[sfReserveIncrement] = 0;
-            obj[sfReferenceFeeUnits] = 0;
+            if (rules.enabled(featureXRPFees))
+            {
+                obj[sfBaseFeeDrops] = XRPAmount{0};
+                obj[sfReserveBaseDrops] = XRPAmount{0};
+                obj[sfReserveIncrementDrops] = XRPAmount{0};
+            }
+            else
+            {
+                obj[sfBaseFee] = 0;
+                obj[sfReserveBase] = 0;
+                obj[sfReserveIncrement] = 0;
+                obj[sfReferenceFeeUnits] = 0;
+            }
         }));
 
         res.emplace_back(STTx(ttAMENDMENT, [&](auto& obj) {
@@ -66,12 +76,13 @@ struct PseudoTx_test : public beast::unit_test::suite
     }
 
     void
-    testPrevented()
+    testPrevented(FeatureBitset features)
     {
         using namespace jtx;
-        Env env(*this);
+        Env env(*this, features);
 
-        for (auto const& stx : getPseudoTxs(env.closed()->seq() + 1))
+        for (auto const& stx :
+             getPseudoTxs(env.closed()->rules(), env.closed()->seq() + 1))
         {
             std::string reason;
             BEAST_EXPECT(isPseudoTx(stx));
@@ -101,7 +112,12 @@ struct PseudoTx_test : public beast::unit_test::suite
     void
     run() override
     {
-        testPrevented();
+        using namespace test::jtx;
+        FeatureBitset const all{supported_amendments()};
+        FeatureBitset const xrpFees{featureXRPFees};
+
+        testPrevented(all - featureXRPFees);
+        testPrevented(all);
         testAllowed();
     }
 };

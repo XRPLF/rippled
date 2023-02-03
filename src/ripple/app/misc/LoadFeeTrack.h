@@ -161,7 +161,7 @@ private:
 // Scale using load as well as base rate
 XRPAmount
 scaleFeeLoad(
-    FeeUnit64 fee,
+    XRPAmount fee,
     LoadFeeTrack const& feeTrack,
     Fees const& fees,
     bool bUnlimited);

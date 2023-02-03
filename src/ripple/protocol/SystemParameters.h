@@ -49,6 +49,14 @@ isLegalAmount(XRPAmount const& amount)
     return amount <= INITIAL_XRP;
 }
 
+/** Returns true if the absolute value of the amount does not exceed the initial
+ * XRP in existence. */
+inline bool
+isLegalAmountSigned(XRPAmount const& amount)
+{
+    return amount >= -INITIAL_XRP && amount <= INITIAL_XRP;
+}
+
 /* The currency code for the native currency. */
 static inline std::string const&
 systemCurrencyCode()

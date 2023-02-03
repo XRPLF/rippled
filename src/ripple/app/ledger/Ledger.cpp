@@ -591,29 +591,9 @@ Ledger::setup(Config const& config)
 {
     bool ret = true;
 
-    fees_.base = config.FEE_DEFAULT;
-    fees_.units = config.TRANSACTION_FEE_BASE;
-    fees_.reserve = config.FEE_ACCOUNT_RESERVE;
-    fees_.increment = config.FEE_OWNER_RESERVE;
-
     try
     {
-        if (auto const sle = read(keylet::fees()))
-        {
-            // VFALCO NOTE Why getFieldIndex and not isFieldPresent?
-
-            if (sle->getFieldIndex(sfBaseFee) != -1)
-                fees_.base = sle->getFieldU64(sfBaseFee);
-
-            if (sle->getFieldIndex(sfReferenceFeeUnits) != -1)
-                fees_.units = sle->getFieldU32(sfReferenceFeeUnits);
-
-            if (sle->getFieldIndex(sfReserveBase) != -1)
-                fees_.reserve = sle->getFieldU32(sfReserveBase);
-
-            if (sle->getFieldIndex(sfReserveIncrement) != -1)
-                fees_.increment = sle->getFieldU32(sfReserveIncrement);
-        }
+        rules_ = makeRulesGivenLedger(*this, config.features);
     }
     catch (SHAMapMissingNode const&)
     {
@@ -624,9 +604,56 @@ Ledger::setup(Config const& config)
         Rethrow();
     }
 
+    fees_.base = config.FEE_DEFAULT;
+    fees_.reserve = config.FEE_ACCOUNT_RESERVE;
+    fees_.increment = config.FEE_OWNER_RESERVE;
+
     try
     {
-        rules_ = makeRulesGivenLedger(*this, config.features);
+        if (auto const sle = read(keylet::fees()))
+        {
+            bool oldFees = false;
+            bool newFees = false;
+            {
+                auto const baseFee = sle->at(~sfBaseFee);
+                auto const reserveBase = sle->at(~sfReserveBase);
+                auto const reserveIncrement = sle->at(~sfReserveIncrement);
+                if (baseFee)
+                    fees_.base = *baseFee;
+                if (reserveBase)
+                    fees_.reserve = *reserveBase;
+                if (reserveIncrement)
+                    fees_.increment = *reserveIncrement;
+                oldFees = baseFee || reserveBase || reserveIncrement;
+            }
+            {
+                auto const baseFeeXRP = sle->at(~sfBaseFeeDrops);
+                auto const reserveBaseXRP = sle->at(~sfReserveBaseDrops);
+                auto const reserveIncrementXRP =
+                    sle->at(~sfReserveIncrementDrops);
+                auto assign = [&ret](
+                                  XRPAmount& dest,
+                                  std::optional<STAmount> const& src) {
+                    if (src)
+                    {
+                        if (src->native())
+                            dest = src->xrp();
+                        else
+                            ret = false;
+                    }
+                };
+                assign(fees_.base, baseFeeXRP);
+                assign(fees_.reserve, reserveBaseXRP);
+                assign(fees_.increment, reserveIncrementXRP);
+                newFees = baseFeeXRP || reserveBaseXRP || reserveIncrementXRP;
+            }
+            if (oldFees && newFees)
+                // Should be all of one or the other, but not both
+                ret = false;
+            if (!rules_.enabled(featureXRPFees) && newFees)
+                // Can't populate the new fees before the amendment is enabled
+                ret = false;
+        }
     }
     catch (SHAMapMissingNode const&)
     {
