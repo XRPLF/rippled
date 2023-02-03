@@ -63,6 +63,16 @@ inline URIOperation inferOperation(STTx const& tx)
         (hasBurnableFlag ? 0b000000010U : 0) +
         (blankFlags      ? 0b000000001U : 0);
 
+    std::cout << "combination" << combination << "\n";
+    std::cout << "mint" << (0b110000001U == combination) << "\n";
+    std::cout << "mint" << (0b110000010U == combination) << "\n";
+    std::cout << "mint" << (0b010000001U == combination) << "\n";
+    std::cout << "mint" << (0b010000010U == combination) << "\n";
+    std::cout << "burn" << (0b001100000U == combination) << "\n";
+    std::cout << "buy" << (0b000110001U == combination) << "\n";
+    std::cout << "sell" << (0b000110100U == combination) << "\n";
+    std::cout << "sell" << (0b000111100U == combination) << "\n";
+    std::cout << "clear" << (0b000100001U == combination) << "\n";
     switch (combination)
     {
         case 0b110000001U:
@@ -281,6 +291,7 @@ URIToken::preclaim(PreclaimContext const& ctx)
 
         default:
         {
+            std::cout << "preclaim with URIOperation::Invalid\n " << "\n";
             JLOG(ctx.j.warn())
                 << "URIToken txid=" << ctx.tx.getTransactionID() << " preclaim with URIOperation::Invalid\n";
             return tecINTERNAL;
@@ -321,10 +332,16 @@ URIToken::doApply()
         sleU  = view().peek(*kl);
 
         if (!sleU)
+        {
+            std::cout << "no entry object" << "\n";
             return tecNO_ENTRY;
-        
+        }
+
         if (sleU->getFieldU16(sfLedgerEntryType) != ltURI_TOKEN)
+        {
+            std::cout << "wrong uri token" << "\n";
             return tecNO_ENTRY;
+        }
 
         owner = (*sleU)[sfOwner];
         issuer = (*sleU)[sfIssuer];
@@ -338,6 +355,7 @@ URIToken::doApply()
 
         if (!sleOwner)
         {
+            std::cout << "tecNO_ENTRY - no owner" << "\n";
             JLOG(j.warn())
                     << "Malformed transaction: owner of URIToken is not in the ledger.";
             return tecNO_ENTRY;
@@ -447,7 +465,7 @@ URIToken::doApply()
             else
             { 
                 // IOU sale
-
+                std::cout << "IOU SALE" << "\n";
                 STAmount availableFunds{accountFunds(
                     view(),
                     account_,
@@ -455,6 +473,8 @@ URIToken::doApply()
                     fhZERO_IF_FROZEN,
                     j)};
 
+                // std::cout << "PURCHASE AMT: " << purchaseAmount << "\n";
+                // std::cout << "AVAIL FUNDS: " << availableFunds << "\n";
                 if (purchaseAmount > availableFunds)
                     return tecINSUFFICIENT_FUNDS;
 
@@ -483,31 +503,39 @@ URIToken::doApply()
                 }
 
                 // remove from buyer
-                initBuyerBal = buyerLow ? (*sleSrcLine)[sfBalance] : -(*sleSrcLine)[sfBalance];
+                initBuyerBal = buyerLow ? ((*sleSrcLine)[sfBalance]) : -((*sleSrcLine)[sfBalance]);
+                // std::cout << "BUYER LOW: " << buyerLow << "\n";
+                // std::cout << "BUYER BAL: " << *initBuyerBal << "\n";
                 finBuyerBal = *initBuyerBal - purchaseAmount;
-                
+                // std::cout << "FIN BUYER BAL: " << *finBuyerBal << "\n";
+
                 // compute amount to deliver
                 static Rate const parityRate(QUALITY_ONE);
                 auto xferRate = transferRate(view(), saleAmount->getIssuer());
-                dstAmt = 
-                    xferRate == parityRate 
+                dstAmt =
+                    xferRate == parityRate
                     ? purchaseAmount
                     : multiplyRound(purchaseAmount, xferRate, purchaseAmount.issue(), true);
 
-                if (!sellerLow)
-                    dstAmt->negate();
+                // std::cout << "SELLER LOW: " << sellerLow << "\n";
+                // std::cout << "DEST AMT: " << *dstAmt << "\n";
+                // if (!sellerLow)
+                //     dstAmt->negate();
 
-                initSellerBal = !sleDstLine 
-                    ? purchaseAmount.zeroed() 
-                    : (sellerLow ? (*sleDstLine)[sfBalance] : -(*sleDstLine)[sfBalance]);
+                // std::cout << "TRUE DEST AMT: " << *dstAmt << "\n";
+                initSellerBal = !sleDstLine
+                    ? purchaseAmount.zeroed()
+                    : sellerLow ? ((*sleDstLine)[sfBalance]) : -((*sleDstLine)[sfBalance]);
 
+                // std::cout << "INIT SELLER BAL: " << *initSellerBal << "\n";
                 finSellerBal = *initSellerBal + *dstAmt;
-                    
+                // std::cout << "FINAL SELLER BAL: " << *finSellerBal << "\n";
             }
 
             // sanity check balance mutations (xrp or iou, both are checked the same way now)
             if (*finSellerBal < *initSellerBal)
             {
+                std::cout << "finSellerBal" << *finSellerBal << "< initSellerBal" << *initSellerBal << "\n";
                 JLOG(j.warn())
                     << "URIToken txid=" << ctx_.tx.getTransactionID() << " "
                     << "finSellerBal < initSellerBal";
@@ -516,6 +544,7 @@ URIToken::doApply()
 
             if (*finBuyerBal > *initBuyerBal)
             {
+                std::cout << "finBuyerBal > initBuyerBal\n " << "\n";
                 JLOG(j.warn())
                     << "URIToken txid=" << ctx_.tx.getTransactionID() << " "
                     << "finBuyerBal > initBuyerBal";
@@ -524,6 +553,7 @@ URIToken::doApply()
 
             if (*finBuyerBal < beast::zero)
             {
+                std::cout << "finBuyerBal < 0\n " << "\n";
                 JLOG(j.warn())
                     << "URIToken txid=" << ctx_.tx.getTransactionID() << " "
                     << "finBuyerBal < 0";
@@ -532,6 +562,7 @@ URIToken::doApply()
 
             if (*finSellerBal < beast::zero)
             {
+                std::cout << "finSellerBal < 0\n " << "\n";
                 JLOG(j.warn())
                     << "URIToken txid=" << ctx_.tx.getTransactionID() << " "
                     << "finSellerBal < 0";
@@ -690,7 +721,7 @@ URIToken::doApply()
 
             view().update(sleU);
             view().update(sleOwner);
-
+            // std::cout << "BUY tecSUCCESS" << "\n";
             return tesSUCCESS;
         }
         case URIOperation::Burn:
@@ -711,6 +742,7 @@ URIToken::doApply()
             auto const page = (*sleU)[sfOwnerNode];
             if (!view().dirRemove(keylet::ownerDir(*owner), page, kl->key, true))
             {
+
                 JLOG(j.fatal())
                     << "Could not remove URIToken from owner directory";
                 return tefBAD_LEDGER;
@@ -718,6 +750,7 @@ URIToken::doApply()
 
             view().erase(sleU);
             adjustOwnerCount(view(), sle, -1, j);
+            // std::cout << "BURN tecSUCCESS" << "\n";
             return tesSUCCESS;
         }
 
@@ -737,6 +770,7 @@ URIToken::doApply()
             sleU->setFieldAmount(sfAmount, ctx_.tx[sfAmount]);
 
             view().update(sleU);
+            // std::cout << "SELL tecSUCCESS" << "\n";
             return tesSUCCESS;
         }
 
