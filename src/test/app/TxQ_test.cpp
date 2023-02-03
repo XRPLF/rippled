@@ -144,9 +144,15 @@ class TxQ1_test : public beast::unit_test::suite
 
         auto const& view = *env.current();
         auto metrics = env.app().getTxQ().getMetrics(view);
+        auto const base = [&view]() {
+            auto base = view.fees().base;
+            if (!base)
+                base += 1;
+            return base;
+        }();
 
         // Don't care about the overflow flag
-        return fee(toDrops(metrics.openLedgerFeeLevel, view.fees().base) + 1);
+        return fee(toDrops(metrics.openLedgerFeeLevel, base) + 1);
     }
 
     static std::unique_ptr<Config>
@@ -189,7 +195,6 @@ class TxQ1_test : public beast::unit_test::suite
         std::size_t expectedPerLedger,
         std::size_t ledgersInQueue,
         std::uint32_t base,
-        std::uint32_t units,
         std::uint32_t reserve,
         std::uint32_t increment)
     {
@@ -219,7 +224,6 @@ class TxQ1_test : public beast::unit_test::suite
         checkMetrics(__LINE__, env, 0, flagMaxQueue, 0, expectedPerLedger, 256);
         auto const fees = env.current()->fees();
         BEAST_EXPECT(fees.base == XRPAmount{base});
-        BEAST_EXPECT(fees.units == FeeUnit64{units});
         BEAST_EXPECT(fees.reserve == XRPAmount{reserve});
         BEAST_EXPECT(fees.increment == XRPAmount{increment});
 
@@ -1095,7 +1099,7 @@ public:
         checkMetrics(__LINE__, env, 0, std::nullopt, 0, 3, 256);
 
         // ledgers in queue is 2 because of makeConfig
-        auto const initQueueMax = initFee(env, 3, 2, 10, 10, 200, 50);
+        auto const initQueueMax = initFee(env, 3, 2, 10, 200, 50);
 
         // Create several accounts while the fee is cheap so they all apply.
         env.fund(drops(2000), noripple(alice));
@@ -1742,7 +1746,7 @@ public:
         auto queued = ter(terQUEUED);
 
         // ledgers in queue is 2 because of makeConfig
-        auto const initQueueMax = initFee(env, 3, 2, 10, 10, 200, 50);
+        auto const initQueueMax = initFee(env, 3, 2, 10, 200, 50);
 
         BEAST_EXPECT(env.current()->fees().base == 10);
 
@@ -2137,7 +2141,7 @@ public:
         // queued before the open ledger fee approached the reserve,
         // which would unnecessarily slow down this test.
         // ledgers in queue is 2 because of makeConfig
-        auto const initQueueMax = initFee(env, 3, 2, 10, 10, 200, 50);
+        auto const initQueueMax = initFee(env, 3, 2, 10, 200, 50);
 
         auto limit = 3;
 
@@ -4786,6 +4790,144 @@ public:
     }
 
     void
+    testZeroReferenceFee()
+    {
+        testcase("Zero reference fee");
+        using namespace jtx;
+
+        Account const alice("alice");
+        auto const queued = ter(terQUEUED);
+
+        Env env(
+            *this,
+            makeConfig(
+                {{"minimum_txn_in_ledger_standalone", "3"}},
+                {{"reference_fee", "0"},
+                 {"account_reserve", "0"},
+                 {"owner_reserve", "0"}}));
+
+        BEAST_EXPECT(env.current()->fees().base == 10);
+
+        checkMetrics(__LINE__, env, 0, std::nullopt, 0, 3, 256);
+
+        // ledgers in queue is 2 because of makeConfig
+        auto const initQueueMax = initFee(env, 3, 2, 0, 0, 0);
+
+        BEAST_EXPECT(env.current()->fees().base == 0);
+
+        {
+            auto const fee = env.rpc("fee");
+
+            if (BEAST_EXPECT(fee.isMember(jss::result)) &&
+                BEAST_EXPECT(!RPC::contains_error(fee[jss::result])))
+            {
+                auto const& result = fee[jss::result];
+
+                BEAST_EXPECT(result.isMember(jss::levels));
+                auto const& levels = result[jss::levels];
+                BEAST_EXPECT(
+                    levels.isMember(jss::median_level) &&
+                    levels[jss::median_level] == "128000");
+                BEAST_EXPECT(
+                    levels.isMember(jss::minimum_level) &&
+                    levels[jss::minimum_level] == "256");
+                BEAST_EXPECT(
+                    levels.isMember(jss::open_ledger_level) &&
+                    levels[jss::open_ledger_level] == "256");
+                BEAST_EXPECT(
+                    levels.isMember(jss::reference_level) &&
+                    levels[jss::reference_level] == "256");
+
+                auto const& drops = result[jss::drops];
+                BEAST_EXPECT(
+                    drops.isMember(jss::base_fee) &&
+                    drops[jss::base_fee] == "0");
+                BEAST_EXPECT(
+                    drops.isMember(jss::median_fee) &&
+                    drops[jss::base_fee] == "0");
+                BEAST_EXPECT(
+                    drops.isMember(jss::minimum_fee) &&
+                    drops[jss::base_fee] == "0");
+                BEAST_EXPECT(
+                    drops.isMember(jss::open_ledger_fee) &&
+                    drops[jss::base_fee] == "0");
+            }
+        }
+
+        checkMetrics(__LINE__, env, 0, initQueueMax, 0, 3, 256);
+
+        // The noripple is to reduce the number of transactions required to
+        // fund the accounts.  There is no rippling in this test.
+        env.fund(XRP(100000), noripple(alice));
+
+        checkMetrics(__LINE__, env, 0, initQueueMax, 1, 3, 256);
+
+        env.close();
+
+        checkMetrics(__LINE__, env, 0, 6, 0, 3, 256);
+
+        fillQueue(env, alice);
+
+        checkMetrics(__LINE__, env, 0, 6, 4, 3, 256);
+
+        env(noop(alice), openLedgerFee(env));
+
+        checkMetrics(__LINE__, env, 0, 6, 5, 3, 256);
+
+        auto aliceSeq = env.seq(alice);
+        env(noop(alice), queued);
+
+        checkMetrics(__LINE__, env, 1, 6, 5, 3, 256);
+
+        env(noop(alice), seq(aliceSeq + 1), fee(10), queued);
+
+        checkMetrics(__LINE__, env, 2, 6, 5, 3, 256);
+
+        {
+            auto const fee = env.rpc("fee");
+
+            if (BEAST_EXPECT(fee.isMember(jss::result)) &&
+                BEAST_EXPECT(!RPC::contains_error(fee[jss::result])))
+            {
+                auto const& result = fee[jss::result];
+
+                BEAST_EXPECT(result.isMember(jss::levels));
+                auto const& levels = result[jss::levels];
+                BEAST_EXPECT(
+                    levels.isMember(jss::median_level) &&
+                    levels[jss::median_level] == "128000");
+                BEAST_EXPECT(
+                    levels.isMember(jss::minimum_level) &&
+                    levels[jss::minimum_level] == "256");
+                BEAST_EXPECT(
+                    levels.isMember(jss::open_ledger_level) &&
+                    levels[jss::open_ledger_level] == "355555");
+                BEAST_EXPECT(
+                    levels.isMember(jss::reference_level) &&
+                    levels[jss::reference_level] == "256");
+
+                auto const& drops = result[jss::drops];
+                BEAST_EXPECT(
+                    drops.isMember(jss::base_fee) &&
+                    drops[jss::base_fee] == "0");
+                BEAST_EXPECT(
+                    drops.isMember(jss::median_fee) &&
+                    drops[jss::median_fee] == "0");
+                BEAST_EXPECT(
+                    drops.isMember(jss::minimum_fee) &&
+                    drops[jss::minimum_fee] == "0");
+                BEAST_EXPECT(
+                    drops.isMember(jss::open_ledger_fee) &&
+                    drops[jss::open_ledger_fee] == "1389");
+            }
+        }
+
+        env.close();
+
+        checkMetrics(__LINE__, env, 0, 10, 2, 5, 256);
+    }
+
+    void
     run() override
     {
         testQueueSeq();
@@ -4825,6 +4967,7 @@ public:
         testReexecutePreflight();
         testQueueFullDropPenalty();
         testCancelQueuedOffers();
+        testZeroReferenceFee();
     }
 };
 
