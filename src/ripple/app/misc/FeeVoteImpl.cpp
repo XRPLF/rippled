@@ -164,7 +164,7 @@ FeeVoteImpl::doValidation(
         auto vote = [&v, this](
                         auto const current,
                         XRPAmount target,
-                        auto convertCallback,
+                        auto const& convertCallback,
                         const char* name,
                         auto const& sfield) {
             if (current != target)
