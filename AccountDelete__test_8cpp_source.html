@@ -586,419 +586,422 @@ $(function() {
 <div class="line"><a name="l00515"></a><span class="lineno">  515</span>&#160; </div>
 <div class="line"><a name="l00516"></a><span class="lineno">  516</span>&#160;        <span class="comment">// All it takes is a large enough XRP payment to resurrect</span></div>
 <div class="line"><a name="l00517"></a><span class="lineno">  517</span>&#160;        <span class="comment">// becky&#39;s account.  Try too small a payment.</span></div>
-<div class="line"><a name="l00518"></a><span class="lineno">  518</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a7816b23daf9b325ea1f88cc121a53d05">pay</a>(alice, becky, <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(9)), <a class="code" href="classripple_1_1test_1_1jtx_1_1ter.html">ter</a>(<a class="code" href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38caf30c1d76d9aca04b89314307a476b2bd">tecNO_DST_INSUF_XRP</a>));</div>
-<div class="line"><a name="l00519"></a><span class="lineno">  519</span>&#160;        env.close();</div>
-<div class="line"><a name="l00520"></a><span class="lineno">  520</span>&#160; </div>
-<div class="line"><a name="l00521"></a><span class="lineno">  521</span>&#160;        <span class="comment">// Actually resurrect becky&#39;s account.</span></div>
-<div class="line"><a name="l00522"></a><span class="lineno">  522</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a7816b23daf9b325ea1f88cc121a53d05">pay</a>(alice, becky, <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(10)));</div>
-<div class="line"><a name="l00523"></a><span class="lineno">  523</span>&#160;        env.close();</div>
-<div class="line"><a name="l00524"></a><span class="lineno">  524</span>&#160; </div>
-<div class="line"><a name="l00525"></a><span class="lineno">  525</span>&#160;        <span class="comment">// becky&#39;s account root should be back.</span></div>
-<div class="line"><a name="l00526"></a><span class="lineno">  526</span>&#160;        BEAST_EXPECT(env.closed()-&gt;exists(beckyAcctKey));</div>
-<div class="line"><a name="l00527"></a><span class="lineno">  527</span>&#160;        BEAST_EXPECT(env.balance(becky) == <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(10));</div>
-<div class="line"><a name="l00528"></a><span class="lineno">  528</span>&#160; </div>
-<div class="line"><a name="l00529"></a><span class="lineno">  529</span>&#160;        <span class="comment">// becky&#39;s resurrected account can be the destination of alice&#39;s</span></div>
-<div class="line"><a name="l00530"></a><span class="lineno">  530</span>&#160;        <span class="comment">// PayChannel.</span></div>
-<div class="line"><a name="l00531"></a><span class="lineno">  531</span>&#160;        <span class="keyword">auto</span> payChanClaim = [&amp;]() {</div>
-<div class="line"><a name="l00532"></a><span class="lineno">  532</span>&#160;            <a class="code" href="classJson_1_1Value.html">Json::Value</a> jv;</div>
-<div class="line"><a name="l00533"></a><span class="lineno">  533</span>&#160;            jv[jss::TransactionType] = jss::PaymentChannelClaim;</div>
-<div class="line"><a name="l00534"></a><span class="lineno">  534</span>&#160;            jv[jss::Flags] = <a class="code" href="namespaceripple.html#aa52329c755ab0ee46e285c09a32b02ec">tfUniversal</a>;</div>
-<div class="line"><a name="l00535"></a><span class="lineno">  535</span>&#160;            jv[jss::Account] = alice.<a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html#aee0c1b197f33ad230162080a4ff2be16">human</a>();</div>
-<div class="line"><a name="l00536"></a><span class="lineno">  536</span>&#160;            jv[<a class="code" href="namespaceripple.html#a8ed26da24b3e8b7ed7ddc6cb0b390452">sfChannel</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>] = <a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(payChanKey.key);</div>
-<div class="line"><a name="l00537"></a><span class="lineno">  537</span>&#160;            jv[<a class="code" href="namespaceripple.html#ab8a9c54401e8209fca7396c6b9c610f4">sfBalance</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>] =</div>
-<div class="line"><a name="l00538"></a><span class="lineno">  538</span>&#160;                payChanXRP.value().getJson(<a class="code" href="namespaceripple.html#a169967ff418b80729654b6d45ade8711a334c4a4c42fdb79d7ebc3e73b517e6f8">JsonOptions::none</a>);</div>
-<div class="line"><a name="l00539"></a><span class="lineno">  539</span>&#160;            <span class="keywordflow">return</span> jv;</div>
-<div class="line"><a name="l00540"></a><span class="lineno">  540</span>&#160;        };</div>
-<div class="line"><a name="l00541"></a><span class="lineno">  541</span>&#160;        env(payChanClaim());</div>
-<div class="line"><a name="l00542"></a><span class="lineno">  542</span>&#160;        env.close();</div>
-<div class="line"><a name="l00543"></a><span class="lineno">  543</span>&#160; </div>
-<div class="line"><a name="l00544"></a><span class="lineno">  544</span>&#160;        BEAST_EXPECT(env.balance(becky) == <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(10) + payChanXRP);</div>
-<div class="line"><a name="l00545"></a><span class="lineno">  545</span>&#160;    }</div>
+<div class="line"><a name="l00518"></a><span class="lineno">  518</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a7816b23daf9b325ea1f88cc121a53d05">pay</a>(alice,</div>
+<div class="line"><a name="l00519"></a><span class="lineno">  519</span>&#160;                becky,</div>
+<div class="line"><a name="l00520"></a><span class="lineno">  520</span>&#160;                <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a47271eb5e7eb9b5aada383ccfaf9c0cf">drops</a>(env.current()-&gt;fees().accountReserve(0)) - <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(1)),</div>
+<div class="line"><a name="l00521"></a><span class="lineno">  521</span>&#160;            <a class="code" href="classripple_1_1test_1_1jtx_1_1ter.html">ter</a>(<a class="code" href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38caf30c1d76d9aca04b89314307a476b2bd">tecNO_DST_INSUF_XRP</a>));</div>
+<div class="line"><a name="l00522"></a><span class="lineno">  522</span>&#160;        env.close();</div>
+<div class="line"><a name="l00523"></a><span class="lineno">  523</span>&#160; </div>
+<div class="line"><a name="l00524"></a><span class="lineno">  524</span>&#160;        <span class="comment">// Actually resurrect becky&#39;s account.</span></div>
+<div class="line"><a name="l00525"></a><span class="lineno">  525</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a7816b23daf9b325ea1f88cc121a53d05">pay</a>(alice, becky, <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(10)));</div>
+<div class="line"><a name="l00526"></a><span class="lineno">  526</span>&#160;        env.close();</div>
+<div class="line"><a name="l00527"></a><span class="lineno">  527</span>&#160; </div>
+<div class="line"><a name="l00528"></a><span class="lineno">  528</span>&#160;        <span class="comment">// becky&#39;s account root should be back.</span></div>
+<div class="line"><a name="l00529"></a><span class="lineno">  529</span>&#160;        BEAST_EXPECT(env.closed()-&gt;exists(beckyAcctKey));</div>
+<div class="line"><a name="l00530"></a><span class="lineno">  530</span>&#160;        BEAST_EXPECT(env.balance(becky) == <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(10));</div>
+<div class="line"><a name="l00531"></a><span class="lineno">  531</span>&#160; </div>
+<div class="line"><a name="l00532"></a><span class="lineno">  532</span>&#160;        <span class="comment">// becky&#39;s resurrected account can be the destination of alice&#39;s</span></div>
+<div class="line"><a name="l00533"></a><span class="lineno">  533</span>&#160;        <span class="comment">// PayChannel.</span></div>
+<div class="line"><a name="l00534"></a><span class="lineno">  534</span>&#160;        <span class="keyword">auto</span> payChanClaim = [&amp;]() {</div>
+<div class="line"><a name="l00535"></a><span class="lineno">  535</span>&#160;            <a class="code" href="classJson_1_1Value.html">Json::Value</a> jv;</div>
+<div class="line"><a name="l00536"></a><span class="lineno">  536</span>&#160;            jv[jss::TransactionType] = jss::PaymentChannelClaim;</div>
+<div class="line"><a name="l00537"></a><span class="lineno">  537</span>&#160;            jv[jss::Flags] = <a class="code" href="namespaceripple.html#aa52329c755ab0ee46e285c09a32b02ec">tfUniversal</a>;</div>
+<div class="line"><a name="l00538"></a><span class="lineno">  538</span>&#160;            jv[jss::Account] = alice.<a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html#aee0c1b197f33ad230162080a4ff2be16">human</a>();</div>
+<div class="line"><a name="l00539"></a><span class="lineno">  539</span>&#160;            jv[<a class="code" href="namespaceripple.html#a8ed26da24b3e8b7ed7ddc6cb0b390452">sfChannel</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>] = <a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(payChanKey.key);</div>
+<div class="line"><a name="l00540"></a><span class="lineno">  540</span>&#160;            jv[<a class="code" href="namespaceripple.html#ab8a9c54401e8209fca7396c6b9c610f4">sfBalance</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>] =</div>
+<div class="line"><a name="l00541"></a><span class="lineno">  541</span>&#160;                payChanXRP.value().getJson(<a class="code" href="namespaceripple.html#a169967ff418b80729654b6d45ade8711a334c4a4c42fdb79d7ebc3e73b517e6f8">JsonOptions::none</a>);</div>
+<div class="line"><a name="l00542"></a><span class="lineno">  542</span>&#160;            <span class="keywordflow">return</span> jv;</div>
+<div class="line"><a name="l00543"></a><span class="lineno">  543</span>&#160;        };</div>
+<div class="line"><a name="l00544"></a><span class="lineno">  544</span>&#160;        env(payChanClaim());</div>
+<div class="line"><a name="l00545"></a><span class="lineno">  545</span>&#160;        env.close();</div>
 <div class="line"><a name="l00546"></a><span class="lineno">  546</span>&#160; </div>
-<div class="line"><a name="l00547"></a><span class="lineno">  547</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00548"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1AccountDelete__test.html#a9608a0aba27aea97c17205de5965d6cd">  548</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#a9608a0aba27aea97c17205de5965d6cd">testAmendmentEnable</a>()</div>
-<div class="line"><a name="l00549"></a><span class="lineno">  549</span>&#160;    {</div>
-<div class="line"><a name="l00550"></a><span class="lineno">  550</span>&#160;        <span class="comment">// Start with the featureDeletableAccounts amendment disabled.</span></div>
-<div class="line"><a name="l00551"></a><span class="lineno">  551</span>&#160;        <span class="comment">// Then enable the amendment and delete an account.</span></div>
-<div class="line"><a name="l00552"></a><span class="lineno">  552</span>&#160;        <span class="keyword">using namespace </span>jtx;</div>
-<div class="line"><a name="l00553"></a><span class="lineno">  553</span>&#160; </div>
-<div class="line"><a name="l00554"></a><span class="lineno">  554</span>&#160;        testcase(<span class="stringliteral">&quot;Amendment enable&quot;</span>);</div>
-<div class="line"><a name="l00555"></a><span class="lineno">  555</span>&#160; </div>
-<div class="line"><a name="l00556"></a><span class="lineno">  556</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env{*<span class="keyword">this</span>, <a class="code" href="namespaceripple_1_1test_1_1jtx.html#af5441d84d5977d52246c5226313560d4">supported_amendments</a>() - <a class="code" href="namespaceripple.html#a19e46a085c26216e75132e85139d09ea">featureDeletableAccounts</a>};</div>
-<div class="line"><a name="l00557"></a><span class="lineno">  557</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span> alice(<span class="stringliteral">&quot;alice&quot;</span>);</div>
-<div class="line"><a name="l00558"></a><span class="lineno">  558</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span> becky(<span class="stringliteral">&quot;becky&quot;</span>);</div>
-<div class="line"><a name="l00559"></a><span class="lineno">  559</span>&#160; </div>
-<div class="line"><a name="l00560"></a><span class="lineno">  560</span>&#160;        env.fund(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(10000), alice, becky);</div>
-<div class="line"><a name="l00561"></a><span class="lineno">  561</span>&#160;        env.close();</div>
+<div class="line"><a name="l00547"></a><span class="lineno">  547</span>&#160;        BEAST_EXPECT(env.balance(becky) == <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(10) + payChanXRP);</div>
+<div class="line"><a name="l00548"></a><span class="lineno">  548</span>&#160;    }</div>
+<div class="line"><a name="l00549"></a><span class="lineno">  549</span>&#160; </div>
+<div class="line"><a name="l00550"></a><span class="lineno">  550</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00551"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1AccountDelete__test.html#a9608a0aba27aea97c17205de5965d6cd">  551</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#a9608a0aba27aea97c17205de5965d6cd">testAmendmentEnable</a>()</div>
+<div class="line"><a name="l00552"></a><span class="lineno">  552</span>&#160;    {</div>
+<div class="line"><a name="l00553"></a><span class="lineno">  553</span>&#160;        <span class="comment">// Start with the featureDeletableAccounts amendment disabled.</span></div>
+<div class="line"><a name="l00554"></a><span class="lineno">  554</span>&#160;        <span class="comment">// Then enable the amendment and delete an account.</span></div>
+<div class="line"><a name="l00555"></a><span class="lineno">  555</span>&#160;        <span class="keyword">using namespace </span>jtx;</div>
+<div class="line"><a name="l00556"></a><span class="lineno">  556</span>&#160; </div>
+<div class="line"><a name="l00557"></a><span class="lineno">  557</span>&#160;        testcase(<span class="stringliteral">&quot;Amendment enable&quot;</span>);</div>
+<div class="line"><a name="l00558"></a><span class="lineno">  558</span>&#160; </div>
+<div class="line"><a name="l00559"></a><span class="lineno">  559</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env{*<span class="keyword">this</span>, <a class="code" href="namespaceripple_1_1test_1_1jtx.html#af5441d84d5977d52246c5226313560d4">supported_amendments</a>() - <a class="code" href="namespaceripple.html#a19e46a085c26216e75132e85139d09ea">featureDeletableAccounts</a>};</div>
+<div class="line"><a name="l00560"></a><span class="lineno">  560</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span> alice(<span class="stringliteral">&quot;alice&quot;</span>);</div>
+<div class="line"><a name="l00561"></a><span class="lineno">  561</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span> becky(<span class="stringliteral">&quot;becky&quot;</span>);</div>
 <div class="line"><a name="l00562"></a><span class="lineno">  562</span>&#160; </div>
-<div class="line"><a name="l00563"></a><span class="lineno">  563</span>&#160;        <span class="comment">// Close enough ledgers to be able to delete alice&#39;s account.</span></div>
-<div class="line"><a name="l00564"></a><span class="lineno">  564</span>&#160;        <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#a5c5e1833684dc58172ce991221cf0be5">incLgrSeqForAccDel</a>(env, alice);</div>
+<div class="line"><a name="l00563"></a><span class="lineno">  563</span>&#160;        env.fund(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(10000), alice, becky);</div>
+<div class="line"><a name="l00564"></a><span class="lineno">  564</span>&#160;        env.close();</div>
 <div class="line"><a name="l00565"></a><span class="lineno">  565</span>&#160; </div>
-<div class="line"><a name="l00566"></a><span class="lineno">  566</span>&#160;        <span class="comment">// Verify that alice&#39;s account root is present.</span></div>
-<div class="line"><a name="l00567"></a><span class="lineno">  567</span>&#160;        <a class="code" href="structripple_1_1Keylet.html">Keylet</a> <span class="keyword">const</span> aliceAcctKey{<a class="code" href="namespaceripple_1_1keylet.html#a50c370db96b4fdcdd202d9c2c38afce9">keylet::account</a>(alice.<a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html#a1ea8869f5af6ce774c37b560c6c785c3">id</a>())};</div>
-<div class="line"><a name="l00568"></a><span class="lineno">  568</span>&#160;        BEAST_EXPECT(env.closed()-&gt;exists(aliceAcctKey));</div>
-<div class="line"><a name="l00569"></a><span class="lineno">  569</span>&#160; </div>
-<div class="line"><a name="l00570"></a><span class="lineno">  570</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> alicePreDelBal{env.balance(alice)};</div>
-<div class="line"><a name="l00571"></a><span class="lineno">  571</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> beckyPreDelBal{env.balance(becky)};</div>
+<div class="line"><a name="l00566"></a><span class="lineno">  566</span>&#160;        <span class="comment">// Close enough ledgers to be able to delete alice&#39;s account.</span></div>
+<div class="line"><a name="l00567"></a><span class="lineno">  567</span>&#160;        <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#a5c5e1833684dc58172ce991221cf0be5">incLgrSeqForAccDel</a>(env, alice);</div>
+<div class="line"><a name="l00568"></a><span class="lineno">  568</span>&#160; </div>
+<div class="line"><a name="l00569"></a><span class="lineno">  569</span>&#160;        <span class="comment">// Verify that alice&#39;s account root is present.</span></div>
+<div class="line"><a name="l00570"></a><span class="lineno">  570</span>&#160;        <a class="code" href="structripple_1_1Keylet.html">Keylet</a> <span class="keyword">const</span> aliceAcctKey{<a class="code" href="namespaceripple_1_1keylet.html#a50c370db96b4fdcdd202d9c2c38afce9">keylet::account</a>(alice.<a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html#a1ea8869f5af6ce774c37b560c6c785c3">id</a>())};</div>
+<div class="line"><a name="l00571"></a><span class="lineno">  571</span>&#160;        BEAST_EXPECT(env.closed()-&gt;exists(aliceAcctKey));</div>
 <div class="line"><a name="l00572"></a><span class="lineno">  572</span>&#160; </div>
-<div class="line"><a name="l00573"></a><span class="lineno">  573</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> acctDelFee{<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a47271eb5e7eb9b5aada383ccfaf9c0cf">drops</a>(env.current()-&gt;fees().increment)};</div>
-<div class="line"><a name="l00574"></a><span class="lineno">  574</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#ada147bbc773967de4235fc8ed1c89562">acctdelete</a>(alice, becky), <a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(acctDelFee), <a class="code" href="classripple_1_1test_1_1jtx_1_1ter.html">ter</a>(<a class="code" href="namespaceripple.html#afe21c8454670d46fb93751a5edffed46ac3482079467d517ea82aa9c8fa693d21">temDISABLED</a>));</div>
-<div class="line"><a name="l00575"></a><span class="lineno">  575</span>&#160;        env.close();</div>
-<div class="line"><a name="l00576"></a><span class="lineno">  576</span>&#160; </div>
-<div class="line"><a name="l00577"></a><span class="lineno">  577</span>&#160;        <span class="comment">// Verify that alice&#39;s account root is still present and alice and</span></div>
-<div class="line"><a name="l00578"></a><span class="lineno">  578</span>&#160;        <span class="comment">// becky both have their XRP.</span></div>
-<div class="line"><a name="l00579"></a><span class="lineno">  579</span>&#160;        BEAST_EXPECT(env.current()-&gt;exists(aliceAcctKey));</div>
-<div class="line"><a name="l00580"></a><span class="lineno">  580</span>&#160;        BEAST_EXPECT(env.balance(alice) == alicePreDelBal);</div>
-<div class="line"><a name="l00581"></a><span class="lineno">  581</span>&#160;        BEAST_EXPECT(env.balance(becky) == beckyPreDelBal);</div>
-<div class="line"><a name="l00582"></a><span class="lineno">  582</span>&#160; </div>
-<div class="line"><a name="l00583"></a><span class="lineno">  583</span>&#160;        <span class="comment">// When the amendment is enabled the previous transaction is</span></div>
-<div class="line"><a name="l00584"></a><span class="lineno">  584</span>&#160;        <span class="comment">// retried into the new open ledger and succeeds.</span></div>
-<div class="line"><a name="l00585"></a><span class="lineno">  585</span>&#160;        env.enableFeature(<a class="code" href="namespaceripple.html#a19e46a085c26216e75132e85139d09ea">featureDeletableAccounts</a>);</div>
-<div class="line"><a name="l00586"></a><span class="lineno">  586</span>&#160;        env.close();</div>
-<div class="line"><a name="l00587"></a><span class="lineno">  587</span>&#160; </div>
-<div class="line"><a name="l00588"></a><span class="lineno">  588</span>&#160;        <span class="comment">// alice&#39;s account is still in the most recently closed ledger.</span></div>
-<div class="line"><a name="l00589"></a><span class="lineno">  589</span>&#160;        BEAST_EXPECT(env.closed()-&gt;exists(aliceAcctKey));</div>
+<div class="line"><a name="l00573"></a><span class="lineno">  573</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> alicePreDelBal{env.balance(alice)};</div>
+<div class="line"><a name="l00574"></a><span class="lineno">  574</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> beckyPreDelBal{env.balance(becky)};</div>
+<div class="line"><a name="l00575"></a><span class="lineno">  575</span>&#160; </div>
+<div class="line"><a name="l00576"></a><span class="lineno">  576</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> acctDelFee{<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a47271eb5e7eb9b5aada383ccfaf9c0cf">drops</a>(env.current()-&gt;fees().increment)};</div>
+<div class="line"><a name="l00577"></a><span class="lineno">  577</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#ada147bbc773967de4235fc8ed1c89562">acctdelete</a>(alice, becky), <a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(acctDelFee), <a class="code" href="classripple_1_1test_1_1jtx_1_1ter.html">ter</a>(<a class="code" href="namespaceripple.html#afe21c8454670d46fb93751a5edffed46ac3482079467d517ea82aa9c8fa693d21">temDISABLED</a>));</div>
+<div class="line"><a name="l00578"></a><span class="lineno">  578</span>&#160;        env.close();</div>
+<div class="line"><a name="l00579"></a><span class="lineno">  579</span>&#160; </div>
+<div class="line"><a name="l00580"></a><span class="lineno">  580</span>&#160;        <span class="comment">// Verify that alice&#39;s account root is still present and alice and</span></div>
+<div class="line"><a name="l00581"></a><span class="lineno">  581</span>&#160;        <span class="comment">// becky both have their XRP.</span></div>
+<div class="line"><a name="l00582"></a><span class="lineno">  582</span>&#160;        BEAST_EXPECT(env.current()-&gt;exists(aliceAcctKey));</div>
+<div class="line"><a name="l00583"></a><span class="lineno">  583</span>&#160;        BEAST_EXPECT(env.balance(alice) == alicePreDelBal);</div>
+<div class="line"><a name="l00584"></a><span class="lineno">  584</span>&#160;        BEAST_EXPECT(env.balance(becky) == beckyPreDelBal);</div>
+<div class="line"><a name="l00585"></a><span class="lineno">  585</span>&#160; </div>
+<div class="line"><a name="l00586"></a><span class="lineno">  586</span>&#160;        <span class="comment">// When the amendment is enabled the previous transaction is</span></div>
+<div class="line"><a name="l00587"></a><span class="lineno">  587</span>&#160;        <span class="comment">// retried into the new open ledger and succeeds.</span></div>
+<div class="line"><a name="l00588"></a><span class="lineno">  588</span>&#160;        env.enableFeature(<a class="code" href="namespaceripple.html#a19e46a085c26216e75132e85139d09ea">featureDeletableAccounts</a>);</div>
+<div class="line"><a name="l00589"></a><span class="lineno">  589</span>&#160;        env.close();</div>
 <div class="line"><a name="l00590"></a><span class="lineno">  590</span>&#160; </div>
-<div class="line"><a name="l00591"></a><span class="lineno">  591</span>&#160;        <span class="comment">// Verify that alice&#39;s account root is gone from the current ledger</span></div>
-<div class="line"><a name="l00592"></a><span class="lineno">  592</span>&#160;        <span class="comment">// and becky has alice&#39;s XRP.</span></div>
-<div class="line"><a name="l00593"></a><span class="lineno">  593</span>&#160;        BEAST_EXPECT(!env.current()-&gt;exists(aliceAcctKey));</div>
-<div class="line"><a name="l00594"></a><span class="lineno">  594</span>&#160;        BEAST_EXPECT(</div>
-<div class="line"><a name="l00595"></a><span class="lineno">  595</span>&#160;            env.balance(becky) == alicePreDelBal + beckyPreDelBal - acctDelFee);</div>
-<div class="line"><a name="l00596"></a><span class="lineno">  596</span>&#160; </div>
-<div class="line"><a name="l00597"></a><span class="lineno">  597</span>&#160;        env.close();</div>
-<div class="line"><a name="l00598"></a><span class="lineno">  598</span>&#160;        BEAST_EXPECT(!env.closed()-&gt;exists(aliceAcctKey));</div>
-<div class="line"><a name="l00599"></a><span class="lineno">  599</span>&#160;    }</div>
-<div class="line"><a name="l00600"></a><span class="lineno">  600</span>&#160; </div>
-<div class="line"><a name="l00601"></a><span class="lineno">  601</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00602"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1AccountDelete__test.html#aa631e36dc0eb14c7b60191138bc1c548">  602</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#aa631e36dc0eb14c7b60191138bc1c548">testTooManyOffers</a>()</div>
-<div class="line"><a name="l00603"></a><span class="lineno">  603</span>&#160;    {</div>
-<div class="line"><a name="l00604"></a><span class="lineno">  604</span>&#160;        <span class="comment">// Put enough offers in an account that we refuse to delete the account.</span></div>
-<div class="line"><a name="l00605"></a><span class="lineno">  605</span>&#160;        <span class="keyword">using namespace </span>jtx;</div>
-<div class="line"><a name="l00606"></a><span class="lineno">  606</span>&#160; </div>
-<div class="line"><a name="l00607"></a><span class="lineno">  607</span>&#160;        testcase(<span class="stringliteral">&quot;Too many offers&quot;</span>);</div>
-<div class="line"><a name="l00608"></a><span class="lineno">  608</span>&#160; </div>
-<div class="line"><a name="l00609"></a><span class="lineno">  609</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env{*<span class="keyword">this</span>};</div>
-<div class="line"><a name="l00610"></a><span class="lineno">  610</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span> alice(<span class="stringliteral">&quot;alice&quot;</span>);</div>
-<div class="line"><a name="l00611"></a><span class="lineno">  611</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span> gw(<span class="stringliteral">&quot;gw&quot;</span>);</div>
-<div class="line"><a name="l00612"></a><span class="lineno">  612</span>&#160; </div>
-<div class="line"><a name="l00613"></a><span class="lineno">  613</span>&#160;        <span class="comment">// Fund alice well so she can afford the reserve on the offers.</span></div>
-<div class="line"><a name="l00614"></a><span class="lineno">  614</span>&#160;        env.fund(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(10000000), alice, gw);</div>
-<div class="line"><a name="l00615"></a><span class="lineno">  615</span>&#160;        env.close();</div>
-<div class="line"><a name="l00616"></a><span class="lineno">  616</span>&#160; </div>
-<div class="line"><a name="l00617"></a><span class="lineno">  617</span>&#160;        <span class="comment">// To increase the number of Books affected, change the currency of</span></div>
-<div class="line"><a name="l00618"></a><span class="lineno">  618</span>&#160;        <span class="comment">// each offer.</span></div>
-<div class="line"><a name="l00619"></a><span class="lineno">  619</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> currency{<span class="stringliteral">&quot;AAA&quot;</span>};</div>
-<div class="line"><a name="l00620"></a><span class="lineno">  620</span>&#160; </div>
-<div class="line"><a name="l00621"></a><span class="lineno">  621</span>&#160;        <span class="comment">// Alice creates 1001 offers.  This is one greater than the number of</span></div>
-<div class="line"><a name="l00622"></a><span class="lineno">  622</span>&#160;        <span class="comment">// directory entries an AccountDelete will remove.</span></div>
-<div class="line"><a name="l00623"></a><span class="lineno">  623</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> <span class="keyword">const</span> offerSeq0{env.seq(alice)};</div>
-<div class="line"><a name="l00624"></a><span class="lineno">  624</span>&#160;        constexpr <span class="keywordtype">int</span> offerCount{1001};</div>
-<div class="line"><a name="l00625"></a><span class="lineno">  625</span>&#160;        <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i{0}; i &lt; offerCount; ++i)</div>
-<div class="line"><a name="l00626"></a><span class="lineno">  626</span>&#160;        {</div>
-<div class="line"><a name="l00627"></a><span class="lineno">  627</span>&#160;            env(offer(alice, gw[currency](1), <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(1)));</div>
-<div class="line"><a name="l00628"></a><span class="lineno">  628</span>&#160;            env.close();</div>
-<div class="line"><a name="l00629"></a><span class="lineno">  629</span>&#160; </div>
-<div class="line"><a name="l00630"></a><span class="lineno">  630</span>&#160;            <span class="comment">// Increment to next currency.</span></div>
-<div class="line"><a name="l00631"></a><span class="lineno">  631</span>&#160;            ++currency[0];</div>
-<div class="line"><a name="l00632"></a><span class="lineno">  632</span>&#160;            <span class="keywordflow">if</span> (currency[0] &gt; <span class="charliteral">&#39;Z&#39;</span>)</div>
-<div class="line"><a name="l00633"></a><span class="lineno">  633</span>&#160;            {</div>
-<div class="line"><a name="l00634"></a><span class="lineno">  634</span>&#160;                currency[0] = <span class="charliteral">&#39;A&#39;</span>;</div>
-<div class="line"><a name="l00635"></a><span class="lineno">  635</span>&#160;                ++currency[1];</div>
-<div class="line"><a name="l00636"></a><span class="lineno">  636</span>&#160;            }</div>
-<div class="line"><a name="l00637"></a><span class="lineno">  637</span>&#160;            <span class="keywordflow">if</span> (currency[1] &gt; <span class="charliteral">&#39;Z&#39;</span>)</div>
-<div class="line"><a name="l00638"></a><span class="lineno">  638</span>&#160;            {</div>
-<div class="line"><a name="l00639"></a><span class="lineno">  639</span>&#160;                currency[1] = <span class="charliteral">&#39;A&#39;</span>;</div>
-<div class="line"><a name="l00640"></a><span class="lineno">  640</span>&#160;                ++currency[2];</div>
-<div class="line"><a name="l00641"></a><span class="lineno">  641</span>&#160;            }</div>
-<div class="line"><a name="l00642"></a><span class="lineno">  642</span>&#160;            <span class="keywordflow">if</span> (currency[2] &gt; <span class="charliteral">&#39;Z&#39;</span>)</div>
-<div class="line"><a name="l00643"></a><span class="lineno">  643</span>&#160;            {</div>
-<div class="line"><a name="l00644"></a><span class="lineno">  644</span>&#160;                currency[0] = <span class="charliteral">&#39;A&#39;</span>;</div>
-<div class="line"><a name="l00645"></a><span class="lineno">  645</span>&#160;                currency[1] = <span class="charliteral">&#39;A&#39;</span>;</div>
-<div class="line"><a name="l00646"></a><span class="lineno">  646</span>&#160;                currency[2] = <span class="charliteral">&#39;A&#39;</span>;</div>
-<div class="line"><a name="l00647"></a><span class="lineno">  647</span>&#160;            }</div>
-<div class="line"><a name="l00648"></a><span class="lineno">  648</span>&#160;        }</div>
-<div class="line"><a name="l00649"></a><span class="lineno">  649</span>&#160; </div>
-<div class="line"><a name="l00650"></a><span class="lineno">  650</span>&#160;        <span class="comment">// Close enough ledgers to be able to delete alice&#39;s account.</span></div>
-<div class="line"><a name="l00651"></a><span class="lineno">  651</span>&#160;        <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#a5c5e1833684dc58172ce991221cf0be5">incLgrSeqForAccDel</a>(env, alice);</div>
+<div class="line"><a name="l00591"></a><span class="lineno">  591</span>&#160;        <span class="comment">// alice&#39;s account is still in the most recently closed ledger.</span></div>
+<div class="line"><a name="l00592"></a><span class="lineno">  592</span>&#160;        BEAST_EXPECT(env.closed()-&gt;exists(aliceAcctKey));</div>
+<div class="line"><a name="l00593"></a><span class="lineno">  593</span>&#160; </div>
+<div class="line"><a name="l00594"></a><span class="lineno">  594</span>&#160;        <span class="comment">// Verify that alice&#39;s account root is gone from the current ledger</span></div>
+<div class="line"><a name="l00595"></a><span class="lineno">  595</span>&#160;        <span class="comment">// and becky has alice&#39;s XRP.</span></div>
+<div class="line"><a name="l00596"></a><span class="lineno">  596</span>&#160;        BEAST_EXPECT(!env.current()-&gt;exists(aliceAcctKey));</div>
+<div class="line"><a name="l00597"></a><span class="lineno">  597</span>&#160;        BEAST_EXPECT(</div>
+<div class="line"><a name="l00598"></a><span class="lineno">  598</span>&#160;            env.balance(becky) == alicePreDelBal + beckyPreDelBal - acctDelFee);</div>
+<div class="line"><a name="l00599"></a><span class="lineno">  599</span>&#160; </div>
+<div class="line"><a name="l00600"></a><span class="lineno">  600</span>&#160;        env.close();</div>
+<div class="line"><a name="l00601"></a><span class="lineno">  601</span>&#160;        BEAST_EXPECT(!env.closed()-&gt;exists(aliceAcctKey));</div>
+<div class="line"><a name="l00602"></a><span class="lineno">  602</span>&#160;    }</div>
+<div class="line"><a name="l00603"></a><span class="lineno">  603</span>&#160; </div>
+<div class="line"><a name="l00604"></a><span class="lineno">  604</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00605"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1AccountDelete__test.html#aa631e36dc0eb14c7b60191138bc1c548">  605</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#aa631e36dc0eb14c7b60191138bc1c548">testTooManyOffers</a>()</div>
+<div class="line"><a name="l00606"></a><span class="lineno">  606</span>&#160;    {</div>
+<div class="line"><a name="l00607"></a><span class="lineno">  607</span>&#160;        <span class="comment">// Put enough offers in an account that we refuse to delete the account.</span></div>
+<div class="line"><a name="l00608"></a><span class="lineno">  608</span>&#160;        <span class="keyword">using namespace </span>jtx;</div>
+<div class="line"><a name="l00609"></a><span class="lineno">  609</span>&#160; </div>
+<div class="line"><a name="l00610"></a><span class="lineno">  610</span>&#160;        testcase(<span class="stringliteral">&quot;Too many offers&quot;</span>);</div>
+<div class="line"><a name="l00611"></a><span class="lineno">  611</span>&#160; </div>
+<div class="line"><a name="l00612"></a><span class="lineno">  612</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env{*<span class="keyword">this</span>};</div>
+<div class="line"><a name="l00613"></a><span class="lineno">  613</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span> alice(<span class="stringliteral">&quot;alice&quot;</span>);</div>
+<div class="line"><a name="l00614"></a><span class="lineno">  614</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span> gw(<span class="stringliteral">&quot;gw&quot;</span>);</div>
+<div class="line"><a name="l00615"></a><span class="lineno">  615</span>&#160; </div>
+<div class="line"><a name="l00616"></a><span class="lineno">  616</span>&#160;        <span class="comment">// Fund alice well so she can afford the reserve on the offers.</span></div>
+<div class="line"><a name="l00617"></a><span class="lineno">  617</span>&#160;        env.fund(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(10000000), alice, gw);</div>
+<div class="line"><a name="l00618"></a><span class="lineno">  618</span>&#160;        env.close();</div>
+<div class="line"><a name="l00619"></a><span class="lineno">  619</span>&#160; </div>
+<div class="line"><a name="l00620"></a><span class="lineno">  620</span>&#160;        <span class="comment">// To increase the number of Books affected, change the currency of</span></div>
+<div class="line"><a name="l00621"></a><span class="lineno">  621</span>&#160;        <span class="comment">// each offer.</span></div>
+<div class="line"><a name="l00622"></a><span class="lineno">  622</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> currency{<span class="stringliteral">&quot;AAA&quot;</span>};</div>
+<div class="line"><a name="l00623"></a><span class="lineno">  623</span>&#160; </div>
+<div class="line"><a name="l00624"></a><span class="lineno">  624</span>&#160;        <span class="comment">// Alice creates 1001 offers.  This is one greater than the number of</span></div>
+<div class="line"><a name="l00625"></a><span class="lineno">  625</span>&#160;        <span class="comment">// directory entries an AccountDelete will remove.</span></div>
+<div class="line"><a name="l00626"></a><span class="lineno">  626</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> <span class="keyword">const</span> offerSeq0{env.seq(alice)};</div>
+<div class="line"><a name="l00627"></a><span class="lineno">  627</span>&#160;        constexpr <span class="keywordtype">int</span> offerCount{1001};</div>
+<div class="line"><a name="l00628"></a><span class="lineno">  628</span>&#160;        <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i{0}; i &lt; offerCount; ++i)</div>
+<div class="line"><a name="l00629"></a><span class="lineno">  629</span>&#160;        {</div>
+<div class="line"><a name="l00630"></a><span class="lineno">  630</span>&#160;            env(offer(alice, gw[currency](1), <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(1)));</div>
+<div class="line"><a name="l00631"></a><span class="lineno">  631</span>&#160;            env.close();</div>
+<div class="line"><a name="l00632"></a><span class="lineno">  632</span>&#160; </div>
+<div class="line"><a name="l00633"></a><span class="lineno">  633</span>&#160;            <span class="comment">// Increment to next currency.</span></div>
+<div class="line"><a name="l00634"></a><span class="lineno">  634</span>&#160;            ++currency[0];</div>
+<div class="line"><a name="l00635"></a><span class="lineno">  635</span>&#160;            <span class="keywordflow">if</span> (currency[0] &gt; <span class="charliteral">&#39;Z&#39;</span>)</div>
+<div class="line"><a name="l00636"></a><span class="lineno">  636</span>&#160;            {</div>
+<div class="line"><a name="l00637"></a><span class="lineno">  637</span>&#160;                currency[0] = <span class="charliteral">&#39;A&#39;</span>;</div>
+<div class="line"><a name="l00638"></a><span class="lineno">  638</span>&#160;                ++currency[1];</div>
+<div class="line"><a name="l00639"></a><span class="lineno">  639</span>&#160;            }</div>
+<div class="line"><a name="l00640"></a><span class="lineno">  640</span>&#160;            <span class="keywordflow">if</span> (currency[1] &gt; <span class="charliteral">&#39;Z&#39;</span>)</div>
+<div class="line"><a name="l00641"></a><span class="lineno">  641</span>&#160;            {</div>
+<div class="line"><a name="l00642"></a><span class="lineno">  642</span>&#160;                currency[1] = <span class="charliteral">&#39;A&#39;</span>;</div>
+<div class="line"><a name="l00643"></a><span class="lineno">  643</span>&#160;                ++currency[2];</div>
+<div class="line"><a name="l00644"></a><span class="lineno">  644</span>&#160;            }</div>
+<div class="line"><a name="l00645"></a><span class="lineno">  645</span>&#160;            <span class="keywordflow">if</span> (currency[2] &gt; <span class="charliteral">&#39;Z&#39;</span>)</div>
+<div class="line"><a name="l00646"></a><span class="lineno">  646</span>&#160;            {</div>
+<div class="line"><a name="l00647"></a><span class="lineno">  647</span>&#160;                currency[0] = <span class="charliteral">&#39;A&#39;</span>;</div>
+<div class="line"><a name="l00648"></a><span class="lineno">  648</span>&#160;                currency[1] = <span class="charliteral">&#39;A&#39;</span>;</div>
+<div class="line"><a name="l00649"></a><span class="lineno">  649</span>&#160;                currency[2] = <span class="charliteral">&#39;A&#39;</span>;</div>
+<div class="line"><a name="l00650"></a><span class="lineno">  650</span>&#160;            }</div>
+<div class="line"><a name="l00651"></a><span class="lineno">  651</span>&#160;        }</div>
 <div class="line"><a name="l00652"></a><span class="lineno">  652</span>&#160; </div>
-<div class="line"><a name="l00653"></a><span class="lineno">  653</span>&#160;        <span class="comment">// Verify the existence of the expected ledger entries.</span></div>
-<div class="line"><a name="l00654"></a><span class="lineno">  654</span>&#160;        <a class="code" href="structripple_1_1Keylet.html">Keylet</a> <span class="keyword">const</span> aliceOwnerDirKey{<a class="code" href="namespaceripple_1_1keylet.html#aa9b2ba2df3c3da4cecd1c07cccf7c7f9">keylet::ownerDir</a>(alice.<a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html#a1ea8869f5af6ce774c37b560c6c785c3">id</a>())};</div>
-<div class="line"><a name="l00655"></a><span class="lineno">  655</span>&#160;        {</div>
-<div class="line"><a name="l00656"></a><span class="lineno">  656</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;ReadView const&gt;</a> closed{env.closed()};</div>
-<div class="line"><a name="l00657"></a><span class="lineno">  657</span>&#160;            BEAST_EXPECT(closed-&gt;exists(<a class="code" href="namespaceripple_1_1keylet.html#a50c370db96b4fdcdd202d9c2c38afce9">keylet::account</a>(alice.<a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html#a1ea8869f5af6ce774c37b560c6c785c3">id</a>())));</div>
-<div class="line"><a name="l00658"></a><span class="lineno">  658</span>&#160;            BEAST_EXPECT(closed-&gt;exists(aliceOwnerDirKey));</div>
-<div class="line"><a name="l00659"></a><span class="lineno">  659</span>&#160; </div>
-<div class="line"><a name="l00660"></a><span class="lineno">  660</span>&#160;            <span class="comment">// alice&#39;s directory nodes.</span></div>
-<div class="line"><a name="l00661"></a><span class="lineno">  661</span>&#160;            <span class="keywordflow">for</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> i{0}; i &lt; ((offerCount / 32) + 1); ++i)</div>
-<div class="line"><a name="l00662"></a><span class="lineno">  662</span>&#160;                BEAST_EXPECT(closed-&gt;exists(<a class="code" href="namespaceripple_1_1keylet.html#a7e018eaf4a4da32d3f6f75f864cb85d1">keylet::page</a>(aliceOwnerDirKey, i)));</div>
-<div class="line"><a name="l00663"></a><span class="lineno">  663</span>&#160; </div>
-<div class="line"><a name="l00664"></a><span class="lineno">  664</span>&#160;            <span class="comment">// alice&#39;s offers.</span></div>
-<div class="line"><a name="l00665"></a><span class="lineno">  665</span>&#160;            <span class="keywordflow">for</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> i{0}; i &lt; offerCount; ++i)</div>
-<div class="line"><a name="l00666"></a><span class="lineno">  666</span>&#160;                BEAST_EXPECT(</div>
-<div class="line"><a name="l00667"></a><span class="lineno">  667</span>&#160;                    closed-&gt;exists(<a class="code" href="namespaceripple_1_1keylet.html#a5d33427228ab1869c37fcf11132865f6">keylet::offer</a>(alice.<a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html#a1ea8869f5af6ce774c37b560c6c785c3">id</a>(), offerSeq0 + i)));</div>
-<div class="line"><a name="l00668"></a><span class="lineno">  668</span>&#160;        }</div>
-<div class="line"><a name="l00669"></a><span class="lineno">  669</span>&#160; </div>
-<div class="line"><a name="l00670"></a><span class="lineno">  670</span>&#160;        <span class="comment">// Delete alice&#39;s account.  Should fail because she has too many</span></div>
-<div class="line"><a name="l00671"></a><span class="lineno">  671</span>&#160;        <span class="comment">// offers in her directory.</span></div>
-<div class="line"><a name="l00672"></a><span class="lineno">  672</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> acctDelFee{<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a47271eb5e7eb9b5aada383ccfaf9c0cf">drops</a>(env.current()-&gt;fees().increment)};</div>
-<div class="line"><a name="l00673"></a><span class="lineno">  673</span>&#160; </div>
-<div class="line"><a name="l00674"></a><span class="lineno">  674</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#ada147bbc773967de4235fc8ed1c89562">acctdelete</a>(alice, gw), <a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(acctDelFee), <a class="code" href="classripple_1_1test_1_1jtx_1_1ter.html">ter</a>(<a class="code" href="namespaceripple.html#a75cb21d7f1df42f2fdc8efddb79b63f4ac88fc0c8fed663cca3ccde623c0f3057">tefTOO_BIG</a>));</div>
-<div class="line"><a name="l00675"></a><span class="lineno">  675</span>&#160; </div>
-<div class="line"><a name="l00676"></a><span class="lineno">  676</span>&#160;        <span class="comment">// Cancel one of alice&#39;s offers.  Then the account delete can succeed.</span></div>
-<div class="line"><a name="l00677"></a><span class="lineno">  677</span>&#160;        env.require(<a class="code" href="classripple_1_1test_1_1jtx_1_1owner__count.html">offers</a>(alice, offerCount));</div>
-<div class="line"><a name="l00678"></a><span class="lineno">  678</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#afd83a8b3855491e6341e1753822f7dc0">offer_cancel</a>(alice, offerSeq0));</div>
-<div class="line"><a name="l00679"></a><span class="lineno">  679</span>&#160;        env.close();</div>
-<div class="line"><a name="l00680"></a><span class="lineno">  680</span>&#160;        env.require(<a class="code" href="classripple_1_1test_1_1jtx_1_1owner__count.html">offers</a>(alice, offerCount - 1));</div>
-<div class="line"><a name="l00681"></a><span class="lineno">  681</span>&#160; </div>
-<div class="line"><a name="l00682"></a><span class="lineno">  682</span>&#160;        <span class="comment">// alice successfully deletes her account.</span></div>
-<div class="line"><a name="l00683"></a><span class="lineno">  683</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> alicePreDelBal{env.balance(alice)};</div>
-<div class="line"><a name="l00684"></a><span class="lineno">  684</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#ada147bbc773967de4235fc8ed1c89562">acctdelete</a>(alice, gw), <a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(acctDelFee));</div>
-<div class="line"><a name="l00685"></a><span class="lineno">  685</span>&#160;        <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#a3a2e08d09c040d83aa23d75f8b0fb58d">verifyDeliveredAmount</a>(env, alicePreDelBal - acctDelFee);</div>
-<div class="line"><a name="l00686"></a><span class="lineno">  686</span>&#160;        env.close();</div>
-<div class="line"><a name="l00687"></a><span class="lineno">  687</span>&#160; </div>
-<div class="line"><a name="l00688"></a><span class="lineno">  688</span>&#160;        <span class="comment">// Verify that alice&#39;s account root is gone as well as her directory</span></div>
-<div class="line"><a name="l00689"></a><span class="lineno">  689</span>&#160;        <span class="comment">// nodes and all of her offers.</span></div>
-<div class="line"><a name="l00690"></a><span class="lineno">  690</span>&#160;        {</div>
-<div class="line"><a name="l00691"></a><span class="lineno">  691</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;ReadView const&gt;</a> closed{env.closed()};</div>
-<div class="line"><a name="l00692"></a><span class="lineno">  692</span>&#160;            BEAST_EXPECT(!closed-&gt;exists(<a class="code" href="namespaceripple_1_1keylet.html#a50c370db96b4fdcdd202d9c2c38afce9">keylet::account</a>(alice.<a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html#a1ea8869f5af6ce774c37b560c6c785c3">id</a>())));</div>
-<div class="line"><a name="l00693"></a><span class="lineno">  693</span>&#160;            BEAST_EXPECT(!closed-&gt;exists(aliceOwnerDirKey));</div>
-<div class="line"><a name="l00694"></a><span class="lineno">  694</span>&#160; </div>
-<div class="line"><a name="l00695"></a><span class="lineno">  695</span>&#160;            <span class="comment">// alice&#39;s former directory nodes.</span></div>
-<div class="line"><a name="l00696"></a><span class="lineno">  696</span>&#160;            <span class="keywordflow">for</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> i{0}; i &lt; ((offerCount / 32) + 1); ++i)</div>
-<div class="line"><a name="l00697"></a><span class="lineno">  697</span>&#160;                BEAST_EXPECT(</div>
-<div class="line"><a name="l00698"></a><span class="lineno">  698</span>&#160;                    !closed-&gt;exists(<a class="code" href="namespaceripple_1_1keylet.html#a7e018eaf4a4da32d3f6f75f864cb85d1">keylet::page</a>(aliceOwnerDirKey, i)));</div>
-<div class="line"><a name="l00699"></a><span class="lineno">  699</span>&#160; </div>
-<div class="line"><a name="l00700"></a><span class="lineno">  700</span>&#160;            <span class="comment">// alice&#39;s former offers.</span></div>
-<div class="line"><a name="l00701"></a><span class="lineno">  701</span>&#160;            <span class="keywordflow">for</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> i{0}; i &lt; offerCount; ++i)</div>
-<div class="line"><a name="l00702"></a><span class="lineno">  702</span>&#160;                BEAST_EXPECT(</div>
-<div class="line"><a name="l00703"></a><span class="lineno">  703</span>&#160;                    !closed-&gt;exists(<a class="code" href="namespaceripple_1_1keylet.html#a5d33427228ab1869c37fcf11132865f6">keylet::offer</a>(alice.<a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html#a1ea8869f5af6ce774c37b560c6c785c3">id</a>(), offerSeq0 + i)));</div>
-<div class="line"><a name="l00704"></a><span class="lineno">  704</span>&#160;        }</div>
-<div class="line"><a name="l00705"></a><span class="lineno">  705</span>&#160;    }</div>
-<div class="line"><a name="l00706"></a><span class="lineno">  706</span>&#160; </div>
-<div class="line"><a name="l00707"></a><span class="lineno">  707</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00708"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1AccountDelete__test.html#af9b88be1918a8fe91a3c7cd9d54207de">  708</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#af9b88be1918a8fe91a3c7cd9d54207de">testImplicitlyCreatedTrustline</a>()</div>
-<div class="line"><a name="l00709"></a><span class="lineno">  709</span>&#160;    {</div>
-<div class="line"><a name="l00710"></a><span class="lineno">  710</span>&#160;        <span class="comment">// Show that a trust line that is implicitly created by offer crossing</span></div>
-<div class="line"><a name="l00711"></a><span class="lineno">  711</span>&#160;        <span class="comment">// prevents an account from being deleted.</span></div>
-<div class="line"><a name="l00712"></a><span class="lineno">  712</span>&#160;        <span class="keyword">using namespace </span>jtx;</div>
-<div class="line"><a name="l00713"></a><span class="lineno">  713</span>&#160; </div>
-<div class="line"><a name="l00714"></a><span class="lineno">  714</span>&#160;        testcase(<span class="stringliteral">&quot;Implicitly created trust line&quot;</span>);</div>
-<div class="line"><a name="l00715"></a><span class="lineno">  715</span>&#160; </div>
-<div class="line"><a name="l00716"></a><span class="lineno">  716</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env{*<span class="keyword">this</span>};</div>
-<div class="line"><a name="l00717"></a><span class="lineno">  717</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span> alice{<span class="stringliteral">&quot;alice&quot;</span>};</div>
-<div class="line"><a name="l00718"></a><span class="lineno">  718</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span> gw{<span class="stringliteral">&quot;gw&quot;</span>};</div>
-<div class="line"><a name="l00719"></a><span class="lineno">  719</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> BUX{gw[<span class="stringliteral">&quot;BUX&quot;</span>]};</div>
-<div class="line"><a name="l00720"></a><span class="lineno">  720</span>&#160; </div>
-<div class="line"><a name="l00721"></a><span class="lineno">  721</span>&#160;        env.fund(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(10000), alice, gw);</div>
-<div class="line"><a name="l00722"></a><span class="lineno">  722</span>&#160;        env.close();</div>
+<div class="line"><a name="l00653"></a><span class="lineno">  653</span>&#160;        <span class="comment">// Close enough ledgers to be able to delete alice&#39;s account.</span></div>
+<div class="line"><a name="l00654"></a><span class="lineno">  654</span>&#160;        <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#a5c5e1833684dc58172ce991221cf0be5">incLgrSeqForAccDel</a>(env, alice);</div>
+<div class="line"><a name="l00655"></a><span class="lineno">  655</span>&#160; </div>
+<div class="line"><a name="l00656"></a><span class="lineno">  656</span>&#160;        <span class="comment">// Verify the existence of the expected ledger entries.</span></div>
+<div class="line"><a name="l00657"></a><span class="lineno">  657</span>&#160;        <a class="code" href="structripple_1_1Keylet.html">Keylet</a> <span class="keyword">const</span> aliceOwnerDirKey{<a class="code" href="namespaceripple_1_1keylet.html#aa9b2ba2df3c3da4cecd1c07cccf7c7f9">keylet::ownerDir</a>(alice.<a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html#a1ea8869f5af6ce774c37b560c6c785c3">id</a>())};</div>
+<div class="line"><a name="l00658"></a><span class="lineno">  658</span>&#160;        {</div>
+<div class="line"><a name="l00659"></a><span class="lineno">  659</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;ReadView const&gt;</a> closed{env.closed()};</div>
+<div class="line"><a name="l00660"></a><span class="lineno">  660</span>&#160;            BEAST_EXPECT(closed-&gt;exists(<a class="code" href="namespaceripple_1_1keylet.html#a50c370db96b4fdcdd202d9c2c38afce9">keylet::account</a>(alice.<a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html#a1ea8869f5af6ce774c37b560c6c785c3">id</a>())));</div>
+<div class="line"><a name="l00661"></a><span class="lineno">  661</span>&#160;            BEAST_EXPECT(closed-&gt;exists(aliceOwnerDirKey));</div>
+<div class="line"><a name="l00662"></a><span class="lineno">  662</span>&#160; </div>
+<div class="line"><a name="l00663"></a><span class="lineno">  663</span>&#160;            <span class="comment">// alice&#39;s directory nodes.</span></div>
+<div class="line"><a name="l00664"></a><span class="lineno">  664</span>&#160;            <span class="keywordflow">for</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> i{0}; i &lt; ((offerCount / 32) + 1); ++i)</div>
+<div class="line"><a name="l00665"></a><span class="lineno">  665</span>&#160;                BEAST_EXPECT(closed-&gt;exists(<a class="code" href="namespaceripple_1_1keylet.html#a7e018eaf4a4da32d3f6f75f864cb85d1">keylet::page</a>(aliceOwnerDirKey, i)));</div>
+<div class="line"><a name="l00666"></a><span class="lineno">  666</span>&#160; </div>
+<div class="line"><a name="l00667"></a><span class="lineno">  667</span>&#160;            <span class="comment">// alice&#39;s offers.</span></div>
+<div class="line"><a name="l00668"></a><span class="lineno">  668</span>&#160;            <span class="keywordflow">for</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> i{0}; i &lt; offerCount; ++i)</div>
+<div class="line"><a name="l00669"></a><span class="lineno">  669</span>&#160;                BEAST_EXPECT(</div>
+<div class="line"><a name="l00670"></a><span class="lineno">  670</span>&#160;                    closed-&gt;exists(<a class="code" href="namespaceripple_1_1keylet.html#a5d33427228ab1869c37fcf11132865f6">keylet::offer</a>(alice.<a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html#a1ea8869f5af6ce774c37b560c6c785c3">id</a>(), offerSeq0 + i)));</div>
+<div class="line"><a name="l00671"></a><span class="lineno">  671</span>&#160;        }</div>
+<div class="line"><a name="l00672"></a><span class="lineno">  672</span>&#160; </div>
+<div class="line"><a name="l00673"></a><span class="lineno">  673</span>&#160;        <span class="comment">// Delete alice&#39;s account.  Should fail because she has too many</span></div>
+<div class="line"><a name="l00674"></a><span class="lineno">  674</span>&#160;        <span class="comment">// offers in her directory.</span></div>
+<div class="line"><a name="l00675"></a><span class="lineno">  675</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> acctDelFee{<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a47271eb5e7eb9b5aada383ccfaf9c0cf">drops</a>(env.current()-&gt;fees().increment)};</div>
+<div class="line"><a name="l00676"></a><span class="lineno">  676</span>&#160; </div>
+<div class="line"><a name="l00677"></a><span class="lineno">  677</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#ada147bbc773967de4235fc8ed1c89562">acctdelete</a>(alice, gw), <a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(acctDelFee), <a class="code" href="classripple_1_1test_1_1jtx_1_1ter.html">ter</a>(<a class="code" href="namespaceripple.html#a75cb21d7f1df42f2fdc8efddb79b63f4ac88fc0c8fed663cca3ccde623c0f3057">tefTOO_BIG</a>));</div>
+<div class="line"><a name="l00678"></a><span class="lineno">  678</span>&#160; </div>
+<div class="line"><a name="l00679"></a><span class="lineno">  679</span>&#160;        <span class="comment">// Cancel one of alice&#39;s offers.  Then the account delete can succeed.</span></div>
+<div class="line"><a name="l00680"></a><span class="lineno">  680</span>&#160;        env.require(<a class="code" href="classripple_1_1test_1_1jtx_1_1owner__count.html">offers</a>(alice, offerCount));</div>
+<div class="line"><a name="l00681"></a><span class="lineno">  681</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#afd83a8b3855491e6341e1753822f7dc0">offer_cancel</a>(alice, offerSeq0));</div>
+<div class="line"><a name="l00682"></a><span class="lineno">  682</span>&#160;        env.close();</div>
+<div class="line"><a name="l00683"></a><span class="lineno">  683</span>&#160;        env.require(<a class="code" href="classripple_1_1test_1_1jtx_1_1owner__count.html">offers</a>(alice, offerCount - 1));</div>
+<div class="line"><a name="l00684"></a><span class="lineno">  684</span>&#160; </div>
+<div class="line"><a name="l00685"></a><span class="lineno">  685</span>&#160;        <span class="comment">// alice successfully deletes her account.</span></div>
+<div class="line"><a name="l00686"></a><span class="lineno">  686</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> alicePreDelBal{env.balance(alice)};</div>
+<div class="line"><a name="l00687"></a><span class="lineno">  687</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#ada147bbc773967de4235fc8ed1c89562">acctdelete</a>(alice, gw), <a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(acctDelFee));</div>
+<div class="line"><a name="l00688"></a><span class="lineno">  688</span>&#160;        <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#a3a2e08d09c040d83aa23d75f8b0fb58d">verifyDeliveredAmount</a>(env, alicePreDelBal - acctDelFee);</div>
+<div class="line"><a name="l00689"></a><span class="lineno">  689</span>&#160;        env.close();</div>
+<div class="line"><a name="l00690"></a><span class="lineno">  690</span>&#160; </div>
+<div class="line"><a name="l00691"></a><span class="lineno">  691</span>&#160;        <span class="comment">// Verify that alice&#39;s account root is gone as well as her directory</span></div>
+<div class="line"><a name="l00692"></a><span class="lineno">  692</span>&#160;        <span class="comment">// nodes and all of her offers.</span></div>
+<div class="line"><a name="l00693"></a><span class="lineno">  693</span>&#160;        {</div>
+<div class="line"><a name="l00694"></a><span class="lineno">  694</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;ReadView const&gt;</a> closed{env.closed()};</div>
+<div class="line"><a name="l00695"></a><span class="lineno">  695</span>&#160;            BEAST_EXPECT(!closed-&gt;exists(<a class="code" href="namespaceripple_1_1keylet.html#a50c370db96b4fdcdd202d9c2c38afce9">keylet::account</a>(alice.<a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html#a1ea8869f5af6ce774c37b560c6c785c3">id</a>())));</div>
+<div class="line"><a name="l00696"></a><span class="lineno">  696</span>&#160;            BEAST_EXPECT(!closed-&gt;exists(aliceOwnerDirKey));</div>
+<div class="line"><a name="l00697"></a><span class="lineno">  697</span>&#160; </div>
+<div class="line"><a name="l00698"></a><span class="lineno">  698</span>&#160;            <span class="comment">// alice&#39;s former directory nodes.</span></div>
+<div class="line"><a name="l00699"></a><span class="lineno">  699</span>&#160;            <span class="keywordflow">for</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> i{0}; i &lt; ((offerCount / 32) + 1); ++i)</div>
+<div class="line"><a name="l00700"></a><span class="lineno">  700</span>&#160;                BEAST_EXPECT(</div>
+<div class="line"><a name="l00701"></a><span class="lineno">  701</span>&#160;                    !closed-&gt;exists(<a class="code" href="namespaceripple_1_1keylet.html#a7e018eaf4a4da32d3f6f75f864cb85d1">keylet::page</a>(aliceOwnerDirKey, i)));</div>
+<div class="line"><a name="l00702"></a><span class="lineno">  702</span>&#160; </div>
+<div class="line"><a name="l00703"></a><span class="lineno">  703</span>&#160;            <span class="comment">// alice&#39;s former offers.</span></div>
+<div class="line"><a name="l00704"></a><span class="lineno">  704</span>&#160;            <span class="keywordflow">for</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> i{0}; i &lt; offerCount; ++i)</div>
+<div class="line"><a name="l00705"></a><span class="lineno">  705</span>&#160;                BEAST_EXPECT(</div>
+<div class="line"><a name="l00706"></a><span class="lineno">  706</span>&#160;                    !closed-&gt;exists(<a class="code" href="namespaceripple_1_1keylet.html#a5d33427228ab1869c37fcf11132865f6">keylet::offer</a>(alice.<a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html#a1ea8869f5af6ce774c37b560c6c785c3">id</a>(), offerSeq0 + i)));</div>
+<div class="line"><a name="l00707"></a><span class="lineno">  707</span>&#160;        }</div>
+<div class="line"><a name="l00708"></a><span class="lineno">  708</span>&#160;    }</div>
+<div class="line"><a name="l00709"></a><span class="lineno">  709</span>&#160; </div>
+<div class="line"><a name="l00710"></a><span class="lineno">  710</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00711"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1AccountDelete__test.html#af9b88be1918a8fe91a3c7cd9d54207de">  711</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#af9b88be1918a8fe91a3c7cd9d54207de">testImplicitlyCreatedTrustline</a>()</div>
+<div class="line"><a name="l00712"></a><span class="lineno">  712</span>&#160;    {</div>
+<div class="line"><a name="l00713"></a><span class="lineno">  713</span>&#160;        <span class="comment">// Show that a trust line that is implicitly created by offer crossing</span></div>
+<div class="line"><a name="l00714"></a><span class="lineno">  714</span>&#160;        <span class="comment">// prevents an account from being deleted.</span></div>
+<div class="line"><a name="l00715"></a><span class="lineno">  715</span>&#160;        <span class="keyword">using namespace </span>jtx;</div>
+<div class="line"><a name="l00716"></a><span class="lineno">  716</span>&#160; </div>
+<div class="line"><a name="l00717"></a><span class="lineno">  717</span>&#160;        testcase(<span class="stringliteral">&quot;Implicitly created trust line&quot;</span>);</div>
+<div class="line"><a name="l00718"></a><span class="lineno">  718</span>&#160; </div>
+<div class="line"><a name="l00719"></a><span class="lineno">  719</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env{*<span class="keyword">this</span>};</div>
+<div class="line"><a name="l00720"></a><span class="lineno">  720</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span> alice{<span class="stringliteral">&quot;alice&quot;</span>};</div>
+<div class="line"><a name="l00721"></a><span class="lineno">  721</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span> gw{<span class="stringliteral">&quot;gw&quot;</span>};</div>
+<div class="line"><a name="l00722"></a><span class="lineno">  722</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> BUX{gw[<span class="stringliteral">&quot;BUX&quot;</span>]};</div>
 <div class="line"><a name="l00723"></a><span class="lineno">  723</span>&#160; </div>
-<div class="line"><a name="l00724"></a><span class="lineno">  724</span>&#160;        <span class="comment">// alice creates an offer that, if crossed, will implicitly create</span></div>
-<div class="line"><a name="l00725"></a><span class="lineno">  725</span>&#160;        <span class="comment">// a trust line.</span></div>
-<div class="line"><a name="l00726"></a><span class="lineno">  726</span>&#160;        env(offer(alice, BUX(30), <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(30)));</div>
-<div class="line"><a name="l00727"></a><span class="lineno">  727</span>&#160;        env.close();</div>
-<div class="line"><a name="l00728"></a><span class="lineno">  728</span>&#160; </div>
-<div class="line"><a name="l00729"></a><span class="lineno">  729</span>&#160;        <span class="comment">// gw crosses alice&#39;s offer.  alice should end up with BUX(30).</span></div>
-<div class="line"><a name="l00730"></a><span class="lineno">  730</span>&#160;        env(offer(gw, <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(30), BUX(30)));</div>
-<div class="line"><a name="l00731"></a><span class="lineno">  731</span>&#160;        env.close();</div>
-<div class="line"><a name="l00732"></a><span class="lineno">  732</span>&#160;        env.require(<a class="code" href="classripple_1_1test_1_1jtx_1_1balance.html">balance</a>(alice, BUX(30)));</div>
-<div class="line"><a name="l00733"></a><span class="lineno">  733</span>&#160; </div>
-<div class="line"><a name="l00734"></a><span class="lineno">  734</span>&#160;        <span class="comment">// Close enough ledgers to be able to delete alice&#39;s account.</span></div>
-<div class="line"><a name="l00735"></a><span class="lineno">  735</span>&#160;        <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#a5c5e1833684dc58172ce991221cf0be5">incLgrSeqForAccDel</a>(env, alice);</div>
+<div class="line"><a name="l00724"></a><span class="lineno">  724</span>&#160;        env.fund(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(10000), alice, gw);</div>
+<div class="line"><a name="l00725"></a><span class="lineno">  725</span>&#160;        env.close();</div>
+<div class="line"><a name="l00726"></a><span class="lineno">  726</span>&#160; </div>
+<div class="line"><a name="l00727"></a><span class="lineno">  727</span>&#160;        <span class="comment">// alice creates an offer that, if crossed, will implicitly create</span></div>
+<div class="line"><a name="l00728"></a><span class="lineno">  728</span>&#160;        <span class="comment">// a trust line.</span></div>
+<div class="line"><a name="l00729"></a><span class="lineno">  729</span>&#160;        env(offer(alice, BUX(30), <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(30)));</div>
+<div class="line"><a name="l00730"></a><span class="lineno">  730</span>&#160;        env.close();</div>
+<div class="line"><a name="l00731"></a><span class="lineno">  731</span>&#160; </div>
+<div class="line"><a name="l00732"></a><span class="lineno">  732</span>&#160;        <span class="comment">// gw crosses alice&#39;s offer.  alice should end up with BUX(30).</span></div>
+<div class="line"><a name="l00733"></a><span class="lineno">  733</span>&#160;        env(offer(gw, <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(30), BUX(30)));</div>
+<div class="line"><a name="l00734"></a><span class="lineno">  734</span>&#160;        env.close();</div>
+<div class="line"><a name="l00735"></a><span class="lineno">  735</span>&#160;        env.require(<a class="code" href="classripple_1_1test_1_1jtx_1_1balance.html">balance</a>(alice, BUX(30)));</div>
 <div class="line"><a name="l00736"></a><span class="lineno">  736</span>&#160; </div>
-<div class="line"><a name="l00737"></a><span class="lineno">  737</span>&#160;        <span class="comment">// alice and gw can&#39;t delete their accounts because of the implicitly</span></div>
-<div class="line"><a name="l00738"></a><span class="lineno">  738</span>&#160;        <span class="comment">// created trust line.</span></div>
-<div class="line"><a name="l00739"></a><span class="lineno">  739</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> acctDelFee{<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a47271eb5e7eb9b5aada383ccfaf9c0cf">drops</a>(env.current()-&gt;fees().increment)};</div>
-<div class="line"><a name="l00740"></a><span class="lineno">  740</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#ada147bbc773967de4235fc8ed1c89562">acctdelete</a>(alice, gw), <a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(acctDelFee), <a class="code" href="classripple_1_1test_1_1jtx_1_1ter.html">ter</a>(<a class="code" href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38caa7460a5fac26c1d8abef55b8c1129150">tecHAS_OBLIGATIONS</a>));</div>
-<div class="line"><a name="l00741"></a><span class="lineno">  741</span>&#160;        env.close();</div>
-<div class="line"><a name="l00742"></a><span class="lineno">  742</span>&#160; </div>
-<div class="line"><a name="l00743"></a><span class="lineno">  743</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#ada147bbc773967de4235fc8ed1c89562">acctdelete</a>(gw, alice), <a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(acctDelFee), <a class="code" href="classripple_1_1test_1_1jtx_1_1ter.html">ter</a>(<a class="code" href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38caa7460a5fac26c1d8abef55b8c1129150">tecHAS_OBLIGATIONS</a>));</div>
+<div class="line"><a name="l00737"></a><span class="lineno">  737</span>&#160;        <span class="comment">// Close enough ledgers to be able to delete alice&#39;s account.</span></div>
+<div class="line"><a name="l00738"></a><span class="lineno">  738</span>&#160;        <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#a5c5e1833684dc58172ce991221cf0be5">incLgrSeqForAccDel</a>(env, alice);</div>
+<div class="line"><a name="l00739"></a><span class="lineno">  739</span>&#160; </div>
+<div class="line"><a name="l00740"></a><span class="lineno">  740</span>&#160;        <span class="comment">// alice and gw can&#39;t delete their accounts because of the implicitly</span></div>
+<div class="line"><a name="l00741"></a><span class="lineno">  741</span>&#160;        <span class="comment">// created trust line.</span></div>
+<div class="line"><a name="l00742"></a><span class="lineno">  742</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> acctDelFee{<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a47271eb5e7eb9b5aada383ccfaf9c0cf">drops</a>(env.current()-&gt;fees().increment)};</div>
+<div class="line"><a name="l00743"></a><span class="lineno">  743</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#ada147bbc773967de4235fc8ed1c89562">acctdelete</a>(alice, gw), <a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(acctDelFee), <a class="code" href="classripple_1_1test_1_1jtx_1_1ter.html">ter</a>(<a class="code" href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38caa7460a5fac26c1d8abef55b8c1129150">tecHAS_OBLIGATIONS</a>));</div>
 <div class="line"><a name="l00744"></a><span class="lineno">  744</span>&#160;        env.close();</div>
-<div class="line"><a name="l00745"></a><span class="lineno">  745</span>&#160;        {</div>
-<div class="line"><a name="l00746"></a><span class="lineno">  746</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;ReadView const&gt;</a> closed{env.closed()};</div>
-<div class="line"><a name="l00747"></a><span class="lineno">  747</span>&#160;            BEAST_EXPECT(closed-&gt;exists(<a class="code" href="namespaceripple_1_1keylet.html#a50c370db96b4fdcdd202d9c2c38afce9">keylet::account</a>(alice.id())));</div>
-<div class="line"><a name="l00748"></a><span class="lineno">  748</span>&#160;            BEAST_EXPECT(closed-&gt;exists(<a class="code" href="namespaceripple_1_1keylet.html#a50c370db96b4fdcdd202d9c2c38afce9">keylet::account</a>(gw.id())));</div>
-<div class="line"><a name="l00749"></a><span class="lineno">  749</span>&#160;        }</div>
-<div class="line"><a name="l00750"></a><span class="lineno">  750</span>&#160;    }</div>
-<div class="line"><a name="l00751"></a><span class="lineno">  751</span>&#160; </div>
-<div class="line"><a name="l00752"></a><span class="lineno">  752</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00753"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1AccountDelete__test.html#a2fb47d7436dbfb81c8114305d78adddd">  753</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#a2fb47d7436dbfb81c8114305d78adddd">testBalanceTooSmallForFee</a>()</div>
-<div class="line"><a name="l00754"></a><span class="lineno">  754</span>&#160;    {</div>
-<div class="line"><a name="l00755"></a><span class="lineno">  755</span>&#160;        <span class="comment">// See what happens when an account with a balance less than the</span></div>
-<div class="line"><a name="l00756"></a><span class="lineno">  756</span>&#160;        <span class="comment">// incremental reserve tries to delete itself.</span></div>
-<div class="line"><a name="l00757"></a><span class="lineno">  757</span>&#160;        <span class="keyword">using namespace </span>jtx;</div>
-<div class="line"><a name="l00758"></a><span class="lineno">  758</span>&#160; </div>
-<div class="line"><a name="l00759"></a><span class="lineno">  759</span>&#160;        testcase(<span class="stringliteral">&quot;Balance too small for fee&quot;</span>);</div>
-<div class="line"><a name="l00760"></a><span class="lineno">  760</span>&#160; </div>
-<div class="line"><a name="l00761"></a><span class="lineno">  761</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env{*<span class="keyword">this</span>};</div>
-<div class="line"><a name="l00762"></a><span class="lineno">  762</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span> alice(<span class="stringliteral">&quot;alice&quot;</span>);</div>
+<div class="line"><a name="l00745"></a><span class="lineno">  745</span>&#160; </div>
+<div class="line"><a name="l00746"></a><span class="lineno">  746</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#ada147bbc773967de4235fc8ed1c89562">acctdelete</a>(gw, alice), <a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(acctDelFee), <a class="code" href="classripple_1_1test_1_1jtx_1_1ter.html">ter</a>(<a class="code" href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38caa7460a5fac26c1d8abef55b8c1129150">tecHAS_OBLIGATIONS</a>));</div>
+<div class="line"><a name="l00747"></a><span class="lineno">  747</span>&#160;        env.close();</div>
+<div class="line"><a name="l00748"></a><span class="lineno">  748</span>&#160;        {</div>
+<div class="line"><a name="l00749"></a><span class="lineno">  749</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;ReadView const&gt;</a> closed{env.closed()};</div>
+<div class="line"><a name="l00750"></a><span class="lineno">  750</span>&#160;            BEAST_EXPECT(closed-&gt;exists(<a class="code" href="namespaceripple_1_1keylet.html#a50c370db96b4fdcdd202d9c2c38afce9">keylet::account</a>(alice.id())));</div>
+<div class="line"><a name="l00751"></a><span class="lineno">  751</span>&#160;            BEAST_EXPECT(closed-&gt;exists(<a class="code" href="namespaceripple_1_1keylet.html#a50c370db96b4fdcdd202d9c2c38afce9">keylet::account</a>(gw.id())));</div>
+<div class="line"><a name="l00752"></a><span class="lineno">  752</span>&#160;        }</div>
+<div class="line"><a name="l00753"></a><span class="lineno">  753</span>&#160;    }</div>
+<div class="line"><a name="l00754"></a><span class="lineno">  754</span>&#160; </div>
+<div class="line"><a name="l00755"></a><span class="lineno">  755</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00756"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1AccountDelete__test.html#a2fb47d7436dbfb81c8114305d78adddd">  756</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#a2fb47d7436dbfb81c8114305d78adddd">testBalanceTooSmallForFee</a>()</div>
+<div class="line"><a name="l00757"></a><span class="lineno">  757</span>&#160;    {</div>
+<div class="line"><a name="l00758"></a><span class="lineno">  758</span>&#160;        <span class="comment">// See what happens when an account with a balance less than the</span></div>
+<div class="line"><a name="l00759"></a><span class="lineno">  759</span>&#160;        <span class="comment">// incremental reserve tries to delete itself.</span></div>
+<div class="line"><a name="l00760"></a><span class="lineno">  760</span>&#160;        <span class="keyword">using namespace </span>jtx;</div>
+<div class="line"><a name="l00761"></a><span class="lineno">  761</span>&#160; </div>
+<div class="line"><a name="l00762"></a><span class="lineno">  762</span>&#160;        testcase(<span class="stringliteral">&quot;Balance too small for fee&quot;</span>);</div>
 <div class="line"><a name="l00763"></a><span class="lineno">  763</span>&#160; </div>
-<div class="line"><a name="l00764"></a><span class="lineno">  764</span>&#160;        <span class="comment">// Note that the fee structure for unit tests does not match the fees</span></div>
-<div class="line"><a name="l00765"></a><span class="lineno">  765</span>&#160;        <span class="comment">// on the production network (October 2019).  Unit tests have a base</span></div>
-<div class="line"><a name="l00766"></a><span class="lineno">  766</span>&#160;        <span class="comment">// reserve of 200 XRP.</span></div>
-<div class="line"><a name="l00767"></a><span class="lineno">  767</span>&#160;        env.fund(env.current()-&gt;fees().accountReserve(0), <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a878af2c3339d93c7ad690135ce33e67a">noripple</a>(alice));</div>
-<div class="line"><a name="l00768"></a><span class="lineno">  768</span>&#160;        env.close();</div>
-<div class="line"><a name="l00769"></a><span class="lineno">  769</span>&#160; </div>
-<div class="line"><a name="l00770"></a><span class="lineno">  770</span>&#160;        <span class="comment">// Burn a chunk of alice&#39;s funds so she only has 1 XRP remaining in</span></div>
-<div class="line"><a name="l00771"></a><span class="lineno">  771</span>&#160;        <span class="comment">// her account.</span></div>
-<div class="line"><a name="l00772"></a><span class="lineno">  772</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a95abf901db0a698e0c97d00476c95f34">noop</a>(alice), <a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(env.balance(alice) - <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(1)));</div>
-<div class="line"><a name="l00773"></a><span class="lineno">  773</span>&#160;        env.close();</div>
-<div class="line"><a name="l00774"></a><span class="lineno">  774</span>&#160; </div>
-<div class="line"><a name="l00775"></a><span class="lineno">  775</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> acctDelFee{<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a47271eb5e7eb9b5aada383ccfaf9c0cf">drops</a>(env.current()-&gt;fees().increment)};</div>
-<div class="line"><a name="l00776"></a><span class="lineno">  776</span>&#160;        BEAST_EXPECT(acctDelFee &gt; env.balance(alice));</div>
+<div class="line"><a name="l00764"></a><span class="lineno">  764</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env{*<span class="keyword">this</span>};</div>
+<div class="line"><a name="l00765"></a><span class="lineno">  765</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span> alice(<span class="stringliteral">&quot;alice&quot;</span>);</div>
+<div class="line"><a name="l00766"></a><span class="lineno">  766</span>&#160; </div>
+<div class="line"><a name="l00767"></a><span class="lineno">  767</span>&#160;        <span class="comment">// Note that the fee structure for unit tests does not match the fees</span></div>
+<div class="line"><a name="l00768"></a><span class="lineno">  768</span>&#160;        <span class="comment">// on the production network (October 2019).  Unit tests have a base</span></div>
+<div class="line"><a name="l00769"></a><span class="lineno">  769</span>&#160;        <span class="comment">// reserve of 200 XRP.</span></div>
+<div class="line"><a name="l00770"></a><span class="lineno">  770</span>&#160;        env.fund(env.current()-&gt;fees().accountReserve(0), <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a878af2c3339d93c7ad690135ce33e67a">noripple</a>(alice));</div>
+<div class="line"><a name="l00771"></a><span class="lineno">  771</span>&#160;        env.close();</div>
+<div class="line"><a name="l00772"></a><span class="lineno">  772</span>&#160; </div>
+<div class="line"><a name="l00773"></a><span class="lineno">  773</span>&#160;        <span class="comment">// Burn a chunk of alice&#39;s funds so she only has 1 XRP remaining in</span></div>
+<div class="line"><a name="l00774"></a><span class="lineno">  774</span>&#160;        <span class="comment">// her account.</span></div>
+<div class="line"><a name="l00775"></a><span class="lineno">  775</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a95abf901db0a698e0c97d00476c95f34">noop</a>(alice), <a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(env.balance(alice) - <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(1)));</div>
+<div class="line"><a name="l00776"></a><span class="lineno">  776</span>&#160;        env.close();</div>
 <div class="line"><a name="l00777"></a><span class="lineno">  777</span>&#160; </div>
-<div class="line"><a name="l00778"></a><span class="lineno">  778</span>&#160;        <span class="comment">// alice attempts to delete her account even though she can&#39;t pay</span></div>
-<div class="line"><a name="l00779"></a><span class="lineno">  779</span>&#160;        <span class="comment">// the full fee.  She specifies a fee that is larger than her balance.</span></div>
-<div class="line"><a name="l00780"></a><span class="lineno">  780</span>&#160;        <span class="comment">//</span></div>
-<div class="line"><a name="l00781"></a><span class="lineno">  781</span>&#160;        <span class="comment">// The balance of env.master should not change.</span></div>
-<div class="line"><a name="l00782"></a><span class="lineno">  782</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> masterBalance{env.balance(env.master)};</div>
-<div class="line"><a name="l00783"></a><span class="lineno">  783</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#ada147bbc773967de4235fc8ed1c89562">acctdelete</a>(alice, env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html#ad72de397f7ac10115b92a1d8691a8e2e">master</a>),</div>
-<div class="line"><a name="l00784"></a><span class="lineno">  784</span>&#160;            <a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(acctDelFee),</div>
-<div class="line"><a name="l00785"></a><span class="lineno">  785</span>&#160;            <a class="code" href="classripple_1_1test_1_1jtx_1_1ter.html">ter</a>(<a class="code" href="namespaceripple.html#adebe4d783be9c979e67fdbb2bc27162fa48941f01fb3df9460afe5bbb9fa76ba1">terINSUF_FEE_B</a>));</div>
-<div class="line"><a name="l00786"></a><span class="lineno">  786</span>&#160;        env.close();</div>
-<div class="line"><a name="l00787"></a><span class="lineno">  787</span>&#160;        {</div>
-<div class="line"><a name="l00788"></a><span class="lineno">  788</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;ReadView const&gt;</a> <span class="keyword">const</span> closed{env.closed()};</div>
-<div class="line"><a name="l00789"></a><span class="lineno">  789</span>&#160;            BEAST_EXPECT(closed-&gt;exists(<a class="code" href="namespaceripple_1_1keylet.html#a50c370db96b4fdcdd202d9c2c38afce9">keylet::account</a>(alice.<a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html#a1ea8869f5af6ce774c37b560c6c785c3">id</a>())));</div>
-<div class="line"><a name="l00790"></a><span class="lineno">  790</span>&#160;            BEAST_EXPECT(env.balance(env.master) == masterBalance);</div>
-<div class="line"><a name="l00791"></a><span class="lineno">  791</span>&#160;        }</div>
-<div class="line"><a name="l00792"></a><span class="lineno">  792</span>&#160; </div>
-<div class="line"><a name="l00793"></a><span class="lineno">  793</span>&#160;        <span class="comment">// alice again attempts to delete her account.  This time she specifies</span></div>
-<div class="line"><a name="l00794"></a><span class="lineno">  794</span>&#160;        <span class="comment">// her current balance in XRP.  Again the transaction fails.</span></div>
-<div class="line"><a name="l00795"></a><span class="lineno">  795</span>&#160;        BEAST_EXPECT(env.balance(alice) == <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(1));</div>
-<div class="line"><a name="l00796"></a><span class="lineno">  796</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#ada147bbc773967de4235fc8ed1c89562">acctdelete</a>(alice, env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html#ad72de397f7ac10115b92a1d8691a8e2e">master</a>), <a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(1)), <a class="code" href="classripple_1_1test_1_1jtx_1_1ter.html">ter</a>(<a class="code" href="namespaceripple.html#a260d2970ac1119109937ed1c5d4ca962a595a44bbc04dffad91a353227660d6ba">telINSUF_FEE_P</a>));</div>
-<div class="line"><a name="l00797"></a><span class="lineno">  797</span>&#160;        env.close();</div>
-<div class="line"><a name="l00798"></a><span class="lineno">  798</span>&#160;        {</div>
-<div class="line"><a name="l00799"></a><span class="lineno">  799</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;ReadView const&gt;</a> closed{env.closed()};</div>
-<div class="line"><a name="l00800"></a><span class="lineno">  800</span>&#160;            BEAST_EXPECT(closed-&gt;exists(<a class="code" href="namespaceripple_1_1keylet.html#a50c370db96b4fdcdd202d9c2c38afce9">keylet::account</a>(alice.<a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html#a1ea8869f5af6ce774c37b560c6c785c3">id</a>())));</div>
-<div class="line"><a name="l00801"></a><span class="lineno">  801</span>&#160;            BEAST_EXPECT(env.balance(env.master) == masterBalance);</div>
-<div class="line"><a name="l00802"></a><span class="lineno">  802</span>&#160;        }</div>
-<div class="line"><a name="l00803"></a><span class="lineno">  803</span>&#160;    }</div>
-<div class="line"><a name="l00804"></a><span class="lineno">  804</span>&#160; </div>
-<div class="line"><a name="l00805"></a><span class="lineno">  805</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00806"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1AccountDelete__test.html#a031c45de38a9ea352bf440f6bd9b60e8">  806</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#a031c45de38a9ea352bf440f6bd9b60e8">testWithTickets</a>()</div>
-<div class="line"><a name="l00807"></a><span class="lineno">  807</span>&#160;    {</div>
-<div class="line"><a name="l00808"></a><span class="lineno">  808</span>&#160;        testcase(<span class="stringliteral">&quot;With Tickets&quot;</span>);</div>
-<div class="line"><a name="l00809"></a><span class="lineno">  809</span>&#160; </div>
-<div class="line"><a name="l00810"></a><span class="lineno">  810</span>&#160;        <span class="keyword">using namespace </span>test::jtx;</div>
-<div class="line"><a name="l00811"></a><span class="lineno">  811</span>&#160; </div>
-<div class="line"><a name="l00812"></a><span class="lineno">  812</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span> alice{<span class="stringliteral">&quot;alice&quot;</span>};</div>
-<div class="line"><a name="l00813"></a><span class="lineno">  813</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span> bob{<span class="stringliteral">&quot;bob&quot;</span>};</div>
+<div class="line"><a name="l00778"></a><span class="lineno">  778</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> acctDelFee{<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a47271eb5e7eb9b5aada383ccfaf9c0cf">drops</a>(env.current()-&gt;fees().increment)};</div>
+<div class="line"><a name="l00779"></a><span class="lineno">  779</span>&#160;        BEAST_EXPECT(acctDelFee &gt; env.balance(alice));</div>
+<div class="line"><a name="l00780"></a><span class="lineno">  780</span>&#160; </div>
+<div class="line"><a name="l00781"></a><span class="lineno">  781</span>&#160;        <span class="comment">// alice attempts to delete her account even though she can&#39;t pay</span></div>
+<div class="line"><a name="l00782"></a><span class="lineno">  782</span>&#160;        <span class="comment">// the full fee.  She specifies a fee that is larger than her balance.</span></div>
+<div class="line"><a name="l00783"></a><span class="lineno">  783</span>&#160;        <span class="comment">//</span></div>
+<div class="line"><a name="l00784"></a><span class="lineno">  784</span>&#160;        <span class="comment">// The balance of env.master should not change.</span></div>
+<div class="line"><a name="l00785"></a><span class="lineno">  785</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> masterBalance{env.balance(env.master)};</div>
+<div class="line"><a name="l00786"></a><span class="lineno">  786</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#ada147bbc773967de4235fc8ed1c89562">acctdelete</a>(alice, env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html#ad72de397f7ac10115b92a1d8691a8e2e">master</a>),</div>
+<div class="line"><a name="l00787"></a><span class="lineno">  787</span>&#160;            <a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(acctDelFee),</div>
+<div class="line"><a name="l00788"></a><span class="lineno">  788</span>&#160;            <a class="code" href="classripple_1_1test_1_1jtx_1_1ter.html">ter</a>(<a class="code" href="namespaceripple.html#adebe4d783be9c979e67fdbb2bc27162fa48941f01fb3df9460afe5bbb9fa76ba1">terINSUF_FEE_B</a>));</div>
+<div class="line"><a name="l00789"></a><span class="lineno">  789</span>&#160;        env.close();</div>
+<div class="line"><a name="l00790"></a><span class="lineno">  790</span>&#160;        {</div>
+<div class="line"><a name="l00791"></a><span class="lineno">  791</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;ReadView const&gt;</a> <span class="keyword">const</span> closed{env.closed()};</div>
+<div class="line"><a name="l00792"></a><span class="lineno">  792</span>&#160;            BEAST_EXPECT(closed-&gt;exists(<a class="code" href="namespaceripple_1_1keylet.html#a50c370db96b4fdcdd202d9c2c38afce9">keylet::account</a>(alice.<a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html#a1ea8869f5af6ce774c37b560c6c785c3">id</a>())));</div>
+<div class="line"><a name="l00793"></a><span class="lineno">  793</span>&#160;            BEAST_EXPECT(env.balance(env.master) == masterBalance);</div>
+<div class="line"><a name="l00794"></a><span class="lineno">  794</span>&#160;        }</div>
+<div class="line"><a name="l00795"></a><span class="lineno">  795</span>&#160; </div>
+<div class="line"><a name="l00796"></a><span class="lineno">  796</span>&#160;        <span class="comment">// alice again attempts to delete her account.  This time she specifies</span></div>
+<div class="line"><a name="l00797"></a><span class="lineno">  797</span>&#160;        <span class="comment">// her current balance in XRP.  Again the transaction fails.</span></div>
+<div class="line"><a name="l00798"></a><span class="lineno">  798</span>&#160;        BEAST_EXPECT(env.balance(alice) == <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(1));</div>
+<div class="line"><a name="l00799"></a><span class="lineno">  799</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#ada147bbc773967de4235fc8ed1c89562">acctdelete</a>(alice, env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html#ad72de397f7ac10115b92a1d8691a8e2e">master</a>), <a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(1)), <a class="code" href="classripple_1_1test_1_1jtx_1_1ter.html">ter</a>(<a class="code" href="namespaceripple.html#a260d2970ac1119109937ed1c5d4ca962a595a44bbc04dffad91a353227660d6ba">telINSUF_FEE_P</a>));</div>
+<div class="line"><a name="l00800"></a><span class="lineno">  800</span>&#160;        env.close();</div>
+<div class="line"><a name="l00801"></a><span class="lineno">  801</span>&#160;        {</div>
+<div class="line"><a name="l00802"></a><span class="lineno">  802</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;ReadView const&gt;</a> closed{env.closed()};</div>
+<div class="line"><a name="l00803"></a><span class="lineno">  803</span>&#160;            BEAST_EXPECT(closed-&gt;exists(<a class="code" href="namespaceripple_1_1keylet.html#a50c370db96b4fdcdd202d9c2c38afce9">keylet::account</a>(alice.<a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html#a1ea8869f5af6ce774c37b560c6c785c3">id</a>())));</div>
+<div class="line"><a name="l00804"></a><span class="lineno">  804</span>&#160;            BEAST_EXPECT(env.balance(env.master) == masterBalance);</div>
+<div class="line"><a name="l00805"></a><span class="lineno">  805</span>&#160;        }</div>
+<div class="line"><a name="l00806"></a><span class="lineno">  806</span>&#160;    }</div>
+<div class="line"><a name="l00807"></a><span class="lineno">  807</span>&#160; </div>
+<div class="line"><a name="l00808"></a><span class="lineno">  808</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00809"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1AccountDelete__test.html#a031c45de38a9ea352bf440f6bd9b60e8">  809</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#a031c45de38a9ea352bf440f6bd9b60e8">testWithTickets</a>()</div>
+<div class="line"><a name="l00810"></a><span class="lineno">  810</span>&#160;    {</div>
+<div class="line"><a name="l00811"></a><span class="lineno">  811</span>&#160;        testcase(<span class="stringliteral">&quot;With Tickets&quot;</span>);</div>
+<div class="line"><a name="l00812"></a><span class="lineno">  812</span>&#160; </div>
+<div class="line"><a name="l00813"></a><span class="lineno">  813</span>&#160;        <span class="keyword">using namespace </span>test::jtx;</div>
 <div class="line"><a name="l00814"></a><span class="lineno">  814</span>&#160; </div>
-<div class="line"><a name="l00815"></a><span class="lineno">  815</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env{*<span class="keyword">this</span>};</div>
-<div class="line"><a name="l00816"></a><span class="lineno">  816</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#ae2349266cb09d1f1c3de06606ebdf9e2">fund</a>(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(100000), alice, bob);</div>
-<div class="line"><a name="l00817"></a><span class="lineno">  817</span>&#160;        env.close();</div>
-<div class="line"><a name="l00818"></a><span class="lineno">  818</span>&#160; </div>
-<div class="line"><a name="l00819"></a><span class="lineno">  819</span>&#160;        <span class="comment">// bob grabs as many tickets as he is allowed to have.</span></div>
-<div class="line"><a name="l00820"></a><span class="lineno">  820</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> <span class="keyword">const</span> ticketSeq{env.seq(bob) + 1};</div>
-<div class="line"><a name="l00821"></a><span class="lineno">  821</span>&#160;        env(ticket::create(bob, 250));</div>
-<div class="line"><a name="l00822"></a><span class="lineno">  822</span>&#160;        env.close();</div>
-<div class="line"><a name="l00823"></a><span class="lineno">  823</span>&#160;        env.require(<a class="code" href="classripple_1_1test_1_1jtx_1_1owners.html">owners</a>(bob, 250));</div>
-<div class="line"><a name="l00824"></a><span class="lineno">  824</span>&#160; </div>
-<div class="line"><a name="l00825"></a><span class="lineno">  825</span>&#160;        {</div>
-<div class="line"><a name="l00826"></a><span class="lineno">  826</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;ReadView const&gt;</a> closed{env.closed()};</div>
-<div class="line"><a name="l00827"></a><span class="lineno">  827</span>&#160;            BEAST_EXPECT(closed-&gt;exists(<a class="code" href="namespaceripple_1_1keylet.html#a50c370db96b4fdcdd202d9c2c38afce9">keylet::account</a>(bob.id())));</div>
-<div class="line"><a name="l00828"></a><span class="lineno">  828</span>&#160;            <span class="keywordflow">for</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> i = 0; i &lt; 250; ++i)</div>
-<div class="line"><a name="l00829"></a><span class="lineno">  829</span>&#160;            {</div>
-<div class="line"><a name="l00830"></a><span class="lineno">  830</span>&#160;                BEAST_EXPECT(</div>
-<div class="line"><a name="l00831"></a><span class="lineno">  831</span>&#160;                    closed-&gt;exists(<a class="code" href="namespaceripple_1_1keylet.html#ae59cd86187ff4936a91b183ec2ea1bf9">keylet::ticket</a>(bob.id(), ticketSeq + i)));</div>
-<div class="line"><a name="l00832"></a><span class="lineno">  832</span>&#160;            }</div>
-<div class="line"><a name="l00833"></a><span class="lineno">  833</span>&#160;        }</div>
-<div class="line"><a name="l00834"></a><span class="lineno">  834</span>&#160; </div>
-<div class="line"><a name="l00835"></a><span class="lineno">  835</span>&#160;        <span class="comment">// Close enough ledgers to be able to delete bob&#39;s account.</span></div>
-<div class="line"><a name="l00836"></a><span class="lineno">  836</span>&#160;        <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#a5c5e1833684dc58172ce991221cf0be5">incLgrSeqForAccDel</a>(env, bob);</div>
+<div class="line"><a name="l00815"></a><span class="lineno">  815</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span> alice{<span class="stringliteral">&quot;alice&quot;</span>};</div>
+<div class="line"><a name="l00816"></a><span class="lineno">  816</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span> bob{<span class="stringliteral">&quot;bob&quot;</span>};</div>
+<div class="line"><a name="l00817"></a><span class="lineno">  817</span>&#160; </div>
+<div class="line"><a name="l00818"></a><span class="lineno">  818</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env{*<span class="keyword">this</span>};</div>
+<div class="line"><a name="l00819"></a><span class="lineno">  819</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#ae2349266cb09d1f1c3de06606ebdf9e2">fund</a>(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(100000), alice, bob);</div>
+<div class="line"><a name="l00820"></a><span class="lineno">  820</span>&#160;        env.close();</div>
+<div class="line"><a name="l00821"></a><span class="lineno">  821</span>&#160; </div>
+<div class="line"><a name="l00822"></a><span class="lineno">  822</span>&#160;        <span class="comment">// bob grabs as many tickets as he is allowed to have.</span></div>
+<div class="line"><a name="l00823"></a><span class="lineno">  823</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> <span class="keyword">const</span> ticketSeq{env.seq(bob) + 1};</div>
+<div class="line"><a name="l00824"></a><span class="lineno">  824</span>&#160;        env(ticket::create(bob, 250));</div>
+<div class="line"><a name="l00825"></a><span class="lineno">  825</span>&#160;        env.close();</div>
+<div class="line"><a name="l00826"></a><span class="lineno">  826</span>&#160;        env.require(<a class="code" href="classripple_1_1test_1_1jtx_1_1owners.html">owners</a>(bob, 250));</div>
+<div class="line"><a name="l00827"></a><span class="lineno">  827</span>&#160; </div>
+<div class="line"><a name="l00828"></a><span class="lineno">  828</span>&#160;        {</div>
+<div class="line"><a name="l00829"></a><span class="lineno">  829</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;ReadView const&gt;</a> closed{env.closed()};</div>
+<div class="line"><a name="l00830"></a><span class="lineno">  830</span>&#160;            BEAST_EXPECT(closed-&gt;exists(<a class="code" href="namespaceripple_1_1keylet.html#a50c370db96b4fdcdd202d9c2c38afce9">keylet::account</a>(bob.id())));</div>
+<div class="line"><a name="l00831"></a><span class="lineno">  831</span>&#160;            <span class="keywordflow">for</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> i = 0; i &lt; 250; ++i)</div>
+<div class="line"><a name="l00832"></a><span class="lineno">  832</span>&#160;            {</div>
+<div class="line"><a name="l00833"></a><span class="lineno">  833</span>&#160;                BEAST_EXPECT(</div>
+<div class="line"><a name="l00834"></a><span class="lineno">  834</span>&#160;                    closed-&gt;exists(<a class="code" href="namespaceripple_1_1keylet.html#ae59cd86187ff4936a91b183ec2ea1bf9">keylet::ticket</a>(bob.id(), ticketSeq + i)));</div>
+<div class="line"><a name="l00835"></a><span class="lineno">  835</span>&#160;            }</div>
+<div class="line"><a name="l00836"></a><span class="lineno">  836</span>&#160;        }</div>
 <div class="line"><a name="l00837"></a><span class="lineno">  837</span>&#160; </div>
-<div class="line"><a name="l00838"></a><span class="lineno">  838</span>&#160;        <span class="comment">// bob deletes his account using a ticket.  bob&#39;s account and all</span></div>
-<div class="line"><a name="l00839"></a><span class="lineno">  839</span>&#160;        <span class="comment">// of his tickets should be removed from the ledger.</span></div>
-<div class="line"><a name="l00840"></a><span class="lineno">  840</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> acctDelFee{<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a47271eb5e7eb9b5aada383ccfaf9c0cf">drops</a>(env.current()-&gt;fees().increment)};</div>
-<div class="line"><a name="l00841"></a><span class="lineno">  841</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> bobOldBalance{env.balance(bob)};</div>
-<div class="line"><a name="l00842"></a><span class="lineno">  842</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#ada147bbc773967de4235fc8ed1c89562">acctdelete</a>(bob, alice), <a class="code" href="classripple_1_1test_1_1jtx_1_1ticket_1_1use.html">ticket::use</a>(ticketSeq), <a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(acctDelFee));</div>
-<div class="line"><a name="l00843"></a><span class="lineno">  843</span>&#160;        <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#a3a2e08d09c040d83aa23d75f8b0fb58d">verifyDeliveredAmount</a>(env, bobOldBalance - acctDelFee);</div>
-<div class="line"><a name="l00844"></a><span class="lineno">  844</span>&#160;        env.close();</div>
-<div class="line"><a name="l00845"></a><span class="lineno">  845</span>&#160;        {</div>
-<div class="line"><a name="l00846"></a><span class="lineno">  846</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;ReadView const&gt;</a> closed{env.closed()};</div>
-<div class="line"><a name="l00847"></a><span class="lineno">  847</span>&#160;            BEAST_EXPECT(!closed-&gt;exists(<a class="code" href="namespaceripple_1_1keylet.html#a50c370db96b4fdcdd202d9c2c38afce9">keylet::account</a>(bob.id())));</div>
-<div class="line"><a name="l00848"></a><span class="lineno">  848</span>&#160;            <span class="keywordflow">for</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> i = 0; i &lt; 250; ++i)</div>
-<div class="line"><a name="l00849"></a><span class="lineno">  849</span>&#160;            {</div>
-<div class="line"><a name="l00850"></a><span class="lineno">  850</span>&#160;                BEAST_EXPECT(</div>
-<div class="line"><a name="l00851"></a><span class="lineno">  851</span>&#160;                    !closed-&gt;exists(<a class="code" href="namespaceripple_1_1keylet.html#ae59cd86187ff4936a91b183ec2ea1bf9">keylet::ticket</a>(bob.id(), ticketSeq + i)));</div>
-<div class="line"><a name="l00852"></a><span class="lineno">  852</span>&#160;            }</div>
-<div class="line"><a name="l00853"></a><span class="lineno">  853</span>&#160;        }</div>
-<div class="line"><a name="l00854"></a><span class="lineno">  854</span>&#160;    }</div>
-<div class="line"><a name="l00855"></a><span class="lineno">  855</span>&#160; </div>
-<div class="line"><a name="l00856"></a><span class="lineno">  856</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00857"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1AccountDelete__test.html#a1b94b395084df1cf1ab3be9c1a68e452">  857</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#a1b94b395084df1cf1ab3be9c1a68e452">testDest</a>()</div>
-<div class="line"><a name="l00858"></a><span class="lineno">  858</span>&#160;    {</div>
-<div class="line"><a name="l00859"></a><span class="lineno">  859</span>&#160;        testcase(<span class="stringliteral">&quot;Destination Constraints&quot;</span>);</div>
-<div class="line"><a name="l00860"></a><span class="lineno">  860</span>&#160; </div>
-<div class="line"><a name="l00861"></a><span class="lineno">  861</span>&#160;        <span class="keyword">using namespace </span>test::jtx;</div>
-<div class="line"><a name="l00862"></a><span class="lineno">  862</span>&#160; </div>
-<div class="line"><a name="l00863"></a><span class="lineno">  863</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span> alice{<span class="stringliteral">&quot;alice&quot;</span>};</div>
-<div class="line"><a name="l00864"></a><span class="lineno">  864</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span> becky{<span class="stringliteral">&quot;becky&quot;</span>};</div>
-<div class="line"><a name="l00865"></a><span class="lineno">  865</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span> carol{<span class="stringliteral">&quot;carol&quot;</span>};</div>
-<div class="line"><a name="l00866"></a><span class="lineno">  866</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span> daria{<span class="stringliteral">&quot;daria&quot;</span>};</div>
-<div class="line"><a name="l00867"></a><span class="lineno">  867</span>&#160; </div>
-<div class="line"><a name="l00868"></a><span class="lineno">  868</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env{*<span class="keyword">this</span>};</div>
-<div class="line"><a name="l00869"></a><span class="lineno">  869</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#ae2349266cb09d1f1c3de06606ebdf9e2">fund</a>(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(100000), alice, becky, carol);</div>
-<div class="line"><a name="l00870"></a><span class="lineno">  870</span>&#160;        env.close();</div>
-<div class="line"><a name="l00871"></a><span class="lineno">  871</span>&#160; </div>
-<div class="line"><a name="l00872"></a><span class="lineno">  872</span>&#160;        <span class="comment">// alice sets the lsfDepositAuth flag on her account.  This should</span></div>
-<div class="line"><a name="l00873"></a><span class="lineno">  873</span>&#160;        <span class="comment">// prevent becky from deleting her account while using alice as the</span></div>
-<div class="line"><a name="l00874"></a><span class="lineno">  874</span>&#160;        <span class="comment">// destination.</span></div>
-<div class="line"><a name="l00875"></a><span class="lineno">  875</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a50cacef3867fc01273aa9c29231f9a7c">fset</a>(alice, <a class="code" href="namespaceripple.html#a1d8ec9af2fd805d04e032c52f6968211">asfDepositAuth</a>));</div>
-<div class="line"><a name="l00876"></a><span class="lineno">  876</span>&#160; </div>
-<div class="line"><a name="l00877"></a><span class="lineno">  877</span>&#160;        <span class="comment">// carol requires a destination tag.</span></div>
-<div class="line"><a name="l00878"></a><span class="lineno">  878</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a50cacef3867fc01273aa9c29231f9a7c">fset</a>(carol, <a class="code" href="namespaceripple.html#a2e3220cb8c660141f5300a9e38841295">asfRequireDest</a>));</div>
-<div class="line"><a name="l00879"></a><span class="lineno">  879</span>&#160;        env.close();</div>
-<div class="line"><a name="l00880"></a><span class="lineno">  880</span>&#160; </div>
-<div class="line"><a name="l00881"></a><span class="lineno">  881</span>&#160;        <span class="comment">// Close enough ledgers to be able to delete becky&#39;s account.</span></div>
-<div class="line"><a name="l00882"></a><span class="lineno">  882</span>&#160;        <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#a5c5e1833684dc58172ce991221cf0be5">incLgrSeqForAccDel</a>(env, becky);</div>
+<div class="line"><a name="l00838"></a><span class="lineno">  838</span>&#160;        <span class="comment">// Close enough ledgers to be able to delete bob&#39;s account.</span></div>
+<div class="line"><a name="l00839"></a><span class="lineno">  839</span>&#160;        <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#a5c5e1833684dc58172ce991221cf0be5">incLgrSeqForAccDel</a>(env, bob);</div>
+<div class="line"><a name="l00840"></a><span class="lineno">  840</span>&#160; </div>
+<div class="line"><a name="l00841"></a><span class="lineno">  841</span>&#160;        <span class="comment">// bob deletes his account using a ticket.  bob&#39;s account and all</span></div>
+<div class="line"><a name="l00842"></a><span class="lineno">  842</span>&#160;        <span class="comment">// of his tickets should be removed from the ledger.</span></div>
+<div class="line"><a name="l00843"></a><span class="lineno">  843</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> acctDelFee{<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a47271eb5e7eb9b5aada383ccfaf9c0cf">drops</a>(env.current()-&gt;fees().increment)};</div>
+<div class="line"><a name="l00844"></a><span class="lineno">  844</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> bobOldBalance{env.balance(bob)};</div>
+<div class="line"><a name="l00845"></a><span class="lineno">  845</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#ada147bbc773967de4235fc8ed1c89562">acctdelete</a>(bob, alice), <a class="code" href="classripple_1_1test_1_1jtx_1_1ticket_1_1use.html">ticket::use</a>(ticketSeq), <a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(acctDelFee));</div>
+<div class="line"><a name="l00846"></a><span class="lineno">  846</span>&#160;        <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#a3a2e08d09c040d83aa23d75f8b0fb58d">verifyDeliveredAmount</a>(env, bobOldBalance - acctDelFee);</div>
+<div class="line"><a name="l00847"></a><span class="lineno">  847</span>&#160;        env.close();</div>
+<div class="line"><a name="l00848"></a><span class="lineno">  848</span>&#160;        {</div>
+<div class="line"><a name="l00849"></a><span class="lineno">  849</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;ReadView const&gt;</a> closed{env.closed()};</div>
+<div class="line"><a name="l00850"></a><span class="lineno">  850</span>&#160;            BEAST_EXPECT(!closed-&gt;exists(<a class="code" href="namespaceripple_1_1keylet.html#a50c370db96b4fdcdd202d9c2c38afce9">keylet::account</a>(bob.id())));</div>
+<div class="line"><a name="l00851"></a><span class="lineno">  851</span>&#160;            <span class="keywordflow">for</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> i = 0; i &lt; 250; ++i)</div>
+<div class="line"><a name="l00852"></a><span class="lineno">  852</span>&#160;            {</div>
+<div class="line"><a name="l00853"></a><span class="lineno">  853</span>&#160;                BEAST_EXPECT(</div>
+<div class="line"><a name="l00854"></a><span class="lineno">  854</span>&#160;                    !closed-&gt;exists(<a class="code" href="namespaceripple_1_1keylet.html#ae59cd86187ff4936a91b183ec2ea1bf9">keylet::ticket</a>(bob.id(), ticketSeq + i)));</div>
+<div class="line"><a name="l00855"></a><span class="lineno">  855</span>&#160;            }</div>
+<div class="line"><a name="l00856"></a><span class="lineno">  856</span>&#160;        }</div>
+<div class="line"><a name="l00857"></a><span class="lineno">  857</span>&#160;    }</div>
+<div class="line"><a name="l00858"></a><span class="lineno">  858</span>&#160; </div>
+<div class="line"><a name="l00859"></a><span class="lineno">  859</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00860"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1AccountDelete__test.html#a1b94b395084df1cf1ab3be9c1a68e452">  860</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#a1b94b395084df1cf1ab3be9c1a68e452">testDest</a>()</div>
+<div class="line"><a name="l00861"></a><span class="lineno">  861</span>&#160;    {</div>
+<div class="line"><a name="l00862"></a><span class="lineno">  862</span>&#160;        testcase(<span class="stringliteral">&quot;Destination Constraints&quot;</span>);</div>
+<div class="line"><a name="l00863"></a><span class="lineno">  863</span>&#160; </div>
+<div class="line"><a name="l00864"></a><span class="lineno">  864</span>&#160;        <span class="keyword">using namespace </span>test::jtx;</div>
+<div class="line"><a name="l00865"></a><span class="lineno">  865</span>&#160; </div>
+<div class="line"><a name="l00866"></a><span class="lineno">  866</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span> alice{<span class="stringliteral">&quot;alice&quot;</span>};</div>
+<div class="line"><a name="l00867"></a><span class="lineno">  867</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span> becky{<span class="stringliteral">&quot;becky&quot;</span>};</div>
+<div class="line"><a name="l00868"></a><span class="lineno">  868</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span> carol{<span class="stringliteral">&quot;carol&quot;</span>};</div>
+<div class="line"><a name="l00869"></a><span class="lineno">  869</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span> daria{<span class="stringliteral">&quot;daria&quot;</span>};</div>
+<div class="line"><a name="l00870"></a><span class="lineno">  870</span>&#160; </div>
+<div class="line"><a name="l00871"></a><span class="lineno">  871</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env{*<span class="keyword">this</span>};</div>
+<div class="line"><a name="l00872"></a><span class="lineno">  872</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#ae2349266cb09d1f1c3de06606ebdf9e2">fund</a>(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(100000), alice, becky, carol);</div>
+<div class="line"><a name="l00873"></a><span class="lineno">  873</span>&#160;        env.close();</div>
+<div class="line"><a name="l00874"></a><span class="lineno">  874</span>&#160; </div>
+<div class="line"><a name="l00875"></a><span class="lineno">  875</span>&#160;        <span class="comment">// alice sets the lsfDepositAuth flag on her account.  This should</span></div>
+<div class="line"><a name="l00876"></a><span class="lineno">  876</span>&#160;        <span class="comment">// prevent becky from deleting her account while using alice as the</span></div>
+<div class="line"><a name="l00877"></a><span class="lineno">  877</span>&#160;        <span class="comment">// destination.</span></div>
+<div class="line"><a name="l00878"></a><span class="lineno">  878</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a50cacef3867fc01273aa9c29231f9a7c">fset</a>(alice, <a class="code" href="namespaceripple.html#a1d8ec9af2fd805d04e032c52f6968211">asfDepositAuth</a>));</div>
+<div class="line"><a name="l00879"></a><span class="lineno">  879</span>&#160; </div>
+<div class="line"><a name="l00880"></a><span class="lineno">  880</span>&#160;        <span class="comment">// carol requires a destination tag.</span></div>
+<div class="line"><a name="l00881"></a><span class="lineno">  881</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a50cacef3867fc01273aa9c29231f9a7c">fset</a>(carol, <a class="code" href="namespaceripple.html#a2e3220cb8c660141f5300a9e38841295">asfRequireDest</a>));</div>
+<div class="line"><a name="l00882"></a><span class="lineno">  882</span>&#160;        env.close();</div>
 <div class="line"><a name="l00883"></a><span class="lineno">  883</span>&#160; </div>
-<div class="line"><a name="l00884"></a><span class="lineno">  884</span>&#160;        <span class="comment">// becky attempts to delete her account using daria as the destination.</span></div>
-<div class="line"><a name="l00885"></a><span class="lineno">  885</span>&#160;        <span class="comment">// Since daria is not in the ledger the delete attempt fails.</span></div>
-<div class="line"><a name="l00886"></a><span class="lineno">  886</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> acctDelFee{<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a47271eb5e7eb9b5aada383ccfaf9c0cf">drops</a>(env.current()-&gt;fees().increment)};</div>
-<div class="line"><a name="l00887"></a><span class="lineno">  887</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#ada147bbc773967de4235fc8ed1c89562">acctdelete</a>(becky, daria), <a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(acctDelFee), <a class="code" href="classripple_1_1test_1_1jtx_1_1ter.html">ter</a>(<a class="code" href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38ca1207baad8c378dc23cd2fa4c4276844d">tecNO_DST</a>));</div>
-<div class="line"><a name="l00888"></a><span class="lineno">  888</span>&#160;        env.close();</div>
-<div class="line"><a name="l00889"></a><span class="lineno">  889</span>&#160; </div>
-<div class="line"><a name="l00890"></a><span class="lineno">  890</span>&#160;        <span class="comment">// becky attempts to delete her account, but carol requires a</span></div>
-<div class="line"><a name="l00891"></a><span class="lineno">  891</span>&#160;        <span class="comment">// destination tag which becky has omitted.</span></div>
-<div class="line"><a name="l00892"></a><span class="lineno">  892</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#ada147bbc773967de4235fc8ed1c89562">acctdelete</a>(becky, carol), <a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(acctDelFee), <a class="code" href="classripple_1_1test_1_1jtx_1_1ter.html">ter</a>(<a class="code" href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38caa3ac7c997274040539a497cadc280b22">tecDST_TAG_NEEDED</a>));</div>
-<div class="line"><a name="l00893"></a><span class="lineno">  893</span>&#160;        env.close();</div>
-<div class="line"><a name="l00894"></a><span class="lineno">  894</span>&#160; </div>
-<div class="line"><a name="l00895"></a><span class="lineno">  895</span>&#160;        <span class="comment">// becky attempts to delete her account, but alice won&#39;t take her XRP,</span></div>
-<div class="line"><a name="l00896"></a><span class="lineno">  896</span>&#160;        <span class="comment">// so the delete is blocked.</span></div>
-<div class="line"><a name="l00897"></a><span class="lineno">  897</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#ada147bbc773967de4235fc8ed1c89562">acctdelete</a>(becky, alice), <a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(acctDelFee), <a class="code" href="classripple_1_1test_1_1jtx_1_1ter.html">ter</a>(<a class="code" href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38ca9af7057961bc54674f4a6c2dd8ed6ab9">tecNO_PERMISSION</a>));</div>
-<div class="line"><a name="l00898"></a><span class="lineno">  898</span>&#160;        env.close();</div>
-<div class="line"><a name="l00899"></a><span class="lineno">  899</span>&#160; </div>
-<div class="line"><a name="l00900"></a><span class="lineno">  900</span>&#160;        <span class="comment">// alice preauthorizes deposits from becky.  Now becky can delete her</span></div>
-<div class="line"><a name="l00901"></a><span class="lineno">  901</span>&#160;        <span class="comment">// account and forward the leftovers to alice.</span></div>
-<div class="line"><a name="l00902"></a><span class="lineno">  902</span>&#160;        env(deposit::auth(alice, becky));</div>
-<div class="line"><a name="l00903"></a><span class="lineno">  903</span>&#160;        env.close();</div>
-<div class="line"><a name="l00904"></a><span class="lineno">  904</span>&#160; </div>
-<div class="line"><a name="l00905"></a><span class="lineno">  905</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> beckyOldBalance{env.balance(becky)};</div>
-<div class="line"><a name="l00906"></a><span class="lineno">  906</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#ada147bbc773967de4235fc8ed1c89562">acctdelete</a>(becky, alice), <a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(acctDelFee));</div>
-<div class="line"><a name="l00907"></a><span class="lineno">  907</span>&#160;        <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#a3a2e08d09c040d83aa23d75f8b0fb58d">verifyDeliveredAmount</a>(env, beckyOldBalance - acctDelFee);</div>
-<div class="line"><a name="l00908"></a><span class="lineno">  908</span>&#160;        env.close();</div>
-<div class="line"><a name="l00909"></a><span class="lineno">  909</span>&#160;    }</div>
-<div class="line"><a name="l00910"></a><span class="lineno">  910</span>&#160; </div>
-<div class="line"><a name="l00911"></a><span class="lineno">  911</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00912"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1AccountDelete__test.html#a90580c0aa5b257088a7b6b0dc52f4934">  912</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#a90580c0aa5b257088a7b6b0dc52f4934">run</a>()<span class="keyword"> override</span></div>
-<div class="line"><a name="l00913"></a><span class="lineno">  913</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00914"></a><span class="lineno">  914</span>&#160;        <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#a09f62f1f5c18fafb1445c43b7f4072f7">testBasics</a>();</div>
-<div class="line"><a name="l00915"></a><span class="lineno">  915</span>&#160;        <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#ac392a32b72823219d9ee0dc266226f64">testDirectories</a>();</div>
-<div class="line"><a name="l00916"></a><span class="lineno">  916</span>&#160;        <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#aa32b27823d78947eae4b1950628d0934">testOwnedTypes</a>();</div>
-<div class="line"><a name="l00917"></a><span class="lineno">  917</span>&#160;        <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#a1e270085d457d7ee5fd5daa3773f6cc3">testResurrection</a>();</div>
-<div class="line"><a name="l00918"></a><span class="lineno">  918</span>&#160;        <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#a9608a0aba27aea97c17205de5965d6cd">testAmendmentEnable</a>();</div>
-<div class="line"><a name="l00919"></a><span class="lineno">  919</span>&#160;        <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#aa631e36dc0eb14c7b60191138bc1c548">testTooManyOffers</a>();</div>
-<div class="line"><a name="l00920"></a><span class="lineno">  920</span>&#160;        <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#af9b88be1918a8fe91a3c7cd9d54207de">testImplicitlyCreatedTrustline</a>();</div>
-<div class="line"><a name="l00921"></a><span class="lineno">  921</span>&#160;        <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#a2fb47d7436dbfb81c8114305d78adddd">testBalanceTooSmallForFee</a>();</div>
-<div class="line"><a name="l00922"></a><span class="lineno">  922</span>&#160;        <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#a031c45de38a9ea352bf440f6bd9b60e8">testWithTickets</a>();</div>
-<div class="line"><a name="l00923"></a><span class="lineno">  923</span>&#160;        <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#a1b94b395084df1cf1ab3be9c1a68e452">testDest</a>();</div>
-<div class="line"><a name="l00924"></a><span class="lineno">  924</span>&#160;    }</div>
-<div class="line"><a name="l00925"></a><span class="lineno">  925</span>&#160;};</div>
-<div class="line"><a name="l00926"></a><span class="lineno">  926</span>&#160; </div>
-<div class="line"><a name="l00927"></a><span class="lineno">  927</span>&#160;<a class="code" href="namespaceripple_1_1test.html#a397b62843220daf742e7187fc3546423">BEAST_DEFINE_TESTSUITE_PRIO</a>(AccountDelete, app, <a class="code" href="namespaceripple.html">ripple</a>, 2);</div>
-<div class="line"><a name="l00928"></a><span class="lineno">  928</span>&#160; </div>
-<div class="line"><a name="l00929"></a><span class="lineno">  929</span>&#160;}  <span class="comment">// namespace test</span></div>
-<div class="line"><a name="l00930"></a><span class="lineno">  930</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00884"></a><span class="lineno">  884</span>&#160;        <span class="comment">// Close enough ledgers to be able to delete becky&#39;s account.</span></div>
+<div class="line"><a name="l00885"></a><span class="lineno">  885</span>&#160;        <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#a5c5e1833684dc58172ce991221cf0be5">incLgrSeqForAccDel</a>(env, becky);</div>
+<div class="line"><a name="l00886"></a><span class="lineno">  886</span>&#160; </div>
+<div class="line"><a name="l00887"></a><span class="lineno">  887</span>&#160;        <span class="comment">// becky attempts to delete her account using daria as the destination.</span></div>
+<div class="line"><a name="l00888"></a><span class="lineno">  888</span>&#160;        <span class="comment">// Since daria is not in the ledger the delete attempt fails.</span></div>
+<div class="line"><a name="l00889"></a><span class="lineno">  889</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> acctDelFee{<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a47271eb5e7eb9b5aada383ccfaf9c0cf">drops</a>(env.current()-&gt;fees().increment)};</div>
+<div class="line"><a name="l00890"></a><span class="lineno">  890</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#ada147bbc773967de4235fc8ed1c89562">acctdelete</a>(becky, daria), <a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(acctDelFee), <a class="code" href="classripple_1_1test_1_1jtx_1_1ter.html">ter</a>(<a class="code" href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38ca1207baad8c378dc23cd2fa4c4276844d">tecNO_DST</a>));</div>
+<div class="line"><a name="l00891"></a><span class="lineno">  891</span>&#160;        env.close();</div>
+<div class="line"><a name="l00892"></a><span class="lineno">  892</span>&#160; </div>
+<div class="line"><a name="l00893"></a><span class="lineno">  893</span>&#160;        <span class="comment">// becky attempts to delete her account, but carol requires a</span></div>
+<div class="line"><a name="l00894"></a><span class="lineno">  894</span>&#160;        <span class="comment">// destination tag which becky has omitted.</span></div>
+<div class="line"><a name="l00895"></a><span class="lineno">  895</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#ada147bbc773967de4235fc8ed1c89562">acctdelete</a>(becky, carol), <a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(acctDelFee), <a class="code" href="classripple_1_1test_1_1jtx_1_1ter.html">ter</a>(<a class="code" href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38caa3ac7c997274040539a497cadc280b22">tecDST_TAG_NEEDED</a>));</div>
+<div class="line"><a name="l00896"></a><span class="lineno">  896</span>&#160;        env.close();</div>
+<div class="line"><a name="l00897"></a><span class="lineno">  897</span>&#160; </div>
+<div class="line"><a name="l00898"></a><span class="lineno">  898</span>&#160;        <span class="comment">// becky attempts to delete her account, but alice won&#39;t take her XRP,</span></div>
+<div class="line"><a name="l00899"></a><span class="lineno">  899</span>&#160;        <span class="comment">// so the delete is blocked.</span></div>
+<div class="line"><a name="l00900"></a><span class="lineno">  900</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#ada147bbc773967de4235fc8ed1c89562">acctdelete</a>(becky, alice), <a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(acctDelFee), <a class="code" href="classripple_1_1test_1_1jtx_1_1ter.html">ter</a>(<a class="code" href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38ca9af7057961bc54674f4a6c2dd8ed6ab9">tecNO_PERMISSION</a>));</div>
+<div class="line"><a name="l00901"></a><span class="lineno">  901</span>&#160;        env.close();</div>
+<div class="line"><a name="l00902"></a><span class="lineno">  902</span>&#160; </div>
+<div class="line"><a name="l00903"></a><span class="lineno">  903</span>&#160;        <span class="comment">// alice preauthorizes deposits from becky.  Now becky can delete her</span></div>
+<div class="line"><a name="l00904"></a><span class="lineno">  904</span>&#160;        <span class="comment">// account and forward the leftovers to alice.</span></div>
+<div class="line"><a name="l00905"></a><span class="lineno">  905</span>&#160;        env(deposit::auth(alice, becky));</div>
+<div class="line"><a name="l00906"></a><span class="lineno">  906</span>&#160;        env.close();</div>
+<div class="line"><a name="l00907"></a><span class="lineno">  907</span>&#160; </div>
+<div class="line"><a name="l00908"></a><span class="lineno">  908</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> beckyOldBalance{env.balance(becky)};</div>
+<div class="line"><a name="l00909"></a><span class="lineno">  909</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#ada147bbc773967de4235fc8ed1c89562">acctdelete</a>(becky, alice), <a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(acctDelFee));</div>
+<div class="line"><a name="l00910"></a><span class="lineno">  910</span>&#160;        <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#a3a2e08d09c040d83aa23d75f8b0fb58d">verifyDeliveredAmount</a>(env, beckyOldBalance - acctDelFee);</div>
+<div class="line"><a name="l00911"></a><span class="lineno">  911</span>&#160;        env.close();</div>
+<div class="line"><a name="l00912"></a><span class="lineno">  912</span>&#160;    }</div>
+<div class="line"><a name="l00913"></a><span class="lineno">  913</span>&#160; </div>
+<div class="line"><a name="l00914"></a><span class="lineno">  914</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00915"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1AccountDelete__test.html#a90580c0aa5b257088a7b6b0dc52f4934">  915</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#a90580c0aa5b257088a7b6b0dc52f4934">run</a>()<span class="keyword"> override</span></div>
+<div class="line"><a name="l00916"></a><span class="lineno">  916</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00917"></a><span class="lineno">  917</span>&#160;        <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#a09f62f1f5c18fafb1445c43b7f4072f7">testBasics</a>();</div>
+<div class="line"><a name="l00918"></a><span class="lineno">  918</span>&#160;        <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#ac392a32b72823219d9ee0dc266226f64">testDirectories</a>();</div>
+<div class="line"><a name="l00919"></a><span class="lineno">  919</span>&#160;        <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#aa32b27823d78947eae4b1950628d0934">testOwnedTypes</a>();</div>
+<div class="line"><a name="l00920"></a><span class="lineno">  920</span>&#160;        <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#a1e270085d457d7ee5fd5daa3773f6cc3">testResurrection</a>();</div>
+<div class="line"><a name="l00921"></a><span class="lineno">  921</span>&#160;        <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#a9608a0aba27aea97c17205de5965d6cd">testAmendmentEnable</a>();</div>
+<div class="line"><a name="l00922"></a><span class="lineno">  922</span>&#160;        <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#aa631e36dc0eb14c7b60191138bc1c548">testTooManyOffers</a>();</div>
+<div class="line"><a name="l00923"></a><span class="lineno">  923</span>&#160;        <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#af9b88be1918a8fe91a3c7cd9d54207de">testImplicitlyCreatedTrustline</a>();</div>
+<div class="line"><a name="l00924"></a><span class="lineno">  924</span>&#160;        <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#a2fb47d7436dbfb81c8114305d78adddd">testBalanceTooSmallForFee</a>();</div>
+<div class="line"><a name="l00925"></a><span class="lineno">  925</span>&#160;        <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#a031c45de38a9ea352bf440f6bd9b60e8">testWithTickets</a>();</div>
+<div class="line"><a name="l00926"></a><span class="lineno">  926</span>&#160;        <a class="code" href="classripple_1_1test_1_1AccountDelete__test.html#a1b94b395084df1cf1ab3be9c1a68e452">testDest</a>();</div>
+<div class="line"><a name="l00927"></a><span class="lineno">  927</span>&#160;    }</div>
+<div class="line"><a name="l00928"></a><span class="lineno">  928</span>&#160;};</div>
+<div class="line"><a name="l00929"></a><span class="lineno">  929</span>&#160; </div>
+<div class="line"><a name="l00930"></a><span class="lineno">  930</span>&#160;<a class="code" href="namespaceripple_1_1test.html#a397b62843220daf742e7187fc3546423">BEAST_DEFINE_TESTSUITE_PRIO</a>(AccountDelete, app, <a class="code" href="namespaceripple.html">ripple</a>, 2);</div>
+<div class="line"><a name="l00931"></a><span class="lineno">  931</span>&#160; </div>
+<div class="line"><a name="l00932"></a><span class="lineno">  932</span>&#160;}  <span class="comment">// namespace test</span></div>
+<div class="line"><a name="l00933"></a><span class="lineno">  933</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="anamespaceripple_html_af295820eb1586f3975bf2000c1b76668"><div class="ttname"><a href="namespaceripple.html#af295820eb1586f3975bf2000c1b76668">ripple::sfOfferSequence</a></div><div class="ttdeci">const SF_UINT32 sfOfferSequence</div></div>
 <div class="ttc" id="anamespaceripple_1_1keylet_html_aa9b2ba2df3c3da4cecd1c07cccf7c7f9"><div class="ttname"><a href="namespaceripple_1_1keylet.html#aa9b2ba2df3c3da4cecd1c07cccf7c7f9">ripple::keylet::ownerDir</a></div><div class="ttdeci">Keylet ownerDir(AccountID const &amp;id) noexcept</div><div class="ttdoc">The root page of an account's directory.</div><div class="ttdef"><b>Definition:</b> <a href="Indexes_8cpp_source.html#l00303">Indexes.cpp:303</a></div></div>
@@ -1014,17 +1017,17 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Env_html_ae1f1a9dbb662717022ce948d5609e956"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Env.html#ae1f1a9dbb662717022ce948d5609e956">ripple::test::jtx::Env::tx</a></div><div class="ttdeci">std::shared_ptr&lt; STTx const  &gt; tx() const</div><div class="ttdoc">Return the tx data for the last JTx.</div><div class="ttdef"><b>Definition:</b> <a href="Env_8cpp_source.html#l00379">Env.cpp:379</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1ter_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1ter.html">ripple::test::jtx::ter</a></div><div class="ttdoc">Set the expected result code for a JTx The test will fail if the code doesn't match.</div><div class="ttdef"><b>Definition:</b> <a href="ter_8h_source.html#l00033">ter.h:33</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1owners_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1owners.html">ripple::test::jtx::owners</a></div><div class="ttdoc">Match the number of items in the account's owner directory.</div><div class="ttdef"><b>Definition:</b> <a href="owners_8h_source.html#l00069">owners.h:69</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1AccountDelete__test_html_a1b94b395084df1cf1ab3be9c1a68e452"><div class="ttname"><a href="classripple_1_1test_1_1AccountDelete__test.html#a1b94b395084df1cf1ab3be9c1a68e452">ripple::test::AccountDelete_test::testDest</a></div><div class="ttdeci">void testDest()</div><div class="ttdef"><b>Definition:</b> <a href="AccountDelete__test_8cpp_source.html#l00857">AccountDelete_test.cpp:857</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1AccountDelete__test_html_af9b88be1918a8fe91a3c7cd9d54207de"><div class="ttname"><a href="classripple_1_1test_1_1AccountDelete__test.html#af9b88be1918a8fe91a3c7cd9d54207de">ripple::test::AccountDelete_test::testImplicitlyCreatedTrustline</a></div><div class="ttdeci">void testImplicitlyCreatedTrustline()</div><div class="ttdef"><b>Definition:</b> <a href="AccountDelete__test_8cpp_source.html#l00708">AccountDelete_test.cpp:708</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1AccountDelete__test_html_a1b94b395084df1cf1ab3be9c1a68e452"><div class="ttname"><a href="classripple_1_1test_1_1AccountDelete__test.html#a1b94b395084df1cf1ab3be9c1a68e452">ripple::test::AccountDelete_test::testDest</a></div><div class="ttdeci">void testDest()</div><div class="ttdef"><b>Definition:</b> <a href="AccountDelete__test_8cpp_source.html#l00860">AccountDelete_test.cpp:860</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1AccountDelete__test_html_af9b88be1918a8fe91a3c7cd9d54207de"><div class="ttname"><a href="classripple_1_1test_1_1AccountDelete__test.html#af9b88be1918a8fe91a3c7cd9d54207de">ripple::test::AccountDelete_test::testImplicitlyCreatedTrustline</a></div><div class="ttdeci">void testImplicitlyCreatedTrustline()</div><div class="ttdef"><b>Definition:</b> <a href="AccountDelete__test_8cpp_source.html#l00711">AccountDelete_test.cpp:711</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a7e1ed9c5ea9eff7dd3046420f228399f"><div class="ttname"><a href="namespaceripple.html#a7e1ed9c5ea9eff7dd3046420f228399f">ripple::sfOwner</a></div><div class="ttdeci">const SF_ACCOUNT sfOwner</div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1balance_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1balance.html">ripple::test::jtx::balance</a></div><div class="ttdoc">A balance matches.</div><div class="ttdef"><b>Definition:</b> <a href="balance_8h_source.html#l00038">balance.h:38</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1test_1_1jtx_html_a47cac3a8bfbc8c14ae8da735ec52ebbf"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx.html#a47cac3a8bfbc8c14ae8da735ec52ebbf">ripple::test::jtx::trust</a></div><div class="ttdeci">Json::Value trust(Account const &amp;account, STAmount const &amp;amount, std::uint32_t flags)</div><div class="ttdoc">Modify a trust line.</div><div class="ttdef"><b>Definition:</b> <a href="trust_8cpp_source.html#l00030">trust.cpp:30</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1AccountDelete__test_html_a031c45de38a9ea352bf440f6bd9b60e8"><div class="ttname"><a href="classripple_1_1test_1_1AccountDelete__test.html#a031c45de38a9ea352bf440f6bd9b60e8">ripple::test::AccountDelete_test::testWithTickets</a></div><div class="ttdeci">void testWithTickets()</div><div class="ttdef"><b>Definition:</b> <a href="AccountDelete__test_8cpp_source.html#l00806">AccountDelete_test.cpp:806</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1AccountDelete__test_html_a031c45de38a9ea352bf440f6bd9b60e8"><div class="ttname"><a href="classripple_1_1test_1_1AccountDelete__test.html#a031c45de38a9ea352bf440f6bd9b60e8">ripple::test::AccountDelete_test::testWithTickets</a></div><div class="ttdeci">void testWithTickets()</div><div class="ttdef"><b>Definition:</b> <a href="AccountDelete__test_8cpp_source.html#l00809">AccountDelete_test.cpp:809</a></div></div>
 <div class="ttc" id="aclassripple_1_1STAmount_html_a02bef3696a9cb07b72e5ec750e7ea456"><div class="ttname"><a href="classripple_1_1STAmount.html#a02bef3696a9cb07b72e5ec750e7ea456">ripple::STAmount::getJson</a></div><div class="ttdeci">Json::Value getJson(JsonOptions) const override</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8cpp_source.html#l00614">STAmount.cpp:614</a></div></div>
 <div class="ttc" id="aduration_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::duration</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1test_1_1jtx_html_afd83a8b3855491e6341e1753822f7dc0"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx.html#afd83a8b3855491e6341e1753822f7dc0">ripple::test::jtx::offer_cancel</a></div><div class="ttdeci">Json::Value offer_cancel(Account const &amp;account, std::uint32_t offerSeq)</div><div class="ttdoc">Cancel an offer.</div><div class="ttdef"><b>Definition:</b> <a href="offer_8cpp_source.html#l00045">offer.cpp:45</a></div></div>
 <div class="ttc" id="anamespaceripple_html_aa298e929e02f59c2b05a30ee8805b38caa3ac7c997274040539a497cadc280b22"><div class="ttname"><a href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38caa3ac7c997274040539a497cadc280b22">ripple::tecDST_TAG_NEEDED</a></div><div class="ttdeci">@ tecDST_TAG_NEEDED</div><div class="ttdef"><b>Definition:</b> <a href="TER_8h_source.html#l00273">TER.h:273</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1AccountDelete__test_html_a9608a0aba27aea97c17205de5965d6cd"><div class="ttname"><a href="classripple_1_1test_1_1AccountDelete__test.html#a9608a0aba27aea97c17205de5965d6cd">ripple::test::AccountDelete_test::testAmendmentEnable</a></div><div class="ttdeci">void testAmendmentEnable()</div><div class="ttdef"><b>Definition:</b> <a href="AccountDelete__test_8cpp_source.html#l00548">AccountDelete_test.cpp:548</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1AccountDelete__test_html_a9608a0aba27aea97c17205de5965d6cd"><div class="ttname"><a href="classripple_1_1test_1_1AccountDelete__test.html#a9608a0aba27aea97c17205de5965d6cd">ripple::test::AccountDelete_test::testAmendmentEnable</a></div><div class="ttdeci">void testAmendmentEnable()</div><div class="ttdef"><b>Definition:</b> <a href="AccountDelete__test_8cpp_source.html#l00551">AccountDelete_test.cpp:551</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1keylet_html_a5d33427228ab1869c37fcf11132865f6"><div class="ttname"><a href="namespaceripple_1_1keylet.html#a5d33427228ab1869c37fcf11132865f6">ripple::keylet::offer</a></div><div class="ttdeci">Keylet offer(AccountID const &amp;id, std::uint32_t seq) noexcept</div><div class="ttdoc">An offer from an account.</div><div class="ttdef"><b>Definition:</b> <a href="Indexes_8cpp_source.html#l00222">Indexes.cpp:222</a></div></div>
 <div class="ttc" id="anamespaceripple_html_ac1c00e26dbebe035301fefc29b02f82b"><div class="ttname"><a href="namespaceripple.html#ac1c00e26dbebe035301fefc29b02f82b">ripple::tfClose</a></div><div class="ttdeci">constexpr std::uint32_t tfClose</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00121">TxFlags.h:121</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Account_html_aee0c1b197f33ad230162080a4ff2be16"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Account.html#aee0c1b197f33ad230162080a4ff2be16">ripple::test::jtx::Account::human</a></div><div class="ttdeci">std::string const  &amp; human() const</div><div class="ttdoc">Returns the human readable public key.</div><div class="ttdef"><b>Definition:</b> <a href="Account_8h_source.html#l00113">Account.h:113</a></div></div>
@@ -1034,7 +1037,7 @@ $(function() {
 <div class="ttc" id="anamespaceripple_1_1keylet_html_ae59cd86187ff4936a91b183ec2ea1bf9"><div class="ttname"><a href="namespaceripple_1_1keylet.html#ae59cd86187ff4936a91b183ec2ea1bf9">ripple::keylet::ticket</a></div><div class="ttdeci">static const ticket_t ticket</div><div class="ttdef"><b>Definition:</b> <a href="Indexes_8h_source.html#l00167">Indexes.h:167</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1AccountDelete__test_html_a1e270085d457d7ee5fd5daa3773f6cc3"><div class="ttname"><a href="classripple_1_1test_1_1AccountDelete__test.html#a1e270085d457d7ee5fd5daa3773f6cc3">ripple::test::AccountDelete_test::testResurrection</a></div><div class="ttdeci">void testResurrection()</div><div class="ttdef"><b>Definition:</b> <a href="AccountDelete__test_8cpp_source.html#l00472">AccountDelete_test.cpp:472</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1AccountDelete__test_html_acefe503ff09c2e8717df694890fec35b"><div class="ttname"><a href="classripple_1_1test_1_1AccountDelete__test.html#acefe503ff09c2e8717df694890fec35b">ripple::test::AccountDelete_test::openLedgerSeq</a></div><div class="ttdeci">std::uint32_t openLedgerSeq(jtx::Env &amp;env)</div><div class="ttdef"><b>Definition:</b> <a href="AccountDelete__test_8cpp_source.html#l00031">AccountDelete_test.cpp:31</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1AccountDelete__test_html_aa631e36dc0eb14c7b60191138bc1c548"><div class="ttname"><a href="classripple_1_1test_1_1AccountDelete__test.html#aa631e36dc0eb14c7b60191138bc1c548">ripple::test::AccountDelete_test::testTooManyOffers</a></div><div class="ttdeci">void testTooManyOffers()</div><div class="ttdef"><b>Definition:</b> <a href="AccountDelete__test_8cpp_source.html#l00602">AccountDelete_test.cpp:602</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1AccountDelete__test_html_aa631e36dc0eb14c7b60191138bc1c548"><div class="ttname"><a href="classripple_1_1test_1_1AccountDelete__test.html#aa631e36dc0eb14c7b60191138bc1c548">ripple::test::AccountDelete_test::testTooManyOffers</a></div><div class="ttdeci">void testTooManyOffers()</div><div class="ttdef"><b>Definition:</b> <a href="AccountDelete__test_8cpp_source.html#l00605">AccountDelete_test.cpp:605</a></div></div>
 <div class="ttc" id="aclassripple_1_1SField_html_a45acf918dce2b1e3e40c6344a49f7b51"><div class="ttname"><a href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">ripple::SField::jsonName</a></div><div class="ttdeci">const Json::StaticString jsonName</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00136">SField.h:136</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1msig_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1msig.html">ripple::test::jtx::msig</a></div><div class="ttdoc">Set a multisignature on a JTx.</div><div class="ttdef"><b>Definition:</b> <a href="multisign_8h_source.html#l00063">multisign.h:63</a></div></div>
 <div class="ttc" id="anamespaceripple_html_afe21c8454670d46fb93751a5edffed46acf9cc7bb9b19628c6a89a21611972242"><div class="ttname"><a href="namespaceripple.html#afe21c8454670d46fb93751a5edffed46acf9cc7bb9b19628c6a89a21611972242">ripple::temDST_IS_SRC</a></div><div class="ttdeci">@ temDST_IS_SRC</div><div class="ttdef"><b>Definition:</b> <a href="TER_8h_source.html#l00103">TER.h:103</a></div></div>
@@ -1050,7 +1053,7 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1test_1_1AccountDelete__test_html_aa32b27823d78947eae4b1950628d0934"><div class="ttname"><a href="classripple_1_1test_1_1AccountDelete__test.html#aa32b27823d78947eae4b1950628d0934">ripple::test::AccountDelete_test::testOwnedTypes</a></div><div class="ttdeci">void testOwnedTypes()</div><div class="ttdef"><b>Definition:</b> <a href="AccountDelete__test_8cpp_source.html#l00308">AccountDelete_test.cpp:308</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a2ad8aac76fb3af4dc77fe87d52a50fdb"><div class="ttname"><a href="namespaceripple.html#a2ad8aac76fb3af4dc77fe87d52a50fdb">ripple::sfDeliveredAmount</a></div><div class="ttdeci">const SF_AMOUNT sfDeliveredAmount</div></div>
 <div class="ttc" id="anamespaceripple_html_aa1125568f116779d0ad145c06a607791"><div class="ttname"><a href="namespaceripple.html#aa1125568f116779d0ad145c06a607791">ripple::sfSettleDelay</a></div><div class="ttdeci">const SF_UINT32 sfSettleDelay</div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1AccountDelete__test_html_a2fb47d7436dbfb81c8114305d78adddd"><div class="ttname"><a href="classripple_1_1test_1_1AccountDelete__test.html#a2fb47d7436dbfb81c8114305d78adddd">ripple::test::AccountDelete_test::testBalanceTooSmallForFee</a></div><div class="ttdeci">void testBalanceTooSmallForFee()</div><div class="ttdef"><b>Definition:</b> <a href="AccountDelete__test_8cpp_source.html#l00753">AccountDelete_test.cpp:753</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1AccountDelete__test_html_a2fb47d7436dbfb81c8114305d78adddd"><div class="ttname"><a href="classripple_1_1test_1_1AccountDelete__test.html#a2fb47d7436dbfb81c8114305d78adddd">ripple::test::AccountDelete_test::testBalanceTooSmallForFee</a></div><div class="ttdeci">void testBalanceTooSmallForFee()</div><div class="ttdef"><b>Definition:</b> <a href="AccountDelete__test_8cpp_source.html#l00756">AccountDelete_test.cpp:756</a></div></div>
 <div class="ttc" id="aclassripple_1_1PublicKey_html"><div class="ttname"><a href="classripple_1_1PublicKey.html">ripple::PublicKey</a></div><div class="ttdoc">A public key.</div><div class="ttdef"><b>Definition:</b> <a href="PublicKey_8h_source.html#l00059">PublicKey.h:59</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1keylet_html_a50c370db96b4fdcdd202d9c2c38afce9"><div class="ttname"><a href="namespaceripple_1_1keylet.html#a50c370db96b4fdcdd202d9c2c38afce9">ripple::keylet::account</a></div><div class="ttdeci">Keylet account(AccountID const &amp;id) noexcept</div><div class="ttdoc">AccountID root.</div><div class="ttdef"><b>Definition:</b> <a href="Indexes_8cpp_source.html#l00133">Indexes.cpp:133</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a169967ff418b80729654b6d45ade8711a334c4a4c42fdb79d7ebc3e73b517e6f8"><div class="ttname"><a href="namespaceripple.html#a169967ff418b80729654b6d45ade8711a334c4a4c42fdb79d7ebc3e73b517e6f8">ripple::JsonOptions::none</a></div><div class="ttdeci">@ none</div></div>
@@ -1074,7 +1077,7 @@ $(function() {
 <div class="ttc" id="anamespaceripple_html_aa298e929e02f59c2b05a30ee8805b38ca44bd180d908c1a35ffd236f7c88c180c"><div class="ttname"><a href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38ca44bd180d908c1a35ffd236f7c88c180c">ripple::tecTOO_SOON</a></div><div class="ttdeci">@ tecTOO_SOON</div><div class="ttdef"><b>Definition:</b> <a href="TER_8h_source.html#l00282">TER.h:282</a></div></div>
 <div class="ttc" id="astructripple_1_1test_1_1jtx_1_1seq_html"><div class="ttname"><a href="structripple_1_1test_1_1jtx_1_1seq.html">ripple::test::jtx::seq</a></div><div class="ttdoc">Set the sequence number on a JTx.</div><div class="ttdef"><b>Definition:</b> <a href="seq_8h_source.html#l00033">seq.h:33</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1AccountDelete__test_html_a90580c0aa5b257088a7b6b0dc52f4934"><div class="ttname"><a href="classripple_1_1test_1_1AccountDelete__test.html#a90580c0aa5b257088a7b6b0dc52f4934">ripple::test::AccountDelete_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="AccountDelete__test_8cpp_source.html#l00912">AccountDelete_test.cpp:912</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1AccountDelete__test_html_a90580c0aa5b257088a7b6b0dc52f4934"><div class="ttname"><a href="classripple_1_1test_1_1AccountDelete__test.html#a90580c0aa5b257088a7b6b0dc52f4934">ripple::test::AccountDelete_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="AccountDelete__test_8cpp_source.html#l00915">AccountDelete_test.cpp:915</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1AccountDelete__test_html"><div class="ttname"><a href="classripple_1_1test_1_1AccountDelete__test.html">ripple::test::AccountDelete_test</a></div><div class="ttdef"><b>Definition:</b> <a href="AccountDelete__test_8cpp_source.html#l00027">AccountDelete_test.cpp:27</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1test_1_1jtx_html_a878af2c3339d93c7ad690135ce33e67a"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx.html#a878af2c3339d93c7ad690135ce33e67a">ripple::test::jtx::noripple</a></div><div class="ttdeci">std::array&lt; Account, 1+sizeof...(Args)&gt; noripple(Account const &amp;account, Args const &amp;... args)</div><div class="ttdoc">Designate accounts as no-ripple in Env::fund.</div><div class="ttdef"><b>Definition:</b> <a href="Env_8h_source.html#l00064">Env.h:64</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1test_1_1jtx_html_a7816b23daf9b325ea1f88cc121a53d05"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx.html#a7816b23daf9b325ea1f88cc121a53d05">ripple::test::jtx::pay</a></div><div class="ttdeci">Json::Value pay(Account const &amp;account, Account const &amp;to, AnyAmount amount)</div><div class="ttdoc">Create a payment.</div><div class="ttdef"><b>Definition:</b> <a href="pay_8cpp_source.html#l00029">pay.cpp:29</a></div></div>

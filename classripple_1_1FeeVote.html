@@ -96,9 +96,9 @@ Classes</h2></td></tr>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a5261d52f9ef186c07a98cdfc2c73a590"><td class="memItemLeft" align="right" valign="top">virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1FeeVote.html#a5261d52f9ef186c07a98cdfc2c73a590">~FeeVote</a> ()=default</td></tr>
 <tr class="separator:a5261d52f9ef186c07a98cdfc2c73a590"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a00796ab7d861859bd50b17e2bc09e314"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1FeeVote.html#a00796ab7d861859bd50b17e2bc09e314">doValidation</a> (<a class="el" href="structripple_1_1Fees.html">Fees</a> const &amp;lastFees, <a class="el" href="classripple_1_1STValidation.html">STValidation</a> &amp;val)=0</td></tr>
-<tr class="memdesc:a00796ab7d861859bd50b17e2bc09e314"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add local fee preference to validation.  <a href="classripple_1_1FeeVote.html#a00796ab7d861859bd50b17e2bc09e314">More...</a><br /></td></tr>
-<tr class="separator:a00796ab7d861859bd50b17e2bc09e314"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8fc2834bb93eb35138b36f9b7a29f954"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1FeeVote.html#a8fc2834bb93eb35138b36f9b7a29f954">doValidation</a> (<a class="el" href="structripple_1_1Fees.html">Fees</a> const &amp;lastFees, <a class="el" href="classripple_1_1Rules.html">Rules</a> const &amp;rules, <a class="el" href="classripple_1_1STValidation.html">STValidation</a> &amp;val)=0</td></tr>
+<tr class="memdesc:a8fc2834bb93eb35138b36f9b7a29f954"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add local fee preference to validation.  <a href="classripple_1_1FeeVote.html#a8fc2834bb93eb35138b36f9b7a29f954">More...</a><br /></td></tr>
+<tr class="separator:a8fc2834bb93eb35138b36f9b7a29f954"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0891027717d974092b4a708b3cb03acc"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1FeeVote.html#a0891027717d974092b4a708b3cb03acc">doVoting</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &gt; const &amp;lastClosedLedger, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1STValidation.html">STValidation</a> &gt;&gt; const &amp;parentValidations, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1SHAMap.html">SHAMap</a> &gt; const &amp;initialPosition)=0</td></tr>
 <tr class="memdesc:a0891027717d974092b4a708b3cb03acc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Cast our local vote on the fee.  <a href="classripple_1_1FeeVote.html#a0891027717d974092b4a708b3cb03acc">More...</a><br /></td></tr>
 <tr class="separator:a0891027717d974092b4a708b3cb03acc"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -134,8 +134,8 @@ Public Member Functions</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a00796ab7d861859bd50b17e2bc09e314"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a00796ab7d861859bd50b17e2bc09e314">&#9670;&nbsp;</a></span>doValidation()</h2>
+<a id="a8fc2834bb93eb35138b36f9b7a29f954"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8fc2834bb93eb35138b36f9b7a29f954">&#9670;&nbsp;</a></span>doValidation()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -148,6 +148,12 @@ Public Member Functions</h2></td></tr>
           <td>(</td>
           <td class="paramtype"><a class="el" href="structripple_1_1Fees.html">Fees</a> const &amp;&#160;</td>
           <td class="paramname"><em>lastFees</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Rules.html">Rules</a> const &amp;&#160;</td>
+          <td class="paramname"><em>rules</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -177,7 +183,7 @@ Public Member Functions</h2></td></tr>
   </dd>
 </dl>
 
-<p>Implemented in <a class="el" href="classripple_1_1FeeVoteImpl.html#a87db6cbe91285e207fc9c752ed33bb78">ripple::FeeVoteImpl</a>.</p>
+<p>Implemented in <a class="el" href="classripple_1_1FeeVoteImpl.html#a095335a98bfd73cd42e017accbc700fa">ripple::FeeVoteImpl</a>.</p>
 
 </div>
 </div>

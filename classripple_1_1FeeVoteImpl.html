@@ -98,9 +98,9 @@ Collaboration diagram for ripple::FeeVoteImpl:</div>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:ad0d05ada35919d89d0fd63ed76bed35d"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1FeeVoteImpl.html#ad0d05ada35919d89d0fd63ed76bed35d">FeeVoteImpl</a> (Setup const &amp;setup, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> journal)</td></tr>
 <tr class="separator:ad0d05ada35919d89d0fd63ed76bed35d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a87db6cbe91285e207fc9c752ed33bb78"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1FeeVoteImpl.html#a87db6cbe91285e207fc9c752ed33bb78">doValidation</a> (<a class="el" href="structripple_1_1Fees.html">Fees</a> const &amp;lastFees, <a class="el" href="classripple_1_1STValidation.html">STValidation</a> &amp;val) override</td></tr>
-<tr class="memdesc:a87db6cbe91285e207fc9c752ed33bb78"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add local fee preference to validation.  <a href="classripple_1_1FeeVoteImpl.html#a87db6cbe91285e207fc9c752ed33bb78">More...</a><br /></td></tr>
-<tr class="separator:a87db6cbe91285e207fc9c752ed33bb78"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a095335a98bfd73cd42e017accbc700fa"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1FeeVoteImpl.html#a095335a98bfd73cd42e017accbc700fa">doValidation</a> (<a class="el" href="structripple_1_1Fees.html">Fees</a> const &amp;lastFees, <a class="el" href="classripple_1_1Rules.html">Rules</a> const &amp;rules, <a class="el" href="classripple_1_1STValidation.html">STValidation</a> &amp;val) override</td></tr>
+<tr class="memdesc:a095335a98bfd73cd42e017accbc700fa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add local fee preference to validation.  <a href="classripple_1_1FeeVoteImpl.html#a095335a98bfd73cd42e017accbc700fa">More...</a><br /></td></tr>
+<tr class="separator:a095335a98bfd73cd42e017accbc700fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad264dda6949150323ec3360ef094ecc5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1FeeVoteImpl.html#ad264dda6949150323ec3360ef094ecc5">doVoting</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &gt; const &amp;lastClosedLedger, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1STValidation.html">STValidation</a> &gt;&gt; const &amp;parentValidations, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1SHAMap.html">SHAMap</a> &gt; const &amp;initialPosition) override</td></tr>
 <tr class="memdesc:ad264dda6949150323ec3360ef094ecc5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Cast our local vote on the fee.  <a href="classripple_1_1FeeVoteImpl.html#ad264dda6949150323ec3360ef094ecc5">More...</a><br /></td></tr>
 <tr class="separator:ad264dda6949150323ec3360ef094ecc5"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -114,7 +114,7 @@ Private Attributes</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="FeeVoteImpl_8cpp_source.html#l00087">87</a> of file <a class="el" href="FeeVoteImpl_8cpp_source.html">FeeVoteImpl.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="FeeVoteImpl_8cpp_source.html#l00093">93</a> of file <a class="el" href="FeeVoteImpl_8cpp_source.html">FeeVoteImpl.cpp</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="ad0d05ada35919d89d0fd63ed76bed35d"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ad0d05ada35919d89d0fd63ed76bed35d">&#9670;&nbsp;</a></span>FeeVoteImpl()</h2>
@@ -142,13 +142,13 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="FeeVoteImpl_8cpp_source.html#l00108">108</a> of file <a class="el" href="FeeVoteImpl_8cpp_source.html">FeeVoteImpl.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="FeeVoteImpl_8cpp_source.html#l00115">115</a> of file <a class="el" href="FeeVoteImpl_8cpp_source.html">FeeVoteImpl.cpp</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a87db6cbe91285e207fc9c752ed33bb78"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a87db6cbe91285e207fc9c752ed33bb78">&#9670;&nbsp;</a></span>doValidation()</h2>
+<a id="a095335a98bfd73cd42e017accbc700fa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a095335a98bfd73cd42e017accbc700fa">&#9670;&nbsp;</a></span>doValidation()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -161,6 +161,12 @@ Private Attributes</h2></td></tr>
           <td>(</td>
           <td class="paramtype"><a class="el" href="structripple_1_1Fees.html">Fees</a> const &amp;&#160;</td>
           <td class="paramname"><em>lastFees</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Rules.html">Rules</a> const &amp;&#160;</td>
+          <td class="paramname"><em>rules</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -190,9 +196,9 @@ Private Attributes</h2></td></tr>
   </dd>
 </dl>
 
-<p>Implements <a class="el" href="classripple_1_1FeeVote.html#a00796ab7d861859bd50b17e2bc09e314">ripple::FeeVote</a>.</p>
+<p>Implements <a class="el" href="classripple_1_1FeeVote.html#a8fc2834bb93eb35138b36f9b7a29f954">ripple::FeeVote</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="FeeVoteImpl_8cpp_source.html#l00114">114</a> of file <a class="el" href="FeeVoteImpl_8cpp_source.html">FeeVoteImpl.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="FeeVoteImpl_8cpp_source.html#l00121">121</a> of file <a class="el" href="FeeVoteImpl_8cpp_source.html">FeeVoteImpl.cpp</a>.</p>
 
 </div>
 </div>
@@ -247,7 +253,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1FeeVote.html#a0891027717d974092b4a708b3cb03acc">ripple::FeeVote</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="FeeVoteImpl_8cpp_source.html#l00148">148</a> of file <a class="el" href="FeeVoteImpl_8cpp_source.html">FeeVoteImpl.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="FeeVoteImpl_8cpp_source.html#l00197">197</a> of file <a class="el" href="FeeVoteImpl_8cpp_source.html">FeeVoteImpl.cpp</a>.</p>
 
 </div>
 </div>
@@ -272,7 +278,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="FeeVoteImpl_8cpp_source.html#l00090">90</a> of file <a class="el" href="FeeVoteImpl_8cpp_source.html">FeeVoteImpl.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="FeeVoteImpl_8cpp_source.html#l00096">96</a> of file <a class="el" href="FeeVoteImpl_8cpp_source.html">FeeVoteImpl.cpp</a>.</p>
 
 </div>
 </div>
@@ -296,7 +302,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="FeeVoteImpl_8cpp_source.html#l00091">91</a> of file <a class="el" href="FeeVoteImpl_8cpp_source.html">FeeVoteImpl.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="FeeVoteImpl_8cpp_source.html#l00097">97</a> of file <a class="el" href="FeeVoteImpl_8cpp_source.html">FeeVoteImpl.cpp</a>.</p>
 
 </div>
 </div>

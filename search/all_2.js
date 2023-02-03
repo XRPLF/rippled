@@ -60,7 +60,7 @@ var searchData=
   ['base_5fuint_3c_20256_20_3e_717',['base_uint&lt; 256 &gt;',['../classripple_1_1base__uint.html',1,'ripple']]],
   ['base_5fuint_3c_20bits_20_3e_718',['base_uint&lt; Bits &gt;',['../classripple_1_1base__uint.html',1,'ripple']]],
   ['base_5fuint_5ftest_719',['base_uint_test',['../structripple_1_1test_1_1base__uint__test.html',1,'ripple::test']]],
-  ['basefee_720',['baseFee',['../structripple_1_1NetworkOPsImp_1_1ServerFeeSummary.html#a7c26160aabbd64974ec1d3239f0d4bd0',1,'ripple::NetworkOPsImp::ServerFeeSummary::baseFee()'],['../classripple_1_1ApplyContext.html#ac66a1078c9945c7e003e6ac44eadb446',1,'ripple::ApplyContext::baseFee()']]],
+  ['basefee_720',['baseFee',['../structripple_1_1NetworkOPsImp_1_1ServerFeeSummary.html#a7c26160aabbd64974ec1d3239f0d4bd0',1,'ripple::NetworkOPsImp::ServerFeeSummary::baseFee()'],['../classripple_1_1ApplyContext.html#a7544df6860162add088debcb5f4629fd',1,'ripple::ApplyContext::baseFee()']]],
   ['basehttppeer_721',['BaseHTTPPeer',['../classripple_1_1BaseHTTPPeer.html',1,'ripple::BaseHTTPPeer&lt; Handler, Impl &gt;'],['../classripple_1_1BaseHTTPPeer.html#a183f4f1850ada15f1bfdffa9977e266c',1,'ripple::BaseHTTPPeer::BaseHTTPPeer()']]],
   ['basehttppeer_3c_20handler_2c_20plainhttppeer_20_3e_722',['BaseHTTPPeer&lt; Handler, PlainHTTPPeer &gt;',['../classripple_1_1PlainHTTPPeer.html#a37ac51d7da9efdac04e51943dbaf6c59',1,'ripple::PlainHTTPPeer']]],
   ['basehttppeer_3c_20handler_2c_20plainhttppeer_3c_20handler_20_3e_20_3e_723',['BaseHTTPPeer&lt; Handler, PlainHTTPPeer&lt; Handler &gt; &gt;',['../classripple_1_1BaseHTTPPeer.html',1,'ripple']]],

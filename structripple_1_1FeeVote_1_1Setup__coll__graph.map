@@ -1,17 +1,9 @@
 <map id="ripple::FeeVote::Setup" name="ripple::FeeVote::Setup">
-<area shape="rect" id="node1" title="Fee schedule to vote for." alt="" coords="703,445,865,471"/>
-<area shape="rect" id="node2" href="$classripple_1_1feeunit_1_1TaggedFee.html" title=" " alt="" coords="332,235,521,276"/>
-<area shape="rect" id="node3" title=" " alt="" coords="13,5,228,47"/>
-<area shape="rect" id="node4" title=" " alt="" coords="19,71,222,112"/>
-<area shape="rect" id="node5" title=" " alt="" coords="5,136,236,177"/>
-<area shape="rect" id="node6" title=" " alt="" coords="27,201,214,243"/>
-<area shape="rect" id="node7" title=" " alt="" coords="17,267,224,308"/>
-<area shape="rect" id="node8" title=" " alt="" coords="34,333,207,389"/>
-<area shape="rect" id="node9" title=" " alt="" coords="101,413,140,439"/>
-<area shape="rect" id="node10" href="$classripple_1_1XRPAmount.html" title=" " alt="" coords="355,559,498,586"/>
-<area shape="rect" id="node11" title=" " alt="" coords="38,464,203,505"/>
-<area shape="rect" id="node12" title=" " alt="" coords="8,530,233,557"/>
-<area shape="rect" id="node13" title=" " alt="" coords="16,581,225,623"/>
-<area shape="rect" id="node14" title=" " alt="" coords="13,647,228,688"/>
-<area shape="rect" id="node15" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="73,713,168,739"/>
+<area shape="rect" id="node1" title="Fee schedule to vote for." alt="" coords="625,130,788,157"/>
+<area shape="rect" id="node2" href="$classripple_1_1XRPAmount.html" title=" " alt="" coords="327,130,469,157"/>
+<area shape="rect" id="node3" title=" " alt="" coords="35,5,201,47"/>
+<area shape="rect" id="node4" title=" " alt="" coords="5,71,231,98"/>
+<area shape="rect" id="node5" title=" " alt="" coords="13,123,223,164"/>
+<area shape="rect" id="node6" title=" " alt="" coords="11,188,225,229"/>
+<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="71,254,165,281"/>
 </map>

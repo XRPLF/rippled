@@ -116,29 +116,35 @@ $(function() {
 <div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;<span class="stringliteral">    return amount &lt;= INITIAL_XRP;</span></div>
 <div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;<span class="stringliteral">}</span></div>
 <div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;<span class="stringliteral"></span> </div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;<span class="stringliteral">/* The currency code for the native currency. */</span></div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;<span class="stringliteral">static inline std::string const&amp;</span></div>
-<div class="line"><a name="l00054"></a><span class="lineno"><a class="line" href="namespaceripple.html#a17931969e24fe7e94e61d6e50f7f5cb7">   54</a></span>&#160;<span class="stringliteral">systemCurrencyCode()</span></div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;<span class="stringliteral">{</span></div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;<span class="stringliteral">    static std::string const code = &quot;XRP&quot;;</span></div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;<span class="stringliteral">    return code;</span></div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;<span class="stringliteral">inline bool</span></div>
+<div class="line"><a name="l00055"></a><span class="lineno"><a class="line" href="namespaceripple.html#a558b17d6addfbe66741d3f5282292d94">   55</a></span>&#160;<span class="stringliteral">isLegalAmountSigned(XRPAmount const&amp; amount)</span></div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;<span class="stringliteral">{</span></div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;<span class="stringliteral">    return amount &gt;= -INITIAL_XRP &amp;&amp; amount &lt;= INITIAL_XRP;</span></div>
 <div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;<span class="stringliteral">}</span></div>
 <div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;<span class="stringliteral"></span> </div>
-<div class="line"><a name="l00061"></a><span class="lineno"><a class="line" href="namespaceripple.html#a2c550f167665d94744b297523ff07de2">   61</a></span>&#160;<span class="stringliteral">static constexpr std::uint32_t XRP_LEDGER_EARLIEST_SEQ{32570u};</span></div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;<span class="stringliteral"></span> </div>
-<div class="line"><a name="l00064"></a><span class="lineno"><a class="line" href="namespaceripple.html#ae92381457e3cd2f702404f51119da317">   64</a></span>&#160;<span class="stringliteral">static constexpr std::uint32_t DEFAULT_LEDGERS_PER_SHARD{16384u};</span></div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;<span class="stringliteral"></span> </div>
-<div class="line"><a name="l00071"></a><span class="lineno"><a class="line" href="namespaceripple.html#a9486d45c2b21072ec54bea71d492d1af">   71</a></span>&#160;<span class="stringliteral">constexpr std::ratio&lt;204, 256&gt; preFixAmendmentMajorityCalcThreshold;</span></div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;<span class="stringliteral"></span> </div>
-<div class="line"><a name="l00073"></a><span class="lineno"><a class="line" href="namespaceripple.html#a7efda97c0ca3525b31f602de3243fae7">   73</a></span>&#160;<span class="stringliteral">constexpr std::ratio&lt;80, 100&gt; postFixAmendmentMajorityCalcThreshold;</span></div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;<span class="stringliteral"></span> </div>
-<div class="line"><a name="l00076"></a><span class="lineno"><a class="line" href="namespaceripple.html#a6d89c3108d7faf0305d9768538ef65b9">   76</a></span>&#160;<span class="stringliteral">constexpr std::chrono::seconds const defaultAmendmentMajorityTime = weeks{2};</span></div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;<span class="stringliteral"></span> </div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;<span class="stringliteral">}  // namespace ripple</span></div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;<span class="stringliteral"></span> </div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;<span class="stringliteral">inline std::uint16_t constexpr DEFAULT_PEER_PORT{2459};</span></div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;<span class="stringliteral">/* The currency code for the native currency. */</span></div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;<span class="stringliteral">static inline std::string const&amp;</span></div>
+<div class="line"><a name="l00062"></a><span class="lineno"><a class="line" href="namespaceripple.html#a17931969e24fe7e94e61d6e50f7f5cb7">   62</a></span>&#160;<span class="stringliteral">systemCurrencyCode()</span></div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;<span class="stringliteral">{</span></div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;<span class="stringliteral">    static std::string const code = &quot;XRP&quot;;</span></div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;<span class="stringliteral">    return code;</span></div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;<span class="stringliteral">}</span></div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;<span class="stringliteral"></span> </div>
+<div class="line"><a name="l00069"></a><span class="lineno"><a class="line" href="namespaceripple.html#a2c550f167665d94744b297523ff07de2">   69</a></span>&#160;<span class="stringliteral">static constexpr std::uint32_t XRP_LEDGER_EARLIEST_SEQ{32570u};</span></div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;<span class="stringliteral"></span> </div>
+<div class="line"><a name="l00072"></a><span class="lineno"><a class="line" href="namespaceripple.html#ae92381457e3cd2f702404f51119da317">   72</a></span>&#160;<span class="stringliteral">static constexpr std::uint32_t DEFAULT_LEDGERS_PER_SHARD{16384u};</span></div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;<span class="stringliteral"></span> </div>
+<div class="line"><a name="l00079"></a><span class="lineno"><a class="line" href="namespaceripple.html#a9486d45c2b21072ec54bea71d492d1af">   79</a></span>&#160;<span class="stringliteral">constexpr std::ratio&lt;204, 256&gt; preFixAmendmentMajorityCalcThreshold;</span></div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;<span class="stringliteral"></span> </div>
+<div class="line"><a name="l00081"></a><span class="lineno"><a class="line" href="namespaceripple.html#a7efda97c0ca3525b31f602de3243fae7">   81</a></span>&#160;<span class="stringliteral">constexpr std::ratio&lt;80, 100&gt; postFixAmendmentMajorityCalcThreshold;</span></div>
 <div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;<span class="stringliteral"></span> </div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;<span class="stringliteral">#endif</span></div>
+<div class="line"><a name="l00084"></a><span class="lineno"><a class="line" href="namespaceripple.html#a6d89c3108d7faf0305d9768538ef65b9">   84</a></span>&#160;<span class="stringliteral">constexpr std::chrono::seconds const defaultAmendmentMajorityTime = weeks{2};</span></div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;<span class="stringliteral"></span> </div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;<span class="stringliteral">}  // namespace ripple</span></div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;<span class="stringliteral"></span> </div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;<span class="stringliteral">inline std::uint16_t constexpr DEFAULT_PEER_PORT{2459};</span></div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;<span class="stringliteral"></span> </div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;<span class="stringliteral">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="anamespaceripple_html_a55a2a537e79363b71783d5f6eaca5abf"><div class="ttname"><a href="namespaceripple.html#a55a2a537e79363b71783d5f6eaca5abf">ripple::INITIAL_XRP</a></div><div class="ttdeci">constexpr XRPAmount INITIAL_XRP</div><div class="ttdoc">Configure the native currency.</div><div class="ttdef"><b>Definition:</b> <a href="SystemParameters_8h_source.html#l00043">SystemParameters.h:43</a></div></div>
