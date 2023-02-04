@@ -23,13 +23,11 @@
 #include <ripple/basics/Slice.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/spinlock.h>
-#include <ripple/beast/core/LexicalCast.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/shamap/SHAMapTreeNode.h>
 #include <ripple/shamap/impl/TaggedPointer.ipp>
 
-#include <algorithm>
 #include <iterator>
 #include <utility>
 

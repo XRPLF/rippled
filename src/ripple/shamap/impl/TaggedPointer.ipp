@@ -576,20 +576,20 @@ TaggedPointer::isDense() const
     auto const children = reinterpret_cast<std::shared_ptr<SHAMapTreeNode>*>(
         hashes + numAllocated);
     return {numAllocated, hashes, children};
-};
+}
 
 [[nodiscard]] inline SHAMapHash*
 TaggedPointer::getHashes() const
 {
     return reinterpret_cast<SHAMapHash*>(tp_ & ptrMask);
-};
+}
 
 [[nodiscard]] inline std::shared_ptr<SHAMapTreeNode>*
 TaggedPointer::getChildren() const
 {
     auto [unused1, unused2, result] = getHashesAndChildren();
     return result;
-};
+}
 
 inline TaggedPointer::~TaggedPointer()
 {

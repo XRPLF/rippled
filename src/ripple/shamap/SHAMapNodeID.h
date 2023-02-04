@@ -78,7 +78,7 @@ public:
      * @return SHAMapNodeID of the node
      */
     static SHAMapNodeID
-    createID(int depth, uint256 const& key);
+    createID(unsigned int depth, uint256 const& key);
 
     // FIXME-C++20: use spaceship and operator synthesis
     /** Comparison operators */
