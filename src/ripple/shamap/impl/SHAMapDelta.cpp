@@ -137,7 +137,7 @@ SHAMap::compare(SHAMap const& otherMap, Delta& differences, int maxCount) const
     std::stack<StackEntry, std::vector<StackEntry>>
         nodeStack;  // track nodes we've pushed
 
-    nodeStack.push({root_.get(), otherMap.root_.get()});
+    nodeStack.emplace(root_.get(), otherMap.root_.get());
     while (!nodeStack.empty())
     {
         auto [ourNode, otherNode] = nodeStack.top();
@@ -220,9 +220,9 @@ SHAMap::compare(SHAMap const& otherMap, Delta& differences, int maxCount) const
                             return false;
                     }
                     else  // The two trees have different non-empty branches
-                        nodeStack.push(
-                            {descendThrow(ours, i),
-                             otherMap.descendThrow(other, i)});
+                        nodeStack.emplace(
+                            descendThrow(ours, i),
+                            otherMap.descendThrow(other, i));
                 }
         }
         else

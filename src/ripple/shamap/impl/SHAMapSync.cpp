@@ -74,7 +74,7 @@ SHAMap::visitNodes(std::function<bool(SHAMapTreeNode&)> const& function) const
                     if (pos != 15)
                     {
                         // save next position to resume at
-                        stack.push(std::make_pair(pos + 1, std::move(node)));
+                        stack.emplace(pos + 1, std::move(node));
                     }
 
                     // descend to the child's first position
@@ -147,8 +147,8 @@ SHAMap::visitDifferences(
                 if (next->isInner())
                 {
                     if (!have || !have->hasInnerNode(childID, childHash))
-                        stack.push(
-                            {static_cast<SHAMapInnerNode*>(next), childID});
+                        stack.emplace(
+                            static_cast<SHAMapInnerNode*>(next), childID);
                 }
                 else if (
                     !have ||
@@ -396,8 +396,8 @@ SHAMap::getMissingNodes(int max, SHAMapSyncFilter* filter)
                 // Recheck nodes we could not finish before
                 for (auto const& [innerNode, nodeId] : mn.resumes_)
                     if (!innerNode->isFullBelow(mn.generation_))
-                        mn.stack_.push(std::make_tuple(
-                            innerNode, nodeId, rand_int(255), 0, true));
+                        mn.stack_.emplace(
+                            innerNode, nodeId, rand_int(255), 0, true);
 
                 mn.resumes_.clear();
             }
@@ -473,7 +473,7 @@ SHAMap::getNodeFat(
         // Add this node to the reply
         s.erase();
         node->serializeForWire(s);
-        data.emplace_back(std::make_pair(nodeID, s.getData()));
+        data.emplace_back(nodeID, s.getData());
 
         if (node->isInner())
         {
@@ -506,8 +506,7 @@ SHAMap::getNodeFat(
                             // Just include this node
                             s.erase();
                             childNode->serializeForWire(s);
-                            data.emplace_back(
-                                std::make_pair(childID, s.getData()));
+                            data.emplace_back(childID, s.getData());
                         }
                     }
                 }
@@ -669,7 +668,7 @@ SHAMap::deepCompare(SHAMap& other) const
     // Intended for debug/test only
     std::stack<std::pair<SHAMapTreeNode*, SHAMapTreeNode*>> stack;
 
-    stack.push({root_.get(), other.root_.get()});
+    stack.emplace(root_.get(), other.root_.get());
 
     while (!stack.empty())
     {
@@ -724,7 +723,7 @@ SHAMap::deepCompare(SHAMap& other) const
                         JLOG(journal_.warn()) << "unable to fetch inner node";
                         return false;
                     }
-                    stack.push({next, otherNext});
+                    stack.emplace(next, otherNext);
                 }
             }
         }

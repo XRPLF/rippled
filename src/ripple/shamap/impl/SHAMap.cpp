@@ -192,14 +192,14 @@ SHAMap::finishFetch(
             canonicalize(hash, node);
         return node;
     }
-    catch (std::runtime_error const& e)
+    catch (std::exception const& e)
     {
-        JLOG(journal_.warn()) << "finishFetch exception: " << e.what();
+        JLOG(journal_.warn()) << "finishFetch: " << hash << ": " << e.what();
     }
     catch (...)
     {
         JLOG(journal_.warn())
-            << "finishFetch exception: unknonw exception: " << hash;
+            << "finishFetch: " << hash << ": unknown exception";
     }
 
     return {};
@@ -459,9 +459,9 @@ SHAMap::belowHelper(
     }
     auto inner = std::static_pointer_cast<SHAMapInnerNode>(node);
     if (stack.empty())
-        stack.push({inner, SHAMapNodeID{}});
+        stack.emplace(inner, SHAMapNodeID{});
     else
-        stack.push({inner, stack.top().second.getChildNodeID(branch)});
+        stack.emplace(inner, stack.top().second.getChildNodeID(branch));
     for (int i = init; cmp(i);)
     {
         if (!inner->isEmptyBranch(i))
@@ -471,11 +471,11 @@ SHAMap::belowHelper(
             if (node->isLeaf())
             {
                 auto n = std::static_pointer_cast<SHAMapLeafNode>(node);
-                stack.push({n, {leafDepth, n->peekItem()->key()}});
+                stack.emplace(n, SHAMapNodeID{leafDepth, n->peekItem()->key()});
                 return n.get();
             }
             inner = std::static_pointer_cast<SHAMapInnerNode>(node);
-            stack.push({inner, stack.top().second.getChildNodeID(branch)});
+            stack.emplace(inner, stack.top().second.getChildNodeID(branch));
             i = init;  // descend and reset loop
         }
         else
@@ -493,7 +493,7 @@ SHAMap::lastBelow(
     auto cmp = [](int i) { return i >= 0; };
     auto incr = [](int& i) { --i; };
 
-    return belowHelper(node, stack, branch, {init, cmp, incr});
+    return belowHelper(std::move(node), stack, branch, {init, cmp, incr});
 }
 SHAMapLeafNode*
 SHAMap::firstBelow(
@@ -505,7 +505,7 @@ SHAMap::firstBelow(
     auto cmp = [](int i) { return i <= branchFactor; };
     auto incr = [](int& i) { ++i; };
 
-    return belowHelper(node, stack, branch, {init, cmp, incr});
+    return belowHelper(std::move(node), stack, branch, {init, cmp, incr});
 }
 static const boost::intrusive_ptr<SHAMapItem const> no_item;
 
@@ -623,8 +623,7 @@ SHAMap::upper_bound(uint256 const& id) const
         {
             auto leaf = static_cast<SHAMapLeafNode*>(node.get());
             if (leaf->peekItem()->key() > id)
-                return const_iterator(
-                    this, leaf->peekItem().get(), std::move(stack));
+                return {this, leaf->peekItem().get(), std::move(stack)};
         }
         else
         {
@@ -639,8 +638,7 @@ SHAMap::upper_bound(uint256 const& id) const
                     auto leaf = firstBelow(node, stack, branch);
                     if (!leaf)
                         Throw<SHAMapMissingNode>(type_, id);
-                    return const_iterator(
-                        this, leaf->peekItem().get(), std::move(stack));
+                    return {this, leaf->peekItem().get(), std::move(stack)};
                 }
             }
         }
@@ -660,8 +658,7 @@ SHAMap::lower_bound(uint256 const& id) const
         {
             auto leaf = static_cast<SHAMapLeafNode*>(node.get());
             if (leaf->peekItem()->key() < id)
-                return const_iterator(
-                    this, leaf->peekItem().get(), std::move(stack));
+                return {this, leaf->peekItem().get(), std::move(stack)};
         }
         else
         {
@@ -675,8 +672,7 @@ SHAMap::lower_bound(uint256 const& id) const
                     auto leaf = lastBelow(node, stack, branch);
                     if (!leaf)
                         Throw<SHAMapMissingNode>(type_, id);
-                    return const_iterator(
-                        this, leaf->peekItem().get(), std::move(stack));
+                    return {this, leaf->peekItem().get(), std::move(stack)};
                 }
             }
         }
@@ -820,7 +816,7 @@ SHAMap::addGiveItem(
         while ((b1 = selectBranch(nodeID, tag)) ==
                (b2 = selectBranch(nodeID, otherItem->key())))
         {
-            stack.push({node, nodeID});
+            stack.emplace(node, nodeID);
 
             // we need a new inner node, since both go on same branch at this
             // level
@@ -1035,7 +1031,7 @@ SHAMap::walkSubTree(bool doWrite, NodeObjectType t)
     int pos = 0;
 
     // We can't flush an inner node until we flush its children
-    while (1)
+    while (true)
     {
         while (pos < branchFactor)
         {
@@ -1127,7 +1123,7 @@ SHAMap::dump(bool hash) const
     JLOG(journal_.info()) << " MAP Contains";
 
     std::stack<std::pair<SHAMapTreeNode*, SHAMapNodeID>> stack;
-    stack.push({root_.get(), SHAMapNodeID()});
+    stack.emplace(root_.get(), SHAMapNodeID());
 
     do
     {
@@ -1151,7 +1147,7 @@ SHAMap::dump(bool hash) const
                     if (child)
                     {
                         assert(child->getHash() == inner->getChildHash(i));
-                        stack.push({child, nodeID.getChildNodeID(i)});
+                        stack.emplace(child, nodeID.getChildNodeID(i));
                     }
                 }
             }
