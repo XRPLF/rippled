@@ -158,6 +158,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a7f13952d6b60dd4efb943f9a87d54afa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a67baee148280677d33108339eb2a3d6e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#a67baee148280677d33108339eb2a3d6e">STAmount</a> (<a class="el" href="classripple_1_1XRPAmount.html">XRPAmount</a> const &amp;amount)</td></tr>
 <tr class="separator:a67baee148280677d33108339eb2a3d6e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a512379550abad21d6ef1331c5cbb83ac"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#a512379550abad21d6ef1331c5cbb83ac">operator Number</a> () const</td></tr>
+<tr class="separator:a512379550abad21d6ef1331c5cbb83ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2885d73708e1b809f31a46ffaea5ad7f"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#a2885d73708e1b809f31a46ffaea5ad7f">exponent</a> () const noexcept</td></tr>
 <tr class="separator:a2885d73708e1b809f31a46ffaea5ad7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af3a02d7e9cd0b11509a90e0e6980bd64"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#af3a02d7e9cd0b11509a90e0e6980bd64">native</a> () const noexcept</td></tr>
@@ -277,6 +279,8 @@ Private Member Functions</h2></td></tr>
 <tr class="separator:abf159f0fdfeb655c111a50b303a0d774"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a359188da6f9563edb159e0651f6ccf6e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STBase.html">STBase</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#a359188da6f9563edb159e0651f6ccf6e">move</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> n, void *buf) override</td></tr>
 <tr class="separator:a359188da6f9563edb159e0651f6ccf6e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa5bf0545fabd14cc515c79a439ed70d5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STAmount.html">STAmount</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#aa5bf0545fabd14cc515c79a439ed70d5">operator=</a> (<a class="el" href="classripple_1_1IOUAmount.html">IOUAmount</a> const &amp;<a class="el" href="classripple_1_1STAmount.html#a094bda660d23e258021a2c63112ebc9a">iou</a>)</td></tr>
+<tr class="separator:aa5bf0545fabd14cc515c79a439ed70d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-static-methods"></a>
 Static Private Member Functions</h2></td></tr>
@@ -304,10 +308,12 @@ Private Attributes</h2></td></tr>
 Friends</h2></td></tr>
 <tr class="memitem:a5e49bd8b743617d1af92ffed7ac6b665"><td class="memItemLeft" align="right" valign="top">class&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#a5e49bd8b743617d1af92ffed7ac6b665">detail::STVar</a></td></tr>
 <tr class="separator:a5e49bd8b743617d1af92ffed7ac6b665"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af43083bb6200c6ea99ae78b4b6109e1b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STAmount.html">STAmount</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STAmount.html#af43083bb6200c6ea99ae78b4b6109e1b">operator+</a> (<a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;v1, <a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;v2)</td></tr>
+<tr class="separator:af43083bb6200c6ea99ae78b4b6109e1b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00044">44</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00045">45</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="adbd368767f508e1102a01ce62acf75a6"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#adbd368767f508e1102a01ce62acf75a6">&#9670;&nbsp;</a></span>mantissa_type</h2>
@@ -321,7 +327,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00047">47</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00048">48</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
 
 </div>
 </div>
@@ -337,7 +343,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00048">48</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00049">49</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
 
 </div>
 </div>
@@ -353,7 +359,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00049">49</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00050">50</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
 
 </div>
 </div>
@@ -369,7 +375,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00059">59</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00060">60</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
 
 </div>
 </div>
@@ -931,6 +937,25 @@ Friends</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="a512379550abad21d6ef1331c5cbb83ac"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a512379550abad21d6ef1331c5cbb83ac">&#9670;&nbsp;</a></span>operator Number()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">ripple::STAmount::operator <a class="el" href="classripple_1_1Number.html">Number</a> </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00381">381</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+
+</div>
+</div>
 <a id="a2885d73708e1b809f31a46ffaea5ad7f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a2885d73708e1b809f31a46ffaea5ad7f">&#9670;&nbsp;</a></span>exponent()</h2>
 
@@ -954,7 +979,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00315">315</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00323">323</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
 
 </div>
 </div>
@@ -981,7 +1006,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00321">321</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00329">329</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
 
 </div>
 </div>
@@ -1008,7 +1033,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00327">327</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00335">335</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
 
 </div>
 </div>
@@ -1035,7 +1060,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00333">333</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00341">341</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
 
 </div>
 </div>
@@ -1054,7 +1079,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00339">339</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00347">347</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
 
 </div>
 </div>
@@ -1073,7 +1098,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00345">345</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00353">353</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
 
 </div>
 </div>
@@ -1092,7 +1117,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00351">351</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00359">359</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
 
 </div>
 </div>
@@ -1119,7 +1144,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00357">357</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00365">365</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
 
 </div>
 </div>
@@ -1140,7 +1165,7 @@ Friends</h2></td></tr>
 
 <p>Returns a zero value with the same issuer and currency. </p>
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00363">363</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00371">371</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
 
 </div>
 </div>
@@ -1160,7 +1185,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00476">476</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00496">496</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
 
 </div>
 </div>
@@ -1187,7 +1212,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00425">425</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00440">440</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
 
 </div>
 </div>
@@ -1214,7 +1239,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00368">368</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00376">376</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
 
 </div>
 </div>
@@ -1234,7 +1259,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00349">349</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00362">362</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
 
 </div>
 </div>
@@ -1254,12 +1279,12 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00356">356</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00369">369</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
 
 </div>
 </div>
 <a id="a26e41013034a7a5a484c7727fdaadbba"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a26e41013034a7a5a484c7727fdaadbba">&#9670;&nbsp;</a></span>operator=() <span class="overload">[1/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a26e41013034a7a5a484c7727fdaadbba">&#9670;&nbsp;</a></span>operator=() <span class="overload">[1/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1274,12 +1299,12 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00373">373</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00388">388</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
 
 </div>
 </div>
 <a id="aa02925b2ca8cf8f5f486dfc4ce393394"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa02925b2ca8cf8f5f486dfc4ce393394">&#9670;&nbsp;</a></span>operator=() <span class="overload">[2/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aa02925b2ca8cf8f5f486dfc4ce393394">&#9670;&nbsp;</a></span>operator=() <span class="overload">[2/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1294,7 +1319,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00380">380</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00395">395</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
 
 </div>
 </div>
@@ -1313,7 +1338,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00387">387</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00402">402</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
 
 </div>
 </div>
@@ -1332,7 +1357,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00394">394</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00409">409</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
 
 </div>
 </div>
@@ -1352,7 +1377,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00405">405</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00420">420</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
 
 </div>
 </div>
@@ -1372,7 +1397,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00411">411</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00426">426</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
 
 </div>
 </div>
@@ -1392,7 +1417,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00418">418</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00433">433</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
 
 </div>
 </div>
@@ -1414,7 +1439,7 @@ Friends</h2></td></tr>
 
 <p>Set the <a class="el" href="classripple_1_1Issue.html" title="A currency issued by an account.">Issue</a> for this amount and update mIsNative. </p>
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00438">438</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00458">458</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
 
 </div>
 </div>
@@ -1443,7 +1468,7 @@ Friends</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#a233469e9eb1efaa8639b384628fcef62">ripple::STBase</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00501">501</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00521">521</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
 
 </div>
 </div>
@@ -1472,7 +1497,7 @@ Friends</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#ac8d35807022215e4c00cb974b6f36216">ripple::STBase</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00507">507</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00527">527</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
 
 </div>
 </div>
@@ -1501,7 +1526,7 @@ Friends</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#a45b0231291b9ba9d1e999033ff975cc3">ripple::STBase</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00530">530</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00550">550</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
 
 </div>
 </div>
@@ -1531,7 +1556,7 @@ Friends</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#af1dfd1c754eaf5eded23242b59a0cdb5">ripple::STBase</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00614">614</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00634">634</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
 
 </div>
 </div>
@@ -1561,7 +1586,7 @@ Friends</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#acc434da323d0ee0bf1880cd46b2a207a">ripple::STBase</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00622">622</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00642">642</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
 
 </div>
 </div>
@@ -1591,7 +1616,7 @@ Friends</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#a2282c8e10ea51c1565b1fd5e67ac8344">ripple::STBase</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00653">653</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00673">673</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
 
 </div>
 </div>
@@ -1620,7 +1645,7 @@ Friends</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#af0182cf3ef71d4367851e1d3d3fbede0">ripple::STBase</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00660">660</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00680">680</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
 
 </div>
 </div>
@@ -1724,7 +1749,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00776">776</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00814">814</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
 
 </div>
 </div>
@@ -1751,7 +1776,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00684">684</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00704">704</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
 
 </div>
 </div>
@@ -1832,6 +1857,34 @@ Friends</h2></td></tr>
 <p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#a0ab863d0b635b5ff22f7f718d0581090">ripple::STBase</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00302">302</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
+
+</div>
+</div>
+<a id="aa5bf0545fabd14cc515c79a439ed70d5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa5bf0545fabd14cc515c79a439ed70d5">&#9670;&nbsp;</a></span>operator=() <span class="overload">[3/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1STAmount.html">STAmount</a> &amp; ripple::STAmount::operator= </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1IOUAmount.html">IOUAmount</a> const &amp;&#160;</td>
+          <td class="paramname"><em>iou</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00343">343</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
 
 </div>
 </div>
@@ -2120,7 +2173,45 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00278">278</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00283">283</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+
+</div>
+</div>
+<a id="af43083bb6200c6ea99ae78b4b6109e1b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af43083bb6200c6ea99ae78b4b6109e1b">&#9670;&nbsp;</a></span>operator+</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1STAmount.html">STAmount</a> operator+ </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;&#160;</td>
+          <td class="paramname"><em>v1</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;&#160;</td>
+          <td class="paramname"><em>v2</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STAmount_8cpp_source.html#l00376">376</a> of file <a class="el" href="STAmount_8cpp_source.html">STAmount.cpp</a>.</p>
 
 </div>
 </div>
@@ -2145,7 +2236,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00052">52</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00053">53</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
 
 </div>
 </div>
@@ -2169,7 +2260,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00053">53</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00054">54</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
 
 </div>
 </div>
@@ -2193,7 +2284,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00054">54</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00055">55</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
 
 </div>
 </div>
@@ -2217,7 +2308,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00055">55</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00056">56</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
 
 </div>
 </div>
@@ -2241,7 +2332,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00056">56</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00057">57</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
 
 </div>
 </div>
@@ -2265,7 +2356,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00061">61</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00062">62</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
 
 </div>
 </div>
@@ -2289,7 +2380,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00062">62</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00063">63</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
 
 </div>
 </div>
@@ -2313,7 +2404,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00065">65</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00066">66</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
 
 </div>
 </div>
@@ -2337,7 +2428,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00066">66</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00067">67</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
 
 </div>
 </div>
@@ -2361,7 +2452,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00067">67</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00068">68</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
 
 </div>
 </div>
@@ -2385,7 +2476,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00070">70</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00071">71</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
 
 </div>
 </div>
@@ -2409,7 +2500,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00071">71</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00072">72</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
 
 </div>
 </div>
@@ -2433,7 +2524,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00072">72</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00073">73</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
 
 </div>
 </div>
@@ -2457,7 +2548,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00074">74</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STAmount_8h_source.html#l00075">75</a> of file <a class="el" href="STAmount_8h_source.html">STAmount.h</a>.</p>
 
 </div>
 </div>

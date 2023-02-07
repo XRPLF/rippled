@@ -1,3 +1,7 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$structripple_1_1test_1_1jtx_1_1AnyAmount.html" title="Amount specifier with an option for any issuer." alt="" coords="5,5,131,47"/>
+<area shape="rect" id="node1" href="$structripple_1_1test_1_1GRPCTestClientBase.html" title=" " alt="" coords="5,111,237,138"/>
+<area shape="rect" id="node2" href="$classripple_1_1test_1_1ReportingETL__test_1_1GrpcLedgerClient.html" title=" " alt="" coords="297,5,482,47"/>
+<area shape="rect" id="node3" href="$classripple_1_1test_1_1ReportingETL__test_1_1GrpcLedgerDataClient.html" title=" " alt="" coords="287,71,492,112"/>
+<area shape="rect" id="node4" href="$classripple_1_1test_1_1ReportingETL__test_1_1GrpcLedgerDiffClient.html" title=" " alt="" coords="291,136,488,177"/>
+<area shape="rect" id="node5" href="$classripple_1_1test_1_1ReportingETL__test_1_1GrpcLedgerEntryClient.html" title=" " alt="" coords="285,201,493,243"/>
 </map>

@@ -102,26 +102,26 @@ $(function() {
 <div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; key,</div>
 <div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt;<span class="keywordtype">void</span>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;SLE&gt;</a> <span class="keyword">const</span>&amp;)&gt; <span class="keyword">const</span>&amp; describe)</div>
 <div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;{</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    <span class="keyword">auto</span> root = <a class="code" href="classripple_1_1ApplyView.html#aad9fb1233dec10dcc10c2e3b1da6a723">peek</a>(directory);</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    <span class="keyword">auto</span> <a class="code" href="namespaceripple.html#acdc87ea9c4ad1742d4aeebac963e8570">root</a> = <a class="code" href="classripple_1_1ApplyView.html#aad9fb1233dec10dcc10c2e3b1da6a723">peek</a>(directory);</div>
 <div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160; </div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    <span class="keywordflow">if</span> (!root)</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    <span class="keywordflow">if</span> (!<a class="code" href="namespaceripple.html#acdc87ea9c4ad1742d4aeebac963e8570">root</a>)</div>
 <div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    {</div>
 <div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;        <span class="comment">// No root, make it.</span></div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;        root = std::make_shared&lt;SLE&gt;(directory);</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        root-&gt;setFieldH256(<a class="code" href="namespaceripple.html#ae5165157de56600d67a81eb78644a038">sfRootIndex</a>, directory.<a class="code" href="structripple_1_1Keylet.html#a482983062843a8682fcea76a309c73db">key</a>);</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        describe(root);</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;        <a class="code" href="namespaceripple.html#acdc87ea9c4ad1742d4aeebac963e8570">root</a> = std::make_shared&lt;SLE&gt;(directory);</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        <a class="code" href="namespaceripple.html#acdc87ea9c4ad1742d4aeebac963e8570">root</a>-&gt;setFieldH256(<a class="code" href="namespaceripple.html#ae5165157de56600d67a81eb78644a038">sfRootIndex</a>, directory.<a class="code" href="structripple_1_1Keylet.html#a482983062843a8682fcea76a309c73db">key</a>);</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        describe(<a class="code" href="namespaceripple.html#acdc87ea9c4ad1742d4aeebac963e8570">root</a>);</div>
 <div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160; </div>
 <div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;        <a class="code" href="classripple_1_1STVector256.html">STVector256</a> v;</div>
 <div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;        v.<a class="code" href="classripple_1_1STVector256.html#a6bd443eec0924c8b8f95e6c6d812117c">push_back</a>(key);</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;        root-&gt;setFieldV256(<a class="code" href="namespaceripple.html#a5db6a436a1b570fd3fdfc1583c34883f">sfIndexes</a>, v);</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;        <a class="code" href="namespaceripple.html#acdc87ea9c4ad1742d4aeebac963e8570">root</a>-&gt;setFieldV256(<a class="code" href="namespaceripple.html#a5db6a436a1b570fd3fdfc1583c34883f">sfIndexes</a>, v);</div>
 <div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160; </div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        <a class="code" href="classripple_1_1ApplyView.html#aa3c5b5cd9dca5f906be4b36640706e3c">insert</a>(root);</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        <a class="code" href="classripple_1_1ApplyView.html#aa3c5b5cd9dca5f906be4b36640706e3c">insert</a>(<a class="code" href="namespaceripple.html#acdc87ea9c4ad1742d4aeebac963e8570">root</a>);</div>
 <div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        <span class="keywordflow">return</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>{0};</div>
 <div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    }</div>
 <div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160; </div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> page = root-&gt;getFieldU64(<a class="code" href="namespaceripple.html#acedcdf61309fa91212d6839205c9be5f">sfIndexPrevious</a>);</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> page = <a class="code" href="namespaceripple.html#acdc87ea9c4ad1742d4aeebac963e8570">root</a>-&gt;getFieldU64(<a class="code" href="namespaceripple.html#acedcdf61309fa91212d6839205c9be5f">sfIndexPrevious</a>);</div>
 <div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160; </div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <span class="keyword">auto</span> node = root;</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <span class="keyword">auto</span> node = <a class="code" href="namespaceripple.html#acdc87ea9c4ad1742d4aeebac963e8570">root</a>;</div>
 <div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160; </div>
 <div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    <span class="keywordflow">if</span> (page)</div>
 <div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    {</div>
@@ -171,8 +171,8 @@ $(function() {
 <div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;    node-&gt;setFieldU64(<a class="code" href="namespaceripple.html#a77074200cc38ab479af35f26073ecd0c">sfIndexNext</a>, page);</div>
 <div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;    <a class="code" href="classripple_1_1ApplyView.html#a542437b9b59a623e755979acdc075af5">update</a>(node);</div>
 <div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160; </div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;    root-&gt;setFieldU64(<a class="code" href="namespaceripple.html#acedcdf61309fa91212d6839205c9be5f">sfIndexPrevious</a>, page);</div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;    <a class="code" href="classripple_1_1ApplyView.html#a542437b9b59a623e755979acdc075af5">update</a>(root);</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;    <a class="code" href="namespaceripple.html#acdc87ea9c4ad1742d4aeebac963e8570">root</a>-&gt;setFieldU64(<a class="code" href="namespaceripple.html#acedcdf61309fa91212d6839205c9be5f">sfIndexPrevious</a>, page);</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;    <a class="code" href="classripple_1_1ApplyView.html#a542437b9b59a623e755979acdc075af5">update</a>(<a class="code" href="namespaceripple.html#acdc87ea9c4ad1742d4aeebac963e8570">root</a>);</div>
 <div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160; </div>
 <div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    <span class="comment">// Insert the new key:</span></div>
 <div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;    indexes.clear();</div>
@@ -385,11 +385,11 @@ $(function() {
 <div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;        <a class="code" href="classripple_1_1ApplyView.html#a542437b9b59a623e755979acdc075af5">update</a>(prev);</div>
 <div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160; </div>
 <div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;        <span class="comment">// And the root points to the the last page:</span></div>
-<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;        <span class="keyword">auto</span> root = <a class="code" href="classripple_1_1ApplyView.html#aad9fb1233dec10dcc10c2e3b1da6a723">peek</a>(<a class="code" href="namespaceripple_1_1keylet.html#a7e018eaf4a4da32d3f6f75f864cb85d1">keylet::page</a>(directory, rootPage));</div>
-<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;        <span class="keywordflow">if</span> (!root)</div>
+<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;        <span class="keyword">auto</span> <a class="code" href="namespaceripple.html#acdc87ea9c4ad1742d4aeebac963e8570">root</a> = <a class="code" href="classripple_1_1ApplyView.html#aad9fb1233dec10dcc10c2e3b1da6a723">peek</a>(<a class="code" href="namespaceripple_1_1keylet.html#a7e018eaf4a4da32d3f6f75f864cb85d1">keylet::page</a>(directory, rootPage));</div>
+<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;        <span class="keywordflow">if</span> (!<a class="code" href="namespaceripple.html#acdc87ea9c4ad1742d4aeebac963e8570">root</a>)</div>
 <div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;            <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<span class="stringliteral">&quot;Directory chain: root link broken.&quot;</span>);</div>
-<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;        root-&gt;setFieldU64(<a class="code" href="namespaceripple.html#acedcdf61309fa91212d6839205c9be5f">sfIndexPrevious</a>, prevPage);</div>
-<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;        <a class="code" href="classripple_1_1ApplyView.html#a542437b9b59a623e755979acdc075af5">update</a>(root);</div>
+<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;        <a class="code" href="namespaceripple.html#acdc87ea9c4ad1742d4aeebac963e8570">root</a>-&gt;setFieldU64(<a class="code" href="namespaceripple.html#acedcdf61309fa91212d6839205c9be5f">sfIndexPrevious</a>, prevPage);</div>
+<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;        <a class="code" href="classripple_1_1ApplyView.html#a542437b9b59a623e755979acdc075af5">update</a>(<a class="code" href="namespaceripple.html#acdc87ea9c4ad1742d4aeebac963e8570">root</a>);</div>
 <div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160; </div>
 <div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;        nextPage = rootPage;</div>
 <div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;    }</div>
@@ -465,6 +465,7 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1STVector256_html"><div class="ttname"><a href="classripple_1_1STVector256.html">ripple::STVector256</a></div><div class="ttdef"><b>Definition:</b> <a href="STVector256_8h_source.html#l00029">STVector256.h:29</a></div></div>
 <div class="ttc" id="aoptional_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a></div></div>
 <div class="ttc" id="anamespaceripple_html_aa92d4d5c77691ea9bf8a848d84187e39"><div class="ttname"><a href="namespaceripple.html#aa92d4d5c77691ea9bf8a848d84187e39">ripple::dirNodeMaxEntries</a></div><div class="ttdeci">constexpr std::size_t dirNodeMaxEntries</div><div class="ttdoc">The maximum number of entries per directory page.</div><div class="ttdef"><b>Definition:</b> <a href="Protocol_8h_source.html#l00055">Protocol.h:55</a></div></div>
+<div class="ttc" id="anamespaceripple_html_acdc87ea9c4ad1742d4aeebac963e8570"><div class="ttname"><a href="namespaceripple.html#acdc87ea9c4ad1742d4aeebac963e8570">ripple::root</a></div><div class="ttdeci">Number root(Number f, unsigned d)</div><div class="ttdef"><b>Definition:</b> <a href="Number_8cpp_source.html#l00624">Number.cpp:624</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

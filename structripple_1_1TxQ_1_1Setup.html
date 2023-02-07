@@ -105,7 +105,7 @@ Public Member Functions</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
 <tr class="memitem:ae90eb2b5bf5f061092c0d83457f55f81"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1TxQ_1_1Setup.html#ae90eb2b5bf5f061092c0d83457f55f81">ledgersInQueue</a> = 20</td></tr>
-<tr class="memdesc:ae90eb2b5bf5f061092c0d83457f55f81"><td class="mdescLeft">&#160;</td><td class="mdescRight">Number of ledgers' worth of transactions to allow in the queue.  <a href="structripple_1_1TxQ_1_1Setup.html#ae90eb2b5bf5f061092c0d83457f55f81">More...</a><br /></td></tr>
+<tr class="memdesc:ae90eb2b5bf5f061092c0d83457f55f81"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classripple_1_1Number.html">Number</a> of ledgers' worth of transactions to allow in the queue.  <a href="structripple_1_1TxQ_1_1Setup.html#ae90eb2b5bf5f061092c0d83457f55f81">More...</a><br /></td></tr>
 <tr class="separator:ae90eb2b5bf5f061092c0d83457f55f81"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6aa8f143fbe49895ac08279cfc0311e2"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1TxQ_1_1Setup.html#a6aa8f143fbe49895ac08279cfc0311e2">queueSizeMin</a> = 2000</td></tr>
 <tr class="memdesc:a6aa8f143fbe49895ac08279cfc0311e2"><td class="mdescLeft">&#160;</td><td class="mdescRight">The smallest limit the queue is allowed.  <a href="structripple_1_1TxQ_1_1Setup.html#a6aa8f143fbe49895ac08279cfc0311e2">More...</a><br /></td></tr>
@@ -123,7 +123,7 @@ Public Attributes</h2></td></tr>
 <tr class="memdesc:acb7f76ef24c80a9a26bc94701001eec5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Like <a class="el" href="structripple_1_1TxQ_1_1Setup.html#a2b11f9f54cac17f8f23c30e978742786">minimumTxnInLedger</a> for standalone mode.  <a href="structripple_1_1TxQ_1_1Setup.html#acb7f76ef24c80a9a26bc94701001eec5">More...</a><br /></td></tr>
 <tr class="separator:acb7f76ef24c80a9a26bc94701001eec5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa1bbdbb893cafa2a5ef126f72644321c"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1TxQ_1_1Setup.html#aa1bbdbb893cafa2a5ef126f72644321c">targetTxnInLedger</a> = 256</td></tr>
-<tr class="memdesc:aa1bbdbb893cafa2a5ef126f72644321c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Number of transactions per ledger that fee escalation "works
+<tr class="memdesc:aa1bbdbb893cafa2a5ef126f72644321c"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classripple_1_1Number.html">Number</a> of transactions per ledger that fee escalation "works
 towards".  <a href="structripple_1_1TxQ_1_1Setup.html#aa1bbdbb893cafa2a5ef126f72644321c">More...</a><br /></td></tr>
 <tr class="separator:aa1bbdbb893cafa2a5ef126f72644321c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7ee5bc03ae4f2f9b5f2de99eceabdac8"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1TxQ_1_1Setup.html#a7ee5bc03ae4f2f9b5f2de99eceabdac8">maximumTxnInLedger</a></td></tr>
@@ -190,7 +190,7 @@ towards".  <a href="structripple_1_1TxQ_1_1Setup.html#aa1bbdbb893cafa2a5ef126f72
       </table>
 </div><div class="memdoc">
 
-<p>Number of ledgers' worth of transactions to allow in the queue. </p>
+<p><a class="el" href="classripple_1_1Number.html">Number</a> of ledgers' worth of transactions to allow in the queue. </p>
 <p>For example, if the last ledger had 150 transactions, then up to 3000 transactions can be queued.</p>
 <p>Can be overridden by <a class="el" href="structripple_1_1TxQ_1_1Setup.html#a6aa8f143fbe49895ac08279cfc0311e2">queueSizeMin</a> </p>
 
@@ -303,7 +303,7 @@ towards".  <a href="structripple_1_1TxQ_1_1Setup.html#aa1bbdbb893cafa2a5ef126f72
       </table>
 </div><div class="memdoc">
 
-<p>Number of transactions per ledger that fee escalation "works
+<p><a class="el" href="classripple_1_1Number.html">Number</a> of transactions per ledger that fee escalation "works
 towards". </p>
 
 <p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00106">106</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>

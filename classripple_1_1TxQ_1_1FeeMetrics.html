@@ -132,14 +132,14 @@ Private Attributes</h2></td></tr>
 <tr class="memdesc:a3ecbd7fe9c9d22c84dfa9c3bec89117c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Minimum value of txnsExpected.  <a href="classripple_1_1TxQ_1_1FeeMetrics.html#a3ecbd7fe9c9d22c84dfa9c3bec89117c">More...</a><br /></td></tr>
 <tr class="separator:a3ecbd7fe9c9d22c84dfa9c3bec89117c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a08104b8222fc9b9af942de8fe76d2405"><td class="memItemLeft" align="right" valign="top">const <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TxQ_1_1FeeMetrics.html#a08104b8222fc9b9af942de8fe76d2405">targetTxnCount_</a></td></tr>
-<tr class="memdesc:a08104b8222fc9b9af942de8fe76d2405"><td class="mdescLeft">&#160;</td><td class="mdescRight">Number of transactions per ledger that fee escalation "works
+<tr class="memdesc:a08104b8222fc9b9af942de8fe76d2405"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classripple_1_1Number.html">Number</a> of transactions per ledger that fee escalation "works
 towards".  <a href="classripple_1_1TxQ_1_1FeeMetrics.html#a08104b8222fc9b9af942de8fe76d2405">More...</a><br /></td></tr>
 <tr class="separator:a08104b8222fc9b9af942de8fe76d2405"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0bdf35ce6e296e27bb903b356e4d47d7"><td class="memItemLeft" align="right" valign="top">const <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TxQ_1_1FeeMetrics.html#a0bdf35ce6e296e27bb903b356e4d47d7">maximumTxnCount_</a></td></tr>
 <tr class="memdesc:a0bdf35ce6e296e27bb903b356e4d47d7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum value of txnsExpected.  <a href="classripple_1_1TxQ_1_1FeeMetrics.html#a0bdf35ce6e296e27bb903b356e4d47d7">More...</a><br /></td></tr>
 <tr class="separator:a0bdf35ce6e296e27bb903b356e4d47d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a37f68c24e1cd38f10a3cca07fd2c50cc"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TxQ_1_1FeeMetrics.html#a37f68c24e1cd38f10a3cca07fd2c50cc">txnsExpected_</a></td></tr>
-<tr class="memdesc:a37f68c24e1cd38f10a3cca07fd2c50cc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Number of transactions expected per ledger.  <a href="classripple_1_1TxQ_1_1FeeMetrics.html#a37f68c24e1cd38f10a3cca07fd2c50cc">More...</a><br /></td></tr>
+<tr class="memdesc:a37f68c24e1cd38f10a3cca07fd2c50cc"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classripple_1_1Number.html">Number</a> of transactions expected per ledger.  <a href="classripple_1_1TxQ_1_1FeeMetrics.html#a37f68c24e1cd38f10a3cca07fd2c50cc">More...</a><br /></td></tr>
 <tr class="separator:a37f68c24e1cd38f10a3cca07fd2c50cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ace3ced272f60d6a504c2c6531aa32114"><td class="memItemLeft" align="right" valign="top">boost::circular_buffer&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TxQ_1_1FeeMetrics.html#ace3ced272f60d6a504c2c6531aa32114">recentTxnCounts_</a></td></tr>
 <tr class="memdesc:ace3ced272f60d6a504c2c6531aa32114"><td class="mdescLeft">&#160;</td><td class="mdescRight">Recent history of transaction counts that exceed the targetTxnCount_.  <a href="classripple_1_1TxQ_1_1FeeMetrics.html#ace3ced272f60d6a504c2c6531aa32114">More...</a><br /></td></tr>
@@ -363,7 +363,7 @@ towards".  <a href="classripple_1_1TxQ_1_1FeeMetrics.html#a08104b8222fc9b9af942d
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">view</td><td>Current open / working ledger. (May be a sandbox.) </td></tr>
-    <tr><td class="paramname">extraCount</td><td>Number of additional transactions to count as in the ledger. (If <code>view</code> is a sandbox, should be the number of transactions in the parent ledger.) </td></tr>
+    <tr><td class="paramname">extraCount</td><td><a class="el" href="classripple_1_1Number.html">Number</a> of additional transactions to count as in the ledger. (If <code>view</code> is a sandbox, should be the number of transactions in the parent ledger.) </td></tr>
     <tr><td class="paramname">seriesSize</td><td>Total number of transactions in the series to be processed.</td></tr>
   </table>
   </dd>
@@ -421,7 +421,7 @@ towards".  <a href="classripple_1_1TxQ_1_1FeeMetrics.html#a08104b8222fc9b9af942d
 </table>
 </div><div class="memdoc">
 
-<p>Number of transactions per ledger that fee escalation "works
+<p><a class="el" href="classripple_1_1Number.html">Number</a> of transactions per ledger that fee escalation "works
 towards". </p>
 
 <p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00381">381</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
@@ -474,7 +474,7 @@ towards". </p>
 </table>
 </div><div class="memdoc">
 
-<p>Number of transactions expected per ledger. </p>
+<p><a class="el" href="classripple_1_1Number.html">Number</a> of transactions expected per ledger. </p>
 <p>One more than this value will be accepted before escalation kicks in. </p>
 
 <p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00387">387</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>

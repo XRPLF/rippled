@@ -420,17 +420,17 @@ $(function() {
 <div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;                <a class="code" href="classripple_1_1SHAMapItem.html">SHAMapItem</a>{k, <a class="code" href="classripple_1_1Slice.html">Slice</a>{k.<a class="code" href="classripple_1_1base__uint.html#a5342507fe2fb5ac55d578e7e98863f70">data</a>(), k.<a class="code" href="classripple_1_1base__uint.html#adbe18ef92b677603e8539b3a77c064b0">size</a>()}});</div>
 <div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;            map.invariants();</div>
 <div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160; </div>
-<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;            <span class="keyword">auto</span> root = map.getHash().as_uint256();</div>
+<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;            <span class="keyword">auto</span> <a class="code" href="namespaceripple.html#acdc87ea9c4ad1742d4aeebac963e8570">root</a> = map.getHash().as_uint256();</div>
 <div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;            <span class="keyword">auto</span> path = map.getProofPath(k);</div>
 <div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;            BEAST_EXPECT(path);</div>
 <div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;            <span class="keywordflow">if</span> (!path)</div>
 <div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;                <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;            BEAST_EXPECT(map.verifyProofPath(root, k, *path));</div>
+<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;            BEAST_EXPECT(map.verifyProofPath(<a class="code" href="namespaceripple.html#acdc87ea9c4ad1742d4aeebac963e8570">root</a>, k, *path));</div>
 <div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;            <span class="keywordflow">if</span> (c == 1)</div>
 <div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;            {</div>
 <div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;                <span class="comment">// extra node</span></div>
 <div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;                path-&gt;insert(path-&gt;begin(), path-&gt;front());</div>
-<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;                BEAST_EXPECT(!map.verifyProofPath(root, k, *path));</div>
+<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;                BEAST_EXPECT(!map.verifyProofPath(<a class="code" href="namespaceripple.html#acdc87ea9c4ad1742d4aeebac963e8570">root</a>, k, *path));</div>
 <div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;                <span class="comment">// wrong key</span></div>
 <div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;                <a class="code" href="classripple_1_1base__uint.html">uint256</a> wrongKey(c + 1);</div>
 <div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;                BEAST_EXPECT(!map.getProofPath(wrongKey));</div>
@@ -438,7 +438,7 @@ $(function() {
 <div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;            <span class="keywordflow">if</span> (c == 99)</div>
 <div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;            {</div>
 <div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;                key = k;</div>
-<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;                rootHash = root;</div>
+<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;                rootHash = <a class="code" href="namespaceripple.html#acdc87ea9c4ad1742d4aeebac963e8570">root</a>;</div>
 <div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160;                goodPath = std::move(*path);</div>
 <div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;            }</div>
 <div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160;        }</div>
@@ -536,6 +536,7 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1SHAMapHash_html_a8f95b5bc14b7085d368f56aeaa17ef4f"><div class="ttname"><a href="classripple_1_1SHAMapHash.html#a8f95b5bc14b7085d368f56aeaa17ef4f">ripple::SHAMapHash::as_uint256</a></div><div class="ttdeci">uint256 const  &amp; as_uint256() const</div><div class="ttdef"><b>Definition:</b> <a href="SHAMapHash_8h_source.html#l00043">SHAMapHash.h:43</a></div></div>
 <div class="ttc" id="afill_n_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/algorithm/fill_n.html">std::fill_n</a></div><div class="ttdeci">T fill_n(T... args)</div></div>
 <div class="ttc" id="aclassripple_1_1SHAMap_html_ad34b4b3f4c26154a0ad8e63ada075f88"><div class="ttname"><a href="classripple_1_1SHAMap.html#ad34b4b3f4c26154a0ad8e63ada075f88">ripple::SHAMap::delItem</a></div><div class="ttdeci">bool delItem(uint256 const &amp;id)</div><div class="ttdef"><b>Definition:</b> <a href="SHAMap_8cpp_source.html#l00690">SHAMap.cpp:690</a></div></div>
+<div class="ttc" id="anamespaceripple_html_acdc87ea9c4ad1742d4aeebac963e8570"><div class="ttname"><a href="namespaceripple.html#acdc87ea9c4ad1742d4aeebac963e8570">ripple::root</a></div><div class="ttdeci">Number root(Number f, unsigned d)</div><div class="ttdef"><b>Definition:</b> <a href="Number_8cpp_source.html#l00624">Number.cpp:624</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

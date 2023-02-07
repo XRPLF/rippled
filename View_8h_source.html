@@ -170,13 +170,13 @@ $(function() {
 <div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;<span class="keywordtype">void</span></div>
 <div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;<a class="code" href="namespaceripple.html#accc8ce88b24f653a30e40f7d22e428c5">forEachItem</a>(</div>
 <div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;    ReadView <span class="keyword">const</span>&amp; view,</div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;    Keylet <span class="keyword">const</span>&amp; root,</div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;    Keylet <span class="keyword">const</span>&amp; <a class="code" href="namespaceripple.html#acdc87ea9c4ad1742d4aeebac963e8570">root</a>,</div>
 <div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt;<span class="keywordtype">void</span>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;SLE const&gt;</a> <span class="keyword">const</span>&amp;)&gt; <span class="keyword">const</span>&amp; f);</div>
 <div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160; </div>
 <div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;<span class="keywordtype">bool</span></div>
 <div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;<a class="code" href="namespaceripple.html#ac1d430838f9c822e6c0722f54807ebef">forEachItemAfter</a>(</div>
 <div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;    ReadView <span class="keyword">const</span>&amp; view,</div>
-<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;    Keylet <span class="keyword">const</span>&amp; root,</div>
+<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;    Keylet <span class="keyword">const</span>&amp; <a class="code" href="namespaceripple.html#acdc87ea9c4ad1742d4aeebac963e8570">root</a>,</div>
 <div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;    <a class="code" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> <span class="keyword">const</span>&amp; <a class="code" href="namespaceripple.html#aebcc26ebe20ddcd3bcbfd5402e0acb89">after</a>,</div>
 <div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> <span class="keyword">const</span> hint,</div>
 <div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;    <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> limit,</div>
@@ -258,7 +258,7 @@ $(function() {
 <div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;<span class="keywordtype">bool</span></div>
 <div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;<a class="code" href="namespaceripple.html#a206bfc3d5fcad44ece8cab528ccf48ba">cdirFirst</a>(</div>
 <div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;    ReadView <span class="keyword">const</span>&amp; view,</div>
-<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;    <a class="code" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> <span class="keyword">const</span>&amp; root,</div>
+<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;    <a class="code" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> <span class="keyword">const</span>&amp; <a class="code" href="namespaceripple.html#acdc87ea9c4ad1742d4aeebac963e8570">root</a>,</div>
 <div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;SLE const&gt;</a>&amp; page,</div>
 <div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;    <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span>&amp; index,</div>
 <div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;    <a class="code" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&amp; entry);</div>
@@ -266,14 +266,14 @@ $(function() {
 <div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;<span class="keywordtype">bool</span></div>
 <div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;<a class="code" href="namespaceripple.html#a34251c908a52d50d055160c19d6e6e56">dirFirst</a>(</div>
 <div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;    ApplyView&amp; view,</div>
-<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;    <a class="code" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> <span class="keyword">const</span>&amp; root,</div>
+<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;    <a class="code" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> <span class="keyword">const</span>&amp; <a class="code" href="namespaceripple.html#acdc87ea9c4ad1742d4aeebac963e8570">root</a>,</div>
 <div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;SLE&gt;</a>&amp; page,</div>
 <div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;    <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span>&amp; index,</div>
 <div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;    <a class="code" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&amp; entry);</div>
 <div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;<span class="keywordtype">bool</span></div>
 <div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160;<a class="code" href="namespaceripple.html#a9c4dd9876685de738163e6ddb7ae498f">cdirNext</a>(</div>
 <div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;    ReadView <span class="keyword">const</span>&amp; view,</div>
-<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;    <a class="code" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> <span class="keyword">const</span>&amp; root,</div>
+<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;    <a class="code" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> <span class="keyword">const</span>&amp; <a class="code" href="namespaceripple.html#acdc87ea9c4ad1742d4aeebac963e8570">root</a>,</div>
 <div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;SLE const&gt;</a>&amp; page,</div>
 <div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;    <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span>&amp; index,</div>
 <div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;    <a class="code" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&amp; entry);</div>
@@ -281,7 +281,7 @@ $(function() {
 <div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;<span class="keywordtype">bool</span></div>
 <div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;<a class="code" href="namespaceripple.html#a3a022ec9e19a1b18a0ac3bdf7328a877">dirNext</a>(</div>
 <div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;    ApplyView&amp; view,</div>
-<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;    <a class="code" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> <span class="keyword">const</span>&amp; root,</div>
+<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;    <a class="code" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> <span class="keyword">const</span>&amp; <a class="code" href="namespaceripple.html#acdc87ea9c4ad1742d4aeebac963e8570">root</a>,</div>
 <div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;SLE&gt;</a>&amp; page,</div>
 <div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;    <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span>&amp; index,</div>
 <div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;    <a class="code" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&amp; entry);</div>
@@ -433,6 +433,7 @@ $(function() {
 <div class="ttc" id="aset_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/set.html">std::set</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="anamespaceripple_html_a6cb89b79bc073abda42953c323d36cda"><div class="ttname"><a href="namespaceripple.html#a6cb89b79bc073abda42953c323d36cda">ripple::isFrozen</a></div><div class="ttdeci">bool isFrozen(ReadView const &amp;view, AccountID const &amp;account, Currency const &amp;currency, AccountID const &amp;issuer)</div><div class="ttdef"><b>Definition:</b> <a href="View_8cpp_source.html#l00200">View.cpp:200</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a00ae0d729cb3e35b6bcac9a27ebb5284"><div class="ttname"><a href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">ripple::AccountID</a></div><div class="ttdeci">base_uint&lt; 160, detail::AccountIDTag &gt; AccountID</div><div class="ttdoc">A 160-bit unsigned that uniquely identifies an account.</div><div class="ttdef"><b>Definition:</b> <a href="AccountID_8h_source.html#l00047">AccountID.h:47</a></div></div>
+<div class="ttc" id="anamespaceripple_html_acdc87ea9c4ad1742d4aeebac963e8570"><div class="ttname"><a href="namespaceripple.html#acdc87ea9c4ad1742d4aeebac963e8570">ripple::root</a></div><div class="ttdeci">Number root(Number f, unsigned d)</div><div class="ttdef"><b>Definition:</b> <a href="Number_8cpp_source.html#l00624">Number.cpp:624</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

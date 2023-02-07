@@ -250,6 +250,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ae1f1a9dbb662717022ce948d5609e956"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab69e6c6873e1ea21296c09d6ce9b92c3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1jtx_1_1Env.html#ab69e6c6873e1ea21296c09d6ce9b92c3">enableFeature</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const feature)</td></tr>
 <tr class="separator:ab69e6c6873e1ea21296c09d6ce9b92c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1d46f1445fc77c5bd2f1a85676038565"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1jtx_1_1Env.html#a1d46f1445fc77c5bd2f1a85676038565">disableFeature</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const feature)</td></tr>
+<tr class="separator:a1d46f1445fc77c5bd2f1a85676038565"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9264df26c2f14a094de53a21055cdb1c"><td class="memTemplParams" colspan="2">template&lt;class Arg , class... Args&gt; </td></tr>
 <tr class="memitem:a9264df26c2f14a094de53a21055cdb1c"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1jtx_1_1Env.html#a9264df26c2f14a094de53a21055cdb1c">fund</a> (<a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;amount, Arg const &amp;arg, Args const &amp;... args)</td></tr>
 <tr class="memdesc:a9264df26c2f14a094de53a21055cdb1c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new account with some XRP.  <a href="classripple_1_1test_1_1jtx_1_1Env.html#a9264df26c2f14a094de53a21055cdb1c">More...</a><br /></td></tr>
@@ -762,7 +764,7 @@ template&lt;class... Args&gt; </div>
 <p>Execute an <a class="el" href="namespaceripple_1_1RPC.html">RPC</a> command. </p>
 <p>The command is examined and used to build the correct JSON as per the arguments. </p>
 
-<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00684">684</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00687">687</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
 
 </div>
 </div>
@@ -794,7 +796,7 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00695">695</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00698">698</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
 
 </div>
 </div>
@@ -1569,6 +1571,26 @@ effects.
 
 </div>
 </div>
+<a id="a1d46f1445fc77c5bd2f1a85676038565"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1d46f1445fc77c5bd2f1a85676038565">&#9670;&nbsp;</a></span>disableFeature()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::test::jtx::Env::disableFeature </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const&#160;</td>
+          <td class="paramname"><em>feature</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="Env_8cpp_source.html#l00470">470</a> of file <a class="el" href="Env_8cpp_source.html">Env.cpp</a>.</p>
+
+</div>
+</div>
 <a id="ae2349266cb09d1f1c3de06606ebdf9e2"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ae2349266cb09d1f1c3de06606ebdf9e2">&#9670;&nbsp;</a></span>fund() <span class="overload">[1/2]</span></h2>
 
@@ -1647,7 +1669,7 @@ effects.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00551">551</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00554">554</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
 
 </div>
 </div>
@@ -1687,7 +1709,7 @@ template&lt;std::size_t N&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00558">558</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00561">561</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
 
 </div>
 </div>
@@ -1739,7 +1761,7 @@ template&lt;class Arg , class... Args&gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00593">593</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00596">596</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
 
 </div>
 </div>
@@ -1819,7 +1841,7 @@ template&lt;class... Accounts&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00623">623</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00626">626</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
 
 </div>
 </div>
@@ -1984,7 +2006,7 @@ template&lt;class... FN&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00665">665</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00668">668</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
 
 </div>
 </div>
@@ -2024,7 +2046,7 @@ template&lt;class... FN&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00673">673</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00676">676</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
 
 </div>
 </div>
@@ -2121,7 +2143,7 @@ template&lt;class... FN&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00635">635</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00638">638</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
 
 </div>
 </div>
@@ -2145,7 +2167,7 @@ template&lt;class... FN&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00636">636</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00639">639</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
 
 </div>
 </div>
@@ -2169,7 +2191,7 @@ template&lt;class... FN&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00637">637</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00640">640</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
 
 </div>
 </div>
@@ -2193,7 +2215,7 @@ template&lt;class... FN&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00638">638</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00641">641</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
 
 </div>
 </div>
@@ -2217,7 +2239,7 @@ template&lt;class... FN&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00679">679</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00682">682</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
 
 </div>
 </div>

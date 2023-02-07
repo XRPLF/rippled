@@ -200,10 +200,10 @@ Private Member Functions</h2></td></tr>
 <tr class="memdesc:ac97ef5d20d6f7ec91992dbc344f9d77a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether the open ledger has any transactions.  <a href="classripple_1_1RCLConsensus_1_1Adaptor.html#ac97ef5d20d6f7ec91992dbc344f9d77a">More...</a><br /></td></tr>
 <tr class="separator:ac97ef5d20d6f7ec91992dbc344f9d77a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aecfa90103c1ac29bb861acc866e16230"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RCLConsensus_1_1Adaptor.html#aecfa90103c1ac29bb861acc866e16230">proposersValidated</a> (<a class="el" href="namespaceripple.html#af5a72d3e0d9b6913c13f688390b90796">LedgerHash</a> const &amp;h) const</td></tr>
-<tr class="memdesc:aecfa90103c1ac29bb861acc866e16230"><td class="mdescLeft">&#160;</td><td class="mdescRight">Number of proposers that have validated the given ledger.  <a href="classripple_1_1RCLConsensus_1_1Adaptor.html#aecfa90103c1ac29bb861acc866e16230">More...</a><br /></td></tr>
+<tr class="memdesc:aecfa90103c1ac29bb861acc866e16230"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classripple_1_1Number.html">Number</a> of proposers that have validated the given ledger.  <a href="classripple_1_1RCLConsensus_1_1Adaptor.html#aecfa90103c1ac29bb861acc866e16230">More...</a><br /></td></tr>
 <tr class="separator:aecfa90103c1ac29bb861acc866e16230"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab10285a854623f41080295ff41f41d12"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RCLConsensus_1_1Adaptor.html#ab10285a854623f41080295ff41f41d12">proposersFinished</a> (<a class="el" href="classripple_1_1RCLCxLedger.html">RCLCxLedger</a> const &amp;ledger, <a class="el" href="namespaceripple.html#af5a72d3e0d9b6913c13f688390b90796">LedgerHash</a> const &amp;h) const</td></tr>
-<tr class="memdesc:ab10285a854623f41080295ff41f41d12"><td class="mdescLeft">&#160;</td><td class="mdescRight">Number of proposers that have validated a ledger descended from requested ledger.  <a href="classripple_1_1RCLConsensus_1_1Adaptor.html#ab10285a854623f41080295ff41f41d12">More...</a><br /></td></tr>
+<tr class="memdesc:ab10285a854623f41080295ff41f41d12"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classripple_1_1Number.html">Number</a> of proposers that have validated a ledger descended from requested ledger.  <a href="classripple_1_1RCLConsensus_1_1Adaptor.html#ab10285a854623f41080295ff41f41d12">More...</a><br /></td></tr>
 <tr class="separator:ab10285a854623f41080295ff41f41d12"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a04003c395b5a8519537fd8388bc4fda7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RCLConsensus_1_1Adaptor.html#a04003c395b5a8519537fd8388bc4fda7">propose</a> (<a class="el" href="classripple_1_1RCLCxPeerPos.html#afef6574cc04e0877e8f23f76cc688390">RCLCxPeerPos::Proposal</a> const &amp;proposal)</td></tr>
 <tr class="memdesc:a04003c395b5a8519537fd8388bc4fda7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Propose the given position to my peers.  <a href="classripple_1_1RCLConsensus_1_1Adaptor.html#a04003c395b5a8519537fd8388bc4fda7">More...</a><br /></td></tr>
@@ -688,7 +688,7 @@ Friends</h2></td></tr>
 <p>If our current ledger has no agreement from the network, then we cannot be in the omFULL mode.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">positions</td><td>Number of current peer positions. </td></tr>
+    <tr><td class="paramname">positions</td><td><a class="el" href="classripple_1_1Number.html">Number</a> of current peer positions. </td></tr>
   </table>
   </dd>
 </dl>
@@ -920,7 +920,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Number of proposers that have validated the given ledger. </p>
+<p><a class="el" href="classripple_1_1Number.html">Number</a> of proposers that have validated the given ledger. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">h</td><td>The hash of the ledger of interest </td></tr>
@@ -967,7 +967,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Number of proposers that have validated a ledger descended from requested ledger. </p>
+<p><a class="el" href="classripple_1_1Number.html">Number</a> of proposers that have validated a ledger descended from requested ledger. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">ledger</td><td>The current working ledger </td></tr>

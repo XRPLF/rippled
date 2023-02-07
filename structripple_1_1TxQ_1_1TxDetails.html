@@ -154,7 +154,7 @@ Public Attributes</h2></td></tr>
 <tr class="memdesc:ac84ba22d948acd43583ac815a34e3138"><td class="mdescLeft">&#160;</td><td class="mdescRight">The full transaction.  <a href="structripple_1_1TxQ_1_1TxDetails.html#ac84ba22d948acd43583ac815a34e3138">More...</a><br /></td></tr>
 <tr class="separator:ac84ba22d948acd43583ac815a34e3138"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af62f2b7354cbefc4223cf768c867fa1f"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1TxQ_1_1TxDetails.html#af62f2b7354cbefc4223cf768c867fa1f">retriesRemaining</a></td></tr>
-<tr class="memdesc:af62f2b7354cbefc4223cf768c867fa1f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Number of times the transactor can return a retry / <code>ter</code> result when attempting to apply this transaction to the open ledger from the queue.  <a href="structripple_1_1TxQ_1_1TxDetails.html#af62f2b7354cbefc4223cf768c867fa1f">More...</a><br /></td></tr>
+<tr class="memdesc:af62f2b7354cbefc4223cf768c867fa1f"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classripple_1_1Number.html">Number</a> of times the transactor can return a retry / <code>ter</code> result when attempting to apply this transaction to the open ledger from the queue.  <a href="structripple_1_1TxQ_1_1TxDetails.html#af62f2b7354cbefc4223cf768c867fa1f">More...</a><br /></td></tr>
 <tr class="separator:af62f2b7354cbefc4223cf768c867fa1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a308ebaa833b444835409d2e04f007f19"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1TxQ_1_1TxDetails.html#a308ebaa833b444835409d2e04f007f19">preflightResult</a></td></tr>
 <tr class="memdesc:a308ebaa833b444835409d2e04f007f19"><td class="mdescLeft">&#160;</td><td class="mdescRight">The <em>intermediate</em> result returned by <a class="el" href="namespaceripple.html#a24280b80536d1afd09e24a75f4596922">preflight</a> before this transaction was queued, or after it is queued, but before a failed attempt to <code>apply</code> it to the open ledger.  <a href="structripple_1_1TxQ_1_1TxDetails.html#a308ebaa833b444835409d2e04f007f19">More...</a><br /></td></tr>
@@ -364,7 +364,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Number of times the transactor can return a retry / <code>ter</code> result when attempting to apply this transaction to the open ledger from the queue. </p>
+<p><a class="el" href="classripple_1_1Number.html">Number</a> of times the transactor can return a retry / <code>ter</code> result when attempting to apply this transaction to the open ledger from the queue. </p>
 <p>If the transactor returns <code>ter</code> and no retries are left, this transaction will be dropped. </p>
 
 <p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00235">235</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
