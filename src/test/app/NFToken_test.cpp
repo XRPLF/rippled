@@ -2349,7 +2349,13 @@ class NFToken_test : public beast::unit_test::suite
 
         // See the impact of rounding when the nft is sold for small amounts
         // of drops.
+        for (auto NumberSwitchOver : {true})
         {
+            if (NumberSwitchOver)
+                env.enableFeature(fixUniversalNumber);
+            else
+                env.disableFeature(fixUniversalNumber);
+
             // An nft with a transfer fee of 1 basis point.
             uint256 const nftID =
                 token::getNextID(env, alice, 0u, tfTransferable, 1);
@@ -2374,16 +2380,16 @@ class NFToken_test : public beast::unit_test::suite
 
             // minter sells to carol.  The payment is just small enough that
             // alice does not get any transfer fee.
+            auto pmt = NumberSwitchOver ? drops(50000) : drops(99999);
             STAmount carolBalance = env.balance(carol);
             uint256 const minterSellOfferIndex =
                 keylet::nftoffer(minter, env.seq(minter)).key;
-            env(token::createOffer(minter, nftID, drops(99999)),
-                txflags(tfSellNFToken));
+            env(token::createOffer(minter, nftID, pmt), txflags(tfSellNFToken));
             env.close();
             env(token::acceptSellOffer(carol, minterSellOfferIndex));
             env.close();
-            minterBalance += drops(99999) - fee;
-            carolBalance -= drops(99999) + fee;
+            minterBalance += pmt - fee;
+            carolBalance -= pmt + fee;
             BEAST_EXPECT(env.balance(alice) == aliceBalance);
             BEAST_EXPECT(env.balance(minter) == minterBalance);
             BEAST_EXPECT(env.balance(carol) == carolBalance);
@@ -2393,13 +2399,13 @@ class NFToken_test : public beast::unit_test::suite
             STAmount beckyBalance = env.balance(becky);
             uint256 const beckyBuyOfferIndex =
                 keylet::nftoffer(becky, env.seq(becky)).key;
-            env(token::createOffer(becky, nftID, drops(100000)),
-                token::owner(carol));
+            pmt = NumberSwitchOver ? drops(50001) : drops(100000);
+            env(token::createOffer(becky, nftID, pmt), token::owner(carol));
             env.close();
             env(token::acceptBuyOffer(carol, beckyBuyOfferIndex));
             env.close();
-            carolBalance += drops(99999) - fee;
-            beckyBalance -= drops(100000) + fee;
+            carolBalance += pmt - drops(1) - fee;
+            beckyBalance -= pmt + fee;
             aliceBalance += drops(1);
 
             BEAST_EXPECT(env.balance(alice) == aliceBalance);
