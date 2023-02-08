@@ -30,6 +30,8 @@ private:
     void
     testTypes()
     {
+        using FeeLevel32 = FeeLevel<std::uint32_t>;
+
         {
             XRPAmount x{100};
             BEAST_EXPECT(x.drops() == 100);
@@ -45,8 +47,8 @@ private:
             BEAST_EXPECT(
                 (std::is_same_v<decltype(z)::unit_type, feeunit::dropTag>));
 
-            FeeUnit32 f{10};
-            FeeUnit32 baseFee{100};
+            FeeLevel32 f{10};
+            FeeLevel32 baseFee{100};
 
             auto drops = mulDiv(baseFee, x, f).second;
 
@@ -65,8 +67,8 @@ private:
             BEAST_EXPECT(
                 (std::is_same_v<decltype(y)::unit_type, feeunit::dropTag>));
 
-            FeeUnit64 f{10};
-            FeeUnit64 baseFee{100};
+            FeeLevel64 f{10};
+            FeeLevel64 baseFee{100};
 
             auto drops = mulDiv(baseFee, x, f).second;
 
@@ -102,22 +104,24 @@ private:
     testJson()
     {
         // Json value functionality
+        using FeeLevel32 = FeeLevel<std::uint32_t>;
+
         {
-            FeeUnit32 x{std::numeric_limits<std::uint32_t>::max()};
+            FeeLevel32 x{std::numeric_limits<std::uint32_t>::max()};
             auto y = x.jsonClipped();
             BEAST_EXPECT(y.type() == Json::uintValue);
             BEAST_EXPECT(y == Json::Value{x.fee()});
         }
 
         {
-            FeeUnit32 x{std::numeric_limits<std::uint32_t>::min()};
+            FeeLevel32 x{std::numeric_limits<std::uint32_t>::min()};
             auto y = x.jsonClipped();
             BEAST_EXPECT(y.type() == Json::uintValue);
             BEAST_EXPECT(y == Json::Value{x.fee()});
         }
 
         {
-            FeeUnit64 x{std::numeric_limits<std::uint64_t>::max()};
+            FeeLevel64 x{std::numeric_limits<std::uint64_t>::max()};
             auto y = x.jsonClipped();
             BEAST_EXPECT(y.type() == Json::uintValue);
             BEAST_EXPECT(
@@ -125,7 +129,7 @@ private:
         }
 
         {
-            FeeUnit64 x{std::numeric_limits<std::uint64_t>::min()};
+            FeeLevel64 x{std::numeric_limits<std::uint64_t>::min()};
             auto y = x.jsonClipped();
             BEAST_EXPECT(y.type() == Json::uintValue);
             BEAST_EXPECT(y == Json::Value{0});
@@ -167,15 +171,17 @@ private:
     {
         // Explicitly test every defined function for the TaggedFee class
         // since some of them are templated, but not used anywhere else.
+        using FeeLevel32 = FeeLevel<std::uint32_t>;
+
         {
-            auto make = [&](auto x) -> FeeUnit64 { return x; };
-            auto explicitmake = [&](auto x) -> FeeUnit64 {
-                return FeeUnit64{x};
+            auto make = [&](auto x) -> FeeLevel64 { return x; };
+            auto explicitmake = [&](auto x) -> FeeLevel64 {
+                return FeeLevel64{x};
             };
 
-            FeeUnit64 defaulted;
+            FeeLevel64 defaulted;
             (void)defaulted;
-            FeeUnit64 test{0};
+            FeeLevel64 test{0};
             BEAST_EXPECT(test.fee() == 0);
 
             test = explicitmake(beast::zero);
@@ -187,13 +193,13 @@ private:
             test = explicitmake(100u);
             BEAST_EXPECT(test.fee() == 100);
 
-            FeeUnit64 const targetSame{200u};
-            FeeUnit32 const targetOther{300u};
+            FeeLevel64 const targetSame{200u};
+            FeeLevel32 const targetOther{300u};
             test = make(targetSame);
             BEAST_EXPECT(test.fee() == 200);
             BEAST_EXPECT(test == targetSame);
-            BEAST_EXPECT(test < FeeUnit64{1000});
-            BEAST_EXPECT(test > FeeUnit64{100});
+            BEAST_EXPECT(test < FeeLevel64{1000});
+            BEAST_EXPECT(test > FeeLevel64{100});
             test = make(targetOther);
             BEAST_EXPECT(test.fee() == 300);
             BEAST_EXPECT(test == targetOther);
