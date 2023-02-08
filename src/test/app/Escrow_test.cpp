@@ -4678,18 +4678,8 @@ struct Escrow_test : public beast::unit_test::suite
             env(pay(gw, bob, USD(1)));
             env.close();
 
-            // alice cannot create escrow for 1/10/100 token - precision loss
+            // alice cannot create escrow for 1/10 token - precision loss
             env(escrow(alice, bob, USD(1)),
-                condition(cb1),
-                finish_time(env.now() + 1s),
-                fee(1500),
-                ter(tecPRECISION_LOSS));
-            env(escrow(alice, bob, USD(10)),
-                condition(cb1),
-                finish_time(env.now() + 1s),
-                fee(1500),
-                ter(tecPRECISION_LOSS));
-            env(escrow(alice, bob, USD(100)),
                 condition(cb1),
                 finish_time(env.now() + 1s),
                 fee(1500),

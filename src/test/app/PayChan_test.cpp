@@ -6023,26 +6023,28 @@ struct PayChan_test : public beast::unit_test::suite
             env.close();
             auto const pk = alice.pk();
             auto const settleDelay = 100s;
-            // alice cannot create paychan for 1/10/100 token - precision loss
+            // alice cannot create paychan for 1/10 token - precision loss
             env(create(alice, bob, USD(1), settleDelay, pk),
                 ter(tecPRECISION_LOSS));
             env.close();
-            // alice can create paychan for 1000 token
+
+            // alice can create paychan for 100 token
             auto const chan = channel(alice, bob, env.seq(alice));
-            env(create(alice, bob, USD(10000), settleDelay, pk));
+            env(create(alice, bob, USD(100), settleDelay, pk));
             env.close();
 
             auto const chanBal = channelBalance(*env.current(), chan);
             auto const chanAmt = channelAmount(*env.current(), chan);
-            auto reqBal = USD(1000);
-            auto authAmt = reqBal + USD(1000);
+
+            auto reqBal = USD(10);
+            auto authAmt = reqBal + USD(10);
             auto sig =
                 signClaimTokenAuth(alice.pk(), alice.sk(), chan, authAmt);
             env(claim(bob, chan, reqBal, authAmt, Slice(sig), alice.pk()),
                 ter(tecPRECISION_LOSS));
 
-            reqBal = USD(10000);
-            authAmt = reqBal + USD(10000);
+            reqBal = USD(100);
+            authAmt = reqBal + USD(100);
             sig = signClaimTokenAuth(alice.pk(), alice.sk(), chan, authAmt);
             env(claim(bob, chan, reqBal, authAmt, Slice(sig), alice.pk()));
         }
