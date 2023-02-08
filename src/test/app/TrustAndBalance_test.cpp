@@ -411,13 +411,11 @@ class TrustAndBalance_test : public beast::unit_test::suite
 
         if (with_rate)
         {
-            // 65.00000000000001 is correct.
-            // This is result of limited precision.
             env.require(balance(
                 alice,
                 STAmount(
                     carol["USD"].issue(),
-                    6500000000000001ull,
+                    6500000000000000ull,
                     -14,
                     false,
                     true,
