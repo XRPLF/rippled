@@ -1674,9 +1674,9 @@ struct Escrow_test : public beast::unit_test::suite
     }
 
     void
-    testICEnablement(FeatureBitset features)
+    testTokenEnablement(FeatureBitset features)
     {
-        testcase("IC Enablement");
+        testcase("Token Enablement");
 
         using namespace jtx;
         using namespace std::chrono;
@@ -1721,13 +1721,13 @@ struct Escrow_test : public beast::unit_test::suite
     }
 
     void
-    testICTiming(FeatureBitset features)
+    testTokenTiming(FeatureBitset features)
     {
         using namespace jtx;
         using namespace std::chrono;
 
         {
-            testcase("Timing: IC Finish Only");
+            testcase("Timing: Token Finish Only");
             Env env{*this, features};
             auto const alice = Account("alice");
             auto const bob = Account("bob");
@@ -1756,7 +1756,7 @@ struct Escrow_test : public beast::unit_test::suite
         }
 
         {
-            testcase("Timing: IC Cancel Only");
+            testcase("Timing: Token Cancel Only");
             Env env{*this, features};
             auto const alice = Account("alice");
             auto const bob = Account("bob");
@@ -1797,7 +1797,7 @@ struct Escrow_test : public beast::unit_test::suite
         }
 
         {
-            testcase("Timing: IC Finish and Cancel -> Finish");
+            testcase("Timing: Token Finish and Cancel -> Finish");
             Env env{*this, features};
             auto const alice = Account("alice");
             auto const bob = Account("bob");
@@ -1840,7 +1840,7 @@ struct Escrow_test : public beast::unit_test::suite
         }
 
         {
-            testcase("Timing: IC Finish and Cancel -> Cancel");
+            testcase("Timing: Token Finish and Cancel -> Cancel");
             Env env{*this, features};
             auto const alice = Account("alice");
             auto const bob = Account("bob");
@@ -1892,9 +1892,9 @@ struct Escrow_test : public beast::unit_test::suite
     }
 
     void
-    testICTags(FeatureBitset features)
+    testTokenTags(FeatureBitset features)
     {
-        testcase("IC Tags");
+        testcase("Token Tags");
 
         using namespace jtx;
         using namespace std::chrono;
@@ -1934,9 +1934,9 @@ struct Escrow_test : public beast::unit_test::suite
     }
 
     void
-    testICDisallowXRP(FeatureBitset features)
+    testTokenDisallowXRP(FeatureBitset features)
     {
-        testcase("IC Disallow XRP");
+        testcase("Token Disallow XRP");
 
         using namespace jtx;
         using namespace std::chrono;
@@ -1976,13 +1976,13 @@ struct Escrow_test : public beast::unit_test::suite
     }
 
     void
-    testIC1571(FeatureBitset features)
+    testToken1571(FeatureBitset features)
     {
         using namespace jtx;
         using namespace std::chrono;
 
         {
-            testcase("IC Implied Finish Time (without fix1571)");
+            testcase("Token Implied Finish Time (without fix1571)");
 
             Env env(*this, supported_amendments() - fix1571);
             auto const alice = Account("alice");
@@ -2026,7 +2026,7 @@ struct Escrow_test : public beast::unit_test::suite
         }
 
         {
-            testcase("IC Implied Finish Time (with fix1571)");
+            testcase("Token Implied Finish Time (with fix1571)");
 
             Env env{*this, features};
             auto const alice = Account("alice");
@@ -2066,9 +2066,9 @@ struct Escrow_test : public beast::unit_test::suite
     }
 
     void
-    testICFails(FeatureBitset features)
+    testTokenFails(FeatureBitset features)
     {
-        testcase("IC Failure Cases");
+        testcase("Token Failure Cases");
 
         using namespace jtx;
         using namespace std::chrono;
@@ -2222,9 +2222,9 @@ struct Escrow_test : public beast::unit_test::suite
     }
 
     void
-    testICLockup(FeatureBitset features)
+    testTokenLockup(FeatureBitset features)
     {
-        testcase("IC Lockup");
+        testcase("Token Lockup");
 
         using namespace jtx;
         using namespace std::chrono;
@@ -2593,9 +2593,9 @@ struct Escrow_test : public beast::unit_test::suite
     }
 
     void
-    testICEscrowConditions(FeatureBitset features)
+    testTokenEscrowConditions(FeatureBitset features)
     {
-        testcase("IC Escrow with CryptoConditions");
+        testcase("Token Escrow with CryptoConditions");
 
         using namespace jtx;
         using namespace std::chrono;
@@ -3089,7 +3089,7 @@ struct Escrow_test : public beast::unit_test::suite
     }
 
     void
-    testICMetaAndOwnership(FeatureBitset features)
+    testTokenMetaAndOwnership(FeatureBitset features)
     {
         using namespace jtx;
         using namespace std::chrono;
@@ -3100,7 +3100,7 @@ struct Escrow_test : public beast::unit_test::suite
         auto const gw = Account{"gateway"};
         auto const USD = gw["USD"];
         {
-            testcase("IC Metadata to self");
+            testcase("Token Metadata to self");
 
             Env env{*this, features};
             env.fund(XRP(5000), alice, bob, carol, gw);
@@ -3181,7 +3181,7 @@ struct Escrow_test : public beast::unit_test::suite
             }
         }
         {
-            testcase("IC Metadata to other");
+            testcase("Token Metadata to other");
 
             Env env{*this, features};
             env.fund(XRP(5000), alice, bob, carol, gw);
@@ -3280,9 +3280,9 @@ struct Escrow_test : public beast::unit_test::suite
     }
 
     void
-    testICConsequences(FeatureBitset features)
+    testTokenConsequences(FeatureBitset features)
     {
-        testcase("IC Consequences");
+        testcase("Token Consequences");
 
         using namespace jtx;
         using namespace std::chrono;
@@ -3354,9 +3354,9 @@ struct Escrow_test : public beast::unit_test::suite
     }
 
     void
-    testICEscrowWithTickets(FeatureBitset features)
+    testTokenEscrowWithTickets(FeatureBitset features)
     {
-        testcase("IC Escrow with tickets");
+        testcase("Token Escrow with tickets");
 
         using namespace jtx;
         using namespace std::chrono;
@@ -3504,9 +3504,9 @@ struct Escrow_test : public beast::unit_test::suite
     }
 
     void
-    testICRippleState(FeatureBitset features)
+    testTokenRippleState(FeatureBitset features)
     {
-        testcase("IC RippleState");
+        testcase("Token RippleState");
         using namespace test::jtx;
         using namespace std::literals;
 
@@ -3893,9 +3893,9 @@ struct Escrow_test : public beast::unit_test::suite
     }
 
     void
-    testICGateway(FeatureBitset features)
+    testTokenGateway(FeatureBitset features)
     {
-        testcase("IC Gateway");
+        testcase("Token Gateway");
         using namespace test::jtx;
         using namespace std::literals;
 
@@ -4166,9 +4166,9 @@ struct Escrow_test : public beast::unit_test::suite
     }
 
     void
-    testICLockedRate(FeatureBitset features)
+    testTokenLockedRate(FeatureBitset features)
     {
-        testcase("IC Locked Rate");
+        testcase("Token Locked Rate");
         using namespace test::jtx;
         using namespace std::literals;
 
@@ -4338,9 +4338,9 @@ struct Escrow_test : public beast::unit_test::suite
     }
 
     void
-    testICTLRequireAuth(FeatureBitset features)
+    testTokenTLRequireAuth(FeatureBitset features)
     {
-        testcase("IC Trustline Require Auth");
+        testcase("Token Trustline Require Auth");
         using namespace test::jtx;
         using namespace std::literals;
 
@@ -4400,9 +4400,9 @@ struct Escrow_test : public beast::unit_test::suite
     }
 
     void
-    testICTLFreeze(FeatureBitset features)
+    testTokenTLFreeze(FeatureBitset features)
     {
-        testcase("IC Trustline Freeze");
+        testcase("Token Trustline Freeze");
         using namespace test::jtx;
         using namespace std::literals;
 
@@ -4539,9 +4539,9 @@ struct Escrow_test : public beast::unit_test::suite
         }
     }
     void
-    testICTLINSF(FeatureBitset features)
+    testTokenTLINSF(FeatureBitset features)
     {
-        testcase("IC Trustline Insuficient Funds");
+        testcase("Token Trustline Insuficient Funds");
         using namespace test::jtx;
         using namespace std::literals;
 
@@ -4604,9 +4604,9 @@ struct Escrow_test : public beast::unit_test::suite
     }
 
     void
-    testICPrecisionLoss(FeatureBitset features)
+    testTokenPrecisionLoss(FeatureBitset features)
     {
-        testcase("IC Precision Loss");
+        testcase("Token Precision Loss");
         using namespace test::jtx;
         using namespace std::literals;
 
@@ -4727,24 +4727,24 @@ struct Escrow_test : public beast::unit_test::suite
         testMetaAndOwnership(features);
         testConsequences(features);
         testEscrowWithTickets(features);
-        testICEnablement(features);
-        testICTiming(features);
-        testICTags(features);
-        testICDisallowXRP(features);
-        testIC1571(features);
-        testICFails(features);
-        testICLockup(features);
-        testICEscrowConditions(features);
-        testICMetaAndOwnership(features);
-        testICConsequences(features);
-        testICEscrowWithTickets(features);
-        testICRippleState(features);
-        testICGateway(features);
-        testICLockedRate(features);
-        testICTLRequireAuth(features);
-        testICTLFreeze(features);
-        testICTLINSF(features);
-        testICPrecisionLoss(features);
+        testTokenEnablement(features);
+        testTokenTiming(features);
+        testTokenTags(features);
+        testTokenDisallowXRP(features);
+        testToken1571(features);
+        testTokenFails(features);
+        testTokenLockup(features);
+        testTokenEscrowConditions(features);
+        testTokenMetaAndOwnership(features);
+        testTokenConsequences(features);
+        testTokenEscrowWithTickets(features);
+        testTokenRippleState(features);
+        testTokenGateway(features);
+        testTokenLockedRate(features);
+        testTokenTLRequireAuth(features);
+        testTokenTLFreeze(features);
+        testTokenTLINSF(features);
+        testTokenPrecisionLoss(features);
     }
 
 public:

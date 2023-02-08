@@ -70,7 +70,7 @@ struct PayChan_test : public beast::unit_test::suite
     }
 
     static Buffer
-    signClaimICAuth(
+    signClaimTokenAuth(
         PublicKey const& pk,
         SecretKey const& sk,
         uint256 const& channel,
@@ -2188,9 +2188,9 @@ struct PayChan_test : public beast::unit_test::suite
     }
 
     void
-    testICSimple(FeatureBitset features)
+    testTokenSimple(FeatureBitset features)
     {
-        testcase("ic simple");
+        testcase("token simple");
         using namespace jtx;
         using namespace std::literals::chrono_literals;
         Env env{*this, features};
@@ -2259,11 +2259,11 @@ struct PayChan_test : public beast::unit_test::suite
 
         {
             // No signature claim with bad amounts (negative)
-            auto const negIC = USD(-100).value();
-            auto const posIC = USD(100).value();
-            env(claim(alice, chan, negIC, negIC), ter(temBAD_AMOUNT));
-            env(claim(alice, chan, posIC, negIC), ter(temBAD_AMOUNT));
-            env(claim(alice, chan, negIC, posIC), ter(temBAD_AMOUNT));
+            auto const negToken = USD(-100).value();
+            auto const posToken = USD(100).value();
+            env(claim(alice, chan, negToken, negToken), ter(temBAD_AMOUNT));
+            env(claim(alice, chan, posToken, negToken), ter(temBAD_AMOUNT));
+            env(claim(alice, chan, negToken, posToken), ter(temBAD_AMOUNT));
         }
         {
             // No signature claim more than authorized
@@ -2300,7 +2300,7 @@ struct PayChan_test : public beast::unit_test::suite
             auto const authAmt = reqBal + USD(100);
             assert(reqBal <= chanAmt);
             auto const sig =
-                signClaimICAuth(alice.pk(), alice.sk(), chan, authAmt);
+                signClaimTokenAuth(alice.pk(), alice.sk(), chan, authAmt);
             env(claim(bob, chan, reqBal, authAmt, Slice(sig), alice.pk()));
             auto postLocked = -lockedAmount(env, alice, gw, USD);
             BEAST_EXPECT(channelBalance(*env.current(), chan) == reqBal);
@@ -2330,7 +2330,7 @@ struct PayChan_test : public beast::unit_test::suite
             STAmount const reqAmt = authAmt + USD(1);
             assert(reqAmt <= chanAmt);
             auto const sig =
-                signClaimICAuth(alice.pk(), alice.sk(), chan, authAmt);
+                signClaimTokenAuth(alice.pk(), alice.sk(), chan, authAmt);
             env(claim(bob, chan, reqAmt, authAmt, Slice(sig), alice.pk()),
                 ter(temBAD_AMOUNT));
             auto const postLocked = -lockedAmount(env, alice, gw, USD);
@@ -2348,7 +2348,7 @@ struct PayChan_test : public beast::unit_test::suite
         {
             // Wrong signing key
             auto const sig =
-                signClaimICAuth(bob.pk(), bob.sk(), chan, USD(1500));
+                signClaimTokenAuth(bob.pk(), bob.sk(), chan, USD(1500));
             env(claim(
                     bob,
                     chan,
@@ -2363,7 +2363,7 @@ struct PayChan_test : public beast::unit_test::suite
         {
             // Bad signature
             auto const sig =
-                signClaimICAuth(bob.pk(), bob.sk(), chan, USD(1500));
+                signClaimTokenAuth(bob.pk(), bob.sk(), chan, USD(1500));
             env(claim(
                     bob,
                     chan,
@@ -2397,9 +2397,9 @@ struct PayChan_test : public beast::unit_test::suite
     }
 
     void
-    testICCancelAfter(FeatureBitset features)
+    testTokenCancelAfter(FeatureBitset features)
     {
-        testcase("ic cancel after");
+        testcase("token cancel after");
         using namespace jtx;
         using namespace std::literals::chrono_literals;
         auto const alice = Account("alice");
@@ -2447,7 +2447,7 @@ struct PayChan_test : public beast::unit_test::suite
                 auto const authAmt = reqBal + USD(100);
                 assert(reqBal <= chanAmt);
                 auto const sig =
-                    signClaimICAuth(alice.pk(), alice.sk(), chan, authAmt);
+                    signClaimTokenAuth(alice.pk(), alice.sk(), chan, authAmt);
                 env(claim(bob, chan, reqBal, authAmt, Slice(sig), alice.pk()));
                 auto const feeDrops = env.current()->fees().base;
                 auto const postLocked = -lockedAmount(env, alice, gw, USD);
@@ -2498,9 +2498,9 @@ struct PayChan_test : public beast::unit_test::suite
     }
 
     void
-    testICSettleDelay(FeatureBitset features)
+    testTokenSettleDelay(FeatureBitset features)
     {
-        testcase("ic settle delay");
+        testcase("token settle delay");
         using namespace jtx;
         using namespace std::literals::chrono_literals;
         Env env{*this, features};
@@ -2542,7 +2542,7 @@ struct PayChan_test : public beast::unit_test::suite
             auto const authAmt = reqBal + USD(100);
             assert(reqBal <= chanAmt);
             auto const sig =
-                signClaimICAuth(alice.pk(), alice.sk(), chan, authAmt);
+                signClaimTokenAuth(alice.pk(), alice.sk(), chan, authAmt);
             env(claim(bob, chan, reqBal, authAmt, Slice(sig), alice.pk()));
             BEAST_EXPECT(channelBalance(*env.current(), chan) == reqBal);
             BEAST_EXPECT(channelAmount(*env.current(), chan) == chanAmt);
@@ -2569,7 +2569,7 @@ struct PayChan_test : public beast::unit_test::suite
             auto const authAmt = reqBal + USD(100);
             assert(reqBal <= chanAmt);
             auto const sig =
-                signClaimICAuth(alice.pk(), alice.sk(), chan, authAmt);
+                signClaimTokenAuth(alice.pk(), alice.sk(), chan, authAmt);
             env(claim(bob, chan, reqBal, authAmt, Slice(sig), alice.pk()));
             auto const feeDrops = env.current()->fees().base;
             auto const postLocked = -lockedAmount(env, alice, gw, USD);
@@ -2583,9 +2583,9 @@ struct PayChan_test : public beast::unit_test::suite
     }
 
     void
-    testICExpiration(FeatureBitset features)
+    testTokenExpiration(FeatureBitset features)
     {
-        testcase("ic expiration");
+        testcase("token expiration");
         using namespace jtx;
         using namespace std::literals::chrono_literals;
         Env env{*this, features};
@@ -2658,9 +2658,9 @@ struct PayChan_test : public beast::unit_test::suite
     }
 
     void
-    testICCloseDry(FeatureBitset features)
+    testTokenCloseDry(FeatureBitset features)
     {
-        testcase("ic close dry");
+        testcase("token close dry");
         using namespace jtx;
         using namespace std::literals::chrono_literals;
         Env env{*this, features};
@@ -2705,10 +2705,10 @@ struct PayChan_test : public beast::unit_test::suite
     }
 
     void
-    testICDefaultAmount(FeatureBitset features)
+    testTokenDefaultAmount(FeatureBitset features)
     {
         // auth amount defaults to balance if not present
-        testcase("ic default amount");
+        testcase("token default amount");
         using namespace jtx;
         using namespace std::literals::chrono_literals;
         Env env{*this, features};
@@ -2743,7 +2743,7 @@ struct PayChan_test : public beast::unit_test::suite
             auto const reqBal = chanBal + delta;
             assert(reqBal <= chanAmt);
             auto const sig =
-                signClaimICAuth(alice.pk(), alice.sk(), chan, reqBal);
+                signClaimTokenAuth(alice.pk(), alice.sk(), chan, reqBal);
             env(claim(bob, chan, reqBal, std::nullopt, Slice(sig), alice.pk()));
             auto const feeDrops = env.current()->fees().base;
             auto const postLocked = -lockedAmount(env, alice, gw, USD);
@@ -2768,7 +2768,7 @@ struct PayChan_test : public beast::unit_test::suite
             auto const reqBal = chanBal + delta;
             assert(reqBal <= chanAmt);
             auto const sig =
-                signClaimICAuth(alice.pk(), alice.sk(), chan, reqBal);
+                signClaimTokenAuth(alice.pk(), alice.sk(), chan, reqBal);
             env(claim(bob, chan, reqBal, std::nullopt, Slice(sig), alice.pk()));
             auto const feeDrops = env.current()->fees().base;
             auto const postLocked = -lockedAmount(env, alice, gw, USD);
@@ -2784,10 +2784,10 @@ struct PayChan_test : public beast::unit_test::suite
     }
 
     void
-    testICDisallowXRP(FeatureBitset features)
+    testTokenDisallowXRP(FeatureBitset features)
     {
         // auth amount defaults to balance if not present
-        testcase("IC Disallow XRP");
+        testcase("Token Disallow XRP");
         using namespace jtx;
         using namespace std::literals::chrono_literals;
 
@@ -2865,10 +2865,10 @@ struct PayChan_test : public beast::unit_test::suite
     }
 
     void
-    testICDstTag(FeatureBitset features)
+    testTokenDstTag(FeatureBitset features)
     {
         // auth amount defaults to balance if not present
-        testcase("IC Dst Tag");
+        testcase("Token Dst Tag");
         using namespace jtx;
         using namespace std::literals::chrono_literals;
         // Create a channel where dst disallows XRP
@@ -2905,9 +2905,9 @@ struct PayChan_test : public beast::unit_test::suite
     }
 
     void
-    testICDepositAuth(FeatureBitset features)
+    testTokenDepositAuth(FeatureBitset features)
     {
-        testcase("IC Deposit Authorization");
+        testcase("Token Deposit Authorization");
         using namespace jtx;
         using namespace std::literals::chrono_literals;
 
@@ -2954,7 +2954,7 @@ struct PayChan_test : public beast::unit_test::suite
             auto const preBobXrp = env.balance(bob);
             {
                 auto const delta = USD(500).value();
-                auto const sig = signClaimICAuth(pk, alice.sk(), chan, delta);
+                auto const sig = signClaimTokenAuth(pk, alice.sk(), chan, delta);
 
                 // alice claims with signature.  Fails since bob has
                 // lsfDepositAuth flag set.
@@ -2981,7 +2981,7 @@ struct PayChan_test : public beast::unit_test::suite
             {
                 // Explore the limits of deposit preauthorization.
                 auto const delta = USD(600).value();
-                auto const sig = signClaimICAuth(pk, alice.sk(), chan, delta);
+                auto const sig = signClaimTokenAuth(pk, alice.sk(), chan, delta);
 
                 // carol claims and fails.  Only channel participants (bob or
                 // alice) may claim.
@@ -3042,10 +3042,10 @@ struct PayChan_test : public beast::unit_test::suite
     }
 
     void
-    testICMultiple(FeatureBitset features)
+    testTokenMultiple(FeatureBitset features)
     {
         // auth amount defaults to balance if not present
-        testcase("IC Multiple channels to the same account");
+        testcase("Token Multiple channels to the same account");
         using namespace jtx;
         using namespace std::literals::chrono_literals;
         Env env{*this, features};
@@ -3073,9 +3073,9 @@ struct PayChan_test : public beast::unit_test::suite
     }
 
     void
-    testICAccountChannelsRPC(FeatureBitset features)
+    testTokenAccountChannelsRPC(FeatureBitset features)
     {
-        testcase("IC AccountChannels RPC");
+        testcase("Token AccountChannels RPC");
 
         using namespace jtx;
         using namespace std::literals::chrono_literals;
@@ -3137,9 +3137,9 @@ struct PayChan_test : public beast::unit_test::suite
     }
 
     void
-    testICAccountChannelsRPCMarkers(FeatureBitset features)
+    testTokenAccountChannelsRPCMarkers(FeatureBitset features)
     {
-        testcase("IC Account channels RPC markers");
+        testcase("Token Account channels RPC markers");
 
         using namespace test::jtx;
         using namespace std::literals;
@@ -3264,11 +3264,11 @@ struct PayChan_test : public beast::unit_test::suite
     }
 
     void
-    testICAccountChannelsRPCSenderOnly(FeatureBitset features)
+    testTokenAccountChannelsRPCSenderOnly(FeatureBitset features)
     {
         // Check that the account_channels command only returns channels owned
         // by the account
-        testcase("IC Account channels RPC owner only");
+        testcase("Token Account channels RPC owner only");
 
         using namespace test::jtx;
         using namespace std::literals;
@@ -3309,9 +3309,9 @@ struct PayChan_test : public beast::unit_test::suite
     }
 
     void
-    testICAuthVerifyRPC(FeatureBitset features)
+    testTokenAuthVerifyRPC(FeatureBitset features)
     {
-        testcase("IC PayChan Auth/Verify RPC");
+        testcase("Token PayChan Auth/Verify RPC");
         using namespace jtx;
         using namespace std::literals::chrono_literals;
         Env env{*this, features};
@@ -3828,9 +3828,9 @@ struct PayChan_test : public beast::unit_test::suite
     }
 
     void
-    testICOptionalFields(FeatureBitset features)
+    testTokenOptionalFields(FeatureBitset features)
     {
-        testcase("IC Optional Fields");
+        testcase("Token Optional Fields");
         using namespace jtx;
         using namespace std::literals::chrono_literals;
         Env env{*this, features};
@@ -3889,9 +3889,9 @@ struct PayChan_test : public beast::unit_test::suite
     }
 
     void
-    testICMalformedPK(FeatureBitset features)
+    testTokenMalformedPK(FeatureBitset features)
     {
-        testcase("ic malformed pk");
+        testcase("token malformed pk");
         using namespace jtx;
         using namespace std::literals::chrono_literals;
         Env env{*this, features};
@@ -3926,7 +3926,7 @@ struct PayChan_test : public beast::unit_test::suite
         env(jv);
 
         auto const authAmt = USD(100);
-        auto const sig = signClaimICAuth(alice.pk(), alice.sk(), chan, authAmt);
+        auto const sig = signClaimTokenAuth(alice.pk(), alice.sk(), chan, authAmt);
         jv = claim(
             bob,
             chan,
@@ -3966,9 +3966,9 @@ struct PayChan_test : public beast::unit_test::suite
     }
 
     void
-    testICMetaAndOwnership(FeatureBitset features)
+    testTokenMetaAndOwnership(FeatureBitset features)
     {
-        testcase("IC Metadata & Ownership");
+        testcase("Token Metadata & Ownership");
 
         using namespace jtx;
         using namespace std::literals::chrono_literals;
@@ -4098,9 +4098,9 @@ struct PayChan_test : public beast::unit_test::suite
     }
 
     void
-    testICAccountDelete(FeatureBitset features)
+    testTokenAccountDelete(FeatureBitset features)
     {
-        testcase("IC Account Delete");
+        testcase("Token Account Delete");
         using namespace test::jtx;
         using namespace std::literals::chrono_literals;
         auto rmAccount = [this](
@@ -4355,7 +4355,7 @@ struct PayChan_test : public beast::unit_test::suite
                 reqBal = chanBal + delta;
                 authAmt = reqBal + USD(100);
                 auto const sig =
-                    signClaimICAuth(alice.pk(), alice.sk(), chan, authAmt);
+                    signClaimTokenAuth(alice.pk(), alice.sk(), chan, authAmt);
                 env(claim(bob, chan, reqBal, authAmt, Slice(sig), alice.pk()));
                 auto const postLocked = -lockedAmount(env, alice, gw, USD);
                 BEAST_EXPECT(channelBalance(*env.current(), chan) == reqBal);
@@ -4399,9 +4399,9 @@ struct PayChan_test : public beast::unit_test::suite
     }
 
     void
-    testICUsingTickets(FeatureBitset features)
+    testTokenUsingTickets(FeatureBitset features)
     {
-        testcase("ic using tickets");
+        testcase("token using tickets");
         using namespace jtx;
         using namespace std::literals::chrono_literals;
         Env env{*this, features};
@@ -4489,7 +4489,7 @@ struct PayChan_test : public beast::unit_test::suite
             auto const authAmt = reqBal + USD(100);
             assert(reqBal <= chanAmt);
             auto const sig =
-                signClaimICAuth(alice.pk(), alice.sk(), chan, authAmt);
+                signClaimTokenAuth(alice.pk(), alice.sk(), chan, authAmt);
             env(claim(bob, chan, reqBal, authAmt, Slice(sig), alice.pk()),
                 ticket::use(bobTicketSeq++));
 
@@ -4529,7 +4529,7 @@ struct PayChan_test : public beast::unit_test::suite
             // Note that since claim() returns a tem (neither tec nor tes),
             // the ticket is not consumed.  So we don't increment bobTicket.
             auto const sig =
-                signClaimICAuth(alice.pk(), alice.sk(), chan, authAmt);
+                signClaimTokenAuth(alice.pk(), alice.sk(), chan, authAmt);
             env(claim(bob, chan, reqAmt, authAmt, Slice(sig), alice.pk()),
                 ticket::use(bobTicketSeq),
                 ter(temBAD_AMOUNT));
@@ -4582,9 +4582,9 @@ struct PayChan_test : public beast::unit_test::suite
     }
 
     void
-    testICAutoTL(FeatureBitset features)
+    testTokenAutoTL(FeatureBitset features)
     {
-        testcase("IC Auto Trust Line");
+        testcase("Token Auto Trust Line");
         using namespace test::jtx;
         using namespace std::literals;
 
@@ -4642,7 +4642,7 @@ struct PayChan_test : public beast::unit_test::suite
                 auto const preBob = env.balance(bob, USD.issue());
                 auto const preBobXrp = env.balance(bob);
                 auto const sig =
-                    signClaimICAuth(alice.pk(), alice.sk(), chan, authAmt);
+                    signClaimTokenAuth(alice.pk(), alice.sk(), chan, authAmt);
                 env(claim(bob, chan, reqBal, authAmt, Slice(sig), alice.pk()));
                 env.close();
                 BEAST_EXPECT(preBob.value() == USD(0));
@@ -4656,9 +4656,9 @@ struct PayChan_test : public beast::unit_test::suite
     }
 
     void
-    testICRippleState(FeatureBitset features)
+    testTokenRippleState(FeatureBitset features)
     {
-        testcase("IC RippleState");
+        testcase("Token RippleState");
         using namespace test::jtx;
         using namespace std::literals;
 
@@ -4705,7 +4705,7 @@ struct PayChan_test : public beast::unit_test::suite
             auto const delta = USD(500);
             auto const reqBal = chanBal + delta;
             auto const authAmt = USD(1000);
-            auto const sig = signClaimICAuth(src.pk(), src.sk(), chan, authAmt);
+            auto const sig = signClaimTokenAuth(src.pk(), src.sk(), chan, authAmt);
             env(claim(dst, chan, reqBal, authAmt, Slice(sig), src.pk()));
             env.close();
             auto postLocked = lockedAmount(env, src, gw, USD);
@@ -4753,7 +4753,7 @@ struct PayChan_test : public beast::unit_test::suite
             auto const delta = USD(500);
             auto const reqBal = chanBal + delta;
             auto const authAmt = USD(1000);
-            auto const sig = signClaimICAuth(src.pk(), src.sk(), chan, authAmt);
+            auto const sig = signClaimTokenAuth(src.pk(), src.sk(), chan, authAmt);
             env(claim(dst, chan, reqBal, authAmt, Slice(sig), src.pk()));
             env.close();
             auto postLocked = lockedAmount(env, src, gw, USD);
@@ -4801,7 +4801,7 @@ struct PayChan_test : public beast::unit_test::suite
             auto const delta = USD(500);
             auto const reqBal = chanBal + delta;
             auto const authAmt = USD(1000);
-            auto const sig = signClaimICAuth(src.pk(), src.sk(), chan, authAmt);
+            auto const sig = signClaimTokenAuth(src.pk(), src.sk(), chan, authAmt);
             env(claim(dst, chan, reqBal, authAmt, Slice(sig), src.pk()));
             env.close();
             auto postLocked = lockedAmount(env, src, gw, USD);
@@ -4849,7 +4849,7 @@ struct PayChan_test : public beast::unit_test::suite
             auto const delta = USD(500);
             auto const reqBal = chanBal + delta;
             auto const authAmt = USD(1000);
-            auto const sig = signClaimICAuth(src.pk(), src.sk(), chan, authAmt);
+            auto const sig = signClaimTokenAuth(src.pk(), src.sk(), chan, authAmt);
             env(claim(dst, chan, reqBal, authAmt, Slice(sig), src.pk()));
             env.close();
             auto postLocked = lockedAmount(env, src, gw, USD);
@@ -4898,7 +4898,7 @@ struct PayChan_test : public beast::unit_test::suite
             auto const delta = USD(500);
             auto const reqBal = chanBal + delta;
             auto const authAmt = USD(1000);
-            auto const sig = signClaimICAuth(src.pk(), src.sk(), chan, authAmt);
+            auto const sig = signClaimTokenAuth(src.pk(), src.sk(), chan, authAmt);
             env(claim(dst, chan, reqBal, authAmt, Slice(sig), src.pk()));
             env.close();
             auto postLocked = lockedAmount(env, src, gw, USD);
@@ -4951,7 +4951,7 @@ struct PayChan_test : public beast::unit_test::suite
             auto const delta = USD(500);
             auto const reqBal = chanBal + delta;
             auto const authAmt = USD(1000);
-            auto const sig = signClaimICAuth(src.pk(), src.sk(), chan, authAmt);
+            auto const sig = signClaimTokenAuth(src.pk(), src.sk(), chan, authAmt);
             env(claim(dst, chan, reqBal, authAmt, Slice(sig), src.pk()));
             env.close();
             auto postLocked = lockedAmount(env, src, gw, USD);
@@ -5004,7 +5004,7 @@ struct PayChan_test : public beast::unit_test::suite
             auto const delta = USD(500);
             auto const reqBal = chanBal + delta;
             auto const authAmt = USD(1000);
-            auto const sig = signClaimICAuth(src.pk(), src.sk(), chan, authAmt);
+            auto const sig = signClaimTokenAuth(src.pk(), src.sk(), chan, authAmt);
             env(claim(dst, chan, reqBal, authAmt, Slice(sig), src.pk()));
             env.close();
             auto postLocked = lockedAmount(env, src, gw, USD);
@@ -5057,7 +5057,7 @@ struct PayChan_test : public beast::unit_test::suite
             auto const delta = USD(500);
             auto const reqBal = chanBal + delta;
             auto const authAmt = USD(1000);
-            auto const sig = signClaimICAuth(src.pk(), src.sk(), chan, authAmt);
+            auto const sig = signClaimTokenAuth(src.pk(), src.sk(), chan, authAmt);
             env(claim(dst, chan, reqBal, authAmt, Slice(sig), src.pk()));
             env.close();
             auto postLocked = lockedAmount(env, src, gw, USD);
@@ -5074,9 +5074,9 @@ struct PayChan_test : public beast::unit_test::suite
     }
 
     void
-    testICGateway(FeatureBitset features)
+    testTokenGateway(FeatureBitset features)
     {
-        testcase("IC Gateway");
+        testcase("Token Gateway");
         using namespace test::jtx;
         using namespace std::literals;
 
@@ -5107,7 +5107,7 @@ struct PayChan_test : public beast::unit_test::suite
             auto const delta = USD(500);
             auto const reqBal = chanBal + delta;
             auto const authAmt = reqBal + USD(100);
-            auto const sig = signClaimICAuth(gw.pk(), gw.sk(), chan, authAmt);
+            auto const sig = signClaimTokenAuth(gw.pk(), gw.sk(), chan, authAmt);
             env(claim(src, chan, reqBal, authAmt, Slice(sig), gw.pk()));
             env.close();
             BEAST_EXPECT(preSrc == USD(0));
@@ -5140,7 +5140,7 @@ struct PayChan_test : public beast::unit_test::suite
             auto const delta = USD(500);
             auto const reqBal = chanBal + delta;
             auto const authAmt = reqBal + USD(100);
-            auto const sig = signClaimICAuth(gw.pk(), gw.sk(), chan, authAmt);
+            auto const sig = signClaimTokenAuth(gw.pk(), gw.sk(), chan, authAmt);
             env(claim(src, chan, reqBal, authAmt, Slice(sig), gw.pk()));
             env.close();
             BEAST_EXPECT(preSrc == USD(0));
@@ -5173,7 +5173,7 @@ struct PayChan_test : public beast::unit_test::suite
             auto const delta = USD(500);
             auto const reqBal = chanBal + delta;
             auto const authAmt = reqBal + USD(100);
-            auto const sig = signClaimICAuth(gw.pk(), gw.sk(), chan, authAmt);
+            auto const sig = signClaimTokenAuth(gw.pk(), gw.sk(), chan, authAmt);
             env(claim(src, chan, reqBal, authAmt, Slice(sig), gw.pk()));
             env.close();
             BEAST_EXPECT(preSrc == USD(0));
@@ -5206,7 +5206,7 @@ struct PayChan_test : public beast::unit_test::suite
             auto const delta = USD(500);
             auto const reqBal = chanBal + delta;
             auto const authAmt = reqBal + USD(100);
-            auto const sig = signClaimICAuth(gw.pk(), gw.sk(), chan, authAmt);
+            auto const sig = signClaimTokenAuth(gw.pk(), gw.sk(), chan, authAmt);
             env(claim(src, chan, reqBal, authAmt, Slice(sig), gw.pk()));
             env.close();
             BEAST_EXPECT(preSrc == USD(0));
@@ -5243,7 +5243,7 @@ struct PayChan_test : public beast::unit_test::suite
             auto const delta = USD(500);
             auto const reqBal = chanBal + delta;
             auto const authAmt = reqBal + USD(100);
-            auto const sig = signClaimICAuth(gw.pk(), gw.sk(), chan, authAmt);
+            auto const sig = signClaimTokenAuth(gw.pk(), gw.sk(), chan, authAmt);
             env(claim(src, chan, reqBal, authAmt, Slice(sig), gw.pk()));
             env.close();
             BEAST_EXPECT(preSrc == -USD(10000));
@@ -5280,7 +5280,7 @@ struct PayChan_test : public beast::unit_test::suite
             auto const delta = USD(500);
             auto const reqBal = chanBal + delta;
             auto const authAmt = reqBal + USD(100);
-            auto const sig = signClaimICAuth(gw.pk(), gw.sk(), chan, authAmt);
+            auto const sig = signClaimTokenAuth(gw.pk(), gw.sk(), chan, authAmt);
             env(claim(src, chan, reqBal, authAmt, Slice(sig), gw.pk()));
             env.close();
             BEAST_EXPECT(preSrc == USD(10000));
@@ -5317,7 +5317,7 @@ struct PayChan_test : public beast::unit_test::suite
             auto const delta = USD(500);
             auto const reqBal = chanBal + delta;
             auto const authAmt = reqBal + USD(100);
-            auto const sig = signClaimICAuth(gw.pk(), gw.sk(), chan, authAmt);
+            auto const sig = signClaimTokenAuth(gw.pk(), gw.sk(), chan, authAmt);
             env(claim(src, chan, reqBal, authAmt, Slice(sig), gw.pk()));
             env.close();
             BEAST_EXPECT(preSrc == -USD(10000));
@@ -5354,7 +5354,7 @@ struct PayChan_test : public beast::unit_test::suite
             auto const delta = USD(500);
             auto const reqBal = chanBal + delta;
             auto const authAmt = reqBal + USD(100);
-            auto const sig = signClaimICAuth(gw.pk(), gw.sk(), chan, authAmt);
+            auto const sig = signClaimTokenAuth(gw.pk(), gw.sk(), chan, authAmt);
             env(claim(src, chan, reqBal, authAmt, Slice(sig), gw.pk()));
             env.close();
             BEAST_EXPECT(preSrc == USD(10000));
@@ -5390,21 +5390,18 @@ struct PayChan_test : public beast::unit_test::suite
             auto const reqBal = chanBal + delta;
             auto const authAmt = reqBal + USD(100);
             auto const sig =
-                signClaimICAuth(alice.pk(), alice.sk(), chan, authAmt);
+                signClaimTokenAuth(alice.pk(), alice.sk(), chan, authAmt);
             env(claim(gw, chan, reqBal, authAmt, Slice(sig), alice.pk()));
             env.close();
             BEAST_EXPECT(preAlice == USD(10000));
             BEAST_EXPECT(env.balance(alice, USD.issue()) == preAlice - delta);
-            std::cout << "PRE ALICE: " << preAlice << "\n";
-            std::cout << "POST ALICE: " << env.balance(alice, USD.issue())
-                      << "\n";
         }
     }
 
     void
-    testICLockedRate(FeatureBitset features)
+    testTokenLockedRate(FeatureBitset features)
     {
-        testcase("IC Locked Rate");
+        testcase("Token Locked Rate");
         using namespace test::jtx;
         using namespace std::literals;
 
@@ -5547,9 +5544,9 @@ struct PayChan_test : public beast::unit_test::suite
     }
 
     void
-    testICTLLimitAmount(FeatureBitset features)
+    testTokenTLLimitAmount(FeatureBitset features)
     {
-        testcase("IC Trustline Limit Amount");
+        testcase("Token Trustline Limit Amount");
         using namespace test::jtx;
         using namespace std::literals;
 
@@ -5598,7 +5595,7 @@ struct PayChan_test : public beast::unit_test::suite
             // bob can claim, increasing the limit amount
             // auto const preBobLimit = limitAmount(env, bob, gw, USD);
             auto const sig =
-                signClaimICAuth(alice.pk(), alice.sk(), chan, authAmt);
+                signClaimTokenAuth(alice.pk(), alice.sk(), chan, authAmt);
             env(claim(bob, chan, reqBal, authAmt, Slice(sig), alice.pk()));
             env.close();
             // auto const postBobLimit = limitAmount(env, bob, gw, USD);
@@ -5608,9 +5605,9 @@ struct PayChan_test : public beast::unit_test::suite
     }
 
     void
-    testICTLRequireAuth(FeatureBitset features)
+    testTokenTLRequireAuth(FeatureBitset features)
     {
-        testcase("IC Trustline Require Auth");
+        testcase("Token Trustline Require Auth");
         using namespace test::jtx;
         using namespace std::literals;
 
@@ -5673,16 +5670,17 @@ struct PayChan_test : public beast::unit_test::suite
             auto const newReqBal = chanBal + delta;
             auto const newAuthAmt = newReqBal + USD(100);
             auto const sig =
-                signClaimICAuth(alice.pk(), alice.sk(), chan, newAuthAmt);
+                signClaimTokenAuth(alice.pk(), alice.sk(), chan, newAuthAmt);
             env(claim(
                 bob, chan, newReqBal, newAuthAmt, Slice(sig), alice.pk()));
             env.close();
         }
     }
+
     void
-    testICTLFreeze(FeatureBitset features)
+    testTokenTLFreeze(FeatureBitset features)
     {
-        testcase("IC Trustline Freeze");
+        testcase("Token Trustline Freeze");
         using namespace test::jtx;
         using namespace std::literals;
 
@@ -5725,7 +5723,7 @@ struct PayChan_test : public beast::unit_test::suite
             auto reqBal = chanBal + delta;
             auto authAmt = reqBal + USD(100);
             env(claim(alice, chan, reqBal, authAmt), ter(tecFROZEN));
-            auto sig = signClaimICAuth(alice.pk(), alice.sk(), chan, authAmt);
+            auto sig = signClaimTokenAuth(alice.pk(), alice.sk(), chan, authAmt);
             env(claim(bob, chan, reqBal, authAmt, Slice(sig), alice.pk()),
                 ter(tecFROZEN));
             env.close();
@@ -5737,7 +5735,7 @@ struct PayChan_test : public beast::unit_test::suite
             chanAmt = channelAmount(*env.current(), chan);
             reqBal = chanBal + delta;
             authAmt = reqBal + USD(100);
-            sig = signClaimICAuth(alice.pk(), alice.sk(), chan, authAmt);
+            sig = signClaimTokenAuth(alice.pk(), alice.sk(), chan, authAmt);
             env(claim(bob, chan, reqBal, authAmt, Slice(sig), alice.pk()));
             env.close();
         }
@@ -5791,7 +5789,7 @@ struct PayChan_test : public beast::unit_test::suite
             env(claim(alice, chan, reqBal, authAmt), ter(tecFROZEN));
 
             // bob claim paychan fails - frozen trustline
-            auto sig = signClaimICAuth(alice.pk(), alice.sk(), chan, authAmt);
+            auto sig = signClaimTokenAuth(alice.pk(), alice.sk(), chan, authAmt);
             env(claim(bob, chan, reqBal, authAmt, Slice(sig), alice.pk()),
                 ter(tecFROZEN));
             env.close();
@@ -5813,15 +5811,16 @@ struct PayChan_test : public beast::unit_test::suite
             authAmt = reqBal + USD(100);
 
             // bob claim paychan success
-            sig = signClaimICAuth(alice.pk(), alice.sk(), chan, authAmt);
+            sig = signClaimTokenAuth(alice.pk(), alice.sk(), chan, authAmt);
             env(claim(bob, chan, reqBal, authAmt, Slice(sig), alice.pk()));
             env.close();
         }
     }
+
     void
-    testICTLINSF(FeatureBitset features)
+    testTokenTLINSF(FeatureBitset features)
     {
-        testcase("IC Trustline Insuficient Funds");
+        testcase("Token Trustline Insuficient Funds");
         using namespace test::jtx;
         using namespace std::literals;
 
@@ -5897,9 +5896,9 @@ struct PayChan_test : public beast::unit_test::suite
     }
 
     void
-    testICMismatchFunding(FeatureBitset features)
+    testTokenMismatchFunding(FeatureBitset features)
     {
-        testcase("IC Mismatch Funding");
+        testcase("Token Mismatch Funding");
         using namespace test::jtx;
         using namespace std::literals;
 
@@ -5932,9 +5931,9 @@ struct PayChan_test : public beast::unit_test::suite
     }
 
     void
-    testICPrecisionLoss(FeatureBitset features)
+    testTokenPrecisionLoss(FeatureBitset features)
     {
-        testcase("IC Precision Loss");
+        testcase("Token Precision Loss");
         using namespace test::jtx;
         using namespace std::literals;
 
@@ -6016,13 +6015,13 @@ struct PayChan_test : public beast::unit_test::suite
             auto const chanAmt = channelAmount(*env.current(), chan);
             auto reqBal = USD(1000);
             auto authAmt = reqBal + USD(1000);
-            auto sig = signClaimICAuth(alice.pk(), alice.sk(), chan, authAmt);
+            auto sig = signClaimTokenAuth(alice.pk(), alice.sk(), chan, authAmt);
             env(claim(bob, chan, reqBal, authAmt, Slice(sig), alice.pk()),
                 ter(tecPRECISION_LOSS));
 
             reqBal = USD(10000);
             authAmt = reqBal + USD(10000);
-            sig = signClaimICAuth(alice.pk(), alice.sk(), chan, authAmt);
+            sig = signClaimTokenAuth(alice.pk(), alice.sk(), chan, authAmt);
             env(claim(bob, chan, reqBal, authAmt, Slice(sig), alice.pk()));
         }
     }
@@ -6049,34 +6048,34 @@ struct PayChan_test : public beast::unit_test::suite
         testMetaAndOwnership(features);
         testAccountDelete(features);
         testUsingTickets(features);
-        testICSimple(features);
-        testICCancelAfter(features);
-        testICSettleDelay(features);
-        testICExpiration(features);
-        testICCloseDry(features);
-        testICDefaultAmount(features);
-        testICDisallowXRP(features);
-        testICDstTag(features);
-        testICDepositAuth(features);
-        testICMultiple(features);
-        testICAccountChannelsRPC(features);
-        testICAccountChannelsRPCMarkers(features);
-        testICAccountChannelsRPCSenderOnly(features);
-        testICAuthVerifyRPC(features);
-        testICOptionalFields(features);
-        testICMalformedPK(features);
-        testICMetaAndOwnership(features);
-        testICAccountDelete(features);
-        testICUsingTickets(features);
-        testICAutoTL(features);
-        testICRippleState(features);
-        testICGateway(features);
-        testICLockedRate(features);
-        testICTLRequireAuth(features);
-        testICTLFreeze(features);
-        testICTLINSF(features);
-        testICMismatchFunding(features);
-        testICPrecisionLoss(features);
+        testTokenSimple(features);
+        testTokenCancelAfter(features);
+        testTokenSettleDelay(features);
+        testTokenExpiration(features);
+        testTokenCloseDry(features);
+        testTokenDefaultAmount(features);
+        testTokenDisallowXRP(features);
+        testTokenDstTag(features);
+        testTokenDepositAuth(features);
+        testTokenMultiple(features);
+        testTokenAccountChannelsRPC(features);
+        testTokenAccountChannelsRPCMarkers(features);
+        testTokenAccountChannelsRPCSenderOnly(features);
+        testTokenAuthVerifyRPC(features);
+        testTokenOptionalFields(features);
+        testTokenMalformedPK(features);
+        testTokenMetaAndOwnership(features);
+        testTokenAccountDelete(features);
+        testTokenUsingTickets(features);
+        testTokenAutoTL(features);
+        testTokenRippleState(features);
+        testTokenGateway(features);
+        testTokenLockedRate(features);
+        testTokenTLRequireAuth(features);
+        testTokenTLFreeze(features);
+        testTokenTLINSF(features);
+        testTokenMismatchFunding(features);
+        testTokenPrecisionLoss(features);
     }
 
 public:
