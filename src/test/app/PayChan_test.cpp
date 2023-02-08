@@ -2954,7 +2954,8 @@ struct PayChan_test : public beast::unit_test::suite
             auto const preBobXrp = env.balance(bob);
             {
                 auto const delta = USD(500).value();
-                auto const sig = signClaimTokenAuth(pk, alice.sk(), chan, delta);
+                auto const sig =
+                    signClaimTokenAuth(pk, alice.sk(), chan, delta);
 
                 // alice claims with signature.  Fails since bob has
                 // lsfDepositAuth flag set.
@@ -2981,7 +2982,8 @@ struct PayChan_test : public beast::unit_test::suite
             {
                 // Explore the limits of deposit preauthorization.
                 auto const delta = USD(600).value();
-                auto const sig = signClaimTokenAuth(pk, alice.sk(), chan, delta);
+                auto const sig =
+                    signClaimTokenAuth(pk, alice.sk(), chan, delta);
 
                 // carol claims and fails.  Only channel participants (bob or
                 // alice) may claim.
@@ -3926,7 +3928,8 @@ struct PayChan_test : public beast::unit_test::suite
         env(jv);
 
         auto const authAmt = USD(100);
-        auto const sig = signClaimTokenAuth(alice.pk(), alice.sk(), chan, authAmt);
+        auto const sig =
+            signClaimTokenAuth(alice.pk(), alice.sk(), chan, authAmt);
         jv = claim(
             bob,
             chan,
@@ -4705,7 +4708,8 @@ struct PayChan_test : public beast::unit_test::suite
             auto const delta = USD(500);
             auto const reqBal = chanBal + delta;
             auto const authAmt = USD(1000);
-            auto const sig = signClaimTokenAuth(src.pk(), src.sk(), chan, authAmt);
+            auto const sig =
+                signClaimTokenAuth(src.pk(), src.sk(), chan, authAmt);
             env(claim(dst, chan, reqBal, authAmt, Slice(sig), src.pk()));
             env.close();
             auto postLocked = lockedAmount(env, src, gw, USD);
@@ -4753,7 +4757,8 @@ struct PayChan_test : public beast::unit_test::suite
             auto const delta = USD(500);
             auto const reqBal = chanBal + delta;
             auto const authAmt = USD(1000);
-            auto const sig = signClaimTokenAuth(src.pk(), src.sk(), chan, authAmt);
+            auto const sig =
+                signClaimTokenAuth(src.pk(), src.sk(), chan, authAmt);
             env(claim(dst, chan, reqBal, authAmt, Slice(sig), src.pk()));
             env.close();
             auto postLocked = lockedAmount(env, src, gw, USD);
@@ -4801,7 +4806,8 @@ struct PayChan_test : public beast::unit_test::suite
             auto const delta = USD(500);
             auto const reqBal = chanBal + delta;
             auto const authAmt = USD(1000);
-            auto const sig = signClaimTokenAuth(src.pk(), src.sk(), chan, authAmt);
+            auto const sig =
+                signClaimTokenAuth(src.pk(), src.sk(), chan, authAmt);
             env(claim(dst, chan, reqBal, authAmt, Slice(sig), src.pk()));
             env.close();
             auto postLocked = lockedAmount(env, src, gw, USD);
@@ -4849,7 +4855,8 @@ struct PayChan_test : public beast::unit_test::suite
             auto const delta = USD(500);
             auto const reqBal = chanBal + delta;
             auto const authAmt = USD(1000);
-            auto const sig = signClaimTokenAuth(src.pk(), src.sk(), chan, authAmt);
+            auto const sig =
+                signClaimTokenAuth(src.pk(), src.sk(), chan, authAmt);
             env(claim(dst, chan, reqBal, authAmt, Slice(sig), src.pk()));
             env.close();
             auto postLocked = lockedAmount(env, src, gw, USD);
@@ -4898,7 +4905,8 @@ struct PayChan_test : public beast::unit_test::suite
             auto const delta = USD(500);
             auto const reqBal = chanBal + delta;
             auto const authAmt = USD(1000);
-            auto const sig = signClaimTokenAuth(src.pk(), src.sk(), chan, authAmt);
+            auto const sig =
+                signClaimTokenAuth(src.pk(), src.sk(), chan, authAmt);
             env(claim(dst, chan, reqBal, authAmt, Slice(sig), src.pk()));
             env.close();
             auto postLocked = lockedAmount(env, src, gw, USD);
@@ -4951,7 +4959,8 @@ struct PayChan_test : public beast::unit_test::suite
             auto const delta = USD(500);
             auto const reqBal = chanBal + delta;
             auto const authAmt = USD(1000);
-            auto const sig = signClaimTokenAuth(src.pk(), src.sk(), chan, authAmt);
+            auto const sig =
+                signClaimTokenAuth(src.pk(), src.sk(), chan, authAmt);
             env(claim(dst, chan, reqBal, authAmt, Slice(sig), src.pk()));
             env.close();
             auto postLocked = lockedAmount(env, src, gw, USD);
@@ -5004,7 +5013,8 @@ struct PayChan_test : public beast::unit_test::suite
             auto const delta = USD(500);
             auto const reqBal = chanBal + delta;
             auto const authAmt = USD(1000);
-            auto const sig = signClaimTokenAuth(src.pk(), src.sk(), chan, authAmt);
+            auto const sig =
+                signClaimTokenAuth(src.pk(), src.sk(), chan, authAmt);
             env(claim(dst, chan, reqBal, authAmt, Slice(sig), src.pk()));
             env.close();
             auto postLocked = lockedAmount(env, src, gw, USD);
@@ -5057,7 +5067,8 @@ struct PayChan_test : public beast::unit_test::suite
             auto const delta = USD(500);
             auto const reqBal = chanBal + delta;
             auto const authAmt = USD(1000);
-            auto const sig = signClaimTokenAuth(src.pk(), src.sk(), chan, authAmt);
+            auto const sig =
+                signClaimTokenAuth(src.pk(), src.sk(), chan, authAmt);
             env(claim(dst, chan, reqBal, authAmt, Slice(sig), src.pk()));
             env.close();
             auto postLocked = lockedAmount(env, src, gw, USD);
@@ -5107,7 +5118,8 @@ struct PayChan_test : public beast::unit_test::suite
             auto const delta = USD(500);
             auto const reqBal = chanBal + delta;
             auto const authAmt = reqBal + USD(100);
-            auto const sig = signClaimTokenAuth(gw.pk(), gw.sk(), chan, authAmt);
+            auto const sig =
+                signClaimTokenAuth(gw.pk(), gw.sk(), chan, authAmt);
             env(claim(src, chan, reqBal, authAmt, Slice(sig), gw.pk()));
             env.close();
             BEAST_EXPECT(preSrc == USD(0));
@@ -5140,7 +5152,8 @@ struct PayChan_test : public beast::unit_test::suite
             auto const delta = USD(500);
             auto const reqBal = chanBal + delta;
             auto const authAmt = reqBal + USD(100);
-            auto const sig = signClaimTokenAuth(gw.pk(), gw.sk(), chan, authAmt);
+            auto const sig =
+                signClaimTokenAuth(gw.pk(), gw.sk(), chan, authAmt);
             env(claim(src, chan, reqBal, authAmt, Slice(sig), gw.pk()));
             env.close();
             BEAST_EXPECT(preSrc == USD(0));
@@ -5173,7 +5186,8 @@ struct PayChan_test : public beast::unit_test::suite
             auto const delta = USD(500);
             auto const reqBal = chanBal + delta;
             auto const authAmt = reqBal + USD(100);
-            auto const sig = signClaimTokenAuth(gw.pk(), gw.sk(), chan, authAmt);
+            auto const sig =
+                signClaimTokenAuth(gw.pk(), gw.sk(), chan, authAmt);
             env(claim(src, chan, reqBal, authAmt, Slice(sig), gw.pk()));
             env.close();
             BEAST_EXPECT(preSrc == USD(0));
@@ -5206,7 +5220,8 @@ struct PayChan_test : public beast::unit_test::suite
             auto const delta = USD(500);
             auto const reqBal = chanBal + delta;
             auto const authAmt = reqBal + USD(100);
-            auto const sig = signClaimTokenAuth(gw.pk(), gw.sk(), chan, authAmt);
+            auto const sig =
+                signClaimTokenAuth(gw.pk(), gw.sk(), chan, authAmt);
             env(claim(src, chan, reqBal, authAmt, Slice(sig), gw.pk()));
             env.close();
             BEAST_EXPECT(preSrc == USD(0));
@@ -5243,7 +5258,8 @@ struct PayChan_test : public beast::unit_test::suite
             auto const delta = USD(500);
             auto const reqBal = chanBal + delta;
             auto const authAmt = reqBal + USD(100);
-            auto const sig = signClaimTokenAuth(gw.pk(), gw.sk(), chan, authAmt);
+            auto const sig =
+                signClaimTokenAuth(gw.pk(), gw.sk(), chan, authAmt);
             env(claim(src, chan, reqBal, authAmt, Slice(sig), gw.pk()));
             env.close();
             BEAST_EXPECT(preSrc == -USD(10000));
@@ -5280,7 +5296,8 @@ struct PayChan_test : public beast::unit_test::suite
             auto const delta = USD(500);
             auto const reqBal = chanBal + delta;
             auto const authAmt = reqBal + USD(100);
-            auto const sig = signClaimTokenAuth(gw.pk(), gw.sk(), chan, authAmt);
+            auto const sig =
+                signClaimTokenAuth(gw.pk(), gw.sk(), chan, authAmt);
             env(claim(src, chan, reqBal, authAmt, Slice(sig), gw.pk()));
             env.close();
             BEAST_EXPECT(preSrc == USD(10000));
@@ -5317,7 +5334,8 @@ struct PayChan_test : public beast::unit_test::suite
             auto const delta = USD(500);
             auto const reqBal = chanBal + delta;
             auto const authAmt = reqBal + USD(100);
-            auto const sig = signClaimTokenAuth(gw.pk(), gw.sk(), chan, authAmt);
+            auto const sig =
+                signClaimTokenAuth(gw.pk(), gw.sk(), chan, authAmt);
             env(claim(src, chan, reqBal, authAmt, Slice(sig), gw.pk()));
             env.close();
             BEAST_EXPECT(preSrc == -USD(10000));
@@ -5354,7 +5372,8 @@ struct PayChan_test : public beast::unit_test::suite
             auto const delta = USD(500);
             auto const reqBal = chanBal + delta;
             auto const authAmt = reqBal + USD(100);
-            auto const sig = signClaimTokenAuth(gw.pk(), gw.sk(), chan, authAmt);
+            auto const sig =
+                signClaimTokenAuth(gw.pk(), gw.sk(), chan, authAmt);
             env(claim(src, chan, reqBal, authAmt, Slice(sig), gw.pk()));
             env.close();
             BEAST_EXPECT(preSrc == USD(10000));
@@ -5723,7 +5742,8 @@ struct PayChan_test : public beast::unit_test::suite
             auto reqBal = chanBal + delta;
             auto authAmt = reqBal + USD(100);
             env(claim(alice, chan, reqBal, authAmt), ter(tecFROZEN));
-            auto sig = signClaimTokenAuth(alice.pk(), alice.sk(), chan, authAmt);
+            auto sig =
+                signClaimTokenAuth(alice.pk(), alice.sk(), chan, authAmt);
             env(claim(bob, chan, reqBal, authAmt, Slice(sig), alice.pk()),
                 ter(tecFROZEN));
             env.close();
@@ -5789,7 +5809,8 @@ struct PayChan_test : public beast::unit_test::suite
             env(claim(alice, chan, reqBal, authAmt), ter(tecFROZEN));
 
             // bob claim paychan fails - frozen trustline
-            auto sig = signClaimTokenAuth(alice.pk(), alice.sk(), chan, authAmt);
+            auto sig =
+                signClaimTokenAuth(alice.pk(), alice.sk(), chan, authAmt);
             env(claim(bob, chan, reqBal, authAmt, Slice(sig), alice.pk()),
                 ter(tecFROZEN));
             env.close();
@@ -6015,7 +6036,8 @@ struct PayChan_test : public beast::unit_test::suite
             auto const chanAmt = channelAmount(*env.current(), chan);
             auto reqBal = USD(1000);
             auto authAmt = reqBal + USD(1000);
-            auto sig = signClaimTokenAuth(alice.pk(), alice.sk(), chan, authAmt);
+            auto sig =
+                signClaimTokenAuth(alice.pk(), alice.sk(), chan, authAmt);
             env(claim(bob, chan, reqBal, authAmt, Slice(sig), alice.pk()),
                 ter(tecPRECISION_LOSS));
 
