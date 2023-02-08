@@ -451,6 +451,8 @@ REGISTER_FIX    (fixTrustLinesToSelf,           Supported::yes, DefaultVote::no)
 REGISTER_FIX    (fixRemoveNFTokenAutoTrustLine, Supported::yes, DefaultVote::yes);
 REGISTER_FEATURE(ImmediateOfferKilled,          Supported::yes, DefaultVote::no);
 REGISTER_FEATURE(DisallowIncoming,              Supported::yes, DefaultVote::no);
+REGISTER_FEATURE(XRPFees,                       Supported::yes, DefaultVote::no);
+REGISTER_FIX    (fixUniversalNumber,            Supported::yes, DefaultVote::yes);
 REGISTER_FEATURE(PaychanAndEscrowForTokens,     Supported::yes, DefaultVote::no);
 
 // The following amendments have been active for at least two years. Their
