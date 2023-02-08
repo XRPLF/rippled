@@ -293,6 +293,7 @@ TxQ::MaybeTx::apply(Application& app, OpenView& view, beast::Journal j)
     // If the rules or flags change, preflight again
     assert(pfresult);
     STAmountSO stAmountSO{view.rules().enabled(fixSTAmountCanonicalize)};
+    NumberSO stNumberSO{view.rules().enabled(fixUniversalNumber)};
 
     if (pfresult->rules != view.rules() || pfresult->flags != flags)
     {
@@ -717,6 +718,7 @@ TxQ::apply(
     beast::Journal j)
 {
     STAmountSO stAmountSO{view.rules().enabled(fixSTAmountCanonicalize)};
+    NumberSO stNumberSO{view.rules().enabled(fixUniversalNumber)};
 
     // See if the transaction paid a high enough fee that it can go straight
     // into the ledger.
