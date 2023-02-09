@@ -168,10 +168,21 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
                 dest.has_value() && *dest != ctx.tx[sfAccount])
                 return tecNO_PERMISSION;
         }
-        // The account offering to buy must have funds:
-        auto const needed = bo->at(sfAmount);
 
-        if (accountHolds(
+        // The account offering to buy must have funds:
+        //
+        // After this amendment, we allow an IOU issuer to buy an NFT with their
+        // own currency
+        auto const needed = bo->at(sfAmount);
+        if (ctx.view.rules().enabled(fixUnburnableNFToken))
+        {
+            if (accountFunds(
+                    ctx.view, (*bo)[sfOwner], needed, fhZERO_IF_FROZEN, ctx.j) <
+                needed)
+                return tecINSUFFICIENT_FUNDS;
+        }
+        else if (
+            accountHolds(
                 ctx.view,
                 (*bo)[sfOwner],
                 needed.getCurrency(),
@@ -206,15 +217,39 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
 
         // The account offering to buy must have funds:
         auto const needed = so->at(sfAmount);
-
-        if (accountHolds(
-                ctx.view,
-                ctx.tx[sfAccount],
-                needed.getCurrency(),
-                needed.getIssuer(),
-                fhZERO_IF_FROZEN,
-                ctx.j) < needed)
-            return tecINSUFFICIENT_FUNDS;
+        if (!ctx.view.rules().enabled(fixUnburnableNFToken))
+        {
+            if (accountHolds(
+                    ctx.view,
+                    ctx.tx[sfAccount],
+                    needed.getCurrency(),
+                    needed.getIssuer(),
+                    fhZERO_IF_FROZEN,
+                    ctx.j) < needed)
+                return tecINSUFFICIENT_FUNDS;
+        }
+        else if (!bo)
+        {
+            // After this amendment, we allow buyers to buy with their own
+            // issued currency.
+            //
+            // In the case of brokered mode, this check is essentially
+            // redundant, since we have already confirmed that buy offer is >
+            // than the sell offer, and that the buyer can cover the buy
+            // offer.
+            //
+            // We also _must not_ check the tx submitter in brokered
+            // mode, because then we are confirming that the broker can
+            // cover what the buyer will pay, which doesn't make sense, causes
+            // an unncessary tec, and is also resolved with this amendment.
+            if (accountFunds(
+                    ctx.view,
+                    ctx.tx[sfAccount],
+                    needed,
+                    fhZERO_IF_FROZEN,
+                    ctx.j) < needed)
+                return tecINSUFFICIENT_FUNDS;
+        }
     }
 
     return tesSUCCESS;
@@ -230,7 +265,22 @@ NFTokenAcceptOffer::pay(
     if (amount < beast::zero)
         return tecINTERNAL;
 
-    return accountSend(view(), from, to, amount, j_);
+    auto const result = accountSend(view(), from, to, amount, j_);
+
+    // After this amendment, if any payment would cause a non-IOU-issuer to
+    // have a negative balance, or an IOU-issuer to have a positive balance in
+    // their own currency, we know that something went wrong. This was
+    // originally found in the context of IOU transfer fees. Since there are
+    // several payouts in this tx, just confirm that the end state is OK.
+    if (!view().rules().enabled(fixUnburnableNFToken))
+        return result;
+    if (result != tesSUCCESS)
+        return result;
+    if (accountFunds(view(), from, amount, fhZERO_IF_FROZEN, j_).signum() < 0)
+        return tecINSUFFICIENT_FUNDS;
+    if (accountFunds(view(), to, amount, fhZERO_IF_FROZEN, j_).signum() < 0)
+        return tecINSUFFICIENT_FUNDS;
+    return tesSUCCESS;
 }
 
 TER
