@@ -163,7 +163,7 @@ NFTokenMint::doApply()
         std::uint32_t tokenSeq;
         if (ctx_.view().rules().enabled(fixUnburnableNFToken))
         {
-            auto accSeq = (*root)[sfSequence];
+            auto const accSeq = (*root)[sfSequence];
 
             // If the issuer hasn't minted a NFT before, we must
             // initialize sfFirstNFTokenSequence to equal to the current account
