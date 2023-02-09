@@ -115,7 +115,9 @@ private:
                     {"UNL", "UNL"},
                     {"XCHAIN", "XChain"},
                     {"ID", "ID"},
-                    {"AMM", "AMM"}};
+                    {"AMM", "AMM"},
+                    {"URITOKEN", "URIToken"},
+                    {"URI", "URI"}};
 
             std::string out;
             size_t pos = 0;
