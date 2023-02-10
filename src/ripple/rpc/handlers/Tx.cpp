@@ -29,6 +29,7 @@
 #include <ripple/rpc/DeliveredAmount.h>
 #include <ripple/rpc/GRPCHandlers.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
+#include <charconv>
 
 namespace ripple {
 
@@ -53,6 +54,7 @@ struct TxResult
     Transaction::pointer txn;
     std::variant<std::shared_ptr<TxMeta>, Blob> meta;
     bool validated = false;
+    std::optional<uint64_t> ctim;
     TxSearched searchedAll;
 };
 
@@ -245,6 +247,18 @@ doTxHelp(RPC::Context& context, TxArgs const& args)
         }
         result.validated = isValidated(
             context.ledgerMaster, ledger->info().seq, ledger->info().hash);
+
+        // compute CTIM
+        
+        uint64_t ctim = 0xC000000000000000ULL;
+        // ledger seq
+        ctim |= (((uint64_t)(ledger->info().seq)) & 0x0FFFFFFFULL) << 32U;
+        // txn index
+        ctim |= ((uint64_t)(meta->getAsObject().getFieldU32(sfTransactionIndex)) & 0xFFFFULL) << 16U;
+        // network
+        ctim |= ((uint64_t)(context.app.config().NETWORK_ID)) & 0xFFFFULL;
+
+        result.ctim = ctim;
     }
 
     return {result, rpcSUCCESS};
@@ -298,6 +312,13 @@ populateJsonResponse(
             }
         }
         response[jss::validated] = result.validated;
+
+        if (result.ctim)
+        {   // todo: replace with std::format
+            char hex[17];
+            snprintf(hex, 17, "%016llX", *(result.ctim));
+            response[jss::concise_id] = std::string((const char*)hex, 17);
+        }
     }
     return response;
 }
