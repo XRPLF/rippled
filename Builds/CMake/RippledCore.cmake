@@ -50,6 +50,7 @@ target_sources (xrpl_core PRIVATE
   src/ripple/basics/impl/FileUtilities.cpp
   src/ripple/basics/impl/IOUAmount.cpp
   src/ripple/basics/impl/Log.cpp
+  src/ripple/basics/impl/Number.cpp
   src/ripple/basics/impl/StringUtilities.cpp
   #[===============================[
     main sources:
@@ -153,6 +154,7 @@ install (
     src/ripple/basics/LocalValue.h
     src/ripple/basics/Log.h
     src/ripple/basics/MathUtilities.h
+    src/ripple/basics/Number.h
     src/ripple/basics/safe_cast.h
     src/ripple/basics/Slice.h
     src/ripple/basics/spinlock.h
@@ -738,6 +740,7 @@ if (tests)
     src/test/basics/FileUtilities_test.cpp
     src/test/basics/IOUAmount_test.cpp
     src/test/basics/KeyCache_test.cpp
+    src/test/basics/Number_test.cpp
     src/test/basics/PerfLog_test.cpp
     src/test/basics/RangeSet_test.cpp
     src/test/basics/scope_test.cpp
@@ -910,6 +913,7 @@ if (tests)
     src/test/protocol/InnerObjectFormats_test.cpp
     src/test/protocol/Issue_test.cpp
     src/test/protocol/Hooks_test.cpp
+    src/test/protocol/Memo_test.cpp
     src/test/protocol/PublicKey_test.cpp
     src/test/protocol/Quality_test.cpp
     src/test/protocol/STAccount_test.cpp

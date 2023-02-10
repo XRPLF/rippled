@@ -29,6 +29,8 @@ namespace ripple {
 
 class NFToken_test : public beast::unit_test::suite
 {
+    FeatureBitset const disallowIncoming{featureDisallowIncoming};
+
     // Helper function that returns the owner count of an account root.
     static std::uint32_t
     ownerCount(test::jtx::Env const& env, test::jtx::Account const& acct)
@@ -2347,7 +2349,13 @@ class NFToken_test : public beast::unit_test::suite
 
         // See the impact of rounding when the nft is sold for small amounts
         // of drops.
+        for (auto NumberSwitchOver : {true})
         {
+            if (NumberSwitchOver)
+                env.enableFeature(fixUniversalNumber);
+            else
+                env.disableFeature(fixUniversalNumber);
+
             // An nft with a transfer fee of 1 basis point.
             uint256 const nftID =
                 token::getNextID(env, alice, 0u, tfTransferable, 1);
@@ -2372,16 +2380,16 @@ class NFToken_test : public beast::unit_test::suite
 
             // minter sells to carol.  The payment is just small enough that
             // alice does not get any transfer fee.
+            auto pmt = NumberSwitchOver ? drops(50000) : drops(99999);
             STAmount carolBalance = env.balance(carol);
             uint256 const minterSellOfferIndex =
                 keylet::nftoffer(minter, env.seq(minter)).key;
-            env(token::createOffer(minter, nftID, drops(99999)),
-                txflags(tfSellNFToken));
+            env(token::createOffer(minter, nftID, pmt), txflags(tfSellNFToken));
             env.close();
             env(token::acceptSellOffer(carol, minterSellOfferIndex));
             env.close();
-            minterBalance += drops(99999) - fee;
-            carolBalance -= drops(99999) + fee;
+            minterBalance += pmt - fee;
+            carolBalance -= pmt + fee;
             BEAST_EXPECT(env.balance(alice) == aliceBalance);
             BEAST_EXPECT(env.balance(minter) == minterBalance);
             BEAST_EXPECT(env.balance(carol) == carolBalance);
@@ -2391,13 +2399,13 @@ class NFToken_test : public beast::unit_test::suite
             STAmount beckyBalance = env.balance(becky);
             uint256 const beckyBuyOfferIndex =
                 keylet::nftoffer(becky, env.seq(becky)).key;
-            env(token::createOffer(becky, nftID, drops(100000)),
-                token::owner(carol));
+            pmt = NumberSwitchOver ? drops(50001) : drops(100000);
+            env(token::createOffer(becky, nftID, pmt), token::owner(carol));
             env.close();
             env(token::acceptBuyOffer(carol, beckyBuyOfferIndex));
             env.close();
-            carolBalance += drops(99999) - fee;
-            beckyBalance -= drops(100000) + fee;
+            carolBalance += pmt - drops(1) - fee;
+            beckyBalance -= pmt + fee;
             aliceBalance += drops(1);
 
             BEAST_EXPECT(env.balance(alice) == aliceBalance);
@@ -2972,6 +2980,135 @@ class NFToken_test : public beast::unit_test::suite
             BEAST_EXPECT(ownerCount(env, issuer) == 0);
             BEAST_EXPECT(ownerCount(env, minter) == 0);
             BEAST_EXPECT(ownerCount(env, buyer) == 1);
+        }
+    }
+
+    void
+    testCreateOfferDestinationDisallowIncoming(FeatureBitset features)
+    {
+        testcase("Create offer destination disallow incoming");
+
+        using namespace test::jtx;
+
+        // test flag doesn't set unless amendment enabled
+        {
+            Env env{*this, features - disallowIncoming};
+            Account const alice{"alice"};
+            env.fund(XRP(10000), alice);
+            env(fset(alice, asfDisallowIncomingNFTOffer));
+            env.close();
+            auto const sle = env.le(alice);
+            uint32_t flags = sle->getFlags();
+            BEAST_EXPECT(!(flags & lsfDisallowIncomingNFTOffer));
+        }
+
+        Env env{*this, features | disallowIncoming};
+
+        Account const issuer{"issuer"};
+        Account const minter{"minter"};
+        Account const buyer{"buyer"};
+        Account const alice{"alice"};
+
+        env.fund(XRP(1000), issuer, minter, buyer, alice);
+
+        env(token::setMinter(issuer, minter));
+        env.close();
+
+        uint256 const nftokenID =
+            token::getNextID(env, issuer, 0, tfTransferable);
+        env(token::mint(minter, 0),
+            token::issuer(issuer),
+            txflags(tfTransferable));
+        env.close();
+
+        // enable flag
+        env(fset(buyer, asfDisallowIncomingNFTOffer));
+        env.close();
+
+        // a sell offer from the minter to the buyer should be rejected
+        {
+            env(token::createOffer(minter, nftokenID, drops(1)),
+                token::destination(buyer),
+                txflags(tfSellNFToken),
+                ter(tecNO_PERMISSION));
+            env.close();
+            BEAST_EXPECT(ownerCount(env, issuer) == 0);
+            BEAST_EXPECT(ownerCount(env, minter) == 1);
+            BEAST_EXPECT(ownerCount(env, buyer) == 0);
+        }
+
+        // disable the flag
+        env(fclear(buyer, asfDisallowIncomingNFTOffer));
+        env.close();
+
+        // create offer (allowed now) then cancel
+        {
+            uint256 const offerIndex =
+                keylet::nftoffer(minter, env.seq(minter)).key;
+
+            env(token::createOffer(minter, nftokenID, drops(1)),
+                token::destination(buyer),
+                txflags(tfSellNFToken));
+            env.close();
+
+            env(token::cancelOffer(minter, {offerIndex}));
+            env.close();
+        }
+
+        // create offer, enable flag, then cancel
+        {
+            uint256 const offerIndex =
+                keylet::nftoffer(minter, env.seq(minter)).key;
+
+            env(token::createOffer(minter, nftokenID, drops(1)),
+                token::destination(buyer),
+                txflags(tfSellNFToken));
+            env.close();
+
+            env(fset(buyer, asfDisallowIncomingNFTOffer));
+            env.close();
+
+            env(token::cancelOffer(minter, {offerIndex}));
+            env.close();
+
+            env(fclear(buyer, asfDisallowIncomingNFTOffer));
+            env.close();
+        }
+
+        // create offer then transfer
+        {
+            uint256 const offerIndex =
+                keylet::nftoffer(minter, env.seq(minter)).key;
+
+            env(token::createOffer(minter, nftokenID, drops(1)),
+                token::destination(buyer),
+                txflags(tfSellNFToken));
+            env.close();
+
+            env(token::acceptSellOffer(buyer, offerIndex));
+            env.close();
+        }
+
+        // buyer now owns the token
+
+        // enable flag again
+        env(fset(buyer, asfDisallowIncomingNFTOffer));
+        env.close();
+
+        // a random offer to buy the token
+        {
+            env(token::createOffer(alice, nftokenID, drops(1)),
+                token::owner(buyer),
+                ter(tecNO_PERMISSION));
+            env.close();
+        }
+
+        // minter offer to buy the token
+        {
+            env(token::createOffer(minter, nftokenID, drops(1)),
+                token::owner(buyer),
+                ter(tecNO_PERMISSION));
+            env.close();
         }
     }
 
@@ -4929,6 +5066,7 @@ class NFToken_test : public beast::unit_test::suite
         testMintTaxon(features);
         testMintURI(features);
         testCreateOfferDestination(features);
+        testCreateOfferDestinationDisallowIncoming(features);
         testCreateOfferExpiration(features);
         testCancelOffers(features);
         testCancelTooManyOffers(features);
@@ -4949,6 +5087,7 @@ public:
         FeatureBitset const fixNFTDir{fixNFTokenDirV1};
 
         testWithFeats(all - fixNFTDir);
+        testWithFeats(all - disallowIncoming);
         testWithFeats(all);
     }
 };

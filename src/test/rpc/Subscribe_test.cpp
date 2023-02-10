@@ -20,6 +20,7 @@
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/core/ConfigSections.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/jss.h>
 #include <test/jtx.h>
 #include <test/jtx/WSClient.h>
@@ -326,11 +327,11 @@ public:
     }
 
     void
-    testValidations()
+    testValidations(FeatureBitset features)
     {
         using namespace jtx;
 
-        Env env{*this, envconfig(validator, "")};
+        Env env{*this, envconfig(validator, ""), features};
         auto& cfg = env.app().config();
         if (!BEAST_EXPECT(cfg.section(SECTION_VALIDATION_SEED).empty()))
             return;
@@ -410,10 +411,25 @@ public:
                 if (jv.isMember(jss::server_version) != isFlagLedger)
                     return false;
 
-                if (jv.isMember(jss::reserve_base) != isFlagLedger)
+                bool xrpFees = env.closed()->rules().enabled(featureXRPFees);
+                if ((!xrpFees &&
+                     jv.isMember(jss::reserve_base) != isFlagLedger) ||
+                    (xrpFees && jv.isMember(jss::reserve_base)))
                     return false;
 
-                if (jv.isMember(jss::reserve_inc) != isFlagLedger)
+                if ((!xrpFees &&
+                     jv.isMember(jss::reserve_inc) != isFlagLedger) ||
+                    (xrpFees && jv.isMember(jss::reserve_inc)))
+                    return false;
+
+                if ((xrpFees &&
+                     jv.isMember(jss::reserve_base_drops) != isFlagLedger) ||
+                    (!xrpFees && jv.isMember(jss::reserve_base_drops)))
+                    return false;
+
+                if ((xrpFees &&
+                     jv.isMember(jss::reserve_inc_drops) != isFlagLedger) ||
+                    (!xrpFees && jv.isMember(jss::reserve_inc_drops)))
                     return false;
 
                 return true;
@@ -1140,11 +1156,16 @@ public:
     void
     run() override
     {
+        using namespace test::jtx;
+        FeatureBitset const all{supported_amendments()};
+        FeatureBitset const xrpFees{featureXRPFees};
+
         testServer();
         testLedger();
         testTransactions();
         testManifests();
-        testValidations();
+        testValidations(all - xrpFees);
+        testValidations(all);
         testSubErrors(true);
         testSubErrors(false);
         testSubByUrl();

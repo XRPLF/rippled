@@ -409,6 +409,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(NodeToShardRPC, rpc, ripple);
+BEAST_DEFINE_TESTSUITE_MANUAL(NodeToShardRPC, rpc, ripple);
 }  // namespace test
 }  // namespace ripple

@@ -839,7 +839,8 @@ RCLConsensus::Adaptor::validate(
             if (ledger.ledger_->isVotingLedger())
             {
                 // Fees:
-                feeVote_->doValidation(ledger.ledger_->fees(), v);
+                feeVote_->doValidation(
+                    ledger.ledger_->fees(), ledger.ledger_->rules(), v);
 
                 // Amendments
                 // FIXME: pass `v` and have the function insert the array

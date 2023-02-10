@@ -538,6 +538,30 @@ SetAccount::doApply()
             sle->makeFieldAbsent(sfNFTokenMinter);
     }
 
+    // Set or clear flags for disallowing various incoming instruments
+    if (ctx_.view().rules().enabled(featureDisallowIncoming))
+    {
+        if (uSetFlag == asfDisallowIncomingNFTOffer)
+            uFlagsOut |= lsfDisallowIncomingNFTOffer;
+        else if (uClearFlag == asfDisallowIncomingNFTOffer)
+            uFlagsOut &= ~lsfDisallowIncomingNFTOffer;
+
+        if (uSetFlag == asfDisallowIncomingCheck)
+            uFlagsOut |= lsfDisallowIncomingCheck;
+        else if (uClearFlag == asfDisallowIncomingCheck)
+            uFlagsOut &= ~lsfDisallowIncomingCheck;
+
+        if (uSetFlag == asfDisallowIncomingPayChan)
+            uFlagsOut |= lsfDisallowIncomingPayChan;
+        else if (uClearFlag == asfDisallowIncomingPayChan)
+            uFlagsOut &= ~lsfDisallowIncomingPayChan;
+
+        if (uSetFlag == asfDisallowIncomingTrustline)
+            uFlagsOut |= lsfDisallowIncomingTrustline;
+        else if (uClearFlag == asfDisallowIncomingTrustline)
+            uFlagsOut &= ~lsfDisallowIncomingTrustline;
+    }
+
     if (uFlagsIn != uFlagsOut)
         sle->setFieldU32(sfFlags, uFlagsOut);
 
