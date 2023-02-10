@@ -107,6 +107,12 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         if ((*bo)[sfAmount].issue() != (*so)[sfAmount].issue())
             return tecNFTOKEN_BUY_SELL_MISMATCH;
 
+        // The two offers may not form a loop.  A broker may not sell the
+        // token to the current owner of the token.
+        if (ctx.view.rules().enabled(fixUnburnableNFToken) &&
+            ((*bo)[sfOwner] == (*so)[sfOwner]))
+            return tecCANT_ACCEPT_OWN_NFTOKEN_OFFER;
+
         // Ensure that the buyer is willing to pay at least as much as the
         // seller is requesting:
         if ((*so)[sfAmount] > (*bo)[sfAmount])
