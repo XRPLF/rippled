@@ -4613,7 +4613,7 @@ class NFToken_test : public beast::unit_test::suite
             txflags(tfTransferable));
         env.close();
 
-        // At the momement issuer and minter cannot delete themselves.
+        // At the moment issuer and minter cannot delete themselves.
         //  o issuer has an issued NFT in the ledger.
         //  o minter owns an NFT.
         env(acctdelete(issuer, daria), fee(XRP(50)), ter(tecHAS_OBLIGATIONS));
@@ -5895,6 +5895,115 @@ class NFToken_test : public beast::unit_test::suite
     }
 
     void
+    testBrokeredSaleToSelf(FeatureBitset features)
+    {
+        // There was a bug that if an account had...
+        //
+        //  1. An NFToken, and
+        //  2. An offer on the ledger to buy that same token, and
+        //  3. Also an offer of the ledger to sell that same token,
+        //
+        // Then someone could broker the two offers.  This would result in
+        // the NFToken being bought and returned to the original owner and
+        // the broker pocketing the profit.
+        //
+        // This unit test verifies that the fixUnburnableNFToken amendment
+        // fixes that bug.
+        testcase("Brokered sale to self");
+
+        using namespace test::jtx;
+
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const broker{"broker"};
+
+        Env env{*this, features};
+        env.fund(XRP(10000), alice, bob, broker);
+        env.close();
+
+        // For this scenario to occur we need the following steps:
+        //
+        //  1. alice mints NFT.
+        //  2. bob creates a buy offer for it for 5 XRP.
+        //  3. alice decides to gift the NFT to bob for 0.
+        //     creating a sell offer (hopefully using a destination too)
+        //  4. Bob accepts the sell offer, because it is better than
+        //     paying 5 XRP.
+        //  5. At this point, bob has the NFT and still has their buy
+        //     offer from when they did not have the NFT!  This is because
+        //     the order book is not cleared when an NFT changes hands.
+        //  6. Now that Bob owns the NFT, he cannot create new buy offers.
+        //     However he still has one left over from when he did not own
+        //     it. He can create new sell offers and does.
+        //  7. Now that bob has both a buy and a sell offer for the same NFT,
+        //     a broker can sell the NFT that bob owns to bob and pocket the
+        //     difference.
+        uint256 const nftId{token::getNextID(env, alice, 0u, tfTransferable)};
+        env(token::mint(alice, 0u), txflags(tfTransferable));
+        env.close();
+
+        // Bob creates a buy offer for 5 XRP.  Alice creates a sell offer
+        // for 0 XRP.
+        uint256 const bobBuyOfferIndex =
+            keylet::nftoffer(bob, env.seq(bob)).key;
+        env(token::createOffer(bob, nftId, XRP(5)), token::owner(alice));
+
+        uint256 const aliceSellOfferIndex =
+            keylet::nftoffer(alice, env.seq(alice)).key;
+        env(token::createOffer(alice, nftId, XRP(0)),
+            token::destination(bob),
+            txflags(tfSellNFToken));
+        env.close();
+
+        // bob accepts alice's offer but forgets to remove the old buy offer.
+        env(token::acceptSellOffer(bob, aliceSellOfferIndex));
+        env.close();
+
+        // Note that bob still has a buy offer on the books.
+        BEAST_EXPECT(env.le(keylet::nftoffer(bobBuyOfferIndex)));
+
+        // Bob creates a sell offer for the gift NFT from alice.
+        uint256 const bobSellOfferIndex =
+            keylet::nftoffer(bob, env.seq(bob)).key;
+        env(token::createOffer(bob, nftId, XRP(4)), txflags(tfSellNFToken));
+        env.close();
+
+        // bob now has a buy offer and a sell offer on the books.  A broker
+        // spots this and swoops in to make a profit.
+        BEAST_EXPECT(nftCount(env, bob) == 1);
+        auto const bobsPriorBalance = env.balance(bob);
+        auto const brokersPriorBalance = env.balance(broker);
+        TER expectTer = features[fixUnburnableNFToken]
+            ? TER(tecCANT_ACCEPT_OWN_NFTOKEN_OFFER)
+            : TER(tesSUCCESS);
+        env(token::brokerOffers(broker, bobBuyOfferIndex, bobSellOfferIndex),
+            token::brokerFee(XRP(1)),
+            ter(expectTer));
+        env.close();
+
+        if (expectTer == tesSUCCESS)
+        {
+            // bob should still have the NFT from alice, but be XRP(1) poorer.
+            // broker should be almost XRP(1) richer because they also paid a
+            // transaction fee.
+            BEAST_EXPECT(nftCount(env, bob) == 1);
+            BEAST_EXPECT(env.balance(bob) == bobsPriorBalance - XRP(1));
+            BEAST_EXPECT(
+                env.balance(broker) ==
+                brokersPriorBalance + XRP(1) - drops(10));
+        }
+        else
+        {
+            // A tec result was returned, so no state should change other
+            // than the broker burning their transaction fee.
+            BEAST_EXPECT(nftCount(env, bob) == 1);
+            BEAST_EXPECT(env.balance(bob) == bobsPriorBalance);
+            BEAST_EXPECT(
+                env.balance(broker) == brokersPriorBalance - drops(10));
+        }
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testEnabled(features);
@@ -5924,6 +6033,7 @@ class NFToken_test : public beast::unit_test::suite
         testNftXxxOffers(features);
         testFixNFTokenNegOffer(features);
         testIOUWithTransferFee(features);
+        testBrokeredSaleToSelf(features);
     }
 
 public:
@@ -5934,10 +6044,9 @@ public:
         FeatureBitset const all{supported_amendments()};
         FeatureBitset const fixNFTDir{fixNFTokenDirV1};
 
-        // TODO too many tests are being run - ths fixNFTDir check should be
-        // pushed into the tests that use it
-        testWithFeats(all - fixNFTDir);
-        testWithFeats(all - disallowIncoming);
+        testWithFeats(all - fixNFTDir - fixUnburnableNFToken);
+        testWithFeats(all - disallowIncoming - fixUnburnableNFToken);
+        testWithFeats(all - fixUnburnableNFToken);
         testWithFeats(all);
     }
 };
