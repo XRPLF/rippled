@@ -115,7 +115,6 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         // If the buyer specified a destination
         if (auto const dest = bo->at(~sfDestination))
         {
-            
             // fixUnburnableNFToken
             if (ctx.view.rules().enabled(fixUnburnableNFToken))
             {
@@ -134,7 +133,6 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         // If the seller specified a destination
         if (auto const dest = so->at(~sfDestination))
         {
-
             // fixUnburnableNFToken
             if (ctx.view.rules().enabled(fixUnburnableNFToken))
             {
