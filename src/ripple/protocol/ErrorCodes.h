@@ -47,8 +47,8 @@ enum error_code_i {
     rpcJSON_RPC = 2,
     rpcFORBIDDEN = 3,
 
+    rpcWRONG_NETWORK = 4,
     // Misc failure
-    // unused                  4,
     // unused                  5,
     rpcNO_PERMISSION = 6,
     rpcNO_EVENTS = 7,

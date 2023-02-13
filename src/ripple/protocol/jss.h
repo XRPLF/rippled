@@ -191,13 +191,13 @@ JSS(command);                // in: RPCHandler
 JSS(complete);               // out: NetworkOPs, InboundLedger
 JSS(complete_ledgers);       // out: NetworkOPs, PeerImp
 JSS(complete_shards);        // out: OverlayImpl, PeerImp
-JSS(concise_id);             // out: Tx RPC
 JSS(consensus);              // out: NetworkOPs, LedgerConsensus
 JSS(converge_time);          // out: NetworkOPs
 JSS(converge_time_s);        // out: NetworkOPs
 JSS(cookie);                 // out: NetworkOPs
 JSS(count);                  // in: AccountTx*, ValidatorList
 JSS(counters);               // in/out: retrieve counters
+JSS(ctim);                   // in/out: Tx RPC
 JSS(currency_a);             // out: BookChanges
 JSS(currency_b);             // out: BookChanges
 JSS(currentShard);           // out: NodeToShardStatus
