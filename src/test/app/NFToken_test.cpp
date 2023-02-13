@@ -6637,7 +6637,7 @@ class NFToken_test : public beast::unit_test::suite
                 nftIDs.end());
         }
     }
-    
+
     void
     testWithFeats(FeatureBitset features)
     {
