@@ -2881,7 +2881,7 @@ class NFToken_test : public beast::unit_test::suite
             {
                 // issuer cannot broker the offers, because they are not the
                 // Destination.
-                TER const expectTer = features[fixUnburnableNFToken]
+                TER const expectTer = features[fixNonFungibleTokensV1_2]
                     ? tecNO_PERMISSION
                     : tecNFTOKEN_BUY_SELL_MISMATCH;
                 env(token::brokerOffers(
@@ -2931,7 +2931,7 @@ class NFToken_test : public beast::unit_test::suite
             {
                 // Cannot broker offers when the sell destination is not the
                 // buyer.
-                TER const expectTer = features[fixUnburnableNFToken]
+                TER const expectTer = features[fixNonFungibleTokensV1_2]
                     ? tecNO_PERMISSION
                     : tecNFTOKEN_BUY_SELL_MISMATCH;
                 env(token::brokerOffers(
@@ -2945,7 +2945,7 @@ class NFToken_test : public beast::unit_test::suite
 
                 // amendment switch: When enabled the broker fails, when
                 // disabled the broker succeeds if the destination is the buyer.
-                TER const eexpectTer = features[fixUnburnableNFToken]
+                TER const eexpectTer = features[fixNonFungibleTokensV1_2]
                     ? tecNO_PERMISSION
                     : TER(tesSUCCESS);
                 env(token::brokerOffers(
@@ -2953,7 +2953,7 @@ class NFToken_test : public beast::unit_test::suite
                     ter(eexpectTer));
                 env.close();
 
-                if (features[fixUnburnableNFToken])
+                if (features[fixNonFungibleTokensV1_2])
                     // Buyer is successful with acceptOffer.
                     env(token::acceptBuyOffer(buyer, offerMinterToBuyer));
                 env.close();
@@ -2994,7 +2994,7 @@ class NFToken_test : public beast::unit_test::suite
             {
                 // Cannot broker offers when the sell destination is not the
                 // buyer or the broker.
-                TER const expectTer = features[fixUnburnableNFToken]
+                TER const expectTer = features[fixNonFungibleTokensV1_2]
                     ? tecNO_PERMISSION
                     : tecNFTOKEN_BUY_SELL_MISMATCH;
                 env(token::brokerOffers(
@@ -3861,7 +3861,8 @@ class NFToken_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         for (auto const& tweakedFeatures :
-             {features - fixUnburnableNFToken, features | fixUnburnableNFToken})
+             {features - fixNonFungibleTokensV1_2,
+              features | fixNonFungibleTokensV1_2})
         {
             Env env{*this, tweakedFeatures};
 
@@ -4400,7 +4401,7 @@ class NFToken_test : public beast::unit_test::suite
                     token::owner(minter));
                 env.close();
 
-                if (tweakedFeatures[fixUnburnableNFToken])
+                if (tweakedFeatures[fixNonFungibleTokensV1_2])
                 {
                     env(token::brokerOffers(
                             broker, buyOfferIndex, minterOfferIndex),
@@ -4946,12 +4947,12 @@ class NFToken_test : public beast::unit_test::suite
         IOU const gwXAU(gw["XAU"]);
 
         // Test both with and without fixNFTokenNegOffer and
-        // fixUnburnableNFToken. Need to turn off fixUnburnableNFToken as well
-        // because that amendment came later and addressed the acceptance
-        // side of this issue.
+        // fixNonFungibleTokensV1_2. Need to turn off fixNonFungibleTokensV1_2
+        // as well because that amendment came later and addressed the
+        // acceptance side of this issue.
         for (auto const& tweakedFeatures :
              {features - fixNFTokenNegOffer - featureNonFungibleTokensV1_1 -
-                  fixUnburnableNFToken,
+                  fixNonFungibleTokensV1_2,
               features - fixNFTokenNegOffer - featureNonFungibleTokensV1_1,
               features | fixNFTokenNegOffer})
         {
@@ -5042,7 +5043,7 @@ class NFToken_test : public beast::unit_test::suite
             }
             {
                 //  1. If fixNFTokenNegOffer is enabled get tecOBJECT_NOT_FOUND
-                //  2. If it is not enabled, but fixUnburnableNFToken is
+                //  2. If it is not enabled, but fixNonFungibleTokensV1_2 is
                 //  enabled, get tecOBJECT_NOT_FOUND.
                 //  3. If neither are enabled, get tesSUCCESS.
                 TER const offerAcceptTER = tweakedFeatures[fixNFTokenNegOffer]
@@ -5184,7 +5185,8 @@ class NFToken_test : public beast::unit_test::suite
         testcase("Payments with IOU transfer fees");
 
         for (auto const& tweakedFeatures :
-             {features - fixUnburnableNFToken, features | fixUnburnableNFToken})
+             {features - fixNonFungibleTokensV1_2,
+              features | fixNonFungibleTokensV1_2})
         {
             Env env{*this, tweakedFeatures};
 
@@ -5336,13 +5338,13 @@ class NFToken_test : public beast::unit_test::suite
                 auto const nftID = mintNFT(minter);
                 auto const offerID =
                     createSellOffer(minter, nftID, gwXAU(1000));
-                auto const sellTER = tweakedFeatures[fixUnburnableNFToken]
+                auto const sellTER = tweakedFeatures[fixNonFungibleTokensV1_2]
                     ? static_cast<TER>(tecINSUFFICIENT_FUNDS)
                     : static_cast<TER>(tesSUCCESS);
                 env(token::acceptSellOffer(buyer, offerID), ter(sellTER));
                 env.close();
 
-                if (tweakedFeatures[fixUnburnableNFToken])
+                if (tweakedFeatures[fixNonFungibleTokensV1_2])
                     expectInitialState();
                 else
                 {
@@ -5360,13 +5362,13 @@ class NFToken_test : public beast::unit_test::suite
                 auto const nftID = mintNFT(minter);
                 auto const offerID =
                     createBuyOffer(buyer, minter, nftID, gwXAU(1000));
-                auto const sellTER = tweakedFeatures[fixUnburnableNFToken]
+                auto const sellTER = tweakedFeatures[fixNonFungibleTokensV1_2]
                     ? static_cast<TER>(tecINSUFFICIENT_FUNDS)
                     : static_cast<TER>(tesSUCCESS);
                 env(token::acceptBuyOffer(minter, offerID), ter(sellTER));
                 env.close();
 
-                if (tweakedFeatures[fixUnburnableNFToken])
+                if (tweakedFeatures[fixNonFungibleTokensV1_2])
                     expectInitialState();
                 else
                 {
@@ -5384,13 +5386,13 @@ class NFToken_test : public beast::unit_test::suite
                 reinitializeTrustLineBalances();
                 auto const nftID = mintNFT(minter);
                 auto const offerID = createSellOffer(minter, nftID, gwXAU(995));
-                auto const sellTER = tweakedFeatures[fixUnburnableNFToken]
+                auto const sellTER = tweakedFeatures[fixNonFungibleTokensV1_2]
                     ? static_cast<TER>(tecINSUFFICIENT_FUNDS)
                     : static_cast<TER>(tesSUCCESS);
                 env(token::acceptSellOffer(buyer, offerID), ter(sellTER));
                 env.close();
 
-                if (tweakedFeatures[fixUnburnableNFToken])
+                if (tweakedFeatures[fixNonFungibleTokensV1_2])
                     expectInitialState();
                 else
                 {
@@ -5408,13 +5410,13 @@ class NFToken_test : public beast::unit_test::suite
                 auto const nftID = mintNFT(minter);
                 auto const offerID =
                     createBuyOffer(buyer, minter, nftID, gwXAU(995));
-                auto const sellTER = tweakedFeatures[fixUnburnableNFToken]
+                auto const sellTER = tweakedFeatures[fixNonFungibleTokensV1_2]
                     ? static_cast<TER>(tecINSUFFICIENT_FUNDS)
                     : static_cast<TER>(tesSUCCESS);
                 env(token::acceptBuyOffer(minter, offerID), ter(sellTER));
                 env.close();
 
-                if (tweakedFeatures[fixUnburnableNFToken])
+                if (tweakedFeatures[fixNonFungibleTokensV1_2])
                     expectInitialState();
                 else
                 {
@@ -5509,13 +5511,13 @@ class NFToken_test : public beast::unit_test::suite
                 auto const nftID = mintNFT(minter);
                 auto const offerID =
                     createSellOffer(minter, nftID, gwXAU(1000));
-                auto const sellTER = tweakedFeatures[fixUnburnableNFToken]
+                auto const sellTER = tweakedFeatures[fixNonFungibleTokensV1_2]
                     ? static_cast<TER>(tesSUCCESS)
                     : static_cast<TER>(tecINSUFFICIENT_FUNDS);
                 env(token::acceptSellOffer(gw, offerID), ter(sellTER));
                 env.close();
 
-                if (tweakedFeatures[fixUnburnableNFToken])
+                if (tweakedFeatures[fixNonFungibleTokensV1_2])
                 {
                     BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(1000));
                     BEAST_EXPECT(
@@ -5530,18 +5532,18 @@ class NFToken_test : public beast::unit_test::suite
                 reinitializeTrustLineBalances();
 
                 auto const nftID = mintNFT(minter);
-                auto const offerTER = tweakedFeatures[fixUnburnableNFToken]
+                auto const offerTER = tweakedFeatures[fixNonFungibleTokensV1_2]
                     ? static_cast<TER>(tesSUCCESS)
                     : static_cast<TER>(tecUNFUNDED_OFFER);
                 auto const offerID =
                     createBuyOffer(gw, minter, nftID, gwXAU(1000), {offerTER});
-                auto const sellTER = tweakedFeatures[fixUnburnableNFToken]
+                auto const sellTER = tweakedFeatures[fixNonFungibleTokensV1_2]
                     ? static_cast<TER>(tesSUCCESS)
                     : static_cast<TER>(tecOBJECT_NOT_FOUND);
                 env(token::acceptBuyOffer(minter, offerID), ter(sellTER));
                 env.close();
 
-                if (tweakedFeatures[fixUnburnableNFToken])
+                if (tweakedFeatures[fixNonFungibleTokensV1_2])
                 {
                     BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(1000));
                     BEAST_EXPECT(
@@ -5557,13 +5559,13 @@ class NFToken_test : public beast::unit_test::suite
                 auto const nftID = mintNFT(minter);
                 auto const offerID =
                     createSellOffer(minter, nftID, gwXAU(5000));
-                auto const sellTER = tweakedFeatures[fixUnburnableNFToken]
+                auto const sellTER = tweakedFeatures[fixNonFungibleTokensV1_2]
                     ? static_cast<TER>(tesSUCCESS)
                     : static_cast<TER>(tecINSUFFICIENT_FUNDS);
                 env(token::acceptSellOffer(gw, offerID), ter(sellTER));
                 env.close();
 
-                if (tweakedFeatures[fixUnburnableNFToken])
+                if (tweakedFeatures[fixNonFungibleTokensV1_2])
                 {
                     BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(5000));
                     BEAST_EXPECT(
@@ -5578,18 +5580,18 @@ class NFToken_test : public beast::unit_test::suite
                 reinitializeTrustLineBalances();
 
                 auto const nftID = mintNFT(minter);
-                auto const offerTER = tweakedFeatures[fixUnburnableNFToken]
+                auto const offerTER = tweakedFeatures[fixNonFungibleTokensV1_2]
                     ? static_cast<TER>(tesSUCCESS)
                     : static_cast<TER>(tecUNFUNDED_OFFER);
                 auto const offerID =
                     createBuyOffer(gw, minter, nftID, gwXAU(5000), {offerTER});
-                auto const sellTER = tweakedFeatures[fixUnburnableNFToken]
+                auto const sellTER = tweakedFeatures[fixNonFungibleTokensV1_2]
                     ? static_cast<TER>(tesSUCCESS)
                     : static_cast<TER>(tecOBJECT_NOT_FOUND);
                 env(token::acceptBuyOffer(minter, offerID), ter(sellTER));
                 env.close();
 
-                if (tweakedFeatures[fixUnburnableNFToken])
+                if (tweakedFeatures[fixNonFungibleTokensV1_2])
                 {
                     BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(5000));
                     BEAST_EXPECT(
@@ -5731,13 +5733,13 @@ class NFToken_test : public beast::unit_test::suite
                 // now we can do a secondary sale
                 auto const offerID =
                     createSellOffer(secondarySeller, nftID, gwXAU(1000));
-                auto const sellTER = tweakedFeatures[fixUnburnableNFToken]
+                auto const sellTER = tweakedFeatures[fixNonFungibleTokensV1_2]
                     ? static_cast<TER>(tecINSUFFICIENT_FUNDS)
                     : static_cast<TER>(tesSUCCESS);
                 env(token::acceptSellOffer(buyer, offerID), ter(sellTER));
                 env.close();
 
-                if (tweakedFeatures[fixUnburnableNFToken])
+                if (tweakedFeatures[fixNonFungibleTokensV1_2])
                     expectInitialState();
                 else
                 {
@@ -5767,14 +5769,14 @@ class NFToken_test : public beast::unit_test::suite
                 // now we can do a secondary sale
                 auto const offerID =
                     createBuyOffer(buyer, secondarySeller, nftID, gwXAU(1000));
-                auto const sellTER = tweakedFeatures[fixUnburnableNFToken]
+                auto const sellTER = tweakedFeatures[fixNonFungibleTokensV1_2]
                     ? static_cast<TER>(tecINSUFFICIENT_FUNDS)
                     : static_cast<TER>(tesSUCCESS);
                 env(token::acceptBuyOffer(secondarySeller, offerID),
                     ter(sellTER));
                 env.close();
 
-                if (tweakedFeatures[fixUnburnableNFToken])
+                if (tweakedFeatures[fixNonFungibleTokensV1_2])
                     expectInitialState();
                 else
                 {
@@ -5940,7 +5942,7 @@ class NFToken_test : public beast::unit_test::suite
         // the NFToken being bought and returned to the original owner and
         // the broker pocketing the profit.
         //
-        // This unit test verifies that the fixUnburnableNFToken amendment
+        // This unit test verifies that the fixNonFungibleTokensV1_2 amendment
         // fixes that bug.
         testcase("Brokered sale to self");
 
@@ -6006,7 +6008,7 @@ class NFToken_test : public beast::unit_test::suite
         BEAST_EXPECT(nftCount(env, bob) == 1);
         auto const bobsPriorBalance = env.balance(bob);
         auto const brokersPriorBalance = env.balance(broker);
-        TER expectTer = features[fixUnburnableNFToken]
+        TER expectTer = features[fixNonFungibleTokensV1_2]
             ? TER(tecCANT_ACCEPT_OWN_NFTOKEN_OFFER)
             : TER(tesSUCCESS);
         env(token::brokerOffers(broker, bobBuyOfferIndex, bobSellOfferIndex),
@@ -6077,9 +6079,9 @@ public:
         FeatureBitset const all{supported_amendments()};
         FeatureBitset const fixNFTDir{fixNFTokenDirV1};
 
-        testWithFeats(all - fixNFTDir - fixUnburnableNFToken);
-        testWithFeats(all - disallowIncoming - fixUnburnableNFToken);
-        testWithFeats(all - fixUnburnableNFToken);
+        testWithFeats(all - fixNFTDir - fixNonFungibleTokensV1_2);
+        testWithFeats(all - disallowIncoming - fixNonFungibleTokensV1_2);
+        testWithFeats(all - fixNonFungibleTokensV1_2);
         testWithFeats(all);
     }
 };
