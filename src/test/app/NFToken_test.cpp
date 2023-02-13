@@ -5112,11 +5112,9 @@ public:
         using namespace test::jtx;
         FeatureBitset const all{supported_amendments()};
         FeatureBitset const fixNFTDir{fixNFTokenDirV1};
-        FeatureBitset const fixNFTBroker{fixUnburnableNFToken};
 
         testWithFeats(all - fixNFTDir);
         testWithFeats(all - disallowIncoming);
-        testWithFeats(all - fixNFTBroker);
         testWithFeats(all);
     }
 };
