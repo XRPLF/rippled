@@ -77,7 +77,7 @@ NFTokenBurn::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    if (!ctx.view.rules().enabled(fixUnburnableNFToken))
+    if (!ctx.view.rules().enabled(fixNonFungibleTokensV1_2))
     {
         // If there are too many offers, then burning the token would produce
         // too much metadata.  Disallow burning a token with too many offers.
@@ -109,7 +109,7 @@ NFTokenBurn::doApply()
         view().update(issuer);
     }
 
-    if (ctx_.view().rules().enabled(fixUnburnableNFToken))
+    if (ctx_.view().rules().enabled(fixNonFungibleTokensV1_2))
     {
         // Delete up to 500 offers in total.
         // Because the number of sell offers is likely to be less than

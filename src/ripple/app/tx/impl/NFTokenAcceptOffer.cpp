@@ -109,7 +109,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
 
         // The two offers may not form a loop.  A broker may not sell the
         // token to the current owner of the token.
-        if (ctx.view.rules().enabled(fixUnburnableNFToken) &&
+        if (ctx.view.rules().enabled(fixNonFungibleTokensV1_2) &&
             ((*bo)[sfOwner] == (*so)[sfOwner]))
             return tecCANT_ACCEPT_OWN_NFTOKEN_OFFER;
 
@@ -121,8 +121,8 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         // If the buyer specified a destination
         if (auto const dest = bo->at(~sfDestination))
         {
-            // fixUnburnableNFToken
-            if (ctx.view.rules().enabled(fixUnburnableNFToken))
+            // fixNonFungibleTokensV1_2
+            if (ctx.view.rules().enabled(fixNonFungibleTokensV1_2))
             {
                 // the destination may only be the account brokering the offer
                 if (*dest != ctx.tx[sfAccount])
@@ -139,8 +139,8 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         // If the seller specified a destination
         if (auto const dest = so->at(~sfDestination))
         {
-            // fixUnburnableNFToken
-            if (ctx.view.rules().enabled(fixUnburnableNFToken))
+            // fixNonFungibleTokensV1_2
+            if (ctx.view.rules().enabled(fixNonFungibleTokensV1_2))
             {
                 // the destination may only be the account brokering the offer
                 if (*dest != ctx.tx[sfAccount])
@@ -200,7 +200,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         // After this amendment, we allow an IOU issuer to buy an NFT with their
         // own currency
         auto const needed = bo->at(sfAmount);
-        if (ctx.view.rules().enabled(fixUnburnableNFToken))
+        if (ctx.view.rules().enabled(fixNonFungibleTokensV1_2))
         {
             if (accountFunds(
                     ctx.view, (*bo)[sfOwner], needed, fhZERO_IF_FROZEN, ctx.j) <
@@ -243,7 +243,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
 
         // The account offering to buy must have funds:
         auto const needed = so->at(sfAmount);
-        if (!ctx.view.rules().enabled(fixUnburnableNFToken))
+        if (!ctx.view.rules().enabled(fixNonFungibleTokensV1_2))
         {
             if (accountHolds(
                     ctx.view,
@@ -298,7 +298,7 @@ NFTokenAcceptOffer::pay(
     // their own currency, we know that something went wrong. This was
     // originally found in the context of IOU transfer fees. Since there are
     // several payouts in this tx, just confirm that the end state is OK.
-    if (!view().rules().enabled(fixUnburnableNFToken))
+    if (!view().rules().enabled(fixNonFungibleTokensV1_2))
         return result;
     if (result != tesSUCCESS)
         return result;
