@@ -161,7 +161,7 @@ NFTokenMint::doApply()
             return Unexpected(tecNO_ISSUER);
 
         std::uint32_t tokenSeq;
-        if (ctx_.view().rules().enabled(fixUnburnableNFToken))
+        if (ctx_.view().rules().enabled(fixNFTokenRemint))
         {
             auto const accSeq = (*root)[sfSequence];
 

@@ -382,9 +382,9 @@ class NFTokenBurn_test : public beast::unit_test::suite
                                      std::uint32_t taxon) -> std::uint32_t {
                 std::uint32_t tokenSeq;
 
-                // If fixUnburnableNFToken amendment is on, we must
+                // If fixNFTokenRemint amendment is on, we must
                 // generate the NFT sequence using new construct
-                if (env.current()->rules().enabled(fixUnburnableNFToken))
+                if (env.current()->rules().enabled(fixNFTokenRemint))
                     tokenSeq = {
                         env.le(acct)
                             ->at(~sfFirstNFTokenSequence)

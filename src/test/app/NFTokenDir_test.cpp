@@ -191,12 +191,12 @@ class NFTokenDir_test : public beast::unit_test::suite
                         Account::base58Seed, std::string(seed));
                     env.fund(XRP(10000), account);
 
-                    // Should not advance ledger if fixUnburnableNFToken is
+                    // Should not advance ledger if fixNFTokenRemint is
                     // enabled. Because otherwise, accounts are initialized at
                     // different ledgers, and will have different account
                     // sequences, which then causes the sequence number of
                     // NFTokenIDs to be different
-                    if (!features[fixUnburnableNFToken])
+                    if (!features[fixNFTokenRemint])
                         env.close();
                 }
                 env.close();
@@ -417,12 +417,12 @@ class NFTokenDir_test : public beast::unit_test::suite
                         Account::base58Seed, std::string(seed));
                     env.fund(XRP(10000), account);
 
-                    // Should not advance ledger if fixUnburnableNFToken is
+                    // Should not advance ledger if fixNFTokenRemint is
                     // enabled. Because otherwise, accounts are initialized at
                     // different ledgers, and will have different account
                     // sequences, which then causes the sequence number of
                     // NFTokenIDs to be different
-                    if (!features[fixUnburnableNFToken])
+                    if (!features[fixNFTokenRemint])
                         env.close();
                 }
                 env.close();
@@ -664,9 +664,9 @@ class NFTokenDir_test : public beast::unit_test::suite
         std::vector<Account> accounts;
         accounts.reserve(seeds.size());
 
-        // If fixUnburnableNFToken is not enabled, accounts can be created in
+        // If fixNFTokenRemint is not enabled, accounts can be created in
         // different ledgers.
-        // If fixUnburnableNFToken is enabled, all accounts must be created in
+        // If fixNFTokenRemint is enabled, all accounts must be created in
         // the same ledger in order to initialize all accounts with the same
         // account sequence.
         for (std::string_view const& seed : seeds)
@@ -675,8 +675,8 @@ class NFTokenDir_test : public beast::unit_test::suite
                 accounts.emplace_back(Account::base58Seed, std::string(seed));
             env.fund(XRP(10000), account);
 
-            // Only advance the ledger if fixUnburnableNFToken is disabled
-            if (!features[fixUnburnableNFToken])
+            // Only advance the ledger if fixNFTokenRemint is disabled
+            if (!features[fixNFTokenRemint])
                 env.close();
         }
         env.close();
@@ -849,9 +849,9 @@ class NFTokenDir_test : public beast::unit_test::suite
         std::vector<Account> accounts;
         accounts.reserve(seeds.size());
 
-        // If fixUnburnableNFToken is not enabled, accounts can be created in
+        // If fixNFTokenRemint is not enabled, accounts can be created in
         // different ledgers.
-        // If fixUnburnableNFToken is enabled, accounts must be created in the
+        // If fixNFTokenRemint is enabled, accounts must be created in the
         // same ledger in order to initialize all accounts with the same
         // account sequence.
         for (std::string_view const& seed : seeds)
@@ -860,8 +860,8 @@ class NFTokenDir_test : public beast::unit_test::suite
                 accounts.emplace_back(Account::base58Seed, std::string(seed));
             env.fund(XRP(10000), account);
 
-            // Only advance the ledger if fixUnburnableNFToken is disabled
-            if (!features[fixUnburnableNFToken])
+            // Only advance the ledger if fixNFTokenRemint is disabled
+            if (!features[fixNFTokenRemint])
                 env.close();
         }
         env.close();
@@ -1114,8 +1114,8 @@ public:
         FeatureBitset const fixNFTDir{
             fixNFTokenDirV1, featureNonFungibleTokensV1_1};
 
-        testWithFeats(all - fixNFTDir - fixUnburnableNFToken);
-        testWithFeats(all - fixUnburnableNFToken);
+        testWithFeats(all - fixNFTDir - fixNFTokenRemint);
+        testWithFeats(all - fixNFTokenRemint);
         testWithFeats(all);
     }
 };
