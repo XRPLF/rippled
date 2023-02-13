@@ -155,7 +155,7 @@ NFTokenCreateOffer::preclaim(PreclaimContext const& ctx)
     {
         // After this amendment, we allow an IOU issuer to make a buy offer
         // using their own currency.
-        if (ctx.view.rules().enabled(fixUnburnableNFToken))
+        if (ctx.view.rules().enabled(fixNonFungibleTokensV1_2))
         {
             if (accountFunds(
                     ctx.view,

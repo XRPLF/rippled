@@ -343,7 +343,7 @@ extern uint256 const featureImmediateOfferKilled;
 extern uint256 const featureDisallowIncoming;
 extern uint256 const featureXRPFees;
 extern uint256 const fixUniversalNumber;
-extern uint256 const fixUnburnableNFToken;
+extern uint256 const fixNonFungibleTokensV1_2;
 
 }  // namespace ripple
 
