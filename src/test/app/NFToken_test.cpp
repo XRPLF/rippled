@@ -2872,7 +2872,6 @@ class NFToken_test : public beast::unit_test::suite
             BEAST_EXPECT(ownerCount(env, minter) == 2);
             BEAST_EXPECT(ownerCount(env, buyer) == 1);
 
-            // fixUnburnableNFToken: Disabled
             {
                 // issuer cannot broker the offers, because they are not the
                 // Destination.
@@ -2938,7 +2937,8 @@ class NFToken_test : public beast::unit_test::suite
                 BEAST_EXPECT(ownerCount(env, minter) == 1);
                 BEAST_EXPECT(ownerCount(env, buyer) == 2);
 
-                // Broker is successful when destination is buyer.
+                // amendment switch: When enabled the broker fails, when
+                // disabled the broker succeeds if the destination is the buyer.
                 TER const eexpectTer = features[fixUnburnableNFToken]
                     ? tecNO_PERMISSION
                     : TER(tesSUCCESS);
