@@ -2878,15 +2878,20 @@ class NFToken_test : public beast::unit_test::suite
             BEAST_EXPECT(ownerCount(env, minter) == 2);
             BEAST_EXPECT(ownerCount(env, buyer) == 1);
 
-            // issuer cannot broker the offers, because they are not the
-            // Destination.
-            env(token::brokerOffers(
-                    issuer, offerBuyerToMinter, offerMinterToBroker),
-                ter(tecNFTOKEN_BUY_SELL_MISMATCH));
-            env.close();
-            BEAST_EXPECT(ownerCount(env, issuer) == 0);
-            BEAST_EXPECT(ownerCount(env, minter) == 2);
-            BEAST_EXPECT(ownerCount(env, buyer) == 1);
+            {
+                // issuer cannot broker the offers, because they are not the
+                // Destination.
+                TER const expectTer = features[fixUnburnableNFToken]
+                    ? tecNO_PERMISSION
+                    : tecNFTOKEN_BUY_SELL_MISMATCH;
+                env(token::brokerOffers(
+                        issuer, offerBuyerToMinter, offerMinterToBroker),
+                    ter(expectTer));
+                env.close();
+                BEAST_EXPECT(ownerCount(env, issuer) == 0);
+                BEAST_EXPECT(ownerCount(env, minter) == 2);
+                BEAST_EXPECT(ownerCount(env, buyer) == 1);
+            }
 
             // Since broker is the sell offer's destination, they can broker
             // the two offers.
@@ -2923,29 +2928,52 @@ class NFToken_test : public beast::unit_test::suite
             BEAST_EXPECT(ownerCount(env, minter) == 1);
             BEAST_EXPECT(ownerCount(env, buyer) == 2);
 
-            // Cannot broker offers when the sell destination is not the buyer.
-            env(token::brokerOffers(
-                    broker, offerIssuerToBuyer, offerBuyerToMinter),
-                ter(tecNFTOKEN_BUY_SELL_MISMATCH));
-            env.close();
-            BEAST_EXPECT(ownerCount(env, issuer) == 1);
-            BEAST_EXPECT(ownerCount(env, minter) == 1);
-            BEAST_EXPECT(ownerCount(env, buyer) == 2);
+            {
+                // Cannot broker offers when the sell destination is not the
+                // buyer.
+                TER const expectTer = features[fixUnburnableNFToken]
+                    ? tecNO_PERMISSION
+                    : tecNFTOKEN_BUY_SELL_MISMATCH;
+                env(token::brokerOffers(
+                        broker, offerIssuerToBuyer, offerBuyerToMinter),
+                    ter(expectTer));
+                env.close();
 
-            // Broker is successful when destination is buyer.
-            env(token::brokerOffers(
-                broker, offerMinterToBuyer, offerBuyerToMinter));
-            env.close();
-            BEAST_EXPECT(ownerCount(env, issuer) == 1);
-            BEAST_EXPECT(ownerCount(env, minter) == 1);
-            BEAST_EXPECT(ownerCount(env, buyer) == 0);
+                BEAST_EXPECT(ownerCount(env, issuer) == 1);
+                BEAST_EXPECT(ownerCount(env, minter) == 1);
+                BEAST_EXPECT(ownerCount(env, buyer) == 2);
 
-            // Clean out the unconsumed offer.
-            env(token::cancelOffer(issuer, {offerIssuerToBuyer}));
-            env.close();
-            BEAST_EXPECT(ownerCount(env, issuer) == 0);
-            BEAST_EXPECT(ownerCount(env, minter) == 1);
-            BEAST_EXPECT(ownerCount(env, buyer) == 0);
+                // amendment switch: When enabled the broker fails, when
+                // disabled the broker succeeds if the destination is the buyer.
+                TER const eexpectTer = features[fixUnburnableNFToken]
+                    ? tecNO_PERMISSION
+                    : TER(tesSUCCESS);
+                env(token::brokerOffers(
+                        broker, offerMinterToBuyer, offerBuyerToMinter),
+                    ter(eexpectTer));
+                env.close();
+
+                if (features[fixUnburnableNFToken])
+                    // Buyer is successful with acceptOffer.
+                    env(token::acceptBuyOffer(buyer, offerMinterToBuyer));
+                env.close();
+
+                // Clean out the unconsumed offer.
+                env(token::cancelOffer(buyer, {offerBuyerToMinter}));
+                env.close();
+
+                BEAST_EXPECT(ownerCount(env, issuer) == 1);
+                BEAST_EXPECT(ownerCount(env, minter) == 1);
+                BEAST_EXPECT(ownerCount(env, buyer) == 0);
+
+                // Clean out the unconsumed offer.
+                env(token::cancelOffer(issuer, {offerIssuerToBuyer}));
+                env.close();
+                BEAST_EXPECT(ownerCount(env, issuer) == 0);
+                BEAST_EXPECT(ownerCount(env, minter) == 1);
+                BEAST_EXPECT(ownerCount(env, buyer) == 0);
+                return;
+            }
         }
 
         // Show that if a buy and a sell offer both have the same destination,
@@ -2963,15 +2991,20 @@ class NFToken_test : public beast::unit_test::suite
                 token::owner(minter),
                 token::destination(broker));
 
-            // Cannot broker offers when the sell destination is not the buyer
-            // or the broker.
-            env(token::brokerOffers(
-                    issuer, offerBuyerToBroker, offerMinterToBroker),
-                ter(tecNFTOKEN_BUY_SELL_MISMATCH));
-            env.close();
-            BEAST_EXPECT(ownerCount(env, issuer) == 0);
-            BEAST_EXPECT(ownerCount(env, minter) == 2);
-            BEAST_EXPECT(ownerCount(env, buyer) == 1);
+            {
+                // Cannot broker offers when the sell destination is not the
+                // buyer or the broker.
+                TER const expectTer = features[fixUnburnableNFToken]
+                    ? tecNO_PERMISSION
+                    : tecNFTOKEN_BUY_SELL_MISMATCH;
+                env(token::brokerOffers(
+                        issuer, offerBuyerToBroker, offerMinterToBroker),
+                    ter(expectTer));
+                env.close();
+                BEAST_EXPECT(ownerCount(env, issuer) == 0);
+                BEAST_EXPECT(ownerCount(env, minter) == 2);
+                BEAST_EXPECT(ownerCount(env, buyer) == 1);
+            }
 
             // Broker is successful if they are the destination of both offers.
             env(token::brokerOffers(
