@@ -121,7 +121,6 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         // If the buyer specified a destination
         if (auto const dest = bo->at(~sfDestination))
         {
-            // fixNonFungibleTokensV1_2
             if (ctx.view.rules().enabled(fixNonFungibleTokensV1_2))
             {
                 // the destination may only be the account brokering the offer
@@ -139,7 +138,6 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         // If the seller specified a destination
         if (auto const dest = so->at(~sfDestination))
         {
-            // fixNonFungibleTokensV1_2
             if (ctx.view.rules().enabled(fixNonFungibleTokensV1_2))
             {
                 // the destination may only be the account brokering the offer
