@@ -2376,14 +2376,11 @@ LedgerMaster::txnIDfromIndex(uint32_t ledgerSeq, uint32_t txnIndex)
     if (!lgr || lgr->txs.empty())
         return {};
 
-    uint32_t counter = 0;
-    for (auto it = lgr->txs.begin(); it != lgr->txs.end() && counter <= txnIndex; it++, counter++)
-    {
-        if (counter != txnIndex)
-            continue;
-        
-        return it->first->getTransactionID();
-    }
+    for (auto it = lgr->txs.begin(); it != lgr->txs.end(); it++)
+        if (it->first && it->second &&
+                it->second->isFieldPresent(sfTransactionIndex) &&
+                it->second->getFieldU32(sfTransactionIndex) == txnIndex)
+            return it->first->getTransactionID();
 
     return {};
 }
