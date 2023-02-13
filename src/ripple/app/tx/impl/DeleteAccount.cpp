@@ -52,20 +52,11 @@ DeleteAccount::preflight(PreflightContext const& ctx)
     return preflight2(ctx);
 }
 
-FeeUnit64
+XRPAmount
 DeleteAccount::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
-    // The fee required for AccountDelete is one owner reserve.  But the
-    // owner reserve is stored in drops.  We need to convert it to fee units.
-    Fees const& fees{view.fees()};
-    std::pair<bool, FeeUnit64> const mulDivResult{
-        mulDiv(fees.increment, safe_cast<FeeUnit64>(fees.units), fees.base)};
-    if (mulDivResult.first)
-        return mulDivResult.second;
-
-    // If mulDiv returns false then overflow happened.  Punt by using the
-    // standard calculation.
-    return Transactor::calculateBaseFee(view, tx);
+    // The fee required for AccountDelete is one owner reserve.
+    return view.fees().increment;
 }
 
 namespace {

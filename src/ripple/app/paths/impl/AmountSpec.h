@@ -36,7 +36,7 @@ struct AmountSpec
     union
     {
         XRPAmount xrp;
-        IOUAmount iou;
+        IOUAmount iou = {};
     };
     std::optional<AccountID> issuer;
     std::optional<Currency> currency;
@@ -64,7 +64,7 @@ struct EitherAmount
 
     union
     {
-        IOUAmount iou;
+        IOUAmount iou = {};
         XRPAmount xrp;
     };
 

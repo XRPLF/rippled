@@ -2404,7 +2404,13 @@ class NFToken_test : public beast::unit_test::suite
 
         // See the impact of rounding when the nft is sold for small amounts
         // of drops.
+        for (auto NumberSwitchOver : {true})
         {
+            if (NumberSwitchOver)
+                env.enableFeature(fixUniversalNumber);
+            else
+                env.disableFeature(fixUniversalNumber);
+
             // An nft with a transfer fee of 1 basis point.
             uint256 const nftID =
                 token::getNextID(env, alice, 0u, tfTransferable, 1);
@@ -2429,16 +2435,16 @@ class NFToken_test : public beast::unit_test::suite
 
             // minter sells to carol.  The payment is just small enough that
             // alice does not get any transfer fee.
+            auto pmt = NumberSwitchOver ? drops(50000) : drops(99999);
             STAmount carolBalance = env.balance(carol);
             uint256 const minterSellOfferIndex =
                 keylet::nftoffer(minter, env.seq(minter)).key;
-            env(token::createOffer(minter, nftID, drops(99999)),
-                txflags(tfSellNFToken));
+            env(token::createOffer(minter, nftID, pmt), txflags(tfSellNFToken));
             env.close();
             env(token::acceptSellOffer(carol, minterSellOfferIndex));
             env.close();
-            minterBalance += drops(99999) - fee;
-            carolBalance -= drops(99999) + fee;
+            minterBalance += pmt - fee;
+            carolBalance -= pmt + fee;
             BEAST_EXPECT(env.balance(alice) == aliceBalance);
             BEAST_EXPECT(env.balance(minter) == minterBalance);
             BEAST_EXPECT(env.balance(carol) == carolBalance);
@@ -2448,13 +2454,13 @@ class NFToken_test : public beast::unit_test::suite
             STAmount beckyBalance = env.balance(becky);
             uint256 const beckyBuyOfferIndex =
                 keylet::nftoffer(becky, env.seq(becky)).key;
-            env(token::createOffer(becky, nftID, drops(100000)),
-                token::owner(carol));
+            pmt = NumberSwitchOver ? drops(50001) : drops(100000);
+            env(token::createOffer(becky, nftID, pmt), token::owner(carol));
             env.close();
             env(token::acceptBuyOffer(carol, beckyBuyOfferIndex));
             env.close();
-            carolBalance += drops(99999) - fee;
-            beckyBalance -= drops(100000) + fee;
+            carolBalance += pmt - drops(1) - fee;
+            beckyBalance -= pmt + fee;
             aliceBalance += drops(1);
 
             BEAST_EXPECT(env.balance(alice) == aliceBalance);
@@ -2927,15 +2933,20 @@ class NFToken_test : public beast::unit_test::suite
             BEAST_EXPECT(ownerCount(env, minter) == 2);
             BEAST_EXPECT(ownerCount(env, buyer) == 1);
 
-            // issuer cannot broker the offers, because they are not the
-            // Destination.
-            env(token::brokerOffers(
-                    issuer, offerBuyerToMinter, offerMinterToBroker),
-                ter(tecNFTOKEN_BUY_SELL_MISMATCH));
-            env.close();
-            BEAST_EXPECT(ownerCount(env, issuer) == 0);
-            BEAST_EXPECT(ownerCount(env, minter) == 2);
-            BEAST_EXPECT(ownerCount(env, buyer) == 1);
+            {
+                // issuer cannot broker the offers, because they are not the
+                // Destination.
+                TER const expectTer = features[fixNonFungibleTokensV1_2]
+                    ? tecNO_PERMISSION
+                    : tecNFTOKEN_BUY_SELL_MISMATCH;
+                env(token::brokerOffers(
+                        issuer, offerBuyerToMinter, offerMinterToBroker),
+                    ter(expectTer));
+                env.close();
+                BEAST_EXPECT(ownerCount(env, issuer) == 0);
+                BEAST_EXPECT(ownerCount(env, minter) == 2);
+                BEAST_EXPECT(ownerCount(env, buyer) == 1);
+            }
 
             // Since broker is the sell offer's destination, they can broker
             // the two offers.
@@ -2972,29 +2983,52 @@ class NFToken_test : public beast::unit_test::suite
             BEAST_EXPECT(ownerCount(env, minter) == 1);
             BEAST_EXPECT(ownerCount(env, buyer) == 2);
 
-            // Cannot broker offers when the sell destination is not the buyer.
-            env(token::brokerOffers(
-                    broker, offerIssuerToBuyer, offerBuyerToMinter),
-                ter(tecNFTOKEN_BUY_SELL_MISMATCH));
-            env.close();
-            BEAST_EXPECT(ownerCount(env, issuer) == 1);
-            BEAST_EXPECT(ownerCount(env, minter) == 1);
-            BEAST_EXPECT(ownerCount(env, buyer) == 2);
+            {
+                // Cannot broker offers when the sell destination is not the
+                // buyer.
+                TER const expectTer = features[fixNonFungibleTokensV1_2]
+                    ? tecNO_PERMISSION
+                    : tecNFTOKEN_BUY_SELL_MISMATCH;
+                env(token::brokerOffers(
+                        broker, offerIssuerToBuyer, offerBuyerToMinter),
+                    ter(expectTer));
+                env.close();
 
-            // Broker is successful when destination is buyer.
-            env(token::brokerOffers(
-                broker, offerMinterToBuyer, offerBuyerToMinter));
-            env.close();
-            BEAST_EXPECT(ownerCount(env, issuer) == 1);
-            BEAST_EXPECT(ownerCount(env, minter) == 1);
-            BEAST_EXPECT(ownerCount(env, buyer) == 0);
+                BEAST_EXPECT(ownerCount(env, issuer) == 1);
+                BEAST_EXPECT(ownerCount(env, minter) == 1);
+                BEAST_EXPECT(ownerCount(env, buyer) == 2);
 
-            // Clean out the unconsumed offer.
-            env(token::cancelOffer(issuer, {offerIssuerToBuyer}));
-            env.close();
-            BEAST_EXPECT(ownerCount(env, issuer) == 0);
-            BEAST_EXPECT(ownerCount(env, minter) == 1);
-            BEAST_EXPECT(ownerCount(env, buyer) == 0);
+                // amendment switch: When enabled the broker fails, when
+                // disabled the broker succeeds if the destination is the buyer.
+                TER const eexpectTer = features[fixNonFungibleTokensV1_2]
+                    ? tecNO_PERMISSION
+                    : TER(tesSUCCESS);
+                env(token::brokerOffers(
+                        broker, offerMinterToBuyer, offerBuyerToMinter),
+                    ter(eexpectTer));
+                env.close();
+
+                if (features[fixNonFungibleTokensV1_2])
+                    // Buyer is successful with acceptOffer.
+                    env(token::acceptBuyOffer(buyer, offerMinterToBuyer));
+                env.close();
+
+                // Clean out the unconsumed offer.
+                env(token::cancelOffer(buyer, {offerBuyerToMinter}));
+                env.close();
+
+                BEAST_EXPECT(ownerCount(env, issuer) == 1);
+                BEAST_EXPECT(ownerCount(env, minter) == 1);
+                BEAST_EXPECT(ownerCount(env, buyer) == 0);
+
+                // Clean out the unconsumed offer.
+                env(token::cancelOffer(issuer, {offerIssuerToBuyer}));
+                env.close();
+                BEAST_EXPECT(ownerCount(env, issuer) == 0);
+                BEAST_EXPECT(ownerCount(env, minter) == 1);
+                BEAST_EXPECT(ownerCount(env, buyer) == 0);
+                return;
+            }
         }
 
         // Show that if a buy and a sell offer both have the same destination,
@@ -3012,15 +3046,20 @@ class NFToken_test : public beast::unit_test::suite
                 token::owner(minter),
                 token::destination(broker));
 
-            // Cannot broker offers when the sell destination is not the buyer
-            // or the broker.
-            env(token::brokerOffers(
-                    issuer, offerBuyerToBroker, offerMinterToBroker),
-                ter(tecNFTOKEN_BUY_SELL_MISMATCH));
-            env.close();
-            BEAST_EXPECT(ownerCount(env, issuer) == 0);
-            BEAST_EXPECT(ownerCount(env, minter) == 2);
-            BEAST_EXPECT(ownerCount(env, buyer) == 1);
+            {
+                // Cannot broker offers when the sell destination is not the
+                // buyer or the broker.
+                TER const expectTer = features[fixNonFungibleTokensV1_2]
+                    ? tecNO_PERMISSION
+                    : tecNFTOKEN_BUY_SELL_MISMATCH;
+                env(token::brokerOffers(
+                        issuer, offerBuyerToBroker, offerMinterToBroker),
+                    ter(expectTer));
+                env.close();
+                BEAST_EXPECT(ownerCount(env, issuer) == 0);
+                BEAST_EXPECT(ownerCount(env, minter) == 2);
+                BEAST_EXPECT(ownerCount(env, buyer) == 1);
+            }
 
             // Broker is successful if they are the destination of both offers.
             env(token::brokerOffers(
@@ -3877,7 +3916,8 @@ class NFToken_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         for (auto const& tweakedFeatures :
-             {features - fixUnburnableNFToken, features | fixUnburnableNFToken})
+             {features - fixNonFungibleTokensV1_2,
+              features | fixNonFungibleTokensV1_2})
         {
             Env env{*this, tweakedFeatures};
 
@@ -4416,7 +4456,7 @@ class NFToken_test : public beast::unit_test::suite
                     token::owner(minter));
                 env.close();
 
-                if (tweakedFeatures[fixUnburnableNFToken])
+                if (tweakedFeatures[fixNonFungibleTokensV1_2])
                 {
                     env(token::brokerOffers(
                             broker, buyOfferIndex, minterOfferIndex),
@@ -4962,12 +5002,12 @@ class NFToken_test : public beast::unit_test::suite
         IOU const gwXAU(gw["XAU"]);
 
         // Test both with and without fixNFTokenNegOffer and
-        // fixUnburnableNFToken. Need to turn off fixUnburnableNFToken as well
-        // because that amendment came later and addressed the acceptance
-        // side of this issue.
+        // fixNonFungibleTokensV1_2. Need to turn off fixNonFungibleTokensV1_2
+        // as well because that amendment came later and addressed the
+        // acceptance side of this issue.
         for (auto const& tweakedFeatures :
              {features - fixNFTokenNegOffer - featureNonFungibleTokensV1_1 -
-                  fixUnburnableNFToken,
+                  fixNonFungibleTokensV1_2,
               features - fixNFTokenNegOffer - featureNonFungibleTokensV1_1,
               features | fixNFTokenNegOffer})
         {
@@ -5058,7 +5098,7 @@ class NFToken_test : public beast::unit_test::suite
             }
             {
                 //  1. If fixNFTokenNegOffer is enabled get tecOBJECT_NOT_FOUND
-                //  2. If it is not enabled, but fixUnburnableNFToken is
+                //  2. If it is not enabled, but fixNonFungibleTokensV1_2 is
                 //  enabled, get tecOBJECT_NOT_FOUND.
                 //  3. If neither are enabled, get tesSUCCESS.
                 TER const offerAcceptTER = tweakedFeatures[fixNFTokenNegOffer]
@@ -5200,7 +5240,8 @@ class NFToken_test : public beast::unit_test::suite
         testcase("Payments with IOU transfer fees");
 
         for (auto const& tweakedFeatures :
-             {features - fixUnburnableNFToken, features | fixUnburnableNFToken})
+             {features - fixNonFungibleTokensV1_2,
+              features | fixNonFungibleTokensV1_2})
         {
             Env env{*this, tweakedFeatures};
 
@@ -5352,13 +5393,13 @@ class NFToken_test : public beast::unit_test::suite
                 auto const nftID = mintNFT(minter);
                 auto const offerID =
                     createSellOffer(minter, nftID, gwXAU(1000));
-                auto const sellTER = tweakedFeatures[fixUnburnableNFToken]
+                auto const sellTER = tweakedFeatures[fixNonFungibleTokensV1_2]
                     ? static_cast<TER>(tecINSUFFICIENT_FUNDS)
                     : static_cast<TER>(tesSUCCESS);
                 env(token::acceptSellOffer(buyer, offerID), ter(sellTER));
                 env.close();
 
-                if (tweakedFeatures[fixUnburnableNFToken])
+                if (tweakedFeatures[fixNonFungibleTokensV1_2])
                     expectInitialState();
                 else
                 {
@@ -5376,13 +5417,13 @@ class NFToken_test : public beast::unit_test::suite
                 auto const nftID = mintNFT(minter);
                 auto const offerID =
                     createBuyOffer(buyer, minter, nftID, gwXAU(1000));
-                auto const sellTER = tweakedFeatures[fixUnburnableNFToken]
+                auto const sellTER = tweakedFeatures[fixNonFungibleTokensV1_2]
                     ? static_cast<TER>(tecINSUFFICIENT_FUNDS)
                     : static_cast<TER>(tesSUCCESS);
                 env(token::acceptBuyOffer(minter, offerID), ter(sellTER));
                 env.close();
 
-                if (tweakedFeatures[fixUnburnableNFToken])
+                if (tweakedFeatures[fixNonFungibleTokensV1_2])
                     expectInitialState();
                 else
                 {
@@ -5400,37 +5441,26 @@ class NFToken_test : public beast::unit_test::suite
                 reinitializeTrustLineBalances();
                 auto const nftID = mintNFT(minter);
                 auto const offerID = createSellOffer(minter, nftID, gwXAU(995));
-                auto const sellTER = tweakedFeatures[fixUnburnableNFToken]
+                auto const sellTER = tweakedFeatures[fixNonFungibleTokensV1_2]
                     ? static_cast<TER>(tecINSUFFICIENT_FUNDS)
                     : static_cast<TER>(tesSUCCESS);
                 env(token::acceptSellOffer(buyer, offerID), ter(sellTER));
                 env.close();
 
-                if (tweakedFeatures[fixUnburnableNFToken])
-                    expectInitialState();
-                else
-                {
-                    BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(995));
-                    BEAST_EXPECT(env.balance(buyer, gwXAU) == gwXAU(-14.9));
-                    BEAST_EXPECT(env.balance(gw, minter["XAU"]) == gwXAU(-995));
-                    BEAST_EXPECT(env.balance(gw, buyer["XAU"]) == gwXAU(14.9));
-                }
-            }
-            {
+                if (tweakedFeatures[fixNonFungibleTokensV1_2])
                 // Buyer attempts to send an amount less than 100% of their
-                // balance of an IOU, but such that the addition of the transfer
                 // fee would be greater than the buyer's balance (buyside)
                 reinitializeTrustLineBalances();
                 auto const nftID = mintNFT(minter);
                 auto const offerID =
                     createBuyOffer(buyer, minter, nftID, gwXAU(995));
-                auto const sellTER = tweakedFeatures[fixUnburnableNFToken]
+                auto const sellTER = tweakedFeatures[fixNonFungibleTokensV1_2]
                     ? static_cast<TER>(tecINSUFFICIENT_FUNDS)
                     : static_cast<TER>(tesSUCCESS);
                 env(token::acceptBuyOffer(minter, offerID), ter(sellTER));
                 env.close();
 
-                if (tweakedFeatures[fixUnburnableNFToken])
+                if (tweakedFeatures[fixNonFungibleTokensV1_2])
                     expectInitialState();
                 else
                 {
@@ -5525,13 +5555,13 @@ class NFToken_test : public beast::unit_test::suite
                 auto const nftID = mintNFT(minter);
                 auto const offerID =
                     createSellOffer(minter, nftID, gwXAU(1000));
-                auto const sellTER = tweakedFeatures[fixUnburnableNFToken]
+                auto const sellTER = tweakedFeatures[fixNonFungibleTokensV1_2]
                     ? static_cast<TER>(tesSUCCESS)
                     : static_cast<TER>(tecINSUFFICIENT_FUNDS);
                 env(token::acceptSellOffer(gw, offerID), ter(sellTER));
                 env.close();
 
-                if (tweakedFeatures[fixUnburnableNFToken])
+                if (tweakedFeatures[fixNonFungibleTokensV1_2])
                 {
                     BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(1000));
                     BEAST_EXPECT(
@@ -5546,18 +5576,18 @@ class NFToken_test : public beast::unit_test::suite
                 reinitializeTrustLineBalances();
 
                 auto const nftID = mintNFT(minter);
-                auto const offerTER = tweakedFeatures[fixUnburnableNFToken]
+                auto const offerTER = tweakedFeatures[fixNonFungibleTokensV1_2]
                     ? static_cast<TER>(tesSUCCESS)
                     : static_cast<TER>(tecUNFUNDED_OFFER);
                 auto const offerID =
                     createBuyOffer(gw, minter, nftID, gwXAU(1000), {offerTER});
-                auto const sellTER = tweakedFeatures[fixUnburnableNFToken]
+                auto const sellTER = tweakedFeatures[fixNonFungibleTokensV1_2]
                     ? static_cast<TER>(tesSUCCESS)
                     : static_cast<TER>(tecOBJECT_NOT_FOUND);
                 env(token::acceptBuyOffer(minter, offerID), ter(sellTER));
                 env.close();
 
-                if (tweakedFeatures[fixUnburnableNFToken])
+                if (tweakedFeatures[fixNonFungibleTokensV1_2])
                 {
                     BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(1000));
                     BEAST_EXPECT(
@@ -5573,13 +5603,13 @@ class NFToken_test : public beast::unit_test::suite
                 auto const nftID = mintNFT(minter);
                 auto const offerID =
                     createSellOffer(minter, nftID, gwXAU(5000));
-                auto const sellTER = tweakedFeatures[fixUnburnableNFToken]
+                auto const sellTER = tweakedFeatures[fixNonFungibleTokensV1_2]
                     ? static_cast<TER>(tesSUCCESS)
                     : static_cast<TER>(tecINSUFFICIENT_FUNDS);
                 env(token::acceptSellOffer(gw, offerID), ter(sellTER));
                 env.close();
 
-                if (tweakedFeatures[fixUnburnableNFToken])
+                if (tweakedFeatures[fixNonFungibleTokensV1_2])
                 {
                     BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(5000));
                     BEAST_EXPECT(
@@ -5594,18 +5624,18 @@ class NFToken_test : public beast::unit_test::suite
                 reinitializeTrustLineBalances();
 
                 auto const nftID = mintNFT(minter);
-                auto const offerTER = tweakedFeatures[fixUnburnableNFToken]
+                auto const offerTER = tweakedFeatures[fixNonFungibleTokensV1_2]
                     ? static_cast<TER>(tesSUCCESS)
                     : static_cast<TER>(tecUNFUNDED_OFFER);
                 auto const offerID =
                     createBuyOffer(gw, minter, nftID, gwXAU(5000), {offerTER});
-                auto const sellTER = tweakedFeatures[fixUnburnableNFToken]
+                auto const sellTER = tweakedFeatures[fixNonFungibleTokensV1_2]
                     ? static_cast<TER>(tesSUCCESS)
                     : static_cast<TER>(tecOBJECT_NOT_FOUND);
                 env(token::acceptBuyOffer(minter, offerID), ter(sellTER));
                 env.close();
 
-                if (tweakedFeatures[fixUnburnableNFToken])
+                if (tweakedFeatures[fixNonFungibleTokensV1_2])
                 {
                     BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(5000));
                     BEAST_EXPECT(
@@ -5747,13 +5777,13 @@ class NFToken_test : public beast::unit_test::suite
                 // now we can do a secondary sale
                 auto const offerID =
                     createSellOffer(secondarySeller, nftID, gwXAU(1000));
-                auto const sellTER = tweakedFeatures[fixUnburnableNFToken]
+                auto const sellTER = tweakedFeatures[fixNonFungibleTokensV1_2]
                     ? static_cast<TER>(tecINSUFFICIENT_FUNDS)
                     : static_cast<TER>(tesSUCCESS);
                 env(token::acceptSellOffer(buyer, offerID), ter(sellTER));
                 env.close();
 
-                if (tweakedFeatures[fixUnburnableNFToken])
+                if (tweakedFeatures[fixNonFungibleTokensV1_2])
                     expectInitialState();
                 else
                 {
@@ -5783,14 +5813,14 @@ class NFToken_test : public beast::unit_test::suite
                 // now we can do a secondary sale
                 auto const offerID =
                     createBuyOffer(buyer, secondarySeller, nftID, gwXAU(1000));
-                auto const sellTER = tweakedFeatures[fixUnburnableNFToken]
+                auto const sellTER = tweakedFeatures[fixNonFungibleTokensV1_2]
                     ? static_cast<TER>(tecINSUFFICIENT_FUNDS)
                     : static_cast<TER>(tesSUCCESS);
                 env(token::acceptBuyOffer(secondarySeller, offerID),
                     ter(sellTER));
                 env.close();
 
-                if (tweakedFeatures[fixUnburnableNFToken])
+                if (tweakedFeatures[fixNonFungibleTokensV1_2])
                     expectInitialState();
                 else
                 {
@@ -5956,7 +5986,7 @@ class NFToken_test : public beast::unit_test::suite
         // the NFToken being bought and returned to the original owner and
         // the broker pocketing the profit.
         //
-        // This unit test verifies that the fixUnburnableNFToken amendment
+        // This unit test verifies that the fixNonFungibleTokensV1_2 amendment
         // fixes that bug.
         testcase("Brokered sale to self");
 
@@ -6022,7 +6052,7 @@ class NFToken_test : public beast::unit_test::suite
         BEAST_EXPECT(nftCount(env, bob) == 1);
         auto const bobsPriorBalance = env.balance(bob);
         auto const brokersPriorBalance = env.balance(broker);
-        TER expectTer = features[fixUnburnableNFToken]
+        TER expectTer = features[fixNonFungibleTokensV1_2]
             ? TER(tecCANT_ACCEPT_OWN_NFTOKEN_OFFER)
             : TER(tesSUCCESS);
         env(token::brokerOffers(broker, bobBuyOfferIndex, bobSellOfferIndex),
@@ -6049,592 +6079,6 @@ class NFToken_test : public beast::unit_test::suite
             BEAST_EXPECT(env.balance(bob) == bobsPriorBalance);
             BEAST_EXPECT(
                 env.balance(broker) == brokersPriorBalance - drops(10));
-        }
-    }
-
-    void
-    testFixNFTokenRemint(FeatureBitset features)
-    {
-        using namespace test::jtx;
-
-        testcase("fixNFTokenRemint");
-
-        // Returns the current ledger sequence
-        auto openLedgerSeq = [](Env& env) { return env.current()->seq(); };
-
-        // Close the ledger until the ledger sequence is large enough to close
-        // the account (no longer within <Sequence + 256>)
-        // This is enforced by the featureDeletableAccounts amendment
-        auto incLgrSeqForAccDel = [&](Env& env, Account const& acc) {
-            int const delta = [&]() -> int {
-                if (env.seq(acc) + 255 > openLedgerSeq(env))
-                    return env.seq(acc) - openLedgerSeq(env) + 255;
-                return 0;
-            }();
-            BEAST_EXPECT(delta >= 0);
-            for (int i = 0; i < delta; ++i)
-                env.close();
-            BEAST_EXPECT(openLedgerSeq(env) == env.seq(acc) + 255);
-        };
-
-        // Close the ledger until the ledger sequence is no longer
-        // within <FirstNFTokenSequence + MintedNFTokens + 256>.
-        // This is enforced by the fixUnburnableNFToken amendment.
-        auto incLgrSeqForNFTokenAccDel = [&](Env& env, Account const& acc) {
-            int delta = 0;
-            auto const deletableLgrSeq =
-                (*env.le(acc))[~sfFirstNFTokenSequence].value_or(0) +
-                (*env.le(acc))[sfMintedNFTokens] + 255;
-
-            if (deletableLgrSeq > openLedgerSeq(env))
-                delta = deletableLgrSeq - openLedgerSeq(env);
-
-            BEAST_EXPECT(delta >= 0);
-            for (int i = 0; i < delta; ++i)
-                env.close();
-            BEAST_EXPECT(openLedgerSeq(env) == deletableLgrSeq);
-        };
-
-        // We check if NFTokenIDs can be duplicated by
-        // re-creation of an account
-        {
-            Env env{*this, features};
-            Account const alice("alice");
-            Account const becky("becky");
-
-            env.fund(XRP(10000), alice, becky);
-            env.close();
-
-            // alice mint and burn a NFT
-            uint256 const prevNftokenID = token::getNextID(env, alice, 0u);
-            env(token::mint(alice));
-            env.close();
-            env(token::burn(alice, prevNftokenID));
-            env.close();
-
-            // alice has minted 1 NFToken
-            BEAST_EXPECT((*env.le(alice))[sfMintedNFTokens] == 1);
-
-            // Close enough ledgers to delete alice's account
-            incLgrSeqForAccDel(env, alice);
-
-            // alice's account is deleted
-            Keylet const aliceAcctKey{keylet::account(alice.id())};
-            auto const acctDelFee{drops(env.current()->fees().increment)};
-            env(acctdelete(alice, becky), fee(acctDelFee));
-            env.close();
-
-            // alice's account account root is gone from the most recently
-            // closed ledger and the current ledger.
-            BEAST_EXPECT(!env.closed()->exists(aliceAcctKey));
-            BEAST_EXPECT(!env.current()->exists(aliceAcctKey));
-
-            // Fund alice to re-create her account
-            env.fund(XRP(10000), alice);
-            env.close();
-
-            // alice's account now exists and has minted 0 NFTokens
-            BEAST_EXPECT(env.closed()->exists(aliceAcctKey));
-            BEAST_EXPECT(env.current()->exists(aliceAcctKey));
-            BEAST_EXPECT((*env.le(alice))[sfMintedNFTokens] == 0);
-
-            // alice mints a NFT with same params as prevNftokenID
-            uint256 const remintNftokenID = token::getNextID(env, alice, 0u);
-            env(token::mint(alice));
-            env.close();
-
-            // burn the NFT to make sure alice owns remintNftokenID
-            env(token::burn(alice, remintNftokenID));
-            env.close();
-
-            if (features[fixUnburnableNFToken])
-                // Check that two NFTs don't have the same ID
-                BEAST_EXPECT(remintNftokenID != prevNftokenID);
-            else
-                // Check that two NFTs have the same ID
-                BEAST_EXPECT(remintNftokenID == prevNftokenID);
-        }
-
-        // If fixUnburnableNFToken is not enabled, we test if the issuer account
-        // can be deleted after an authorized minter mints and burns a batch of
-        // NFTokens.
-        // After the issuer's account is re-created and mints a NFT, it should
-        // have the same NFTokenID as the one minted before.
-        if (!features[fixUnburnableNFToken])
-        {
-            Env env{*this, features};
-            Account const alice("alice");
-            Account const becky("becky");
-            Account const minter{"minter"};
-
-            env.fund(XRP(10000), alice, becky, minter);
-            env.close();
-
-            // alice sets minter as her authorized minter
-            env(token::setMinter(alice, minter));
-            env.close();
-
-            // minter mints 500 NFTs for alice
-            std::vector<uint256> nftIDs;
-            nftIDs.reserve(500);
-            for (int i = 0; i < 500; i++)
-            {
-                uint256 const nftokenID = token::getNextID(env, alice, 0u);
-                nftIDs.push_back(nftokenID);
-                env(token::mint(minter), token::issuer(alice));
-            }
-            env.close();
-
-            // minter burns 500 NFTs
-            for (auto const nftokenID : nftIDs)
-            {
-                env(token::burn(minter, nftokenID));
-            }
-            env.close();
-
-            // Increment ledger sequence to the number that is
-            // enforced by the featureDeletableAccounts amendment
-            incLgrSeqForAccDel(env, alice);
-
-            // Verify that alice's account root is present.
-            Keylet const aliceAcctKey{keylet::account(alice.id())};
-            BEAST_EXPECT(env.closed()->exists(aliceAcctKey));
-            BEAST_EXPECT(env.current()->exists(aliceAcctKey));
-
-            auto const acctDelFee1{drops(env.current()->fees().increment)};
-
-            // alice's account can be successfully deleted.
-            env(acctdelete(alice, becky), fee(acctDelFee1));
-            env.close();
-            BEAST_EXPECT(!env.current()->exists(aliceAcctKey));
-
-            // Fund alice to re-create her account
-            env.fund(XRP(10000), alice);
-            env.close();
-
-            // alice's account now exists and has minted 0 NFTokens
-            BEAST_EXPECT(env.closed()->exists(aliceAcctKey));
-            BEAST_EXPECT(env.current()->exists(aliceAcctKey));
-            BEAST_EXPECT((*env.le(alice))[sfMintedNFTokens] == 0);
-
-            // alice mints a NFT with same params as prevNftokenID
-            uint256 const remintNftokenID = token::getNextID(env, alice, 0u);
-            env(token::mint(alice));
-            env.close();
-
-            // burn the NFT to make sure alice owns remintNftokenID
-            env(token::burn(alice, remintNftokenID));
-            env.close();
-
-            // The new NFT minted has the same ID as one of the NFTs
-            // authorized minter minted for alice
-            BEAST_EXPECT(
-                std::find(nftIDs.begin(), nftIDs.end(), remintNftokenID) !=
-                nftIDs.end());
-        }
-
-        // If fixUnburnableNFToken is not enabled,
-        // when an account mints and burns a batch of NFTokens using tickets,
-        // the account should be able to be deleted.
-        // After the issuer's account is re-created and mints a NFT, it should
-        // have the same NFTokenID as the one minted before.
-        if (!features[fixUnburnableNFToken])
-        {
-            Env env{*this, features};
-
-            Account const alice{"alice"};
-            Account const becky{"becky"};
-            env.fund(XRP(10000), alice, becky);
-            env.close();
-
-            // alice grab enough tickets for all of the following
-            // transactions.  Note that once the tickets are acquired alice's
-            // account sequence number should not advance.
-            std::uint32_t aliceTicketSeq{env.seq(alice) + 1};
-            env(ticket::create(alice, 100));
-            env.close();
-
-            BEAST_EXPECT(ticketCount(env, alice) == 100);
-            BEAST_EXPECT(ownerCount(env, alice) == 100);
-
-            // alice mints 50 NFTs using tickets
-            std::vector<uint256> nftIDs;
-            nftIDs.reserve(50);
-            for (int i = 0; i < 50; i++)
-            {
-                nftIDs.push_back(token::getNextID(env, alice, 0u));
-                env(token::mint(alice, 0u), ticket::use(aliceTicketSeq++));
-                env.close();
-            }
-
-            // alice burns 50 NFTs using tickets
-            for (auto const nftokenID : nftIDs)
-            {
-                env(token::burn(alice, nftokenID),
-                    ticket::use(aliceTicketSeq++));
-            }
-            env.close();
-
-            BEAST_EXPECT(ticketCount(env, alice) == 0);
-
-            // Increment ledger sequence to the number that is
-            // enforced by the featureDeletableAccounts amendment
-            incLgrSeqForAccDel(env, alice);
-
-            // Verify that alice's account root is present.
-            Keylet const aliceAcctKey{keylet::account(alice.id())};
-            BEAST_EXPECT(env.closed()->exists(aliceAcctKey));
-            BEAST_EXPECT(env.current()->exists(aliceAcctKey));
-
-            // alice tries to delete her account, and is successful.
-            auto const acctDelFee1{drops(env.current()->fees().increment)};
-            env(acctdelete(alice, becky), fee(acctDelFee1));
-            env.close();
-
-            // alice's account account root is gone from the most recently
-            // closed ledger and the current ledger.
-            BEAST_EXPECT(!env.closed()->exists(aliceAcctKey));
-            BEAST_EXPECT(!env.current()->exists(aliceAcctKey));
-
-            // Fund alice to re-create her account
-            env.fund(XRP(10000), alice);
-            env.close();
-
-            // alice's account now exists and has minted 0 NFTokens
-            BEAST_EXPECT(env.closed()->exists(aliceAcctKey));
-            BEAST_EXPECT(env.current()->exists(aliceAcctKey));
-            BEAST_EXPECT((*env.le(alice))[sfMintedNFTokens] == 0);
-
-            // alice mints a NFT with same params as prevNftokenID
-            uint256 const remintNftokenID = token::getNextID(env, alice, 0u);
-            env(token::mint(alice));
-            env.close();
-
-            // burn the NFT to make sure alice owns remintNftokenID
-            env(token::burn(alice, remintNftokenID));
-            env.close();
-
-            // The new NFT minted will have the same ID
-            // as one of NFTs minted using tickets
-            BEAST_EXPECT(
-                std::find(nftIDs.begin(), nftIDs.end(), remintNftokenID) !=
-                nftIDs.end());
-        }
-
-        // If fixUnburnableNFToken is enabled,
-        // when an authorized minter mints and burns a batch of NFTokens,
-        // issuer's account needs to wait a longer time before it can deleted.
-        // After the issuer's account is re-created and mints a NFT, it should
-        // not have the same NFTokenID as the ones authorized minter minted.
-        if (features[fixUnburnableNFToken])
-        {
-            Env env{*this, features};
-            Account const alice("alice");
-            Account const becky("becky");
-            Account const minter{"minter"};
-
-            env.fund(XRP(10000), alice, becky, minter);
-            env.close();
-
-            // alice sets minter as her authorized minter
-            env(token::setMinter(alice, minter));
-            env.close();
-
-            // minter mints 500 NFTs for alice
-            std::vector<uint256> nftIDs;
-            nftIDs.reserve(500);
-            for (int i = 0; i < 500; i++)
-            {
-                uint256 const nftokenID = token::getNextID(env, alice, 0u);
-                nftIDs.push_back(nftokenID);
-                env(token::mint(minter), token::issuer(alice));
-            }
-            env.close();
-
-            // minter burns 500 NFTs
-            for (auto const nftokenID : nftIDs)
-            {
-                env(token::burn(minter, nftokenID));
-            }
-            env.close();
-
-            // Increment ledger sequence to the number that is
-            // enforced by the featureDeletableAccounts amendment
-            incLgrSeqForAccDel(env, alice);
-
-            // Verify that alice's account root is present.
-            Keylet const aliceAcctKey{keylet::account(alice.id())};
-            BEAST_EXPECT(env.closed()->exists(aliceAcctKey));
-            BEAST_EXPECT(env.current()->exists(aliceAcctKey));
-
-            // alice tries to delete her account, but is unsuccessful.
-            // Due to authorized minting, alice's account sequence does not
-            // advance while minter mints NFTokens for her.
-            // The new account deletion retriction <FirstNFTokenSequence +
-            // MintedNFTokens + 256> enabled by this amendment will enforce
-            // alice to wait for more ledgers to close before she can delete her
-            // account, to prevent duplicate NFTokenIDs
-            auto const acctDelFee1{drops(env.current()->fees().increment)};
-            env(acctdelete(alice, becky), fee(acctDelFee1), ter(tecTOO_SOON));
-            env.close();
-
-            // alice's account is still present
-            BEAST_EXPECT(env.current()->exists(aliceAcctKey));
-
-            // Close more ledgers until it is no longer within
-            // <FirstNFTokenSequence + MintedNFTokens + 256>
-            // to be able to delete alice's account
-            incLgrSeqForNFTokenAccDel(env, alice);
-
-            // alice's account is deleted
-            auto const acctDelFee2{drops(env.current()->fees().increment)};
-            env(acctdelete(alice, becky), fee(acctDelFee2));
-            env.close();
-
-            // alice's account account root is gone from the most recently
-            // closed ledger and the current ledger.
-            BEAST_EXPECT(!env.closed()->exists(aliceAcctKey));
-            BEAST_EXPECT(!env.current()->exists(aliceAcctKey));
-
-            // Fund alice to re-create her account
-            env.fund(XRP(10000), alice);
-            env.close();
-
-            // alice's account now exists and has minted 0 NFTokens
-            BEAST_EXPECT(env.closed()->exists(aliceAcctKey));
-            BEAST_EXPECT(env.current()->exists(aliceAcctKey));
-            BEAST_EXPECT((*env.le(alice))[sfMintedNFTokens] == 0);
-
-            // alice mints a NFT with same params as prevNftokenID
-            uint256 const remintNftokenID = token::getNextID(env, alice, 0u);
-            env(token::mint(alice));
-            env.close();
-
-            // burn the NFT to make sure alice owns remintNftokenID
-            env(token::burn(alice, remintNftokenID));
-            env.close();
-
-            // The new NFT minted will not have the same ID
-            // as one of NFTs authorized minter minted
-            BEAST_EXPECT(
-                std::find(nftIDs.begin(), nftIDs.end(), remintNftokenID) ==
-                nftIDs.end());
-        }
-
-        // If fixUnburnableNFToken is enabled,
-        // when an account mints and burns a batch of NFTokens using tickets,
-        // the account needs to wait a longer time before it can deleted.
-        // After the issuer's account is re-created and mints a NFT, it should
-        // not have the same NFTokenID as the ones minted using tickets.
-        if (features[fixUnburnableNFToken])
-        {
-            Env env{*this, features};
-
-            Account const alice{"alice"};
-            Account const becky{"becky"};
-            env.fund(XRP(10000), alice, becky);
-            env.close();
-
-            // alice grab enough tickets for all of the following
-            // transactions. Note that once the tickets are acquired alice's
-            // account sequence number should not advance.
-            std::uint32_t aliceTicketSeq{env.seq(alice) + 1};
-            env(ticket::create(alice, 100));
-            env.close();
-
-            BEAST_EXPECT(ticketCount(env, alice) == 100);
-            BEAST_EXPECT(ownerCount(env, alice) == 100);
-
-            // alice mints 50 NFTs using tickets
-            std::vector<uint256> nftIDs;
-            nftIDs.reserve(50);
-            for (int i = 0; i < 50; i++)
-            {
-                nftIDs.push_back(token::getNextID(env, alice, 0u));
-                env(token::mint(alice, 0u), ticket::use(aliceTicketSeq++));
-                env.close();
-            }
-
-            // alice burns 50 NFTs using tickets
-            for (auto const nftokenID : nftIDs)
-            {
-                env(token::burn(alice, nftokenID),
-                    ticket::use(aliceTicketSeq++));
-            }
-            env.close();
-
-            BEAST_EXPECT(ticketCount(env, alice) == 0);
-
-            // Increment ledger sequence to the number that is
-            // enforced by the featureDeletableAccounts amendment
-            incLgrSeqForAccDel(env, alice);
-
-            // Verify that alice's account root is present.
-            Keylet const aliceAcctKey{keylet::account(alice.id())};
-            BEAST_EXPECT(env.closed()->exists(aliceAcctKey));
-            BEAST_EXPECT(env.current()->exists(aliceAcctKey));
-
-            // alice tries to delete her account, but is unsuccessful.
-            // Because alice used tickets to mint and burn NFTs, her account
-            // sequence did not change while while submitting these
-            // transactions. Hence, her <FirstNFTokenSequence + MintedNFTokens +
-            // 256> is still greater than the current ledger sequence
-            auto const acctDelFee1{drops(env.current()->fees().increment)};
-            env(acctdelete(alice, becky), fee(acctDelFee1), ter(tecTOO_SOON));
-            env.close();
-
-            // Close more ledgers until it is no longer within
-            // <FirstNFTokenSequence + MintedNFTokens + 256>
-            // to be able to delete alice's account
-            incLgrSeqForNFTokenAccDel(env, alice);
-
-            // alice's account is deleted
-            auto const acctDelFee2{drops(env.current()->fees().increment)};
-            env(acctdelete(alice, becky), fee(acctDelFee2));
-            env.close();
-
-            // alice's account account root is gone from the most recently
-            // closed ledger and the current ledger.
-            BEAST_EXPECT(!env.closed()->exists(aliceAcctKey));
-            BEAST_EXPECT(!env.current()->exists(aliceAcctKey));
-
-            // Fund alice to re-create her account
-            env.fund(XRP(10000), alice);
-            env.close();
-
-            // alice's account now exists and has minted 0 NFTokens
-            BEAST_EXPECT(env.closed()->exists(aliceAcctKey));
-            BEAST_EXPECT(env.current()->exists(aliceAcctKey));
-            BEAST_EXPECT((*env.le(alice))[sfMintedNFTokens] == 0);
-
-            // alice mints a NFT with same params as prevNftokenID
-            uint256 const remintNftokenID = token::getNextID(env, alice, 0u);
-            env(token::mint(alice));
-            env.close();
-
-            // burn the NFT to make sure alice owns remintNftokenID
-            env(token::burn(alice, remintNftokenID));
-            env.close();
-
-            // The new NFT minted will not have the same ID
-            // as one of NFTs alice minted using tickets
-            BEAST_EXPECT(
-                std::find(nftIDs.begin(), nftIDs.end(), remintNftokenID) ==
-                nftIDs.end());
-        }
-
-        // If fixUnburnableNFToken is enabled,
-        // when an authorized minter mints and burns a batch of NFTokens using
-        // tickets, issuer's account needs to wait a longer time before it can
-        // deleted.
-        // After the issuer's account is re-created and mints a NFT, it should
-        // not have the same NFTokenID as the ones authorized minter minted.
-        if (features[fixUnburnableNFToken])
-        {
-            Env env{*this, features};
-            Account const alice("alice");
-            Account const becky("becky");
-            Account const minter{"minter"};
-
-            env.fund(XRP(10000), alice, becky, minter);
-            env.close();
-
-            // alice sets minter as her authorized minter
-            env(token::setMinter(alice, minter));
-            env.close();
-
-            // minter creates 100 tickets
-            std::uint32_t minterTicketSeq{env.seq(minter) + 1};
-            env(ticket::create(minter, 100));
-            env.close();
-
-            BEAST_EXPECT(ticketCount(env, minter) == 100);
-            BEAST_EXPECT(ownerCount(env, minter) == 100);
-
-            // minter mints 50 NFTs for alice using tickets
-            std::vector<uint256> nftIDs;
-            nftIDs.reserve(50);
-            for (int i = 0; i < 50; i++)
-            {
-                uint256 const nftokenID = token::getNextID(env, alice, 0u);
-                nftIDs.push_back(nftokenID);
-                env(token::mint(minter),
-                    token::issuer(alice),
-                    ticket::use(minterTicketSeq++));
-            }
-            env.close();
-
-            // minter burns 50 NFTs using tickets
-            for (auto const nftokenID : nftIDs)
-            {
-                env(token::burn(minter, nftokenID),
-                    ticket::use(minterTicketSeq++));
-            }
-            env.close();
-
-            BEAST_EXPECT(ticketCount(env, minter) == 0);
-
-            // Increment ledger sequence to the number that is
-            // enforced by the featureDeletableAccounts amendment
-            incLgrSeqForAccDel(env, alice);
-
-            // Verify that alice's account root is present.
-            Keylet const aliceAcctKey{keylet::account(alice.id())};
-            BEAST_EXPECT(env.closed()->exists(aliceAcctKey));
-            BEAST_EXPECT(env.current()->exists(aliceAcctKey));
-
-            // alice tries to delete her account, but is unsuccessful.
-            // Due to authorized minting, alice's account sequence does not
-            // advance while minter mints NFTokens for her using tickets.
-            // The new account deletion retriction <FirstNFTokenSequence +
-            // MintedNFTokens + 256> enabled by this amendment will enforce
-            // alice to wait for more ledgers to close before she can delete her
-            // account, to prevent duplicate NFTokenIDs
-            auto const acctDelFee1{drops(env.current()->fees().increment)};
-            env(acctdelete(alice, becky), fee(acctDelFee1), ter(tecTOO_SOON));
-            env.close();
-
-            // alice's account is still present
-            BEAST_EXPECT(env.current()->exists(aliceAcctKey));
-
-            // Close more ledgers until it is no longer within
-            // <FirstNFTokenSequence + MintedNFTokens + 256>
-            // to be able to delete alice's account
-            incLgrSeqForNFTokenAccDel(env, alice);
-
-            // alice's account is deleted
-            auto const acctDelFee2{drops(env.current()->fees().increment)};
-            env(acctdelete(alice, becky), fee(acctDelFee2));
-            env.close();
-
-            // alice's account account root is gone from the most recently
-            // closed ledger and the current ledger.
-            BEAST_EXPECT(!env.closed()->exists(aliceAcctKey));
-            BEAST_EXPECT(!env.current()->exists(aliceAcctKey));
-
-            // Fund alice to re-create her account
-            env.fund(XRP(10000), alice);
-            env.close();
-
-            // alice's account now exists and has minted 0 NFTokens
-            BEAST_EXPECT(env.closed()->exists(aliceAcctKey));
-            BEAST_EXPECT(env.current()->exists(aliceAcctKey));
-            BEAST_EXPECT((*env.le(alice))[sfMintedNFTokens] == 0);
-
-            // alice mints a NFT with same params as prevNftokenID
-            uint256 const remintNftokenID = token::getNextID(env, alice, 0u);
-            env(token::mint(alice));
-            env.close();
-
-            // burn the NFT to make sure alice owns remintNftokenID
-            env(token::burn(alice, remintNftokenID));
-            env.close();
-
-            // The new NFT minted will not have the same ID
-            // as one of NFTs authorized minter minted using tickets
-            BEAST_EXPECT(
-                std::find(nftIDs.begin(), nftIDs.end(), remintNftokenID) ==
-                nftIDs.end());
         }
     }
 
@@ -6669,7 +6113,6 @@ class NFToken_test : public beast::unit_test::suite
         testFixNFTokenNegOffer(features);
         testIOUWithTransferFee(features);
         testBrokeredSaleToSelf(features);
-        testFixNFTokenRemint(features);
     }
 
 public:
@@ -6680,9 +6123,9 @@ public:
         FeatureBitset const all{supported_amendments()};
         FeatureBitset const fixNFTDir{fixNFTokenDirV1};
 
-        testWithFeats(all - fixNFTDir - fixUnburnableNFToken);
-        testWithFeats(all - disallowIncoming - fixUnburnableNFToken);
-        testWithFeats(all - fixUnburnableNFToken);
+        testWithFeats(all - fixNFTDir - fixNonFungibleTokensV1_2);
+        testWithFeats(all - disallowIncoming - fixNonFungibleTokensV1_2);
+        testWithFeats(all - fixNonFungibleTokensV1_2);
         testWithFeats(all);
     }
 };
