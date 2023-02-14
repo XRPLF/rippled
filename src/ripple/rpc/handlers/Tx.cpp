@@ -36,55 +36,55 @@ namespace ripple {
 
 // {
 //   transaction: <hex> |
-//   ctim: <hex>
+//   ctid: <hex>
 // }
 
 std::optional<std::string>
-encodeCTIM(uint32_t ledger_seq, uint16_t txn_index, uint16_t network_id) noexcept
+encodeCTID(uint32_t ledger_seq, uint16_t txn_index, uint16_t network_id) noexcept
 {
     if (ledger_seq > 0xFFFFFFF)
         return {};
 
-    uint64_t ctimValue =
+    uint64_t ctidValue =
         ((0xC0000000ULL + static_cast<uint64_t>(ledger_seq)) << 32) +
         (static_cast<uint64_t>(txn_index) << 16) + network_id;
 
     std::stringstream buffer;
-    buffer << std::hex << std::uppercase << std::setfill('0') << std::setw(16) << ctimValue;
+    buffer << std::hex << std::uppercase << std::setfill('0') << std::setw(16) << ctidValue;
     return {buffer.str()};
 }
 
 template <typename T>
 std::optional<std::tuple<uint32_t, uint16_t, uint16_t>>
-decodeCTIM(const T ctim) noexcept
+decodeCTID(const T ctid) noexcept
 {
-    uint64_t ctimValue {0};
+    uint64_t ctidValue {0};
     if constexpr (std::is_same_v<T, std::string> || std::is_same_v<T, char *> ||
             std::is_same_v<T, const char *> ||
             std::is_same_v<T, std::string_view>)
     {
-        const std::string ctimString(ctim);
+        const std::string ctidString(ctid);
 
-        if (ctimString.length() != 16)
+        if (ctidString.length() != 16)
             return {};
 
-        if (!std::regex_match(ctimString, std::regex("^[0-9A-F]+$")))
+        if (!std::regex_match(ctidString, std::regex("^[0-9A-F]+$")))
             return {};
 
-        ctimValue = std::stoull(ctimString, nullptr, 16);
+        ctidValue = std::stoull(ctidString, nullptr, 16);
     }
     else if constexpr (std::is_integral_v<T>)
-        ctimValue = ctim;
+        ctidValue = ctid;
     else
         return {};
 
-    if (ctimValue > 0xFFFFFFFFFFFFFFFFULL ||
-            (ctimValue & 0xF000000000000000ULL) != 0xC000000000000000ULL)
+    if (ctidValue > 0xFFFFFFFFFFFFFFFFULL ||
+            (ctidValue & 0xF000000000000000ULL) != 0xC000000000000000ULL)
         return {};
 
-    uint32_t ledger_seq = (ctimValue >> 32) & 0xFFFFFFFUL;
-    uint16_t txn_index = (ctimValue >> 16) & 0xFFFFU;
-    uint16_t network_id = ctimValue & 0xFFFFU;
+    uint32_t ledger_seq = (ctidValue >> 32) & 0xFFFFFFFUL;
+    uint16_t txn_index = (ctidValue >> 16) & 0xFFFFU;
+    uint16_t network_id = ctidValue & 0xFFFFU;
     return {{ledger_seq, txn_index, network_id}};
 }
 
@@ -105,14 +105,14 @@ struct TxResult
     Transaction::pointer txn;
     std::variant<std::shared_ptr<TxMeta>, Blob> meta;
     bool validated = false;
-    std::optional<std::string> ctim;
+    std::optional<std::string> ctid;
     TxSearched searchedAll;
 };
 
 struct TxArgs
 {
     std::optional<uint256> hash;
-    std::optional<std::pair<uint32_t, uint16_t>> ctim;
+    std::optional<std::pair<uint32_t, uint16_t>> ctid;
     bool binary = false;
     std::optional<std::pair<uint32_t, uint32_t>> ledgerRange;
 };
@@ -131,7 +131,7 @@ doTxPostgres(RPC::Context& context, TxArgs const& args)
     res.searchedAll = TxSearched::unknown;
     
     if (!args.hash)
-        return {res, {rpcNOT_IMPL, "Use of CTIMs on reporting mode is not currently supported."}};
+        return {res, {rpcNOT_IMPL, "Use of CTIDs on reporting mode is not currently supported."}};
 
 
     JLOG(context.j.debug()) << "Fetching from postgres";
@@ -256,14 +256,14 @@ doTxHelp(RPC::Context& context, TxArgs args)
     result.searchedAll = TxSearched::unknown;
     std::variant<TxPair, TxSearched> v;
 
-    if (args.ctim)
+    if (args.ctid)
     {
         args.hash = 
             context.app.getLedgerMaster().
-                txnIDfromIndex(args.ctim->first, args.ctim->second);
+                txnIDfromIndex(args.ctid->first, args.ctid->second);
         if (!args.hash)
             return {result, rpcTXN_NOT_FOUND};
-        range = ClosedInterval<uint32_t>(args.ctim->first, args.ctim->second);
+        range = ClosedInterval<uint32_t>(args.ctid->first, args.ctid->second);
     }
     
     if (args.ledgerRange)
@@ -315,14 +315,14 @@ doTxHelp(RPC::Context& context, TxArgs args)
         result.validated = isValidated(
             context.ledgerMaster, ledger->info().seq, ledger->info().hash);
 
-        // compute outgoing CTIM
+        // compute outgoing CTID
         uint32_t lgrSeq = ledger->info().seq;
         uint32_t txnIdx = meta->getAsObject().getFieldU32(sfTransactionIndex);
         uint32_t netID = context.app.config().NETWORK_ID;
 
         if (txnIdx <= 0xFFFFU && netID < 0xFFFFU && lgrSeq < 0xFFFFFFFUL)
-            result.ctim =
-                encodeCTIM(lgrSeq, (uint16_t)txnIdx, (uint16_t)netID);
+            result.ctid =
+                encodeCTID(lgrSeq, (uint16_t)txnIdx, (uint16_t)netID);
     }
 
     return {result, rpcSUCCESS};
@@ -377,8 +377,8 @@ populateJsonResponse(
         }
         response[jss::validated] = result.validated;
 
-        if (result.ctim)
-            response[jss::ctim] = *(result.ctim);
+        if (result.ctid)
+            response[jss::ctid] = *(result.ctid);
     }
     return response;
 }
@@ -393,7 +393,7 @@ doTxJson(RPC::JsonContext& context)
 
     TxArgs args;
 
-    if (context.params.isMember(jss::transaction) && context.params.isMember(jss::ctim))
+    if (context.params.isMember(jss::transaction) && context.params.isMember(jss::ctid))
         // specifying both is ambiguous
         return rpcError(rpcINVALID_PARAMS);
 
@@ -404,12 +404,12 @@ doTxJson(RPC::JsonContext& context)
         if (!hash.parseHex(context.params[jss::transaction].asString()))
             return rpcError(rpcNOT_IMPL);
         args.hash = hash;
-    } else if (context.params.isMember(jss::ctim)) {
-        auto ctim = decodeCTIM(context.params[jss::ctim].asString());
-        if (!ctim)
+    } else if (context.params.isMember(jss::ctid)) {
+        auto ctid = decodeCTID(context.params[jss::ctid].asString());
+        if (!ctid)
             return rpcError(rpcINVALID_PARAMS);
 
-        auto const [lgr_seq, txn_idx, net_id] = *ctim;
+        auto const [lgr_seq, txn_idx, net_id] = *ctid;
         if (net_id != context.app.config().NETWORK_ID)
         {
             std::stringstream out;
@@ -417,7 +417,7 @@ doTxJson(RPC::JsonContext& context)
             return RPC::make_error(
                 rpcWRONG_NETWORK, out.str());
         }
-        args.ctim = {lgr_seq, txn_idx};
+        args.ctid = {lgr_seq, txn_idx};
     }
     else
         return rpcError(rpcINVALID_PARAMS);
