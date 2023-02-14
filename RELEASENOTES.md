@@ -7,9 +7,9 @@ This document contains the release notes for `rippled`, the reference server imp
  
 Have new ideas? Need help with setting up your node? Come visit us [here](https://github.com/xrplf/rippled/issues/new/choose)
 
-## Version 1.10.0
+## UNRELEASED
 
-This release introduces six protocol amendments:
+The release introduces six protocol amendments:
 
 1. `fixTrustLinesToSelf`
 2. `featureImmediateOfferKilled`
