@@ -200,7 +200,7 @@ NFTokenMint::doApply()
         }
 
         auto const mintedNftCnt = (*root)[~sfMintedNFTokens].value_or(0);
-        
+
         (*root)[sfMintedNFTokens] = mintedNftCnt + 1;
         if ((*root)[sfMintedNFTokens] == 0)
             return Unexpected(tecMAX_SEQUENCE_REACHED);
