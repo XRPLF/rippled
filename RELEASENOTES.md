@@ -51,13 +51,6 @@ On supported platforms, see [the instructions on installing or updating `rippled
 * Update documented pathfinding configuration defaults: by @ximinez in https://github.com/XRPLF/rippled/pull/4409
 * Change default vote on fixUniversalNumber from yes to no by @HowardHinnant in https://github.com/XRPLF/rippled/pull/4414
 
-## New Contributors
-* @jscottbranson made their first contribution in https://github.com/XRPLF/rippled/pull/4018
-* @intelliot made their first contribution in https://github.com/XRPLF/rippled/pull/3890
-* @greg7mdp made their first contribution in https://github.com/XRPLF/rippled/pull/4266
-* @alloynetworks made their first contribution in https://github.com/XRPLF/rippled/pull/4329
-* @thejohnfreeman made their first contribution in https://github.com/XRPLF/rippled/pull/4367
-
 **Full Changelog**: https://github.com/XRPLF/rippled/compare/1.9.4...releases/1.10.0-rc2
 
 ## Contributions
