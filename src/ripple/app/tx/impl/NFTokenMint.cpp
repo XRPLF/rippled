@@ -160,41 +160,10 @@ NFTokenMint::doApply()
             // Should not happen.  Checked in preclaim.
             return Unexpected(tecNO_ISSUER);
 
-        std::uint32_t tokenSeq;
-        if (ctx_.view().rules().enabled(fixNFTokenRemint))
-        {
-            auto const accSeq = (*root)[sfSequence];
-
-            // If the issuer hasn't minted a NFT before, we must
-            // initialize sfFirstNFTokenSequence to equal to the current account
-            // sequence. In general, we must subtract account sequence by
-            // one, since it is incremented by the transactor beforehand. In
-            // scenarios of AuthorizedMinting or Tickets, we use the
-            // account sequence as it is because it has not been incremented
-            std::uint32_t const firstNFTokenSeq =
-                (*root)[~sfFirstNFTokenSequence].value_or(
-                    (*root)[~sfNFTokenMinter] == ctx_.tx[sfAccount] ||
-                            ctx_.tx.getSeqProxy().isTicket()
-                        ? accSeq
-                        : accSeq - 1);
-
-            // Get the unique sequence number of this token by
-            // sfFirstNFTokenSequence + sfMintedNFTokens
-            tokenSeq = firstNFTokenSeq + (*root)[~sfMintedNFTokens].value_or(0);
-            {
-                std::uint32_t const nextTokenSeq = tokenSeq + 1;
-                if (nextTokenSeq < tokenSeq)
-                    return Unexpected(tecMAX_SEQUENCE_REACHED);
-
-                (*root)[sfMintedNFTokens] =
-                    (*root)[~sfMintedNFTokens].value_or(0) + 1;
-                (*root)[sfFirstNFTokenSequence] = firstNFTokenSeq;
-            }
-        }
-        else
+       if (!ctx_.view().rules().enabled(fixNFTokenRemint))
         {
             // Get the unique sequence number for this token:
-            tokenSeq = (*root)[~sfMintedNFTokens].value_or(0);
+            std::uint32_t const tokenSeq = (*root)[~sfMintedNFTokens].value_or(0);
             {
                 std::uint32_t const nextTokenSeq = tokenSeq + 1;
                 if (nextTokenSeq < tokenSeq)
@@ -202,7 +171,45 @@ NFTokenMint::doApply()
 
                 (*root)[sfMintedNFTokens] = nextTokenSeq;
             }
+            ctx_.view().update(root);
+            return tokenSeq;
         }
+
+
+        // With fixNFTokenRemint amendment enabled:
+        //
+        // If the issuer hasn't minted a NFT before, we must
+        // initialize sfFirstNFTokenSequence to equal to the current account
+        // sequence. In general, we must subtract account sequence by
+        // one, since it is incremented by the transactor beforehand. In
+        // scenarios of AuthorizedMinting or Tickets, we use the
+        // account sequence as it is because it has not been incremented.
+        //
+        // Whether we subtract the acct sequence by 1 is unimportant in real
+        // world use case. But it is needed in order to deterministically
+        // generate the NFTokenSequence for test cases.
+        if (auto fts = (*root)[~sfFirstNFTokenSequence]; !fts)
+        {
+            auto const accSeq = (*root)[sfSequence];
+            (*root)[sfFirstNFTokenSequence] = (*root)[~sfNFTokenMinter] == ctx_.tx[sfAccount] || ctx_.tx.getSeqProxy().isTicket()? accSeq : accSeq - 1;
+        }
+
+        auto const mintedNftCnt = (*root)[~sfMintedNFTokens].value_or(0);
+
+        (*root)[sfMintedNFTokens] = mintedNftCnt + 1; 
+
+        if ((*root)[sfMintedNFTokens] == 0)
+            return Unexpected(tecMAX_SEQUENCE_REACHED);
+
+        // Get the unique sequence number of this token by
+        // sfFirstNFTokenSequence + sfMintedNFTokens
+        auto const offset = (*root)[sfFirstNFTokenSequence];
+        auto const tokenSeq = offset + mintedNftCnt;
+
+        // Check for more overflow cases
+        if (tokenSeq + 1 == 0 || tokenSeq < mintedNftCnt)
+            return Unexpected(tecMAX_SEQUENCE_REACHED);
+
         ctx_.view().update(root);
         return tokenSeq;
     }();
