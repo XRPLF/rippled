@@ -191,6 +191,7 @@ NFTokenMint::doApply()
         if (auto fts = (*root)[~sfFirstNFTokenSequence]; !fts)
         {
             auto const accSeq = (*root)[sfSequence];
+
             (*root)[sfFirstNFTokenSequence] =
                 (*root)[~sfNFTokenMinter] == ctx_.tx[sfAccount] ||
                     ctx_.tx.getSeqProxy().isTicket()
