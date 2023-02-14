@@ -24,6 +24,7 @@ On supported platforms, see [the instructions on installing or updating `rippled
 
 ## What's Changed
 * Proposed 1.10.0-b1 by @nbougalis in https://github.com/XRPLF/rippled/pull/4270
+* `fixTrustLinesToSelf`: Remove Trustlines to self by @a-noni-mousse in https://github.com/XRPLF/rippled/pull/4105
 * Proposed 1.10.0-b2 by @manojsdoshi in https://github.com/XRPLF/rippled/pull/4321
 * [TRIVIAL] Update Linux Build Instructions by @jscottbranson in https://github.com/XRPLF/rippled/pull/4018
 * Don't try to read SLE with key 0 from the ledger: by @ximinez in https://github.com/XRPLF/rippled/pull/4351
@@ -32,7 +33,7 @@ On supported platforms, see [the instructions on installing or updating `rippled
 * Update my affiliation by @nbougalis in https://github.com/XRPLF/rippled/pull/4360
 * Prevent unnecessary `shared_ptr` copies by accepting a value in `SHAMapInnerNode::setChild` by @greg7mdp in https://github.com/XRPLF/rippled/pull/4266
 * Update Github Actions to ubuntu-latest: by @ximinez in https://github.com/XRPLF/rippled/pull/4357
-* Reduce reserves to 10/2 by @alloynetworks in https://github.com/XRPLF/rippled/pull/4329
+* Reduce default reserves to 10/2 by @alloynetworks in https://github.com/XRPLF/rippled/pull/4329
 * Work around gdb bug by changing a template parameter: by @seelabs in https://github.com/XRPLF/rippled/pull/4332
 * Fix clang 15 warnings by @seelabs in https://github.com/XRPLF/rippled/pull/4325
 * Catch transaction deserialization error in doLedgerGrpc by @cjcobb23 in https://github.com/XRPLF/rippled/pull/4323
@@ -49,7 +50,6 @@ On supported platforms, see [the instructions on installing or updating `rippled
 * `fixUniversalNumber`: Number merge by @HowardHinnant in https://github.com/XRPLF/rippled/pull/4192
 * Update dependency: grpc by @thejohnfreeman in https://github.com/XRPLF/rippled/pull/4407
 * Update documented pathfinding configuration defaults: by @ximinez in https://github.com/XRPLF/rippled/pull/4409
-* Change default vote on fixUniversalNumber from yes to no by @HowardHinnant in https://github.com/XRPLF/rippled/pull/4414
 
 **Full Changelog**: https://github.com/XRPLF/rippled/compare/1.9.4...releases/1.10.0-rc2
 
@@ -77,7 +77,6 @@ The following people contributed directly to this release:
 - Scott Determan <scott.determan@yahoo.com>
 - Scott Schurr <scott@ripple.com>
 - Shawn Xie <35279399+shawnxie999@users.noreply.github.com>
-- greg7mdp <greg7mdp@gmail.com>
 - ledhed2222 <ledhed2222@users.noreply.github.com>
 - manojsdoshi <mdoshi@ripple.com>
 - seelabs <scott.determan@yahoo.com>
