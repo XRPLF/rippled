@@ -58,7 +58,7 @@ On supported platforms, see [the instructions on installing or updating `rippled
 * @alloynetworks made their first contribution in https://github.com/XRPLF/rippled/pull/4329
 * @thejohnfreeman made their first contribution in https://github.com/XRPLF/rippled/pull/4367
 
-**Full Changelog**: https://github.com/XRPLF/rippled/compare/1.9.4...1.10.0-rc2
+**Full Changelog**: https://github.com/XRPLF/rippled/compare/1.9.4...releases/1.10.0-rc2
 
 ## Contributions
 
