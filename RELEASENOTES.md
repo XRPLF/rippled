@@ -7,6 +7,89 @@ This document contains the release notes for `rippled`, the reference server imp
  
 Have new ideas? Need help with setting up your node? Come visit us [here](https://github.com/xrplf/rippled/issues/new/choose)
 
+## Version 1.10.0
+
+This release introduces six protocol amendments:
+
+1. `fixTrustLinesToSelf`
+2. `featureImmediateOfferKilled`
+3. `featureDisallowIncoming`
+4. `featureXRPFees`
+5. `fixUniversalNumber`
+6. `fixNonFungibleTokensV1_2` ([#4417](https://github.com/XRPLF/rippled/pull/4417))
+
+## Install / Upgrade
+
+On supported platforms, see [the instructions on installing or updating `rippled`](https://xrpl.org/install-rippled.html).
+
+## What's Changed
+* Proposed 1.10.0-b1 by @nbougalis in https://github.com/XRPLF/rippled/pull/4270
+* Proposed 1.10.0-b2 by @manojsdoshi in https://github.com/XRPLF/rippled/pull/4321
+* [TRIVIAL] Update Linux Build Instructions by @jscottbranson in https://github.com/XRPLF/rippled/pull/4018
+* Don't try to read SLE with key 0 from the ledger: by @ximinez in https://github.com/XRPLF/rippled/pull/4351
+* README - add link to ripple-server mailing list by @intelliot in https://github.com/XRPLF/rippled/pull/3890
+* Improve move semantics in Expected by @seelabs in https://github.com/XRPLF/rippled/pull/4326
+* Update my affiliation by @nbougalis in https://github.com/XRPLF/rippled/pull/4360
+* Prevent unnecessary `shared_ptr` copies by accepting a value in `SHAMapInnerNode::setChild` by @greg7mdp in https://github.com/XRPLF/rippled/pull/4266
+* Update Github Actions to ubuntu-latest: by @ximinez in https://github.com/XRPLF/rippled/pull/4357
+* Reduce reserves to 10/2 by @alloynetworks in https://github.com/XRPLF/rippled/pull/4329
+* Work around gdb bug by changing a template parameter: by @seelabs in https://github.com/XRPLF/rippled/pull/4332
+* Fix clang 15 warnings by @seelabs in https://github.com/XRPLF/rippled/pull/4325
+* Catch transaction deserialization error in doLedgerGrpc by @cjcobb23 in https://github.com/XRPLF/rippled/pull/4323
+* Use the Conan package manager by @thejohnfreeman in https://github.com/XRPLF/rippled/pull/4367
+* `featureDisallowIncoming`: Opt-out of incoming Checks, PayChans, NFTokenOffers and Trustlines by @RichardAH in https://github.com/XRPLF/rippled/pull/4336
+* Fix Doxygen workflow by @thejohnfreeman in https://github.com/XRPLF/rippled/pull/4372
+* RPC tooBusy response now has 503 HTTP status code: by @scottschurr in https://github.com/XRPLF/rippled/pull/4143
+* Add a unit test for invalid memos by @scottschurr in https://github.com/XRPLF/rippled/pull/4287
+* Update build instructions by @thejohnfreeman in https://github.com/XRPLF/rippled/pull/4376
+* Make NodeToShardRPC a manual test by @thejohnfreeman in https://github.com/XRPLF/rippled/pull/4379
+* Try to help readers of BUILD.md by @thejohnfreeman in https://github.com/XRPLF/rippled/pull/4383
+* `XRPFees`: Fee setting and handling improvements by @ximinez in https://github.com/XRPLF/rippled/pull/4247
+* Revise CONTRIBUTING by @thejohnfreeman in https://github.com/XRPLF/rippled/pull/4382
+* `fixUniversalNumber`: Number merge by @HowardHinnant in https://github.com/XRPLF/rippled/pull/4192
+* Update dependency: grpc by @thejohnfreeman in https://github.com/XRPLF/rippled/pull/4407
+* Update documented pathfinding configuration defaults: by @ximinez in https://github.com/XRPLF/rippled/pull/4409
+* Change default vote on fixUniversalNumber from yes to no by @HowardHinnant in https://github.com/XRPLF/rippled/pull/4414
+
+## New Contributors
+* @jscottbranson made their first contribution in https://github.com/XRPLF/rippled/pull/4018
+* @intelliot made their first contribution in https://github.com/XRPLF/rippled/pull/3890
+* @greg7mdp made their first contribution in https://github.com/XRPLF/rippled/pull/4266
+* @alloynetworks made their first contribution in https://github.com/XRPLF/rippled/pull/4329
+* @thejohnfreeman made their first contribution in https://github.com/XRPLF/rippled/pull/4367
+
+**Full Changelog**: https://github.com/XRPLF/rippled/compare/1.9.4...1.10.0-rc2
+
+## Contributions
+
+We welcome contributions, big and small, and invite everyone to join the community
+of XRP Ledger developers and help build the Internet of Value.
+
+### Credits
+The following people contributed directly to this release:
+- Alexander Kremer <akremer@ripple.com>
+- Alloy Networks <45832257+alloynetworks@users.noreply.github.com>
+- CJ Cobb <46455409+cjcobb23@users.noreply.github.com>
+- Chenna Keshava B S <ckbs.keshava56@gmail.com>
+- Crypto Brad Garlinghouse <cryptobradgarlinghouse@protonmail.com>
+- Denis Angell <dangell@transia.co>
+- Ed Hennis <ed@ripple.com>
+- Elliot Lee <github.public@intelliot.com>
+- Gregory Popovitch <greg7mdp@gmail.com>
+- Howard Hinnant <howard.hinnant@gmail.com>
+- J. Scott Branson <18340247+crypticrabbit@users.noreply.github.com>
+- John Freeman <jfreeman08@gmail.com>
+- Nik Bougalis <nikb@bougalis.net>
+- RichardAH <richard.holland@starstone.co.nz>
+- Scott Determan <scott.determan@yahoo.com>
+- Scott Schurr <scott@ripple.com>
+- Shawn Xie <35279399+shawnxie999@users.noreply.github.com>
+- greg7mdp <greg7mdp@gmail.com>
+- ledhed2222 <ledhed2222@users.noreply.github.com>
+- manojsdoshi <mdoshi@ripple.com>
+- seelabs <scott.determan@yahoo.com>
+
+
 # Introducing XRP Ledger version 1.9.4
 
 Version 1.9.4 of `rippled`, the reference implementation of the XRP Ledger protocol is now available. This release introduces an amendment that removes the ability for an NFT issuer to indicate that trust lines should be automatically created for royalty payments from secondary sales of NFTs, in response to a bug report that indicated how this functionality could be abused to mount a denial of service attack against the issuer.
