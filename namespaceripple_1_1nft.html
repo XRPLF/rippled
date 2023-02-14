@@ -114,9 +114,9 @@ Functions</h2></td></tr>
 <tr class="separator:a85dc7006d747123fc93c4fac11678a62"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a783cd2024e926955810456a5e08a69b7"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="structripple_1_1nft_1_1TokenAndPage.html">TokenAndPage</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1nft.html#a783cd2024e926955810456a5e08a69b7">findTokenAndPage</a> (<a class="el" href="classripple_1_1ApplyView.html">ApplyView</a> &amp;view, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;owner, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;nftokenID)</td></tr>
 <tr class="separator:a783cd2024e926955810456a5e08a69b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac5fc57cdcc0d26ec19c3a70467a934f1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1nft.html#ac5fc57cdcc0d26ec19c3a70467a934f1">removeAllTokenOffers</a> (<a class="el" href="classripple_1_1ApplyView.html">ApplyView</a> &amp;view, <a class="el" href="structripple_1_1Keylet.html">Keylet</a> const  &amp;directory)</td></tr>
-<tr class="memdesc:ac5fc57cdcc0d26ec19c3a70467a934f1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Deletes all offers from the specified token offer directory.  <a href="namespaceripple_1_1nft.html#ac5fc57cdcc0d26ec19c3a70467a934f1">More...</a><br /></td></tr>
-<tr class="separator:ac5fc57cdcc0d26ec19c3a70467a934f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abb4362fd10edf10dd40898b0ba5cdd6e"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1nft.html#abb4362fd10edf10dd40898b0ba5cdd6e">removeTokenOffersWithLimit</a> (<a class="el" href="classripple_1_1ApplyView.html">ApplyView</a> &amp;view, <a class="el" href="structripple_1_1Keylet.html">Keylet</a> const  &amp;directory, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> maxDeletableOffers)</td></tr>
+<tr class="memdesc:abb4362fd10edf10dd40898b0ba5cdd6e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Delete up to a specified number of offers from the specified token offer directory.  <a href="namespaceripple_1_1nft.html#abb4362fd10edf10dd40898b0ba5cdd6e">More...</a><br /></td></tr>
+<tr class="separator:abb4362fd10edf10dd40898b0ba5cdd6e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8217fa70057de09b69cb99c8cfcb68ef"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1nft.html#a8217fa70057de09b69cb99c8cfcb68ef">notTooManyOffers</a> (<a class="el" href="classripple_1_1ReadView.html">ReadView</a> const  &amp;view, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const  &amp;nftokenID)</td></tr>
 <tr class="memdesc:a8217fa70057de09b69cb99c8cfcb68ef"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns tesSUCCESS if NFToken has few enough offers that it can be burned.  <a href="namespaceripple_1_1nft.html#a8217fa70057de09b69cb99c8cfcb68ef">More...</a><br /></td></tr>
 <tr class="separator:a8217fa70057de09b69cb99c8cfcb68ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -580,14 +580,14 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="ac5fc57cdcc0d26ec19c3a70467a934f1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac5fc57cdcc0d26ec19c3a70467a934f1">&#9670;&nbsp;</a></span>removeAllTokenOffers()</h2>
+<a id="abb4362fd10edf10dd40898b0ba5cdd6e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abb4362fd10edf10dd40898b0ba5cdd6e">&#9670;&nbsp;</a></span>removeTokenOffersWithLimit()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void ripple::nft::removeAllTokenOffers </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> ripple::nft::removeTokenOffersWithLimit </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classripple_1_1ApplyView.html">ApplyView</a> &amp;&#160;</td>
           <td class="paramname"><em>view</em>, </td>
@@ -596,7 +596,13 @@ Variables</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype"><a class="el" href="structripple_1_1Keylet.html">Keylet</a> const &amp;&#160;</td>
-          <td class="paramname"><em>directory</em>&#160;</td>
+          <td class="paramname"><em>directory</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td>
+          <td class="paramname"><em>maxDeletableOffers</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -606,9 +612,9 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Deletes all offers from the specified token offer directory. </p>
+<p>Delete up to a specified number of offers from the specified token offer directory. </p>
 
-<p class="definition">Definition at line <a class="el" href="NFTokenUtils_8cpp_source.html#l00524">524</a> of file <a class="el" href="NFTokenUtils_8cpp_source.html">NFTokenUtils.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NFTokenUtils_8cpp_source.html#l00525">525</a> of file <a class="el" href="NFTokenUtils_8cpp_source.html">NFTokenUtils.cpp</a>.</p>
 
 </div>
 </div>
@@ -640,7 +646,7 @@ Variables</h2></td></tr>
 
 <p>Returns tesSUCCESS if NFToken has few enough offers that it can be burned. </p>
 
-<p class="definition">Definition at line <a class="el" href="NFTokenUtils_8cpp_source.html#l00554">554</a> of file <a class="el" href="NFTokenUtils_8cpp_source.html">NFTokenUtils.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NFTokenUtils_8cpp_source.html#l00575">575</a> of file <a class="el" href="NFTokenUtils_8cpp_source.html">NFTokenUtils.cpp</a>.</p>
 
 </div>
 </div>
@@ -678,7 +684,7 @@ Variables</h2></td></tr>
 </ul>
 <p>The offer also consumes one incremental reserve. </p>
 
-<p class="definition">Definition at line <a class="el" href="NFTokenUtils_8cpp_source.html#l00581">581</a> of file <a class="el" href="NFTokenUtils_8cpp_source.html">NFTokenUtils.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NFTokenUtils_8cpp_source.html#l00602">602</a> of file <a class="el" href="NFTokenUtils_8cpp_source.html">NFTokenUtils.cpp</a>.</p>
 
 </div>
 </div>
@@ -738,7 +744,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NFTokenUtils_8h_source.html#l00116">116</a> of file <a class="el" href="NFTokenUtils_8h_source.html">NFTokenUtils.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NFTokenUtils_8h_source.html#l00120">120</a> of file <a class="el" href="NFTokenUtils_8h_source.html">NFTokenUtils.h</a>.</p>
 
 </div>
 </div>
@@ -758,7 +764,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NFTokenUtils_8h_source.html#l00124">124</a> of file <a class="el" href="NFTokenUtils_8h_source.html">NFTokenUtils.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NFTokenUtils_8h_source.html#l00128">128</a> of file <a class="el" href="NFTokenUtils_8h_source.html">NFTokenUtils.h</a>.</p>
 
 </div>
 </div>
@@ -778,7 +784,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NFTokenUtils_8h_source.html#l00132">132</a> of file <a class="el" href="NFTokenUtils_8h_source.html">NFTokenUtils.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NFTokenUtils_8h_source.html#l00136">136</a> of file <a class="el" href="NFTokenUtils_8h_source.html">NFTokenUtils.h</a>.</p>
 
 </div>
 </div>
@@ -808,7 +814,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NFTokenUtils_8h_source.html#l00140">140</a> of file <a class="el" href="NFTokenUtils_8h_source.html">NFTokenUtils.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NFTokenUtils_8h_source.html#l00144">144</a> of file <a class="el" href="NFTokenUtils_8h_source.html">NFTokenUtils.h</a>.</p>
 
 </div>
 </div>
@@ -828,7 +834,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NFTokenUtils_8h_source.html#l00164">164</a> of file <a class="el" href="NFTokenUtils_8h_source.html">NFTokenUtils.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NFTokenUtils_8h_source.html#l00168">168</a> of file <a class="el" href="NFTokenUtils_8h_source.html">NFTokenUtils.h</a>.</p>
 
 </div>
 </div>
@@ -848,7 +854,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NFTokenUtils_8h_source.html#l00176">176</a> of file <a class="el" href="NFTokenUtils_8h_source.html">NFTokenUtils.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NFTokenUtils_8h_source.html#l00180">180</a> of file <a class="el" href="NFTokenUtils_8h_source.html">NFTokenUtils.h</a>.</p>
 
 </div>
 </div>
