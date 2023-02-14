@@ -160,10 +160,11 @@ NFTokenMint::doApply()
             // Should not happen.  Checked in preclaim.
             return Unexpected(tecNO_ISSUER);
 
-       if (!ctx_.view().rules().enabled(fixNFTokenRemint))
+        if (!ctx_.view().rules().enabled(fixNFTokenRemint))
         {
             // Get the unique sequence number for this token:
-            std::uint32_t const tokenSeq = (*root)[~sfMintedNFTokens].value_or(0);
+            std::uint32_t const tokenSeq =
+                (*root)[~sfMintedNFTokens].value_or(0);
             {
                 std::uint32_t const nextTokenSeq = tokenSeq + 1;
                 if (nextTokenSeq < tokenSeq)
@@ -174,7 +175,6 @@ NFTokenMint::doApply()
             ctx_.view().update(root);
             return tokenSeq;
         }
-
 
         // With fixNFTokenRemint amendment enabled:
         //
@@ -191,12 +191,16 @@ NFTokenMint::doApply()
         if (auto fts = (*root)[~sfFirstNFTokenSequence]; !fts)
         {
             auto const accSeq = (*root)[sfSequence];
-            (*root)[sfFirstNFTokenSequence] = (*root)[~sfNFTokenMinter] == ctx_.tx[sfAccount] || ctx_.tx.getSeqProxy().isTicket()? accSeq : accSeq - 1;
+            (*root)[sfFirstNFTokenSequence] =
+                (*root)[~sfNFTokenMinter] == ctx_.tx[sfAccount] ||
+                    ctx_.tx.getSeqProxy().isTicket()
+                ? accSeq
+                : accSeq - 1;
         }
 
         auto const mintedNftCnt = (*root)[~sfMintedNFTokens].value_or(0);
 
-        (*root)[sfMintedNFTokens] = mintedNftCnt + 1; 
+        (*root)[sfMintedNFTokens] = mintedNftCnt + 1;
 
         if ((*root)[sfMintedNFTokens] == 0)
             return Unexpected(tecMAX_SEQUENCE_REACHED);
