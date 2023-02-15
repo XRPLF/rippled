@@ -7,11 +7,19 @@ name: windows
 # then, we leave this tombstone as a reminder that we have tried (but failed)
 # to write a reliable test for Windows.
 # on: [push, pull_request]
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'action'
+    paths:
+      - '.github/workflow/windows.yml'
 
 jobs:
 
   test:
     strategy:
+      fail-fast: false
       matrix:
         generator:
           - Visual Studio 16 2019
