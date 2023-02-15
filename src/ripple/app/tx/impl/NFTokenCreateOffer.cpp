@@ -153,15 +153,28 @@ NFTokenCreateOffer::preclaim(PreclaimContext const& ctx)
     // offer may later become unfunded.
     if (!isSellOffer)
     {
-        auto const funds = accountHolds(
-            ctx.view,
-            ctx.tx[sfAccount],
-            amount.getCurrency(),
-            amount.getIssuer(),
-            FreezeHandling::fhZERO_IF_FROZEN,
-            ctx.j);
-
-        if (funds.signum() <= 0)
+        // After this amendment, we allow an IOU issuer to make a buy offer
+        // using their own currency.
+        if (ctx.view.rules().enabled(fixNonFungibleTokensV1_2))
+        {
+            if (accountFunds(
+                    ctx.view,
+                    ctx.tx[sfAccount],
+                    amount,
+                    FreezeHandling::fhZERO_IF_FROZEN,
+                    ctx.j)
+                    .signum() <= 0)
+                return tecUNFUNDED_OFFER;
+        }
+        else if (
+            accountHolds(
+                ctx.view,
+                ctx.tx[sfAccount],
+                amount.getCurrency(),
+                amount.getIssuer(),
+                FreezeHandling::fhZERO_IF_FROZEN,
+                ctx.j)
+                .signum() <= 0)
             return tecUNFUNDED_OFFER;
     }
 
