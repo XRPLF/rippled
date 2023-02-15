@@ -6,10 +6,12 @@ We do not recommend Windows for rippled production use at this time. Currently,
 the Ubuntu platform has received the highest level of quality assurance,
 testing, and support. Additionally, 32-bit Windows versions are not supported.
 
-While there are several options for building `rippled` on Windows, we recommend using
-[Chocolatey, Conan, CMake and Visual Studio](README.md#build-using-chocolatey-conan-cmake-and-visual-studio-recommended).
-If using this option, you can skip the section [Install Software](README.md#install-software)
-because Conan automatically installs all dependencies for `rippled`.
+While there are several options for building `rippled` on Windows, we recommend
+using [Chocolatey, Conan, CMake and Visual
+Studio](README.md#build-using-chocolatey-conan-cmake-and-visual-studio).
+If using this option, you can skip the section [Install
+Software](README.md#install-software) because Conan automatically installs all
+dependencies for `rippled`.
 
 
 ## Prerequisites
@@ -26,7 +28,8 @@ need these software components
 | [Boost library](README.md#build-boost) | 1.70.0 |
 | [CMake for Windows](README.md#optional-install-cmake-for-windows)* | 3.12 |
 
-\* Only needed if not using the integrated CMake in VS 2019 and prefer generating dedicated project/solution files.
+\* Only needed if not using the integrated CMake in VS 2019 and prefer
+generating dedicated project/solution files.
 
 ## Install Software
 
@@ -239,7 +242,7 @@ or
 ```
 These paths are relative to your cloned git repository.
 
-# Build using Chocolatey, Conan, CMake and Visual Studio (Recommended)
+# Build using Chocolatey, Conan, CMake and Visual Studio
 
 Open a PowerShell as Administrator and execute a
 [setup script](https://gist.github.com/ximinez/1678229f97831c602a9a42a1ea03c9c4).

@@ -171,7 +171,7 @@ Until then, we advise Windows developers to use Visual Studio 2019.
 ## Prerequisites
 
 > **Warning**
-> The commands in this document are guidelines which cannot always be successfully copy and pasted.
+> The commands in this document are examples which cannot always be successfully copy-and-pasted.
 > This document is written for multiple audiences,
 > meaning that your particular circumstances may require some commands and not
 > others.
@@ -186,9 +186,9 @@ Until then, we advise Windows developers to use Visual Studio 2019.
 ### All Platforms
 
 To build this package, you will need [Python][] (>= 3.7),
-[Conan][] (>= 1.52), and [CMake][] (>= 3.16).
+[Conan][] (>= 1.58), and [CMake][] (>= 3.16).
 If you are unfamiliar with Conan,
-there is a crash course at the end of this document.
+there is a crash course at the beginning of this document.
 
 [Conan]: https://conan.io/downloads.html
 [CMake]: https://cmake.org/download/
@@ -203,7 +203,7 @@ conan profile new default --detect
 You'll need to compile in the C++20 dialect:
 
 ```
-conan profile update settings.cppstd=20 default
+conan profile update settings.compiler.cppstd=20 default
 ```
 
 ### Linux
@@ -252,6 +252,39 @@ For the rest, you can set these environment variables:
 ```
 conan profile update env.CC=<path> default
 conan profile update env.CXX=<path> default
+```
+
+
+## How to build and test
+
+Let's start with a couple of examples of common workflows.
+The first is for a single-configuration generator (e.g. Unix Makefiles) on
+Linux or MacOS:
+
+```
+conan export external/rocksdb
+mkdir .build
+cd .build
+conan install .. --output-folder . --build missing --settings build_type=Release
+cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release ..
+cmake --build .
+./rippled --unittest
+```
+
+The second is for a multi-configuration generator (e.g. Visual Studio) on
+Windows:
+
+```
+conan export external/rocksdb
+mkdir .build
+cd .build
+conan install .. --output-folder . --build missing --settings build_type=Release --settings compiler.runtime=MT
+conan install .. --output-folder . --build missing --settings build_type=Debug --settings compiler.runtime=MTd
+cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake ..
+cmake --build . --config Release
+cmake --build . --config Debug
+./Release/rippled --unittest
+./Debug/rippled --unittest
 ```
 
 ## Explanation of build steps
