@@ -97,6 +97,11 @@ accountHolds(
     FreezeHandling zeroIfFrozen,
     beast::Journal j);
 
+// Returns the amount an account can spend of the currency type saDefault, or
+// returns saDefault if this account is the issuer of the the currency in
+// question. Should be used in favor of accountHolds when questioning how much
+// an account can spend while also allowing currency issuers to spend
+// unlimited amounts of their own currency (since they can always issue more).
 [[nodiscard]] STAmount
 accountFunds(
     ReadView const& view,
