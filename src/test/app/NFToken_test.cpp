@@ -6121,7 +6121,7 @@ class NFToken_test : public beast::unit_test::suite
         // Close the ledger until the ledger sequence is no longer
         // within <FirstNFTokenSequence + MintedNFTokens + 256>.
         // This is enforced by the fixNFTokenRemint amendment.
-        auto incLgrSeqForNFTokenAccDel = [&](Env& env, Account const& acc) {
+        auto incLgrSeqForFixNftRemint = [&](Env& env, Account const& acc) {
             int delta = 0;
             auto const deletableLgrSeq =
                 (*env.le(acc))[~sfFirstNFTokenSequence].value_or(0) +
@@ -6425,7 +6425,7 @@ class NFToken_test : public beast::unit_test::suite
             // Close more ledgers until it is no longer within
             // <FirstNFTokenSequence + MintedNFTokens + 256>
             // to be able to delete alice's account
-            incLgrSeqForNFTokenAccDel(env, alice);
+            incLgrSeqForFixNftRemint(env, alice);
 
             // alice's account is deleted
             auto const acctDelFee2{drops(env.current()->fees().increment)};
@@ -6527,7 +6527,7 @@ class NFToken_test : public beast::unit_test::suite
             // Close more ledgers until it is no longer within
             // <FirstNFTokenSequence + MintedNFTokens + 256>
             // to be able to delete alice's account
-            incLgrSeqForNFTokenAccDel(env, alice);
+            incLgrSeqForFixNftRemint(env, alice);
 
             // alice's account is deleted
             auto const acctDelFee2{drops(env.current()->fees().increment)};
@@ -6641,7 +6641,7 @@ class NFToken_test : public beast::unit_test::suite
             // Close more ledgers until it is no longer within
             // <FirstNFTokenSequence + MintedNFTokens + 256>
             // to be able to delete alice's account
-            incLgrSeqForNFTokenAccDel(env, alice);
+            incLgrSeqForFixNftRemint(env, alice);
 
             // alice's account is deleted
             auto const acctDelFee2{drops(env.current()->fees().increment)};
