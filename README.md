@@ -35,7 +35,7 @@ The server software that powers the XRP Ledger is called `rippled` and is availa
 
 ## Source Code
 
-Here some good places to start learning the source code:
+Here are some good places to start learning the source code:
 
 - Read the markdown files in the source tree: `src/ripple/**/*.md`.
 - Read [the levelization document](./Builds/levelization) to get an idea of the internal dependency graph.
