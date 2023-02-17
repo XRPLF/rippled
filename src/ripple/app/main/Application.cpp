@@ -602,6 +602,13 @@ public:
         return *m_networkOPs;
     }
 
+    virtual ServerHandlerImp&
+    getServerHandler() override
+    {
+        assert(serverHandler_);
+        return *serverHandler_;
+    }
+
     boost::asio::io_service&
     getIOService() override
     {

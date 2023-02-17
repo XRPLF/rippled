@@ -77,8 +77,16 @@ public:
             BEAST_EXPECT(result[jss::result][jss::status] == "success");
             BEAST_EXPECT(result[jss::result].isMember(jss::info));
         }
+
         {
-            Env env(*this, makeValidatorConfig());
+            auto config = makeValidatorConfig();
+            auto const rpc_port =
+                (*config)["port_rpc"].get<unsigned int>("port");
+            auto const ws_port = (*config)["port_ws"].get<unsigned int>("port");
+            BEAST_EXPECT(rpc_port);
+            BEAST_EXPECT(ws_port);
+
+            Env env(*this, std::move(config));
             auto const result = env.rpc("server_info");
             BEAST_EXPECT(!result[jss::result].isMember(jss::error));
             BEAST_EXPECT(result[jss::result][jss::status] == "success");
@@ -86,6 +94,28 @@ public:
             BEAST_EXPECT(
                 result[jss::result][jss::info][jss::pubkey_validator] ==
                 validator_data::public_key);
+
+            auto const& ports = result[jss::result][jss::info][jss::ports];
+            BEAST_EXPECT(ports.isArray());
+            BEAST_EXPECT(ports.size() == 2);
+            for (auto const& port : ports)
+            {
+                auto const& proto = port[jss::protocol];
+                BEAST_EXPECT(proto.isArray());
+                auto const p = port[jss::port].asUInt();
+                BEAST_EXPECT(p == rpc_port || p == ws_port);
+                if (p == rpc_port)
+                {
+                    BEAST_EXPECT(proto.size() == 2);
+                    BEAST_EXPECT(proto[0u].asString() == "http");
+                    BEAST_EXPECT(proto[1u].asString() == "ws2");
+                }
+                if (p == ws_port)
+                {
+                    BEAST_EXPECT(proto.size() == 1);
+                    BEAST_EXPECT(proto[0u].asString() == "ws");
+                }
+            }
         }
     }
 
