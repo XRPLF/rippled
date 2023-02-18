@@ -93,7 +93,12 @@ Key Features of the XRP Ledger</h1>
 </ul>
 <h1><a class="anchor" id="autotoc_md306"></a>
 Source Code</h1>
-<p><a href="https://travis-ci.com/ripple/rippled"><object type="image/svg+xml" data="https://travis-ci.com/ripple/rippled.svg?branch=develop" style="pointer-events: none;">travis-ci.com: Build Status</object></a> <a href="https://codecov.io/gh/ripple/rippled"><object type="image/svg+xml" data="https://codecov.io/gh/ripple/rippled/branch/develop/graph/badge.svg" style="pointer-events: none;">codecov.io: Code Coverage</object></a></p>
+<p>Here are some good places to start learning the source code:</p>
+<ul>
+<li>Read the markdown files in the source tree: <code>src/ripple/**/*.md</code>.</li>
+<li>Read <a href="./Builds/levelization">the levelization document</a> to get an idea of the internal dependency graph.</li>
+<li>In the big picture, the <code>main</code> function constructs an <code>ApplicationImp</code> object, which implements the <code>Application</code> virtual interface. Almost every component in the application takes an <code>Application&amp;</code> parameter in its constructor, typically named <code>app</code> and stored as a member variable <code>app_</code>. This allows most components to depend on any other component.</li>
+</ul>
 <h2><a class="anchor" id="autotoc_md307"></a>
 Repository Contents</h2>
 <table class="markdownTable">
