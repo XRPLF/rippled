@@ -1,12 +1,27 @@
+- [Build `rippled`](#build-rippled)
+  - [Branches](#branches)
+  - [Minimum Requirements](#minimum-requirements)
+  - [Set Up Conan](#set-up-conan)
+    - [All Platforms](#all-platforms)
+    - [Additional Linux Set Up](#additional-linux-set-up)
+    - [Additional Windows Set Up](#additional-windows-set-up)
+  - [Build Steps](#build-steps)
+  - [Options](#options)
+  - [Add a Dependency](#add-a-dependency)
+  - [Troubleshooting](#troubleshooting)
+    - [Conan](#conan)
+    - [no std::result\_of](#no-stdresult_of)
+    - [recompile with -fPIC](#recompile-with--fpic)
+
 # Build `rippled`
 
 > **Warning:**
 >
-> These instructions assume a basic familiarity with Conan and CMake. See:
-> - [CMake Getting Started](https://cmake.org/cmake/help/latest/guide/tutorial/A%20Basic%20Starting%20Point.html)
-> - [Conan Getting Started](https://docs.conan.io/en/latest/getting_started.html)
+> The commands used in this document are examples and will differ depending on your circumstances. Don't copy and paste them without a basic understanding of _Conan_ and _CMake_. See:
+> - [CMake Getting Started][]
+> - [Conan Getting Started][]
 
-We recommend using *CMake* and *Conan* to build this project. You can manually build it yourself, but the process is tedious and error-prone, requiring you to:
+We recommend using CMake and Conan to build this project. You can manually build it yourself, but the process is tedious and error-prone, requiring you to:
 
 - Compile every translation unit into an object file.
 - Link those objects together.
@@ -41,9 +56,9 @@ git checkout develop
 
 ## Minimum Requirements
 
-- Python 3.7
-- [Conan 1.55](https://conan.io/downloads.html)
-- [CMake 3.16](https://cmake.org/download/)
+- [Python 3.7][]
+- [Conan 1.58][]
+- [CMake 3.16][]
 
 | Compiler    | Version |
 | ----------- | ------- |
@@ -52,7 +67,7 @@ git checkout develop
 | Apple Clang | 13.1.6  |
 | MSVC        | 19.23   |
 
-We recommend *Ubuntu* for `rippled` production use because it has the highest level of QA, testing, and support. You can use *Windows*, but 32-bit development isn't supported.
+We recommend _Ubuntu_ for `rippled` production use because it has the highest level of QA, testing, and support. You can use _Windows_, but 32-bit development isn't supported.
 
 <!-- Is Visual Studio '22 supported now that Boost 1.8 is out?
 
@@ -67,48 +82,66 @@ Until then, we advise Windows developers to use Visual Studio 2019.
 
 -->
 
-## Steps
+## Set Up Conan
 
-1. Update Conan to compile in C++20:
+### All Platforms
+
+1. (Optional) If you've never used _Conan_, use autodetect to set up a default profile.
+
+    ```
+    conan profile new default --detect
+    ```
+
+2. Compile in the C++20 dialect.
 
     ```
     conan profile update settings.compiler.cppstd=20 default
     ```
 
-    Linux developers commonly have a default Conan [profile][] that compiles with GCC and links with libstdc++. If you are linking with libstdc++ (see profile setting `compiler.libcxx`), then you will need to choose the `libstdc++11` ABI:
-
-    ```
-    conan profile update settings.compiler.libcxx=libstdc++11 default
-    ```
-
-    Windows developers must build rippled and its dependencies for the x64 architecture:
-
-    **Note:** We find it necessary to use the x64 native build tools on Windows. An easy way to do that is to run the shortcut "x64 Native Tools Command Prompt" for the version of Visual Studio that you have installed.
-
-    ```
-    conan profile update settings.arch=x86_64 default
-    ```
-
-    If you have multiple compilers installed on your platform, then you'll need to make sure that Conan and CMake select the one you want to use. This setting will set the correct variables (`CMAKE_<LANG>_COMPILER`) in the generated CMake toolchain file:
+3. (Optional) If you have multiple compilers installed, make sure Conan and CMake select the one you want to use.
 
     ```
     conan profile update 'conf.tools.build:compiler_executables={"c": "<path>", "cpp": "<path>"}' default
     ```
 
-    It should choose the compiler for dependencies as well, but not all of them have a Conan recipe that respects this setting (yet). For the rest, you can set these environment variables:
-
+    This command should choose the compiler for dependencies as well, but not all of them have a Conan recipe that respects this setting (yet). For the rest, you can set these environment variables:
+    
     ```
     conan profile update env.CC=<path> default
     conan profile update env.CXX=<path> default
     ```
 
+### Additional Linux Set Up 
+
+Linux developers commonly have a default Conan [profile][] that compiles with GCC and links with libstdc++. If you are linking with libstdc++ (see profile setting `compiler.libcxx`), then you will need to choose the `libstdc++11` ABI:
+
+```
+conan profile update settings.compiler.libcxx=libstdc++11 default
+```
+
+### Additional Windows Set Up
+
+We recommended you use _PowerShell_ in administrator mode to run commands. See an [example script](./Builds/windows/install.ps1) that utilizes the [chocolately](https://chocolatey.org/) package manager.
+
+You should also use the x64 native build tools on Windows. Run _x64 Native Tools Command Prompt_ for your version of Visual Studio.
+
+Windows developers must build rippled and its dependencies for the x64 architecture:
+
+```
+conan profile update settings.arch=x86_64 default
+```
+
+
+## Build Steps
+
 <!-- I'm seeing 6.27.3 on Conan Center. Can we insert a linkt to it? Or is it still better to use what's in the repo? -->
+1. Export our [Conan recipe for RocksDB](./external/rocksdb). It builds version 6.27.3, which, as of July 8, 2022, is not available in [Conan Center](https://conan.io/center/rocksdb).
 
-2. Export our [Conan recipe for RocksDB](./external/rocksdb).
+    ```
+    conan export external/rocksdb
+    ```
 
-    It builds version 6.27.3, which, as of July 8, 2022, is not available in [Conan Center](https://conan.io/center/rocksdb).
-
-3. Create a build directory and move into it.
+2. Create a build directory and move into it.
 
     ```
     mkdir .build
@@ -117,19 +150,21 @@ Until then, we advise Windows developers to use Visual Studio 2019.
 
     You can use any directory name. Conan treats your working directory as an install folder and generates files with implementation details. You don't need to worry about these files, but make sure to change your working directory to your build directory before calling Conan.
 
-    > **Note:** You can specify a directory to put the Conan files in using the `install-folder` or `-if` to every `conan install` command.
+    > **Note:** You can specify a directory to put the Conan files in by adding the `install-folder` or `-if` option to every `conan install` command in the next step.
 
-4. Generate CMake files for every configuration you want to build.
+3. Generate CMake files for every configuration you want to build. 
 
     ```
     conan install .. --output-folder . --build missing --settings build_type=Release
     conan install .. --output-folder . --build missing --settings build_type=Debug
     ```
 
-    > **Note:** Each of these commands should have a different `build_type` setting. A second command with the same `build_type` setting will just overwrite the files generated by the first.
+    Each of these commands should have a different `build_type` setting. A second command with the same `build_type` setting will overwrite the files generated by the first.
     
     If you are using a Microsoft Visual C++ compiler, then you will need to ensure consistency between the `build_type` setting and the `compiler.runtime` setting.
+    
     When `build_type` is `Release`, `compiler.runtime` should be `MT`.
+    
     When `build_type` is `Debug`, `compiler.runtime` should be `MTd`.
 
     ```
@@ -137,7 +172,7 @@ Until then, we advise Windows developers to use Visual Studio 2019.
     conan install .. --output-folder . --build missing --settings build_type=Debug --settings compiler.runtime=MTd
     ```
 
-5. Configure CMake and pass the toolchain file generated by Conan, located at `$OUTPUT_FOLDER/build/generators/conan_toolchain.cmake`:
+4. Configure CMake and pass the toolchain file generated by Conan, located at `$OUTPUT_FOLDER/build/generators/conan_toolchain.cmake`:
 
     Single-config generators:
     
@@ -153,7 +188,7 @@ Until then, we advise Windows developers to use Visual Studio 2019.
     cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake ..
     ```
 
-6. Build rippled.
+5. Build rippled.
 
     Single-config generators:
 
@@ -161,17 +196,14 @@ Until then, we advise Windows developers to use Visual Studio 2019.
     cmake --build .
     ```
 
-    > **Note:** This builds whatever configuration you passed for `CMAKE_BUILD_TYPE`.
-
     Multi-config generators:
     
     ```
     cmake --build . --config Release
     cmake --build . --config Debug
     ```
-    
 
-7. Test rippled.
+6. Test rippled.
 
     Single-config generators:
 
@@ -186,7 +218,7 @@ Until then, we advise Windows developers to use Visual Studio 2019.
     ./Debug/rippled --unittest
     ```
 
-    > **Note:** The location of `rippled` in your build directory depends on your CMake generator. Pass `--help` to see the rest of the command line options.
+    The location of `rippled` in your build directory depends on your CMake generator. Pass `--help` to see the rest of the command line options.
 
 
 ## Options
@@ -268,3 +300,8 @@ conan install --build boost ...
 [search]: https://cmake.org/cmake/help/latest/command/find_package.html#search-procedure
 [prefix_path]: https://cmake.org/cmake/help/latest/variable/CMAKE_PREFIX_PATH.html
 [profile]: https://docs.conan.io/en/latest/reference/profiles.html
+[Conan 1.58]: https://conan.io/downloads.html
+[CMake 3.16]: https://cmake.org/download/
+[Python 3.7]: https://www.python.org/downloads/
+[CMake Getting Started]: https://cmake.org/cmake/help/latest/guide/tutorial/A%20Basic%20Starting%20Point.html
+[Conan Getting Started]: https://docs.conan.io/en/latest/getting_started.html
