@@ -256,7 +256,7 @@ public:
         {
             // bogus account value
             auto const jrr = env.rpc(
-                "account_offers", toBase58(Account("bogus").id()))[jss::result];
+                "account_offers", Account("bogus").human())[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "actNotFound");
             BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error_message] == "Account not found.");
@@ -265,7 +265,7 @@ public:
         {
             // bad limit
             Json::Value jvParams;
-            jvParams[jss::account] = toBase58(bob.id());
+            jvParams[jss::account] = bob.human();
             jvParams[jss::limit] = "0";  // NOT an integer
             auto const jrr = env.rpc(
                 "json",
@@ -281,7 +281,7 @@ public:
         {
             // invalid marker
             Json::Value jvParams;
-            jvParams[jss::account] = toBase58(bob.id());
+            jvParams[jss::account] = bob.human();
             jvParams[jss::marker] = "NOT_A_MARKER";
             auto const jrr = env.rpc(
                 "json",
@@ -295,7 +295,7 @@ public:
         {
             // invalid marker - not a string
             Json::Value jvParams;
-            jvParams[jss::account] = toBase58(bob.id());
+            jvParams[jss::account] = bob.human();
             jvParams[jss::marker] = 1;
             auto const jrr = env.rpc(
                 "json",
@@ -311,7 +311,7 @@ public:
         {
             // ask for a bad ledger index
             Json::Value jvParams;
-            jvParams[jss::account] = toBase58(bob.id());
+            jvParams[jss::account] = bob.human();
             jvParams[jss::ledger_index] = 10u;
             auto const jrr = env.rpc(
                 "json",

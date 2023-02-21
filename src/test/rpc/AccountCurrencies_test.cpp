@@ -82,7 +82,7 @@ class AccountCurrencies_test : public beast::unit_test::suite
 
         {  // ask for nonexistent account
             Json::Value params;
-            params[jss::account] = toBase58(Account{"bob"}.id());
+            params[jss::account] = Account{"bob"}.human();
             auto const result = env.rpc(
                 "json",
                 "account_currencies",
@@ -113,7 +113,7 @@ class AccountCurrencies_test : public beast::unit_test::suite
         env.close();
 
         Json::Value params;
-        params[jss::account] = toBase58(alice.id());
+        params[jss::account] = alice.human();
         auto result = env.rpc(
             "json",
             "account_currencies",
@@ -152,7 +152,7 @@ class AccountCurrencies_test : public beast::unit_test::suite
         // freeze the USD trust line and verify that the receive currencies
         // does not change
         env(trust(alice, gw["USD"](100), tfSetFreeze));
-        result = env.rpc("account_lines", toBase58(alice.id()));
+        result = env.rpc("account_lines", alice.human());
         for (auto const& l : result[jss::lines])
             BEAST_EXPECT(
                 l[jss::freeze].asBool() == (l[jss::currency] == "USD"));

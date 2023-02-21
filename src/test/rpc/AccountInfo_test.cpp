@@ -63,7 +63,7 @@ public:
             auto const info = env.rpc(
                 "json",
                 "account_info",
-                R"({ "account": ")" + toBase58(bogie.id()) + R"("})");
+                R"({ "account": ")" + bogie.human() + R"("})");
             BEAST_EXPECT(
                 info[jss::result][jss::error_code] == rpcACT_NOT_FOUND);
             BEAST_EXPECT(

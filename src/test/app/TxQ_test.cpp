@@ -3101,13 +3101,11 @@ public:
         env.fund(XRP(1000000), alice);
         env.close();
 
-        auto const aliceAccountIDStr = toBase58(alice.id());
         auto const withQueue =
-            R"({ "account": ")" + aliceAccountIDStr + R"(", "queue": true })";
-        auto const withoutQueue =
-            R"({ "account": ")" + aliceAccountIDStr + R"("})";
-        auto const prevLedgerWithQueue = R"({ "account": ")" +
-            aliceAccountIDStr + R"(", "queue": true, "ledger_index": 3 })";
+            R"({ "account": ")" + alice.human() + R"(", "queue": true })";
+        auto const withoutQueue = R"({ "account": ")" + alice.human() + R"("})";
+        auto const prevLedgerWithQueue = R"({ "account": ")" + alice.human() +
+            R"(", "queue": true, "ledger_index": 3 })";
         BEAST_EXPECT(env.current()->info().seq > 3);
 
         {
