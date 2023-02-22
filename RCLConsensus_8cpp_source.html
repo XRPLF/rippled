@@ -408,7 +408,7 @@ $(function() {
 <div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;            <span class="comment">// pseudo-transactions</span></div>
 <div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;            <span class="keyword">auto</span> validations = app_.validators().negativeUNLFilter(</div>
 <div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;                app_.getValidations().getTrustedForLedger(</div>
-<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;                    prevLedger-&gt;info().parentHash));</div>
+<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;                    prevLedger-&gt;info().parentHash, prevLedger-&gt;seq() - 1));</div>
 <div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;            <span class="keywordflow">if</span> (validations.size() &gt;= app_.validators().quorum())</div>
 <div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;            {</div>
 <div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;                feeVote_-&gt;doVoting(prevLedger, validations, initialSet);</div>

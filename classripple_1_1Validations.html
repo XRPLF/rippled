@@ -169,9 +169,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a49f71ec8e41262f46c851cfb741d3299"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Validations.html#a49f71ec8e41262f46c851cfb741d3299">numTrustedForLedger</a> (<a class="el" href="classripple_1_1Validations.html#acddbd8581fe7d4466e20da9143364915">ID</a> const &amp;ledgerID)</td></tr>
 <tr class="memdesc:a49f71ec8e41262f46c851cfb741d3299"><td class="mdescLeft">&#160;</td><td class="mdescRight">Count the number of trusted full validations for the given ledger.  <a href="classripple_1_1Validations.html#a49f71ec8e41262f46c851cfb741d3299">More...</a><br /></td></tr>
 <tr class="separator:a49f71ec8e41262f46c851cfb741d3299"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a86ce52398a951c7df913b254eb8e9a2c"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classripple_1_1Validations.html#aed95c3c0f3992ca0755fe6a07e39e268">WrappedValidationType</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Validations.html#a86ce52398a951c7df913b254eb8e9a2c">getTrustedForLedger</a> (<a class="el" href="classripple_1_1Validations.html#acddbd8581fe7d4466e20da9143364915">ID</a> const &amp;ledgerID)</td></tr>
-<tr class="memdesc:a86ce52398a951c7df913b254eb8e9a2c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get trusted full validations for a specific ledger.  <a href="classripple_1_1Validations.html#a86ce52398a951c7df913b254eb8e9a2c">More...</a><br /></td></tr>
-<tr class="separator:a86ce52398a951c7df913b254eb8e9a2c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a065935dcd0e0f1fa0d5ded9a65935e86"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classripple_1_1Validations.html#aed95c3c0f3992ca0755fe6a07e39e268">WrappedValidationType</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Validations.html#a065935dcd0e0f1fa0d5ded9a65935e86">getTrustedForLedger</a> (<a class="el" href="classripple_1_1Validations.html#acddbd8581fe7d4466e20da9143364915">ID</a> const &amp;ledgerID, <a class="el" href="classripple_1_1Validations.html#a1bb85550f592de56d2b1ae0c15938162">Seq</a> const &amp;seq)</td></tr>
+<tr class="memdesc:a065935dcd0e0f1fa0d5ded9a65935e86"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get trusted full validations for a specific ledger.  <a href="classripple_1_1Validations.html#a065935dcd0e0f1fa0d5ded9a65935e86">More...</a><br /></td></tr>
+<tr class="separator:a065935dcd0e0f1fa0d5ded9a65935e86"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3f0296ffe3a427900bac6b4452d9636f"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Validations.html#a3f0296ffe3a427900bac6b4452d9636f">fees</a> (<a class="el" href="classripple_1_1Validations.html#acddbd8581fe7d4466e20da9143364915">ID</a> const &amp;ledgerID, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> baseFee)</td></tr>
 <tr class="memdesc:a3f0296ffe3a427900bac6b4452d9636f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns fees reported by trusted full validators in the given ledger.  <a href="classripple_1_1Validations.html#a3f0296ffe3a427900bac6b4452d9636f">More...</a><br /></td></tr>
 <tr class="separator:a3f0296ffe3a427900bac6b4452d9636f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1455,8 +1455,8 @@ template&lt;class Adaptor &gt; </div>
 
 </div>
 </div>
-<a id="a86ce52398a951c7df913b254eb8e9a2c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a86ce52398a951c7df913b254eb8e9a2c">&#9670;&nbsp;</a></span>getTrustedForLedger()</h2>
+<a id="a065935dcd0e0f1fa0d5ded9a65935e86"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a065935dcd0e0f1fa0d5ded9a65935e86">&#9670;&nbsp;</a></span>getTrustedForLedger()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1467,8 +1467,18 @@ template&lt;class Adaptor &gt; </div>
           <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt;<a class="el" href="classripple_1_1Validations.html#aed95c3c0f3992ca0755fe6a07e39e268">WrappedValidationType</a>&gt; <a class="el" href="classripple_1_1Validations.html">ripple::Validations</a>&lt; Adaptor &gt;::getTrustedForLedger </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classripple_1_1Validations.html#acddbd8581fe7d4466e20da9143364915">ID</a> const &amp;&#160;</td>
-          <td class="paramname"><em>ledgerID</em></td><td>)</td>
+          <td class="paramname"><em>ledgerID</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Validations.html#a1bb85550f592de56d2b1ae0c15938162">Seq</a> const &amp;&#160;</td>
+          <td class="paramname"><em>seq</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -1477,12 +1487,13 @@ template&lt;class Adaptor &gt; </div>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">ledgerID</td><td>The identifier of ledger of interest </td></tr>
+    <tr><td class="paramname">seq</td><td>The sequence number of ledger of interest </td></tr>
   </table>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Trusted validations associated with ledger </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l01055">1055</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l01056">1056</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -1524,7 +1535,7 @@ template&lt;class Adaptor &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Vector of fees </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l01078">1078</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l01079">1079</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -1547,7 +1558,7 @@ template&lt;class Adaptor &gt; </div>
 
 <p>Flush all current validations. </p>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l01102">1102</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l01103">1103</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -1591,7 +1602,7 @@ template&lt;class Adaptor &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Quantity of laggards. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l01124">1124</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l01125">1125</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
