@@ -69,6 +69,7 @@
 #include <boost/asio/ip/host_name.hpp>
 #include <boost/asio/steady_timer.hpp>
 
+#include <algorithm>
 #include <mutex>
 #include <string>
 #include <tuple>
@@ -2663,8 +2664,9 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
     }
 
     // This array must be sorted in increasing order.
-    static constexpr std::array<std::string_view, 6> protocols{
-        "http", "https", "ws", "ws2", "wss", "wss2"};
+    static constexpr std::array<std::string_view, 7> protocols{
+        "http", "https", "peer", "ws", "ws2", "wss", "wss2"};
+    static_assert(std::is_sorted(std::begin(protocols), std::end(protocols)));
     {
         Json::Value ports{Json::arrayValue};
         std::vector<std::string> proto;
@@ -2689,6 +2691,19 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
                 jv[jss::protocol] = Json::Value{Json::arrayValue};
                 for (auto const& p : proto)
                     jv[jss::protocol].append(p);
+            }
+        }
+
+        if (app_.config().exists("port_grpc"))
+        {
+            auto const& grpcSection = app_.config().section("port_grpc");
+            auto const optPort = grpcSection.get("port");
+            if (optPort && grpcSection.get("ip"))
+            {
+                auto& jv = ports.append(Json::Value(Json::objectValue));
+                jv[jss::port] = *optPort;
+                jv[jss::protocol] = Json::Value{Json::arrayValue};
+                jv[jss::protocol].append("port_grpc");
             }
         }
         info[jss::ports] = std::move(ports);
