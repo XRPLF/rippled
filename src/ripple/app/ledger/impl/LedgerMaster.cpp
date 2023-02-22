@@ -341,7 +341,8 @@ LedgerMaster::setValidLedger(std::shared_ptr<Ledger const> const& l)
     if (!standalone_)
     {
         auto validations = app_.validators().negativeUNLFilter(
-            app_.getValidations().getTrustedForLedger(l->info().hash));
+            app_.getValidations().getTrustedForLedger(
+                l->info().hash, l->info().seq));
         times.reserve(validations.size());
         for (auto const& val : validations)
             times.push_back(val->getSignTime());
@@ -987,7 +988,7 @@ LedgerMaster::checkAccept(uint256 const& hash, std::uint32_t seq)
             return;
 
         auto validations = app_.validators().negativeUNLFilter(
-            app_.getValidations().getTrustedForLedger(hash));
+            app_.getValidations().getTrustedForLedger(hash, seq));
         valCount = validations.size();
         if (valCount >= app_.validators().quorum())
         {
@@ -1053,7 +1054,8 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
 
     auto const minVal = getNeededValidations();
     auto validations = app_.validators().negativeUNLFilter(
-        app_.getValidations().getTrustedForLedger(ledger->info().hash));
+        app_.getValidations().getTrustedForLedger(
+            ledger->info().hash, ledger->info().seq));
     auto const tvc = validations.size();
     if (tvc < minVal)  // nothing we can do
     {
@@ -1128,7 +1130,7 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
         {
             // Have not printed the warning before, check if need to print.
             auto const vals = app_.getValidations().getTrustedForLedger(
-                ledger->info().parentHash);
+                ledger->info().parentHash, ledger->info().seq - 1);
             std::size_t higherVersionCount = 0;
             std::size_t rippledCount = 0;
             for (auto const& v : vals)
