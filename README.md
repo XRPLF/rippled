@@ -34,8 +34,12 @@ The server software that powers the XRP Ledger is called `rippled` and is availa
 
 
 ## Source Code
-[![travis-ci.com: Build Status](https://travis-ci.com/ripple/rippled.svg?branch=develop)](https://travis-ci.com/ripple/rippled)
-[![codecov.io: Code Coverage](https://codecov.io/gh/ripple/rippled/branch/develop/graph/badge.svg)](https://codecov.io/gh/ripple/rippled)
+
+Here are some good places to start learning the source code:
+
+- Read the markdown files in the source tree: `src/ripple/**/*.md`.
+- Read [the levelization document](./Builds/levelization) to get an idea of the internal dependency graph.
+- In the big picture, the `main` function constructs an `ApplicationImp` object, which implements the `Application` virtual interface. Almost every component in the application takes an `Application&` parameter in its constructor, typically named `app` and stored as a member variable `app_`. This allows most components to depend on any other component.
 
 ### Repository Contents
 
