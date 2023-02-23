@@ -46,7 +46,7 @@ jobs:
             path: ${{ steps.pip-cache.outputs.dir }}
             key: ${{ runner.os }}-${{ hashFiles('.github/workflows/windows.yml') }}
       - name: install Conan
-        run: pip install wheel 'conan>=1.52.0'
+        run: pip install wheel 'conan~=1.52'
       - name: check environment
         run: |
           $env:PATH -split ';'
