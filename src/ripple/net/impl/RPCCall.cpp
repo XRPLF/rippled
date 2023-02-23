@@ -482,17 +482,31 @@ private:
         return jvRequest;
     }
 
-    // connect <ip> [port]
+    // connect <ip[:port]> [port]
     Json::Value
     parseConnect(Json::Value const& jvParams)
     {
         Json::Value jvRequest(Json::objectValue);
-
-        jvRequest[jss::ip] = jvParams[0u].asString();
-
+        std::string ip = jvParams[0u].asString();
         if (jvParams.size() == 2)
+        {
+            jvRequest[jss::ip] = ip;
             jvRequest[jss::port] = jvParams[1u].asUInt();
+            return jvRequest;
+        }
 
+        // handle case where there is one argument of the form ip:port
+        if (std::count(ip.begin(), ip.end(), ':') == 1)
+        {
+            std::size_t colon = ip.find_last_of(":");
+            jvRequest[jss::ip] = std::string{ip, 0, colon};
+            jvRequest[jss::port] =
+                Json::Value{std::string{ip, colon + 1}}.asUInt();
+            return jvRequest;
+        }
+
+        // default case, no port
+        jvRequest[jss::ip] = ip;
         return jvRequest;
     }
 
