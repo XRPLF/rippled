@@ -1,3 +1,1 @@
-# macOS Build Instructions
-
-[Build and Run rippled on macOS](https://xrpl.org/build-run-rippled-macos.html)
+[Build instructions are currently located in `BUILD.md`](../../BUILD.md)
