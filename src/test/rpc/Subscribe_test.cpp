@@ -411,7 +411,6 @@ public:
                 if (jv.isMember(jss::server_version) != isFlagLedger)
                     return false;
 
-                bool xrpFees = env.closed()->rules().enabled(featureXRPFees);
                 if (jv.isMember(jss::reserve_base) != isFlagLedger)
                     return false;
 
