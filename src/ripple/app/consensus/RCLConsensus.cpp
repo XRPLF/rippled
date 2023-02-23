@@ -337,7 +337,7 @@ RCLConsensus::Adaptor::onClose(
             // pseudo-transactions
             auto validations = app_.validators().negativeUNLFilter(
                 app_.getValidations().getTrustedForLedger(
-                    prevLedger->info().parentHash));
+                    prevLedger->info().parentHash, prevLedger->seq() - 1));
             if (validations.size() >= app_.validators().quorum())
             {
                 feeVote_->doVoting(prevLedger, validations, initialSet);
