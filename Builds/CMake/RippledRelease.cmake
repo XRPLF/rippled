@@ -34,7 +34,6 @@ if (is_root_project)
       SOURCES
         Builds/containers/centos-builder/Dockerfile
         Builds/containers/centos-builder/centos_setup.sh
-        Builds/containers/centos-builder/extras.sh
         Builds/containers/shared/update-rippled.sh
         Builds/containers/shared/update_sources.sh
         Builds/containers/shared/rippled.service

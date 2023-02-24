@@ -44,7 +44,7 @@ ln -sf /usr/lib64/libstdc++.so.6.0.22 /usr/lib64/libstdc++.so.6
 ln -sf /lib64/libstdc++.so.6.0.22 /usr/lib64/libstdc++.so.6
 
 source /opt/rh/rh-python38/enable
-pip install "conan==1.58"
+pip install "conan<2"
 conan profile new default --detect
 conan profile update settings.compiler.libcxx=libstdc++11 default
 conan profile update settings.compiler.cppstd=20 default
@@ -55,7 +55,11 @@ mkdir -p bld.rippled
 conan export external/snappy snappy/1.1.9@
 
 pushd bld.rippled
-conan install .. --output-folder . --build missing --settings build_type=Release
+conan install .. \
+     --settings build_type=Release \
+     --output-folder . \
+     --build missing
+
 cmake -G Ninja \
      -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
      -DCMAKE_INSTALL_PREFIX=%{_prefix} \
@@ -63,7 +67,6 @@ cmake -G Ninja \
      -Dunity=OFF \
      -Dstatic=ON \
      -Dvalidator_keys=ON \
-     -DCMAKE_BUILD_TYPE=Release \
      -DCMAKE_VERBOSE_MAKEFILE=ON \
      ..
 
@@ -73,7 +76,12 @@ popd
 mkdir -p bld.rippled-reporting
 pushd bld.rippled-reporting
 
-conan install .. --output-folder . --build missing --settings build_type=Release -s compiler.cppstd=17 --options reporting=True
+conan install .. \
+     --settings build_type=Release \
+     --output-folder . \
+     --build missing \
+     --settings compiler.cppstd=17 \
+     --options reporting=True
 
 cmake -G Ninja \
      -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
@@ -82,7 +90,6 @@ cmake -G Ninja \
      -Dunity=OFF \
      -Dstatic=ON \
      -Dvalidator_keys=ON \
-     -DCMAKE_BUILD_TYPE=Release \
      -Dreporting=ON \
      -DCMAKE_VERBOSE_MAKEFILE=ON \
      ..

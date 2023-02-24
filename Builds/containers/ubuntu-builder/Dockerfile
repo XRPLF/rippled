@@ -14,10 +14,6 @@ RUN /tmp/ubuntu_setup.sh
 RUN /tmp/install_cmake.sh 3.16.3 /opt/local/cmake-3.16
 RUN ln -s /opt/local/cmake-3.16 /opt/local/cmake
 ENV PATH="/opt/local/cmake/bin:$PATH"
-# TODO: Install latest CMake for testing
-RUN if [ "${CI_USE}" = true ] ; then /tmp/install_cmake.sh 3.9.0 /opt/local/cmake-3.9; fi
-
-ENV OPENSSL_ROOT="/opt/local/openssl"
 
 # prep files for package building
 RUN update-alternatives --set gcc /usr/bin/gcc-11

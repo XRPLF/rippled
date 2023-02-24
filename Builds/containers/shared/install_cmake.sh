@@ -22,7 +22,7 @@ if [[ "${installed}" != "" && ${installed} =~ ${cm_maj}.${cm_min}.${cm_rel} ]] ;
     exit
 fi
 # From CMake 20+ "Linux" is lowercase so using `uname` won't create be the correct path
-if [ ${cm_min} -gt 19 ];then
+if [ ${cm_min} -gt 19 ]; then
     linux="linux"
 else
     linux=$(uname)
