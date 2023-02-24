@@ -215,19 +215,20 @@ Ledger::Ledger(
         if (std::find(amendments.begin(), amendments.end(), featureXRPFees) !=
             amendments.end())
         {
-            sle->at(sfBaseFeeDrops) = config.FEE_DEFAULT;
-            sle->at(sfReserveBaseDrops) = config.FEE_ACCOUNT_RESERVE;
-            sle->at(sfReserveIncrementDrops) = config.FEE_OWNER_RESERVE;
+            sle->at(sfBaseFeeDrops) = config.FEES.reference_fee;
+            sle->at(sfReserveBaseDrops) = config.FEES.account_reserve;
+            sle->at(sfReserveIncrementDrops) = config.FEES.owner_reserve;
         }
         else
         {
-            if (auto const f = config.FEE_DEFAULT.dropsAs<std::uint64_t>())
+            if (auto const f =
+                    config.FEES.reference_fee.dropsAs<std::uint64_t>())
                 sle->at(sfBaseFee) = *f;
             if (auto const f =
-                    config.FEE_ACCOUNT_RESERVE.dropsAs<std::uint32_t>())
+                    config.FEES.account_reserve.dropsAs<std::uint32_t>())
                 sle->at(sfReserveBase) = *f;
             if (auto const f =
-                    config.FEE_OWNER_RESERVE.dropsAs<std::uint32_t>())
+                    config.FEES.owner_reserve.dropsAs<std::uint32_t>())
                 sle->at(sfReserveIncrement) = *f;
             sle->at(sfReferenceFeeUnits) = Config::FEE_UNITS_DEPRECATED;
         }
@@ -694,11 +695,11 @@ Ledger::defaultFees(Config const& config)
 {
     assert(fees_.base == 0 && fees_.reserve == 0 && fees_.increment == 0);
     if (fees_.base == 0)
-        fees_.base = config.FEE_DEFAULT;
+        fees_.base = config.FEES.reference_fee;
     if (fees_.reserve == 0)
-        fees_.reserve = config.FEE_ACCOUNT_RESERVE;
+        fees_.reserve = config.FEES.account_reserve;
     if (fees_.increment == 0)
-        fees_.increment = config.FEE_OWNER_RESERVE;
+        fees_.increment = config.FEES.owner_reserve;
 }
 
 std::shared_ptr<SLE>

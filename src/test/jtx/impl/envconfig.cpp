@@ -45,9 +45,9 @@ setupConfigForUnitTests(Config& cfg)
     using namespace jtx;
     // Default fees to old values, so tests don't have to worry about changes in
     // Config.h
-    cfg.FEE_DEFAULT = 10;
-    cfg.FEE_ACCOUNT_RESERVE = XRP(200).value().xrp().drops();
-    cfg.FEE_OWNER_RESERVE = XRP(50).value().xrp().drops();
+    cfg.FEES.reference_fee = 10;
+    cfg.FEES.account_reserve = XRP(200).value().xrp().drops();
+    cfg.FEES.owner_reserve = XRP(50).value().xrp().drops();
 
     cfg.overwrite(ConfigSection::nodeDatabase(), "type", "memory");
     cfg.overwrite(ConfigSection::nodeDatabase(), "path", "main");
