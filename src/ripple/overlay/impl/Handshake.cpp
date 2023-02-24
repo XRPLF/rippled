@@ -301,6 +301,24 @@ verifyHandshake(
         throw std::runtime_error("Bad node public key");
     }();
 
+    // This check gets two birds with one stone:
+    //
+    // 1) it verifies that the node we are talking to has access to the
+    //    private key corresponding to the public node identity it claims.
+    // 2) it verifies that our SSL session is end-to-end with that node
+    //    and not through a proxy that establishes two separate sessions.
+    {
+        auto const iter = headers.find("Session-Signature");
+
+        if (iter == headers.end())
+            throw std::runtime_error("No session signature specified");
+
+        auto sig = base64_decode(iter->value().to_string());
+
+        if (!verifyDigest(publicKey, sharedValue, makeSlice(sig), false))
+            throw std::runtime_error("Failed to verify session");
+    }
+
     if (publicKey == app.nodeIdentity().first)
     {
         auto const peerInstanceID = [&headers]() {
@@ -329,24 +347,6 @@ verifyHandshake(
         }
 
         throw std::runtime_error("Self connection");
-    }
-
-    // This check gets two birds with one stone:
-    //
-    // 1) it verifies that the node we are talking to has access to the
-    //    private key corresponding to the public node identity it claims.
-    // 2) it verifies that our SSL session is end-to-end with that node
-    //    and not through a proxy that establishes two separate sessions.
-    {
-        auto const iter = headers.find("Session-Signature");
-
-        if (iter == headers.end())
-            throw std::runtime_error("No session signature specified");
-
-        auto sig = base64_decode(iter->value().to_string());
-
-        if (!verifyDigest(publicKey, sharedValue, makeSlice(sig), false))
-            throw std::runtime_error("Failed to verify session");
     }
 
     if (auto const iter = headers.find("Local-IP"); iter != headers.end())
