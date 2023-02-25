@@ -116,13 +116,9 @@ template <>
 std::optional<Seed>
 parseBase58(std::string const& s);
 
-/** Attempt to parse a string as a seed.
-
-    @param str the string to parse
-    @param rfc1751 true if we should attempt RFC1751 style parsing (deprecated)
- * */
+/** Attempt to parse a string as a seed */
 std::optional<Seed>
-parseGenericSeed(std::string const& str, bool rfc1751 = true);
+parseGenericSeed(std::string const& str);
 
 /** Encode a Seed in RFC1751 format */
 std::string

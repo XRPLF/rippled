@@ -23,20 +23,13 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/SecretKey.h>
-#include <boost/program_options.hpp>
 #include <utility>
 
 namespace ripple {
 
-/** The cryptographic credentials identifying this server instance.
-
-    @param app The application object
-    @param cmdline The command line parameters passed into the application.
- */
+/** The cryptographic credentials identifying this server instance. */
 std::pair<PublicKey, SecretKey>
-getNodeIdentity(
-    Application& app,
-    boost::program_options::variables_map const& cmdline);
+getNodeIdentity(Application& app);
 
 }  // namespace ripple
 

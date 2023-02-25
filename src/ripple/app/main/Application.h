@@ -28,7 +28,6 @@
 #include <ripple/shamap/FullBelowCache.h>
 #include <ripple/shamap/TreeNodeCache.h>
 #include <boost/asio.hpp>
-#include <boost/program_options.hpp>
 #include <memory>
 #include <mutex>
 
@@ -136,14 +135,13 @@ public:
     virtual ~Application() = default;
 
     virtual bool
-    setup(boost::program_options::variables_map const& options) = 0;
-
+    setup() = 0;
     virtual void
     start(bool withTimers) = 0;
     virtual void
     run() = 0;
     virtual void
-    signalStop(std::string msg = "") = 0;
+    signalStop() = 0;
     virtual bool
     checkSigs() const = 0;
     virtual void
@@ -154,10 +152,6 @@ public:
     //
     // ---
     //
-
-    /** Returns a 64-bit instance identifier, generated at startup */
-    virtual std::uint64_t
-    instanceID() const = 0;
 
     virtual Logs&
     logs() = 0;

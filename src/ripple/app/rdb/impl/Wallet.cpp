@@ -119,12 +119,6 @@ addValidatorManifest(soci::session& session, std::string const& serialized)
     tr.commit();
 }
 
-void
-clearNodeIdentity(soci::session& session)
-{
-    session << "DELETE FROM NodeIdentity;";
-}
-
 std::pair<PublicKey, SecretKey>
 getNodeIdentity(soci::session& session)
 {

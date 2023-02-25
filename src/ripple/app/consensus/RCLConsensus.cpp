@@ -86,11 +86,9 @@ RCLConsensus::Adaptor::Adaptor(
     , inboundTransactions_{inboundTransactions}
     , j_(journal)
     , validatorKeys_(validatorKeys)
-    , valCookie_(
-          1 +
-          rand_int(
-              crypto_prng(),
-              std::numeric_limits<std::uint64_t>::max() - 1))
+    , valCookie_{rand_int<std::uint64_t>(
+          1,
+          std::numeric_limits<std::uint64_t>::max())}
     , nUnlVote_(validatorKeys_.nodeID, j_)
 {
     assert(valCookie_ != 0);

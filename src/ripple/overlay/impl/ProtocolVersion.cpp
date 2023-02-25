@@ -36,6 +36,7 @@ namespace ripple {
 // clang-format off
 constexpr ProtocolVersion const supportedProtocolList[]
 {
+    {2, 0},
     {2, 1},
     {2, 2}
 };
