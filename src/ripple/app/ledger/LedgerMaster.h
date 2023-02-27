@@ -291,8 +291,8 @@ public:
     // Returns the minimum ledger sequence in SQL database, if any.
     std::optional<LedgerIndex>
     minSqlSeq();
-   
-    // Iff a txn exists at the specified ledger and offset then return its txnid 
+
+    // Iff a txn exists at the specified ledger and offset then return its txnid
     std::optional<uint256>
     txnIDfromIndex(uint32_t ledgerSeq, uint32_t txnIndex);
 

@@ -698,6 +698,7 @@ if (tests)
     src/test/app/HashRouter_test.cpp
     src/test/app/LedgerHistory_test.cpp
     src/test/app/LedgerLoad_test.cpp
+    src/test/app/LedgerMaster_test.cpp
     src/test/app/LedgerReplay_test.cpp
     src/test/app/LoadFeeTrack_test.cpp
     src/test/app/Manifest_test.cpp

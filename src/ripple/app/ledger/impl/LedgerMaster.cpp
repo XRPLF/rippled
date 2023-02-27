@@ -2363,7 +2363,6 @@ LedgerMaster::minSqlSeq()
     return app_.getRelationalDatabase().getMinLedgerSeq();
 }
 
-
 std::optional<uint256>
 LedgerMaster::txnIDfromIndex(uint32_t ledgerSeq, uint32_t txnIndex)
 {
@@ -2378,8 +2377,8 @@ LedgerMaster::txnIDfromIndex(uint32_t ledgerSeq, uint32_t txnIndex)
 
     for (auto it = lgr->txs.begin(); it != lgr->txs.end(); it++)
         if (it->first && it->second &&
-                it->second->isFieldPresent(sfTransactionIndex) &&
-                it->second->getFieldU32(sfTransactionIndex) == txnIndex)
+            it->second->isFieldPresent(sfTransactionIndex) &&
+            it->second->getFieldU32(sfTransactionIndex) == txnIndex)
             return it->first->getTransactionID();
 
     return {};

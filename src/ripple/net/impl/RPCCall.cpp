@@ -1098,7 +1098,11 @@ private:
             jvRequest[jss::max_ledger] = jvParams[2u + offset].asString();
         }
 
-        jvRequest[jss::transaction] = jvParams[0u].asString();
+        if (jvParams[0u].asString().length() == 16)
+            jvRequest[jss::ctid] = jvParams[0u].asString();
+        else
+            jvRequest[jss::transaction] = jvParams[0u].asString();
+
         return jvRequest;
     }
 

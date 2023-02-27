@@ -415,6 +415,11 @@ Env::autofill(JTx& jt)
         jtx::fill_fee(jv, *current());
     if (jt.fill_seq)
         jtx::fill_seq(jv, *current());
+
+    uint32_t networkID = app().config().NETWORK_ID;
+    if (networkID > 1024)
+        jv[jss::NetworkID] = networkID;
+
     // Must come last
     try
     {
