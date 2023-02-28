@@ -243,7 +243,7 @@ The first is for a single-configuration generator (e.g. Unix Makefiles) on
 Linux or MacOS:
 
 ```
-conan export external/rocksdb
+conan export external/snappy snappy/1.1.9@
 mkdir .build
 cd .build
 conan install .. --output-folder . --build missing --settings build_type=Release
@@ -256,7 +256,7 @@ The second is for a multi-configuration generator (e.g. Visual Studio) on
 Windows:
 
 ```
-conan export external/rocksdb
+conan export external/snappy snappy/1.1.9@
 mkdir .build
 cd .build
 conan install .. --output-folder . --build missing --settings build_type=Release --settings compiler.runtime=MT
@@ -270,10 +270,10 @@ cmake --build . --config Debug
 
 Now to explain the individual steps in each example:
 
-1. Export our [Conan recipe for RocksDB](./external/rocksdb).
+1. Export our [Conan recipe for Snappy](./external/snappy).
 
-    It builds version 6.27.3, which, as of July 8, 2022,
-    is not available in [Conan Center](https://conan.io/center/rocksdb).
+    It does not explicitly link the C++ standard library,
+    which allows us to statically link it.
 
 1. Create a build directory (and move into it).
 

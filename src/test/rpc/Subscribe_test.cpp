@@ -411,25 +411,10 @@ public:
                 if (jv.isMember(jss::server_version) != isFlagLedger)
                     return false;
 
-                bool xrpFees = env.closed()->rules().enabled(featureXRPFees);
-                if ((!xrpFees &&
-                     jv.isMember(jss::reserve_base) != isFlagLedger) ||
-                    (xrpFees && jv.isMember(jss::reserve_base)))
+                if (jv.isMember(jss::reserve_base) != isFlagLedger)
                     return false;
 
-                if ((!xrpFees &&
-                     jv.isMember(jss::reserve_inc) != isFlagLedger) ||
-                    (xrpFees && jv.isMember(jss::reserve_inc)))
-                    return false;
-
-                if ((xrpFees &&
-                     jv.isMember(jss::reserve_base_drops) != isFlagLedger) ||
-                    (!xrpFees && jv.isMember(jss::reserve_base_drops)))
-                    return false;
-
-                if ((xrpFees &&
-                     jv.isMember(jss::reserve_inc_drops) != isFlagLedger) ||
-                    (!xrpFees && jv.isMember(jss::reserve_inc_drops)))
+                if (jv.isMember(jss::reserve_inc) != isFlagLedger)
                     return false;
 
                 return true;
