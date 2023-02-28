@@ -1,9 +1,9 @@
 # rippled Source
 
 Some of these directories come from entire outside repositories brought in
-using [git-subtree](.https://github.com/apenwarr/git-subtree) This means that the source files are inserted directly
+using [git-subtree](https://github.com/apenwarr/git-subtree) This means that the source files are inserted directly
 into the `rippled` repository. They can be edited and committed just as if they
-were normal files. [git-subtree](https://github.com/apenwarr/git-subtree) `apenwarr/git-subtree`
+were normal files. [git-subtree](https://github.com/apenwarr/git-subtree) 
 
 If you create a commit that contains files both from a subtree, and from the
 `rippled` source tree, please use care when designing the commit message, since
