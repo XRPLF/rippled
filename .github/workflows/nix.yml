@@ -69,8 +69,8 @@ jobs:
         with:
             path: ${{ steps.conan-cache.outputs.dir }}
             key: ${{ hashFiles('~/.conan/profiles/default', 'conanfile.py', 'external/rocksdb/*', '.github/workflows/nix.yml') }}
-      - name: export RocksDB
-        run: conan export external/rocksdb
+      - name: export Snappy
+        run: conan export external/snappy snappy/1.1.9@
       - name: install dependencies
         run: |
           mkdir ${build_dir}
