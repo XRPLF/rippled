@@ -2184,16 +2184,15 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
         //  simplifies later operations)
         if (auto const baseFeeXRP = ~val->at(~sfBaseFeeDrops);
             baseFeeXRP && baseFeeXRP->native())
-            jvObj[jss::base_fee_drops] = baseFeeXRP->xrp().jsonClipped();
+            jvObj[jss::base_fee] = baseFeeXRP->xrp().jsonClipped();
 
         if (auto const reserveBaseXRP = ~val->at(~sfReserveBaseDrops);
             reserveBaseXRP && reserveBaseXRP->native())
-            jvObj[jss::reserve_base_drops] =
-                reserveBaseXRP->xrp().jsonClipped();
+            jvObj[jss::reserve_base] = reserveBaseXRP->xrp().jsonClipped();
 
         if (auto const reserveIncXRP = ~val->at(~sfReserveIncrementDrops);
             reserveIncXRP && reserveIncXRP->native())
-            jvObj[jss::reserve_inc_drops] = reserveIncXRP->xrp().jsonClipped();
+            jvObj[jss::reserve_inc] = reserveIncXRP->xrp().jsonClipped();
 
         for (auto i = mStreamMaps[sValidations].begin();
              i != mStreamMaps[sValidations].end();)
