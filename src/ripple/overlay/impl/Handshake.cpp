@@ -321,7 +321,7 @@ verifyHandshake(
 
     if (publicKey == app.nodeIdentity().first)
         throw std::runtime_error("Self connection");
-    
+
     if (auto const iter = headers.find("Local-IP"); iter != headers.end())
     {
         boost::system::error_code ec;
