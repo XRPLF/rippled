@@ -39,7 +39,7 @@ namespace ripple {
 
 /** General RPC command that can retrieve objects in the account root.
     {
-      account: <account>|<account_public_key>
+      account: <account>
       ledger_hash: <string> // optional
       ledger_index: <string | unsigned integer> // optional
       type: <string> // optional, defaults to all account objects types
@@ -60,8 +60,8 @@ doAccountNFTs(RPC::JsonContext& context)
     if (ledger == nullptr)
         return result;
 
-    auto const strIdent = params[jss::account].asString();
-    auto const accountID = parseBase58<AccountID>(strIdent);
+    auto const accountID =
+        parseBase58<AccountID>(params[jss::account].asString());
     if (!accountID)
     {
         RPC::inject_error(rpcACT_MALFORMED, result);
@@ -173,8 +173,8 @@ doAccountObjects(RPC::JsonContext& context)
     if (ledger == nullptr)
         return result;
 
-    auto const strIdent = params[jss::account].asString();
-    auto const accountID = parseBase58<AccountID>(strIdent);
+    auto const accountID =
+        parseBase58<AccountID>(params[jss::account].asString());
     if (!accountID)
     {
         RPC::inject_error(rpcACT_MALFORMED, result);

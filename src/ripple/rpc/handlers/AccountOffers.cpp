@@ -47,7 +47,7 @@ appendOfferJson(std::shared_ptr<SLE const> const& offer, Json::Value& offers)
 };
 
 // {
-//   account: <account>|<account_public_key>
+//   account: <account>
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>
 //   limit: integer                 // optional
@@ -65,8 +65,8 @@ doAccountOffers(RPC::JsonContext& context)
     if (!ledger)
         return result;
 
-    std::string const strIdent(params[jss::account].asString());
-    auto const accountID = RPC::accountFromStringStrict(strIdent);
+    auto const accountID =
+        parseBase58<AccountID>(params[jss::account].asString());
     if (!accountID)
     {
         RPC::inject_error(rpcACT_MALFORMED, result);

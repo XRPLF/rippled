@@ -66,7 +66,7 @@ doAccountInfo(RPC::JsonContext& context)
         return result;
 
     // Get info on account.
-    auto const accountID = RPC::accountFromStringStrict(strIdent);
+    auto const accountID = parseBase58<AccountID>(strIdent);
     if (!accountID)
     {
         RPC::inject_error(rpcACT_MALFORMED, result);

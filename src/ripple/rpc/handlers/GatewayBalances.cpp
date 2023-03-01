@@ -20,6 +20,7 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/app/paths/TrustLine.h>
 #include <ripple/ledger/ReadView.h>
+#include <ripple/net/RPCErr.h>
 #include <ripple/protocol/AccountID.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/PublicKey.h>
@@ -68,19 +69,14 @@ doGatewayBalances(RPC::JsonContext& context)
         params.isMember(jss::account) ? params[jss::account].asString()
                                       : params[jss::ident].asString());
 
-    bool const bStrict =
-        params.isMember(jss::strict) && params[jss::strict].asBool();
-
     // Get info on account.
-    AccountID accountID;
-    auto jvAccepted = RPC::accountFromString(accountID, strIdent, bStrict);
-
-    if (jvAccepted)
-        return jvAccepted;
+    auto const accountID = parseBase58<AccountID>(strIdent);
+    if (!accountID)
+        return rpcError(rpcACT_MALFORMED);
 
     context.loadType = Resource::feeHighBurdenRPC;
 
-    result[jss::account] = toBase58(accountID);
+    result[jss::account] = toBase58(*accountID);
 
     // Parse the specified hotwallet(s), if any
     std::set<AccountID> hotWallets;
@@ -90,17 +86,7 @@ doGatewayBalances(RPC::JsonContext& context)
         auto addHotWallet = [&hotWallets](Json::Value const& j) {
             if (j.isString())
             {
-                auto const pk = parseBase58<PublicKey>(
-                    TokenType::AccountPublic, j.asString());
-                if (pk)
-                {
-                    hotWallets.insert(calcAccountID(*pk));
-                    return true;
-                }
-
-                auto const id = parseBase58<AccountID>(j.asString());
-
-                if (id)
+                if (auto const id = parseBase58<AccountID>(j.asString()); id)
                 {
                     hotWallets.insert(*id);
                     return true;
@@ -143,8 +129,8 @@ doGatewayBalances(RPC::JsonContext& context)
     // Traverse the cold wallet's trust lines
     {
         forEachItem(
-            *ledger, accountID, [&](std::shared_ptr<SLE const> const& sle) {
-                auto rs = PathFindTrustLine::makeItem(accountID, sle);
+            *ledger, *accountID, [&](std::shared_ptr<SLE const> const& sle) {
+                auto rs = PathFindTrustLine::makeItem(*accountID, sle);
 
                 if (!rs)
                     return;

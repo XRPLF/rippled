@@ -47,7 +47,7 @@ doAccountCurrencies(RPC::JsonContext& context)
                                       : params[jss::ident].asString());
 
     // Get info on account.
-    auto const accountID = RPC::accountFromStringStrict(strIdent);
+    auto const accountID = parseBase58<AccountID>(strIdent);
     if (!accountID)
     {
         RPC::inject_error(rpcACT_MALFORMED, result);

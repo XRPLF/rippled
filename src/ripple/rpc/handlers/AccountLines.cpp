@@ -76,7 +76,7 @@ addLine(Json::Value& jsonLines, RPCTrustLine const& line)
 }
 
 // {
-//   account: <account>|<account_public_key>
+//   account: <account>
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>
 //   limit: integer                 // optional
@@ -96,8 +96,8 @@ doAccountLines(RPC::JsonContext& context)
     if (!ledger)
         return result;
 
-    std::string const strIdent(params[jss::account].asString());
-    auto const accountID = parseBase58<AccountID>(strIdent);
+    auto const accountID =
+        parseBase58<AccountID>(params[jss::account].asString());
     if (!accountID)
     {
         RPC::inject_error(rpcACT_MALFORMED, result);
