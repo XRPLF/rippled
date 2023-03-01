@@ -754,6 +754,33 @@ Config::loadFromString(std::string const& fileContents)
         SERVER_DOMAIN = strTemp;
     }
 
+    if (getSingleSection(secConfig, SECTION_BROWSER_REDIRECT, strTemp, j_))
+    {
+        parsedURL url;
+
+        if (!parseUrl(url, strTemp))
+            Throw<std::runtime_error>(
+                "Invalid " SECTION_BROWSER_REDIRECT
+                ": Must specify valid http or https URL.");
+
+        if (auto const scheme = boost::algorithm::to_lower_copy(url.scheme);
+            scheme != "http" && scheme != "https")
+            Throw<std::runtime_error>(
+                "Invalid " SECTION_BROWSER_REDIRECT
+                ": Must specify valid http or https URL.");
+
+        if (!url.username.empty() || !url.password.empty())
+            Throw<std::runtime_error>(
+                "Invalid " SECTION_BROWSER_REDIRECT
+                ": URL must not have the username or the password.");
+
+        if (url.domain.empty())
+            Throw<std::runtime_error>("Invalid " SECTION_BROWSER_REDIRECT
+                                      ": URL must have domain.");
+
+        BROWSER_REDIRECT = strTemp;
+    }
+
     if (exists(SECTION_OVERLAY))
     {
         auto const sec = section(SECTION_OVERLAY);

@@ -295,6 +295,9 @@ public:
     // First, attempt to load the latest ledger directly from disk.
     bool FAST_LOAD = false;
 
+    // Redirect location for HTTPS requests
+    std::string BROWSER_REDIRECT;
+
 public:
     Config();
 
