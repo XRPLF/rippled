@@ -46,7 +46,7 @@ jobs:
             path: ${{ steps.pip-cache.outputs.dir }}
             key: ${{ runner.os }}-${{ hashFiles('.github/workflows/windows.yml') }}
       - name: install Conan
-        run: pip install wheel 'conan>=1.52.0'
+        run: pip install wheel 'conan~=1.52'
       - name: check environment
         run: |
           $env:PATH -split ';'
@@ -69,8 +69,8 @@ jobs:
         with:
             path: ${{ steps.conan-cache.outputs.dir }}
             key: ${{ hashFiles('~/.conan/profiles/default', 'conanfile.py', 'external/rocksdb/*', '.github/workflows/windows.yml') }}
-      - name: export RocksDB
-        run: conan export external/rocksdb
+      - name: export Snappy
+        run: conan export external/snappy snappy/1.1.9@
       - name: install dependencies
         run: |
           mkdir $env:build_dir

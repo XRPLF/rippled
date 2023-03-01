@@ -15,7 +15,7 @@ RIPPLED_DPKG_VERSION=$(echo "${RIPPLED_VERSION}" | sed 's!-!~!g')
 # TODO - decide how to handle the trailing/release
 # version here (hardcoded to 1). Does it ever need to change?
 RIPPLED_DPKG_FULL_VERSION="${RIPPLED_DPKG_VERSION}-1"
-
+git config --global --add safe.directory /opt/rippled_bld/pkg/rippled
 cd /opt/rippled_bld/pkg/rippled
 if [[ -n $(git status --porcelain) ]]; then
     git status
@@ -45,8 +45,8 @@ CHANGELOG
 # PATH must be preserved for our more modern cmake in /opt/local
 # TODO : consider allowing lintian to run in future ?
 export DH_BUILD_DDEBS=1
-export CC=gcc-8
-export CXX=g++-8
+export CC=gcc-11
+export CXX=g++-11
 debuild --no-lintian --preserve-envvar PATH --preserve-env -us -uc
 rc=$?; if [[ $rc != 0 ]]; then
     error "error building dpkg"
@@ -54,7 +54,6 @@ fi
 cd ..
 
 # copy artifacts
-cp rippled-dev_${RIPPLED_DPKG_FULL_VERSION}_amd64.deb ${PKG_OUTDIR}
 cp rippled-reporting_${RIPPLED_DPKG_FULL_VERSION}_amd64.deb ${PKG_OUTDIR}
 cp rippled_${RIPPLED_DPKG_FULL_VERSION}_amd64.deb ${PKG_OUTDIR}
 cp rippled_${RIPPLED_DPKG_FULL_VERSION}.dsc ${PKG_OUTDIR}
@@ -84,15 +83,12 @@ DBG_SHA256=$(cat shasums | \
     grep "rippled-dbgsym_${RIPPLED_DPKG_VERSION}-1_amd64.*" | cut -d " " -f 1)
 REPORTING_DBG_SHA256=$(cat shasums | \
     grep "rippled-reporting-dbgsym_${RIPPLED_DPKG_VERSION}-1_amd64.*" | cut -d " " -f 1)
-DEV_SHA256=$(cat shasums | \
-    grep "rippled-dev_${RIPPLED_DPKG_VERSION}-1_amd64.deb" | cut -d " " -f 1)
 REPORTING_SHA256=$(cat shasums | \
     grep "rippled-reporting_${RIPPLED_DPKG_VERSION}-1_amd64.deb" | cut -d " " -f 1)
 SRC_SHA256=$(cat shasums | \
     grep "rippled_${RIPPLED_DPKG_VERSION}.orig.tar.gz" | cut -d " " -f 1)
 echo "deb_sha256=${DEB_SHA256}" >> ${PKG_OUTDIR}/build_vars
 echo "dbg_sha256=${DBG_SHA256}" >> ${PKG_OUTDIR}/build_vars
-echo "dev_sha256=${DEV_SHA256}" >> ${PKG_OUTDIR}/build_vars
 echo "reporting_sha256=${REPORTING_SHA256}" >> ${PKG_OUTDIR}/build_vars
 echo "reporting_dbg_sha256=${REPORTING_DBG_SHA256}" >> ${PKG_OUTDIR}/build_vars
 echo "src_sha256=${SRC_SHA256}" >> ${PKG_OUTDIR}/build_vars
