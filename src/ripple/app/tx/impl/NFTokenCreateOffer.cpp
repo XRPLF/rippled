@@ -193,7 +193,7 @@ NFTokenCreateOffer::preclaim(PreclaimContext const& ctx)
             // flag cannot be set unless amendment is enabled but
             // out of an abundance of caution check anyway
 
-            if (sleDst->getFlags() & lsfDisallowIncomingNFTOffer)
+            if (sleDst->getFlags() & lsfDisallowIncomingNFTokenOffer)
                 return tecNO_PERMISSION;
         }
     }
@@ -210,7 +210,7 @@ NFTokenCreateOffer::preclaim(PreclaimContext const& ctx)
             if (!sleOwner)
                 return tecNO_TARGET;
 
-            if (sleOwner->getFlags() & lsfDisallowIncomingNFTOffer)
+            if (sleOwner->getFlags() & lsfDisallowIncomingNFTokenOffer)
                 return tecNO_PERMISSION;
         }
     }
