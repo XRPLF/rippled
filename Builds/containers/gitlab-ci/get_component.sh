@@ -3,7 +3,7 @@ case ${CI_COMMIT_REF_NAME} in
     develop)
         export COMPONENT="nightly"
         ;;
-    release)
+    release*)
         export COMPONENT="unstable"
         ;;
     master)
@@ -13,4 +13,3 @@ case ${CI_COMMIT_REF_NAME} in
         export COMPONENT="_unknown_"
         ;;
 esac
-

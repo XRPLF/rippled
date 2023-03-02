@@ -58,7 +58,7 @@ stages:
 .only_primary_template: &only_primary
   only:
     refs:
-      - /^(master|release|develop)$/
+      - /^(master|release|releases\/.*|develop)$/
     variables:
       - $IS_PRIMARY_REPO == "true"
 
