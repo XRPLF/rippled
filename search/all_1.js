@@ -487,7 +487,7 @@ var searchData=
   ['asfdepositauth_487',['asfDepositAuth',['../namespaceripple.html#a1d8ec9af2fd805d04e032c52f6968211',1,'ripple']]],
   ['asfdisablemaster_488',['asfDisableMaster',['../namespaceripple.html#a67cb8f38f9c204304ea44fcff2953438',1,'ripple']]],
   ['asfdisallowincomingcheck_489',['asfDisallowIncomingCheck',['../namespaceripple.html#a9410087e0ef101a892bb3f4a3cb16614',1,'ripple']]],
-  ['asfdisallowincomingnftoffer_490',['asfDisallowIncomingNFTOffer',['../namespaceripple.html#a2c87e2cc3a9dfddc003d318401d70ee1',1,'ripple']]],
+  ['asfdisallowincomingnftokenoffer_490',['asfDisallowIncomingNFTokenOffer',['../namespaceripple.html#a1dc3be353a462b0e773a87943306c501',1,'ripple']]],
   ['asfdisallowincomingpaychan_491',['asfDisallowIncomingPayChan',['../namespaceripple.html#ac12fbb1864b09bfd3fb4ead410449edd',1,'ripple']]],
   ['asfdisallowincomingtrustline_492',['asfDisallowIncomingTrustline',['../namespaceripple.html#a72b8ab4faf1078ddedabff623d95b057',1,'ripple']]],
   ['asfdisallowxrp_493',['asfDisallowXRP',['../namespaceripple.html#af9cd2b389ce115ba9d17fbd557aca94d',1,'ripple']]],

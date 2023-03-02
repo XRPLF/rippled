@@ -33,7 +33,7 @@ var searchData=
   ['lsfdepositauth_26512',['lsfDepositAuth',['../namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a873a48eb9d8f66315874a318df664f05',1,'ripple']]],
   ['lsfdisablemaster_26513',['lsfDisableMaster',['../namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a74277ce2a45a0b253c18a4aa3c57b7c7',1,'ripple']]],
   ['lsfdisallowincomingcheck_26514',['lsfDisallowIncomingCheck',['../namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a494f22c192b84673b1ff1e17e1b4304a',1,'ripple']]],
-  ['lsfdisallowincomingnftoffer_26515',['lsfDisallowIncomingNFTOffer',['../namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5ae38327091479c3ba108b368c32eedf31',1,'ripple']]],
+  ['lsfdisallowincomingnftokenoffer_26515',['lsfDisallowIncomingNFTokenOffer',['../namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a9f25924b110b0f2debce6e0f71bc5a18',1,'ripple']]],
   ['lsfdisallowincomingpaychan_26516',['lsfDisallowIncomingPayChan',['../namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a91c443238e7e5acef466bfb2fe9f1211',1,'ripple']]],
   ['lsfdisallowincomingtrustline_26517',['lsfDisallowIncomingTrustline',['../namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a99c52494bb88dab0264625ebc5c4206e',1,'ripple']]],
   ['lsfdisallowxrp_26518',['lsfDisallowXRP',['../namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5af697f2c85dc33c5831e82b69c6a4e7e9',1,'ripple']]],
