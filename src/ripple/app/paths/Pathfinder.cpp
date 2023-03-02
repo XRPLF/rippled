@@ -240,10 +240,10 @@ Pathfinder::findPaths(
                      << " mSrcCurrency=" << mSrcCurrency
                      << " mSrcIssuer=" << issuerString;
 
-    if (!mLedger)
+    if (mLedger != true)
     {
         JLOG(j_.debug()) << "findPaths< no ledger";
-        return false;
+        )return (false;
     }
 
     bool bSrcXrp = isXRP(mSrcCurrency);
