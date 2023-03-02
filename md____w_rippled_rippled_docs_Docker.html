@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.17"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>rippled: Rippled Docker Image</title>
+<title>rippled: &lt;tt&gt;rippled&lt;/tt&gt; Docker Image</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -62,17 +62,16 @@ $(function() {
 </div><!-- top -->
 <div class="PageDoc"><div class="header">
   <div class="headertitle">
-<div class="title">Rippled Docker Image </div>  </div>
+<div class="title"><code>rippled</code> Docker Image </div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><p>Rippled has a continuous deployment pipeline that turns every git commit into a docker image for quick testing and deployment.</p>
-<p>To run the tip of the latest release via docker:</p>
-<div class="fragment"><div class="line"> {$}</div>
-<div class="line"> </div>
-<div class="line">To run the tip of active development:</div>
-<div class="line"> </div>
-<div class="line">```$ docker run -P -v /srv/rippled/ ripple/rippled:develo</div>
-</div><!-- fragment --><p>Where <code>/srv/rippled</code> points to a directory containing a rippled.cfg and database files. By default, port 5005/tcp maps to the RPC port and 51235/udp to the peer port. </p>
+<div class="textblock"><ul>
+<li>Some info relating to Docker containers can be found here: <a href="../Builds/containers">../Builds/containers</a></li>
+<li>Images for building and testing rippled can be found here: <a href="https://github.com/thejohnfreeman/rippled-docker/">thejohnfreeman/rippled-docker</a><ul>
+<li>These images do not have rippled. They have all the tools necessary to build rippled. </li>
+</ul>
+</li>
+</ul>
 </div></div><!-- contents -->
 </div><!-- PageDoc -->
 <!-- start footer part -->
