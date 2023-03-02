@@ -893,26 +893,32 @@ Pathfinder::isNoRipple(
     auto const flag(
         (toAccount > fromAccount) ? lsfHighNoRipple : lsfLowNoRipple);
 
-    return sleRipple && (sleRipple->getFieldU32(sfFlags) & flag);
+    return (sleRipple) && (sleRipple->getFieldU32(sfFlags) & flag);
 }
 
-// Does this path end on an account-to-account link whose last account has
-// set "no ripple" on the link?
+/* 
+ * Does this path end on an account-to-account link whose last account has
+ * set "no ripple" on the link?
+ */
 bool
 Pathfinder::isNoRippleOut(STPath const& currentPath)
 {
     // Must have at least one link.
-    if (currentPath.empty())
+    if (currentPath.empty()) {
         return false;
+    }
 
     // Last link must be an account.
     STPathElement const& endElement = currentPath.back();
-    if (!(endElement.getNodeType() & STPathElement::typeAccount))
+    if (!(endElement.getNodeType() & STPathElement::typeAccount)) {
         return false;
+    }
 
-    // If there's only one item in the path, return true if that item specifies
-    // no ripple on the output. A path with no ripple on its output can't be
-    // followed by a link with no ripple on its input.
+    /* 
+     * If there's only one item in the path, return true if that item specifies
+     * no ripple on the output. A path with no ripple on its output can't be
+     * followed by a link with no ripple on its input
+     */
     auto const& fromAccount = (currentPath.size() == 1)
         ? mSrcAccount
         : (currentPath.end() - 2)->getAccountID();
@@ -925,10 +931,10 @@ addUniquePath(STPathSet& pathSet, STPath const& path)
 {
     // TODO(tom): building an STPathSet this way is quadratic in the size
     // of the STPathSet!
-    for (auto const& p : pathSet)
-    {
-        if (p == path)
+    for (auto const& p : pathSet) {
+        if (p == path) {
             return;
+        }
     }
     pathSet.push_back(path);
 }
@@ -938,8 +944,7 @@ Pathfinder::addLink(
     const STPath& currentPath,   // The path to build from
     STPathSet& incompletePaths,  // The set of partial paths we add to
     int addFlags,
-    std::function<bool(void)> const& continueCallback)
-{
+    std::function<bool(void)> const& continueCallback) {
     auto const& pathEnd = currentPath.empty() ? mSource : currentPath.back();
     auto const& uEndCurrency = pathEnd.getCurrency();
     auto const& uEndIssuer = pathEnd.getIssuerID();
