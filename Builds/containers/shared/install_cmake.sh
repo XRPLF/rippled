@@ -21,8 +21,13 @@ if [[ "${installed}" != "" && ${installed} =~ ${cm_maj}.${cm_min}.${cm_rel} ]] ;
     echo "cmake already installed: ${installed}"
     exit
 fi
-
-pkgname="cmake-${cm_maj}.${cm_min}.${cm_rel}-$(uname)-x86_64.tar.gz"
+# From CMake 20+ "Linux" is lowercase so using `uname` won't create be the correct path
+if [ ${cm_min} -gt 19 ]; then
+    linux="linux"
+else
+    linux=$(uname)
+fi
+pkgname="cmake-${cm_maj}.${cm_min}.${cm_rel}-${linux}-x86_64.tar.gz"
 tmppkg="/tmp/cmake.tar.gz"
 wget --quiet https://cmake.org/files/v${cm_maj}.${cm_min}/${pkgname} -O ${tmppkg}
 mkdir -p ${CMAKE_ROOT}
@@ -30,5 +35,3 @@ cd ${CMAKE_ROOT}
 tar --strip-components 1 -xf ${tmppkg}
 rm -f ${tmppkg}
 echo "installed: $(cmake_version)"
-
-

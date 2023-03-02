@@ -106,3 +106,6 @@ compile_commands.json
 .clangd
 packages
 pkg_out
+pkg
+CMakeUserPresets.json
+bld.rippled/
