@@ -14,18 +14,17 @@ cd $TOPDIR
 cd build/dpkg/packages
 CURLARGS="-sk -X${action} -urippled:${ARTIFACTORY_DEPLOY_KEY_RIPPLED}"
 RIPPLED_PKG=$(ls rippled_*.deb)
-RIPPLED_DEV_PKG=$(ls rippled-dev_*.deb)
 RIPPLED_REPORTING_PKG=$(ls rippled-reporting_*.deb)
-RIPPLED_DBG_PKG=$(ls rippled-dbgsym_*.deb)
-RIPPLED_REPORTING_DBG_PKG=$(ls rippled-reporting-dbgsym_*.deb)
+RIPPLED_DBG_PKG=$(ls rippled-dbgsym_*.*deb)
+RIPPLED_REPORTING_DBG_PKG=$(ls rippled-reporting-dbgsym_*.*deb)
 # TODO - where to upload src tgz?
 RIPPLED_SRC=$(ls rippled_*.orig.tar.gz)
 DEB_MATRIX=";deb.component=${COMPONENT};deb.architecture=amd64"
-for dist in stretch buster bullseye bionic focal jammy; do
+for dist in bullseye focal jammy; do
     DEB_MATRIX="${DEB_MATRIX};deb.distribution=${dist}"
 done
 echo "{ \"debs\": {" > "${TOPDIR}/files.info"
-for deb in ${RIPPLED_PKG} ${RIPPLED_DEV_PKG} ${RIPPLED_DBG_PKG} ${RIPPLED_REPORTING_PKG} ${RIPPLED_REPORTING_DBG_PKG}; do
+for deb in ${RIPPLED_PKG} ${RIPPLED_DBG_PKG} ${RIPPLED_REPORTING_PKG} ${RIPPLED_REPORTING_DBG_PKG}; do
     # first item doesn't get a comma separator
     if [ $deb != $RIPPLED_PKG ] ; then
         echo "," >> "${TOPDIR}/files.info"

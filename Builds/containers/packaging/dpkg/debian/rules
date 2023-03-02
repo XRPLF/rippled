@@ -16,31 +16,46 @@ override_dh_systemd_start:
 
 override_dh_auto_configure:
 	env
-	rm -rf bld && mkdir -p bld/rippled
-	cd bld/rippled && \
-	cmake ../.. -G Ninja \
-		-DCMAKE_INSTALL_PREFIX=/opt/ripple \
-		-DCMAKE_BUILD_TYPE=Release \
-		-Dstatic=ON \
-		-Dunity=OFF \
-		-Dvalidator_keys=ON \
-		-Dunity=OFF \
-		-DCMAKE_VERBOSE_MAKEFILE=OFF
+	rm -rf bld
 
+	conan export external/snappy snappy/1.1.9@
 
-	cmake -S . \
-		-B bld/rippled-reporting \
+	conan install . \
+		--install-folder bld/rippled  \
+		--build missing \
+		--settings build_type=Release
+
+	cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
 		-G Ninja \
-		-DCMAKE_INSTALL_PREFIX=/opt/rippled-reporting \
 		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_INSTALL_PREFIX=/opt/ripple \
 		-Dstatic=ON \
 		-Dunity=OFF \
-		-DCMAKE_VERBOSE_MAKEFILE=OFF \
-		-Dreporting=ON
+		-DCMAKE_VERBOSE_MAKEFILE=ON \
+		-Dvalidator_keys=ON \
+		-B bld/rippled
+
+	conan install . \
+		--install-folder bld/rippled-reporting \
+		--build missing \
+		--settings build_type=Release \
+		--settings compiler.cppstd=17 \
+		--options reporting=True
+
+	cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
+		-G Ninja \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_INSTALL_PREFIX=/opt/rippled-reporting \
+		-Dstatic=ON \
+		-Dunity=OFF \
+		-DCMAKE_VERBOSE_MAKEFILE=ON \
+		-Dreporting=ON \
+		-B bld/rippled-reporting
 
 override_dh_auto_build:
-	cmake --build bld/rippled --target rippled --target validator-keys --parallel
-	cmake --build bld/rippled-reporting --target rippled --parallel
+	cmake --build bld/rippled --target rippled --target validator-keys -j${nproc}
+
+	cmake --build bld/rippled-reporting --target rippled -j${nproc}
 
 override_dh_auto_install:
 	cmake --install bld/rippled --prefix debian/tmp/opt/ripple
@@ -52,8 +67,8 @@ override_dh_auto_install:
 	rm -rf debian/tmp/opt/ripple/lib64/cmake/date
 
 	mkdir -p debian/tmp/opt/rippled-reporting/etc
+	mkdir -p debian/tmp/opt/rippled-reporting/bin
 	cp cfg/validators-example.txt debian/tmp/opt/rippled-reporting/etc/validators.txt
-	install -D bld/rippled/validator-keys/validator-keys debian/tmp/opt/rippled-reporting/bin/validator-keys
 
 	sed -E 's/rippled?/rippled-reporting/g' Builds/containers/shared/update-rippled.sh > debian/tmp/opt/rippled-reporting/bin/update-rippled-reporting.sh
 	sed -E 's/rippled?/rippled-reporting/g' bin/getRippledInfo > debian/tmp/opt/rippled-reporting/bin/getRippledReportingInfo
