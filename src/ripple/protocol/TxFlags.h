@@ -51,6 +51,8 @@ namespace ripple {
     @ingroup protocol
 */
 
+// Formatting equals sign aligned 4 spaces after longest prefix, except for
+// wrapped lines
 // clang-format off
 // Universal Transaction flags:
 constexpr std::uint32_t tfFullyCanonicalSig                = 0x80000000;
