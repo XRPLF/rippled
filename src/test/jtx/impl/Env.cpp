@@ -466,6 +466,14 @@ Env::enableFeature(uint256 const feature)
     app().config().features.insert(feature);
 }
 
+void
+Env::disableFeature(uint256 const feature)
+{
+    // Env::close() must be called for feature
+    // enable to take place.
+    app().config().features.erase(feature);
+}
+
 }  // namespace jtx
 
 }  // namespace test

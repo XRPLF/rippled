@@ -7,11 +7,19 @@ name: windows
 # then, we leave this tombstone as a reminder that we have tried (but failed)
 # to write a reliable test for Windows.
 # on: [push, pull_request]
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'action'
+    paths:
+      - '.github/workflow/windows.yml'
 
 jobs:
 
   test:
     strategy:
+      fail-fast: false
       matrix:
         generator:
           - Visual Studio 16 2019
@@ -38,7 +46,7 @@ jobs:
             path: ${{ steps.pip-cache.outputs.dir }}
             key: ${{ runner.os }}-${{ hashFiles('.github/workflows/windows.yml') }}
       - name: install Conan
-        run: pip install wheel 'conan>=1.52.0'
+        run: pip install wheel 'conan~=1.52'
       - name: check environment
         run: |
           $env:PATH -split ';'
@@ -61,8 +69,8 @@ jobs:
         with:
             path: ${{ steps.conan-cache.outputs.dir }}
             key: ${{ hashFiles('~/.conan/profiles/default', 'conanfile.py', 'external/rocksdb/*', '.github/workflows/windows.yml') }}
-      - name: export RocksDB
-        run: conan export external/rocksdb
+      - name: export Snappy
+        run: conan export external/snappy snappy/1.1.9@
       - name: install dependencies
         run: |
           mkdir $env:build_dir

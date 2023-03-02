@@ -301,36 +301,6 @@ verifyHandshake(
         throw std::runtime_error("Bad node public key");
     }();
 
-    if (publicKey == app.nodeIdentity().first)
-    {
-        auto const peerInstanceID = [&headers]() {
-            std::uint64_t iid = 0;
-
-            if (auto const iter = headers.find("Instance-Cookie");
-                iter != headers.end())
-            {
-                if (!beast::lexicalCastChecked(iid, iter->value().to_string()))
-                    throw std::runtime_error("Invalid instance cookie");
-
-                if (iid == 0)
-                    throw std::runtime_error("Invalid instance cookie");
-            }
-
-            return iid;
-        }();
-
-        // Attempt to differentiate self-connections as opposed to accidental
-        // node identity reuse caused by accidental misconfiguration. When we
-        // detect this, we stop the process and log an error message.
-        if (peerInstanceID != app.instanceID())
-        {
-            app.signalStop("Remote server is using our node identity");
-            throw std::runtime_error("Node identity reuse detected");
-        }
-
-        throw std::runtime_error("Self connection");
-    }
-
     // This check gets two birds with one stone:
     //
     // 1) it verifies that the node we are talking to has access to the
@@ -348,6 +318,9 @@ verifyHandshake(
         if (!verifyDigest(publicKey, sharedValue, makeSlice(sig), false))
             throw std::runtime_error("Failed to verify session");
     }
+
+    if (publicKey == app.nodeIdentity().first)
+        throw std::runtime_error("Self connection");
 
     if (auto const iter = headers.find("Local-IP"); iter != headers.end())
     {

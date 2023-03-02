@@ -87,30 +87,13 @@ LoadFeeTrack::lowerLocalFee()
 // Scale using load as well as base rate
 XRPAmount
 scaleFeeLoad(
-    FeeUnit64 fee,
+    XRPAmount fee,
     LoadFeeTrack const& feeTrack,
     Fees const& fees,
     bool bUnlimited)
 {
     if (fee == 0)
-        return XRPAmount{0};
-
-    // Normally, types with different units wouldn't be mathematically
-    // compatible. This function is an exception.
-    auto lowestTerms = [](auto& a, auto& b) {
-        auto value = [](auto val) {
-            if constexpr (std::is_arithmetic_v<decltype(val)>)
-                return val;
-            else
-                return val.value();
-        };
-
-        if (auto const g = std::gcd(value(a), value(b)))
-        {
-            a = value(a) / g;
-            b = value(b) / g;
-        }
-    };
+        return fee;
 
     // Collect the fee rates
     auto [feeFactor, uRemFee] = feeTrack.getScalingFactors();
@@ -120,45 +103,12 @@ scaleFeeLoad(
     if (bUnlimited && (feeFactor > uRemFee) && (feeFactor < (4 * uRemFee)))
         feeFactor = uRemFee;
 
-    XRPAmount baseFee{fees.base};
     // Compute:
-    // fee = fee * baseFee * feeFactor / (fees.units * lftNormalFee);
+    // fee = fee * feeFactor / (lftNormalFee);
     // without overflow, and as accurately as possible
 
-    // The denominator of the fraction we're trying to compute.
-    // fees.units and lftNormalFee are both 32 bit,
-    //  so the multiplication can't overflow.
-    auto den = FeeUnit64{fees.units} *
-        safe_cast<std::uint64_t>(feeTrack.getLoadBase());
-    // Reduce fee * baseFee * feeFactor / (fees.units * lftNormalFee)
-    // to lowest terms.
-    lowestTerms(fee, den);
-    lowestTerms(baseFee, den);
-    lowestTerms(feeFactor, den);
-
-    // fee and baseFee are 64 bit, feeFactor is 32 bit
-    // Order fee and baseFee largest first
-    // Normally, these types wouldn't be comparable or swappable.
-    // This function is an exception.
-    if (fee.value() < baseFee.value())
-    {
-        auto tmp = fee.value();
-        fee = baseFee.value();
-        baseFee = tmp;
-    }
-    // double check
-    assert(fee.value() >= baseFee.value());
-
-    // If baseFee * feeFactor overflows, the final result will overflow
-    XRPAmount const baseFeeOverflow{
-        std::numeric_limits<XRPAmount::value_type>::max() / feeFactor};
-    if (baseFee > baseFeeOverflow)
-    {
-        Throw<std::overflow_error>("scaleFeeLoad");
-    }
-    baseFee *= feeFactor;
-
-    auto const result = mulDiv(fee, baseFee, den);
+    auto const result = mulDiv(
+        fee, feeFactor, safe_cast<std::uint64_t>(feeTrack.getLoadBase()));
     if (!result.first)
         Throw<std::overflow_error>("scaleFeeLoad");
     return result.second;
