@@ -235,7 +235,7 @@ enum LedgerSpecificFlags {
 /*  // reserved for Hooks amendment
     lsfTshCollect = 0x02000000,     // True, allow TSH collect-calls to acc hooks
 */
-    lsfDisallowIncomingNFTOffer =
+    lsfDisallowIncomingNFTokenOffer =
         0x04000000,               // True, reject new incoming NFT offers
     lsfDisallowIncomingCheck =
         0x08000000,               // True, reject new checks
