@@ -81,8 +81,10 @@ else
     elif [ "${install_from}" = "local" ] ; then
         # cached pkg install
         pkgs=("yum-utils openssl-static zlib-static")
-        if [ "$ID" = "rocky" ]; then
-            sed -i 's/enabled=0/enabled=1/g' /etc/yum.repos.d/Rocky-PowerTools.repo
+        if [[ "$ID" =~ rocky|fedora ]]; then
+            if [[ "$ID" =~ "rocky" ]]; then
+                sed -i 's/enabled=0/enabled=1/g' /etc/yum.repos.d/Rocky-PowerTools.repo
+            fi
             pkgs="${pkgs[@]/openssl-static}"
         fi
         yum install -y $pkgs
