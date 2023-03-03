@@ -600,12 +600,10 @@ void
 PeerImp::fail(std::string const& reason)
 {
     if (!strand_.running_in_this_thread())
-        return post(
-            strand_,
-            std::bind(
-                (void(Peer::*)(std::string const&)) & PeerImp::fail,
-                shared_from_this(),
-                reason));
+        return post(strand_, [reason, self = shared_from_this()]() {
+            self->fail(reason);
+        });
+
     if (journal_.active(beast::severities::kWarning) && socket_.is_open())
     {
         std::string const n = name();

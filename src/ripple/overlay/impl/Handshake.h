@@ -124,7 +124,8 @@ buildHandshake(
     @return The public key of the remote peer on success. An exception
             otherwise.
 
-    @throw A class derived from std::exception, with an appropriate error message.
+    @throw A class derived from std::exception, with an appropriate error
+           message.
 */
 [[nodiscard]] PublicKey
 verifyHandshake(
