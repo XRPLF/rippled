@@ -120,3 +120,8 @@ if (coverage)
   message (STATUS "coverage build requested - forcing Debug build")
   set (CMAKE_BUILD_TYPE Debug CACHE STRING "build type" FORCE)
 endif ()
+
+git_branch (current_branch)
+if (current_branch STREQUAL "develop")
+  add_definitions(-DDEVELOP=TRUE)
+endif ()

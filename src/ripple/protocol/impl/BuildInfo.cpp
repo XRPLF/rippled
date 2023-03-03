@@ -36,11 +36,13 @@ namespace BuildInfo {
 char const* const versionString = "1.10.0-rc3"
 // clang-format on
 
-#if defined(DEBUG) || defined(SANITIZER)
+#if defined(DEBUG) || defined(SANITIZER) || defined(DEVELOP)
     "+"
 #ifdef GIT_COMMIT_HASH
     GIT_COMMIT_HASH
+#if ! defined(DEVELOP)
     "."
+#endif
 #endif
 #ifdef DEBUG
     "DEBUG"
