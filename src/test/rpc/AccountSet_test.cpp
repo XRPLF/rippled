@@ -86,7 +86,7 @@ public:
 
                 if (flag == asfDisallowIncomingCheck ||
                     flag == asfDisallowIncomingPayChan ||
-                    flag == asfDisallowIncomingNFTOffer ||
+                    flag == asfDisallowIncomingNFTokenOffer ||
                     flag == asfDisallowIncomingTrustline)
                 {
                     // These flags are part of the DisallowIncoming amendment

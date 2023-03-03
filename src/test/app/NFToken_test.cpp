@@ -3028,11 +3028,11 @@ class NFToken_test : public beast::unit_test::suite
             Env env{*this, features - disallowIncoming};
             Account const alice{"alice"};
             env.fund(XRP(10000), alice);
-            env(fset(alice, asfDisallowIncomingNFTOffer));
+            env(fset(alice, asfDisallowIncomingNFTokenOffer));
             env.close();
             auto const sle = env.le(alice);
             uint32_t flags = sle->getFlags();
-            BEAST_EXPECT(!(flags & lsfDisallowIncomingNFTOffer));
+            BEAST_EXPECT(!(flags & lsfDisallowIncomingNFTokenOffer));
         }
 
         Env env{*this, features | disallowIncoming};
@@ -3055,7 +3055,7 @@ class NFToken_test : public beast::unit_test::suite
         env.close();
 
         // enable flag
-        env(fset(buyer, asfDisallowIncomingNFTOffer));
+        env(fset(buyer, asfDisallowIncomingNFTokenOffer));
         env.close();
 
         // a sell offer from the minter to the buyer should be rejected
@@ -3071,7 +3071,7 @@ class NFToken_test : public beast::unit_test::suite
         }
 
         // disable the flag
-        env(fclear(buyer, asfDisallowIncomingNFTOffer));
+        env(fclear(buyer, asfDisallowIncomingNFTokenOffer));
         env.close();
 
         // create offer (allowed now) then cancel
@@ -3098,13 +3098,13 @@ class NFToken_test : public beast::unit_test::suite
                 txflags(tfSellNFToken));
             env.close();
 
-            env(fset(buyer, asfDisallowIncomingNFTOffer));
+            env(fset(buyer, asfDisallowIncomingNFTokenOffer));
             env.close();
 
             env(token::cancelOffer(minter, {offerIndex}));
             env.close();
 
-            env(fclear(buyer, asfDisallowIncomingNFTOffer));
+            env(fclear(buyer, asfDisallowIncomingNFTokenOffer));
             env.close();
         }
 
@@ -3125,7 +3125,7 @@ class NFToken_test : public beast::unit_test::suite
         // buyer now owns the token
 
         // enable flag again
-        env(fset(buyer, asfDisallowIncomingNFTOffer));
+        env(fset(buyer, asfDisallowIncomingNFTokenOffer));
         env.close();
 
         // a random offer to buy the token
