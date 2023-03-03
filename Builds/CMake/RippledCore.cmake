@@ -13,6 +13,10 @@ if (unity)
   set_target_properties(xrpl_core PROPERTIES UNITY_BUILD ON)
 endif ()
 
+add_library(libxrpl INTERFACE)
+target_link_libraries(libxrpl INTERFACE xrpl_core)
+add_library(xrpl::libxrpl ALIAS libxrpl)
+
 
 #[===============================[
     beast/legacy FILES:
