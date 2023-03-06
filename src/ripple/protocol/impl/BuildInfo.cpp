@@ -38,20 +38,17 @@ char const* const versionString = "1.10.0-rc3"
 
 #if defined(DEBUG) || defined(SANITIZER) || defined(DEVELOP)
     "+"
+#define SEPARATOR ""
 #ifdef GIT_COMMIT_HASH
     GIT_COMMIT_HASH
-#if ! defined(DEVELOP)
-    "."
-#endif
+    #define SEPARATOR "."
 #endif
 #ifdef DEBUG
+    SEPARATOR
     "DEBUG"
+    #define SEPARATOR "."
 #ifdef SANITIZER
-    "."
-#endif
-#endif
-
-#ifdef SANITIZER
+    SEPARATOR
     BOOST_PP_STRINGIZE(SANITIZER)
 #endif
 #endif
