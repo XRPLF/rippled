@@ -6113,10 +6113,10 @@ class NFToken_test : public beast::unit_test::suite
             env.close();
 
             // alice mint and burn a NFT
-            uint256 const prevNftokenID = token::getNextID(env, alice, 0u);
+            uint256 const prevNFTokenID = token::getNextID(env, alice, 0u);
             env(token::mint(alice));
             env.close();
-            env(token::burn(alice, prevNftokenID));
+            env(token::burn(alice, prevNFTokenID));
             env.close();
 
             // alice has minted 1 NFToken
@@ -6145,29 +6145,25 @@ class NFToken_test : public beast::unit_test::suite
             BEAST_EXPECT(env.current()->exists(aliceAcctKey));
             BEAST_EXPECT((*env.le(alice))[sfMintedNFTokens] == 0);
 
-            // alice mints a NFT with same params as prevNftokenID
-            uint256 const remintNftokenID = token::getNextID(env, alice, 0u);
+            // alice mints a NFT with same params as prevNFTokenID
+            uint256 const remintNFTokenID = token::getNextID(env, alice, 0u);
             env(token::mint(alice));
             env.close();
 
-            // burn the NFT to make sure alice owns remintNftokenID
-            env(token::burn(alice, remintNftokenID));
+            // burn the NFT to make sure alice owns remintNFTokenID
+            env(token::burn(alice, remintNFTokenID));
             env.close();
 
             if (features[fixNFTokenRemint])
                 // Check that two NFTs don't have the same ID
-                BEAST_EXPECT(remintNftokenID != prevNftokenID);
+                BEAST_EXPECT(remintNFTokenID != prevNFTokenID);
             else
                 // Check that two NFTs have the same ID
-                BEAST_EXPECT(remintNftokenID == prevNftokenID);
+                BEAST_EXPECT(remintNFTokenID == prevNFTokenID);
         }
 
-        // If fixNFTokenRemint is not enabled, we test if the issuer account
-        // can be deleted after an authorized minter mints and burns a batch of
-        // NFTokens.
-        // After the issuer's account is re-created and mints a NFT, it should
-        // have the same NFTokenID as the one minted before.
-        if (!features[fixNFTokenRemint])
+        // Test if the issuer account can be deleted after an authorized
+        // minter mints and burns a batch of NFTokens.
         {
             Env env{*this, features};
             Account const alice("alice");
@@ -6208,44 +6204,102 @@ class NFToken_test : public beast::unit_test::suite
             BEAST_EXPECT(env.closed()->exists(aliceAcctKey));
             BEAST_EXPECT(env.current()->exists(aliceAcctKey));
 
-            auto const acctDelFee1{drops(env.current()->fees().increment)};
+            auto const acctDelFee{drops(env.current()->fees().increment)};
 
-            // alice's account can be successfully deleted.
-            env(acctdelete(alice, becky), fee(acctDelFee1));
-            env.close();
-            BEAST_EXPECT(!env.current()->exists(aliceAcctKey));
+            if (!features[fixNFTokenRemint])
+            {
+                // alice's account can be successfully deleted.
+                env(acctdelete(alice, becky), fee(acctDelFee));
+                env.close();
+                BEAST_EXPECT(!env.current()->exists(aliceAcctKey));
 
-            // Fund alice to re-create her account
-            env.fund(XRP(10000), alice);
-            env.close();
+                // Fund alice to re-create her account
+                env.fund(XRP(10000), alice);
+                env.close();
 
-            // alice's account now exists and has minted 0 NFTokens
-            BEAST_EXPECT(env.closed()->exists(aliceAcctKey));
-            BEAST_EXPECT(env.current()->exists(aliceAcctKey));
-            BEAST_EXPECT((*env.le(alice))[sfMintedNFTokens] == 0);
+                // alice's account now exists and has minted 0 NFTokens
+                BEAST_EXPECT(env.closed()->exists(aliceAcctKey));
+                BEAST_EXPECT(env.current()->exists(aliceAcctKey));
+                BEAST_EXPECT((*env.le(alice))[sfMintedNFTokens] == 0);
 
-            // alice mints a NFT with same params as prevNftokenID
-            uint256 const remintNftokenID = token::getNextID(env, alice, 0u);
-            env(token::mint(alice));
-            env.close();
+                // alice mints a NFT with same params as the first one before
+                // the account delete.
+                uint256 const remintNFTokenID =
+                    token::getNextID(env, alice, 0u);
+                env(token::mint(alice));
+                env.close();
 
-            // burn the NFT to make sure alice owns remintNftokenID
-            env(token::burn(alice, remintNftokenID));
-            env.close();
+                // burn the NFT to make sure alice owns remintNFTokenID
+                env(token::burn(alice, remintNFTokenID));
+                env.close();
 
-            // The new NFT minted has the same ID as one of the NFTs
-            // authorized minter minted for alice
-            BEAST_EXPECT(
-                std::find(nftIDs.begin(), nftIDs.end(), remintNftokenID) !=
-                nftIDs.end());
+                // The new NFT minted has the same ID as one of the NFTs
+                // authorized minter minted for alice
+                BEAST_EXPECT(
+                    std::find(nftIDs.begin(), nftIDs.end(), remintNFTokenID) !=
+                    nftIDs.end());
+            }
+            else if (features[fixNFTokenRemint])
+            {
+                // alice tries to delete her account, but is unsuccessful.
+                // Due to authorized minting, alice's account sequence does not
+                // advance while minter mints NFTokens for her.
+                // The new account deletion retriction <FirstNFTokenSequence +
+                // MintedNFTokens + 256> enabled by this amendment will enforce
+                // alice to wait for more ledgers to close before she can
+                // delete her account, to prevent duplicate NFTokenIDs
+                env(acctdelete(alice, becky),
+                    fee(acctDelFee),
+                    ter(tecTOO_SOON));
+                env.close();
+
+                // alice's account is still present
+                BEAST_EXPECT(env.current()->exists(aliceAcctKey));
+
+                // Close more ledgers until it is no longer within
+                // <FirstNFTokenSequence + MintedNFTokens + 256>
+                // to be able to delete alice's account
+                incLgrSeqForFixNftRemint(env, alice);
+
+                // alice's account is deleted
+                env(acctdelete(alice, becky), fee(acctDelFee));
+                env.close();
+
+                // alice's account account root is gone from the most recently
+                // closed ledger and the current ledger.
+                BEAST_EXPECT(!env.closed()->exists(aliceAcctKey));
+                BEAST_EXPECT(!env.current()->exists(aliceAcctKey));
+
+                // Fund alice to re-create her account
+                env.fund(XRP(10000), alice);
+                env.close();
+
+                // alice's account now exists and has minted 0 NFTokens
+                BEAST_EXPECT(env.closed()->exists(aliceAcctKey));
+                BEAST_EXPECT(env.current()->exists(aliceAcctKey));
+                BEAST_EXPECT((*env.le(alice))[sfMintedNFTokens] == 0);
+
+                // alice mints a NFT with same params as the first one before
+                // the account delete.
+                uint256 const remintNFTokenID =
+                    token::getNextID(env, alice, 0u);
+                env(token::mint(alice));
+                env.close();
+
+                // burn the NFT to make sure alice owns remintNFTokenID
+                env(token::burn(alice, remintNFTokenID));
+                env.close();
+
+                // The new NFT minted will not have the same ID
+                // as any of the NFTs authorized minter minted
+                BEAST_EXPECT(
+                    std::find(nftIDs.begin(), nftIDs.end(), remintNFTokenID) ==
+                    nftIDs.end());
+            }
         }
 
-        // If fixNFTokenRemint is not enabled,
-        // when an account mints and burns a batch of NFTokens using tickets,
-        // the account should be able to be deleted.
-        // After the issuer's account is re-created and mints a NFT, it should
-        // have the same NFTokenID as the one minted before.
-        if (!features[fixNFTokenRemint])
+        // When an account mints and burns a batch of NFTokens using tickets,
+        // see if the the account can be deleted.
         {
             Env env{*this, features};
 
@@ -6293,243 +6347,103 @@ class NFToken_test : public beast::unit_test::suite
             BEAST_EXPECT(env.closed()->exists(aliceAcctKey));
             BEAST_EXPECT(env.current()->exists(aliceAcctKey));
 
-            // alice tries to delete her account, and is successful.
-            auto const acctDelFee1{drops(env.current()->fees().increment)};
-            env(acctdelete(alice, becky), fee(acctDelFee1));
-            env.close();
+            auto const acctDelFee{drops(env.current()->fees().increment)};
 
-            // alice's account account root is gone from the most recently
-            // closed ledger and the current ledger.
-            BEAST_EXPECT(!env.closed()->exists(aliceAcctKey));
-            BEAST_EXPECT(!env.current()->exists(aliceAcctKey));
-
-            // Fund alice to re-create her account
-            env.fund(XRP(10000), alice);
-            env.close();
-
-            // alice's account now exists and has minted 0 NFTokens
-            BEAST_EXPECT(env.closed()->exists(aliceAcctKey));
-            BEAST_EXPECT(env.current()->exists(aliceAcctKey));
-            BEAST_EXPECT((*env.le(alice))[sfMintedNFTokens] == 0);
-
-            // alice mints a NFT with same params as prevNftokenID
-            uint256 const remintNftokenID = token::getNextID(env, alice, 0u);
-            env(token::mint(alice));
-            env.close();
-
-            // burn the NFT to make sure alice owns remintNftokenID
-            env(token::burn(alice, remintNftokenID));
-            env.close();
-
-            // The new NFT minted will have the same ID
-            // as one of NFTs minted using tickets
-            BEAST_EXPECT(
-                std::find(nftIDs.begin(), nftIDs.end(), remintNftokenID) !=
-                nftIDs.end());
-        }
-
-        // If fixNFTokenRemint is enabled,
-        // when an authorized minter mints and burns a batch of NFTokens,
-        // issuer's account needs to wait a longer time before it can deleted.
-        // After the issuer's account is re-created and mints a NFT, it should
-        // not have the same NFTokenID as the ones authorized minter minted.
-        if (features[fixNFTokenRemint])
-        {
-            Env env{*this, features};
-            Account const alice("alice");
-            Account const becky("becky");
-            Account const minter{"minter"};
-
-            env.fund(XRP(10000), alice, becky, minter);
-            env.close();
-
-            // alice sets minter as her authorized minter
-            env(token::setMinter(alice, minter));
-            env.close();
-
-            // minter mints 500 NFTs for alice
-            std::vector<uint256> nftIDs;
-            nftIDs.reserve(500);
-            for (int i = 0; i < 500; i++)
+            if (!features[fixNFTokenRemint])
             {
-                uint256 const nftokenID = token::getNextID(env, alice, 0u);
-                nftIDs.push_back(nftokenID);
-                env(token::mint(minter), token::issuer(alice));
-            }
-            env.close();
-
-            // minter burns 500 NFTs
-            for (auto const nftokenID : nftIDs)
-            {
-                env(token::burn(minter, nftokenID));
-            }
-            env.close();
-
-            // Increment ledger sequence to the number that is
-            // enforced by the featureDeletableAccounts amendment
-            incLgrSeqForAcctDel(env, alice);
-
-            // Verify that alice's account root is present.
-            Keylet const aliceAcctKey{keylet::account(alice.id())};
-            BEAST_EXPECT(env.closed()->exists(aliceAcctKey));
-            BEAST_EXPECT(env.current()->exists(aliceAcctKey));
-
-            // alice tries to delete her account, but is unsuccessful.
-            // Due to authorized minting, alice's account sequence does not
-            // advance while minter mints NFTokens for her.
-            // The new account deletion retriction <FirstNFTokenSequence +
-            // MintedNFTokens + 256> enabled by this amendment will enforce
-            // alice to wait for more ledgers to close before she can delete her
-            // account, to prevent duplicate NFTokenIDs
-            auto const acctDelFee1{drops(env.current()->fees().increment)};
-            env(acctdelete(alice, becky), fee(acctDelFee1), ter(tecTOO_SOON));
-            env.close();
-
-            // alice's account is still present
-            BEAST_EXPECT(env.current()->exists(aliceAcctKey));
-
-            // Close more ledgers until it is no longer within
-            // <FirstNFTokenSequence + MintedNFTokens + 256>
-            // to be able to delete alice's account
-            incLgrSeqForFixNftRemint(env, alice);
-
-            // alice's account is deleted
-            auto const acctDelFee2{drops(env.current()->fees().increment)};
-            env(acctdelete(alice, becky), fee(acctDelFee2));
-            env.close();
-
-            // alice's account account root is gone from the most recently
-            // closed ledger and the current ledger.
-            BEAST_EXPECT(!env.closed()->exists(aliceAcctKey));
-            BEAST_EXPECT(!env.current()->exists(aliceAcctKey));
-
-            // Fund alice to re-create her account
-            env.fund(XRP(10000), alice);
-            env.close();
-
-            // alice's account now exists and has minted 0 NFTokens
-            BEAST_EXPECT(env.closed()->exists(aliceAcctKey));
-            BEAST_EXPECT(env.current()->exists(aliceAcctKey));
-            BEAST_EXPECT((*env.le(alice))[sfMintedNFTokens] == 0);
-
-            // alice mints a NFT with same params as prevNftokenID
-            uint256 const remintNftokenID = token::getNextID(env, alice, 0u);
-            env(token::mint(alice));
-            env.close();
-
-            // burn the NFT to make sure alice owns remintNftokenID
-            env(token::burn(alice, remintNftokenID));
-            env.close();
-
-            // The new NFT minted will not have the same ID
-            // as one of NFTs authorized minter minted
-            BEAST_EXPECT(
-                std::find(nftIDs.begin(), nftIDs.end(), remintNftokenID) ==
-                nftIDs.end());
-        }
-
-        // If fixNFTokenRemint is enabled,
-        // when an account mints and burns a batch of NFTokens using tickets,
-        // the account needs to wait a longer time before it can deleted.
-        // After the issuer's account is re-created and mints a NFT, it should
-        // not have the same NFTokenID as the ones minted using tickets.
-        if (features[fixNFTokenRemint])
-        {
-            Env env{*this, features};
-
-            Account const alice{"alice"};
-            Account const becky{"becky"};
-            env.fund(XRP(10000), alice, becky);
-            env.close();
-
-            // alice grab enough tickets for all of the following
-            // transactions. Note that once the tickets are acquired alice's
-            // account sequence number should not advance.
-            std::uint32_t aliceTicketSeq{env.seq(alice) + 1};
-            env(ticket::create(alice, 100));
-            env.close();
-
-            BEAST_EXPECT(ticketCount(env, alice) == 100);
-            BEAST_EXPECT(ownerCount(env, alice) == 100);
-
-            // alice mints 50 NFTs using tickets
-            std::vector<uint256> nftIDs;
-            nftIDs.reserve(50);
-            for (int i = 0; i < 50; i++)
-            {
-                nftIDs.push_back(token::getNextID(env, alice, 0u));
-                env(token::mint(alice, 0u), ticket::use(aliceTicketSeq++));
+                // alice tries to delete her account, and is successful.
+                env(acctdelete(alice, becky), fee(acctDelFee));
                 env.close();
-            }
 
-            // alice burns 50 NFTs using tickets
-            for (auto const nftokenID : nftIDs)
+                // alice's account account root is gone from the most recently
+                // closed ledger and the current ledger.
+                BEAST_EXPECT(!env.closed()->exists(aliceAcctKey));
+                BEAST_EXPECT(!env.current()->exists(aliceAcctKey));
+
+                // Fund alice to re-create her account
+                env.fund(XRP(10000), alice);
+                env.close();
+
+                // alice's account now exists and has minted 0 NFTokens
+                BEAST_EXPECT(env.closed()->exists(aliceAcctKey));
+                BEAST_EXPECT(env.current()->exists(aliceAcctKey));
+                BEAST_EXPECT((*env.le(alice))[sfMintedNFTokens] == 0);
+
+                // alice mints a NFT with same params as the first one before
+                // the account delete.
+                uint256 const remintNFTokenID =
+                    token::getNextID(env, alice, 0u);
+                env(token::mint(alice));
+                env.close();
+
+                // burn the NFT to make sure alice owns remintNFTokenID
+                env(token::burn(alice, remintNFTokenID));
+                env.close();
+
+                // The new NFT minted will have the same ID
+                // as one of NFTs minted using tickets
+                BEAST_EXPECT(
+                    std::find(nftIDs.begin(), nftIDs.end(), remintNFTokenID) !=
+                    nftIDs.end());
+            }
+            else if (features[fixNFTokenRemint])
             {
-                env(token::burn(alice, nftokenID),
-                    ticket::use(aliceTicketSeq++));
+                // alice tries to delete her account, but is unsuccessful.
+                // Due to authorized minting, alice's account sequence does not
+                // advance while minter mints NFTokens for her using tickets.
+                // The new account deletion retriction <FirstNFTokenSequence +
+                // MintedNFTokens + 256> enabled by this amendment will enforce
+                // alice to wait for more ledgers to close before she can
+                // delete her account, to prevent duplicate NFTokenIDs
+                env(acctdelete(alice, becky),
+                    fee(acctDelFee),
+                    ter(tecTOO_SOON));
+                env.close();
+
+                // alice's account is still present
+                BEAST_EXPECT(env.current()->exists(aliceAcctKey));
+
+                // Close more ledgers until it is no longer within
+                // <FirstNFTokenSequence + MintedNFTokens + 256>
+                // to be able to delete alice's account
+                incLgrSeqForFixNftRemint(env, alice);
+
+                // alice's account is deleted
+                env(acctdelete(alice, becky), fee(acctDelFee));
+                env.close();
+
+                // alice's account account root is gone from the most recently
+                // closed ledger and the current ledger.
+                BEAST_EXPECT(!env.closed()->exists(aliceAcctKey));
+                BEAST_EXPECT(!env.current()->exists(aliceAcctKey));
+
+                // Fund alice to re-create her account
+                env.fund(XRP(10000), alice);
+                env.close();
+
+                // alice's account now exists and has minted 0 NFTokens
+                BEAST_EXPECT(env.closed()->exists(aliceAcctKey));
+                BEAST_EXPECT(env.current()->exists(aliceAcctKey));
+                BEAST_EXPECT((*env.le(alice))[sfMintedNFTokens] == 0);
+
+                // alice mints a NFT with same params as the first one before
+                // the account delete.
+                uint256 const remintNFTokenID =
+                    token::getNextID(env, alice, 0u);
+                env(token::mint(alice));
+                env.close();
+
+                // burn the NFT to make sure alice owns remintNFTokenID
+                env(token::burn(alice, remintNFTokenID));
+                env.close();
+
+                // The new NFT minted will not have the same ID
+                // as any of the NFTs authorized minter minted using tickets
+                BEAST_EXPECT(
+                    std::find(nftIDs.begin(), nftIDs.end(), remintNFTokenID) ==
+                    nftIDs.end());
             }
-            env.close();
-
-            BEAST_EXPECT(ticketCount(env, alice) == 0);
-
-            // Increment ledger sequence to the number that is
-            // enforced by the featureDeletableAccounts amendment
-            incLgrSeqForAcctDel(env, alice);
-
-            // Verify that alice's account root is present.
-            Keylet const aliceAcctKey{keylet::account(alice.id())};
-            BEAST_EXPECT(env.closed()->exists(aliceAcctKey));
-            BEAST_EXPECT(env.current()->exists(aliceAcctKey));
-
-            // alice tries to delete her account, but is unsuccessful.
-            // Because alice used tickets to mint and burn NFTs, her account
-            // sequence did not change while while submitting these
-            // transactions. Hence, her <FirstNFTokenSequence + MintedNFTokens +
-            // 256> is still greater than the current ledger sequence
-            auto const acctDelFee1{drops(env.current()->fees().increment)};
-            env(acctdelete(alice, becky), fee(acctDelFee1), ter(tecTOO_SOON));
-            env.close();
-
-            // Close more ledgers until it is no longer within
-            // <FirstNFTokenSequence + MintedNFTokens + 256>
-            // to be able to delete alice's account
-            incLgrSeqForFixNftRemint(env, alice);
-
-            // alice's account is deleted
-            auto const acctDelFee2{drops(env.current()->fees().increment)};
-            env(acctdelete(alice, becky), fee(acctDelFee2));
-            env.close();
-
-            // alice's account account root is gone from the most recently
-            // closed ledger and the current ledger.
-            BEAST_EXPECT(!env.closed()->exists(aliceAcctKey));
-            BEAST_EXPECT(!env.current()->exists(aliceAcctKey));
-
-            // Fund alice to re-create her account
-            env.fund(XRP(10000), alice);
-            env.close();
-
-            // alice's account now exists and has minted 0 NFTokens
-            BEAST_EXPECT(env.closed()->exists(aliceAcctKey));
-            BEAST_EXPECT(env.current()->exists(aliceAcctKey));
-            BEAST_EXPECT((*env.le(alice))[sfMintedNFTokens] == 0);
-
-            // alice mints a NFT with same params as prevNftokenID
-            uint256 const remintNftokenID = token::getNextID(env, alice, 0u);
-            env(token::mint(alice));
-            env.close();
-
-            // burn the NFT to make sure alice owns remintNftokenID
-            env(token::burn(alice, remintNftokenID));
-            env.close();
-
-            // The new NFT minted will not have the same ID
-            // as one of NFTs alice minted using tickets
-            BEAST_EXPECT(
-                std::find(nftIDs.begin(), nftIDs.end(), remintNftokenID) ==
-                nftIDs.end());
         }
-
         // If fixNFTokenRemint is enabled,
         // when an authorized minter mints and burns a batch of NFTokens using
         // tickets, issuer's account needs to wait a longer time before it can
@@ -6597,8 +6511,8 @@ class NFToken_test : public beast::unit_test::suite
             // MintedNFTokens + 256> enabled by this amendment will enforce
             // alice to wait for more ledgers to close before she can delete her
             // account, to prevent duplicate NFTokenIDs
-            auto const acctDelFee1{drops(env.current()->fees().increment)};
-            env(acctdelete(alice, becky), fee(acctDelFee1), ter(tecTOO_SOON));
+            auto const acctDelFee{drops(env.current()->fees().increment)};
+            env(acctdelete(alice, becky), fee(acctDelFee), ter(tecTOO_SOON));
             env.close();
 
             // alice's account is still present
@@ -6610,8 +6524,7 @@ class NFToken_test : public beast::unit_test::suite
             incLgrSeqForFixNftRemint(env, alice);
 
             // alice's account is deleted
-            auto const acctDelFee2{drops(env.current()->fees().increment)};
-            env(acctdelete(alice, becky), fee(acctDelFee2));
+            env(acctdelete(alice, becky), fee(acctDelFee));
             env.close();
 
             // alice's account account root is gone from the most recently
@@ -6628,19 +6541,19 @@ class NFToken_test : public beast::unit_test::suite
             BEAST_EXPECT(env.current()->exists(aliceAcctKey));
             BEAST_EXPECT((*env.le(alice))[sfMintedNFTokens] == 0);
 
-            // alice mints a NFT with same params as prevNftokenID
-            uint256 const remintNftokenID = token::getNextID(env, alice, 0u);
+            // alice mints a NFT with same params as prevNFTokenID
+            uint256 const remintNFTokenID = token::getNextID(env, alice, 0u);
             env(token::mint(alice));
             env.close();
 
-            // burn the NFT to make sure alice owns remintNftokenID
-            env(token::burn(alice, remintNftokenID));
+            // burn the NFT to make sure alice owns remintNFTokenID
+            env(token::burn(alice, remintNFTokenID));
             env.close();
 
             // The new NFT minted will not have the same ID
             // as one of NFTs authorized minter minted using tickets
             BEAST_EXPECT(
-                std::find(nftIDs.begin(), nftIDs.end(), remintNftokenID) ==
+                std::find(nftIDs.begin(), nftIDs.end(), remintNFTokenID) ==
                 nftIDs.end());
         }
     }
