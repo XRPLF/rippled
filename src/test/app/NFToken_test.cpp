@@ -314,25 +314,13 @@ class NFToken_test : public beast::unit_test::suite
 
         while (seq < 33)
         {
-            if (features[fixNFTokenRemint])
-                // If fixNFTokenRemint is enabled, we must add
-                // FirstNFTokenSequence to offset the starting NFT sequence
-                // number
-                env(token::burn(
-                    alice,
-                    token::getID(
-                        alice,
-                        0,
-                        (*env.le(alice))[sfFirstNFTokenSequence] + seq++)));
-            else
-                env(token::burn(alice, token::getID(alice, 0, seq++)));
-
+            env(token::burn(alice, token::getID(env, alice, 0, seq++)));
             env.close();
             checkAliceOwnerMintedBurned((33 - seq) ? 1 : 0, 33, seq, __LINE__);
         }
 
         // alice burns a non-existent NFT.
-        env(token::burn(alice, token::getID(alice, 197, 5)), ter(tecNO_ENTRY));
+        env(token::burn(alice, token::getID(env, alice, 197, 5)), ter(tecNO_ENTRY));
         env.close();
         checkAliceOwnerMintedBurned(0, 33, 33, __LINE__);
 
@@ -442,19 +430,7 @@ class NFToken_test : public beast::unit_test::suite
         // minter burns the NFTs she created.
         while (nftSeq < 65)
         {
-            if (features[fixNFTokenRemint])
-                // If fixNFTokenRemint is enabled, we must add
-                // FirstNFTokenSequence to offset the starting NFT sequence
-                // number
-                env(token::burn(
-                    minter,
-                    token::getID(
-                        alice,
-                        0,
-                        (*env.le(alice))[sfFirstNFTokenSequence] + nftSeq++)));
-            else
-                env(token::burn(minter, token::getID(alice, 0, nftSeq++)));
-
+            env(token::burn(minter, token::getID(env, alice, 0, nftSeq++)));
             env.close();
             checkMintersOwnerMintedBurned(
                 0, 66, nftSeq, (65 - seq) ? 1 : 0, 0, 0, __LINE__);
@@ -462,22 +438,12 @@ class NFToken_test : public beast::unit_test::suite
 
         // minter has one more NFT to burn.  Should take her owner count to
         // 0.
-        if (features[fixNFTokenRemint])
-            // If fixNFTokenRemint is enabled, we must add
-            // FirstNFTokenSequence to offset the starting NFT sequence number
-            env(token::burn(
-                minter,
-                token::getID(
-                    alice,
-                    0,
-                    (*env.le(alice))[sfFirstNFTokenSequence] + nftSeq++)));
-        else
-            env(token::burn(minter, token::getID(alice, 0, nftSeq++)));
+        env(token::burn(minter, token::getID(env, alice, 0, nftSeq++)));
         env.close();
         checkMintersOwnerMintedBurned(0, 66, nftSeq, 0, 0, 0, __LINE__);
 
         // minter burns a non-existent NFT.
-        env(token::burn(minter, token::getID(alice, 2009, 3)),
+        env(token::burn(minter, token::getID(env, alice, 2009, 3)),
             ter(tecNO_ENTRY));
         env.close();
         checkMintersOwnerMintedBurned(0, 66, nftSeq, 0, 0, 0, __LINE__);
@@ -678,7 +644,7 @@ class NFToken_test : public beast::unit_test::suite
         // preclaim
 
         // Try to burn a token that doesn't exist.
-        env(token::burn(alice, token::getID(alice, 0, 1)), ter(tecNO_ENTRY));
+        env(token::burn(alice, token::getID(env, alice, 0, 1)), ter(tecNO_ENTRY));
         env.close();
         BEAST_EXPECT(ownerCount(env, buyer) == 0);
 
@@ -824,14 +790,14 @@ class NFToken_test : public beast::unit_test::suite
         BEAST_EXPECT(ownerCount(env, buyer) == 0);
 
         // The nftID must be present in the ledger.
-        env(token::createOffer(buyer, token::getID(alice, 0, 1), XRP(1000)),
+        env(token::createOffer(buyer, token::getID(env, alice, 0, 1), XRP(1000)),
             token::owner(alice),
             ter(tecNO_ENTRY));
         env.close();
         BEAST_EXPECT(ownerCount(env, buyer) == 0);
 
         // The nftID must be present in the ledger of a sell offer too.
-        env(token::createOffer(alice, token::getID(alice, 0, 1), XRP(1000)),
+        env(token::createOffer(alice, token::getID(env, alice, 0, 1), XRP(1000)),
             txflags(tfSellNFToken),
             ter(tecNO_ENTRY));
         env.close();
@@ -2608,7 +2574,7 @@ class NFToken_test : public beast::unit_test::suite
                     }
                 };
 
-                uint256 const nftAliceID = token::getID(
+                uint256 const nftAliceID = token::getID(env, 
                     alice,
                     taxon,
                     rand_int<std::uint32_t>(),
@@ -2616,7 +2582,7 @@ class NFToken_test : public beast::unit_test::suite
                     rand_int<std::uint16_t>());
                 check(taxon, nftAliceID);
 
-                uint256 const nftBeckyID = token::getID(
+                uint256 const nftBeckyID = token::getID(env, 
                     becky,
                     taxon,
                     rand_int<std::uint32_t>(),
@@ -6103,29 +6069,29 @@ class NFToken_test : public beast::unit_test::suite
         // Returns the current ledger sequence
         auto openLedgerSeq = [](Env& env) { return env.current()->seq(); };
 
-        // Close the ledger until the ledger sequence is large enough to close
+        // Close the ledger until the ledger sequence is large enough to delete
         // the account (no longer within <Sequence + 256>)
         // This is enforced by the featureDeletableAccounts amendment
-        auto incLgrSeqForAccDel = [&](Env& env, Account const& acc) {
+        auto incLgrSeqForAcctDel = [&](Env& env, Account const& acct) {
             int const delta = [&]() -> int {
-                if (env.seq(acc) + 255 > openLedgerSeq(env))
-                    return env.seq(acc) - openLedgerSeq(env) + 255;
+                if (env.seq(acct) + 255 > openLedgerSeq(env))
+                    return env.seq(acct) - openLedgerSeq(env) + 255;
                 return 0;
             }();
             BEAST_EXPECT(delta >= 0);
             for (int i = 0; i < delta; ++i)
                 env.close();
-            BEAST_EXPECT(openLedgerSeq(env) == env.seq(acc) + 255);
+            BEAST_EXPECT(openLedgerSeq(env) == env.seq(acct) + 255);
         };
 
         // Close the ledger until the ledger sequence is no longer
         // within <FirstNFTokenSequence + MintedNFTokens + 256>.
         // This is enforced by the fixNFTokenRemint amendment.
-        auto incLgrSeqForFixNftRemint = [&](Env& env, Account const& acc) {
+        auto incLgrSeqForFixNftRemint = [&](Env& env, Account const& acct) {
             int delta = 0;
             auto const deletableLgrSeq =
-                (*env.le(acc))[~sfFirstNFTokenSequence].value_or(0) +
-                (*env.le(acc))[sfMintedNFTokens] + 255;
+                (*env.le(acct))[~sfFirstNFTokenSequence].value_or(0) +
+                (*env.le(acct))[sfMintedNFTokens] + 255;
 
             if (deletableLgrSeq > openLedgerSeq(env))
                 delta = deletableLgrSeq - openLedgerSeq(env);
@@ -6157,7 +6123,7 @@ class NFToken_test : public beast::unit_test::suite
             BEAST_EXPECT((*env.le(alice))[sfMintedNFTokens] == 1);
 
             // Close enough ledgers to delete alice's account
-            incLgrSeqForAccDel(env, alice);
+            incLgrSeqForAcctDel(env, alice);
 
             // alice's account is deleted
             Keylet const aliceAcctKey{keylet::account(alice.id())};
@@ -6235,7 +6201,7 @@ class NFToken_test : public beast::unit_test::suite
 
             // Increment ledger sequence to the number that is
             // enforced by the featureDeletableAccounts amendment
-            incLgrSeqForAccDel(env, alice);
+            incLgrSeqForAcctDel(env, alice);
 
             // Verify that alice's account root is present.
             Keylet const aliceAcctKey{keylet::account(alice.id())};
@@ -6320,7 +6286,7 @@ class NFToken_test : public beast::unit_test::suite
 
             // Increment ledger sequence to the number that is
             // enforced by the featureDeletableAccounts amendment
-            incLgrSeqForAccDel(env, alice);
+            incLgrSeqForAcctDel(env, alice);
 
             // Verify that alice's account root is present.
             Keylet const aliceAcctKey{keylet::account(alice.id())};
@@ -6401,7 +6367,7 @@ class NFToken_test : public beast::unit_test::suite
 
             // Increment ledger sequence to the number that is
             // enforced by the featureDeletableAccounts amendment
-            incLgrSeqForAccDel(env, alice);
+            incLgrSeqForAcctDel(env, alice);
 
             // Verify that alice's account root is present.
             Keylet const aliceAcctKey{keylet::account(alice.id())};
@@ -6508,7 +6474,7 @@ class NFToken_test : public beast::unit_test::suite
 
             // Increment ledger sequence to the number that is
             // enforced by the featureDeletableAccounts amendment
-            incLgrSeqForAccDel(env, alice);
+            incLgrSeqForAcctDel(env, alice);
 
             // Verify that alice's account root is present.
             Keylet const aliceAcctKey{keylet::account(alice.id())};
@@ -6617,7 +6583,7 @@ class NFToken_test : public beast::unit_test::suite
 
             // Increment ledger sequence to the number that is
             // enforced by the featureDeletableAccounts amendment
-            incLgrSeqForAccDel(env, alice);
+            incLgrSeqForAcctDel(env, alice);
 
             // Verify that alice's account root is present.
             Keylet const aliceAcctKey{keylet::account(alice.id())};
