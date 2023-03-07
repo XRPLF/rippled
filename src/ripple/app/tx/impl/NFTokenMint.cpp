@@ -204,7 +204,8 @@ NFTokenMint::doApply()
                 : acctSeq - 1;
         }
 
-        std::uint32_t const mintedNftCnt = (*root)[~sfMintedNFTokens].value_or(0u);
+        std::uint32_t const mintedNftCnt =
+            (*root)[~sfMintedNFTokens].value_or(0u);
 
         (*root)[sfMintedNFTokens] = mintedNftCnt + 1u;
         if ((*root)[sfMintedNFTokens] == 0u)

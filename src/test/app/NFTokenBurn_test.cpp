@@ -380,7 +380,7 @@ class NFTokenBurn_test : public beast::unit_test::suite
             auto internalTaxon = [&env](
                                      Account const& acct,
                                      std::uint32_t taxon) -> std::uint32_t {
-               std::uint32_t tokenSeq =
+                std::uint32_t tokenSeq =
                     env.le(acct)->at(~sfMintedNFTokens).value_or(0);
 
                 // If fixNFTokenRemint amendment is on, we must

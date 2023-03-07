@@ -320,7 +320,8 @@ class NFToken_test : public beast::unit_test::suite
         }
 
         // alice burns a non-existent NFT.
-        env(token::burn(alice, token::getID(env, alice, 197, 5)), ter(tecNO_ENTRY));
+        env(token::burn(alice, token::getID(env, alice, 197, 5)),
+            ter(tecNO_ENTRY));
         env.close();
         checkAliceOwnerMintedBurned(0, 33, 33, __LINE__);
 
@@ -644,7 +645,8 @@ class NFToken_test : public beast::unit_test::suite
         // preclaim
 
         // Try to burn a token that doesn't exist.
-        env(token::burn(alice, token::getID(env, alice, 0, 1)), ter(tecNO_ENTRY));
+        env(token::burn(alice, token::getID(env, alice, 0, 1)),
+            ter(tecNO_ENTRY));
         env.close();
         BEAST_EXPECT(ownerCount(env, buyer) == 0);
 
@@ -790,14 +792,16 @@ class NFToken_test : public beast::unit_test::suite
         BEAST_EXPECT(ownerCount(env, buyer) == 0);
 
         // The nftID must be present in the ledger.
-        env(token::createOffer(buyer, token::getID(env, alice, 0, 1), XRP(1000)),
+        env(token::createOffer(
+                buyer, token::getID(env, alice, 0, 1), XRP(1000)),
             token::owner(alice),
             ter(tecNO_ENTRY));
         env.close();
         BEAST_EXPECT(ownerCount(env, buyer) == 0);
 
         // The nftID must be present in the ledger of a sell offer too.
-        env(token::createOffer(alice, token::getID(env, alice, 0, 1), XRP(1000)),
+        env(token::createOffer(
+                alice, token::getID(env, alice, 0, 1), XRP(1000)),
             txflags(tfSellNFToken),
             ter(tecNO_ENTRY));
         env.close();
@@ -2574,7 +2578,8 @@ class NFToken_test : public beast::unit_test::suite
                     }
                 };
 
-                uint256 const nftAliceID = token::getID(env, 
+                uint256 const nftAliceID = token::getID(
+                    env,
                     alice,
                     taxon,
                     rand_int<std::uint32_t>(),
@@ -2582,7 +2587,8 @@ class NFToken_test : public beast::unit_test::suite
                     rand_int<std::uint16_t>());
                 check(taxon, nftAliceID);
 
-                uint256 const nftBeckyID = token::getID(env, 
+                uint256 const nftBeckyID = token::getID(
+                    env,
                     becky,
                     taxon,
                     rand_int<std::uint32_t>(),
