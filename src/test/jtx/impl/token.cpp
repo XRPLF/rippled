@@ -65,18 +65,13 @@ getNextID(
     std::uint16_t flags,
     std::uint16_t xferFee)
 {
-    std::uint32_t nftSeq;
+    std::uint32_t nftSeq = env.le(issuer)->at(~sfMintedNFTokens).value_or(0);
 
-    // If fixNFTokenRemint amendment is on, we must
-    // generate the NFT sequence using new construct
+    // If fixNFTokenRemint amendment is on, we must add FirstNFTokenSequence.
     if (env.current()->rules().enabled(fixNFTokenRemint))
-        nftSeq = {
-            env.le(issuer)
-                ->at(~sfFirstNFTokenSequence)
-                .value_or(env.seq(issuer)) +
-            env.le(issuer)->at(~sfMintedNFTokens).value_or(0)};
-    else
-        nftSeq = {env.le(issuer)->at(~sfMintedNFTokens).value_or(0)};
+        nftSeq += env.le(issuer)
+                      ->at(~sfFirstNFTokenSequence)
+                      .value_or(env.seq(issuer));
 
     return token::getID(issuer, nfTokenTaxon, nftSeq, flags, xferFee);
 }

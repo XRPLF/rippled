@@ -178,40 +178,45 @@ NFTokenMint::doApply()
 
         // With fixNFTokenRemint amendment enabled:
         //
-        // If the issuer hasn't minted a NFT before, we must
-        // initialize sfFirstNFTokenSequence to equal to the current account
-        // sequence. In general, we must subtract account sequence by
-        // one, since it is incremented by the transactor beforehand. In
-        // scenarios of AuthorizedMinting or Tickets, we use the
-        // account sequence as it is because it has not been incremented.
+        // If the issuer hasn't minted an NFToken before we must add a
+        // FirstNFTokenSequence field to the issuer's AccountRoot.  The
+        // value of the FirstNFTokenSequence must equal the issuer's
+        // current account sequence.
         //
-        // Whether we subtract the acct sequence by 1 is unimportant in real
-        // world use case. But it is needed in order to deterministically
-        // generate the NFTokenSequence for test cases.
+        // There are three situations:
+        //  o If the first token is being minted by the issuer and
+        //     * If the transaction consumes a Sequence number, then the
+        //       Sequence has been pre-incremented by the time we get here in
+        //       doApply.  We must decrement the value in the Sequence field.
+        //     * Otherwise the transaction uses a Ticket so the Sequence has
+        //       not been pre-incremented.  We use the Sequence value as is.
+        //  o The first token is being minted by an authorized minter.  In
+        //    this case the issuer's Sequence field has been left untouched.
+        //    We use the issuer's Sequence value as is.
         if (auto fts = (*root)[~sfFirstNFTokenSequence]; !fts)
         {
-            auto const accSeq = (*root)[sfSequence];
+            std::uint32_t const acctSeq = (*root)[sfSequence];
 
             (*root)[sfFirstNFTokenSequence] =
                 (*root)[~sfNFTokenMinter] == ctx_.tx[sfAccount] ||
                     ctx_.tx.getSeqProxy().isTicket()
-                ? accSeq
-                : accSeq - 1;
+                ? acctSeq
+                : acctSeq - 1;
         }
 
-        auto const mintedNftCnt = (*root)[~sfMintedNFTokens].value_or(0);
+        std::uint32_t const mintedNftCnt = (*root)[~sfMintedNFTokens].value_or(0u);
 
-        (*root)[sfMintedNFTokens] = mintedNftCnt + 1;
-        if ((*root)[sfMintedNFTokens] == 0)
+        (*root)[sfMintedNFTokens] = mintedNftCnt + 1u;
+        if ((*root)[sfMintedNFTokens] == 0u)
             return Unexpected(tecMAX_SEQUENCE_REACHED);
 
         // Get the unique sequence number of this token by
         // sfFirstNFTokenSequence + sfMintedNFTokens
-        auto const offset = (*root)[sfFirstNFTokenSequence];
-        auto const tokenSeq = offset + mintedNftCnt;
+        std::uint32_t const offset = (*root)[sfFirstNFTokenSequence];
+        std::uint32_t const tokenSeq = offset + mintedNftCnt;
 
         // Check for more overflow cases
-        if (tokenSeq + 1 == 0 || tokenSeq < mintedNftCnt)
+        if (tokenSeq + 1u == 0u || tokenSeq < offset)
             return Unexpected(tecMAX_SEQUENCE_REACHED);
 
         ctx_.view().update(root);

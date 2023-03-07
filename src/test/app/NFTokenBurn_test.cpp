@@ -380,19 +380,15 @@ class NFTokenBurn_test : public beast::unit_test::suite
             auto internalTaxon = [&env](
                                      Account const& acct,
                                      std::uint32_t taxon) -> std::uint32_t {
-                std::uint32_t tokenSeq;
+               std::uint32_t tokenSeq =
+                    env.le(acct)->at(~sfMintedNFTokens).value_or(0);
 
                 // If fixNFTokenRemint amendment is on, we must
-                // generate the NFT sequence using new construct
+                // add FirstNFTokenSequence.
                 if (env.current()->rules().enabled(fixNFTokenRemint))
-                    tokenSeq = {
-                        env.le(acct)
-                            ->at(~sfFirstNFTokenSequence)
-                            .value_or(env.seq(acct)) +
-                        env.le(acct)->at(~sfMintedNFTokens).value_or(0)};
-                else
-                    tokenSeq = {
-                        env.le(acct)->at(~sfMintedNFTokens).value_or(0)};
+                    tokenSeq += env.le(acct)
+                                    ->at(~sfFirstNFTokenSequence)
+                                    .value_or(env.seq(acct));
 
                 return toUInt32(
                     nft::cipheredTaxon(tokenSeq, nft::toTaxon(taxon)));

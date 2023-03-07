@@ -191,13 +191,11 @@ class NFTokenDir_test : public beast::unit_test::suite
                         Account::base58Seed, std::string(seed));
                     env.fund(XRP(10000), account);
 
-                    // Should not advance ledger if fixNFTokenRemint is
-                    // enabled. Because otherwise, accounts are initialized at
-                    // different ledgers, and will have different account
-                    // sequences, which then causes the sequence number of
-                    // NFTokenIDs to be different
-                    if (!features[fixNFTokenRemint])
-                        env.close();
+                    // Do not close the ledger inside the loop.  If
+                    // fixNFTokenRemint is enabled and accounts are initialized
+                    // at different ledgers, they will have different account
+                    // sequences.  That would cause the accounts to have
+                    // different NFTokenID sequence numbers.
                 }
                 env.close();
 
@@ -417,13 +415,11 @@ class NFTokenDir_test : public beast::unit_test::suite
                         Account::base58Seed, std::string(seed));
                     env.fund(XRP(10000), account);
 
-                    // Should not advance ledger if fixNFTokenRemint is
-                    // enabled. Because otherwise, accounts are initialized at
-                    // different ledgers, and will have different account
-                    // sequences, which then causes the sequence number of
-                    // NFTokenIDs to be different
-                    if (!features[fixNFTokenRemint])
-                        env.close();
+                    // Do not close the ledger inside the loop.  If
+                    // fixNFTokenRemint is enabled and accounts are initialized
+                    // at different ledgers, they will have different account
+                    // sequences.  That would cause the accounts to have
+                    // different NFTokenID sequence numbers.
                 }
                 env.close();
 
@@ -663,21 +659,17 @@ class NFTokenDir_test : public beast::unit_test::suite
         // Create accounts for all of the seeds and fund those accounts.
         std::vector<Account> accounts;
         accounts.reserve(seeds.size());
-
-        // If fixNFTokenRemint is not enabled, accounts can be created in
-        // different ledgers.
-        // If fixNFTokenRemint is enabled, all accounts must be created in
-        // the same ledger in order to initialize all accounts with the same
-        // account sequence.
         for (std::string_view const& seed : seeds)
         {
             Account const& account =
                 accounts.emplace_back(Account::base58Seed, std::string(seed));
             env.fund(XRP(10000), account);
 
-            // Only advance the ledger if fixNFTokenRemint is disabled
-            if (!features[fixNFTokenRemint])
-                env.close();
+            // Do not close the ledger inside the loop.  If
+            // fixNFTokenRemint is enabled and accounts are initialized
+            // at different ledgers, they will have different account
+            // sequences.  That would cause the accounts to have
+            // different NFTokenID sequence numbers.
         }
         env.close();
 
@@ -848,21 +840,17 @@ class NFTokenDir_test : public beast::unit_test::suite
         // Create accounts for all of the seeds and fund those accounts.
         std::vector<Account> accounts;
         accounts.reserve(seeds.size());
-
-        // If fixNFTokenRemint is not enabled, accounts can be created in
-        // different ledgers.
-        // If fixNFTokenRemint is enabled, accounts must be created in the
-        // same ledger in order to initialize all accounts with the same
-        // account sequence.
         for (std::string_view const& seed : seeds)
         {
             Account const& account =
                 accounts.emplace_back(Account::base58Seed, std::string(seed));
             env.fund(XRP(10000), account);
 
-            // Only advance the ledger if fixNFTokenRemint is disabled
-            if (!features[fixNFTokenRemint])
-                env.close();
+            // Do not close the ledger inside the loop.  If
+            // fixNFTokenRemint is enabled and accounts are initialized
+            // at different ledgers, they will have different account
+            // sequences.  That would cause the accounts to have
+            // different NFTokenID sequence numbers.
         }
         env.close();
 
