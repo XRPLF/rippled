@@ -50,7 +50,7 @@ On supported platforms, see the [instructions on installing or updating `rippled
 
 - **RPC tooBusy response now has 503 HTTP status code**: Added ripplerpc 3.0, enabling RPC tooBusy responses to return relevant HTTP status codes. This is a non-breaking change that only applies to JSON-RPC when you include `"ripplerpc": "3.0"` in the request. [#4143](https://github.com/XRPLF/rippled/pull/4143)
 
-- **Use the Conan package manager**: Added a `conanfile.py` and Conan recipe for RocksDB to enable building dependencies with Conan. [#4367](https://github.com/XRPLF/rippled/pull/4367)
+- **Use the Conan package manager**: Added a `conanfile.py` to enable building dependencies with Conan [#4367](https://github.com/XRPLF/rippled/pull/4367). A recipe for Snappy was added [c2b03fe](https://github.com/XRPLF/rippled/commit/c2b03fecca19a304b37467b01fa78593d3dce3fb)
 
 - **Update Build Instructions**: Updated the build instructions to build with the Conan package manager and restructured info for easier comprehension. [#4376](https://github.com/XRPLF/rippled/pull/4376), [#4383](https://github.com/XRPLF/rippled/pull/4383)
 
