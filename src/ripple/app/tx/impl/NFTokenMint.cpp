@@ -193,12 +193,12 @@ NFTokenMint::doApply()
         //  o The first token is being minted by an authorized minter.  In
         //    this case the issuer's Sequence field has been left untouched.
         //    We use the issuer's Sequence value as is.
-        if (auto fts = (*root)[~sfFirstNFTokenSequence]; !fts)
+        if (!root->isFieldPresent(sfFirstNFTokenSequence))
         {
-            std::uint32_t const acctSeq = (*root)[sfSequence];
+            std::uint32_t const acctSeq = root->at(sfSequence);
 
-            (*root)[sfFirstNFTokenSequence] =
-                (*root)[~sfNFTokenMinter] == ctx_.tx[sfAccount] ||
+            root->at(sfFirstNFTokenSequence) =
+                ctx_.tx.isFieldPresent(sfIssuer) ||
                     ctx_.tx.getSeqProxy().isTicket()
                 ? acctSeq
                 : acctSeq - 1;
