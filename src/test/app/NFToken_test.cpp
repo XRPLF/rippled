@@ -6137,7 +6137,7 @@ class NFToken_test : public beast::unit_test::suite
             env(acctdelete(alice, becky), fee(acctDelFee));
             env.close();
 
-            // alice's account account root is gone from the most recently
+            // alice's account root is gone from the most recently
             // closed ledger and the current ledger.
             BEAST_EXPECT(!env.closed()->exists(aliceAcctKey));
             BEAST_EXPECT(!env.current()->exists(aliceAcctKey));
@@ -6271,7 +6271,7 @@ class NFToken_test : public beast::unit_test::suite
                 env(acctdelete(alice, becky), fee(acctDelFee));
                 env.close();
 
-                // alice's account account root is gone from the most recently
+                // alice's account root is gone from the most recently
                 // closed ledger and the current ledger.
                 BEAST_EXPECT(!env.closed()->exists(aliceAcctKey));
                 BEAST_EXPECT(!env.current()->exists(aliceAcctKey));
@@ -6361,7 +6361,7 @@ class NFToken_test : public beast::unit_test::suite
                 env(acctdelete(alice, becky), fee(acctDelFee));
                 env.close();
 
-                // alice's account account root is gone from the most recently
+                // alice's account root is gone from the most recently
                 // closed ledger and the current ledger.
                 BEAST_EXPECT(!env.closed()->exists(aliceAcctKey));
                 BEAST_EXPECT(!env.current()->exists(aliceAcctKey));
@@ -6418,7 +6418,7 @@ class NFToken_test : public beast::unit_test::suite
                 env(acctdelete(alice, becky), fee(acctDelFee));
                 env.close();
 
-                // alice's account account root is gone from the most recently
+                // alice's account root is gone from the most recently
                 // closed ledger and the current ledger.
                 BEAST_EXPECT(!env.closed()->exists(aliceAcctKey));
                 BEAST_EXPECT(!env.current()->exists(aliceAcctKey));
@@ -6533,7 +6533,7 @@ class NFToken_test : public beast::unit_test::suite
             env(acctdelete(alice, becky), fee(acctDelFee));
             env.close();
 
-            // alice's account account root is gone from the most recently
+            // alice's account root is gone from the most recently
             // closed ledger and the current ledger.
             BEAST_EXPECT(!env.closed()->exists(aliceAcctKey));
             BEAST_EXPECT(!env.current()->exists(aliceAcctKey));
