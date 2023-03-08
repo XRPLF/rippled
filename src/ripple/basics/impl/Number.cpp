@@ -26,8 +26,6 @@
 #include <type_traits>
 #include <utility>
 
-#include <boost/predef.h>
-
 #ifdef BOOST_COMP_MSVC
 #include <boost/multiprecision/cpp_int.hpp>
 using uint128_t = boost::multiprecision::uint128_t;

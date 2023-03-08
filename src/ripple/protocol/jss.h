@@ -105,25 +105,24 @@ JSS(Paths);                // in/out: TransactionSign
 JSS(PayChannel);           // ledger type.
 JSS(Payment);              // transaction type.
 JSS(PaymentChannelClaim);  // transaction type.
-JSS(PaymentChannelCreate);  // transaction type.
-JSS(PaymentChannelFund);    // transaction type.
-JSS(RippleState);           // ledger type.
-JSS(SLE_hit_rate);          // out: GetCounts.
-JSS(SetFee);                // transaction type.
-JSS(UNLModify);             // transaction type.
-JSS(SettleDelay);           // in: TransactionSign
-JSS(SendMax);               // in: TransactionSign
-JSS(Sequence);              // in/out: TransactionSign; field.
-JSS(SetFlag);               // field.
-JSS(SetRegularKey);         // transaction type.
-JSS(SignerList);            // ledger type.
-JSS(SignerListSet);         // transaction type.
-JSS(SigningPubKey);         // field.
-JSS(TakerGets);             // field.
-JSS(TakerPays);             // field.
-JSS(Ticket);                // ledger type.
-JSS(TicketCreate);          // transaction type.
-// JSS(TimeInterval);           // out: AMM Auction Slot
+JSS(PaymentChannelCreate);   // transaction type.
+JSS(PaymentChannelFund);     // transaction type.
+JSS(RippleState);            // ledger type.
+JSS(SLE_hit_rate);           // out: GetCounts.
+JSS(SetFee);                 // transaction type.
+JSS(UNLModify);              // transaction type.
+JSS(SettleDelay);            // in: TransactionSign
+JSS(SendMax);                // in: TransactionSign
+JSS(Sequence);               // in/out: TransactionSign; field.
+JSS(SetFlag);                // field.
+JSS(SetRegularKey);          // transaction type.
+JSS(SignerList);             // ledger type.
+JSS(SignerListSet);          // transaction type.
+JSS(SigningPubKey);          // field.
+JSS(TakerGets);              // field.
+JSS(TakerPays);              // field.
+JSS(Ticket);                 // ledger type.
+JSS(TicketCreate);           // transaction type.
 JSS(TxnSignature);           // field.
 JSS(TradingFee);             // in/out: AMM trading fee
 JSS(TransactionType);        // in: TransactionSign.
