@@ -338,15 +338,14 @@ EscrowFinish::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-FeeUnit64
+XRPAmount
 EscrowFinish::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
-    FeeUnit64 extraFee{0};
+    XRPAmount extraFee{0};
 
     if (auto const fb = tx[~sfFulfillment])
     {
-        extraFee +=
-            safe_cast<FeeUnit64>(view.fees().units) * (32 + (fb->size() / 16));
+        extraFee += view.fees().base * (32 + (fb->size() / 16));
     }
 
     return Transactor::calculateBaseFee(view, tx) + extraFee;

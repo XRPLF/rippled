@@ -5,6 +5,7 @@ jobs:
 
   dependencies:
     strategy:
+      fail-fast: false
       matrix:
         platform:
           - linux
@@ -66,6 +67,7 @@ jobs:
 
   test:
     strategy:
+      fail-fast: false
       matrix:
         platform:
           - linux

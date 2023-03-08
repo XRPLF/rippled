@@ -339,6 +339,19 @@ STAmount::iou() const
     return {mantissa, exponent};
 }
 
+STAmount&
+STAmount::operator=(IOUAmount const& iou)
+{
+    assert(mIsNative == false);
+    mOffset = iou.exponent();
+    mIsNegative = iou < beast::zero;
+    if (mIsNegative)
+        mValue = static_cast<std::uint64_t>(-iou.mantissa());
+    else
+        mValue = static_cast<std::uint64_t>(iou.mantissa());
+    return *this;
+}
+
 //------------------------------------------------------------------------------
 //
 // Operators
@@ -381,6 +394,13 @@ operator+(STAmount const& v1, STAmount const& v2)
 
     if (v1.native())
         return {v1.getFName(), getSNValue(v1) + getSNValue(v2)};
+
+    if (*stNumberSwitchover)
+    {
+        auto x = v1;
+        x = v1.iou() + v2.iou();
+        return x;
+    }
 
     int ov1 = v1.exponent(), ov2 = v2.exponent();
     std::int64_t vv1 = static_cast<std::int64_t>(v1.mantissa());
@@ -705,24 +725,36 @@ STAmount::canonicalize()
                     "Native currency amount out of range");
         }
 
-        while (mOffset < 0)
+        if (*stNumberSwitchover && *stAmountCanonicalizeSwitchover)
         {
-            mValue /= 10;
-            ++mOffset;
+            Number num(
+                mIsNegative ? -mValue : mValue, mOffset, Number::unchecked{});
+            XRPAmount xrp{num};
+            mIsNegative = xrp.drops() < 0;
+            mValue = mIsNegative ? -xrp.drops() : xrp.drops();
+            mOffset = 0;
         }
-
-        while (mOffset > 0)
+        else
         {
-            if (*stAmountCanonicalizeSwitchover)
+            while (mOffset < 0)
             {
-                // N.B. do not move the overflow check to after the
-                // multiplication
-                if (mValue > cMaxNativeN)
-                    Throw<std::runtime_error>(
-                        "Native currency amount out of range");
+                mValue /= 10;
+                ++mOffset;
             }
-            mValue *= 10;
-            --mOffset;
+
+            while (mOffset > 0)
+            {
+                if (*stAmountCanonicalizeSwitchover)
+                {
+                    // N.B. do not move the overflow check to after the
+                    // multiplication
+                    if (mValue > cMaxNativeN)
+                        Throw<std::runtime_error>(
+                            "Native currency amount out of range");
+                }
+                mValue *= 10;
+                --mOffset;
+            }
         }
 
         if (mValue > cMaxNativeN)
@@ -732,6 +764,12 @@ STAmount::canonicalize()
     }
 
     mIsNative = false;
+
+    if (*stNumberSwitchover)
+    {
+        *this = iou();
+        return;
+    }
 
     if (mValue == 0)
     {
@@ -1169,6 +1207,9 @@ multiply(STAmount const& v1, STAmount const& v2, Issue const& issue)
 
         return STAmount(v1.getFName(), minV * maxV);
     }
+
+    if (*stNumberSwitchover)
+        return {IOUAmount{Number{v1} * Number{v2}}, issue};
 
     std::uint64_t value1 = v1.mantissa();
     std::uint64_t value2 = v2.mantissa();

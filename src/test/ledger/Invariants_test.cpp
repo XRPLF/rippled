@@ -64,7 +64,7 @@ class Invariants_test : public beast::unit_test::suite
             ov,
             tx,
             tesSUCCESS,
-            safe_cast<FeeUnit64>(env.current()->fees().units),
+            env.current()->fees().base,
             tapNONE,
             jlog};
 

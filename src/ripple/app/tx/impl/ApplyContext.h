@@ -40,14 +40,14 @@ public:
         OpenView& base,
         STTx const& tx,
         TER preclaimResult,
-        FeeUnit64 baseFee,
+        XRPAmount baseFee,
         ApplyFlags flags,
         beast::Journal = beast::Journal{beast::Journal::getNullSink()});
 
     Application& app;
     STTx const& tx;
     TER const preclaimResult;
-    FeeUnit64 const baseFee;
+    XRPAmount const baseFee;
     beast::Journal const journal;
 
     ApplyView&
