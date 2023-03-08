@@ -6547,7 +6547,8 @@ class NFToken_test : public beast::unit_test::suite
             BEAST_EXPECT(env.current()->exists(aliceAcctKey));
             BEAST_EXPECT((*env.le(alice))[sfMintedNFTokens] == 0);
 
-            // alice mints a NFT with same params as prevNFTokenID
+            // The new NFT minted will not have the same ID
+            // as any of the NFTs authorized minter minted using tickets
             uint256 const remintNFTokenID = token::getNextID(env, alice, 0u);
             env(token::mint(alice));
             env.close();
