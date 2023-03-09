@@ -49,18 +49,18 @@ enum TELcodes : TERUnderlyingType {
     // - Not forwarded
     // - No fee check
     telLOCAL_ERROR = -399,
-    telBAD_DOMAIN,
-    telBAD_PATH_COUNT,
-    telBAD_PUBLIC_KEY,
-    telFAILED_PROCESSING,
-    telINSUF_FEE_P,
-    telNO_DST_PARTIAL,
-    telCAN_NOT_QUEUE,
-    telCAN_NOT_QUEUE_BALANCE,
-    telCAN_NOT_QUEUE_BLOCKS,
-    telCAN_NOT_QUEUE_BLOCKED,
-    telCAN_NOT_QUEUE_FEE,
-    telCAN_NOT_QUEUE_FULL,
+    telBAD_DOMAIN = -398,
+    telBAD_PATH_COUNT = -397,
+    telBAD_PUBLIC_KEY = -396,
+    telFAILED_PROCESSING = -395,
+    telINSUF_FEE_P = -394,
+    telNO_DST_PARTIAL = -393,
+    telCAN_NOT_QUEUE = -392,
+    telCAN_NOT_QUEUE_BALANCE = -391,
+    telCAN_NOT_QUEUE_BLOCKS = -390,
+    telCAN_NOT_QUEUE_BLOCKED = -389,
+    telCAN_NOT_QUEUE_FEE = -388,
+    telCAN_NOT_QUEUE_FULL = -387,
 };
 
 //------------------------------------------------------------------------------
@@ -81,45 +81,47 @@ enum TEMcodes : TERUnderlyingType {
     // - Cannot succeed in any imagined ledger.
     temMALFORMED = -299,
 
-    temBAD_AMOUNT,
-    temBAD_CURRENCY,
-    temBAD_EXPIRATION,
-    temBAD_FEE,
-    temBAD_ISSUER,
-    temBAD_LIMIT,
-    temBAD_OFFER,
-    temBAD_PATH,
-    temBAD_PATH_LOOP,
-    temBAD_REGKEY,
-    temBAD_SEND_XRP_LIMIT,
-    temBAD_SEND_XRP_MAX,
-    temBAD_SEND_XRP_NO_DIRECT,
-    temBAD_SEND_XRP_PARTIAL,
-    temBAD_SEND_XRP_PATHS,
-    temBAD_SEQUENCE,
-    temBAD_SIGNATURE,
-    temBAD_SRC_ACCOUNT,
-    temBAD_TRANSFER_RATE,
-    temDST_IS_SRC,
-    temDST_NEEDED,
-    temINVALID,
-    temINVALID_FLAG,
-    temREDUNDANT,
-    temRIPPLE_EMPTY,
-    temDISABLED,
-    temBAD_SIGNER,
-    temBAD_QUORUM,
-    temBAD_WEIGHT,
-    temBAD_TICK_SIZE,
-    temINVALID_ACCOUNT_ID,
-    temCANNOT_PREAUTH_SELF,
-    temINVALID_COUNT,
+    temBAD_AMOUNT = -298,
+    temBAD_CURRENCY = -297,
+    temBAD_EXPIRATION = -296,
+    temBAD_FEE = -295,
+    temBAD_ISSUER = -294,
+    temBAD_LIMIT = -293,
+    temBAD_OFFER = -292,
+    temBAD_PATH = -291,
+    temBAD_PATH_LOOP = -290,
+    temBAD_REGKEY = -289,
+    temBAD_SEND_XRP_LIMIT = -288,
+    temBAD_SEND_XRP_MAX = -287,
+    temBAD_SEND_XRP_NO_DIRECT = -286,
+    temBAD_SEND_XRP_PARTIAL = -285,
+    temBAD_SEND_XRP_PATHS = -284,
+    temBAD_SEQUENCE = -283,
+    temBAD_SIGNATURE = -282,
+    temBAD_SRC_ACCOUNT = -281,
+    temBAD_TRANSFER_RATE = -280,
+    temDST_IS_SRC = -279,
+    temDST_NEEDED = -278,
+    temINVALID = -277,
+    temINVALID_FLAG = -276,
+    temREDUNDANT = -275,
+    temRIPPLE_EMPTY = -274,
+    temDISABLED = -273,
+    temBAD_SIGNER = -272,
+    temBAD_QUORUM = -271,
+    temBAD_WEIGHT = -270,
+    temBAD_TICK_SIZE = -269,
+    temINVALID_ACCOUNT_ID = -268,
+    temCANNOT_PREAUTH_SELF = -267,
+    temINVALID_COUNT = -266,
 
-    temUNCERTAIN,  // An internal intermediate result; should never be returned.
-    temUNKNOWN,    // An internal intermediate result; should never be returned.
+    // An internal intermediate result; should never be returned.
+    temUNCERTAIN = -265,
+    // An internal intermediate result; should never be returned.
+    temUNKNOWN = -264,
 
-    temSEQ_AND_TICKET,
-    temBAD_NFTOKEN_TRANSFER_FEE,
+    temSEQ_AND_TICKET = -263,
+    temBAD_NFTOKEN_TRANSFER_FEE = -262,
 };
 
 //------------------------------------------------------------------------------
@@ -143,26 +145,26 @@ enum TEFcodes : TERUnderlyingType {
     // - Not forwarded
     // - Could succeed in an imagined ledger.
     tefFAILURE = -199,
-    tefALREADY,
-    tefBAD_ADD_AUTH,
-    tefBAD_AUTH,
-    tefBAD_LEDGER,
-    tefCREATED,
-    tefEXCEPTION,
-    tefINTERNAL,
-    tefNO_AUTH_REQUIRED,  // Can't set auth if auth is not required.
-    tefPAST_SEQ,
-    tefWRONG_PRIOR,
-    tefMASTER_DISABLED,
-    tefMAX_LEDGER,
-    tefBAD_SIGNATURE,
-    tefBAD_QUORUM,
-    tefNOT_MULTI_SIGNING,
-    tefBAD_AUTH_MASTER,
-    tefINVARIANT_FAILED,
-    tefTOO_BIG,
-    tefNO_TICKET,
-    tefNFTOKEN_IS_NOT_TRANSFERABLE,
+    tefALREADY = -198,
+    tefBAD_ADD_AUTH = -197,
+    tefBAD_AUTH = -196,
+    tefBAD_LEDGER = -195,
+    tefCREATED = -194,
+    tefEXCEPTION = -193,
+    tefINTERNAL = -192,
+    tefNO_AUTH_REQUIRED = -191,  // Can't set auth if auth is not required.
+    tefPAST_SEQ = -190,
+    tefWRONG_PRIOR = -189,
+    tefMASTER_DISABLED = -188,
+    tefMAX_LEDGER = -187,
+    tefBAD_SIGNATURE = -186,
+    tefBAD_QUORUM = -185,
+    tefNOT_MULTI_SIGNING = -184,
+    tefBAD_AUTH_MASTER = -183,
+    tefINVARIANT_FAILED = -182,
+    tefTOO_BIG = -181,
+    tefNO_TICKET = -180,
+    tefNFTOKEN_IS_NOT_TRANSFERABLE = -179,
 };
 
 //------------------------------------------------------------------------------
@@ -190,18 +192,18 @@ enum TERcodes : TERUnderlyingType {
     // - Hold
     // - Makes hole in sequence which jams transactions.
     terRETRY = -99,
-    terFUNDS_SPENT,  // DEPRECATED.
-    terINSUF_FEE_B,  // Can't pay fee, therefore don't burden network.
-    terNO_ACCOUNT,   // Can't pay fee, therefore don't burden network.
-    terNO_AUTH,      // Not authorized to hold IOUs.
-    terNO_LINE,      // Internal flag.
-    terOWNERS,       // Can't succeed with non-zero owner count.
-    terPRE_SEQ,      // Can't pay fee, no point in forwarding, so don't
-                     // burden network.
-    terLAST,         // DEPRECATED.
-    terNO_RIPPLE,    // Rippling not allowed
-    terQUEUED,       // Transaction is being held in TxQ until fee drops
-    terPRE_TICKET,   // Ticket is not yet in ledger but might be on its way
+    terFUNDS_SPENT = -98,  // DEPRECATED.
+    terINSUF_FEE_B = -97,  // Can't pay fee, therefore don't burden network.
+    terNO_ACCOUNT = -96,   // Can't pay fee, therefore don't burden network.
+    terNO_AUTH = -95,      // Not authorized to hold IOUs.
+    terNO_LINE = -94,      // Internal flag.
+    terOWNERS = -93,       // Can't succeed with non-zero owner count.
+    terPRE_SEQ = -92,      // Can't pay fee, no point in forwarding, so don't
+                           // burden network.
+    terLAST = -91,         // DEPRECATED.
+    terNO_RIPPLE = -90,    // Rippling not allowed
+    terQUEUED = -89,       // Transaction is being held in TxQ until fee drops
+    terPRE_TICKET = -88,  // Ticket is not yet in ledger but might be on its way
 };
 
 //------------------------------------------------------------------------------
