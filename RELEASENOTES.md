@@ -151,7 +151,6 @@ The following people contributed directly to this release:
 - RichardAH <richard.holland@starstone.co.nz>
 - Scott Determan <scott.determan@yahoo.com>
 - Scott Schurr <scott@ripple.com>
-- seelabs <scott.determan@yahoo.com>
 - Shawn Xie <35279399+shawnxie999@users.noreply.github.com>
 
 Security Bug Bounty Acknowledgements:
