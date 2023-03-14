@@ -515,10 +515,16 @@ public:
         };
 
         static constexpr std::
-            array<std::pair<std::string_view, std::uint32_t>, 7>
+            array<std::pair<std::string_view, std::uint32_t>, 11>
                 asFlags{
                     {{"defaultRipple", asfDefaultRipple},
                      {"depositAuth", asfDepositAuth},
+                     {"disallowIncomingCheck", asfDisallowIncomingCheck},
+                     {"disallowIncomingNFTokenOffer",
+                      asfDisallowIncomingNFTokenOffer},
+                     {"disallowIncomingPayChan", asfDisallowIncomingPayChan},
+                     {"disallowIncomingTrustline",
+                      asfDisallowIncomingTrustline},
                      {"disallowIncomingXRP", asfDisallowXRP},
                      {"globalFreeze", asfGlobalFreeze},
                      {"noFreeze", asfNoFreeze},

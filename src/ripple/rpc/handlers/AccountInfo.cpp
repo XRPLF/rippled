@@ -78,12 +78,17 @@ doAccountInfo(RPC::JsonContext& context)
         return jvAccepted;
 
     static constexpr std::
-        array<std::pair<std::string_view, LedgerSpecificFlags>, 9>
+        array<std::pair<std::string_view, LedgerSpecificFlags>, 13>
             lsFlags{
                 {{"defaultRipple", lsfDefaultRipple},
                  {"depositAuth", lsfDepositAuth},
                  {"disableMasterKey", lsfDisableMaster},
                  {"disallowIncomingXRP", lsfDisallowXRP},
+                 {"disallowIncomingNFTokenOffer",
+                  lsfDisallowIncomingNFTokenOffer},
+                 {"disallowIncomingCheck", lsfDisallowIncomingCheck},
+                 {"disallowIncomingPayChan", lsfDisallowIncomingPayChan},
+                 {"disallowIncomingTrustline", lsfDisallowIncomingTrustline},
                  {"globalFreeze", lsfGlobalFreeze},
                  {"noFreeze", lsfNoFreeze},
                  {"passwordSpent", lsfPasswordSpent},
