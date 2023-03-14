@@ -42,7 +42,8 @@ namespace ripple {
  * The slot-holder owns the slot privileges when in state Occupied or Tailing.
  * If x is the fraction of used slot time for the current slot holder
  * and X is the price at which the slot can be bought specified in LPTokens
- * then: The minimum bid price for the slot in first interval is f(x) = X * 1.05
+ * then: The minimum bid price for the slot in first interval is
+ * f(x) = X * 1.05 + min_slot_price
  * The bid price of slot any time is
  * f(x) = X * 1.05 * (1 - x^60) + min_slot_price, where min_slot_price
  * is some constant minimum slot price.
@@ -58,6 +59,8 @@ namespace ripple {
  * Price - price paid for the slot in LPTokens.
  * AuthAccounts - up to four accounts authorized to trade at
  *     the discounted fee.
+ * @see [XLS30d:Continuous Auction
+ * Mechanism](https://github.com/XRPLF/XRPL-Standards/discussions/78)
  */
 class AMMBid : public Transactor
 {

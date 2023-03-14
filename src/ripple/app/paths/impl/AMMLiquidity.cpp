@@ -132,7 +132,7 @@ AMMLiquidity<TIn, TOut>::getOffer(
         return std::nullopt;
     }
 
-    JLOG(j_.debug()) << "AMMLiquidity::getOffer balances "
+    JLOG(j_.trace()) << "AMMLiquidity::getOffer balances "
                      << to_string(initialBalances_.in) << " "
                      << to_string(initialBalances_.out) << " new balances "
                      << to_string(balances.in) << " "
@@ -146,14 +146,11 @@ AMMLiquidity<TIn, TOut>::getOffer(
     // to the requested clobQuality but not exactly and potentially SPQ may keep
     // on approaching clobQuality for many iterations. Checking for the quality
     // threshold prevents this scenario.
-    auto const spotPriceQ = Quality{balances};
-    if (clobQuality &&
+    if (auto const spotPriceQ = Quality{balances}; clobQuality &&
         (spotPriceQ <= clobQuality ||
-         ((Number(clobQuality->rate()) - spotPriceQ.rate()) /
-              clobQuality->rate() <
-          Number(1, -7))))
+         withinRelativeDistance(spotPriceQ, *clobQuality, Number(1, -7))))
     {
-        JLOG(j_.debug()) << "AMMLiquidity::getOffer, higher clob quality";
+        JLOG(j_.trace()) << "AMMLiquidity::getOffer, higher clob quality";
         return std::nullopt;
     }
 
@@ -189,26 +186,26 @@ AMMLiquidity<TIn, TOut>::getOffer(
             JLOG(j_.error()) << "AMMLiquidity::getOffer overflow " << e.what();
             return maxOffer(balances);
         }
-        catch (std::runtime_error const& e)
+        catch (std::exception const& e)
         {
-            JLOG(j_.error()) << "AMMLiquidity::getOffer runtime " << e.what();
+            JLOG(j_.error()) << "AMMLiquidity::getOffer exception " << e.what();
         }
         return std::nullopt;
     }();
 
-    if (offer && offer->amount().in > beast::zero &&
-        offer->amount().out > beast::zero)
+    if (offer)
     {
-        JLOG(j_.debug()) << "AMMLiquidity::getOffer, created "
-                         << to_string(offer->amount().in) << "/" << issueIn_
-                         << " " << to_string(offer->amount().out) << "/"
-                         << issueOut_;
-        return offer;
-    }
-    else
-    {
-        JLOG(j_.debug()) << "AMMLiquidity::getOffer, failed "
-                         << offer.has_value();
+        if (offer->amount().in > beast::zero &&
+            offer->amount().out > beast::zero)
+        {
+            JLOG(j_.trace())
+                << "AMMLiquidity::getOffer, created "
+                << to_string(offer->amount().in) << "/" << issueIn_ << " "
+                << to_string(offer->amount().out) << "/" << issueOut_;
+            return offer;
+        }
+
+        JLOG(j_.error()) << "AMMLiquidity::getOffer, failed";
     }
 
     return std::nullopt;

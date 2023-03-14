@@ -454,8 +454,8 @@ AMMWithdraw::withdraw(
     }
 
     // Withdraw amountWithdraw
-    auto res =
-        ammSend(view, ammAccount, account_, amountWithdraw, ctx_.journal);
+    auto res = accountSend(
+        view, ammAccount, account_, amountWithdraw, ctx_.journal, true);
     if (res != tesSUCCESS)
     {
         JLOG(ctx_.journal.debug())
@@ -466,8 +466,8 @@ AMMWithdraw::withdraw(
     // Withdraw amount2Withdraw
     if (amount2Withdraw)
     {
-        res =
-            ammSend(view, ammAccount, account_, *amount2Withdraw, ctx_.journal);
+        res = accountSend(
+            view, ammAccount, account_, *amount2Withdraw, ctx_.journal, true);
         if (res != tesSUCCESS)
         {
             JLOG(ctx_.journal.debug())

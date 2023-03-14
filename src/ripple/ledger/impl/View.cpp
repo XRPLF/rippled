@@ -1099,7 +1099,8 @@ rippleSend(
     AccountID const& uReceiverID,
     STAmount const& saAmount,
     STAmount& saActual,
-    beast::Journal j)
+    beast::Journal j,
+    bool waveFee)
 {
     auto const issuer = saAmount.getIssuer();
 
@@ -1120,8 +1121,9 @@ rippleSend(
     // Sending 3rd party IOUs: transit.
 
     // Calculate the amount to transfer accounting
-    // for any transfer fees:
-    saActual = multiply(saAmount, transferRate(view, issuer));
+    // for any transfer fees if the fee is not waved:
+    saActual =
+        waveFee ? saAmount : multiply(saAmount, transferRate(view, issuer));
 
     JLOG(j.debug()) << "rippleSend> " << to_string(uSenderID) << " - > "
                     << to_string(uReceiverID)
@@ -1142,7 +1144,8 @@ accountSend(
     AccountID const& uSenderID,
     AccountID const& uReceiverID,
     STAmount const& saAmount,
-    beast::Journal j)
+    beast::Journal j,
+    bool waveFee)
 {
     assert(saAmount >= beast::zero);
 
@@ -1160,7 +1163,8 @@ accountSend(
                         << to_string(uReceiverID) << " : "
                         << saAmount.getFullText();
 
-        return rippleSend(view, uSenderID, uReceiverID, saAmount, saActual, j);
+        return rippleSend(
+            view, uSenderID, uReceiverID, saAmount, saActual, j, waveFee);
     }
 
     /* XRP send which does not check reserve and can do pure adjustment.
@@ -1513,10 +1517,10 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account)
     {
         if (auto const trustLine =
                 view.read(keylet::line(account, issue.account, issue.currency)))
-            return !((*trustLine)[sfFlags] &
-                     ((account > issue.account) ? lsfLowAuth : lsfHighAuth))
-                ? TER{tecNO_AUTH}
-                : tesSUCCESS;
+            return ((*trustLine)[sfFlags] &
+                    ((account > issue.account) ? lsfLowAuth : lsfHighAuth))
+                ? tesSUCCESS
+                : TER{tecNO_AUTH};
         return TER{tecNO_LINE};
     }
 

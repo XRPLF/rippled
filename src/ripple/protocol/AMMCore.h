@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PROTOCOL_AMM_H_INCLUDED
-#define RIPPLE_PROTOCOL_AMM_H_INCLUDED
+#ifndef RIPPLE_PROTOCOL_AMMCORE_H_INCLUDED
+#define RIPPLE_PROTOCOL_AMMCORE_H_INCLUDED
 
 #include <ripple/protocol/AccountID.h>
 #include <ripple/protocol/Issue.h>
@@ -88,4 +88,4 @@ ammEnabled(Rules const&);
 
 }  // namespace ripple
 
-#endif  // RIPPLE_PROTOCOL_AMM_H_INCLUDED
+#endif  // RIPPLE_PROTOCOL_AMMCORE_H_INCLUDED

@@ -59,6 +59,8 @@ class Sandbox;
  *     that initiated the transaction and a new trustline is created,
  *     if there does not exist one.
  * The pool composition is updated.
+ * @see [XLS30d:AMMDeposit
+ * transaction](https://github.com/XRPLF/XRPL-Standards/discussions/78)
  */
 class AMMDeposit : public Transactor
 {

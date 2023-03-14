@@ -16,8 +16,8 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#ifndef RIPPLE_APP_MISC_AMM_H_INLCUDED
-#define RIPPLE_APP_MISC_AMM_H_INLCUDED
+#ifndef RIPPLE_APP_MISC_AMMUTILS_H_INLCUDED
+#define RIPPLE_APP_MISC_AMMUTILS_H_INLCUDED
 
 #include <ripple/basics/Expected.h>
 #include <ripple/beast/utility/Journal.h>
@@ -85,20 +85,6 @@ getTradingFee(
     SLE const& ammSle,
     AccountID const& account);
 
-/** Send w/o fees. Either from or to must be AMM account.
- * This is the same as accountSend() except that the transfer
- * fee is ignored if IOU is sent. The changes MUST BE ROLLED
- * BACK IN CASE OF A FAILURE CODE otherwise a partial transfer
- * takes place.
- */
-TER
-ammSend(
-    ApplyView& view,
-    AccountID const& from,
-    AccountID const& to,
-    STAmount const& amount,
-    beast::Journal j);
-
 /** Returns total amount held by AMM for the given token.
  */
 STAmount
@@ -109,4 +95,4 @@ ammAccountHolds(
 
 }  // namespace ripple
 
-#endif  // RIPPLE_APP_MISC_AMM_H_INLCUDED
+#endif  // RIPPLE_APP_MISC_AMMUTILS_H_INLCUDED

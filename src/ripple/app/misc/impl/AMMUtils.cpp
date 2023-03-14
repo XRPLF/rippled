@@ -161,30 +161,6 @@ getTradingFee(ReadView const& view, SLE const& ammSle, AccountID const& account)
     return ammSle[sfTradingFee];
 }
 
-TER
-ammSend(
-    ApplyView& view,
-    AccountID const& from,
-    AccountID const& to,
-    STAmount const& amount,
-    beast::Journal j)
-{
-    if (isXRP(amount))
-        return accountSend(view, from, to, amount, j);
-
-    auto const issuer = amount.getIssuer();
-
-    if (from == issuer || to == issuer || issuer == noAccount())
-        return rippleCredit(view, from, to, amount, false, j);
-
-    TER terResult = rippleCredit(view, issuer, to, amount, true, j);
-
-    if (terResult == tesSUCCESS)
-        terResult = rippleCredit(view, from, issuer, amount, true, j);
-
-    return terResult;
-}
-
 STAmount
 ammAccountHolds(
     ReadView const& view,

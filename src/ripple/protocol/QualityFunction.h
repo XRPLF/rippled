@@ -26,10 +26,15 @@ namespace ripple {
 
 class Quality;
 
-/** Average Quality as a function of out: q(out) = m * out + b,
- * where m = -1 / poolGets, b = poolPays / poolGets. Used
- * to find required output amount when quality limit is
- * provided for one path optimization.
+/** Average quality of a path as a function of `out`: q(out) = m * out + b,
+ * where m = -1 / poolGets, b = poolPays / poolGets. If CLOB offer then
+ * `m` is equal to 0 `b` is equal to the offer's quality. The function
+ * is derived by substituting `in` in q = out / in with the swap out formula
+ * for `in`:
+ * in = [(poolGets * poolPays) / (poolGets - out) - poolPays] / (1 - tfee)
+ * and combining the function for multiple steps. The function is used
+ * to limit required output amount when quality limit is provided in one
+ * path optimization.
  */
 class QualityFunction
 {
@@ -39,7 +44,6 @@ private:
     // intercept
     Number b_;
     // seated if QF is for CLOB offer.
-    // note that m_ is 0 in this case
     std::optional<Quality> quality_;
 
 public:

@@ -128,9 +128,32 @@ withdrawByTokens(
     STAmount const& lpTokens,
     std::uint32_t tfee);
 
-/** Find in/out amounts to change the spot price quality to the requested
- * quality. Implements AMM Swap equation (11) and calls swapAssetIn
- * to find the required offer size to change the spot price quality.
+/** Check if the relative distance between the qualities
+ * is within the requested distance.
+ * @param calcQuality calculated quality
+ * @param reqQuality requested quality
+ * @param dist requested relative distance
+ * @return true if within dist, false otherwise
+ */
+inline bool
+withinRelativeDistance(
+    Quality const& calcQuality,
+    Quality const& reqQuality,
+    Number const& dist)
+{
+    if (calcQuality == reqQuality)
+        return true;
+    auto const [min, max] = std::minmax(calcQuality, reqQuality);
+    // Rate is inverse of quality
+    return ((min.rate() - max.rate()) / min.rate()) < dist;
+}
+
+/** Finds takerPays (i) and takerGets (o) such that given pool composition
+ * poolGets(I) and poolPays(O): (O - o) / (I + i) = quality.
+ * Where takerGets is calculated as the swapAssetIn (see below).
+ * The above equation produces the quadratic equation:
+ * i^2*(1-fee) + i*I*(2-fee) + I^2 - I*O/quality,
+ * which is solved for i, and o is found with swapAssetIn().
  * @param pool AMM pool balances
  * @param quality requested quality
  * @param tfee trading fee in basis points
@@ -143,17 +166,36 @@ changeSpotPriceQuality(
     Quality const& quality,
     std::uint32_t tfee)
 {
-    if (auto const nTakerPays =
-            (root2(pool.in * pool.out * quality.rate()) - pool.in);
-        nTakerPays > 0)
+    auto const f = feeMult(tfee);
+    auto const a = f;
+    auto const b = pool.in * (1 + f);
+    Number const c = pool.in * pool.in - pool.in * pool.out * quality.rate();
+    if (auto const res = b * b - 4 * a * c; res < 0)
+        return std::nullopt;
+    else if (auto const nTakerPaysPropose = (-b + root2(res)) / (2 * a);
+             nTakerPaysPropose > 0)
     {
+        auto const nTakerPays = [&]() {
+            // The fee might make the AMM offer quality less than CLOB quality.
+            // Therefore, AMM offer has to satisfy this constraint: o / i >= q.
+            // Substituting o with swapAssetIn() gives:
+            // i <= O / q - I / (1 - fee).
+            auto const nTakerPaysConstraint =
+                pool.out * quality.rate() - pool.in / f;
+            if (nTakerPaysPropose > nTakerPaysConstraint)
+                return nTakerPaysConstraint;
+            return nTakerPaysPropose;
+        }();
+        if (nTakerPays <= 0)
+            return std::nullopt;
         auto const takerPays = toAmount<TIn>(
             getIssue(pool.in), nTakerPays, Number::rounding_mode::upward);
         // should not fail
         if (auto const amounts =
                 TAmounts<TIn, TOut>{
                     takerPays, swapAssetIn(pool, takerPays, tfee)};
-            Quality{amounts} < quality)
+            Quality{amounts} < quality &&
+            !withinRelativeDistance(Quality{amounts}, quality, Number(1, -7)))
             Throw<std::runtime_error>("changeSpotPriceQuality failed");
         else
             return amounts;
@@ -174,7 +216,9 @@ changeSpotPriceQuality(
  */
 
 /** Swap assetIn into the pool and swap out a proportional amount
- * of the other asset. Implements AMM Swap equation (9).
+ * of the other asset. Implements AMM Swap in.
+ * @see [XLS30d:AMM
+ * Swap](https://github.com/XRPLF/XRPL-Standards/discussions/78)
  * @param pool current AMM pool balances
  * @param assetIn amount to swap in
  * @param tfee trading fee in basis points
@@ -194,7 +238,9 @@ swapAssetIn(
 }
 
 /** Swap assetOut out of the pool and swap in a proportional amount
- * of the other asset. Implements AMM Swap equation (10).
+ * of the other asset. Implements AMM Swap out.
+ * @see [XLS30d:AMM
+ * Swap](https://github.com/XRPLF/XRPL-Standards/discussions/78)
  * @param pool current AMM pool balances
  * @param assetOut amount to swap out
  * @param tfee trading fee in basis points

@@ -88,8 +88,17 @@ AMMOffer<TIn, TOut>::limitOut(
     TAmounts<TIn, TOut> const& offrAmt,
     TOut const& limit) const
 {
+    // Change the offer size proportionally to the original offer quality
+    // to keep the strands quality order unchanged. The taker pays slightly
+    // more for the offer in this case, which results in a slightly higher
+    // pool product than the original pool product. I.e. if the original
+    // pool is poolPays, poolGets and the offer is assetIn, assetOut then
+    // poolPays * poolGets < (poolPays - assetOut) * (poolGets + assetIn)
     if (ammLiquidity_.multiPath())
         return quality().ceil_out(offrAmt, limit);
+    // Change the offer size according to the conservation function. The offer
+    // quality is increased in this case, but it doesn't matter since there is
+    // only one path.
     return {swapAssetOut(*balances_, limit, ammLiquidity_.tradingFee()), limit};
 }
 
@@ -99,6 +108,7 @@ AMMOffer<TIn, TOut>::limitIn(
     TAmounts<TIn, TOut> const& offrAmt,
     TIn const& limit) const
 {
+    // See the comments above in limitOut().
     if (ammLiquidity_.multiPath())
         return quality().ceil_in(offrAmt, limit);
     return {limit, swapAssetIn(*balances_, limit, ammLiquidity_.tradingFee())};

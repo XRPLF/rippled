@@ -59,6 +59,8 @@ class Sandbox;
  * The LPTokens ~  are balanced between the AMM instance account and
  *     the account that initiated the transaction.
  * The pool composition is updated.
+ * @see [XLS30d:AMMWithdraw
+ * transaction](https://github.com/XRPLF/XRPL-Standards/discussions/78)
  */
 class AMMWithdraw : public Transactor
 {

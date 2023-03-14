@@ -200,7 +200,8 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
                 ? TER(tesSUCCESS)
                 : (!sle ? tecINSUF_RESERVE_LINE : tecAMM_UNFUNDED);
         }
-        return (accountHolds(
+        return (accountID == deposit.issue().account ||
+                accountHolds(
                     ctx.view,
                     accountID,
                     deposit.issue(),
@@ -392,12 +393,13 @@ AMMDeposit::deposit(
                 keylet::line(account_, lpIssue.account, lpIssue.currency));
             return xrpLiquid(view, account_, !sle, j_) >= deposit;
         }
-        return accountHolds(
-                   view,
-                   account_,
-                   deposit.issue(),
-                   FreezeHandling::fhZERO_IF_FROZEN,
-                   ctx_.journal) >= deposit;
+        return account_ == deposit.issue().account ||
+            accountHolds(
+                view,
+                account_,
+                deposit.issue(),
+                FreezeHandling::fhZERO_IF_FROZEN,
+                ctx_.journal) >= deposit;
     };
 
     // Deposit amountDeposit

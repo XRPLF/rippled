@@ -120,7 +120,7 @@ public:
     static TER
     send(Args&&... args)
     {
-        return ammSend(std::forward<Args>(args)...);
+        return accountSend(std::forward<Args>(args)..., true);
     }
 
     bool

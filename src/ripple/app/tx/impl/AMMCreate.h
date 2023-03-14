@@ -51,6 +51,8 @@ namespace ripple {
  *  AMMToken - currency/issuer information for AMM tokens.
  *  AMMDeposit, AMMWithdraw, AMMVote, and AMMBid transactions use the hash
  *  to access AMM instance.
+ *  @see [XLS30d:Creating AMM instance on
+ * XRPL](https://github.com/XRPLF/XRPL-Standards/discussions/78)
  */
 class AMMCreate : public Transactor
 {

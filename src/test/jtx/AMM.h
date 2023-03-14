@@ -117,7 +117,7 @@ public:
         std::optional<AccountID> const& account = std::nullopt,
         std::optional<std::string> const& ledger_index = std::nullopt) const;
 
-    /** Get AMM balances
+    /** Get AMM balances for the token pair.
      */
     std::tuple<STAmount, STAmount, STAmount>
     balances(
