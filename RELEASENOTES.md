@@ -145,13 +145,25 @@ The following people contributed directly to this release:
 - J. Scott Branson <18340247+crypticrabbit@users.noreply.github.com>
 - John Freeman <jfreeman08@gmail.com>
 - ledhed2222 <ledhed2222@users.noreply.github.com>
+- Levin Winter <33220502+levinwinter@users.noreply.github.com>
 - manojsdoshi <mdoshi@ripple.com>
 - Nik Bougalis <nikb@bougalis.net>
 - RichardAH <richard.holland@starstone.co.nz>
 - Scott Determan <scott.determan@yahoo.com>
 - Scott Schurr <scott@ripple.com>
-- seelabs <scott.determan@yahoo.com>
 - Shawn Xie <35279399+shawnxie999@users.noreply.github.com>
+
+Security Bug Bounty Acknowledgements:
+- Aaron Hook
+- Levin Winter
+
+Bug Bounties and Responsible Disclosures:
+We welcome reviews of the rippled code and urge researchers to
+responsibly disclose any issues they may find.
+
+To report a bug, please send a detailed report to:
+
+    bugs@xrpl.org
 
 
 # Introducing XRP Ledger version 1.9.4
