@@ -30,14 +30,19 @@ On supported platforms, see the [instructions on installing or updating `rippled
 ## New Amendments
 
 - **`featureImmediateOfferKilled`**: Changes the response code of an `OfferCreate` transaction with the `tfImmediateOrCancel` flag to return `tecKILLED` when no funds are moved. The previous return code of `tecSUCCESS` was unintuitive. [#4157](https://github.com/XRPLF/rippled/pull/4157)
+
 - **`featureDisallowIncoming`**: Enables an account to block incoming checks, payment channels, NFToken offers, and trust lines. [#4336](https://github.com/XRPLF/rippled/pull/4336)
+
 - **`featureXRPFees`**: Simplifies transaction cost calculations to use XRP directly, rather than calculating indirectly in "fee units" and translating the results to XRP. Updates all instances of "fee units" in the protocol and ledger data to be drops of XRP instead. [#4247](https://github.com/XRPLF/rippled/pull/4247) 
+
 - **`fixUniversalNumber`**: Simplifies and unifies the code for decimal floating point math. In some cases, this provides slightly better accuracy than the previous code, resulting in calculations whose least significant digits are different than when calculated with the previous code. The different results may cause other edge case differences where precise calculations are used, such as ranking of offers or processing of payments that use several different paths. [#4192](https://github.com/XRPLF/rippled/pull/4192)
+
 - **`fixNonFungibleTokensV1_2`**: This amendment is a combination of NFToken fixes. [#4417](https://github.com/XRPLF/rippled/pull/4417)
   - Fixes unburnable NFTokens when it has over 500 offers. [#4346](https://github.com/XRPLF/rippled/pull/4346)
   - Fixes 3 NFToken offer acceptance issues. [#4380](https://github.com/XRPLF/rippled/pull/4380)
   - Prevents brokered sales of NFTokens to owners. [#4403](https://github.com/XRPLF/rippled/pull/4403)
   - Only allows the destination to settle NFToken offers through brokerage. [#4399](https://github.com/XRPLF/rippled/pull/4399)
+
 - **`fixTrustLinesToSelf`**: Trust lines must be between two different accounts, but two exceptions exist because of a bug that briefly existed. This amendment removes those trust lines. [69bb2be](https://github.com/XRPLF/rippled/pull/4270/commits/69bb2be446e3cc24c694c0835b48bd2ecd3d119e)
 
 
@@ -46,11 +51,11 @@ On supported platforms, see the [instructions on installing or updating `rippled
 
 ### New Features and Improvements
 
-- **Improve Handshake in the peer protocol**: Switch to using a cryptographically secure PRNG for the Instance Cookie. Use hex encoding for the `Closed-Ledger` and `Previous-Ledger` fields in the Handshake. Add `--newnodeid` and `--nodeid` command line options. [5a15229](https://github.com/XRPLF/rippled/pull/4270/commits/5a15229eeb13b69c8adf1f653b88a8f8b9480546)
+- **Improve Handshake in the peer protocol**: Switched to using a cryptographically secure PRNG for the Instance Cookie. `rippled` now uses hex encoding for the `Closed-Ledger` and `Previous-Ledger` fields in the Handshake. Also added `--newnodeid` and `--nodeid` command line options. [5a15229](https://github.com/XRPLF/rippled/pull/4270/commits/5a15229eeb13b69c8adf1f653b88a8f8b9480546)
 
 - **RPC tooBusy response now has 503 HTTP status code**: Added ripplerpc 3.0, enabling RPC tooBusy responses to return relevant HTTP status codes. This is a non-breaking change that only applies to JSON-RPC when you include `"ripplerpc": "3.0"` in the request. [#4143](https://github.com/XRPLF/rippled/pull/4143)
 
-- **Use the Conan package manager**: Added a `conanfile.py` to enable building dependencies with Conan [#4367](https://github.com/XRPLF/rippled/pull/4367). A recipe for Snappy was added [c2b03fe](https://github.com/XRPLF/rippled/commit/c2b03fecca19a304b37467b01fa78593d3dce3fb)
+- **Use the Conan package manager**: Added a `conanfile.py` and Conan recipe for Snappy. Removed the RocksDB recipe from the repo; you can now get it from Conan Center. [#4367](https://github.com/XRPLF/rippled/pull/4367), [c2b03fe](https://github.com/XRPLF/rippled/commit/c2b03fecca19a304b37467b01fa78593d3dce3fb)
 
 - **Update Build Instructions**: Updated the build instructions to build with the Conan package manager and restructured info for easier comprehension. [#4376](https://github.com/XRPLF/rippled/pull/4376), [#4383](https://github.com/XRPLF/rippled/pull/4383)
 
@@ -58,7 +63,7 @@ On supported platforms, see the [instructions on installing or updating `rippled
 
 - **Update documented pathfinding configuration defaults**: `417cfc2` changed the default Path Finding configuration values, but missed updating the values documented in rippled-example.cfg. Updated those defaults and added recommended values for nodes that want to support advanced pathfinding. [#4409](https://github.com/XRPLF/rippled/pull/4409)
 
-- **Remove gRPC code previously used for the Xpring SDK**: Removed gRPC code used for the Xpring SDK. The gRPC API is also enabled locally by default in `rippled-example.cfg` - this API is used for [Reporting Mode](https://xrpl.org/build-run-rippled-in-reporting-mode.html) and [Clio](https://github.com/XRPLF/clio). [28f4cc7](https://github.com/XRPLF/rippled/pull/4321/commits/28f4cc7817c2e477f0d7e9ade8f07a45ff2b81f1)
+- **Remove gRPC code previously used for the Xpring SDK**: Removed gRPC code used for the Xpring SDK. The gRPC API is also enabled locally by default in `rippled-example.cfg`. This API is used for [Reporting Mode](https://xrpl.org/build-run-rippled-in-reporting-mode.html) and [Clio](https://github.com/XRPLF/clio). [28f4cc7](https://github.com/XRPLF/rippled/pull/4321/commits/28f4cc7817c2e477f0d7e9ade8f07a45ff2b81f1)
 
 - **Switch from C++17 to C++20**: Updated `rippled` to use C++20. [92d35e5](https://github.com/XRPLF/rippled/pull/4270/commits/92d35e54c7de6bbe44ff6c7c52cc0765b3f78258)
 
@@ -79,7 +84,7 @@ On supported platforms, see the [instructions on installing or updating `rippled
 
 - **Catch transaction deserialization error in doLedgerGrpc**: Fixed an issue in the gRPC API, so `Clio` can extract ledger headers and state objects from specific transactions that can't be deserialized by `rippled` code. [#4323](https://github.com/XRPLF/rippled/pull/4323)
 
-- **Update dependency: gRPC**: New Conan recipes break the old version of gRPC, so the dependency must be updated. [#4407](https://github.com/XRPLF/rippled/pull/4407)
+- **Update dependency: gRPC**: New Conan recipes broke the old version of gRPC, so the dependency was updated. [#4407](https://github.com/XRPLF/rippled/pull/4407)
 
 - **Fix Doxygen workflow**: Added options to build documentation that don't depend on the library dependencies of `rippled`. [#4372](https://github.com/XRPLF/rippled/pull/4372)
 
