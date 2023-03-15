@@ -75,11 +75,23 @@ public:
     virtual bool
     isShardBacked() const = 0;
 
+    /** Acquire ledger that has a missing node by ledger sequence
+     *
+     * Throw if in reporting mode.
+     *
+     * @param refNum Sequence of ledger to acquire.
+     * @param nodeHash Hash of missing node to report in throw.
+     */
     virtual void
-    missingNode(std::uint32_t refNum) = 0;
+    missingNodeAcquireBySeq(std::uint32_t refNum, uint256 const& nodeHash) = 0;
 
+    /** Acquire ledger that has a missing node by ledger hash
+     *
+     * @param refHash Hash of ledger to acquire.
+     * @param refNum Ledger sequence with missing node.
+     */
     virtual void
-    missingNode(uint256 const& refHash, std::uint32_t refNum) = 0;
+    missingNodeAcquireByHash(uint256 const& refHash, std::uint32_t refNum) = 0;
 
     virtual void
     reset() = 0;

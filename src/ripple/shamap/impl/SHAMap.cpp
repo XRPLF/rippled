@@ -173,30 +173,40 @@ SHAMap::finishFetch(
     std::shared_ptr<NodeObject> const& object) const
 {
     assert(backed_);
-    if (!object)
-    {
-        if (full_)
-        {
-            full_ = false;
-            f_.missingNode(ledgerSeq_);
-        }
-        return {};
-    }
 
     std::shared_ptr<SHAMapTreeNode> node;
     try
     {
+        if (!object)
+        {
+            if (full_)
+            {
+                full_ = false;
+                f_.missingNodeAcquireBySeq(ledgerSeq_, hash.as_uint256());
+            }
+            return {};
+        }
+
         node =
             SHAMapTreeNode::makeFromPrefix(makeSlice(object->getData()), hash);
         if (node)
             canonicalize(hash, node);
         return node;
     }
-    catch (std::exception const&)
+    catch (SHAMapMissingNode const& e)
+    {
+        JLOG(journal_.warn()) << "Missing node: " << hash << " : " << e.what();
+    }
+    catch (std::runtime_error const& e)
+    {
+        JLOG(journal_.warn()) << e.what();
+    }
+    catch (...)
     {
         JLOG(journal_.warn()) << "Invalid DB node " << hash;
-        return std::shared_ptr<SHAMapTreeNode>();
     }
+
+    return std::shared_ptr<SHAMapTreeNode>();
 }
 
 // See if a sync filter has a node

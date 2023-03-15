@@ -89,10 +89,11 @@ public:
     reset() override;
 
     void
-    missingNode(std::uint32_t seq) override;
+    missingNodeAcquireBySeq(std::uint32_t seq, uint256 const& nodeHash)
+        override;
 
     void
-    missingNode(uint256 const& hash, std::uint32_t seq) override
+    missingNodeAcquireByHash(uint256 const& hash, std::uint32_t seq) override
     {
         acquire(hash, seq);
     }
