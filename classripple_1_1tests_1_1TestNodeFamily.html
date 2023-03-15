@@ -150,10 +150,12 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a5db2c83c9acdf0cf011b1996f29ff5e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afb023f84c09e43f20e2c5c802ac89398"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1tests_1_1TestNodeFamily.html#afb023f84c09e43f20e2c5c802ac89398">isShardBacked</a> () const override</td></tr>
 <tr class="separator:afb023f84c09e43f20e2c5c802ac89398"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8f177b952248943dee2c55f8fd780844"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1tests_1_1TestNodeFamily.html#a8f177b952248943dee2c55f8fd780844">missingNode</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> refNum) override</td></tr>
-<tr class="separator:a8f177b952248943dee2c55f8fd780844"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a245a544cb00a81ee4378703d696294f2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1tests_1_1TestNodeFamily.html#a245a544cb00a81ee4378703d696294f2">missingNode</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;refHash, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> refNum) override</td></tr>
-<tr class="separator:a245a544cb00a81ee4378703d696294f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4295cbf58bcee1b440f80b9b0aae1688"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1tests_1_1TestNodeFamily.html#a4295cbf58bcee1b440f80b9b0aae1688">missingNodeAcquireBySeq</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> refNum, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;nodeHash) override</td></tr>
+<tr class="memdesc:a4295cbf58bcee1b440f80b9b0aae1688"><td class="mdescLeft">&#160;</td><td class="mdescRight">Acquire ledger that has a missing node by ledger sequence.  <a href="classripple_1_1tests_1_1TestNodeFamily.html#a4295cbf58bcee1b440f80b9b0aae1688">More...</a><br /></td></tr>
+<tr class="separator:a4295cbf58bcee1b440f80b9b0aae1688"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7a68a8a2ad6b5a10f521847d4f382a4b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1tests_1_1TestNodeFamily.html#a7a68a8a2ad6b5a10f521847d4f382a4b">missingNodeAcquireByHash</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;refHash, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> refNum) override</td></tr>
+<tr class="memdesc:a7a68a8a2ad6b5a10f521847d4f382a4b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Acquire ledger that has a missing node by ledger hash.  <a href="classripple_1_1tests_1_1TestNodeFamily.html#a7a68a8a2ad6b5a10f521847d4f382a4b">More...</a><br /></td></tr>
+<tr class="separator:a7a68a8a2ad6b5a10f521847d4f382a4b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1f76e62e5e7675389c08622c7cbcd292"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1tests_1_1TestNodeFamily.html#a1f76e62e5e7675389c08622c7cbcd292">reset</a> () override</td></tr>
 <tr class="separator:a1f76e62e5e7675389c08622c7cbcd292"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0c4dffd3fce00837dabf16efa4131b67"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbeast_1_1manual__clock.html">beast::manual_clock</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/steady_clock.html">std::chrono::steady_clock</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1tests_1_1TestNodeFamily.html#a0c4dffd3fce00837dabf16efa4131b67">clock</a> ()</td></tr>
@@ -422,8 +424,8 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a8f177b952248943dee2c55f8fd780844"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8f177b952248943dee2c55f8fd780844">&#9670;&nbsp;</a></span>missingNode() <span class="overload">[1/2]</span></h2>
+<a id="a4295cbf58bcee1b440f80b9b0aae1688"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4295cbf58bcee1b440f80b9b0aae1688">&#9670;&nbsp;</a></span>missingNodeAcquireBySeq()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -432,11 +434,21 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void ripple::tests::TestNodeFamily::missingNode </td>
+          <td class="memname">void ripple::tests::TestNodeFamily::missingNodeAcquireBySeq </td>
           <td>(</td>
           <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td>
-          <td class="paramname"><em>refNum</em></td><td>)</td>
+          <td class="paramname"><em>refNum</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;&#160;</td>
+          <td class="paramname"><em>nodeHash</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
   </td>
@@ -446,14 +458,24 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implements <a class="el" href="classripple_1_1Family.html#a195ad5c61d5ef6a5b269232ecea7ca55">ripple::Family</a>.</p>
+<p>Acquire ledger that has a missing node by ledger sequence. </p>
+<p>Throw if in reporting mode.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">refNum</td><td>Sequence of ledger to acquire. </td></tr>
+    <tr><td class="paramname">nodeHash</td><td>Hash of missing node to report in throw. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p>Implements <a class="el" href="classripple_1_1Family.html#ac747e6910394a7440db45af0aa222a11">ripple::Family</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="common_8h_source.html#l00108">108</a> of file <a class="el" href="common_8h_source.html">common.h</a>.</p>
 
 </div>
 </div>
-<a id="a245a544cb00a81ee4378703d696294f2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a245a544cb00a81ee4378703d696294f2">&#9670;&nbsp;</a></span>missingNode() <span class="overload">[2/2]</span></h2>
+<a id="a7a68a8a2ad6b5a10f521847d4f382a4b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7a68a8a2ad6b5a10f521847d4f382a4b">&#9670;&nbsp;</a></span>missingNodeAcquireByHash()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -462,7 +484,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void ripple::tests::TestNodeFamily::missingNode </td>
+          <td class="memname">void ripple::tests::TestNodeFamily::missingNodeAcquireByHash </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;&#160;</td>
           <td class="paramname"><em>refHash</em>, </td>
@@ -486,9 +508,18 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implements <a class="el" href="classripple_1_1Family.html#a25bd0bb37c0cbf82b50b479df990b5b2">ripple::Family</a>.</p>
+<p>Acquire ledger that has a missing node by ledger hash. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">refHash</td><td>Hash of ledger to acquire. </td></tr>
+    <tr><td class="paramname">refNum</td><td><a class="el" href="classripple_1_1Ledger.html" title="Holds a ledger.">Ledger</a> sequence with missing node. </td></tr>
+  </table>
+  </dd>
+</dl>
 
-<p class="definition">Definition at line <a class="el" href="common_8h_source.html#l00114">114</a> of file <a class="el" href="common_8h_source.html">common.h</a>.</p>
+<p>Implements <a class="el" href="classripple_1_1Family.html#ac23fa3820800431370db9197986d70f5">ripple::Family</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="common_8h_source.html#l00115">115</a> of file <a class="el" href="common_8h_source.html">common.h</a>.</p>
 
 </div>
 </div>
@@ -517,7 +548,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Family.html#a2711e78e7c2e33e24db3dfa5235eccd4">ripple::Family</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="common_8h_source.html#l00120">120</a> of file <a class="el" href="common_8h_source.html">common.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="common_8h_source.html#l00122">122</a> of file <a class="el" href="common_8h_source.html">common.h</a>.</p>
 
 </div>
 </div>
@@ -536,7 +567,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="common_8h_source.html#l00127">127</a> of file <a class="el" href="common_8h_source.html">common.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="common_8h_source.html#l00129">129</a> of file <a class="el" href="common_8h_source.html">common.h</a>.</p>
 
 </div>
 </div>

@@ -136,19 +136,19 @@ $(function() {
 <div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span></div>
 <div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    <a class="code" href="classripple_1_1Family.html#a58104afed93195e1d2eb74c31dd514a8">isShardBacked</a>() <span class="keyword">const</span> = 0;</div>
 <div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160; </div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    <a class="code" href="classripple_1_1Family.html#a195ad5c61d5ef6a5b269232ecea7ca55">missingNode</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> refNum) = 0;</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160; </div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    <a class="code" href="classripple_1_1Family.html#a195ad5c61d5ef6a5b269232ecea7ca55">missingNode</a>(<a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; refHash, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> refNum) = 0;</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160; </div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    <a class="code" href="classripple_1_1Family.html#a2711e78e7c2e33e24db3dfa5235eccd4">reset</a>() = 0;</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;};</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;    <a class="code" href="classripple_1_1Family.html#ac747e6910394a7440db45af0aa222a11">missingNodeAcquireBySeq</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> refNum, <a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; nodeHash) = 0;</div>
 <div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160; </div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;}  <span class="comment">// namespace ripple</span></div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160; </div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;    <a class="code" href="classripple_1_1Family.html#ac23fa3820800431370db9197986d70f5">missingNodeAcquireByHash</a>(<a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; refHash, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> refNum) = 0;</div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160; </div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;    <a class="code" href="classripple_1_1Family.html#a2711e78e7c2e33e24db3dfa5235eccd4">reset</a>() = 0;</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;};</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160; </div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160; </div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aclassripple_1_1Family_html_a794019ebd9859fb37a7a65b80e8d6df7"><div class="ttname"><a href="classripple_1_1Family.html#a794019ebd9859fb37a7a65b80e8d6df7">ripple::Family::getTreeNodeCache</a></div><div class="ttdeci">virtual std::shared_ptr&lt; TreeNodeCache &gt; getTreeNodeCache(std::uint32_t ledgerSeq)=0</div><div class="ttdoc">Return a pointer to the Family Tree Node Cache.</div></div>
 <div class="ttc" id="aclassripple_1_1Family_html_a07ace65397c6fe5be9674420a8def04b"><div class="ttname"><a href="classripple_1_1Family.html#a07ace65397c6fe5be9674420a8def04b">ripple::Family::operator=</a></div><div class="ttdeci">Family &amp; operator=(Family const &amp;)=delete</div></div>
@@ -158,8 +158,8 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1Family_html_a3ad0cea735f2bd07adc7b5ed7b3528b8"><div class="ttname"><a href="classripple_1_1Family.html#a3ad0cea735f2bd07adc7b5ed7b3528b8">ripple::Family::sweep</a></div><div class="ttdeci">virtual void sweep()=0</div></div>
 <div class="ttc" id="aclassripple_1_1Family_html_a58104afed93195e1d2eb74c31dd514a8"><div class="ttname"><a href="classripple_1_1Family.html#a58104afed93195e1d2eb74c31dd514a8">ripple::Family::isShardBacked</a></div><div class="ttdeci">virtual bool isShardBacked() const =0</div></div>
 <div class="ttc" id="aclassripple_1_1Family_html_ac16fa71cf792d5716da74e9164707769"><div class="ttname"><a href="classripple_1_1Family.html#ac16fa71cf792d5716da74e9164707769">ripple::Family::getFullBelowCache</a></div><div class="ttdeci">virtual std::shared_ptr&lt; FullBelowCache &gt; getFullBelowCache(std::uint32_t ledgerSeq)=0</div><div class="ttdoc">Return a pointer to the Family Full Below Cache.</div></div>
-<div class="ttc" id="aclassripple_1_1Family_html_a195ad5c61d5ef6a5b269232ecea7ca55"><div class="ttname"><a href="classripple_1_1Family.html#a195ad5c61d5ef6a5b269232ecea7ca55">ripple::Family::missingNode</a></div><div class="ttdeci">virtual void missingNode(std::uint32_t refNum)=0</div></div>
 <div class="ttc" id="aclassripple_1_1Family_html_a2618f6f7bd3709acf853db111c814df2"><div class="ttname"><a href="classripple_1_1Family.html#a2618f6f7bd3709acf853db111c814df2">ripple::Family::db</a></div><div class="ttdeci">virtual NodeStore::Database &amp; db()=0</div></div>
+<div class="ttc" id="aclassripple_1_1Family_html_ac747e6910394a7440db45af0aa222a11"><div class="ttname"><a href="classripple_1_1Family.html#ac747e6910394a7440db45af0aa222a11">ripple::Family::missingNodeAcquireBySeq</a></div><div class="ttdeci">virtual void missingNodeAcquireBySeq(std::uint32_t refNum, uint256 const &amp;nodeHash)=0</div><div class="ttdoc">Acquire ledger that has a missing node by ledger sequence.</div></div>
 <div class="ttc" id="aclassripple_1_1base__uint_html"><div class="ttname"><a href="classripple_1_1base__uint.html">ripple::base_uint&lt; 256 &gt;</a></div></div>
 <div class="ttc" id="aclassripple_1_1Family_html_af3c9358bb83bdee02793cef452c38f64"><div class="ttname"><a href="classripple_1_1Family.html#af3c9358bb83bdee02793cef452c38f64">ripple::Family::Family</a></div><div class="ttdeci">Family()=default</div></div>
 <div class="ttc" id="aclassripple_1_1Family_html_acc97327a6e3f4e10783d397eebc9cbc0"><div class="ttname"><a href="classripple_1_1Family.html#acc97327a6e3f4e10783d397eebc9cbc0">ripple::Family::~Family</a></div><div class="ttdeci">virtual ~Family()=default</div></div>
@@ -169,6 +169,7 @@ $(function() {
 <div class="ttc" id="ainteger_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="aclassripple_1_1Family_html_af25466995d0a740ffcf80cd8a59cf0c9"><div class="ttname"><a href="classripple_1_1Family.html#af25466995d0a740ffcf80cd8a59cf0c9">ripple::Family::journal</a></div><div class="ttdeci">virtual beast::Journal const  &amp; journal()=0</div></div>
+<div class="ttc" id="aclassripple_1_1Family_html_ac23fa3820800431370db9197986d70f5"><div class="ttname"><a href="classripple_1_1Family.html#ac23fa3820800431370db9197986d70f5">ripple::Family::missingNodeAcquireByHash</a></div><div class="ttdeci">virtual void missingNodeAcquireByHash(uint256 const &amp;refHash, std::uint32_t refNum)=0</div><div class="ttdoc">Acquire ledger that has a missing node by ledger hash.</div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

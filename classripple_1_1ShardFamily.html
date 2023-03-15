@@ -176,10 +176,12 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a7d20553d0c7fb3f3ecf4e630058dc260"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abc32123f94ee1177fa3a1fd5dfe1c982"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ShardFamily.html#abc32123f94ee1177fa3a1fd5dfe1c982">reset</a> () override</td></tr>
 <tr class="separator:abc32123f94ee1177fa3a1fd5dfe1c982"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab8a8537a986b8ba0ca4f556c065d669c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ShardFamily.html#ab8a8537a986b8ba0ca4f556c065d669c">missingNode</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> seq) override</td></tr>
-<tr class="separator:ab8a8537a986b8ba0ca4f556c065d669c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab37342166bcf5823ea87e1b7bb6f54b3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ShardFamily.html#ab37342166bcf5823ea87e1b7bb6f54b3">missingNode</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;hash, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> seq) override</td></tr>
-<tr class="separator:ab37342166bcf5823ea87e1b7bb6f54b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a19c9c4e3f13a3a1370a0d6752d8dceb9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ShardFamily.html#a19c9c4e3f13a3a1370a0d6752d8dceb9">missingNodeAcquireBySeq</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> seq, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;nodeHash) override</td></tr>
+<tr class="memdesc:a19c9c4e3f13a3a1370a0d6752d8dceb9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Acquire ledger that has a missing node by ledger sequence.  <a href="classripple_1_1ShardFamily.html#a19c9c4e3f13a3a1370a0d6752d8dceb9">More...</a><br /></td></tr>
+<tr class="separator:a19c9c4e3f13a3a1370a0d6752d8dceb9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7e4d3c72f06b568d224265757bad2b94"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ShardFamily.html#a7e4d3c72f06b568d224265757bad2b94">missingNodeAcquireByHash</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;hash, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> seq) override</td></tr>
+<tr class="memdesc:a7e4d3c72f06b568d224265757bad2b94"><td class="mdescLeft">&#160;</td><td class="mdescRight">Acquire ledger that has a missing node by ledger hash.  <a href="classripple_1_1ShardFamily.html#a7e4d3c72f06b568d224265757bad2b94">More...</a><br /></td></tr>
+<tr class="separator:a7e4d3c72f06b568d224265757bad2b94"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
@@ -320,7 +322,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ShardFamily_8cpp_source.html#l00036">36</a> of file <a class="el" href="ShardFamily_8cpp_source.html">ShardFamily.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ShardFamily_8cpp_source.html#l00037">37</a> of file <a class="el" href="ShardFamily_8cpp_source.html">ShardFamily.cpp</a>.</p>
 
 </div>
 </div>
@@ -528,7 +530,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Family.html#ac16fa71cf792d5716da74e9164707769">ripple::Family</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="ShardFamily_8cpp_source.html#l00047">47</a> of file <a class="el" href="ShardFamily_8cpp_source.html">ShardFamily.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ShardFamily_8cpp_source.html#l00048">48</a> of file <a class="el" href="ShardFamily_8cpp_source.html">ShardFamily.cpp</a>.</p>
 
 </div>
 </div>
@@ -549,7 +551,7 @@ Private Attributes</h2></td></tr>
 
 <p>Return the number of entries in the cache. </p>
 
-<p class="definition">Definition at line <a class="el" href="ShardFamily_8cpp_source.html#l00066">66</a> of file <a class="el" href="ShardFamily_8cpp_source.html">ShardFamily.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ShardFamily_8cpp_source.html#l00067">67</a> of file <a class="el" href="ShardFamily_8cpp_source.html">ShardFamily.cpp</a>.</p>
 
 </div>
 </div>
@@ -588,7 +590,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Family.html#a794019ebd9859fb37a7a65b80e8d6df7">ripple::Family</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="ShardFamily_8cpp_source.html#l00076">76</a> of file <a class="el" href="ShardFamily_8cpp_source.html">ShardFamily.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ShardFamily_8cpp_source.html#l00077">77</a> of file <a class="el" href="ShardFamily_8cpp_source.html">ShardFamily.cpp</a>.</p>
 
 </div>
 </div>
@@ -609,7 +611,7 @@ Private Attributes</h2></td></tr>
 
 <p>Return a pair where the first item is the number of items cached and the second item is the number of entries in the cached. </p>
 
-<p class="definition">Definition at line <a class="el" href="ShardFamily_8cpp_source.html#l00094">94</a> of file <a class="el" href="ShardFamily_8cpp_source.html">ShardFamily.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ShardFamily_8cpp_source.html#l00095">95</a> of file <a class="el" href="ShardFamily_8cpp_source.html">ShardFamily.cpp</a>.</p>
 
 </div>
 </div>
@@ -638,7 +640,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Family.html#a3ad0cea735f2bd07adc7b5ed7b3528b8">ripple::Family</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="ShardFamily_8cpp_source.html#l00108">108</a> of file <a class="el" href="ShardFamily_8cpp_source.html">ShardFamily.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ShardFamily_8cpp_source.html#l00109">109</a> of file <a class="el" href="ShardFamily_8cpp_source.html">ShardFamily.cpp</a>.</p>
 
 </div>
 </div>
@@ -667,12 +669,12 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Family.html#a2711e78e7c2e33e24db3dfa5235eccd4">ripple::Family</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="ShardFamily_8cpp_source.html#l00138">138</a> of file <a class="el" href="ShardFamily_8cpp_source.html">ShardFamily.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ShardFamily_8cpp_source.html#l00139">139</a> of file <a class="el" href="ShardFamily_8cpp_source.html">ShardFamily.cpp</a>.</p>
 
 </div>
 </div>
-<a id="ab8a8537a986b8ba0ca4f556c065d669c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab8a8537a986b8ba0ca4f556c065d669c">&#9670;&nbsp;</a></span>missingNode() <span class="overload">[1/2]</span></h2>
+<a id="a19c9c4e3f13a3a1370a0d6752d8dceb9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a19c9c4e3f13a3a1370a0d6752d8dceb9">&#9670;&nbsp;</a></span>missingNodeAcquireBySeq()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -681,46 +683,16 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void ripple::ShardFamily::missingNode </td>
+          <td class="memname">void ripple::ShardFamily::missingNodeAcquireBySeq </td>
           <td>(</td>
           <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td>
-          <td class="paramname"><em>seq</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Implements <a class="el" href="classripple_1_1Family.html#a195ad5c61d5ef6a5b269232ecea7ca55">ripple::Family</a>.</p>
-
-<p class="definition">Definition at line <a class="el" href="ShardFamily_8cpp_source.html#l00155">155</a> of file <a class="el" href="ShardFamily_8cpp_source.html">ShardFamily.cpp</a>.</p>
-
-</div>
-</div>
-<a id="ab37342166bcf5823ea87e1b7bb6f54b3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab37342166bcf5823ea87e1b7bb6f54b3">&#9670;&nbsp;</a></span>missingNode() <span class="overload">[2/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ripple::ShardFamily::missingNode </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;&#160;</td>
-          <td class="paramname"><em>hash</em>, </td>
+          <td class="paramname"><em>refNum</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td>
-          <td class="paramname"><em>seq</em>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;&#160;</td>
+          <td class="paramname"><em>nodeHash</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -735,9 +707,68 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implements <a class="el" href="classripple_1_1Family.html#a25bd0bb37c0cbf82b50b479df990b5b2">ripple::Family</a>.</p>
+<p>Acquire ledger that has a missing node by ledger sequence. </p>
+<p>Throw if in reporting mode.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">refNum</td><td>Sequence of ledger to acquire. </td></tr>
+    <tr><td class="paramname">nodeHash</td><td>Hash of missing node to report in throw. </td></tr>
+  </table>
+  </dd>
+</dl>
 
-<p class="definition">Definition at line <a class="el" href="ShardFamily_8h_source.html#l00095">95</a> of file <a class="el" href="ShardFamily_8h_source.html">ShardFamily.h</a>.</p>
+<p>Implements <a class="el" href="classripple_1_1Family.html#ac747e6910394a7440db45af0aa222a11">ripple::Family</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="ShardFamily_8cpp_source.html#l00156">156</a> of file <a class="el" href="ShardFamily_8cpp_source.html">ShardFamily.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a7e4d3c72f06b568d224265757bad2b94"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7e4d3c72f06b568d224265757bad2b94">&#9670;&nbsp;</a></span>missingNodeAcquireByHash()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::ShardFamily::missingNodeAcquireByHash </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;&#160;</td>
+          <td class="paramname"><em>refHash</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td>
+          <td class="paramname"><em>refNum</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Acquire ledger that has a missing node by ledger hash. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">refHash</td><td>Hash of ledger to acquire. </td></tr>
+    <tr><td class="paramname">refNum</td><td><a class="el" href="classripple_1_1Ledger.html" title="Holds a ledger.">Ledger</a> sequence with missing node. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p>Implements <a class="el" href="classripple_1_1Family.html#ac23fa3820800431370db9197986d70f5">ripple::Family</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="ShardFamily_8h_source.html#l00096">96</a> of file <a class="el" href="ShardFamily_8h_source.html">ShardFamily.h</a>.</p>
 
 </div>
 </div>
@@ -775,7 +806,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ShardFamily_8cpp_source.html#l00185">185</a> of file <a class="el" href="ShardFamily_8cpp_source.html">ShardFamily.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ShardFamily_8cpp_source.html#l00187">187</a> of file <a class="el" href="ShardFamily_8cpp_source.html">ShardFamily.cpp</a>.</p>
 
 </div>
 </div>
@@ -800,7 +831,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ShardFamily_8h_source.html#l00101">101</a> of file <a class="el" href="ShardFamily_8h_source.html">ShardFamily.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ShardFamily_8h_source.html#l00102">102</a> of file <a class="el" href="ShardFamily_8h_source.html">ShardFamily.h</a>.</p>
 
 </div>
 </div>
@@ -824,7 +855,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ShardFamily_8h_source.html#l00102">102</a> of file <a class="el" href="ShardFamily_8h_source.html">ShardFamily.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ShardFamily_8h_source.html#l00103">103</a> of file <a class="el" href="ShardFamily_8h_source.html">ShardFamily.h</a>.</p>
 
 </div>
 </div>
@@ -848,7 +879,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ShardFamily_8h_source.html#l00103">103</a> of file <a class="el" href="ShardFamily_8h_source.html">ShardFamily.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ShardFamily_8h_source.html#l00104">104</a> of file <a class="el" href="ShardFamily_8h_source.html">ShardFamily.h</a>.</p>
 
 </div>
 </div>
@@ -872,7 +903,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ShardFamily_8h_source.html#l00104">104</a> of file <a class="el" href="ShardFamily_8h_source.html">ShardFamily.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ShardFamily_8h_source.html#l00105">105</a> of file <a class="el" href="ShardFamily_8h_source.html">ShardFamily.h</a>.</p>
 
 </div>
 </div>
@@ -896,7 +927,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ShardFamily_8h_source.html#l00106">106</a> of file <a class="el" href="ShardFamily_8h_source.html">ShardFamily.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ShardFamily_8h_source.html#l00107">107</a> of file <a class="el" href="ShardFamily_8h_source.html">ShardFamily.h</a>.</p>
 
 </div>
 </div>
@@ -920,7 +951,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ShardFamily_8h_source.html#l00107">107</a> of file <a class="el" href="ShardFamily_8h_source.html">ShardFamily.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ShardFamily_8h_source.html#l00108">108</a> of file <a class="el" href="ShardFamily_8h_source.html">ShardFamily.h</a>.</p>
 
 </div>
 </div>
@@ -944,7 +975,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ShardFamily_8h_source.html#l00109">109</a> of file <a class="el" href="ShardFamily_8h_source.html">ShardFamily.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ShardFamily_8h_source.html#l00110">110</a> of file <a class="el" href="ShardFamily_8h_source.html">ShardFamily.h</a>.</p>
 
 </div>
 </div>
@@ -968,7 +999,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ShardFamily_8h_source.html#l00110">110</a> of file <a class="el" href="ShardFamily_8h_source.html">ShardFamily.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ShardFamily_8h_source.html#l00111">111</a> of file <a class="el" href="ShardFamily_8h_source.html">ShardFamily.h</a>.</p>
 
 </div>
 </div>
@@ -992,7 +1023,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ShardFamily_8h_source.html#l00111">111</a> of file <a class="el" href="ShardFamily_8h_source.html">ShardFamily.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ShardFamily_8h_source.html#l00112">112</a> of file <a class="el" href="ShardFamily_8h_source.html">ShardFamily.h</a>.</p>
 
 </div>
 </div>
@@ -1016,7 +1047,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ShardFamily_8h_source.html#l00112">112</a> of file <a class="el" href="ShardFamily_8h_source.html">ShardFamily.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ShardFamily_8h_source.html#l00113">113</a> of file <a class="el" href="ShardFamily_8h_source.html">ShardFamily.h</a>.</p>
 
 </div>
 </div>
@@ -1040,7 +1071,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ShardFamily_8h_source.html#l00115">115</a> of file <a class="el" href="ShardFamily_8h_source.html">ShardFamily.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ShardFamily_8h_source.html#l00116">116</a> of file <a class="el" href="ShardFamily_8h_source.html">ShardFamily.h</a>.</p>
 
 </div>
 </div>
@@ -1064,7 +1095,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ShardFamily_8h_source.html#l00116">116</a> of file <a class="el" href="ShardFamily_8h_source.html">ShardFamily.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ShardFamily_8h_source.html#l00117">117</a> of file <a class="el" href="ShardFamily_8h_source.html">ShardFamily.h</a>.</p>
 
 </div>
 </div>
