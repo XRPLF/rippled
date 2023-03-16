@@ -794,7 +794,8 @@ public:
         FeatureBitset const all{supported_amendments()};
         FeatureBitset const fixNFTDir{fixNFTokenDirV1};
 
-        testWithFeats(all - fixNonFungibleTokensV1_2 - fixNFTDir - fixNFTokenRemint);
+        testWithFeats(
+            all - fixNonFungibleTokensV1_2 - fixNFTDir - fixNFTokenRemint);
         testWithFeats(all - fixNonFungibleTokensV1_2 - fixNFTokenRemint);
         testWithFeats(all - fixNFTokenRemint);
         testWithFeats(all);
