@@ -1568,16 +1568,14 @@ private:
         }
 
         // Issuer deposit
-        {
-            testAMM([&](AMM& ammAlice, Env& env) {
-                ammAlice.deposit(gw, 1000000);
-                BEAST_EXPECT(ammAlice.expectBalances(
-                    XRP(11000), USD(11000), IOUAmount{11000000}));
-                ammAlice.deposit(gw, USD(1000));
-                BEAST_EXPECT(ammAlice.expectBalances(
-                    XRP(11000), USD(12000), IOUAmount{1148912529307606, -8}));
-            });
-        }
+        testAMM([&](AMM& ammAlice, Env& env) {
+            ammAlice.deposit(gw, 1000000);
+            BEAST_EXPECT(ammAlice.expectBalances(
+                XRP(11000), USD(11000), IOUAmount{11000000}));
+            ammAlice.deposit(gw, USD(1000));
+            BEAST_EXPECT(ammAlice.expectBalances(
+                XRP(11000), USD(12000), IOUAmount{1148912529307606, -8}));
+        });
     }
 
     void

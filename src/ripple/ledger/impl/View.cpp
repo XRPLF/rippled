@@ -1100,7 +1100,7 @@ rippleSend(
     STAmount const& saAmount,
     STAmount& saActual,
     beast::Journal j,
-    bool waveFee)
+    bool waiveFee)
 {
     auto const issuer = saAmount.getIssuer();
 
@@ -1121,9 +1121,9 @@ rippleSend(
     // Sending 3rd party IOUs: transit.
 
     // Calculate the amount to transfer accounting
-    // for any transfer fees if the fee is not waved:
+    // for any transfer fees if the fee is not waived:
     saActual =
-        waveFee ? saAmount : multiply(saAmount, transferRate(view, issuer));
+        waiveFee ? saAmount : multiply(saAmount, transferRate(view, issuer));
 
     JLOG(j.debug()) << "rippleSend> " << to_string(uSenderID) << " - > "
                     << to_string(uReceiverID)
@@ -1145,7 +1145,7 @@ accountSend(
     AccountID const& uReceiverID,
     STAmount const& saAmount,
     beast::Journal j,
-    bool waveFee)
+    bool waiveFee)
 {
     assert(saAmount >= beast::zero);
 
@@ -1164,7 +1164,7 @@ accountSend(
                         << saAmount.getFullText();
 
         return rippleSend(
-            view, uSenderID, uReceiverID, saAmount, saActual, j, waveFee);
+            view, uSenderID, uReceiverID, saAmount, saActual, j, waiveFee);
     }
 
     /* XRP send which does not check reserve and can do pure adjustment.

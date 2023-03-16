@@ -258,7 +258,7 @@ applyCreate(
         !page)
     {
         JLOG(j_.debug()) << "AMM Instance: failed to insert owner dir";
-        return {tecINTERNAL, false};
+        return {tecDIR_FULL, false};
     }
 
     // Send LPT to LP.

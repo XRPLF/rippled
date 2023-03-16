@@ -401,7 +401,7 @@ accountSend(
     AccountID const& to,
     const STAmount& saAmount,
     beast::Journal j,
-    bool waveFee = false);
+    bool waiveFee = false);
 
 [[nodiscard]] TER
 issueIOU(
