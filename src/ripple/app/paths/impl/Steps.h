@@ -301,7 +301,7 @@ public:
      * fee.
      */
     virtual bool
-    wavesTransferFee(ReadView const&) const
+    waivesTransferFee(ReadView const&) const
     {
         return false;
     }

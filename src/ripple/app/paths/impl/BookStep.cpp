@@ -183,7 +183,7 @@ public:
     }
 
     bool
-    wavesTransferFee(ReadView const&) const override;
+    waivesTransferFee(ReadView const&) const override;
 
 protected:
     std::string
@@ -334,7 +334,7 @@ public:
         };
 
         auto const prevStepPaysTrFee =
-            !this->prevStep_ || !this->prevStep_->wavesTransferFee(v);
+            !this->prevStep_ || !this->prevStep_->waivesTransferFee(v);
         auto const trIn = redeems(prevStepDir) && prevStepPaysTrFee
             ? rate(this->book_.in.account)
             : parityRate;
@@ -632,7 +632,7 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
     };
 
     auto const prevStepPaysTrFee =
-        !prevStep_ || !prevStep_->wavesTransferFee(sb);
+        !prevStep_ || !prevStep_->waivesTransferFee(sb);
     std::uint32_t const trIn = redeems(prevStepDir) && prevStepPaysTrFee
         ? rate(book_.in.account)
         : QUALITY_ONE;
@@ -863,7 +863,7 @@ BookStep<TIn, TOut, TDerived>::tipOfferQualityF(ReadView const& view) const
 
 template <class TIn, class TOut, class TDerived>
 bool
-BookStep<TIn, TOut, TDerived>::wavesTransferFee(ReadView const& view) const
+BookStep<TIn, TOut, TDerived>::waivesTransferFee(ReadView const& view) const
 {
     if (std::optional<std::pair<Quality, bool>> const res =
             tipOfferQuality(view))
