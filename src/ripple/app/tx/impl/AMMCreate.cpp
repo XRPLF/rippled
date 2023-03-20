@@ -69,7 +69,7 @@ AMMCreate::preflight(PreflightContext const& ctx)
         return err;
     }
 
-    if (ctx.tx[sfTradingFee] > TradingFeeThreshold)
+    if (ctx.tx[sfTradingFee] > TRADING_FEE_THRESHOLD)
     {
         JLOG(ctx.j.debug()) << "AMM Instance: invalid trading fee.";
         return temBAD_FEE;
@@ -244,7 +244,7 @@ applyCreate(
         std::chrono::duration_cast<std::chrono::seconds>(
             ctx_.view().info().parentCloseTime.time_since_epoch())
             .count() +
-        24 * 3600;
+        TOTAL_TIME_SLOT_SECS;
     auctionSlot.setFieldU32(sfExpiration, expiration);
     auctionSlot.setFieldU32(sfDiscountedFee, 0);
     auctionSlot.setFieldAmount(sfPrice, STAmount{lpTokens.issue(), 0});
@@ -330,16 +330,9 @@ AMMCreate::doApply()
     // as we go on processing transactions.
     Sandbox sb(&ctx_.view());
 
-    // This is a ledger with just the fees paid and any unfunded or expired
-    // offers we encounter removed. It's used when handling Fill-or-Kill offers,
-    // if the order isn't going to be placed, to avoid wasting the work we did.
-    Sandbox sbCancel(&ctx_.view());
-
     auto const result = applyCreate(ctx_, sb, account_, j_);
     if (result.second)
         sb.apply(ctx_.rawView());
-    else
-        sbCancel.apply(ctx_.rawView());
 
     return result.first;
 }

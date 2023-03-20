@@ -35,8 +35,7 @@ AMMVote::preflight(PreflightContext const& ctx)
     if (!ammEnabled(ctx.rules))
         return temDISABLED;
 
-    auto const ret = preflight1(ctx);
-    if (!isTesSuccess(ret))
+    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
     if (auto const res = invalidAMMAssetPair(ctx.tx[sfAsset], ctx.tx[sfAsset2]))
@@ -51,7 +50,7 @@ AMMVote::preflight(PreflightContext const& ctx)
         return temINVALID_FLAG;
     }
 
-    if (ctx.tx[sfTradingFee] > TradingFeeThreshold)
+    if (ctx.tx[sfTradingFee] > TRADING_FEE_THRESHOLD)
     {
         JLOG(ctx.j.debug()) << "AMM Vote: invalid trading fee.";
         return temBAD_FEE;
@@ -205,16 +204,9 @@ AMMVote::doApply()
     // as we go on processing transactions.
     Sandbox sb(&ctx_.view());
 
-    // This is a ledger with just the fees paid and any unfunded or expired
-    // offers we encounter removed. It's used when handling Fill-or-Kill offers,
-    // if the order isn't going to be placed, to avoid wasting the work we did.
-    Sandbox sbCancel(&ctx_.view());
-
     auto const result = applyVote(ctx_, sb, account_, j_);
     if (result.second)
         sb.apply(ctx_.rawView());
-    else
-        sbCancel.apply(ctx_.rawView());
 
     return result.first;
 }

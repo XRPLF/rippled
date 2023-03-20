@@ -37,8 +37,7 @@ AMMBid::preflight(PreflightContext const& ctx)
     if (!ammEnabled(ctx.rules))
         return temDISABLED;
 
-    auto const ret = preflight1(ctx);
-    if (!isTesSuccess(ret))
+    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
     if (ctx.tx.getFlags() & tfUniversalMask)
@@ -174,9 +173,8 @@ applyBid(
             ctx_.view().info().parentCloseTime.time_since_epoch())
             .count();
 
-    std::uint32_t constexpr totalSlotTimeSecs = 24 * 3600;
     std::uint32_t constexpr nIntervals = 20;
-    std::uint32_t constexpr tailingSlot = 19;
+    std::uint32_t constexpr tailingSlot = nIntervals - 1;
 
     // If seated then it is the current slot-holder time slot, otherwise
     // the auction slot is not owned. Slot range is in {0-19}
@@ -195,13 +193,15 @@ applyBid(
                           Number const& minPrice,
                           Number const& burn) -> TER {
         auctionSlot.setAccountID(sfAccount, account_);
-        auctionSlot.setFieldU32(sfExpiration, current + totalSlotTimeSecs);
+        auctionSlot.setFieldU32(sfExpiration, current + TOTAL_TIME_SLOT_SECS);
         auctionSlot.setFieldU32(sfDiscountedFee, fee);
         auctionSlot.setFieldAmount(
             sfPrice, toSTAmount(lpTokens.issue(), minPrice));
         if (ctx_.tx.isFieldPresent(sfAuthAccounts))
             auctionSlot.setFieldArray(
                 sfAuthAccounts, ctx_.tx.getFieldArray(sfAuthAccounts));
+        else
+            auctionSlot.makeFieldAbsent(sfAuthAccounts);
         // Burn the remaining bid amount
         auto const saBurn = toSTAmount(lpTokens.issue(), burn);
         if (saBurn >= lptAMMBalance)
@@ -270,6 +270,7 @@ applyBid(
     {
         // Price the slot was purchased at.
         STAmount const pricePurchased = auctionSlot[sfPrice];
+        assert(timeSlot);
         auto const fractionUsed = (Number(*timeSlot) + 1) / nIntervals;
         auto const fractionRemaining = Number(1) - fractionUsed;
         auto const computedPrice = [&]() -> Number {
@@ -324,16 +325,9 @@ AMMBid::doApply()
     // as we go on processing transactions.
     Sandbox sb(&ctx_.view());
 
-    // This is a ledger with just the fees paid and any unfunded or expired
-    // offers we encounter removed. It's used when handling Fill-or-Kill offers,
-    // if the order isn't going to be placed, to avoid wasting the work we did.
-    Sandbox sbCancel(&ctx_.view());
-
     auto const result = applyBid(ctx_, sb, account_, j_);
     if (result.second)
         sb.apply(ctx_.rawView());
-    else
-        sbCancel.apply(ctx_.rawView());
 
     return result.first;
 }

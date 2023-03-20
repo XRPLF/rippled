@@ -147,6 +147,9 @@ public:
         std::optional<std::string> const& ledger_index = std::nullopt) const;
 
     bool
+    expectAuctionSlot(std::vector<AccountID> const& authAccount) const;
+
+    bool
     expectTradingFee(std::uint16_t fee) const;
 
     bool

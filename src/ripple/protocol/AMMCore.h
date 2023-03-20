@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2022 Ripple Labs Inc.
+    Copyright (c) 2012, 2023 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -27,7 +27,9 @@
 
 namespace ripple {
 
-std::uint16_t constexpr TradingFeeThreshold = 1000;  // 1%
+std::uint16_t constexpr TRADING_FEE_THRESHOLD = 1000;  // 1%
+
+std::uint32_t constexpr TOTAL_TIME_SLOT_SECS = 24 * 3600;
 
 class STObject;
 class STAmount;

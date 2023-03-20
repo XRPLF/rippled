@@ -24,6 +24,7 @@
 #include <ripple/app/paths/Flow.h>
 #include <ripple/app/paths/impl/StrandFlow.h>
 #include <ripple/ledger/PaymentSandbox.h>
+#include <ripple/protocol/AMMCore.h>
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/RPCHandler.h>
@@ -2652,7 +2653,7 @@ private:
 
         // Slot states.
         testAMM([&](AMM& ammAlice, Env& env) {
-            auto constexpr intervalDuration = 24 * 3600 / 20;
+            auto constexpr intervalDuration = TOTAL_TIME_SLOT_SECS / 20;
             ammAlice.deposit(carol, 1000000);
 
             fund(env, gw, {bob}, {USD(10000)}, Fund::Acct);
@@ -2745,7 +2746,7 @@ private:
                 tokens = ammAlice.getLPTokensBalance();
                 BEAST_EXPECT(
                     ammAlice.expectBalances(XRP(12000), USD(12100), tokens));
-                env.close(seconds(24 * 3600 + 1));
+                env.close(seconds(TOTAL_TIME_SLOT_SECS + 1));
                 // clock is parent's based
                 env.close();
                 env(pay(carol, bob, USD(100)), path(~USD), sendmax(XRP(110)));
@@ -2775,6 +2776,19 @@ private:
             // The purchase price is still too small to affect the total tokens
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(10000), USD(10000), ammAlice.tokens()));
+        });
+
+        // Reset auth account
+        testAMM([&](AMM& ammAlice, Env& env) {
+            ammAlice.bid(alice, IOUAmount{100}, std::nullopt, {carol});
+            BEAST_EXPECT(ammAlice.expectAuctionSlot({carol}));
+            ammAlice.bid(alice, IOUAmount{100});
+            BEAST_EXPECT(ammAlice.expectAuctionSlot({}));
+            Account bob("bob");
+            Account dan("dan");
+            fund(env, {bob, dan}, XRP(1000));
+            ammAlice.bid(alice, IOUAmount{100}, std::nullopt, {bob, dan});
+            BEAST_EXPECT(ammAlice.expectAuctionSlot({bob, dan}));
         });
     }
 

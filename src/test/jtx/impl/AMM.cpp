@@ -240,7 +240,8 @@ AMM::expectAuctionSlot(
 {
     return expectAuctionSlot([&](std::uint32_t slotFee,
                                  std::optional<std::uint8_t> slotInterval,
-                                 IOUAmount const& slotPrice) {
+                                 IOUAmount const& slotPrice,
+                                 auto const&) {
         if (!purchasedTimeSlot)
             purchasedTimeSlot = timeSlot;
 
@@ -265,12 +266,32 @@ AMM::expectAuctionSlot(
 {
     return expectAuctionSlot([&](std::uint32_t slotFee,
                                  std::optional<std::uint8_t> slotInterval,
-                                 IOUAmount const& slotPrice) {
+                                 IOUAmount const& slotPrice,
+                                 auto const&) {
         return slotFee == fee &&
             // Auction slot might be expired, in which case slotInterval is
             // 0
             ((!timeSlot && slotInterval == 0) || slotInterval == timeSlot) &&
             slotPrice == expectedPrice;
+    });
+}
+
+bool
+AMM::expectAuctionSlot(std::vector<AccountID> const& authAccounts) const
+{
+    return expectAuctionSlot([&](std::uint32_t,
+                                 std::optional<std::uint8_t>,
+                                 IOUAmount const&,
+                                 STArray const& accounts) {
+        for (auto const& account : accounts)
+        {
+            if (std::find(
+                    authAccounts.cbegin(),
+                    authAccounts.cend(),
+                    account.getAccountID(sfAccount)) == authAccounts.end())
+                return false;
+        }
+        return true;
     });
 }
 
@@ -727,7 +748,8 @@ AMM::expectAuctionSlot(auto&& cb) const
                 env_.app().timeKeeper().now().time_since_epoch().count(),
                 auctionSlot);
             auto const slotPrice = auctionSlot[sfPrice].iou();
-            return cb(slotFee, slotInterval, slotPrice);
+            auto const authAccounts = auctionSlot.getFieldArray(sfAuthAccounts);
+            return cb(slotFee, slotInterval, slotPrice, authAccounts);
         }
     }
     return false;

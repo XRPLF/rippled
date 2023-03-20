@@ -37,8 +37,7 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
     if (!ammEnabled(ctx.rules))
         return temDISABLED;
 
-    auto const ret = preflight1(ctx);
-    if (!isTesSuccess(ret))
+    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
     auto const flags = ctx.tx.getFlags();
@@ -371,16 +370,9 @@ AMMWithdraw::doApply()
     // as we go on processing transactions.
     Sandbox sb(&ctx_.view());
 
-    // This is a ledger with just the fees paid and any unfunded or expired
-    // offers we encounter removed. It's used when handling Fill-or-Kill offers,
-    // if the order isn't going to be placed, to avoid wasting the work we did.
-    Sandbox sbCancel(&ctx_.view());
-
     auto const result = applyGuts(sb);
     if (result.second)
         sb.apply(ctx_.rawView());
-    else
-        sbCancel.apply(ctx_.rawView());
 
     return result.first;
 }
