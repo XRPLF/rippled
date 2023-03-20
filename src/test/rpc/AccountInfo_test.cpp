@@ -492,10 +492,11 @@ public:
     }
 
     void
-    testAccountFlags()
+    testAccountFlags(FeatureBitset const& features)
     {
         using namespace jtx;
-        Env env(*this);
+
+        Env env(*this, features);
         Account const alice{"alice"};
         env.fund(XRP(1000), alice);
 
@@ -515,17 +516,10 @@ public:
         };
 
         static constexpr std::
-            array<std::pair<std::string_view, std::uint32_t>, 11>
+            array<std::pair<std::string_view, std::uint32_t>, 6>
                 asFlags{
                     {{"defaultRipple", asfDefaultRipple},
                      {"depositAuth", asfDepositAuth},
-                     {"disallowIncomingCheck", asfDisallowIncomingCheck},
-                     {"disallowIncomingNFTokenOffer",
-                      asfDisallowIncomingNFTokenOffer},
-                     {"disallowIncomingPayChan", asfDisallowIncomingPayChan},
-                     {"disallowIncomingTrustline",
-                      asfDisallowIncomingTrustline},
-                     {"disallowIncomingXRP", asfDisallowXRP},
                      {"globalFreeze", asfGlobalFreeze},
                      {"noFreeze", asfNoFreeze},
                      {"requireAuthorization", asfRequireAuth},
@@ -537,7 +531,7 @@ public:
             // as expected
             env(fclear(alice, asf.second));
             env.close();
-            auto f1 = getAccountFlag(asf.first);
+            auto const f1 = getAccountFlag(asf.first);
             BEAST_EXPECT(f1.has_value());
             BEAST_EXPECT(!f1.value());
 
@@ -545,9 +539,49 @@ public:
             // as expected
             env(fset(alice, asf.second));
             env.close();
-            auto f2 = getAccountFlag(asf.first);
+            auto const f2 = getAccountFlag(asf.first);
             BEAST_EXPECT(f2.has_value());
             BEAST_EXPECT(f2.value());
+        }
+
+        static constexpr std::
+            array<std::pair<std::string_view, std::uint32_t>, 5>
+                disallowIncomingFlags{
+                    {{"disallowIncomingCheck", asfDisallowIncomingCheck},
+                     {"disallowIncomingNFTokenOffer",
+                      asfDisallowIncomingNFTokenOffer},
+                     {"disallowIncomingPayChan", asfDisallowIncomingPayChan},
+                     {"disallowIncomingTrustline",
+                      asfDisallowIncomingTrustline},
+                     {"disallowIncomingXRP", asfDisallowXRP}}};
+
+        if (features[featureDisallowIncoming])
+        {
+            for (auto& asf : disallowIncomingFlags)
+            {
+                // Clear a flag and check that account_info returns results
+                // as expected
+                env(fclear(alice, asf.second));
+                env.close();
+                auto const f1 = getAccountFlag(asf.first);
+                BEAST_EXPECT(f1.has_value());
+                BEAST_EXPECT(!f1.value());
+
+                // Set a flag and check that account_info returns results
+                // as expected
+                env(fset(alice, asf.second));
+                env.close();
+                auto const f2 = getAccountFlag(asf.first);
+                BEAST_EXPECT(f2.has_value());
+                BEAST_EXPECT(f2.value());
+            }
+        }
+        else
+        {
+            for (auto& asf : disallowIncomingFlags)
+            {
+                BEAST_EXPECT(!getAccountFlag(asf.first));
+            }
         }
     }
 
@@ -558,7 +592,11 @@ public:
         testSignerLists();
         testSignerListsApiVersion2();
         testSignerListsV2();
-        testAccountFlags();
+
+        FeatureBitset const allFeatures{
+            ripple::test::jtx::supported_amendments()};
+        testAccountFlags(allFeatures);
+        testAccountFlags(allFeatures - featureDisallowIncoming);
     }
 };
 

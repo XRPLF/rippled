@@ -78,22 +78,26 @@ doAccountInfo(RPC::JsonContext& context)
         return jvAccepted;
 
     static constexpr std::
-        array<std::pair<std::string_view, LedgerSpecificFlags>, 13>
+        array<std::pair<std::string_view, LedgerSpecificFlags>, 8>
             lsFlags{
                 {{"defaultRipple", lsfDefaultRipple},
                  {"depositAuth", lsfDepositAuth},
                  {"disableMasterKey", lsfDisableMaster},
-                 {"disallowIncomingXRP", lsfDisallowXRP},
-                 {"disallowIncomingNFTokenOffer",
-                  lsfDisallowIncomingNFTokenOffer},
-                 {"disallowIncomingCheck", lsfDisallowIncomingCheck},
-                 {"disallowIncomingPayChan", lsfDisallowIncomingPayChan},
-                 {"disallowIncomingTrustline", lsfDisallowIncomingTrustline},
                  {"globalFreeze", lsfGlobalFreeze},
                  {"noFreeze", lsfNoFreeze},
                  {"passwordSpent", lsfPasswordSpent},
                  {"requireAuthorization", lsfRequireAuth},
                  {"requireDestinationTag", lsfRequireDestTag}}};
+
+    static constexpr std::
+        array<std::pair<std::string_view, LedgerSpecificFlags>, 5>
+            disallowIncomingFlags{
+                {{"disallowIncomingXRP", lsfDisallowXRP},
+                 {"disallowIncomingNFTokenOffer",
+                  lsfDisallowIncomingNFTokenOffer},
+                 {"disallowIncomingCheck", lsfDisallowIncomingCheck},
+                 {"disallowIncomingPayChan", lsfDisallowIncomingPayChan},
+                 {"disallowIncomingTrustline", lsfDisallowIncomingTrustline}}};
 
     auto const sleAccepted = ledger->read(keylet::account(accountID));
     if (sleAccepted)
@@ -115,6 +119,12 @@ doAccountInfo(RPC::JsonContext& context)
         Json::Value acctFlags{Json::objectValue};
         for (auto const& lsf : lsFlags)
             acctFlags[lsf.first.data()] = sleAccepted->isFlag(lsf.second);
+
+        if (ledger->rules().enabled(featureDisallowIncoming))
+        {
+            for (auto const& lsf : disallowIncomingFlags)
+                acctFlags[lsf.first.data()] = sleAccepted->isFlag(lsf.second);
+        }
         result[jss::account_flags] = std::move(acctFlags);
 
         // Return SignerList(s) if that is requested.
