@@ -316,8 +316,19 @@ ValidatorSite::onRequestTimeout(std::size_t siteIdx, error_code const& ec)
 
     {
         std::lock_guard lock_site{sites_mutex_};
-        JLOG(j_.warn()) << "Request for " << sites_[siteIdx].activeResource->uri
-                        << " took too long";
+        // In some circumstances, both this function and the response
+        // handler (onSiteFetch or onTextFetch) can get queued and
+        // processed. In all observed cases, the response handler
+        // processes a network error. Usually, this function runs first,
+        // but on extremely rare occasions, the response handler can run
+        // first, which will leave activeResource empty.
+        auto const& site = sites_[siteIdx];
+        if (site.activeResource)
+            JLOG(j_.warn()) << "Request for " << site.activeResource->uri
+                            << " took too long";
+        else
+            JLOG(j_.error()) << "Request took too long, but a response has "
+                                "already been processed";
     }
 
     std::lock_guard lock_state{state_mutex_};
