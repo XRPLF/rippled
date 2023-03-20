@@ -177,7 +177,7 @@ doAccountLines(RPC::JsonContext& context)
         if (!sle)
             return rpcError(rpcINVALID_PARAMS);
 
-        if (!RPC::isOwnedByAccount(*ledger, sle, accountID))
+        if (!RPC::isRelatedToAccount(*ledger, sle, accountID))
             return rpcError(rpcINVALID_PARAMS);
     }
 
