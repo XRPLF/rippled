@@ -122,21 +122,6 @@ public:
     checkSign(RequireFullyCanonicalSig requireCanonicalSig, Rules const& rules)
         const;
 
-    // SQL Functions with metadata.
-    static std::string const&
-    getMetaSQLInsertReplaceHeader();
-
-    std::string
-    getMetaSQL(std::uint32_t inLedger, std::string const& escapedMetaData)
-        const;
-
-    std::string
-    getMetaSQL(
-        Serializer rawTxn,
-        std::uint32_t inLedger,
-        char status,
-        std::string const& escapedMetaData) const;
-
 private:
     Expected<void, std::string>
     checkSingleSign(RequireFullyCanonicalSig requireCanonicalSig) const;
@@ -192,6 +177,13 @@ STTx::getTransactionID() const
 {
     return tid_;
 }
+
+std::string
+getTxMetaSQL(
+    STTx const& tx,
+    std::uint32_t ledger,
+    std::string_view hexMetaData,
+    char status = txnSqlValidated);
 
 }  // namespace ripple
 

@@ -153,11 +153,8 @@ updateLedgerDBs(
 
                 Serializer s;
                 item.second->add(s);
-                session
-                    << (STTx::getMetaSQLInsertReplaceHeader() +
-                        item.first->getMetaSQL(
-                            ledgerSeq, sqlBlobLiteral(s.modData())) +
-                        ';');
+                session << getTxMetaSQL(
+                    *item.first, ledgerSeq, strHex(s.peekData()));
             }
         }
 

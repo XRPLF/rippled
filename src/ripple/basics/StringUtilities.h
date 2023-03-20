@@ -32,19 +32,6 @@
 
 namespace ripple {
 
-/** Format arbitrary binary data as an SQLite "blob literal".
-
-    In SQLite, blob literals must be encoded when used in a query. Per
-    https://sqlite.org/lang_expr.html#literal_values_constants_ they are
-    encoded as string literals containing hexadecimal data and preceded
-    by a single 'X' character.
-
-    @param blob An arbitrary blob of binary data
-    @return The input, encoded as a blob literal.
- */
-std::string
-sqlBlobLiteral(Blob const& blob);
-
 template <class Iterator>
 std::optional<Blob>
 strUnHex(std::size_t strSize, Iterator begin, Iterator end)

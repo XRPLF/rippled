@@ -465,6 +465,13 @@ Value::asCString() const
     return value_.string_;
 }
 
+std::string_view
+Value::asStringView() const
+{
+    JSON_ASSERT(type_ == stringValue);
+    return value_.string_;
+}
+
 std::string
 Value::asString() const
 {

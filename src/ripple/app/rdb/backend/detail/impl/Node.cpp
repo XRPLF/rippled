@@ -273,13 +273,15 @@ saveValidatedLedger(
 
             for (auto const& acceptedLedgerTx : *aLedger)
             {
-                uint256 transactionID = acceptedLedgerTx->getTransactionID();
+                auto const& txn = acceptedLedgerTx->getTxn();
 
-                std::string const txnId(to_string(transactionID));
-                std::string const txnSeq(
-                    std::to_string(acceptedLedgerTx->getTxnSeq()));
+                uint256 transactionID = txn->getTransactionID();
 
-                *db << boost::str(deleteAcctTrans % transactionID);
+                std::string const txnId = to_string(transactionID);
+                std::string const txnSeq =
+                    std::to_string(acceptedLedgerTx->getTxnSeq());
+
+                *db << boost::str(deleteAcctTrans % txnId);
 
                 auto const& accts = acceptedLedgerTx->getAffected();
 
@@ -318,21 +320,16 @@ saveValidatedLedger(
                     JLOG(j.trace()) << "ActTx: " << sql;
                     *db << sql;
                 }
-                else if (auto const& sleTxn = acceptedLedgerTx->getTxn();
-                         !isPseudoTx(*sleTxn))
+                else if (!isPseudoTx(*txn))
                 {
                     // It's okay for pseudo transactions to not affect any
                     // accounts.  But otherwise...
                     JLOG(j.warn()) << "Transaction in ledger " << seq
                                    << " affects no accounts";
-                    JLOG(j.warn()) << sleTxn->getJson(JsonOptions::none);
+                    JLOG(j.warn()) << txn->getJson(JsonOptions::none);
                 }
 
-                *db
-                    << (STTx::getMetaSQLInsertReplaceHeader() +
-                        acceptedLedgerTx->getTxn()->getMetaSQL(
-                            seq, acceptedLedgerTx->getEscMeta()) +
-                        ";");
+                *db << getTxMetaSQL(*txn, seq, acceptedLedgerTx->getMetaHex());
 
                 app.getMasterTransaction().inLedger(transactionID, seq);
             }

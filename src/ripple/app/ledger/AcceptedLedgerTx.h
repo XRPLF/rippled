@@ -26,8 +26,6 @@
 
 namespace ripple {
 
-class Logs;
-
 /**
     A transaction that is in a closed ledger.
 
@@ -53,6 +51,7 @@ public:
     {
         return mTxn;
     }
+
     TxMeta const&
     getMeta() const
     {
@@ -70,23 +69,27 @@ public:
     {
         return mTxn->getTransactionID();
     }
+
     TxType
     getTxnType() const
     {
         return mTxn->getTxnType();
     }
+
     TER
     getResult() const
     {
         return mMeta.getResultTER();
     }
+
     std::uint32_t
     getTxnSeq() const
     {
         return mMeta.getIndex();
     }
-    std::string
-    getEscMeta() const;
+
+    std::string_view
+    getMetaHex() const;
 
     Json::Value const&
     getJson() const
@@ -98,7 +101,6 @@ private:
     std::shared_ptr<STTx const> mTxn;
     TxMeta mMeta;
     boost::container::flat_set<AccountID> mAffected;
-    Blob mRawMeta;
     Json::Value mJson;
 };
 

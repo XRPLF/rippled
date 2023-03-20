@@ -247,6 +247,10 @@ public:
 
     const char*
     asCString() const;
+
+    std::string_view
+    asStringView() const;
+
     /** Returns the unquoted string value. */
     std::string
     asString() const;

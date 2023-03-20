@@ -37,13 +37,12 @@ AcceptedLedgerTx::AcceptedLedgerTx(
 
     Serializer s;
     met->add(s);
-    mRawMeta = std::move(s.modData());
 
     mJson = Json::objectValue;
     mJson[jss::transaction] = mTxn->getJson(JsonOptions::none);
 
     mJson[jss::meta] = mMeta.getJson(JsonOptions::none);
-    mJson[jss::raw_meta] = strHex(mRawMeta);
+    mJson[jss::raw_meta] = strHex(s.peekData());
 
     mJson[jss::result] = transHuman(mMeta.getResultTER());
 
@@ -73,11 +72,11 @@ AcceptedLedgerTx::AcceptedLedgerTx(
     }
 }
 
-std::string
-AcceptedLedgerTx::getEscMeta() const
+std::string_view
+AcceptedLedgerTx::getMetaHex() const
 {
-    assert(!mRawMeta.empty());
-    return sqlBlobLiteral(mRawMeta);
+    assert(mJson.isMember(jss::raw_meta) && mJson[jss::raw_meta].isString());
+    return mJson[jss::raw_meta].asStringView();
 }
 
 }  // namespace ripple

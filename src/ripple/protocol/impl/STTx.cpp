@@ -22,7 +22,6 @@
 #include <ripple/basics/contract.h>
 #include <ripple/basics/safe_cast.h>
 #include <ripple/json/to_string.h>
-#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/PublicKey.h>
@@ -33,7 +32,7 @@
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/protocol/UintTypes.h>
 #include <ripple/protocol/jss.h>
-#include <boost/format.hpp>
+#include <boost/algorithm/hex.hpp>
 #include <array>
 #include <memory>
 #include <type_traits>
@@ -44,16 +43,12 @@ namespace ripple {
 static auto
 getTxFormat(TxType type)
 {
-    auto format = TxFormats::getInstance().findByType(type);
+    if (auto format = TxFormats::getInstance().findByType(type))
+        return format;
 
-    if (format == nullptr)
-    {
-        Throw<std::runtime_error>(
-            "Invalid transaction type " +
-            std::to_string(safe_cast<std::underlying_type_t<TxType>>(type)));
-    }
-
-    return format;
+    Throw<std::runtime_error>(
+        "Invalid transaction type " +
+        std::to_string(safe_cast<std::underlying_type_t<TxType>>(type)));
 }
 
 STTx::STTx(STObject&& object) : STObject(std::move(object))
@@ -226,7 +221,8 @@ STTx::checkSign(
     return Unexpected("Internal signature check failure.");
 }
 
-Json::Value STTx::getJson(JsonOptions) const
+Json::Value
+STTx::getJson(JsonOptions) const
 {
     Json::Value ret = STObject::getJson(JsonOptions::none);
     ret[jss::hash] = to_string(getTransactionID());
@@ -245,48 +241,6 @@ STTx::getJson(JsonOptions options, bool binary) const
         return ret;
     }
     return getJson(options);
-}
-
-std::string const&
-STTx::getMetaSQLInsertReplaceHeader()
-{
-    static std::string const sql =
-        "INSERT OR REPLACE INTO Transactions "
-        "(TransID, TransType, FromAcct, FromSeq, LedgerSeq, Status, RawTxn, "
-        "TxnMeta)"
-        " VALUES ";
-
-    return sql;
-}
-
-std::string
-STTx::getMetaSQL(std::uint32_t inLedger, std::string const& escapedMetaData)
-    const
-{
-    Serializer s;
-    add(s);
-    return getMetaSQL(s, inLedger, txnSqlValidated, escapedMetaData);
-}
-
-// VFALCO This could be a free function elsewhere
-std::string
-STTx::getMetaSQL(
-    Serializer rawTxn,
-    std::uint32_t inLedger,
-    char status,
-    std::string const& escapedMetaData) const
-{
-    static boost::format bfTrans(
-        "('%s', '%s', '%s', '%d', '%d', '%c', %s, %s)");
-    std::string rTxn = sqlBlobLiteral(rawTxn.peekData());
-
-    auto format = TxFormats::getInstance().findByType(tx_type_);
-    assert(format != nullptr);
-
-    return str(
-        boost::format(bfTrans) % to_string(getTransactionID()) %
-        format->getName() % toBase58(getAccountID(sfAccount)) %
-        getFieldU32(sfSequence) % inLedger % status % rTxn % escapedMetaData);
 }
 
 Expected<void, std::string>
@@ -563,6 +517,50 @@ isPseudoTx(STObject const& tx)
         return false;
     auto tt = safe_cast<TxType>(*t);
     return tt == ttAMENDMENT || tt == ttFEE || tt == ttUNL_MODIFY;
+}
+
+std::string
+getTxMetaSQL(
+    STTx const& tx,
+    std::uint32_t ledger,
+    std::string_view hexMetaData,
+    char status)
+{
+    // FIXME This needs the memory allocation which is expensive.
+    Serializer s;
+    tx.add(s);
+
+    auto format = TxFormats::getInstance().findByType(tx.getTxnType());
+    assert(format != nullptr);
+
+    std::string ret;
+    ret.reserve(270 + hexMetaData.size() + (s.size() * 2));
+
+    ret =
+        "INSERT OR REPLACE INTO Transactions "
+        "(TransID, TransType, FromAcct, FromSeq, LedgerSeq, Status, RawTxn, "
+        "TxnMeta) VALUES ('";
+    boost::algorithm::hex(
+        tx.getTransactionID().cbegin(),
+        tx.getTransactionID().cend(),
+        std::back_inserter(ret));
+    ret += "', '";
+    ret += format->getName();
+    ret += "', '";
+    ret += toBase58(tx.getAccountID(sfAccount));
+    ret += "', '";
+    ret += std::to_string(tx.getFieldU32(sfSequence));
+    ret += "', '";
+    ret += std::to_string(ledger);
+    ret += "', '";
+    ret += status;
+    ret += "', X'";
+    boost::algorithm::hex(s.begin(), s.end(), std::back_inserter(ret));
+    ret += "', X'";
+    ret += hexMetaData;
+    ret += "');";
+
+    return ret;
 }
 
 }  // namespace ripple
