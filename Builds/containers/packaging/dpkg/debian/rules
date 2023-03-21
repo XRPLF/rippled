@@ -23,6 +23,8 @@ override_dh_auto_configure:
 	conan install . \
 		--install-folder bld/rippled  \
 		--build missing \
+		--build boost \
+		--build sqlite3 \
 		--settings build_type=Release
 
 	cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
@@ -38,8 +40,10 @@ override_dh_auto_configure:
 	conan install . \
 		--install-folder bld/rippled-reporting \
 		--build missing \
+		--build boost \
+		--build sqlite3 \
+		--build libuv \
 		--settings build_type=Release \
-		--settings compiler.cppstd=17 \
 		--options reporting=True
 
 	cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
