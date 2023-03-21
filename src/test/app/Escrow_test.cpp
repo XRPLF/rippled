@@ -215,6 +215,20 @@ struct Escrow_test : public beast::unit_test::suite
     }
 
     static STAmount
+    limitAmount(
+        jtx::Env const& env,
+        jtx::Account const& account,
+        jtx::Account const& gw,
+        jtx::IOU const& iou)
+    {
+        auto const aHigh = account.id() > gw.id();
+        auto const sle = env.le(keylet::line(account, gw, iou.currency));
+        if (sle && sle->isFieldPresent(aHigh ? sfLowLimit : sfHighLimit))
+            return (*sle)[aHigh ? sfLowLimit : sfHighLimit];
+        return STAmount(iou, 0);
+    }
+
+    static STAmount
     lineBalance(
         jtx::Env const& env,
         jtx::Account const& account,
@@ -3510,385 +3524,81 @@ struct Escrow_test : public beast::unit_test::suite
         using namespace test::jtx;
         using namespace std::literals;
 
-        // src > dst
-        // src > issuer
-        // dest no trustline
-        // negative locked/tl balance
+        struct TestAccountData
         {
-            auto const src = Account("alice2");
-            auto const dst = Account("bob0");
-            auto const gw = Account{"gw0"};
-            auto const USD = gw["USD"];
+            Account src;
+            Account dst;
+            Account gw;
+            bool hasTrustline;
+            bool negative;
+        };
 
+        std::array<TestAccountData, 8> tests = {
+            {
+                // src > dst && src > issuer && dst no trustline
+                {Account("alice2"), Account("bob0"), Account{"gw0"}, false, true},
+                // src < dst && src < issuer && dst no trustline
+                {Account("carol0"), Account("dan1"), Account{"gw1"}, false, false},
+                // // dst > src && dst > issuer && dst no trustline
+                {Account("dan1"), Account("alice2"), Account{"gw0"}, false, true},
+                // // dst < src && dst < issuer && dst no trustline
+                {Account("bob0"), Account("carol0"), Account{"gw1"}, false, false},
+                // // src > dst && src > issuer && dst has trustline
+                {Account("alice2"), Account("bob0"), Account{"gw0"}, true, true},
+                // // src < dst && src < issuer && dst has trustline
+                {Account("carol0"), Account("dan1"), Account{"gw1"}, true, false},
+                // // dst > src && dst > issuer && dst has trustline
+                {Account("dan1"), Account("alice2"), Account{"gw0"}, true, true},
+                // // dst < src && dst < issuer && dst has trustline
+                {Account("bob0"), Account("carol0"), Account{"gw1"}, true, false},
+            }
+        };
+
+        for (auto const& t : tests)
+        {
             Env env{*this, features};
-            env.fund(XRP(5000), src, dst, gw);
+            auto const USD = t.gw["USD"];
+            env.fund(XRP(5000), t.src, t.dst, t.gw);
             env.close();
-            env.trust(USD(100000), src);
+            
+            if (t.hasTrustline)
+                env.trust(USD(100000), t.src, t.dst);
+            else
+                env.trust(USD(100000), t.src);
             env.close();
-            env(pay(gw, src, USD(10000)));
+
+            env(pay(t.gw, t.src, USD(10000)));
+            if (t.hasTrustline)
+                env(pay(t.gw, t.dst, USD(10000)));
             env.close();
 
             // src can create escrow
-            auto const seq1 = env.seq(src);
+            auto const seq1 = env.seq(t.src);
             auto const delta = USD(1000);
-            env(escrow(src, dst, delta),
+            env(escrow(t.src, t.dst, delta),
                 condition(cb1),
                 finish_time(env.now() + 1s),
                 fee(1500));
             env.close();
 
-            auto const preLocked = lockedAmount(env, src, gw, USD);
-            BEAST_EXPECT(preLocked == -delta);
+            auto const preLocked = lockedAmount(env, t.src, t.gw, USD);
+            BEAST_EXPECT(preLocked == (t.negative ? -delta : delta));
 
             // dst can finish escrow
-            auto const preSrc = lineBalance(env, src, gw, USD);
-            auto const preDst = lineBalance(env, dst, gw, USD);
+            auto const preSrc = lineBalance(env, t.src, t.gw, USD);
+            auto const preDst = lineBalance(env, t.dst, t.gw, USD);
 
-            env(finish(dst, src, seq1),
+            env(finish(t.dst, t.src, seq1),
                 condition(cb1),
                 fulfillment(fb1),
                 fee(1500));
             env.close();
 
-            auto postLocked = lockedAmount(env, src, gw, USD);
-            BEAST_EXPECT(
-                lineBalance(env, src, gw, USD) == preSrc.value() + delta);
-            BEAST_EXPECT(
-                lineBalance(env, dst, gw, USD) == preDst.value() - delta);
-            BEAST_EXPECT(preLocked == postLocked - delta);
-        }
-        // src < dst
-        // src < issuer
-        // dest no trustline
-        // positive locked/tl balance
-        {
-            auto const src = Account("carol0");
-            auto const dst = Account("dan1");
-            auto const gw = Account{"gw1"};
-            auto const USD = gw["USD"];
+            auto postLocked = lockedAmount(env, t.src, t.gw, USD);
+            BEAST_EXPECT(lineBalance(env, t.src, t.gw, USD) == (t.negative ? (preSrc + delta) : (preSrc - delta)));
+            BEAST_EXPECT(lineBalance(env, t.dst, t.gw, USD) == (t.negative ? (preDst - delta) : (preDst + delta)));
+            BEAST_EXPECT(postLocked == (t.negative ? (preLocked + delta) : (preLocked - delta)));
 
-            Env env{*this, features};
-            env.fund(XRP(5000), src, dst, gw);
-            env.close();
-            env.trust(USD(100000), src);
-            env.close();
-            env(pay(gw, src, USD(10000)));
-            env.close();
-
-            // src can create escrow
-            auto const seq1 = env.seq(src);
-            auto const delta = USD(1000);
-            env(escrow(src, dst, delta),
-                condition(cb1),
-                finish_time(env.now() + 1s),
-                fee(1500));
-            env.close();
-
-            auto const preLocked = lockedAmount(env, src, gw, USD);
-            BEAST_EXPECT(preLocked == delta);
-
-            // dst can finish escrow
-            auto const preSrc = lineBalance(env, src, gw, USD);
-            auto const preDst = lineBalance(env, dst, gw, USD);
-
-            env(finish(dst, src, seq1),
-                condition(cb1),
-                fulfillment(fb1),
-                fee(1500));
-            env.close();
-
-            auto postLocked = lockedAmount(env, src, gw, USD);
-            BEAST_EXPECT(
-                lineBalance(env, src, gw, USD) == preSrc.value() - delta);
-            BEAST_EXPECT(
-                lineBalance(env, dst, gw, USD) == preDst.value() + delta);
-            BEAST_EXPECT(preLocked == postLocked + delta);
-        }
-        // dst > src
-        // dst > issuer
-        // dest no trustline
-        // negative locked/tl balance
-        {
-            auto const src = Account("dan1");
-            auto const dst = Account("alice2");
-            auto const gw = Account{"gw0"};
-            auto const USD = gw["USD"];
-
-            Env env{*this, features};
-            env.fund(XRP(5000), src, dst, gw);
-            env.close();
-            env.trust(USD(100000), src);
-            env.close();
-            env(pay(gw, src, USD(10000)));
-            env.close();
-
-            // src can create escrow
-            auto const seq1 = env.seq(src);
-            auto const delta = USD(1000);
-            env(escrow(src, dst, delta),
-                condition(cb1),
-                finish_time(env.now() + 1s),
-                fee(1500));
-            env.close();
-
-            auto const preLocked = lockedAmount(env, src, gw, USD);
-            BEAST_EXPECT(preLocked == -delta);
-
-            // dst can finish escrow
-            auto const preSrc = lineBalance(env, src, gw, USD);
-            auto const preDst = lineBalance(env, dst, gw, USD);
-
-            env(finish(dst, src, seq1),
-                condition(cb1),
-                fulfillment(fb1),
-                fee(1500));
-            env.close();
-
-            auto postLocked = lockedAmount(env, src, gw, USD);
-            BEAST_EXPECT(
-                lineBalance(env, src, gw, USD) == preSrc.value() + delta);
-            BEAST_EXPECT(
-                lineBalance(env, dst, gw, USD) == preDst.value() - delta);
-            BEAST_EXPECT(preLocked == postLocked - delta);
-        }
-        // dst < src
-        // dst < issuer
-        // dest no trustline
-        // positive locked/tl balance
-        {
-            auto const src = Account("bob0");
-            auto const dst = Account("carol0");
-            auto const gw = Account{"gw1"};
-            auto const USD = gw["USD"];
-
-            Env env{*this, features};
-            env.fund(XRP(5000), src, dst, gw);
-            env.close();
-            env.trust(USD(100000), src);
-            env.close();
-            env(pay(gw, src, USD(10000)));
-            env.close();
-
-            // src can create escrow
-            auto const seq1 = env.seq(src);
-            auto const delta = USD(1000);
-            env(escrow(src, dst, delta),
-                condition(cb1),
-                finish_time(env.now() + 1s),
-                fee(1500));
-            env.close();
-
-            auto const preLocked = lockedAmount(env, src, gw, USD);
-            BEAST_EXPECT(preLocked == delta);
-
-            // dst can finish escrow
-            auto const preSrc = lineBalance(env, src, gw, USD);
-            auto const preDst = lineBalance(env, dst, gw, USD);
-
-            env(finish(dst, src, seq1),
-                condition(cb1),
-                fulfillment(fb1),
-                fee(1500));
-            env.close();
-
-            auto postLocked = lockedAmount(env, src, gw, USD);
-            BEAST_EXPECT(
-                lineBalance(env, src, gw, USD) == preSrc.value() - delta);
-            BEAST_EXPECT(
-                lineBalance(env, dst, gw, USD) == preDst.value() + delta);
-            BEAST_EXPECT(preLocked == postLocked + delta);
-        }
-        // src > dst
-        // src > issuer
-        // dest has trustline
-        // negative locked/tl balance
-        {
-            auto const src = Account("alice2");
-            auto const dst = Account("bob0");
-            auto const gw = Account{"gw0"};
-            auto const USD = gw["USD"];
-
-            Env env{*this, features};
-            env.fund(XRP(5000), src, dst, gw);
-            env.close();
-            env.trust(USD(100000), src, dst);
-            env.close();
-            env(pay(gw, src, USD(10000)));
-            env(pay(gw, dst, USD(10000)));
-            env.close();
-
-            // src can create escrow
-            auto const seq1 = env.seq(src);
-            auto const delta = USD(1000);
-            env(escrow(src, dst, delta),
-                condition(cb1),
-                finish_time(env.now() + 1s),
-                fee(1500));
-            env.close();
-
-            auto const preLocked = lockedAmount(env, src, gw, USD);
-            BEAST_EXPECT(preLocked == -delta);
-
-            // dst can finish escrow
-            auto const preSrc = lineBalance(env, src, gw, USD);
-            auto const preDst = lineBalance(env, dst, gw, USD);
-
-            env(finish(dst, src, seq1),
-                condition(cb1),
-                fulfillment(fb1),
-                fee(1500));
-            env.close();
-
-            auto postLocked = lockedAmount(env, src, gw, USD);
-            BEAST_EXPECT(
-                lineBalance(env, src, gw, USD) == preSrc.value() + delta);
-            BEAST_EXPECT(
-                lineBalance(env, dst, gw, USD) == preDst.value() - delta);
-            BEAST_EXPECT(preLocked == postLocked - delta);
-        }
-        // src < dst
-        // src < issuer
-        // dest has trustline
-        // positive locked/tl balance
-        {
-            auto const src = Account("carol0");
-            auto const dst = Account("dan1");
-            auto const gw = Account{"gw1"};
-            auto const USD = gw["USD"];
-
-            Env env{*this, features};
-            env.fund(XRP(5000), src, dst, gw);
-            env.close();
-            env.trust(USD(100000), src, dst);
-            env.close();
-            env(pay(gw, src, USD(10000)));
-            env(pay(gw, dst, USD(10000)));
-            env.close();
-
-            // src can create escrow
-            auto const seq1 = env.seq(src);
-            auto const delta = USD(1000);
-            env(escrow(src, dst, delta),
-                condition(cb1),
-                finish_time(env.now() + 1s),
-                fee(1500));
-            env.close();
-
-            auto const preLocked = lockedAmount(env, src, gw, USD);
-            BEAST_EXPECT(preLocked == delta);
-
-            // dst can finish escrow
-            auto const preSrc = lineBalance(env, src, gw, USD);
-            auto const preDst = lineBalance(env, dst, gw, USD);
-
-            env(finish(dst, src, seq1),
-                condition(cb1),
-                fulfillment(fb1),
-                fee(1500));
-            env.close();
-
-            auto postLocked = lockedAmount(env, src, gw, USD);
-            BEAST_EXPECT(
-                lineBalance(env, src, gw, USD) == preSrc.value() - delta);
-            BEAST_EXPECT(
-                lineBalance(env, dst, gw, USD) == preDst.value() + delta);
-            BEAST_EXPECT(preLocked == postLocked + delta);
-        }
-        // dst > src
-        // dst > issuer
-        // dest has trustline
-        // negative locked/tl balance
-        {
-            auto const src = Account("dan1");
-            auto const dst = Account("alice2");
-            auto const gw = Account{"gw0"};
-            auto const USD = gw["USD"];
-
-            Env env{*this, features};
-            env.fund(XRP(5000), src, dst, gw);
-            env.close();
-            env.trust(USD(100000), src, dst);
-            env.close();
-            env(pay(gw, src, USD(10000)));
-            env(pay(gw, dst, USD(10000)));
-            env.close();
-
-            // src can create escrow
-            auto const seq1 = env.seq(src);
-            auto const delta = USD(1000);
-            env(escrow(src, dst, delta),
-                condition(cb1),
-                finish_time(env.now() + 1s),
-                fee(1500));
-            env.close();
-
-            auto const preLocked = lockedAmount(env, src, gw, USD);
-            BEAST_EXPECT(preLocked == -delta);
-
-            // dst can finish escrow
-            auto const preSrc = lineBalance(env, src, gw, USD);
-            auto const preDst = lineBalance(env, dst, gw, USD);
-
-            env(finish(dst, src, seq1),
-                condition(cb1),
-                fulfillment(fb1),
-                fee(1500));
-            env.close();
-
-            auto postLocked = lockedAmount(env, src, gw, USD);
-            BEAST_EXPECT(
-                lineBalance(env, src, gw, USD) == preSrc.value() + delta);
-            BEAST_EXPECT(
-                lineBalance(env, dst, gw, USD) == preDst.value() - delta);
-            BEAST_EXPECT(preLocked == postLocked - delta);
-        }
-        // dst < src
-        // dst < issuer
-        // dest has trustline
-        // positive locked/tl balance
-        {
-            auto const src = Account("bob0");
-            auto const dst = Account("carol0");
-            auto const gw = Account{"gw1"};
-            auto const USD = gw["USD"];
-
-            Env env{*this, features};
-            env.fund(XRP(5000), src, dst, gw);
-            env.close();
-            env.trust(USD(100000), src, dst);
-            env.close();
-            env(pay(gw, src, USD(10000)));
-            env(pay(gw, dst, USD(10000)));
-            env.close();
-
-            // src can create escrow
-            auto const seq1 = env.seq(src);
-            auto const delta = USD(1000);
-            env(escrow(src, dst, delta),
-                condition(cb1),
-                finish_time(env.now() + 1s),
-                fee(1500));
-            env.close();
-
-            auto const preLocked = lockedAmount(env, src, gw, USD);
-            BEAST_EXPECT(preLocked == delta);
-
-            // dst can finish escrow
-            auto const preSrc = lineBalance(env, src, gw, USD);
-            auto const preDst = lineBalance(env, dst, gw, USD);
-
-            env(finish(dst, src, seq1),
-                condition(cb1),
-                fulfillment(fb1),
-                fee(1500));
-            env.close();
-
-            auto postLocked = lockedAmount(env, src, gw, USD);
-            BEAST_EXPECT(
-                lineBalance(env, src, gw, USD) == preSrc.value() - delta);
-            BEAST_EXPECT(
-                lineBalance(env, dst, gw, USD) == preDst.value() + delta);
-            BEAST_EXPECT(preLocked == postLocked + delta);
         }
     }
 
@@ -3899,269 +3609,72 @@ struct Escrow_test : public beast::unit_test::suite
         using namespace test::jtx;
         using namespace std::literals;
 
-        // test escrow with issuer
-        // src > issuer
-        // no dest trustline
-        // negative locked/tl balance
+        struct TestAccountData
         {
-            auto const src = Account("alice2");
-            auto const gw = Account{"gw0"};
-            auto const USD = gw["USD"];
+            Account src;
+            Account gw;
+            bool hasTrustline;
+            bool negative;
+        };
 
+        std::array<TestAccountData, 8> tests = {
+            {
+                // src > dst && src > issuer && dst no trustline
+                {Account("alice2"), Account{"gw0"}, false, true},
+                // // src < dst && src < issuer && dst no trustline
+                {Account("carol0"), Account{"gw1"}, false, false},
+                // // // // // dst > src && dst > issuer && dst no trustline
+                {Account("dan1"), Account{"gw0"}, false, true},
+                // // // // // dst < src && dst < issuer && dst no trustline
+                {Account("bob0"), Account{"gw1"}, false, false},
+                // // // // src > dst && src > issuer && dst has trustline
+                {Account("alice2"), Account{"gw0"}, true, true},
+                // // // // src < dst && src < issuer && dst has trustline
+                {Account("carol0"), Account{"gw1"}, true, false},
+                // // // // dst > src && dst > issuer && dst has trustline
+                {Account("dan1"), Account{"gw0"}, true, true},
+                // // // // dst < src && dst < issuer && dst has trustline
+                {Account("bob0"), Account{"gw1"}, true, false},
+            }
+        };
+
+        for (auto const& t : tests)
+        {
             Env env{*this, features};
-            env.fund(XRP(5000), src, gw);
+            auto const USD = t.gw["USD"];
+            env.fund(XRP(5000), t.src, t.gw);
+            env.close();
+            
+            if (t.hasTrustline)
+                env.trust(USD(100000), t.src);
+            
+            env.close();
+
+            if (t.hasTrustline)
+                env(pay(t.gw, t.src, USD(10000)));
+            
             env.close();
 
             // issuer can create escrow
-            auto const seq1 = env.seq(gw);
-            auto const preSrc = lineBalance(env, src, gw, USD);
-            env(escrow(gw, src, USD(1000)),
+            auto const seq1 = env.seq(t.gw);
+            auto const preSrc = lineBalance(env, t.src, t.gw, USD);
+            env(escrow(t.gw, t.src, USD(1000)),
                 condition(cb1),
                 finish_time(env.now() + 1s),
                 fee(1500));
             env.close();
 
             // src can finish escrow, no dest trustline
-            env(finish(src, gw, seq1),
+            env(finish(t.src, t.gw, seq1),
                 condition(cb1),
                 fulfillment(fb1),
                 fee(1500));
             env.close();
-            BEAST_EXPECT(preSrc == USD(0));
-            BEAST_EXPECT(lineBalance(env, src, gw, USD) == -USD(1000));
-        }
-        // test escrow with issuer
-        // src < issuer
-        // no dest trustline
-        // positive locked/tl balance
-        {
-            auto const src = Account("carol0");
-            auto const gw = Account{"gw1"};
-            auto const USD = gw["USD"];
-
-            Env env{*this, features};
-            env.fund(XRP(5000), src, gw);
-            env.close();
-
-            // issuer can create escrow
-            auto const seq1 = env.seq(gw);
-            auto const preSrc = lineBalance(env, src, gw, USD);
-            env(escrow(gw, src, USD(1000)),
-                condition(cb1),
-                finish_time(env.now() + 1s),
-                fee(1500));
-            env.close();
-
-            // src can finish escrow, no dest trustline
-            env(finish(src, gw, seq1),
-                condition(cb1),
-                fulfillment(fb1),
-                fee(1500));
-            env.close();
-            BEAST_EXPECT(preSrc == USD(0));
-            BEAST_EXPECT(lineBalance(env, src, gw, USD) == USD(1000));
-        }
-        // test escrow with issuer
-        // dst > issuer
-        // no dest trustline
-        // negative locked/tl balance
-        {
-            auto const src = Account("alice2");
-            auto const gw = Account{"gw0"};
-            auto const USD = gw["USD"];
-
-            Env env{*this, features};
-            env.fund(XRP(5000), src, gw);
-            env.close();
-
-            // issuer can create escrow
-            auto const seq1 = env.seq(gw);
-            auto const preSrc = lineBalance(env, src, gw, USD);
-            env(escrow(gw, src, USD(1000)),
-                condition(cb1),
-                finish_time(env.now() + 1s),
-                fee(1500));
-            env.close();
-
-            // src can finish escrow, no dest trustline
-            env(finish(src, gw, seq1),
-                condition(cb1),
-                fulfillment(fb1),
-                fee(1500));
-            env.close();
-            BEAST_EXPECT(preSrc == USD(0));
-            BEAST_EXPECT(lineBalance(env, src, gw, USD) == -USD(1000));
-        }
-        // test escrow with issuer, no dest trustline
-        // dst < issuer
-        // no dest trustline
-        // positive locked/tl balance
-        {
-            auto const src = Account("carol0");
-            auto const gw = Account{"gw1"};
-            auto const USD = gw["USD"];
-
-            Env env{*this, features};
-            env.fund(XRP(5000), src, gw);
-            env.close();
-
-            // issuer can create escrow
-            auto const seq1 = env.seq(gw);
-            auto const preSrc = lineBalance(env, src, gw, USD);
-            env(escrow(gw, src, USD(1000)),
-                condition(cb1),
-                finish_time(env.now() + 1s),
-                fee(1500));
-            env.close();
-
-            // src can finish escrow, no dest trustline
-            env(finish(src, gw, seq1),
-                condition(cb1),
-                fulfillment(fb1),
-                fee(1500));
-            env.close();
-            BEAST_EXPECT(preSrc == USD(0));
-            BEAST_EXPECT(lineBalance(env, src, gw, USD) == USD(1000));
-        }
-        // test escrow with issuer
-        // src > issuer
-        // dest has trustline
-        // negative locked/tl balance
-        {
-            auto const src = Account("alice2");
-            auto const gw = Account{"gw0"};
-            auto const USD = gw["USD"];
-
-            Env env{*this, features};
-            env.fund(XRP(5000), src, gw);
-            env.close();
-            env.trust(USD(100000), src);
-            env.close();
-            env(pay(gw, src, USD(10000)));
-            env.close();
-
-            // issuer can create escrow
-            auto const seq1 = env.seq(gw);
-            auto const preSrc = lineBalance(env, src, gw, USD);
-            env(escrow(gw, src, USD(1000)),
-                condition(cb1),
-                finish_time(env.now() + 1s),
-                fee(1500));
-            env.close();
-
-            // src can finish escrow, no dest trustline
-            env(finish(src, gw, seq1),
-                condition(cb1),
-                fulfillment(fb1),
-                fee(1500));
-            env.close();
-            BEAST_EXPECT(preSrc == -USD(10000));
-            BEAST_EXPECT(lineBalance(env, src, gw, USD) == -USD(11000));
-        }
-        // test escrow with issuer
-        // src < issuer
-        // dest has trustline
-        // positive locked/tl balance
-        {
-            auto const src = Account("carol0");
-            auto const gw = Account{"gw1"};
-            auto const USD = gw["USD"];
-
-            Env env{*this, features};
-            env.fund(XRP(5000), src, gw);
-            env.close();
-            env.trust(USD(100000), src);
-            env.close();
-            env(pay(gw, src, USD(10000)));
-            env.close();
-
-            // issuer can create escrow
-            auto const seq1 = env.seq(gw);
-            auto const preSrc = lineBalance(env, src, gw, USD);
-            env(escrow(gw, src, USD(1000)),
-                condition(cb1),
-                finish_time(env.now() + 1s),
-                fee(1500));
-            env.close();
-
-            // src can finish escrow, no dest trustline
-            env(finish(src, gw, seq1),
-                condition(cb1),
-                fulfillment(fb1),
-                fee(1500));
-            env.close();
-            BEAST_EXPECT(preSrc == USD(10000));
-            BEAST_EXPECT(lineBalance(env, src, gw, USD) == USD(11000));
-        }
-        // test escrow with issuer
-        // dst > issuer
-        // dest has trustline
-        // negative locked/tl balance
-        {
-            auto const src = Account("alice2");
-            auto const gw = Account{"gw0"};
-            auto const USD = gw["USD"];
-
-            Env env{*this, features};
-            env.fund(XRP(5000), src, gw);
-            env.close();
-            env.trust(USD(100000), src);
-            env.close();
-            env(pay(gw, src, USD(10000)));
-            env.close();
-
-            // issuer can create escrow
-            auto const seq1 = env.seq(gw);
-            auto const preSrc = lineBalance(env, src, gw, USD);
-            env(escrow(gw, src, USD(1000)),
-                condition(cb1),
-                finish_time(env.now() + 1s),
-                fee(1500));
-            env.close();
-
-            // src can finish escrow, no dest trustline
-            env(finish(src, gw, seq1),
-                condition(cb1),
-                fulfillment(fb1),
-                fee(1500));
-            env.close();
-            BEAST_EXPECT(preSrc == -USD(10000));
-            BEAST_EXPECT(lineBalance(env, src, gw, USD) == -USD(11000));
-        }
-        // test escrow with issuer, no dest trustline
-        // dst < issuer
-        // dest has trustline
-        // positive locked/tl balance
-        {
-            auto const src = Account("carol0");
-            auto const gw = Account{"gw1"};
-            auto const USD = gw["USD"];
-
-            Env env{*this, features};
-            env.fund(XRP(5000), src, gw);
-            env.close();
-            env.trust(USD(100000), src);
-            env.close();
-            env(pay(gw, src, USD(10000)));
-            env.close();
-
-            // issuer can create escrow
-            auto const seq1 = env.seq(gw);
-            auto const preSrc = lineBalance(env, src, gw, USD);
-            env(escrow(gw, src, USD(1000)),
-                condition(cb1),
-                finish_time(env.now() + 1s),
-                fee(1500));
-            env.close();
-
-            // src can finish escrow, no dest trustline
-            env(finish(src, gw, seq1),
-                condition(cb1),
-                fulfillment(fb1),
-                fee(1500));
-            env.close();
-            BEAST_EXPECT(preSrc == USD(10000));
-            BEAST_EXPECT(lineBalance(env, src, gw, USD) == USD(11000));
+            auto const preAmount = t.hasTrustline ? 10000 : 0;
+            BEAST_EXPECT(preSrc == (t.negative ? -USD(preAmount) : USD(preAmount)));
+            auto const postAmount = t.hasTrustline ? 11000 : 1000;
+            BEAST_EXPECT(lineBalance(env, t.src, t.gw, USD) == (t.negative ? -USD(postAmount) : USD(postAmount)));
+            BEAST_EXPECT(lineBalance(env, t.gw, t.src, USD) == (t.negative ? -USD(postAmount) : USD(postAmount)));
         }
     }
 
@@ -4324,7 +3837,7 @@ struct Escrow_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 transferRate.value == std::uint32_t(1000000000 * 1.25));
 
-            // issuer can finish escrow - no rate charged
+            // alice can finish escrow - no rate charged
             env(finish(alice, gw, seq1),
                 condition(cb1),
                 fulfillment(fb1),
@@ -4334,6 +3847,51 @@ struct Escrow_test : public beast::unit_test::suite
             BEAST_EXPECT(postLocked == USD(0));
             BEAST_EXPECT(env.balance(alice, USD.issue()) == preAlice + delta);
             BEAST_EXPECT(env.balance(alice, USD.issue()) == USD(10125));
+        }
+    }
+
+    void
+    testTokenTLLimitAmount(FeatureBitset features)
+    {
+        testcase("Token Trustline Require Auth");
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account{"gateway"};
+        auto const USD = gw["USD"];
+
+        // test LimitAmount
+        {
+            Env env{*this, features};
+            env.fund(XRP(1000), alice, bob, gw);
+            env.close();
+            env.trust(USD(10000), alice, bob);
+            env.close();
+            env(pay(gw, alice, USD(1000)));
+            env(pay(gw, bob, USD(1000)));
+            env.close();
+
+            // alice can create escrow
+            auto seq1 = env.seq(alice);
+            auto const delta = USD(125);
+            env(escrow(alice, bob, delta),
+                condition(cb1),
+                finish_time(env.now() + 1s),
+                fee(1500));
+            env.close();
+
+            // bob can finish
+            auto const preBobLimit = limitAmount(env, bob, gw, USD);
+            env(finish(bob, alice, seq1),
+                condition(cb1),
+                fulfillment(fb1),
+                fee(1500));
+            env.close();
+            auto const postBobLimit = limitAmount(env, bob, gw, USD);
+            // bobs limit is NOT changed
+            BEAST_EXPECT(postBobLimit == preBobLimit);
         }
     }
 
@@ -4731,6 +4289,7 @@ struct Escrow_test : public beast::unit_test::suite
         testTokenRippleState(features);
         testTokenGateway(features);
         testTokenLockedRate(features);
+        testTokenTLLimitAmount(features);
         testTokenTLRequireAuth(features);
         testTokenTLFreeze(features);
         testTokenTLINSF(features);
