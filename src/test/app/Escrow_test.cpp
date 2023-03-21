@@ -3533,26 +3533,24 @@ struct Escrow_test : public beast::unit_test::suite
             bool negative;
         };
 
-        std::array<TestAccountData, 8> tests = {
-            {
-                // src > dst && src > issuer && dst no trustline
-                {Account("alice2"), Account("bob0"), Account{"gw0"}, false, true},
-                // src < dst && src < issuer && dst no trustline
-                {Account("carol0"), Account("dan1"), Account{"gw1"}, false, false},
-                // // dst > src && dst > issuer && dst no trustline
-                {Account("dan1"), Account("alice2"), Account{"gw0"}, false, true},
-                // // dst < src && dst < issuer && dst no trustline
-                {Account("bob0"), Account("carol0"), Account{"gw1"}, false, false},
-                // // src > dst && src > issuer && dst has trustline
-                {Account("alice2"), Account("bob0"), Account{"gw0"}, true, true},
-                // // src < dst && src < issuer && dst has trustline
-                {Account("carol0"), Account("dan1"), Account{"gw1"}, true, false},
-                // // dst > src && dst > issuer && dst has trustline
-                {Account("dan1"), Account("alice2"), Account{"gw0"}, true, true},
-                // // dst < src && dst < issuer && dst has trustline
-                {Account("bob0"), Account("carol0"), Account{"gw1"}, true, false},
-            }
-        };
+        std::array<TestAccountData, 8> tests = {{
+            // src > dst && src > issuer && dst no trustline
+            {Account("alice2"), Account("bob0"), Account{"gw0"}, false, true},
+            // src < dst && src < issuer && dst no trustline
+            {Account("carol0"), Account("dan1"), Account{"gw1"}, false, false},
+            // // dst > src && dst > issuer && dst no trustline
+            {Account("dan1"), Account("alice2"), Account{"gw0"}, false, true},
+            // // dst < src && dst < issuer && dst no trustline
+            {Account("bob0"), Account("carol0"), Account{"gw1"}, false, false},
+            // // src > dst && src > issuer && dst has trustline
+            {Account("alice2"), Account("bob0"), Account{"gw0"}, true, true},
+            // // src < dst && src < issuer && dst has trustline
+            {Account("carol0"), Account("dan1"), Account{"gw1"}, true, false},
+            // // dst > src && dst > issuer && dst has trustline
+            {Account("dan1"), Account("alice2"), Account{"gw0"}, true, true},
+            // // dst < src && dst < issuer && dst has trustline
+            {Account("bob0"), Account("carol0"), Account{"gw1"}, true, false},
+        }};
 
         for (auto const& t : tests)
         {
@@ -3560,7 +3558,7 @@ struct Escrow_test : public beast::unit_test::suite
             auto const USD = t.gw["USD"];
             env.fund(XRP(5000), t.src, t.dst, t.gw);
             env.close();
-            
+
             if (t.hasTrustline)
                 env.trust(USD(100000), t.src, t.dst);
             else
@@ -3595,10 +3593,15 @@ struct Escrow_test : public beast::unit_test::suite
             env.close();
 
             auto postLocked = lockedAmount(env, t.src, t.gw, USD);
-            BEAST_EXPECT(lineBalance(env, t.src, t.gw, USD) == (t.negative ? (preSrc + delta) : (preSrc - delta)));
-            BEAST_EXPECT(lineBalance(env, t.dst, t.gw, USD) == (t.negative ? (preDst - delta) : (preDst + delta)));
-            BEAST_EXPECT(postLocked == (t.negative ? (preLocked + delta) : (preLocked - delta)));
-
+            BEAST_EXPECT(
+                lineBalance(env, t.src, t.gw, USD) ==
+                (t.negative ? (preSrc + delta) : (preSrc - delta)));
+            BEAST_EXPECT(
+                lineBalance(env, t.dst, t.gw, USD) ==
+                (t.negative ? (preDst - delta) : (preDst + delta)));
+            BEAST_EXPECT(
+                postLocked ==
+                (t.negative ? (preLocked + delta) : (preLocked - delta)));
         }
     }
 
@@ -3617,26 +3620,24 @@ struct Escrow_test : public beast::unit_test::suite
             bool negative;
         };
 
-        std::array<TestAccountData, 8> tests = {
-            {
-                // src > dst && src > issuer && dst no trustline
-                {Account("alice2"), Account{"gw0"}, false, true},
-                // // src < dst && src < issuer && dst no trustline
-                {Account("carol0"), Account{"gw1"}, false, false},
-                // // // // // dst > src && dst > issuer && dst no trustline
-                {Account("dan1"), Account{"gw0"}, false, true},
-                // // // // // dst < src && dst < issuer && dst no trustline
-                {Account("bob0"), Account{"gw1"}, false, false},
-                // // // // src > dst && src > issuer && dst has trustline
-                {Account("alice2"), Account{"gw0"}, true, true},
-                // // // // src < dst && src < issuer && dst has trustline
-                {Account("carol0"), Account{"gw1"}, true, false},
-                // // // // dst > src && dst > issuer && dst has trustline
-                {Account("dan1"), Account{"gw0"}, true, true},
-                // // // // dst < src && dst < issuer && dst has trustline
-                {Account("bob0"), Account{"gw1"}, true, false},
-            }
-        };
+        std::array<TestAccountData, 8> tests = {{
+            // src > dst && src > issuer && dst no trustline
+            {Account("alice2"), Account{"gw0"}, false, true},
+            // // src < dst && src < issuer && dst no trustline
+            {Account("carol0"), Account{"gw1"}, false, false},
+            // // // // // dst > src && dst > issuer && dst no trustline
+            {Account("dan1"), Account{"gw0"}, false, true},
+            // // // // // dst < src && dst < issuer && dst no trustline
+            {Account("bob0"), Account{"gw1"}, false, false},
+            // // // // src > dst && src > issuer && dst has trustline
+            {Account("alice2"), Account{"gw0"}, true, true},
+            // // // // src < dst && src < issuer && dst has trustline
+            {Account("carol0"), Account{"gw1"}, true, false},
+            // // // // dst > src && dst > issuer && dst has trustline
+            {Account("dan1"), Account{"gw0"}, true, true},
+            // // // // dst < src && dst < issuer && dst has trustline
+            {Account("bob0"), Account{"gw1"}, true, false},
+        }};
 
         for (auto const& t : tests)
         {
@@ -3644,15 +3645,15 @@ struct Escrow_test : public beast::unit_test::suite
             auto const USD = t.gw["USD"];
             env.fund(XRP(5000), t.src, t.gw);
             env.close();
-            
+
             if (t.hasTrustline)
                 env.trust(USD(100000), t.src);
-            
+
             env.close();
 
             if (t.hasTrustline)
                 env(pay(t.gw, t.src, USD(10000)));
-            
+
             env.close();
 
             // issuer can create escrow
@@ -3671,10 +3672,15 @@ struct Escrow_test : public beast::unit_test::suite
                 fee(1500));
             env.close();
             auto const preAmount = t.hasTrustline ? 10000 : 0;
-            BEAST_EXPECT(preSrc == (t.negative ? -USD(preAmount) : USD(preAmount)));
+            BEAST_EXPECT(
+                preSrc == (t.negative ? -USD(preAmount) : USD(preAmount)));
             auto const postAmount = t.hasTrustline ? 11000 : 1000;
-            BEAST_EXPECT(lineBalance(env, t.src, t.gw, USD) == (t.negative ? -USD(postAmount) : USD(postAmount)));
-            BEAST_EXPECT(lineBalance(env, t.gw, t.src, USD) == (t.negative ? -USD(postAmount) : USD(postAmount)));
+            BEAST_EXPECT(
+                lineBalance(env, t.src, t.gw, USD) ==
+                (t.negative ? -USD(postAmount) : USD(postAmount)));
+            BEAST_EXPECT(
+                lineBalance(env, t.gw, t.src, USD) ==
+                (t.negative ? -USD(postAmount) : USD(postAmount)));
         }
     }
 
