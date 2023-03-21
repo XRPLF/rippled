@@ -234,7 +234,8 @@ CONSTRUCT_TYPED_SFIELD(sfMinimumOffer,          "MinimumOffer",         AMOUNT, 
 CONSTRUCT_TYPED_SFIELD(sfRippleEscrow,          "RippleEscrow",         AMOUNT,    17);
 CONSTRUCT_TYPED_SFIELD(sfDeliveredAmount,       "DeliveredAmount",      AMOUNT,    18);
 CONSTRUCT_TYPED_SFIELD(sfNFTokenBrokerFee,      "NFTokenBrokerFee",     AMOUNT,    19);
-CONSTRUCT_TYPED_SFIELD(sfLockedBalance,         "LockedBalance",        AMOUNT,    31);
+CONSTRUCT_TYPED_SFIELD(sfHookCallbackFee,       "HookCallbackFee",      AMOUNT,    20);
+CONSTRUCT_TYPED_SFIELD(sfLockedBalance,         "LockedBalance",        AMOUNT,    21);
 
 // Reserve 20 & 21 for Hooks
 
