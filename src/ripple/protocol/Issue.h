@@ -63,31 +63,29 @@ hash_append(Hasher& h, Issue const& r)
     hash_append(h, r.currency, r.account);
 }
 
-/** Ordered comparison.
-    The assets are ordered first by currency and then by account,
-    if the currency is not XRP.
-*/
-int
-compare(Issue const& lhs, Issue const& rhs);
-
 /** Equality comparison. */
 /** @{ */
-bool
-operator==(Issue const& lhs, Issue const& rhs);
-bool
-operator!=(Issue const& lhs, Issue const& rhs);
+[[nodiscard]] inline constexpr bool
+operator==(Issue const& lhs, Issue const& rhs)
+{
+    return (lhs.currency == rhs.currency) &&
+        (isXRP(lhs.currency) || lhs.account == rhs.account);
+}
 /** @} */
 
 /** Strict weak ordering. */
 /** @{ */
-bool
-operator<(Issue const& lhs, Issue const& rhs);
-bool
-operator>(Issue const& lhs, Issue const& rhs);
-bool
-operator>=(Issue const& lhs, Issue const& rhs);
-bool
-operator<=(Issue const& lhs, Issue const& rhs);
+[[nodiscard]] inline constexpr std::weak_ordering
+operator<=>(Issue const& lhs, Issue const& rhs)
+{
+    if (auto const c{lhs.currency <=> rhs.currency}; c != 0)
+        return c;
+
+    if (isXRP(lhs.currency))
+        return std::weak_ordering::equivalent;
+
+    return (lhs.account <=> rhs.account);
+}
 /** @} */
 
 //------------------------------------------------------------------------------

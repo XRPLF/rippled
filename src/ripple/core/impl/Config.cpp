@@ -37,6 +37,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <iterator>
+#include <regex>
 #include <thread>
 
 #if BOOST_OS_WINDOWS
@@ -467,6 +468,28 @@ Config::loadFromString(std::string const& fileContents)
 
     if (auto s = getIniFileSection(secConfig, SECTION_SNTP))
         SNTP_SERVERS = *s;
+
+    // if the user has specified ip:port then replace : with a space.
+    {
+        auto replaceColons = [](std::vector<std::string>& strVec) {
+            const static std::regex e(":([0-9]+)$");
+            for (auto& line : strVec)
+            {
+                // skip anything that might be an ipv6 address
+                if (std::count(line.begin(), line.end(), ':') != 1)
+                    continue;
+
+                std::string result = std::regex_replace(line, e, " $1");
+                // sanity check the result of the replace, should be same length
+                // as input
+                if (result.size() == line.size())
+                    line = result;
+            }
+        };
+
+        replaceColons(IPS_FIXED);
+        replaceColons(IPS);
+    }
 
     {
         std::string dbPath;

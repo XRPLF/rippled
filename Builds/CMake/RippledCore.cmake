@@ -532,7 +532,6 @@ target_sources (rippled PRIVATE
   src/ripple/nodestore/impl/DeterministicShard.cpp
   src/ripple/nodestore/impl/DecodedBlob.cpp
   src/ripple/nodestore/impl/DummyScheduler.cpp
-  src/ripple/nodestore/impl/EncodedBlob.cpp
   src/ripple/nodestore/impl/ManagerImp.cpp
   src/ripple/nodestore/impl/NodeObject.cpp
   src/ripple/nodestore/impl/Shard.cpp

@@ -266,7 +266,7 @@ Ledger::Ledger(
     {
         info_.hash = calculateLedgerHash(info_);
         if (acquire && !config.reporting())
-            family.missingNode(info_.hash, info_.seq);
+            family.missingNodeAcquireByHash(info_.hash, info_.seq);
     }
 }
 
