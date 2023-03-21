@@ -62,7 +62,7 @@ While we commit to responding with 24 hours of your initial report with our tria
 
 [Ripple](https://ripple.com) is generously sponsoring a bug bounty program for vulnerabilities in [`rippled`](https://github.com/XRPLF/rippled) (and other related projects, like [`xrpl.js`](https://github.com/XRPLF/xrpl.js), [`xrpl-py`](https://github.com/XRPLF/xrpl-py), [`xrpl4j`](https://github.com/XRPLF/xrpl4j)).
 
-This program allows us to recognize and reward individuals or groups that identify and report bugs. In summary, order to qualify for a bounty, the bug must be:
+This program allows us to recognize and reward individuals or groups that identify and report bugs. In summary, in order to qualify for a bounty, the bug must be:
 
 1. **In scope**. Only bugs in software under the scope of the program qualify. Currently, that means `rippled`, `xrpl.js`, `xrpl-py`, `xrpl4j`.
 2. **Relevant**. A security issue, posing a danger to user funds, privacy, or the operation of the XRP Ledger.
