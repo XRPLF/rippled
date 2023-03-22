@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['fees_27231',['Fees',['../md_ripple_app_misc_FeeEscalation.html',1,'']]],
-  ['fee_20voting_27232',['Fee Voting',['../md_ripple_app_misc_README.html',1,'']]]
+  ['deterministic_20database_20shards_27233',['Deterministic Database Shards',['../md_ripple_nodestore_DeterministicShard.html',1,'']]],
+  ['database_20documentation_27234',['Database Documentation',['../md_ripple_nodestore_README.html',1,'']]]
 ];
