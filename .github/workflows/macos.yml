@@ -31,7 +31,7 @@ jobs:
         id: pip-cache
         run: |
           sudo pip install --upgrade pip
-          echo "::set-output name=dir::$(pip cache dir)"
+          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
       - name: restore Python cache directory
         uses: actions/cache@v2
         with:
@@ -53,7 +53,7 @@ jobs:
       - name: learn Conan cache directory
         id: conan-cache
         run: |
-          echo "::set-output name=dir::$(conan config get storage.path)"
+          echo "dir=$(conan config get storage.path)" >> $GITHUB_OUTPUT
       - name: restore Conan cache directory
         uses: actions/cache@v2
         with:
