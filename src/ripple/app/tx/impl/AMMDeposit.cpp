@@ -277,7 +277,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
     auto ammSle = sb.peek(keylet::amm(ctx_.tx[sfAsset], ctx_.tx[sfAsset2]));
     if (!ammSle)
         return {tecINTERNAL, false};
-    auto const ammAccountID = (*ammSle)[sfAMMAccount];
+    auto const ammAccountID = (*ammSle)[sfAccount];
 
     auto const tfee = getTradingFee(ctx_.view(), *ammSle, account_);
 

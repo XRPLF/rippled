@@ -223,7 +223,7 @@ applyCreate(
     // Create ltAMM
     auto ammSle = std::make_shared<SLE>(ammKeylet);
     ammSle->setFieldU16(sfTradingFee, ctx_.tx[sfTradingFee]);
-    ammSle->setAccountID(sfAMMAccount, *ammAccount);
+    ammSle->setAccountID(sfAccount, *ammAccount);
     ammSle->setFieldAmount(sfLPTokenBalance, lpTokens);
     auto const& [issue1, issue2] = std::minmax(amount.issue(), amount2.issue());
     ammSle->setFieldIssue(sfAsset, STIssue{sfAsset, issue1});

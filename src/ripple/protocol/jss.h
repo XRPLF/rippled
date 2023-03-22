@@ -158,7 +158,6 @@ JSS(alternatives);           // out: PathRequest, RipplePathFind
 JSS(amendment_blocked);      // out: NetworkOPs
 JSS(amendments);             // in: AccountObjects, out: NetworkOPs
 JSS(amm);                    // out: amm_info
-JSS(amm_account);            // out: amm_info
 JSS(amount);                 // out: AccountChannels, amm_info
 JSS(amount2);                // out: amm_info
 JSS(api_version);            // in: many, out: Version

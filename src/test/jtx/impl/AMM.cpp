@@ -120,7 +120,7 @@ AMM::create(
         if (auto const amm = env_.current()->read(
                 keylet::amm(asset1_.issue(), asset2_.issue())))
         {
-            ammAccount_ = amm->getAccountID(sfAMMAccount);
+            ammAccount_ = amm->getAccountID(sfAccount);
             lptIssue_ = ripple::ammLPTIssue(
                 asset1_.issue().currency,
                 asset2_.issue().currency,
@@ -170,7 +170,7 @@ AMM::balances(
     if (auto const amm =
             env_.current()->read(keylet::amm(asset1_.issue(), asset2_.issue())))
     {
-        auto const ammAccountID = amm->getAccountID(sfAMMAccount);
+        auto const ammAccountID = amm->getAccountID(sfAccount);
         auto const [asset1Balance, asset2Balance] = ammPoolHolds(
             *env_.current(),
             ammAccountID,

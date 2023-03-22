@@ -278,7 +278,7 @@ AMMWithdraw::applyGuts(Sandbox& sb)
     auto ammSle = sb.peek(keylet::amm(ctx_.tx[sfAsset], ctx_.tx[sfAsset2]));
     if (!ammSle)
         return {tecINTERNAL, false};
-    auto const ammAccountID = (*ammSle)[sfAMMAccount];
+    auto const ammAccountID = (*ammSle)[sfAccount];
     auto const lpTokens =
         ammLPHolds(ctx_.view(), *ammSle, ctx_.tx[sfAccount], ctx_.journal);
     auto const lpTokensWithdraw =

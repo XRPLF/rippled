@@ -90,7 +90,7 @@ ammHolds(
         return Unexpected(tecAMM_INVALID_TOKENS);
     auto const [asset1, asset2] = ammPoolHolds(
         view,
-        ammSle.getAccountID(sfAMMAccount),
+        ammSle.getAccountID(sfAccount),
         issues->first,
         issues->second,
         freezeHandling,
@@ -128,7 +128,7 @@ ammLPHolds(
         view,
         ammSle[sfAsset].currency,
         ammSle[sfAsset2].currency,
-        ammSle[sfAMMAccount],
+        ammSle[sfAccount],
         lpAccount,
         j);
 }

@@ -109,7 +109,7 @@ doAMMInfo(RPC::JsonContext& context)
     if (!amm)
         return rpcError(rpcACT_NOT_FOUND);
 
-    auto const ammAccountID = amm->getAccountID(sfAMMAccount);
+    auto const ammAccountID = amm->getAccountID(sfAccount);
 
     // provide funds if frozen, specify asset_frozen flag
     auto const [asset1Balance, asset2Balance] = ammPoolHolds(
@@ -128,7 +128,7 @@ doAMMInfo(RPC::JsonContext& context)
     asset2Balance.setJson(ammResult[jss::amount2]);
     lptAMMBalance.setJson(ammResult[jss::lp_token]);
     ammResult[jss::trading_fee] = (*amm)[sfTradingFee];
-    ammResult[jss::amm_account] = to_string(ammAccountID);
+    ammResult[jss::account] = to_string(ammAccountID);
     Json::Value voteSlots(Json::arrayValue);
     if (amm->isFieldPresent(sfVoteSlots))
     {

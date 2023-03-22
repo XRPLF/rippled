@@ -271,7 +271,7 @@ LedgerFormats::LedgerFormats()
     add(jss::AMM,
         ltAMM,
         {
-            {sfAMMAccount, soeREQUIRED},
+            {sfAccount, soeREQUIRED},
             {sfTradingFee, soeREQUIRED},
             {sfVoteSlots, soeOPTIONAL},
             {sfAuctionSlot, soeOPTIONAL},

@@ -101,7 +101,7 @@ public:
         if (auto const ammSle = ctx.view.read(keylet::amm(in, out)))
             ammLiquidity_.emplace(
                 ctx.view,
-                (*ammSle)[sfAMMAccount],
+                (*ammSle)[sfAccount],
                 getTradingFee(ctx.view, *ammSle, ctx.ammContext.account()),
                 in,
                 out,
