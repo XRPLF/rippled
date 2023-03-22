@@ -344,6 +344,7 @@ extern uint256 const featureDisallowIncoming;
 extern uint256 const featureXRPFees;
 extern uint256 const fixUniversalNumber;
 extern uint256 const fixNonFungibleTokensV1_2;
+extern uint256 const fixNFTokenRemint;
 
 }  // namespace ripple
 
