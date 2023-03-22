@@ -380,8 +380,16 @@ class NFTokenBurn_test : public beast::unit_test::suite
             auto internalTaxon = [&env](
                                      Account const& acct,
                                      std::uint32_t taxon) -> std::uint32_t {
-                std::uint32_t const tokenSeq = {
-                    env.le(acct)->at(~sfMintedNFTokens).value_or(0)};
+                std::uint32_t tokenSeq =
+                    env.le(acct)->at(~sfMintedNFTokens).value_or(0);
+
+                // If fixNFTokenRemint amendment is on, we must
+                // add FirstNFTokenSequence.
+                if (env.current()->rules().enabled(fixNFTokenRemint))
+                    tokenSeq += env.le(acct)
+                                    ->at(~sfFirstNFTokenSequence)
+                                    .value_or(env.seq(acct));
+
                 return toUInt32(
                     nft::cipheredTaxon(tokenSeq, nft::toTaxon(taxon)));
             };
@@ -786,8 +794,10 @@ public:
         FeatureBitset const all{supported_amendments()};
         FeatureBitset const fixNFTDir{fixNFTokenDirV1};
 
-        testWithFeats(all - fixNonFungibleTokensV1_2 - fixNFTDir);
-        testWithFeats(all - fixNonFungibleTokensV1_2);
+        testWithFeats(
+            all - fixNonFungibleTokensV1_2 - fixNFTDir - fixNFTokenRemint);
+        testWithFeats(all - fixNonFungibleTokensV1_2 - fixNFTokenRemint);
+        testWithFeats(all - fixNFTokenRemint);
         testWithFeats(all);
     }
 };
