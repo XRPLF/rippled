@@ -1,3 +1,11 @@
+This document contains instructions for installing rippled.
+The APT package manager is common on Debian-based Linux distributions like
+Ubuntu,
+while the YUM package manager is common on Red Hat-based Linux distributions
+like CentOS.
+Installing from source is an option for all platforms,
+and the only supported option for installing custom builds.
+
 ## From source
 
 From a source build, you can install rippled and libxrpl using CMake's
@@ -12,7 +20,7 @@ The default [prefix][1] is typically `/usr/local` on Linux and macOS and
 
 [1]: https://cmake.org/cmake/help/latest/variable/CMAKE_INSTALL_PREFIX.html
 
-## Installation Steps using APT package manager
+## With the APT package manager
 
 1. Update repositories:
 
@@ -85,7 +93,7 @@ The default [prefix][1] is typically `/usr/local` on Linux and macOS and
 
         sudo setcap 'cap_net_bind_service=+ep' /opt/ripple/bin/rippled
 
-## Installation Steps using YUM package manager
+## With the YUM package manager
 
 1. Install the Ripple RPM repository:
 
