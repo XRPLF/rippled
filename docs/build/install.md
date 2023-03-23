@@ -6,6 +6,7 @@ like CentOS.
 Installing from source is an option for all platforms,
 and the only supported option for installing custom builds.
 
+
 ## From source
 
 From a source build, you can install rippled and libxrpl using CMake's
@@ -19,6 +20,7 @@ The default [prefix][1] is typically `/usr/local` on Linux and macOS and
 `C:/Program Files/rippled` on Windows.
 
 [1]: https://cmake.org/cmake/help/latest/variable/CMAKE_INSTALL_PREFIX.html
+
 
 ## With the APT package manager
 
@@ -92,6 +94,7 @@ The default [prefix][1] is typically `/usr/local` on Linux and macOS and
     This allows you to serve incoming API requests on port 80 or 443. (If you want to do so, you must also update the config file's port settings.)
 
         sudo setcap 'cap_net_bind_service=+ep' /opt/ripple/bin/rippled
+
 
 ## With the YUM package manager
 

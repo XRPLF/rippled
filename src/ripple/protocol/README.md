@@ -1,14 +1,13 @@
 # protocol
 
 Classes and functions for handling data and
-values associated with the Ripple protocol.
+values associated with the XRP Ledger protocol.
 
 ## Serialized Objects
 
-In ripple objects transmitted over the network must be
+Objects transmitted over the network must be
 serialized into a canonical format. The prefix "ST" refers
-to classes that deal with the serialized format of ripple
-objects.
+to classes that deal with the serialized format.
 
 The term "Tx" or "tx" is an abbreviation for "Transaction",
 a commonly occurring object type.
@@ -38,3 +37,8 @@ it exists and a second time to get/set its value.
 
 The source of this "type magic" is in
 [SField.h](./SField.h#L296-L302).
+
+### Related Resources
+
+- [ripple-binary-codec SField enums](https://github.com/XRPLF/xrpl.js/tree/main/packages/ripple-binary-codec/src/enums)
+- [SFCode Registry Tables](https://github.com/XRPLF/sFieldRegistry)
