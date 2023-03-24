@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2019 Ripple Labs Inc.
+    Copyright (c) 2023 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -33,7 +33,7 @@
 namespace ripple {
 namespace RPC {
 
-bool
+static bool
 canHaveNFTokenOfferID(
     std::shared_ptr<STTx const> const& serializedTx,
     TxMeta const& transactionMeta)
@@ -41,7 +41,7 @@ canHaveNFTokenOfferID(
     if (!serializedTx)
         return false;
 
-    TxType const tt{serializedTx->getTxnType()};
+    TxType const tt = serializedTx->getTxnType();
     if (tt != ttNFTOKEN_CREATE_OFFER)
         return false;
 
@@ -52,10 +52,9 @@ canHaveNFTokenOfferID(
     return true;
 }
 
-void
+static std::optional<uint256>
 getOfferIDFromCreatedOffer(
-    TxMeta const& transactionMeta,
-    std::vector<uint256>& idResult)
+    TxMeta const& transactionMeta)
 {
     for (STObject const& node : transactionMeta.getNodes())
     {
@@ -63,11 +62,9 @@ getOfferIDFromCreatedOffer(
             continue;
 
         if (node.getFName() == sfCreatedNode)
-        {
-            auto const& offerID = node.getFieldH256(sfLedgerIndex);
-            idResult.push_back(offerID);
-        }
+            return node.getFieldH256(sfLedgerIndex);
     }
+    return std::nullopt;
 }
 
 void
@@ -79,11 +76,10 @@ insertNFTokenOfferID(
     if (!canHaveNFTokenOfferID(transaction, transactionMeta))
         return;
 
-    std::vector<uint256> offerIDResult;
-    getOfferIDFromCreatedOffer(transactionMeta, offerIDResult);
+    std::optional<uint256> result = getOfferIDFromCreatedOffer(transactionMeta);
 
-    if (offerIDResult.size() == 1)
-        response[jss::offer_id] = to_string(offerIDResult.front());
+    if (result.has_value())
+        response[jss::offer_id] = to_string(result.value());
 }
 
 }  // namespace RPC

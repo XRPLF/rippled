@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2019 Ripple Labs Inc.
+    Copyright (c) 2023 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -33,7 +33,7 @@
 namespace ripple {
 namespace RPC {
 
-bool
+static bool
 canHaveNFTokenID(
     std::shared_ptr<STTx const> const& serializedTx,
     TxMeta const& transactionMeta)
@@ -41,7 +41,7 @@ canHaveNFTokenID(
     if (!serializedTx)
         return false;
 
-    TxType const tt{serializedTx->getTxnType()};
+    TxType const tt = serializedTx->getTxnType();
     if (tt != ttNFTOKEN_MINT && tt != ttNFTOKEN_ACCEPT_OFFER &&
         tt != ttNFTOKEN_CANCEL_OFFER)
         return false;
@@ -53,11 +53,13 @@ canHaveNFTokenID(
     return true;
 }
 
-void
+static std::optional<uint256>
 getNFTokenIDFromPage(
-    TxMeta const& transactionMeta,
-    std::vector<uint256>& tokenIDResult)
+    TxMeta const& transactionMeta)
 {
+    // The metadata does not make it obvious which NFT was added.  To figure
+    // that out we gather up all of the previous NFT IDs and all of the final
+    // NFT IDs and compare them to find what changed.
     std::vector<uint256> prevIDs;
     std::vector<uint256> finalIDs;
 
@@ -66,22 +68,21 @@ getNFTokenIDFromPage(
         if (node.getFieldU16(sfLedgerEntryType) != ltNFTOKEN_PAGE)
             continue;
 
-        if (node.getFName() == sfCreatedNode)
+        SField const& fName = node.getFName();
+        if (fName == sfCreatedNode)
         {
-            STArray const& toAddNFTs = node.peekAtField(sfNewFields)
+            STArray const& toAddPrevNFTs = node.peekAtField(sfNewFields)
                                            .downcast<STObject>()
                                            .getFieldArray(sfNFTokens);
             std::transform(
-                toAddNFTs.begin(),
-                toAddNFTs.end(),
+                toAddPrevNFTs.begin(),
+                toAddPrevNFTs.end(),
                 std::back_inserter(finalIDs),
                 [](STObject const& nft) {
                     return nft.getFieldH256(sfNFTokenID);
                 });
         }
-        // Else it's modified, as there should never be a deleted NFToken page
-        // as a result of a mint.
-        else
+        else if (fName == sfModifiedNode)
         {
             // When a mint results in splitting an existing page,
             // it results in a created page and a modified node. Sometimes,
@@ -97,10 +98,10 @@ getNFTokenIDFromPage(
             if (!previousFields.isFieldPresent(sfNFTokens))
                 continue;
 
-            STArray const& toAddNFTs = previousFields.getFieldArray(sfNFTokens);
+            STArray const& toAddPrevNFTs = previousFields.getFieldArray(sfNFTokens);
             std::transform(
-                toAddNFTs.begin(),
-                toAddNFTs.end(),
+                toAddPrevNFTs.begin(),
+                toAddPrevNFTs.end(),
                 std::back_inserter(prevIDs),
                 [](STObject const& nft) {
                     return nft.getFieldH256(sfNFTokenID);
@@ -119,22 +120,29 @@ getNFTokenIDFromPage(
         }
     }
 
-    std::sort(finalIDs.begin(), finalIDs.end());
-    std::sort(prevIDs.begin(), prevIDs.end());
+    // We expect NFTs to be added one at a time.  So finalIDs should be one
+    // longer than prevIDs.  If that's not the case something is messed up.
+    if (finalIDs.size() != prevIDs.size() + 1)
+        return std::nullopt;
 
-    std::set_difference(
-        finalIDs.begin(),
-        finalIDs.end(),
-        prevIDs.begin(),
-        prevIDs.end(),
-        std::inserter(tokenIDResult, tokenIDResult.begin()));
+    // Find the first NFT ID that doesn't match.  We're looking for an
+    // added NFT, so the one we want will be the mismatch in finalIDs.
+    auto const diff = std::mismatch(
+        finalIDs.begin(), finalIDs.end(), prevIDs.begin(), prevIDs.end());
+
+    // There should always be a difference so the returned finalIDs
+    // iterator should never be end().  But better safe than sorry.
+    if (diff.first == finalIDs.end())
+        return std::nullopt;
+
+    return *diff.first;
 }
 
-void
+static std::vector<uint256>
 getNFTokenIDFromDeletedOffer(
-    TxMeta const& transactionMeta,
-    std::vector<uint256>& tokenIDResult)
+    TxMeta const& transactionMeta)
 {
+    std::vector<uint256> tokenIDResult;
     for (STObject const& node : transactionMeta.getNodes())
     {
         if (node.getFieldU16(sfLedgerEntryType) != ltNFTOKEN_OFFER)
@@ -148,6 +156,8 @@ getNFTokenIDFromDeletedOffer(
             tokenIDResult.push_back(toAddNFT);
         }
     }
+
+    return tokenIDResult;
 }
 
 void
@@ -159,31 +169,28 @@ insertNFTokenID(
     if (!canHaveNFTokenID(transaction, transactionMeta))
         return;
 
-    std::vector<uint256> tokenIDResult;
-
     // We extract the NFTokenID from metadata by comparing affected nodes
     if (auto const type = transaction->getTxnType(); type == ttNFTOKEN_MINT)
     {
-        getNFTokenIDFromPage(transactionMeta, tokenIDResult);
-
-        if (tokenIDResult.size() > 0)
-            response[jss::nftoken_id] = to_string(tokenIDResult.front());
+        std::optional<uint256> result = getNFTokenIDFromPage(transactionMeta);
+        if (result.has_value())
+            response[jss::nftoken_id] = to_string(result.value());
     }
     else if (type == ttNFTOKEN_ACCEPT_OFFER)
     {
-        getNFTokenIDFromDeletedOffer(transactionMeta, tokenIDResult);
-
+        std::vector<uint256> result = getNFTokenIDFromDeletedOffer(transactionMeta);
+        
         // In brokered mode, there will be a duplicate NFTokenID in the
         // vector, but we don't have to do anything special here.
-        if (tokenIDResult.size() > 0)
-            response[jss::nftoken_id] = to_string(tokenIDResult.front());
+        if (result.size() > 0)
+            response[jss::nftoken_id] = to_string(result.front());
     }
     else if (type == ttNFTOKEN_CANCEL_OFFER)
     {
-        getNFTokenIDFromDeletedOffer(transactionMeta, tokenIDResult);
+        std::vector<uint256> result = getNFTokenIDFromDeletedOffer(transactionMeta);
 
         response[jss::nftoken_ids] = Json::Value(Json::arrayValue);
-        for (auto const& nftID : tokenIDResult)
+        for (auto const& nftID : result)
             response[jss::nftoken_ids].append(to_string(nftID));
     }
 }

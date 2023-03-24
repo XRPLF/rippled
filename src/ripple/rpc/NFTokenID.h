@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2019 Ripple Labs Inc.
+    Copyright (c) 2023 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -43,15 +43,6 @@ namespace RPC {
 
    @{
  */
-bool
-canHaveNFTokenID(std::shared_ptr<STTx const> const&, TxMeta const&);
-
-void
-getNFTokenIDFromPage(TxMeta const&, std::vector<uint256>&);
-
-void
-getNFTokenIDFromDeletedOffer(TxMeta const&, std::vector<uint256>&);
-
 void
 insertNFTokenID(
     Json::Value&,
