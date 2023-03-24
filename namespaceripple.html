@@ -1618,7 +1618,8 @@ Enumerations</h2></td></tr>
  }</td></tr>
 <tr class="memdesc:afaeac9ab95c58b4359cdd27f59d18568"><td class="mdescLeft">&#160;</td><td class="mdescRight">Describes how an account was found in a path, and how to find the next set of paths.  <a href="namespaceripple.html#afaeac9ab95c58b4359cdd27f59d18568">More...</a><br /></td></tr>
 <tr class="separator:afaeac9ab95c58b4359cdd27f59d18568"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1dcb4cf27e683bd94d11f5322836c689"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a1dcb4cf27e683bd94d11f5322836c689">AmendmentVote</a> : int { <a class="el" href="namespaceripple.html#a1dcb4cf27e683bd94d11f5322836c689a46c48bec0d282018b9d167eef7711b2c">AmendmentVote::up</a> = 0, 
+<tr class="memitem:a1dcb4cf27e683bd94d11f5322836c689"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a1dcb4cf27e683bd94d11f5322836c689">AmendmentVote</a> : int { <a class="el" href="namespaceripple.html#a1dcb4cf27e683bd94d11f5322836c689a28a39c5d0e09f2b9f423c9864ecf1db8">AmendmentVote::obsolete</a> = -1, 
+<a class="el" href="namespaceripple.html#a1dcb4cf27e683bd94d11f5322836c689a46c48bec0d282018b9d167eef7711b2c">AmendmentVote::up</a> = 0, 
 <a class="el" href="namespaceripple.html#a1dcb4cf27e683bd94d11f5322836c689a74e8333ad11685ff3bdae589c8f6e34d">AmendmentVote::down</a> = 1
  }</td></tr>
 <tr class="separator:a1dcb4cf27e683bd94d11f5322836c689"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1896,10 +1897,11 @@ Enumerations</h2></td></tr>
  }</td></tr>
 <tr class="memdesc:a53248e40c0a268c7c59fbe4a6e1179d9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Codes returned in the <code>warnings</code> array of certain RPC commands.  <a href="namespaceripple.html#a53248e40c0a268c7c59fbe4a6e1179d9">More...</a><br /></td></tr>
 <tr class="separator:a53248e40c0a268c7c59fbe4a6e1179d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afaf9aac668f4e0805bc2911291e29e9f"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9f">DefaultVote</a> : bool { <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9fa7fa3b767c460b54a2be4d49030b349c7">DefaultVote::no</a> = false, 
-<a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>
+<tr class="memitem:aa5778f9faa15e3677dcda7975d9db7c6"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6">VoteBehavior</a> : int { <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6aec30c235d0eb792797af1aa1d11759a7">VoteBehavior::Obsolete</a> = -1, 
+<a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a3fcbd083035206240ef4d4488ac18498">VoteBehavior::DefaultNo</a> = 0, 
+<a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>
  }</td></tr>
-<tr class="separator:afaf9aac668f4e0805bc2911291e29e9f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:aa5778f9faa15e3677dcda7975d9db7c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad5143ceada01141772ae4aab984f94bd"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ad5143ceada01141772ae4aab984f94bd">HashPrefix</a> : std::uint32_t { <br />
 &#160;&#160;<a class="el" href="namespaceripple.html#ad5143ceada01141772ae4aab984f94bda9ff03a73c38a945848893498e0c617a4">HashPrefix::transactionID</a> = detail::make_hash_prefix('T', 'X', 'N'), 
 <a class="el" href="namespaceripple.html#ad5143ceada01141772ae4aab984f94bda555f976fd82d9e7e487770c44c7980bf">HashPrefix::txNode</a> = detail::make_hash_prefix('S', 'N', 'D'), 
@@ -3605,99 +3607,99 @@ Functions</h2></td></tr>
 <tr class="separator:a614d8681c8dff84ac2257939751987c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7f497dcb1c3e98dd745e3278eafc5342"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a7f497dcb1c3e98dd745e3278eafc5342">hash_value</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">ripple::uint256</a> const &amp;feature)</td></tr>
 <tr class="separator:a7f497dcb1c3e98dd745e3278eafc5342"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afe038ff792ec0fff57daed002f438f15"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#afe038ff792ec0fff57daed002f438f15">registerFeature</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;name, Supported support, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9f">DefaultVote</a> vote)</td></tr>
-<tr class="separator:afe038ff792ec0fff57daed002f438f15"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a409262339843a2785f29845c7ec5c7f9"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a409262339843a2785f29845c7ec5c7f9">registerFeature</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;name, Supported support, <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6">VoteBehavior</a> vote)</td></tr>
+<tr class="separator:a409262339843a2785f29845c7ec5c7f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8c231e0a6ac493297e442e8e99af8037"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a8c231e0a6ac493297e442e8e99af8037">retireFeature</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;name)</td></tr>
 <tr class="separator:a8c231e0a6ac493297e442e8e99af8037"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac52a0eb5ca3e6aec7bc695eb44ed1ab8"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ac52a0eb5ca3e6aec7bc695eb44ed1ab8">registrationIsDone</a> ()</td></tr>
 <tr class="memdesc:ac52a0eb5ca3e6aec7bc695eb44ed1ab8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Tell FeatureCollections when registration is complete.  <a href="namespaceripple.html#ac52a0eb5ca3e6aec7bc695eb44ed1ab8">More...</a><br /></td></tr>
 <tr class="separator:ac52a0eb5ca3e6aec7bc695eb44ed1ab8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3027a89189f7590509e1afdb945ac9b2"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a3027a89189f7590509e1afdb945ac9b2">REGISTER_FEATURE</a> (OwnerPaysFee, Supported::no, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9fa7fa3b767c460b54a2be4d49030b349c7">DefaultVote::no</a>)</td></tr>
-<tr class="separator:a3027a89189f7590509e1afdb945ac9b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae955b1ffdbc6f642edc6bd1631600efc"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ae955b1ffdbc6f642edc6bd1631600efc">REGISTER_FEATURE</a> (Flow, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
-<tr class="separator:ae955b1ffdbc6f642edc6bd1631600efc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af3d27856e5f56e0125a4ac0503dc5128"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#af3d27856e5f56e0125a4ac0503dc5128">REGISTER_FEATURE</a> (FlowCross, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
-<tr class="separator:af3d27856e5f56e0125a4ac0503dc5128"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6567270f826f07bffde8c18f15932061"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a6567270f826f07bffde8c18f15932061">REGISTER_FEATURE</a> (CryptoConditionsSuite, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9fa7fa3b767c460b54a2be4d49030b349c7">DefaultVote::no</a>)</td></tr>
-<tr class="separator:a6567270f826f07bffde8c18f15932061"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa4be9c7709719b27e7148aa76bc60175"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aa4be9c7709719b27e7148aa76bc60175">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#a1e4e6d3ac032cc3787c0901156036618">fix1513</a>, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
-<tr class="separator:aa4be9c7709719b27e7148aa76bc60175"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ace1dbecf4a73917b8dbb850b6c1d9ea6"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ace1dbecf4a73917b8dbb850b6c1d9ea6">REGISTER_FEATURE</a> (DepositAuth, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
-<tr class="separator:ace1dbecf4a73917b8dbb850b6c1d9ea6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a09fe5714d7a1dcbeb4cd08a4ae848f04"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a09fe5714d7a1dcbeb4cd08a4ae848f04">REGISTER_FEATURE</a> (Checks, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
-<tr class="separator:a09fe5714d7a1dcbeb4cd08a4ae848f04"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af7980c9fc25b221977d1821637f6de98"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#af7980c9fc25b221977d1821637f6de98">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#aceb75e0144de4950c33dedd1191de320">fix1571</a>, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
-<tr class="separator:af7980c9fc25b221977d1821637f6de98"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae36c67724a59a42d50fc59fac5f10e42"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ae36c67724a59a42d50fc59fac5f10e42">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#af692a0db75adbc331df9226d28909dd9">fix1543</a>, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
-<tr class="separator:ae36c67724a59a42d50fc59fac5f10e42"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad4df0a44a6f14554e9104ca92ebb046f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ad4df0a44a6f14554e9104ca92ebb046f">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#af2c25b95b708d565d681958fbd20d2b6">fix1623</a>, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
-<tr class="separator:ad4df0a44a6f14554e9104ca92ebb046f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a34ce95c5969e4ba85e5e28b474efe5cc"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a34ce95c5969e4ba85e5e28b474efe5cc">REGISTER_FEATURE</a> (<a class="el" href="classripple_1_1DepositPreauth.html">DepositPreauth</a>, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
-<tr class="separator:a34ce95c5969e4ba85e5e28b474efe5cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0b4926e7f116e47ccb3a73f850add5f9"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a0b4926e7f116e47ccb3a73f850add5f9">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#a0c155f4dfdb9766fbe27cbe85d43ded7">fix1515</a>, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
-<tr class="separator:a0b4926e7f116e47ccb3a73f850add5f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a929e6bcad1025310e66e58d1ae77301f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a929e6bcad1025310e66e58d1ae77301f">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#afa20eb58bea379999a57028e082576f1">fix1578</a>, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
-<tr class="separator:a929e6bcad1025310e66e58d1ae77301f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae70b3dcb595ff6d0833f762db9e63f2a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ae70b3dcb595ff6d0833f762db9e63f2a">REGISTER_FEATURE</a> (MultiSignReserve, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
-<tr class="separator:ae70b3dcb595ff6d0833f762db9e63f2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2c12a3621b99b304577f17e58eb0d81b"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a2c12a3621b99b304577f17e58eb0d81b">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#a0c6216b12b73b15239445dfaeee8d473">fixTakerDryOfferRemoval</a>, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
-<tr class="separator:a2c12a3621b99b304577f17e58eb0d81b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac68ae6a4840dae3bbc1acc9d82c5aad3"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ac68ae6a4840dae3bbc1acc9d82c5aad3">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#aba5b8db3b6370710dbaadeb4a3b56f6b">fixMasterKeyAsRegularKey</a>, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
-<tr class="separator:ac68ae6a4840dae3bbc1acc9d82c5aad3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a969dddbd16dea21dfaed7c4120c1a9bc"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a969dddbd16dea21dfaed7c4120c1a9bc">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#ac73c4c435b681301e35a8028c549c709">fixCheckThreading</a>, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
-<tr class="separator:a969dddbd16dea21dfaed7c4120c1a9bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac1c493fa7a0a22a75df71b3fdb68b691"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ac1c493fa7a0a22a75df71b3fdb68b691">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#afd7eb1f95de1f953b43cfd2adb902eec">fixPayChanRecipientOwnerDir</a>, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
-<tr class="separator:ac1c493fa7a0a22a75df71b3fdb68b691"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a358da1774db087dbe9962994818798ca"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a358da1774db087dbe9962994818798ca">REGISTER_FEATURE</a> (DeletableAccounts, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
-<tr class="separator:a358da1774db087dbe9962994818798ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abf2484d392ce039ae80f86f0b3fa2a39"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#abf2484d392ce039ae80f86f0b3fa2a39">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#a0925502ed5ba18e4eaec5b16b1f552c0">fixQualityUpperBound</a>, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
-<tr class="separator:abf2484d392ce039ae80f86f0b3fa2a39"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7bb81c798dcd5c65d9d3e84229661edf"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a7bb81c798dcd5c65d9d3e84229661edf">REGISTER_FEATURE</a> (RequireFullyCanonicalSig, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
-<tr class="separator:a7bb81c798dcd5c65d9d3e84229661edf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac1c4b0b0fd89f0fc5c78944b022b2fb9"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ac1c4b0b0fd89f0fc5c78944b022b2fb9">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#aa520966ed6e3285630d0871466e438a8">fix1781</a>, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
-<tr class="separator:ac1c4b0b0fd89f0fc5c78944b022b2fb9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aaf25e0f9d5bc0181eb548a571def035d"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aaf25e0f9d5bc0181eb548a571def035d">REGISTER_FEATURE</a> (HardenedValidations, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
-<tr class="separator:aaf25e0f9d5bc0181eb548a571def035d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3e88cb027ef298cf997eb008d5328f7c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a3e88cb027ef298cf997eb008d5328f7c">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#a7ddad39c3614122e497f9a0980f0f0cc">fixAmendmentMajorityCalc</a>, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
-<tr class="separator:a3e88cb027ef298cf997eb008d5328f7c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab0e45a6bfcdfcd22770de5f6a329f878"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ab0e45a6bfcdfcd22770de5f6a329f878">REGISTER_FEATURE</a> (NegativeUNL, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
-<tr class="separator:ab0e45a6bfcdfcd22770de5f6a329f878"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a31744e05fceff02bbe0b19c7335d09e2"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a31744e05fceff02bbe0b19c7335d09e2">REGISTER_FEATURE</a> (TicketBatch, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
-<tr class="separator:a31744e05fceff02bbe0b19c7335d09e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a27842b5bf18f3391ac140f8e94161248"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a27842b5bf18f3391ac140f8e94161248">REGISTER_FEATURE</a> (FlowSortStrands, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
-<tr class="separator:a27842b5bf18f3391ac140f8e94161248"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3826809481851bac3da12b77a45f7b3f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a3826809481851bac3da12b77a45f7b3f">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#a58db4f19d243f6c82a533a40a0db89cd">fixSTAmountCanonicalize</a>, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
-<tr class="separator:a3826809481851bac3da12b77a45f7b3f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a61e0ee25af6fdc7e001381205fffcf18"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a61e0ee25af6fdc7e001381205fffcf18">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#a628c330b73f95a76b38d4d385bd37ac0">fixRmSmallIncreasedQOffers</a>, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
-<tr class="separator:a61e0ee25af6fdc7e001381205fffcf18"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab3017b7c2fef62c7121dc4e1ff409ca7"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ab3017b7c2fef62c7121dc4e1ff409ca7">REGISTER_FEATURE</a> (CheckCashMakesTrustLine, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9fa7fa3b767c460b54a2be4d49030b349c7">DefaultVote::no</a>)</td></tr>
-<tr class="separator:ab3017b7c2fef62c7121dc4e1ff409ca7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a686d98014bf03ca38047e2cadee5bb7c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a686d98014bf03ca38047e2cadee5bb7c">REGISTER_FEATURE</a> (NonFungibleTokensV1, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9fa7fa3b767c460b54a2be4d49030b349c7">DefaultVote::no</a>)</td></tr>
-<tr class="separator:a686d98014bf03ca38047e2cadee5bb7c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa8b65e499e90b0a0c8acc3e4f577dc2e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aa8b65e499e90b0a0c8acc3e4f577dc2e">REGISTER_FEATURE</a> (ExpandedSignerList, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9fa7fa3b767c460b54a2be4d49030b349c7">DefaultVote::no</a>)</td></tr>
-<tr class="separator:aa8b65e499e90b0a0c8acc3e4f577dc2e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aca4c69da0ba92fa421bd1eadee3d6c1c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aca4c69da0ba92fa421bd1eadee3d6c1c">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#adc24572ec82470f0e8510bcd85ed6100">fixNFTokenDirV1</a>, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9fa7fa3b767c460b54a2be4d49030b349c7">DefaultVote::no</a>)</td></tr>
-<tr class="separator:aca4c69da0ba92fa421bd1eadee3d6c1c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a65f7eab6d2025264dd569b99fcec7448"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a65f7eab6d2025264dd569b99fcec7448">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#a451091d6bfaf55f18f3bcdfe7df65acd">fixNFTokenNegOffer</a>, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9fa7fa3b767c460b54a2be4d49030b349c7">DefaultVote::no</a>)</td></tr>
-<tr class="separator:a65f7eab6d2025264dd569b99fcec7448"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad2244621c26868bbff6f8193f63c901e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ad2244621c26868bbff6f8193f63c901e">REGISTER_FEATURE</a> (NonFungibleTokensV1_1, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9fa7fa3b767c460b54a2be4d49030b349c7">DefaultVote::no</a>)</td></tr>
-<tr class="separator:ad2244621c26868bbff6f8193f63c901e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5d9e79dfb78fd15e872bce056a187985"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a5d9e79dfb78fd15e872bce056a187985">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#ab6b87f591d4f3dee9dfcaf11249616a9">fixTrustLinesToSelf</a>, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9fa7fa3b767c460b54a2be4d49030b349c7">DefaultVote::no</a>)</td></tr>
-<tr class="separator:a5d9e79dfb78fd15e872bce056a187985"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9cd242bb411528c3353f9973c55d0bf9"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a9cd242bb411528c3353f9973c55d0bf9">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#aa035aaadc44680dfcde94efd7a0e67e2">fixRemoveNFTokenAutoTrustLine</a>, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>)</td></tr>
-<tr class="separator:a9cd242bb411528c3353f9973c55d0bf9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af406ab33fe9f8e3a100b27a912dc6d60"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#af406ab33fe9f8e3a100b27a912dc6d60">REGISTER_FEATURE</a> (ImmediateOfferKilled, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9fa7fa3b767c460b54a2be4d49030b349c7">DefaultVote::no</a>)</td></tr>
-<tr class="separator:af406ab33fe9f8e3a100b27a912dc6d60"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae2954cb6e30ce9bd16564a6cd7b47829"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ae2954cb6e30ce9bd16564a6cd7b47829">REGISTER_FEATURE</a> (DisallowIncoming, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9fa7fa3b767c460b54a2be4d49030b349c7">DefaultVote::no</a>)</td></tr>
-<tr class="separator:ae2954cb6e30ce9bd16564a6cd7b47829"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a48fb9db527888efd247ecebaa7242ee1"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a48fb9db527888efd247ecebaa7242ee1">REGISTER_FEATURE</a> (XRPFees, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9fa7fa3b767c460b54a2be4d49030b349c7">DefaultVote::no</a>)</td></tr>
-<tr class="separator:a48fb9db527888efd247ecebaa7242ee1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4dd2c83cd53d85f62c350c5de46064df"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a4dd2c83cd53d85f62c350c5de46064df">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#aca7b4bf41e621edeabbb353a76e9b055">fixUniversalNumber</a>, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9fa7fa3b767c460b54a2be4d49030b349c7">DefaultVote::no</a>)</td></tr>
-<tr class="separator:a4dd2c83cd53d85f62c350c5de46064df"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4e71ec3675d6974c037ca8af3e0d3abd"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a4e71ec3675d6974c037ca8af3e0d3abd">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#a831b340e9f96cdaec47e018aeff72dec">fixNonFungibleTokensV1_2</a>, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9fa7fa3b767c460b54a2be4d49030b349c7">DefaultVote::no</a>)</td></tr>
-<tr class="separator:a4e71ec3675d6974c037ca8af3e0d3abd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a74c1ad3d77354775e672cfdc255bedc5"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a74c1ad3d77354775e672cfdc255bedc5">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#a2abe44fcd04710b216e3f9f774e4849d">fixNFTokenRemint</a>, Supported::yes, <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9fa7fa3b767c460b54a2be4d49030b349c7">DefaultVote::no</a>)</td></tr>
-<tr class="separator:a74c1ad3d77354775e672cfdc255bedc5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a857eef678f2479e90978a6d9415cbc52"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a857eef678f2479e90978a6d9415cbc52">REGISTER_FEATURE</a> (OwnerPaysFee, Supported::no, <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a3fcbd083035206240ef4d4488ac18498">VoteBehavior::DefaultNo</a>)</td></tr>
+<tr class="separator:a857eef678f2479e90978a6d9415cbc52"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a064faf022553336b083aa598020c64df"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a064faf022553336b083aa598020c64df">REGISTER_FEATURE</a> (Flow, Supported::yes, <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>)</td></tr>
+<tr class="separator:a064faf022553336b083aa598020c64df"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3ad97567490330f9641f9da8c0210502"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a3ad97567490330f9641f9da8c0210502">REGISTER_FEATURE</a> (FlowCross, Supported::yes, <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>)</td></tr>
+<tr class="separator:a3ad97567490330f9641f9da8c0210502"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1659fa50f5ac271b6b18d5da57e8c0e6"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a1659fa50f5ac271b6b18d5da57e8c0e6">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#a1e4e6d3ac032cc3787c0901156036618">fix1513</a>, Supported::yes, <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>)</td></tr>
+<tr class="separator:a1659fa50f5ac271b6b18d5da57e8c0e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6dc35990c5069db541cd1496485fb68e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a6dc35990c5069db541cd1496485fb68e">REGISTER_FEATURE</a> (DepositAuth, Supported::yes, <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>)</td></tr>
+<tr class="separator:a6dc35990c5069db541cd1496485fb68e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a525e7e9ab2f57b6a3d6d78ee4edbd5e9"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a525e7e9ab2f57b6a3d6d78ee4edbd5e9">REGISTER_FEATURE</a> (Checks, Supported::yes, <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>)</td></tr>
+<tr class="separator:a525e7e9ab2f57b6a3d6d78ee4edbd5e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab2e90499fc13234b79e85adbfc949820"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ab2e90499fc13234b79e85adbfc949820">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#aceb75e0144de4950c33dedd1191de320">fix1571</a>, Supported::yes, <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>)</td></tr>
+<tr class="separator:ab2e90499fc13234b79e85adbfc949820"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac10d6e59d0ecc1559790aa6a6c314a69"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ac10d6e59d0ecc1559790aa6a6c314a69">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#af692a0db75adbc331df9226d28909dd9">fix1543</a>, Supported::yes, <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>)</td></tr>
+<tr class="separator:ac10d6e59d0ecc1559790aa6a6c314a69"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6ac7f9108e5619a525f393afb269d671"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a6ac7f9108e5619a525f393afb269d671">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#af2c25b95b708d565d681958fbd20d2b6">fix1623</a>, Supported::yes, <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>)</td></tr>
+<tr class="separator:a6ac7f9108e5619a525f393afb269d671"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a15fdcfc05603dcd404e851f61e11e1cf"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a15fdcfc05603dcd404e851f61e11e1cf">REGISTER_FEATURE</a> (<a class="el" href="classripple_1_1DepositPreauth.html">DepositPreauth</a>, Supported::yes, <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>)</td></tr>
+<tr class="separator:a15fdcfc05603dcd404e851f61e11e1cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a837906cab454e01ebe6614f89062f55b"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a837906cab454e01ebe6614f89062f55b">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#a0c155f4dfdb9766fbe27cbe85d43ded7">fix1515</a>, Supported::yes, <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>)</td></tr>
+<tr class="separator:a837906cab454e01ebe6614f89062f55b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2193905e684944a7ae134a43b44471db"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a2193905e684944a7ae134a43b44471db">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#afa20eb58bea379999a57028e082576f1">fix1578</a>, Supported::yes, <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>)</td></tr>
+<tr class="separator:a2193905e684944a7ae134a43b44471db"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeefe91b2152e86de87e1f11cfcd8321e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aeefe91b2152e86de87e1f11cfcd8321e">REGISTER_FEATURE</a> (MultiSignReserve, Supported::yes, <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>)</td></tr>
+<tr class="separator:aeefe91b2152e86de87e1f11cfcd8321e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaeb60db5a9479b8a56f76f07d36eebc8"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aaeb60db5a9479b8a56f76f07d36eebc8">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#a0c6216b12b73b15239445dfaeee8d473">fixTakerDryOfferRemoval</a>, Supported::yes, <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>)</td></tr>
+<tr class="separator:aaeb60db5a9479b8a56f76f07d36eebc8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af25b13542c8a57b69c1ebbb55551cd99"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#af25b13542c8a57b69c1ebbb55551cd99">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#aba5b8db3b6370710dbaadeb4a3b56f6b">fixMasterKeyAsRegularKey</a>, Supported::yes, <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>)</td></tr>
+<tr class="separator:af25b13542c8a57b69c1ebbb55551cd99"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af6707b0a000fc62edd13279c3b1e99b9"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#af6707b0a000fc62edd13279c3b1e99b9">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#ac73c4c435b681301e35a8028c549c709">fixCheckThreading</a>, Supported::yes, <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>)</td></tr>
+<tr class="separator:af6707b0a000fc62edd13279c3b1e99b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7cab38d7396b4a8f0aec243aaa456696"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a7cab38d7396b4a8f0aec243aaa456696">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#afd7eb1f95de1f953b43cfd2adb902eec">fixPayChanRecipientOwnerDir</a>, Supported::yes, <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>)</td></tr>
+<tr class="separator:a7cab38d7396b4a8f0aec243aaa456696"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaaba90567299ed9d9a23bb0003680194"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aaaba90567299ed9d9a23bb0003680194">REGISTER_FEATURE</a> (DeletableAccounts, Supported::yes, <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>)</td></tr>
+<tr class="separator:aaaba90567299ed9d9a23bb0003680194"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad7eae8b3f4a8155c1b315431a8b9d8c4"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ad7eae8b3f4a8155c1b315431a8b9d8c4">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#a0925502ed5ba18e4eaec5b16b1f552c0">fixQualityUpperBound</a>, Supported::yes, <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>)</td></tr>
+<tr class="separator:ad7eae8b3f4a8155c1b315431a8b9d8c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac6bbf51e08a0329474e3642a6e616435"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ac6bbf51e08a0329474e3642a6e616435">REGISTER_FEATURE</a> (RequireFullyCanonicalSig, Supported::yes, <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>)</td></tr>
+<tr class="separator:ac6bbf51e08a0329474e3642a6e616435"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4d511800f83b53f36a217c4d110ec6bf"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a4d511800f83b53f36a217c4d110ec6bf">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#aa520966ed6e3285630d0871466e438a8">fix1781</a>, Supported::yes, <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>)</td></tr>
+<tr class="separator:a4d511800f83b53f36a217c4d110ec6bf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:accc96aba3f22b5100cc37646fc3f005a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#accc96aba3f22b5100cc37646fc3f005a">REGISTER_FEATURE</a> (HardenedValidations, Supported::yes, <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>)</td></tr>
+<tr class="separator:accc96aba3f22b5100cc37646fc3f005a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6887f9e22fc7ea9ceaabd2ac4b724f1a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a6887f9e22fc7ea9ceaabd2ac4b724f1a">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#a7ddad39c3614122e497f9a0980f0f0cc">fixAmendmentMajorityCalc</a>, Supported::yes, <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>)</td></tr>
+<tr class="separator:a6887f9e22fc7ea9ceaabd2ac4b724f1a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a89dc3cae24a32037e8b43cc0f47b2784"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a89dc3cae24a32037e8b43cc0f47b2784">REGISTER_FEATURE</a> (NegativeUNL, Supported::yes, <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>)</td></tr>
+<tr class="separator:a89dc3cae24a32037e8b43cc0f47b2784"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a656f71d8c8741debc6a24b9b43db2f56"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a656f71d8c8741debc6a24b9b43db2f56">REGISTER_FEATURE</a> (TicketBatch, Supported::yes, <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>)</td></tr>
+<tr class="separator:a656f71d8c8741debc6a24b9b43db2f56"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8f68bb4f40600445be927335d3a3a600"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a8f68bb4f40600445be927335d3a3a600">REGISTER_FEATURE</a> (FlowSortStrands, Supported::yes, <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>)</td></tr>
+<tr class="separator:a8f68bb4f40600445be927335d3a3a600"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7a1871c3b8c03fb60ee1ac4138d1405e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a7a1871c3b8c03fb60ee1ac4138d1405e">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#a58db4f19d243f6c82a533a40a0db89cd">fixSTAmountCanonicalize</a>, Supported::yes, <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>)</td></tr>
+<tr class="separator:a7a1871c3b8c03fb60ee1ac4138d1405e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aace7c56fd44dd3d10f48dde6dc8bbd03"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aace7c56fd44dd3d10f48dde6dc8bbd03">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#a628c330b73f95a76b38d4d385bd37ac0">fixRmSmallIncreasedQOffers</a>, Supported::yes, <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>)</td></tr>
+<tr class="separator:aace7c56fd44dd3d10f48dde6dc8bbd03"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a95ea67d3787c8d1ad3e1f0a34025a397"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a95ea67d3787c8d1ad3e1f0a34025a397">REGISTER_FEATURE</a> (CheckCashMakesTrustLine, Supported::yes, <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a3fcbd083035206240ef4d4488ac18498">VoteBehavior::DefaultNo</a>)</td></tr>
+<tr class="separator:a95ea67d3787c8d1ad3e1f0a34025a397"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae28d2117badb6c1de7f48a2625f56505"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ae28d2117badb6c1de7f48a2625f56505">REGISTER_FEATURE</a> (ExpandedSignerList, Supported::yes, <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a3fcbd083035206240ef4d4488ac18498">VoteBehavior::DefaultNo</a>)</td></tr>
+<tr class="separator:ae28d2117badb6c1de7f48a2625f56505"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3ca1f33a4717caa53131490619a5d297"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a3ca1f33a4717caa53131490619a5d297">REGISTER_FEATURE</a> (NonFungibleTokensV1_1, Supported::yes, <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a3fcbd083035206240ef4d4488ac18498">VoteBehavior::DefaultNo</a>)</td></tr>
+<tr class="separator:a3ca1f33a4717caa53131490619a5d297"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaa59efdbaffc9a822e230033875c7d52"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aaa59efdbaffc9a822e230033875c7d52">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#ab6b87f591d4f3dee9dfcaf11249616a9">fixTrustLinesToSelf</a>, Supported::yes, <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a3fcbd083035206240ef4d4488ac18498">VoteBehavior::DefaultNo</a>)</td></tr>
+<tr class="separator:aaa59efdbaffc9a822e230033875c7d52"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae0ff84fe64a4b7cc787564c3d8900f77"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ae0ff84fe64a4b7cc787564c3d8900f77">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#aa035aaadc44680dfcde94efd7a0e67e2">fixRemoveNFTokenAutoTrustLine</a>, Supported::yes, <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>)</td></tr>
+<tr class="separator:ae0ff84fe64a4b7cc787564c3d8900f77"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acae5dc740946e32d990e55ea05084d3f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#acae5dc740946e32d990e55ea05084d3f">REGISTER_FEATURE</a> (ImmediateOfferKilled, Supported::yes, <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a3fcbd083035206240ef4d4488ac18498">VoteBehavior::DefaultNo</a>)</td></tr>
+<tr class="separator:acae5dc740946e32d990e55ea05084d3f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a101f91a1117a71e330dd8e5c90dacfec"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a101f91a1117a71e330dd8e5c90dacfec">REGISTER_FEATURE</a> (DisallowIncoming, Supported::yes, <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a3fcbd083035206240ef4d4488ac18498">VoteBehavior::DefaultNo</a>)</td></tr>
+<tr class="separator:a101f91a1117a71e330dd8e5c90dacfec"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa8ed9ec0e22ae30cd3bba3dacc8a3f5b"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aa8ed9ec0e22ae30cd3bba3dacc8a3f5b">REGISTER_FEATURE</a> (XRPFees, Supported::yes, <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a3fcbd083035206240ef4d4488ac18498">VoteBehavior::DefaultNo</a>)</td></tr>
+<tr class="separator:aa8ed9ec0e22ae30cd3bba3dacc8a3f5b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab9405b2117c61c38b4fbbabdb6953f1b"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ab9405b2117c61c38b4fbbabdb6953f1b">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#aca7b4bf41e621edeabbb353a76e9b055">fixUniversalNumber</a>, Supported::yes, <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a3fcbd083035206240ef4d4488ac18498">VoteBehavior::DefaultNo</a>)</td></tr>
+<tr class="separator:ab9405b2117c61c38b4fbbabdb6953f1b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a39f6666c2b639ec733b8cedc01bd460f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a39f6666c2b639ec733b8cedc01bd460f">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#a831b340e9f96cdaec47e018aeff72dec">fixNonFungibleTokensV1_2</a>, Supported::yes, <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a3fcbd083035206240ef4d4488ac18498">VoteBehavior::DefaultNo</a>)</td></tr>
+<tr class="separator:a39f6666c2b639ec733b8cedc01bd460f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac8d6f7c5e097cb37a19ae6f74e937228"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ac8d6f7c5e097cb37a19ae6f74e937228">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#a2abe44fcd04710b216e3f9f774e4849d">fixNFTokenRemint</a>, Supported::yes, <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a3fcbd083035206240ef4d4488ac18498">VoteBehavior::DefaultNo</a>)</td></tr>
+<tr class="separator:ac8d6f7c5e097cb37a19ae6f74e937228"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0a284d81b944c07c9e0b103422c21e92"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a0a284d81b944c07c9e0b103422c21e92">REGISTER_FEATURE</a> (CryptoConditionsSuite, Supported::yes, <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6aec30c235d0eb792797af1aa1d11759a7">VoteBehavior::Obsolete</a>)</td></tr>
+<tr class="separator:a0a284d81b944c07c9e0b103422c21e92"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a06b7bde287bdc0dc89448a925382d27c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a06b7bde287bdc0dc89448a925382d27c">REGISTER_FEATURE</a> (NonFungibleTokensV1, Supported::yes, <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6aec30c235d0eb792797af1aa1d11759a7">VoteBehavior::Obsolete</a>)</td></tr>
+<tr class="separator:a06b7bde287bdc0dc89448a925382d27c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab7ed8afe47ee06dc1de7266a46a826d9"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ab7ed8afe47ee06dc1de7266a46a826d9">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#adc24572ec82470f0e8510bcd85ed6100">fixNFTokenDirV1</a>, Supported::yes, <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6aec30c235d0eb792797af1aa1d11759a7">VoteBehavior::Obsolete</a>)</td></tr>
+<tr class="separator:ab7ed8afe47ee06dc1de7266a46a826d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac021498211a1d02ed856550bd81e45f8"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ac021498211a1d02ed856550bd81e45f8">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#a451091d6bfaf55f18f3bcdfe7df65acd">fixNFTokenNegOffer</a>, Supported::yes, <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6aec30c235d0eb792797af1aa1d11759a7">VoteBehavior::Obsolete</a>)</td></tr>
+<tr class="separator:ac021498211a1d02ed856550bd81e45f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4d94a73034cd9472952dc5448bc420a4"><td class="memTemplParams" colspan="2">template&lt;class... Args&gt; </td></tr>
 <tr class="memitem:a4d94a73034cd9472952dc5448bc420a4"><td class="memTemplItemLeft" align="right" valign="top">static <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a4d94a73034cd9472952dc5448bc420a4">indexHash</a> (<a class="el" href="namespaceripple.html#a22768e0a41b646442c98d38f2f2a307b">LedgerNameSpace</a> space, Args const &amp;... args)</td></tr>
 <tr class="separator:a4d94a73034cd9472952dc5448bc420a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -7740,7 +7742,8 @@ template&lt;class Value , class Hash  = hardened_hash&lt;strong_hash&gt;, class 
 </table>
 </div><div class="memdoc">
 <table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a1dcb4cf27e683bd94d11f5322836c689a46c48bec0d282018b9d167eef7711b2c"></a>up&#160;</td><td class="fielddoc"></td></tr>
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a1dcb4cf27e683bd94d11f5322836c689a28a39c5d0e09f2b9f423c9864ecf1db8"></a>obsolete&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a1dcb4cf27e683bd94d11f5322836c689a46c48bec0d282018b9d167eef7711b2c"></a>up&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a1dcb4cf27e683bd94d11f5322836c689a74e8333ad11685ff3bdae589c8f6e34d"></a>down&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
@@ -8380,8 +8383,8 @@ template&lt;class Value , class Hash  = hardened_hash&lt;strong_hash&gt;, class 
 
 </div>
 </div>
-<a id="afaf9aac668f4e0805bc2911291e29e9f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afaf9aac668f4e0805bc2911291e29e9f">&#9670;&nbsp;</a></span>DefaultVote</h2>
+<a id="aa5778f9faa15e3677dcda7975d9db7c6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa5778f9faa15e3677dcda7975d9db7c6">&#9670;&nbsp;</a></span>VoteBehavior</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -8390,7 +8393,7 @@ template&lt;class Value , class Hash  = hardened_hash&lt;strong_hash&gt;, class 
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">enum <a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9f">ripple::DefaultVote</a> : bool</td>
+          <td class="memname">enum <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6">ripple::VoteBehavior</a> : int</td>
         </tr>
       </table>
   </td>
@@ -8400,8 +8403,9 @@ template&lt;class Value , class Hash  = hardened_hash&lt;strong_hash&gt;, class 
 </table>
 </div><div class="memdoc">
 <table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="afaf9aac668f4e0805bc2911291e29e9fa7fa3b767c460b54a2be4d49030b349c7"></a>no&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e"></a>yes&#160;</td><td class="fielddoc"></td></tr>
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="aa5778f9faa15e3677dcda7975d9db7c6aec30c235d0eb792797af1aa1d11759a7"></a>Obsolete&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="aa5778f9faa15e3677dcda7975d9db7c6a3fcbd083035206240ef4d4488ac18498"></a>DefaultNo&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf"></a>DefaultYes&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
 <p class="definition">Definition at line <a class="el" href="Feature_8h_source.html#l00069">69</a> of file <a class="el" href="Feature_8h_source.html">Feature.h</a>.</p>
@@ -11089,7 +11093,7 @@ template&lt;class Object &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AmendmentTable_8cpp_source.html#l00789">789</a> of file <a class="el" href="AmendmentTable_8cpp_source.html">AmendmentTable.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AmendmentTable_8cpp_source.html#l00812">812</a> of file <a class="el" href="AmendmentTable_8cpp_source.html">AmendmentTable.cpp</a>.</p>
 
 </div>
 </div>
@@ -27235,7 +27239,7 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00341">341</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00342">342</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -27255,7 +27259,7 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00368">368</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00369">369</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -27275,7 +27279,7 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00374">374</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00375">375</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -27295,7 +27299,7 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00380">380</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00381">381</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -27411,8 +27415,8 @@ template&lt;class Hasher &gt; </div>
 
 </div>
 </div>
-<a id="afe038ff792ec0fff57daed002f438f15"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afe038ff792ec0fff57daed002f438f15">&#9670;&nbsp;</a></span>registerFeature()</h2>
+<a id="a409262339843a2785f29845c7ec5c7f9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a409262339843a2785f29845c7ec5c7f9">&#9670;&nbsp;</a></span>registerFeature()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -27432,7 +27436,7 @@ template&lt;class Hasher &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9f">DefaultVote</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6">VoteBehavior</a>&#160;</td>
           <td class="paramname"><em>vote</em>&#160;</td>
         </tr>
         <tr>
@@ -27443,7 +27447,7 @@ template&lt;class Hasher &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00347">347</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00348">348</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -27463,7 +27467,7 @@ template&lt;class Hasher &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00355">355</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00356">356</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -27484,12 +27488,12 @@ template&lt;class Hasher &gt; </div>
 
 <p>Tell FeatureCollections when registration is complete. </p>
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00362">362</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00363">363</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a3027a89189f7590509e1afdb945ac9b2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3027a89189f7590509e1afdb945ac9b2">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[1/21]</span></h2>
+<a id="a857eef678f2479e90978a6d9415cbc52"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a857eef678f2479e90978a6d9415cbc52">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[1/21]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -27509,7 +27513,7 @@ template&lt;class Hasher &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9fa7fa3b767c460b54a2be4d49030b349c7">DefaultVote::no</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a3fcbd083035206240ef4d4488ac18498">VoteBehavior::DefaultNo</a>&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -27522,8 +27526,8 @@ template&lt;class Hasher &gt; </div>
 
 </div>
 </div>
-<a id="ae955b1ffdbc6f642edc6bd1631600efc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae955b1ffdbc6f642edc6bd1631600efc">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[2/21]</span></h2>
+<a id="a064faf022553336b083aa598020c64df"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a064faf022553336b083aa598020c64df">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[2/21]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -27543,7 +27547,7 @@ template&lt;class Hasher &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -27556,8 +27560,8 @@ template&lt;class Hasher &gt; </div>
 
 </div>
 </div>
-<a id="af3d27856e5f56e0125a4ac0503dc5128"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af3d27856e5f56e0125a4ac0503dc5128">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[3/21]</span></h2>
+<a id="a3ad97567490330f9641f9da8c0210502"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3ad97567490330f9641f9da8c0210502">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[3/21]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -27577,7 +27581,7 @@ template&lt;class Hasher &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -27590,42 +27594,8 @@ template&lt;class Hasher &gt; </div>
 
 </div>
 </div>
-<a id="a6567270f826f07bffde8c18f15932061"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6567270f826f07bffde8c18f15932061">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[4/21]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">ripple::REGISTER_FEATURE </td>
-          <td>(</td>
-          <td class="paramtype">CryptoConditionsSuite&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">Supported::yes&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9fa7fa3b767c460b54a2be4d49030b349c7">DefaultVote::no</a>&#160;</td>
-          <td class="paramname">&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="aa4be9c7709719b27e7148aa76bc60175"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa4be9c7709719b27e7148aa76bc60175">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[1/22]</span></h2>
+<a id="a1659fa50f5ac271b6b18d5da57e8c0e6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1659fa50f5ac271b6b18d5da57e8c0e6">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[1/22]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -27645,7 +27615,7 @@ template&lt;class Hasher &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -27658,8 +27628,8 @@ template&lt;class Hasher &gt; </div>
 
 </div>
 </div>
-<a id="ace1dbecf4a73917b8dbb850b6c1d9ea6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ace1dbecf4a73917b8dbb850b6c1d9ea6">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[5/21]</span></h2>
+<a id="a6dc35990c5069db541cd1496485fb68e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6dc35990c5069db541cd1496485fb68e">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[4/21]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -27679,7 +27649,7 @@ template&lt;class Hasher &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -27692,8 +27662,8 @@ template&lt;class Hasher &gt; </div>
 
 </div>
 </div>
-<a id="a09fe5714d7a1dcbeb4cd08a4ae848f04"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a09fe5714d7a1dcbeb4cd08a4ae848f04">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[6/21]</span></h2>
+<a id="a525e7e9ab2f57b6a3d6d78ee4edbd5e9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a525e7e9ab2f57b6a3d6d78ee4edbd5e9">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[5/21]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -27713,7 +27683,7 @@ template&lt;class Hasher &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -27726,8 +27696,8 @@ template&lt;class Hasher &gt; </div>
 
 </div>
 </div>
-<a id="af7980c9fc25b221977d1821637f6de98"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af7980c9fc25b221977d1821637f6de98">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[2/22]</span></h2>
+<a id="ab2e90499fc13234b79e85adbfc949820"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab2e90499fc13234b79e85adbfc949820">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[2/22]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -27747,7 +27717,7 @@ template&lt;class Hasher &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -27760,8 +27730,8 @@ template&lt;class Hasher &gt; </div>
 
 </div>
 </div>
-<a id="ae36c67724a59a42d50fc59fac5f10e42"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae36c67724a59a42d50fc59fac5f10e42">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[3/22]</span></h2>
+<a id="ac10d6e59d0ecc1559790aa6a6c314a69"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac10d6e59d0ecc1559790aa6a6c314a69">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[3/22]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -27781,7 +27751,7 @@ template&lt;class Hasher &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -27794,8 +27764,8 @@ template&lt;class Hasher &gt; </div>
 
 </div>
 </div>
-<a id="ad4df0a44a6f14554e9104ca92ebb046f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad4df0a44a6f14554e9104ca92ebb046f">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[4/22]</span></h2>
+<a id="a6ac7f9108e5619a525f393afb269d671"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6ac7f9108e5619a525f393afb269d671">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[4/22]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -27815,7 +27785,7 @@ template&lt;class Hasher &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -27828,8 +27798,8 @@ template&lt;class Hasher &gt; </div>
 
 </div>
 </div>
-<a id="a34ce95c5969e4ba85e5e28b474efe5cc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a34ce95c5969e4ba85e5e28b474efe5cc">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[7/21]</span></h2>
+<a id="a15fdcfc05603dcd404e851f61e11e1cf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a15fdcfc05603dcd404e851f61e11e1cf">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[6/21]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -27849,7 +27819,7 @@ template&lt;class Hasher &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -27862,8 +27832,8 @@ template&lt;class Hasher &gt; </div>
 
 </div>
 </div>
-<a id="a0b4926e7f116e47ccb3a73f850add5f9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0b4926e7f116e47ccb3a73f850add5f9">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[5/22]</span></h2>
+<a id="a837906cab454e01ebe6614f89062f55b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a837906cab454e01ebe6614f89062f55b">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[5/22]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -27883,7 +27853,7 @@ template&lt;class Hasher &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -27896,8 +27866,8 @@ template&lt;class Hasher &gt; </div>
 
 </div>
 </div>
-<a id="a929e6bcad1025310e66e58d1ae77301f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a929e6bcad1025310e66e58d1ae77301f">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[6/22]</span></h2>
+<a id="a2193905e684944a7ae134a43b44471db"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2193905e684944a7ae134a43b44471db">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[6/22]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -27917,7 +27887,7 @@ template&lt;class Hasher &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -27930,8 +27900,8 @@ template&lt;class Hasher &gt; </div>
 
 </div>
 </div>
-<a id="ae70b3dcb595ff6d0833f762db9e63f2a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae70b3dcb595ff6d0833f762db9e63f2a">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[8/21]</span></h2>
+<a id="aeefe91b2152e86de87e1f11cfcd8321e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aeefe91b2152e86de87e1f11cfcd8321e">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[7/21]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -27951,7 +27921,7 @@ template&lt;class Hasher &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -27964,8 +27934,8 @@ template&lt;class Hasher &gt; </div>
 
 </div>
 </div>
-<a id="a2c12a3621b99b304577f17e58eb0d81b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2c12a3621b99b304577f17e58eb0d81b">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[7/22]</span></h2>
+<a id="aaeb60db5a9479b8a56f76f07d36eebc8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaeb60db5a9479b8a56f76f07d36eebc8">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[7/22]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -27985,7 +27955,7 @@ template&lt;class Hasher &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -27998,8 +27968,8 @@ template&lt;class Hasher &gt; </div>
 
 </div>
 </div>
-<a id="ac68ae6a4840dae3bbc1acc9d82c5aad3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac68ae6a4840dae3bbc1acc9d82c5aad3">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[8/22]</span></h2>
+<a id="af25b13542c8a57b69c1ebbb55551cd99"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af25b13542c8a57b69c1ebbb55551cd99">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[8/22]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -28019,7 +27989,7 @@ template&lt;class Hasher &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -28032,8 +28002,8 @@ template&lt;class Hasher &gt; </div>
 
 </div>
 </div>
-<a id="a969dddbd16dea21dfaed7c4120c1a9bc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a969dddbd16dea21dfaed7c4120c1a9bc">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[9/22]</span></h2>
+<a id="af6707b0a000fc62edd13279c3b1e99b9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af6707b0a000fc62edd13279c3b1e99b9">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[9/22]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -28053,7 +28023,7 @@ template&lt;class Hasher &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -28066,8 +28036,8 @@ template&lt;class Hasher &gt; </div>
 
 </div>
 </div>
-<a id="ac1c493fa7a0a22a75df71b3fdb68b691"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac1c493fa7a0a22a75df71b3fdb68b691">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[10/22]</span></h2>
+<a id="a7cab38d7396b4a8f0aec243aaa456696"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7cab38d7396b4a8f0aec243aaa456696">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[10/22]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -28087,7 +28057,7 @@ template&lt;class Hasher &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -28100,8 +28070,8 @@ template&lt;class Hasher &gt; </div>
 
 </div>
 </div>
-<a id="a358da1774db087dbe9962994818798ca"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a358da1774db087dbe9962994818798ca">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[9/21]</span></h2>
+<a id="aaaba90567299ed9d9a23bb0003680194"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaaba90567299ed9d9a23bb0003680194">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[8/21]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -28121,7 +28091,7 @@ template&lt;class Hasher &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -28134,8 +28104,8 @@ template&lt;class Hasher &gt; </div>
 
 </div>
 </div>
-<a id="abf2484d392ce039ae80f86f0b3fa2a39"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abf2484d392ce039ae80f86f0b3fa2a39">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[11/22]</span></h2>
+<a id="ad7eae8b3f4a8155c1b315431a8b9d8c4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad7eae8b3f4a8155c1b315431a8b9d8c4">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[11/22]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -28155,7 +28125,7 @@ template&lt;class Hasher &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -28168,8 +28138,8 @@ template&lt;class Hasher &gt; </div>
 
 </div>
 </div>
-<a id="a7bb81c798dcd5c65d9d3e84229661edf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7bb81c798dcd5c65d9d3e84229661edf">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[10/21]</span></h2>
+<a id="ac6bbf51e08a0329474e3642a6e616435"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac6bbf51e08a0329474e3642a6e616435">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[9/21]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -28189,7 +28159,7 @@ template&lt;class Hasher &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -28202,8 +28172,8 @@ template&lt;class Hasher &gt; </div>
 
 </div>
 </div>
-<a id="ac1c4b0b0fd89f0fc5c78944b022b2fb9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac1c4b0b0fd89f0fc5c78944b022b2fb9">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[12/22]</span></h2>
+<a id="a4d511800f83b53f36a217c4d110ec6bf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4d511800f83b53f36a217c4d110ec6bf">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[12/22]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -28223,7 +28193,7 @@ template&lt;class Hasher &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -28236,8 +28206,8 @@ template&lt;class Hasher &gt; </div>
 
 </div>
 </div>
-<a id="aaf25e0f9d5bc0181eb548a571def035d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aaf25e0f9d5bc0181eb548a571def035d">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[11/21]</span></h2>
+<a id="accc96aba3f22b5100cc37646fc3f005a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#accc96aba3f22b5100cc37646fc3f005a">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[10/21]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -28257,7 +28227,7 @@ template&lt;class Hasher &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -28270,8 +28240,8 @@ template&lt;class Hasher &gt; </div>
 
 </div>
 </div>
-<a id="a3e88cb027ef298cf997eb008d5328f7c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3e88cb027ef298cf997eb008d5328f7c">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[13/22]</span></h2>
+<a id="a6887f9e22fc7ea9ceaabd2ac4b724f1a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6887f9e22fc7ea9ceaabd2ac4b724f1a">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[13/22]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -28291,7 +28261,7 @@ template&lt;class Hasher &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -28304,8 +28274,8 @@ template&lt;class Hasher &gt; </div>
 
 </div>
 </div>
-<a id="ab0e45a6bfcdfcd22770de5f6a329f878"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab0e45a6bfcdfcd22770de5f6a329f878">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[12/21]</span></h2>
+<a id="a89dc3cae24a32037e8b43cc0f47b2784"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a89dc3cae24a32037e8b43cc0f47b2784">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[11/21]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -28325,7 +28295,7 @@ template&lt;class Hasher &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -28338,8 +28308,8 @@ template&lt;class Hasher &gt; </div>
 
 </div>
 </div>
-<a id="a31744e05fceff02bbe0b19c7335d09e2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a31744e05fceff02bbe0b19c7335d09e2">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[13/21]</span></h2>
+<a id="a656f71d8c8741debc6a24b9b43db2f56"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a656f71d8c8741debc6a24b9b43db2f56">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[12/21]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -28359,7 +28329,7 @@ template&lt;class Hasher &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -28372,8 +28342,8 @@ template&lt;class Hasher &gt; </div>
 
 </div>
 </div>
-<a id="a27842b5bf18f3391ac140f8e94161248"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a27842b5bf18f3391ac140f8e94161248">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[14/21]</span></h2>
+<a id="a8f68bb4f40600445be927335d3a3a600"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8f68bb4f40600445be927335d3a3a600">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[13/21]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -28393,7 +28363,7 @@ template&lt;class Hasher &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -28406,8 +28376,8 @@ template&lt;class Hasher &gt; </div>
 
 </div>
 </div>
-<a id="a3826809481851bac3da12b77a45f7b3f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3826809481851bac3da12b77a45f7b3f">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[14/22]</span></h2>
+<a id="a7a1871c3b8c03fb60ee1ac4138d1405e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7a1871c3b8c03fb60ee1ac4138d1405e">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[14/22]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -28427,7 +28397,7 @@ template&lt;class Hasher &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -28440,8 +28410,8 @@ template&lt;class Hasher &gt; </div>
 
 </div>
 </div>
-<a id="a61e0ee25af6fdc7e001381205fffcf18"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a61e0ee25af6fdc7e001381205fffcf18">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[15/22]</span></h2>
+<a id="aace7c56fd44dd3d10f48dde6dc8bbd03"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aace7c56fd44dd3d10f48dde6dc8bbd03">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[15/22]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -28461,7 +28431,7 @@ template&lt;class Hasher &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -28474,8 +28444,8 @@ template&lt;class Hasher &gt; </div>
 
 </div>
 </div>
-<a id="ab3017b7c2fef62c7121dc4e1ff409ca7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab3017b7c2fef62c7121dc4e1ff409ca7">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[15/21]</span></h2>
+<a id="a95ea67d3787c8d1ad3e1f0a34025a397"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a95ea67d3787c8d1ad3e1f0a34025a397">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[14/21]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -28495,7 +28465,7 @@ template&lt;class Hasher &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9fa7fa3b767c460b54a2be4d49030b349c7">DefaultVote::no</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a3fcbd083035206240ef4d4488ac18498">VoteBehavior::DefaultNo</a>&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -28508,42 +28478,8 @@ template&lt;class Hasher &gt; </div>
 
 </div>
 </div>
-<a id="a686d98014bf03ca38047e2cadee5bb7c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a686d98014bf03ca38047e2cadee5bb7c">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[16/21]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">ripple::REGISTER_FEATURE </td>
-          <td>(</td>
-          <td class="paramtype">NonFungibleTokensV1&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">Supported::yes&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9fa7fa3b767c460b54a2be4d49030b349c7">DefaultVote::no</a>&#160;</td>
-          <td class="paramname">&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="aa8b65e499e90b0a0c8acc3e4f577dc2e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa8b65e499e90b0a0c8acc3e4f577dc2e">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[17/21]</span></h2>
+<a id="ae28d2117badb6c1de7f48a2625f56505"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae28d2117badb6c1de7f48a2625f56505">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[15/21]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -28563,7 +28499,7 @@ template&lt;class Hasher &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9fa7fa3b767c460b54a2be4d49030b349c7">DefaultVote::no</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a3fcbd083035206240ef4d4488ac18498">VoteBehavior::DefaultNo</a>&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -28576,76 +28512,8 @@ template&lt;class Hasher &gt; </div>
 
 </div>
 </div>
-<a id="aca4c69da0ba92fa421bd1eadee3d6c1c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aca4c69da0ba92fa421bd1eadee3d6c1c">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[16/22]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">ripple::REGISTER_FIX </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#adc24572ec82470f0e8510bcd85ed6100">fixNFTokenDirV1</a>&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">Supported::yes&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9fa7fa3b767c460b54a2be4d49030b349c7">DefaultVote::no</a>&#160;</td>
-          <td class="paramname">&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a65f7eab6d2025264dd569b99fcec7448"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a65f7eab6d2025264dd569b99fcec7448">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[17/22]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">ripple::REGISTER_FIX </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#a451091d6bfaf55f18f3bcdfe7df65acd">fixNFTokenNegOffer</a>&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">Supported::yes&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9fa7fa3b767c460b54a2be4d49030b349c7">DefaultVote::no</a>&#160;</td>
-          <td class="paramname">&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="ad2244621c26868bbff6f8193f63c901e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad2244621c26868bbff6f8193f63c901e">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[18/21]</span></h2>
+<a id="a3ca1f33a4717caa53131490619a5d297"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3ca1f33a4717caa53131490619a5d297">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[16/21]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -28665,7 +28533,7 @@ template&lt;class Hasher &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9fa7fa3b767c460b54a2be4d49030b349c7">DefaultVote::no</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a3fcbd083035206240ef4d4488ac18498">VoteBehavior::DefaultNo</a>&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -28678,8 +28546,8 @@ template&lt;class Hasher &gt; </div>
 
 </div>
 </div>
-<a id="a5d9e79dfb78fd15e872bce056a187985"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5d9e79dfb78fd15e872bce056a187985">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[18/22]</span></h2>
+<a id="aaa59efdbaffc9a822e230033875c7d52"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaa59efdbaffc9a822e230033875c7d52">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[16/22]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -28699,7 +28567,7 @@ template&lt;class Hasher &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9fa7fa3b767c460b54a2be4d49030b349c7">DefaultVote::no</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a3fcbd083035206240ef4d4488ac18498">VoteBehavior::DefaultNo</a>&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -28712,8 +28580,8 @@ template&lt;class Hasher &gt; </div>
 
 </div>
 </div>
-<a id="a9cd242bb411528c3353f9973c55d0bf9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9cd242bb411528c3353f9973c55d0bf9">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[19/22]</span></h2>
+<a id="ae0ff84fe64a4b7cc787564c3d8900f77"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae0ff84fe64a4b7cc787564c3d8900f77">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[17/22]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -28733,7 +28601,7 @@ template&lt;class Hasher &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9faa6105c0a611b41b08f1209506350279e">DefaultVote::yes</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf">VoteBehavior::DefaultYes</a>&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -28746,8 +28614,8 @@ template&lt;class Hasher &gt; </div>
 
 </div>
 </div>
-<a id="af406ab33fe9f8e3a100b27a912dc6d60"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af406ab33fe9f8e3a100b27a912dc6d60">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[19/21]</span></h2>
+<a id="acae5dc740946e32d990e55ea05084d3f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acae5dc740946e32d990e55ea05084d3f">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[17/21]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -28767,7 +28635,7 @@ template&lt;class Hasher &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9fa7fa3b767c460b54a2be4d49030b349c7">DefaultVote::no</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a3fcbd083035206240ef4d4488ac18498">VoteBehavior::DefaultNo</a>&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -28780,8 +28648,8 @@ template&lt;class Hasher &gt; </div>
 
 </div>
 </div>
-<a id="ae2954cb6e30ce9bd16564a6cd7b47829"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae2954cb6e30ce9bd16564a6cd7b47829">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[20/21]</span></h2>
+<a id="a101f91a1117a71e330dd8e5c90dacfec"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a101f91a1117a71e330dd8e5c90dacfec">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[18/21]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -28801,7 +28669,7 @@ template&lt;class Hasher &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9fa7fa3b767c460b54a2be4d49030b349c7">DefaultVote::no</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a3fcbd083035206240ef4d4488ac18498">VoteBehavior::DefaultNo</a>&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -28814,8 +28682,8 @@ template&lt;class Hasher &gt; </div>
 
 </div>
 </div>
-<a id="a48fb9db527888efd247ecebaa7242ee1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a48fb9db527888efd247ecebaa7242ee1">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[21/21]</span></h2>
+<a id="aa8ed9ec0e22ae30cd3bba3dacc8a3f5b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa8ed9ec0e22ae30cd3bba3dacc8a3f5b">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[19/21]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -28835,7 +28703,7 @@ template&lt;class Hasher &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9fa7fa3b767c460b54a2be4d49030b349c7">DefaultVote::no</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a3fcbd083035206240ef4d4488ac18498">VoteBehavior::DefaultNo</a>&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -28848,8 +28716,8 @@ template&lt;class Hasher &gt; </div>
 
 </div>
 </div>
-<a id="a4dd2c83cd53d85f62c350c5de46064df"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4dd2c83cd53d85f62c350c5de46064df">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[20/22]</span></h2>
+<a id="ab9405b2117c61c38b4fbbabdb6953f1b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab9405b2117c61c38b4fbbabdb6953f1b">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[18/22]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -28869,7 +28737,7 @@ template&lt;class Hasher &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9fa7fa3b767c460b54a2be4d49030b349c7">DefaultVote::no</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a3fcbd083035206240ef4d4488ac18498">VoteBehavior::DefaultNo</a>&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -28882,8 +28750,8 @@ template&lt;class Hasher &gt; </div>
 
 </div>
 </div>
-<a id="a4e71ec3675d6974c037ca8af3e0d3abd"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4e71ec3675d6974c037ca8af3e0d3abd">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[21/22]</span></h2>
+<a id="a39f6666c2b639ec733b8cedc01bd460f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a39f6666c2b639ec733b8cedc01bd460f">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[19/22]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -28903,7 +28771,7 @@ template&lt;class Hasher &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9fa7fa3b767c460b54a2be4d49030b349c7">DefaultVote::no</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a3fcbd083035206240ef4d4488ac18498">VoteBehavior::DefaultNo</a>&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -28916,8 +28784,8 @@ template&lt;class Hasher &gt; </div>
 
 </div>
 </div>
-<a id="a74c1ad3d77354775e672cfdc255bedc5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a74c1ad3d77354775e672cfdc255bedc5">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[22/22]</span></h2>
+<a id="ac8d6f7c5e097cb37a19ae6f74e937228"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac8d6f7c5e097cb37a19ae6f74e937228">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[20/22]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -28937,7 +28805,143 @@ template&lt;class Hasher &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#afaf9aac668f4e0805bc2911291e29e9fa7fa3b767c460b54a2be4d49030b349c7">DefaultVote::no</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a3fcbd083035206240ef4d4488ac18498">VoteBehavior::DefaultNo</a>&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a0a284d81b944c07c9e0b103422c21e92"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0a284d81b944c07c9e0b103422c21e92">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[20/21]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">ripple::REGISTER_FEATURE </td>
+          <td>(</td>
+          <td class="paramtype">CryptoConditionsSuite&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Supported::yes&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6aec30c235d0eb792797af1aa1d11759a7">VoteBehavior::Obsolete</a>&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a06b7bde287bdc0dc89448a925382d27c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a06b7bde287bdc0dc89448a925382d27c">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[21/21]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">ripple::REGISTER_FEATURE </td>
+          <td>(</td>
+          <td class="paramtype">NonFungibleTokensV1&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Supported::yes&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6aec30c235d0eb792797af1aa1d11759a7">VoteBehavior::Obsolete</a>&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ab7ed8afe47ee06dc1de7266a46a826d9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab7ed8afe47ee06dc1de7266a46a826d9">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[21/22]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">ripple::REGISTER_FIX </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#adc24572ec82470f0e8510bcd85ed6100">fixNFTokenDirV1</a>&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Supported::yes&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6aec30c235d0eb792797af1aa1d11759a7">VoteBehavior::Obsolete</a>&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ac021498211a1d02ed856550bd81e45f8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac021498211a1d02ed856550bd81e45f8">&#9670;&nbsp;</a></span>REGISTER_FIX() <span class="overload">[22/22]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">ripple::REGISTER_FIX </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a451091d6bfaf55f18f3bcdfe7df65acd">fixNFTokenNegOffer</a>&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Supported::yes&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6aec30c235d0eb792797af1aa1d11759a7">VoteBehavior::Obsolete</a>&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -50487,7 +50491,7 @@ template&lt;class Dest , class Src &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00465">465</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00478">478</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -50503,7 +50507,7 @@ template&lt;class Dest , class Src &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00466">466</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00479">479</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -50519,7 +50523,7 @@ template&lt;class Dest , class Src &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00467">467</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00480">480</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -50535,7 +50539,7 @@ template&lt;class Dest , class Src &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00468">468</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00481">481</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -50551,7 +50555,7 @@ template&lt;class Dest , class Src &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00469">469</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00482">482</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -50567,7 +50571,7 @@ template&lt;class Dest , class Src &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00470">470</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00483">483</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -50583,7 +50587,7 @@ template&lt;class Dest , class Src &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00471">471</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00484">484</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -50599,7 +50603,7 @@ template&lt;class Dest , class Src &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00472">472</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00485">485</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -50615,7 +50619,7 @@ template&lt;class Dest , class Src &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00473">473</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00486">486</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -50631,7 +50635,7 @@ template&lt;class Dest , class Src &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00474">474</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00487">487</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -50647,7 +50651,7 @@ template&lt;class Dest , class Src &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00475">475</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00488">488</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -50663,7 +50667,7 @@ template&lt;class Dest , class Src &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00476">476</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00489">489</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -50679,7 +50683,7 @@ template&lt;class Dest , class Src &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00477">477</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00490">490</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -50695,7 +50699,7 @@ template&lt;class Dest , class Src &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00478">478</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00491">491</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -50711,7 +50715,7 @@ template&lt;class Dest , class Src &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00479">479</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00492">492</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -50737,7 +50741,7 @@ template&lt;class Dest , class Src &gt; </div>
 <b>Initial value:</b><div class="fragment"><div class="line">=</div>
 <div class="line">    featureCollections.registrationIsDone()</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00494">494</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00507">507</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
