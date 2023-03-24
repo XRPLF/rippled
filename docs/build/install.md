@@ -118,7 +118,7 @@ The default [prefix][1] is typically `/usr/local` on Linux and macOS and
         gpgkey=https://repos.ripple.com/repos/rippled-rpm/stable/repodata/repomd.xml.key
         REPOFILE
 
-    *Pre-release*
+    *Unstable*
 
         cat << REPOFILE | sudo tee /etc/yum.repos.d/ripple.repo
         [ripple-unstable]
@@ -130,7 +130,7 @@ The default [prefix][1] is typically `/usr/local` on Linux and macOS and
         gpgkey=https://repos.ripple.com/repos/rippled-rpm/unstable/repodata/repomd.xml.key
         REPOFILE
 
-    *Development*
+    *Nightly*
 
         cat << REPOFILE | sudo tee /etc/yum.repos.d/ripple.repo
         [ripple-nightly]
