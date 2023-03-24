@@ -53,8 +53,7 @@ canHaveNFTokenOfferID(
 }
 
 static std::optional<uint256>
-getOfferIDFromCreatedOffer(
-    TxMeta const& transactionMeta)
+getOfferIDFromCreatedOffer(TxMeta const& transactionMeta)
 {
     for (STObject const& node : transactionMeta.getNodes())
     {

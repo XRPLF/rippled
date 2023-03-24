@@ -6617,42 +6617,43 @@ class NFToken_test : public beast::unit_test::suite
 
         // Verify `nftoken_ids` value equals to the NFTokenIDs that were
         // changed in the most recent NFTokenCancelOffer transaction
-        auto verifyNFTokenIDsInCancelOffer = [&](std::vector<uint256> actualNftIDs) {
-            // Get the hash for the most recent transaction.
-            std::string const txHash{
-                env.tx()->getJson(JsonOptions::none)[jss::hash].asString()};
+        auto verifyNFTokenIDsInCancelOffer =
+            [&](std::vector<uint256> actualNftIDs) {
+                // Get the hash for the most recent transaction.
+                std::string const txHash{
+                    env.tx()->getJson(JsonOptions::none)[jss::hash].asString()};
 
-            env.close();
-            Json::Value const meta =
-                env.rpc("tx", txHash)[jss::result][jss::meta];
+                env.close();
+                Json::Value const meta =
+                    env.rpc("tx", txHash)[jss::result][jss::meta];
 
-            // Expect nftokens_ids field and verify the values
-            if (!BEAST_EXPECT(meta.isMember(jss::nftoken_ids)))
-                return;
+                // Expect nftokens_ids field and verify the values
+                if (!BEAST_EXPECT(meta.isMember(jss::nftoken_ids)))
+                    return;
 
-            // Convert NFT IDs from Json::Value to uint256
-            std::vector<uint256> metaIDs;
-            std::transform(
-                meta[jss::nftoken_ids].begin(),
-                meta[jss::nftoken_ids].end(),
-                std::back_inserter(metaIDs),
-                [this](Json::Value id) {
-                    uint256 nftID;
-                    BEAST_EXPECT(nftID.parseHex(id.asString()));
-                    return nftID;
-                });
+                // Convert NFT IDs from Json::Value to uint256
+                std::vector<uint256> metaIDs;
+                std::transform(
+                    meta[jss::nftoken_ids].begin(),
+                    meta[jss::nftoken_ids].end(),
+                    std::back_inserter(metaIDs),
+                    [this](Json::Value id) {
+                        uint256 nftID;
+                        BEAST_EXPECT(nftID.parseHex(id.asString()));
+                        return nftID;
+                    });
 
-            std::sort(metaIDs.begin(), metaIDs.end());
-            std::sort(actualNftIDs.begin(), actualNftIDs.end());
+                std::sort(metaIDs.begin(), metaIDs.end());
+                std::sort(actualNftIDs.begin(), actualNftIDs.end());
 
-            // Make sure the expect number of NFTs is correct
-            BEAST_EXPECT(metaIDs.size() == actualNftIDs.size());
+                // Make sure the expect number of NFTs is correct
+                BEAST_EXPECT(metaIDs.size() == actualNftIDs.size());
 
-            // Check the value of NFT ID in the meta with the
-            // actual values
-            for (size_t i = 0; i < metaIDs.size(); ++i)
-                BEAST_EXPECT(metaIDs[i] == actualNftIDs[i]);
-        };
+                // Check the value of NFT ID in the meta with the
+                // actual values
+                for (size_t i = 0; i < metaIDs.size(); ++i)
+                    BEAST_EXPECT(metaIDs[i] == actualNftIDs[i]);
+            };
 
         // Verify `offer_id` value equals to the offerID that was
         // changed in the most recent NFTokenCreateOffer tx

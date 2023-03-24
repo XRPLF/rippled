@@ -54,8 +54,7 @@ canHaveNFTokenID(
 }
 
 static std::optional<uint256>
-getNFTokenIDFromPage(
-    TxMeta const& transactionMeta)
+getNFTokenIDFromPage(TxMeta const& transactionMeta)
 {
     // The metadata does not make it obvious which NFT was added.  To figure
     // that out we gather up all of the previous NFT IDs and all of the final
@@ -72,8 +71,8 @@ getNFTokenIDFromPage(
         if (fName == sfCreatedNode)
         {
             STArray const& toAddPrevNFTs = node.peekAtField(sfNewFields)
-                                           .downcast<STObject>()
-                                           .getFieldArray(sfNFTokens);
+                                               .downcast<STObject>()
+                                               .getFieldArray(sfNFTokens);
             std::transform(
                 toAddPrevNFTs.begin(),
                 toAddPrevNFTs.end(),
@@ -98,7 +97,8 @@ getNFTokenIDFromPage(
             if (!previousFields.isFieldPresent(sfNFTokens))
                 continue;
 
-            STArray const& toAddPrevNFTs = previousFields.getFieldArray(sfNFTokens);
+            STArray const& toAddPrevNFTs =
+                previousFields.getFieldArray(sfNFTokens);
             std::transform(
                 toAddPrevNFTs.begin(),
                 toAddPrevNFTs.end(),
@@ -139,8 +139,7 @@ getNFTokenIDFromPage(
 }
 
 static std::vector<uint256>
-getNFTokenIDFromDeletedOffer(
-    TxMeta const& transactionMeta)
+getNFTokenIDFromDeletedOffer(TxMeta const& transactionMeta)
 {
     std::vector<uint256> tokenIDResult;
     for (STObject const& node : transactionMeta.getNodes())
@@ -178,8 +177,9 @@ insertNFTokenID(
     }
     else if (type == ttNFTOKEN_ACCEPT_OFFER)
     {
-        std::vector<uint256> result = getNFTokenIDFromDeletedOffer(transactionMeta);
-        
+        std::vector<uint256> result =
+            getNFTokenIDFromDeletedOffer(transactionMeta);
+
         // In brokered mode, there will be a duplicate NFTokenID in the
         // vector, but we don't have to do anything special here.
         if (result.size() > 0)
@@ -187,7 +187,8 @@ insertNFTokenID(
     }
     else if (type == ttNFTOKEN_CANCEL_OFFER)
     {
-        std::vector<uint256> result = getNFTokenIDFromDeletedOffer(transactionMeta);
+        std::vector<uint256> result =
+            getNFTokenIDFromDeletedOffer(transactionMeta);
 
         response[jss::nftoken_ids] = Json::Value(Json::arrayValue);
         for (auto const& nftID : result)
