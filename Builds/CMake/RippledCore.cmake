@@ -655,7 +655,7 @@ target_sources (rippled PRIVATE
   src/ripple/rpc/impl/TransactionSign.cpp
   src/ripple/rpc/impl/NFTokenID.cpp
   src/ripple/rpc/impl/NFTokenOfferID.cpp
-  src/ripple/rpc/impl/TxMetaSerializer.cpp
+  src/ripple/rpc/impl/NFTSyntheticSerializer.cpp
   #[===============================[
      main sources:
        subdir: perflog

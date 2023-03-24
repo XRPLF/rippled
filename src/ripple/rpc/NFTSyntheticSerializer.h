@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_TXMETASERIALIZER_H_INCLUDED
-#define RIPPLE_RPC_TXMETASERIALIZER_H_INCLUDED
+#ifndef RIPPLE_RPC_NFTSYNTHETICSERIALIZER_H_INCLUDED
+#define RIPPLE_RPC_NFTSYNTHETICSERIALIZER_H_INCLUDED
 
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/STBase.h>
@@ -45,12 +45,11 @@ struct JsonContext;
    @{
  */
 void
-serializeTxMetaAsJSON(
+insertNFTSyntheticInJson(
     Json::Value&,
     RPC::JsonContext const&,
     std::shared_ptr<STTx const> const&,
-    TxMeta const&,
-    JsonOptions);
+    TxMeta const&);
 /** @} */
 
 }  // namespace RPC

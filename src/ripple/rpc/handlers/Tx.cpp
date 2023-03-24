@@ -26,8 +26,9 @@
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/Context.h>
+#include <ripple/rpc/DeliveredAmount.h>
 #include <ripple/rpc/GRPCHandlers.h>
-#include <ripple/rpc/TxMetaSerializer.h>
+#include <ripple/rpc/NFTSyntheticSerializer.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 
 namespace ripple {
@@ -292,12 +293,14 @@ populateJsonResponse(
             auto& meta = *m;
             if (meta)
             {
-                serializeTxMetaAsJSON(
+                response[jss::meta] = meta->getJson(JsonOptions::none);
+                insertDeliveredAmount(
+                    response[jss::meta], context, result.txn, *meta);
+                insertNFTSyntheticInJson(
                     response,
                     context,
                     result.txn->getSTransaction(),
-                    *meta,
-                    JsonOptions::none);
+                    *meta);
             }
         }
         response[jss::validated] = result.validated;

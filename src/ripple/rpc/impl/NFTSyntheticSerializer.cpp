@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/rpc/TxMetaSerializer.h>
+#include <ripple/rpc/NFTSyntheticSerializer.h>
 
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/OpenLedger.h>
@@ -27,10 +27,8 @@
 #include <ripple/protocol/AccountID.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/rpc/Context.h>
-#include <ripple/rpc/DeliveredAmount.h>
 #include <ripple/rpc/NFTokenID.h>
 #include <ripple/rpc/NFTokenOfferID.h>
-#include <ripple/rpc/TxMetaSerializer.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 #include <boost/algorithm/string/case_conv.hpp>
 
@@ -38,17 +36,12 @@ namespace ripple {
 namespace RPC {
 
 void
-serializeTxMetaAsJSON(
+insertNFTSyntheticInJson(
     Json::Value& response,
     RPC::JsonContext const& context,
     std::shared_ptr<STTx const> const& transaction,
-    TxMeta const& transactionMeta,
-    JsonOptions options)
+    TxMeta const& transactionMeta)
 {
-    response[jss::meta] = transactionMeta.getJson(options);
-
-    insertDeliveredAmount(
-        response[jss::meta], context, transaction, transactionMeta);
     insertNFTokenID(response[jss::meta], transaction, transactionMeta);
     insertNFTokenOfferID(response[jss::meta], transaction, transactionMeta);
 }

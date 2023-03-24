@@ -6617,7 +6617,7 @@ class NFToken_test : public beast::unit_test::suite
 
         // Verify `nftoken_ids` value equals to the NFTokenIDs that were
         // changed in the most recent NFTokenCancelOffer transaction
-        auto verifyNFTokenIDs = [&](std::vector<uint256> actualNftIDs) {
+        auto verifyNFTokenIDsInCancelOffer = [&](std::vector<uint256> actualNftIDs) {
             // Get the hash for the most recent transaction.
             std::string const txHash{
                 env.tx()->getJson(JsonOptions::none)[jss::hash].asString()};
@@ -6713,7 +6713,7 @@ class NFToken_test : public beast::unit_test::suite
             env(token::cancelOffer(
                 alice, {aliceOfferIndex1, aliceOfferIndex2}));
             env.close();
-            verifyNFTokenIDs({nftId1, nftId2});
+            verifyNFTokenIDsInCancelOffer({nftId1, nftId2});
 
             // Bobs creates a buy offer for nftId1
             // Verify the offer id is correct in the NFTokenCreateOffer tx meta
