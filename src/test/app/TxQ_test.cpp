@@ -2939,9 +2939,9 @@ public:
         // Verify that nothing can be added now that the gap is filled.
         env(noop(alice), seq(aliceSeq + 20), ter(telCAN_NOT_QUEUE_FULL));
 
-        // Close ledger 6.  That removes 6 of alice's transactions,
-        // but alice adds one more transaction at seq(aliceSeq + 20) so
-        // we only see a reduction by 5.
+        // Close ledger 6.  That removes some of alice's transactions,
+        // but alice adds some more transaction(s) so expectedCount
+        // may not reduce to 8.
         env.close();
         checkMetrics(__LINE__, env, 9, 50, 6, 5, 256);
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 13);
