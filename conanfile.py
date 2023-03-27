@@ -154,4 +154,5 @@ class Xrpl(ConanFile):
         libxrpl.requires = [
             'boost::boost',
             'openssl::crypto',
+            'date::date',
         ]
