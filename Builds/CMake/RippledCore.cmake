@@ -153,6 +153,7 @@ install (
     src/ripple/basics/Blob.h
     src/ripple/basics/Buffer.h
     src/ripple/basics/CountedObject.h
+    src/ripple/basics/Expected.h
     src/ripple/basics/FileUtilities.h
     src/ripple/basics/IOUAmount.h
     src/ripple/basics/LocalValue.h
