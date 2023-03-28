@@ -720,7 +720,7 @@ checkFee(
         }
     }
 
-    XRPAmount const feeDefault = config.FEE_DEFAULT;
+    XRPAmount const feeDefault = config.FEES.reference_fee;
 
     auto ledger = app.openLedger().current();
     // Administrative and identified endpoints are exempt from local fees.

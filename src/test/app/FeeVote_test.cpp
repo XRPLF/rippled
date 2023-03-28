@@ -29,7 +29,7 @@ class FeeVote_test : public beast::unit_test::suite
     void
     testSetup()
     {
-        FeeVote::Setup const defaultSetup;
+        FeeSetup const defaultSetup;
         {
             // defaults
             Section config;
