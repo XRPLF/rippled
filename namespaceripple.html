@@ -441,6 +441,9 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1Fees.html">Fees</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reflects the fee settings for a particular ledger.  <a href="structripple_1_1Fees.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1FeeSetup.html">FeeSetup</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fee schedule for startup / standalone, and to vote for.  <a href="structripple_1_1FeeSetup.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1FeeVote.html">FeeVote</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Manager to process fee votes.  <a href="classripple_1_1FeeVote.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -2472,12 +2475,9 @@ Functions</h2></td></tr>
 <tr class="separator:ad41956ef004d64710296fd76a5dc9e06"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae7f0e432d5fa980cfc588654bb6c77d7"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ae7f0e432d5fa980cfc588654bb6c77d7">operator&lt;</a> (<a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html">CanonicalTXSet::Key</a> const &amp;lhs, <a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html">CanonicalTXSet::Key</a> const &amp;rhs)</td></tr>
 <tr class="separator:ae7f0e432d5fa980cfc588654bb6c77d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acbafe6bd675116b7d1c63c314fcd369d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structripple_1_1FeeVote_1_1Setup.html">FeeVote::Setup</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#acbafe6bd675116b7d1c63c314fcd369d">setup_FeeVote</a> (<a class="el" href="classripple_1_1Section.html">Section</a> const &amp;section)</td></tr>
-<tr class="memdesc:acbafe6bd675116b7d1c63c314fcd369d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Build <a class="el" href="structripple_1_1FeeVote_1_1Setup.html" title="Fee schedule to vote for.">FeeVote::Setup</a> from a config section.  <a href="namespaceripple.html#acbafe6bd675116b7d1c63c314fcd369d">More...</a><br /></td></tr>
-<tr class="separator:acbafe6bd675116b7d1c63c314fcd369d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0255816875fa12eac9b8dccf1fbcf592"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1FeeVote.html">FeeVote</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a0255816875fa12eac9b8dccf1fbcf592">make_FeeVote</a> (<a class="el" href="structripple_1_1FeeVote_1_1Setup.html">FeeVote::Setup</a> const &amp;setup, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> journal)</td></tr>
-<tr class="memdesc:a0255816875fa12eac9b8dccf1fbcf592"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create an instance of the <a class="el" href="classripple_1_1FeeVote.html" title="Manager to process fee votes.">FeeVote</a> logic.  <a href="namespaceripple.html#a0255816875fa12eac9b8dccf1fbcf592">More...</a><br /></td></tr>
-<tr class="separator:a0255816875fa12eac9b8dccf1fbcf592"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a56634a05bfc2b4f7c95169c75f370554"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1FeeVote.html">FeeVote</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a56634a05bfc2b4f7c95169c75f370554">make_FeeVote</a> (<a class="el" href="structripple_1_1FeeSetup.html">FeeSetup</a> const &amp;setup, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> journal)</td></tr>
+<tr class="memdesc:a56634a05bfc2b4f7c95169c75f370554"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create an instance of the <a class="el" href="classripple_1_1FeeVote.html" title="Manager to process fee votes.">FeeVote</a> logic.  <a href="namespaceripple.html#a56634a05bfc2b4f7c95169c75f370554">More...</a><br /></td></tr>
+<tr class="separator:a56634a05bfc2b4f7c95169c75f370554"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9add4411a685197531d0d1cbd63fb6d3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a9add4411a685197531d0d1cbd63fb6d3">convertBlobsToTxResult</a> (<a class="el" href="classripple_1_1RelationalDatabase.html#a1af9139d7f4c8f662c7b8e49473a21e2">RelationalDatabase::AccountTxs</a> &amp;to, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ledger_index, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;status, <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> const &amp;rawTxn, <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> const &amp;rawMeta, <a class="el" href="classripple_1_1Application.html">Application</a> &amp;app)</td></tr>
 <tr class="separator:a9add4411a685197531d0d1cbd63fb6d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5b20792dc031a8d5507966448d62f686"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a5b20792dc031a8d5507966448d62f686">saveLedgerAsync</a> (<a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> seq)</td></tr>
@@ -3250,6 +3250,8 @@ Functions</h2></td></tr>
 <tr class="separator:a38d1749cd010f88da471b4183b2dfe52"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a49d3a2fa89321343ddb5e337429c713f"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a49d3a2fa89321343ddb5e337429c713f">to_string</a> (<a class="el" href="namespaceripple.html#a6434c1a0fd22b77e2e4a228c0eca79eb">ValStatus</a> m)</td></tr>
 <tr class="separator:a49d3a2fa89321343ddb5e337429c713f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac297eefd69dc2e30749d2446715b3f9c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structripple_1_1FeeSetup.html">FeeSetup</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ac297eefd69dc2e30749d2446715b3f9c">setup_FeeVote</a> (<a class="el" href="classripple_1_1Section.html">Section</a> const &amp;section)</td></tr>
+<tr class="separator:ac297eefd69dc2e30749d2446715b3f9c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad762481a6ff332cd122213b3f84cfbee"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Checkpointer.html">Checkpointer</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ad762481a6ff332cd122213b3f84cfbee">checkpointerFromId</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uintptr_t</a> id)</td></tr>
 <tr class="separator:ad762481a6ff332cd122213b3f84cfbee"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1d3bf5cf699aaa0e0bf24af623b4bc48"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structripple_1_1DatabaseCon_1_1Setup.html">DatabaseCon::Setup</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a1d3bf5cf699aaa0e0bf24af623b4bc48">setup_DatabaseCon</a> (<a class="el" href="classripple_1_1Config.html">Config</a> const &amp;c, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> &gt; j=std::nullopt)</td></tr>
@@ -3305,6 +3307,8 @@ Functions</h2></td></tr>
 <tr class="separator:a0807551a7ab907a795266255ea7b05a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4d08485f43bd15fe6626fd599d612863"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#ad2487abbcc1a5d6064b72144b461df6e">ApplyFlags</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a4d08485f43bd15fe6626fd599d612863">operator&amp;=</a> (<a class="el" href="namespaceripple.html#ad2487abbcc1a5d6064b72144b461df6e">ApplyFlags</a> &amp;lhs, <a class="el" href="namespaceripple.html#ad2487abbcc1a5d6064b72144b461df6e">ApplyFlags</a> const &amp;rhs)</td></tr>
 <tr class="separator:a4d08485f43bd15fe6626fd599d612863"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab66396bca7a8c0e7ff80fdfbdeff411d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Rules.html">Rules</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ab66396bca7a8c0e7ff80fdfbdeff411d">makeRulesGivenLedger</a> (<a class="el" href="classripple_1_1DigestAwareReadView.html">DigestAwareReadView</a> const &amp;ledger, <a class="el" href="classripple_1_1Rules.html">Rules</a> const &amp;current)</td></tr>
+<tr class="separator:ab66396bca7a8c0e7ff80fdfbdeff411d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a290a1560d9785bfcb320cca36d1cfcf2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Rules.html">Rules</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a290a1560d9785bfcb320cca36d1cfcf2">makeRulesGivenLedger</a> (<a class="el" href="classripple_1_1DigestAwareReadView.html">DigestAwareReadView</a> const &amp;ledger, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/unordered_set.html">std::unordered_set</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>, <a class="el" href="structbeast_1_1uhash.html">beast::uhash</a>&lt;&gt;&gt; const &amp;presets)</td></tr>
 <tr class="separator:a290a1560d9785bfcb320cca36d1cfcf2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ace117d2fc5a43543b6a33fff822d4854"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ace117d2fc5a43543b6a33fff822d4854">addRaw</a> (<a class="el" href="structripple_1_1LedgerInfo.html">LedgerInfo</a> const &amp;info, <a class="el" href="classripple_1_1Serializer.html">Serializer</a> &amp;s, bool includeHash)</td></tr>
@@ -5639,6 +5643,9 @@ Variables</h2></td></tr>
 <tr class="memitem:a2c550f167665d94744b297523ff07de2"><td class="memItemLeft" align="right" valign="top">static constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a2c550f167665d94744b297523ff07de2">XRP_LEDGER_EARLIEST_SEQ</a> {32570u}</td></tr>
 <tr class="memdesc:a2c550f167665d94744b297523ff07de2"><td class="mdescLeft">&#160;</td><td class="mdescRight">The XRP ledger network's earliest allowed sequence.  <a href="namespaceripple.html#a2c550f167665d94744b297523ff07de2">More...</a><br /></td></tr>
 <tr class="separator:a2c550f167665d94744b297523ff07de2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6fc7a232cc9b90d4b5846057977fcf63"><td class="memItemLeft" align="right" valign="top">static constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a6fc7a232cc9b90d4b5846057977fcf63">XRP_LEDGER_EARLIEST_FEES</a> {562177u}</td></tr>
+<tr class="memdesc:a6fc7a232cc9b90d4b5846057977fcf63"><td class="mdescLeft">&#160;</td><td class="mdescRight">The XRP <a class="el" href="classripple_1_1Ledger.html" title="Holds a ledger.">Ledger</a> mainnet's earliest ledger with a FeeSettings object.  <a href="namespaceripple.html#a6fc7a232cc9b90d4b5846057977fcf63">More...</a><br /></td></tr>
+<tr class="separator:a6fc7a232cc9b90d4b5846057977fcf63"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae92381457e3cd2f702404f51119da317"><td class="memItemLeft" align="right" valign="top">static constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ae92381457e3cd2f702404f51119da317">DEFAULT_LEDGERS_PER_SHARD</a> {16384u}</td></tr>
 <tr class="memdesc:ae92381457e3cd2f702404f51119da317"><td class="mdescLeft">&#160;</td><td class="mdescRight">The number of ledgers in a shard.  <a href="namespaceripple.html#ae92381457e3cd2f702404f51119da317">More...</a><br /></td></tr>
 <tr class="separator:ae92381457e3cd2f702404f51119da317"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -5818,7 +5825,7 @@ Variables</h2></td></tr>
 
 <p>A ledger wrapped in a <a class="el" href="classripple_1_1CachedView.html" title="Wraps a DigestAwareReadView to provide caching.">CachedView</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8h_source.html#l00414">414</a> of file <a class="el" href="Ledger_8h_source.html">Ledger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8h_source.html#l00416">416</a> of file <a class="el" href="Ledger_8h_source.html">Ledger.h</a>.</p>
 
 </div>
 </div>
@@ -9584,7 +9591,7 @@ ledger.
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>The newly built ledger </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="BuildLedger_8cpp_source.html#l00175">175</a> of file <a class="el" href="BuildLedger_8cpp_source.html">BuildLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BuildLedger_8cpp_source.html#l00177">177</a> of file <a class="el" href="BuildLedger_8cpp_source.html">BuildLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -9639,7 +9646,7 @@ ledger.
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>The newly built ledger </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="BuildLedger_8cpp_source.html#l00214">214</a> of file <a class="el" href="BuildLedger_8cpp_source.html">BuildLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BuildLedger_8cpp_source.html#l00216">216</a> of file <a class="el" href="BuildLedger_8cpp_source.html">BuildLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -9768,7 +9775,7 @@ template&lt;class ApplyTxs &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>number of transactions applied; transactions to retry left in txns </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="BuildLedger_8cpp_source.html#l00095">95</a> of file <a class="el" href="BuildLedger_8cpp_source.html">BuildLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BuildLedger_8cpp_source.html#l00097">97</a> of file <a class="el" href="BuildLedger_8cpp_source.html">BuildLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -9818,7 +9825,7 @@ template&lt;class ApplyTxs &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00234">234</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00237">237</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -9850,7 +9857,7 @@ template&lt;class ApplyTxs &gt; </div>
 
 <p>Deserialize a ledger header from a byte array. </p>
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00272">272</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00275">275</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -9882,7 +9889,7 @@ template&lt;class ApplyTxs &gt; </div>
 
 <p>Deserialize a ledger header (prefixed with 4 bytes) from a byte array. </p>
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00296">296</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00299">299</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -10314,7 +10321,7 @@ template&lt;class ApplyTxs &gt; </div>
 <p>Deserialize a <a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> containing a single <a class="el" href="classripple_1_1STTx.html">STTx</a>. </p>
 <p>Throw: </p><pre class="fragment">May throw on deserializaton error
 </pre> 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00382">382</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00409">409</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -10338,7 +10345,7 @@ template&lt;class ApplyTxs &gt; </div>
 <p>The <a class="el" href="classripple_1_1SHAMap.html" title="A SHAMap is both a radix tree with a fan-out of 16 and a Merkle tree.">SHAMap</a> must contain two variable length serialization objects.</p>
 <p>Throw: </p><pre class="fragment">May throw on deserializaton error
 </pre> 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00389">389</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00416">416</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -10360,7 +10367,7 @@ template&lt;class ApplyTxs &gt; </div>
 
 <p>Returns true if the given ledgerIndex is a flag ledgerIndex. </p>
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00940">940</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00975">975</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -10404,7 +10411,7 @@ template&lt;class ApplyTxs &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00946">946</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00981">981</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -10448,7 +10455,7 @@ template&lt;class ApplyTxs &gt; </div>
 
 <p>Save, or arrange to save, a fully-validated ledger Returns false on error. </p>
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00976">976</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01011">1011</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -10484,7 +10491,7 @@ template&lt;class ApplyTxs &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01048">1048</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01083">1083</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -10528,7 +10535,7 @@ template&lt;class ApplyTxs &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01066">1066</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01101">1101</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -10548,7 +10555,7 @@ template&lt;class ApplyTxs &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01082">1082</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01120">1120</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -10584,7 +10591,7 @@ template&lt;class ApplyTxs &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01092">1092</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01130">1130</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -10620,7 +10627,7 @@ template&lt;class ApplyTxs &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01105">1105</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01143">1143</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -10650,7 +10657,7 @@ template&lt;class ApplyTxs &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01120">1120</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01158">1158</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -10680,7 +10687,7 @@ template&lt;class ApplyTxs &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01189">1189</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01227">1227</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -10890,7 +10897,7 @@ template&lt;class Object &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l02172">2172</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l02181">2181</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -11127,30 +11134,8 @@ template&lt;class Object &gt; </div>
 
 </div>
 </div>
-<a id="acbafe6bd675116b7d1c63c314fcd369d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acbafe6bd675116b7d1c63c314fcd369d">&#9670;&nbsp;</a></span>setup_FeeVote()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="structripple_1_1FeeVote_1_1Setup.html">FeeVote::Setup</a> ripple::setup_FeeVote </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1Section.html">Section</a> const &amp;&#160;</td>
-          <td class="paramname"><em>section</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Build <a class="el" href="structripple_1_1FeeVote_1_1Setup.html" title="Fee schedule to vote for.">FeeVote::Setup</a> from a config section. </p>
-
-<p class="definition">Definition at line <a class="el" href="FeeVoteImpl_8cpp_source.html#l00339">339</a> of file <a class="el" href="FeeVoteImpl_8cpp_source.html">FeeVoteImpl.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a0255816875fa12eac9b8dccf1fbcf592"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0255816875fa12eac9b8dccf1fbcf592">&#9670;&nbsp;</a></span>make_FeeVote()</h2>
+<a id="a56634a05bfc2b4f7c95169c75f370554"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a56634a05bfc2b4f7c95169c75f370554">&#9670;&nbsp;</a></span>make_FeeVote()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -11158,7 +11143,7 @@ template&lt;class Object &gt; </div>
         <tr>
           <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1FeeVote.html">FeeVote</a> &gt; ripple::make_FeeVote </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="structripple_1_1FeeVote_1_1Setup.html">FeeVote::Setup</a> const &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="structripple_1_1FeeSetup.html">FeeSetup</a> const &amp;&#160;</td>
           <td class="paramname"><em>setup</em>, </td>
         </tr>
         <tr>
@@ -11184,7 +11169,7 @@ template&lt;class Object &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="FeeVoteImpl_8cpp_source.html#l00359">359</a> of file <a class="el" href="FeeVoteImpl_8cpp_source.html">FeeVoteImpl.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="FeeVoteImpl_8cpp_source.html#l00339">339</a> of file <a class="el" href="FeeVoteImpl_8cpp_source.html">FeeVoteImpl.cpp</a>.</p>
 
 </div>
 </div>
@@ -22210,6 +22195,26 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 
 </div>
 </div>
+<a id="ac297eefd69dc2e30749d2446715b3f9c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac297eefd69dc2e30749d2446715b3f9c">&#9670;&nbsp;</a></span>setup_FeeVote()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structripple_1_1FeeSetup.html">FeeSetup</a> ripple::setup_FeeVote </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Section.html">Section</a> const &amp;&#160;</td>
+          <td class="paramname"><em>section</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="Config_8cpp_source.html#l01019">1019</a> of file <a class="el" href="Config_8cpp_source.html">Config.cpp</a>.</p>
+
+</div>
+</div>
 <a id="ad762481a6ff332cd122213b3f84cfbee"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ad762481a6ff332cd122213b3f84cfbee">&#9670;&nbsp;</a></span>checkpointerFromId()</h2>
 
@@ -22977,8 +22982,38 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 
 </div>
 </div>
+<a id="ab66396bca7a8c0e7ff80fdfbdeff411d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab66396bca7a8c0e7ff80fdfbdeff411d">&#9670;&nbsp;</a></span>makeRulesGivenLedger() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1Rules.html">Rules</a> ripple::makeRulesGivenLedger </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1DigestAwareReadView.html">DigestAwareReadView</a> const &amp;&#160;</td>
+          <td class="paramname"><em>ledger</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Rules.html">Rules</a> const &amp;&#160;</td>
+          <td class="paramname"><em>current</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="ReadView_8cpp_source.html#l00069">69</a> of file <a class="el" href="ReadView_8cpp_source.html">ReadView.cpp</a>.</p>
+
+</div>
+</div>
 <a id="a290a1560d9785bfcb320cca36d1cfcf2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a290a1560d9785bfcb320cca36d1cfcf2">&#9670;&nbsp;</a></span>makeRulesGivenLedger()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a290a1560d9785bfcb320cca36d1cfcf2">&#9670;&nbsp;</a></span>makeRulesGivenLedger() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -23003,7 +23038,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReadView_8cpp_source.html#l00069">69</a> of file <a class="el" href="ReadView_8cpp_source.html">ReadView.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReadView_8cpp_source.html#l00075">75</a> of file <a class="el" href="ReadView_8cpp_source.html">ReadView.cpp</a>.</p>
 
 </div>
 </div>
@@ -48024,7 +48059,7 @@ template&lt;class Handler &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8h_source.html#l00416">416</a> of file <a class="el" href="Ledger_8h_source.html">Ledger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8h_source.html#l00418">418</a> of file <a class="el" href="Ledger_8h_source.html">Ledger.h</a>.</p>
 
 </div>
 </div>
@@ -54360,6 +54395,33 @@ template&lt;class Dest , class Src &gt; </div>
 
 </div>
 </div>
+<a id="a6fc7a232cc9b90d4b5846057977fcf63"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6fc7a232cc9b90d4b5846057977fcf63">&#9670;&nbsp;</a></span>XRP_LEDGER_EARLIEST_FEES</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ripple::XRP_LEDGER_EARLIEST_FEES {562177u}</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>The XRP <a class="el" href="classripple_1_1Ledger.html" title="Holds a ledger.">Ledger</a> mainnet's earliest ledger with a FeeSettings object. </p>
+<p>Only used in asserts and tests. </p>
+
+<p class="definition">Definition at line <a class="el" href="SystemParameters_8h_source.html#l00073">73</a> of file <a class="el" href="SystemParameters_8h_source.html">SystemParameters.h</a>.</p>
+
+</div>
+</div>
 <a id="ae92381457e3cd2f702404f51119da317"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ae92381457e3cd2f702404f51119da317">&#9670;&nbsp;</a></span>DEFAULT_LEDGERS_PER_SHARD</h2>
 
@@ -54382,7 +54444,7 @@ template&lt;class Dest , class Src &gt; </div>
 
 <p>The number of ledgers in a shard. </p>
 
-<p class="definition">Definition at line <a class="el" href="SystemParameters_8h_source.html#l00072">72</a> of file <a class="el" href="SystemParameters_8h_source.html">SystemParameters.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SystemParameters_8h_source.html#l00076">76</a> of file <a class="el" href="SystemParameters_8h_source.html">SystemParameters.h</a>.</p>
 
 </div>
 </div>
@@ -54409,7 +54471,7 @@ template&lt;class Dest , class Src &gt; </div>
 <p>The minimum amount of support an amendment should have. </p>
 <dl class="section note"><dt>Note</dt><dd>This value is used by legacy code and will become obsolete once the fixAmendmentMajorityCalc amendment activates. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SystemParameters_8h_source.html#l00079">79</a> of file <a class="el" href="SystemParameters_8h_source.html">SystemParameters.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SystemParameters_8h_source.html#l00083">83</a> of file <a class="el" href="SystemParameters_8h_source.html">SystemParameters.h</a>.</p>
 
 </div>
 </div>
@@ -54433,7 +54495,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SystemParameters_8h_source.html#l00081">81</a> of file <a class="el" href="SystemParameters_8h_source.html">SystemParameters.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SystemParameters_8h_source.html#l00085">85</a> of file <a class="el" href="SystemParameters_8h_source.html">SystemParameters.h</a>.</p>
 
 </div>
 </div>
@@ -54459,7 +54521,7 @@ template&lt;class Dest , class Src &gt; </div>
 
 <p>The minimum amount of time an amendment must hold a majority. </p>
 
-<p class="definition">Definition at line <a class="el" href="SystemParameters_8h_source.html#l00084">84</a> of file <a class="el" href="SystemParameters_8h_source.html">SystemParameters.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SystemParameters_8h_source.html#l00088">88</a> of file <a class="el" href="SystemParameters_8h_source.html">SystemParameters.h</a>.</p>
 
 </div>
 </div>

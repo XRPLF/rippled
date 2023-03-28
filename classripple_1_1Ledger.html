@@ -245,10 +245,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:aa7a5631ff08a7cf45c966d70fd9d3f01"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4c26247b2e1d951177f8e2e5ab7719c3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Ledger.html#a4c26247b2e1d951177f8e2e5ab7719c3">setValidated</a> () const</td></tr>
 <tr class="separator:a4c26247b2e1d951177f8e2e5ab7719c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acbcedaa40d8162271cb6e6f37f549e5f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Ledger.html#acbcedaa40d8162271cb6e6f37f549e5f">setAccepted</a> (<a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> closeTime, <a class="el" href="classripple_1_1NetClock.html#afe3767203cd971a00067671641bc7e16">NetClock::duration</a> closeResolution, bool correctCloseTime, <a class="el" href="classripple_1_1Config.html">Config</a> const &amp;config)</td></tr>
-<tr class="separator:acbcedaa40d8162271cb6e6f37f549e5f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a87ea8cee44207987a9d9ac826aacc831"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Ledger.html#a87ea8cee44207987a9d9ac826aacc831">setImmutable</a> (<a class="el" href="classripple_1_1Config.html">Config</a> const &amp;config, bool rehash=true)</td></tr>
-<tr class="separator:a87ea8cee44207987a9d9ac826aacc831"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a01c95d393ff4cfeb9e49226a13dff476"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Ledger.html#a01c95d393ff4cfeb9e49226a13dff476">setAccepted</a> (<a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> closeTime, <a class="el" href="classripple_1_1NetClock.html#afe3767203cd971a00067671641bc7e16">NetClock::duration</a> closeResolution, bool correctCloseTime)</td></tr>
+<tr class="separator:a01c95d393ff4cfeb9e49226a13dff476"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afd058f73688aeae4e7ec60b255c1795a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Ledger.html#afd058f73688aeae4e7ec60b255c1795a">setImmutable</a> (bool rehash=true)</td></tr>
+<tr class="separator:afd058f73688aeae4e7ec60b255c1795a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a25c5bcfcef6f0b9f0de97582ee37797a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Ledger.html#a25c5bcfcef6f0b9f0de97582ee37797a">isImmutable</a> () const</td></tr>
 <tr class="separator:a25c5bcfcef6f0b9f0de97582ee37797a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8a75fcab11d8fe2e7bd5cd6643a052e1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Ledger.html#a8a75fcab11d8fe2e7bd5cd6643a052e1">setFull</a> () const</td></tr>
@@ -331,8 +331,10 @@ Public Attributes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
-<tr class="memitem:a0003b028844c6ac875b7c5f328d0c92e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Ledger.html#a0003b028844c6ac875b7c5f328d0c92e">setup</a> (<a class="el" href="classripple_1_1Config.html">Config</a> const &amp;config)</td></tr>
-<tr class="separator:a0003b028844c6ac875b7c5f328d0c92e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab2ac3c630db320c5af8a95030d9cb1cb"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Ledger.html#ab2ac3c630db320c5af8a95030d9cb1cb">setup</a> ()</td></tr>
+<tr class="separator:ab2ac3c630db320c5af8a95030d9cb1cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a01fab1196e490d0133b5a4920b271712"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Ledger.html#a01fab1196e490d0133b5a4920b271712">defaultFees</a> (<a class="el" href="classripple_1_1Config.html">Config</a> const &amp;config)</td></tr>
+<tr class="separator:a01fab1196e490d0133b5a4920b271712"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-static-methods"></a>
 Static Private Member Functions</h2></td></tr>
@@ -572,7 +574,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00305">305</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00332">332</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -634,7 +636,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00216">216</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00242">242</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -667,7 +669,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
 <p>Create a new ledger following a previous ledger. </p>
 <p>The ledger will have the sequence number that follows previous, and have parentCloseTime == previous.closeTime. </p>
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00274">274</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00301">301</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -709,7 +711,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00319">319</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00346">346</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -939,7 +941,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
 
 <p>Implements <a class="el" href="classripple_1_1ReadView.html#ac1d377c35a8332d069b09be8f4008dec">ripple::ReadView</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00408">408</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00435">435</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -959,7 +961,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00415">415</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00442">442</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -997,7 +999,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00421">421</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00448">448</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1032,7 +1034,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
 
 <p>Implements <a class="el" href="classripple_1_1ReadView.html#a3351e0244f921234d5ba005a07ddf539">ripple::ReadView</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00432">432</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00459">459</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1061,7 +1063,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
 
 <p>Implements <a class="el" href="classripple_1_1ReadView.html#a70b1654cf02d2af0c3d34faf6be218ac">ripple::ReadView</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00451">451</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00478">478</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1090,7 +1092,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
 
 <p>Implements <a class="el" href="classripple_1_1ReadView.html#a6940351c76fe355db59a9f8ff6bf807b">ripple::ReadView</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00457">457</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00484">484</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1118,7 +1120,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00463">463</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00490">490</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1147,7 +1149,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
 
 <p>Implements <a class="el" href="classripple_1_1ReadView.html#a8bf980722b37ba7a57614fa7c92c7d11">ripple::ReadView</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00470">470</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00497">497</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1176,7 +1178,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
 
 <p>Implements <a class="el" href="classripple_1_1ReadView.html#afbcb8704c56e927eca2cb81bcb42f912">ripple::ReadView</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00476">476</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00503">503</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1204,7 +1206,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00482">482</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00509">509</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1238,7 +1240,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
 
 <p>Implements <a class="el" href="classripple_1_1ReadView.html#af88b035a71531a9b27ee2fa25d0444e9">ripple::ReadView</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00488">488</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00515">515</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1271,7 +1273,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
 
 <p>Implements <a class="el" href="classripple_1_1DigestAwareReadView.html#abb28ae3cc06d0450b0eae17f0a531a0f">ripple::DigestAwareReadView</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00503">503</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00530">530</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1304,7 +1306,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
 
 <p>Implements <a class="el" href="classripple_1_1RawView.html#ae90031cd2242cf34aeb93fbdbf92cfb8">ripple::RawView</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00516">516</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00543">543</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1339,7 +1341,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
 
 <p>Implements <a class="el" href="classripple_1_1RawView.html#a144f9ecbd046e28918d273728ad91eb0">ripple::RawView</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00530">530</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00557">557</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1359,7 +1361,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00523">523</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00550">550</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1394,7 +1396,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
 
 <p>Implements <a class="el" href="classripple_1_1RawView.html#ad27fcee888dd020ca39a2327d1a5f19c">ripple::RawView</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00541">541</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00568">568</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1471,7 +1473,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00552">552</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00579">579</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1507,7 +1509,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00570">570</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00597">597</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1530,8 +1532,8 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
 
 </div>
 </div>
-<a id="acbcedaa40d8162271cb6e6f37f549e5f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acbcedaa40d8162271cb6e6f37f549e5f">&#9670;&nbsp;</a></span>setAccepted()</h2>
+<a id="a01c95d393ff4cfeb9e49226a13dff476"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a01c95d393ff4cfeb9e49226a13dff476">&#9670;&nbsp;</a></span>setAccepted()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1552,13 +1554,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>correctCloseTime</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1Config.html">Config</a> const &amp;&#160;</td>
-          <td class="paramname"><em>config</em>&#160;</td>
+          <td class="paramname"><em>correctCloseTime</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -1568,12 +1564,12 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00356">356</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00384">384</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a87ea8cee44207987a9d9ac826aacc831"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a87ea8cee44207987a9d9ac826aacc831">&#9670;&nbsp;</a></span>setImmutable()</h2>
+<a id="afd058f73688aeae4e7ec60b255c1795a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afd058f73688aeae4e7ec60b255c1795a">&#9670;&nbsp;</a></span>setImmutable()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1581,24 +1577,14 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
         <tr>
           <td class="memname">void ripple::Ledger::setImmutable </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1Config.html">Config</a> const &amp;&#160;</td>
-          <td class="paramname"><em>config</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
           <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>rehash</em> = <code>true</code>&#160;</td>
-        </tr>
-        <tr>
+          <td class="paramname"><em>rehash</em> = <code>true</code></td><td>)</td>
           <td></td>
-          <td>)</td>
-          <td></td><td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00336">336</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00364">364</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1617,7 +1603,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8h_source.html#l00276">276</a> of file <a class="el" href="Ledger_8h_source.html">Ledger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8h_source.html#l00275">275</a> of file <a class="el" href="Ledger_8h_source.html">Ledger.h</a>.</p>
 
 </div>
 </div>
@@ -1636,7 +1622,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8h_source.html#l00292">292</a> of file <a class="el" href="Ledger_8h_source.html">Ledger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8h_source.html#l00291">291</a> of file <a class="el" href="Ledger_8h_source.html">Ledger.h</a>.</p>
 
 </div>
 </div>
@@ -1656,7 +1642,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8h_source.html#l00301">301</a> of file <a class="el" href="Ledger_8h_source.html">Ledger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8h_source.html#l00300">300</a> of file <a class="el" href="Ledger_8h_source.html">Ledger.h</a>.</p>
 
 </div>
 </div>
@@ -1675,7 +1661,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8h_source.html#l00307">307</a> of file <a class="el" href="Ledger_8h_source.html">Ledger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8h_source.html#l00306">306</a> of file <a class="el" href="Ledger_8h_source.html">Ledger.h</a>.</p>
 
 </div>
 </div>
@@ -1694,7 +1680,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8h_source.html#l00313">313</a> of file <a class="el" href="Ledger_8h_source.html">Ledger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8h_source.html#l00312">312</a> of file <a class="el" href="Ledger_8h_source.html">Ledger.h</a>.</p>
 
 </div>
 </div>
@@ -1713,7 +1699,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8h_source.html#l00319">319</a> of file <a class="el" href="Ledger_8h_source.html">Ledger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8h_source.html#l00318">318</a> of file <a class="el" href="Ledger_8h_source.html">Ledger.h</a>.</p>
 
 </div>
 </div>
@@ -1732,7 +1718,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8h_source.html#l00325">325</a> of file <a class="el" href="Ledger_8h_source.html">Ledger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8h_source.html#l00324">324</a> of file <a class="el" href="Ledger_8h_source.html">Ledger.h</a>.</p>
 
 </div>
 </div>
@@ -1752,7 +1738,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00372">372</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00399">399</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1771,7 +1757,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00865">865</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00900">900</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1801,7 +1787,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00790">790</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00825">825</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1821,7 +1807,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00841">841</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00876">876</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1840,7 +1826,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01032">1032</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01067">1067</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1859,7 +1845,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01025">1025</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01060">1060</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1881,7 +1867,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
 <p>get Negative UNL validators' master public keys </p>
 <dl class="section return"><dt>Returns</dt><dd>the public keys </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00683">683</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00718">718</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1903,7 +1889,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
 <p>get the to be disabled validator's master public key if any </p>
 <dl class="section return"><dt>Returns</dt><dd>the public key if any </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00709">709</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00744">744</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1925,7 +1911,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
 <p>get the to be re-enabled validator's master public key if any </p>
 <dl class="section return"><dt>Returns</dt><dd>the public key if any </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00724">724</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00759">759</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1947,7 +1933,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
 <p>update the Negative UNL ledger component. </p>
 <dl class="section note"><dt>Note</dt><dd>must be called at and only at flag ledgers must be called before applying UNLModify Tx </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00739">739</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00774">774</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1968,7 +1954,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
 
 <p>Returns true if the ledger is a flag ledger. </p>
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00929">929</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00964">964</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1989,7 +1975,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
 
 <p>Returns true if the ledger directly precedes a flag ledger. </p>
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00934">934</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00969">969</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -2009,12 +1995,12 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00671">671</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00706">706</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a0003b028844c6ac875b7c5f328d0c92e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0003b028844c6ac875b7c5f328d0c92e">&#9670;&nbsp;</a></span>setup()</h2>
+<a id="ab2ac3c630db320c5af8a95030d9cb1cb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab2ac3c630db320c5af8a95030d9cb1cb">&#9670;&nbsp;</a></span>setup()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2024,6 +2010,33 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
       <table class="memname">
         <tr>
           <td class="memname">bool ripple::Ledger::setup </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00617">617</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a01fab1196e490d0133b5a4920b271712"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a01fab1196e490d0133b5a4920b271712">&#9670;&nbsp;</a></span>defaultFees()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::Ledger::defaultFees </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classripple_1_1Config.html">Config</a> const &amp;&#160;</td>
           <td class="paramname"><em>config</em></td><td>)</td>
@@ -2037,7 +2050,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00590">590</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00694">694</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -2376,7 +2389,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8h_source.html#l00400">400</a> of file <a class="el" href="Ledger_8h_source.html">Ledger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8h_source.html#l00402">402</a> of file <a class="el" href="Ledger_8h_source.html">Ledger.h</a>.</p>
 
 </div>
 </div>
@@ -2400,7 +2413,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8h_source.html#l00402">402</a> of file <a class="el" href="Ledger_8h_source.html">Ledger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8h_source.html#l00404">404</a> of file <a class="el" href="Ledger_8h_source.html">Ledger.h</a>.</p>
 
 </div>
 </div>
@@ -2424,7 +2437,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8h_source.html#l00403">403</a> of file <a class="el" href="Ledger_8h_source.html">Ledger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8h_source.html#l00405">405</a> of file <a class="el" href="Ledger_8h_source.html">Ledger.h</a>.</p>
 
 </div>
 </div>
@@ -2448,7 +2461,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8h_source.html#l00406">406</a> of file <a class="el" href="Ledger_8h_source.html">Ledger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8h_source.html#l00408">408</a> of file <a class="el" href="Ledger_8h_source.html">Ledger.h</a>.</p>
 
 </div>
 </div>
@@ -2472,7 +2485,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8h_source.html#l00408">408</a> of file <a class="el" href="Ledger_8h_source.html">Ledger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8h_source.html#l00410">410</a> of file <a class="el" href="Ledger_8h_source.html">Ledger.h</a>.</p>
 
 </div>
 </div>
@@ -2496,7 +2509,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8h_source.html#l00409">409</a> of file <a class="el" href="Ledger_8h_source.html">Ledger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8h_source.html#l00411">411</a> of file <a class="el" href="Ledger_8h_source.html">Ledger.h</a>.</p>
 
 </div>
 </div>
@@ -2520,7 +2533,7 @@ Calls virtuals in the constructor, so marked as final </dd></dl>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8h_source.html#l00410">410</a> of file <a class="el" href="Ledger_8h_source.html">Ledger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8h_source.html#l00412">412</a> of file <a class="el" href="Ledger_8h_source.html">Ledger.h</a>.</p>
 
 </div>
 </div>

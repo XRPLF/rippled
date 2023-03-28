@@ -1,5 +1,5 @@
-<map id="ripple::FeeVote::Setup" name="ripple::FeeVote::Setup">
-<area shape="rect" id="node1" title="Fee schedule to vote for." alt="" coords="625,130,788,157"/>
+<map id="ripple::FeeSetup" name="ripple::FeeSetup">
+<area shape="rect" id="node1" title="Fee schedule for startup / standalone, and to vote for." alt="" coords="625,130,752,157"/>
 <area shape="rect" id="node2" href="$classripple_1_1XRPAmount.html" title=" " alt="" coords="327,130,469,157"/>
 <area shape="rect" id="node3" title=" " alt="" coords="35,5,201,47"/>
 <area shape="rect" id="node4" title=" " alt="" coords="5,71,231,98"/>

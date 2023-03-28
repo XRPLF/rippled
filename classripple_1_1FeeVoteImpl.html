@@ -87,17 +87,24 @@ Collaboration diagram for ripple::FeeVoteImpl:</div>
 <div class="dyncontent">
 <div class="center"><img src="classripple_1_1FeeVoteImpl__coll__graph.png" border="0" usemap="#ripple_1_1FeeVoteImpl_coll__map" alt="Collaboration graph"/></div>
 <map name="ripple_1_1FeeVoteImpl_coll__map" id="ripple_1_1FeeVoteImpl_coll__map">
-<area shape="rect" title=" " alt="" coords="37,184,183,211"/>
-<area shape="rect" href="classripple_1_1FeeVote.html" title="Manager to process fee votes." alt="" coords="5,95,124,121"/>
-<area shape="rect" href="classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="148,95,259,121"/>
-<area shape="rect" href="classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="130,5,277,32"/>
+<area shape="rect" title=" " alt="" coords="861,130,1008,157"/>
+<area shape="rect" href="classripple_1_1FeeVote.html" title="Manager to process fee votes." alt="" coords="633,79,752,106"/>
+<area shape="rect" href="structripple_1_1FeeSetup.html" title="Fee schedule for startup / standalone, and to vote for." alt="" coords="629,130,756,157"/>
+<area shape="rect" href="classripple_1_1XRPAmount.html" title=" " alt="" coords="329,130,471,157"/>
+<area shape="rect" title=" " alt="" coords="35,5,201,47"/>
+<area shape="rect" title=" " alt="" coords="5,71,231,98"/>
+<area shape="rect" title=" " alt="" coords="13,123,223,164"/>
+<area shape="rect" title=" " alt="" coords="11,188,225,229"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="71,254,165,281"/>
+<area shape="rect" href="classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="637,181,748,207"/>
+<area shape="rect" href="classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="327,181,473,207"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:ad0d05ada35919d89d0fd63ed76bed35d"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1FeeVoteImpl.html#ad0d05ada35919d89d0fd63ed76bed35d">FeeVoteImpl</a> (Setup const &amp;setup, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> journal)</td></tr>
-<tr class="separator:ad0d05ada35919d89d0fd63ed76bed35d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a682d4fa14c73f4cf80a7625b1380fb3b"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1FeeVoteImpl.html#a682d4fa14c73f4cf80a7625b1380fb3b">FeeVoteImpl</a> (<a class="el" href="structripple_1_1FeeSetup.html">FeeSetup</a> const &amp;setup, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> journal)</td></tr>
+<tr class="separator:a682d4fa14c73f4cf80a7625b1380fb3b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a095335a98bfd73cd42e017accbc700fa"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1FeeVoteImpl.html#a095335a98bfd73cd42e017accbc700fa">doValidation</a> (<a class="el" href="structripple_1_1Fees.html">Fees</a> const &amp;lastFees, <a class="el" href="classripple_1_1Rules.html">Rules</a> const &amp;rules, <a class="el" href="classripple_1_1STValidation.html">STValidation</a> &amp;val) override</td></tr>
 <tr class="memdesc:a095335a98bfd73cd42e017accbc700fa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add local fee preference to validation.  <a href="classripple_1_1FeeVoteImpl.html#a095335a98bfd73cd42e017accbc700fa">More...</a><br /></td></tr>
 <tr class="separator:a095335a98bfd73cd42e017accbc700fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -107,8 +114,8 @@ Public Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
-<tr class="memitem:a385f588cb201f7ac41bb6c3751c07ecd"><td class="memItemLeft" align="right" valign="top">Setup&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1FeeVoteImpl.html#a385f588cb201f7ac41bb6c3751c07ecd">target_</a></td></tr>
-<tr class="separator:a385f588cb201f7ac41bb6c3751c07ecd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a16cac8d8937ea15f0fa3bc9295c8d4f7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structripple_1_1FeeSetup.html">FeeSetup</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1FeeVoteImpl.html#a16cac8d8937ea15f0fa3bc9295c8d4f7">target_</a></td></tr>
+<tr class="separator:a16cac8d8937ea15f0fa3bc9295c8d4f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2de72b0b3f3a4dc5b412843d25fc57be"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1FeeVoteImpl.html#a2de72b0b3f3a4dc5b412843d25fc57be">journal_</a></td></tr>
 <tr class="separator:a2de72b0b3f3a4dc5b412843d25fc57be"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
@@ -116,8 +123,8 @@ Private Attributes</h2></td></tr>
 <div class="textblock">
 <p class="definition">Definition at line <a class="el" href="FeeVoteImpl_8cpp_source.html#l00093">93</a> of file <a class="el" href="FeeVoteImpl_8cpp_source.html">FeeVoteImpl.cpp</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="ad0d05ada35919d89d0fd63ed76bed35d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad0d05ada35919d89d0fd63ed76bed35d">&#9670;&nbsp;</a></span>FeeVoteImpl()</h2>
+<a id="a682d4fa14c73f4cf80a7625b1380fb3b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a682d4fa14c73f4cf80a7625b1380fb3b">&#9670;&nbsp;</a></span>FeeVoteImpl()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -125,7 +132,7 @@ Private Attributes</h2></td></tr>
         <tr>
           <td class="memname">ripple::FeeVoteImpl::FeeVoteImpl </td>
           <td>(</td>
-          <td class="paramtype">Setup const &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="structripple_1_1FeeSetup.html">FeeSetup</a> const &amp;&#160;</td>
           <td class="paramname"><em>setup</em>, </td>
         </tr>
         <tr>
@@ -258,8 +265,8 @@ Private Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
-<a id="a385f588cb201f7ac41bb6c3751c07ecd"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a385f588cb201f7ac41bb6c3751c07ecd">&#9670;&nbsp;</a></span>target_</h2>
+<a id="a16cac8d8937ea15f0fa3bc9295c8d4f7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a16cac8d8937ea15f0fa3bc9295c8d4f7">&#9670;&nbsp;</a></span>target_</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -268,7 +275,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">Setup ripple::FeeVoteImpl::target_</td>
+          <td class="memname"><a class="el" href="structripple_1_1FeeSetup.html">FeeSetup</a> ripple::FeeVoteImpl::target_</td>
         </tr>
       </table>
   </td>

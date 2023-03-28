@@ -1508,7 +1508,7 @@ $(function() {
 <div class="line"><a name="l01448"></a><span class="lineno"> 1448</span>&#160;        <span class="comment">// These tests may change if TxQ ordering is changed</span></div>
 <div class="line"><a name="l01449"></a><span class="lineno"> 1449</span>&#160;        <span class="keyword">using namespace </span>std::string_literals;</div>
 <div class="line"><a name="l01450"></a><span class="lineno"> 1450</span>&#160;        BEAST_EXPECTS(</div>
-<div class="line"><a name="l01451"></a><span class="lineno"> 1451</span>&#160;            aliceSeq + 1 == env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2ef09f6f41b7d8a2dc89175e3b108f87">seq</a>(alice),</div>
+<div class="line"><a name="l01451"></a><span class="lineno"> 1451</span>&#160;            aliceSeq == env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2ef09f6f41b7d8a2dc89175e3b108f87">seq</a>(alice),</div>
 <div class="line"><a name="l01452"></a><span class="lineno"> 1452</span>&#160;            <span class="stringliteral">&quot;alice: &quot;</span>s + <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(aliceSeq) + <span class="stringliteral">&quot;, &quot;</span> +</div>
 <div class="line"><a name="l01453"></a><span class="lineno"> 1453</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2ef09f6f41b7d8a2dc89175e3b108f87">seq</a>(alice)));</div>
 <div class="line"><a name="l01454"></a><span class="lineno"> 1454</span>&#160;        BEAST_EXPECTS(</div>
@@ -1520,7 +1520,7 @@ $(function() {
 <div class="line"><a name="l01460"></a><span class="lineno"> 1460</span>&#160;            <span class="stringliteral">&quot;charlie: &quot;</span>s + <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(charlieSeq) + <span class="stringliteral">&quot;, &quot;</span> +</div>
 <div class="line"><a name="l01461"></a><span class="lineno"> 1461</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2ef09f6f41b7d8a2dc89175e3b108f87">seq</a>(charlie)));</div>
 <div class="line"><a name="l01462"></a><span class="lineno"> 1462</span>&#160;        BEAST_EXPECTS(</div>
-<div class="line"><a name="l01463"></a><span class="lineno"> 1463</span>&#160;            dariaSeq == env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2ef09f6f41b7d8a2dc89175e3b108f87">seq</a>(daria),</div>
+<div class="line"><a name="l01463"></a><span class="lineno"> 1463</span>&#160;            dariaSeq + 1 == env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2ef09f6f41b7d8a2dc89175e3b108f87">seq</a>(daria),</div>
 <div class="line"><a name="l01464"></a><span class="lineno"> 1464</span>&#160;            <span class="stringliteral">&quot;daria: &quot;</span>s + <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(dariaSeq) + <span class="stringliteral">&quot;, &quot;</span> +</div>
 <div class="line"><a name="l01465"></a><span class="lineno"> 1465</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2ef09f6f41b7d8a2dc89175e3b108f87">seq</a>(daria)));</div>
 <div class="line"><a name="l01466"></a><span class="lineno"> 1466</span>&#160;        BEAST_EXPECTS(</div>
@@ -1532,24 +1532,24 @@ $(function() {
 <div class="line"><a name="l01472"></a><span class="lineno"> 1472</span>&#160;            <span class="stringliteral">&quot;fred: &quot;</span>s + <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(fredSeq) + <span class="stringliteral">&quot;, &quot;</span> +</div>
 <div class="line"><a name="l01473"></a><span class="lineno"> 1473</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2ef09f6f41b7d8a2dc89175e3b108f87">seq</a>(fred)));</div>
 <div class="line"><a name="l01474"></a><span class="lineno"> 1474</span>&#160;        BEAST_EXPECTS(</div>
-<div class="line"><a name="l01475"></a><span class="lineno"> 1475</span>&#160;            gwenSeq + 1 == env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2ef09f6f41b7d8a2dc89175e3b108f87">seq</a>(gwen),</div>
+<div class="line"><a name="l01475"></a><span class="lineno"> 1475</span>&#160;            gwenSeq == env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2ef09f6f41b7d8a2dc89175e3b108f87">seq</a>(gwen),</div>
 <div class="line"><a name="l01476"></a><span class="lineno"> 1476</span>&#160;            <span class="stringliteral">&quot;gwen: &quot;</span>s + <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(gwenSeq) + <span class="stringliteral">&quot;, &quot;</span> +</div>
 <div class="line"><a name="l01477"></a><span class="lineno"> 1477</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2ef09f6f41b7d8a2dc89175e3b108f87">seq</a>(gwen)));</div>
 <div class="line"><a name="l01478"></a><span class="lineno"> 1478</span>&#160;        BEAST_EXPECTS(</div>
-<div class="line"><a name="l01479"></a><span class="lineno"> 1479</span>&#160;            hankSeq == env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2ef09f6f41b7d8a2dc89175e3b108f87">seq</a>(hank),</div>
+<div class="line"><a name="l01479"></a><span class="lineno"> 1479</span>&#160;            hankSeq + 1 == env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2ef09f6f41b7d8a2dc89175e3b108f87">seq</a>(hank),</div>
 <div class="line"><a name="l01480"></a><span class="lineno"> 1480</span>&#160;            <span class="stringliteral">&quot;hank: &quot;</span>s + <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(hankSeq) + <span class="stringliteral">&quot;, &quot;</span> +</div>
 <div class="line"><a name="l01481"></a><span class="lineno"> 1481</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2ef09f6f41b7d8a2dc89175e3b108f87">seq</a>(hank)));</div>
 <div class="line"><a name="l01482"></a><span class="lineno"> 1482</span>&#160; </div>
 <div class="line"><a name="l01483"></a><span class="lineno"> 1483</span>&#160;        <span class="comment">// Which sequences get incremented may change if TxQ ordering is</span></div>
 <div class="line"><a name="l01484"></a><span class="lineno"> 1484</span>&#160;        <span class="comment">// changed</span></div>
-<div class="line"><a name="l01485"></a><span class="lineno"> 1485</span>&#160;        ++aliceSeq;</div>
+<div class="line"><a name="l01485"></a><span class="lineno"> 1485</span>&#160;        <span class="comment">//++aliceSeq;</span></div>
 <div class="line"><a name="l01486"></a><span class="lineno"> 1486</span>&#160;        ++bobSeq;</div>
 <div class="line"><a name="l01487"></a><span class="lineno"> 1487</span>&#160;        ++(++charlieSeq);</div>
-<div class="line"><a name="l01488"></a><span class="lineno"> 1488</span>&#160;        <span class="comment">// ++dariaSeq;</span></div>
+<div class="line"><a name="l01488"></a><span class="lineno"> 1488</span>&#160;        ++dariaSeq;</div>
 <div class="line"><a name="l01489"></a><span class="lineno"> 1489</span>&#160;        ++elmoSeq;</div>
 <div class="line"><a name="l01490"></a><span class="lineno"> 1490</span>&#160;        <span class="comment">// ++fredSeq;</span></div>
-<div class="line"><a name="l01491"></a><span class="lineno"> 1491</span>&#160;        ++gwenSeq;</div>
-<div class="line"><a name="l01492"></a><span class="lineno"> 1492</span>&#160;        <span class="comment">// ++hankSeq;</span></div>
+<div class="line"><a name="l01491"></a><span class="lineno"> 1491</span>&#160;        <span class="comment">//++gwenSeq;</span></div>
+<div class="line"><a name="l01492"></a><span class="lineno"> 1492</span>&#160;        ++hankSeq;</div>
 <div class="line"><a name="l01493"></a><span class="lineno"> 1493</span>&#160; </div>
 <div class="line"><a name="l01494"></a><span class="lineno"> 1494</span>&#160;        <span class="keyword">auto</span> getTxsQueued = [&amp;]() {</div>
 <div class="line"><a name="l01495"></a><span class="lineno"> 1495</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> txs = env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a9e55bbdb66a785bfd0dda93802b514b6">app</a>().<a class="code" href="classripple_1_1Application.html#a9865710c130bf4427842a544b2b7f077">getTxQ</a>().<a class="code" href="classripple_1_1TxQ.html#a0d767ce3cbba060040b2d3179db347c6">getTxs</a>();</div>
@@ -2987,12 +2987,12 @@ $(function() {
 <div class="line"><a name="l02939"></a><span class="lineno"> 2939</span>&#160;        <span class="comment">// Verify that nothing can be added now that the gap is filled.</span></div>
 <div class="line"><a name="l02940"></a><span class="lineno"> 2940</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a95abf901db0a698e0c97d00476c95f34">noop</a>(alice), <a class="code" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>(aliceSeq + 20), <a class="code" href="classripple_1_1test_1_1jtx_1_1ter.html">ter</a>(<a class="code" href="namespaceripple.html#a260d2970ac1119109937ed1c5d4ca962a65b75f655ffb0ef44da5d662c231a5b5">telCAN_NOT_QUEUE_FULL</a>));</div>
 <div class="line"><a name="l02941"></a><span class="lineno"> 2941</span>&#160; </div>
-<div class="line"><a name="l02942"></a><span class="lineno"> 2942</span>&#160;        <span class="comment">// Close ledger 6.  That removes 6 of alice&#39;s transactions,</span></div>
-<div class="line"><a name="l02943"></a><span class="lineno"> 2943</span>&#160;        <span class="comment">// but alice adds one more transaction at seq(aliceSeq + 20) so</span></div>
-<div class="line"><a name="l02944"></a><span class="lineno"> 2944</span>&#160;        <span class="comment">// we only see a reduction by 5.</span></div>
+<div class="line"><a name="l02942"></a><span class="lineno"> 2942</span>&#160;        <span class="comment">// Close ledger 6.  That removes some of alice&#39;s transactions,</span></div>
+<div class="line"><a name="l02943"></a><span class="lineno"> 2943</span>&#160;        <span class="comment">// but alice adds some more transaction(s) so expectedCount</span></div>
+<div class="line"><a name="l02944"></a><span class="lineno"> 2944</span>&#160;        <span class="comment">// may not reduce to 8.</span></div>
 <div class="line"><a name="l02945"></a><span class="lineno"> 2945</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a69095691c9bcfab1f3d69c645f2dbe33">close</a>();</div>
 <div class="line"><a name="l02946"></a><span class="lineno"> 2946</span>&#160;        <a class="code" href="classripple_1_1test_1_1TxQ1__test.html#ad351e14597a3607c5424332ee18f2719">checkMetrics</a>(__LINE__, env, 9, 50, 6, 5, 256);</div>
-<div class="line"><a name="l02947"></a><span class="lineno"> 2947</span>&#160;        <a class="code" href="classripple_1_1test_1_1TxQ1__test.html#a67d712c537479cfcb58f55341fa22a6c">BEAST_EXPECT</a>(env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2ef09f6f41b7d8a2dc89175e3b108f87">seq</a>(alice) == aliceSeq + 15);</div>
+<div class="line"><a name="l02947"></a><span class="lineno"> 2947</span>&#160;        <a class="code" href="classripple_1_1test_1_1TxQ1__test.html#a67d712c537479cfcb58f55341fa22a6c">BEAST_EXPECT</a>(env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2ef09f6f41b7d8a2dc89175e3b108f87">seq</a>(alice) == aliceSeq + 13);</div>
 <div class="line"><a name="l02948"></a><span class="lineno"> 2948</span>&#160; </div>
 <div class="line"><a name="l02949"></a><span class="lineno"> 2949</span>&#160;        <span class="comment">// Close ledger 7.  That should remove 7 more of alice&#39;s transactions.</span></div>
 <div class="line"><a name="l02950"></a><span class="lineno"> 2950</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a69095691c9bcfab1f3d69c645f2dbe33">close</a>();</div>
