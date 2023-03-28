@@ -7,6 +7,51 @@ This document contains the release notes for `rippled`, the reference server imp
  
 Have new ideas? Need help with setting up your node? [Please open an issue here](https://github.com/xrplf/rippled/issues/new/choose).
 
+
+# Introducing XRP Ledger version 1.10.1
+
+Version 1.10.1 of `rippled`, the reference server implementation of the XRP Ledger protocol, is now available. This release restores packages for Ubuntu 18.04.
+
+Compared to version 1.10.0, the only C++ code change fixes an edge case in Reporting Mode.
+
+If you are already running version 1.10.0, then upgrading to version 1.10.1 is generally not required.
+
+[Sign Up for Future Release Announcements](https://groups.google.com/g/ripple-server)
+
+<!-- BREAK -->
+
+## Install / Upgrade
+
+On supported platforms, see the [instructions on installing or updating `rippled`](https://xrpl.org/install-rippled.html).
+
+## Changelog
+
+- [`da18c86cbf`](https://github.com/ripple/rippled/commit/da18c86cbfea1d8fe6940035f9103e15890d47ce) Build packages with Ubuntu 18.04
+- [`f7b3ddd87b`](https://github.com/ripple/rippled/commit/f7b3ddd87b8ef093a06ab1420bea57ed1e77643a) Reporting Mode: Do not attempt to acquire missing data from peer network (#4458)
+
+### GitHub
+
+The public source code repository for `rippled` is hosted on GitHub at <https://github.com/XRPLF/rippled>.
+
+We welcome all contributions and invite everyone to join the community of XRP Ledger developers to help build the Internet of Value.
+
+### Credits
+
+The following people contributed directly to this release:
+
+- John Freeman <jfreeman08@gmail.com>
+- Mark Travis <mtrippled@users.noreply.github.com>
+- Michael Legleux <mlegleux@ripple.com>
+
+Bug Bounties and Responsible Disclosures:
+We welcome reviews of the rippled code and urge researchers to
+responsibly disclose any issues they may find.
+
+To report a bug, please send a detailed report to:
+
+    bugs@xrpl.org
+
+
 # Introducing XRP Ledger version 1.10.0
 
 Version 1.10.0 of `rippled`, the reference server implementation of the XRP Ledger protocol, is now available. This release introduces six new amendments, detailed below, and cleans up code to improve performance.

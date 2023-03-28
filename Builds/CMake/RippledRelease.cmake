@@ -64,16 +64,16 @@ if (is_root_project)
     #[===================================================================[
         dpkg
     #]===================================================================]
-    # currently use ubuntu 16.04 as a base b/c it has one of
+    # currently use ubuntu 18.04 as a base b/c it has one of
     # the lower versions of libc among ubuntu and debian releases.
     # we could change this in the future and build with some other deb
     # based system.
     add_custom_target (dpkg_container
       docker build
         --pull
-        --build-arg DIST_TAG=20.04
+        --build-arg DIST_TAG=18.04
         --build-arg GIT_COMMIT=${commit_hash}
-        -t rippleci/rippled-dpkg-builder:${container_label}
+        -t rippled-dpkg-builder:${container_label}
         $<$<BOOL:${dpkg_cache_from}>:--cache-from=${dpkg_cache_from}>
         -f ubuntu-builder/Dockerfile .
       WORKING_DIRECTORY  ${CMAKE_CURRENT_SOURCE_DIR}/Builds/containers
@@ -119,7 +119,7 @@ if (is_root_project)
       docker run
         -v ${CMAKE_CURRENT_SOURCE_DIR}:/opt/rippled_bld/pkg/rippled
         -v ${CMAKE_CURRENT_BINARY_DIR}/packages:/opt/rippled_bld/pkg/out
-        -t rippleci/rippled-dpkg-builder:${container_label}
+        -t rippled-dpkg-builder:${container_label}
         /bin/bash -c "cp -fpu rippled/Builds/containers/packaging/dpkg/build_dpkg.sh . && ./build_dpkg.sh"
       VERBATIM
       USES_TERMINAL
@@ -159,7 +159,7 @@ if (is_root_project)
     add_custom_target (ci_container
       docker build
         --pull
-        --build-arg DIST_TAG=20.04
+        --build-arg DIST_TAG=18.04
         --build-arg GIT_COMMIT=${commit_hash}
         --build-arg CI_USE=true
         -t rippled-ci-builder:${container_label}
