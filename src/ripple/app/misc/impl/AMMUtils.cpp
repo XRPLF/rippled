@@ -141,19 +141,19 @@ getTradingFee(ReadView const& view, SLE const& ammSle, AccountID const& account)
     {
         auto const& auctionSlot =
             static_cast<STObject const&>(ammSle.peekAtField(sfAuctionSlot));
-        if (auto const expiration = auctionSlot[~sfExpiration])
+        // Not expired
+        if (auto const expiration = auctionSlot[~sfExpiration];
+            duration_cast<seconds>(
+                view.info().parentCloseTime.time_since_epoch())
+                .count() < expiration)
         {
-            auto const notExpired =
-                duration_cast<seconds>(
-                    view.info().parentCloseTime.time_since_epoch())
-                    .count() < expiration;
-            if (auctionSlot[~sfAccount] == account && notExpired)
+            if (auctionSlot[~sfAccount] == account)
                 return auctionSlot[sfDiscountedFee];
             if (auctionSlot.isFieldPresent(sfAuthAccounts))
             {
                 for (auto const& acct :
                      auctionSlot.getFieldArray(sfAuthAccounts))
-                    if (acct[~sfAccount] == account && notExpired)
+                    if (acct[~sfAccount] == account)
                         return auctionSlot[sfDiscountedFee];
             }
         }
@@ -165,7 +165,7 @@ STAmount
 ammAccountHolds(
     ReadView const& view,
     AccountID const& ammAccountID,
-    const Issue& issue)
+    Issue const& issue)
 {
     if (isXRP(issue))
     {

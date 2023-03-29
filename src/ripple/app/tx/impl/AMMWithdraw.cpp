@@ -188,7 +188,7 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
         *ammSle,
         amount ? amount->issue() : std::optional<Issue>{},
         amount2 ? amount2->issue() : std::optional<Issue>{},
-        FreezeHandling::fhZERO_IF_FROZEN,
+        FreezeHandling::fhIGNORE_FREEZE,
         ctx.j);
     if (!expected)
         return expected.error();
@@ -196,16 +196,12 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
     if (amountBalance <= beast::zero || amount2Balance <= beast::zero ||
         lptAMMBalance <= beast::zero)
     {
-        if (isGlobalFrozen(ctx.view, amountBalance.getIssuer()) ||
-            isGlobalFrozen(ctx.view, amount2Balance.getIssuer()))
-        {
-            JLOG(ctx.j.debug()) << "AMM Withdraw involves frozen asset.";
-            return tecFROZEN;
-        }
         JLOG(ctx.j.debug())
             << "AMM Withdraw: reserves or tokens balance is zero.";
         return tecAMM_BALANCE;
     }
+
+    auto const ammAccountID = ammSle->getAccountID(sfAccount);
 
     auto checkAmount = [&](std::optional<STAmount> const& amount,
                            auto const& balance) -> TER {
@@ -218,6 +214,22 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
                     << "AMM Withdraw: account is not authorized, "
                     << amount->issue();
                 return ter;
+            }
+            // AMM account or currency frozen
+            if (isFrozen(ctx.view, ammAccountID, amount->issue()))
+            {
+                JLOG(ctx.j.debug())
+                    << "AMM Withdraw: AMM account or currency is frozen, "
+                    << to_string(accountID);
+                return tecFROZEN;
+            }
+            // Account frozen
+            if (isIndividualFrozen(ctx.view, accountID, amount->issue()))
+            {
+                JLOG(ctx.j.debug()) << "AMM Withdraw: account is frozen, "
+                                    << to_string(accountID) << " "
+                                    << to_string(amount->issue().currency);
+                return tecFROZEN;
             }
             if (amount > balance)
             {
@@ -264,6 +276,20 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
     {
         JLOG(ctx.j.debug()) << "AMM Withdraw: invalid EPrice.";
         return temAMM_BAD_TOKENS;
+    }
+
+    if ((ctx.tx.getFlags() & tfLPToken) &&
+        (isFrozen(ctx.view, ammAccountID, ctx.tx[sfAsset]) ||
+         isFrozen(ctx.view, ammAccountID, ctx.tx[sfAsset2]) ||
+         isIndividualFrozen(ctx.view, accountID, ctx.tx[sfAsset]) ||
+         isIndividualFrozen(ctx.view, accountID, ctx.tx[sfAsset2])))
+    {
+        JLOG(ctx.j.debug())
+            << "AMM Withdraw: (AMM) account or currency is frozen, "
+            << to_string(ammAccountID) << " " << to_string(accountID) << " "
+            << to_string(ctx.tx[sfAsset].currency) << " "
+            << to_string(ctx.tx[sfAsset2].currency);
+        return tecFROZEN;
     }
 
     return tesSUCCESS;

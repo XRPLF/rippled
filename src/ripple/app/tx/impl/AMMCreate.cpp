@@ -116,8 +116,9 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
         return ter;
     }
 
-    if (isGlobalFrozen(ctx.view, amount.getIssuer()) ||
-        isGlobalFrozen(ctx.view, amount2.getIssuer()))
+    // Globally or individually frozen
+    if (isFrozen(ctx.view, accountID, amount.issue()) ||
+        isFrozen(ctx.view, accountID, amount2.issue()))
     {
         JLOG(ctx.j.debug()) << "AMM Instance: involves frozen asset.";
         return tecFROZEN;
@@ -139,8 +140,7 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
             accountHolds(
                 ctx.view,
                 accountID,
-                asset.issue().currency,
-                asset.issue().account,
+                asset.issue(),
                 FreezeHandling::fhZERO_IF_FROZEN,
                 ctx.j) < asset;
     };

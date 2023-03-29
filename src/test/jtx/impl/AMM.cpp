@@ -479,6 +479,8 @@ AMM::deposit(
     }
     jv[jss::Flags] = jvflags;
     deposit(account, jv, assets, seq);
+    if (ter)
+        ter_ = std::nullopt;
 }
 
 void

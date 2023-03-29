@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_MISC_AMM_FORMULAE_H_INCLUDED
-#define RIPPLE_APP_MISC_AMM_FORMULAE_H_INCLUDED
+#ifndef RIPPLE_APP_MISC_AMMHELPERS_H_INCLUDED
+#define RIPPLE_APP_MISC_AMMHELPERS_H_INCLUDED
 
 #include <ripple/basics/IOUAmount.h>
 #include <ripple/basics/Number.h>
@@ -166,8 +166,8 @@ changeSpotPriceQuality(
     Quality const& quality,
     std::uint32_t tfee)
 {
-    auto const f = feeMult(tfee);
-    auto const a = f;
+    auto const f = feeMult(tfee);  // 1 - fee
+    auto const& a = f;
     auto const b = pool.in * (1 + f);
     Number const c = pool.in * pool.in - pool.in * pool.out * quality.rate();
     if (auto const res = b * b - 4 * a * c; res < 0)
@@ -267,4 +267,4 @@ square(Number const& n);
 
 }  // namespace ripple
 
-#endif  // RIPPLE_APP_MISC_AMM_FORMULAE_H_INCLUDED
+#endif  // RIPPLE_APP_MISC_AMMHELPERS_H_INCLUDED

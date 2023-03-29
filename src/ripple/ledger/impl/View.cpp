@@ -194,6 +194,26 @@ isGlobalFrozen(ReadView const& view, AccountID const& issuer)
     return false;
 }
 
+bool
+isIndividualFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Currency const& currency,
+    AccountID const& issuer)
+{
+    if (isXRP(currency))
+        return false;
+    if (issuer != account)
+    {
+        // Check if the issuer froze the line
+        auto const sle = view.read(keylet::line(account, issuer, currency));
+        if (sle &&
+            sle->isFlag((issuer > account) ? lsfHighFreeze : lsfLowFreeze))
+            return true;
+    }
+    return false;
+}
+
 // Can the specified account spend the specified currency issued by
 // the specified issuer or does the freeze flag prohibit it?
 bool

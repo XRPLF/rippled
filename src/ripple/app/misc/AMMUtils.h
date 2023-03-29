@@ -91,7 +91,7 @@ STAmount
 ammAccountHolds(
     ReadView const& view,
     AccountID const& ammAccountID,
-    const Issue& issue);
+    Issue const& issue);
 
 }  // namespace ripple
 

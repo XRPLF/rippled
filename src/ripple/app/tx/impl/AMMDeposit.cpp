@@ -164,7 +164,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
         *ammSle,
         std::nullopt,
         std::nullopt,
-        FreezeHandling::fhZERO_IF_FROZEN,
+        FreezeHandling::fhIGNORE_FREEZE,
         ctx.j);
     if (!expected)
         return expected.error();
@@ -172,12 +172,6 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
     if (amountBalance <= beast::zero || amount2Balance <= beast::zero ||
         lptAMMBalance <= beast::zero)
     {
-        if (isGlobalFrozen(ctx.view, amountBalance.getIssuer()) ||
-            isGlobalFrozen(ctx.view, amount2Balance.getIssuer()))
-        {
-            JLOG(ctx.j.debug()) << "AMM Deposit involves frozen asset.";
-            return tecFROZEN;
-        }
         JLOG(ctx.j.debug())
             << "AMM Deposit: reserves or tokens balance is zero.";
         return tecAMM_BALANCE;
@@ -204,7 +198,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
                     ctx.view,
                     accountID,
                     deposit.issue(),
-                    FreezeHandling::fhZERO_IF_FROZEN,
+                    FreezeHandling::fhIGNORE_FREEZE,
                     ctx.j) >= deposit)
             ? TER(tesSUCCESS)
             : tecAMM_UNFUNDED;
@@ -212,6 +206,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
 
     auto const amount = ctx.tx[~sfAmount];
     auto const amount2 = ctx.tx[~sfAmount2];
+    auto const ammAccountID = ammSle->getAccountID(sfAccount);
 
     auto checkAmount = [&](std::optional<STAmount> const& amount) -> TER {
         if (amount)
@@ -226,6 +221,22 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
                     << "AMM Deposit: account is not authorized, "
                     << amount->issue();
                 return ter;
+            }
+            // AMM account or currency frozen
+            if (isFrozen(ctx.view, ammAccountID, amount->issue()))
+            {
+                JLOG(ctx.j.debug())
+                    << "AMM Deposit: AMM account or currency is frozen, "
+                    << to_string(accountID);
+                return tecFROZEN;
+            }
+            // Account frozen
+            if (isIndividualFrozen(ctx.view, accountID, amount->issue()))
+            {
+                JLOG(ctx.j.debug()) << "AMM Deposit: account is frozen, "
+                                    << to_string(accountID) << " "
+                                    << to_string(amount->issue().currency);
+                return tecFROZEN;
             }
             if (auto const ter = balance(*amount))
             {
@@ -244,11 +255,26 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
     if (auto const ter = checkAmount(amount2))
         return ter;
 
+    // Equal deposit lp tokens
     if (auto const lpTokens = ctx.tx[~sfLPTokenOut];
         lpTokens && lpTokens->issue() != lptAMMBalance.issue())
     {
         JLOG(ctx.j.debug()) << "AMM Deposit: invalid LPTokens.";
         return temAMM_BAD_TOKENS;
+    }
+
+    if ((ctx.tx.getFlags() & tfLPToken) &&
+        (isFrozen(ctx.view, ammAccountID, ctx.tx[sfAsset]) ||
+         isFrozen(ctx.view, ammAccountID, ctx.tx[sfAsset2]) ||
+         isIndividualFrozen(ctx.view, accountID, ctx.tx[sfAsset]) ||
+         isIndividualFrozen(ctx.view, accountID, ctx.tx[sfAsset2])))
+    {
+        JLOG(ctx.j.debug())
+            << "AMM Deposit: (AMM) account or currency is frozen, "
+            << to_string(ammAccountID) << " " << to_string(accountID) << " "
+            << to_string(ctx.tx[sfAsset].currency) << " "
+            << to_string(ctx.tx[sfAsset2].currency);
+        return tecFROZEN;
     }
 
     // Check the reserve for LPToken trustline if not LP.
@@ -390,7 +416,7 @@ AMMDeposit::deposit(
                 view,
                 account_,
                 deposit.issue(),
-                FreezeHandling::fhZERO_IF_FROZEN,
+                FreezeHandling::fhIGNORE_FREEZE,
                 ctx_.journal) >= deposit;
     };
 
