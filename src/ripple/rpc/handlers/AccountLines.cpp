@@ -30,17 +30,6 @@
 
 namespace ripple {
 
-struct VisitData
-{
-    std::vector<RPCTrustLine> items;
-    AccountID const& accountID;
-    bool hasPeer;
-    AccountID const& raPeerAccount;
-
-    bool ignoreDefault;
-    uint32_t foundCount;
-};
-
 void
 addLine(Json::Value& jsonLines, RPCTrustLine const& line)
 {
@@ -110,17 +99,14 @@ doAccountLines(RPC::JsonContext& context)
     std::string strPeer;
     if (params.isMember(jss::peer))
         strPeer = params[jss::peer].asString();
-    auto hasPeer = !strPeer.empty();
 
-    std::optional<AccountID> raPeerAccount{AccountID()};
-    if (hasPeer)
+    auto const raPeerAccount = [&]() -> std::optional<AccountID> {
+        return strPeer.empty() ? std::nullopt : parseBase58<AccountID>(strPeer);
+    }();
+    if (!strPeer.empty() && !raPeerAccount)
     {
-        raPeerAccount = parseBase58<AccountID>(strPeer);
-        if (!raPeerAccount)
-        {
-            RPC::inject_error(rpcACT_MALFORMED, result);
-            return result;
-        }
+        RPC::inject_error(rpcACT_MALFORMED, result);
+        return result;
     }
 
     unsigned int limit;
@@ -136,8 +122,15 @@ doAccountLines(RPC::JsonContext& context)
         params[jss::ignore_default].asBool();
 
     Json::Value& jsonLines(result[jss::lines] = Json::arrayValue);
-    VisitData visitData = {
-        {}, *accountID, hasPeer, *raPeerAccount, ignoreDefault, 0};
+    struct VisitData
+    {
+        std::vector<RPCTrustLine> items;
+        AccountID const& accountID;
+        std::optional<AccountID> const& raPeerAccount;
+        bool ignoreDefault;
+        uint32_t foundCount;
+    };
+    VisitData visitData = {{}, *accountID, raPeerAccount, ignoreDefault, 0};
     uint256 startAfter = beast::zero;
     std::uint64_t startHint = 0;
 
@@ -175,7 +168,7 @@ doAccountLines(RPC::JsonContext& context)
         if (!sle)
             return rpcError(rpcINVALID_PARAMS);
 
-        if (!RPC::isRelatedToAccount(*ledger, sle, accountID))
+        if (!RPC::isRelatedToAccount(*ledger, sle, *accountID))
             return rpcError(rpcINVALID_PARAMS);
     }
 
@@ -225,8 +218,8 @@ doAccountLines(RPC::JsonContext& context)
                             RPCTrustLine::makeItem(visitData.accountID, sleCur);
 
                         if (line &&
-                            (!visitData.hasPeer ||
-                             visitData.raPeerAccount ==
+                            (!visitData.raPeerAccount ||
+                             *visitData.raPeerAccount ==
                                  line->getAccountIDPeer()))
                         {
                             visitData.items.emplace_back(*line);

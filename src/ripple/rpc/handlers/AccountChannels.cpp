@@ -89,17 +89,12 @@ doAccountChannels(RPC::JsonContext& context)
     std::string strDst;
     if (params.isMember(jss::destination_account))
         strDst = params[jss::destination_account].asString();
-    auto hasDst = !strDst.empty();
 
-    std::optional<AccountID> raDstAccount{AccountID()};
-    if (hasDst)
-    {
-        raDstAccount = parseBase58<AccountID>(strDst);
-        if (!raDstAccount)
-        {
-            rpcError(rpcACT_MALFORMED);
-        }
-    }
+    auto const raDstAccount = [&]() -> std::optional<AccountID> {
+        return strDst.empty() ? std::nullopt : parseBase58<AccountID>(strDst);
+    }();
+    if (!strDst.empty() && !raDstAccount)
+        return rpcError(rpcACT_MALFORMED);
 
     unsigned int limit;
     if (auto err = readLimitField(limit, RPC::Tuning::accountChannels, context))
@@ -113,10 +108,9 @@ doAccountChannels(RPC::JsonContext& context)
     {
         std::vector<std::shared_ptr<SLE const>> items;
         AccountID const& accountID;
-        bool hasDst;
-        AccountID const& raDstAccount;
+        std::optional<AccountID> const& raDstAccount;
     };
-    VisitData visitData = {{}, *accountID, hasDst, *raDstAccount};
+    VisitData visitData = {{}, *accountID, raDstAccount};
     visitData.items.reserve(limit);
     uint256 startAfter = beast::zero;
     std::uint64_t startHint = 0;
@@ -155,7 +149,7 @@ doAccountChannels(RPC::JsonContext& context)
         if (!sle)
             return rpcError(rpcINVALID_PARAMS);
 
-        if (!RPC::isRelatedToAccount(*ledger, sle, accountID))
+        if (!RPC::isRelatedToAccount(*ledger, sle, *accountID))
             return rpcError(rpcINVALID_PARAMS);
     }
 
@@ -168,7 +162,7 @@ doAccountChannels(RPC::JsonContext& context)
             startAfter,
             startHint,
             limit + 1,
-            [&visitData, accountID, &count, &limit, &marker, &nextHint](
+            [&visitData, &accountID, &count, &limit, &marker, &nextHint](
                 std::shared_ptr<SLE const> const& sleCur) {
                 if (!sleCur)
                 {
@@ -184,8 +178,8 @@ doAccountChannels(RPC::JsonContext& context)
 
                 if (count <= limit && sleCur->getType() == ltPAYCHAN &&
                     (*sleCur)[sfAccount] == *accountID &&
-                    (!visitData.hasDst ||
-                     visitData.raDstAccount == (*sleCur)[sfDestination]))
+                    (!visitData.raDstAccount ||
+                     *visitData.raDstAccount == (*sleCur)[sfDestination]))
                 {
                     visitData.items.emplace_back(sleCur);
                 }

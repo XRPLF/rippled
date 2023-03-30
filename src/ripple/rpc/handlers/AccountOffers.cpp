@@ -125,7 +125,7 @@ doAccountOffers(RPC::JsonContext& context)
         if (!sle)
             return rpcError(rpcINVALID_PARAMS);
 
-        if (!RPC::isRelatedToAccount(*ledger, sle, accountID))
+        if (!RPC::isRelatedToAccount(*ledger, sle, *accountID))
             return rpcError(rpcINVALID_PARAMS);
     }
 
@@ -138,7 +138,7 @@ doAccountOffers(RPC::JsonContext& context)
             startAfter,
             startHint,
             limit + 1,
-            [&offers, &count, &marker, &limit, &nextHint, accountID](
+            [&offers, &count, &marker, &limit, &nextHint, &accountID](
                 std::shared_ptr<SLE const> const& sle) {
                 if (!sle)
                 {
