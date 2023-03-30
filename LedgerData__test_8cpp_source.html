@@ -385,195 +385,214 @@ $(function() {
 <div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> USD = gw[<span class="stringliteral">&quot;USD&quot;</span>];</div>
 <div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;        env.fund(XRP(100000), gw);</div>
 <div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160; </div>
-<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;        <span class="keywordtype">int</span> <span class="keyword">const</span> num_accounts = 10;</div>
-<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160; </div>
-<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> i = 0; i &lt; num_accounts; i++)</div>
-<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;        {</div>
-<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;            Account <span class="keyword">const</span> bob{<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(<span class="stringliteral">&quot;bob&quot;</span>) + <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(i)};</div>
-<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;            env.fund(XRP(1000), bob);</div>
-<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;        }</div>
-<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;        env(offer(Account{<span class="stringliteral">&quot;bob0&quot;</span>}, USD(100), XRP(100)));</div>
-<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;        env.trust(Account{<span class="stringliteral">&quot;bob2&quot;</span>}[<span class="stringliteral">&quot;USD&quot;</span>](100), Account{<span class="stringliteral">&quot;bob3&quot;</span>});</div>
+<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;        <span class="keyword">auto</span> <a class="code" href="namespaceripple.html#ac35dc55d3f3c259f344225586a8887b4">makeRequest</a> = [&amp;env](<a class="code" href="classJson_1_1StaticString.html">Json::StaticString</a> <span class="keyword">const</span>&amp; type) {</div>
+<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;            <a class="code" href="classJson_1_1Value.html">Json::Value</a> jvParams;</div>
+<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;            jvParams[jss::ledger_index] = <span class="stringliteral">&quot;current&quot;</span>;</div>
+<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;            jvParams[jss::type] = type;</div>
+<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;            <span class="keywordflow">return</span> env.rpc(</div>
+<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;                <span class="stringliteral">&quot;json&quot;</span>,</div>
+<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;                <span class="stringliteral">&quot;ledger_data&quot;</span>,</div>
+<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;                boost::lexical_cast&lt;std::string&gt;(jvParams))[jss::result];</div>
+<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;        };</div>
 <div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160; </div>
-<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;        <span class="keyword">auto</span> majorities = <a class="code" href="namespaceripple.html#ab6b00b336996c0b0a3fe2e8a8d5fa76a">getMajorityAmendments</a>(*env.closed());</div>
-<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;        <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt;= 256; ++i)</div>
-<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;        {</div>
-<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;            env.close();</div>
-<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;            majorities = <a class="code" href="namespaceripple.html#ab6b00b336996c0b0a3fe2e8a8d5fa76a">getMajorityAmendments</a>(*env.closed());</div>
-<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;            <span class="keywordflow">if</span> (!majorities.empty())</div>
-<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;                <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;        }</div>
-<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;        env(signers(</div>
-<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;            Account{<span class="stringliteral">&quot;bob0&quot;</span>}, 1, {{Account{<span class="stringliteral">&quot;bob1&quot;</span>}, 1}, {Account{<span class="stringliteral">&quot;bob2&quot;</span>}, 1}}));</div>
-<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;        env(ticket::create(env.master, 1));</div>
-<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160; </div>
-<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;        {</div>
-<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;            <a class="code" href="classJson_1_1Value.html">Json::Value</a> jv;</div>
-<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;            jv[jss::TransactionType] = jss::EscrowCreate;</div>
-<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;            jv[jss::Flags] = <a class="code" href="namespaceripple.html#aa52329c755ab0ee46e285c09a32b02ec">tfUniversal</a>;</div>
-<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;            jv[jss::Account] = Account{<span class="stringliteral">&quot;bob5&quot;</span>}.human();</div>
-<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;            jv[jss::Destination] = Account{<span class="stringliteral">&quot;bob6&quot;</span>}.human();</div>
-<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;            jv[jss::Amount] = XRP(50).value().getJson(<a class="code" href="namespaceripple.html#a169967ff418b80729654b6d45ade8711a334c4a4c42fdb79d7ebc3e73b517e6f8">JsonOptions::none</a>);</div>
-<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;            jv[<a class="code" href="namespaceripple.html#a512ffe74f26a9616aa021796b3a2a227">sfFinishAfter</a>.<a class="code" href="classripple_1_1SField.html#a634bfabbd5e4494a2d5be6b7c6d3d70d">fieldName</a>] = <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/time_point.html">NetClock::time_point</a>{env.now() + 10s}</div>
-<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;                                              .<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/time_point/time_since_epoch.html">time_since_epoch</a>()</div>
-<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;                                              .count();</div>
-<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;            env(jv);</div>
-<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;        }</div>
-<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160; </div>
-<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;        {</div>
-<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;            <a class="code" href="classJson_1_1Value.html">Json::Value</a> jv;</div>
-<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;            jv[jss::TransactionType] = jss::PaymentChannelCreate;</div>
-<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;            jv[jss::Flags] = <a class="code" href="namespaceripple.html#aa52329c755ab0ee46e285c09a32b02ec">tfUniversal</a>;</div>
-<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;            jv[jss::Account] = Account{<span class="stringliteral">&quot;bob6&quot;</span>}.human();</div>
-<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;            jv[jss::Destination] = Account{<span class="stringliteral">&quot;bob7&quot;</span>}.human();</div>
-<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;            jv[jss::Amount] = XRP(100).value().getJson(<a class="code" href="namespaceripple.html#a169967ff418b80729654b6d45ade8711a334c4a4c42fdb79d7ebc3e73b517e6f8">JsonOptions::none</a>);</div>
-<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;            jv[jss::SettleDelay] = <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">NetClock::duration</a>{10s}.<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration/count.html">count</a>();</div>
-<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;            jv[<a class="code" href="namespaceripple.html#a16991de33a4e83d355de9c387c712a4e">sfPublicKey</a>.<a class="code" href="classripple_1_1SField.html#a634bfabbd5e4494a2d5be6b7c6d3d70d">fieldName</a>] = <a class="code" href="namespaceripple.html#a86e358ce3f06ff049af13c2342791cf8">strHex</a>(Account{<span class="stringliteral">&quot;bob6&quot;</span>}.pk().slice());</div>
-<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;            jv[<a class="code" href="namespaceripple.html#af699325c99d6c2371f5dd40cdffeb9f5">sfCancelAfter</a>.<a class="code" href="classripple_1_1SField.html#a634bfabbd5e4494a2d5be6b7c6d3d70d">fieldName</a>] = <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/time_point.html">NetClock::time_point</a>{env.now() + 300s}</div>
-<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;                                              .<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/time_point/time_since_epoch.html">time_since_epoch</a>()</div>
-<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;                                              .count();</div>
-<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;            env(jv);</div>
-<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;        }</div>
+<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;        <span class="comment">// Assert that state is an empty array.</span></div>
+<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; type :</div>
+<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;             {jss::amendments,</div>
+<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;              jss::check,</div>
+<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;              jss::directory,</div>
+<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;              jss::fee,</div>
+<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;              jss::offer,</div>
+<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;              jss::signer_list,</div>
+<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;              jss::state,</div>
+<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;              jss::ticket,</div>
+<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;              jss::escrow,</div>
+<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;              jss::payment_channel,</div>
+<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;              jss::deposit_preauth})</div>
+<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;        {</div>
+<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> jrr = <a class="code" href="namespaceripple.html#ac35dc55d3f3c259f344225586a8887b4">makeRequest</a>(type);</div>
+<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;            BEAST_EXPECT(<a class="code" href="classripple_1_1LedgerData__test.html#a310cc7bbdbb4e4dc3586e36ab9e8a7e8">checkArraySize</a>(jrr[jss::state], 0));</div>
+<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;        }</div>
+<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160; </div>
+<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;        <span class="keywordtype">int</span> <span class="keyword">const</span> num_accounts = 10;</div>
+<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160; </div>
+<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> i = 0; i &lt; num_accounts; i++)</div>
+<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;        {</div>
+<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;            Account <span class="keyword">const</span> bob{<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(<span class="stringliteral">&quot;bob&quot;</span>) + <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(i)};</div>
+<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;            env.fund(XRP(1000), bob);</div>
+<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;        }</div>
+<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;        env(offer(Account{<span class="stringliteral">&quot;bob0&quot;</span>}, USD(100), XRP(100)));</div>
+<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;        env.trust(Account{<span class="stringliteral">&quot;bob2&quot;</span>}[<span class="stringliteral">&quot;USD&quot;</span>](100), Account{<span class="stringliteral">&quot;bob3&quot;</span>});</div>
+<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160; </div>
+<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;        <span class="keyword">auto</span> majorities = <a class="code" href="namespaceripple.html#ab6b00b336996c0b0a3fe2e8a8d5fa76a">getMajorityAmendments</a>(*env.closed());</div>
+<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;        <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt;= 256; ++i)</div>
+<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;        {</div>
+<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;            env.close();</div>
+<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;            majorities = <a class="code" href="namespaceripple.html#ab6b00b336996c0b0a3fe2e8a8d5fa76a">getMajorityAmendments</a>(*env.closed());</div>
+<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;            <span class="keywordflow">if</span> (!majorities.empty())</div>
+<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;                <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;        }</div>
+<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;        env(signers(</div>
+<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;            Account{<span class="stringliteral">&quot;bob0&quot;</span>}, 1, {{Account{<span class="stringliteral">&quot;bob1&quot;</span>}, 1}, {Account{<span class="stringliteral">&quot;bob2&quot;</span>}, 1}}));</div>
+<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;        env(ticket::create(env.master, 1));</div>
 <div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160; </div>
-<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;        env(check::create(<span class="stringliteral">&quot;bob6&quot;</span>, <span class="stringliteral">&quot;bob7&quot;</span>, XRP(100)));</div>
-<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160; </div>
-<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;        <span class="comment">// bob9 DepositPreauths bob4 and bob8.</span></div>
-<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;        env(deposit::auth(Account{<span class="stringliteral">&quot;bob9&quot;</span>}, Account{<span class="stringliteral">&quot;bob4&quot;</span>}));</div>
-<div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160;        env(deposit::auth(Account{<span class="stringliteral">&quot;bob9&quot;</span>}, Account{<span class="stringliteral">&quot;bob8&quot;</span>}));</div>
-<div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;        env.close();</div>
-<div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160; </div>
-<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;        <span class="comment">// Now fetch each type</span></div>
-<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;        <span class="keyword">auto</span> <a class="code" href="namespaceripple.html#ac35dc55d3f3c259f344225586a8887b4">makeRequest</a> = [&amp;env](<a class="code" href="classJson_1_1StaticString.html">Json::StaticString</a> t) {</div>
-<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160;            <a class="code" href="classJson_1_1Value.html">Json::Value</a> jvParams;</div>
-<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;            jvParams[jss::ledger_index] = <span class="stringliteral">&quot;current&quot;</span>;</div>
-<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;            jvParams[jss::type] = t;</div>
-<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;            <span class="keywordflow">return</span> env.rpc(</div>
-<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;                <span class="stringliteral">&quot;json&quot;</span>,</div>
-<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;                <span class="stringliteral">&quot;ledger_data&quot;</span>,</div>
-<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;                boost::lexical_cast&lt;std::string&gt;(jvParams))[jss::result];</div>
-<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;        };</div>
-<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160; </div>
-<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160;        {  <span class="comment">// jvParams[jss::type] = &quot;account&quot;;</span></div>
-<div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> jrr = <a class="code" href="namespaceripple.html#ac35dc55d3f3c259f344225586a8887b4">makeRequest</a>(jss::account);</div>
-<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160;            BEAST_EXPECT(<a class="code" href="classripple_1_1LedgerData__test.html#a310cc7bbdbb4e4dc3586e36ab9e8a7e8">checkArraySize</a>(jrr[jss::state], 12));</div>
-<div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; j : jrr[jss::state])</div>
-<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;                BEAST_EXPECT(j[<span class="stringliteral">&quot;LedgerEntryType&quot;</span>] == jss::AccountRoot);</div>
-<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;        }</div>
-<div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160; </div>
-<div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160;        {  <span class="comment">// jvParams[jss::type] = &quot;amendments&quot;;</span></div>
-<div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> jrr = <a class="code" href="namespaceripple.html#ac35dc55d3f3c259f344225586a8887b4">makeRequest</a>(jss::amendments);</div>
-<div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160;            BEAST_EXPECT(<a class="code" href="classripple_1_1LedgerData__test.html#a310cc7bbdbb4e4dc3586e36ab9e8a7e8">checkArraySize</a>(jrr[jss::state], 1));</div>
-<div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; j : jrr[jss::state])</div>
-<div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160;                BEAST_EXPECT(j[<span class="stringliteral">&quot;LedgerEntryType&quot;</span>] == jss::Amendments);</div>
-<div class="line"><a name="l00397"></a><span class="lineno">  397</span>&#160;        }</div>
-<div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160; </div>
-<div class="line"><a name="l00399"></a><span class="lineno">  399</span>&#160;        {  <span class="comment">// jvParams[jss::type] = &quot;check&quot;;</span></div>
-<div class="line"><a name="l00400"></a><span class="lineno">  400</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> jrr = <a class="code" href="namespaceripple.html#ac35dc55d3f3c259f344225586a8887b4">makeRequest</a>(jss::check);</div>
-<div class="line"><a name="l00401"></a><span class="lineno">  401</span>&#160;            BEAST_EXPECT(<a class="code" href="classripple_1_1LedgerData__test.html#a310cc7bbdbb4e4dc3586e36ab9e8a7e8">checkArraySize</a>(jrr[jss::state], 1));</div>
-<div class="line"><a name="l00402"></a><span class="lineno">  402</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; j : jrr[jss::state])</div>
-<div class="line"><a name="l00403"></a><span class="lineno">  403</span>&#160;                BEAST_EXPECT(j[<span class="stringliteral">&quot;LedgerEntryType&quot;</span>] == jss::Check);</div>
-<div class="line"><a name="l00404"></a><span class="lineno">  404</span>&#160;        }</div>
-<div class="line"><a name="l00405"></a><span class="lineno">  405</span>&#160; </div>
-<div class="line"><a name="l00406"></a><span class="lineno">  406</span>&#160;        {  <span class="comment">// jvParams[jss::type] = &quot;directory&quot;;</span></div>
-<div class="line"><a name="l00407"></a><span class="lineno">  407</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> jrr = <a class="code" href="namespaceripple.html#ac35dc55d3f3c259f344225586a8887b4">makeRequest</a>(jss::directory);</div>
-<div class="line"><a name="l00408"></a><span class="lineno">  408</span>&#160;            BEAST_EXPECT(<a class="code" href="classripple_1_1LedgerData__test.html#a310cc7bbdbb4e4dc3586e36ab9e8a7e8">checkArraySize</a>(jrr[jss::state], 9));</div>
-<div class="line"><a name="l00409"></a><span class="lineno">  409</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; j : jrr[jss::state])</div>
-<div class="line"><a name="l00410"></a><span class="lineno">  410</span>&#160;                BEAST_EXPECT(j[<span class="stringliteral">&quot;LedgerEntryType&quot;</span>] == jss::DirectoryNode);</div>
-<div class="line"><a name="l00411"></a><span class="lineno">  411</span>&#160;        }</div>
-<div class="line"><a name="l00412"></a><span class="lineno">  412</span>&#160; </div>
-<div class="line"><a name="l00413"></a><span class="lineno">  413</span>&#160;        {  <span class="comment">// jvParams[jss::type] = &quot;fee&quot;;</span></div>
-<div class="line"><a name="l00414"></a><span class="lineno">  414</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> jrr = <a class="code" href="namespaceripple.html#ac35dc55d3f3c259f344225586a8887b4">makeRequest</a>(jss::fee);</div>
-<div class="line"><a name="l00415"></a><span class="lineno">  415</span>&#160;            BEAST_EXPECT(<a class="code" href="classripple_1_1LedgerData__test.html#a310cc7bbdbb4e4dc3586e36ab9e8a7e8">checkArraySize</a>(jrr[jss::state], 1));</div>
-<div class="line"><a name="l00416"></a><span class="lineno">  416</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; j : jrr[jss::state])</div>
-<div class="line"><a name="l00417"></a><span class="lineno">  417</span>&#160;                BEAST_EXPECT(j[<span class="stringliteral">&quot;LedgerEntryType&quot;</span>] == jss::FeeSettings);</div>
-<div class="line"><a name="l00418"></a><span class="lineno">  418</span>&#160;        }</div>
-<div class="line"><a name="l00419"></a><span class="lineno">  419</span>&#160; </div>
-<div class="line"><a name="l00420"></a><span class="lineno">  420</span>&#160;        {  <span class="comment">// jvParams[jss::type] = &quot;hashes&quot;;</span></div>
-<div class="line"><a name="l00421"></a><span class="lineno">  421</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> jrr = <a class="code" href="namespaceripple.html#ac35dc55d3f3c259f344225586a8887b4">makeRequest</a>(jss::hashes);</div>
-<div class="line"><a name="l00422"></a><span class="lineno">  422</span>&#160;            BEAST_EXPECT(<a class="code" href="classripple_1_1LedgerData__test.html#a310cc7bbdbb4e4dc3586e36ab9e8a7e8">checkArraySize</a>(jrr[jss::state], 2));</div>
-<div class="line"><a name="l00423"></a><span class="lineno">  423</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; j : jrr[jss::state])</div>
-<div class="line"><a name="l00424"></a><span class="lineno">  424</span>&#160;                BEAST_EXPECT(j[<span class="stringliteral">&quot;LedgerEntryType&quot;</span>] == jss::LedgerHashes);</div>
-<div class="line"><a name="l00425"></a><span class="lineno">  425</span>&#160;        }</div>
-<div class="line"><a name="l00426"></a><span class="lineno">  426</span>&#160; </div>
-<div class="line"><a name="l00427"></a><span class="lineno">  427</span>&#160;        {  <span class="comment">// jvParams[jss::type] = &quot;offer&quot;;</span></div>
-<div class="line"><a name="l00428"></a><span class="lineno">  428</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> jrr = <a class="code" href="namespaceripple.html#ac35dc55d3f3c259f344225586a8887b4">makeRequest</a>(jss::offer);</div>
-<div class="line"><a name="l00429"></a><span class="lineno">  429</span>&#160;            BEAST_EXPECT(<a class="code" href="classripple_1_1LedgerData__test.html#a310cc7bbdbb4e4dc3586e36ab9e8a7e8">checkArraySize</a>(jrr[jss::state], 1));</div>
-<div class="line"><a name="l00430"></a><span class="lineno">  430</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; j : jrr[jss::state])</div>
-<div class="line"><a name="l00431"></a><span class="lineno">  431</span>&#160;                BEAST_EXPECT(j[<span class="stringliteral">&quot;LedgerEntryType&quot;</span>] == jss::Offer);</div>
-<div class="line"><a name="l00432"></a><span class="lineno">  432</span>&#160;        }</div>
-<div class="line"><a name="l00433"></a><span class="lineno">  433</span>&#160; </div>
-<div class="line"><a name="l00434"></a><span class="lineno">  434</span>&#160;        {  <span class="comment">// jvParams[jss::type] = &quot;signer_list&quot;;</span></div>
-<div class="line"><a name="l00435"></a><span class="lineno">  435</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> jrr = <a class="code" href="namespaceripple.html#ac35dc55d3f3c259f344225586a8887b4">makeRequest</a>(jss::signer_list);</div>
-<div class="line"><a name="l00436"></a><span class="lineno">  436</span>&#160;            BEAST_EXPECT(<a class="code" href="classripple_1_1LedgerData__test.html#a310cc7bbdbb4e4dc3586e36ab9e8a7e8">checkArraySize</a>(jrr[jss::state], 1));</div>
-<div class="line"><a name="l00437"></a><span class="lineno">  437</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; j : jrr[jss::state])</div>
-<div class="line"><a name="l00438"></a><span class="lineno">  438</span>&#160;                BEAST_EXPECT(j[<span class="stringliteral">&quot;LedgerEntryType&quot;</span>] == jss::SignerList);</div>
-<div class="line"><a name="l00439"></a><span class="lineno">  439</span>&#160;        }</div>
-<div class="line"><a name="l00440"></a><span class="lineno">  440</span>&#160; </div>
-<div class="line"><a name="l00441"></a><span class="lineno">  441</span>&#160;        {  <span class="comment">// jvParams[jss::type] = &quot;state&quot;;</span></div>
-<div class="line"><a name="l00442"></a><span class="lineno">  442</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> jrr = <a class="code" href="namespaceripple.html#ac35dc55d3f3c259f344225586a8887b4">makeRequest</a>(jss::state);</div>
-<div class="line"><a name="l00443"></a><span class="lineno">  443</span>&#160;            BEAST_EXPECT(<a class="code" href="classripple_1_1LedgerData__test.html#a310cc7bbdbb4e4dc3586e36ab9e8a7e8">checkArraySize</a>(jrr[jss::state], 1));</div>
-<div class="line"><a name="l00444"></a><span class="lineno">  444</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; j : jrr[jss::state])</div>
-<div class="line"><a name="l00445"></a><span class="lineno">  445</span>&#160;                BEAST_EXPECT(j[<span class="stringliteral">&quot;LedgerEntryType&quot;</span>] == jss::RippleState);</div>
-<div class="line"><a name="l00446"></a><span class="lineno">  446</span>&#160;        }</div>
-<div class="line"><a name="l00447"></a><span class="lineno">  447</span>&#160; </div>
-<div class="line"><a name="l00448"></a><span class="lineno">  448</span>&#160;        {  <span class="comment">// jvParams[jss::type] = &quot;ticket&quot;;</span></div>
-<div class="line"><a name="l00449"></a><span class="lineno">  449</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> jrr = <a class="code" href="namespaceripple.html#ac35dc55d3f3c259f344225586a8887b4">makeRequest</a>(jss::ticket);</div>
-<div class="line"><a name="l00450"></a><span class="lineno">  450</span>&#160;            BEAST_EXPECT(<a class="code" href="classripple_1_1LedgerData__test.html#a310cc7bbdbb4e4dc3586e36ab9e8a7e8">checkArraySize</a>(jrr[jss::state], 1));</div>
-<div class="line"><a name="l00451"></a><span class="lineno">  451</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; j : jrr[jss::state])</div>
-<div class="line"><a name="l00452"></a><span class="lineno">  452</span>&#160;                BEAST_EXPECT(j[<span class="stringliteral">&quot;LedgerEntryType&quot;</span>] == jss::Ticket);</div>
-<div class="line"><a name="l00453"></a><span class="lineno">  453</span>&#160;        }</div>
-<div class="line"><a name="l00454"></a><span class="lineno">  454</span>&#160; </div>
-<div class="line"><a name="l00455"></a><span class="lineno">  455</span>&#160;        {  <span class="comment">// jvParams[jss::type] = &quot;escrow&quot;;</span></div>
-<div class="line"><a name="l00456"></a><span class="lineno">  456</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> jrr = <a class="code" href="namespaceripple.html#ac35dc55d3f3c259f344225586a8887b4">makeRequest</a>(jss::escrow);</div>
-<div class="line"><a name="l00457"></a><span class="lineno">  457</span>&#160;            BEAST_EXPECT(<a class="code" href="classripple_1_1LedgerData__test.html#a310cc7bbdbb4e4dc3586e36ab9e8a7e8">checkArraySize</a>(jrr[jss::state], 1));</div>
-<div class="line"><a name="l00458"></a><span class="lineno">  458</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; j : jrr[jss::state])</div>
-<div class="line"><a name="l00459"></a><span class="lineno">  459</span>&#160;                BEAST_EXPECT(j[<span class="stringliteral">&quot;LedgerEntryType&quot;</span>] == jss::Escrow);</div>
-<div class="line"><a name="l00460"></a><span class="lineno">  460</span>&#160;        }</div>
-<div class="line"><a name="l00461"></a><span class="lineno">  461</span>&#160; </div>
-<div class="line"><a name="l00462"></a><span class="lineno">  462</span>&#160;        {  <span class="comment">// jvParams[jss::type] = &quot;payment_channel&quot;;</span></div>
-<div class="line"><a name="l00463"></a><span class="lineno">  463</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> jrr = <a class="code" href="namespaceripple.html#ac35dc55d3f3c259f344225586a8887b4">makeRequest</a>(jss::payment_channel);</div>
-<div class="line"><a name="l00464"></a><span class="lineno">  464</span>&#160;            BEAST_EXPECT(<a class="code" href="classripple_1_1LedgerData__test.html#a310cc7bbdbb4e4dc3586e36ab9e8a7e8">checkArraySize</a>(jrr[jss::state], 1));</div>
-<div class="line"><a name="l00465"></a><span class="lineno">  465</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; j : jrr[jss::state])</div>
-<div class="line"><a name="l00466"></a><span class="lineno">  466</span>&#160;                BEAST_EXPECT(j[<span class="stringliteral">&quot;LedgerEntryType&quot;</span>] == jss::PayChannel);</div>
-<div class="line"><a name="l00467"></a><span class="lineno">  467</span>&#160;        }</div>
-<div class="line"><a name="l00468"></a><span class="lineno">  468</span>&#160; </div>
-<div class="line"><a name="l00469"></a><span class="lineno">  469</span>&#160;        {  <span class="comment">// jvParams[jss::type] = &quot;deposit_preauth&quot;;</span></div>
-<div class="line"><a name="l00470"></a><span class="lineno">  470</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> jrr = <a class="code" href="namespaceripple.html#ac35dc55d3f3c259f344225586a8887b4">makeRequest</a>(jss::deposit_preauth);</div>
-<div class="line"><a name="l00471"></a><span class="lineno">  471</span>&#160;            BEAST_EXPECT(<a class="code" href="classripple_1_1LedgerData__test.html#a310cc7bbdbb4e4dc3586e36ab9e8a7e8">checkArraySize</a>(jrr[jss::state], 2));</div>
-<div class="line"><a name="l00472"></a><span class="lineno">  472</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; j : jrr[jss::state])</div>
-<div class="line"><a name="l00473"></a><span class="lineno">  473</span>&#160;                BEAST_EXPECT(j[<span class="stringliteral">&quot;LedgerEntryType&quot;</span>] == jss::DepositPreauth);</div>
-<div class="line"><a name="l00474"></a><span class="lineno">  474</span>&#160;        }</div>
-<div class="line"><a name="l00475"></a><span class="lineno">  475</span>&#160; </div>
-<div class="line"><a name="l00476"></a><span class="lineno">  476</span>&#160;        {  <span class="comment">// jvParams[jss::type] = &quot;misspelling&quot;;</span></div>
-<div class="line"><a name="l00477"></a><span class="lineno">  477</span>&#160;            <a class="code" href="classJson_1_1Value.html">Json::Value</a> jvParams;</div>
-<div class="line"><a name="l00478"></a><span class="lineno">  478</span>&#160;            jvParams[jss::ledger_index] = <span class="stringliteral">&quot;current&quot;</span>;</div>
-<div class="line"><a name="l00479"></a><span class="lineno">  479</span>&#160;            jvParams[jss::type] = <span class="stringliteral">&quot;misspelling&quot;</span>;</div>
-<div class="line"><a name="l00480"></a><span class="lineno">  480</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> jrr = env.rpc(</div>
-<div class="line"><a name="l00481"></a><span class="lineno">  481</span>&#160;                <span class="stringliteral">&quot;json&quot;</span>,</div>
-<div class="line"><a name="l00482"></a><span class="lineno">  482</span>&#160;                <span class="stringliteral">&quot;ledger_data&quot;</span>,</div>
-<div class="line"><a name="l00483"></a><span class="lineno">  483</span>&#160;                boost::lexical_cast&lt;std::string&gt;(jvParams))[jss::result];</div>
-<div class="line"><a name="l00484"></a><span class="lineno">  484</span>&#160;            BEAST_EXPECT(jrr.isMember(<span class="stringliteral">&quot;error&quot;</span>));</div>
-<div class="line"><a name="l00485"></a><span class="lineno">  485</span>&#160;            BEAST_EXPECT(jrr[<span class="stringliteral">&quot;error&quot;</span>] == <span class="stringliteral">&quot;invalidParams&quot;</span>);</div>
-<div class="line"><a name="l00486"></a><span class="lineno">  486</span>&#160;            BEAST_EXPECT(jrr[<span class="stringliteral">&quot;error_message&quot;</span>] == <span class="stringliteral">&quot;Invalid field &#39;type&#39;.&quot;</span>);</div>
-<div class="line"><a name="l00487"></a><span class="lineno">  487</span>&#160;        }</div>
-<div class="line"><a name="l00488"></a><span class="lineno">  488</span>&#160;    }</div>
-<div class="line"><a name="l00489"></a><span class="lineno">  489</span>&#160; </div>
-<div class="line"><a name="l00490"></a><span class="lineno">  490</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00491"></a><span class="lineno"><a class="line" href="classripple_1_1LedgerData__test.html#ab780ad06dffbc53a2222d7fb446ed541">  491</a></span>&#160;    <a class="code" href="classripple_1_1LedgerData__test.html#ab780ad06dffbc53a2222d7fb446ed541">run</a>()<span class="keyword"> override</span></div>
-<div class="line"><a name="l00492"></a><span class="lineno">  492</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00493"></a><span class="lineno">  493</span>&#160;        <a class="code" href="classripple_1_1LedgerData__test.html#a66905c0b81d219c4b88a2e14be5dcda6">testCurrentLedgerToLimits</a>(<span class="keyword">true</span>);</div>
-<div class="line"><a name="l00494"></a><span class="lineno">  494</span>&#160;        <a class="code" href="classripple_1_1LedgerData__test.html#a66905c0b81d219c4b88a2e14be5dcda6">testCurrentLedgerToLimits</a>(<span class="keyword">false</span>);</div>
-<div class="line"><a name="l00495"></a><span class="lineno">  495</span>&#160;        <a class="code" href="classripple_1_1LedgerData__test.html#a742aaa4ba3aaf1f2ec70e306aef2b47e">testCurrentLedgerBinary</a>();</div>
-<div class="line"><a name="l00496"></a><span class="lineno">  496</span>&#160;        <a class="code" href="classripple_1_1LedgerData__test.html#aba9b540fc2e290e511f6643edc400115">testBadInput</a>();</div>
-<div class="line"><a name="l00497"></a><span class="lineno">  497</span>&#160;        <a class="code" href="classripple_1_1LedgerData__test.html#a5eff86d1e17e96305f062b18157ed2f7">testMarkerFollow</a>();</div>
-<div class="line"><a name="l00498"></a><span class="lineno">  498</span>&#160;        <a class="code" href="classripple_1_1LedgerData__test.html#aa951daf7cad2e508d39078d2cf0035e8">testLedgerHeader</a>();</div>
-<div class="line"><a name="l00499"></a><span class="lineno">  499</span>&#160;        <a class="code" href="classripple_1_1LedgerData__test.html#a14ef02cdba61fb6a13e15255fbf0320f">testLedgerType</a>();</div>
-<div class="line"><a name="l00500"></a><span class="lineno">  500</span>&#160;    }</div>
-<div class="line"><a name="l00501"></a><span class="lineno">  501</span>&#160;};</div>
-<div class="line"><a name="l00502"></a><span class="lineno">  502</span>&#160; </div>
-<div class="line"><a name="l00503"></a><span class="lineno">  503</span>&#160;<a class="code" href="namespaceripple.html#abb6db96ce083bd9c8676f09faf02c5f0">BEAST_DEFINE_TESTSUITE_PRIO</a>(LedgerData, app, <a class="code" href="namespaceripple.html">ripple</a>, 1);</div>
-<div class="line"><a name="l00504"></a><span class="lineno">  504</span>&#160; </div>
-<div class="line"><a name="l00505"></a><span class="lineno">  505</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;        {</div>
+<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;            <a class="code" href="classJson_1_1Value.html">Json::Value</a> jv;</div>
+<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;            jv[jss::TransactionType] = jss::EscrowCreate;</div>
+<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;            jv[jss::Flags] = <a class="code" href="namespaceripple.html#aa52329c755ab0ee46e285c09a32b02ec">tfUniversal</a>;</div>
+<div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160;            jv[jss::Account] = Account{<span class="stringliteral">&quot;bob5&quot;</span>}.human();</div>
+<div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;            jv[jss::Destination] = Account{<span class="stringliteral">&quot;bob6&quot;</span>}.human();</div>
+<div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160;            jv[jss::Amount] = XRP(50).value().getJson(<a class="code" href="namespaceripple.html#a169967ff418b80729654b6d45ade8711a334c4a4c42fdb79d7ebc3e73b517e6f8">JsonOptions::none</a>);</div>
+<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;            jv[<a class="code" href="namespaceripple.html#a512ffe74f26a9616aa021796b3a2a227">sfFinishAfter</a>.<a class="code" href="classripple_1_1SField.html#a634bfabbd5e4494a2d5be6b7c6d3d70d">fieldName</a>] = <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/time_point.html">NetClock::time_point</a>{env.now() + 10s}</div>
+<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;                                              .<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/time_point/time_since_epoch.html">time_since_epoch</a>()</div>
+<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160;                                              .count();</div>
+<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;            env(jv);</div>
+<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;        }</div>
+<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160; </div>
+<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;        {</div>
+<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;            <a class="code" href="classJson_1_1Value.html">Json::Value</a> jv;</div>
+<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;            jv[jss::TransactionType] = jss::PaymentChannelCreate;</div>
+<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;            jv[jss::Flags] = <a class="code" href="namespaceripple.html#aa52329c755ab0ee46e285c09a32b02ec">tfUniversal</a>;</div>
+<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;            jv[jss::Account] = Account{<span class="stringliteral">&quot;bob6&quot;</span>}.human();</div>
+<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160;            jv[jss::Destination] = Account{<span class="stringliteral">&quot;bob7&quot;</span>}.human();</div>
+<div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;            jv[jss::Amount] = XRP(100).value().getJson(<a class="code" href="namespaceripple.html#a169967ff418b80729654b6d45ade8711a334c4a4c42fdb79d7ebc3e73b517e6f8">JsonOptions::none</a>);</div>
+<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160;            jv[jss::SettleDelay] = <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">NetClock::duration</a>{10s}.<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration/count.html">count</a>();</div>
+<div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160;            jv[<a class="code" href="namespaceripple.html#a16991de33a4e83d355de9c387c712a4e">sfPublicKey</a>.<a class="code" href="classripple_1_1SField.html#a634bfabbd5e4494a2d5be6b7c6d3d70d">fieldName</a>] = <a class="code" href="namespaceripple.html#a86e358ce3f06ff049af13c2342791cf8">strHex</a>(Account{<span class="stringliteral">&quot;bob6&quot;</span>}.pk().slice());</div>
+<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;            jv[<a class="code" href="namespaceripple.html#af699325c99d6c2371f5dd40cdffeb9f5">sfCancelAfter</a>.<a class="code" href="classripple_1_1SField.html#a634bfabbd5e4494a2d5be6b7c6d3d70d">fieldName</a>] = <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/time_point.html">NetClock::time_point</a>{env.now() + 300s}</div>
+<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;                                              .<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/time_point/time_since_epoch.html">time_since_epoch</a>()</div>
+<div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160;                                              .count();</div>
+<div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160;            env(jv);</div>
+<div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;        }</div>
+<div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160; </div>
+<div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160;        env(check::create(<span class="stringliteral">&quot;bob6&quot;</span>, <span class="stringliteral">&quot;bob7&quot;</span>, XRP(100)));</div>
+<div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160; </div>
+<div class="line"><a name="l00397"></a><span class="lineno">  397</span>&#160;        <span class="comment">// bob9 DepositPreauths bob4 and bob8.</span></div>
+<div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160;        env(deposit::auth(Account{<span class="stringliteral">&quot;bob9&quot;</span>}, Account{<span class="stringliteral">&quot;bob4&quot;</span>}));</div>
+<div class="line"><a name="l00399"></a><span class="lineno">  399</span>&#160;        env(deposit::auth(Account{<span class="stringliteral">&quot;bob9&quot;</span>}, Account{<span class="stringliteral">&quot;bob8&quot;</span>}));</div>
+<div class="line"><a name="l00400"></a><span class="lineno">  400</span>&#160;        env.close();</div>
+<div class="line"><a name="l00401"></a><span class="lineno">  401</span>&#160; </div>
+<div class="line"><a name="l00402"></a><span class="lineno">  402</span>&#160;        <span class="comment">// Now fetch each type</span></div>
+<div class="line"><a name="l00403"></a><span class="lineno">  403</span>&#160; </div>
+<div class="line"><a name="l00404"></a><span class="lineno">  404</span>&#160;        {  <span class="comment">// jvParams[jss::type] = &quot;account&quot;;</span></div>
+<div class="line"><a name="l00405"></a><span class="lineno">  405</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> jrr = <a class="code" href="namespaceripple.html#ac35dc55d3f3c259f344225586a8887b4">makeRequest</a>(jss::account);</div>
+<div class="line"><a name="l00406"></a><span class="lineno">  406</span>&#160;            BEAST_EXPECT(<a class="code" href="classripple_1_1LedgerData__test.html#a310cc7bbdbb4e4dc3586e36ab9e8a7e8">checkArraySize</a>(jrr[jss::state], 12));</div>
+<div class="line"><a name="l00407"></a><span class="lineno">  407</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; j : jrr[jss::state])</div>
+<div class="line"><a name="l00408"></a><span class="lineno">  408</span>&#160;                BEAST_EXPECT(j[<span class="stringliteral">&quot;LedgerEntryType&quot;</span>] == jss::AccountRoot);</div>
+<div class="line"><a name="l00409"></a><span class="lineno">  409</span>&#160;        }</div>
+<div class="line"><a name="l00410"></a><span class="lineno">  410</span>&#160; </div>
+<div class="line"><a name="l00411"></a><span class="lineno">  411</span>&#160;        {  <span class="comment">// jvParams[jss::type] = &quot;amendments&quot;;</span></div>
+<div class="line"><a name="l00412"></a><span class="lineno">  412</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> jrr = <a class="code" href="namespaceripple.html#ac35dc55d3f3c259f344225586a8887b4">makeRequest</a>(jss::amendments);</div>
+<div class="line"><a name="l00413"></a><span class="lineno">  413</span>&#160;            BEAST_EXPECT(<a class="code" href="classripple_1_1LedgerData__test.html#a310cc7bbdbb4e4dc3586e36ab9e8a7e8">checkArraySize</a>(jrr[jss::state], 1));</div>
+<div class="line"><a name="l00414"></a><span class="lineno">  414</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; j : jrr[jss::state])</div>
+<div class="line"><a name="l00415"></a><span class="lineno">  415</span>&#160;                BEAST_EXPECT(j[<span class="stringliteral">&quot;LedgerEntryType&quot;</span>] == jss::Amendments);</div>
+<div class="line"><a name="l00416"></a><span class="lineno">  416</span>&#160;        }</div>
+<div class="line"><a name="l00417"></a><span class="lineno">  417</span>&#160; </div>
+<div class="line"><a name="l00418"></a><span class="lineno">  418</span>&#160;        {  <span class="comment">// jvParams[jss::type] = &quot;check&quot;;</span></div>
+<div class="line"><a name="l00419"></a><span class="lineno">  419</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> jrr = <a class="code" href="namespaceripple.html#ac35dc55d3f3c259f344225586a8887b4">makeRequest</a>(jss::check);</div>
+<div class="line"><a name="l00420"></a><span class="lineno">  420</span>&#160;            BEAST_EXPECT(<a class="code" href="classripple_1_1LedgerData__test.html#a310cc7bbdbb4e4dc3586e36ab9e8a7e8">checkArraySize</a>(jrr[jss::state], 1));</div>
+<div class="line"><a name="l00421"></a><span class="lineno">  421</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; j : jrr[jss::state])</div>
+<div class="line"><a name="l00422"></a><span class="lineno">  422</span>&#160;                BEAST_EXPECT(j[<span class="stringliteral">&quot;LedgerEntryType&quot;</span>] == jss::Check);</div>
+<div class="line"><a name="l00423"></a><span class="lineno">  423</span>&#160;        }</div>
+<div class="line"><a name="l00424"></a><span class="lineno">  424</span>&#160; </div>
+<div class="line"><a name="l00425"></a><span class="lineno">  425</span>&#160;        {  <span class="comment">// jvParams[jss::type] = &quot;directory&quot;;</span></div>
+<div class="line"><a name="l00426"></a><span class="lineno">  426</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> jrr = <a class="code" href="namespaceripple.html#ac35dc55d3f3c259f344225586a8887b4">makeRequest</a>(jss::directory);</div>
+<div class="line"><a name="l00427"></a><span class="lineno">  427</span>&#160;            BEAST_EXPECT(<a class="code" href="classripple_1_1LedgerData__test.html#a310cc7bbdbb4e4dc3586e36ab9e8a7e8">checkArraySize</a>(jrr[jss::state], 9));</div>
+<div class="line"><a name="l00428"></a><span class="lineno">  428</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; j : jrr[jss::state])</div>
+<div class="line"><a name="l00429"></a><span class="lineno">  429</span>&#160;                BEAST_EXPECT(j[<span class="stringliteral">&quot;LedgerEntryType&quot;</span>] == jss::DirectoryNode);</div>
+<div class="line"><a name="l00430"></a><span class="lineno">  430</span>&#160;        }</div>
+<div class="line"><a name="l00431"></a><span class="lineno">  431</span>&#160; </div>
+<div class="line"><a name="l00432"></a><span class="lineno">  432</span>&#160;        {  <span class="comment">// jvParams[jss::type] = &quot;fee&quot;;</span></div>
+<div class="line"><a name="l00433"></a><span class="lineno">  433</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> jrr = <a class="code" href="namespaceripple.html#ac35dc55d3f3c259f344225586a8887b4">makeRequest</a>(jss::fee);</div>
+<div class="line"><a name="l00434"></a><span class="lineno">  434</span>&#160;            BEAST_EXPECT(<a class="code" href="classripple_1_1LedgerData__test.html#a310cc7bbdbb4e4dc3586e36ab9e8a7e8">checkArraySize</a>(jrr[jss::state], 1));</div>
+<div class="line"><a name="l00435"></a><span class="lineno">  435</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; j : jrr[jss::state])</div>
+<div class="line"><a name="l00436"></a><span class="lineno">  436</span>&#160;                BEAST_EXPECT(j[<span class="stringliteral">&quot;LedgerEntryType&quot;</span>] == jss::FeeSettings);</div>
+<div class="line"><a name="l00437"></a><span class="lineno">  437</span>&#160;        }</div>
+<div class="line"><a name="l00438"></a><span class="lineno">  438</span>&#160; </div>
+<div class="line"><a name="l00439"></a><span class="lineno">  439</span>&#160;        {  <span class="comment">// jvParams[jss::type] = &quot;hashes&quot;;</span></div>
+<div class="line"><a name="l00440"></a><span class="lineno">  440</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> jrr = <a class="code" href="namespaceripple.html#ac35dc55d3f3c259f344225586a8887b4">makeRequest</a>(jss::hashes);</div>
+<div class="line"><a name="l00441"></a><span class="lineno">  441</span>&#160;            BEAST_EXPECT(<a class="code" href="classripple_1_1LedgerData__test.html#a310cc7bbdbb4e4dc3586e36ab9e8a7e8">checkArraySize</a>(jrr[jss::state], 2));</div>
+<div class="line"><a name="l00442"></a><span class="lineno">  442</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; j : jrr[jss::state])</div>
+<div class="line"><a name="l00443"></a><span class="lineno">  443</span>&#160;                BEAST_EXPECT(j[<span class="stringliteral">&quot;LedgerEntryType&quot;</span>] == jss::LedgerHashes);</div>
+<div class="line"><a name="l00444"></a><span class="lineno">  444</span>&#160;        }</div>
+<div class="line"><a name="l00445"></a><span class="lineno">  445</span>&#160; </div>
+<div class="line"><a name="l00446"></a><span class="lineno">  446</span>&#160;        {  <span class="comment">// jvParams[jss::type] = &quot;offer&quot;;</span></div>
+<div class="line"><a name="l00447"></a><span class="lineno">  447</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> jrr = <a class="code" href="namespaceripple.html#ac35dc55d3f3c259f344225586a8887b4">makeRequest</a>(jss::offer);</div>
+<div class="line"><a name="l00448"></a><span class="lineno">  448</span>&#160;            BEAST_EXPECT(<a class="code" href="classripple_1_1LedgerData__test.html#a310cc7bbdbb4e4dc3586e36ab9e8a7e8">checkArraySize</a>(jrr[jss::state], 1));</div>
+<div class="line"><a name="l00449"></a><span class="lineno">  449</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; j : jrr[jss::state])</div>
+<div class="line"><a name="l00450"></a><span class="lineno">  450</span>&#160;                BEAST_EXPECT(j[<span class="stringliteral">&quot;LedgerEntryType&quot;</span>] == jss::Offer);</div>
+<div class="line"><a name="l00451"></a><span class="lineno">  451</span>&#160;        }</div>
+<div class="line"><a name="l00452"></a><span class="lineno">  452</span>&#160; </div>
+<div class="line"><a name="l00453"></a><span class="lineno">  453</span>&#160;        {  <span class="comment">// jvParams[jss::type] = &quot;signer_list&quot;;</span></div>
+<div class="line"><a name="l00454"></a><span class="lineno">  454</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> jrr = <a class="code" href="namespaceripple.html#ac35dc55d3f3c259f344225586a8887b4">makeRequest</a>(jss::signer_list);</div>
+<div class="line"><a name="l00455"></a><span class="lineno">  455</span>&#160;            BEAST_EXPECT(<a class="code" href="classripple_1_1LedgerData__test.html#a310cc7bbdbb4e4dc3586e36ab9e8a7e8">checkArraySize</a>(jrr[jss::state], 1));</div>
+<div class="line"><a name="l00456"></a><span class="lineno">  456</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; j : jrr[jss::state])</div>
+<div class="line"><a name="l00457"></a><span class="lineno">  457</span>&#160;                BEAST_EXPECT(j[<span class="stringliteral">&quot;LedgerEntryType&quot;</span>] == jss::SignerList);</div>
+<div class="line"><a name="l00458"></a><span class="lineno">  458</span>&#160;        }</div>
+<div class="line"><a name="l00459"></a><span class="lineno">  459</span>&#160; </div>
+<div class="line"><a name="l00460"></a><span class="lineno">  460</span>&#160;        {  <span class="comment">// jvParams[jss::type] = &quot;state&quot;;</span></div>
+<div class="line"><a name="l00461"></a><span class="lineno">  461</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> jrr = <a class="code" href="namespaceripple.html#ac35dc55d3f3c259f344225586a8887b4">makeRequest</a>(jss::state);</div>
+<div class="line"><a name="l00462"></a><span class="lineno">  462</span>&#160;            BEAST_EXPECT(<a class="code" href="classripple_1_1LedgerData__test.html#a310cc7bbdbb4e4dc3586e36ab9e8a7e8">checkArraySize</a>(jrr[jss::state], 1));</div>
+<div class="line"><a name="l00463"></a><span class="lineno">  463</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; j : jrr[jss::state])</div>
+<div class="line"><a name="l00464"></a><span class="lineno">  464</span>&#160;                BEAST_EXPECT(j[<span class="stringliteral">&quot;LedgerEntryType&quot;</span>] == jss::RippleState);</div>
+<div class="line"><a name="l00465"></a><span class="lineno">  465</span>&#160;        }</div>
+<div class="line"><a name="l00466"></a><span class="lineno">  466</span>&#160; </div>
+<div class="line"><a name="l00467"></a><span class="lineno">  467</span>&#160;        {  <span class="comment">// jvParams[jss::type] = &quot;ticket&quot;;</span></div>
+<div class="line"><a name="l00468"></a><span class="lineno">  468</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> jrr = <a class="code" href="namespaceripple.html#ac35dc55d3f3c259f344225586a8887b4">makeRequest</a>(jss::ticket);</div>
+<div class="line"><a name="l00469"></a><span class="lineno">  469</span>&#160;            BEAST_EXPECT(<a class="code" href="classripple_1_1LedgerData__test.html#a310cc7bbdbb4e4dc3586e36ab9e8a7e8">checkArraySize</a>(jrr[jss::state], 1));</div>
+<div class="line"><a name="l00470"></a><span class="lineno">  470</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; j : jrr[jss::state])</div>
+<div class="line"><a name="l00471"></a><span class="lineno">  471</span>&#160;                BEAST_EXPECT(j[<span class="stringliteral">&quot;LedgerEntryType&quot;</span>] == jss::Ticket);</div>
+<div class="line"><a name="l00472"></a><span class="lineno">  472</span>&#160;        }</div>
+<div class="line"><a name="l00473"></a><span class="lineno">  473</span>&#160; </div>
+<div class="line"><a name="l00474"></a><span class="lineno">  474</span>&#160;        {  <span class="comment">// jvParams[jss::type] = &quot;escrow&quot;;</span></div>
+<div class="line"><a name="l00475"></a><span class="lineno">  475</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> jrr = <a class="code" href="namespaceripple.html#ac35dc55d3f3c259f344225586a8887b4">makeRequest</a>(jss::escrow);</div>
+<div class="line"><a name="l00476"></a><span class="lineno">  476</span>&#160;            BEAST_EXPECT(<a class="code" href="classripple_1_1LedgerData__test.html#a310cc7bbdbb4e4dc3586e36ab9e8a7e8">checkArraySize</a>(jrr[jss::state], 1));</div>
+<div class="line"><a name="l00477"></a><span class="lineno">  477</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; j : jrr[jss::state])</div>
+<div class="line"><a name="l00478"></a><span class="lineno">  478</span>&#160;                BEAST_EXPECT(j[<span class="stringliteral">&quot;LedgerEntryType&quot;</span>] == jss::Escrow);</div>
+<div class="line"><a name="l00479"></a><span class="lineno">  479</span>&#160;        }</div>
+<div class="line"><a name="l00480"></a><span class="lineno">  480</span>&#160; </div>
+<div class="line"><a name="l00481"></a><span class="lineno">  481</span>&#160;        {  <span class="comment">// jvParams[jss::type] = &quot;payment_channel&quot;;</span></div>
+<div class="line"><a name="l00482"></a><span class="lineno">  482</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> jrr = <a class="code" href="namespaceripple.html#ac35dc55d3f3c259f344225586a8887b4">makeRequest</a>(jss::payment_channel);</div>
+<div class="line"><a name="l00483"></a><span class="lineno">  483</span>&#160;            BEAST_EXPECT(<a class="code" href="classripple_1_1LedgerData__test.html#a310cc7bbdbb4e4dc3586e36ab9e8a7e8">checkArraySize</a>(jrr[jss::state], 1));</div>
+<div class="line"><a name="l00484"></a><span class="lineno">  484</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; j : jrr[jss::state])</div>
+<div class="line"><a name="l00485"></a><span class="lineno">  485</span>&#160;                BEAST_EXPECT(j[<span class="stringliteral">&quot;LedgerEntryType&quot;</span>] == jss::PayChannel);</div>
+<div class="line"><a name="l00486"></a><span class="lineno">  486</span>&#160;        }</div>
+<div class="line"><a name="l00487"></a><span class="lineno">  487</span>&#160; </div>
+<div class="line"><a name="l00488"></a><span class="lineno">  488</span>&#160;        {  <span class="comment">// jvParams[jss::type] = &quot;deposit_preauth&quot;;</span></div>
+<div class="line"><a name="l00489"></a><span class="lineno">  489</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> jrr = <a class="code" href="namespaceripple.html#ac35dc55d3f3c259f344225586a8887b4">makeRequest</a>(jss::deposit_preauth);</div>
+<div class="line"><a name="l00490"></a><span class="lineno">  490</span>&#160;            BEAST_EXPECT(<a class="code" href="classripple_1_1LedgerData__test.html#a310cc7bbdbb4e4dc3586e36ab9e8a7e8">checkArraySize</a>(jrr[jss::state], 2));</div>
+<div class="line"><a name="l00491"></a><span class="lineno">  491</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; j : jrr[jss::state])</div>
+<div class="line"><a name="l00492"></a><span class="lineno">  492</span>&#160;                BEAST_EXPECT(j[<span class="stringliteral">&quot;LedgerEntryType&quot;</span>] == jss::DepositPreauth);</div>
+<div class="line"><a name="l00493"></a><span class="lineno">  493</span>&#160;        }</div>
+<div class="line"><a name="l00494"></a><span class="lineno">  494</span>&#160; </div>
+<div class="line"><a name="l00495"></a><span class="lineno">  495</span>&#160;        {  <span class="comment">// jvParams[jss::type] = &quot;misspelling&quot;;</span></div>
+<div class="line"><a name="l00496"></a><span class="lineno">  496</span>&#160;            <a class="code" href="classJson_1_1Value.html">Json::Value</a> jvParams;</div>
+<div class="line"><a name="l00497"></a><span class="lineno">  497</span>&#160;            jvParams[jss::ledger_index] = <span class="stringliteral">&quot;current&quot;</span>;</div>
+<div class="line"><a name="l00498"></a><span class="lineno">  498</span>&#160;            jvParams[jss::type] = <span class="stringliteral">&quot;misspelling&quot;</span>;</div>
+<div class="line"><a name="l00499"></a><span class="lineno">  499</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> jrr = env.rpc(</div>
+<div class="line"><a name="l00500"></a><span class="lineno">  500</span>&#160;                <span class="stringliteral">&quot;json&quot;</span>,</div>
+<div class="line"><a name="l00501"></a><span class="lineno">  501</span>&#160;                <span class="stringliteral">&quot;ledger_data&quot;</span>,</div>
+<div class="line"><a name="l00502"></a><span class="lineno">  502</span>&#160;                boost::lexical_cast&lt;std::string&gt;(jvParams))[jss::result];</div>
+<div class="line"><a name="l00503"></a><span class="lineno">  503</span>&#160;            BEAST_EXPECT(jrr.isMember(<span class="stringliteral">&quot;error&quot;</span>));</div>
+<div class="line"><a name="l00504"></a><span class="lineno">  504</span>&#160;            BEAST_EXPECT(jrr[<span class="stringliteral">&quot;error&quot;</span>] == <span class="stringliteral">&quot;invalidParams&quot;</span>);</div>
+<div class="line"><a name="l00505"></a><span class="lineno">  505</span>&#160;            BEAST_EXPECT(jrr[<span class="stringliteral">&quot;error_message&quot;</span>] == <span class="stringliteral">&quot;Invalid field &#39;type&#39;.&quot;</span>);</div>
+<div class="line"><a name="l00506"></a><span class="lineno">  506</span>&#160;        }</div>
+<div class="line"><a name="l00507"></a><span class="lineno">  507</span>&#160;    }</div>
+<div class="line"><a name="l00508"></a><span class="lineno">  508</span>&#160; </div>
+<div class="line"><a name="l00509"></a><span class="lineno">  509</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00510"></a><span class="lineno"><a class="line" href="classripple_1_1LedgerData__test.html#ab780ad06dffbc53a2222d7fb446ed541">  510</a></span>&#160;    <a class="code" href="classripple_1_1LedgerData__test.html#ab780ad06dffbc53a2222d7fb446ed541">run</a>()<span class="keyword"> override</span></div>
+<div class="line"><a name="l00511"></a><span class="lineno">  511</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00512"></a><span class="lineno">  512</span>&#160;        <a class="code" href="classripple_1_1LedgerData__test.html#a66905c0b81d219c4b88a2e14be5dcda6">testCurrentLedgerToLimits</a>(<span class="keyword">true</span>);</div>
+<div class="line"><a name="l00513"></a><span class="lineno">  513</span>&#160;        <a class="code" href="classripple_1_1LedgerData__test.html#a66905c0b81d219c4b88a2e14be5dcda6">testCurrentLedgerToLimits</a>(<span class="keyword">false</span>);</div>
+<div class="line"><a name="l00514"></a><span class="lineno">  514</span>&#160;        <a class="code" href="classripple_1_1LedgerData__test.html#a742aaa4ba3aaf1f2ec70e306aef2b47e">testCurrentLedgerBinary</a>();</div>
+<div class="line"><a name="l00515"></a><span class="lineno">  515</span>&#160;        <a class="code" href="classripple_1_1LedgerData__test.html#aba9b540fc2e290e511f6643edc400115">testBadInput</a>();</div>
+<div class="line"><a name="l00516"></a><span class="lineno">  516</span>&#160;        <a class="code" href="classripple_1_1LedgerData__test.html#a5eff86d1e17e96305f062b18157ed2f7">testMarkerFollow</a>();</div>
+<div class="line"><a name="l00517"></a><span class="lineno">  517</span>&#160;        <a class="code" href="classripple_1_1LedgerData__test.html#aa951daf7cad2e508d39078d2cf0035e8">testLedgerHeader</a>();</div>
+<div class="line"><a name="l00518"></a><span class="lineno">  518</span>&#160;        <a class="code" href="classripple_1_1LedgerData__test.html#a14ef02cdba61fb6a13e15255fbf0320f">testLedgerType</a>();</div>
+<div class="line"><a name="l00519"></a><span class="lineno">  519</span>&#160;    }</div>
+<div class="line"><a name="l00520"></a><span class="lineno">  520</span>&#160;};</div>
+<div class="line"><a name="l00521"></a><span class="lineno">  521</span>&#160; </div>
+<div class="line"><a name="l00522"></a><span class="lineno">  522</span>&#160;<a class="code" href="namespaceripple.html#abb6db96ce083bd9c8676f09faf02c5f0">BEAST_DEFINE_TESTSUITE_PRIO</a>(LedgerData, app, <a class="code" href="namespaceripple.html">ripple</a>, 1);</div>
+<div class="line"><a name="l00523"></a><span class="lineno">  523</span>&#160; </div>
+<div class="line"><a name="l00524"></a><span class="lineno">  524</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="anamespaceripple_html_ab6b00b336996c0b0a3fe2e8a8d5fa76a"><div class="ttname"><a href="namespaceripple.html#ab6b00b336996c0b0a3fe2e8a8d5fa76a">ripple::getMajorityAmendments</a></div><div class="ttdeci">majorityAmendments_t getMajorityAmendments(ReadView const &amp;view)</div><div class="ttdef"><b>Definition:</b> <a href="View_8cpp_source.html#l00621">View.cpp:621</a></div></div>
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div><div class="ttdoc">STL class.</div></div>
@@ -599,7 +618,7 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1Serializer_html"><div class="ttname"><a href="classripple_1_1Serializer.html">ripple::Serializer</a></div><div class="ttdef"><b>Definition:</b> <a href="Serializer_8h_source.html#l00039">Serializer.h:39</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="aclassJson_1_1StaticString_html"><div class="ttname"><a href="classJson_1_1StaticString.html">Json::StaticString</a></div><div class="ttdoc">Lightweight wrapper to tag static string.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00060">json_value.h:60</a></div></div>
-<div class="ttc" id="aclassripple_1_1LedgerData__test_html_ab780ad06dffbc53a2222d7fb446ed541"><div class="ttname"><a href="classripple_1_1LedgerData__test.html#ab780ad06dffbc53a2222d7fb446ed541">ripple::LedgerData_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="LedgerData__test_8cpp_source.html#l00491">LedgerData_test.cpp:491</a></div></div>
+<div class="ttc" id="aclassripple_1_1LedgerData__test_html_ab780ad06dffbc53a2222d7fb446ed541"><div class="ttname"><a href="classripple_1_1LedgerData__test.html#ab780ad06dffbc53a2222d7fb446ed541">ripple::LedgerData_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="LedgerData__test_8cpp_source.html#l00510">LedgerData_test.cpp:510</a></div></div>
 <div class="ttc" id="aclassripple_1_1LedgerData__test_html_aba9b540fc2e290e511f6643edc400115"><div class="ttname"><a href="classripple_1_1LedgerData__test.html#aba9b540fc2e290e511f6643edc400115">ripple::LedgerData_test::testBadInput</a></div><div class="ttdeci">void testBadInput()</div><div class="ttdef"><b>Definition:</b> <a href="LedgerData__test_8cpp_source.html#l00130">LedgerData_test.cpp:130</a></div></div>
 <div class="ttc" id="acount_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/chrono/duration/count.html">std::chrono::duration::count</a></div><div class="ttdeci">T count(T... args)</div></div>
 <div class="ttc" id="anamespaceripple_html_af699325c99d6c2371f5dd40cdffeb9f5"><div class="ttname"><a href="namespaceripple.html#af699325c99d6c2371f5dd40cdffeb9f5">ripple::sfCancelAfter</a></div><div class="ttdeci">const SF_UINT32 sfCancelAfter</div></div>
