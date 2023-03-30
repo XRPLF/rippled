@@ -77,6 +77,28 @@ doAccountInfo(RPC::JsonContext& context)
     if (jvAccepted)
         return jvAccepted;
 
+    static constexpr std::
+        array<std::pair<std::string_view, LedgerSpecificFlags>, 9>
+            lsFlags{
+                {{"defaultRipple", lsfDefaultRipple},
+                 {"depositAuth", lsfDepositAuth},
+                 {"disableMasterKey", lsfDisableMaster},
+                 {"disallowIncomingXRP", lsfDisallowXRP},
+                 {"globalFreeze", lsfGlobalFreeze},
+                 {"noFreeze", lsfNoFreeze},
+                 {"passwordSpent", lsfPasswordSpent},
+                 {"requireAuthorization", lsfRequireAuth},
+                 {"requireDestinationTag", lsfRequireDestTag}}};
+
+    static constexpr std::
+        array<std::pair<std::string_view, LedgerSpecificFlags>, 4>
+            disallowIncomingFlags{
+                {{"disallowIncomingNFTokenOffer",
+                  lsfDisallowIncomingNFTokenOffer},
+                 {"disallowIncomingCheck", lsfDisallowIncomingCheck},
+                 {"disallowIncomingPayChan", lsfDisallowIncomingPayChan},
+                 {"disallowIncomingTrustline", lsfDisallowIncomingTrustline}}};
+
     auto const sleAccepted = ledger->read(keylet::account(accountID));
     if (sleAccepted)
     {
@@ -93,6 +115,17 @@ doAccountInfo(RPC::JsonContext& context)
 
         RPC::injectSLE(jvAccepted, *sleAccepted);
         result[jss::account_data] = jvAccepted;
+
+        Json::Value acctFlags{Json::objectValue};
+        for (auto const& lsf : lsFlags)
+            acctFlags[lsf.first.data()] = sleAccepted->isFlag(lsf.second);
+
+        if (ledger->rules().enabled(featureDisallowIncoming))
+        {
+            for (auto const& lsf : disallowIncomingFlags)
+                acctFlags[lsf.first.data()] = sleAccepted->isFlag(lsf.second);
+        }
+        result[jss::account_flags] = std::move(acctFlags);
 
         // Return SignerList(s) if that is requested.
         if (params.isMember(jss::signer_lists) &&
