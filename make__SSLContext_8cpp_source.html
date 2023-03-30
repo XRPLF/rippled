@@ -321,95 +321,98 @@ $(function() {
 <div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160; </div>
 <div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;            fclose(f);</div>
 <div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;        }</div>
-<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;        <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a> <span class="keyword">const</span>&amp;)</div>
+<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;        <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a> <span class="keyword">const</span>&amp; ex)</div>
 <div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;        {</div>
 <div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;            fclose(f);</div>
-<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;            <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<span class="stringliteral">&quot;Reading the SSL chain file generated an exception.&quot;</span>);</div>
-<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;        }</div>
-<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;    }</div>
-<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160; </div>
-<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;    <span class="keywordflow">if</span> (!key_file.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/empty.html">empty</a>())</div>
-<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;    {</div>
-<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;        boost::system::error_code ec;</div>
-<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160; </div>
-<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;        context.use_private_key_file(</div>
-<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;            key_file, boost::asio::ssl::context::pem, ec);</div>
+<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;            <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(</div>
+<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(</div>
+<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;                    <span class="stringliteral">&quot;Reading the SSL chain file generated an exception: &quot;</span>) +</div>
+<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160;                ex.<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception/what.html">what</a>());</div>
+<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;        }</div>
+<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;    }</div>
+<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160; </div>
+<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;    <span class="keywordflow">if</span> (!key_file.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/empty.html">empty</a>())</div>
+<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;    {</div>
+<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;        boost::system::error_code ec;</div>
 <div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160; </div>
-<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;        <span class="keywordflow">if</span> (ec)</div>
-<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;        {</div>
-<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;            <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(</div>
-<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;                <span class="stringliteral">&quot;Problem using the SSL private key file&quot;</span> + fmt_error(ec));</div>
-<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;        }</div>
-<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;    }</div>
-<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160; </div>
-<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;    <span class="keywordflow">if</span> (SSL_CTX_check_private_key(ssl) != 1)</div>
-<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;    {</div>
-<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;        <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<span class="stringliteral">&quot;Invalid key in SSL private key file.&quot;</span>);</div>
-<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;    }</div>
-<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;}</div>
-<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160; </div>
-<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;boost::asio::ssl::context&gt;</a></div>
-<div class="line"><a name="l00323"></a><span class="lineno"><a class="line" href="namespaceripple_1_1openssl_1_1detail.html#aef24a56d2f2bb53af7bd545390d04fdc">  323</a></span>&#160;<a class="code" href="namespaceripple_1_1openssl_1_1detail.html#aef24a56d2f2bb53af7bd545390d04fdc">get_context</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> cipherList)</div>
-<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;{</div>
-<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;    <span class="keyword">auto</span> c = std::make_shared&lt;boost::asio::ssl::context&gt;(</div>
-<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;        boost::asio::ssl::context::sslv23);</div>
-<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160; </div>
-<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;    c-&gt;set_options(</div>
-<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;        boost::asio::ssl::context::default_workarounds |</div>
-<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;        boost::asio::ssl::context::no_sslv2 |</div>
-<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;        boost::asio::ssl::context::no_sslv3 |</div>
-<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;        boost::asio::ssl::context::no_tlsv1 |</div>
-<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;        boost::asio::ssl::context::no_tlsv1_1 |</div>
-<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;        boost::asio::ssl::context::single_dh_use |</div>
-<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;        boost::asio::ssl::context::no_compression);</div>
-<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160; </div>
-<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;    <span class="keywordflow">if</span> (cipherList.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/empty.html">empty</a>())</div>
-<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;        cipherList = <a class="code" href="namespaceripple_1_1openssl_1_1detail.html#aad232b4e5ba55646b1c05dc19250b8ad">defaultCipherList</a>;</div>
+<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;        context.use_private_key_file(</div>
+<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;            key_file, boost::asio::ssl::context::pem, ec);</div>
+<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160; </div>
+<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;        <span class="keywordflow">if</span> (ec)</div>
+<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;        {</div>
+<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;            <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(</div>
+<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;                <span class="stringliteral">&quot;Problem using the SSL private key file&quot;</span> + fmt_error(ec));</div>
+<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;        }</div>
+<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;    }</div>
+<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160; </div>
+<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;    <span class="keywordflow">if</span> (SSL_CTX_check_private_key(ssl) != 1)</div>
+<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;    {</div>
+<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;        <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<span class="stringliteral">&quot;Invalid key in SSL private key file.&quot;</span>);</div>
+<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;    }</div>
+<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;}</div>
+<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160; </div>
+<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;boost::asio::ssl::context&gt;</a></div>
+<div class="line"><a name="l00326"></a><span class="lineno"><a class="line" href="namespaceripple_1_1openssl_1_1detail.html#aef24a56d2f2bb53af7bd545390d04fdc">  326</a></span>&#160;<a class="code" href="namespaceripple_1_1openssl_1_1detail.html#aef24a56d2f2bb53af7bd545390d04fdc">get_context</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> cipherList)</div>
+<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;{</div>
+<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;    <span class="keyword">auto</span> c = std::make_shared&lt;boost::asio::ssl::context&gt;(</div>
+<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;        boost::asio::ssl::context::sslv23);</div>
+<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160; </div>
+<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;    c-&gt;set_options(</div>
+<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;        boost::asio::ssl::context::default_workarounds |</div>
+<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;        boost::asio::ssl::context::no_sslv2 |</div>
+<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;        boost::asio::ssl::context::no_sslv3 |</div>
+<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;        boost::asio::ssl::context::no_tlsv1 |</div>
+<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;        boost::asio::ssl::context::no_tlsv1_1 |</div>
+<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;        boost::asio::ssl::context::single_dh_use |</div>
+<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;        boost::asio::ssl::context::no_compression);</div>
 <div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160; </div>
-<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;    <span class="keywordflow">if</span> (<span class="keyword">auto</span> result =</div>
-<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;            SSL_CTX_set_cipher_list(c-&gt;native_handle(), cipherList.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/c_str.html">c_str</a>());</div>
-<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;        result != 1)</div>
-<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;        <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<span class="stringliteral">&quot;SSL_CTX_set_cipher_list failed&quot;</span>);</div>
-<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160; </div>
-<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;    c-&gt;use_tmp_dh({<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/addressof.html">std::addressof</a>(<a class="code" href="namespaceripple_1_1openssl_1_1detail.html#a6a06bb98812817012093d40c92120083">detail::defaultDH</a>), <span class="keyword">sizeof</span>(<a class="code" href="namespaceripple_1_1openssl_1_1detail.html#a6a06bb98812817012093d40c92120083">defaultDH</a>)});</div>
-<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160; </div>
-<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;    <span class="comment">// Disable all renegotiation support in TLS v1.2. This can help prevent</span></div>
-<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;    <span class="comment">// exploitation of the bug described in CVE-2021-3499 (for details see</span></div>
-<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;    <span class="comment">// https://www.openssl.org/news/secadv/20210325.txt) when linking</span></div>
-<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;    <span class="comment">// against OpenSSL versions prior to 1.1.1k.</span></div>
-<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;    SSL_CTX_set_options(c-&gt;native_handle(), SSL_OP_NO_RENEGOTIATION);</div>
-<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160; </div>
-<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;    <span class="keywordflow">return</span> c;</div>
-<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;}</div>
+<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;    <span class="keywordflow">if</span> (cipherList.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/empty.html">empty</a>())</div>
+<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;        cipherList = <a class="code" href="namespaceripple_1_1openssl_1_1detail.html#aad232b4e5ba55646b1c05dc19250b8ad">defaultCipherList</a>;</div>
+<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160; </div>
+<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;    <span class="keywordflow">if</span> (<span class="keyword">auto</span> result =</div>
+<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;            SSL_CTX_set_cipher_list(c-&gt;native_handle(), cipherList.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/c_str.html">c_str</a>());</div>
+<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;        result != 1)</div>
+<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;        <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<span class="stringliteral">&quot;SSL_CTX_set_cipher_list failed&quot;</span>);</div>
+<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160; </div>
+<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;    c-&gt;use_tmp_dh({<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/addressof.html">std::addressof</a>(<a class="code" href="namespaceripple_1_1openssl_1_1detail.html#a6a06bb98812817012093d40c92120083">detail::defaultDH</a>), <span class="keyword">sizeof</span>(<a class="code" href="namespaceripple_1_1openssl_1_1detail.html#a6a06bb98812817012093d40c92120083">defaultDH</a>)});</div>
+<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160; </div>
+<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;    <span class="comment">// Disable all renegotiation support in TLS v1.2. This can help prevent</span></div>
+<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;    <span class="comment">// exploitation of the bug described in CVE-2021-3499 (for details see</span></div>
+<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;    <span class="comment">// https://www.openssl.org/news/secadv/20210325.txt) when linking</span></div>
+<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;    <span class="comment">// against OpenSSL versions prior to 1.1.1k.</span></div>
+<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;    SSL_CTX_set_options(c-&gt;native_handle(), SSL_OP_NO_RENEGOTIATION);</div>
 <div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160; </div>
-<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;}  <span class="comment">// namespace detail</span></div>
-<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;}  <span class="comment">// namespace openssl</span></div>
+<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;    <span class="keywordflow">return</span> c;</div>
+<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;}</div>
 <div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160; </div>
-<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;<span class="comment">//------------------------------------------------------------------------------</span></div>
-<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;boost::asio::ssl::context&gt;</a></div>
-<div class="line"><a name="l00361"></a><span class="lineno"><a class="line" href="namespaceripple.html#a4d435c32e5733f8d57bf0562c25e0f3b">  361</a></span>&#160;<a class="code" href="namespaceripple.html#a4d435c32e5733f8d57bf0562c25e0f3b">make_SSLContext</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; cipherList)</div>
-<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;{</div>
-<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;    <span class="keyword">auto</span> context = <a class="code" href="namespaceripple_1_1openssl_1_1detail.html#aef24a56d2f2bb53af7bd545390d04fdc">openssl::detail::get_context</a>(cipherList);</div>
-<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;    <a class="code" href="namespaceripple_1_1openssl_1_1detail.html#a5424207e5a700ac59ea8b9ab1e2b9397">openssl::detail::initAnonymous</a>(*context);</div>
-<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;    <span class="comment">// VFALCO NOTE, It seems the WebSocket context never has</span></div>
-<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;    <span class="comment">// set_verify_mode called, for either setting of WEBSOCKET_SECURE</span></div>
-<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;    context-&gt;set_verify_mode(boost::asio::ssl::verify_none);</div>
-<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;    <span class="keywordflow">return</span> context;</div>
-<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;}</div>
-<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160; </div>
-<div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;boost::asio::ssl::context&gt;</a></div>
-<div class="line"><a name="l00372"></a><span class="lineno"><a class="line" href="namespaceripple.html#ae8b021ae4b350b66b5e9e39f4a32c844">  372</a></span>&#160;<a class="code" href="namespaceripple.html#ae8b021ae4b350b66b5e9e39f4a32c844">make_SSLContextAuthed</a>(</div>
-<div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; keyFile,</div>
-<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; certFile,</div>
-<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; chainFile,</div>
-<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; cipherList)</div>
-<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;{</div>
-<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;    <span class="keyword">auto</span> context = <a class="code" href="namespaceripple_1_1openssl_1_1detail.html#aef24a56d2f2bb53af7bd545390d04fdc">openssl::detail::get_context</a>(cipherList);</div>
-<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;    <a class="code" href="namespaceripple_1_1openssl_1_1detail.html#a70f3d81f87a75113774c421267a670b7">openssl::detail::initAuthenticated</a>(*context, keyFile, certFile, chainFile);</div>
-<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;    <span class="keywordflow">return</span> context;</div>
-<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;}</div>
-<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160; </div>
-<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;}  <span class="comment">// namespace detail</span></div>
+<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;}  <span class="comment">// namespace openssl</span></div>
+<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160; </div>
+<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;<span class="comment">//------------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;boost::asio::ssl::context&gt;</a></div>
+<div class="line"><a name="l00364"></a><span class="lineno"><a class="line" href="namespaceripple.html#a4d435c32e5733f8d57bf0562c25e0f3b">  364</a></span>&#160;<a class="code" href="namespaceripple.html#a4d435c32e5733f8d57bf0562c25e0f3b">make_SSLContext</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; cipherList)</div>
+<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;{</div>
+<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;    <span class="keyword">auto</span> context = <a class="code" href="namespaceripple_1_1openssl_1_1detail.html#aef24a56d2f2bb53af7bd545390d04fdc">openssl::detail::get_context</a>(cipherList);</div>
+<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;    <a class="code" href="namespaceripple_1_1openssl_1_1detail.html#a5424207e5a700ac59ea8b9ab1e2b9397">openssl::detail::initAnonymous</a>(*context);</div>
+<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;    <span class="comment">// VFALCO NOTE, It seems the WebSocket context never has</span></div>
+<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;    <span class="comment">// set_verify_mode called, for either setting of WEBSOCKET_SECURE</span></div>
+<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;    context-&gt;set_verify_mode(boost::asio::ssl::verify_none);</div>
+<div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160;    <span class="keywordflow">return</span> context;</div>
+<div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;}</div>
+<div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160; </div>
+<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;boost::asio::ssl::context&gt;</a></div>
+<div class="line"><a name="l00375"></a><span class="lineno"><a class="line" href="namespaceripple.html#ae8b021ae4b350b66b5e9e39f4a32c844">  375</a></span>&#160;<a class="code" href="namespaceripple.html#ae8b021ae4b350b66b5e9e39f4a32c844">make_SSLContextAuthed</a>(</div>
+<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; keyFile,</div>
+<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; certFile,</div>
+<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; chainFile,</div>
+<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; cipherList)</div>
+<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;{</div>
+<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;    <span class="keyword">auto</span> context = <a class="code" href="namespaceripple_1_1openssl_1_1detail.html#aef24a56d2f2bb53af7bd545390d04fdc">openssl::detail::get_context</a>(cipherList);</div>
+<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;    <a class="code" href="namespaceripple_1_1openssl_1_1detail.html#a70f3d81f87a75113774c421267a670b7">openssl::detail::initAuthenticated</a>(*context, keyFile, certFile, chainFile);</div>
+<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;    <span class="keywordflow">return</span> context;</div>
+<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;}</div>
+<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160; </div>
+<div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="actime_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/ctime.html">ctime</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1openssl_1_1detail_html_a6a06bb98812817012093d40c92120083"><div class="ttname"><a href="namespaceripple_1_1openssl_1_1detail.html#a6a06bb98812817012093d40c92120083">ripple::openssl::detail::defaultDH</a></div><div class="ttdeci">static constexpr const char defaultDH[]</div><div class="ttdoc">The default DH parameters.</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00059">make_SSLContext.cpp:59</a></div></div>
@@ -417,11 +420,11 @@ $(function() {
 <div class="ttc" id="ashared_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt; boost::asio::ssl::context &gt;</a></div></div>
 <div class="ttc" id="aexception_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="anamespaceripple_1_1openssl_1_1detail_html_ae431166efcafc1b6d7fc5109bfc7e678"><div class="ttname"><a href="namespaceripple_1_1openssl_1_1detail.html#ae431166efcafc1b6d7fc5109bfc7e678">ripple::openssl::detail::defaultRSAKeyBits</a></div><div class="ttdeci">int defaultRSAKeyBits</div><div class="ttdoc">The default strength of self-signed RSA certifices.</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00045">make_SSLContext.cpp:45</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a4d435c32e5733f8d57bf0562c25e0f3b"><div class="ttname"><a href="namespaceripple.html#a4d435c32e5733f8d57bf0562c25e0f3b">ripple::make_SSLContext</a></div><div class="ttdeci">std::shared_ptr&lt; boost::asio::ssl::context &gt; make_SSLContext(std::string const &amp;cipherList)</div><div class="ttdoc">Create a self-signed SSL context that allows anonymous Diffie Hellman.</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00361">make_SSLContext.cpp:361</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a4d435c32e5733f8d57bf0562c25e0f3b"><div class="ttname"><a href="namespaceripple.html#a4d435c32e5733f8d57bf0562c25e0f3b">ripple::make_SSLContext</a></div><div class="ttdeci">std::shared_ptr&lt; boost::asio::ssl::context &gt; make_SSLContext(std::string const &amp;cipherList)</div><div class="ttdoc">Create a self-signed SSL context that allows anonymous Diffie Hellman.</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00364">make_SSLContext.cpp:364</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1openssl_1_1detail_html_a5424207e5a700ac59ea8b9ab1e2b9397"><div class="ttname"><a href="namespaceripple_1_1openssl_1_1detail.html#a5424207e5a700ac59ea8b9ab1e2b9397">ripple::openssl::detail::initAnonymous</a></div><div class="ttdeci">static void initAnonymous(boost::asio::ssl::context &amp;context)</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00086">make_SSLContext.cpp:86</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1openssl_1_1detail_html_aef24a56d2f2bb53af7bd545390d04fdc"><div class="ttname"><a href="namespaceripple_1_1openssl_1_1detail.html#aef24a56d2f2bb53af7bd545390d04fdc">ripple::openssl::detail::get_context</a></div><div class="ttdeci">std::shared_ptr&lt; boost::asio::ssl::context &gt; get_context(std::string cipherList)</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00323">make_SSLContext.cpp:323</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1openssl_1_1detail_html_aef24a56d2f2bb53af7bd545390d04fdc"><div class="ttname"><a href="namespaceripple_1_1openssl_1_1detail.html#aef24a56d2f2bb53af7bd545390d04fdc">ripple::openssl::detail::get_context</a></div><div class="ttdeci">std::shared_ptr&lt; boost::asio::ssl::context &gt; get_context(std::string cipherList)</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00326">make_SSLContext.cpp:326</a></div></div>
 <div class="ttc" id="agmtime_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/chrono/c/gmtime.html">std::gmtime</a></div><div class="ttdeci">T gmtime(T... args)</div></div>
-<div class="ttc" id="anamespaceripple_html_ae8b021ae4b350b66b5e9e39f4a32c844"><div class="ttname"><a href="namespaceripple.html#ae8b021ae4b350b66b5e9e39f4a32c844">ripple::make_SSLContextAuthed</a></div><div class="ttdeci">std::shared_ptr&lt; boost::asio::ssl::context &gt; make_SSLContextAuthed(std::string const &amp;keyFile, std::string const &amp;certFile, std::string const &amp;chainFile, std::string const &amp;cipherList)</div><div class="ttdoc">Create an authenticated SSL context using the specified files.</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00372">make_SSLContext.cpp:372</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ae8b021ae4b350b66b5e9e39f4a32c844"><div class="ttname"><a href="namespaceripple.html#ae8b021ae4b350b66b5e9e39f4a32c844">ripple::make_SSLContextAuthed</a></div><div class="ttdeci">std::shared_ptr&lt; boost::asio::ssl::context &gt; make_SSLContextAuthed(std::string const &amp;keyFile, std::string const &amp;certFile, std::string const &amp;chainFile, std::string const &amp;cipherList)</div><div class="ttdoc">Create an authenticated SSL context using the specified files.</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00375">make_SSLContext.cpp:375</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1openssl_1_1detail_html_aad232b4e5ba55646b1c05dc19250b8ad"><div class="ttname"><a href="namespaceripple_1_1openssl_1_1detail.html#aad232b4e5ba55646b1c05dc19250b8ad">ripple::openssl::detail::defaultCipherList</a></div><div class="ttdeci">const std::string defaultCipherList</div><div class="ttdoc">The default list of ciphers we accept over TLS.</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00083">make_SSLContext.cpp:83</a></div></div>
 <div class="ttc" id="astdexcept_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/stdexcept.html">stdexcept</a></div></div>
 <div class="ttc" id="aaddressof_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/addressof.html">std::addressof</a></div><div class="ttdeci">T addressof(T... args)</div></div>
@@ -433,6 +436,7 @@ $(function() {
 <div class="ttc" id="aempty_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string/empty.html">std::string::empty</a></div><div class="ttdeci">T empty(T... args)</div></div>
 <div class="ttc" id="atime_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/chrono/c/time.html">std::time</a></div><div class="ttdeci">T time(T... args)</div></div>
 <div class="ttc" id="anamespaceripple_1_1openssl_1_1detail_html_a70f3d81f87a75113774c421267a670b7"><div class="ttname"><a href="namespaceripple_1_1openssl_1_1detail.html#a70f3d81f87a75113774c421267a670b7">ripple::openssl::detail::initAuthenticated</a></div><div class="ttdeci">static void initAuthenticated(boost::asio::ssl::context &amp;context, std::string const &amp;key_file, std::string const &amp;cert_file, std::string const &amp;chain_file)</div><div class="ttdef"><b>Definition:</b> <a href="make__SSLContext_8cpp_source.html#l00228">make_SSLContext.cpp:228</a></div></div>
+<div class="ttc" id="awhat_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/error/exception/what.html">std::exception::what</a></div><div class="ttdeci">T what(T... args)</div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">
