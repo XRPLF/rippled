@@ -357,8 +357,9 @@ ValidatorSite::onTimer(std::size_t siteIdx, error_code const& ec)
         // the WorkSSL client ctor can throw if SSL init fails
         makeRequest(sites_[siteIdx].startingResource, siteIdx, lock);
     }
-    catch (std::exception&)
+    catch (std::exception const& ex)
     {
+        JLOG(j_.error()) << "Exception in " << __func__ << ": " << ex.what();
         onSiteFetch(
             boost::system::error_code{-1, boost::system::generic_category()},
             {},
@@ -526,7 +527,7 @@ ValidatorSite::processRedirect(
             throw std::runtime_error(
                 "invalid scheme in redirect " + newLocation->pUrl.scheme);
     }
-    catch (std::exception&)
+    catch (std::exception const& ex)
     {
         JLOG(j_.error()) << "Invalid redirect location: "
                          << res[field::location];
@@ -606,8 +607,10 @@ ValidatorSite::onSiteFetch(
                     }
                 }
             }
-            catch (std::exception& ex)
+            catch (std::exception const& ex)
             {
+                JLOG(j_.error())
+                    << "Exception in " << __func__ << ": " << ex.what();
                 onError(ex.what(), false);
             }
         }
@@ -643,8 +646,10 @@ ValidatorSite::onTextFetch(
 
             parseJsonResponse(res, siteIdx, lock_sites);
         }
-        catch (std::exception& ex)
+        catch (std::exception const& ex)
         {
+            JLOG(j_.error())
+                << "Exception in " << __func__ << ": " << ex.what();
             sites_[siteIdx].lastRefreshStatus.emplace(Site::Status{
                 clock_type::now(), ListDisposition::invalid, ex.what()});
         }

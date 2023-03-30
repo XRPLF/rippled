@@ -866,10 +866,11 @@ LedgerMaster::fixMismatch(ReadView const& ledger)
             {
                 hash = hashOfSeq(ledger, lSeq, m_journal);
             }
-            catch (std::exception const&)
+            catch (std::exception const& ex)
             {
                 JLOG(m_journal.warn())
-                    << "fixMismatch encounters partial ledger";
+                    << "fixMismatch encounters partial ledger. Exception: "
+                    << ex.what();
                 clearLedger(lSeq);
                 return;
             }
@@ -1407,10 +1408,11 @@ LedgerMaster::findNewLedgersToPublish(
         JLOG(m_journal.trace())
             << "ready to publish " << ret.size() << " ledgers.";
     }
-    catch (std::exception const&)
+    catch (std::exception const& ex)
     {
         JLOG(m_journal.error())
-            << "Exception while trying to find ledgers to publish.";
+            << "Exception while trying to find ledgers to publish: "
+            << ex.what();
     }
 
     if (app_.config().LEDGER_REPLAY)
@@ -2009,9 +2011,10 @@ LedgerMaster::fetchForHistory(
                     }
                 }
             }
-            catch (std::exception const&)
+            catch (std::exception const& ex)
             {
-                JLOG(m_journal.warn()) << "Threw while prefetching";
+                JLOG(m_journal.warn())
+                    << "Threw while prefetching: " << ex.what();
             }
         }
     }
@@ -2346,9 +2349,10 @@ LedgerMaster::makeFetchPack(
 
         peer->send(msg);
     }
-    catch (std::exception const&)
+    catch (std::exception const& ex)
     {
-        JLOG(m_journal.warn()) << "Exception building fetch pach";
+        JLOG(m_journal.warn())
+            << "Exception building fetch pach. Exception: " << ex.what();
     }
 }
 

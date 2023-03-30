@@ -143,9 +143,10 @@ applyTransactions(
                         ++it;
                 }
             }
-            catch (std::exception const&)
+            catch (std::exception const& ex)
             {
-                JLOG(j.warn()) << "Transaction " << txid << " throws";
+                JLOG(j.warn())
+                    << "Transaction " << txid << " throws: " << ex.what();
                 failed.insert(txid);
                 it = txns.erase(it);
             }

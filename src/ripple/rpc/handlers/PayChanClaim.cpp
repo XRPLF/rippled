@@ -80,10 +80,11 @@ doChannelAuthorize(RPC::JsonContext& context)
         auto const buf = sign(pk, sk, msg.slice());
         result[jss::signature] = strHex(buf);
     }
-    catch (std::exception&)
+    catch (std::exception const& ex)
     {
-        result =
-            RPC::make_error(rpcINTERNAL, "Exception occurred during signing.");
+        result = RPC::make_error(
+            rpcINTERNAL,
+            "Exception occurred during signing: " + std::string(ex.what()));
     }
     return result;
 }

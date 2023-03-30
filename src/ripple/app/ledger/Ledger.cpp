@@ -186,6 +186,7 @@ Ledger::Ledger(
     , txMap_(std::make_shared<SHAMap>(SHAMapType::TRANSACTION, family))
     , stateMap_(std::make_shared<SHAMap>(SHAMapType::STATE, family))
     , rules_{config.features}
+    , j_(beast::Journal(beast::Journal::getNullSink()))
 {
     info_.seq = 1;
     info_.drops = INITIAL_XRP;
@@ -255,6 +256,7 @@ Ledger::Ledger(
           std::make_shared<SHAMap>(SHAMapType::STATE, info.accountHash, family))
     , rules_(config.features)
     , info_(info)
+    , j_(j)
 {
     loaded = true;
 
@@ -306,6 +308,7 @@ Ledger::Ledger(Ledger const& prevLedger, NetClock::time_point closeTime)
     , stateMap_(prevLedger.stateMap_->snapShot(true))
     , fees_(prevLedger.fees_)
     , rules_(prevLedger.rules_)
+    , j_(beast::Journal(beast::Journal::getNullSink()))
 {
     info_.seq = prevLedger.info_.seq + 1;
     info_.parentCloseTime = prevLedger.info_.closeTime;
@@ -339,6 +342,7 @@ Ledger::Ledger(LedgerInfo const& info, Config const& config, Family& family)
           std::make_shared<SHAMap>(SHAMapType::STATE, info.accountHash, family))
     , rules_{config.features}
     , info_(info)
+    , j_(beast::Journal(beast::Journal::getNullSink()))
 {
     info_.hash = calculateLedgerHash(info_);
 }
@@ -352,6 +356,7 @@ Ledger::Ledger(
     , txMap_(std::make_shared<SHAMap>(SHAMapType::TRANSACTION, family))
     , stateMap_(std::make_shared<SHAMap>(SHAMapType::STATE, family))
     , rules_{config.features}
+    , j_(beast::Journal(beast::Journal::getNullSink()))
 {
     info_.seq = ledgerSeq;
     info_.closeTime = closeTime;
@@ -626,8 +631,9 @@ Ledger::setup()
     {
         ret = false;
     }
-    catch (std::exception const&)
+    catch (std::exception const& ex)
     {
+        JLOG(j_.error()) << "Exception in " << __func__ << ": " << ex.what();
         Rethrow();
     }
 
@@ -682,8 +688,9 @@ Ledger::setup()
     {
         ret = false;
     }
-    catch (std::exception const&)
+    catch (std::exception const& ex)
     {
+        JLOG(j_.error()) << "Exception in " << __func__ << ": " << ex.what();
         Rethrow();
     }
 
