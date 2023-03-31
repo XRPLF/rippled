@@ -823,17 +823,12 @@ BookStep<TIn, TOut, TDerived>::tip(ReadView const& view) const
     // Don't pass in clobQuality. For one-path it returns the offer as
     // the pool balances and the resulting quality is Spot Price Quality.
     // For multi-path it returns the actual offer.
-    if (auto const ammOffer = getAMMOffer(view, std::nullopt))
-    {
-        // AMM quality is better or no CLOB offer
-        if ((clobQuality && ammOffer->quality() > clobQuality) || !clobQuality)
-            return ammOffer;
-    }
-    // CLOB quality is better or no AMM offer
-    if (clobQuality)
-        return *clobQuality;
-    // Neither CLOB nor AMM offer is available
-    return std::nullopt;
+    // AMM quality is better or no CLOB offer
+    if (auto const ammOffer = getAMMOffer(view, std::nullopt); ammOffer &&
+        ((clobQuality && ammOffer->quality() > clobQuality) || !clobQuality))
+        return ammOffer;
+    // CLOB quality is better or nullopt
+    return clobQuality;
 }
 
 template <class TIn, class TOut, class TDerived>

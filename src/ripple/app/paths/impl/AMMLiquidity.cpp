@@ -58,34 +58,32 @@ TAmounts<TIn, TOut>
 AMMLiquidity<TIn, TOut>::generateFibSeqOffer(
     TAmounts<TIn, TOut> const& balances) const
 {
-    auto const n = ammContext_.curIters();
     TAmounts<TIn, TOut> cur{};
-    Number x{};
-    Number y{};
 
     cur.in = toAmount<TIn>(
         getIssue(balances.in),
         InitialFibSeqPct * initialBalances_.in,
         Number::rounding_mode::upward);
     cur.out = swapAssetIn(initialBalances_, cur.in, tradingFee_);
-    y = cur.out;
-    if (n == 0)
+
+    if (ammContext_.curIters() == 0)
         return cur;
 
-    std::uint16_t i = 0;
-    auto const total = [&]() {
-        Number total{};
-        do
-        {
-            total = x + y;
-            x = y;
-            y = total;
-        } while (++i < n);
-        return total;
-    }();
+    // clang-format off
+    constexpr std::uint32_t fib[AMMContext::MaxIterations] = {
+        1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987,
+        1597, 2584, 4181, 6765, 10946, 17711, 28657, 46368, 75025, 121393,
+        196418, 317811, 514229, 832040};
+    // clang-format on
+
+    assert(!ammContext_.maxItersReached());
+
     cur.out = toAmount<TOut>(
-        getIssue(balances.out), total, Number::rounding_mode::downward);
+        getIssue(balances.out),
+        cur.out * fib[ammContext_.curIters() - 1],
+        Number::rounding_mode::downward);
     cur.in = swapAssetOut(balances, cur.out, tradingFee_);
+
     return cur;
 }
 
