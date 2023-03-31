@@ -17,9 +17,11 @@
 */
 //==============================================================================
 
+#include <test/jtx/envconfig.h>
+
 #include <ripple/core/ConfigSections.h>
 #include <test/jtx/Env.h>
-#include <test/jtx/envconfig.h>
+#include <test/jtx/amount.h>
 
 namespace ripple {
 namespace test {
@@ -39,6 +41,13 @@ setupConfigForUnitTests(Config& cfg)
     std::string const port_peer = std::to_string(port_base);
     std::string port_rpc = std::to_string(port_base + 1);
     std::string port_ws = std::to_string(port_base + 2);
+
+    using namespace jtx;
+    // Default fees to old values, so tests don't have to worry about changes in
+    // Config.h
+    cfg.FEES.reference_fee = 10;
+    cfg.FEES.account_reserve = XRP(200).value().xrp().drops();
+    cfg.FEES.owner_reserve = XRP(50).value().xrp().drops();
 
     cfg.overwrite(ConfigSection::nodeDatabase(), "type", "memory");
     cfg.overwrite(ConfigSection::nodeDatabase(), "path", "main");

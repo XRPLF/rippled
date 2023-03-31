@@ -193,13 +193,14 @@ SHAMap::finishFetch(
             canonicalize(hash, node);
         return node;
     }
+
     catch (SHAMapMissingNode const& e)
     {
         JLOG(journal_.warn()) << "Missing node: " << hash << " : " << e.what();
     }
     catch (std::runtime_error const& e)
     {
-        JLOG(journal_.warn()) << e.what();
+        JLOG(journal_.warn()) << __func__ << " : " << e.what();
     }
     catch (...)
     {

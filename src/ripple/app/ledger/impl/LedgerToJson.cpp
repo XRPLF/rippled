@@ -192,9 +192,14 @@ fillJsonTx(Object& json, LedgerFill const& fill)
             appendAll(fill.ledger.txs);
         }
     }
-    catch (std::exception const&)
+    catch (std::exception const& ex)
     {
         // Nothing the user can do about this.
+        if (fill.context)
+        {
+            JLOG(fill.context->j.error())
+                << "Exception in " << __func__ << ": " << ex.what();
+        }
     }
 }
 

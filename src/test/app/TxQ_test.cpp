@@ -1448,7 +1448,7 @@ public:
         // These tests may change if TxQ ordering is changed
         using namespace std::string_literals;
         BEAST_EXPECTS(
-            aliceSeq + 1 == env.seq(alice),
+            aliceSeq == env.seq(alice),
             "alice: "s + std::to_string(aliceSeq) + ", " +
                 std::to_string(env.seq(alice)));
         BEAST_EXPECTS(
@@ -1460,7 +1460,7 @@ public:
             "charlie: "s + std::to_string(charlieSeq) + ", " +
                 std::to_string(env.seq(charlie)));
         BEAST_EXPECTS(
-            dariaSeq == env.seq(daria),
+            dariaSeq + 1 == env.seq(daria),
             "daria: "s + std::to_string(dariaSeq) + ", " +
                 std::to_string(env.seq(daria)));
         BEAST_EXPECTS(
@@ -1472,24 +1472,24 @@ public:
             "fred: "s + std::to_string(fredSeq) + ", " +
                 std::to_string(env.seq(fred)));
         BEAST_EXPECTS(
-            gwenSeq + 1 == env.seq(gwen),
+            gwenSeq == env.seq(gwen),
             "gwen: "s + std::to_string(gwenSeq) + ", " +
                 std::to_string(env.seq(gwen)));
         BEAST_EXPECTS(
-            hankSeq == env.seq(hank),
+            hankSeq + 1 == env.seq(hank),
             "hank: "s + std::to_string(hankSeq) + ", " +
                 std::to_string(env.seq(hank)));
 
         // Which sequences get incremented may change if TxQ ordering is
         // changed
-        ++aliceSeq;
+        //++aliceSeq;
         ++bobSeq;
         ++(++charlieSeq);
-        // ++dariaSeq;
+        ++dariaSeq;
         ++elmoSeq;
         // ++fredSeq;
-        ++gwenSeq;
-        // ++hankSeq;
+        //++gwenSeq;
+        ++hankSeq;
 
         auto getTxsQueued = [&]() {
             auto const txs = env.app().getTxQ().getTxs();
@@ -2939,12 +2939,12 @@ public:
         // Verify that nothing can be added now that the gap is filled.
         env(noop(alice), seq(aliceSeq + 20), ter(telCAN_NOT_QUEUE_FULL));
 
-        // Close ledger 6.  That removes 6 of alice's transactions,
-        // but alice adds one more transaction at seq(aliceSeq + 20) so
-        // we only see a reduction by 5.
+        // Close ledger 6.  That removes some of alice's transactions,
+        // but alice adds some more transaction(s) so expectedCount
+        // may not reduce to 8.
         env.close();
         checkMetrics(__LINE__, env, 9, 50, 6, 5, 256);
-        BEAST_EXPECT(env.seq(alice) == aliceSeq + 15);
+        BEAST_EXPECT(env.seq(alice) == aliceSeq + 13);
 
         // Close ledger 7.  That should remove 7 more of alice's transactions.
         env.close();

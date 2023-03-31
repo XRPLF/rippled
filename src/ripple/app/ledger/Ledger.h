@@ -266,11 +266,10 @@ public:
     setAccepted(
         NetClock::time_point closeTime,
         NetClock::duration closeResolution,
-        bool correctCloseTime,
-        Config const& config);
+        bool correctCloseTime);
 
     void
-    setImmutable(Config const& config, bool rehash = true);
+    setImmutable(bool rehash = true);
 
     bool
     isImmutable() const
@@ -395,7 +394,10 @@ private:
     class txs_iter_impl;
 
     bool
-    setup(Config const& config);
+    setup();
+
+    void
+    defaultFees(Config const& config);
 
     bool mImmutable;
 
@@ -408,6 +410,7 @@ private:
     Fees fees_;
     Rules rules_;
     LedgerInfo info_;
+    beast::Journal j_;
 };
 
 /** A ledger wrapped in a CachedView. */
