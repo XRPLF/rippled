@@ -329,7 +329,6 @@ public:
              {jss::amendments,
               jss::check,
               jss::directory,
-              jss::fee,
               jss::offer,
               jss::signer_list,
               jss::state,
