@@ -119,9 +119,8 @@ public:
     sles_type::value_type
     dereference() const override
     {
-        auto const item = *iter_;
-        SerialIter sit(item.slice());
-        return std::make_shared<SLE const>(sit, item.key());
+        SerialIter sit(iter_->slice());
+        return std::make_shared<SLE const>(sit, iter_->key());
     }
 };
 
@@ -168,7 +167,7 @@ public:
     txs_type::value_type
     dereference() const override
     {
-        auto const item = *iter_;
+        auto const& item = *iter_;
         if (metadata_)
             return deserializeTxPlusMeta(item);
         return {deserializeTx(item), nullptr};
@@ -404,8 +403,8 @@ bool
 Ledger::addSLE(SLE const& sle)
 {
     auto const s = sle.getSerializer();
-    SHAMapItem item(sle.key(), s.slice());
-    return stateMap_->addItem(SHAMapNodeType::tnACCOUNT_STATE, std::move(item));
+    return stateMap_->addItem(
+        SHAMapNodeType::tnACCOUNT_STATE, make_shamapitem(sle.key(), s.slice()));
 }
 
 //------------------------------------------------------------------------------
@@ -565,7 +564,7 @@ Ledger::rawInsert(std::shared_ptr<SLE> const& sle)
     sle->add(ss);
     if (!stateMap_->addGiveItem(
             SHAMapNodeType::tnACCOUNT_STATE,
-            std::make_shared<SHAMapItem const>(sle->key(), ss.slice())))
+            make_shamapitem(sle->key(), ss.slice())))
         LogicError("Ledger::rawInsert: key already exists");
 }
 
@@ -576,7 +575,7 @@ Ledger::rawReplace(std::shared_ptr<SLE> const& sle)
     sle->add(ss);
     if (!stateMap_->updateGiveItem(
             SHAMapNodeType::tnACCOUNT_STATE,
-            std::make_shared<SHAMapItem const>(sle->key(), ss.slice())))
+            make_shamapitem(sle->key(), ss.slice())))
         LogicError("Ledger::rawReplace: key not found");
 }
 
@@ -593,8 +592,7 @@ Ledger::rawTxInsert(
     s.addVL(txn->peekData());
     s.addVL(metaData->peekData());
     if (!txMap().addGiveItem(
-            SHAMapNodeType::tnTRANSACTION_MD,
-            std::make_shared<SHAMapItem const>(key, s.slice())))
+            SHAMapNodeType::tnTRANSACTION_MD, make_shamapitem(key, s.slice())))
         LogicError("duplicate_tx: " + to_string(key));
 }
 
@@ -610,7 +608,7 @@ Ledger::rawTxInsertWithHash(
     Serializer s(txn->getDataLength() + metaData->getDataLength() + 16);
     s.addVL(txn->peekData());
     s.addVL(metaData->peekData());
-    auto item = std::make_shared<SHAMapItem const>(key, s.slice());
+    auto item = make_shamapitem(key, s.slice());
     auto hash = sha512Half(HashPrefix::txNode, item->slice(), item->key());
     if (!txMap().addGiveItem(SHAMapNodeType::tnTRANSACTION_MD, std::move(item)))
         LogicError("duplicate_tx: " + to_string(key));

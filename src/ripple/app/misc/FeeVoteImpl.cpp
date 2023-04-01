@@ -326,7 +326,7 @@ FeeVoteImpl::doVoting(
 
         if (!initialPosition->addGiveItem(
                 SHAMapNodeType::tnTRANSACTION_NM,
-                std::make_shared<SHAMapItem>(txID, s.slice())))
+                make_shamapitem(txID, s.slice())))
         {
             JLOG(journal_.warn()) << "Ledger already had fee change";
         }
