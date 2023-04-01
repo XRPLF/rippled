@@ -105,7 +105,7 @@ public:
     void
     gotSkipList(
         LedgerInfo const& info,
-        std::shared_ptr<SHAMapItem const> const& data);
+        boost::intrusive_ptr<SHAMapItem const> const& data);
 
     /**
      * Process a ledger delta (extracted from a TMReplayDeltaResponse message)

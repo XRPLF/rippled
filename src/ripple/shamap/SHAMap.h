@@ -120,8 +120,8 @@ public:
     static inline constexpr unsigned int leafDepth = 64;
 
     using DeltaItem = std::pair<
-        std::shared_ptr<SHAMapItem const>,
-        std::shared_ptr<SHAMapItem const>>;
+        boost::intrusive_ptr<SHAMapItem const>,
+        boost::intrusive_ptr<SHAMapItem const>>;
     using Delta = std::map<uint256, DeltaItem>;
 
     SHAMap(SHAMap const&) = delete;
@@ -190,23 +190,27 @@ public:
     delItem(uint256 const& id);
 
     bool
-    addItem(SHAMapNodeType type, SHAMapItem&& i);
+    addItem(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem const> item);
 
     SHAMapHash
     getHash() const;
 
     // save a copy if you have a temporary anyway
     bool
-    updateGiveItem(SHAMapNodeType type, std::shared_ptr<SHAMapItem const>);
+    updateGiveItem(
+        SHAMapNodeType type,
+        boost::intrusive_ptr<SHAMapItem const> item);
 
     bool
-    addGiveItem(SHAMapNodeType type, std::shared_ptr<SHAMapItem const> item);
+    addGiveItem(
+        SHAMapNodeType type,
+        boost::intrusive_ptr<SHAMapItem const> item);
 
     // Save a copy if you need to extend the life
     // of the SHAMapItem beyond this SHAMap
-    std::shared_ptr<SHAMapItem const> const&
+    boost::intrusive_ptr<SHAMapItem const> const&
     peekItem(uint256 const& id) const;
-    std::shared_ptr<SHAMapItem const> const&
+    boost::intrusive_ptr<SHAMapItem const> const&
     peekItem(uint256 const& id, SHAMapHash& hash) const;
 
     // traverse functions
@@ -253,8 +257,8 @@ public:
     */
     void
     visitLeaves(
-        std::function<void(std::shared_ptr<SHAMapItem const> const&)> const&)
-        const;
+        std::function<
+            void(boost::intrusive_ptr<SHAMapItem const> const&)> const&) const;
 
     // comparison/sync functions
 
@@ -361,8 +365,8 @@ private:
     using SharedPtrNodeStack =
         std::stack<std::pair<std::shared_ptr<SHAMapTreeNode>, SHAMapNodeID>>;
     using DeltaRef = std::pair<
-        std::shared_ptr<SHAMapItem const> const&,
-        std::shared_ptr<SHAMapItem const> const&>;
+        boost::intrusive_ptr<SHAMapItem const>,
+        boost::intrusive_ptr<SHAMapItem const>>;
 
     // tree node cache operations
     std::shared_ptr<SHAMapTreeNode>
@@ -475,7 +479,7 @@ private:
     descendNoStore(std::shared_ptr<SHAMapInnerNode> const&, int branch) const;
 
     /** If there is only one leaf below this node, get its contents */
-    std::shared_ptr<SHAMapItem const> const&
+    boost::intrusive_ptr<SHAMapItem const> const&
     onlyBelow(SHAMapTreeNode*) const;
 
     bool
@@ -490,7 +494,7 @@ private:
     bool
     walkBranch(
         SHAMapTreeNode* node,
-        std::shared_ptr<SHAMapItem const> const& otherMapItem,
+        boost::intrusive_ptr<SHAMapItem const> const& otherMapItem,
         bool isFirstMap,
         Delta& differences,
         int& maxCount) const;
