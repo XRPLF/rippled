@@ -431,6 +431,7 @@ SHAMapInnerNode::invariants(bool is_root) const
         }
     }
 
+    (void)count;
     if (!is_root)
     {
         assert(hash_.isNonZero());
