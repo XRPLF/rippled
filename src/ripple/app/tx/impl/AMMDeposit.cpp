@@ -687,6 +687,9 @@ AMMDeposit::singleDepositEPrice(
                 view, ammAccount, amount, std::nullopt, lptAMMBalance, tokens);
     }
 
+    // LPTokens is asset out => EP = b / t
+    // substituting t in formula 3 as b/EP and simplifying
+    // b = (T * EP)**2 * (1 - 0.5 * tfee) / B - 2 * T * EP
     auto const amountDeposit = toSTAmount(
         amountBalance.issue(),
         square(ePrice * lptAMMBalance) * feeMultHalf(tfee) / amountBalance -

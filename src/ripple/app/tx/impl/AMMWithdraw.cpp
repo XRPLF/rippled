@@ -750,6 +750,11 @@ AMMWithdraw::singleWithdrawEPrice(
     STAmount const& ePrice,
     std::uint16_t tfee)
 {
+    // LPTokens is asset in => EP = t / a and formula (8) is rewritten as:
+    // a = A * (1 - (1 - t/T)**2) * (1 - 0.5 * tfee)
+    // substituting a as t/EP and simplifying get the formula
+    // for the tokens as:
+    // t = T * (2 - T/(EP * A * (1 - 0.5 * tfee)))
     auto const tokens = lptAMMBalance *
         (Number(2) -
          lptAMMBalance / (amountBalance * ePrice * feeMultHalf(tfee)));
