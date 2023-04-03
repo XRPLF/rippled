@@ -49,7 +49,6 @@ namespace ripple {
 struct Fees
 {
     XRPAmount base{0};       // Reference tx cost (drops)
-    FeeUnit32 units{0};      // Reference fee units
     XRPAmount reserve{0};    // Reserve base (drops)
     XRPAmount increment{0};  // Reserve increment (drops)
 
@@ -67,15 +66,6 @@ struct Fees
     accountReserve(std::size_t ownerCount) const
     {
         return reserve + ownerCount * increment;
-    }
-
-    XRPAmount
-    toDrops(FeeUnit64 const& fee) const
-    {
-        if (auto const resultPair = mulDiv(base, fee, units); resultPair.first)
-            return resultPair.second;
-
-        return XRPAmount(STAmount::cMaxNativeN);
     }
 };
 

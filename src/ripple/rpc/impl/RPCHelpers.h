@@ -86,7 +86,7 @@ getStartHint(std::shared_ptr<SLE const> const& sle, AccountID const& accountID);
  * @param account - The account being tested for SLE ownership.
  */
 bool
-isOwnedByAccount(
+isRelatedToAccount(
     ReadView const& ledger,
     std::shared_ptr<SLE const> const& sle,
     AccountID const& accountID);

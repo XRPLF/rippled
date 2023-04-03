@@ -40,14 +40,14 @@ public:
     struct FeatureInfo
     {
         FeatureInfo() = delete;
-        FeatureInfo(std::string const& n, uint256 const& f, DefaultVote v)
+        FeatureInfo(std::string const& n, uint256 const& f, VoteBehavior v)
             : name(n), feature(f), vote(v)
         {
         }
 
         std::string const name;
         uint256 const feature;
-        DefaultVote const vote;
+        VoteBehavior const vote;
     };
 
     virtual ~AmendmentTable() = default;

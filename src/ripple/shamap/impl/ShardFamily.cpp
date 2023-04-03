@@ -22,6 +22,7 @@
 #include <ripple/app/main/Tuning.h>
 #include <ripple/nodestore/DatabaseShard.h>
 #include <ripple/shamap/ShardFamily.h>
+#include <tuple>
 
 namespace ripple {
 
@@ -152,8 +153,9 @@ ShardFamily::reset()
 }
 
 void
-ShardFamily::missingNode(std::uint32_t seq)
+ShardFamily::missingNodeAcquireBySeq(std::uint32_t seq, uint256 const& nodeHash)
 {
+    std::ignore = nodeHash;
     JLOG(j_.error()) << "Missing node in ledger sequence " << seq;
 
     std::unique_lock<std::mutex> lock(maxSeqMutex_);

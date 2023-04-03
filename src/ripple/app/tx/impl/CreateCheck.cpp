@@ -90,8 +90,14 @@ CreateCheck::preclaim(PreclaimContext const& ctx)
         return tecNO_DST;
     }
 
-    if ((sleDst->getFlags() & lsfRequireDestTag) &&
-        !ctx.tx.isFieldPresent(sfDestinationTag))
+    auto const flags = sleDst->getFlags();
+
+    // Check if the destination has disallowed incoming checks
+    if (ctx.view.rules().enabled(featureDisallowIncoming) &&
+        (flags & lsfDisallowIncomingCheck))
+        return tecNO_PERMISSION;
+
+    if ((flags & lsfRequireDestTag) && !ctx.tx.isFieldPresent(sfDestinationTag))
     {
         // The tag is basically account-specific information we don't
         // understand, but we can require someone to fill it in.

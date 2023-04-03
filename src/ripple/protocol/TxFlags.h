@@ -51,74 +51,83 @@ namespace ripple {
     @ingroup protocol
 */
 
+// Formatting equals sign aligned 4 spaces after longest prefix, except for
+// wrapped lines
 // clang-format off
 // Universal Transaction flags:
-constexpr std::uint32_t tfFullyCanonicalSig            = 0x80000000;
-constexpr std::uint32_t tfUniversal                    = tfFullyCanonicalSig;
-constexpr std::uint32_t tfUniversalMask                = ~tfUniversal;
+constexpr std::uint32_t tfFullyCanonicalSig                = 0x80000000;
+constexpr std::uint32_t tfUniversal                        = tfFullyCanonicalSig;
+constexpr std::uint32_t tfUniversalMask                    = ~tfUniversal;
 
 // AccountSet flags:
-constexpr std::uint32_t tfRequireDestTag               = 0x00010000;
-constexpr std::uint32_t tfOptionalDestTag              = 0x00020000;
-constexpr std::uint32_t tfRequireAuth                  = 0x00040000;
-constexpr std::uint32_t tfOptionalAuth                 = 0x00080000;
-constexpr std::uint32_t tfDisallowXRP                  = 0x00100000;
-constexpr std::uint32_t tfAllowXRP                     = 0x00200000;
+constexpr std::uint32_t tfRequireDestTag                   = 0x00010000;
+constexpr std::uint32_t tfOptionalDestTag                  = 0x00020000;
+constexpr std::uint32_t tfRequireAuth                      = 0x00040000;
+constexpr std::uint32_t tfOptionalAuth                     = 0x00080000;
+constexpr std::uint32_t tfDisallowXRP                      = 0x00100000;
+constexpr std::uint32_t tfAllowXRP                         = 0x00200000;
 constexpr std::uint32_t tfAccountSetMask =
     ~(tfUniversal | tfRequireDestTag | tfOptionalDestTag | tfRequireAuth |
       tfOptionalAuth | tfDisallowXRP | tfAllowXRP);
 
 // AccountSet SetFlag/ClearFlag values
-constexpr std::uint32_t asfRequireDest                 =  1;
-constexpr std::uint32_t asfRequireAuth                 =  2;
-constexpr std::uint32_t asfDisallowXRP                 =  3;
-constexpr std::uint32_t asfDisableMaster               =  4;
-constexpr std::uint32_t asfAccountTxnID                =  5;
-constexpr std::uint32_t asfNoFreeze                    =  6;
-constexpr std::uint32_t asfGlobalFreeze                =  7;
-constexpr std::uint32_t asfDefaultRipple               =  8;
-constexpr std::uint32_t asfDepositAuth                 =  9;
-constexpr std::uint32_t asfAuthorizedNFTokenMinter     = 10;
+constexpr std::uint32_t asfRequireDest                     =  1;
+constexpr std::uint32_t asfRequireAuth                     =  2;
+constexpr std::uint32_t asfDisallowXRP                     =  3;
+constexpr std::uint32_t asfDisableMaster                   =  4;
+constexpr std::uint32_t asfAccountTxnID                    =  5;
+constexpr std::uint32_t asfNoFreeze                        =  6;
+constexpr std::uint32_t asfGlobalFreeze                    =  7;
+constexpr std::uint32_t asfDefaultRipple                   =  8;
+constexpr std::uint32_t asfDepositAuth                     =  9;
+constexpr std::uint32_t asfAuthorizedNFTokenMinter         = 10;
+/*  // reserved for Hooks amendment
+constexpr std::uint32_t asfTshCollect                      = 11;
+*/
+constexpr std::uint32_t asfDisallowIncomingNFTokenOffer    = 12;
+constexpr std::uint32_t asfDisallowIncomingCheck           = 13;
+constexpr std::uint32_t asfDisallowIncomingPayChan         = 14;
+constexpr std::uint32_t asfDisallowIncomingTrustline       = 15;
 
 // OfferCreate flags:
-constexpr std::uint32_t tfPassive                      = 0x00010000;
-constexpr std::uint32_t tfImmediateOrCancel            = 0x00020000;
-constexpr std::uint32_t tfFillOrKill                   = 0x00040000;
-constexpr std::uint32_t tfSell                         = 0x00080000;
+constexpr std::uint32_t tfPassive                          = 0x00010000;
+constexpr std::uint32_t tfImmediateOrCancel                = 0x00020000;
+constexpr std::uint32_t tfFillOrKill                       = 0x00040000;
+constexpr std::uint32_t tfSell                             = 0x00080000;
 constexpr std::uint32_t tfOfferCreateMask =
     ~(tfUniversal | tfPassive | tfImmediateOrCancel | tfFillOrKill | tfSell);
 
 // Payment flags:
-constexpr std::uint32_t tfNoRippleDirect               = 0x00010000;
-constexpr std::uint32_t tfPartialPayment               = 0x00020000;
-constexpr std::uint32_t tfLimitQuality                 = 0x00040000;
+constexpr std::uint32_t tfNoRippleDirect                   = 0x00010000;
+constexpr std::uint32_t tfPartialPayment                   = 0x00020000;
+constexpr std::uint32_t tfLimitQuality                     = 0x00040000;
 constexpr std::uint32_t tfPaymentMask =
     ~(tfUniversal | tfPartialPayment | tfLimitQuality | tfNoRippleDirect);
 
 // TrustSet flags:
-constexpr std::uint32_t tfSetfAuth                     = 0x00010000;
-constexpr std::uint32_t tfSetNoRipple                  = 0x00020000;
-constexpr std::uint32_t tfClearNoRipple                = 0x00040000;
-constexpr std::uint32_t tfSetFreeze                    = 0x00100000;
-constexpr std::uint32_t tfClearFreeze                  = 0x00200000;
+constexpr std::uint32_t tfSetfAuth                         = 0x00010000;
+constexpr std::uint32_t tfSetNoRipple                      = 0x00020000;
+constexpr std::uint32_t tfClearNoRipple                    = 0x00040000;
+constexpr std::uint32_t tfSetFreeze                        = 0x00100000;
+constexpr std::uint32_t tfClearFreeze                      = 0x00200000;
 constexpr std::uint32_t tfTrustSetMask =
     ~(tfUniversal | tfSetfAuth | tfSetNoRipple | tfClearNoRipple | tfSetFreeze |
       tfClearFreeze);
 
 // EnableAmendment flags:
-constexpr std::uint32_t tfGotMajority                  = 0x00010000;
-constexpr std::uint32_t tfLostMajority                 = 0x00020000;
+constexpr std::uint32_t tfGotMajority                      = 0x00010000;
+constexpr std::uint32_t tfLostMajority                     = 0x00020000;
 
 // PaymentChannelClaim flags:
-constexpr std::uint32_t tfRenew                        = 0x00010000;
-constexpr std::uint32_t tfClose                        = 0x00020000;
+constexpr std::uint32_t tfRenew                            = 0x00010000;
+constexpr std::uint32_t tfClose                            = 0x00020000;
 constexpr std::uint32_t tfPayChanClaimMask = ~(tfUniversal | tfRenew | tfClose);
 
 // NFTokenMint flags:
-constexpr std::uint32_t const tfBurnable               = 0x00000001;
-constexpr std::uint32_t const tfOnlyXRP                = 0x00000002;
-constexpr std::uint32_t const tfTrustLine              = 0x00000004;
-constexpr std::uint32_t const tfTransferable           = 0x00000008;
+constexpr std::uint32_t const tfBurnable                   = 0x00000001;
+constexpr std::uint32_t const tfOnlyXRP                    = 0x00000002;
+constexpr std::uint32_t const tfTrustLine                  = 0x00000004;
+constexpr std::uint32_t const tfTransferable               = 0x00000008;
 
 // Prior to fixRemoveNFTokenAutoTrustLine, transfer of an NFToken between
 // accounts allowed a TrustLine to be added to the issuer of that token
@@ -140,15 +149,15 @@ constexpr std::uint32_t const tfNFTokenMintMask =
     ~(tfUniversal | tfBurnable | tfOnlyXRP | tfTransferable);
 
 // NFTokenCreateOffer flags:
-constexpr std::uint32_t const tfSellNFToken            = 0x00000001;
+constexpr std::uint32_t const tfSellNFToken                = 0x00000001;
 constexpr std::uint32_t const tfNFTokenCreateOfferMask =
     ~(tfUniversal | tfSellNFToken);
 
 // NFTokenCancelOffer flags:
-constexpr std::uint32_t const tfNFTokenCancelOfferMask = ~(tfUniversal);
+constexpr std::uint32_t const tfNFTokenCancelOfferMask     = ~(tfUniversal);
 
 // NFTokenAcceptOffer flags:
-constexpr std::uint32_t const tfNFTokenAcceptOfferMask = ~tfUniversal;
+constexpr std::uint32_t const tfNFTokenAcceptOfferMask     = ~tfUniversal;
 
 // clang-format on
 

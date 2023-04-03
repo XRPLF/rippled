@@ -1,49 +1,3 @@
-#[===================================================================[
-   NIH dep: boost
-#]===================================================================]
-
-if((NOT DEFINED BOOST_ROOT) AND(DEFINED ENV{BOOST_ROOT}))
-  set(BOOST_ROOT $ENV{BOOST_ROOT})
-endif()
-file(TO_CMAKE_PATH "${BOOST_ROOT}" BOOST_ROOT)
-if(WIN32 OR CYGWIN)
-  # Workaround for MSVC having two boost versions - x86 and x64 on same PC in stage folders
-  if(DEFINED BOOST_ROOT)
-    if(IS_DIRECTORY ${BOOST_ROOT}/stage64/lib)
-      set(BOOST_LIBRARYDIR ${BOOST_ROOT}/stage64/lib)
-    elseif(IS_DIRECTORY ${BOOST_ROOT}/stage/lib)
-      set(BOOST_LIBRARYDIR ${BOOST_ROOT}/stage/lib)
-    elseif(IS_DIRECTORY ${BOOST_ROOT}/lib)
-      set(BOOST_LIBRARYDIR ${BOOST_ROOT}/lib)
-    else()
-      message(WARNING "Did not find expected boost library dir. "
-        "Defaulting to ${BOOST_ROOT}")
-      set(BOOST_LIBRARYDIR ${BOOST_ROOT})
-    endif()
-  endif()
-endif()
-message(STATUS "BOOST_ROOT: ${BOOST_ROOT}")
-message(STATUS "BOOST_LIBRARYDIR: ${BOOST_LIBRARYDIR}")
-
-# uncomment the following as needed to debug FindBoost issues:
-#set(Boost_DEBUG ON)
-
-#[=========================================================[
-   boost dynamic libraries don't trivially support @rpath
-   linking right now (cmake's default), so just force
-   static linking for macos, or if requested on linux by flag
-#]=========================================================]
-if(static)
-  set(Boost_USE_STATIC_LIBS ON)
-endif()
-set(Boost_USE_MULTITHREADED ON)
-if(static AND NOT APPLE)
-  set(Boost_USE_STATIC_RUNTIME ON)
-else()
-  set(Boost_USE_STATIC_RUNTIME OFF)
-endif()
-# TBD:
-# Boost_USE_DEBUG_RUNTIME:  When ON, uses Boost libraries linked against the
 find_package(Boost 1.70 REQUIRED
   COMPONENTS
     chrono
@@ -55,11 +9,12 @@ find_package(Boost 1.70 REQUIRED
     program_options
     regex
     system
-    thread)
+    thread
+)
 
 add_library(ripple_boost INTERFACE)
 add_library(Ripple::boost ALIAS ripple_boost)
-if(is_xcode)
+if(XCODE)
   target_include_directories(ripple_boost BEFORE INTERFACE ${Boost_INCLUDE_DIRS})
   target_compile_options(ripple_boost INTERFACE --system-header-prefix="boost/")
 else()

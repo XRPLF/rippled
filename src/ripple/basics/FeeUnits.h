@@ -455,11 +455,6 @@ mulDivU(Source1 value, Dest mul, Source2 div)
 }  // namespace feeunit
 
 template <class T>
-using FeeUnit = feeunit::TaggedFee<feeunit::feeunitTag, T>;
-using FeeUnit32 = FeeUnit<std::uint32_t>;
-using FeeUnit64 = FeeUnit<std::uint64_t>;
-
-template <class T>
 using FeeLevel = feeunit::TaggedFee<feeunit::feelevelTag, T>;
 using FeeLevel64 = FeeLevel<std::uint64_t>;
 using FeeLevelDouble = FeeLevel<double>;

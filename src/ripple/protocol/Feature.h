@@ -36,17 +36,17 @@
  *    for the feature at the bottom
  * 2) Add a uint256 definition for the feature to the corresponding source
  *    file (Feature.cpp). Use `registerFeature` to create the feature with
- *    the feature's name, `Supported::no`, and `DefaultVote::no`. This
+ *    the feature's name, `Supported::no`, and `VoteBehavior::DefaultNo`. This
  *    should be the only place the feature's name appears in code as a string.
  * 3) Use the uint256 as the parameter to `view.rules.enabled()` to
  *    control flow into new code that this feature limits.
  * 4) If the feature development is COMPLETE, and the feature is ready to be
  *    SUPPORTED, change the `registerFeature` parameter to Supported::yes.
  * 5) When the feature is ready to be ENABLED, change the `registerFeature`
- *    parameter to `DefaultVote::yes`.
+ *    parameter to `VoteBehavior::DefaultYes`.
  * In general, any newly supported amendments (`Supported::yes`) should have
- * a `DefaultVote::no` for at least one full release cycle. High priority
- * bug fixes can be an exception to this rule of thumb.
+ * a `VoteBehavior::DefaultNo` for at least one full release cycle. High
+ * priority bug fixes can be an exception to this rule of thumb.
  *
  * When a feature has been enabled for several years, the conditional code
  * may be removed, and the feature "retired". To retire a feature:
@@ -55,7 +55,7 @@
  *    section at the end of the file.
  * 3) CHANGE the name of the variable to start with "retired".
  * 4) CHANGE the parameters of the `registerFeature` call to `Supported::yes`
- *    and `DefaultVote::no`.
+ *    and `VoteBehavior::DefaultNo`.
  * The feature must remain registered and supported indefinitely because it
  * still exists in the ledger, but there is no need to vote for it because
  * there's nothing to vote for. If it is removed completely from the code, any
@@ -66,7 +66,7 @@
 
 namespace ripple {
 
-enum class DefaultVote : bool { no = false, yes };
+enum class VoteBehavior : int { Obsolete = -1, DefaultNo = 0, DefaultYes };
 
 namespace detail {
 
@@ -74,12 +74,12 @@ namespace detail {
 // Feature.cpp. Because it's only used to reserve storage, and determine how
 // large to make the FeatureBitset, it MAY be larger. It MUST NOT be less than
 // the actual number of amendments. A LogicError on startup will verify this.
-static constexpr std::size_t numFeatures = 53;
+static constexpr std::size_t numFeatures = 58;
 
 /** Amendments that this server supports and the default voting behavior.
    Whether they are enabled depends on the Rules defined in the validated
    ledger */
-std::map<std::string, DefaultVote> const&
+std::map<std::string, VoteBehavior> const&
 supportedAmendments();
 
 /** Amendments that this server won't vote for by default.
@@ -340,6 +340,11 @@ extern uint256 const featureNonFungibleTokensV1_1;
 extern uint256 const fixTrustLinesToSelf;
 extern uint256 const fixRemoveNFTokenAutoTrustLine;
 extern uint256 const featureImmediateOfferKilled;
+extern uint256 const featureDisallowIncoming;
+extern uint256 const featureXRPFees;
+extern uint256 const fixUniversalNumber;
+extern uint256 const fixNonFungibleTokensV1_2;
+extern uint256 const fixNFTokenRemint;
 
 }  // namespace ripple
 

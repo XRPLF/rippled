@@ -29,13 +29,14 @@ class FeeVote_test : public beast::unit_test::suite
     void
     testSetup()
     {
+        FeeVote::Setup const defaultSetup;
         {
             // defaults
             Section config;
             auto setup = setup_FeeVote(config);
-            BEAST_EXPECT(setup.reference_fee == 10);
-            BEAST_EXPECT(setup.account_reserve == 20 * DROPS_PER_XRP);
-            BEAST_EXPECT(setup.owner_reserve == 5 * DROPS_PER_XRP);
+            BEAST_EXPECT(setup.reference_fee == defaultSetup.reference_fee);
+            BEAST_EXPECT(setup.account_reserve == defaultSetup.account_reserve);
+            BEAST_EXPECT(setup.owner_reserve == defaultSetup.owner_reserve);
         }
         {
             Section config;
@@ -56,9 +57,9 @@ class FeeVote_test : public beast::unit_test::suite
                  "owner_reserve = foo"});
             // Illegal values are ignored, and the defaults left unchanged
             auto setup = setup_FeeVote(config);
-            BEAST_EXPECT(setup.reference_fee == 10);
-            BEAST_EXPECT(setup.account_reserve == 20 * DROPS_PER_XRP);
-            BEAST_EXPECT(setup.owner_reserve == 5 * DROPS_PER_XRP);
+            BEAST_EXPECT(setup.reference_fee == defaultSetup.reference_fee);
+            BEAST_EXPECT(setup.account_reserve == defaultSetup.account_reserve);
+            BEAST_EXPECT(setup.owner_reserve == defaultSetup.owner_reserve);
         }
         {
             Section config;
@@ -68,7 +69,7 @@ class FeeVote_test : public beast::unit_test::suite
                  "owner_reserve = -1234"});
             // Illegal values are ignored, and the defaults left unchanged
             auto setup = setup_FeeVote(config);
-            BEAST_EXPECT(setup.reference_fee == 10);
+            BEAST_EXPECT(setup.reference_fee == defaultSetup.reference_fee);
             BEAST_EXPECT(
                 setup.account_reserve == static_cast<std::uint32_t>(-1234567));
             BEAST_EXPECT(
@@ -86,9 +87,9 @@ class FeeVote_test : public beast::unit_test::suite
                  "owner_reserve = " + big64});
             // Illegal values are ignored, and the defaults left unchanged
             auto setup = setup_FeeVote(config);
-            BEAST_EXPECT(setup.reference_fee == 10);
-            BEAST_EXPECT(setup.account_reserve == 20 * DROPS_PER_XRP);
-            BEAST_EXPECT(setup.owner_reserve == 5 * DROPS_PER_XRP);
+            BEAST_EXPECT(setup.reference_fee == defaultSetup.reference_fee);
+            BEAST_EXPECT(setup.account_reserve == defaultSetup.account_reserve);
+            BEAST_EXPECT(setup.owner_reserve == defaultSetup.owner_reserve);
         }
     }
 

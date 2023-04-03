@@ -118,7 +118,7 @@ SHAMap::dirtyUp(
         assert(branch >= 0);
 
         node = unshareNode(std::move(node), nodeID);
-        node->setChild(branch, child);
+        node->setChild(branch, std::move(child));
 
         child = std::move(node);
     }
@@ -173,30 +173,40 @@ SHAMap::finishFetch(
     std::shared_ptr<NodeObject> const& object) const
 {
     assert(backed_);
-    if (!object)
-    {
-        if (full_)
-        {
-            full_ = false;
-            f_.missingNode(ledgerSeq_);
-        }
-        return {};
-    }
 
     std::shared_ptr<SHAMapTreeNode> node;
     try
     {
+        if (!object)
+        {
+            if (full_)
+            {
+                full_ = false;
+                f_.missingNodeAcquireBySeq(ledgerSeq_, hash.as_uint256());
+            }
+            return {};
+        }
+
         node =
             SHAMapTreeNode::makeFromPrefix(makeSlice(object->getData()), hash);
         if (node)
             canonicalize(hash, node);
         return node;
     }
-    catch (std::exception const&)
+    catch (SHAMapMissingNode const& e)
+    {
+        JLOG(journal_.warn()) << "Missing node: " << hash << " : " << e.what();
+    }
+    catch (std::runtime_error const& e)
+    {
+        JLOG(journal_.warn()) << e.what();
+    }
+    catch (...)
     {
         JLOG(journal_.warn()) << "Invalid DB node " << hash;
-        return std::shared_ptr<SHAMapTreeNode>();
     }
+
+    return std::shared_ptr<SHAMapTreeNode>();
 }
 
 // See if a sync filter has a node
@@ -718,7 +728,7 @@ SHAMap::delItem(uint256 const& id)
         stack.pop();
 
         node = unshareNode(std::move(node), nodeID);
-        node->setChild(selectBranch(nodeID, id), prevNode);
+        node->setChild(selectBranch(nodeID, id), std::move(prevNode));
 
         if (!nodeID.isRoot())
         {
@@ -795,8 +805,7 @@ SHAMap::addGiveItem(SHAMapNodeType type, std::shared_ptr<SHAMapItem const> item)
         auto inner = std::static_pointer_cast<SHAMapInnerNode>(node);
         int branch = selectBranch(nodeID, tag);
         assert(inner->isEmptyBranch(branch));
-        auto newNode = makeTypedLeaf(type, std::move(item), cowid_);
-        inner->setChild(branch, newNode);
+        inner->setChild(branch, makeTypedLeaf(type, std::move(item), cowid_));
     }
     else
     {

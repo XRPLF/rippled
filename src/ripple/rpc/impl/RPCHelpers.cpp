@@ -23,6 +23,7 @@
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/app/paths/TrustLine.h>
 #include <ripple/app/rdb/RelationalDatabase.h>
+#include <ripple/app/tx/impl/details/NFTokenUtils.h>
 #include <ripple/ledger/View.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/AccountID.h>
@@ -109,7 +110,7 @@ getStartHint(std::shared_ptr<SLE const> const& sle, AccountID const& accountID)
 }
 
 bool
-isOwnedByAccount(
+isRelatedToAccount(
     ReadView const& ledger,
     std::shared_ptr<SLE const> const& sle,
     AccountID const& accountID)
@@ -121,12 +122,26 @@ isOwnedByAccount(
     }
     else if (sle->isFieldPresent(sfAccount))
     {
-        return sle->getAccountID(sfAccount) == accountID;
+        // If there's an sfAccount present, also test the sfDestination, if
+        // present. This will match objects such as Escrows (ltESCROW), Payment
+        // Channels (ltPAYCHAN), and Checks (ltCHECK) because those are added to
+        // the Destination account's directory. It intentionally EXCLUDES
+        // NFToken Offers (ltNFTOKEN_OFFER). NFToken Offers are NOT added to the
+        // Destination account's directory.
+        return sle->getAccountID(sfAccount) == accountID ||
+            (sle->isFieldPresent(sfDestination) &&
+             sle->getAccountID(sfDestination) == accountID);
     }
     else if (sle->getType() == ltSIGNER_LIST)
     {
         Keylet const accountSignerList = keylet::signers(accountID);
         return sle->key() == accountSignerList.key;
+    }
+    else if (sle->getType() == ltNFTOKEN_OFFER)
+    {
+        // Do not check the sfDestination field. NFToken Offers are NOT added to
+        // the Destination account's directory.
+        return sle->getAccountID(sfOwner) == accountID;
     }
 
     return false;

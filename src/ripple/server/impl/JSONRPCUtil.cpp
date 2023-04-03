@@ -61,7 +61,7 @@ HTTPReply(
 {
     JLOG(j.trace()) << "HTTP Reply " << nStatus << " " << content;
 
-    if (nStatus == 401)
+    if (content.empty() && nStatus == 401)
     {
         output("HTTP/1.0 401 Authorization Required\r\n");
         output(getHTTPHeaderTimestamp());
@@ -100,8 +100,14 @@ HTTPReply(
         case 200:
             output("HTTP/1.1 200 OK\r\n");
             break;
+        case 202:
+            output("HTTP/1.1 202 Accepted\r\n");
+            break;
         case 400:
             output("HTTP/1.1 400 Bad Request\r\n");
+            break;
+        case 401:
+            output("HTTP/1.1 401 Authorization Required\r\n");
             break;
         case 403:
             output("HTTP/1.1 403 Forbidden\r\n");
@@ -109,8 +115,17 @@ HTTPReply(
         case 404:
             output("HTTP/1.1 404 Not Found\r\n");
             break;
+        case 405:
+            output("HTTP/1.1 405 Method Not Allowed\r\n");
+            break;
+        case 429:
+            output("HTTP/1.1 429 Too Many Requests\r\n");
+            break;
         case 500:
             output("HTTP/1.1 500 Internal Server Error\r\n");
+            break;
+        case 501:
+            output("HTTP/1.1 501 Not Implemented\r\n");
             break;
         case 503:
             output("HTTP/1.1 503 Server is overloaded\r\n");

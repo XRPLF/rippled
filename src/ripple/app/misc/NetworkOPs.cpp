@@ -2171,14 +2171,28 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
         if (auto const loadFee = (*val)[~sfLoadFee])
             jvObj[jss::load_fee] = *loadFee;
 
-        if (auto const baseFee = (*val)[~sfBaseFee])
+        if (auto const baseFee = val->at(~sfBaseFee))
             jvObj[jss::base_fee] = static_cast<double>(*baseFee);
 
-        if (auto const reserveBase = (*val)[~sfReserveBase])
+        if (auto const reserveBase = val->at(~sfReserveBase))
             jvObj[jss::reserve_base] = *reserveBase;
 
-        if (auto const reserveInc = (*val)[~sfReserveIncrement])
+        if (auto const reserveInc = val->at(~sfReserveIncrement))
             jvObj[jss::reserve_inc] = *reserveInc;
+
+        // (The ~ operator converts the Proxy to a std::optional, which
+        //  simplifies later operations)
+        if (auto const baseFeeXRP = ~val->at(~sfBaseFeeDrops);
+            baseFeeXRP && baseFeeXRP->native())
+            jvObj[jss::base_fee] = baseFeeXRP->xrp().jsonClipped();
+
+        if (auto const reserveBaseXRP = ~val->at(~sfReserveBaseDrops);
+            reserveBaseXRP && reserveBaseXRP->native())
+            jvObj[jss::reserve_base] = reserveBaseXRP->xrp().jsonClipped();
+
+        if (auto const reserveIncXRP = ~val->at(~sfReserveIncrementDrops);
+            reserveIncXRP && reserveIncXRP->native())
+            jvObj[jss::reserve_inc] = reserveIncXRP->xrp().jsonClipped();
 
         for (auto i = mStreamMaps[sValidations].begin();
              i != mStreamMaps[sValidations].end();)
@@ -2883,7 +2897,8 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
             jvObj[jss::ledger_time] = Json::Value::UInt(
                 lpAccepted->info().closeTime.time_since_epoch().count());
 
-            jvObj[jss::fee_ref] = lpAccepted->fees().units.jsonClipped();
+            if (!lpAccepted->rules().enabled(featureXRPFees))
+                jvObj[jss::fee_ref] = Config::FEE_UNITS_DEPRECATED;
             jvObj[jss::fee_base] = lpAccepted->fees().base.jsonClipped();
             jvObj[jss::reserve_base] =
                 lpAccepted->fees().accountReserve(0).jsonClipped();
@@ -3889,7 +3904,8 @@ NetworkOPsImp::subLedger(InfoSub::ref isrListener, Json::Value& jvResult)
         jvResult[jss::ledger_hash] = to_string(lpClosed->info().hash);
         jvResult[jss::ledger_time] = Json::Value::UInt(
             lpClosed->info().closeTime.time_since_epoch().count());
-        jvResult[jss::fee_ref] = lpClosed->fees().units.jsonClipped();
+        if (!lpClosed->rules().enabled(featureXRPFees))
+            jvResult[jss::fee_ref] = Config::FEE_UNITS_DEPRECATED;
         jvResult[jss::fee_base] = lpClosed->fees().base.jsonClipped();
         jvResult[jss::reserve_base] =
             lpClosed->fees().accountReserve(0).jsonClipped();

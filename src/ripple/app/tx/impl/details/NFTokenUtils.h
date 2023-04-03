@@ -53,9 +53,13 @@ constexpr std::uint16_t const flagOnlyXRP = 0x0002;
 constexpr std::uint16_t const flagCreateTrustLines = 0x0004;
 constexpr std::uint16_t const flagTransferable = 0x0008;
 
-/** Deletes all offers from the specified token offer directory. */
-void
-removeAllTokenOffers(ApplyView& view, Keylet const& directory);
+/** Delete up to a specified number of offers from the specified token offer
+ * directory. */
+std::size_t
+removeTokenOffersWithLimit(
+    ApplyView& view,
+    Keylet const& directory,
+    std::size_t maxDeletableOffers);
 
 /** Returns tesSUCCESS if NFToken has few enough offers that it can be burned */
 TER

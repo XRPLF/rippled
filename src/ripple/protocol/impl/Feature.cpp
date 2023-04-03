@@ -67,9 +67,10 @@ enum class Supported : bool { no = false, yes };
 // updated.
 //
 // Generally, amendments which introduce new features should be set as
-// "DefaultVote::no" whereas in rare cases, amendments that fix critical
-// bugs should be set as "DefaultVote::yes", if off-chain consensus is
-// reached amongst reviewers, validator operators, and other participants.
+// "VoteBehavior::DefaultNo" whereas in rare cases, amendments that fix
+// critical bugs should be set as "VoteBehavior::DefaultYes", if off-chain
+// consensus is reached amongst reviewers, validator operators, and other
+// participants.
 
 class FeatureCollections
 {
@@ -115,7 +116,7 @@ class FeatureCollections
     // name, index, and uint256 feature identifier
     boost::multi_index::multi_index_container<Feature, feature_indexing>
         features;
-    std::map<std::string, DefaultVote> supported;
+    std::map<std::string, VoteBehavior> supported;
     std::size_t upVotes = 0;
     std::size_t downVotes = 0;
     mutable std::atomic<bool> readOnly = false;
@@ -163,7 +164,7 @@ public:
     registerFeature(
         std::string const& name,
         Supported support,
-        DefaultVote vote);
+        VoteBehavior vote);
 
     /** Tell FeatureCollections when registration is complete. */
     bool
@@ -181,7 +182,7 @@ public:
     /** Amendments that this server supports.
     Whether they are enabled depends on the Rules defined in the validated
     ledger */
-    std::map<std::string, DefaultVote> const&
+    std::map<std::string, VoteBehavior> const&
     supportedAmendments() const
     {
         return supported;
@@ -230,11 +231,11 @@ uint256
 FeatureCollections::registerFeature(
     std::string const& name,
     Supported support,
-    DefaultVote vote)
+    VoteBehavior vote)
 {
     check(!readOnly, "Attempting to register a feature after startup.");
     check(
-        support == Supported::yes || vote == DefaultVote::no,
+        support == Supported::yes || vote == VoteBehavior::DefaultNo,
         "Invalid feature parameters. Must be supported to be up-voted.");
     Feature const* i = getByName(name);
     if (!i)
@@ -254,7 +255,7 @@ FeatureCollections::registerFeature(
         {
             supported.emplace(name, vote);
 
-            if (vote == DefaultVote::yes)
+            if (vote == VoteBehavior::DefaultYes)
                 ++upVotes;
             else
                 ++downVotes;
@@ -315,7 +316,7 @@ static FeatureCollections featureCollections;
 /** Amendments that this server supports.
    Whether they are enabled depends on the Rules defined in the validated
    ledger */
-std::map<std::string, DefaultVote> const&
+std::map<std::string, VoteBehavior> const&
 detail::supportedAmendments()
 {
     return featureCollections.supportedAmendments();
@@ -344,7 +345,7 @@ getRegisteredFeature(std::string const& name)
 }
 
 uint256
-registerFeature(std::string const& name, Supported support, DefaultVote vote)
+registerFeature(std::string const& name, Supported support, VoteBehavior vote)
 {
     return featureCollections.registerFeature(name, support, vote);
 }
@@ -354,7 +355,7 @@ registerFeature(std::string const& name, Supported support, DefaultVote vote)
 uint256
 retireFeature(std::string const& name)
 {
-    return registerFeature(name, Supported::yes, DefaultVote::no);
+    return registerFeature(name, Supported::yes, VoteBehavior::Obsolete);
 }
 
 /** Tell FeatureCollections when registration is complete. */
@@ -390,9 +391,9 @@ Takes the name of a feature, whether it's supported, and the default vote. Will
 register the feature, and create a variable whose name is "feature" plus the
 feature name.
 */
-#define REGISTER_FEATURE(fName, supported, defaultvote) \
-    uint256 const feature##fName =                      \
-        registerFeature(#fName, supported, defaultvote)
+#define REGISTER_FEATURE(fName, supported, votebehavior) \
+    uint256 const feature##fName =                       \
+        registerFeature(#fName, supported, votebehavior)
 
 #pragma push_macro("REGISTER_FIX")
 #undef REGISTER_FIX
@@ -402,54 +403,71 @@ Takes the name of a feature, whether it's supported, and the default vote. Will
 register the feature, and create a variable whose name is the unmodified feature
 name.
 */
-#define REGISTER_FIX(fName, supported, defaultvote) \
-    uint256 const fName = registerFeature(#fName, supported, defaultvote)
+#define REGISTER_FIX(fName, supported, votebehavior) \
+    uint256 const fName = registerFeature(#fName, supported, votebehavior)
 
 // clang-format off
 
 // All known amendments must be registered either here or below with the
 // "retired" amendments
-REGISTER_FEATURE(OwnerPaysFee,                  Supported::no,  DefaultVote::no);
-REGISTER_FEATURE(Flow,                          Supported::yes, DefaultVote::yes);
-REGISTER_FEATURE(FlowCross,                     Supported::yes, DefaultVote::yes);
-REGISTER_FEATURE(CryptoConditionsSuite,         Supported::yes, DefaultVote::no);
-REGISTER_FIX    (fix1513,                       Supported::yes, DefaultVote::yes);
-REGISTER_FEATURE(DepositAuth,                   Supported::yes, DefaultVote::yes);
-REGISTER_FEATURE(Checks,                        Supported::yes, DefaultVote::yes);
-REGISTER_FIX    (fix1571,                       Supported::yes, DefaultVote::yes);
-REGISTER_FIX    (fix1543,                       Supported::yes, DefaultVote::yes);
-REGISTER_FIX    (fix1623,                       Supported::yes, DefaultVote::yes);
-REGISTER_FEATURE(DepositPreauth,                Supported::yes, DefaultVote::yes);
+REGISTER_FEATURE(OwnerPaysFee,                  Supported::no,  VoteBehavior::DefaultNo);
+REGISTER_FEATURE(Flow,                          Supported::yes, VoteBehavior::DefaultYes);
+REGISTER_FEATURE(FlowCross,                     Supported::yes, VoteBehavior::DefaultYes);
+REGISTER_FIX    (fix1513,                       Supported::yes, VoteBehavior::DefaultYes);
+REGISTER_FEATURE(DepositAuth,                   Supported::yes, VoteBehavior::DefaultYes);
+REGISTER_FEATURE(Checks,                        Supported::yes, VoteBehavior::DefaultYes);
+REGISTER_FIX    (fix1571,                       Supported::yes, VoteBehavior::DefaultYes);
+REGISTER_FIX    (fix1543,                       Supported::yes, VoteBehavior::DefaultYes);
+REGISTER_FIX    (fix1623,                       Supported::yes, VoteBehavior::DefaultYes);
+REGISTER_FEATURE(DepositPreauth,                Supported::yes, VoteBehavior::DefaultYes);
 // Use liquidity from strands that consume max offers, but mark as dry
-REGISTER_FIX    (fix1515,                       Supported::yes, DefaultVote::yes);
-REGISTER_FIX    (fix1578,                       Supported::yes, DefaultVote::yes);
-REGISTER_FEATURE(MultiSignReserve,              Supported::yes, DefaultVote::yes);
-REGISTER_FIX    (fixTakerDryOfferRemoval,       Supported::yes, DefaultVote::yes);
-REGISTER_FIX    (fixMasterKeyAsRegularKey,      Supported::yes, DefaultVote::yes);
-REGISTER_FIX    (fixCheckThreading,             Supported::yes, DefaultVote::yes);
-REGISTER_FIX    (fixPayChanRecipientOwnerDir,   Supported::yes, DefaultVote::yes);
-REGISTER_FEATURE(DeletableAccounts,             Supported::yes, DefaultVote::yes);
+REGISTER_FIX    (fix1515,                       Supported::yes, VoteBehavior::DefaultYes);
+REGISTER_FIX    (fix1578,                       Supported::yes, VoteBehavior::DefaultYes);
+REGISTER_FEATURE(MultiSignReserve,              Supported::yes, VoteBehavior::DefaultYes);
+REGISTER_FIX    (fixTakerDryOfferRemoval,       Supported::yes, VoteBehavior::DefaultYes);
+REGISTER_FIX    (fixMasterKeyAsRegularKey,      Supported::yes, VoteBehavior::DefaultYes);
+REGISTER_FIX    (fixCheckThreading,             Supported::yes, VoteBehavior::DefaultYes);
+REGISTER_FIX    (fixPayChanRecipientOwnerDir,   Supported::yes, VoteBehavior::DefaultYes);
+REGISTER_FEATURE(DeletableAccounts,             Supported::yes, VoteBehavior::DefaultYes);
 // fixQualityUpperBound should be activated before FlowCross
-REGISTER_FIX    (fixQualityUpperBound,          Supported::yes, DefaultVote::yes);
-REGISTER_FEATURE(RequireFullyCanonicalSig,      Supported::yes, DefaultVote::yes);
+REGISTER_FIX    (fixQualityUpperBound,          Supported::yes, VoteBehavior::DefaultYes);
+REGISTER_FEATURE(RequireFullyCanonicalSig,      Supported::yes, VoteBehavior::DefaultYes);
 // fix1781: XRPEndpointSteps should be included in the circular payment check
-REGISTER_FIX    (fix1781,                       Supported::yes, DefaultVote::yes);
-REGISTER_FEATURE(HardenedValidations,           Supported::yes, DefaultVote::yes);
-REGISTER_FIX    (fixAmendmentMajorityCalc,      Supported::yes, DefaultVote::yes);
-REGISTER_FEATURE(NegativeUNL,                   Supported::yes, DefaultVote::yes);
-REGISTER_FEATURE(TicketBatch,                   Supported::yes, DefaultVote::yes);
-REGISTER_FEATURE(FlowSortStrands,               Supported::yes, DefaultVote::yes);
-REGISTER_FIX    (fixSTAmountCanonicalize,       Supported::yes, DefaultVote::yes);
-REGISTER_FIX    (fixRmSmallIncreasedQOffers,    Supported::yes, DefaultVote::yes);
-REGISTER_FEATURE(CheckCashMakesTrustLine,       Supported::yes, DefaultVote::no);
-REGISTER_FEATURE(NonFungibleTokensV1,           Supported::yes, DefaultVote::no);
-REGISTER_FEATURE(ExpandedSignerList,            Supported::yes, DefaultVote::no);
-REGISTER_FIX    (fixNFTokenDirV1,               Supported::yes, DefaultVote::no);
-REGISTER_FIX    (fixNFTokenNegOffer,            Supported::yes, DefaultVote::no);
-REGISTER_FEATURE(NonFungibleTokensV1_1,         Supported::yes, DefaultVote::no);
-REGISTER_FIX    (fixTrustLinesToSelf,           Supported::yes, DefaultVote::no);
-REGISTER_FIX    (fixRemoveNFTokenAutoTrustLine, Supported::yes, DefaultVote::yes);
-REGISTER_FEATURE(ImmediateOfferKilled,          Supported::yes, DefaultVote::no);
+REGISTER_FIX    (fix1781,                       Supported::yes, VoteBehavior::DefaultYes);
+REGISTER_FEATURE(HardenedValidations,           Supported::yes, VoteBehavior::DefaultYes);
+REGISTER_FIX    (fixAmendmentMajorityCalc,      Supported::yes, VoteBehavior::DefaultYes);
+REGISTER_FEATURE(NegativeUNL,                   Supported::yes, VoteBehavior::DefaultYes);
+REGISTER_FEATURE(TicketBatch,                   Supported::yes, VoteBehavior::DefaultYes);
+REGISTER_FEATURE(FlowSortStrands,               Supported::yes, VoteBehavior::DefaultYes);
+REGISTER_FIX    (fixSTAmountCanonicalize,       Supported::yes, VoteBehavior::DefaultYes);
+REGISTER_FIX    (fixRmSmallIncreasedQOffers,    Supported::yes, VoteBehavior::DefaultYes);
+REGISTER_FEATURE(CheckCashMakesTrustLine,       Supported::yes, VoteBehavior::DefaultNo);
+REGISTER_FEATURE(ExpandedSignerList,            Supported::yes, VoteBehavior::DefaultNo);
+REGISTER_FEATURE(NonFungibleTokensV1_1,         Supported::yes, VoteBehavior::DefaultNo);
+REGISTER_FIX    (fixTrustLinesToSelf,           Supported::yes, VoteBehavior::DefaultNo);
+REGISTER_FIX    (fixRemoveNFTokenAutoTrustLine, Supported::yes, VoteBehavior::DefaultYes);
+REGISTER_FEATURE(ImmediateOfferKilled,          Supported::yes, VoteBehavior::DefaultNo);
+REGISTER_FEATURE(DisallowIncoming,              Supported::yes, VoteBehavior::DefaultNo);
+REGISTER_FEATURE(XRPFees,                       Supported::yes, VoteBehavior::DefaultNo);
+REGISTER_FIX    (fixUniversalNumber,            Supported::yes, VoteBehavior::DefaultNo);
+REGISTER_FIX    (fixNonFungibleTokensV1_2,      Supported::yes, VoteBehavior::DefaultNo);
+REGISTER_FIX    (fixNFTokenRemint,              Supported::yes, VoteBehavior::DefaultNo);
+
+// The following amendments are obsolete, but must remain supported
+// because they could potentially get enabled.
+//
+// Obsolete features are (usually) not in the ledger, and may have code
+// controlled by the feature. They need to be supported because at some
+// time in the past, the feature was supported and votable, but never
+// passed. So the feature needs to be supported in case it is ever
+// enabled (added to the ledger).
+//
+// If a feature remains obsolete for long enough that no clients are able
+// to vote for it, the feature can be removed (entirely?) from the code.
+REGISTER_FEATURE(CryptoConditionsSuite, Supported::yes, VoteBehavior::Obsolete);
+REGISTER_FEATURE(NonFungibleTokensV1,   Supported::yes, VoteBehavior::Obsolete);
+REGISTER_FIX    (fixNFTokenDirV1,       Supported::yes, VoteBehavior::Obsolete);
+REGISTER_FIX    (fixNFTokenNegOffer,    Supported::yes, VoteBehavior::Obsolete);
 
 // The following amendments have been active for at least two years. Their
 // pre-amendment code has been removed and the identifiers are deprecated.
