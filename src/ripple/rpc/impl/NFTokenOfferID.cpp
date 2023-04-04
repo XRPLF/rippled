@@ -57,7 +57,8 @@ getOfferIDFromCreatedOffer(TxMeta const& transactionMeta)
 {
     for (STObject const& node : transactionMeta.getNodes())
     {
-        if (node.getFieldU16(sfLedgerEntryType) != ltNFTOKEN_OFFER || node.getFName() != sfCreatedNode)
+        if (node.getFieldU16(sfLedgerEntryType) != ltNFTOKEN_OFFER ||
+            node.getFName() != sfCreatedNode)
             continue;
 
         return node.getFieldH256(sfLedgerIndex);

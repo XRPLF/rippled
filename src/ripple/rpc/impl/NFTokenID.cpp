@@ -144,20 +144,22 @@ getNFTokenIDFromDeletedOffer(TxMeta const& transactionMeta)
     std::vector<uint256> tokenIDResult;
     for (STObject const& node : transactionMeta.getNodes())
     {
-        if (node.getFieldU16(sfLedgerEntryType) != ltNFTOKEN_OFFER || node.getFName() != sfDeletedNode)
+        if (node.getFieldU16(sfLedgerEntryType) != ltNFTOKEN_OFFER ||
+            node.getFName() != sfDeletedNode)
             continue;
 
         auto const& toAddNFT = node.peekAtField(sfFinalFields)
-                                    .downcast<STObject>()
-                                    .getFieldH256(sfNFTokenID);
+                                   .downcast<STObject>()
+                                   .getFieldH256(sfNFTokenID);
         tokenIDResult.push_back(toAddNFT);
-        
     }
 
     // Deduplicate the NFT IDs because multiple offers could affect the same NFT
     // and hence we would get duplicate NFT IDs
     sort(tokenIDResult.begin(), tokenIDResult.end());
-    tokenIDResult.erase( unique( tokenIDResult.begin(), tokenIDResult.end() ), tokenIDResult.end() );
+    tokenIDResult.erase(
+        unique(tokenIDResult.begin(), tokenIDResult.end()),
+        tokenIDResult.end());
     return tokenIDResult;
 }
 

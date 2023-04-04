@@ -6642,7 +6642,7 @@ class NFToken_test : public beast::unit_test::suite
                         BEAST_EXPECT(nftID.parseHex(id.asString()));
                         return nftID;
                     });
-                 
+
                 // Sort both array to prepare for comparison
                 std::sort(metaIDs.begin(), metaIDs.end());
                 std::sort(actualNftIDs.begin(), actualNftIDs.end());
@@ -6764,8 +6764,8 @@ class NFToken_test : public beast::unit_test::suite
             verifyNFTokenID(nftId);
         }
 
-        // Check if there are no duplicate nft id in Cancel transactions where multiple offers
-        // are cancelled for the same NFT
+        // Check if there are no duplicate nft id in Cancel transactions where
+        // multiple offers are cancelled for the same NFT
         {
             // Alice mints a NFT
             uint256 const nftId{
@@ -6789,7 +6789,8 @@ class NFToken_test : public beast::unit_test::suite
             env.close();
             verifyNFTokenOfferID(aliceOfferIndex2);
 
-            // Make sure the metadata only has 1 nft id, since both offers are for the same nft
+            // Make sure the metadata only has 1 nft id, since both offers are
+            // for the same nft
             env(token::cancelOffer(
                 alice, {aliceOfferIndex1, aliceOfferIndex2}));
             env.close();
