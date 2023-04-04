@@ -33,7 +33,7 @@
 namespace ripple {
 namespace RPC {
 
-static bool
+bool
 canHaveNFTokenID(
     std::shared_ptr<STTx const> const& serializedTx,
     TxMeta const& transactionMeta)
@@ -53,7 +53,7 @@ canHaveNFTokenID(
     return true;
 }
 
-static std::optional<uint256>
+std::optional<uint256>
 getNFTokenIDFromPage(TxMeta const& transactionMeta)
 {
     // The metadata does not make it obvious which NFT was added.  To figure
@@ -138,24 +138,26 @@ getNFTokenIDFromPage(TxMeta const& transactionMeta)
     return *diff.first;
 }
 
-static std::vector<uint256>
+std::vector<uint256>
 getNFTokenIDFromDeletedOffer(TxMeta const& transactionMeta)
 {
     std::vector<uint256> tokenIDResult;
     for (STObject const& node : transactionMeta.getNodes())
     {
-        if (node.getFieldU16(sfLedgerEntryType) != ltNFTOKEN_OFFER)
+        if (node.getFieldU16(sfLedgerEntryType) != ltNFTOKEN_OFFER || node.getFName() != sfDeletedNode)
             continue;
 
-        if (node.getFName() == sfDeletedNode)
-        {
-            auto const& toAddNFT = node.peekAtField(sfFinalFields)
-                                       .downcast<STObject>()
-                                       .getFieldH256(sfNFTokenID);
-            tokenIDResult.push_back(toAddNFT);
-        }
+        auto const& toAddNFT = node.peekAtField(sfFinalFields)
+                                    .downcast<STObject>()
+                                    .getFieldH256(sfNFTokenID);
+        tokenIDResult.push_back(toAddNFT);
+        
     }
 
+    // Deduplicate the NFT IDs because multiple offers could affect the same NFT
+    // and hence we would get duplicate NFT IDs
+    sort(tokenIDResult.begin(), tokenIDResult.end());
+    tokenIDResult.erase( unique( tokenIDResult.begin(), tokenIDResult.end() ), tokenIDResult.end() );
     return tokenIDResult;
 }
 
@@ -180,8 +182,6 @@ insertNFTokenID(
         std::vector<uint256> result =
             getNFTokenIDFromDeletedOffer(transactionMeta);
 
-        // In brokered mode, there will be a duplicate NFTokenID in the
-        // vector, but we don't have to do anything special here.
         if (result.size() > 0)
             response[jss::nftoken_id] = to_string(result.front());
     }

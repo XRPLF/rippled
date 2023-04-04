@@ -42,11 +42,19 @@ namespace RPC {
 
    @{
  */
+bool
+canHaveNFTokenOfferID(
+    std::shared_ptr<STTx const> const& serializedTx,
+    TxMeta const& transactionMeta);
+
+std::optional<uint256>
+getOfferIDFromCreatedOffer(TxMeta const& transactionMeta);
+
 void
 insertNFTokenOfferID(
-    Json::Value&,
-    std::shared_ptr<STTx const> const&,
-    TxMeta const&);
+    Json::Value& response,
+    std::shared_ptr<STTx const> const& transaction,
+    TxMeta const& transactionMeta);
 /** @} */
 
 }  // namespace RPC

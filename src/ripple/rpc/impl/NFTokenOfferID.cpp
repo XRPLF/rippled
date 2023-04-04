@@ -33,7 +33,7 @@
 namespace ripple {
 namespace RPC {
 
-static bool
+bool
 canHaveNFTokenOfferID(
     std::shared_ptr<STTx const> const& serializedTx,
     TxMeta const& transactionMeta)
@@ -52,16 +52,15 @@ canHaveNFTokenOfferID(
     return true;
 }
 
-static std::optional<uint256>
+std::optional<uint256>
 getOfferIDFromCreatedOffer(TxMeta const& transactionMeta)
 {
     for (STObject const& node : transactionMeta.getNodes())
     {
-        if (node.getFieldU16(sfLedgerEntryType) != ltNFTOKEN_OFFER)
+        if (node.getFieldU16(sfLedgerEntryType) != ltNFTOKEN_OFFER || node.getFName() != sfCreatedNode)
             continue;
 
-        if (node.getFName() == sfCreatedNode)
-            return node.getFieldH256(sfLedgerIndex);
+        return node.getFieldH256(sfLedgerIndex);
     }
     return std::nullopt;
 }

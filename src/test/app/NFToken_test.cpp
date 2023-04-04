@@ -6642,7 +6642,8 @@ class NFToken_test : public beast::unit_test::suite
                         BEAST_EXPECT(nftID.parseHex(id.asString()));
                         return nftID;
                     });
-
+                 
+                // Sort both array to prepare for comparison
                 std::sort(metaIDs.begin(), metaIDs.end());
                 std::sort(actualNftIDs.begin(), actualNftIDs.end());
 
@@ -6761,6 +6762,38 @@ class NFToken_test : public beast::unit_test::suite
                 broker, offerBobToBroker, offerAliceToBroker));
             env.close();
             verifyNFTokenID(nftId);
+        }
+
+        // Check if there are no duplicate nft id in Cancel transactions where multiple offers
+        // are cancelled for the same NFT
+        {
+            // Alice mints a NFT
+            uint256 const nftId{
+                token::getNextID(env, alice, 0u, tfTransferable)};
+            env(token::mint(alice, 0u), txflags(tfTransferable));
+            env.close();
+            verifyNFTokenID(nftId);
+
+            // Alice creates 2 sell offers for the same NFT
+            uint256 const aliceOfferIndex1 =
+                keylet::nftoffer(alice, env.seq(alice)).key;
+            env(token::createOffer(alice, nftId, drops(1)),
+                txflags(tfSellNFToken));
+            env.close();
+            verifyNFTokenOfferID(aliceOfferIndex1);
+
+            uint256 const aliceOfferIndex2 =
+                keylet::nftoffer(alice, env.seq(alice)).key;
+            env(token::createOffer(alice, nftId, drops(1)),
+                txflags(tfSellNFToken));
+            env.close();
+            verifyNFTokenOfferID(aliceOfferIndex2);
+
+            // Make sure the metadata only has 1 nft id, since both offers are for the same nft
+            env(token::cancelOffer(
+                alice, {aliceOfferIndex1, aliceOfferIndex2}));
+            env.close();
+            verifyNFTokenIDsInCancelOffer({nftId});
         }
     }
 
