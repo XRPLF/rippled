@@ -348,7 +348,7 @@ struct LedgerHistoryHelper
         assert(seen.emplace(s.back()).second);
 
         Ledger const& parent = (*this)[s.substr(0, s.size() - 1)];
-        return ledgers.emplace(s, oracle.accept(parent, ++nextTx))
+        return ledgers.emplace(s, oracle.accept(parent, Tx{++nextTx}))
             .first->second;
     }
 };

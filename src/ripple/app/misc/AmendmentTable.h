@@ -172,8 +172,7 @@ public:
 
             initialPosition->addGiveItem(
                 SHAMapNodeType::tnTRANSACTION_NM,
-                std::make_shared<SHAMapItem>(
-                    amendTx.getTransactionID(), s.slice()));
+                make_shamapitem(amendTx.getTransactionID(), s.slice()));
         }
     }
 };
