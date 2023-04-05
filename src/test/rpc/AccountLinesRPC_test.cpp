@@ -679,6 +679,7 @@ public:
             auto aliceLines = getNextLine(env, alice, std::nullopt);
             constexpr std::size_t expectedIterations = 16;
             constexpr std::size_t expectedLines = 2;
+            constexpr std::size_t expectedNFTs = 1;
             std::size_t foundLines = 0;
 
             auto hasMarker = [](auto const& aliceLines) {
@@ -729,7 +730,7 @@ public:
             // this test will need to be updated.
             BEAST_EXPECT(
                 aliceObjects[jss::result][jss::account_objects].size() ==
-                iterations);
+                iterations + expectedNFTs);
             // If ledger object association ever changes, for whatever
             // reason, this test will need to be updated.
             BEAST_EXPECTS(
