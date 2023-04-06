@@ -41,6 +41,7 @@ namespace RPC {
    The field is only added to successful NFTokenMint, NFTokenAcceptOffer,
    and NFTokenCancelOffer transactions.
 
+   Helper functions are not static because they can be used by Clio.
    @{
  */
 bool

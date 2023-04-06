@@ -40,6 +40,7 @@ namespace RPC {
    Add an `offer_id` field to the `meta` output parameter.
    The field is only added to successful NFTokenCreateOffer transactions.
 
+   Helper functions are not static because they can be used by Clio.
    @{
  */
 bool
