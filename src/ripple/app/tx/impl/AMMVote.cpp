@@ -152,7 +152,8 @@ applyVote(
     // The account doesn't have the vote entry.
     if (!foundAccount)
     {
-        auto update = [&]() {
+        auto update = [&](std::optional<std::uint8_t> const& minPos =
+                              std::nullopt) {
             STObject newEntry{sfVoteEntry};
             newEntry.setFieldU16(sfTradingFee, feeNew);
             newEntry.setFieldU32(
@@ -162,7 +163,10 @@ applyVote(
             newEntry.setAccountID(sfAccount, account_);
             num += feeNew * lpTokensNew;
             den += lpTokensNew;
-            updatedVoteSlots.push_back(std::move(newEntry));
+            if (minPos)
+                *(updatedVoteSlots.begin() + *minPos) = std::move(newEntry);
+            else
+                updatedVoteSlots.push_back(std::move(newEntry));
         };
         // Add new entry if the number of the vote entries
         // is less than Max.
@@ -177,8 +181,7 @@ applyVote(
             // Remove the least token vote entry.
             num -= Number((*entry)[sfTradingFee]) * *minTokens;
             den -= *minTokens;
-            updatedVoteSlots.erase(updatedVoteSlots.begin() + minPos);
-            update();
+            update(minPos);
         }
         // All slots are full and the account does not hold more LPTokens
         else

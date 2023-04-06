@@ -66,23 +66,25 @@ ammHolds(
             }
             return std::make_optional(std::make_pair(*optIssue1, *optIssue2));
         }
+        auto const singleIssue =
+            [&issue1, &issue2, &j](
+                Issue checkIssue,
+                const char* label) -> std::optional<std::pair<Issue, Issue>> {
+            if (checkIssue == issue1)
+                return std::make_optional(std::make_pair(issue1, issue2));
+            else if (checkIssue == issue2)
+                return std::make_optional(std::make_pair(issue2, issue1));
+            JLOG(j.debug())
+                << "ammHolds: Invalid " << label << " " << checkIssue;
+            return std::nullopt;
+        };
         if (optIssue1)
         {
-            if (*optIssue1 == issue1)
-                return std::make_optional(std::make_pair(issue1, issue2));
-            else if (*optIssue1 == issue2)
-                return std::make_optional(std::make_pair(issue2, issue1));
-            JLOG(j.debug()) << "ammHolds: Invalid optIssue1 " << *optIssue1;
-            return std::nullopt;
+            return singleIssue(*optIssue1, "optIssue1");
         }
         else if (optIssue2)
         {
-            if (*optIssue2 == issue2)
-                return std::make_optional(std::make_pair(issue2, issue1));
-            else if (*optIssue2 == issue1)
-                return std::make_optional(std::make_pair(issue1, issue2));
-            JLOG(j.debug()) << "ammHolds: Invalid optIssue2 " << *optIssue2;
-            return std::nullopt;
+            return singleIssue(*optIssue2, "optIssue2");
         }
         return std::make_optional(std::make_pair(issue1, issue2));
     }();
@@ -107,12 +109,11 @@ ammLPHolds(
     AccountID const& lpAccount,
     beast::Journal const j)
 {
-    auto const lptIss = ammLPTIssue(cur1, cur2, ammAccount);
     return accountHolds(
         view,
         lpAccount,
-        lptIss.currency,
-        lptIss.account,
+        ammLPTCurrency(cur1, cur2),
+        ammAccount,
         FreezeHandling::fhZERO_IF_FROZEN,
         j);
 }

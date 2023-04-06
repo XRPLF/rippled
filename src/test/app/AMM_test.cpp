@@ -1103,6 +1103,12 @@ private:
         testAMM([&](AMM& ammAlice, Env& env) {
             ammAlice.deposit(
                 alice, 0, std::nullopt, std::nullopt, ter(temAMM_BAD_TOKENS));
+            ammAlice.deposit(
+                alice,
+                IOUAmount{-1},
+                std::nullopt,
+                std::nullopt,
+                ter(temAMM_BAD_TOKENS));
         });
 
         // Invalid tokens - bogus currency
@@ -1168,6 +1174,13 @@ private:
                 USD(-1000),
                 std::nullopt,
                 std::nullopt,
+                std::nullopt,
+                ter(temBAD_AMOUNT));
+            ammAlice.deposit(
+                alice,
+                USD(10),
+                std::nullopt,
+                USD(-1),
                 std::nullopt,
                 ter(temBAD_AMOUNT));
         });
@@ -1765,6 +1778,12 @@ private:
         testAMM([&](AMM& ammAlice, Env& env) {
             ammAlice.withdraw(
                 alice, 0, std::nullopt, std::nullopt, ter(temAMM_BAD_TOKENS));
+            ammAlice.withdraw(
+                alice,
+                IOUAmount{-1},
+                std::nullopt,
+                std::nullopt,
+                ter(temAMM_BAD_TOKENS));
         });
 
         // Mismatched token, invalid Asset1Out issue
@@ -1806,6 +1825,12 @@ private:
                 USD(-100),
                 std::nullopt,
                 std::nullopt,
+                ter(temBAD_AMOUNT));
+            ammAlice.withdraw(
+                alice,
+                USD(10),
+                std::nullopt,
+                IOUAmount{-1},
                 ter(temBAD_AMOUNT));
         });
 

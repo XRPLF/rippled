@@ -152,18 +152,6 @@ toSTAmount(
 }
 
 template <typename T>
-STAmount
-toSTAmount(Issue const& issue, T const& a)
-{
-    if constexpr (std::is_same_v<IOUAmount, T>)
-        return toSTAmount(a, issue);
-    if constexpr (std::is_same_v<XRPAmount, T>)
-        return toSTAmount(a);
-    if constexpr (std::is_same_v<STAmount, T>)
-        return a;
-}
-
-template <typename T>
 Issue
 getIssue(T const& amt)
 {

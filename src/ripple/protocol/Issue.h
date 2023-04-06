@@ -21,7 +21,6 @@
 #define RIPPLE_PROTOCOL_ISSUE_H_INCLUDED
 
 #include <ripple/json/json_value.h>
-#include <ripple/protocol/SField.h>
 #include <ripple/protocol/UintTypes.h>
 
 #include <cassert>

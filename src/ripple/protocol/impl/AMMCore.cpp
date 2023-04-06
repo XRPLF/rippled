@@ -94,11 +94,11 @@ NotTEC
 invalidAMMAmount(
     STAmount const& amount,
     std::optional<std::pair<Issue, Issue>> const& pair,
-    bool nonNegative)
+    bool validZero)
 {
     if (auto const res = invalidAMMAsset(amount.issue(), pair))
         return res;
-    if (!nonNegative && amount <= beast::zero)
+    if (amount < beast::zero || (!validZero && amount == beast::zero))
         return temBAD_AMOUNT;
     return tesSUCCESS;
 }

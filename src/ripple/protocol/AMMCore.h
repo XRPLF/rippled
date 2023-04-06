@@ -20,6 +20,7 @@
 #ifndef RIPPLE_PROTOCOL_AMMCORE_H_INCLUDED
 #define RIPPLE_PROTOCOL_AMMCORE_H_INCLUDED
 
+#include <ripple/basics/Number.h>
 #include <ripple/protocol/AccountID.h>
 #include <ripple/protocol/Issue.h>
 #include <ripple/protocol/TER.h>
@@ -57,7 +58,7 @@ ammLPTIssue(
     AccountID const& ammAccountID);
 
 /** Validate the amount.
- * If zero is false and amount is beast::zero then invalid amount.
+ * If validZero is false and amount is beast::zero then invalid amount.
  * Return error code if invalid amount.
  * If pair then validate amount's issue matches one of the pair's issue.
  */
@@ -65,7 +66,7 @@ NotTEC
 invalidAMMAmount(
     STAmount const& amount,
     std::optional<std::pair<Issue, Issue>> const& pair = std::nullopt,
-    bool nonNegative = false);
+    bool validZero = false);
 
 NotTEC
 invalidAMMAsset(
@@ -87,6 +88,34 @@ ammAuctionTimeSlot(std::uint64_t current, STObject const& auctionSlot);
  */
 bool
 ammEnabled(Rules const&);
+
+/** Convert to the fee from the basis points
+ * @param tfee  trading fee in {0, 1000}
+ * 1 = 1/10bps or 0.001%, 1000 = 1%
+ */
+inline Number
+getFee(std::uint16_t tfee)
+{
+    return Number{tfee} / 100000;
+}
+
+/** Get fee multiplier (1 - tfee)
+ * @tfee trading fee in basis points
+ */
+inline Number
+feeMult(std::uint16_t tfee)
+{
+    return 1 - getFee(tfee);
+}
+
+/** Get fee multiplier (1 - tfee / 2)
+ * @tfee trading fee in basis points
+ */
+inline Number
+feeMultHalf(std::uint16_t tfee)
+{
+    return 1 - getFee(tfee) / 2;
+}
 
 }  // namespace ripple
 

@@ -22,6 +22,7 @@
 
 #include <ripple/basics/IOUAmount.h>
 #include <ripple/basics/Number.h>
+#include <ripple/protocol/AMMCore.h>
 #include <ripple/protocol/AmountConversions.h>
 #include <ripple/protocol/Issue.h>
 #include <ripple/protocol/Quality.h>
@@ -42,34 +43,6 @@ ammLPTokens(
     STAmount const& asset1,
     STAmount const& asset2,
     Issue const& lptIssue);
-
-/** Convert to the fee from the basis points
- * @param tfee  trading fee in {0, 1000}
- * 1 = 1/10bps or 0.001%, 1000 = 1%
- */
-inline Number
-getFee(std::uint16_t tfee)
-{
-    return Number{tfee} / 100000;
-}
-
-/** Get fee multiplier (1 - tfee)
- * @tfee trading fee in basis points
- */
-inline Number
-feeMult(std::uint16_t tfee)
-{
-    return 1 - getFee(tfee);
-}
-
-/** Get fee multiplier (1 - tfee / 2)
- * @tfee trading fee in basis points
- */
-inline Number
-feeMultHalf(std::uint16_t tfee)
-{
-    return 1 - getFee(tfee) / 2;
-}
 
 /** Calculate LP Tokens given asset's deposit amount.
  * @param asset1Balance current AMM asset1 balance

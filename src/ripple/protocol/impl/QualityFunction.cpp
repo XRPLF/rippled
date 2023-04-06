@@ -17,8 +17,9 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/Quality.h>
 #include <ripple/protocol/QualityFunction.h>
+
+#include <ripple/protocol/Quality.h>
 
 namespace ripple {
 

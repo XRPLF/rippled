@@ -375,14 +375,12 @@ Keylet
 amm(Issue const& issue1, Issue const& issue2) noexcept
 {
     auto const& [minI, maxI] = std::minmax(issue1, issue2);
-    return {
-        ltAMM,
-        indexHash(
-            LedgerNameSpace::AMM,
-            minI.account,
-            minI.currency,
-            maxI.account,
-            maxI.currency)};
+    return amm(indexHash(
+        LedgerNameSpace::AMM,
+        minI.account,
+        minI.currency,
+        maxI.account,
+        maxI.currency));
 }
 
 Keylet
