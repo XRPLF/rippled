@@ -94,6 +94,10 @@ doLedgerData(RPC::JsonContext& context)
         return jvResult;
     }
     Json::Value& nodes = jvResult[jss::state];
+    if (nodes.type() == Json::nullValue)
+    {
+        nodes = Json::Value(Json::arrayValue);
+    }
 
     auto e = lpLedger->sles.end();
     for (auto i = lpLedger->sles.upper_bound(key); i != e; ++i)

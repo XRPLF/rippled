@@ -498,10 +498,11 @@ RCLConsensus::Adaptor::doAccept(
                 std::make_shared<STTx const>(SerialIter{item.slice()}));
             JLOG(j_.debug()) << "    Tx: " << item.key();
         }
-        catch (std::exception const&)
+        catch (std::exception const& ex)
         {
             failed.insert(item.key());
-            JLOG(j_.warn()) << "    Tx: " << item.key() << " throws!";
+            JLOG(j_.warn())
+                << "    Tx: " << item.key() << " throws: " << ex.what();
         }
     }
 
@@ -615,10 +616,11 @@ RCLConsensus::Adaptor::doAccept(
 
                     anyDisputes = true;
                 }
-                catch (std::exception const&)
+                catch (std::exception const& ex)
                 {
-                    JLOG(j_.debug())
-                        << "Failed to apply transaction we voted NO on";
+                    JLOG(j_.debug()) << "Failed to apply transaction we voted "
+                                        "NO on. Exception: "
+                                     << ex.what();
                 }
             }
         }

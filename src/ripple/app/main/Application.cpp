@@ -1699,7 +1699,7 @@ ApplicationImp::fdRequired() const
 void
 ApplicationImp::startGenesisLedger()
 {
-    std::vector<uint256> initialAmendments =
+    std::vector<uint256> const initialAmendments =
         (config_->START_UP == Config::FRESH) ? m_amendmentTable->getDesired()
                                              : std::vector<uint256>{};
 
@@ -1710,7 +1710,10 @@ ApplicationImp::startGenesisLedger()
     auto const next =
         std::make_shared<Ledger>(*genesis, timeKeeper().closeTime());
     next->updateSkipList();
-    next->setImmutable(*config_);
+    assert(
+        next->info().seq < XRP_LEDGER_EARLIEST_FEES ||
+        next->read(keylet::fees()));
+    next->setImmutable();
     openLedger_.emplace(next, cachedSLEs_, logs_->journal("OpenLedger"));
     m_ledgerMaster->storeLedger(next);
     m_ledgerMaster->switchLCL(next);
@@ -1728,7 +1731,10 @@ ApplicationImp::getLastFullLedger()
         if (!ledger)
             return ledger;
 
-        ledger->setImmutable(*config_);
+        assert(
+            ledger->info().seq < XRP_LEDGER_EARLIEST_FEES ||
+            ledger->read(keylet::fees()));
+        ledger->setImmutable();
 
         if (getLedgerMaster().haveLedger(seq))
             ledger->setValidated();
@@ -1879,8 +1885,11 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
 
         loadLedger->stateMap().flushDirty(hotACCOUNT_NODE);
 
+        assert(
+            loadLedger->info().seq < XRP_LEDGER_EARLIEST_FEES ||
+            loadLedger->read(keylet::fees()));
         loadLedger->setAccepted(
-            closeTime, closeTimeResolution, !closeTimeEstimated, *config_);
+            closeTime, closeTimeResolution, !closeTimeEstimated);
 
         return loadLedger;
     }
