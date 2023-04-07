@@ -378,7 +378,7 @@ limitOut(
             if (!qf)
                 qf = stepQualityF;
             else
-                qf->combineWithNext(*stepQualityF);
+                qf->combine(*stepQualityF);
         }
         else
             return remainingOut;

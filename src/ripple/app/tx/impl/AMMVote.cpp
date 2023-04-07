@@ -115,7 +115,7 @@ applyVote(
                 << "AMMVote::applyVote, account " << account << " is not LP";
             continue;
         }
-        auto feeVal = entry[sfTradingFee];
+        auto feeVal = entry[~sfTradingFee].value_or(0);
         STObject newEntry{sfVoteEntry};
         // The account already has the vote entry.
         if (account == account_)
@@ -128,7 +128,8 @@ applyVote(
         num += feeVal * lpTokens;
         den += lpTokens;
         newEntry.setAccountID(sfAccount, account);
-        newEntry.setFieldU16(sfTradingFee, feeVal);
+        if (feeVal != 0)
+            newEntry.setFieldU16(sfTradingFee, feeVal);
         newEntry.setFieldU32(
             sfVoteWeight,
             static_cast<std::int64_t>(
@@ -155,7 +156,8 @@ applyVote(
         auto update = [&](std::optional<std::uint8_t> const& minPos =
                               std::nullopt) {
             STObject newEntry{sfVoteEntry};
-            newEntry.setFieldU16(sfTradingFee, feeNew);
+            if (feeNew != 0)
+                newEntry.setFieldU16(sfTradingFee, feeNew);
             newEntry.setFieldU32(
                 sfVoteWeight,
                 static_cast<std::int64_t>(
@@ -179,7 +181,7 @@ applyVote(
         {
             auto const entry = updatedVoteSlots.begin() + minPos;
             // Remove the least token vote entry.
-            num -= Number((*entry)[sfTradingFee]) * *minTokens;
+            num -= Number((*entry)[~sfTradingFee].value_or(0)) * *minTokens;
             den -= *minTokens;
             update(minPos);
         }
@@ -194,7 +196,10 @@ applyVote(
 
     // Update the vote entries and the trading fee.
     ammSle->setFieldArray(sfVoteSlots, updatedVoteSlots);
-    ammSle->setFieldU16(sfTradingFee, static_cast<std::int64_t>(num / den));
+    if (auto const fee = static_cast<std::int64_t>(num / den))
+        ammSle->setFieldU16(sfTradingFee, fee);
+    else
+        ammSle->makeFieldAbsent(sfTradingFee);
     sb.update(ammSle);
 
     return {tesSUCCESS, true};

@@ -222,7 +222,8 @@ applyCreate(
 
     // Create ltAMM
     auto ammSle = std::make_shared<SLE>(ammKeylet);
-    ammSle->setFieldU16(sfTradingFee, ctx_.tx[sfTradingFee]);
+    if (ctx_.tx[sfTradingFee] != 0)
+        ammSle->setFieldU16(sfTradingFee, ctx_.tx[sfTradingFee]);
     ammSle->setAccountID(sfAccount, *ammAccount);
     ammSle->setFieldAmount(sfLPTokenBalance, lpTokens);
     auto const& [issue1, issue2] = std::minmax(amount.issue(), amount2.issue());
@@ -231,7 +232,8 @@ applyCreate(
     // AMM creator gets the voting slot.
     STArray voteSlots;
     STObject voteEntry{sfVoteEntry};
-    voteEntry.setFieldU16(sfTradingFee, ctx_.tx[sfTradingFee]);
+    if (ctx_.tx[sfTradingFee] != 0)
+        voteEntry.setFieldU16(sfTradingFee, ctx_.tx[sfTradingFee]);
     voteEntry.setFieldU32(sfVoteWeight, 100000);
     voteEntry.setAccountID(sfAccount, account_);
     voteSlots.push_back(voteEntry);
@@ -246,7 +248,6 @@ applyCreate(
             .count() +
         TOTAL_TIME_SLOT_SECS;
     auctionSlot.setFieldU32(sfExpiration, expiration);
-    auctionSlot.setFieldU32(sfDiscountedFee, 0);
     auctionSlot.setFieldAmount(sfPrice, STAmount{lpTokens.issue(), 0});
     sb.insert(ammSle);
 

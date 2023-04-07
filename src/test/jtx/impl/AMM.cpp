@@ -300,7 +300,7 @@ AMM::expectTradingFee(std::uint16_t fee) const
 {
     if (auto const amm =
             env_.current()->read(keylet::amm(asset1_.issue(), asset2_.issue()));
-        amm && amm->getFieldU16(sfTradingFee) == fee)
+        amm && (*amm)[~sfTradingFee].value_or(0) == fee)
         return true;
     return false;
 }
@@ -745,7 +745,7 @@ AMM::expectAuctionSlot(auto&& cb) const
             static_cast<STObject const&>(amm->peekAtField(sfAuctionSlot));
         if (auctionSlot.isFieldPresent(sfAccount))
         {
-            auto const slotFee = auctionSlot.getFieldU32(sfDiscountedFee);
+            auto const slotFee = auctionSlot[~sfDiscountedFee].value_or(0);
             auto const slotInterval = ammAuctionTimeSlot(
                 env_.app().timeKeeper().now().time_since_epoch().count(),
                 auctionSlot);

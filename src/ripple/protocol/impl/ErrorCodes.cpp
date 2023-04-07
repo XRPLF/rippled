@@ -76,6 +76,7 @@ constexpr static ErrorInfo unorderedErrorInfos[]{
     {rpcINTERNAL,               "internal",             "Internal error.", 500},
     {rpcINVALID_LGR_RANGE,      "invalidLgrRange",      "Ledger range is invalid.", 400},
     {rpcINVALID_PARAMS,         "invalidParams",        "Invalid parameters.", 400},
+    {rpcISSUE_MALFORMED,        "issueMalformed",       "Issue is malformed.", 400},
     {rpcJSON_RPC,               "json_rpc",             "JSON-RPC transport error.", 500},
     {rpcLGR_IDXS_INVALID,       "lgrIdxsInvalid",       "Ledger indexes invalid.", 400},
     {rpcLGR_IDX_MALFORMED,      "lgrIdxMalformed",      "Ledger index malformed.", 400},
@@ -107,8 +108,7 @@ constexpr static ErrorInfo unorderedErrorInfos[]{
     {rpcSTREAM_MALFORMED,       "malformedStream",      "Stream malformed.", 400},
     {rpcTOO_BUSY,               "tooBusy",              "The server is too busy to help you now.", 503},
     {rpcTXN_NOT_FOUND,          "txnNotFound",          "Transaction not found.", 404},
-    {rpcUNKNOWN_COMMAND,        "unknownCmd",           "Unknown method.", 405},
-    {rpcAMM_ISSUE_MALFORMED,    "ammIssueMalformed",    "AMM issue is malformed.", 406}};
+    {rpcUNKNOWN_COMMAND,        "unknownCmd",           "Unknown method.", 405}};
 // clang-format on
 
 // Sort and validate unorderedErrorInfos at compile time.  Should be

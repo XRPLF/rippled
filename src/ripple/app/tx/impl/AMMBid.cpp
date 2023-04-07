@@ -199,7 +199,10 @@ applyBid(
                           Number const& burn) -> TER {
         auctionSlot.setAccountID(sfAccount, account_);
         auctionSlot.setFieldU32(sfExpiration, current + TOTAL_TIME_SLOT_SECS);
-        auctionSlot.setFieldU32(sfDiscountedFee, fee);
+        if (fee == 0)
+            auctionSlot.makeFieldAbsent(sfDiscountedFee);
+        else
+            auctionSlot.setFieldU32(sfDiscountedFee, fee);
         auctionSlot.setFieldAmount(
             sfPrice, toSTAmount(lpTokens.issue(), minPrice));
         if (ctx_.tx.isFieldPresent(sfAuthAccounts))

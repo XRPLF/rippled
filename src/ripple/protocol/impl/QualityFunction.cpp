@@ -34,7 +34,7 @@ QualityFunction::QualityFunction(
 }
 
 void
-QualityFunction::combineWithNext(QualityFunction const& qf)
+QualityFunction::combine(QualityFunction const& qf)
 {
     m_ += b_ * qf.m_;
     b_ *= qf.b_;

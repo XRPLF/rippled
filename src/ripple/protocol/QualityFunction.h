@@ -65,7 +65,7 @@ public:
     /** Combines QF with the next step QF
      */
     void
-    combineWithNext(QualityFunction const& qf);
+    combine(QualityFunction const& qf);
 
     /** Find output to produce the requested
      * average quality.

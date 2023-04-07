@@ -81,12 +81,12 @@ invalidAMMAssetPair(
     Issue const& issue2,
     std::optional<std::pair<Issue, Issue>> const& pair)
 {
+    if (issue1 == issue2)
+        return temAMM_BAD_TOKENS;
     if (auto const res = invalidAMMAsset(issue1, pair))
         return res;
     if (auto const res = invalidAMMAsset(issue2, pair))
         return res;
-    if (issue1 == issue2)
-        return temAMM_BAD_TOKENS;
     return tesSUCCESS;
 }
 
@@ -109,9 +109,9 @@ ammAuctionTimeSlot(std::uint64_t current, STObject const& auctionSlot)
     using namespace std::chrono;
     std::uint32_t constexpr intervals = 20;
     std::uint32_t constexpr intervalDuration = TOTAL_TIME_SLOT_SECS / intervals;
-    if (auto const expiration = auctionSlot[~sfExpiration])
+    if (auto const expiration = auctionSlot[sfExpiration])
     {
-        auto const diff = current - (*expiration - TOTAL_TIME_SLOT_SECS);
+        auto const diff = current - (expiration - TOTAL_TIME_SLOT_SECS);
         if (diff < TOTAL_TIME_SLOT_SECS)
             return diff / intervalDuration;
     }
