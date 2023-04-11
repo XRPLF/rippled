@@ -96,6 +96,9 @@ Public Types</h2></td></tr>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:abc1a3144a6538cdc8af234cbcd807508"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1csf_1_1Tx.html#abc1a3144a6538cdc8af234cbcd807508">Tx</a> (<a class="el" href="classripple_1_1test_1_1csf_1_1Tx.html#a59367f75f7072c9766aad91307f6dfed">ID</a> i)</td></tr>
 <tr class="separator:abc1a3144a6538cdc8af234cbcd807508"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af78c609d85e592490c8501aa4bffaabc"><td class="memTemplParams" colspan="2">template&lt;typename T , typename  = std::enable_if_t&lt;std::is_same_v&lt;T, Tx&gt;&gt;&gt; </td></tr>
+<tr class="memitem:af78c609d85e592490c8501aa4bffaabc"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1csf_1_1Tx.html#af78c609d85e592490c8501aa4bffaabc">Tx</a> (T const *t)</td></tr>
+<tr class="separator:af78c609d85e592490c8501aa4bffaabc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abfb2500a84d4f702ff19105ffabc75b7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1test_1_1csf_1_1Tx.html#a59367f75f7072c9766aad91307f6dfed">ID</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1csf_1_1Tx.html#abfb2500a84d4f702ff19105ffabc75b7">id</a> () const</td></tr>
 <tr class="separator:abfb2500a84d4f702ff19105ffabc75b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a588a58f26b3dfd67671a654b3e3fb9ed"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1csf_1_1Tx.html#a588a58f26b3dfd67671a654b3e3fb9ed">operator&lt;</a> (<a class="el" href="classripple_1_1test_1_1csf_1_1Tx.html">Tx</a> const &amp;o) const</td></tr>
@@ -111,7 +114,7 @@ Private Attributes</h2></td></tr>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>A single transaction. </p>
 
-<p class="definition">Definition at line <a class="el" href="Tx_8h_source.html#l00034">34</a> of file <a class="el" href="Tx_8h_source.html">Tx.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Tx_8h_source.html#l00035">35</a> of file <a class="el" href="Tx_8h_source.html">Tx.h</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="a59367f75f7072c9766aad91307f6dfed"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a59367f75f7072c9766aad91307f6dfed">&#9670;&nbsp;</a></span>ID</h2>
@@ -125,13 +128,13 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Tx_8h_source.html#l00037">37</a> of file <a class="el" href="Tx_8h_source.html">Tx.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Tx_8h_source.html#l00038">38</a> of file <a class="el" href="Tx_8h_source.html">Tx.h</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="abc1a3144a6538cdc8af234cbcd807508"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abc1a3144a6538cdc8af234cbcd807508">&#9670;&nbsp;</a></span>Tx()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#abc1a3144a6538cdc8af234cbcd807508">&#9670;&nbsp;</a></span>Tx() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -146,7 +149,29 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Tx_8h_source.html#l00039">39</a> of file <a class="el" href="Tx_8h_source.html">Tx.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Tx_8h_source.html#l00040">40</a> of file <a class="el" href="Tx_8h_source.html">Tx.h</a>.</p>
+
+</div>
+</div>
+<a id="af78c609d85e592490c8501aa4bffaabc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af78c609d85e592490c8501aa4bffaabc">&#9670;&nbsp;</a></span>Tx() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , typename  = std::enable_if_t&lt;std::is_same_v&lt;T, Tx&gt;&gt;&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">ripple::test::csf::Tx::Tx </td>
+          <td>(</td>
+          <td class="paramtype">T const *&#160;</td>
+          <td class="paramname"><em>t</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="Tx_8h_source.html#l00045">45</a> of file <a class="el" href="Tx_8h_source.html">Tx.h</a>.</p>
 
 </div>
 </div>
@@ -166,7 +191,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Tx_8h_source.html#l00044">44</a> of file <a class="el" href="Tx_8h_source.html">Tx.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Tx_8h_source.html#l00050">50</a> of file <a class="el" href="Tx_8h_source.html">Tx.h</a>.</p>
 
 </div>
 </div>
@@ -186,7 +211,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Tx_8h_source.html#l00050">50</a> of file <a class="el" href="Tx_8h_source.html">Tx.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Tx_8h_source.html#l00056">56</a> of file <a class="el" href="Tx_8h_source.html">Tx.h</a>.</p>
 
 </div>
 </div>
@@ -206,7 +231,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Tx_8h_source.html#l00056">56</a> of file <a class="el" href="Tx_8h_source.html">Tx.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Tx_8h_source.html#l00062">62</a> of file <a class="el" href="Tx_8h_source.html">Tx.h</a>.</p>
 
 </div>
 </div>
@@ -231,7 +256,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Tx_8h_source.html#l00062">62</a> of file <a class="el" href="Tx_8h_source.html">Tx.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Tx_8h_source.html#l00068">68</a> of file <a class="el" href="Tx_8h_source.html">Tx.h</a>.</p>
 
 </div>
 </div>

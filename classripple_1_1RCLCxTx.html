@@ -77,23 +77,6 @@ $(function() {
 
 <p>Represents a transaction in <a class="el" href="classripple_1_1RCLConsensus.html" title="Manages the generic consensus algorithm for use by the RCL.">RCLConsensus</a>.  
  <a href="classripple_1_1RCLCxTx.html#details">More...</a></p>
-<div class="dynheader">
-Collaboration diagram for ripple::RCLCxTx:</div>
-<div class="dyncontent">
-<div class="center"><img src="classripple_1_1RCLCxTx__coll__graph.png" border="0" usemap="#ripple_1_1RCLCxTx_coll__map" alt="Collaboration graph"/></div>
-<map name="ripple_1_1RCLCxTx_coll__map" id="ripple_1_1RCLCxTx_coll__map">
-<area shape="rect" title="Represents a transaction in RCLConsensus." alt="" coords="183,407,307,433"/>
-<area shape="rect" href="classripple_1_1SHAMapItem.html" title=" " alt="" coords="170,317,321,344"/>
-<area shape="rect" href="classripple_1_1CountedObject.html" title=" " alt="" coords="5,213,168,255"/>
-<area shape="rect" href="classripple_1_1Buffer.html" title="Like std::vector&lt;char&gt; but better." alt="" coords="192,221,299,247"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html" title=" " alt="" coords="93,95,248,136"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="123,5,218,32"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/types/size_t.html" title=" " alt="" coords="272,102,360,129"/>
-<area shape="rect" href="classripple_1_1base__uint.html" title=" " alt="" coords="323,213,464,255"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/container/array.html" title=" " alt="" coords="384,95,552,136"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="417,5,519,32"/>
-</map>
-<center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
@@ -103,18 +86,18 @@ Public Types</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:ab3df2ab24e3ebbec5e6f02bfff2a6ee6"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RCLCxTx.html#ab3df2ab24e3ebbec5e6f02bfff2a6ee6">RCLCxTx</a> (<a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> const &amp;txn)</td></tr>
-<tr class="memdesc:ab3df2ab24e3ebbec5e6f02bfff2a6ee6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor.  <a href="classripple_1_1RCLCxTx.html#ab3df2ab24e3ebbec5e6f02bfff2a6ee6">More...</a><br /></td></tr>
-<tr class="separator:ab3df2ab24e3ebbec5e6f02bfff2a6ee6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a414a40b4730525c49fd72ad4d3e6a76e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RCLCxTx.html#a414a40b4730525c49fd72ad4d3e6a76e">RCLCxTx</a> (boost::intrusive_ptr&lt; <a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> const &gt; txn)</td></tr>
+<tr class="memdesc:a414a40b4730525c49fd72ad4d3e6a76e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor.  <a href="classripple_1_1RCLCxTx.html#a414a40b4730525c49fd72ad4d3e6a76e">More...</a><br /></td></tr>
+<tr class="separator:a414a40b4730525c49fd72ad4d3e6a76e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ada5760c0d0d4bbc5de8e579ea1f81f4f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1RCLCxTx.html#af23a5fc53012f97206cc37602b3301ce">ID</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RCLCxTx.html#ada5760c0d0d4bbc5de8e579ea1f81f4f">id</a> () const</td></tr>
 <tr class="memdesc:ada5760c0d0d4bbc5de8e579ea1f81f4f"><td class="mdescLeft">&#160;</td><td class="mdescRight">The unique identifier/hash of the transaction.  <a href="classripple_1_1RCLCxTx.html#ada5760c0d0d4bbc5de8e579ea1f81f4f">More...</a><br /></td></tr>
 <tr class="separator:ada5760c0d0d4bbc5de8e579ea1f81f4f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:a7e371c89131df3bd613a889757b81a18"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RCLCxTx.html#a7e371c89131df3bd613a889757b81a18">tx_</a></td></tr>
-<tr class="memdesc:a7e371c89131df3bd613a889757b81a18"><td class="mdescLeft">&#160;</td><td class="mdescRight">The <a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> that represents the transaction.  <a href="classripple_1_1RCLCxTx.html#a7e371c89131df3bd613a889757b81a18">More...</a><br /></td></tr>
-<tr class="separator:a7e371c89131df3bd613a889757b81a18"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad18aaac4c2cedb3c620489a9b055d2b7"><td class="memItemLeft" align="right" valign="top">boost::intrusive_ptr&lt; <a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> const  &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RCLCxTx.html#ad18aaac4c2cedb3c620489a9b055d2b7">tx_</a></td></tr>
+<tr class="memdesc:ad18aaac4c2cedb3c620489a9b055d2b7"><td class="mdescLeft">&#160;</td><td class="mdescRight">The <a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> that represents the transaction.  <a href="classripple_1_1RCLCxTx.html#ad18aaac4c2cedb3c620489a9b055d2b7">More...</a><br /></td></tr>
+<tr class="separator:ad18aaac4c2cedb3c620489a9b055d2b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Represents a transaction in <a class="el" href="classripple_1_1RCLConsensus.html" title="Manages the generic consensus algorithm for use by the RCL.">RCLConsensus</a>. </p>
@@ -141,8 +124,8 @@ Public Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="ab3df2ab24e3ebbec5e6f02bfff2a6ee6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab3df2ab24e3ebbec5e6f02bfff2a6ee6">&#9670;&nbsp;</a></span>RCLCxTx()</h2>
+<a id="a414a40b4730525c49fd72ad4d3e6a76e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a414a40b4730525c49fd72ad4d3e6a76e">&#9670;&nbsp;</a></span>RCLCxTx()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -150,7 +133,7 @@ Public Attributes</h2></td></tr>
         <tr>
           <td class="memname">ripple::RCLCxTx::RCLCxTx </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> const &amp;&#160;</td>
+          <td class="paramtype">boost::intrusive_ptr&lt; <a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> const &gt;&#160;</td>
           <td class="paramname"><em>txn</em></td><td>)</td>
           <td></td>
         </tr>
@@ -192,14 +175,14 @@ Public Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
-<a id="a7e371c89131df3bd613a889757b81a18"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7e371c89131df3bd613a889757b81a18">&#9670;&nbsp;</a></span>tx_</h2>
+<a id="ad18aaac4c2cedb3c620489a9b055d2b7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad18aaac4c2cedb3c620489a9b055d2b7">&#9670;&nbsp;</a></span>tx_</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> ripple::RCLCxTx::tx_</td>
+          <td class="memname">boost::intrusive_ptr&lt;<a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> const&gt; ripple::RCLCxTx::tx_</td>
         </tr>
       </table>
 </div><div class="memdoc">

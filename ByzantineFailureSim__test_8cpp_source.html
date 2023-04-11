@@ -149,7 +149,7 @@ $(function() {
 <div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;        <span class="comment">// All peers see some TX 0</span></div>
 <div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;        <span class="keywordflow">for</span> (<a class="code" href="classripple_1_1Peer.html">Peer</a>* peer : network)</div>
 <div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;        {</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;            peer-&gt;submit(Tx(0));</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;            peer-&gt;submit(Tx{0});</div>
 <div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;            <span class="comment">// Peers 0,1,2,6 will close the next ledger differently by injecting</span></div>
 <div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;            <span class="comment">// a non-consensus approved transaciton</span></div>
 <div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;            <span class="keywordflow">if</span> (byzantineNodes.contains(peer))</div>

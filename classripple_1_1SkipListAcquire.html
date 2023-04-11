@@ -154,9 +154,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a07b11e154a7e3f29610fc23e62665488"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SkipListAcquire.html#a07b11e154a7e3f29610fc23e62665488">init</a> (int numPeers)</td></tr>
 <tr class="memdesc:a07b11e154a7e3f29610fc23e62665488"><td class="mdescLeft">&#160;</td><td class="mdescRight">Start the <a class="el" href="classripple_1_1SkipListAcquire.html" title="Manage the retrieval of a skip list in a ledger from the network.">SkipListAcquire</a> task.  <a href="classripple_1_1SkipListAcquire.html#a07b11e154a7e3f29610fc23e62665488">More...</a><br /></td></tr>
 <tr class="separator:a07b11e154a7e3f29610fc23e62665488"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad11375b1c27286f91bceb4f623f529e8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SkipListAcquire.html#ad11375b1c27286f91bceb4f623f529e8">processData</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ledgerSeq, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> const &gt; const &amp;item)</td></tr>
-<tr class="memdesc:ad11375b1c27286f91bceb4f623f529e8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Process the data extracted from a peer's reply.  <a href="classripple_1_1SkipListAcquire.html#ad11375b1c27286f91bceb4f623f529e8">More...</a><br /></td></tr>
-<tr class="separator:ad11375b1c27286f91bceb4f623f529e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9ce62079d9f0b6ed450f5735f9e706a7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SkipListAcquire.html#a9ce62079d9f0b6ed450f5735f9e706a7">processData</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ledgerSeq, boost::intrusive_ptr&lt; <a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> const &gt; const &amp;item)</td></tr>
+<tr class="memdesc:a9ce62079d9f0b6ed450f5735f9e706a7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Process the data extracted from a peer's reply.  <a href="classripple_1_1SkipListAcquire.html#a9ce62079d9f0b6ed450f5735f9e706a7">More...</a><br /></td></tr>
+<tr class="separator:a9ce62079d9f0b6ed450f5735f9e706a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1f67eddc5690cc860abb3857f62e4d0c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SkipListAcquire.html#a1f67eddc5690cc860abb3857f62e4d0c">addDataCallback</a> (<a class="el" href="classripple_1_1SkipListAcquire.html#a3cc854033d5c399898997a16e222f916">OnSkipListDataCB</a> &amp;&amp;cb)</td></tr>
 <tr class="memdesc:a1f67eddc5690cc860abb3857f62e4d0c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add a callback that will be called when the skipList is ready or failed.  <a href="classripple_1_1SkipListAcquire.html#a1f67eddc5690cc860abb3857f62e4d0c">More...</a><br /></td></tr>
 <tr class="separator:a1f67eddc5690cc860abb3857f62e4d0c"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -428,8 +428,8 @@ Friends</h2></td></tr>
 
 </div>
 </div>
-<a id="ad11375b1c27286f91bceb4f623f529e8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad11375b1c27286f91bceb4f623f529e8">&#9670;&nbsp;</a></span>processData()</h2>
+<a id="a9ce62079d9f0b6ed450f5735f9e706a7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9ce62079d9f0b6ed450f5735f9e706a7">&#9670;&nbsp;</a></span>processData()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -443,7 +443,7 @@ Friends</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> const &gt; const &amp;&#160;</td>
+          <td class="paramtype">boost::intrusive_ptr&lt; <a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> const &gt; const &amp;&#160;</td>
           <td class="paramname"><em>item</em>&#160;</td>
         </tr>
         <tr>

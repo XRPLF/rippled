@@ -1,15 +1,9 @@
 <map id="ripple::SHAMapLeafNode" name="ripple::SHAMapLeafNode">
-<area shape="rect" id="node1" title=" " alt="" coords="152,511,335,537"/>
-<area shape="rect" id="node2" href="$classripple_1_1SHAMapTreeNode.html" title=" " alt="" coords="52,414,235,441"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,5,108,32"/>
-<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="69,95,237,136"/>
-<area shape="rect" id="node4" href="$classripple_1_1SHAMapHash.html" title=" " alt="" coords="78,317,233,344"/>
-<area shape="rect" id="node5" href="$classripple_1_1base__uint.html" title=" " alt="" coords="98,213,239,255"/>
-<area shape="rect" id="node9" href="$classripple_1_1SHAMapItem.html" title=" " alt="" coords="269,317,420,344"/>
-<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="313,102,401,129"/>
-<area shape="rect" id="node11" href="$classripple_1_1Buffer.html" title="Like std::vector&lt;char&gt; but better." alt="" coords="450,221,557,247"/>
-<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="259,407,430,448"/>
-<area shape="rect" id="node10" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="263,213,426,255"/>
-<area shape="rect" id="node12" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="426,95,581,136"/>
-<area shape="rect" id="node13" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="456,5,551,32"/>
+<area shape="rect" id="node1" title=" " alt="" coords="5,483,188,509"/>
+<area shape="rect" id="node2" href="$classripple_1_1SHAMapTreeNode.html" title=" " alt="" coords="5,407,188,433"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="45,5,148,32"/>
+<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="113,95,281,136"/>
+<area shape="rect" id="node4" href="$classripple_1_1SHAMapHash.html" title=" " alt="" coords="127,317,282,344"/>
+<area shape="rect" id="node5" href="$classripple_1_1base__uint.html" title=" " alt="" coords="149,213,290,255"/>
+<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="305,102,393,129"/>
 </map>

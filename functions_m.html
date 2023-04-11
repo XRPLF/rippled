@@ -84,6 +84,7 @@ $(function() {
 , <a class="el" href="classripple_1_1NetworkValidatedLedgers.html#a8bcf72d742ececff2e24b30803f81d06">ripple::NetworkValidatedLedgers</a>
 , <a class="el" href="classripple_1_1RPC_1_1ShardArchiveHandler.html#a236fb42ce35edfad5e0f61f1405bb40a">ripple::RPC::ShardArchiveHandler</a>
 , <a class="el" href="classripple_1_1ServerImpl.html#a513dfd120f4beb08bbc6e1b48d711b85">ripple::ServerImpl&lt; Handler &gt;</a>
+, <a class="el" href="structripple_1_1SlabAllocator_1_1SlabBlock.html#a531411f3231aa0ae9aa735da7c739ce4">ripple::SlabAllocator&lt; Type &gt;::SlabBlock</a>
 , <a class="el" href="structripple_1_1test_1_1detail_1_1multi__runner__base_1_1inner.html#a38f04dc61b0965fe76034272c5d567f1">ripple::test::detail::multi_runner_base&lt; IsParent &gt;::inner</a>
 , <a class="el" href="classripple_1_1test_1_1WSClientImpl.html#a400ce0f9b243a513973cd7758a37e061">ripple::test::WSClientImpl</a>
 , <a class="el" href="classripple_1_1ThreadSafeQueue.html#a0c64cc5a0321aaef4e841db09824f1f5">ripple::ThreadSafeQueue&lt; T &gt;</a>
@@ -892,7 +893,10 @@ $(function() {
 : <a class="el" href="classbeast_1_1insight_1_1detail_1_1GroupImp.html#a8a9988f6dc8367593efda80d45f13f9a">beast::insight::detail::GroupImp</a>
 </li>
 <li>make_random_item()
-: <a class="el" href="classripple_1_1tests_1_1FetchPack__test.html#a389246300ce1d915c47c23e4f5b1c327">ripple::tests::FetchPack_test</a>
+: <a class="el" href="classripple_1_1tests_1_1FetchPack__test.html#a403ef43171e21430bf3a764e0a5aaa62">ripple::tests::FetchPack_test</a>
+</li>
+<li>make_shamapitem
+: <a class="el" href="classripple_1_1SHAMapItem.html#a167b4d4f68841afdb25e029faf254e9a">ripple::SHAMapItem</a>
 </li>
 <li>make_stvar
 : <a class="el" href="classripple_1_1detail_1_1STVar.html#adfc5c4888dc6003707acd62f14c20112">ripple::detail::STVar</a>
@@ -1033,7 +1037,7 @@ $(function() {
 , <a class="el" href="classripple_1_1PeerImp.html#aa809ac6735656bd62b6ff456c7366e20">ripple::PeerImp</a>
 </li>
 <li>makeRandomAS()
-: <a class="el" href="classripple_1_1tests_1_1SHAMapSync__test.html#a1973955def3cbf0c916a6845523c43f1">ripple::tests::SHAMapSync_test</a>
+: <a class="el" href="classripple_1_1tests_1_1SHAMapSync__test.html#a7e0ecf2be3b899945c2c3d7d42dbbc79">ripple::tests::SHAMapSync_test</a>
 </li>
 <li>makeRedirectResponse()
 : <a class="el" href="classripple_1_1OverlayImpl.html#a9f6861b0fb2805bb479f316f1d0d2bc2">ripple::OverlayImpl</a>
@@ -1161,7 +1165,7 @@ $(function() {
 : <a class="el" href="classripple_1_1test_1_1ManualTimeKeeper.html#ae0307c0cafd95511e1f63e6c8af6bf2d">ripple::test::ManualTimeKeeper</a>
 </li>
 <li>Map()
-: <a class="el" href="classbeast_1_1PropertyStream_1_1Map.html#a86ae0af55cc5c29c39a416f3da0fd589">beast::PropertyStream::Map</a>
+: <a class="el" href="classbeast_1_1PropertyStream_1_1Map.html#a0f6b67ac7adeceaead76790bbe519c22">beast::PropertyStream::Map</a>
 , <a class="el" href="classripple_1_1JobTypes.html#abe5b7a836190305dd192caa948955494">ripple::JobTypes</a>
 , <a class="el" href="classripple_1_1NodeStore_1_1MemoryBackend.html#a157d4f5773b131ea06360784e967b7f0">ripple::NodeStore::MemoryBackend</a>
 </li>
@@ -1459,7 +1463,8 @@ $(function() {
 : <a class="el" href="classripple_1_1NodeStore_1_1Sequence.html#a58ba63aeceae99d4a07ad575bf5bb791abeb99a2e83d7f12facf1e4358d06ef13">ripple::NodeStore::Sequence</a>
 </li>
 <li>maxSize_
-: <a class="el" href="classripple_1_1ThreadSafeQueue.html#ad9c6b00c5f0185788b46ea36b82bad1d">ripple::ThreadSafeQueue&lt; T &gt;</a>
+: <a class="el" href="classripple_1_1SlabAllocatorSet.html#a96e56f2b07cb747c0ec4a7ff3b79e1a5">ripple::SlabAllocatorSet&lt; Type &gt;</a>
+, <a class="el" href="classripple_1_1ThreadSafeQueue.html#ad9c6b00c5f0185788b46ea36b82bad1d">ripple::ThreadSafeQueue&lt; T &gt;</a>
 , <a class="el" href="classripple_1_1TxQ.html#a21c99b49f8d49b48488d8388ad53f747">ripple::TxQ</a>
 </li>
 <li>maxSizeGb
@@ -1600,7 +1605,7 @@ $(function() {
 </li>
 <li>member()
 : <a class="el" href="classbeast_1_1detail_1_1empty__base__optimization.html#aa636f02427e497edd17d7b016c00291a">beast::detail::empty_base_optimization&lt; T, UniqueID, isDerived &gt;</a>
-, <a class="el" href="classbeast_1_1detail_1_1empty__base__optimization_3_01T_00_01UniqueID_00_01false_01_4.html#a5d804161c453bd124dd80eb09dbe61c1">beast::detail::empty_base_optimization&lt; T, UniqueID, false &gt;</a>
+, <a class="el" href="classbeast_1_1detail_1_1empty__base__optimization_3_01T_00_01UniqueID_00_01false_01_4.html#a5a6193c02e481c64ab5460df89158dda">beast::detail::empty_base_optimization&lt; T, UniqueID, false &gt;</a>
 , <a class="el" href="classripple_1_1Cluster.html#adffcdc10e28e4fa6f3e9b9c5f4bb3afa">ripple::Cluster</a>
 </li>
 <li>memberName()
@@ -1713,7 +1718,7 @@ $(function() {
 : <a class="el" href="classripple_1_1test_1_1detail_1_1multi__runner__base.html#afe4e245ee815663245d23372c4f9e65b">ripple::test::detail::multi_runner_base&lt; IsParent &gt;</a>
 </li>
 <li>MessageWithHash()
-: <a class="el" href="structripple_1_1ValidatorList_1_1MessageWithHash.html#a371d1aa21ff85729e2e5544f3bd63fbe">ripple::ValidatorList::MessageWithHash</a>
+: <a class="el" href="structripple_1_1ValidatorList_1_1MessageWithHash.html#a17b716a96c5adf8f12cee236370a3aa5">ripple::ValidatorList::MessageWithHash</a>
 </li>
 <li>meta
 : <a class="el" href="structripple_1_1OpenView_1_1txData.html#ae0b8577ea1186d2270cb43343ae248dd">ripple::OpenView::txData</a>
@@ -1731,7 +1736,7 @@ $(function() {
 : <a class="el" href="classripple_1_1RelationalDatabase.html#a183ed7f35d368ec4564d8083fe9656f3">ripple::RelationalDatabase</a>
 </li>
 <li>Meter()
-: <a class="el" href="classbeast_1_1insight_1_1Meter.html#a1c722eaae1865f01bfe1f0e0cbe42a4a">beast::insight::Meter</a>
+: <a class="el" href="classbeast_1_1insight_1_1Meter.html#a3b28aae0d54481cc432ce6fa9f158c4b">beast::insight::Meter</a>
 </li>
 <li>Method
 : <a class="el" href="structripple_1_1RPC_1_1Handler.html#ae4654d5b78aa373850325913a8dd6369">ripple::RPC::Handler</a>

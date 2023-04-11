@@ -369,6 +369,8 @@ Functions</h2></td></tr>
 <tr class="separator:a0417dc5baa8cfe83638ad5483dac985e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6aa90cf7fb70da61df09715f8c800977"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a6aa90cf7fb70da61df09715f8c800977">decodeBase58</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;s)</td></tr>
 <tr class="separator:a6aa90cf7fb70da61df09715f8c800977"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae9da365be7da5573d9c1c353af6eb470"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1SlabAllocatorSet.html">SlabAllocatorSet</a>&lt; <a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#ae9da365be7da5573d9c1c353af6eb470">slabber</a> ({ { 128, <a class="el" href="namespaceripple.html#a13d7c6c34d30731bbc221f629e03f8db">megabytes</a>(<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>(60)) }, { 192, <a class="el" href="namespaceripple.html#a13d7c6c34d30731bbc221f629e03f8db">megabytes</a>(<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>(46)) }, { 272, <a class="el" href="namespaceripple.html#a13d7c6c34d30731bbc221f629e03f8db">megabytes</a>(<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>(60)) }, { 384, <a class="el" href="namespaceripple.html#a13d7c6c34d30731bbc221f629e03f8db">megabytes</a>(<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>(56)) }, { 564, <a class="el" href="namespaceripple.html#a13d7c6c34d30731bbc221f629e03f8db">megabytes</a>(<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>(40)) }, { 772, <a class="el" href="namespaceripple.html#a13d7c6c34d30731bbc221f629e03f8db">megabytes</a>(<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>(46)) }, { 1052, <a class="el" href="namespaceripple.html#a13d7c6c34d30731bbc221f629e03f8db">megabytes</a>(<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>(60)) }, })</td></tr>
+<tr class="separator:ae9da365be7da5573d9c1c353af6eb470"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0d900d363b7c2725a8d1698e15067ec3"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a0d900d363b7c2725a8d1698e15067ec3">configContents</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;dbPath, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;validatorsFile)</td></tr>
 <tr class="separator:a0d900d363b7c2725a8d1698e15067ec3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1c5d9fb1006ebe79534ff7eb895abdbb"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a1c5d9fb1006ebe79534ff7eb895abdbb">valFileContents</a> ()</td></tr>
@@ -3341,6 +3343,24 @@ template&lt;class T , class... Args&gt; </div>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="tokens_8cpp_source.html#l00150">150</a> of file <a class="el" href="tokens_8cpp_source.html">tokens.cpp</a>.</p>
+
+</div>
+</div>
+<a id="ae9da365be7da5573d9c1c353af6eb470"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae9da365be7da5573d9c1c353af6eb470">&#9670;&nbsp;</a></span>slabber()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1SlabAllocatorSet.html">SlabAllocatorSet</a>&lt;<a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a>&gt; ripple::detail::slabber </td>
+          <td>(</td>
+          <td class="paramtype">{ { 128, <a class="el" href="namespaceripple.html#a13d7c6c34d30731bbc221f629e03f8db">megabytes</a>(<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>(60)) }, { 192, <a class="el" href="namespaceripple.html#a13d7c6c34d30731bbc221f629e03f8db">megabytes</a>(<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>(46)) }, { 272, <a class="el" href="namespaceripple.html#a13d7c6c34d30731bbc221f629e03f8db">megabytes</a>(<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>(60)) }, { 384, <a class="el" href="namespaceripple.html#a13d7c6c34d30731bbc221f629e03f8db">megabytes</a>(<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>(56)) }, { 564, <a class="el" href="namespaceripple.html#a13d7c6c34d30731bbc221f629e03f8db">megabytes</a>(<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>(40)) }, { 772, <a class="el" href="namespaceripple.html#a13d7c6c34d30731bbc221f629e03f8db">megabytes</a>(<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>(46)) }, { 1052, <a class="el" href="namespaceripple.html#a13d7c6c34d30731bbc221f629e03f8db">megabytes</a>(<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>(60)) }, }&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
 
 </div>
 </div>

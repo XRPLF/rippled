@@ -67,8 +67,10 @@ $(function() {
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pri-methods">Private Member Functions</a> &#124;
 <a href="#pri-static-methods">Static Private Member Functions</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
+<a href="#friends">Friends</a> &#124;
 <a href="classripple_1_1SHAMapItem-members.html">List of all members</a>  </div>
   <div class="headertitle">
 <div class="title">ripple::SHAMapItem Class Reference</div>  </div>
@@ -88,15 +90,13 @@ Collaboration diagram for ripple::SHAMapItem:</div>
 <div class="dyncontent">
 <div class="center"><img src="classripple_1_1SHAMapItem__coll__graph.png" border="0" usemap="#ripple_1_1SHAMapItem_coll__map" alt="Collaboration graph"/></div>
 <map name="ripple_1_1SHAMapItem_coll__map" id="ripple_1_1SHAMapItem_coll__map">
-<area shape="rect" title=" " alt="" coords="170,317,321,344"/>
-<area shape="rect" href="classripple_1_1CountedObject.html" title=" " alt="" coords="5,213,168,255"/>
-<area shape="rect" href="classripple_1_1Buffer.html" title="Like std::vector&lt;char&gt; but better." alt="" coords="192,221,299,247"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html" title=" " alt="" coords="93,95,248,136"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="123,5,218,32"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/types/size_t.html" title=" " alt="" coords="272,102,360,129"/>
-<area shape="rect" href="classripple_1_1base__uint.html" title=" " alt="" coords="323,213,464,255"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/container/array.html" title=" " alt="" coords="384,95,552,136"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="417,5,519,32"/>
+<area shape="rect" title=" " alt="" coords="888,98,1039,125"/>
+<area shape="rect" href="classripple_1_1CountedObject.html" title=" " alt="" coords="644,5,807,47"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="5,122,108,149"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/atomic/atomic.html" title=" " alt="" coords="413,122,620,149"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/container/array.html" title=" " alt="" coords="221,173,389,215"/>
+<area shape="rect" href="classripple_1_1base__uint.html" title="Integers of any length that is a multiple of 32&#45;bits." alt="" coords="655,185,796,227"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/types/size_t.html" title=" " alt="" coords="261,241,349,267"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -104,16 +104,27 @@ Collaboration diagram for ripple::SHAMapItem:</div>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:aaaf776384dd9ec074a4c85cf70d47f35"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapItem.html#aaaf776384dd9ec074a4c85cf70d47f35">SHAMapItem</a> ()=delete</td></tr>
 <tr class="separator:aaaf776384dd9ec074a4c85cf70d47f35"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a90d7b0c93cfd51acdf151eba40fee683"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapItem.html#a90d7b0c93cfd51acdf151eba40fee683">SHAMapItem</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;tag, <a class="el" href="classripple_1_1Slice.html">Slice</a> <a class="el" href="classripple_1_1SHAMapItem.html#abb9566a5f6f2bed04bfabafe5251993d">data</a>)</td></tr>
-<tr class="separator:a90d7b0c93cfd51acdf151eba40fee683"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afda8d4a4b69c2884dd864e3eb612e812"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapItem.html#afda8d4a4b69c2884dd864e3eb612e812">SHAMapItem</a> (<a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> const &amp;other)=delete</td></tr>
+<tr class="separator:afda8d4a4b69c2884dd864e3eb612e812"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3ae021fa94adfc1487139e053f272172"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapItem.html#a3ae021fa94adfc1487139e053f272172">operator=</a> (<a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> const &amp;other)=delete</td></tr>
+<tr class="separator:a3ae021fa94adfc1487139e053f272172"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a12d4df082a12f56f9c227e071fa98103"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapItem.html#a12d4df082a12f56f9c227e071fa98103">SHAMapItem</a> (<a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> &amp;&amp;other)=delete</td></tr>
+<tr class="separator:a12d4df082a12f56f9c227e071fa98103"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afef192b29af7f376f144b734d1543637"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapItem.html#afef192b29af7f376f144b734d1543637">operator=</a> (<a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> &amp;&amp;)=delete</td></tr>
+<tr class="separator:afef192b29af7f376f144b734d1543637"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9d92059f2308f9fe008ad5cfbc7d9478"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapItem.html#a9d92059f2308f9fe008ad5cfbc7d9478">key</a> () const</td></tr>
 <tr class="separator:a9d92059f2308f9fe008ad5cfbc7d9478"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3f52867a7d3829faede60bf7dd5628ba"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Slice.html">Slice</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapItem.html#a3f52867a7d3829faede60bf7dd5628ba">slice</a> () const</td></tr>
-<tr class="separator:a3f52867a7d3829faede60bf7dd5628ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad322c63f7fbe6a84fa9e77715115f7a3"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapItem.html#ad322c63f7fbe6a84fa9e77715115f7a3">size</a> () const</td></tr>
 <tr class="separator:ad322c63f7fbe6a84fa9e77715115f7a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abb9566a5f6f2bed04bfabafe5251993d"><td class="memItemLeft" align="right" valign="top">void const  *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapItem.html#abb9566a5f6f2bed04bfabafe5251993d">data</a> () const</td></tr>
 <tr class="separator:abb9566a5f6f2bed04bfabafe5251993d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3f52867a7d3829faede60bf7dd5628ba"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Slice.html">Slice</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapItem.html#a3f52867a7d3829faede60bf7dd5628ba">slice</a> () const</td></tr>
+<tr class="separator:a3f52867a7d3829faede60bf7dd5628ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-methods"></a>
+Private Member Functions</h2></td></tr>
+<tr class="memitem:a90d7b0c93cfd51acdf151eba40fee683"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapItem.html#a90d7b0c93cfd51acdf151eba40fee683">SHAMapItem</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;tag, <a class="el" href="classripple_1_1Slice.html">Slice</a> <a class="el" href="classripple_1_1SHAMapItem.html#abb9566a5f6f2bed04bfabafe5251993d">data</a>)</td></tr>
+<tr class="separator:a90d7b0c93cfd51acdf151eba40fee683"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-static-methods"></a>
 Static Private Member Functions</h2></td></tr>
@@ -122,17 +133,66 @@ Static Private Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
-<tr class="memitem:afdad3ab4c09ac9c13e5cbb4a8012c4d3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapItem.html#afdad3ab4c09ac9c13e5cbb4a8012c4d3">tag_</a></td></tr>
-<tr class="separator:afdad3ab4c09ac9c13e5cbb4a8012c4d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ada6b1f3554ed31b3465ea31a922a0d9d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Buffer.html">Buffer</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapItem.html#ada6b1f3554ed31b3465ea31a922a0d9d">data_</a></td></tr>
-<tr class="separator:ada6b1f3554ed31b3465ea31a922a0d9d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abf90ca9bd7d9c5ce0a17e7f58cca2b91"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapItem.html#abf90ca9bd7d9c5ce0a17e7f58cca2b91">tag_</a></td></tr>
+<tr class="separator:abf90ca9bd7d9c5ce0a17e7f58cca2b91"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a18904203010378c5212d89e30ed66044"><td class="memItemLeft" align="right" valign="top">const <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapItem.html#a18904203010378c5212d89e30ed66044">size_</a></td></tr>
+<tr class="separator:a18904203010378c5212d89e30ed66044"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad2831484014eca794c5c9e39258b39f2"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/atomic/atomic.html">std::atomic</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapItem.html#ad2831484014eca794c5c9e39258b39f2">refcount_</a> = 1</td></tr>
+<tr class="separator:ad2831484014eca794c5c9e39258b39f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="friends"></a>
+Friends</h2></td></tr>
+<tr class="memitem:a4ac1b741513378aaa260f7118f1f85b3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapItem.html#a4ac1b741513378aaa260f7118f1f85b3">intrusive_ptr_add_ref</a> (<a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> const *x)</td></tr>
+<tr class="separator:a4ac1b741513378aaa260f7118f1f85b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a998cc5875809d78f5afbd599c4cf409f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapItem.html#a998cc5875809d78f5afbd599c4cf409f">intrusive_ptr_release</a> (<a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> const *x)</td></tr>
+<tr class="separator:a998cc5875809d78f5afbd599c4cf409f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a167b4d4f68841afdb25e029faf254e9a"><td class="memItemLeft" align="right" valign="top">boost::intrusive_ptr&lt; <a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapItem.html#a167b4d4f68841afdb25e029faf254e9a">make_shamapitem</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;tag, <a class="el" href="classripple_1_1Slice.html">Slice</a> <a class="el" href="classripple_1_1SHAMapItem.html#abb9566a5f6f2bed04bfabafe5251993d">data</a>)</td></tr>
+<tr class="separator:a167b4d4f68841afdb25e029faf254e9a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="SHAMapItem_8h_source.html#l00031">31</a> of file <a class="el" href="SHAMapItem_8h_source.html">SHAMapItem.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapItem_8h_source.html#l00034">34</a> of file <a class="el" href="SHAMapItem_8h_source.html">SHAMapItem.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="a90d7b0c93cfd51acdf151eba40fee683"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a90d7b0c93cfd51acdf151eba40fee683">&#9670;&nbsp;</a></span>SHAMapItem() <span class="overload">[1/4]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">ripple::SHAMapItem::SHAMapItem </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;&#160;</td>
+          <td class="paramname"><em>tag</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Slice.html">Slice</a>&#160;</td>
+          <td class="paramname"><em>data</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SHAMapItem_8h_source.html#l00064">64</a> of file <a class="el" href="SHAMapItem_8h_source.html">SHAMapItem.h</a>.</p>
+
+</div>
+</div>
 <a id="aaaf776384dd9ec074a4c85cf70d47f35"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aaaf776384dd9ec074a4c85cf70d47f35">&#9670;&nbsp;</a></span>SHAMapItem() <span class="overload">[1/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aaaf776384dd9ec074a4c85cf70d47f35">&#9670;&nbsp;</a></span>SHAMapItem() <span class="overload">[2/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -156,37 +216,111 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a90d7b0c93cfd51acdf151eba40fee683"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a90d7b0c93cfd51acdf151eba40fee683">&#9670;&nbsp;</a></span>SHAMapItem() <span class="overload">[2/2]</span></h2>
+<a id="afda8d4a4b69c2884dd864e3eb612e812"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afda8d4a4b69c2884dd864e3eb612e812">&#9670;&nbsp;</a></span>SHAMapItem() <span class="overload">[3/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname">ripple::SHAMapItem::SHAMapItem </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;&#160;</td>
-          <td class="paramname"><em>tag</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> const &amp;&#160;</td>
+          <td class="paramname"><em>other</em></td><td>)</td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1Slice.html">Slice</a>&#160;</td>
-          <td class="paramname"><em>data</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">delete</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapItem_8h_source.html#l00040">40</a> of file <a class="el" href="SHAMapItem_8h_source.html">SHAMapItem.h</a>.</p>
+</div>
+</div>
+<a id="a12d4df082a12f56f9c227e071fa98103"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a12d4df082a12f56f9c227e071fa98103">&#9670;&nbsp;</a></span>SHAMapItem() <span class="overload">[4/4]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">ripple::SHAMapItem::SHAMapItem </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> &amp;&amp;&#160;</td>
+          <td class="paramname"><em>other</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">delete</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
 
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="a3ae021fa94adfc1487139e053f272172"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3ae021fa94adfc1487139e053f272172">&#9670;&nbsp;</a></span>operator=() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a>&amp; ripple::SHAMapItem::operator= </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> const &amp;&#160;</td>
+          <td class="paramname"><em>other</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">delete</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="afef192b29af7f376f144b734d1543637"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afef192b29af7f376f144b734d1543637">&#9670;&nbsp;</a></span>operator=() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a>&amp; ripple::SHAMapItem::operator= </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> &amp;&amp;&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">delete</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a9d92059f2308f9fe008ad5cfbc7d9478"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a9d92059f2308f9fe008ad5cfbc7d9478">&#9670;&nbsp;</a></span>key()</h2>
 
@@ -202,26 +336,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapItem_8h_source.html#l00045">45</a> of file <a class="el" href="SHAMapItem_8h_source.html">SHAMapItem.h</a>.</p>
-
-</div>
-</div>
-<a id="a3f52867a7d3829faede60bf7dd5628ba"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3f52867a7d3829faede60bf7dd5628ba">&#9670;&nbsp;</a></span>slice()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classripple_1_1Slice.html">Slice</a> ripple::SHAMapItem::slice </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SHAMapItem_8h_source.html#l00051">51</a> of file <a class="el" href="SHAMapItem_8h_source.html">SHAMapItem.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapItem_8h_source.html#l00087">87</a> of file <a class="el" href="SHAMapItem_8h_source.html">SHAMapItem.h</a>.</p>
 
 </div>
 </div>
@@ -240,7 +355,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapItem_8h_source.html#l00057">57</a> of file <a class="el" href="SHAMapItem_8h_source.html">SHAMapItem.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapItem_8h_source.html#l00093">93</a> of file <a class="el" href="SHAMapItem_8h_source.html">SHAMapItem.h</a>.</p>
 
 </div>
 </div>
@@ -259,7 +374,26 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapItem_8h_source.html#l00063">63</a> of file <a class="el" href="SHAMapItem_8h_source.html">SHAMapItem.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapItem_8h_source.html#l00099">99</a> of file <a class="el" href="SHAMapItem_8h_source.html">SHAMapItem.h</a>.</p>
+
+</div>
+</div>
+<a id="a3f52867a7d3829faede60bf7dd5628ba"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3f52867a7d3829faede60bf7dd5628ba">&#9670;&nbsp;</a></span>slice()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1Slice.html">Slice</a> ripple::SHAMapItem::slice </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SHAMapItem_8h_source.html#l00105">105</a> of file <a class="el" href="SHAMapItem_8h_source.html">SHAMapItem.h</a>.</p>
 
 </div>
 </div>
@@ -287,9 +421,104 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
+<h2 class="groupheader">Friends And Related Function Documentation</h2>
+<a id="a4ac1b741513378aaa260f7118f1f85b3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4ac1b741513378aaa260f7118f1f85b3">&#9670;&nbsp;</a></span>intrusive_ptr_add_ref</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void intrusive_ptr_add_ref </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> const *&#160;</td>
+          <td class="paramname"><em>x</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SHAMapItem_8h_source.html#l00131">131</a> of file <a class="el" href="SHAMapItem_8h_source.html">SHAMapItem.h</a>.</p>
+
+</div>
+</div>
+<a id="a998cc5875809d78f5afbd599c4cf409f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a998cc5875809d78f5afbd599c4cf409f">&#9670;&nbsp;</a></span>intrusive_ptr_release</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void intrusive_ptr_release </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> const *&#160;</td>
+          <td class="paramname"><em>x</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SHAMapItem_8h_source.html#l00140">140</a> of file <a class="el" href="SHAMapItem_8h_source.html">SHAMapItem.h</a>.</p>
+
+</div>
+</div>
+<a id="a167b4d4f68841afdb25e029faf254e9a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a167b4d4f68841afdb25e029faf254e9a">&#9670;&nbsp;</a></span>make_shamapitem</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">boost::intrusive_ptr&lt;<a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a>&gt; make_shamapitem </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;&#160;</td>
+          <td class="paramname"><em>tag</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Slice.html">Slice</a>&#160;</td>
+          <td class="paramname"><em>data</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SHAMapItem_8h_source.html#l00160">160</a> of file <a class="el" href="SHAMapItem_8h_source.html">SHAMapItem.h</a>.</p>
+
+</div>
+</div>
 <h2 class="groupheader">Member Data Documentation</h2>
-<a id="afdad3ab4c09ac9c13e5cbb4a8012c4d3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afdad3ab4c09ac9c13e5cbb4a8012c4d3">&#9670;&nbsp;</a></span>tag_</h2>
+<a id="abf90ca9bd7d9c5ce0a17e7f58cca2b91"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abf90ca9bd7d9c5ce0a17e7f58cca2b91">&#9670;&nbsp;</a></span>tag_</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -298,7 +527,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::SHAMapItem::tag_</td>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::SHAMapItem::tag_</td>
         </tr>
       </table>
   </td>
@@ -308,12 +537,12 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapItem_8h_source.html#l00034">34</a> of file <a class="el" href="SHAMapItem_8h_source.html">SHAMapItem.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapItem_8h_source.html#l00050">50</a> of file <a class="el" href="SHAMapItem_8h_source.html">SHAMapItem.h</a>.</p>
 
 </div>
 </div>
-<a id="ada6b1f3554ed31b3465ea31a922a0d9d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ada6b1f3554ed31b3465ea31a922a0d9d">&#9670;&nbsp;</a></span>data_</h2>
+<a id="a18904203010378c5212d89e30ed66044"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a18904203010378c5212d89e30ed66044">&#9670;&nbsp;</a></span>size_</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -322,7 +551,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1Buffer.html">Buffer</a> ripple::SHAMapItem::data_</td>
+          <td class="memname">const <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ripple::SHAMapItem::size_</td>
         </tr>
       </table>
   </td>
@@ -332,7 +561,31 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapItem_8h_source.html#l00035">35</a> of file <a class="el" href="SHAMapItem_8h_source.html">SHAMapItem.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapItem_8h_source.html#l00055">55</a> of file <a class="el" href="SHAMapItem_8h_source.html">SHAMapItem.h</a>.</p>
+
+</div>
+</div>
+<a id="ad2831484014eca794c5c9e39258b39f2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad2831484014eca794c5c9e39258b39f2">&#9670;&nbsp;</a></span>refcount_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/atomic/atomic.html">std::atomic</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&gt; ripple::SHAMapItem::refcount_ = 1</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">mutable</span><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SHAMapItem_8h_source.html#l00058">58</a> of file <a class="el" href="SHAMapItem_8h_source.html">SHAMapItem.h</a>.</p>
 
 </div>
 </div>

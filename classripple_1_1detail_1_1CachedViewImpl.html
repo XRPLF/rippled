@@ -215,8 +215,6 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a81e1b7628e44e758a0359061c4b17c96"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6989ce9f6240d5c600d3a4f526f89d29"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ReadView.html#a6989ce9f6240d5c600d3a4f526f89d29">ownerCountHook</a> (<a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;account, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> count) const</td></tr>
 <tr class="separator:a6989ce9f6240d5c600d3a4f526f89d29"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abccd7f2f0b2ebfaafc8fedd6cc7ad081"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1detail_1_1ReadViewFwdRange.html#ad0e2a978fcfc47b2a937b536f1ed948f">sles_type::iter_base</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ReadView.html#abccd7f2f0b2ebfaafc8fedd6cc7ad081">slesUpperBound</a> (<a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a> const &amp;key) const =0</td></tr>
-<tr class="separator:abccd7f2f0b2ebfaafc8fedd6cc7ad081"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af95bff423d062ed89665e9f628972ece"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ReadView.html#af95bff423d062ed89665e9f628972ece">txExists</a> (<a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a> const &amp;key) const =0</td></tr>
 <tr class="memdesc:af95bff423d062ed89665e9f628972ece"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns <code>true</code> if a tx exists in the tx map.  <a href="classripple_1_1ReadView.html#af95bff423d062ed89665e9f628972ece">More...</a><br /></td></tr>
 <tr class="separator:af95bff423d062ed89665e9f628972ece"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -742,7 +740,7 @@ Private Attributes</h2></td></tr>
 </div>
 </div>
 <a id="ae165ae0cb1f8c8f40043e7fd81e7ab70"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae165ae0cb1f8c8f40043e7fd81e7ab70">&#9670;&nbsp;</a></span>slesUpperBound() <span class="overload">[1/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ae165ae0cb1f8c8f40043e7fd81e7ab70">&#9670;&nbsp;</a></span>slesUpperBound()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -760,10 +758,12 @@ Private Attributes</h2></td></tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span></span>  </td>
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Implements <a class="el" href="classripple_1_1ReadView.html#abccd7f2f0b2ebfaafc8fedd6cc7ad081">ripple::ReadView</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="CachedView_8h_source.html#l00112">112</a> of file <a class="el" href="CachedView_8h_source.html">CachedView.h</a>.</p>
 
@@ -1038,7 +1038,7 @@ Private Attributes</h2></td></tr>
 <p>This returns the key of the first state item whose key is greater than the specified key. If no such key is present, std::nullopt is returned.</p>
 <p>If <code>last</code> is engaged, returns std::nullopt when the key returned would be outside the open interval (key, last). </p>
 
-<p>Implemented in <a class="el" href="classripple_1_1OpenView.html#a76b4e313ced46f6caaff0b53da2298bb">ripple::OpenView</a>, and <a class="el" href="classripple_1_1detail_1_1ApplyViewBase.html#abb4191e08ea906c3074d4020ad6c8fde">ripple::detail::ApplyViewBase</a>.</p>
+<p>Implemented in <a class="el" href="classripple_1_1Ledger.html#ae0a63c9a1943ea6a18726df087a37bdc">ripple::Ledger</a>, <a class="el" href="classripple_1_1OpenView.html#a76b4e313ced46f6caaff0b53da2298bb">ripple::OpenView</a>, and <a class="el" href="classripple_1_1detail_1_1ApplyViewBase.html#abb4191e08ea906c3074d4020ad6c8fde">ripple::detail::ApplyViewBase</a>.</p>
 
 </div>
 </div>
@@ -1128,32 +1128,6 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="abccd7f2f0b2ebfaafc8fedd6cc7ad081"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abccd7f2f0b2ebfaafc8fedd6cc7ad081">&#9670;&nbsp;</a></span>slesUpperBound() <span class="overload">[2/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt;<a class="el" href="classripple_1_1detail_1_1ReadViewFwdRange.html#ad0e2a978fcfc47b2a937b536f1ed948f">sles_type::iter_base</a>&gt; ripple::ReadView::slesUpperBound </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1ReadView.html#a937328125a7d62270f32b4e1555c5cdd">key_type</a> const &amp;&#160;</td>
-          <td class="paramname"><em>key</em></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">pure virtual</span><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
 <a id="af95bff423d062ed89665e9f628972ece"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#af95bff423d062ed89665e9f628972ece">&#9670;&nbsp;</a></span>txExists() <span class="overload">[2/2]</span></h2>
 
@@ -1181,7 +1155,7 @@ Private Attributes</h2></td></tr>
 <p>Returns <code>true</code> if a tx exists in the tx map. </p>
 <p>A tx exists in the map if it is part of the base ledger, or if it is a newly inserted tx. </p>
 
-<p>Implemented in <a class="el" href="classripple_1_1OpenView.html#a2294a6339fc789d88ca4b155a493c71a">ripple::OpenView</a>, and <a class="el" href="classripple_1_1detail_1_1ApplyViewBase.html#ad7cd53575d79dd8f0bf93a0143957b9d">ripple::detail::ApplyViewBase</a>.</p>
+<p>Implemented in <a class="el" href="classripple_1_1Ledger.html#a46a546d8198b17cb9dff3036d920eee4">ripple::Ledger</a>, <a class="el" href="classripple_1_1OpenView.html#a2294a6339fc789d88ca4b155a493c71a">ripple::OpenView</a>, and <a class="el" href="classripple_1_1detail_1_1ApplyViewBase.html#ad7cd53575d79dd8f0bf93a0143957b9d">ripple::detail::ApplyViewBase</a>.</p>
 
 </div>
 </div>

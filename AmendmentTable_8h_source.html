@@ -228,24 +228,23 @@ $(function() {
 <div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160; </div>
 <div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;            initialPosition-&gt;addGiveItem(</div>
 <div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;                <a class="code" href="namespaceripple.html#ae0356b1de00f841c554c830be509dd58a9b447756a7d7ddf4e828beeb38d079f6">SHAMapNodeType::tnTRANSACTION_NM</a>,</div>
-<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;                std::make_shared&lt;SHAMapItem&gt;(</div>
-<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;                    amendTx.<a class="code" href="classripple_1_1STTx.html#ad314af66e2542db537b3b5de291d33c3">getTransactionID</a>(), s.<a class="code" href="classripple_1_1Serializer.html#a394c3299f6cfcebdaa4bc98ec0c602d6">slice</a>()));</div>
-<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;        }</div>
-<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;    }</div>
-<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;};</div>
-<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160; </div>
-<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;AmendmentTable&gt;</a></div>
-<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;<a class="code" href="namespaceripple.html#ad41956ef004d64710296fd76a5dc9e06">make_AmendmentTable</a>(</div>
-<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;    Application&amp; app,</div>
-<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> majorityTime,</div>
-<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;AmendmentTable::FeatureInfo&gt;</a> <span class="keyword">const</span>&amp; supported,</div>
-<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;    Section <span class="keyword">const</span>&amp; enabled,</div>
-<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;    Section <span class="keyword">const</span>&amp; vetoed,</div>
-<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;    <a class="code" href="classbeast_1_1Journal.html">beast::Journal</a> journal);</div>
-<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160; </div>
-<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;}  <span class="comment">// namespace ripple</span></div>
-<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160; </div>
-<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;                <a class="code" href="namespaceripple.html#a0f98a7a60d7fb0c39572419ac15c959f">make_shamapitem</a>(amendTx.<a class="code" href="classripple_1_1STTx.html#ad314af66e2542db537b3b5de291d33c3">getTransactionID</a>(), s.<a class="code" href="classripple_1_1Serializer.html#a394c3299f6cfcebdaa4bc98ec0c602d6">slice</a>()));</div>
+<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;        }</div>
+<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;    }</div>
+<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;};</div>
+<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160; </div>
+<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;AmendmentTable&gt;</a></div>
+<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;<a class="code" href="namespaceripple.html#ad41956ef004d64710296fd76a5dc9e06">make_AmendmentTable</a>(</div>
+<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;    Application&amp; app,</div>
+<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> majorityTime,</div>
+<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;AmendmentTable::FeatureInfo&gt;</a> <span class="keyword">const</span>&amp; supported,</div>
+<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;    Section <span class="keyword">const</span>&amp; enabled,</div>
+<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;    Section <span class="keyword">const</span>&amp; vetoed,</div>
+<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;    <a class="code" href="classbeast_1_1Journal.html">beast::Journal</a> journal);</div>
+<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160; </div>
+<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160; </div>
+<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="astructripple_1_1AmendmentTable_1_1FeatureInfo_html_aeb9acbcc9a7b2eaa32a51dace735b55d"><div class="ttname"><a href="structripple_1_1AmendmentTable_1_1FeatureInfo.html#aeb9acbcc9a7b2eaa32a51dace735b55d">ripple::AmendmentTable::FeatureInfo::name</a></div><div class="ttdeci">const std::string name</div><div class="ttdef"><b>Definition:</b> <a href="AmendmentTable_8h_source.html#l00048">AmendmentTable.h:48</a></div></div>
 <div class="ttc" id="anamespaceripple_html_ab6b00b336996c0b0a3fe2e8a8d5fa76a"><div class="ttname"><a href="namespaceripple.html#ab6b00b336996c0b0a3fe2e8a8d5fa76a">ripple::getMajorityAmendments</a></div><div class="ttdeci">majorityAmendments_t getMajorityAmendments(ReadView const &amp;view)</div><div class="ttdef"><b>Definition:</b> <a href="View_8cpp_source.html#l00621">View.cpp:621</a></div></div>
@@ -257,6 +256,7 @@ $(function() {
 <div class="ttc" id="astructripple_1_1AmendmentTable_1_1FeatureInfo_html_a430a68bc818bfd1eb118d92d551b7c33"><div class="ttname"><a href="structripple_1_1AmendmentTable_1_1FeatureInfo.html#a430a68bc818bfd1eb118d92d551b7c33">ripple::AmendmentTable::FeatureInfo::feature</a></div><div class="ttdeci">const uint256 feature</div><div class="ttdef"><b>Definition:</b> <a href="AmendmentTable_8h_source.html#l00049">AmendmentTable.h:49</a></div></div>
 <div class="ttc" id="aclassripple_1_1AmendmentTable_html_a5a0a3c98955ce15af2458780544edb71"><div class="ttname"><a href="classripple_1_1AmendmentTable.html#a5a0a3c98955ce15af2458780544edb71">ripple::AmendmentTable::veto</a></div><div class="ttdeci">virtual bool veto(uint256 const &amp;amendment)=0</div></div>
 <div class="ttc" id="aclassripple_1_1AmendmentTable_html_aca7fd10cd15869ffea10ee5d769ad744"><div class="ttname"><a href="classripple_1_1AmendmentTable.html#aca7fd10cd15869ffea10ee5d769ad744">ripple::AmendmentTable::find</a></div><div class="ttdeci">virtual uint256 find(std::string const &amp;name) const =0</div></div>
+<div class="ttc" id="anamespaceripple_html_a0f98a7a60d7fb0c39572419ac15c959f"><div class="ttname"><a href="namespaceripple.html#a0f98a7a60d7fb0c39572419ac15c959f">ripple::make_shamapitem</a></div><div class="ttdeci">boost::intrusive_ptr&lt; SHAMapItem &gt; make_shamapitem(uint256 const &amp;tag, Slice data)</div><div class="ttdef"><b>Definition:</b> <a href="SHAMapItem_8h_source.html#l00160">SHAMapItem.h:160</a></div></div>
 <div class="ttc" id="avector_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="aclassripple_1_1AmendmentTable_html_ae4402ab8248766bc7556bdbb93225943"><div class="ttname"><a href="classripple_1_1AmendmentTable.html#ae4402ab8248766bc7556bdbb93225943">ripple::AmendmentTable::doVoting</a></div><div class="ttdeci">void doVoting(std::shared_ptr&lt; ReadView const &gt; const &amp;lastClosedLedger, std::vector&lt; std::shared_ptr&lt; STValidation &gt;&gt; const &amp;parentValidations, std::shared_ptr&lt; SHAMap &gt; const &amp;initialPosition)</div><div class="ttdef"><b>Definition:</b> <a href="AmendmentTable_8h_source.html#l00143">AmendmentTable.h:143</a></div></div>
 <div class="ttc" id="aduration_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a></div></div>

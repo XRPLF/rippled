@@ -73,7 +73,7 @@ $(function() {
 <a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classripple_1_1InboundLedgersImp-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">ripple::InboundLedgersImp Class Reference<span class="mlabels"><span class="mlabel">abstract</span></span></div>  </div>
+<div class="title">ripple::InboundLedgersImp Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 <div class="dynheader">
@@ -182,8 +182,6 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a56c2e865dd2f67eef9cf7516d5f57876"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a88e8fd50a41647c9c50909858eeff941"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedgersImp.html#a88e8fd50a41647c9c50909858eeff941">stop</a> () override</td></tr>
 <tr class="separator:a88e8fd50a41647c9c50909858eeff941"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0d8a7699ca582b7fd8eab345f10c021d"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1InboundLedger.html">InboundLedger</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedgers.html#a0d8a7699ca582b7fd8eab345f10c021d">find</a> (<a class="el" href="namespaceripple.html#af5a72d3e0d9b6913c13f688390b90796">LedgerHash</a> const &amp;hash)=0</td></tr>
-<tr class="separator:a0d8a7699ca582b7fd8eab345f10c021d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
@@ -408,7 +406,7 @@ Here is the call graph for this function:</div>
 </div>
 </div>
 <a id="a970ca13c3ac53d4be592a7e9d000cf2b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a970ca13c3ac53d4be592a7e9d000cf2b">&#9670;&nbsp;</a></span>find() <span class="overload">[1/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a970ca13c3ac53d4be592a7e9d000cf2b">&#9670;&nbsp;</a></span>find()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -426,10 +424,12 @@ Here is the call graph for this function:</div>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span></span>  </td>
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Implements <a class="el" href="classripple_1_1InboundLedgers.html#a0d8a7699ca582b7fd8eab345f10c021d">ripple::InboundLedgers</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00145">145</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
 
@@ -790,34 +790,6 @@ Here is the call graph for this function:</div>
 <p>Implements <a class="el" href="classripple_1_1InboundLedgers.html#a5619c1c0ea5b6e666d33da64f8203a5a">ripple::InboundLedgers</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00406">406</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a0d8a7699ca582b7fd8eab345f10c021d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0d8a7699ca582b7fd8eab345f10c021d">&#9670;&nbsp;</a></span>find() <span class="overload">[2/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt;<a class="el" href="classripple_1_1InboundLedger.html">InboundLedger</a>&gt; ripple::InboundLedgers::find </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#af5a72d3e0d9b6913c13f688390b90796">LedgerHash</a> const &amp;&#160;</td>
-          <td class="paramname"><em>hash</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">pure virtual</span><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Implemented in <a class="el" href="classripple_1_1test_1_1MagicInboundLedgers.html#a588f7b40af6c6c3ffa7b084c6325c03a">ripple::test::MagicInboundLedgers</a>.</p>
 
 </div>
 </div>

@@ -1035,6 +1035,11 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SkipListAcquire.html">SkipListAcquire</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Manage the retrieval of a skip list in a ledger from the network.  <a href="classripple_1_1SkipListAcquire.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SlabAllocator.html">SlabAllocator</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SlabAllocatorSet.html">SlabAllocatorSet</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A collection of slab allocators of various sizes for a given type.  <a href="classripple_1_1SlabAllocatorSet.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Slice.html">Slice</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">An immutable linear range of bytes.  <a href="classripple_1_1Slice.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -4711,8 +4716,8 @@ Functions</h2></td></tr>
 <tr class="memitem:a3f03c206eec01cb455b609c9fd752508"><td class="memTemplItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1Server.html">Server</a> &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a3f03c206eec01cb455b609c9fd752508">make_Server</a> (Handler &amp;handler, boost::asio::io_service &amp;io_service, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> journal)</td></tr>
 <tr class="memdesc:a3f03c206eec01cb455b609c9fd752508"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create the HTTP server using the specified handler.  <a href="namespaceripple.html#a3f03c206eec01cb455b609c9fd752508">More...</a><br /></td></tr>
 <tr class="separator:a3f03c206eec01cb455b609c9fd752508"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a290b06e05d4261e2042dafbb85f6ccf9"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1SHAMapLeafNode.html">SHAMapLeafNode</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a290b06e05d4261e2042dafbb85f6ccf9">makeTypedLeaf</a> (<a class="el" href="namespaceripple.html#ae0356b1de00f841c554c830be509dd58">SHAMapNodeType</a> type, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> const &gt; item, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> owner)</td></tr>
-<tr class="separator:a290b06e05d4261e2042dafbb85f6ccf9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a91b375831fa65e2708b2a9722d76fd08"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1SHAMapLeafNode.html">SHAMapLeafNode</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a91b375831fa65e2708b2a9722d76fd08">makeTypedLeaf</a> (<a class="el" href="namespaceripple.html#ae0356b1de00f841c554c830be509dd58">SHAMapNodeType</a> type, boost::intrusive_ptr&lt; <a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> const &gt; item, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> owner)</td></tr>
+<tr class="separator:a91b375831fa65e2708b2a9722d76fd08"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acd47ea998572e5b479a48cdbb088d168"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#acd47ea998572e5b479a48cdbb088d168">depthMask</a> (unsigned int depth)</td></tr>
 <tr class="separator:acd47ea998572e5b479a48cdbb088d168"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a179c66641961c1b976e7c050860064a3"><td class="memItemLeft" align="right" valign="top">unsigned int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a179c66641961c1b976e7c050860064a3">selectBranch</a> (<a class="el" href="classripple_1_1SHAMapNodeID.html">SHAMapNodeID</a> const  &amp;id, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const  &amp;hash)</td></tr>
@@ -4724,6 +4729,14 @@ Functions</h2></td></tr>
 <tr class="separator:a0d675d0b4aec39653e5554fb8976c68e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad4dea638ae6e1e701a2155ca93792419"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ad4dea638ae6e1e701a2155ca93792419">operator!=</a> (<a class="el" href="classripple_1_1SHAMap_1_1const__iterator.html">SHAMap::const_iterator</a> const &amp;x, <a class="el" href="classripple_1_1SHAMap_1_1const__iterator.html">SHAMap::const_iterator</a> const &amp;y)</td></tr>
 <tr class="separator:ad4dea638ae6e1e701a2155ca93792419"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad0655e5196cc0b5add7afefc2688d1e3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ad0655e5196cc0b5add7afefc2688d1e3">intrusive_ptr_add_ref</a> (<a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> const *x)</td></tr>
+<tr class="separator:ad0655e5196cc0b5add7afefc2688d1e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a42add542723b31666227194e46020f4b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a42add542723b31666227194e46020f4b">intrusive_ptr_release</a> (<a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> const *x)</td></tr>
+<tr class="separator:a42add542723b31666227194e46020f4b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0f98a7a60d7fb0c39572419ac15c959f"><td class="memItemLeft" align="right" valign="top">boost::intrusive_ptr&lt; <a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a0f98a7a60d7fb0c39572419ac15c959f">make_shamapitem</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;tag, <a class="el" href="classripple_1_1Slice.html">Slice</a> data)</td></tr>
+<tr class="separator:a0f98a7a60d7fb0c39572419ac15c959f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9bd498c2d480ac22ebe7ebf5ff230193"><td class="memItemLeft" align="right" valign="top">boost::intrusive_ptr&lt; <a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a9bd498c2d480ac22ebe7ebf5ff230193">make_shamapitem</a> (<a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> const &amp;other)</td></tr>
+<tr class="separator:a9bd498c2d480ac22ebe7ebf5ff230193"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae4231cd5ae89abe4232eed5ff0ec8030"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ae4231cd5ae89abe4232eed5ff0ec8030">to_string</a> (<a class="el" href="namespaceripple.html#a5d9fe757c37a7602a883d30b14e1bf3c">SHAMapType</a> t)</td></tr>
 <tr class="separator:ae4231cd5ae89abe4232eed5ff0ec8030"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae17017060989c5be0a5e70d8e41dbff2"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ae17017060989c5be0a5e70d8e41dbff2">to_string</a> (<a class="el" href="classripple_1_1SHAMapNodeID.html">SHAMapNodeID</a> const &amp;node)</td></tr>
@@ -5774,8 +5787,8 @@ Variables</h2></td></tr>
 <tr class="separator:a66e85854f42a1d204ca53f079e7fe5b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4bcdfc97a572a6463fbd2f8024121d0a"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceJson.html#a91fe494468d6262cf119456ba139de34">Json::Int</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a4bcdfc97a572a6463fbd2f8024121d0a">wrong_version</a> = -32606</td></tr>
 <tr class="separator:a4bcdfc97a572a6463fbd2f8024121d0a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab7948ae8b3ba20aa43371f26a90bb0d6"><td class="memItemLeft" align="right" valign="top">static const <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> const  &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ab7948ae8b3ba20aa43371f26a90bb0d6">no_item</a></td></tr>
-<tr class="separator:ab7948ae8b3ba20aa43371f26a90bb0d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3c3b8619e7bd4dfe630a3b76bd55aed5"><td class="memItemLeft" align="right" valign="top">static const boost::intrusive_ptr&lt; <a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> const  &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a3c3b8619e7bd4dfe630a3b76bd55aed5">no_item</a></td></tr>
+<tr class="separator:a3c3b8619e7bd4dfe630a3b76bd55aed5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a358175eb11ec25bda82f8bfc46077581"><td class="memItemLeft" align="right" valign="top">static constexpr unsigned const char&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a358175eb11ec25bda82f8bfc46077581">wireTypeTransaction</a> = 0</td></tr>
 <tr class="separator:a358175eb11ec25bda82f8bfc46077581"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2431568230bc455a272a4d23cf1020f8"><td class="memItemLeft" align="right" valign="top">static constexpr unsigned const char&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a2431568230bc455a272a4d23cf1020f8">wireTypeAccountState</a> = 1</td></tr>
@@ -10321,7 +10334,7 @@ template&lt;class ApplyTxs &gt; </div>
 <p>Deserialize a <a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> containing a single <a class="el" href="classripple_1_1STTx.html">STTx</a>. </p>
 <p>Throw: </p><pre class="fragment">May throw on deserializaton error
 </pre> 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00414">414</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00413">413</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -10345,7 +10358,7 @@ template&lt;class ApplyTxs &gt; </div>
 <p>The <a class="el" href="classripple_1_1SHAMap.html" title="A SHAMap is both a radix tree with a fan-out of 16 and a Merkle tree.">SHAMap</a> must contain two variable length serialization objects.</p>
 <p>Throw: </p><pre class="fragment">May throw on deserializaton error
 </pre> 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00421">421</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00420">420</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -10367,7 +10380,7 @@ template&lt;class ApplyTxs &gt; </div>
 
 <p>Returns true if the given ledgerIndex is a flag ledgerIndex. </p>
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00982">982</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00980">980</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -10411,7 +10424,7 @@ template&lt;class ApplyTxs &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00988">988</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l00986">986</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -10455,7 +10468,7 @@ template&lt;class ApplyTxs &gt; </div>
 
 <p>Save, or arrange to save, a fully-validated ledger Returns false on error. </p>
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01018">1018</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01016">1016</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -10491,7 +10504,7 @@ template&lt;class ApplyTxs &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01090">1090</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01088">1088</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -10535,7 +10548,7 @@ template&lt;class ApplyTxs &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01108">1108</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01106">1106</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -10555,7 +10568,7 @@ template&lt;class ApplyTxs &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01127">1127</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01125">1125</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -10591,7 +10604,7 @@ template&lt;class ApplyTxs &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01137">1137</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01135">1135</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -10627,7 +10640,7 @@ template&lt;class ApplyTxs &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01150">1150</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01148">1148</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -10657,7 +10670,7 @@ template&lt;class ApplyTxs &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01165">1165</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01163">1163</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -10687,7 +10700,7 @@ template&lt;class ApplyTxs &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01234">1234</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ledger_8cpp_source.html#l01232">1232</a> of file <a class="el" href="Ledger_8cpp_source.html">Ledger.cpp</a>.</p>
 
 </div>
 </div>
@@ -45176,8 +45189,8 @@ template&lt;class Handler &gt; </div>
 
 </div>
 </div>
-<a id="a290b06e05d4261e2042dafbb85f6ccf9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a290b06e05d4261e2042dafbb85f6ccf9">&#9670;&nbsp;</a></span>makeTypedLeaf()</h2>
+<a id="a91b375831fa65e2708b2a9722d76fd08"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a91b375831fa65e2708b2a9722d76fd08">&#9670;&nbsp;</a></span>makeTypedLeaf()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -45191,7 +45204,7 @@ template&lt;class Handler &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> const &gt;&#160;</td>
+          <td class="paramtype">boost::intrusive_ptr&lt; <a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> const &gt;&#160;</td>
           <td class="paramname"><em>item</em>, </td>
         </tr>
         <tr>
@@ -45369,7 +45382,7 @@ template&lt;class Handler &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMap_8h_source.html#l00725">725</a> of file <a class="el" href="SHAMap_8h_source.html">SHAMap.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMap_8h_source.html#l00729">729</a> of file <a class="el" href="SHAMap_8h_source.html">SHAMap.h</a>.</p>
 
 </div>
 </div>
@@ -45399,7 +45412,97 @@ template&lt;class Handler &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMap_8h_source.html#l00732">732</a> of file <a class="el" href="SHAMap_8h_source.html">SHAMap.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMap_8h_source.html#l00736">736</a> of file <a class="el" href="SHAMap_8h_source.html">SHAMap.h</a>.</p>
+
+</div>
+</div>
+<a id="ad0655e5196cc0b5add7afefc2688d1e3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad0655e5196cc0b5add7afefc2688d1e3">&#9670;&nbsp;</a></span>intrusive_ptr_add_ref()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::intrusive_ptr_add_ref </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> const *&#160;</td>
+          <td class="paramname"><em>x</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SHAMapItem_8h_source.html#l00131">131</a> of file <a class="el" href="SHAMapItem_8h_source.html">SHAMapItem.h</a>.</p>
+
+</div>
+</div>
+<a id="a42add542723b31666227194e46020f4b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a42add542723b31666227194e46020f4b">&#9670;&nbsp;</a></span>intrusive_ptr_release()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::intrusive_ptr_release </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> const *&#160;</td>
+          <td class="paramname"><em>x</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SHAMapItem_8h_source.html#l00140">140</a> of file <a class="el" href="SHAMapItem_8h_source.html">SHAMapItem.h</a>.</p>
+
+</div>
+</div>
+<a id="a0f98a7a60d7fb0c39572419ac15c959f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0f98a7a60d7fb0c39572419ac15c959f">&#9670;&nbsp;</a></span>make_shamapitem() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">boost::intrusive_ptr&lt;<a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a>&gt; ripple::make_shamapitem </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;&#160;</td>
+          <td class="paramname"><em>tag</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Slice.html">Slice</a>&#160;</td>
+          <td class="paramname"><em>data</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SHAMapItem_8h_source.html#l00160">160</a> of file <a class="el" href="SHAMapItem_8h_source.html">SHAMapItem.h</a>.</p>
+
+</div>
+</div>
+<a id="a9bd498c2d480ac22ebe7ebf5ff230193"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9bd498c2d480ac22ebe7ebf5ff230193">&#9670;&nbsp;</a></span>make_shamapitem() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">boost::intrusive_ptr&lt;<a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a>&gt; ripple::make_shamapitem </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> const &amp;&#160;</td>
+          <td class="paramname"><em>other</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SHAMapItem_8h_source.html#l00182">182</a> of file <a class="el" href="SHAMapItem_8h_source.html">SHAMapItem.h</a>.</p>
 
 </div>
 </div>
@@ -55987,8 +56090,8 @@ template&lt;class Dest , class Src &gt; </div>
 
 </div>
 </div>
-<a id="ab7948ae8b3ba20aa43371f26a90bb0d6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab7948ae8b3ba20aa43371f26a90bb0d6">&#9670;&nbsp;</a></span>no_item</h2>
+<a id="a3c3b8619e7bd4dfe630a3b76bd55aed5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3c3b8619e7bd4dfe630a3b76bd55aed5">&#9670;&nbsp;</a></span>no_item</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -55997,7 +56100,7 @@ template&lt;class Dest , class Src &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt;<a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> const&gt; ripple::no_item</td>
+          <td class="memname">const boost::intrusive_ptr&lt;<a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> const&gt; ripple::no_item</td>
         </tr>
       </table>
   </td>

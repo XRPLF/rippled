@@ -147,9 +147,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a117a8fd4c54900b486116583ff8466ca"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerReplayer.html#a117a8fd4c54900b486116583ff8466ca">createDeltas</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1LedgerReplayTask.html">LedgerReplayTask</a> &gt; task)</td></tr>
 <tr class="memdesc:a117a8fd4c54900b486116583ff8466ca"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create <a class="el" href="classripple_1_1LedgerDeltaAcquire.html" title="Manage the retrieval of a ledger delta (header and transactions) from the network.">LedgerDeltaAcquire</a> subtasks for the <a class="el" href="classripple_1_1LedgerReplayTask.html">LedgerReplayTask</a> task.  <a href="classripple_1_1LedgerReplayer.html#a117a8fd4c54900b486116583ff8466ca">More...</a><br /></td></tr>
 <tr class="separator:a117a8fd4c54900b486116583ff8466ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7f1036aacf255756c523a2cb17986bb4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerReplayer.html#a7f1036aacf255756c523a2cb17986bb4">gotSkipList</a> (<a class="el" href="structripple_1_1LedgerInfo.html">LedgerInfo</a> const &amp;info, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> const &gt; const &amp;data)</td></tr>
-<tr class="memdesc:a7f1036aacf255756c523a2cb17986bb4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Process a skip list (extracted from a TMProofPathResponse message)  <a href="classripple_1_1LedgerReplayer.html#a7f1036aacf255756c523a2cb17986bb4">More...</a><br /></td></tr>
-<tr class="separator:a7f1036aacf255756c523a2cb17986bb4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a759cf78a2dd1b613d9e1caccfe7be1e8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerReplayer.html#a759cf78a2dd1b613d9e1caccfe7be1e8">gotSkipList</a> (<a class="el" href="structripple_1_1LedgerInfo.html">LedgerInfo</a> const &amp;info, boost::intrusive_ptr&lt; <a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> const &gt; const &amp;data)</td></tr>
+<tr class="memdesc:a759cf78a2dd1b613d9e1caccfe7be1e8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Process a skip list (extracted from a TMProofPathResponse message)  <a href="classripple_1_1LedgerReplayer.html#a759cf78a2dd1b613d9e1caccfe7be1e8">More...</a><br /></td></tr>
+<tr class="separator:a759cf78a2dd1b613d9e1caccfe7be1e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8652a285d05995ff346e6ae2944bef97"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerReplayer.html#a8652a285d05995ff346e6ae2944bef97">gotReplayDelta</a> (<a class="el" href="structripple_1_1LedgerInfo.html">LedgerInfo</a> const &amp;info, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/map.html">std::map</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1STTx.html">STTx</a> const &gt;&gt; &amp;&amp;txns)</td></tr>
 <tr class="memdesc:a8652a285d05995ff346e6ae2944bef97"><td class="mdescLeft">&#160;</td><td class="mdescRight">Process a ledger delta (extracted from a TMReplayDeltaResponse message)  <a href="classripple_1_1LedgerReplayer.html#a8652a285d05995ff346e6ae2944bef97">More...</a><br /></td></tr>
 <tr class="separator:a8652a285d05995ff346e6ae2944bef97"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -313,8 +313,8 @@ Friends</h2></td></tr>
 
 </div>
 </div>
-<a id="a7f1036aacf255756c523a2cb17986bb4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7f1036aacf255756c523a2cb17986bb4">&#9670;&nbsp;</a></span>gotSkipList()</h2>
+<a id="a759cf78a2dd1b613d9e1caccfe7be1e8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a759cf78a2dd1b613d9e1caccfe7be1e8">&#9670;&nbsp;</a></span>gotSkipList()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -328,7 +328,7 @@ Friends</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> const &gt; const &amp;&#160;</td>
+          <td class="paramtype">boost::intrusive_ptr&lt; <a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> const &gt; const &amp;&#160;</td>
           <td class="paramname"><em>data</em>&#160;</td>
         </tr>
         <tr>

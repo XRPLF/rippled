@@ -1339,7 +1339,7 @@ $(function() {
 <div class="line"><a name="l01643"></a><span class="lineno"> 1643</span>&#160;            (inThisSet &amp;&amp; result_-&gt;txns.find(txId) &amp;&amp; !o.find(txId)) ||</div>
 <div class="line"><a name="l01644"></a><span class="lineno"> 1644</span>&#160;            (!inThisSet &amp;&amp; !result_-&gt;txns.find(txId) &amp;&amp; o.find(txId)));</div>
 <div class="line"><a name="l01645"></a><span class="lineno"> 1645</span>&#160; </div>
-<div class="line"><a name="l01646"></a><span class="lineno"> 1646</span>&#160;        <a class="code" href="classripple_1_1Consensus.html#a756a605e09b99b2a7d49a941a3055433">Tx_t</a> tx = inThisSet ? *result_-&gt;txns.find(txId) : *o.find(txId);</div>
+<div class="line"><a name="l01646"></a><span class="lineno"> 1646</span>&#160;        <a class="code" href="classripple_1_1Consensus.html#a756a605e09b99b2a7d49a941a3055433">Tx_t</a> tx = inThisSet ? result_-&gt;txns.find(txId) : o.find(txId);</div>
 <div class="line"><a name="l01647"></a><span class="lineno"> 1647</span>&#160;        <span class="keyword">auto</span> txID = tx.id();</div>
 <div class="line"><a name="l01648"></a><span class="lineno"> 1648</span>&#160; </div>
 <div class="line"><a name="l01649"></a><span class="lineno"> 1649</span>&#160;        <span class="keywordflow">if</span> (result_-&gt;disputes.find(txID) != result_-&gt;disputes.end())</div>
