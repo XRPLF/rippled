@@ -131,14 +131,14 @@ fillJsonTx(
         if (stMeta)
         {
             txJson[jss::metaData] = stMeta->getJson(JsonOptions::none);
+
+            // If applicable, insert delivered amount
             if (txnType == ttPAYMENT || txnType == ttCHECK_CASH)
-            {
-                // Insert delivered amount
-                auto txMeta = std::make_shared<TxMeta>(
-                    txn->getTransactionID(), fill.ledger.seq(), *stMeta);
                 RPC::insertDeliveredAmount(
-                    txJson[jss::metaData], fill.ledger, txn, *txMeta);
-            }
+                    txJson[jss::metaData],
+                    fill.ledger,
+                    txn,
+                    {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
         }
     }
 

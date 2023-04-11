@@ -126,8 +126,7 @@ TxMeta::getAffectedAccounts() const
 
         if (index != -1)
         {
-            const STObject* inner =
-                dynamic_cast<const STObject*>(&it.peekAtIndex(index));
+            auto inner = dynamic_cast<STObject const*>(&it.peekAtIndex(index));
             assert(inner);
             if (inner)
             {
@@ -145,8 +144,7 @@ TxMeta::getAffectedAccounts() const
                         (field.getFName() == sfTakerPays) ||
                         (field.getFName() == sfTakerGets))
                     {
-                        const STAmount* lim =
-                            dynamic_cast<const STAmount*>(&field);
+                        auto lim = dynamic_cast<STAmount const*>(&field);
                         assert(lim);
 
                         if (lim != nullptr)
