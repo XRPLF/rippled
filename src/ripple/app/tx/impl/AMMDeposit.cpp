@@ -365,7 +365,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
                 *lpTokensDeposit);
         // should not happen.
         JLOG(j_.error()) << "AMM Deposit: invalid options.";
-        return std::make_pair(tecAMM_FAILED_DEPOSIT, STAmount{});
+        return std::make_pair(tecINTERNAL, STAmount{});
     }();
 
     if (result == tesSUCCESS && newLPTokenBalance > beast::zero)

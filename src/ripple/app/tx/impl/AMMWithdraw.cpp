@@ -371,7 +371,7 @@ AMMWithdraw::applyGuts(Sandbox& sb)
                 *lpTokensWithdraw);
         // should not happen.
         JLOG(j_.error()) << "AMM Withdraw: invalid options.";
-        return std::make_pair(tecAMM_FAILED_WITHDRAW, STAmount{});
+        return std::make_pair(tecINTERNAL, STAmount{});
     }();
 
     // AMM is deleted if zero tokens balance

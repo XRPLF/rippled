@@ -109,11 +109,18 @@ ammAuctionTimeSlot(std::uint64_t current, STObject const& auctionSlot)
     using namespace std::chrono;
     std::uint32_t constexpr intervals = 20;
     std::uint32_t constexpr intervalDuration = TOTAL_TIME_SLOT_SECS / intervals;
-    if (auto const expiration = auctionSlot[sfExpiration])
+    // It should be impossible for expiration to be < TOTAL_TIME_SLOT_SECS,
+    // but check just to be safe
+    auto const expiration = auctionSlot[sfExpiration];
+    assert(expiration >= TOTAL_TIME_SLOT_SECS);
+    if (expiration >= TOTAL_TIME_SLOT_SECS)
     {
-        auto const diff = current - (expiration - TOTAL_TIME_SLOT_SECS);
-        if (diff < TOTAL_TIME_SLOT_SECS)
-            return diff / intervalDuration;
+        if (auto const start = expiration - TOTAL_TIME_SLOT_SECS;
+            current >= start)
+        {
+            if (auto const diff = current - start; diff < TOTAL_TIME_SLOT_SECS)
+                return diff / intervalDuration;
+        }
     }
     return std::nullopt;
 }

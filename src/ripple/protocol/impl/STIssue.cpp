@@ -68,24 +68,7 @@ STIssue::getSType() const
 std::string
 STIssue::getText() const
 {
-    std::string ret;
-
-    ret.reserve(64);
-    ret = to_string(issue_.currency);
-
-    if (!isXRP(issue_.currency))
-    {
-        ret += "/";
-
-        if (isXRP(issue_.account))
-            ret += "0";
-        else if (issue_.account == noAccount())
-            ret += "1";
-        else
-            ret += to_string(issue_.account);
-    }
-
-    return ret;
+    return issue_.getText();
 }
 
 Json::Value STIssue::getJson(JsonOptions) const

@@ -115,7 +115,7 @@ applyVote(
                 << "AMMVote::applyVote, account " << account << " is not LP";
             continue;
         }
-        auto feeVal = entry[~sfTradingFee].value_or(0);
+        auto feeVal = entry[sfTradingFee];
         STObject newEntry{sfVoteEntry};
         // The account already has the vote entry.
         if (account == account_)

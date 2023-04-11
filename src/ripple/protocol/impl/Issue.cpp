@@ -25,6 +25,29 @@
 
 namespace ripple {
 
+std::string
+Issue::getText() const
+{
+    std::string ret;
+
+    ret.reserve(64);
+    ret = to_string(currency);
+
+    if (!isXRP(currency))
+    {
+        ret += "/";
+
+        if (isXRP(account))
+            ret += "0";
+        else if (account == noAccount())
+            ret += "1";
+        else
+            ret += to_string(account);
+    }
+
+    return ret;
+}
+
 bool
 isConsistent(Issue const& ac)
 {

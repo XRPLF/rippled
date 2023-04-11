@@ -149,17 +149,17 @@ getTradingFee(ReadView const& view, SLE const& ammSle, AccountID const& account)
                 .count() < expiration)
         {
             if (auctionSlot[~sfAccount] == account)
-                return auctionSlot[~sfDiscountedFee].value_or(0);
+                return auctionSlot[sfDiscountedFee];
             if (auctionSlot.isFieldPresent(sfAuthAccounts))
             {
                 for (auto const& acct :
                      auctionSlot.getFieldArray(sfAuthAccounts))
                     if (acct[~sfAccount] == account)
-                        return auctionSlot[~sfDiscountedFee].value_or(0);
+                        return auctionSlot[sfDiscountedFee];
             }
         }
     }
-    return ammSle[~sfTradingFee].value_or(0);
+    return ammSle[sfTradingFee];
 }
 
 STAmount

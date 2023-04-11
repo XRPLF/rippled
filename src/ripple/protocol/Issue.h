@@ -45,6 +45,9 @@ public:
     Issue(Currency const& c, AccountID const& a) : currency(c), account(a)
     {
     }
+
+    std::string
+    getText() const;
 };
 
 bool

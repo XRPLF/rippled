@@ -127,7 +127,7 @@ doAMMInfo(RPC::JsonContext& context)
     asset1Balance.setJson(ammResult[jss::amount]);
     asset2Balance.setJson(ammResult[jss::amount2]);
     lptAMMBalance.setJson(ammResult[jss::lp_token]);
-    ammResult[jss::trading_fee] = (*amm)[~sfTradingFee].value_or(0);
+    ammResult[jss::trading_fee] = (*amm)[sfTradingFee];
     ammResult[jss::account] = to_string(ammAccountID);
     Json::Value voteSlots(Json::arrayValue);
     if (amm->isFieldPresent(sfVoteSlots))
@@ -136,7 +136,7 @@ doAMMInfo(RPC::JsonContext& context)
         {
             Json::Value vote;
             vote[jss::account] = to_string(voteEntry.getAccountID(sfAccount));
-            vote[jss::trading_fee] = voteEntry[~sfTradingFee].value_or(0);
+            vote[jss::trading_fee] = voteEntry[sfTradingFee];
             vote[jss::vote_weight] = voteEntry[sfVoteWeight];
             voteSlots.append(vote);
         }
@@ -155,8 +155,7 @@ doAMMInfo(RPC::JsonContext& context)
                 auctionSlot);
             auction[jss::time_interval] = timeSlot ? *timeSlot : 0;
             auctionSlot[sfPrice].setJson(auction[jss::price]);
-            auction[jss::discounted_fee] =
-                auctionSlot[~sfDiscountedFee].value_or(0);
+            auction[jss::discounted_fee] = auctionSlot[sfDiscountedFee];
             auction[jss::account] =
                 to_string(auctionSlot.getAccountID(sfAccount));
             auction[jss::expiration] = to_string(NetClock::time_point{
