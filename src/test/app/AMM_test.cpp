@@ -2631,7 +2631,9 @@ private:
 
         // Bid price exceeds LP owned tokens
         testAMM([&](AMM& ammAlice, Env& env) {
+            fund(env, gw, {bob}, XRP(1000), {USD(100)}, Fund::Acct);
             ammAlice.deposit(carol, 1000000);
+            ammAlice.deposit(bob, 10);
             ammAlice.bid(
                 carol,
                 1000001,
@@ -2645,6 +2647,18 @@ private:
                 carol,
                 std::nullopt,
                 1000001,
+                {},
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                ter(tecAMM_INVALID_TOKENS));
+            ammAlice.bid(carol, 1000);
+            BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount{1000}));
+            // Slot purchase price is more than 1000 but bob only has 10 tokens
+            ammAlice.bid(
+                bob,
+                std::nullopt,
+                std::nullopt,
                 {},
                 std::nullopt,
                 std::nullopt,

@@ -238,39 +238,46 @@ applyBid(
     Number const MinSlotPrice = 0;
 
     auto getPayPrice =
-        [&](Number const& computedPrice) -> std::optional<Number> {
-        // Both min/max bid price are defined
-        if (bidMin && bidMax)
-        {
-            if (computedPrice >= *bidMin && computedPrice <= *bidMax)
+        [&](Number const& computedPrice) -> Expected<Number, TER> {
+        auto const payPrice = [&]() -> std::optional<Number> {
+            // Both min/max bid price are defined
+            if (bidMin && bidMax)
+            {
+                if (computedPrice >= *bidMin && computedPrice <= *bidMax)
+                    return computedPrice;
+                JLOG(ctx_.journal.debug())
+                    << "AMM Bid: not in range " << computedPrice << *bidMin
+                    << " " << *bidMax;
+                return std::nullopt;
+            }
+            // Bidder pays max(bidPrice, computedPrice)
+            if (bidMin)
+            {
+                return std::max(computedPrice, Number(*bidMin));
+            }
+            else if (bidMax)
+            {
+                if (computedPrice <= *bidMax)
+                    return computedPrice;
+                JLOG(ctx_.journal.debug())
+                    << "AMM Bid: not in range " << computedPrice << *bidMax;
+                return std::nullopt;
+            }
+            else
                 return computedPrice;
-            JLOG(ctx_.journal.debug())
-                << "AMM Bid: not in range " << computedPrice << *bidMin << " "
-                << *bidMax;
-            return std::nullopt;
-        }
-        // Bidder pays max(bidPrice, computedPrice)
-        if (bidMin)
-        {
-            return std::max(computedPrice, Number(*bidMin));
-        }
-        else if (bidMax)
-        {
-            if (computedPrice <= *bidMax)
-                return computedPrice;
-            JLOG(ctx_.journal.debug())
-                << "AMM Bid: not in range " << computedPrice << *bidMax;
-            return std::nullopt;
-        }
-        else
-            return computedPrice;
+        }();
+        if (!payPrice)
+            return Unexpected(tecAMM_FAILED_BID);
+        else if (payPrice > lpTokens)
+            return Unexpected(tecAMM_INVALID_TOKENS);
+        return *payPrice;
     };
 
     // No one owns the slot or expired slot.
     if (auto const acct = auctionSlot[~sfAccount]; !acct || !validOwner(*acct))
     {
         if (auto const payPrice = getPayPrice(MinSlotPrice); !payPrice)
-            return {tecAMM_FAILED_BID, false};
+            return {payPrice.error(), false};
         else
             res = updateSlot(0, *payPrice, *payPrice);
     }
@@ -294,7 +301,7 @@ applyBid(
         auto const payPrice = getPayPrice(computedPrice);
 
         if (!payPrice)
-            return {tecAMM_FAILED_BID, false};
+            return {payPrice.error(), false};
 
         // Refund the previous owner. If the time slot is 0 then
         // the owner is refunded full amount.
