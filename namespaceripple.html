@@ -2108,7 +2108,10 @@ Enumerations</h2></td></tr>
 <a class="el" href="namespaceripple.html#a260d2970ac1119109937ed1c5d4ca962a2f58f0aada31cf40f373e57f402178f1">telCAN_NOT_QUEUE_BLOCKED</a>, 
 <a class="el" href="namespaceripple.html#a260d2970ac1119109937ed1c5d4ca962a9bf3ae40d6640752371f91ea31337f0f">telCAN_NOT_QUEUE_FEE</a>, 
 <br />
-&#160;&#160;<a class="el" href="namespaceripple.html#a260d2970ac1119109937ed1c5d4ca962a65b75f655ffb0ef44da5d662c231a5b5">telCAN_NOT_QUEUE_FULL</a>
+&#160;&#160;<a class="el" href="namespaceripple.html#a260d2970ac1119109937ed1c5d4ca962a65b75f655ffb0ef44da5d662c231a5b5">telCAN_NOT_QUEUE_FULL</a>, 
+<a class="el" href="namespaceripple.html#a260d2970ac1119109937ed1c5d4ca962a1fa28c4ec99b6c940db5c11653e58846">telWRONG_NETWORK</a>, 
+<a class="el" href="namespaceripple.html#a260d2970ac1119109937ed1c5d4ca962a60ca3bee487b10f7e41a8e11c5c8f9ba">telREQUIRES_NETWORK_ID</a>, 
+<a class="el" href="namespaceripple.html#a260d2970ac1119109937ed1c5d4ca962a7f4ff2a5a0a9be1783ad56ad895b60e6">telNETWORK_ID_MAKES_TX_NON_CANONICAL</a>
 <br />
  }</td></tr>
 <tr class="separator:a260d2970ac1119109937ed1c5d4ca962"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -3835,6 +3838,8 @@ Functions</h2></td></tr>
 <tr class="separator:ae6b4dda46d49f1f15422e9d1112400b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a212e403830ed5d1f81b1ed568fe6d05c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a212e403830ed5d1f81b1ed568fe6d05c">CONSTRUCT_TYPED_SFIELD</a> (<a class="el" href="namespaceripple.html#a99d820f03a550e113359d5f1570b28e2">sfHookApiVersion</a>, &quot;HookApiVersion&quot;, UINT16, 20)</td></tr>
 <tr class="separator:a212e403830ed5d1f81b1ed568fe6d05c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9c96ba3d4b6b188c41e30f08d4c72993"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a9c96ba3d4b6b188c41e30f08d4c72993">CONSTRUCT_TYPED_SFIELD</a> (<a class="el" href="namespaceripple.html#ac1b113851fc141f389419face5a1aa3f">sfNetworkID</a>, &quot;NetworkID&quot;, UINT32, 1)</td></tr>
+<tr class="separator:a9c96ba3d4b6b188c41e30f08d4c72993"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a22494c85a3418572ccc52d8234fba047"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a22494c85a3418572ccc52d8234fba047">CONSTRUCT_TYPED_SFIELD</a> (<a class="el" href="namespaceripple.html#ac1371098a8a7c1e1238290d0220dc941">sfFlags</a>, &quot;Flags&quot;, UINT32, 2)</td></tr>
 <tr class="separator:a22494c85a3418572ccc52d8234fba047"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a89c99758f250f18c1481284d28948b06"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a89c99758f250f18c1481284d28948b06">CONSTRUCT_TYPED_SFIELD</a> (<a class="el" href="namespaceripple.html#a09466f7a28305870168651ea5f34340e">sfSourceTag</a>, &quot;SourceTag&quot;, UINT32, 3)</td></tr>
@@ -5270,6 +5275,8 @@ Variables</h2></td></tr>
 <tr class="separator:a0def3c2ed82b5544c4f969ca21ab4e66"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a99d820f03a550e113359d5f1570b28e2"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#acfd08f58ea046933d32ff03520205d98">SF_UINT16</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a99d820f03a550e113359d5f1570b28e2">sfHookApiVersion</a></td></tr>
 <tr class="separator:a99d820f03a550e113359d5f1570b28e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac1b113851fc141f389419face5a1aa3f"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a3131ec3dec328bb57ce9046da34eb6d7">SF_UINT32</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ac1b113851fc141f389419face5a1aa3f">sfNetworkID</a></td></tr>
+<tr class="separator:ac1b113851fc141f389419face5a1aa3f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac1371098a8a7c1e1238290d0220dc941"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a3131ec3dec328bb57ce9046da34eb6d7">SF_UINT32</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ac1371098a8a7c1e1238290d0220dc941">sfFlags</a></td></tr>
 <tr class="separator:ac1371098a8a7c1e1238290d0220dc941"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a09466f7a28305870168651ea5f34340e"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a3131ec3dec328bb57ce9046da34eb6d7">SF_UINT32</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a09466f7a28305870168651ea5f34340e">sfSourceTag</a></td></tr>
@@ -7136,7 +7143,7 @@ template&lt;class Value , class Hash  = hardened_hash&lt;strong_hash&gt;, class 
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00525">525</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00528">528</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -7152,7 +7159,7 @@ template&lt;class Value , class Hash  = hardened_hash&lt;strong_hash&gt;, class 
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00565">565</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00568">568</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -8906,6 +8913,9 @@ ledger.
 <tr><td class="fieldname"><a id="a260d2970ac1119109937ed1c5d4ca962a2f58f0aada31cf40f373e57f402178f1"></a>telCAN_NOT_QUEUE_BLOCKED&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a260d2970ac1119109937ed1c5d4ca962a9bf3ae40d6640752371f91ea31337f0f"></a>telCAN_NOT_QUEUE_FEE&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a260d2970ac1119109937ed1c5d4ca962a65b75f655ffb0ef44da5d662c231a5b5"></a>telCAN_NOT_QUEUE_FULL&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a260d2970ac1119109937ed1c5d4ca962a1fa28c4ec99b6c940db5c11653e58846"></a>telWRONG_NETWORK&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a260d2970ac1119109937ed1c5d4ca962a60ca3bee487b10f7e41a8e11c5c8f9ba"></a>telREQUIRES_NETWORK_ID&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a260d2970ac1119109937ed1c5d4ca962a7f4ff2a5a0a9be1783ad56ad895b60e6"></a>telNETWORK_ID_MAKES_TX_NON_CANONICAL&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
 <p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00041">41</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
@@ -8964,7 +8974,7 @@ ledger.
 <tr><td class="fieldname"><a id="afe21c8454670d46fb93751a5edffed46af2084040fe48a79ee22653f67314ced7"></a>temBAD_NFTOKEN_TRANSFER_FEE&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00068">68</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00071">71</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -9003,7 +9013,7 @@ ledger.
 <tr><td class="fieldname"><a id="a75cb21d7f1df42f2fdc8efddb79b63f4a6700b7b7664a3b6c0611d9f943b5625f"></a>tefNFTOKEN_IS_NOT_TRANSFERABLE&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00127">127</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00130">130</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -9033,7 +9043,7 @@ ledger.
 <tr><td class="fieldname"><a id="adebe4d783be9c979e67fdbb2bc27162fad237d4c433f46906a2b8b2e1624c1aff"></a>terPRE_TICKET&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00170">170</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00173">173</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -9052,7 +9062,7 @@ ledger.
 <tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="aabc7f150d5082c73116a1cd5962b434da28c7d8b3ed759d363503a05fcd59f151"></a>tesSUCCESS&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00209">209</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00212">212</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -9117,7 +9127,7 @@ ledger.
 <tr><td class="fieldname"><a id="aa298e929e02f59c2b05a30ee8805b38cad18642528049bc00b66717a80669617b"></a>tecINSUFFICIENT_PAYMENT&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00224">224</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00227">227</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -17648,7 +17658,7 @@ template&lt;class TIn , class TOut &gt; </div>
 
 <p>Performs early sanity checks on the account and fee fields. </p>
 
-<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00057">57</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00078">78</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
 
 </div>
 </div>
@@ -17670,7 +17680,7 @@ template&lt;class TIn , class TOut &gt; </div>
 
 <p>Checks whether the signature appears valid. </p>
 
-<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00109">109</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00130">130</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
 
 </div>
 </div>
@@ -17714,7 +17724,7 @@ template&lt;class TIn , class TOut &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00701">701</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00722">722</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
 
 </div>
 </div>
@@ -17758,7 +17768,7 @@ template&lt;class TIn , class TOut &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00721">721</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00742">742</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
 
 </div>
 </div>
@@ -22264,7 +22274,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Config_8cpp_source.html#l01019">1019</a> of file <a class="el" href="Config_8cpp_source.html">Config.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Config_8cpp_source.html#l01031">1031</a> of file <a class="el" href="Config_8cpp_source.html">Config.cpp</a>.</p>
 
 </div>
 </div>
@@ -30365,7 +30375,7 @@ any terminating null.
 </div>
 </div>
 <a id="a6f8683e00f027d81f93c0234df312243"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6f8683e00f027d81f93c0234df312243">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[1/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a6f8683e00f027d81f93c0234df312243">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[1/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -30405,7 +30415,7 @@ any terminating null.
 </div>
 </div>
 <a id="a5f338211a4a55e0e7d2d7ef9ffff9173"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5f338211a4a55e0e7d2d7ef9ffff9173">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[2/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a5f338211a4a55e0e7d2d7ef9ffff9173">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[2/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -30445,7 +30455,7 @@ any terminating null.
 </div>
 </div>
 <a id="afdb6281200a5e43a63ec6a2ca6e13847"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afdb6281200a5e43a63ec6a2ca6e13847">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[3/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#afdb6281200a5e43a63ec6a2ca6e13847">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[3/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -30485,7 +30495,7 @@ any terminating null.
 </div>
 </div>
 <a id="a5c727700ce6f90a3827de831bdf1edc7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5c727700ce6f90a3827de831bdf1edc7">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[4/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a5c727700ce6f90a3827de831bdf1edc7">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[4/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -30525,7 +30535,7 @@ any terminating null.
 </div>
 </div>
 <a id="af60dce962bc1ac2461b5b2f418618d53"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af60dce962bc1ac2461b5b2f418618d53">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[5/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#af60dce962bc1ac2461b5b2f418618d53">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[5/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -30565,7 +30575,7 @@ any terminating null.
 </div>
 </div>
 <a id="a5c018099ebf7a652ffb0423961c23ccf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5c018099ebf7a652ffb0423961c23ccf">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[6/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a5c018099ebf7a652ffb0423961c23ccf">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[6/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -30605,7 +30615,7 @@ any terminating null.
 </div>
 </div>
 <a id="aac841df9afbf3bdc99ec958444a0ad91"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aac841df9afbf3bdc99ec958444a0ad91">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[7/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aac841df9afbf3bdc99ec958444a0ad91">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[7/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -30651,7 +30661,7 @@ any terminating null.
 </div>
 </div>
 <a id="a3f60b2d5005a2e92703648bdb51a5f0a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3f60b2d5005a2e92703648bdb51a5f0a">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[8/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a3f60b2d5005a2e92703648bdb51a5f0a">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[8/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -30691,7 +30701,7 @@ any terminating null.
 </div>
 </div>
 <a id="adc1413624ef3e339eb770105f70ba74d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adc1413624ef3e339eb770105f70ba74d">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[9/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#adc1413624ef3e339eb770105f70ba74d">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[9/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -30731,7 +30741,7 @@ any terminating null.
 </div>
 </div>
 <a id="acda0af91f0289e350b66ef74b61014cb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acda0af91f0289e350b66ef74b61014cb">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[10/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#acda0af91f0289e350b66ef74b61014cb">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[10/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -30771,7 +30781,7 @@ any terminating null.
 </div>
 </div>
 <a id="a1cc333da47ea21490ad8c08dea68458e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1cc333da47ea21490ad8c08dea68458e">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[11/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a1cc333da47ea21490ad8c08dea68458e">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[11/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -30811,7 +30821,7 @@ any terminating null.
 </div>
 </div>
 <a id="ab4d50d45493d3991eaa609691ece887a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab4d50d45493d3991eaa609691ece887a">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[12/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ab4d50d45493d3991eaa609691ece887a">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[12/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -30851,7 +30861,7 @@ any terminating null.
 </div>
 </div>
 <a id="a923185eb12669d7dabd4c940bab7a296"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a923185eb12669d7dabd4c940bab7a296">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[13/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a923185eb12669d7dabd4c940bab7a296">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[13/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -30891,7 +30901,7 @@ any terminating null.
 </div>
 </div>
 <a id="ae6b4dda46d49f1f15422e9d1112400b2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae6b4dda46d49f1f15422e9d1112400b2">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[14/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ae6b4dda46d49f1f15422e9d1112400b2">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[14/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -30931,7 +30941,7 @@ any terminating null.
 </div>
 </div>
 <a id="a212e403830ed5d1f81b1ed568fe6d05c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a212e403830ed5d1f81b1ed568fe6d05c">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[15/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a212e403830ed5d1f81b1ed568fe6d05c">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[15/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -30970,8 +30980,48 @@ any terminating null.
 
 </div>
 </div>
+<a id="a9c96ba3d4b6b188c41e30f08d4c72993"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9c96ba3d4b6b188c41e30f08d4c72993">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[16/168]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">ripple::CONSTRUCT_TYPED_SFIELD </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#ac1b113851fc141f389419face5a1aa3f">sfNetworkID</a>&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&quot;NetworkID&quot;&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">UINT32&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">1&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a22494c85a3418572ccc52d8234fba047"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a22494c85a3418572ccc52d8234fba047">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[16/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a22494c85a3418572ccc52d8234fba047">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[17/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -31011,7 +31061,7 @@ any terminating null.
 </div>
 </div>
 <a id="a89c99758f250f18c1481284d28948b06"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a89c99758f250f18c1481284d28948b06">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[17/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a89c99758f250f18c1481284d28948b06">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[18/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -31051,7 +31101,7 @@ any terminating null.
 </div>
 </div>
 <a id="a7b601429adeaba305833cf68bdad10ff"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7b601429adeaba305833cf68bdad10ff">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[18/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a7b601429adeaba305833cf68bdad10ff">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[19/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -31091,7 +31141,7 @@ any terminating null.
 </div>
 </div>
 <a id="a919bab8e680fc5293dd7954c97856b42"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a919bab8e680fc5293dd7954c97856b42">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[19/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a919bab8e680fc5293dd7954c97856b42">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[20/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -31137,7 +31187,7 @@ any terminating null.
 </div>
 </div>
 <a id="a7fbccdb7c890d1b95feece8db3425cfe"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7fbccdb7c890d1b95feece8db3425cfe">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[20/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a7fbccdb7c890d1b95feece8db3425cfe">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[21/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -31177,7 +31227,7 @@ any terminating null.
 </div>
 </div>
 <a id="af68bdaae542bde04adcbceddc26b81ee"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af68bdaae542bde04adcbceddc26b81ee">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[21/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#af68bdaae542bde04adcbceddc26b81ee">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[22/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -31217,7 +31267,7 @@ any terminating null.
 </div>
 </div>
 <a id="a71ea74ab093c783ac453c1e0a207cce7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a71ea74ab093c783ac453c1e0a207cce7">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[22/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a71ea74ab093c783ac453c1e0a207cce7">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[23/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -31257,7 +31307,7 @@ any terminating null.
 </div>
 </div>
 <a id="a227a56545e752b9a9c74eb2272611ba4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a227a56545e752b9a9c74eb2272611ba4">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[23/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a227a56545e752b9a9c74eb2272611ba4">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[24/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -31297,7 +31347,7 @@ any terminating null.
 </div>
 </div>
 <a id="a4bcf48590e71597408aed6c39315f3f2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4bcf48590e71597408aed6c39315f3f2">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[24/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a4bcf48590e71597408aed6c39315f3f2">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[25/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -31337,7 +31387,7 @@ any terminating null.
 </div>
 </div>
 <a id="ada5f8059daf1fc0777358a2989a89ee5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ada5f8059daf1fc0777358a2989a89ee5">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[25/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ada5f8059daf1fc0777358a2989a89ee5">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[26/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -31377,7 +31427,7 @@ any terminating null.
 </div>
 </div>
 <a id="a0e13c04ccee7b528b5b222d264b3c49d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0e13c04ccee7b528b5b222d264b3c49d">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[26/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a0e13c04ccee7b528b5b222d264b3c49d">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[27/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -31417,7 +31467,7 @@ any terminating null.
 </div>
 </div>
 <a id="af5c93b84a91f05166a2344b4020a3e97"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af5c93b84a91f05166a2344b4020a3e97">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[27/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#af5c93b84a91f05166a2344b4020a3e97">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[28/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -31457,7 +31507,7 @@ any terminating null.
 </div>
 </div>
 <a id="a5a47181c58c7e15da2c9739881e53121"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5a47181c58c7e15da2c9739881e53121">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[28/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a5a47181c58c7e15da2c9739881e53121">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[29/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -31497,7 +31547,7 @@ any terminating null.
 </div>
 </div>
 <a id="adbbe74ba7d8f66b00575e40574ebf9df"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adbbe74ba7d8f66b00575e40574ebf9df">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[29/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#adbbe74ba7d8f66b00575e40574ebf9df">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[30/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -31537,7 +31587,7 @@ any terminating null.
 </div>
 </div>
 <a id="aae202786688064ea5e914438a71eec04"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aae202786688064ea5e914438a71eec04">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[30/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aae202786688064ea5e914438a71eec04">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[31/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -31577,7 +31627,7 @@ any terminating null.
 </div>
 </div>
 <a id="a8c145e872a27a2186f41b9f1e8e34f1b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8c145e872a27a2186f41b9f1e8e34f1b">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[31/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a8c145e872a27a2186f41b9f1e8e34f1b">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[32/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -31617,7 +31667,7 @@ any terminating null.
 </div>
 </div>
 <a id="a4ff0db3c5f6b150e4bbd76d8dc3f805e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4ff0db3c5f6b150e4bbd76d8dc3f805e">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[32/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a4ff0db3c5f6b150e4bbd76d8dc3f805e">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[33/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -31657,7 +31707,7 @@ any terminating null.
 </div>
 </div>
 <a id="a947a42561db79ef7a62e6683f1714a8b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a947a42561db79ef7a62e6683f1714a8b">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[33/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a947a42561db79ef7a62e6683f1714a8b">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[34/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -31697,7 +31747,7 @@ any terminating null.
 </div>
 </div>
 <a id="abc8afe0a3fd745df2333cab3733d6f44"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abc8afe0a3fd745df2333cab3733d6f44">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[34/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#abc8afe0a3fd745df2333cab3733d6f44">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[35/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -31737,7 +31787,7 @@ any terminating null.
 </div>
 </div>
 <a id="a60597c9a07440999b1f9ff4b564e7943"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a60597c9a07440999b1f9ff4b564e7943">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[35/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a60597c9a07440999b1f9ff4b564e7943">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[36/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -31777,7 +31827,7 @@ any terminating null.
 </div>
 </div>
 <a id="a328804266c57c7d83d5f0e653e3f900a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a328804266c57c7d83d5f0e653e3f900a">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[36/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a328804266c57c7d83d5f0e653e3f900a">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[37/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -31817,7 +31867,7 @@ any terminating null.
 </div>
 </div>
 <a id="ac2491f249c8d9cb281d372ae978dc4ee"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac2491f249c8d9cb281d372ae978dc4ee">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[37/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ac2491f249c8d9cb281d372ae978dc4ee">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[38/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -31857,7 +31907,7 @@ any terminating null.
 </div>
 </div>
 <a id="a087e9da0a9ba93a66f1a5568b5256aa3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a087e9da0a9ba93a66f1a5568b5256aa3">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[38/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a087e9da0a9ba93a66f1a5568b5256aa3">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[39/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -31897,7 +31947,7 @@ any terminating null.
 </div>
 </div>
 <a id="ab993b1a37ebcc255dabbf911c61acfc0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab993b1a37ebcc255dabbf911c61acfc0">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[39/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ab993b1a37ebcc255dabbf911c61acfc0">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[40/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -31937,7 +31987,7 @@ any terminating null.
 </div>
 </div>
 <a id="a65a62026ffce314000f5227e8ef1eff2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a65a62026ffce314000f5227e8ef1eff2">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[40/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a65a62026ffce314000f5227e8ef1eff2">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[41/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -31977,7 +32027,7 @@ any terminating null.
 </div>
 </div>
 <a id="a67bbb82762c787a3ba4673510a797eb9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a67bbb82762c787a3ba4673510a797eb9">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[41/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a67bbb82762c787a3ba4673510a797eb9">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[42/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -32017,7 +32067,7 @@ any terminating null.
 </div>
 </div>
 <a id="a15644cf467f09338e091cce097e7ac2b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a15644cf467f09338e091cce097e7ac2b">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[42/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a15644cf467f09338e091cce097e7ac2b">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[43/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -32057,7 +32107,7 @@ any terminating null.
 </div>
 </div>
 <a id="abe5cf46f30d9de3438793ae6553b6795"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abe5cf46f30d9de3438793ae6553b6795">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[43/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#abe5cf46f30d9de3438793ae6553b6795">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[44/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -32097,7 +32147,7 @@ any terminating null.
 </div>
 </div>
 <a id="a5bfacfb1ba67c35bfdf76f977808dce6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5bfacfb1ba67c35bfdf76f977808dce6">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[44/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a5bfacfb1ba67c35bfdf76f977808dce6">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[45/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -32137,7 +32187,7 @@ any terminating null.
 </div>
 </div>
 <a id="ae24637892863d6c989ed388634ad7ef6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae24637892863d6c989ed388634ad7ef6">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[45/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ae24637892863d6c989ed388634ad7ef6">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[46/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -32177,7 +32227,7 @@ any terminating null.
 </div>
 </div>
 <a id="a71ff003a947e75cf29ccffa21762c94f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a71ff003a947e75cf29ccffa21762c94f">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[46/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a71ff003a947e75cf29ccffa21762c94f">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[47/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -32217,7 +32267,7 @@ any terminating null.
 </div>
 </div>
 <a id="a1d91d478c9bfe5116408ec4276bdc037"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1d91d478c9bfe5116408ec4276bdc037">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[47/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a1d91d478c9bfe5116408ec4276bdc037">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[48/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -32257,7 +32307,7 @@ any terminating null.
 </div>
 </div>
 <a id="a02d00ce57786d85f075e462c1b20b5d4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a02d00ce57786d85f075e462c1b20b5d4">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[48/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a02d00ce57786d85f075e462c1b20b5d4">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[49/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -32297,7 +32347,7 @@ any terminating null.
 </div>
 </div>
 <a id="a9547f622df6c998652e09607a5927c77"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9547f622df6c998652e09607a5927c77">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[49/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a9547f622df6c998652e09607a5927c77">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[50/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -32337,7 +32387,7 @@ any terminating null.
 </div>
 </div>
 <a id="ae75ea391d78a586f1930279beb24583e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae75ea391d78a586f1930279beb24583e">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[50/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ae75ea391d78a586f1930279beb24583e">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[51/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -32377,7 +32427,7 @@ any terminating null.
 </div>
 </div>
 <a id="a2d7b40361d53323df30f43ca10e87e78"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2d7b40361d53323df30f43ca10e87e78">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[51/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a2d7b40361d53323df30f43ca10e87e78">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[52/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -32417,7 +32467,7 @@ any terminating null.
 </div>
 </div>
 <a id="a982482467a52aebc20550beaca382302"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a982482467a52aebc20550beaca382302">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[52/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a982482467a52aebc20550beaca382302">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[53/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -32457,7 +32507,7 @@ any terminating null.
 </div>
 </div>
 <a id="abd8bb6d57e29720be3fcda91ddc03fea"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abd8bb6d57e29720be3fcda91ddc03fea">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[53/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#abd8bb6d57e29720be3fcda91ddc03fea">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[54/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -32497,7 +32547,7 @@ any terminating null.
 </div>
 </div>
 <a id="ade89e61766dde9d0751128c12df53c75"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ade89e61766dde9d0751128c12df53c75">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[54/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ade89e61766dde9d0751128c12df53c75">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[55/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -32537,7 +32587,7 @@ any terminating null.
 </div>
 </div>
 <a id="adde69bd1a8f230a03b805279c886def1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adde69bd1a8f230a03b805279c886def1">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[55/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#adde69bd1a8f230a03b805279c886def1">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[56/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -32577,7 +32627,7 @@ any terminating null.
 </div>
 </div>
 <a id="a032ce987304b6153a8301ede0c0535fd"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a032ce987304b6153a8301ede0c0535fd">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[56/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a032ce987304b6153a8301ede0c0535fd">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[57/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -32617,7 +32667,7 @@ any terminating null.
 </div>
 </div>
 <a id="a6b9e717584e6c93edb25e9db478d3d58"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6b9e717584e6c93edb25e9db478d3d58">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[57/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a6b9e717584e6c93edb25e9db478d3d58">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[58/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -32657,7 +32707,7 @@ any terminating null.
 </div>
 </div>
 <a id="a363bac963f0da7bd7a1a21e94331a553"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a363bac963f0da7bd7a1a21e94331a553">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[58/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a363bac963f0da7bd7a1a21e94331a553">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[59/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -32697,7 +32747,7 @@ any terminating null.
 </div>
 </div>
 <a id="a3903cb554946d2b3893fc1c84e1e2b27"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3903cb554946d2b3893fc1c84e1e2b27">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[59/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a3903cb554946d2b3893fc1c84e1e2b27">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[60/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -32737,7 +32787,7 @@ any terminating null.
 </div>
 </div>
 <a id="a020db12e820cb8f6e35fc29f0cc22013"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a020db12e820cb8f6e35fc29f0cc22013">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[60/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a020db12e820cb8f6e35fc29f0cc22013">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[61/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -32777,7 +32827,7 @@ any terminating null.
 </div>
 </div>
 <a id="ad9c24a875ef5d2d3de3475138bfd1efa"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad9c24a875ef5d2d3de3475138bfd1efa">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[61/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ad9c24a875ef5d2d3de3475138bfd1efa">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[62/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -32817,7 +32867,7 @@ any terminating null.
 </div>
 </div>
 <a id="a1612f0e3f7cbe29f531bc757eb317309"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1612f0e3f7cbe29f531bc757eb317309">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[62/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a1612f0e3f7cbe29f531bc757eb317309">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[63/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -32857,7 +32907,7 @@ any terminating null.
 </div>
 </div>
 <a id="a31e7fd19bf8404f132ca727718c2a7ad"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a31e7fd19bf8404f132ca727718c2a7ad">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[63/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a31e7fd19bf8404f132ca727718c2a7ad">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[64/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -32897,7 +32947,7 @@ any terminating null.
 </div>
 </div>
 <a id="a4122b35e1aa2b7a414f50ca3c31841a7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4122b35e1aa2b7a414f50ca3c31841a7">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[64/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a4122b35e1aa2b7a414f50ca3c31841a7">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[65/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -32937,7 +32987,7 @@ any terminating null.
 </div>
 </div>
 <a id="a8f530ef634ddce80fc6c22c538ab65ed"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8f530ef634ddce80fc6c22c538ab65ed">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[65/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a8f530ef634ddce80fc6c22c538ab65ed">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[66/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -32977,7 +33027,7 @@ any terminating null.
 </div>
 </div>
 <a id="ab26878d0a1561cd140f0a9707f6eb74d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab26878d0a1561cd140f0a9707f6eb74d">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[66/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ab26878d0a1561cd140f0a9707f6eb74d">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[67/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -33017,7 +33067,7 @@ any terminating null.
 </div>
 </div>
 <a id="a1dbab2b77fd5cb57d27e591645f1a6fc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1dbab2b77fd5cb57d27e591645f1a6fc">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[67/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a1dbab2b77fd5cb57d27e591645f1a6fc">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[68/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -33057,7 +33107,7 @@ any terminating null.
 </div>
 </div>
 <a id="a6523b8908af23d4cab6aad50def0c719"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6523b8908af23d4cab6aad50def0c719">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[68/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a6523b8908af23d4cab6aad50def0c719">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[69/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -33097,7 +33147,7 @@ any terminating null.
 </div>
 </div>
 <a id="a03024f8e75477725bbe91068ef01e6b2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a03024f8e75477725bbe91068ef01e6b2">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[69/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a03024f8e75477725bbe91068ef01e6b2">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[70/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -33137,7 +33187,7 @@ any terminating null.
 </div>
 </div>
 <a id="af4d2694175f9186ec5027e6675b37b92"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af4d2694175f9186ec5027e6675b37b92">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[70/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#af4d2694175f9186ec5027e6675b37b92">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[71/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -33177,7 +33227,7 @@ any terminating null.
 </div>
 </div>
 <a id="a52e8ca4ee745ea817f2328b795081cb8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a52e8ca4ee745ea817f2328b795081cb8">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[71/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a52e8ca4ee745ea817f2328b795081cb8">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[72/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -33217,7 +33267,7 @@ any terminating null.
 </div>
 </div>
 <a id="a32a4112917ba1a002a06a18a9adb8149"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a32a4112917ba1a002a06a18a9adb8149">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[72/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a32a4112917ba1a002a06a18a9adb8149">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[73/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -33257,7 +33307,7 @@ any terminating null.
 </div>
 </div>
 <a id="a725ecea91fb62ccf6feb06f31a6d2f9d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a725ecea91fb62ccf6feb06f31a6d2f9d">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[73/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a725ecea91fb62ccf6feb06f31a6d2f9d">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[74/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -33297,7 +33347,7 @@ any terminating null.
 </div>
 </div>
 <a id="aa28afb9437eca0bb171532cba555963a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa28afb9437eca0bb171532cba555963a">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[74/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aa28afb9437eca0bb171532cba555963a">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[75/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -33337,7 +33387,7 @@ any terminating null.
 </div>
 </div>
 <a id="abb206c0d421eb710198555b4bd123223"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abb206c0d421eb710198555b4bd123223">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[75/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#abb206c0d421eb710198555b4bd123223">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[76/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -33377,7 +33427,7 @@ any terminating null.
 </div>
 </div>
 <a id="a601c50cbcf652d2b07f2ac338c0cfd67"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a601c50cbcf652d2b07f2ac338c0cfd67">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[76/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a601c50cbcf652d2b07f2ac338c0cfd67">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[77/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -33417,7 +33467,7 @@ any terminating null.
 </div>
 </div>
 <a id="a9c91075c326d59f94b07965c0f0e1e2e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9c91075c326d59f94b07965c0f0e1e2e">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[77/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a9c91075c326d59f94b07965c0f0e1e2e">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[78/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -33457,7 +33507,7 @@ any terminating null.
 </div>
 </div>
 <a id="a27dc7abcaca0dc586aa383fdd0c89164"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a27dc7abcaca0dc586aa383fdd0c89164">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[78/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a27dc7abcaca0dc586aa383fdd0c89164">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[79/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -33497,7 +33547,7 @@ any terminating null.
 </div>
 </div>
 <a id="a66f3a3df7909d222c08a5c47d8b09860"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a66f3a3df7909d222c08a5c47d8b09860">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[79/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a66f3a3df7909d222c08a5c47d8b09860">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[80/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -33537,7 +33587,7 @@ any terminating null.
 </div>
 </div>
 <a id="ad0f0eb13c2b7cb5fbfd938d55e1c1f02"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad0f0eb13c2b7cb5fbfd938d55e1c1f02">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[80/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ad0f0eb13c2b7cb5fbfd938d55e1c1f02">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[81/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -33577,7 +33627,7 @@ any terminating null.
 </div>
 </div>
 <a id="ae0d239fb425362b40994b7621f982d5e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae0d239fb425362b40994b7621f982d5e">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[81/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ae0d239fb425362b40994b7621f982d5e">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[82/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -33617,7 +33667,7 @@ any terminating null.
 </div>
 </div>
 <a id="af18d89fc340cdf2e32261dda1af02c7a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af18d89fc340cdf2e32261dda1af02c7a">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[82/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#af18d89fc340cdf2e32261dda1af02c7a">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[83/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -33657,7 +33707,7 @@ any terminating null.
 </div>
 </div>
 <a id="a1d7877bf538d3580b3e6ed00c6e80c6d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1d7877bf538d3580b3e6ed00c6e80c6d">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[83/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a1d7877bf538d3580b3e6ed00c6e80c6d">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[84/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -33697,7 +33747,7 @@ any terminating null.
 </div>
 </div>
 <a id="a4e212890d2f5ff46b88e3e4c3dc6e599"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4e212890d2f5ff46b88e3e4c3dc6e599">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[84/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a4e212890d2f5ff46b88e3e4c3dc6e599">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[85/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -33737,7 +33787,7 @@ any terminating null.
 </div>
 </div>
 <a id="a5ff081cb278ba62e1f175e3cb19b06b6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5ff081cb278ba62e1f175e3cb19b06b6">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[85/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a5ff081cb278ba62e1f175e3cb19b06b6">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[86/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -33777,7 +33827,7 @@ any terminating null.
 </div>
 </div>
 <a id="a1484a70d2ba9255c893d31d4053df0cb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1484a70d2ba9255c893d31d4053df0cb">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[86/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a1484a70d2ba9255c893d31d4053df0cb">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[87/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -33817,7 +33867,7 @@ any terminating null.
 </div>
 </div>
 <a id="af5fc3b7215938de7d77f0a2bef08fee2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af5fc3b7215938de7d77f0a2bef08fee2">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[87/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#af5fc3b7215938de7d77f0a2bef08fee2">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[88/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -33863,7 +33913,7 @@ any terminating null.
 </div>
 </div>
 <a id="af3b6b87d2a80ad62d36f7bfa608dcf03"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af3b6b87d2a80ad62d36f7bfa608dcf03">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[88/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#af3b6b87d2a80ad62d36f7bfa608dcf03">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[89/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -33903,7 +33953,7 @@ any terminating null.
 </div>
 </div>
 <a id="a6e516dc3963ba3825d2ca6e2ddce72bc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6e516dc3963ba3825d2ca6e2ddce72bc">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[89/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a6e516dc3963ba3825d2ca6e2ddce72bc">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[90/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -33943,7 +33993,7 @@ any terminating null.
 </div>
 </div>
 <a id="ad35bb7a5d26a213661cb6b25d630d067"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad35bb7a5d26a213661cb6b25d630d067">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[90/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ad35bb7a5d26a213661cb6b25d630d067">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[91/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -33989,7 +34039,7 @@ any terminating null.
 </div>
 </div>
 <a id="a94f3980adf67c5c740b6c4d40b265c89"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a94f3980adf67c5c740b6c4d40b265c89">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[91/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a94f3980adf67c5c740b6c4d40b265c89">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[92/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -34029,7 +34079,7 @@ any terminating null.
 </div>
 </div>
 <a id="aa8ae7aeac937fbda60ef9bdcfbb820ed"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa8ae7aeac937fbda60ef9bdcfbb820ed">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[92/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aa8ae7aeac937fbda60ef9bdcfbb820ed">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[93/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -34069,7 +34119,7 @@ any terminating null.
 </div>
 </div>
 <a id="a738571c197066be972f232591a53a32a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a738571c197066be972f232591a53a32a">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[93/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a738571c197066be972f232591a53a32a">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[94/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -34109,7 +34159,7 @@ any terminating null.
 </div>
 </div>
 <a id="aaa2622095a18ee39904a83e74761c6e5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aaa2622095a18ee39904a83e74761c6e5">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[94/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aaa2622095a18ee39904a83e74761c6e5">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[95/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -34149,7 +34199,7 @@ any terminating null.
 </div>
 </div>
 <a id="abf18e54a6e1dcb062b48f0264c4a558e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abf18e54a6e1dcb062b48f0264c4a558e">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[95/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#abf18e54a6e1dcb062b48f0264c4a558e">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[96/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -34189,7 +34239,7 @@ any terminating null.
 </div>
 </div>
 <a id="a74631eb64ac32854f63fd712c7741418"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a74631eb64ac32854f63fd712c7741418">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[96/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a74631eb64ac32854f63fd712c7741418">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[97/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -34229,7 +34279,7 @@ any terminating null.
 </div>
 </div>
 <a id="a581bc1b3c8d9fce56a55e1f605fc06e3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a581bc1b3c8d9fce56a55e1f605fc06e3">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[97/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a581bc1b3c8d9fce56a55e1f605fc06e3">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[98/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -34269,7 +34319,7 @@ any terminating null.
 </div>
 </div>
 <a id="a6fe7a098b9a0f5fef89e55c8dfea9a68"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6fe7a098b9a0f5fef89e55c8dfea9a68">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[98/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a6fe7a098b9a0f5fef89e55c8dfea9a68">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[99/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -34309,7 +34359,7 @@ any terminating null.
 </div>
 </div>
 <a id="ac2da4aaeb75ebc5bf9c1be135dd58f46"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac2da4aaeb75ebc5bf9c1be135dd58f46">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[99/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ac2da4aaeb75ebc5bf9c1be135dd58f46">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[100/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -34349,7 +34399,7 @@ any terminating null.
 </div>
 </div>
 <a id="a2524f8ddec4b22c0aa3b210d643cb8a4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2524f8ddec4b22c0aa3b210d643cb8a4">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[100/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a2524f8ddec4b22c0aa3b210d643cb8a4">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[101/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -34389,7 +34439,7 @@ any terminating null.
 </div>
 </div>
 <a id="a835d795367719911af1828e5f8bd492c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a835d795367719911af1828e5f8bd492c">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[101/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a835d795367719911af1828e5f8bd492c">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[102/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -34429,7 +34479,7 @@ any terminating null.
 </div>
 </div>
 <a id="ac243c501d3c968c45b58a68cc7b05997"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac243c501d3c968c45b58a68cc7b05997">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[102/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ac243c501d3c968c45b58a68cc7b05997">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[103/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -34469,7 +34519,7 @@ any terminating null.
 </div>
 </div>
 <a id="a507280431b6b6b9446b2feef994a8fdf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a507280431b6b6b9446b2feef994a8fdf">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[103/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a507280431b6b6b9446b2feef994a8fdf">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[104/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -34509,7 +34559,7 @@ any terminating null.
 </div>
 </div>
 <a id="a5337b9ddddc03f9418026c8051f8984d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5337b9ddddc03f9418026c8051f8984d">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[104/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a5337b9ddddc03f9418026c8051f8984d">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[105/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -34549,7 +34599,7 @@ any terminating null.
 </div>
 </div>
 <a id="a268fe0228758f708e049e8d46bd92314"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a268fe0228758f708e049e8d46bd92314">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[105/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a268fe0228758f708e049e8d46bd92314">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[106/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -34589,7 +34639,7 @@ any terminating null.
 </div>
 </div>
 <a id="ae701c3607621a9946ce21d9806dc3466"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae701c3607621a9946ce21d9806dc3466">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[106/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ae701c3607621a9946ce21d9806dc3466">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[107/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -34629,7 +34679,7 @@ any terminating null.
 </div>
 </div>
 <a id="a94adb559bef4f24220bd017e1a54264f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a94adb559bef4f24220bd017e1a54264f">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[107/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a94adb559bef4f24220bd017e1a54264f">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[108/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -34669,7 +34719,7 @@ any terminating null.
 </div>
 </div>
 <a id="a66ef31ab684102493ec37a791192db67"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a66ef31ab684102493ec37a791192db67">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[108/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a66ef31ab684102493ec37a791192db67">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[109/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -34709,7 +34759,7 @@ any terminating null.
 </div>
 </div>
 <a id="a13aadb8d6935d9a810205da08799bfc1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a13aadb8d6935d9a810205da08799bfc1">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[109/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a13aadb8d6935d9a810205da08799bfc1">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[110/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -34749,7 +34799,7 @@ any terminating null.
 </div>
 </div>
 <a id="a13af1708c76f27f2947236f14743fe13"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a13af1708c76f27f2947236f14743fe13">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[110/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a13af1708c76f27f2947236f14743fe13">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[111/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -34789,7 +34839,7 @@ any terminating null.
 </div>
 </div>
 <a id="ac82fff7b16079c3ba4886eda1d79be33"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac82fff7b16079c3ba4886eda1d79be33">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[111/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ac82fff7b16079c3ba4886eda1d79be33">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[112/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -34829,7 +34879,7 @@ any terminating null.
 </div>
 </div>
 <a id="a3f86be8b4631d016aa79739c1fac0df6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3f86be8b4631d016aa79739c1fac0df6">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[112/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a3f86be8b4631d016aa79739c1fac0df6">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[113/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -34869,7 +34919,7 @@ any terminating null.
 </div>
 </div>
 <a id="afc453f0d7efa0323dd85b5ec458c29ac"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afc453f0d7efa0323dd85b5ec458c29ac">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[113/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#afc453f0d7efa0323dd85b5ec458c29ac">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[114/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -34909,7 +34959,7 @@ any terminating null.
 </div>
 </div>
 <a id="a6687bd9e5ea0afe0df13d3cd72698666"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6687bd9e5ea0afe0df13d3cd72698666">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[114/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a6687bd9e5ea0afe0df13d3cd72698666">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[115/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -34949,7 +34999,7 @@ any terminating null.
 </div>
 </div>
 <a id="ad24ccf0317f6abd202f5fc499ab60d40"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad24ccf0317f6abd202f5fc499ab60d40">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[115/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ad24ccf0317f6abd202f5fc499ab60d40">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[116/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -34989,7 +35039,7 @@ any terminating null.
 </div>
 </div>
 <a id="ad394d9d231cfe47aaa13343e9f562478"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad394d9d231cfe47aaa13343e9f562478">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[116/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ad394d9d231cfe47aaa13343e9f562478">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[117/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -35029,7 +35079,7 @@ any terminating null.
 </div>
 </div>
 <a id="ab2ddc9f229f7191e98104556e16e90f0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab2ddc9f229f7191e98104556e16e90f0">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[117/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ab2ddc9f229f7191e98104556e16e90f0">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[118/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -35069,7 +35119,7 @@ any terminating null.
 </div>
 </div>
 <a id="af35bdf1035461223708d2841145363dd"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af35bdf1035461223708d2841145363dd">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[118/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#af35bdf1035461223708d2841145363dd">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[119/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -35109,7 +35159,7 @@ any terminating null.
 </div>
 </div>
 <a id="a6f3e1ce7d193e4130188b52ef43c59b0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6f3e1ce7d193e4130188b52ef43c59b0">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[119/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a6f3e1ce7d193e4130188b52ef43c59b0">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[120/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -35149,7 +35199,7 @@ any terminating null.
 </div>
 </div>
 <a id="a26785e29ec0c10041d321a0e3a96c7f8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a26785e29ec0c10041d321a0e3a96c7f8">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[120/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a26785e29ec0c10041d321a0e3a96c7f8">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[121/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -35189,7 +35239,7 @@ any terminating null.
 </div>
 </div>
 <a id="aa980f3b98d76ff0c233a9bc0a3eeafce"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa980f3b98d76ff0c233a9bc0a3eeafce">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[121/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aa980f3b98d76ff0c233a9bc0a3eeafce">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[122/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -35229,7 +35279,7 @@ any terminating null.
 </div>
 </div>
 <a id="a2d93f8baf521d9d718ec1b10a52d7ddd"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2d93f8baf521d9d718ec1b10a52d7ddd">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[122/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a2d93f8baf521d9d718ec1b10a52d7ddd">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[123/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -35269,7 +35319,7 @@ any terminating null.
 </div>
 </div>
 <a id="a6dd36d86a1f686c1c9f8dff7baeb2c9e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6dd36d86a1f686c1c9f8dff7baeb2c9e">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[123/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a6dd36d86a1f686c1c9f8dff7baeb2c9e">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[124/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -35309,7 +35359,7 @@ any terminating null.
 </div>
 </div>
 <a id="adb46c467415ed68ac369eb6f8035e86f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adb46c467415ed68ac369eb6f8035e86f">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[124/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#adb46c467415ed68ac369eb6f8035e86f">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[125/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -35349,7 +35399,7 @@ any terminating null.
 </div>
 </div>
 <a id="a93322d28d2e468d823b24545735fa167"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a93322d28d2e468d823b24545735fa167">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[125/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a93322d28d2e468d823b24545735fa167">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[126/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -35389,7 +35439,7 @@ any terminating null.
 </div>
 </div>
 <a id="a270133d4d16068938b59adb7073e56a1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a270133d4d16068938b59adb7073e56a1">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[126/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a270133d4d16068938b59adb7073e56a1">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[127/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -35429,7 +35479,7 @@ any terminating null.
 </div>
 </div>
 <a id="abc902a88964988fa8b7bf6380ea6c535"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abc902a88964988fa8b7bf6380ea6c535">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[127/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#abc902a88964988fa8b7bf6380ea6c535">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[128/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -35469,7 +35519,7 @@ any terminating null.
 </div>
 </div>
 <a id="afa3d78c289f17679fdd1dac96dcfd351"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afa3d78c289f17679fdd1dac96dcfd351">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[128/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#afa3d78c289f17679fdd1dac96dcfd351">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[129/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -35509,7 +35559,7 @@ any terminating null.
 </div>
 </div>
 <a id="a77a5557008c4397b3ef39cebe22c4712"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a77a5557008c4397b3ef39cebe22c4712">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[129/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a77a5557008c4397b3ef39cebe22c4712">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[130/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -35549,7 +35599,7 @@ any terminating null.
 </div>
 </div>
 <a id="a97d2d1cbed4e9485d64cd6689f0226a1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a97d2d1cbed4e9485d64cd6689f0226a1">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[130/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a97d2d1cbed4e9485d64cd6689f0226a1">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[131/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -35589,7 +35639,7 @@ any terminating null.
 </div>
 </div>
 <a id="abbfec3b0de2c8720c98e53e405678fc5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abbfec3b0de2c8720c98e53e405678fc5">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[131/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#abbfec3b0de2c8720c98e53e405678fc5">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[132/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -35629,7 +35679,7 @@ any terminating null.
 </div>
 </div>
 <a id="a5a2d6e8d17bd9217325e943c6ca9b5f8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5a2d6e8d17bd9217325e943c6ca9b5f8">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[132/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a5a2d6e8d17bd9217325e943c6ca9b5f8">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[133/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -35669,7 +35719,7 @@ any terminating null.
 </div>
 </div>
 <a id="ab234b88f88c308f8f3daf1bf187e6e2d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab234b88f88c308f8f3daf1bf187e6e2d">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[133/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ab234b88f88c308f8f3daf1bf187e6e2d">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[134/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -35721,7 +35771,7 @@ any terminating null.
 </div>
 </div>
 <a id="ab0be7d90c162f3a6ca5caa80c8245c08"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab0be7d90c162f3a6ca5caa80c8245c08">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[134/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ab0be7d90c162f3a6ca5caa80c8245c08">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[135/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -35761,7 +35811,7 @@ any terminating null.
 </div>
 </div>
 <a id="ae95eb7bb89c3f74241119c98f599efe6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae95eb7bb89c3f74241119c98f599efe6">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[135/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ae95eb7bb89c3f74241119c98f599efe6">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[136/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -35813,7 +35863,7 @@ any terminating null.
 </div>
 </div>
 <a id="a105d1e519d7162dd90086920309833f1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a105d1e519d7162dd90086920309833f1">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[136/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a105d1e519d7162dd90086920309833f1">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[137/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -35853,7 +35903,7 @@ any terminating null.
 </div>
 </div>
 <a id="a8bee34f2f275e15566af3dd89a6b24d1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8bee34f2f275e15566af3dd89a6b24d1">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[137/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a8bee34f2f275e15566af3dd89a6b24d1">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[138/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -35893,7 +35943,7 @@ any terminating null.
 </div>
 </div>
 <a id="a9536b205cb92a237f0bd5e95a4be5f07"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9536b205cb92a237f0bd5e95a4be5f07">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[138/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a9536b205cb92a237f0bd5e95a4be5f07">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[139/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -35933,7 +35983,7 @@ any terminating null.
 </div>
 </div>
 <a id="a85b274f806662c9b68b1a55754f99a46"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a85b274f806662c9b68b1a55754f99a46">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[139/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a85b274f806662c9b68b1a55754f99a46">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[140/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -35973,7 +36023,7 @@ any terminating null.
 </div>
 </div>
 <a id="a4a5162e7b14a195db934a60f63039dae"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4a5162e7b14a195db934a60f63039dae">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[140/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a4a5162e7b14a195db934a60f63039dae">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[141/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -36013,7 +36063,7 @@ any terminating null.
 </div>
 </div>
 <a id="aa850e772d21db2a69e4a374bc9604321"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa850e772d21db2a69e4a374bc9604321">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[141/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aa850e772d21db2a69e4a374bc9604321">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[142/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -36053,7 +36103,7 @@ any terminating null.
 </div>
 </div>
 <a id="a98894f68659bc8048c93ce1102b9f1e9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a98894f68659bc8048c93ce1102b9f1e9">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[142/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a98894f68659bc8048c93ce1102b9f1e9">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[143/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -36093,7 +36143,7 @@ any terminating null.
 </div>
 </div>
 <a id="adeaf7b3285814cde2760f6d0ffa5005b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adeaf7b3285814cde2760f6d0ffa5005b">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[143/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#adeaf7b3285814cde2760f6d0ffa5005b">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[144/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -36133,7 +36183,7 @@ any terminating null.
 </div>
 </div>
 <a id="ad1cda38cf3b21c728be36f71b5dbc2dc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad1cda38cf3b21c728be36f71b5dbc2dc">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[144/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ad1cda38cf3b21c728be36f71b5dbc2dc">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[145/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -36173,7 +36223,7 @@ any terminating null.
 </div>
 </div>
 <a id="a55dba90c157b7786caaf49446e7ab21b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a55dba90c157b7786caaf49446e7ab21b">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[145/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a55dba90c157b7786caaf49446e7ab21b">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[146/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -36213,7 +36263,7 @@ any terminating null.
 </div>
 </div>
 <a id="a1ecccef7abac4dec69f76b75c1d12a89"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1ecccef7abac4dec69f76b75c1d12a89">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[146/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a1ecccef7abac4dec69f76b75c1d12a89">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[147/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -36265,7 +36315,7 @@ any terminating null.
 </div>
 </div>
 <a id="a8c92727725ed022f6981a4c1b901aced"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8c92727725ed022f6981a4c1b901aced">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[147/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a8c92727725ed022f6981a4c1b901aced">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[148/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -36305,7 +36355,7 @@ any terminating null.
 </div>
 </div>
 <a id="abfe782b174ed4cc0e294c81d85f17ba2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abfe782b174ed4cc0e294c81d85f17ba2">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[148/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#abfe782b174ed4cc0e294c81d85f17ba2">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[149/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -36345,7 +36395,7 @@ any terminating null.
 </div>
 </div>
 <a id="a5270acf98b14f5835c470eba95e8c1e5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5270acf98b14f5835c470eba95e8c1e5">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[149/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a5270acf98b14f5835c470eba95e8c1e5">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[150/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -36385,7 +36435,7 @@ any terminating null.
 </div>
 </div>
 <a id="a88a4a1d3d9b8bf527f43d154511c4a00"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a88a4a1d3d9b8bf527f43d154511c4a00">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[150/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a88a4a1d3d9b8bf527f43d154511c4a00">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[151/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -36425,7 +36475,7 @@ any terminating null.
 </div>
 </div>
 <a id="ae64bde44eb68beef982bf81ca6fc6362"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae64bde44eb68beef982bf81ca6fc6362">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[151/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ae64bde44eb68beef982bf81ca6fc6362">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[152/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -36465,7 +36515,7 @@ any terminating null.
 </div>
 </div>
 <a id="aea52cf7fe39905f509cc41cb01ba4ccc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aea52cf7fe39905f509cc41cb01ba4ccc">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[152/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aea52cf7fe39905f509cc41cb01ba4ccc">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[153/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -36505,7 +36555,7 @@ any terminating null.
 </div>
 </div>
 <a id="aa5a3576dc62bad35c1c78371fc7c4f8a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa5a3576dc62bad35c1c78371fc7c4f8a">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[153/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aa5a3576dc62bad35c1c78371fc7c4f8a">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[154/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -36545,7 +36595,7 @@ any terminating null.
 </div>
 </div>
 <a id="a629c7cab8d873180fe5ac33d37ce21c5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a629c7cab8d873180fe5ac33d37ce21c5">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[154/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a629c7cab8d873180fe5ac33d37ce21c5">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[155/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -36585,7 +36635,7 @@ any terminating null.
 </div>
 </div>
 <a id="a2ca2aa0d2a10a4036b9002d64fd425ce"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2ca2aa0d2a10a4036b9002d64fd425ce">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[155/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a2ca2aa0d2a10a4036b9002d64fd425ce">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[156/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -36625,7 +36675,7 @@ any terminating null.
 </div>
 </div>
 <a id="ab76c004753ffa07aaddb21de55e72a8f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab76c004753ffa07aaddb21de55e72a8f">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[156/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ab76c004753ffa07aaddb21de55e72a8f">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[157/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -36665,7 +36715,7 @@ any terminating null.
 </div>
 </div>
 <a id="aafec0ec64f6d57162539ca1aae5c5a85"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aafec0ec64f6d57162539ca1aae5c5a85">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[157/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aafec0ec64f6d57162539ca1aae5c5a85">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[158/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -36705,7 +36755,7 @@ any terminating null.
 </div>
 </div>
 <a id="a1bdc0c3ad1e9afb08653f5e18798d56b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1bdc0c3ad1e9afb08653f5e18798d56b">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[158/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a1bdc0c3ad1e9afb08653f5e18798d56b">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[159/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -36745,7 +36795,7 @@ any terminating null.
 </div>
 </div>
 <a id="a1ce87dbaf8f60174b814729e4745d49b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1ce87dbaf8f60174b814729e4745d49b">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[159/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a1ce87dbaf8f60174b814729e4745d49b">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[160/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -36785,7 +36835,7 @@ any terminating null.
 </div>
 </div>
 <a id="a56ab83e299eb7c3e986261036c3810be"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a56ab83e299eb7c3e986261036c3810be">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[160/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a56ab83e299eb7c3e986261036c3810be">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[161/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -36825,7 +36875,7 @@ any terminating null.
 </div>
 </div>
 <a id="a92d5fa980364da4d9a86b7ed9732cc48"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a92d5fa980364da4d9a86b7ed9732cc48">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[161/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a92d5fa980364da4d9a86b7ed9732cc48">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[162/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -36865,7 +36915,7 @@ any terminating null.
 </div>
 </div>
 <a id="a6584570256d2b3cee97b094a89ff1955"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6584570256d2b3cee97b094a89ff1955">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[162/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a6584570256d2b3cee97b094a89ff1955">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[163/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -36905,7 +36955,7 @@ any terminating null.
 </div>
 </div>
 <a id="a00e9dae4d2d845da1b3d6c4f7bfe9794"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a00e9dae4d2d845da1b3d6c4f7bfe9794">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[163/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a00e9dae4d2d845da1b3d6c4f7bfe9794">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[164/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -36945,7 +36995,7 @@ any terminating null.
 </div>
 </div>
 <a id="a122dd3383e3ded770033ef01f1ced09e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a122dd3383e3ded770033ef01f1ced09e">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[164/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a122dd3383e3ded770033ef01f1ced09e">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[165/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -36991,7 +37041,7 @@ any terminating null.
 </div>
 </div>
 <a id="add020f79ce80bf2414d0fabb6f7fc066"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#add020f79ce80bf2414d0fabb6f7fc066">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[165/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#add020f79ce80bf2414d0fabb6f7fc066">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[166/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -37031,7 +37081,7 @@ any terminating null.
 </div>
 </div>
 <a id="a2d64ed24e25f568e2dbc960b917993d7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2d64ed24e25f568e2dbc960b917993d7">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[166/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a2d64ed24e25f568e2dbc960b917993d7">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[167/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -37071,7 +37121,7 @@ any terminating null.
 </div>
 </div>
 <a id="aabaff85c3d30f7ec1e10ce9306218001"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aabaff85c3d30f7ec1e10ce9306218001">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[167/167]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aabaff85c3d30f7ec1e10ce9306218001">&#9670;&nbsp;</a></span>CONSTRUCT_TYPED_SFIELD() <span class="overload">[168/168]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -39634,7 +39684,7 @@ any terminating null.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8cpp_source.html#l00192">192</a> of file <a class="el" href="TER_8cpp_source.html">TER.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8cpp_source.html#l00195">195</a> of file <a class="el" href="TER_8cpp_source.html">TER.cpp</a>.</p>
 
 </div>
 </div>
@@ -39654,7 +39704,7 @@ any terminating null.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8cpp_source.html#l00207">207</a> of file <a class="el" href="TER_8cpp_source.html">TER.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8cpp_source.html#l00210">210</a> of file <a class="el" href="TER_8cpp_source.html">TER.cpp</a>.</p>
 
 </div>
 </div>
@@ -39674,7 +39724,7 @@ any terminating null.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8cpp_source.html#l00216">216</a> of file <a class="el" href="TER_8cpp_source.html">TER.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8cpp_source.html#l00219">219</a> of file <a class="el" href="TER_8cpp_source.html">TER.cpp</a>.</p>
 
 </div>
 </div>
@@ -39694,7 +39744,7 @@ any terminating null.
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8cpp_source.html#l00225">225</a> of file <a class="el" href="TER_8cpp_source.html">TER.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8cpp_source.html#l00228">228</a> of file <a class="el" href="TER_8cpp_source.html">TER.cpp</a>.</p>
 
 </div>
 </div>
@@ -41413,7 +41463,7 @@ template&lt;class U &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00298">298</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00301">301</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -41441,7 +41491,7 @@ template&lt;class U &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00304">304</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00307">307</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -41469,7 +41519,7 @@ template&lt;class U &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00310">310</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00313">313</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -41497,7 +41547,7 @@ template&lt;class U &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00316">316</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00319">319</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -41525,7 +41575,7 @@ template&lt;class U &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00322">322</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00325">325</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -41553,7 +41603,7 @@ template&lt;class U &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00328">328</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00331">331</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -41597,7 +41647,7 @@ template&lt;typename L , typename R &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00432">432</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00435">435</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -41641,7 +41691,7 @@ template&lt;typename L , typename R &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00442">442</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00445">445</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -41685,7 +41735,7 @@ template&lt;typename L , typename R &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00452">452</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00455">455</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -41729,7 +41779,7 @@ template&lt;typename L , typename R &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00462">462</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00465">465</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -41773,7 +41823,7 @@ template&lt;typename L , typename R &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00472">472</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00475">475</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -41817,7 +41867,7 @@ template&lt;typename L , typename R &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00482">482</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00485">485</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -41837,7 +41887,7 @@ template&lt;typename L , typename R &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00570">570</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00573">573</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -41857,7 +41907,7 @@ template&lt;typename L , typename R &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00576">576</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00579">579</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -41877,7 +41927,7 @@ template&lt;typename L , typename R &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00582">582</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00585">585</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -41897,7 +41947,7 @@ template&lt;typename L , typename R &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00588">588</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00591">591</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -41917,7 +41967,7 @@ template&lt;typename L , typename R &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00594">594</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00597">597</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -41937,7 +41987,7 @@ template&lt;typename L , typename R &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00600">600</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00603">603</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -51799,6 +51849,20 @@ template&lt;class Dest , class Src &gt; </div>
       <table class="memname">
         <tr>
           <td class="memname">const <a class="el" href="namespaceripple.html#acfd08f58ea046933d32ff03520205d98">SF_UINT16</a> ripple::sfHookApiVersion</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ac1b113851fc141f389419face5a1aa3f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac1b113851fc141f389419face5a1aa3f">&#9670;&nbsp;</a></span>sfNetworkID</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a3131ec3dec328bb57ce9046da34eb6d7">SF_UINT32</a> ripple::sfNetworkID</td>
         </tr>
       </table>
 </div><div class="memdoc">
