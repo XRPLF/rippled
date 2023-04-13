@@ -1828,9 +1828,8 @@ private:
                     env.app().getOPs(),
                     env.app().overlay(),
                     env.app().getHashRouter());
-                if ((minimumQuorum.has_value() &&
-                     trustedKeys->quorum() == *minimumQuorum) ||
-                    (trustedKeys->quorum() == std::ceil(cfgKeys.size() * 0.8f)))
+                if (minimumQuorum == trustedKeys->quorum() ||
+                    trustedKeys->quorum() == std::ceil(cfgKeys.size() * 0.8f))
                     return trustedKeys;
             }
             return nullptr;

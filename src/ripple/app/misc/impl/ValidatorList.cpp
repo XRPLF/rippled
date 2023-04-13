@@ -1711,11 +1711,11 @@ ValidatorList::calculateQuorum(
     std::size_t seenSize)
 {
     // Use quorum if specified via command line.
-    if (minimumQuorum_ && *minimumQuorum_)
+    if (minimumQuorum_ > 0)
     {
         JLOG(j_.warn()) << "Using potentially unsafe quorum of "
                         << *minimumQuorum_
-                        << " as specified in the command line";
+                        << " as specified on the command line";
         return *minimumQuorum_;
     }
 
