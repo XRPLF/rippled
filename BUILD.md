@@ -265,6 +265,27 @@ conan profile update 'conf.tools.build:cflags+=["-DBOOST_ASIO_HAS_STD_INVOKE_RES
 conan profile update 'conf.tools.build:cxxflags+=["-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"]' default
 ```
 
+#### Boost Build Error
+
+If you encounter the following error during your build related to boost:
+
+```
+boost/1.77.0: ERROR: Package '12a0259a3874809e8c87bd0624bf06329b6d5b82' build failed
+boost/1.77.0: WARN: Build folder /Users/{username}/.conan/data/boost/1.77.0/_/_/build/12a0259a3874809e8c87bd0624bf06329b6d5b82/build-release
+ERROR: boost/1.77.0: Error in build() method, line 887
+        self.run(full_command)
+        ConanException: Error 1 while executing b2 -q numa=on target-os=darwin architecture=arm address-model=64 binary-format=mach-o abi=aapcs ...
+```
+
+Then try the following commands to build boost from source:
+
+```
+conan remove boost -f
+conan install boost/1.77.0@ --build
+```
+
+And then continue the the build commands above in [How to build and test](## How to build and test)
+
 
 #### recompile with -fPIC
 
