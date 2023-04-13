@@ -71,15 +71,15 @@ $(function() {
 <li>The base class <code>RelationalDatabase</code> is inherited by derived classes that each provide an interface for operating on distinct relational database systems.</li>
 <li>For future use, the shard store will be used if the node store is absent.</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md138"></a>
+<h1><a class="anchor" id="autotoc_md140"></a>
 Overview</h1>
 <p>Firstly, the interface <code>RelationalDatabase</code> is inherited by the classes <code>SQLiteDatabase</code> and <code>PostgresDatabase</code> which are used to operate the software's main data store (for storing transactions, accounts, ledgers, etc.). Secondly, the files under the <code>detail</code> directory provide supplementary functions that are used by these derived classes to access the underlying databases. Lastly, the remaining files in the interface (located at the top level of the module) are used by varied parts of the software to access any secondary relational databases.</p>
-<h1><a class="anchor" id="autotoc_md139"></a>
+<h1><a class="anchor" id="autotoc_md141"></a>
 Configuration</h1>
 <p>The config section <code>[relational_db]</code> has a property named <code>backend</code> whose value designates which database implementation will be used for node or shard databases. Presently the only valid value for this property is <code>sqlite</code>:</p>
 <div class="fragment"><div class="line">[relational_db]</div>
 <div class="line">backend=sqlite</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md140"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md142"></a>
 Source Files</h1>
 <p>The Relational Database Interface consists of the following directory structure (as of November 2021):</p>
 <div class="fragment"><div class="line">src/ripple/app/rdb/</div>
@@ -113,7 +113,7 @@ Source Files</h1>
 <div class="line">├── UnitaryShard.h</div>
 <div class="line">├── Vacuum.h</div>
 <div class="line">└── Wallet.h</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md141"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md143"></a>
 File Contents</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -145,10 +145,10 @@ File Contents</h2>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone"><code>Wallet.[h\|cpp]</code> </td><td class="markdownTableBodyNone">Defines/Implements methods for interacting with Wallet SQLite databases  </td></tr>
 </table>
-<h1><a class="anchor" id="autotoc_md142"></a>
+<h1><a class="anchor" id="autotoc_md144"></a>
 Classes</h1>
 <p>The abstract class <code>RelationalDatabase</code> is the primary class of the Relational Database Interface and is defined in the eponymous header file. This class provides a static method <code>init()</code> which, when invoked, creates a concrete instance of a derived class whose type is specified by the system configuration. All other methods in the class are virtual. Presently there exist two classes that derive from <code>RelationalDatabase</code>, namely <code>SQLiteDatabase</code> and <code>PostgresDatabase</code>.</p>
-<h1><a class="anchor" id="autotoc_md143"></a>
+<h1><a class="anchor" id="autotoc_md145"></a>
 Database Methods</h1>
 <p>The Relational Database Interface provides three categories of methods for interacting with databases:</p>
 <ul>

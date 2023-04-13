@@ -68,12 +68,12 @@ $(function() {
 <div class="textblock"><p>The jemalloc library provides a good API for doing heap analysis, including a mechanism to dump a description of the heap from within the running application via a function call. Details on how to perform this activity in general, as well as how to acquire the software, are available on the jemalloc site: <a href="https://github.com/jemalloc/jemalloc/wiki/Use-Case:-Heap-Profiling">https://github.com/jemalloc/jemalloc/wiki/Use-Case:-Heap-Profiling</a></p>
 <p>jemalloc is acquired separately from rippled, and is not affiliated with Ripple Labs. If you compile and install jemalloc from the source release with default options, it will install the library and header under <code>/usr/local/lib</code> and <code>/usr/local/include</code>, respectively. Heap profiling has been tested with rippled on a Linux platform. It should work on platforms on which both rippled and jemalloc are available.</p>
 <p>To link rippled with jemalloc, the argument <code>profile-jemalloc=&lt;jemalloc_dir&gt;</code> is provided after the optional target. The <code>&lt;jemalloc_dir&gt;</code> argument should be the same as that of the <code>--prefix</code> parameter passed to the jemalloc configure script when building.</p>
-<h1><a class="anchor" id="autotoc_md70"></a>
+<h1><a class="anchor" id="autotoc_md72"></a>
 Examples:</h1>
 <p>Build rippled with jemalloc library under /usr/local/lib and header under /usr/local/include: </p><pre class="fragment">$ scons profile-jemalloc=/usr/local
 </pre><p>Build rippled using clang with the jemalloc library under /opt/local/lib and header under /opt/local/include: </p><pre class="fragment">$ scons clang profile-jemalloc=/opt/local
 </pre><hr  />
-<h1><a class="anchor" id="autotoc_md71"></a>
+<h1><a class="anchor" id="autotoc_md73"></a>
 Using the jemalloc library from within the code</h1>
 <p>The <code>profile-jemalloc</code> parameter enables a macro definition called <code>PROFILE_JEMALLOC</code>. Include the jemalloc header file as well as the api call(s) that you wish to make within preprocessor conditional groups, such as:</p>
 <p>In global scope: </p><pre class="fragment">#ifdef PROFILE_JEMALLOC

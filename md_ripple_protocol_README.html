@@ -66,11 +66,11 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><p>Classes and functions for handling data and values associated with the XRP Ledger protocol.</p>
-<h1><a class="anchor" id="autotoc_md268"></a>
+<h1><a class="anchor" id="autotoc_md270"></a>
 Serialized Objects</h1>
 <p>Objects transmitted over the network must be serialized into a canonical format. The prefix "ST" refers to classes that deal with the serialized format.</p>
 <p>The term "Tx" or "tx" is an abbreviation for "Transaction", a commonly occurring object type.</p>
-<h2><a class="anchor" id="autotoc_md269"></a>
+<h2><a class="anchor" id="autotoc_md271"></a>
 Optional Fields</h2>
 <p>Our serialized fields have some "type magic" to make optional fields easier to read:</p>
 <ul>
@@ -84,7 +84,7 @@ Optional Fields</h2>
 </ul>
 <p>Typically, for things that are guaranteed to exist, you use <code>x[sfFoo]</code> and avoid having to deal with a container that may or may not hold a value. For things not guaranteed to exist, you use <code>x[~sfFoo]</code> because you want such a container. It avoids having to look something up twice, once just to see if it exists and a second time to get/set its value. (<a href="https://github.com/ripple/rippled/blob/35f4698aed5dce02f771b34cfbb690495cb5efcc/src/ripple/app/tx/impl/PayChan.cpp#L229-L236">Real example</a>)</p>
 <p>The source of this "type magic" is in <a href="./SField.h#L296-L302">SField.h</a>.</p>
-<h2><a class="anchor" id="autotoc_md270"></a>
+<h2><a class="anchor" id="autotoc_md272"></a>
 Related Resources</h2>
 <ul>
 <li><a href="https://github.com/XRPLF/xrpl.js/tree/main/packages/ripple-binary-codec/src/enums">ripple-binary-codec SField enums</a></li>
