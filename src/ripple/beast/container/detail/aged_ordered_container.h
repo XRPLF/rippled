@@ -148,8 +148,13 @@ private:
     class pair_value_compare
         : public beast::detail::empty_base_optimization<Compare>
 #ifdef _LIBCPP_VERSION
+#if _LIBCPP_VERSION >= 15006
         ,
           public std::__binary_function<value_type, value_type, bool>
+#else
+        ,
+          public std::binary_function<value_type, value_type, bool>
+#endif
 #endif
     {
     public:
@@ -186,8 +191,13 @@ private:
     class KeyValueCompare
         : public beast::detail::empty_base_optimization<Compare>
 #ifdef _LIBCPP_VERSION
+#if _LIBCPP_VERSION >= 15006
         ,
           public std::__binary_function<Key, element, bool>
+#else
+        ,
+          public std::binary_function<Key, element, bool>
+#endif
 #endif
     {
     public:
