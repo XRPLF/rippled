@@ -149,16 +149,10 @@ private:
 
     // VFALCO TODO hoist to remove template argument dependencies
     class ValueHash : private beast::detail::empty_base_optimization<Hash>
-#ifdef _LIBCPP_VERSION
-        ,
-                      public std::unary_function<element, std::size_t>
-#endif
     {
     public:
-#ifndef _LIBCPP_VERSION
         using argument_type = element;
         using result_type = size_t;
-#endif
 
         ValueHash()
         {
@@ -192,17 +186,11 @@ private:
     // VFALCO TODO hoist to remove template argument dependencies
     class KeyValueEqual
         : private beast::detail::empty_base_optimization<KeyEqual>
-#ifdef _LIBCPP_VERSION
-        ,
-          public std::binary_function<Key, element, bool>
-#endif
     {
     public:
-#ifndef _LIBCPP_VERSION
         using first_argument_type = Key;
         using second_argument_type = element;
         using result_type = bool;
-#endif
 
         KeyValueEqual()
         {
