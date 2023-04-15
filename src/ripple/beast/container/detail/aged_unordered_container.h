@@ -158,8 +158,7 @@ private:
         {
         }
 
-        ValueHash(Hash const& h)
-            : Hash(h)
+        ValueHash(Hash const& h) : Hash(h)
         {
         }
 
@@ -184,8 +183,7 @@ private:
 
     // Compares value_type against element, used in find/insert_check
     // VFALCO TODO hoist to remove template argument dependencies
-    class KeyValueEqual
-        : public KeyEqual
+    class KeyValueEqual : public KeyEqual
     {
     public:
         using first_argument_type = Key;
@@ -196,8 +194,7 @@ private:
         {
         }
 
-        KeyValueEqual(KeyEqual const& keyEqual)
-            : KeyEqual(keyEqual)
+        KeyValueEqual(KeyEqual const& keyEqual) : KeyEqual(keyEqual)
         {
         }
 

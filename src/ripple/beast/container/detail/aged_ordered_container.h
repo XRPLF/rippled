@@ -145,8 +145,7 @@ private:
     };
 
     // VFALCO TODO This should only be enabled for maps.
-    class pair_value_compare
-        : public Compare
+    class pair_value_compare : public Compare
     {
     public:
         using first_argument = value_type;
@@ -163,24 +162,21 @@ private:
         {
         }
 
-        pair_value_compare(pair_value_compare const& other)
-            : Compare(other)
+        pair_value_compare(pair_value_compare const& other) : Compare(other)
         {
         }
 
     private:
         friend aged_ordered_container;
 
-        pair_value_compare(Compare const& compare)
-            : Compare(compare)
+        pair_value_compare(Compare const& compare) : Compare(compare)
         {
         }
     };
 
     // Compares value_type against element, used in insert_check
     // VFALCO TODO hoist to remove template argument dependencies
-    class KeyValueCompare
-        : public Compare
+    class KeyValueCompare : public Compare
     {
     public:
         using first_argument = Key;
@@ -189,8 +185,7 @@ private:
 
         KeyValueCompare() = default;
 
-        KeyValueCompare(Compare const& compare)
-            : Compare(compare)
+        KeyValueCompare(Compare const& compare) : Compare(compare)
         {
         }
 
