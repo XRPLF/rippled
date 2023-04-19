@@ -158,6 +158,7 @@ public:
     std::string START_LEDGER;
 
     // Network parameters
+    uint32_t NETWORK_ID = 0;
 
     // DEPRECATED - Fee units for a reference transction.
     // Only provided for backwards compatibility in a couple of places
