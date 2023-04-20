@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2015 Ripple Labs Inc.
+    Copyright (c) 2023 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,40 +17,25 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/basics/SubmitSync.h>
-#include <ripple/protocol/ErrorCodes.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/resource/Fees.h>
-#include <ripple/rpc/Context.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
-#include <ripple/rpc/impl/TransactionSign.h>
+#ifndef RIPPLE_BASICS_SUBMITSYNC_H_INCLUDED
+#define RIPPLE_BASICS_SUBMITSYNC_H_INCLUDED
 
 namespace ripple {
+namespace RPC {
 
-// {
-//   SigningAccounts <array>,
-//   tx_json: <object>,
-// }
-Json::Value
-doSubmitMultiSigned(RPC::JsonContext& context)
-{
-    context.loadType = Resource::feeHighBurdenRPC;
-    auto const failHard = context.params[jss::fail_hard].asBool();
-    auto const failType = NetworkOPs::doFailHard(failHard);
+/**
+ * Possible values for defining synchronous behavior of the transaction
+ * submission API.
+ *   1) sync (default): Process transactions in a batch immediately,
+ *       and return only once the transaction has been processed.
+ *   2) async: Put transaction into the batch for the next processing
+ *       interval and return immediately.
+ *   3) wait: Put transaction into the batch for the next processing
+ *       interval and return only after it is processed.
+ */
+enum class SubmitSync { sync, async, wait };
 
-    auto const sync = RPC::getSubmitSyncMode(context.params);
-    if (!sync)
-        return sync.error();
-
-    return RPC::transactionSubmitMultiSigned(
-        context.params,
-        failType,
-        context.role,
-        context.ledgerMaster.getValidatedLedgerAge(),
-        context.app,
-        RPC::getProcessTxnFn(context.netOps),
-        *sync);
-}
-
+}  // namespace RPC
 }  // namespace ripple
+
+#endif
