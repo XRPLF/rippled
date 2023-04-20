@@ -527,6 +527,14 @@ divRound(
     Issue const& issue,
     bool roundUp);
 
+// divide following the rounding directions more precisely.
+STAmount
+divRoundStrict(
+    STAmount const& v1,
+    STAmount const& v2,
+    Issue const& issue,
+    bool roundUp);
+
 // Someone is offering X for Y, what is the rate?
 // Rate: smaller is better, the taker wants the most out: in/out
 // VFALCO TODO Return a Quality object

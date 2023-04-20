@@ -665,9 +665,9 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
             stpAmt.out = mulRatio(
                 ownerGives, QUALITY_ONE, ofrOutRate, /*roundUp*/ false);
 
-            // It turns out we can prevent order book blocking by rounding down
-            // the ceil_out() result.  This adjustment changes transaction
-            // outcomes, so it must be made under an amendment.
+            // It turns out we can prevent order book blocking by (strictly)
+            // rounding down the ceil_out() result.  This adjustment changes
+            // transaction outcomes, so it must be made under an amendment.
             if (fixReduced)
                 ofrAmt = ofrQ->ceil_out_strict(
                     ofrAmt, stpAmt.out, /* roundUp */ false);

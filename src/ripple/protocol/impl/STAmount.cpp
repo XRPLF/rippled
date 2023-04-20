@@ -1346,8 +1346,42 @@ canonicalizeRoundStrict(
     }
 }
 
-// Pass the canonicalizeRound function as a template parameter.
-template <void (*Canonicalize)(bool, std::uint64_t&, int&, bool)>
+namespace {
+
+// saveNumberRoundMode doesn't do quite enough for us.  What we want is a
+// Number::RoundModeGuard that sets the new mode and restores the old mode
+// when it leaves scope.  Since Number doesn't have that facility, we'll
+// build it here.
+class NumberRoundModeGuard
+{
+    saveNumberRoundMode saved_;
+
+public:
+    explicit NumberRoundModeGuard(Number::rounding_mode mode) noexcept
+        : saved_{Number::setround(mode)}
+    {
+    }
+};
+
+// We need a class that has an interface similar to NumberRoundModeGuard
+// but does nothing.
+class DontAffectNumberRoundMode
+{
+public:
+    explicit DontAffectNumberRoundMode(Number::rounding_mode mode) noexcept
+    {
+    }
+};
+
+}  // anonymous namespace
+
+// Pass the canonicalizeRound function pointer as a template parameter.
+//
+// We might need to use NumberRoundModeGuard.  Allow the caller
+// to pass either that or a replacement as a template parameter.
+template <
+    void (*CanonicalizeFunc)(bool, std::uint64_t&, int&, bool),
+    typename MightSaveRound>
 static STAmount
 mulRoundImpl(
     STAmount const& v1,
@@ -1413,9 +1447,14 @@ mulRoundImpl(
     int offset = offset1 + offset2 + 14;
     if (resultNegative != roundUp)
     {
-        Canonicalize(xrp, amount, offset, roundUp);
+        CanonicalizeFunc(xrp, amount, offset, roundUp);
     }
-    STAmount result(issue, amount, offset, resultNegative);
+    STAmount result = [&]() {
+        // If appropriate, tell Number to round down.  This gives the desired
+        // result from STAmount::canonicalize.
+        MightSaveRound const savedRound(Number::towards_zero);
+        return STAmount(issue, amount, offset, resultNegative);
+    }();
 
     if (roundUp && !resultNegative && !result)
     {
@@ -1443,7 +1482,8 @@ mulRound(
     Issue const& issue,
     bool roundUp)
 {
-    return mulRoundImpl<canonicalizeRound>(v1, v2, issue, roundUp);
+    return mulRoundImpl<canonicalizeRound, DontAffectNumberRoundMode>(
+        v1, v2, issue, roundUp);
 }
 
 STAmount
@@ -1453,11 +1493,15 @@ mulRoundStrict(
     Issue const& issue,
     bool roundUp)
 {
-    return mulRoundImpl<canonicalizeRoundStrict>(v1, v2, issue, roundUp);
+    return mulRoundImpl<canonicalizeRoundStrict, NumberRoundModeGuard>(
+        v1, v2, issue, roundUp);
 }
 
-STAmount
-divRound(
+// We might need to use NumberRoundModeGuard.  Allow the caller
+// to pass either that or a replacement as a template parameter.
+template <typename MightSaveRound>
+static STAmount
+divRoundImpl(
     STAmount const& num,
     STAmount const& den,
     Issue const& issue,
@@ -1508,7 +1552,13 @@ divRound(
     if (resultNegative != roundUp)
         canonicalizeRound(isXRP(issue), amount, offset, roundUp);
 
-    STAmount result(issue, amount, offset, resultNegative);
+    STAmount result = [&]() {
+        // If appropriate, tell Number the rounding mode we are using.
+        MightSaveRound const savedRound(
+            roundUp ? Number::upward : Number::towards_zero);
+        return STAmount(issue, amount, offset, resultNegative);
+    }();
+
     if (roundUp && !resultNegative && !result)
     {
         if (isXRP(issue))
@@ -1526,6 +1576,26 @@ divRound(
         return STAmount(issue, amount, offset, resultNegative);
     }
     return result;
+}
+
+STAmount
+divRound(
+    STAmount const& num,
+    STAmount const& den,
+    Issue const& issue,
+    bool roundUp)
+{
+    return divRoundImpl<DontAffectNumberRoundMode>(num, den, issue, roundUp);
+}
+
+STAmount
+divRoundStrict(
+    STAmount const& num,
+    STAmount const& den,
+    Issue const& issue,
+    bool roundUp)
+{
+    return divRoundImpl<NumberRoundModeGuard>(num, den, issue, roundUp);
 }
 
 }  // namespace ripple

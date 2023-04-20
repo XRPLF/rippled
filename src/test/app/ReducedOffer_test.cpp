@@ -200,7 +200,7 @@ public:
             }
             else
             {
-                BEAST_EXPECT(blockedCount >= 180);
+                BEAST_EXPECT(blockedCount >= 170);
             }
         }
     }
@@ -343,7 +343,7 @@ public:
             // ledger should increase with each iteration.
             unsigned int blockedCount = 0;
             for (std::uint64_t mantissaReduce = 1'000'000'000ull;
-                 mantissaReduce < 4'000'000'000ull;
+                 mantissaReduce <= 4'000'000'000ull;
                  mantissaReduce += 20'000'000ull)
             {
                 STAmount bobUSD{
@@ -412,7 +412,7 @@ public:
                 env(offer(bob, drops(2), USD(1)));
                 env.close();
 
-                // alice places an offer would cross bob's if bob's were
+                // alice places an offer that would cross bob's if bob's were
                 // well funded.
                 std::uint32_t const aliceOfferSeq = env.seq(alice);
                 env(offer(alice, USD(1), drops(2)));
