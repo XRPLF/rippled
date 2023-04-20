@@ -32,6 +32,7 @@
 #include <ripple/basics/base64.h>
 #include <ripple/basics/random.h>
 #include <ripple/basics/safe_cast.h>
+#include <ripple/beast/clock/abstract_clock.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <ripple/beast/core/SemanticVersion.h>
 #include <ripple/nodestore/DatabaseShard.h>
@@ -39,6 +40,7 @@
 #include <ripple/overlay/impl/PeerImp.h>
 #include <ripple/overlay/impl/Tuning.h>
 #include <ripple/overlay/predicates.h>
+#include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/digest.h>
 
 #include <boost/algorithm/string.hpp>
@@ -46,6 +48,7 @@
 #include <boost/beast/core/ostream.hpp>
 
 #include <algorithm>
+#include <chrono>
 #include <memory>
 #include <mutex>
 #include <numeric>
@@ -1992,6 +1995,10 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
     JLOG(p_journal_.trace())
         << "Proposal: " << (isTrusted ? "trusted" : "untrusted");
 
+    std::optional<LedgerIndex> ledgerSeq;
+    if (set.has_ledgerseq())
+        ledgerSeq = set.ledgerseq();
+
     auto proposal = RCLCxPeerPos(
         publicKey,
         sig,
@@ -2002,7 +2009,9 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
             proposeHash,
             closeTime,
             app_.timeKeeper().closeTime(),
-            calcNodeID(app_.validatorManifests().getMasterKey(publicKey))});
+            calcNodeID(app_.validatorManifests().getMasterKey(publicKey)),
+            ledgerSeq,
+            beast::get_abstract_clock<std::chrono::steady_clock>()});
 
     std::weak_ptr<PeerImp> weak = shared_from_this();
     app_.getJobQueue().addJob(
