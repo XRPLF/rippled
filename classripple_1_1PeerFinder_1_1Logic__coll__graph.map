@@ -1,52 +1,52 @@
 <map id="ripple::PeerFinder::Logic&lt; Checker &gt;" name="ripple::PeerFinder::Logic&lt; Checker &gt;">
-<area shape="rect" id="node1" title="The Logic for maintaining the list of Slot addresses." alt="" coords="2076,746,2223,787"/>
-<area shape="rect" id="node2" href="$classbeast_1_1detail_1_1aged__ordered__container.html" title=" " alt="" coords="1339,480,1497,536"/>
-<area shape="rect" id="node3" href="$classbeast_1_1detail_1_1aged__ordered__container_1_1config__t.html" title=" " alt="" coords="918,348,1129,433"/>
-<area shape="rect" id="node37" href="$classbeast_1_1detail_1_1aged__ordered__container.html" title=" " alt="" coords="1326,341,1510,456"/>
-<area shape="rect" id="node4" href="$classbeast_1_1detail_1_1aged__ordered__container_1_1KeyValueCompare.html" title=" " alt="" coords="477,348,688,433"/>
-<area shape="rect" id="node5" href="$classbeast_1_1detail_1_1empty__base__optimization.html" title=" " alt="" coords="136,370,375,411"/>
-<area shape="rect" id="node6" title=" " alt="" coords="5,377,87,404"/>
-<area shape="rect" id="node7" href="$classbeast_1_1detail_1_1empty__base__optimization.html" title=" " alt="" coords="473,457,692,513"/>
-<area shape="rect" id="node8" title=" " alt="" coords="188,472,323,499"/>
-<area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/functional/reference_wrapper.html" title=" " alt="" coords="487,282,678,323"/>
-<area shape="rect" id="node10" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/conditional.html" title=" " alt="" coords="876,458,1171,617"/>
-<area shape="rect" id="node11" href="$classbeast_1_1detail_1_1aged__ordered__container_1_1chronological__t.html" title=" " alt="" coords="918,239,1129,324"/>
-<area shape="rect" id="node12" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/set.html" title=" " alt="" coords="1707,631,1876,673"/>
-<area shape="rect" id="node13" href="$classripple_1_1PublicKey.html" title="A public key." alt="" coords="1353,585,1483,612"/>
-<area shape="rect" id="node14" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="976,641,1071,668"/>
-<area shape="rect" id="node15" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="979,756,1067,783"/>
-<area shape="rect" id="node22" href="$classripple_1_1PeerFinder_1_1Counts.html" title="Manages the count of available connections for the various slots." alt="" coords="1541,726,1676,767"/>
-<area shape="rect" id="node30" href="$classripple_1_1PeerFinder_1_1Fixed.html" title="Metadata for a Fixed slot." alt="" coords="1351,793,1485,834"/>
-<area shape="rect" id="node39" href="$structripple_1_1PeerFinder_1_1Config.html" title="PeerFinder configuration settings." alt="" coords="1351,885,1485,926"/>
-<area shape="rect" id="node16" href="$classripple_1_1PeerFinder_1_1Bootcache.html" title="Stores IP addresses useful for gaining initial connections." alt="" coords="1724,182,1859,223"/>
-<area shape="rect" id="node17" href="$classbeast_1_1abstract__clock.html" title="Abstract interface to a clock." alt="" coords="1338,35,1498,77"/>
-<area shape="rect" id="node18" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="1363,211,1473,237"/>
-<area shape="rect" id="node33" href="$classripple_1_1PeerFinder_1_1Livecache.html" title="The Livecache holds the short&#45;lived relayed Endpoint messages." alt="" coords="1700,363,1883,405"/>
-<area shape="rect" id="node19" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="950,56,1097,83"/>
-<area shape="rect" id="node20" href="$classripple_1_1PeerFinder_1_1Store.html" title="Abstract persistence for PeerFinder data." alt="" coords="1351,115,1485,157"/>
-<area shape="rect" id="node21" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/recursive_mutex.html" title="STL class." alt="" coords="1712,1025,1871,1052"/>
-<area shape="rect" id="node23" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/multiset.html" title=" " alt="" coords="1714,1077,1869,1118"/>
-<area shape="rect" id="node24" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="1333,1217,1503,1258"/>
-<area shape="rect" id="node38" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="1702,1143,1881,1199"/>
-<area shape="rect" id="node25" href="$classripple_1_1PeerFinder_1_1Source.html" title="A static or dynamic source of peer addresses." alt="" coords="956,1219,1091,1261"/>
-<area shape="rect" id="node26" href="$classripple_1_1PeerFinder_1_1Checker.html" title="Tests remote listening sockets to make sure they are connectible." alt="" coords="1708,1286,1875,1327"/>
-<area shape="rect" id="node27" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/condition_variable.html" title=" " alt="" coords="1333,1339,1503,1365"/>
-<area shape="rect" id="node28" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title="STL class." alt="" coords="1372,1288,1464,1315"/>
-<area shape="rect" id="node29" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="1716,795,1867,851"/>
-<area shape="rect" id="node31" href="$classbeast_1_1IP_1_1Endpoint.html" title="A version&#45;independent IP address and port combination." alt="" coords="511,999,654,1025"/>
-<area shape="rect" id="node41" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="1708,945,1875,1001"/>
-<area shape="rect" id="node43" href="$classripple_1_1PeerFinder_1_1SlotImp.html" title=" " alt="" coords="956,1154,1091,1195"/>
-<area shape="rect" id="node32" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="204,915,307,941"/>
-<area shape="rect" id="node34" href="$classripple_1_1PeerFinder_1_1Livecache_1_1hops__t.html" title=" " alt="" coords="1334,261,1502,317"/>
-<area shape="rect" id="node35" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="934,107,1113,149"/>
-<area shape="rect" id="node36" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="928,173,1119,214"/>
-<area shape="rect" id="node40" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="980,927,1067,953"/>
-<area shape="rect" id="node42" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="1319,1115,1517,1141"/>
-<area shape="rect" id="node44" href="$classripple_1_1PeerFinder_1_1Slot.html" title="Properties and state associated with a peer to peer overlay connection." alt="" coords="515,1213,650,1254"/>
-<area shape="rect" id="node45" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="505,1278,660,1319"/>
-<area shape="rect" id="node46" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="505,1343,660,1385"/>
-<area shape="rect" id="node47" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="208,1124,303,1151"/>
-<area shape="rect" id="node50" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="483,1161,682,1188"/>
-<area shape="rect" id="node48" href="$classripple_1_1PeerFinder_1_1SlotImp_1_1recent__t.html" title=" " alt="" coords="512,1409,653,1450"/>
-<area shape="rect" id="node49" href="$classbeast_1_1detail_1_1aged__unordered__container.html" title=" " alt="" coords="174,1394,337,1465"/>
+<area shape="rect" id="node1" title="The Logic for maintaining the list of Slot addresses." alt="" coords="2164,746,2311,787"/>
+<area shape="rect" id="node2" href="$classbeast_1_1detail_1_1aged__ordered__container.html" title=" " alt="" coords="1427,480,1585,536"/>
+<area shape="rect" id="node3" href="$classbeast_1_1detail_1_1aged__ordered__container_1_1config__t.html" title=" " alt="" coords="1006,348,1217,433"/>
+<area shape="rect" id="node36" href="$classbeast_1_1detail_1_1aged__ordered__container.html" title=" " alt="" coords="1414,341,1598,456"/>
+<area shape="rect" id="node4" href="$classbeast_1_1detail_1_1aged__ordered__container_1_1KeyValueCompare.html" title=" " alt="" coords="565,348,776,433"/>
+<area shape="rect" id="node5" title=" " alt="" coords="341,377,422,404"/>
+<area shape="rect" id="node6" href="$classbeast_1_1detail_1_1empty__base__optimization.html" title=" " alt="" coords="561,457,780,513"/>
+<area shape="rect" id="node7" title=" " alt="" coords="314,472,449,499"/>
+<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/functional/reference_wrapper.html" title=" " alt="" coords="575,282,766,323"/>
+<area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/conditional.html" title=" " alt="" coords="964,458,1259,617"/>
+<area shape="rect" id="node10" href="$classbeast_1_1detail_1_1aged__ordered__container_1_1chronological__t.html" title=" " alt="" coords="1006,239,1217,324"/>
+<area shape="rect" id="node11" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/set.html" title=" " alt="" coords="1795,631,1964,673"/>
+<area shape="rect" id="node12" href="$classripple_1_1PublicKey.html" title="A public key." alt="" coords="1441,585,1571,612"/>
+<area shape="rect" id="node13" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="1064,641,1159,668"/>
+<area shape="rect" id="node14" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="1067,756,1155,783"/>
+<area shape="rect" id="node21" href="$classripple_1_1PeerFinder_1_1Counts.html" title="Manages the count of available connections for the various slots." alt="" coords="1629,726,1764,767"/>
+<area shape="rect" id="node29" href="$classripple_1_1PeerFinder_1_1Fixed.html" title="Metadata for a Fixed slot." alt="" coords="1439,793,1573,834"/>
+<area shape="rect" id="node38" href="$structripple_1_1PeerFinder_1_1Config.html" title="PeerFinder configuration settings." alt="" coords="1439,887,1573,929"/>
+<area shape="rect" id="node15" href="$classripple_1_1PeerFinder_1_1Bootcache.html" title="Stores IP addresses useful for gaining initial connections." alt="" coords="1812,182,1947,223"/>
+<area shape="rect" id="node16" href="$classbeast_1_1abstract__clock.html" title="Abstract interface to a clock." alt="" coords="1426,35,1586,77"/>
+<area shape="rect" id="node17" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="1451,211,1561,237"/>
+<area shape="rect" id="node32" href="$classripple_1_1PeerFinder_1_1Livecache.html" title="The Livecache holds the short&#45;lived relayed Endpoint messages." alt="" coords="1788,363,1971,405"/>
+<area shape="rect" id="node18" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="1038,56,1185,83"/>
+<area shape="rect" id="node19" href="$classripple_1_1PeerFinder_1_1Store.html" title="Abstract persistence for PeerFinder data." alt="" coords="1439,115,1573,157"/>
+<area shape="rect" id="node20" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/recursive_mutex.html" title="STL class." alt="" coords="1800,1021,1959,1048"/>
+<area shape="rect" id="node22" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/multiset.html" title=" " alt="" coords="1802,1073,1957,1114"/>
+<area shape="rect" id="node23" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="1421,1213,1591,1254"/>
+<area shape="rect" id="node37" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="1790,1139,1969,1195"/>
+<area shape="rect" id="node24" href="$classripple_1_1PeerFinder_1_1Source.html" title="A static or dynamic source of peer addresses." alt="" coords="1044,1215,1179,1257"/>
+<area shape="rect" id="node25" href="$classripple_1_1PeerFinder_1_1Checker.html" title="Tests remote listening sockets to make sure they are connectible." alt="" coords="1796,1282,1963,1323"/>
+<area shape="rect" id="node26" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/condition_variable.html" title=" " alt="" coords="1421,1335,1591,1361"/>
+<area shape="rect" id="node27" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title="STL class." alt="" coords="1460,1284,1552,1311"/>
+<area shape="rect" id="node28" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="1804,795,1955,851"/>
+<area shape="rect" id="node30" href="$classbeast_1_1IP_1_1Endpoint.html" title="A version&#45;independent IP address and port combination." alt="" coords="599,1000,742,1027"/>
+<area shape="rect" id="node40" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="1796,941,1963,997"/>
+<area shape="rect" id="node42" href="$classripple_1_1PeerFinder_1_1SlotImp.html" title=" " alt="" coords="1044,1150,1179,1191"/>
+<area shape="rect" id="node31" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="330,916,433,943"/>
+<area shape="rect" id="node33" href="$classripple_1_1PeerFinder_1_1Livecache_1_1hops__t.html" title=" " alt="" coords="1422,261,1590,317"/>
+<area shape="rect" id="node34" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="1022,107,1201,149"/>
+<area shape="rect" id="node35" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="1016,173,1207,214"/>
+<area shape="rect" id="node39" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="1068,927,1155,953"/>
+<area shape="rect" id="node41" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="1407,1105,1605,1132"/>
+<area shape="rect" id="node43" href="$classripple_1_1PeerFinder_1_1Slot.html" title="Properties and state associated with a peer to peer overlay connection." alt="" coords="603,1209,738,1250"/>
+<area shape="rect" id="node44" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="593,1274,748,1315"/>
+<area shape="rect" id="node45" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="593,1339,748,1381"/>
+<area shape="rect" id="node46" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="334,1120,429,1147"/>
+<area shape="rect" id="node50" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="571,1157,770,1184"/>
+<area shape="rect" id="node47" href="$classripple_1_1PeerFinder_1_1SlotImp_1_1recent__t.html" title=" " alt="" coords="600,1405,741,1446"/>
+<area shape="rect" id="node48" href="$classbeast_1_1detail_1_1aged__unordered__container.html" title=" " alt="" coords="300,1390,463,1461"/>
+<area shape="rect" id="node49" href="$classbeast_1_1detail_1_1aged__unordered__container_1_1Buckets.html" title=" " alt="" coords="5,1383,196,1468"/>
 </map>

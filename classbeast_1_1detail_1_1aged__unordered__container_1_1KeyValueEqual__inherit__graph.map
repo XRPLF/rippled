@@ -1,6 +1,5 @@
 <map id="beast::detail::aged_unordered_container&lt; IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator &gt;::KeyValueEqual" name="beast::detail::aged_unordered_container&lt; IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator &gt;::KeyValueEqual">
-<area shape="rect" id="node1" title=" " alt="" coords="423,5,625,91"/>
-<area shape="rect" id="node4" href="$classbeast_1_1detail_1_1aged__unordered__container_1_1config__t.html" title=" " alt="" coords="673,5,864,91"/>
-<area shape="rect" id="node2" href="$classbeast_1_1detail_1_1empty__base__optimization.html" title=" " alt="" coords="136,27,375,69"/>
-<area shape="rect" id="node3" title=" " alt="" coords="5,35,88,61"/>
+<area shape="rect" id="node1" title=" " alt="" coords="136,5,339,91"/>
+<area shape="rect" id="node3" href="$classbeast_1_1detail_1_1aged__unordered__container_1_1config__t.html" title=" " alt="" coords="387,5,577,91"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,35,88,61"/>
 </map>
