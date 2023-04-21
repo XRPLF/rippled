@@ -21,7 +21,7 @@ git checkout develop
 ```
 
 
-## Platforms
+## Compilers
 
 rippled is written in the C++20 dialect and includes the `<concepts>` header.
 The [minimum compiler versions][2] that can compile this dialect are given
@@ -34,39 +34,54 @@ below:
 | Apple Clang | 13.1.6
 | MSVC        | 19.23
 
-We do not recommend Windows for rippled production use at this time.
-As of January 2023, the Ubuntu platform has received the highest level of
-quality assurance, testing, and support.
-Additionally, 32-bit Windows development is not supported.
+## Prerequisites
 
-Visual Studio 2022 is not yet supported.
-This is because rippled is not compatible with [Boost][] versions 1.78 or 1.79,
-but Conan cannot build Boost versions released earlier than them with VS 2022.
-We expect that rippled will be compatible with Boost 1.80, which should be
-released in August 2022.
-Until then, we advise Windows developers to use Visual Studio 2019.
+See [System Requirements](https://xrpl.org/system-requirements.html).
+
+rippled generally requires:
+- git
+- Python
+- Conan
+- CMake
+- a C++ compiler
+
+### Linux
+
+The Ubuntu operating system has received the highest level of
+quality assurance, testing, and support.
+
+Here are [sample instructions for setting up a C++ development environment on Linux](./docs/build/environment.md#linux).
+
+### Mac
+
+Many rippled engineers use macOS for development.
+
+Here are [sample instructions for setting up a C++ development environment on macOS](./docs/build/environment.md#macos).
+
+### Windows
+
+Windows is not recommended for production use at this time.
+
+- Additionally, 32-bit Windows development is not supported.
+- Visual Studio 2022 is not yet supported.
+  - rippled generally requires [Boost][] 1.77, which Conan cannot build with VS 2022.
+  - Until rippled is updated for compatibility with later versions of Boost, Windows developers may need to use Visual Studio 2019.
 
 [Boost]: https://www.boost.org/
 
-
-## Prerequisites
-
-> **Warning**
-> These instructions assume you have a C++ development environment ready
-> with Git, Python, Conan, CMake, and a C++ compiler.
-> For help setting one up on Linux, macOS, or Windows,
-> please see [our guide](./docs/build/environment.md).
->
-> These instructions further assume a basic familiarity with Conan and CMake.
-> If you are unfamiliar with Conan,
-> then please read our [crash course](./docs/build/conan.md)
-> or the official [Getting Started][3] walkthrough.
+## Conan profile
 
 To build this package, you will need Python (>= 3.7),
 [Conan][] (>= 1.55, < 2), and [CMake][] (>= 3.16).
 
 [Conan]: https://conan.io/downloads.html
 [CMake]: https://cmake.org/download/
+
+After you have a [C++ development environment](./docs/build/environment.md) ready with Git, Python, Conan, CMake, and a C++ compiler, you may need to set up your Conan profile.
+
+These instructions assume a basic familiarity with Conan and CMake.
+
+If you are unfamiliar with Conan, then please read [this crash course](./docs/build/conan.md) or the official [Getting Started][3] walkthrough.
 
 You'll need at least one Conan profile:
 
@@ -80,7 +95,7 @@ You'll need to compile in the C++20 dialect:
 conan profile update settings.compiler.cppstd=20 default
 ```
 
-Linux developers will commonly have a default Conan [profile][] that compiles
+**Linux** developers will commonly have a default Conan [profile][] that compiles
 with GCC and links with libstdc++.
 If you are linking with libstdc++ (see profile setting `compiler.libcxx`),
 then you will need to choose the `libstdc++11` ABI:
@@ -89,7 +104,7 @@ then you will need to choose the `libstdc++11` ABI:
 conan profile update settings.compiler.libcxx=libstdc++11 default
 ```
 
-We find it necessary to use the x64 native build tools on Windows.
+**Windows** developers may need to use the x64 native build tools.
 An easy way to do that is to run the shortcut "x64 Native Tools Command
 Prompt" for the version of Visual Studio that you have installed.
 
@@ -100,15 +115,17 @@ architecture:
 conan profile update settings.arch=x86_64 default
 ```
 
-If you have multiple compilers installed on your platform,
+**If you have multiple compilers** installed on your platform,
 then you'll need to make sure that Conan and CMake select the one you want to
 use.
-This setting will set the correct variables (`CMAKE_<LANG>_COMPILER`) in the
-generated CMake toolchain file:
+Update the `conf.tools.build:compiler_executables` setting in order to set the correct variables (`CMAKE_<LANG>_COMPILER`) in the
+generated CMake toolchain file.
+For example, on Ubuntu 20, you may have gcc at `/usr/bin/gcc` and g++ at `/usr/bin/g++`; if that is the case, you can select those compilers with:
+```
+conan profile update 'conf.tools.build:compiler_executables={"c": "/usr/bin/gcc", "cpp": "/usr/bin/g++"}' default
+```
 
-```
-conan profile update 'conf.tools.build:compiler_executables={"c": "<path>", "cpp": "<path>"}' default
-```
+Replace `/usr/bin/gcc` and `/usr/bin/g++` with paths to the desired compilers.
 
 It should choose the compiler for dependencies as well,
 but not all of them have a Conan recipe that respects this setting (yet).
@@ -118,6 +135,8 @@ For the rest, you can set these environment variables:
 conan profile update env.CC=<path> default
 conan profile update env.CXX=<path> default
 ```
+
+Replace `<path>` with paths to the desired compilers.
 
 Export our [Conan recipe for Snappy](./external/snappy).
 It does not explicitly link the C++ standard library,
