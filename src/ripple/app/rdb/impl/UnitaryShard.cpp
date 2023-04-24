@@ -103,22 +103,24 @@ updateLedgerDBs(
 
             for (auto const& item : ledger->txs)
             {
-                if (stop)
+                if (stop.load(std::memory_order_relaxed))
                     return false;
 
-                auto const txID{item.first->getTransactionID()};
-                auto const sTxID{to_string(txID)};
-                auto const txMeta{std::make_shared<TxMeta>(
-                    txID, ledger->seq(), *item.second)};
+                TxMeta const txMeta{
+                    item.first->getTransactionID(),
+                    ledger->seq(),
+                    *item.second};
+
+                auto const sTxID = to_string(txMeta.getTxID());
 
                 session << "DELETE FROM AccountTransactions "
                            "WHERE TransID = :txID;",
                     soci::use(sTxID);
 
-                auto const& accounts = txMeta->getAffectedAccounts();
+                auto const& accounts = txMeta.getAffectedAccounts();
                 if (!accounts.empty())
                 {
-                    auto const sTxnSeq{std::to_string(txMeta->getIndex())};
+                    auto const sTxnSeq{std::to_string(txMeta.getIndex())};
                     auto const s{boost::str(
                         boost::format("('%s','%s',%s,%s)") % sTxID % "%s" %
                         sSeq % sTxnSeq)};

@@ -104,6 +104,7 @@ CONSTRUCT_TYPED_SFIELD(sfHookExecutionIndex,    "HookExecutionIndex",   UINT16, 
 CONSTRUCT_TYPED_SFIELD(sfHookApiVersion,        "HookApiVersion",       UINT16,    20);
 
 // 32-bit integers (common)
+CONSTRUCT_TYPED_SFIELD(sfNetworkID,             "NetworkID",            UINT32,     1);
 CONSTRUCT_TYPED_SFIELD(sfFlags,                 "Flags",                UINT32,     2);
 CONSTRUCT_TYPED_SFIELD(sfSourceTag,             "SourceTag",            UINT32,     3);
 CONSTRUCT_TYPED_SFIELD(sfSequence,              "Sequence",             UINT32,     4);
@@ -150,6 +151,9 @@ CONSTRUCT_TYPED_SFIELD(sfMintedNFTokens,        "MintedNFTokens",       UINT32, 
 CONSTRUCT_TYPED_SFIELD(sfBurnedNFTokens,        "BurnedNFTokens",       UINT32,    44);
 CONSTRUCT_TYPED_SFIELD(sfHookStateCount,        "HookStateCount",       UINT32,    45);
 CONSTRUCT_TYPED_SFIELD(sfEmitGeneration,        "EmitGeneration",       UINT32,    46);
+// Three field values of 47, 48 and 49 are reserved for 
+// LockCount(Hooks), VoteWeight(AMM), DiscountedFee(AMM)
+CONSTRUCT_TYPED_SFIELD(sfFirstNFTokenSequence,  "FirstNFTokenSequence", UINT32,    50);
 
 // 64-bit integers (common)
 CONSTRUCT_TYPED_SFIELD(sfIndexNext,             "IndexNext",            UINT64,     1);

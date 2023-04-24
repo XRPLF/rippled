@@ -144,7 +144,7 @@ createFeatureVotes(soci::session& session);
 
 // For historical reasons the up-vote and down-vote integer representations
 // are unintuitive.
-enum class AmendmentVote : int { up = 0, down = 1 };
+enum class AmendmentVote : int { obsolete = -1, up = 0, down = 1 };
 
 /**
  * @brief readAmendments Reads all amendments from the FeatureVotes table.

@@ -66,6 +66,12 @@ ReadView::txs_type::end() const -> iterator
 }
 
 Rules
+makeRulesGivenLedger(DigestAwareReadView const& ledger, Rules const& current)
+{
+    return makeRulesGivenLedger(ledger, current.presets());
+}
+
+Rules
 makeRulesGivenLedger(
     DigestAwareReadView const& ledger,
     std::unordered_set<uint256, beast::uhash<>> const& presets)

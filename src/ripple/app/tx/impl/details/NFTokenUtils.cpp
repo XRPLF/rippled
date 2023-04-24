@@ -146,19 +146,22 @@ getPageForToken(
                 return nullptr;
             else
             {
-                // This would be an ideal place for the spaceship operator...
-                int const relation = compare(id & nft::pageMask, cmp);
+                auto const relation{(id & nft::pageMask) <=> cmp};
                 if (relation == 0)
+                {
                     // If the passed in id belongs exactly on this (full) page
                     // this account simply cannot store the NFT.
                     return nullptr;
+                }
 
-                else if (relation > 0)
+                if (relation > 0)
+                {
                     // We need to leave the entire contents of this page in
                     // narr so carr stays empty.  The new NFT will be
                     // inserted in carr.  This keeps the NFTs that must be
                     // together all on their own page.
                     splitIter = narr.end();
+                }
 
                 // If neither of those conditions apply then put all of
                 // narr into carr and produce an empty narr where the new NFT
@@ -228,7 +231,7 @@ compareTokens(uint256 const& a, uint256 const& b)
     // 96-bits are identical we still need a fully deterministic sort.
     // So we sort on the low 96-bits first. If those are equal we sort on
     // the whole thing.
-    if (auto const lowBitsCmp = compare(a & nft::pageMask, b & nft::pageMask);
+    if (auto const lowBitsCmp{(a & nft::pageMask) <=> (b & nft::pageMask)};
         lowBitsCmp != 0)
         return lowBitsCmp < 0;
 

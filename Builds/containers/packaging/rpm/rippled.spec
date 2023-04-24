@@ -36,16 +36,64 @@ History server for XRP Ledger
 %setup -c -n rippled
 
 %build
+rm -rf ~/.conan/profiles/default
+
+cp /opt/libcstd/libstdc++.so.6.0.22 /usr/lib64
+cp /opt/libcstd/libstdc++.so.6.0.22 /lib64
+ln -sf /usr/lib64/libstdc++.so.6.0.22 /usr/lib64/libstdc++.so.6
+ln -sf /lib64/libstdc++.so.6.0.22 /usr/lib64/libstdc++.so.6
+
+source /opt/rh/rh-python38/enable
+pip install "conan<2"
+conan profile new default --detect
+conan profile update settings.compiler.libcxx=libstdc++11 default
+conan profile update settings.compiler.cppstd=20 default
+
 cd rippled
+
 mkdir -p bld.rippled
+conan export external/snappy snappy/1.1.9@
+
 pushd bld.rippled
-cmake .. -G Ninja -DCMAKE_INSTALL_PREFIX=%{_prefix} -DCMAKE_BUILD_TYPE=Release -Dunity=OFF -Dstatic=true -DCMAKE_VERBOSE_MAKEFILE=OFF -Dvalidator_keys=ON
+conan install .. \
+     --settings build_type=Release \
+     --output-folder . \
+     --build missing
+
+cmake -G Ninja \
+     -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
+     -DCMAKE_INSTALL_PREFIX=%{_prefix} \
+     -DCMAKE_BUILD_TYPE=Release \
+     -Dunity=OFF \
+     -Dstatic=ON \
+     -Dvalidator_keys=ON \
+     -DCMAKE_VERBOSE_MAKEFILE=ON \
+     ..
+
 cmake --build . --parallel $(nproc) --target rippled --target validator-keys
 popd
 
 mkdir -p bld.rippled-reporting
-cd bld.rippled-reporting
-cmake .. -G Ninja -DCMAKE_INSTALL_PREFIX=%{_prefix}-reporting -DCMAKE_BUILD_TYPE=Release -Dunity=OFF -Dstatic=true -DCMAKE_VERBOSE_MAKEFILE=OFF -Dreporting=ON
+pushd bld.rippled-reporting
+
+conan install .. \
+     --settings build_type=Release \
+     --output-folder . \
+     --build missing \
+     --settings compiler.cppstd=17 \
+     --options reporting=True
+
+cmake -G Ninja \
+     -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
+     -DCMAKE_INSTALL_PREFIX=%{_prefix} \
+     -DCMAKE_BUILD_TYPE=Release \
+     -Dunity=OFF \
+     -Dstatic=ON \
+     -Dvalidator_keys=ON \
+     -Dreporting=ON \
+     -DCMAKE_VERBOSE_MAKEFILE=ON \
+     ..
+
 cmake --build . --parallel $(nproc) --target rippled
 
 %pre
@@ -53,13 +101,18 @@ test -e /etc/pki/tls || { mkdir -p /etc/pki; ln -s /usr/lib/ssl /etc/pki/tls; }
 
 %install
 rm -rf $RPM_BUILD_ROOT
-DESTDIR=$RPM_BUILD_ROOT cmake --build rippled/bld.rippled --target install -- -v
-rm -rf ${RPM_BUILD_ROOT}/%{_prefix}/lib64/cmake/date
+DESTDIR=$RPM_BUILD_ROOT cmake --build rippled/bld.rippled --target install #-- -v
+mkdir -p $RPM_BUILD_ROOT
+rm -rf ${RPM_BUILD_ROOT}/%{_prefix}/lib64/
 install -d ${RPM_BUILD_ROOT}/etc/opt/ripple
 install -d ${RPM_BUILD_ROOT}/usr/local/bin
-ln -s %{_prefix}/etc/rippled.cfg ${RPM_BUILD_ROOT}/etc/opt/ripple/rippled.cfg
-ln -s %{_prefix}/etc/validators.txt ${RPM_BUILD_ROOT}/etc/opt/ripple/validators.txt
-ln -s %{_prefix}/bin/rippled ${RPM_BUILD_ROOT}/usr/local/bin/rippled
+
+install -D ./rippled/cfg/rippled-example.cfg ${RPM_BUILD_ROOT}/%{_prefix}/etc/rippled.cfg
+install -D ./rippled/cfg/validators-example.txt ${RPM_BUILD_ROOT}/%{_prefix}/etc/validators.txt
+
+ln -sf %{_prefix}/etc/rippled.cfg ${RPM_BUILD_ROOT}/etc/opt/ripple/rippled.cfg
+ln -sf %{_prefix}/etc/validators.txt ${RPM_BUILD_ROOT}/etc/opt/ripple/validators.txt
+ln -sf %{_prefix}/bin/rippled ${RPM_BUILD_ROOT}/usr/local/bin/rippled
 install -D rippled/bld.rippled/validator-keys/validator-keys ${RPM_BUILD_ROOT}%{_bindir}/validator-keys
 install -D ./rippled/Builds/containers/shared/rippled.service ${RPM_BUILD_ROOT}/usr/lib/systemd/system/rippled.service
 install -D ./rippled/Builds/containers/packaging/rpm/50-rippled.preset ${RPM_BUILD_ROOT}/usr/lib/systemd/system-preset/50-rippled.preset
@@ -141,6 +194,7 @@ chmod -x /usr/lib/systemd/system/rippled-reporting.service
 %config(noreplace) /etc/logrotate.d/rippled
 %config(noreplace) /usr/lib/systemd/system/rippled.service
 %config(noreplace) /usr/lib/systemd/system-preset/50-rippled.preset
+
 %dir /var/log/rippled/
 %dir /var/lib/rippled/
 

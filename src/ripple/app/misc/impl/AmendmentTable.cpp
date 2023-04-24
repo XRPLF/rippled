@@ -333,19 +333,31 @@ AmendmentTableImpl::AmendmentTableImpl(
     }();
 
     // Parse supported amendments
-    for (auto const& [name, amendment, defaultVote] : supported)
+    for (auto const& [name, amendment, votebehavior] : supported)
     {
         AmendmentState& s = add(amendment, lock);
 
         s.name = name;
         s.supported = true;
-        s.vote = defaultVote == DefaultVote::yes ? AmendmentVote::up
-                                                 : AmendmentVote::down;
+        switch (votebehavior)
+        {
+            case VoteBehavior::DefaultYes:
+                s.vote = AmendmentVote::up;
+                break;
+
+            case VoteBehavior::DefaultNo:
+                s.vote = AmendmentVote::down;
+                break;
+
+            case VoteBehavior::Obsolete:
+                s.vote = AmendmentVote::obsolete;
+                break;
+        }
 
         JLOG(j_.debug()) << "Amendment " << amendment << " (" << s.name
                          << ") is supported and will be "
                          << (s.vote == AmendmentVote::up ? "up" : "down")
-                         << " voted if not enabled on the ledger.";
+                         << " voted by default if not enabled on the ledger.";
     }
 
     hash_set<uint256> detect_conflict;
@@ -420,7 +432,9 @@ AmendmentTableImpl::AmendmentTableImpl(
                                     << amend_hash << "} is downvoted.";
                     if (!amendment_name->empty())
                         s->name = *amendment_name;
-                    s->vote = *vote;
+                    // An obsolete amendment's vote can never be changed
+                    if (s->vote != AmendmentVote::obsolete)
+                        s->vote = *vote;
                 }
             }
             else  // up-vote
@@ -431,7 +445,9 @@ AmendmentTableImpl::AmendmentTableImpl(
                                  << amend_hash << "} is upvoted.";
                 if (!amendment_name->empty())
                     s.name = *amendment_name;
-                s.vote = *vote;
+                // An obsolete amendment's vote can never be changed
+                if (s.vote != AmendmentVote::obsolete)
+                    s.vote = *vote;
             }
         });
 }
@@ -489,6 +505,7 @@ AmendmentTableImpl::persistVote(
     std::string const& name,
     AmendmentVote vote) const
 {
+    assert(vote != AmendmentVote::obsolete);
     auto db = db_.checkoutDb();
     voteAmendment(*db, amendment, name, vote);
 }
@@ -499,7 +516,7 @@ AmendmentTableImpl::veto(uint256 const& amendment)
     std::lock_guard lock(mutex_);
     AmendmentState& s = add(amendment, lock);
 
-    if (s.vote == AmendmentVote::down)
+    if (s.vote != AmendmentVote::up)
         return false;
     s.vote = AmendmentVote::down;
     persistVote(amendment, s.name, s.vote);
@@ -512,7 +529,7 @@ AmendmentTableImpl::unVeto(uint256 const& amendment)
     std::lock_guard lock(mutex_);
     AmendmentState* const s = get(amendment, lock);
 
-    if (!s || s->vote == AmendmentVote::up)
+    if (!s || s->vote != AmendmentVote::down)
         return false;
     s->vote = AmendmentVote::up;
     persistVote(amendment, s->name, s->vote);
@@ -734,7 +751,13 @@ AmendmentTableImpl::injectJson(
         v[jss::name] = fs.name;
 
     v[jss::supported] = fs.supported;
-    v[jss::vetoed] = fs.vote == AmendmentVote::down;
+    if (!fs.enabled)
+    {
+        if (fs.vote == AmendmentVote::obsolete)
+            v[jss::vetoed] = "Obsolete";
+        else
+            v[jss::vetoed] = fs.vote == AmendmentVote::down;
+    }
     v[jss::enabled] = fs.enabled;
 
     if (!fs.enabled && lastVote_)

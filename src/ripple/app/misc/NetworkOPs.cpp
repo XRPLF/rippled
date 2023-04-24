@@ -1162,9 +1162,10 @@ NetworkOPsImp::submitTransaction(std::shared_ptr<STTx const> const& iTrans)
             return;
         }
     }
-    catch (std::exception const&)
+    catch (std::exception const& ex)
     {
-        JLOG(m_journal.warn()) << "Exception checking transaction" << txid;
+        JLOG(m_journal.warn())
+            << "Exception checking transaction " << txid << ": " << ex.what();
 
         return;
     }
