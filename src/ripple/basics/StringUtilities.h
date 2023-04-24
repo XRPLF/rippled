@@ -108,7 +108,7 @@ strUnHex(std::string const& strSrc)
 }
 
 inline std::optional<Blob>
-strViewUnHex(boost::string_view const& strSrc)
+strViewUnHex(std::string_view strSrc)
 {
     return strUnHex(strSrc.size(), strSrc.cbegin(), strSrc.cend());
 }

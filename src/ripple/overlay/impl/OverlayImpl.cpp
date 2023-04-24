@@ -997,9 +997,10 @@ OverlayImpl::processValidatorList(
         return true;
     };
 
-    auto key = req.target().substr(prefix.size());
+    // Explicitly construct a std::string_view until http_request_type is migrated from boost
+    std::string_view key{req.target().substr(prefix.size()).data(), req.target().substr(prefix.size()).length()};
 
-    if (auto slash = key.find('/'); slash != boost::string_view::npos)
+    if (auto slash = key.find('/'); slash != std::string_view::npos)
     {
         auto verString = key.substr(0, slash);
         if (!boost::conversion::try_lexical_convert(verString, version))

@@ -559,8 +559,8 @@ ServerHandlerImp::processSession(
         [&] {
             auto const iter = session->request().find("X-User");
             if (iter != session->request().end())
-                return iter->value();
-            return boost::beast::string_view{};
+                return std::string_view{iter->value().data(), iter->value().length()};
+            return std::string_view{};
         }());
 
     if (beast::rfc2616::is_keep_alive(session->request()))
@@ -592,8 +592,8 @@ ServerHandlerImp::processRequest(
     beast::IP::Endpoint const& remoteIPAddress,
     Output&& output,
     std::shared_ptr<JobQueue::Coro> coro,
-    boost::string_view forwardedFor,
-    boost::string_view user)
+    std::string_view forwardedFor,
+    std::string_view user)
 {
     auto rpcJ = app_.journal("RPC");
 
@@ -847,8 +847,13 @@ ServerHandlerImp::processRequest(
          */
         if (role != Role::IDENTIFIED && role != Role::PROXY)
         {
-            forwardedFor.clear();
-            user.clear();
+            // Simulate the clearing of string_view through a swap. Is this a good candidate for std::string_view?
+            // This is due to a discrepency between boost::string_view versus std::string_view's APIs
+//            forwardedFor.clear();
+            std::string_view empty_str;
+            forwardedFor.swap(empty_str);
+//            user.clear();
+            user.swap(empty_str);
         }
 
         JLOG(m_journal.debug()) << "Query: " << strMethod << params;

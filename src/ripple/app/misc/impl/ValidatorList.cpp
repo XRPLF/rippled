@@ -1676,7 +1676,7 @@ ValidatorList::for_each_available(
 
 std::optional<Json::Value>
 ValidatorList::getAvailable(
-    boost::beast::string_view const& pubKey,
+    std::string_view pubKey,
     std::optional<std::uint32_t> forceVersion /* = {} */)
 {
     std::shared_lock read_lock{mutex_};

@@ -39,13 +39,14 @@ doPing(RPC::JsonContext& context)
             break;
         case Role::IDENTIFIED:
             ret[jss::role] = "identified";
-            ret[jss::username] = context.headers.user.to_string();
+            // Can I avoid making expensive copies for std::string?
+            ret[jss::username] = std::string{context.headers.user};
             if (context.headers.forwardedFor.size())
-                ret[jss::ip] = context.headers.forwardedFor.to_string();
+                ret[jss::ip] = std::string{context.headers.forwardedFor};
             break;
         case Role::PROXY:
             ret[jss::role] = "proxied";
-            ret[jss::ip] = context.headers.forwardedFor.to_string();
+            ret[jss::ip] = std::string{context.headers.forwardedFor};
         default:;
     }
 
