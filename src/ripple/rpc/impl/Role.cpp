@@ -286,9 +286,8 @@ forwardedFor(http_request_type const& request)
 
         // We found a "for=".  Scan for the end of the IP address.
         std::size_t const pos = [&found, &it]() {
-            std::size_t pos =
-                std::string_view(found, it->value().end() - found)
-                    .find_first_of(",;");
+            std::size_t pos = std::string_view(found, it->value().end() - found)
+                                  .find_first_of(",;");
             if (pos != std::string_view::npos)
                 return pos;
 
@@ -305,8 +304,10 @@ forwardedFor(http_request_type const& request)
         std::size_t found = it->value().find(',');
         if (found == boost::string_view::npos)
             found = it->value().length();
-        // http_request_type has a dependency on boost. Explicitly convert such boost::string_view into std::string_view
-        return extractIpAddrFromField(std::string_view{it->value().substr(0, found).data(), found});
+        // http_request_type has a dependency on boost. Explicitly convert such
+        // boost::string_view into std::string_view
+        return extractIpAddrFromField(
+            std::string_view{it->value().substr(0, found).data(), found});
     }
 
     return {};

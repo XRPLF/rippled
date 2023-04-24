@@ -559,7 +559,8 @@ ServerHandlerImp::processSession(
         [&] {
             auto const iter = session->request().find("X-User");
             if (iter != session->request().end())
-                return std::string_view{iter->value().data(), iter->value().length()};
+                return std::string_view{
+                    iter->value().data(), iter->value().length()};
             return std::string_view{};
         }());
 
@@ -847,12 +848,13 @@ ServerHandlerImp::processRequest(
          */
         if (role != Role::IDENTIFIED && role != Role::PROXY)
         {
-            // Simulate the clearing of string_view through a swap. Is this a good candidate for std::string_view?
-            // This is due to a discrepency between boost::string_view versus std::string_view's APIs
-//            forwardedFor.clear();
+            // Simulate the clearing of string_view through a swap. Is this a
+            // good candidate for std::string_view? This is due to a discrepency
+            // between boost::string_view versus std::string_view's APIs
+            //            forwardedFor.clear();
             std::string_view empty_str;
             forwardedFor.swap(empty_str);
-//            user.clear();
+            //            user.clear();
             user.swap(empty_str);
         }
 

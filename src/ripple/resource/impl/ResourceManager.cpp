@@ -83,8 +83,7 @@ public:
             return newInboundEndpoint(address);
 
         boost::system::error_code ec;
-        auto const proxiedIp =
-            boost::asio::ip::make_address(forwardedFor, ec);
+        auto const proxiedIp = boost::asio::ip::make_address(forwardedFor, ec);
         if (ec)
         {
             journal_.warn()
