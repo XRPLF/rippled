@@ -546,7 +546,7 @@ URIToken::doApply()
                         purchaseAmount, xferRate, purchaseAmount.issue(), true);
                 }
 
-                initSellerBal = !sleDstLine 
+                initSellerBal = !sleDstLine
                     ? purchaseAmount.zeroed()
                     : sellerLow ? ((*sleDstLine)[sfBalance])
                                 : -((*sleDstLine)[sfBalance]);
