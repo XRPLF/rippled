@@ -848,14 +848,8 @@ ServerHandlerImp::processRequest(
          */
         if (role != Role::IDENTIFIED && role != Role::PROXY)
         {
-            // Simulate the clearing of string_view through a swap. Is this a
-            // good candidate for std::string_view? This is due to a discrepency
-            // between boost::string_view versus std::string_view's APIs
-            //            forwardedFor.clear();
-            std::string_view empty_str;
-            forwardedFor.swap(empty_str);
-            //            user.clear();
-            user.swap(empty_str);
+            forwardedFor.remove_suffix(forwardedFor.size());
+            user.remove_suffix(user.size());
         }
 
         JLOG(m_journal.debug()) << "Query: " << strMethod << params;
