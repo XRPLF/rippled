@@ -38,7 +38,7 @@ below:
 
 See [System Requirements](https://xrpl.org/system-requirements.html).
 
-rippled generally requires git, Python, Conan, CMake, and a C++ compiler. Some guidance on setting up such a [C++ development environment can be found here](./docs/build/environment.md).
+Building rippled generally requires git, Python, Conan, CMake, and a C++ compiler. Some guidance on setting up such a [C++ development environment can be found here](./docs/build/environment.md).
 
 ### Linux
 
