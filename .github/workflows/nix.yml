@@ -28,6 +28,8 @@ jobs:
               cxx: /usr/bin/clang++-14
     runs-on: [self-hosted, heavy]
     container: thejohnfreeman/rippled-build-ubuntu:12e19cd9034b
+    env:
+      build_dir: .build
     steps:
       - name: check environment
         run: |
