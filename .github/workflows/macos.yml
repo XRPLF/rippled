@@ -7,16 +7,17 @@ jobs:
     strategy:
       matrix:
         platform:
-          - macos-12
+          - macos
         generator:
           - Ninja
         configuration:
           - Release
-    runs-on: ${{ matrix.platform }}
+          - Debug
+    runs-on: [self-hosted, macOS]
     env:
       # The `build` action requires these variables.
       build_dir: .build
-      NUM_PROCESSORS: 2
+      NUM_PROCESSORS: 12
     steps:
       - name: checkout
         uses: actions/checkout@v3
