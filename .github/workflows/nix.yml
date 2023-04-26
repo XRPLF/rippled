@@ -28,6 +28,8 @@ jobs:
               cxx: /usr/bin/clang++-14
     runs-on: [self-hosted, heavy]
     container: thejohnfreeman/rippled-build-ubuntu:12e19cd9034b
+    env:
+      build_dir: .build
     steps:
       - name: check environment
         run: |
@@ -47,15 +49,10 @@ jobs:
           conan profile update conf.tools.build:compiler_executables='{"c": "${{ matrix.profile.cc }}", "cpp": "${{ matrix.profile.cxx }}"}' default
       - name: checkout
         uses: actions/checkout@v3
-      - name: build dependencies
-        run: |
-          mkdir .build
-          cd .build
-          conan install \
-            --output-folder . \
-            --build missing \
-            --settings build_type=${{ matrix.configuration }} \
-            ..
+      - name: dependencies
+        uses: ./.github/actions/dependencies
+        with:
+          configuration: ${{ matrix.configuration }}
       - name: archive cache
         run: tar -czf conan.tar -C ~/.conan .
       - name: upload cache

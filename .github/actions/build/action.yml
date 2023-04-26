@@ -10,19 +10,10 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: export custom recipes
-      shell: bash
-      run: conan export external/snappy snappy/1.1.9@
-    - name: install dependencies
-      shell: bash
-      run: |
-        mkdir ${build_dir}
-        cd ${build_dir}
-        conan install \
-          --output-folder . \
-          --build missing \
-          --settings build_type=${{ inputs.configuration }} \
-          ..
+    - name: dependencies
+      uses: ./.github/actions/dependencies
+      with:
+        configuration: ${{ inputs.configuration }}
     - name: configure
       shell: bash
       run: |

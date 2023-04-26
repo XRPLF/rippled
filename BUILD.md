@@ -127,6 +127,13 @@ which allows you to statically link it with GCC, if you want.
 conan export external/snappy snappy/1.1.9@
 ```
 
+Export our [Conan recipe for SOCI](./external/soci).
+It patches their CMake to correctly import its dependencies.
+
+```
+conan export external/soci soci/4.0.3@
+```
+
 ## How to build and test
 
 Let's start with a couple of examples of common workflows.
