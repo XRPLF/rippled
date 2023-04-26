@@ -110,9 +110,13 @@ architecture:
 conan profile update settings.arch=x86_64 default
 ```
 
-**If you have multiple compilers** installed on your platform,
-then you'll need to make sure that Conan and CMake select the one you want to
-use.
+### Multiple compilers
+
+When `/usr/bin/g++` exists on a platform, it is the default cpp compiler. This
+default works for some users.
+
+However, if this compiler cannot build rippled or its dependencies, then you can
+install another compiler and set Conan and CMake to use it.
 Update the `conf.tools.build:compiler_executables` setting in order to set the correct variables (`CMAKE_<LANG>_COMPILER`) in the
 generated CMake toolchain file.
 For example, on Ubuntu 20, you may have gcc at `/usr/bin/gcc` and g++ at `/usr/bin/g++`; if that is the case, you can select those compilers with:
