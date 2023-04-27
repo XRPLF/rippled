@@ -168,26 +168,26 @@ LoadManager::run()
                 LogicError("Deadlock detected");
             }
         }
-    }
 
-    bool change;
+        bool change;
 
-    if (app_.getJobQueue().isOverloaded())
-    {
-        JLOG(journal_.info()) << "Raising local fee (JQ overload): "
-                              << app_.getJobQueue().getJson(0);
-        change = app_.getFeeTrack().raiseLocalFee();
-    }
-    else
-    {
-        change = app_.getFeeTrack().lowerLocalFee();
-    }
+        if (app_.getJobQueue().isOverloaded())
+        {
+            JLOG(journal_.info()) << "Raising local fee (JQ overload): "
+                                  << app_.getJobQueue().getJson(0);
+            change = app_.getFeeTrack().raiseLocalFee();
+        }
+        else
+        {
+            change = app_.getFeeTrack().lowerLocalFee();
+        }
 
-    if (change)
-    {
-        // VFALCO TODO replace this with a Listener / observer and
-        // subscribe in NetworkOPs or Application.
-        app_.getOPs().reportFeeChange();
+        if (change)
+        {
+            // VFALCO TODO replace this with a Listener / observer and
+            // subscribe in NetworkOPs or Application.
+            app_.getOPs().reportFeeChange();
+        }
     }
 }
 
