@@ -39,14 +39,14 @@ jobs:
         id: pip-cache
         run: |
           pip install --upgrade pip
-          echo "::set-output name=dir::$(pip cache dir)"
+          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
       - name: restore Python cache directory
         uses: actions/cache@v2
         with:
             path: ${{ steps.pip-cache.outputs.dir }}
             key: ${{ runner.os }}-${{ hashFiles('.github/workflows/windows.yml') }}
       - name: install Conan
-        run: pip install wheel 'conan~=1.52'
+        run: pip install wheel 'conan<2'
       - name: check environment
         run: |
           $env:PATH -split ';'
@@ -63,14 +63,16 @@ jobs:
       - name: learn Conan cache directory
         id: conan-cache
         run: |
-          echo "::set-output name=dir::$(conan config get storage.path)"
+          echo "dir=$(conan config get storage.path)" >> $GITHUB_OUTPUT
       - name: restore Conan cache directory
         uses: actions/cache@v2
         with:
             path: ${{ steps.conan-cache.outputs.dir }}
             key: ${{ hashFiles('~/.conan/profiles/default', 'conanfile.py', 'external/rocksdb/*', '.github/workflows/windows.yml') }}
-      - name: export Snappy
-        run: conan export external/snappy snappy/1.1.9@
+      - name: export custom recipes
+        run: |
+          conan export external/snappy snappy/1.1.9@
+          conan export external/soci soci/4.0.3@
       - name: install dependencies
         run: |
           mkdir $env:build_dir
