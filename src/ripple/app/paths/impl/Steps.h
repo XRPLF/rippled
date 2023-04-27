@@ -198,7 +198,7 @@ public:
      * implementation.
      */
     virtual std::pair<std::optional<QualityFunction>, DebtDirection>
-    getQualityF(ReadView const& v, DebtDirection prevStepDir) const;
+    getQualityFunc(ReadView const& v, DebtDirection prevStepDir) const;
 
     /** Return the number of offers consumed or partially consumed the last time
         the step ran, including expired and unfunded offers.
@@ -315,7 +315,7 @@ private:
 };
 
 inline std::pair<std::optional<QualityFunction>, DebtDirection>
-Step::getQualityF(ReadView const& v, DebtDirection prevStepDir) const
+Step::getQualityFunc(ReadView const& v, DebtDirection prevStepDir) const
 {
     if (auto const res = qualityUpperBound(v, prevStepDir); res.first)
         return {

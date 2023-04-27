@@ -138,11 +138,11 @@ doAMMInfo(RPC::JsonContext& context)
             vote[jss::account] = to_string(voteEntry.getAccountID(sfAccount));
             vote[jss::trading_fee] = voteEntry[sfTradingFee];
             vote[jss::vote_weight] = voteEntry[sfVoteWeight];
-            voteSlots.append(vote);
+            voteSlots.append(std::move(vote));
         }
     }
     if (voteSlots.size() > 0)
-        ammResult[jss::vote_slots] = voteSlots;
+        ammResult[jss::vote_slots] = std::move(voteSlots);
     if (amm->isFieldPresent(sfAuctionSlot))
     {
         auto const& auctionSlot =
@@ -172,7 +172,7 @@ doAMMInfo(RPC::JsonContext& context)
                 }
                 auction[jss::auth_accounts] = auth;
             }
-            ammResult[jss::auction_slot] = auction;
+            ammResult[jss::auction_slot] = std::move(auction);
         }
     }
 
@@ -183,7 +183,7 @@ doAMMInfo(RPC::JsonContext& context)
         ammResult[jss::asset2_frozen] =
             isFrozen(*ledger, ammAccountID, issue2.currency, issue2.account);
 
-    result[jss::amm] = ammResult;
+    result[jss::amm] = std::move(ammResult);
     if (!result.isMember(jss::ledger_index) &&
         !result.isMember(jss::ledger_hash))
         result[jss::ledger_current_index] = ledger->info().seq;

@@ -22,6 +22,7 @@
 
 #include <ripple/ledger/ApplyView.h>
 #include <ripple/protocol/Quality.h>
+#include <ripple/protocol/TER.h>
 
 namespace ripple {
 
@@ -64,16 +65,16 @@ public:
         std::optional<TAmounts<TIn, TOut>> const& balances,
         Quality const& quality);
 
-    Quality const
+    Quality
     quality() const noexcept
     {
         return quality_;
     }
 
-    Issue
+    Issue const&
     issueIn() const;
 
-    Issue
+    Issue const&
     issueOut() const;
 
     AccountID const&
@@ -112,7 +113,7 @@ public:
     limitIn(TAmounts<TIn, TOut> const& offrAmt, TIn const& limit) const;
 
     QualityFunction
-    getQualityF() const;
+    getQualityFunc() const;
 
     /** Send funds without incurring the transfer fee
      */

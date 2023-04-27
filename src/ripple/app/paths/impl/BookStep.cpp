@@ -149,7 +149,7 @@ public:
         const override;
 
     std::pair<std::optional<QualityFunction>, DebtDirection>
-    getQualityF(ReadView const& v, DebtDirection prevStepDir) const override;
+    getQualityFunc(ReadView const& v, DebtDirection prevStepDir) const override;
 
     std::uint32_t
     offersUsed() const override;
@@ -538,7 +538,7 @@ BookStep<TIn, TOut, TDerived>::qualityUpperBound(
 
 template <class TIn, class TOut, class TDerived>
 std::pair<std::optional<QualityFunction>, DebtDirection>
-BookStep<TIn, TOut, TDerived>::getQualityF(
+BookStep<TIn, TOut, TDerived>::getQualityFunc(
     ReadView const& v,
     DebtDirection prevStepDir) const
 {
@@ -651,7 +651,7 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
     std::optional<Quality> ofrQ;
     auto execOffer = [&](auto& offer) {
         // Note that offer.quality() returns a (non-optional) Quality.  So
-        // ofrQ is always safe to use below this point in the loop.
+        // ofrQ is always safe to use below this point in the lambda.
         if (!ofrQ)
             ofrQ = offer.quality();
         else if (*ofrQ != offer.quality())
@@ -687,7 +687,7 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
                     if (!offerAttempted)
                         // Change quality only if no previous offers were tried.
                         ofrQ = std::nullopt;
-                    // This continue causes offers.step() to delete the offer.
+                    // Returning true causes offers.step() to delete the offer.
                     return true;
                 }
             }
@@ -735,10 +735,8 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
 
     // At any payment engine iteration, AMM offer can only be consumed once.
     auto tryAMM = [&](std::optional<Quality> const& quality) -> bool {
-        if (auto ammOffer = getAMMOffer(sb, quality);
-            ammOffer && !execOffer(*ammOffer))
-            return false;
-        return true;
+        auto ammOffer = getAMMOffer(sb, quality);
+        return !ammOffer || execOffer(*ammOffer);
     };
 
     if (offers.step())
@@ -806,9 +804,9 @@ BookStep<TIn, TOut, TDerived>::getAMMOffer(
     ReadView const& view,
     std::optional<Quality> const& clobQuality) const
 {
-    return ammLiquidity_ ? std::optional<AMMOffer<TIn, TOut>>(
-                               ammLiquidity_->getOffer(view, clobQuality))
-                         : std::nullopt;
+    if (ammLiquidity_)
+        return ammLiquidity_->getOffer(view, clobQuality);
+    return std::nullopt;
 }
 
 template <class TIn, class TOut, class TDerived>
@@ -853,7 +851,7 @@ BookStep<TIn, TOut, TDerived>::tipOfferQualityF(ReadView const& view) const
     else if (auto const q = std::get_if<Quality>(&(*res)))
         return QualityFunction{*q, QualityFunction::CLOBLikeTag{}};
     else
-        return std::get<AMMOffer<TIn, TOut>>(*res).getQualityF();
+        return std::get<AMMOffer<TIn, TOut>>(*res).getQualityFunc();
 }
 
 template <class TIn, class TOut, class TDerived>

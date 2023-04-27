@@ -16,8 +16,9 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================/
-#include <ripple/app/paths/AMMLiquidity.h>
 #include <ripple/app/paths/AMMOffer.h>
+
+#include <ripple/app/paths/AMMLiquidity.h>
 #include <ripple/protocol/QualityFunction.h>
 
 namespace ripple {
@@ -37,14 +38,14 @@ AMMOffer<TIn, TOut>::AMMOffer(
 }
 
 template <typename TIn, typename TOut>
-Issue
+Issue const&
 AMMOffer<TIn, TOut>::issueIn() const
 {
     return ammLiquidity_.issueIn();
 }
 
 template <typename TIn, typename TOut>
-Issue
+Issue const&
 AMMOffer<TIn, TOut>::issueOut() const
 {
     return ammLiquidity_.issueOut();
@@ -116,7 +117,7 @@ AMMOffer<TIn, TOut>::limitIn(
 
 template <typename TIn, typename TOut>
 QualityFunction
-AMMOffer<TIn, TOut>::getQualityF() const
+AMMOffer<TIn, TOut>::getQualityFunc() const
 {
     if (ammLiquidity_.multiPath())
         return QualityFunction{quality(), QualityFunction::CLOBLikeTag{}};

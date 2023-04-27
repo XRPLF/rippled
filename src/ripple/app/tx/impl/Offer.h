@@ -71,7 +71,7 @@ public:
         offer is partially filled; Subsequent partial fills will use the
         original quality.
     */
-    Quality const
+    Quality
     quality() const noexcept
     {
         return m_quality;
@@ -131,9 +131,9 @@ public:
         return m_entry->key();
     }
 
-    Issue
+    Issue const&
     issueIn() const;
-    Issue
+    Issue const&
     issueOut() const;
 
     TAmounts<TIn, TOut>
@@ -259,28 +259,28 @@ TOffer<XRPAmount, IOUAmount>::setFieldAmounts()
 }
 
 template <class TIn, class TOut>
-Issue
+Issue const&
 TOffer<TIn, TOut>::issueIn() const
 {
     return this->issIn_;
 }
 
 template <>
-inline Issue
+inline Issue const&
 TOffer<STAmount, STAmount>::issueIn() const
 {
     return m_amounts.in.issue();
 }
 
 template <class TIn, class TOut>
-Issue
+Issue const&
 TOffer<TIn, TOut>::issueOut() const
 {
     return this->issOut_;
 }
 
 template <>
-inline Issue
+inline Issue const&
 TOffer<STAmount, STAmount>::issueOut() const
 {
     return m_amounts.out.issue();

@@ -17,6 +17,7 @@
 */
 //==============================================================================
 #include <ripple/app/paths/AMMLiquidity.h>
+
 #include <ripple/app/paths/AMMOffer.h>
 
 namespace ripple {
@@ -163,18 +164,18 @@ AMMLiquidity<TIn, TOut>::getOffer(
                 return AMMOffer<TIn, TOut>(
                     *this, amounts, std::nullopt, Quality{amounts});
             }
-            else if (
-                auto const amounts = clobQuality
-                    ? changeSpotPriceQuality(
-                          balances, *clobQuality, tradingFee_)
-                    : balances)
+            else if (!clobQuality)
             {
-                // If the offer size is equal to the balances then change the
-                // size to the largest amount, which doesn't overflow. The size
-                // is going to be changed in BookStep per either deliver amount
-                // limit, or sendmax, or available output or input funds.
-                if (balances == amounts)
-                    return maxOffer(balances);
+                // If there is no CLOB to compare against, return the largest
+                // amount, which doesn't overflow. The size is going to be
+                // changed in BookStep per either deliver amount limit, or
+                // sendmax, or available output or input funds.
+                return maxOffer(balances);
+            }
+            else if (
+                auto const amounts =
+                    changeSpotPriceQuality(balances, *clobQuality, tradingFee_))
+            {
                 return AMMOffer<TIn, TOut>(
                     *this, *amounts, balances, Quality{*amounts});
             }

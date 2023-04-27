@@ -374,21 +374,17 @@ xrpLiquid(
     std::uint32_t const ownerCount = confineOwnerCount(
         view.ownerCountHook(id, sle->getFieldU32(sfOwnerCount)), ownerCountAdj);
 
-    auto const reserve = view.fees().accountReserve(ownerCount);
+    // AMMs have no reserve requirement
+    auto const reserve = (sle->getFlags() & lsfAMM)
+        ? XRPAmount{0}
+        : view.fees().accountReserve(ownerCount);
 
     auto const fullBalance = sle->getFieldAmount(sfBalance);
 
     auto const balance = view.balanceHook(id, xrpAccount(), fullBalance);
 
-    STAmount amount = [&]() {
-        // AMM doesn't require the reserves
-        if (sle->getFlags() & lsfAMM)
-            return balance;
-        STAmount amount = balance - reserve;
-        if (balance < reserve)
-            amount.clear();
-        return amount;
-    }();
+    STAmount const amount =
+        (balance < reserve) ? STAmount{0} : balance - reserve;
 
     JLOG(j.trace()) << "accountHolds:"
                     << " account=" << to_string(id)

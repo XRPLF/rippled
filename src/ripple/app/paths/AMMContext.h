@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_PATHS_IMPL_AMMCONTEXT_H_INCLUDED
-#define RIPPLE_APP_PATHS_IMPL_AMMCONTEXT_H_INCLUDED
+#ifndef RIPPLE_APP_PATHS_AMMCONTEXT_H_INCLUDED
+#define RIPPLE_APP_PATHS_AMMCONTEXT_H_INCLUDED
 
 #include <ripple/protocol/AccountID.h>
 
@@ -45,7 +45,7 @@ private:
     AccountID account_;
     // true if payment has multiple paths
     bool multiPath_{false};
-    // Is true if AMM offer is consumed at a payment engine iteration.
+    // Is true if AMM offer is consumed during a payment engine iteration.
     bool ammUsed_{false};
     // Counter of payment engine iterations with consumed AMM
     std::uint16_t ammIters_{0};
@@ -104,7 +104,7 @@ public:
         return account_;
     }
 
-    /** Stand execution may fail. Reset the flag at the start
+    /** Strand execution may fail. Reset the flag at the start
      * of each payment engine iteration.
      */
     void
@@ -116,4 +116,4 @@ public:
 
 }  // namespace ripple
 
-#endif  // RIPPLE_APP_PATHS_IMPL_AMMCONTEXT_H_INCLUDED
+#endif  // RIPPLE_APP_PATHS_AMMCONTEXT_H_INCLUDED

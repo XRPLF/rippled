@@ -367,18 +367,18 @@ limitOut(
     TOutAmt const& remainingOut,
     Quality const& limitQuality)
 {
-    std::optional<QualityFunction> stepQualityF;
+    std::optional<QualityFunction> stepQualityFunc;
     std::optional<QualityFunction> qf;
     DebtDirection dir = DebtDirection::issues;
     for (auto const& step : strand)
     {
-        if (std::tie(stepQualityF, dir) = step->getQualityF(v, dir);
-            stepQualityF)
+        if (std::tie(stepQualityFunc, dir) = step->getQualityFunc(v, dir);
+            stepQualityFunc)
         {
             if (!qf)
-                qf = stepQualityF;
+                qf = stepQualityFunc;
             else
-                qf->combine(*stepQualityF);
+                qf->combine(*stepQualityFunc);
         }
         else
             return remainingOut;

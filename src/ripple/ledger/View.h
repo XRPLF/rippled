@@ -119,11 +119,6 @@ accountHolds(
     FreezeHandling zeroIfFrozen,
     beast::Journal j);
 
-// Returns the amount an account can spend of the currency type saDefault, or
-// returns saDefault if this account is the issuer of the the currency in
-// question. Should be used in favor of accountHolds when questioning how much
-// an account can spend while also allowing currency issuers to spend
-// unlimited amounts of their own currency (since they can always issue more).
 [[nodiscard]] STAmount
 accountHolds(
     ReadView const& view,
@@ -132,6 +127,11 @@ accountHolds(
     FreezeHandling zeroIfFrozen,
     beast::Journal j);
 
+// Returns the amount an account can spend of the currency type saDefault, or
+// returns saDefault if this account is the issuer of the currency in
+// question. Should be used in favor of accountHolds when questioning how much
+// an account can spend while also allowing currency issuers to spend
+// unlimited amounts of their own currency (since they can always issue more).
 [[nodiscard]] STAmount
 accountFunds(
     ReadView const& view,
@@ -141,7 +141,7 @@ accountFunds(
     beast::Journal j);
 
 // Return the account's liquid (not reserved) XRP.  Generally prefer
-// calling accountHolds() over this interface.  However this interface
+// calling accountHolds() over this interface.  However, this interface
 // allows the caller to temporarily adjust the owner count should that be
 // necessary.
 //
