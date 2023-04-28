@@ -134,7 +134,11 @@ public:
                 auto jt = env.jtnofill(jvn);
                 Serializer s;
                 jt.stx->add(s);
-                BEAST_EXPECT(env.rpc("submit", strHex(s.slice()))[jss::result][jss::engine_result] == "telREQUIRES_NETWORK_ID");
+                BEAST_EXPECT(
+                    env.rpc(
+                        "submit",
+                        strHex(s.slice()))[jss::result][jss::engine_result] ==
+                    "telREQUIRES_NETWORK_ID");
                 env.close();
             }
 

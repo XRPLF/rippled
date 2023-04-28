@@ -25,10 +25,10 @@
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/jss.h>
+#include <ripple/rpc/CTID.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/DeliveredAmount.h>
 #include <ripple/rpc/GRPCHandlers.h>
-#include <ripple/rpc/CTID.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 #include <charconv>
 #include <regex>
@@ -271,7 +271,8 @@ doTxHelp(RPC::Context& context, TxArgs args)
         uint32_t netID = context.app.config().NETWORK_ID;
 
         if (txnIdx <= 0xFFFFU && netID < 0xFFFFU && lgrSeq < 0xFFFFFFFUL)
-            result.ctid = RPC::encodeCTID(lgrSeq, (uint16_t)txnIdx, (uint16_t)netID);
+            result.ctid =
+                RPC::encodeCTID(lgrSeq, (uint16_t)txnIdx, (uint16_t)netID);
     }
 
     return {result, rpcSUCCESS};
