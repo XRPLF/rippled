@@ -42,7 +42,7 @@ public:
 
         @param txn The transaction to wrap
     */
-    RCLCxTx(SHAMapItem const& txn) : tx_{txn}
+    RCLCxTx(boost::intrusive_ptr<SHAMapItem const> txn) : tx_(std::move(txn))
     {
     }
 
@@ -50,11 +50,11 @@ public:
     ID const&
     id() const
     {
-        return tx_.key();
+        return tx_->key();
     }
 
     //! The SHAMapItem that represents the transaction.
-    SHAMapItem const tx_;
+    boost::intrusive_ptr<SHAMapItem const> tx_;
 };
 
 /** Represents a set of transactions in RCLConsensus.
@@ -90,8 +90,7 @@ public:
         bool
         insert(Tx const& t)
         {
-            return map_->addItem(
-                SHAMapNodeType::tnTRANSACTION_NM, SHAMapItem{t.tx_});
+            return map_->addItem(SHAMapNodeType::tnTRANSACTION_NM, t.tx_);
         }
 
         /** Remove a transaction from the set.
@@ -145,7 +144,7 @@ public:
               code uses the shared_ptr semantics to know whether the find
               was successful and properly creates a Tx as needed.
     */
-    std::shared_ptr<const SHAMapItem> const&
+    boost::intrusive_ptr<SHAMapItem const> const&
     find(Tx::ID const& entry) const
     {
         return map_->peekItem(entry);

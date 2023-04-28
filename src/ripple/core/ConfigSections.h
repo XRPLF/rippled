@@ -54,8 +54,6 @@ struct ConfigSection
 #define SECTION_DEBUG_LOGFILE "debug_logfile"
 #define SECTION_ELB_SUPPORT "elb_support"
 #define SECTION_FEE_DEFAULT "fee_default"
-#define SECTION_FEE_ACCOUNT_RESERVE "fee_account_reserve"
-#define SECTION_FEE_OWNER_RESERVE "fee_owner_reserve"
 #define SECTION_FETCH_DEPTH "fetch_depth"
 #define SECTION_HISTORICAL_SHARD_PATHS "historical_shard_paths"
 #define SECTION_INSIGHT "insight"

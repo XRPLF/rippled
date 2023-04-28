@@ -541,10 +541,10 @@ SetAccount::doApply()
     // Set or clear flags for disallowing various incoming instruments
     if (ctx_.view().rules().enabled(featureDisallowIncoming))
     {
-        if (uSetFlag == asfDisallowIncomingNFTOffer)
-            uFlagsOut |= lsfDisallowIncomingNFTOffer;
-        else if (uClearFlag == asfDisallowIncomingNFTOffer)
-            uFlagsOut &= ~lsfDisallowIncomingNFTOffer;
+        if (uSetFlag == asfDisallowIncomingNFTokenOffer)
+            uFlagsOut |= lsfDisallowIncomingNFTokenOffer;
+        else if (uClearFlag == asfDisallowIncomingNFTokenOffer)
+            uFlagsOut &= ~lsfDisallowIncomingNFTokenOffer;
 
         if (uSetFlag == asfDisallowIncomingCheck)
             uFlagsOut |= lsfDisallowIncomingCheck;

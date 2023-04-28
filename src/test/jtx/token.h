@@ -95,6 +95,7 @@ getNextID(
 /** Get the NFTokenID for a particular nftSequence. */
 uint256
 getID(
+    jtx::Env const& env,
     jtx::Account const& account,
     std::uint32_t tokenTaxon,
     std::uint32_t nftSeq,

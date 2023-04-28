@@ -93,11 +93,11 @@ VotableValue::getVotes() const -> std::pair<value_type, bool>
 class FeeVoteImpl : public FeeVote
 {
 private:
-    Setup target_;
+    FeeSetup target_;
     beast::Journal const journal_;
 
 public:
-    FeeVoteImpl(Setup const& setup, beast::Journal journal);
+    FeeVoteImpl(FeeSetup const& setup, beast::Journal journal);
 
     void
     doValidation(Fees const& lastFees, Rules const& rules, STValidation& val)
@@ -112,7 +112,7 @@ public:
 
 //--------------------------------------------------------------------------
 
-FeeVoteImpl::FeeVoteImpl(Setup const& setup, beast::Journal journal)
+FeeVoteImpl::FeeVoteImpl(FeeSetup const& setup, beast::Journal journal)
     : target_(setup), journal_(journal)
 {
 }
@@ -326,7 +326,7 @@ FeeVoteImpl::doVoting(
 
         if (!initialPosition->addGiveItem(
                 SHAMapNodeType::tnTRANSACTION_NM,
-                std::make_shared<SHAMapItem>(txID, s.slice())))
+                make_shamapitem(txID, s.slice())))
         {
             JLOG(journal_.warn()) << "Ledger already had fee change";
         }
@@ -335,28 +335,8 @@ FeeVoteImpl::doVoting(
 
 //------------------------------------------------------------------------------
 
-FeeVote::Setup
-setup_FeeVote(Section const& section)
-{
-    FeeVote::Setup setup;
-    {
-        std::uint64_t temp;
-        if (set(temp, "reference_fee", section) &&
-            temp <= std::numeric_limits<XRPAmount::value_type>::max())
-            setup.reference_fee = temp;
-    }
-    {
-        std::uint32_t temp;
-        if (set(temp, "account_reserve", section))
-            setup.account_reserve = temp;
-        if (set(temp, "owner_reserve", section))
-            setup.owner_reserve = temp;
-    }
-    return setup;
-}
-
 std::unique_ptr<FeeVote>
-make_FeeVote(FeeVote::Setup const& setup, beast::Journal journal)
+make_FeeVote(FeeSetup const& setup, beast::Journal journal)
 {
     return std::make_unique<FeeVoteImpl>(setup, journal);
 }

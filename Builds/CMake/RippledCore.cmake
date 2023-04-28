@@ -13,6 +13,10 @@ if (unity)
   set_target_properties(xrpl_core PROPERTIES UNITY_BUILD ON)
 endif ()
 
+add_library(libxrpl INTERFACE)
+target_link_libraries(libxrpl INTERFACE xrpl_core)
+add_library(xrpl::libxrpl ALIAS libxrpl)
+
 
 #[===============================[
     beast/legacy FILES:
@@ -532,7 +536,6 @@ target_sources (rippled PRIVATE
   src/ripple/nodestore/impl/DeterministicShard.cpp
   src/ripple/nodestore/impl/DecodedBlob.cpp
   src/ripple/nodestore/impl/DummyScheduler.cpp
-  src/ripple/nodestore/impl/EncodedBlob.cpp
   src/ripple/nodestore/impl/ManagerImp.cpp
   src/ripple/nodestore/impl/NodeObject.cpp
   src/ripple/nodestore/impl/Shard.cpp

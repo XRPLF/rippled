@@ -922,6 +922,84 @@ r.ripple.com 51235
     }
 
     void
+    testColons()
+    {
+        Config cfg;
+        /* NOTE: this string includes some explicit
+         * space chars in order to verify proper trimming */
+        std::string toLoad(R"(
+[port_rpc])"
+                           "\x20"
+                           R"(
+# comment
+    # indented comment
+)"
+                           "\x20\x20"
+                           R"(
+[ips])"
+                           "\x20"
+                           R"(
+r.ripple.com:51235
+
+  [ips_fixed])"
+                           "\x20\x20"
+                           R"(
+    # COMMENT
+    s1.ripple.com:51235
+    s2.ripple.com 51235
+    anotherserversansport
+    anotherserverwithport:12
+    1.1.1.1:1
+    1.1.1.1 1
+    12.34.12.123:12345
+    12.34.12.123 12345
+    ::
+    2001:db8::
+    ::1
+    ::1:12345
+    [::1]:12345
+    2001:db8:3333:4444:5555:6666:7777:8888:12345
+    [2001:db8:3333:4444:5555:6666:7777:8888]:1
+
+
+)");
+        cfg.loadFromString(toLoad);
+        BEAST_EXPECT(
+            cfg.exists("port_rpc") && cfg.section("port_rpc").lines().empty() &&
+            cfg.section("port_rpc").values().empty());
+        BEAST_EXPECT(
+            cfg.exists(SECTION_IPS) &&
+            cfg.section(SECTION_IPS).lines().size() == 1 &&
+            cfg.section(SECTION_IPS).values().size() == 1);
+        BEAST_EXPECT(
+            cfg.exists(SECTION_IPS_FIXED) &&
+            cfg.section(SECTION_IPS_FIXED).lines().size() == 15 &&
+            cfg.section(SECTION_IPS_FIXED).values().size() == 15);
+        BEAST_EXPECT(cfg.IPS[0] == "r.ripple.com 51235");
+
+        BEAST_EXPECT(cfg.IPS_FIXED[0] == "s1.ripple.com 51235");
+        BEAST_EXPECT(cfg.IPS_FIXED[1] == "s2.ripple.com 51235");
+        BEAST_EXPECT(cfg.IPS_FIXED[2] == "anotherserversansport");
+        BEAST_EXPECT(cfg.IPS_FIXED[3] == "anotherserverwithport 12");
+        BEAST_EXPECT(cfg.IPS_FIXED[4] == "1.1.1.1 1");
+        BEAST_EXPECT(cfg.IPS_FIXED[5] == "1.1.1.1 1");
+        BEAST_EXPECT(cfg.IPS_FIXED[6] == "12.34.12.123 12345");
+        BEAST_EXPECT(cfg.IPS_FIXED[7] == "12.34.12.123 12345");
+
+        // all ipv6 should be ignored by colon replacer, howsoever formated
+        BEAST_EXPECT(cfg.IPS_FIXED[8] == "::");
+        BEAST_EXPECT(cfg.IPS_FIXED[9] == "2001:db8::");
+        BEAST_EXPECT(cfg.IPS_FIXED[10] == "::1");
+        BEAST_EXPECT(cfg.IPS_FIXED[11] == "::1:12345");
+        BEAST_EXPECT(cfg.IPS_FIXED[12] == "[::1]:12345");
+        BEAST_EXPECT(
+            cfg.IPS_FIXED[13] ==
+            "2001:db8:3333:4444:5555:6666:7777:8888:12345");
+        BEAST_EXPECT(
+            cfg.IPS_FIXED[14] == "[2001:db8:3333:4444:5555:6666:7777:8888]:1");
+    }
+
+    void
     testComments()
     {
         struct TestCommentData
@@ -1212,6 +1290,7 @@ r.ripple.com 51235
         testSetup(true);
         testPort();
         testWhitespace();
+        testColons();
         testComments();
         testGetters();
         testAmendment();

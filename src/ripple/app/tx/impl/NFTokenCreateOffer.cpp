@@ -153,15 +153,28 @@ NFTokenCreateOffer::preclaim(PreclaimContext const& ctx)
     // offer may later become unfunded.
     if (!isSellOffer)
     {
-        auto const funds = accountHolds(
-            ctx.view,
-            ctx.tx[sfAccount],
-            amount.getCurrency(),
-            amount.getIssuer(),
-            FreezeHandling::fhZERO_IF_FROZEN,
-            ctx.j);
-
-        if (funds.signum() <= 0)
+        // After this amendment, we allow an IOU issuer to make a buy offer
+        // using their own currency.
+        if (ctx.view.rules().enabled(fixNonFungibleTokensV1_2))
+        {
+            if (accountFunds(
+                    ctx.view,
+                    ctx.tx[sfAccount],
+                    amount,
+                    FreezeHandling::fhZERO_IF_FROZEN,
+                    ctx.j)
+                    .signum() <= 0)
+                return tecUNFUNDED_OFFER;
+        }
+        else if (
+            accountHolds(
+                ctx.view,
+                ctx.tx[sfAccount],
+                amount.getCurrency(),
+                amount.getIssuer(),
+                FreezeHandling::fhZERO_IF_FROZEN,
+                ctx.j)
+                .signum() <= 0)
             return tecUNFUNDED_OFFER;
     }
 
@@ -180,7 +193,7 @@ NFTokenCreateOffer::preclaim(PreclaimContext const& ctx)
             // flag cannot be set unless amendment is enabled but
             // out of an abundance of caution check anyway
 
-            if (sleDst->getFlags() & lsfDisallowIncomingNFTOffer)
+            if (sleDst->getFlags() & lsfDisallowIncomingNFTokenOffer)
                 return tecNO_PERMISSION;
         }
     }
@@ -197,7 +210,7 @@ NFTokenCreateOffer::preclaim(PreclaimContext const& ctx)
             if (!sleOwner)
                 return tecNO_TARGET;
 
-            if (sleOwner->getFlags() & lsfDisallowIncomingNFTOffer)
+            if (sleOwner->getFlags() & lsfDisallowIncomingNFTokenOffer)
                 return tecNO_PERMISSION;
         }
     }

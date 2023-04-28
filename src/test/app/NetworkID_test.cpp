@@ -48,7 +48,9 @@ public:
     void
     testNetworkID()
     {
-        testcase("network_id");
+        testcase(
+            "Require txn NetworkID to be specified (or not) depending on the "
+            "network ID of the node");
         using namespace jtx;
 
         auto const alice = Account{"alice"};
@@ -120,7 +122,6 @@ public:
         {
             test::jtx::Env env{*this, makeNetworkConfig(1025)};
             BEAST_EXPECT(env.app().config().NETWORK_ID == 1025);
-
             {
                 env.fund(XRP(200), alice);
                 // try to submit a txn without network id, this should not work
