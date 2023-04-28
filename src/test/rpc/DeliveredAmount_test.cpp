@@ -17,9 +17,13 @@
 */
 //==============================================================================
 
+#include <ripple/basics/chrono.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/jss.h>
+#include <ripple/resource/Fees.h>
+#include <ripple/rpc/Context.h>
+#include <ripple/rpc/DeliveredAmount.h>
 #include <test/jtx.h>
 #include <test/jtx/WSClient.h>
 
@@ -266,6 +270,7 @@ class DeliveredAmount_test : public beast::unit_test::suite
             BEAST_EXPECT(checkDeliveredAmount.checkExpectedCounters());
         }
     }
+
     void
     testTxDeliveredAmountRPC()
     {
@@ -325,12 +330,181 @@ class DeliveredAmount_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testGetDeliveredAmount()
+    {
+        testcase("getDeliveredAmount");
+
+        using namespace test::jtx;
+        using namespace std::chrono_literals;
+
+        Account const alice("alice");
+        Account const brynn("brynn");
+        Account const carol("carol");
+        Account const gw("gateway");
+        auto const USD = gw["USD"];
+        auto const BTC = gw["BTC"];
+
+        Env env{*this};
+
+        // Build an RPC::Context we can use to call the entry point.
+        Resource::Charge charge = Resource::feeReferenceRPC;
+        Resource::Consumer consumer;
+        RPC::Context const context{
+            env.app().journal("DeliveredAmountTest"),
+            env.app(),
+            charge,
+            env.app().getOPs(),
+            env.app().getLedgerMaster(),
+            consumer,
+            Role::GUEST,
+            nullptr,
+            nullptr,
+            1};
+
+        env.fund(XRP(10000), alice, brynn, carol, gw);
+
+        // Make sure the ledger close time is after the DeliveredAmount code
+        // went live.
+        env.close(NetClock::time_point{446000000s});
+
+        // trust 2e90)
+        env(trust(alice, STAmount(USD.issue(), 2, 90)));
+        env(trust(brynn, STAmount(BTC.issue(), 2, 90)));
+        env.close();
+
+        // initial balance 1e90
+        env(pay(gw, alice, STAmount(USD.issue(), 1, 90)));
+        env(pay(gw, brynn, STAmount(BTC.issue(), 1, 90)));
+        env.close();
+
+        // Make a payment so small relative to the current trust line that
+        // no funds actually move.
+        {
+            env(pay(gw, alice, USD(1)));
+            std::shared_ptr<STTx const> tx = env.tx();
+            std::shared_ptr<STObject const> meta = env.meta();
+            env.close();
+
+            LedgerIndex const ledgerIndex = env.closed()->seq();
+            if (BEAST_EXPECT(tx && meta))
+            {
+                {
+                    // Expect a nullopt because the tx has no DeliverMin and
+                    // no Amount.
+                    auto hackedTx = std::make_shared<STTx>(*tx);
+                    hackedTx->makeFieldAbsent(sfAmount);
+                    TxMeta const txMeta(
+                        hackedTx->getTransactionID(), ledgerIndex, *meta);
+                    BEAST_EXPECT(
+                        getDeliveredAmount(
+                            context, hackedTx, txMeta, ledgerIndex) ==
+                        std::nullopt);
+                }
+                {
+                    // Expect a nullopt because the tx has no Destination.
+                    auto hackedTx = std::make_shared<STTx>(*tx);
+                    hackedTx->makeFieldAbsent(sfDestination);
+                    TxMeta const txMeta(
+                        hackedTx->getTransactionID(), ledgerIndex, *meta);
+                    BEAST_EXPECT(
+                        getDeliveredAmount(
+                            context, hackedTx, txMeta, ledgerIndex) ==
+                        std::nullopt);
+                }
+                {
+                    // Expect a nullopt because the trust line did not
+                    // actually change.
+                    TxMeta const txMeta(
+                        tx->getTransactionID(), ledgerIndex, *meta);
+                    BEAST_EXPECT(
+                        getDeliveredAmount(context, tx, txMeta, ledgerIndex) ==
+                        std::nullopt);
+                }
+            }
+        }
+        // Cash a check so small relative to the current trust line that no
+        // funds actually move.
+        {
+            auto const checkId = keylet::check(gw, env.seq(gw)).key;
+            env(check::create(gw, brynn, BTC(1)));
+            env.close();
+
+            env(check::cash(brynn, checkId, check::DeliverMin(BTC(1))));
+            std::shared_ptr<STTx const> tx = env.tx();
+            std::shared_ptr<STObject const> meta = env.meta();
+            env.close();
+
+            LedgerIndex const ledgerIndex = env.closed()->seq();
+            if (BEAST_EXPECT(tx && meta))
+            {
+                // Expect a nullopt because the cashed check was too small to
+                // modify the trust line.
+                TxMeta const txMeta(tx->getTransactionID(), ledgerIndex, *meta);
+                BEAST_EXPECT(
+                    getDeliveredAmount(context, tx, txMeta, ledgerIndex) ==
+                    std::nullopt);
+            }
+        }
+        // Make sure that a reasonable check cash that creates a trust line
+        // returns the correct delivered_amount.
+        {
+            auto const checkId = keylet::check(brynn, env.seq(brynn)).key;
+            env(check::create(brynn, carol, BTC(10)));
+            env.close();
+
+            env(check::cash(carol, checkId, check::DeliverMin(BTC(10))));
+            std::shared_ptr<STTx const> tx = env.tx();
+            std::shared_ptr<STObject const> meta = env.meta();
+            env.close();
+
+            LedgerIndex const ledgerIndex = env.closed()->seq();
+            if (BEAST_EXPECT(tx && meta))
+            {
+                TxMeta const txMeta(tx->getTransactionID(), ledgerIndex, *meta);
+                std::optional<STAmount> const delivered =
+                    getDeliveredAmount(context, tx, txMeta, ledgerIndex);
+                BEAST_EXPECT(delivered && delivered.value() == BTC(10));
+            }
+        }
+        // Test getDeliveredAmount with a multi-hop payment.
+        {
+            // carol creates an offer selling BTC for USD.  alice uses that
+            // offer in a multi-step payment.
+            env(offer(carol, USD(1), BTC(1)));
+            env.close();
+
+            env(pay(alice, brynn, BTC(1)), path(~BTC), sendmax(USD(1)));
+            std::shared_ptr<STTx const> tx = env.tx();
+            std::shared_ptr<STObject const> meta = env.meta();
+            env.close();
+
+            // We can show that carol actually sent BTC(1) to brynn, even
+            // though tbrynn's balance did not change, because carol's
+            // balance is now BTC(9).
+            env.require(balance(carol, USD(1)));
+            env.require(balance(carol, BTC(9)));
+
+            LedgerIndex const ledgerIndex = env.closed()->seq();
+            if (BEAST_EXPECT(tx && meta))
+            {
+                // Expect a nullopt because the BTC that brynn received
+                // is too small to register in brynn's trust line.
+                TxMeta const txMeta(tx->getTransactionID(), ledgerIndex, *meta);
+                BEAST_EXPECT(
+                    getDeliveredAmount(context, tx, txMeta, ledgerIndex) ==
+                    std::nullopt);
+            }
+        }
+    }
+
 public:
     void
     run() override
     {
-        testTxDeliveredAmountRPC();
         testAccountDeliveredAmountSubscribe();
+        testTxDeliveredAmountRPC();
+        testGetDeliveredAmount();
     }
 };
 
