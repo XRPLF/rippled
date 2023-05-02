@@ -29,6 +29,7 @@
 #include "ripple/app/paths/AMMContext.h"
 #include <test/jtx.h>
 #include <test/jtx/PathSet.h>
+#include <test/jtx/TestHelpers.h>
 
 namespace ripple {
 namespace test {
@@ -161,26 +162,6 @@ iape(AccountID const& account)
 {
     return STPathElement(
         STPathElement::typeIssuer, xrpAccount(), xrpCurrency(), account);
-};
-
-// Currency path element
-STPathElement
-cpe(Currency const& c)
-{
-    return STPathElement(
-        STPathElement::typeCurrency, xrpAccount(), c, xrpAccount());
-};
-
-// All path element
-STPathElement
-allpe(AccountID const& a, Issue const& iss)
-{
-    return STPathElement(
-        STPathElement::typeAccount | STPathElement::typeCurrency |
-            STPathElement::typeIssuer,
-        a,
-        iss.currency,
-        iss.account);
 };
 
 class ElementComboIter

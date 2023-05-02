@@ -19,6 +19,7 @@
 
 #include <ripple/protocol/jss.h>
 #include <test/jtx.h>
+#include <test/jtx/TestHelpers.h>
 
 namespace ripple {
 namespace test {
@@ -26,13 +27,6 @@ namespace test {
 class AccountOffers_test : public beast::unit_test::suite
 {
 public:
-    // test helper
-    static bool
-    checkArraySize(Json::Value const& val, unsigned int size)
-    {
-        return val.isArray() && val.size() == size;
-    }
-
     // test helper
     static bool
     checkMarker(Json::Value const& val)

@@ -22,6 +22,7 @@
 #include <ripple/protocol/jss.h>
 #include <test/jtx.h>
 #include <test/jtx/PathSet.h>
+#include <test/jtx/TestHelpers.h>
 #include <test/jtx/WSClient.h>
 
 namespace ripple {
@@ -39,42 +40,6 @@ class Offer_test : public beast::unit_test::suite
     lastClose(jtx::Env& env)
     {
         return env.current()->info().parentCloseTime.time_since_epoch().count();
-    }
-
-    static auto
-    xrpMinusFee(jtx::Env const& env, std::int64_t xrpAmount)
-        -> jtx::PrettyAmount
-    {
-        using namespace jtx;
-        auto feeDrops = env.current()->fees().base;
-        return drops(dropsPerXRP * xrpAmount - feeDrops);
-    }
-
-    static auto
-    ledgerEntryState(
-        jtx::Env& env,
-        jtx::Account const& acct_a,
-        jtx::Account const& acct_b,
-        std::string const& currency)
-    {
-        Json::Value jvParams;
-        jvParams[jss::ledger_index] = "current";
-        jvParams[jss::ripple_state][jss::currency] = currency;
-        jvParams[jss::ripple_state][jss::accounts] = Json::arrayValue;
-        jvParams[jss::ripple_state][jss::accounts].append(acct_a.human());
-        jvParams[jss::ripple_state][jss::accounts].append(acct_b.human());
-        return env.rpc(
-            "json", "ledger_entry", to_string(jvParams))[jss::result];
-    }
-
-    static auto
-    ledgerEntryRoot(jtx::Env& env, jtx::Account const& acct)
-    {
-        Json::Value jvParams;
-        jvParams[jss::ledger_index] = "current";
-        jvParams[jss::account_root] = acct.human();
-        return env.rpc(
-            "json", "ledger_entry", to_string(jvParams))[jss::result];
     }
 
     static auto

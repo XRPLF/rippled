@@ -87,6 +87,68 @@ protected:
         std::optional<FeatureBitset> const& features = std::nullopt);
 };
 
+class Test : public jtx::AMMTestBase
+{
+protected:
+    XRPAmount
+    reserve(jtx::Env& env, std::uint32_t count) const;
+
+    XRPAmount
+    ammCrtFee(jtx::Env& env) const;
+
+    /* Path_test */
+    /************************************************/
+    class gate
+    {
+    private:
+        std::condition_variable cv_;
+        std::mutex mutex_;
+        bool signaled_ = false;
+
+    public:
+        // Thread safe, blocks until signaled or period expires.
+        // Returns `true` if signaled.
+        template <class Rep, class Period>
+        bool
+        wait_for(std::chrono::duration<Rep, Period> const& rel_time)
+        {
+            std::unique_lock<std::mutex> lk(mutex_);
+            auto b = cv_.wait_for(lk, rel_time, [this] { return signaled_; });
+            signaled_ = false;
+            return b;
+        }
+
+        void
+        signal()
+        {
+            std::lock_guard lk(mutex_);
+            signaled_ = true;
+            cv_.notify_all();
+        }
+    };
+
+    jtx::Env
+    pathTestEnv();
+
+    Json::Value
+    find_paths_request(
+        jtx::Env& env,
+        jtx::Account const& src,
+        jtx::Account const& dst,
+        STAmount const& saDstAmount,
+        std::optional<STAmount> const& saSendMax = std::nullopt,
+        std::optional<Currency> const& saSrcCurrency = std::nullopt);
+
+    std::tuple<STPathSet, STAmount, STAmount>
+    find_paths(
+        jtx::Env& env,
+        jtx::Account const& src,
+        jtx::Account const& dst,
+        STAmount const& saDstAmount,
+        std::optional<STAmount> const& saSendMax = std::nullopt,
+        std::optional<Currency> const& saSrcCurrency = std::nullopt);
+};
+
 }  // namespace jtx
 }  // namespace test
 }  // namespace ripple

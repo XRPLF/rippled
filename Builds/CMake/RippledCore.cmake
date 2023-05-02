@@ -705,6 +705,7 @@ if (tests)
     src/test/app/AccountTxPaging_test.cpp
     src/test/app/AmendmentTable_test.cpp
     src/test/app/AMM_test.cpp
+    src/test/app/AMMCalc_test.cpp
     src/test/app/Check_test.cpp
     src/test/app/CrossingLimits_test.cpp
     src/test/app/DeliverMin_test.cpp
@@ -850,6 +851,7 @@ if (tests)
     src/test/jtx/impl/Env.cpp
     src/test/jtx/impl/JSONRPCClient.cpp
     src/test/jtx/impl/ManualTimeKeeper.cpp
+    src/test/jtx/impl/TestHelpers.cpp
     src/test/jtx/impl/WSClient.cpp
     src/test/jtx/impl/acctdelete.cpp
     src/test/jtx/impl/account_txn_id.cpp
