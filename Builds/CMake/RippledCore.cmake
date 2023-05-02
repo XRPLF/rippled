@@ -648,7 +648,7 @@ target_sources (rippled PRIVATE
   src/ripple/rpc/impl/RPCHandler.cpp
   src/ripple/rpc/impl/RPCHelpers.cpp
   src/ripple/rpc/impl/Role.cpp
-  src/ripple/rpc/impl/ServerHandlerImp.cpp
+  src/ripple/rpc/impl/ServerHandler.cpp
   src/ripple/rpc/impl/ShardArchiveHandler.cpp
   src/ripple/rpc/impl/ShardVerificationScheduler.cpp
   src/ripple/rpc/impl/Status.cpp
