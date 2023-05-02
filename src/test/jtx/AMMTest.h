@@ -29,6 +29,8 @@ namespace ripple {
 namespace test {
 namespace jtx {
 
+class AMM;
+
 enum class Fund { All, Acct, Gw, IOUOnly };
 
 void
@@ -56,7 +58,7 @@ fund(
     std::vector<STAmount> const& amts = {},
     Fund how = Fund::All);
 
-class AMMTest : public beast::unit_test::suite
+class AMMTestBase : public beast::unit_test::suite
 {
 protected:
     jtx::Account const gw;
@@ -70,59 +72,19 @@ protected:
     jtx::IOU const BAD;
 
 public:
-    AMMTest();
+    AMMTestBase();
 
 protected:
     /** testAMM() funds 30,000XRP and 30,000IOU
      * for each non-XRP asset to Alice and Carol
      */
-    template <typename F>
     void
     testAMM(
-        F&& cb,
+        std::function<void(jtx::AMM&, jtx::Env&)>&& cb,
         std::optional<std::pair<STAmount, STAmount>> const& pool = std::nullopt,
         std::uint32_t fee = 0,
         std::optional<jtx::ter> const& ter = std::nullopt,
-        std::optional<FeatureBitset> const& features = std::nullopt)
-    {
-        using namespace jtx;
-        auto env = [&]() {
-            if (features)
-                return Env{*this, *features};
-            return Env{*this};
-        }();
-
-        auto const [asset1, asset2] =
-            pool ? *pool : std::make_pair(XRP(10000), USD(10000));
-        auto tofund = [&](STAmount const& a) -> STAmount {
-            if (a.native())
-            {
-                auto const defXRP = XRP(30000);
-                if (a <= defXRP)
-                    return defXRP;
-                return a + XRP(1000);
-            }
-            auto const defIOU = STAmount{a.issue(), 30000};
-            if (a <= defIOU)
-                return defIOU;
-            return a + STAmount{a.issue(), 1000};
-        };
-        auto const toFund1 = tofund(asset1);
-        auto const toFund2 = tofund(asset2);
-        assert(asset1 <= toFund1 && asset2 <= toFund2);
-
-        if (!asset1.native() && !asset2.native())
-            fund(env, gw, {alice, carol}, {toFund1, toFund2}, Fund::All);
-        else if (asset1.native())
-            fund(env, gw, {alice, carol}, toFund1, {toFund2}, Fund::All);
-        else if (asset2.native())
-            fund(env, gw, {alice, carol}, toFund2, {toFund1}, Fund::All);
-
-        AMM ammAlice(env, alice, asset1, asset2, false, fee);
-        BEAST_EXPECT(
-            ammAlice.expectBalances(asset1, asset2, ammAlice.tokens()));
-        cb(ammAlice, env);
-    }
+        std::optional<FeatureBitset> const& features = std::nullopt);
 };
 
 }  // namespace jtx

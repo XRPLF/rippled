@@ -36,7 +36,7 @@ namespace jtx {
 
 class LPToken
 {
-    IOUAmount tokens_;
+    IOUAmount const tokens_;
 
 public:
     LPToken(std::uint64_t tokens) : tokens_(tokens)
@@ -63,22 +63,21 @@ class AMM
 {
     Env& env_;
     Account const creatorAccount_;
-    AccountID ammAccount_;
-    Issue lptIssue_;
     STAmount const asset1_;
     STAmount const asset2_;
     IOUAmount const initialLPTokens_;
-    std::optional<ter> ter_;
-    bool log_ = false;
+    bool log_;
     // Predict next purchase price
     IOUAmount lastPurchasePrice_;
-    Number minSlotPrice_;
+    Number const minSlotPrice_;
     std::optional<IOUAmount> bidMin_;
     std::optional<IOUAmount> bidMax_;
     // Multi-signature
-    std::optional<msig> msig_;
+    std::optional<msig> const msig_;
     // Transaction fee
-    std::uint32_t fee_;
+    std::uint32_t const fee_;
+    AccountID const ammAccount_;
+    Issue const lptIssue_;
 
 public:
     AMM(Env& env,
@@ -101,7 +100,7 @@ public:
 
     /** Send amm_info RPC command
      */
-    std::optional<Json::Value>
+    Json::Value
     ammRpcInfo(
         std::optional<AccountID> const& account = std::nullopt,
         std::optional<std::string> const& ledgerIndex = std::nullopt,
@@ -109,13 +108,12 @@ public:
 
     /** Verify the AMM balances.
      */
-    bool
+    [[nodiscard]] bool
     expectBalances(
         STAmount const& asset1,
         STAmount const& asset2,
         IOUAmount const& lpt,
-        std::optional<AccountID> const& account = std::nullopt,
-        std::optional<std::string> const& ledger_index = std::nullopt) const;
+        std::optional<AccountID> const& account = std::nullopt) const;
 
     /** Get AMM balances for the token pair.
      */
@@ -125,7 +123,7 @@ public:
         Issue const& issue2,
         std::optional<AccountID> const& account = std::nullopt) const;
 
-    bool
+    [[nodiscard]] bool
     expectLPTokens(AccountID const& account, IOUAmount const& tokens) const;
 
     /**
@@ -133,26 +131,24 @@ public:
      * @param timeSlot expected time slot
      * @param purchasedTimeSlot time slot corresponding to the purchased price
      */
-    bool
+    [[nodiscard]] bool
     expectAuctionSlot(
         std::uint32_t fee,
         std::optional<std::uint8_t> timeSlot,
-        std::optional<std::uint8_t> purchasedTimeSlot = std::nullopt,
-        std::optional<std::string> const& ledger_index = std::nullopt) const;
-    bool
+        std::optional<std::uint8_t> purchasedTimeSlot = std::nullopt) const;
+    [[nodiscard]] bool
     expectAuctionSlot(
         std::uint32_t fee,
         std::optional<std::uint8_t> timeSlot,
-        IOUAmount expectedPrice,
-        std::optional<std::string> const& ledger_index = std::nullopt) const;
+        IOUAmount expectedPrice) const;
 
-    bool
+    [[nodiscard]] bool
     expectAuctionSlot(std::vector<AccountID> const& authAccount) const;
 
-    bool
+    [[nodiscard]] bool
     expectTradingFee(std::uint16_t fee) const;
 
-    bool
+    [[nodiscard]] bool
     expectAmmRpcInfo(
         STAmount const& asset1,
         STAmount const& asset2,
@@ -160,7 +156,7 @@ public:
         std::optional<AccountID> const& account = std::nullopt,
         std::optional<std::string> const& ledger_index = std::nullopt) const;
 
-    bool
+    [[nodiscard]] bool
     ammExists() const;
 
     void
@@ -280,24 +276,20 @@ public:
     operator<<(std::ostream& s, AMM const& amm)
     {
         if (auto const res = amm.ammRpcInfo())
-            s << res->toStyledString();
+            s << res.toStyledString();
         return s;
     }
 
     std::string
     operator[](AccountID const& lp)
     {
-        if (auto const res = ammRpcInfo(lp))
-            return res->toStyledString();
-        return {};
+        return ammRpcInfo(lp).toStyledString();
     }
 
     Json::Value
     operator()(AccountID const& lp)
     {
-        if (auto const res = ammRpcInfo(lp))
-            return *res;
-        return {};
+        return ammRpcInfo(lp);
     }
 
 private:
@@ -306,18 +298,20 @@ private:
         Json::Value& jv,
         std::optional<std::pair<Issue, Issue>> const& assets = std::nullopt);
 
-    void
+    AccountID
     create(
         std::uint32_t tfee = 0,
-        std::optional<std::uint32_t> flags = std::nullopt,
-        std::optional<jtx::seq> seq = std::nullopt);
+        std::optional<std::uint32_t> const& flags = std::nullopt,
+        std::optional<jtx::seq> const& seq = std::nullopt,
+        std::optional<ter> const& ter = std::nullopt);
 
     void
     deposit(
         std::optional<Account> const& account,
         Json::Value& jv,
         std::optional<std::pair<Issue, Issue>> const& assets = std::nullopt,
-        std::optional<jtx::seq> const& seq = std::nullopt);
+        std::optional<jtx::seq> const& seq = std::nullopt,
+        std::optional<ter> const& ter = std::nullopt);
 
     void
     withdraw(
@@ -333,14 +327,14 @@ private:
         log_ = log;
     }
 
-    bool
+    [[nodiscard]] bool
     expectAmmInfo(
         STAmount const& asset1,
         STAmount const& asset2,
         IOUAmount const& balance,
         Json::Value const& jv) const;
 
-    IOUAmount
+    [[nodiscard]] IOUAmount
     expectedPurchasePrice(
         std::optional<std::uint8_t> timeSlot,
         IOUAmount const& lastPurchasePrice) const;
@@ -351,7 +345,7 @@ private:
         std::optional<jtx::seq> const& seq,
         std::optional<ter> const& ter);
 
-    bool
+    [[nodiscard]] bool
     expectAuctionSlot(auto&& cb) const;
 };
 

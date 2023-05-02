@@ -17,8 +17,9 @@
 */
 //==============================================================================
 
-#include <test/jtx/AMM.h>
 #include <test/jtx/AMMTest.h>
+
+#include <test/jtx/AMM.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/pay.h>
 
@@ -34,7 +35,7 @@ fund(
     std::vector<STAmount> const& amts,
     Fund how)
 {
-    fund(env, gw, accounts, 30000 * jtx::dropsPerXRP, amts, how);
+    fund(env, gw, accounts, XRP(30000), amts, how);
 }
 
 void
@@ -50,16 +51,18 @@ fund(
         if (how == Fund::All || how == Fund::Acct)
         {
             env.fund(xrp, account);
-            env.close();
         }
+    }
+    env.close();
+    for (auto const& account : accounts)
+    {
         for (auto const& amt : amts)
         {
             env.trust(amt + amt, account);
-            env.close();
             env(pay(amt.issue().account, account, amt));
-            env.close();
         }
     }
+    env.close();
 }
 
 void
@@ -74,24 +77,10 @@ fund(
     if (how == Fund::All || how == Fund::Gw)
         env.fund(xrp, gw);
     env.close();
-    for (auto const& account : accounts)
-    {
-        if (how == Fund::All || how == Fund::Acct)
-        {
-            env.fund(xrp, account);
-            env.close();
-        }
-        for (auto const& amt : amts)
-        {
-            env.trust(amt + amt, account);
-            env.close();
-            env(pay(gw, account, amt));
-            env.close();
-        }
-    }
+    fund(env, accounts, xrp, amts, how);
 }
 
-AMMTest::AMMTest()
+AMMTestBase::AMMTestBase()
     : gw("gateway")
     , carol("carol")
     , alice("alice")
@@ -102,6 +91,52 @@ AMMTest::AMMTest()
     , BTC(gw["BTC"])
     , BAD(jtx::IOU(gw, badCurrency()))
 {
+}
+
+void
+AMMTestBase::testAMM(
+    std::function<void(jtx::AMM&, jtx::Env&)>&& cb,
+    std::optional<std::pair<STAmount, STAmount>> const& pool,
+    std::uint32_t fee,
+    std::optional<jtx::ter> const& ter,
+    std::optional<FeatureBitset> const& features)
+{
+    using namespace jtx;
+    auto env = [&]() {
+        if (features)
+            return Env{*this, *features};
+        return Env{*this};
+    }();
+
+    auto const [asset1, asset2] =
+        pool ? *pool : std::make_pair(XRP(10000), USD(10000));
+    auto tofund = [&](STAmount const& a) -> STAmount {
+        if (a.native())
+        {
+            auto const defXRP = XRP(30000);
+            if (a <= defXRP)
+                return defXRP;
+            return a + XRP(1000);
+        }
+        auto const defIOU = STAmount{a.issue(), 30000};
+        if (a <= defIOU)
+            return defIOU;
+        return a + STAmount{a.issue(), 1000};
+    };
+    auto const toFund1 = tofund(asset1);
+    auto const toFund2 = tofund(asset2);
+    BEAST_EXPECT(asset1 <= toFund1 && asset2 <= toFund2);
+
+    if (!asset1.native() && !asset2.native())
+        fund(env, gw, {alice, carol}, {toFund1, toFund2}, Fund::All);
+    else if (asset1.native())
+        fund(env, gw, {alice, carol}, toFund1, {toFund2}, Fund::All);
+    else if (asset2.native())
+        fund(env, gw, {alice, carol}, toFund2, {toFund1}, Fund::All);
+
+    AMM ammAlice(env, alice, asset1, asset2, false, fee);
+    BEAST_EXPECT(ammAlice.expectBalances(asset1, asset2, ammAlice.tokens()));
+    cb(ammAlice, env);
 }
 
 }  // namespace jtx

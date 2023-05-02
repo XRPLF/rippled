@@ -69,17 +69,17 @@ getAccountLines(jtx::Env& env, AccountID const& acctId, IOU... ious)
 {
     auto const jrr = getAccountLines(env, acctId);
     Json::Value res;
-    for (auto const& line : jrr["lines"])
+    for (auto const& line : jrr[jss::lines])
     {
         for (auto const& iou : {ious...})
         {
-            if (line["currency"].asString() == to_string(iou.currency))
+            if (line[jss::currency].asString() == to_string(iou.currency))
             {
                 Json::Value v;
-                v["currency"] = line["currency"];
-                v["balance"] = line["balance"];
-                v["limit"] = line["limit"];
-                v["account"] = line["account"];
+                v[jss::currency] = line[jss::currency];
+                v[jss::balance] = line[jss::balance];
+                v[jss::limit] = line[jss::limit];
+                v[jss::account] = line[jss::account];
                 res[jss::lines].append(v);
             }
         }
@@ -89,7 +89,7 @@ getAccountLines(jtx::Env& env, AccountID const& acctId, IOU... ious)
     return jrr;
 }
 
-static bool
+[[nodiscard]] static bool
 checkArraySize(Json::Value const& val, unsigned int size)
 {
     return val.isArray() && val.size() == size;
@@ -202,7 +202,7 @@ expectLine(
     jtx::Env& env,
     AccountID const& account,
     STAmount const& value,
-    bool defaultTrustline = false)
+    bool defaultLimits = false)
 {
     if (auto const sle = env.le(keylet::line(account, value.issue())))
     {
@@ -210,7 +210,7 @@ expectLine(
         bool const accountLow = account < issue.account;
 
         bool expectDefaultTrustLine = true;
-        if (defaultTrustline)
+        if (defaultLimits)
         {
             STAmount low{issue};
             STAmount high{issue};
@@ -254,7 +254,7 @@ expectOffers(
     jtx::Env& env,
     AccountID const& account,
     std::uint16_t size,
-    std::optional<std::vector<Amounts>> const& toMatch = std::nullopt)
+    std::vector<Amounts> const& toMatch = {})
 {
     std::uint16_t cnt = 0;
     std::uint16_t matched = 0;
@@ -265,17 +265,16 @@ expectOffers(
             if (sle->getType() == ltOFFER)
             {
                 ++cnt;
-                if (toMatch &&
-                    std::find_if(
-                        toMatch->begin(), toMatch->end(), [&](auto const& a) {
+                if (std::find_if(
+                        toMatch.begin(), toMatch.end(), [&](auto const& a) {
                             return a.in == sle->getFieldAmount(sfTakerPays) &&
                                 a.out == sle->getFieldAmount(sfTakerGets);
-                        }) != toMatch->end())
+                        }) != toMatch.end())
                     ++matched;
             }
             return true;
         });
-    return size == cnt && (!toMatch || matched == toMatch->size());
+    return size == cnt && matched == toMatch.size();
 }
 
 static auto
@@ -380,12 +379,13 @@ private:
     std::string value_;
 
 public:
-    explicit condition(Slice cond) : value_(strHex(cond))
+    explicit condition(Slice const& cond) : value_(strHex(cond))
     {
     }
 
     template <size_t N>
-    explicit condition(std::array<std::uint8_t, N> c) : condition(makeSlice(c))
+    explicit condition(std::array<std::uint8_t, N> const& c)
+        : condition(makeSlice(c))
     {
     }
 
@@ -439,12 +439,12 @@ create(
     jv[jss::Account] = to_string(account);
     jv[jss::Destination] = to_string(to);
     jv[jss::Amount] = amount.getJson(JsonOptions::none);
-    jv["SettleDelay"] = settleDelay.count();
-    jv["PublicKey"] = strHex(pk.slice());
+    jv[jss::SettleDelay] = settleDelay.count();
+    jv[sfPublicKey.fieldName] = strHex(pk.slice());
     if (cancelAfter)
-        jv["CancelAfter"] = cancelAfter->time_since_epoch().count();
+        jv[sfCancelAfter.fieldName] = cancelAfter->time_since_epoch().count();
     if (dstTag)
-        jv["DestinationTag"] = *dstTag;
+        jv[sfDestinationTag.fieldName] = *dstTag;
     return jv;
 }
 
@@ -460,10 +460,10 @@ chfund(
     jv[jss::TransactionType] = jss::PaymentChannelFund;
     jv[jss::Flags] = tfUniversal;
     jv[jss::Account] = to_string(account);
-    jv["Channel"] = to_string(channel);
+    jv[sfChannel.fieldName] = to_string(channel);
     jv[jss::Amount] = amount.getJson(JsonOptions::none);
     if (expiration)
-        jv["Expiration"] = expiration->time_since_epoch().count();
+        jv[sfExpiration.fieldName] = expiration->time_since_epoch().count();
     return jv;
 }
 
@@ -558,13 +558,8 @@ allpe(AccountID const& a, Issue const& iss)
 
 /***************************************************************/
 
-class Test : public jtx::AMMTest
+class Test : public jtx::AMMTestBase
 {
-public:
-    Test() : jtx::AMMTest()
-    {
-    }
-
 protected:
     template <typename C>
     void
@@ -813,15 +808,15 @@ private:
             Env env{*this};
             env.fund(XRP(30000), gw, alice);
             env.close();
-            env(fset(gw, asfGlobalFreeze));
-            env.close();
             env.trust(USD(30000), alice);
+            env.close();
+            env(pay(gw, alice, USD(10000)));
+            env.close();
+            env(fset(gw, asfGlobalFreeze));
             env.close();
             AMM ammAliceFail(
                 env, alice, XRP(10000), USD(10000), ter(tecFROZEN));
             env(fclear(gw, asfGlobalFreeze));
-            env.close();
-            env(pay(gw, alice, USD(10000)));
             env.close();
             AMM ammAlice(env, alice, XRP(10000), USD(10000));
         }
@@ -1059,32 +1054,33 @@ private:
 
         using namespace jtx;
 
-        // Invalid flags
         testAMM([&](AMM& ammAlice, Env& env) {
+            // Invalid flags
             ammAlice.deposit(
                 alice,
                 1000000,
                 std::nullopt,
                 tfWithdrawAll,
                 ter(temINVALID_FLAG));
-        });
 
-        // Invalid options
-        std::vector<std::tuple<
-            std::optional<std::uint32_t>,
-            std::optional<STAmount>,
-            std::optional<STAmount>,
-            std::optional<STAmount>>>
-            invalidOptions = {
-                // tokens, asset1In, asset2in, EPrice
-                {1000, std::nullopt, USD(100), std::nullopt},
-                {1000, std::nullopt, std::nullopt, STAmount{USD, 1, -1}},
-                {std::nullopt, std::nullopt, USD(100), STAmount{USD, 1, -1}},
-                {std::nullopt, XRP(100), USD(100), STAmount{USD, 1, -1}},
-                {1000, XRP(100), USD(100), std::nullopt}};
-        for (auto const& it : invalidOptions)
-        {
-            testAMM([&](AMM& ammAlice, Env& env) {
+            // Invalid options
+            std::vector<std::tuple<
+                std::optional<std::uint32_t>,
+                std::optional<STAmount>,
+                std::optional<STAmount>,
+                std::optional<STAmount>>>
+                invalidOptions = {
+                    // tokens, asset1In, asset2in, EPrice
+                    {1000, std::nullopt, USD(100), std::nullopt},
+                    {1000, std::nullopt, std::nullopt, STAmount{USD, 1, -1}},
+                    {std::nullopt,
+                     std::nullopt,
+                     USD(100),
+                     STAmount{USD, 1, -1}},
+                    {std::nullopt, XRP(100), USD(100), STAmount{USD, 1, -1}},
+                    {1000, XRP(100), USD(100), std::nullopt}};
+            for (auto const& it : invalidOptions)
+            {
                 ammAlice.deposit(
                     alice,
                     std::get<0>(it),
@@ -1095,11 +1091,9 @@ private:
                     std::nullopt,
                     std::nullopt,
                     ter(temMALFORMED));
-            });
-        }
+            }
 
-        // Invalid tokens
-        testAMM([&](AMM& ammAlice, Env& env) {
+            // Invalid tokens
             ammAlice.deposit(
                 alice, 0, std::nullopt, std::nullopt, ter(temAMM_BAD_TOKENS));
             ammAlice.deposit(
@@ -1108,26 +1102,24 @@ private:
                 std::nullopt,
                 std::nullopt,
                 ter(temAMM_BAD_TOKENS));
-        });
 
-        // Invalid tokens - bogus currency
-        testAMM([&](AMM& ammAlice, Env& env) {
-            auto const iss1 = Issue{Currency(0xabc), gw.id()};
-            auto const iss2 = Issue{Currency(0xdef), gw.id()};
-            ammAlice.deposit(
-                alice,
-                1000,
-                std::nullopt,
-                std::nullopt,
-                std::nullopt,
-                std::nullopt,
-                {{iss1, iss2}},
-                std::nullopt,
-                ter(terNO_AMM));
-        });
+            // Invalid tokens - bogus currency
+            {
+                auto const iss1 = Issue{Currency(0xabc), gw.id()};
+                auto const iss2 = Issue{Currency(0xdef), gw.id()};
+                ammAlice.deposit(
+                    alice,
+                    1000,
+                    std::nullopt,
+                    std::nullopt,
+                    std::nullopt,
+                    std::nullopt,
+                    {{iss1, iss2}},
+                    std::nullopt,
+                    ter(terNO_AMM));
+            }
 
-        // Depositing mismatched token, invalid Asset1In.issue
-        testAMM([&](AMM& ammAlice, Env& env) {
+            // Depositing mismatched token, invalid Asset1In.issue
             ammAlice.deposit(
                 alice,
                 GBP(100),
@@ -1135,10 +1127,8 @@ private:
                 std::nullopt,
                 std::nullopt,
                 ter(temAMM_BAD_TOKENS));
-        });
 
-        // Depositing mismatched token, invalid Asset2In.issue
-        testAMM([&](AMM& ammAlice, Env& env) {
+            // Depositing mismatched token, invalid Asset2In.issue
             ammAlice.deposit(
                 alice,
                 USD(100),
@@ -1146,10 +1136,8 @@ private:
                 std::nullopt,
                 std::nullopt,
                 ter(temAMM_BAD_TOKENS));
-        });
 
-        // Depositing mismatched token, Asset1In.issue == Asset2In.issue
-        testAMM([&](AMM& ammAlice, Env& env) {
+            // Depositing mismatched token, Asset1In.issue == Asset2In.issue
             ammAlice.deposit(
                 alice,
                 USD(100),
@@ -1157,10 +1145,8 @@ private:
                 std::nullopt,
                 std::nullopt,
                 ter(temAMM_BAD_TOKENS));
-        });
 
-        // Invalid amount value
-        testAMM([&](AMM& ammAlice, Env& env) {
+            // Invalid amount value
             ammAlice.deposit(
                 alice,
                 USD(0),
@@ -1182,10 +1168,8 @@ private:
                 USD(-1),
                 std::nullopt,
                 ter(temBAD_AMOUNT));
-        });
 
-        // Bad currency
-        testAMM([&](AMM& ammAlice, Env& env) {
+            // Bad currency
             ammAlice.deposit(
                 alice,
                 BAD(100),
@@ -1193,10 +1177,8 @@ private:
                 std::nullopt,
                 std::nullopt,
                 ter(temBAD_CURRENCY));
-        });
 
-        // Invalid Account
-        testAMM([&](AMM& ammAlice, Env& env) {
+            // Invalid Account
             Account bad("bad");
             env.memoize(bad);
             ammAlice.deposit(
@@ -1209,15 +1191,8 @@ private:
                 std::nullopt,
                 seq(1),
                 ter(terNO_ACCOUNT));
-        });
 
-        // Invalid AMM
-        testAMM([&](AMM& ammAlice, Env& env) {
-            ammAlice.withdrawAll(alice);
-            ammAlice.deposit(
-                alice, 10000, std::nullopt, std::nullopt, ter(terNO_AMM));
-        });
-        testAMM([&](AMM& ammAlice, Env& env) {
+            // Invalid AMM
             ammAlice.deposit(
                 alice,
                 1000,
@@ -1228,6 +1203,72 @@ private:
                 {{USD, GBP}},
                 std::nullopt,
                 ter(terNO_AMM));
+
+            // Single deposit: 100000 tokens worth of USD
+            // Amount to deposit exceeds Max
+            ammAlice.deposit(
+                carol,
+                100000,
+                USD(200),
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                ter(tecAMM_FAILED_DEPOSIT));
+
+            // Single deposit: 100000 tokens worth of XRP
+            // Amount to deposit exceeds Max
+            ammAlice.deposit(
+                carol,
+                100000,
+                XRP(200),
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                ter(tecAMM_FAILED_DEPOSIT));
+
+            // Deposit amount is invalid
+            // Calculated amount to deposit is 98,000,000
+            ammAlice.deposit(
+                alice,
+                USD(0),
+                std::nullopt,
+                STAmount{USD, 1, -1},
+                std::nullopt,
+                ter(tecAMM_UNFUNDED));
+            // Calculated amount is 0
+            ammAlice.deposit(
+                alice,
+                USD(0),
+                std::nullopt,
+                STAmount{USD, 2000, -6},
+                std::nullopt,
+                ter(tecAMM_FAILED_DEPOSIT));
+
+            // Tiny deposit
+            ammAlice.deposit(
+                carol,
+                IOUAmount{1, -4},
+                std::nullopt,
+                std::nullopt,
+                ter(tecAMM_FAILED_DEPOSIT));
+            ammAlice.deposit(
+                carol,
+                STAmount{USD, 1, -11},
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                ter(tecAMM_FAILED_DEPOSIT));
+        });
+
+        // Invalid AMM
+        testAMM([&](AMM& ammAlice, Env& env) {
+            ammAlice.withdrawAll(alice);
+            ammAlice.deposit(
+                alice, 10000, std::nullopt, std::nullopt, ter(terNO_AMM));
         });
 
         // Globally frozen asset
@@ -1399,75 +1440,6 @@ private:
                 std::nullopt,
                 ter(tecINSUF_RESERVE_LINE));
         }
-
-        // Single deposit: 100000 tokens worth of USD
-        // Amount to deposit exceeds Max
-        testAMM([&](AMM& ammAlice, Env&) {
-            ammAlice.deposit(
-                carol,
-                100000,
-                USD(200),
-                std::nullopt,
-                std::nullopt,
-                std::nullopt,
-                std::nullopt,
-                std::nullopt,
-                ter(tecAMM_FAILED_DEPOSIT));
-        });
-
-        // Single deposit: 100000 tokens worth of XRP
-        // Amount to deposit exceeds Max
-        testAMM([&](AMM& ammAlice, Env&) {
-            ammAlice.deposit(
-                carol,
-                100000,
-                XRP(200),
-                std::nullopt,
-                std::nullopt,
-                std::nullopt,
-                std::nullopt,
-                std::nullopt,
-                ter(tecAMM_FAILED_DEPOSIT));
-        });
-
-        // Deposit amount is invalid
-        testAMM([&](AMM& ammAlice, Env&) {
-            // Calculated amount to deposit is 98,000,000
-            ammAlice.deposit(
-                alice,
-                USD(0),
-                std::nullopt,
-                STAmount{USD, 1, -1},
-                std::nullopt,
-                ter(tecAMM_UNFUNDED));
-            // Calculated amount is 0
-            ammAlice.deposit(
-                alice,
-                USD(0),
-                std::nullopt,
-                STAmount{USD, 2000, -6},
-                std::nullopt,
-                ter(tecAMM_FAILED_DEPOSIT));
-        });
-
-        // Tiny deposit
-        testAMM([&](AMM& ammAlice, Env&) {
-            ammAlice.deposit(
-                carol,
-                IOUAmount{1, -4},
-                std::nullopt,
-                std::nullopt,
-                ter(tecAMM_FAILED_DEPOSIT));
-        });
-        testAMM([&](AMM& ammAlice, Env&) {
-            ammAlice.deposit(
-                carol,
-                STAmount{USD, 1, -11},
-                std::nullopt,
-                std::nullopt,
-                std::nullopt,
-                ter(tecAMM_FAILED_DEPOSIT));
-        });
     }
 
     void
@@ -1478,10 +1450,15 @@ private:
         using namespace jtx;
 
         // Equal deposit: 1000000 tokens, 10% of the current pool
-        testAMM([&](AMM& ammAlice, Env&) {
+        testAMM([&](AMM& ammAlice, Env& env) {
             ammAlice.deposit(carol, 1000000);
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(11000), USD(11000), IOUAmount{11000000, 0}));
+            // 30,000 less deposited 1,000
+            BEAST_EXPECT(expectLine(env, carol, USD(29000)));
+            // 30,000 less deposited 1,000 and 10 drops tx fee
+            BEAST_EXPECT(
+                expectLedgerEntryRoot(env, carol, XRPAmount{28999999990}));
         });
 
         // Equal limit deposit: deposit USD100 and XRP proportionally
@@ -1495,14 +1472,19 @@ private:
                 XRP(10100), USD(10100), IOUAmount{10100000, 0}));
         });
 
-        // Equal limit deposit. Deposit 100USD/100XRP
+        // Equal limit deposit.
+        // Try to deposit 200USD/100XRP. Is truncated to 100USD/100XRP.
         testAMM([&](AMM& ammAlice, Env&) {
             ammAlice.deposit(carol, USD(200), XRP(100));
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(10100), USD(10100), IOUAmount{10100000, 0}));
         });
-
-        // TODO. Equal limit deposit. Constraint fails.
+        // Try to deposit 100USD/200XRP. Is truncated to 100USD/100XRP.
+        testAMM([&](AMM& ammAlice, Env&) {
+            ammAlice.deposit(carol, USD(100), XRP(200));
+            BEAST_EXPECT(ammAlice.expectBalances(
+                XRP(10100), USD(10100), IOUAmount{10100000, 0}));
+        });
 
         // Single deposit: 1000 USD
         testAMM([&](AMM& ammAlice, Env&) {
@@ -1643,8 +1625,8 @@ private:
 
         using namespace jtx;
 
-        // Invalid flags
         testAMM([&](AMM& ammAlice, Env& env) {
+            // Invalid flags
             ammAlice.withdraw(
                 alice,
                 1000000,
@@ -1655,111 +1637,109 @@ private:
                 std::nullopt,
                 std::nullopt,
                 ter(temINVALID_FLAG));
-        });
 
-        // Invalid options
-        std::vector<std::tuple<
-            std::optional<std::uint32_t>,
-            std::optional<STAmount>,
-            std::optional<STAmount>,
-            std::optional<IOUAmount>,
-            std::optional<std::uint32_t>,
-            NotTEC>>
-            invalidOptions = {
-                // tokens, asset1Out, asset2Out, EPrice, flags, ter
-                {std::nullopt,
-                 std::nullopt,
-                 std::nullopt,
-                 std::nullopt,
-                 std::nullopt,
-                 temMALFORMED},
-                {std::nullopt,
-                 std::nullopt,
-                 std::nullopt,
-                 std::nullopt,
-                 tfSingleAsset | tfTwoAsset,
-                 temMALFORMED},
-                {1000,
-                 std::nullopt,
-                 std::nullopt,
-                 std::nullopt,
-                 tfWithdrawAll,
-                 temMALFORMED},
-                {std::nullopt,
-                 USD(0),
-                 XRP(100),
-                 std::nullopt,
-                 tfWithdrawAll | tfLPToken,
-                 temMALFORMED},
-                {std::nullopt,
-                 std::nullopt,
-                 USD(100),
-                 std::nullopt,
-                 tfWithdrawAll,
-                 temMALFORMED},
-                {std::nullopt,
-                 std::nullopt,
-                 std::nullopt,
-                 std::nullopt,
-                 tfWithdrawAll | tfOneAssetWithdrawAll,
-                 temMALFORMED},
-                {std::nullopt,
-                 USD(100),
-                 std::nullopt,
-                 std::nullopt,
-                 tfWithdrawAll,
-                 temMALFORMED},
-                {std::nullopt,
-                 std::nullopt,
-                 std::nullopt,
-                 std::nullopt,
-                 tfOneAssetWithdrawAll,
-                 temMALFORMED},
-                {1000,
-                 std::nullopt,
-                 USD(100),
-                 std::nullopt,
-                 std::nullopt,
-                 temMALFORMED},
-                {std::nullopt,
-                 std::nullopt,
-                 std::nullopt,
-                 IOUAmount{250, 0},
-                 tfWithdrawAll,
-                 temMALFORMED},
-                {1000,
-                 std::nullopt,
-                 std::nullopt,
-                 IOUAmount{250, 0},
-                 std::nullopt,
-                 temMALFORMED},
-                {std::nullopt,
-                 std::nullopt,
-                 USD(100),
-                 IOUAmount{250, 0},
-                 std::nullopt,
-                 temMALFORMED},
-                {std::nullopt,
-                 XRP(100),
-                 USD(100),
-                 IOUAmount{250, 0},
-                 std::nullopt,
-                 temMALFORMED},
-                {1000,
-                 XRP(100),
-                 USD(100),
-                 std::nullopt,
-                 std::nullopt,
-                 temMALFORMED},
-                {std::nullopt,
-                 XRP(100),
-                 USD(100),
-                 std::nullopt,
-                 tfWithdrawAll,
-                 temMALFORMED}};
-        for (auto const& it : invalidOptions)
-        {
-            testAMM([&](AMM& ammAlice, Env& env) {
+            // Invalid options
+            std::vector<std::tuple<
+                std::optional<std::uint32_t>,
+                std::optional<STAmount>,
+                std::optional<STAmount>,
+                std::optional<IOUAmount>,
+                std::optional<std::uint32_t>,
+                NotTEC>>
+                invalidOptions = {
+                    // tokens, asset1Out, asset2Out, EPrice, flags, ter
+                    {std::nullopt,
+                     std::nullopt,
+                     std::nullopt,
+                     std::nullopt,
+                     std::nullopt,
+                     temMALFORMED},
+                    {std::nullopt,
+                     std::nullopt,
+                     std::nullopt,
+                     std::nullopt,
+                     tfSingleAsset | tfTwoAsset,
+                     temMALFORMED},
+                    {1000,
+                     std::nullopt,
+                     std::nullopt,
+                     std::nullopt,
+                     tfWithdrawAll,
+                     temMALFORMED},
+                    {std::nullopt,
+                     USD(0),
+                     XRP(100),
+                     std::nullopt,
+                     tfWithdrawAll | tfLPToken,
+                     temMALFORMED},
+                    {std::nullopt,
+                     std::nullopt,
+                     USD(100),
+                     std::nullopt,
+                     tfWithdrawAll,
+                     temMALFORMED},
+                    {std::nullopt,
+                     std::nullopt,
+                     std::nullopt,
+                     std::nullopt,
+                     tfWithdrawAll | tfOneAssetWithdrawAll,
+                     temMALFORMED},
+                    {std::nullopt,
+                     USD(100),
+                     std::nullopt,
+                     std::nullopt,
+                     tfWithdrawAll,
+                     temMALFORMED},
+                    {std::nullopt,
+                     std::nullopt,
+                     std::nullopt,
+                     std::nullopt,
+                     tfOneAssetWithdrawAll,
+                     temMALFORMED},
+                    {1000,
+                     std::nullopt,
+                     USD(100),
+                     std::nullopt,
+                     std::nullopt,
+                     temMALFORMED},
+                    {std::nullopt,
+                     std::nullopt,
+                     std::nullopt,
+                     IOUAmount{250, 0},
+                     tfWithdrawAll,
+                     temMALFORMED},
+                    {1000,
+                     std::nullopt,
+                     std::nullopt,
+                     IOUAmount{250, 0},
+                     std::nullopt,
+                     temMALFORMED},
+                    {std::nullopt,
+                     std::nullopt,
+                     USD(100),
+                     IOUAmount{250, 0},
+                     std::nullopt,
+                     temMALFORMED},
+                    {std::nullopt,
+                     XRP(100),
+                     USD(100),
+                     IOUAmount{250, 0},
+                     std::nullopt,
+                     temMALFORMED},
+                    {1000,
+                     XRP(100),
+                     USD(100),
+                     std::nullopt,
+                     std::nullopt,
+                     temMALFORMED},
+                    {std::nullopt,
+                     XRP(100),
+                     USD(100),
+                     std::nullopt,
+                     tfWithdrawAll,
+                     temMALFORMED}};
+            for (auto const& it : invalidOptions)
+            {
                 ammAlice.withdraw(
                     alice,
                     std::get<0>(it),
@@ -1770,11 +1750,9 @@ private:
                     std::nullopt,
                     std::nullopt,
                     ter(std::get<5>(it)));
-            });
-        }
+            }
 
-        // Invalid tokens
-        testAMM([&](AMM& ammAlice, Env& env) {
+            // Invalid tokens
             ammAlice.withdraw(
                 alice, 0, std::nullopt, std::nullopt, ter(temAMM_BAD_TOKENS));
             ammAlice.withdraw(
@@ -1783,40 +1761,32 @@ private:
                 std::nullopt,
                 std::nullopt,
                 ter(temAMM_BAD_TOKENS));
-        });
 
-        // Mismatched token, invalid Asset1Out issue
-        testAMM([&](AMM& ammAlice, Env& env) {
+            // Mismatched token, invalid Asset1Out issue
             ammAlice.withdraw(
                 alice,
                 GBP(100),
                 std::nullopt,
                 std::nullopt,
                 ter(temAMM_BAD_TOKENS));
-        });
 
-        // Mismatched token, invalid Asset2Out issue
-        testAMM([&](AMM& ammAlice, Env& env) {
+            // Mismatched token, invalid Asset2Out issue
             ammAlice.withdraw(
                 alice,
                 USD(100),
                 GBP(100),
                 std::nullopt,
                 ter(temAMM_BAD_TOKENS));
-        });
 
-        // Mismatched token, Asset1Out.issue == Asset2Out.issue
-        testAMM([&](AMM& ammAlice, Env& env) {
+            // Mismatched token, Asset1Out.issue == Asset2Out.issue
             ammAlice.withdraw(
                 alice,
                 USD(100),
                 USD(100),
                 std::nullopt,
                 ter(temAMM_BAD_TOKENS));
-        });
 
-        // Invalid amount value
-        testAMM([&](AMM& ammAlice, Env& env) {
+            // Invalid amount value
             ammAlice.withdraw(
                 alice, USD(0), std::nullopt, std::nullopt, ter(temBAD_AMOUNT));
             ammAlice.withdraw(
@@ -1831,55 +1801,41 @@ private:
                 std::nullopt,
                 IOUAmount{-1},
                 ter(temBAD_AMOUNT));
-        });
 
-        // Invalid amount/token value, withdraw all tokens from one side
-        // of the pool.
-        {
-            testAMM([&](AMM& ammAlice, Env& env) {
-                ammAlice.withdraw(
-                    alice,
-                    USD(10000),
-                    std::nullopt,
-                    std::nullopt,
-                    ter(tecAMM_FAILED_WITHDRAW));
-            });
+            // Invalid amount/token value, withdraw all tokens from one side
+            // of the pool.
+            ammAlice.withdraw(
+                alice,
+                USD(10000),
+                std::nullopt,
+                std::nullopt,
+                ter(tecAMM_FAILED_WITHDRAW));
+            ammAlice.withdraw(
+                alice,
+                XRP(10000),
+                std::nullopt,
+                std::nullopt,
+                ter(tecAMM_FAILED_WITHDRAW));
+            ammAlice.withdraw(
+                alice,
+                std::nullopt,
+                USD(0),
+                std::nullopt,
+                std::nullopt,
+                tfOneAssetWithdrawAll,
+                std::nullopt,
+                std::nullopt,
+                ter(tecAMM_FAILED_WITHDRAW));
 
-            testAMM([&](AMM& ammAlice, Env& env) {
-                ammAlice.withdraw(
-                    alice,
-                    XRP(10000),
-                    std::nullopt,
-                    std::nullopt,
-                    ter(tecAMM_FAILED_WITHDRAW));
-            });
-
-            testAMM([&](AMM& ammAlice, Env& env) {
-                ammAlice.withdraw(
-                    alice,
-                    std::nullopt,
-                    USD(0),
-                    std::nullopt,
-                    std::nullopt,
-                    tfOneAssetWithdrawAll,
-                    std::nullopt,
-                    std::nullopt,
-                    ter(tecAMM_FAILED_WITHDRAW));
-            });
-        }
-
-        // Bad currency
-        testAMM([&](AMM& ammAlice, Env& env) {
+            // Bad currency
             ammAlice.withdraw(
                 alice,
                 BAD(100),
                 std::nullopt,
                 std::nullopt,
                 ter(temBAD_CURRENCY));
-        });
 
-        // Invalid Account
-        testAMM([&](AMM& ammAlice, Env& env) {
+            // Invalid Account
             Account bad("bad");
             env.memoize(bad);
             ammAlice.withdraw(
@@ -1892,15 +1848,8 @@ private:
                 std::nullopt,
                 seq(1),
                 ter(terNO_ACCOUNT));
-        });
 
-        // Invalid AMM
-        testAMM([&](AMM& ammAlice, Env& env) {
-            ammAlice.withdrawAll(alice);
-            ammAlice.withdraw(
-                alice, 10000, std::nullopt, std::nullopt, ter(terNO_AMM));
-        });
-        testAMM([&](AMM& ammAlice, Env& env) {
+            // Invalid AMM
             ammAlice.withdraw(
                 alice,
                 1000,
@@ -1911,6 +1860,17 @@ private:
                 {{USD, GBP}},
                 std::nullopt,
                 ter(terNO_AMM));
+
+            // Carol is not a Liquidity Provider
+            ammAlice.withdraw(
+                carol, 10000, std::nullopt, std::nullopt, ter(tecAMM_BALANCE));
+        });
+
+        // Invalid AMM
+        testAMM([&](AMM& ammAlice, Env& env) {
+            ammAlice.withdrawAll(alice);
+            ammAlice.withdraw(
+                alice, 10000, std::nullopt, std::nullopt, ter(terNO_AMM));
         });
 
         // Globally frozen asset
@@ -1947,14 +1907,6 @@ private:
                 alice, 1000, std::nullopt, std::nullopt, ter(tecFROZEN));
             ammAlice.withdraw(
                 alice, USD(100), std::nullopt, std::nullopt, ter(tecFROZEN));
-        });
-
-        // Carol is not a Liquidity Provider
-        testAMM([&](AMM& ammAlice, Env&) {
-            ammAlice.withdraw(
-                carol, 10000, std::nullopt, std::nullopt, ter(tecAMM_BALANCE));
-            BEAST_EXPECT(ammAlice.expectBalances(
-                XRP(10000), USD(10000), IOUAmount{10000000, 0}));
         });
 
         // Carol withdraws more than she owns
@@ -2078,18 +2030,26 @@ private:
 
         // Equal withdrawal by Carol: 1000000 of tokens, 10% of the current
         // pool
-        testAMM([&](AMM& ammAlice, Env&) {
+        testAMM([&](AMM& ammAlice, Env& env) {
             // Single deposit of 100000 worth of tokens,
             // which is 10% of the pool. Carol is LP now.
             ammAlice.deposit(carol, 1000000);
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(11000), USD(11000), IOUAmount{11000000, 0}));
             BEAST_EXPECT(ammAlice.expectLPTokens(carol, IOUAmount{1000000, 0}));
+            // 30,000 less deposited 1,000
+            BEAST_EXPECT(expectLine(env, carol, USD(29000)));
+            // 30,000 less deposited 1,000 and 10 drops tx fee
+            BEAST_EXPECT(
+                expectLedgerEntryRoot(env, carol, XRPAmount{28999999990}));
 
             // Carol withdraws all tokens
             ammAlice.withdraw(carol, 1000000);
             BEAST_EXPECT(
                 ammAlice.expectLPTokens(carol, IOUAmount(beast::Zero())));
+            BEAST_EXPECT(expectLine(env, carol, USD(30000)));
+            BEAST_EXPECT(
+                expectLedgerEntryRoot(env, carol, XRPAmount{29999999980}));
         });
 
         // Equal withdrawal by tokens 1000000, 10%
@@ -2102,7 +2062,7 @@ private:
 
         // Equal withdrawal with a limit. Withdraw XRP200.
         // If proportional withdraw of USD is less than 100
-        // the withdraw that amount, otherwise withdraw USD100
+        // then withdraw that amount, otherwise withdraw USD100
         // and proportionally withdraw XRP. It's the latter
         // in this case - XRP100/USD100.
         testAMM([&](AMM& ammAlice, Env&) {
@@ -2233,7 +2193,7 @@ private:
                     IOUAmount{1015384615384615, -8}) &&
                 ammAlice.expectLPTokens(carol, IOUAmount{15384615384615, -8}));
             ammAlice.withdrawAll(carol);
-            ammAlice.expectLPTokens(carol, IOUAmount{0});
+            BEAST_EXPECT(ammAlice.expectLPTokens(carol, IOUAmount{0}));
         });
 
         // Withdraw with EPrice limit. AssetOut is 0.
@@ -2276,7 +2236,7 @@ private:
             ammAlice.withdraw(carol, 10);
             BEAST_EXPECT(ammAlice.expectBalances(
                 USD(20000), BTC(0.5), IOUAmount{100, 0}));
-            ammAlice.expectLPTokens(carol, IOUAmount{0, 0});
+            BEAST_EXPECT(ammAlice.expectLPTokens(carol, IOUAmount{0, 0}));
             // 2,500 - 0.25*2,000=500(deposit fee)=2,000
             BEAST_EXPECT(expectLine(env, carol, USD(2000)));
             // 0.0625 - 0.025*0.5=0.0125(deposit fee)=0.05
@@ -2314,8 +2274,8 @@ private:
         testcase("Invalid Fee Vote");
         using namespace jtx;
 
-        // Invalid flags
         testAMM([&](AMM& ammAlice, Env& env) {
+            // Invalid flags
             ammAlice.vote(
                 std::nullopt,
                 1000,
@@ -2323,10 +2283,8 @@ private:
                 std::nullopt,
                 std::nullopt,
                 ter(temINVALID_FLAG));
-        });
 
-        // Invalid fee.
-        testAMM([&](AMM& ammAlice, Env& env) {
+            // Invalid fee.
             ammAlice.vote(
                 std::nullopt,
                 1001,
@@ -2335,10 +2293,8 @@ private:
                 std::nullopt,
                 ter(temBAD_FEE));
             BEAST_EXPECT(ammAlice.expectTradingFee(0));
-        });
 
-        // Invalid Account
-        testAMM([&](AMM& ammAlice, Env& env) {
+            // Invalid Account
             Account bad("bad");
             env.memoize(bad);
             ammAlice.vote(
@@ -2348,6 +2304,24 @@ private:
                 seq(1),
                 std::nullopt,
                 ter(terNO_ACCOUNT));
+
+            // Invalid AMM
+            ammAlice.vote(
+                alice,
+                1000,
+                std::nullopt,
+                std::nullopt,
+                {{USD, GBP}},
+                ter(terNO_AMM));
+
+            // Account is not LP
+            ammAlice.vote(
+                carol,
+                1000,
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                ter(tecAMM_INVALID_TOKENS));
         });
 
         // Invalid AMM
@@ -2360,26 +2334,6 @@ private:
                 std::nullopt,
                 std::nullopt,
                 ter(terNO_AMM));
-        });
-        testAMM([&](AMM& ammAlice, Env& env) {
-            ammAlice.vote(
-                alice,
-                1000,
-                std::nullopt,
-                std::nullopt,
-                {{USD, GBP}},
-                ter(terNO_AMM));
-        });
-
-        // Account is not LP
-        testAMM([&](AMM& ammAlice, Env& env) {
-            ammAlice.vote(
-                carol,
-                1000,
-                std::nullopt,
-                std::nullopt,
-                std::nullopt,
-                ter(tecAMM_INVALID_TOKENS));
         });
 
         // Eight votes fill all voting slots (Creator gets the first slot).
@@ -2491,8 +2445,8 @@ private:
         using namespace jtx;
         using namespace std::chrono;
 
-        // Invalid flags
         testAMM([&](AMM& ammAlice, Env& env) {
+            // Invalid flags
             ammAlice.bid(
                 carol,
                 0,
@@ -2502,11 +2456,9 @@ private:
                 std::nullopt,
                 std::nullopt,
                 ter(temINVALID_FLAG));
-        });
 
-        // Invalid Bid price <= 0
-        testAMM([&](AMM& ammAlice, Env& env) {
             ammAlice.deposit(carol, 1000000);
+            // Invalid Bid price <= 0
             for (auto bid : {0, -100})
             {
                 ammAlice.bid(
@@ -2528,11 +2480,8 @@ private:
                     std::nullopt,
                     ter(temBAD_AMOUNT));
             }
-        });
 
-        // Invlaid Min/Max combination
-        testAMM([&](AMM& ammAlice, Env& env) {
-            ammAlice.deposit(carol, 1000000);
+            // Invlaid Min/Max combination
             ammAlice.bid(
                 carol,
                 200,
@@ -2542,10 +2491,8 @@ private:
                 std::nullopt,
                 std::nullopt,
                 ter(tecAMM_INVALID_TOKENS));
-        });
 
-        // Invalid Account
-        testAMM([&](AMM& ammAlice, Env& env) {
+            // Invalid Account
             Account bad("bad");
             env.memoize(bad);
             ammAlice.bid(
@@ -2557,6 +2504,70 @@ private:
                 seq(1),
                 std::nullopt,
                 ter(terNO_ACCOUNT));
+
+            // Account is not LP
+            Account const dan("dan");
+            env.fund(XRP(1000), dan);
+            ammAlice.bid(
+                dan,
+                100,
+                std::nullopt,
+                {},
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                ter(tecAMM_INVALID_TOKENS));
+            ammAlice.bid(
+                dan,
+                std::nullopt,
+                std::nullopt,
+                {},
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                ter(tecAMM_INVALID_TOKENS));
+
+            // Auth account is invalid.
+            ammAlice.bid(
+                carol,
+                100,
+                std::nullopt,
+                {bob},
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                ter(terNO_ACCOUNT));
+
+            // Invalid Assets
+            ammAlice.bid(
+                alice,
+                std::nullopt,
+                100,
+                {},
+                std::nullopt,
+                std::nullopt,
+                {{USD, GBP}},
+                ter(terNO_AMM));
+
+            // Invalid Min/Max issue
+            ammAlice.bid(
+                alice,
+                std::nullopt,
+                STAmount{USD, 100},
+                {},
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                ter(temAMM_BAD_TOKENS));
+            ammAlice.bid(
+                alice,
+                STAmount{USD, 100},
+                std::nullopt,
+                {},
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                ter(temAMM_BAD_TOKENS));
         });
 
         // Invalid AMM
@@ -2571,41 +2582,6 @@ private:
                 std::nullopt,
                 std::nullopt,
                 ter(terNO_AMM));
-        });
-
-        // Account is not LP
-        testAMM([&](AMM& ammAlice, Env& env) {
-            ammAlice.bid(
-                carol,
-                100,
-                std::nullopt,
-                {},
-                std::nullopt,
-                std::nullopt,
-                std::nullopt,
-                ter(tecAMM_INVALID_TOKENS));
-            ammAlice.bid(
-                carol,
-                std::nullopt,
-                std::nullopt,
-                {},
-                std::nullopt,
-                std::nullopt,
-                std::nullopt,
-                ter(tecAMM_INVALID_TOKENS));
-        });
-
-        // Auth account is invalid.
-        testAMM([&](AMM& ammAlice, Env& env) {
-            ammAlice.bid(
-                carol,
-                100,
-                std::nullopt,
-                {bob},
-                std::nullopt,
-                std::nullopt,
-                std::nullopt,
-                ter(terNO_ACCOUNT));
         });
 
         // More than four Auth accounts.
@@ -2663,41 +2639,6 @@ private:
                 std::nullopt,
                 std::nullopt,
                 ter(tecAMM_INVALID_TOKENS));
-        });
-
-        // Invalid Assets
-        testAMM([&](AMM& ammAlice, Env&) {
-            ammAlice.bid(
-                alice,
-                std::nullopt,
-                100,
-                {},
-                std::nullopt,
-                std::nullopt,
-                {{USD, GBP}},
-                ter(terNO_AMM));
-        });
-
-        // Invalid Min/Max issue
-        testAMM([&](AMM& ammAlice, Env&) {
-            ammAlice.bid(
-                alice,
-                std::nullopt,
-                STAmount{USD, 100},
-                {},
-                std::nullopt,
-                std::nullopt,
-                std::nullopt,
-                ter(temAMM_BAD_TOKENS));
-            ammAlice.bid(
-                alice,
-                STAmount{USD, 100},
-                std::nullopt,
-                {},
-                std::nullopt,
-                std::nullopt,
-                std::nullopt,
-                ter(temAMM_BAD_TOKENS));
         });
 
         // Bid all tokens, still own the slot
@@ -3366,7 +3307,7 @@ private:
 
         // Payment and transfer fee
         // Scenario:
-        // Bob sends 125GBP to pay 100USD to Carol
+        // Bob sends 125GBP to pay 100EUR to Carol
         // Payment execution:
         // bob's 125GBP/1.25 = 100GBP
         // 100GBP/100EUR AMM offer
@@ -7105,20 +7046,6 @@ private:
         env.close();
 
         {
-            // Is toggled via AccountSet using SetFlag and ClearFlag
-            //    test: SetFlag GlobalFreeze
-            env.require(nflags(G1, asfGlobalFreeze));
-            env(fset(G1, asfGlobalFreeze));
-            env.require(flags(G1, asfGlobalFreeze));
-            env.require(nflags(G1, asfNoFreeze));
-
-            //    test: ClearFlag GlobalFreeze
-            env(fclear(G1, asfGlobalFreeze));
-            env.require(nflags(G1, asfGlobalFreeze));
-            env.require(nflags(G1, asfNoFreeze));
-        }
-
-        {
             // Account without GlobalFreeze (proving operations normally
             // work)
             //    test: visible offers where taker_pays is unfrozen issuer
@@ -7268,7 +7195,7 @@ private:
             STAmount{Issue{to_currency("USD"), ammA3.ammAccount()}, 0};
         env(trust(G1, a3am, tfSetFreeze));
         auto const info = ammA3.ammRpcInfo();
-        BEAST_EXPECT(info && (*info)[jss::amm][jss::asset2_frozen].asBool());
+        BEAST_EXPECT(info[jss::amm][jss::asset2_frozen].asBool());
         auto affected =
             env.meta()->getJson(JsonOptions::none)[sfAffectedNodes.fieldName];
         if (!BEAST_EXPECT(checkArraySize(affected, 2u)))
@@ -7366,7 +7293,8 @@ private:
             XRP(11000), USD(11000), IOUAmount{11000000, 0}));
 
         ammAlice.withdraw(alice, 1000000);
-        ammAlice.expectBalances(XRP(10000), USD(10000), ammAlice.tokens());
+        BEAST_EXPECT(
+            ammAlice.expectBalances(XRP(10000), USD(10000), ammAlice.tokens()));
 
         ammAlice.vote({}, 1000);
         BEAST_EXPECT(ammAlice.expectTradingFee(1000));
@@ -7647,6 +7575,7 @@ private:
         testFreeze();
         testMultisign();
         testPayStrand();
+        BEAST_EXPECT(true);
     }
 };
 

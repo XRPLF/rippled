@@ -66,8 +66,7 @@ path::create()
 void
 path::append_one(Account const& account)
 {
-    auto& jv = create();
-    jv["account"] = toBase58(account.id());
+    append_one(account.id());
 }
 
 void

@@ -203,7 +203,7 @@ install (
 install (
   FILES
     src/ripple/protocol/AccountID.h
-    src/ripple/protocol/AMM.h
+    src/ripple/protocol/AMMCore.h
     src/ripple/protocol/AmountConversions.h
     src/ripple/protocol/Book.h
     src/ripple/protocol/BuildInfo.h
