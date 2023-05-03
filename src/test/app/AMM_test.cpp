@@ -6873,7 +6873,6 @@ private:
         testFreeze();
         testMultisign();
         testPayStrand();
-        BEAST_EXPECT(true);
     }
 };
 
