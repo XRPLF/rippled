@@ -40,6 +40,18 @@ class ReducedOffer_test : public beast::unit_test::suite
             "json", "ledger_entry", to_string(jvParams))[jss::result];
     }
 
+    static bool
+    offerInLedger(
+        jtx::Env& env,
+        jtx::Account const& acct,
+        std::uint32_t offerSeq)
+    {
+        Json::Value ledgerOffer = ledgerEntryOffer(env, acct, offerSeq);
+        return !(
+            ledgerOffer.isMember(jss::error) &&
+            ledgerOffer[jss::error].asString() == "entryNotFound");
+    }
+
     // Common code to clean up unneeded offers.
     static void
     cleanupOldOffers(
@@ -111,17 +123,11 @@ public:
 
                 // alice's offer should be fully crossed and so gone from
                 // the ledger.
-                {
-                    Json::Value aliceOffer =
-                        ledgerEntryOffer(env, alice, aliceOfferSeq);
-                    if (!BEAST_EXPECT(
-                            aliceOffer.isMember(jss::error) &&
-                            aliceOffer[jss::error].asString() ==
-                                "entryNotFound"))
-                        // If the in-ledger offer was not consumed then further
-                        // results are meaningless.
-                        return 1;
-                }
+                if (!BEAST_EXPECT(!offerInLedger(env, alice, aliceOfferSeq)))
+                    // If the in-ledger offer was not consumed then further
+                    // results are meaningless.
+                    return 1;
+
                 // bob's offer should be in the ledger, but reduced in size.
                 unsigned int badRate = 1;
                 {
@@ -268,19 +274,13 @@ public:
                 STAmount const aliceFinalBalance = env.balance(alice);
 
                 // bob's offer should not have made it into the ledger.
+                if (!BEAST_EXPECT(!offerInLedger(env, bob, bobOfferSeq)))
                 {
-                    Json::Value bobOffer =
-                        ledgerEntryOffer(env, bob, bobOfferSeq);
-                    if (!BEAST_EXPECT(
-                            bobOffer.isMember(jss::error) &&
-                            bobOffer[jss::error].asString() == "entryNotFound"))
-                    {
-                        // If the in-ledger offer was not consumed then further
-                        // results are meaningless.
-                        cleanupOldOffers(
-                            env, alice, bob, aliceOfferSeq, bobOfferSeq);
-                        return 1;
-                    }
+                    // If the in-ledger offer was not consumed then further
+                    // results are meaningless.
+                    cleanupOldOffers(
+                        env, alice, bob, aliceOfferSeq, bobOfferSeq);
+                    return 1;
                 }
                 // alice's offer should still be in the ledger, but reduced in
                 // size.
@@ -431,13 +431,9 @@ public:
                 // then we use that as evidence that bob's offer blocked the
                 // order book.
                 {
-                    Json::Value bobsOfferJson =
-                        ledgerEntryOffer(env, bob, bobOfferSeq);
                     bool const bobsOfferGone =
-                        bobsOfferJson.isMember(jss::error) &&
-                        bobsOfferJson[jss::error] == "entryNotFound";
-
-                    STAmount aliceBalanceUSD = env.balance(alice, USD);
+                        !offerInLedger(env, bob, bobOfferSeq);
+                    STAmount const aliceBalanceUSD = env.balance(alice, USD);
 
                     // Sanity check the ledger if alice got USD.
                     if (aliceBalanceUSD.signum() > 0)
@@ -550,12 +546,8 @@ public:
 
                 // Examine the aftermath of alice's offer.
                 {
-                    Json::Value bobsOfferJson =
-                        ledgerEntryOffer(env, bob, bobOfferSeq);
                     bool const bobsOfferGone =
-                        bobsOfferJson.isMember(jss::error) &&
-                        bobsOfferJson[jss::error] == "entryNotFound";
-
+                        !offerInLedger(env, bob, bobOfferSeq);
                     STAmount aliceBalanceUSD = env.balance(alice, USD);
 #if 0
                     std::cout
