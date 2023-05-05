@@ -40,6 +40,20 @@ class ReducedOffer_test : public beast::unit_test::suite
             "json", "ledger_entry", to_string(jvParams))[jss::result];
     }
 
+    // Common code to clean up unneeded offers.
+    static void
+    cleanupOldOffers(
+        jtx::Env& env,
+        jtx::Account const& acct1,
+        jtx::Account const& acct2,
+        std::uint32_t acct1OfferSeq,
+        std::uint32_t acct2OfferSeq)
+    {
+        env(offer_cancel(acct1, acct1OfferSeq));
+        env(offer_cancel(acct2, acct2OfferSeq));
+        env.close();
+    }
+
 public:
     void
     testPartialCrossNewXrpIouQChange()
@@ -160,10 +174,7 @@ public:
 
                 // In preparation for the next iteration make sure the two
                 // offers are gone from the ledger.
-                env(offer_cancel(alice, aliceOfferSeq));
-                env(offer_cancel(bob, bobOfferSeq));
-                env.close();
-
+                cleanupOldOffers(env, alice, bob, aliceOfferSeq, bobOfferSeq);
                 return badRate;
             };
 
@@ -256,15 +267,6 @@ public:
                 env.close();
                 STAmount const aliceFinalBalance = env.balance(alice);
 
-                auto doCleanup =
-                    [&env, &alice, &bob, aliceOfferSeq, bobOfferSeq](
-                        unsigned int ret) -> unsigned int {
-                    env(offer_cancel(alice, aliceOfferSeq));
-                    env(offer_cancel(bob, bobOfferSeq));
-                    env.close();
-                    return ret;
-                };
-
                 // bob's offer should not have made it into the ledger.
                 {
                     Json::Value bobOffer =
@@ -272,9 +274,13 @@ public:
                     if (!BEAST_EXPECT(
                             bobOffer.isMember(jss::error) &&
                             bobOffer[jss::error].asString() == "entryNotFound"))
+                    {
                         // If the in-ledger offer was not consumed then further
                         // results are meaningless.
-                        return doCleanup(1);
+                        cleanupOldOffers(
+                            env, alice, bob, aliceOfferSeq, bobOfferSeq);
+                        return 1;
+                    }
                 }
                 // alice's offer should still be in the ledger, but reduced in
                 // size.
@@ -331,7 +337,8 @@ public:
 
                 // In preparation for the next iteration make sure the two
                 // offers are gone from the ledger.
-                return doCleanup(badRate);
+                cleanupOldOffers(env, alice, bob, aliceOfferSeq, bobOfferSeq);
+                return badRate;
             };
 
             // alice's offer (the old offer) is the same every time:
@@ -408,7 +415,7 @@ public:
                 env(pay(gw, bob, initialBobUSD));
                 env.close();
 
-                std::uint32_t const bobsOfferSeq = env.seq(bob);
+                std::uint32_t const bobOfferSeq = env.seq(bob);
                 env(offer(bob, drops(2), USD(1)));
                 env.close();
 
@@ -425,7 +432,7 @@ public:
                 // order book.
                 {
                     Json::Value bobsOfferJson =
-                        ledgerEntryOffer(env, bob, bobsOfferSeq);
+                        ledgerEntryOffer(env, bob, bobOfferSeq);
                     bool const bobsOfferGone =
                         bobsOfferJson.isMember(jss::error) &&
                         bobsOfferJson[jss::error] == "entryNotFound";
@@ -448,9 +455,8 @@ public:
 
                     // In preparation for the next iteration clean up any
                     // leftover offers.
-                    env(offer_cancel(alice, aliceOfferSeq));
-                    env(offer_cancel(bob, bobsOfferSeq));
-                    env.close();
+                    cleanupOldOffers(
+                        env, alice, bob, aliceOfferSeq, bobOfferSeq);
 
                     // Zero out alice's and bob's USD balances.
                     if (STAmount const aliceBalance = env.balance(alice, USD);
@@ -532,7 +538,7 @@ public:
                 env.close();
 
                 // This offer is underfunded
-                std::uint32_t bobsOfferSeq = env.seq(bob);
+                std::uint32_t bobOfferSeq = env.seq(bob);
                 env(offer(bob, eurOffer, usdOffer));
                 env.close();
                 env.require(offers(bob, 1));
@@ -545,7 +551,7 @@ public:
                 // Examine the aftermath of alice's offer.
                 {
                     Json::Value bobsOfferJson =
-                        ledgerEntryOffer(env, bob, bobsOfferSeq);
+                        ledgerEntryOffer(env, bob, bobOfferSeq);
                     bool const bobsOfferGone =
                         bobsOfferJson.isMember(jss::error) &&
                         bobsOfferJson[jss::error] == "entryNotFound";
@@ -575,9 +581,7 @@ public:
 
                 // In preparation for the next iteration clean up any
                 // leftover offers.
-                env(offer_cancel(alice, aliceOfferSeq));
-                env(offer_cancel(bob, bobsOfferSeq));
-                env.close();
+                cleanupOldOffers(env, alice, bob, aliceOfferSeq, bobOfferSeq);
 
                 // Zero out alice's and bob's IOU balances.
                 auto zeroBalance = [&env, &gw](

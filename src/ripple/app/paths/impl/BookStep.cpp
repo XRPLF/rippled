@@ -507,8 +507,7 @@ limitStepIn(
     TOut& ownerGives,
     std::uint32_t transferRateIn,
     std::uint32_t transferRateOut,
-    TIn const& limit,
-    Rules const& rules)
+    TIn const& limit)
 {
     if (limit < stpAmt.in)
     {
@@ -911,8 +910,7 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
                 ownerGivesAdj,
                 transferRateIn,
                 transferRateOut,
-                remainingIn,
-                afView.rules());
+                remainingIn);
             savedIns.insert(remainingIn);
             lastOut = savedOuts.insert(stpAdjAmt.out);
             result.out = sum(savedOuts);
