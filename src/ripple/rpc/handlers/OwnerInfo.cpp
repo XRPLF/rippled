@@ -49,7 +49,7 @@ doOwnerInfo(RPC::JsonContext& context)
     auto const& closedLedger = context.ledgerMaster.getClosedLedger();
     std::optional<AccountID> const accountID = parseBase58<AccountID>(strIdent);
     ret[jss::accepted] = accountID.has_value()
-        ? context.netOps.getOwnerInfo(closedLedger, *accountID)
+        ? context.netOps.getOwnerInfo(closedLedger, accountID.value())
         : rpcError(rpcACT_MALFORMED);
 
     auto const& currentLedger = context.ledgerMaster.getCurrentLedger();

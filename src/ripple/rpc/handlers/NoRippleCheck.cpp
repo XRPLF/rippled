@@ -92,15 +92,14 @@ doNoRippleCheck(RPC::JsonContext& context)
     Json::Value& jvTransactions =
         transactions ? (result[jss::transactions] = Json::arrayValue) : dummy;
 
-    auto const accountID =
-        parseBase58<AccountID>(params[jss::account].asString());
-    if (!accountID)
+    auto id = parseBase58<AccountID>(params[jss::account].asString());
+    if (!id)
     {
         RPC::inject_error(rpcACT_MALFORMED, result);
         return result;
     }
-
-    auto const sle = ledger->read(keylet::account(*accountID));
+    auto const accountID{std::move(id.value())};
+    auto const sle = ledger->read(keylet::account(accountID));
     if (!sle)
         return rpcError(rpcACT_NOT_FOUND);
 
@@ -125,20 +124,20 @@ doNoRippleCheck(RPC::JsonContext& context)
             Json::Value& tx = jvTransactions.append(Json::objectValue);
             tx["TransactionType"] = jss::AccountSet;
             tx["SetFlag"] = 8;
-            fillTransaction(context, tx, *accountID, seq, *ledger);
+            fillTransaction(context, tx, accountID, seq, *ledger);
         }
     }
 
     forEachItemAfter(
         *ledger,
-        *accountID,
+        accountID,
         uint256(),
         0,
         limit,
         [&](std::shared_ptr<SLE const> const& ownedItem) {
             if (ownedItem->getType() == ltRIPPLE_STATE)
             {
-                bool const bLow = *accountID ==
+                bool const bLow = accountID ==
                     ownedItem->getFieldAmount(sfLowLimit).getIssuer();
 
                 bool const bNoRipple = ownedItem->getFieldU32(sfFlags) &
@@ -178,7 +177,7 @@ doNoRippleCheck(RPC::JsonContext& context)
                     tx["TransactionType"] = jss::TrustSet;
                     tx["LimitAmount"] = limitAmount.getJson(JsonOptions::none);
                     tx["Flags"] = bNoRipple ? tfClearNoRipple : tfSetNoRipple;
-                    fillTransaction(context, tx, *accountID, seq, *ledger);
+                    fillTransaction(context, tx, accountID, seq, *ledger);
 
                     return true;
                 }

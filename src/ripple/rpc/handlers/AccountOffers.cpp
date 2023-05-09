@@ -65,18 +65,18 @@ doAccountOffers(RPC::JsonContext& context)
     if (!ledger)
         return result;
 
-    auto const accountID =
-        parseBase58<AccountID>(params[jss::account].asString());
-    if (!accountID)
+    auto id = parseBase58<AccountID>(params[jss::account].asString());
+    if (!id)
     {
         RPC::inject_error(rpcACT_MALFORMED, result);
         return result;
     }
+    auto const accountID{std::move(id.value())};
 
     // Get info on account.
-    result[jss::account] = toBase58(*accountID);
+    result[jss::account] = toBase58(accountID);
 
-    if (!ledger->exists(keylet::account(*accountID)))
+    if (!ledger->exists(keylet::account(accountID)))
         return rpcError(rpcACT_NOT_FOUND);
 
     unsigned int limit;
@@ -125,7 +125,7 @@ doAccountOffers(RPC::JsonContext& context)
         if (!sle)
             return rpcError(rpcINVALID_PARAMS);
 
-        if (!RPC::isRelatedToAccount(*ledger, sle, *accountID))
+        if (!RPC::isRelatedToAccount(*ledger, sle, accountID))
             return rpcError(rpcINVALID_PARAMS);
     }
 
@@ -134,7 +134,7 @@ doAccountOffers(RPC::JsonContext& context)
     std::uint64_t nextHint = 0;
     if (!forEachItemAfter(
             *ledger,
-            *accountID,
+            accountID,
             startAfter,
             startHint,
             limit + 1,
@@ -149,7 +149,7 @@ doAccountOffers(RPC::JsonContext& context)
                 if (++count == limit)
                 {
                     marker = sle->key();
-                    nextHint = RPC::getStartHint(sle, *accountID);
+                    nextHint = RPC::getStartHint(sle, accountID);
                 }
 
                 if (count <= limit && sle->getType() == ltOFFER)

@@ -86,9 +86,9 @@ doGatewayBalances(RPC::JsonContext& context)
         auto addHotWallet = [&hotWallets](Json::Value const& j) {
             if (j.isString())
             {
-                if (auto const id = parseBase58<AccountID>(j.asString()); id)
+                if (auto id = parseBase58<AccountID>(j.asString()); id)
                 {
-                    hotWallets.insert(*id);
+                    hotWallets.insert(std::move(id.value()));
                     return true;
                 }
             }

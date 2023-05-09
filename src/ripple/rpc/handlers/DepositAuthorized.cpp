@@ -47,10 +47,10 @@ doDepositAuthorized(RPC::JsonContext& context)
             rpcINVALID_PARAMS,
             RPC::expected_field_message(jss::source_account, "a string"));
 
-    std::optional<AccountID> const srcAcct =
-        parseBase58<AccountID>(params[jss::source_account].asString());
-    if (!srcAcct)
+    auto srcID = parseBase58<AccountID>(params[jss::source_account].asString());
+    if (!srcID)
         return rpcError(rpcACT_MALFORMED);
+    auto const srcAcct{std::move(srcID.value())};
 
     // Validate destination_account.
     if (!params.isMember(jss::destination_account))
@@ -60,10 +60,11 @@ doDepositAuthorized(RPC::JsonContext& context)
             rpcINVALID_PARAMS,
             RPC::expected_field_message(jss::destination_account, "a string"));
 
-    std::optional<AccountID> const dstAcct =
+    auto dstID =
         parseBase58<AccountID>(params[jss::destination_account].asString());
-    if (!dstAcct)
+    if (!dstID)
         return rpcError(rpcACT_MALFORMED);
+    auto const dstAcct{std::move(dstID.value())};
 
     // Validate ledger.
     std::shared_ptr<ReadView const> ledger;
@@ -73,14 +74,14 @@ doDepositAuthorized(RPC::JsonContext& context)
         return result;
 
     // If source account is not in the ledger it can't be authorized.
-    if (!ledger->exists(keylet::account(*srcAcct)))
+    if (!ledger->exists(keylet::account(srcAcct)))
     {
         RPC::inject_error(rpcSRC_ACT_NOT_FOUND, result);
         return result;
     }
 
     // If destination account is not in the ledger you can't deposit to it, eh?
-    auto const sleDest = ledger->read(keylet::account(*dstAcct));
+    auto const sleDest = ledger->read(keylet::account(dstAcct));
     if (!sleDest)
     {
         RPC::inject_error(rpcDST_ACT_NOT_FOUND, result);
@@ -89,7 +90,7 @@ doDepositAuthorized(RPC::JsonContext& context)
 
     // If the two accounts are the same, then the deposit should be fine.
     bool depositAuthorized{true};
-    if (*srcAcct != *dstAcct)
+    if (srcAcct != dstAcct)
     {
         // Check destination for the DepositAuth flag.  If that flag is
         // not set then a deposit should be just fine.
@@ -97,7 +98,7 @@ doDepositAuthorized(RPC::JsonContext& context)
         {
             // See if a preauthorization entry is in the ledger.
             auto const sleDepositAuth =
-                ledger->read(keylet::depositPreauth(*dstAcct, *srcAcct));
+                ledger->read(keylet::depositPreauth(dstAcct, srcAcct));
             depositAuthorized = static_cast<bool>(sleDepositAuth);
         }
     }

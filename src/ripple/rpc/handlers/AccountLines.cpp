@@ -85,15 +85,15 @@ doAccountLines(RPC::JsonContext& context)
     if (!ledger)
         return result;
 
-    auto const accountID =
-        parseBase58<AccountID>(params[jss::account].asString());
-    if (!accountID)
+    auto id = parseBase58<AccountID>(params[jss::account].asString());
+    if (!id)
     {
         RPC::inject_error(rpcACT_MALFORMED, result);
         return result;
     }
+    auto const accountID{std::move(id.value())};
 
-    if (!ledger->exists(keylet::account(*accountID)))
+    if (!ledger->exists(keylet::account(accountID)))
         return rpcError(rpcACT_NOT_FOUND);
 
     std::string strPeer;
@@ -130,7 +130,7 @@ doAccountLines(RPC::JsonContext& context)
         bool ignoreDefault;
         uint32_t foundCount;
     };
-    VisitData visitData = {{}, *accountID, raPeerAccount, ignoreDefault, 0};
+    VisitData visitData = {{}, accountID, raPeerAccount, ignoreDefault, 0};
     uint256 startAfter = beast::zero;
     std::uint64_t startHint = 0;
 
@@ -168,7 +168,7 @@ doAccountLines(RPC::JsonContext& context)
         if (!sle)
             return rpcError(rpcINVALID_PARAMS);
 
-        if (!RPC::isRelatedToAccount(*ledger, sle, *accountID))
+        if (!RPC::isRelatedToAccount(*ledger, sle, accountID))
             return rpcError(rpcINVALID_PARAMS);
     }
 
@@ -178,7 +178,7 @@ doAccountLines(RPC::JsonContext& context)
     {
         if (!forEachItemAfter(
                 *ledger,
-                *accountID,
+                accountID,
                 startAfter,
                 startHint,
                 limit + 1,
@@ -243,7 +243,7 @@ doAccountLines(RPC::JsonContext& context)
             to_string(*marker) + "," + std::to_string(nextHint);
     }
 
-    result[jss::account] = toBase58(*accountID);
+    result[jss::account] = toBase58(accountID);
 
     for (auto const& item : visitData.items)
         addLine(jsonLines, item);

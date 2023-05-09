@@ -47,18 +47,19 @@ doAccountCurrencies(RPC::JsonContext& context)
                                       : params[jss::ident].asString());
 
     // Get info on account.
-    auto const accountID = parseBase58<AccountID>(strIdent);
-    if (!accountID)
+    auto id = parseBase58<AccountID>(strIdent);
+    if (!id)
     {
         RPC::inject_error(rpcACT_MALFORMED, result);
         return result;
     }
+    auto const accountID{std::move(id.value())};
 
-    if (!ledger->exists(keylet::account(*accountID)))
+    if (!ledger->exists(keylet::account(accountID)))
         return rpcError(rpcACT_NOT_FOUND);
 
     std::set<Currency> send, receive;
-    for (auto const& rspEntry : RPCTrustLine::getItems(*accountID, *ledger))
+    for (auto const& rspEntry : RPCTrustLine::getItems(accountID, *ledger))
     {
         STAmount const& saBalance = rspEntry.getBalance();
 

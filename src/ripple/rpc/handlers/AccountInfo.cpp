@@ -66,12 +66,13 @@ doAccountInfo(RPC::JsonContext& context)
         return result;
 
     // Get info on account.
-    auto const accountID = parseBase58<AccountID>(strIdent);
-    if (!accountID)
+    auto id = parseBase58<AccountID>(strIdent);
+    if (!id)
     {
         RPC::inject_error(rpcACT_MALFORMED, result);
         return result;
     }
+    auto const accountID{std::move(id.value())};
 
     static constexpr std::
         array<std::pair<std::string_view, LedgerSpecificFlags>, 9>
@@ -95,7 +96,7 @@ doAccountInfo(RPC::JsonContext& context)
                  {"disallowIncomingPayChan", lsfDisallowIncomingPayChan},
                  {"disallowIncomingTrustline", lsfDisallowIncomingTrustline}}};
 
-    auto const sleAccepted = ledger->read(keylet::account(*accountID));
+    auto const sleAccepted = ledger->read(keylet::account(accountID));
     if (sleAccepted)
     {
         auto const queue =
@@ -134,7 +135,7 @@ doAccountInfo(RPC::JsonContext& context)
 
             // This code will need to be revisited if in the future we support
             // multiple SignerLists on one account.
-            auto const sleSigners = ledger->read(keylet::signers(*accountID));
+            auto const sleSigners = ledger->read(keylet::signers(accountID));
             if (sleSigners)
                 jvSignerList.append(sleSigners->getJson(JsonOptions::none));
 
@@ -157,7 +158,7 @@ doAccountInfo(RPC::JsonContext& context)
         {
             Json::Value jvQueueData = Json::objectValue;
 
-            auto const txs = context.app.getTxQ().getAccountTxs(*accountID);
+            auto const txs = context.app.getTxQ().getAccountTxs(accountID);
             if (!txs.empty())
             {
                 jvQueueData[jss::txn_count] =
@@ -244,7 +245,7 @@ doAccountInfo(RPC::JsonContext& context)
     }
     else
     {
-        result[jss::account] = toBase58(*accountID);
+        result[jss::account] = toBase58(accountID);
         RPC::inject_error(rpcACT_NOT_FOUND, result);
     }
 
