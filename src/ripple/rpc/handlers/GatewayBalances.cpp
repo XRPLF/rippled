@@ -70,13 +70,13 @@ doGatewayBalances(RPC::JsonContext& context)
                                       : params[jss::ident].asString());
 
     // Get info on account.
-    auto const accountID = parseBase58<AccountID>(strIdent);
-    if (!accountID)
+    auto id = parseBase58<AccountID>(strIdent);
+    if (!id)
         return rpcError(rpcACT_MALFORMED);
-
+    auto const accountID{std::move(id.value())};
     context.loadType = Resource::feeHighBurdenRPC;
 
-    result[jss::account] = toBase58(*accountID);
+    result[jss::account] = toBase58(accountID);
 
     // Parse the specified hotwallet(s), if any
     std::set<AccountID> hotWallets;
@@ -129,8 +129,8 @@ doGatewayBalances(RPC::JsonContext& context)
     // Traverse the cold wallet's trust lines
     {
         forEachItem(
-            *ledger, *accountID, [&](std::shared_ptr<SLE const> const& sle) {
-                auto rs = PathFindTrustLine::makeItem(*accountID, sle);
+            *ledger, accountID, [&](std::shared_ptr<SLE const> const& sle) {
+                auto rs = PathFindTrustLine::makeItem(accountID, sle);
 
                 if (!rs)
                     return;
