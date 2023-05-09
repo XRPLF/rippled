@@ -76,14 +76,14 @@ doAccountChannels(RPC::JsonContext& context)
     if (!ledger)
         return result;
 
-    auto const accountID =
-        parseBase58<AccountID>(params[jss::account].asString());
-    if (!accountID)
+    auto id = parseBase58<AccountID>(params[jss::account].asString());
+    if (!id)
     {
-        rpcError(rpcACT_MALFORMED);
+        return rpcError(rpcACT_MALFORMED);
     }
+    AccountID const accountID{std::move(id.value())};
 
-    if (!ledger->exists(keylet::account(*accountID)))
+    if (!ledger->exists(keylet::account(accountID)))
         return rpcError(rpcACT_NOT_FOUND);
 
     std::string strDst;
@@ -110,7 +110,7 @@ doAccountChannels(RPC::JsonContext& context)
         AccountID const& accountID;
         std::optional<AccountID> const& raDstAccount;
     };
-    VisitData visitData = {{}, *accountID, raDstAccount};
+    VisitData visitData = {{}, accountID, raDstAccount};
     visitData.items.reserve(limit);
     uint256 startAfter = beast::zero;
     std::uint64_t startHint = 0;
@@ -149,7 +149,7 @@ doAccountChannels(RPC::JsonContext& context)
         if (!sle)
             return rpcError(rpcINVALID_PARAMS);
 
-        if (!RPC::isRelatedToAccount(*ledger, sle, *accountID))
+        if (!RPC::isRelatedToAccount(*ledger, sle, accountID))
             return rpcError(rpcINVALID_PARAMS);
     }
 
@@ -158,7 +158,7 @@ doAccountChannels(RPC::JsonContext& context)
     std::uint64_t nextHint = 0;
     if (!forEachItemAfter(
             *ledger,
-            *accountID,
+            accountID,
             startAfter,
             startHint,
             limit + 1,
@@ -177,7 +177,7 @@ doAccountChannels(RPC::JsonContext& context)
                 }
 
                 if (count <= limit && sleCur->getType() == ltPAYCHAN &&
-                    (*sleCur)[sfAccount] == *accountID &&
+                    (*sleCur)[sfAccount] == accountID &&
                     (!visitData.raDstAccount ||
                      *visitData.raDstAccount == (*sleCur)[sfDestination]))
                 {
@@ -200,7 +200,7 @@ doAccountChannels(RPC::JsonContext& context)
             to_string(*marker) + "," + std::to_string(nextHint);
     }
 
-    result[jss::account] = toBase58(*accountID);
+    result[jss::account] = toBase58(accountID);
 
     for (auto const& item : visitData.items)
         addChannel(jsonChannels, *item);
