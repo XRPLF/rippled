@@ -44,7 +44,7 @@ public:
         @return `true` if the ledger was already tracked
     */
     bool
-    insert(std::shared_ptr<Ledger const> ledger, bool validated);
+    insert(std::shared_ptr<Ledger const> const& ledger, bool validated);
 
     /** Get the ledgers_by_hash cache hit rate
         @return the hit rate

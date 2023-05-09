@@ -127,6 +127,13 @@ which allows you to statically link it with GCC, if you want.
 conan export external/snappy snappy/1.1.9@
 ```
 
+Export our [Conan recipe for SOCI](./external/soci).
+It patches their CMake to correctly import its dependencies.
+
+```
+conan export external/soci soci/4.0.3@
+```
+
 ## How to build and test
 
 Let's start with a couple of examples of common workflows.
@@ -258,10 +265,11 @@ part of C++20, e.g. Apple Clang 15.0,
 then you might need to add a preprocessor definition to your bulid:
 
 ```
+conan profile update 'options.boost:extra_b2_flags="define=BOOST_ASIO_HAS_STD_INVOKE_RESULT"' default
 conan profile update 'env.CFLAGS="-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"' default
 conan profile update 'env.CXXFLAGS="-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"' default
-conan profile update 'tools.build:cflags+=["-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"]' default
-conan profile update 'tools.build:cxxflags+=["-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"]' default
+conan profile update 'conf.tools.build:cflags+=["-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"]' default
+conan profile update 'conf.tools.build:cxxflags+=["-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"]' default
 ```
 
 

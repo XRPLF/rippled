@@ -196,6 +196,7 @@ doAccountObjects(RPC::JsonContext& context)
         } static constexpr deletionBlockers[] = {
             {jss::check, ltCHECK},
             {jss::escrow, ltESCROW},
+            {jss::nft_page, ltNFTOKEN_PAGE},
             {jss::payment_channel, ltPAYCHAN},
             {jss::state, ltRIPPLE_STATE}};
 

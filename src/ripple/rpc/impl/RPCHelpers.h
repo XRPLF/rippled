@@ -106,7 +106,7 @@ getAccountObjects(
     AccountID const& account,
     std::optional<std::vector<LedgerEntryType>> const& typeFilter,
     uint256 dirIndex,
-    uint256 const& entryIndex,
+    uint256 entryIndex,
     std::uint32_t const limit,
     Json::Value& jvResult);
 
