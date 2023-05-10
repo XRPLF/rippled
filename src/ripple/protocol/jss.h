@@ -53,6 +53,7 @@ JSS(Check);                  // ledger type.
 JSS(CheckCancel);            // transaction type.
 JSS(CheckCash);              // transaction type.
 JSS(CheckCreate);            // transaction type.
+JSS(Clawback);               // transaction type.
 JSS(ClearFlag);              // field.
 JSS(DeliverMin);             // in: TransactionSign
 JSS(DepositPreauth);         // transaction and ledger type.
