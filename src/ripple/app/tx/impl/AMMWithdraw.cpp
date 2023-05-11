@@ -448,7 +448,8 @@ AMMWithdraw::withdraw(
     (void)_;
 
     // Withdrawing one side of the pool
-    if (amountWithdraw == curBalance && !amount2Withdraw)
+    if ((amountWithdraw == curBalance && amount2Withdraw != curBalance2) ||
+        (amount2Withdraw == curBalance2 && amountWithdraw != curBalance))
     {
         JLOG(ctx_.journal.debug())
             << "AMM Withdraw: failed to withdraw one side of the pool "

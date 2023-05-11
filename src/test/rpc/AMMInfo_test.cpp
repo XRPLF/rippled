@@ -95,7 +95,7 @@ public:
             std::unordered_set<std::string> authAccounts = {
                 carol.human(), bob.human(), ed.human(), bill.human()};
             auto const ammInfo = ammAlice.ammRpcInfo();
-            auto const amm = ammInfo["amm"];
+            auto const& amm = ammInfo[jss::amm];
             try
             {
                 // votes

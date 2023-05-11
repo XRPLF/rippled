@@ -1162,6 +1162,46 @@ private:
             // Carol is not a Liquidity Provider
             ammAlice.withdraw(
                 carol, 10000, std::nullopt, std::nullopt, ter(tecAMM_BALANCE));
+
+            // Withdraw entire one side of the pool.
+            // Equal withdraw but due to XRP precision limit,
+            // this results in full withdraw of XRP pool only,
+            // while leaving a tiny amount in USD pool.
+            ammAlice.withdraw(
+                alice,
+                IOUAmount{99999999999, -4},
+                std::nullopt,
+                std::nullopt,
+                ter(tecAMM_FAILED_WITHDRAW));
+            // Withdrawing from one side.
+            // XRP by tokens
+            ammAlice.withdraw(
+                alice,
+                IOUAmount(99999999999, -4),
+                XRP(0),
+                std::nullopt,
+                ter(tecAMM_FAILED_WITHDRAW));
+            // USD by tokens
+            ammAlice.withdraw(
+                alice,
+                IOUAmount(99999999, -1),
+                USD(0),
+                std::nullopt,
+                ter(tecAMM_FAILED_WITHDRAW));
+            // XRP
+            ammAlice.withdraw(
+                alice,
+                XRP(10000),
+                std::nullopt,
+                std::nullopt,
+                ter(tecAMM_FAILED_WITHDRAW));
+            // USD
+            ammAlice.withdraw(
+                alice,
+                STAmount{USD, UINT64_C(99999999999999999), -13},
+                std::nullopt,
+                std::nullopt,
+                ter(tecAMM_FAILED_WITHDRAW));
         });
 
         // Invalid AMM
@@ -1506,13 +1546,6 @@ private:
                 ammAlice.expectLPTokens(carol, IOUAmount{15384615384615, -8}));
         });
 
-        // TODO there should be a limit on a single withdraw amount.
-        // For instance, in 10000USD and 10000XRP amm with all liquidity
-        // provided by one LP, LP can not withdraw all tokens in USD.
-        // Withdrawing 90% in USD is also invalid. Besides the impact
-        // on the pool there should be a max threshold for single
-        // deposit.
-
         // IOU to IOU + transfer fee
         {
             Env env{*this};
@@ -1563,6 +1596,39 @@ private:
                 XRP(10000),
                 STAmount{USD, UINT64_C(99999999999999), -10},
                 IOUAmount{999999999999995, -8}));
+        });
+
+        // Withdraw close to entire pool
+        // Equal by tokens
+        testAMM([&](AMM& ammAlice, Env&) {
+            ammAlice.withdraw(alice, IOUAmount{9999999999, -3});
+            BEAST_EXPECT(ammAlice.expectBalances(
+                XRPAmount{1}, STAmount{USD, 1, -6}, IOUAmount{1, -3}));
+        });
+        // USD by tokens
+        testAMM([&](AMM& ammAlice, Env&) {
+            ammAlice.withdraw(alice, IOUAmount{9999999}, USD(0));
+            BEAST_EXPECT(ammAlice.expectBalances(
+                XRP(10000), STAmount{USD, 1, -10}, IOUAmount{1}));
+        });
+        // XRP by tokens
+        testAMM([&](AMM& ammAlice, Env&) {
+            ammAlice.withdraw(alice, IOUAmount{9999900}, XRP(0));
+            BEAST_EXPECT(ammAlice.expectBalances(
+                XRPAmount{1}, USD(10000), IOUAmount{100}));
+        });
+        // USD
+        testAMM([&](AMM& ammAlice, Env&) {
+            ammAlice.withdraw(
+                alice, STAmount{USD, UINT64_C(9999999999999999), -12});
+            BEAST_EXPECT(ammAlice.expectBalances(
+                XRP(10000), STAmount{USD, 1, -12}, IOUAmount{1, -1}));
+        });
+        // XRP
+        testAMM([&](AMM& ammAlice, Env&) {
+            ammAlice.withdraw(alice, XRPAmount{9999999999});
+            BEAST_EXPECT(ammAlice.expectBalances(
+                XRPAmount{1}, USD(10000), IOUAmount{100}));
         });
     }
 
@@ -1671,67 +1737,52 @@ private:
             BEAST_EXPECT(ammAlice.expectTradingFee(1000));
         });
 
+        auto vote = [&](AMM& ammAlice,
+                        Env& env,
+                        int i,
+                        int fundUSD = 100'000,
+                        std::uint32_t tokens = 10'000'000) {
+            Account a(std::to_string(i));
+            fund(env, gw, {a}, {USD(fundUSD)}, Fund::Acct);
+            ammAlice.deposit(a, tokens);
+            ammAlice.vote(a, 50 * (i + 1));
+        };
+
         // Eight votes fill all voting slots, set fee 0.175%.
         testAMM([&](AMM& ammAlice, Env& env) {
             for (int i = 0; i < 7; ++i)
-            {
-                Account a(std::to_string(i));
-                fund(env, gw, {a}, {USD(10000)}, Fund::Acct);
-                ammAlice.deposit(a, 10000000);
-                ammAlice.vote(a, 50 * (i + 1));
-            }
+                vote(ammAlice, env, i, 10'000);
             BEAST_EXPECT(ammAlice.expectTradingFee(175));
         });
 
         // Eight votes fill all voting slots, set fee 0.175%.
-        // New vote, same account, sets fee 0.275%
+        // New vote, same account, sets fee 0.225%
         testAMM([&](AMM& ammAlice, Env& env) {
-            auto vote = [&](Account const& a, int i) {
-                fund(env, gw, {a}, {USD(100000)}, Fund::Acct);
-                ammAlice.deposit(a, 10000000);
-                ammAlice.vote(a, 50 * (i + 1));
-            };
-            Account a("0");
-            vote(a, 0);
-            for (int i = 1; i < 7; ++i)
-            {
-                Account a(std::to_string(i));
-                vote(a, i);
-            }
+            for (int i = 0; i < 7; ++i)
+                vote(ammAlice, env, i);
             BEAST_EXPECT(ammAlice.expectTradingFee(175));
+            Account const a("0");
             ammAlice.vote(a, 450);
             BEAST_EXPECT(ammAlice.expectTradingFee(225));
         });
 
-        // Eight votes fill all voting slots, set fee 0.225%.
+        // Eight votes fill all voting slots, set fee 0.175%.
         // New vote, new account, higher vote weight, set higher fee 0.244%
         testAMM([&](AMM& ammAlice, Env& env) {
-            auto vote = [&](int i, std::uint32_t tokens) {
-                Account a(std::to_string(i));
-                fund(env, gw, {a}, {USD(100000)}, Fund::Acct);
-                ammAlice.deposit(a, tokens);
-                ammAlice.vote(a, 50 * (i + 1));
-            };
             for (int i = 0; i < 7; ++i)
-                vote(i, 10000000);
+                vote(ammAlice, env, i);
             BEAST_EXPECT(ammAlice.expectTradingFee(175));
-            vote(7, 20000000);
+            vote(ammAlice, env, 7, 100'000, 20'000'000);
             BEAST_EXPECT(ammAlice.expectTradingFee(244));
         });
 
         // Eight votes fill all voting slots, set fee 0.219%.
         // New vote, new account, higher vote weight, set smaller fee 0.206%
         testAMM([&](AMM& ammAlice, Env& env) {
-            auto vote = [&](int i, std::uint32_t tokens) {
-                Account a(std::to_string(i));
-                fund(env, gw, {a}, {USD(100000)}, Fund::Acct);
-                ammAlice.deposit(a, tokens);
-                ammAlice.vote(a, 50 * (i + 1));
-            };
             for (int i = 7; i > 0; --i)
-                vote(i, 10000000);
+                vote(ammAlice, env, i);
             BEAST_EXPECT(ammAlice.expectTradingFee(219));
-            vote(0, 20000000);
+            vote(ammAlice, env, 0, 100'000, 20'000'000);
             BEAST_EXPECT(ammAlice.expectTradingFee(206));
         });
     }
