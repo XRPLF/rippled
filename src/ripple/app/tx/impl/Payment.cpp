@@ -277,7 +277,7 @@ Payment::preclaim(PreclaimContext const& ctx)
 
         if (paths.size() > MaxPathSize ||
             std::any_of(paths.begin(), paths.end(), [](STPath const& path) {
-                return path.size() > MaxPathSize;
+                return path.size() > MaxPathLength;
             }))
         {
             return telBAD_PATH_COUNT;
