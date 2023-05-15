@@ -447,19 +447,6 @@ REGISTER_FEATURE(DisallowIncoming,              Supported::yes, VoteBehavior::De
 REGISTER_FEATURE(XRPFees,                       Supported::yes, VoteBehavior::DefaultNo);
 REGISTER_FIX    (fixUniversalNumber,            Supported::yes, VoteBehavior::DefaultNo);
 
-// The following amendments are obsolete, but must remain supported
-// because they could potentially get enabled.
-//
-// Obsolete features are (usually) not in the ledger, and may have code
-// controlled by the feature. They need to be supported because at some
-// time in the past, the feature was supported and votable, but never
-// passed. So the feature needs to be supported in case it is ever
-// enabled (added to the ledger).
-//
-// If a feature remains obsolete for long enough that no clients are able
-// to vote for it, the feature can be removed (entirely?) from the code.
-REGISTER_FEATURE(CryptoConditionsSuite, Supported::yes, VoteBehavior::Obsolete);
-
 // The following amendments have been active for at least two years. Their
 // pre-amendment code has been removed and the identifiers are deprecated.
 // All known amendments and amendments that may appear in a validated
@@ -469,7 +456,6 @@ uint256 const
     retiredMultiSign         = retireFeature("MultiSign"),
     retiredTrustSetAuth      = retireFeature("TrustSetAuth"),
     retiredFeeEscalation     = retireFeature("FeeEscalation"),
-    retiredCryptoConditions  = retireFeature("CryptoConditions"),
     retiredTickSize          = retireFeature("TickSize"),
     retiredFix1368           = retireFeature("fix1368"),
     retiredEscrow            = retireFeature("Escrow"),

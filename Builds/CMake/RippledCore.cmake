@@ -452,13 +452,6 @@ target_sources (rippled PRIVATE
   src/ripple/basics/impl/partitioned_unordered_map.cpp
   #[===============================[
      main sources:
-       subdir: conditions
-  #]===============================]
-  src/ripple/conditions/impl/Condition.cpp
-  src/ripple/conditions/impl/Fulfillment.cpp
-  src/ripple/conditions/impl/error.cpp
-  #[===============================[
-     main sources:
        subdir: core
   #]===============================]
   src/ripple/core/impl/Config.cpp
@@ -750,11 +743,6 @@ if (tests)
     src/test/beast/beast_basic_seconds_clock_test.cpp
     src/test/beast/beast_io_latency_probe_test.cpp
     src/test/beast/define_print.cpp
-    #[===============================[
-       test sources:
-         subdir: conditions
-    #]===============================]
-    src/test/conditions/PreimageSha256_test.cpp
     #[===============================[
        test sources:
          subdir: consensus
