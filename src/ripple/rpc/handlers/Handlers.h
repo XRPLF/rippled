@@ -47,10 +47,6 @@ doBlackList(RPC::JsonContext&);
 Json::Value
 doCanDelete(RPC::JsonContext&);
 Json::Value
-doChannelAuthorize(RPC::JsonContext&);
-Json::Value
-doChannelVerify(RPC::JsonContext&);
-Json::Value
 doConnect(RPC::JsonContext&);
 Json::Value
 doConsensusInfo(RPC::JsonContext&);

@@ -147,19 +147,6 @@ struct next_t
 };
 static next_t const next{};
 
-/** A ticket belonging to an account */
-struct ticket_t
-{
-    explicit ticket_t() = default;
-
-    Keylet
-    operator()(AccountID const& id, std::uint32_t ticketSeq) const;
-
-    Keylet
-    operator()(AccountID const& id, SeqProxy ticketSeq) const;
-};
-static ticket_t const ticket{};
-
 /** A SignerList */
 Keylet
 signers(AccountID const& account) noexcept;

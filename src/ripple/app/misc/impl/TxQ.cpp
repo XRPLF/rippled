@@ -413,10 +413,6 @@ TxQ::canBeHeld(
     // If we get here the queue limit is exceeded.  Only allow if this
     // transaction fills the _first_ sequence hole for the account.
     auto const txSeqProx = tx.getSeqProxy();
-    if (txSeqProx.isTicket())
-        // Tickets always follow sequence-based transactions, so a ticket
-        // cannot unblock a sequence-based transaction.
-        return telCAN_NOT_QUEUE_FULL;
 
     // This is the next queuable sequence-based SeqProxy for the account.
     SeqProxy const nextQueuable = nextQueuableSeqImpl(sleAccount, lock);
@@ -464,9 +460,7 @@ TxQ::eraseAndAdvance(TxQ::FeeMultiSet::const_iterator_type candidateIter)
     // Note that sequence-based transactions must be applied in sequence order
     // from smallest to largest.  But ticket-based transactions can be
     // applied in any order.
-    assert(
-        candidateIter->seqProxy.isTicket() ||
-        accountIter == txQAccount.transactions.begin());
+    assert(accountIter == txQAccount.transactions.begin());
     assert(byFee_.iterator_to(accountIter->second) == candidateIter);
     auto const accountNextIter = std::next(accountIter);
 
@@ -552,25 +546,6 @@ TxQ::tryClearAccountQueueUpThruTx(
         // moot.
         --it->second.retriesRemaining;
         it->second.lastResult = txResult.first;
-
-        // In TxQ::apply we note that it's possible for a transaction with
-        // a ticket to both be in the queue and in the ledger.  And, while
-        // we're in TxQ::apply, it's too expensive to filter those out.
-        //
-        // So here in tryClearAccountQueueUpThruTx we just received a batch of
-        // queued transactions.  And occasionally one of those is a ticketed
-        // transaction that is both in the queue and in the ledger.  When
-        // that happens the queued transaction returns tefNO_TICKET.
-        //
-        // The transaction that returned tefNO_TICKET can never succeed
-        // and we'd like to get it out of the queue as soon as possible.
-        // The easiest way to do that from here is to treat the transaction
-        // as though it succeeded and attempt to clear the remaining
-        // transactions in the account queue.  Then, if clearing the account
-        // is successful, we will have removed any ticketed transactions
-        // that can never succeed.
-        if (txResult.first == tefNO_TICKET)
-            continue;
 
         if (!txResult.second)
         {
@@ -749,18 +724,6 @@ TxQ::apply(
     // If the transaction needs a Ticket is that Ticket in the ledger?
     SeqProxy const acctSeqProx = SeqProxy::sequence((*sleAccount)[sfSequence]);
     SeqProxy const txSeqProx = tx->getSeqProxy();
-    if (txSeqProx.isTicket() &&
-        !view.exists(keylet::ticket(account, txSeqProx)))
-    {
-        if (txSeqProx.value() < acctSeqProx.value())
-            // The ticket number is low enough that it should already be
-            // in the ledger if it were ever going to exist.
-            return {tefNO_TICKET, false};
-
-        // We don't queue transactions that use Tickets unless
-        // we can find the Ticket in the ledger.
-        return {terPRE_TICKET, false};
-    }
 
     std::lock_guard lock(mutex_);
 
@@ -1500,40 +1463,23 @@ TxQ::accept(Application& app, OpenView& view)
                     // The queue is close to full, this account has multiple
                     // txs queued, and this account has had a transaction
                     // fail.
-                    if (candidateIter->seqProxy.isTicket())
-                    {
-                        // Since the failed transaction has a ticket, order
-                        // doesn't matter.  Drop this one.
-                        JLOG(j_.info())
-                            << "Queue is nearly full, and transaction "
-                            << candidateIter->txID << " failed with "
-                            << transToken(txnResult)
-                            << ". Removing ticketed tx from account "
-                            << account.account;
-                        candidateIter = eraseAndAdvance(candidateIter);
-                    }
-                    else
-                    {
-                        // Even though we're giving this transaction another
-                        // chance, chances are it won't recover. To avoid
-                        // making things worse, drop the _last_ transaction for
-                        // this account.
-                        auto dropRIter = account.transactions.rbegin();
-                        assert(
-                            dropRIter->second.account ==
-                            candidateIter->account);
 
-                        JLOG(j_.info())
-                            << "Queue is nearly full, and transaction "
-                            << candidateIter->txID << " failed with "
-                            << transToken(txnResult)
-                            << ". Removing last item from account "
-                            << account.account;
-                        auto endIter = byFee_.iterator_to(dropRIter->second);
-                        if (endIter != candidateIter)
-                            erase(endIter);
-                        ++candidateIter;
-                    }
+                    // Even though we're giving this transaction another
+                    // chance, chances are it won't recover. To avoid
+                    // making things worse, drop the _last_ transaction for
+                    // this account.
+                    auto dropRIter = account.transactions.rbegin();
+                    assert(dropRIter->second.account == candidateIter->account);
+
+                    JLOG(j_.info()) << "Queue is nearly full, and transaction "
+                                    << candidateIter->txID << " failed with "
+                                    << transToken(txnResult)
+                                    << ". Removing last item from account "
+                                    << account.account;
+                    auto endIter = byFee_.iterator_to(dropRIter->second);
+                    if (endIter != candidateIter)
+                        erase(endIter);
+                    ++candidateIter;
                 }
                 else
                     ++candidateIter;

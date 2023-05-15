@@ -165,18 +165,12 @@ public:
                 SeqProxy::sequence(sleAcct->getFieldU32(sfSequence));
             SeqProxy const seqProx = txn.getSeqProxy();
 
-            if (seqProx.isSeq())
+//            if (seqProx.isSeq())
                 return acctSeq > seqProx;  // Remove tefPAST_SEQ
-
-            if (seqProx.isTicket() && acctSeq.value() <= seqProx.value())
-                // Keep ticket from the future.  Note, however, that the
-                // transaction will not be held indefinitely since LocalTxs
-                // will only hold a transaction for a maximum of 5 ledgers.
-                return false;
 
             // Ticket should have been created by now.  Remove if ticket
             // does not exist.
-            return !view.exists(keylet::ticket(acctID, seqProx));
+//            return !view.exists(keylet::ticket(acctID, seqProx));
         });
     }
 

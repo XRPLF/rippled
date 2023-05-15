@@ -76,14 +76,6 @@ preflight0(PreflightContext const& ctx)
 NotTEC
 preflight1(PreflightContext const& ctx)
 {
-    // This is inappropriate in preflight0, because only Change transactions
-    // skip this function, and those do not allow an sfTicketSequence field.
-    if (ctx.tx.isFieldPresent(sfTicketSequence) &&
-        !ctx.rules.enabled(featureTicketBatch))
-    {
-        return temMALFORMED;
-    }
-
     auto const ret = preflight0(ctx);
     if (!isTesSuccess(ret))
         return ret;
@@ -110,16 +102,6 @@ preflight1(PreflightContext const& ctx)
         JLOG(ctx.j.debug()) << "preflight1: invalid signing key";
         return temBAD_SIGNATURE;
     }
-
-    // An AccountTxnID field constrains transaction ordering more than the
-    // Sequence field.  Tickets, on the other hand, reduce ordering
-    // constraints.  Because Tickets and AccountTxnID work against one
-    // another the combination is unsupported and treated as malformed.
-    //
-    // We return temINVALID for such transactions.
-    if (ctx.tx.getSeqProxy().isTicket() &&
-        ctx.tx.isFieldPresent(sfAccountTxnID))
-        return temINVALID;
 
     return tesSUCCESS;
 }
@@ -281,13 +263,6 @@ Transactor::checkSeqProxy(
 
     if (t_seqProx.isSeq())
     {
-        if (tx.isFieldPresent(sfTicketSequence) &&
-            view.rules().enabled(featureTicketBatch))
-        {
-            JLOG(j.trace()) << "applyTransaction: has both a TicketSequence "
-                               "and a non-zero Sequence number";
-            return temSEQ_AND_TICKET;
-        }
         if (t_seqProx != a_seq)
         {
             if (a_seq < t_seqProx)
@@ -301,29 +276,6 @@ Transactor::checkSeqProxy(
             JLOG(j.trace()) << "applyTransaction: has past sequence number "
                             << "a_seq=" << a_seq << " t_seq=" << t_seqProx;
             return tefPAST_SEQ;
-        }
-    }
-    else if (t_seqProx.isTicket())
-    {
-        // Bypass the type comparison. Apples and oranges.
-        if (a_seq.value() <= t_seqProx.value())
-        {
-            // If the Ticket number is greater than or equal to the
-            // account sequence there's the possibility that the
-            // transaction to create the Ticket has not hit the ledger
-            // yet.  Allow a retry.
-            JLOG(j.trace()) << "applyTransaction: has future ticket id "
-                            << "a_seq=" << a_seq << " t_seq=" << t_seqProx;
-            return terPRE_TICKET;
-        }
-
-        // Transaction can never succeed if the Ticket is not in the ledger.
-        if (!view.exists(keylet::ticket(id, t_seqProx)))
-        {
-            JLOG(j.trace())
-                << "applyTransaction: ticket already used or never created "
-                << "a_seq=" << a_seq << " t_seq=" << t_seqProx;
-            return tefNO_TICKET;
         }
     }
 
@@ -373,62 +325,6 @@ Transactor::consumeSeqProxy(SLE::pointer const& sleAccount)
         sleAccount->setFieldU32(sfSequence, seqProx.value() + 1);
         return tesSUCCESS;
     }
-    return ticketDelete(
-        view(), account_, getTicketIndex(account_, seqProx), j_);
-}
-
-// Remove a single Ticket from the ledger.
-TER
-Transactor::ticketDelete(
-    ApplyView& view,
-    AccountID const& account,
-    uint256 const& ticketIndex,
-    beast::Journal j)
-{
-    // Delete the Ticket, adjust the account root ticket count, and
-    // reduce the owner count.
-    SLE::pointer const sleTicket = view.peek(keylet::ticket(ticketIndex));
-    if (!sleTicket)
-    {
-        JLOG(j.fatal()) << "Ticket disappeared from ledger.";
-        return tefBAD_LEDGER;
-    }
-
-    std::uint64_t const page{(*sleTicket)[sfOwnerNode]};
-    if (!view.dirRemove(keylet::ownerDir(account), page, ticketIndex, true))
-    {
-        JLOG(j.fatal()) << "Unable to delete Ticket from owner.";
-        return tefBAD_LEDGER;
-    }
-
-    // Update the account root's TicketCount.  If the ticket count drops to
-    // zero remove the (optional) field.
-    auto sleAccount = view.peek(keylet::account(account));
-    if (!sleAccount)
-    {
-        JLOG(j.fatal()) << "Could not find Ticket owner account root.";
-        return tefBAD_LEDGER;
-    }
-
-    if (auto ticketCount = (*sleAccount)[~sfTicketCount])
-    {
-        if (*ticketCount == 1)
-            sleAccount->makeFieldAbsent(sfTicketCount);
-        else
-            ticketCount = *ticketCount - 1;
-    }
-    else
-    {
-        JLOG(j.fatal()) << "TicketCount field missing from account root.";
-        return tefBAD_LEDGER;
-    }
-
-    // Update the Ticket owner's reserve.
-    adjustOwnerCount(view, sleAccount, -1, j);
-
-    // Remove Ticket from ledger.
-    view.erase(sleTicket);
-    return tesSUCCESS;
 }
 
 // check stuff before you bother to lock the ledger

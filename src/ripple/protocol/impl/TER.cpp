@@ -104,7 +104,7 @@ transResults()
         MAKE_ERROR(tefBAD_AUTH_MASTER,             "Auth for unclaimed account needs correct master key."),
         MAKE_ERROR(tefINVARIANT_FAILED,            "Fee claim violated invariants for the transaction."),
         MAKE_ERROR(tefTOO_BIG,                     "Transaction affects too many items."),
-        MAKE_ERROR(tefNO_TICKET,                   "Ticket is not in ledger."),
+
 
 
         MAKE_ERROR(telLOCAL_ERROR,            "Local failure."),

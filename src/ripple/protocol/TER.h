@@ -163,7 +163,6 @@ enum TEFcodes : TERUnderlyingType {
     tefBAD_AUTH_MASTER,
     tefINVARIANT_FAILED,
     tefTOO_BIG,
-    tefNO_TICKET,
 };
 
 //------------------------------------------------------------------------------

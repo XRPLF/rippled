@@ -22,7 +22,6 @@
 #include <ripple/app/tx/impl/CancelOffer.h>
 #include <ripple/app/tx/impl/Change.h>
 #include <ripple/app/tx/impl/CreateOffer.h>
-#include <ripple/app/tx/impl/CreateTicket.h>
 #include <ripple/app/tx/impl/DeleteAccount.h>
 #include <ripple/app/tx/impl/DepositPreauth.h>
 #include <ripple/app/tx/impl/Payment.h>
@@ -101,8 +100,6 @@ invoke_preflight(PreflightContext const& ctx)
             return invoke_preflight_helper<SetRegularKey>(ctx);
         case ttSIGNER_LIST_SET:
             return invoke_preflight_helper<SetSignerList>(ctx);
-        case ttTICKET_CREATE:
-            return invoke_preflight_helper<CreateTicket>(ctx);
         case ttTRUST_SET:
             return invoke_preflight_helper<SetTrust>(ctx);
         case ttAMENDMENT:
@@ -174,8 +171,6 @@ invoke_preclaim(PreclaimContext const& ctx)
             return invoke_preclaim<SetRegularKey>(ctx);
         case ttSIGNER_LIST_SET:
             return invoke_preclaim<SetSignerList>(ctx);
-        case ttTICKET_CREATE:
-            return invoke_preclaim<CreateTicket>(ctx);
         case ttTRUST_SET:
             return invoke_preclaim<SetTrust>(ctx);
         case ttAMENDMENT:
@@ -209,8 +204,6 @@ invoke_calculateBaseFee(ReadView const& view, STTx const& tx)
             return SetRegularKey::calculateBaseFee(view, tx);
         case ttSIGNER_LIST_SET:
             return SetSignerList::calculateBaseFee(view, tx);
-        case ttTICKET_CREATE:
-            return CreateTicket::calculateBaseFee(view, tx);
         case ttTRUST_SET:
             return SetTrust::calculateBaseFee(view, tx);
         case ttAMENDMENT:
@@ -297,10 +290,6 @@ invoke_apply(ApplyContext& ctx)
         }
         case ttSIGNER_LIST_SET: {
             SetSignerList p(ctx);
-            return p();
-        }
-        case ttTICKET_CREATE: {
-            CreateTicket p(ctx);
             return p();
         }
         case ttTRUST_SET: {
