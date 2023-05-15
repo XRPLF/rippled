@@ -154,17 +154,6 @@ LedgerFormats::LedgerFormats()
         },
         commonFields);
 
-    add(jss::Ticket,
-        ltTICKET,
-        {
-            {sfAccount,              soeREQUIRED},
-            {sfOwnerNode,            soeREQUIRED},
-            {sfTicketSequence,       soeREQUIRED},
-            {sfPreviousTxnID,        soeREQUIRED},
-            {sfPreviousTxnLgrSeq,    soeREQUIRED},
-        },
-        commonFields);
-
     // All fields are soeREQUIRED because there is always a
     // SignerEntries.  If there are no SignerEntries the node is deleted.
     add(jss::SignerList,

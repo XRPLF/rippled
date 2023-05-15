@@ -246,35 +246,6 @@ doLedgerEntry(RPC::JsonContext& context)
             }
         }
     }
-    else if (context.params.isMember(jss::ticket))
-    {
-        expectedType = ltTICKET;
-        if (!context.params[jss::ticket].isObject())
-        {
-            if (!uNodeIndex.parseHex(context.params[jss::ticket].asString()))
-            {
-                uNodeIndex = beast::zero;
-                jvResult[jss::error] = "malformedRequest";
-            }
-        }
-        else if (
-            !context.params[jss::ticket].isMember(jss::account) ||
-            !context.params[jss::ticket].isMember(jss::ticket_seq) ||
-            !context.params[jss::ticket][jss::ticket_seq].isIntegral())
-        {
-            jvResult[jss::error] = "malformedRequest";
-        }
-        else
-        {
-            auto const id = parseBase58<AccountID>(
-                context.params[jss::ticket][jss::account].asString());
-            if (!id)
-                jvResult[jss::error] = "malformedAddress";
-            else
-                uNodeIndex = getTicketIndex(
-                    *id, context.params[jss::ticket][jss::ticket_seq].asUInt());
-        }
-    }
     else
     {
         if (context.params.isMember("params") &&

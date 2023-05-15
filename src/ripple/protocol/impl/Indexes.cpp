@@ -245,18 +245,6 @@ next_t::operator()(Keylet const& k) const
     return {ltDIR_NODE, getQualityNext(k.key)};
 }
 
-Keylet
-ticket_t::operator()(AccountID const& id, std::uint32_t ticketSeq) const
-{
-    return {ltTICKET, getTicketIndex(id, ticketSeq)};
-}
-
-Keylet
-ticket_t::operator()(AccountID const& id, SeqProxy ticketSeq) const
-{
-    return {ltTICKET, getTicketIndex(id, ticketSeq)};
-}
-
 // This function is presently static, since it's never accessed from anywhere
 // else. If we ever support multiple pages of signer lists, this would be the
 // keylet used to locate them.

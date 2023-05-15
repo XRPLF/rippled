@@ -426,7 +426,6 @@ target_sources (rippled PRIVATE
   src/ripple/app/tx/impl/CancelOffer.cpp
   src/ripple/app/tx/impl/Change.cpp
   src/ripple/app/tx/impl/CreateOffer.cpp
-  src/ripple/app/tx/impl/CreateTicket.cpp
   src/ripple/app/tx/impl/DeleteAccount.cpp
   src/ripple/app/tx/impl/DepositPreauth.cpp
   src/ripple/app/tx/impl/InvariantCheck.cpp
@@ -705,7 +704,6 @@ if (tests)
     src/test/app/SetTrust_test.cpp
     src/test/app/Taker_test.cpp
     src/test/app/TheoreticalQuality_test.cpp
-    src/test/app/Ticket_test.cpp
     src/test/app/Transaction_ordering_test.cpp
     src/test/app/TrustAndBalance_test.cpp
     src/test/app/TxQ_test.cpp
@@ -837,7 +835,6 @@ if (tests)
     src/test/jtx/impl/seq.cpp
     src/test/jtx/impl/sig.cpp
     src/test/jtx/impl/tag.cpp
-    src/test/jtx/impl/ticket.cpp
     src/test/jtx/impl/trust.cpp
     src/test/jtx/impl/txflags.cpp
     src/test/jtx/impl/utility.cpp

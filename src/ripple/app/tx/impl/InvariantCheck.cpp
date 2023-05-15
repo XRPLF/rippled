@@ -293,7 +293,6 @@ LedgerEntryTypesMatch::visitEntry(
             case ltACCOUNT_ROOT:
             case ltDIR_NODE:
             case ltRIPPLE_STATE:
-            case ltTICKET:
             case ltSIGNER_LIST:
             case ltOFFER:
             case ltLEDGER_HASHES:

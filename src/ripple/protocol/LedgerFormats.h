@@ -73,12 +73,6 @@ enum LedgerEntryType : std::uint16_t
      */
     ltRIPPLE_STATE = 0x0072,
 
-    /** A ledger object which describes a ticket.
-
-        \sa keylet::ticket
-     */
-    ltTICKET = 0x0054,
-
     /** A ledger object which contains a signer list for an account.
 
         \sa keylet::signers

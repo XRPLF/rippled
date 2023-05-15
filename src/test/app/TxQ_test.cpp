@@ -30,7 +30,6 @@
 #include <test/jtx/TestSuite.h>
 #include <test/jtx/WSClient.h>
 #include <test/jtx/envconfig.h>
-#include <test/jtx/ticket.h>
 
 namespace ripple {
 

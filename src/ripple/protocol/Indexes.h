@@ -157,12 +157,6 @@ struct ticket_t
 
     Keylet
     operator()(AccountID const& id, SeqProxy ticketSeq) const;
-
-    Keylet
-    operator()(uint256 const& key) const
-    {
-        return {ltTICKET, key};
-    }
 };
 static ticket_t const ticket{};
 

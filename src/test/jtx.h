@@ -57,7 +57,6 @@
 #include <test/jtx/tag.h>
 #include <test/jtx/tags.h>
 #include <test/jtx/ter.h>
-#include <test/jtx/ticket.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
 #include <test/jtx/utility.h>

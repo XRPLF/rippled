@@ -918,7 +918,6 @@ chooseLedgerEntryType(Json::Value const& params)
                  {jss::offer, ltOFFER},
                  {jss::signer_list, ltSIGNER_LIST},
                  {jss::state, ltRIPPLE_STATE},
-                 {jss::ticket, ltTICKET},
                }};
 
         auto const& p = params[jss::type];

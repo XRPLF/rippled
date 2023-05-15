@@ -129,8 +129,6 @@ nonObligationDeleter(LedgerEntryType t)
             return offerDelete;
         case ltSIGNER_LIST:
             return removeSignersFromLedger;
-        case ltTICKET:
-            return removeTicketFromLedger;
         case ltDEPOSIT_PREAUTH:
             return removeDepositPreauthFromLedger;
         default:
