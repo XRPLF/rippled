@@ -442,7 +442,7 @@ transactionPreProcessImpl(
     {
         if (!tx_json.isMember(jss::Sequence))
         {
-            tx_json[jss::Sequence] = 0
+            tx_json[jss::Sequence] = 0;
         }
 
         if (!tx_json.isMember(jss::Flags))

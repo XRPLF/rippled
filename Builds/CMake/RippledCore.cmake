@@ -874,7 +874,6 @@ if (tests)
     src/test/protocol/BuildInfo_test.cpp
     src/test/protocol/InnerObjectFormats_test.cpp
     src/test/protocol/Issue_test.cpp
-    src/test/protocol/Hooks_test.cpp
     src/test/protocol/Memo_test.cpp
     src/test/protocol/PublicKey_test.cpp
     src/test/protocol/Quality_test.cpp

@@ -98,10 +98,6 @@ CONSTRUCT_TYPED_SFIELD(sfTransferFee,           "TransferFee",          UINT16, 
 
 // 16-bit integers (uncommon)
 CONSTRUCT_TYPED_SFIELD(sfVersion,               "Version",              UINT16,    16);
-CONSTRUCT_TYPED_SFIELD(sfHookStateChangeCount,  "HookStateChangeCount", UINT16,    17);
-CONSTRUCT_TYPED_SFIELD(sfHookEmitCount,         "HookEmitCount",        UINT16,    18);
-CONSTRUCT_TYPED_SFIELD(sfHookExecutionIndex,    "HookExecutionIndex",   UINT16,    19);
-CONSTRUCT_TYPED_SFIELD(sfHookApiVersion,        "HookApiVersion",       UINT16,    20);
 
 // 32-bit integers (common)
 CONSTRUCT_TYPED_SFIELD(sfNetworkID,             "NetworkID",            UINT32,     1);
@@ -144,12 +140,7 @@ CONSTRUCT_TYPED_SFIELD(sfCancelAfter,           "CancelAfter",          UINT32, 
 CONSTRUCT_TYPED_SFIELD(sfFinishAfter,           "FinishAfter",          UINT32,    37);
 CONSTRUCT_TYPED_SFIELD(sfSignerListID,          "SignerListID",         UINT32,    38);
 CONSTRUCT_TYPED_SFIELD(sfSettleDelay,           "SettleDelay",          UINT32,    39);
-CONSTRUCT_TYPED_SFIELD(sfTicketCount,           "TicketCount",          UINT32,    40);
-CONSTRUCT_TYPED_SFIELD(sfTicketSequence,        "TicketSequence",       UINT32,    41);
-CONSTRUCT_TYPED_SFIELD(sfHookStateCount,        "HookStateCount",       UINT32,    45);
 CONSTRUCT_TYPED_SFIELD(sfEmitGeneration,        "EmitGeneration",       UINT32,    46);
-// Three field values of 47, 48 and 49 are reserved for 
-// LockCount(Hooks), VoteWeight(AMM), DiscountedFee(AMM)
 
 // 64-bit integers (common)
 CONSTRUCT_TYPED_SFIELD(sfIndexNext,             "IndexNext",            UINT64,     1);
@@ -207,10 +198,6 @@ CONSTRUCT_TYPED_SFIELD(sfCheckID,               "CheckID",              UINT256,
 CONSTRUCT_TYPED_SFIELD(sfValidatedHash,         "ValidatedHash",        UINT256,   25);
 CONSTRUCT_TYPED_SFIELD(sfPreviousPageMin,       "PreviousPageMin",      UINT256,   26);
 CONSTRUCT_TYPED_SFIELD(sfNextPageMin,           "NextPageMin",          UINT256,   27);
-CONSTRUCT_TYPED_SFIELD(sfHookStateKey,          "HookStateKey",         UINT256,   30);
-CONSTRUCT_TYPED_SFIELD(sfHookHash,              "HookHash",             UINT256,   31);
-CONSTRUCT_TYPED_SFIELD(sfHookNamespace,         "HookNamespace",        UINT256,   32);
-CONSTRUCT_TYPED_SFIELD(sfHookSetTxnID,          "HookSetTxnID",         UINT256,   33);
 
 // currency amount (common)
 CONSTRUCT_TYPED_SFIELD(sfAmount,                "Amount",               AMOUNT,     1);
@@ -228,8 +215,6 @@ CONSTRUCT_TYPED_SFIELD(sfDeliverMin,            "DeliverMin",           AMOUNT, 
 CONSTRUCT_TYPED_SFIELD(sfMinimumOffer,          "MinimumOffer",         AMOUNT,    16);
 CONSTRUCT_TYPED_SFIELD(sfRippleEscrow,          "RippleEscrow",         AMOUNT,    17);
 CONSTRUCT_TYPED_SFIELD(sfDeliveredAmount,       "DeliveredAmount",      AMOUNT,    18);
-
-// Reserve 20 & 21 for Hooks
 
 // currency amount (fees)
 CONSTRUCT_TYPED_SFIELD(sfBaseFeeDrops,            "BaseFeeDrops",           AMOUNT,    22);
@@ -259,10 +244,6 @@ CONSTRUCT_TYPED_SFIELD(sfMasterSignature,       "MasterSignature",      VL,     
 CONSTRUCT_TYPED_SFIELD(sfUNLModifyValidator,    "UNLModifyValidator",   VL,        19);
 CONSTRUCT_TYPED_SFIELD(sfValidatorToDisable,    "ValidatorToDisable",   VL,        20);
 CONSTRUCT_TYPED_SFIELD(sfValidatorToReEnable,   "ValidatorToReEnable",  VL,        21);
-CONSTRUCT_TYPED_SFIELD(sfHookStateData,         "HookStateData",        VL,        22);
-CONSTRUCT_TYPED_SFIELD(sfHookReturnString,      "HookReturnString",     VL,        23);
-CONSTRUCT_TYPED_SFIELD(sfHookParameterName,     "HookParameterName",    VL,        24);
-CONSTRUCT_TYPED_SFIELD(sfHookParameterValue,    "HookParameterValue",   VL,        25);
 
 // account
 CONSTRUCT_TYPED_SFIELD(sfAccount,               "Account",              ACCOUNT,    1);
@@ -322,7 +303,6 @@ CONSTRUCT_UNTYPED_SFIELD(sfNecessary,           "Necessary",            ARRAY,  
 CONSTRUCT_UNTYPED_SFIELD(sfSufficient,          "Sufficient",           ARRAY,      7);
 CONSTRUCT_UNTYPED_SFIELD(sfAffectedNodes,       "AffectedNodes",        ARRAY,      8);
 CONSTRUCT_UNTYPED_SFIELD(sfMemos,               "Memos",                ARRAY,      9);
-CONSTRUCT_UNTYPED_SFIELD(sfHooks,               "Hooks",                ARRAY,     11);
 
 // array of objects (uncommon)
 CONSTRUCT_UNTYPED_SFIELD(sfMajorities,          "Majorities",           ARRAY,     16);

@@ -183,10 +183,8 @@ SeqProxy
 STTx::getSeqProxy() const
 {
     std::uint32_t const seq{getFieldU32(sfSequence)};
-    if (seq != 0)
-        return SeqProxy::sequence(seq);
 
-    return SeqProxy{SeqProxy::ticket, *ticketSeq};
+    return SeqProxy::sequence(seq);
 }
 
 void
@@ -221,7 +219,8 @@ STTx::checkSign(
     return Unexpected("Internal signature check failure.");
 }
 
-Json::Value STTx::getJson(JsonOptions) const
+Json::Value
+STTx::getJson(JsonOptions) const
 {
     Json::Value ret = STObject::getJson(JsonOptions::none);
     ret[jss::hash] = to_string(getTransactionID());
