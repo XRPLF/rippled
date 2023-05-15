@@ -55,7 +55,6 @@ JSS(CheckCash);              // transaction type.
 JSS(CheckCreate);            // transaction type.
 JSS(ClearFlag);              // field.
 JSS(DeliverMin);             // in: TransactionSign
-JSS(DepositPreauth);         // transaction and ledger type.
 JSS(Destination);            // in: TransactionSign; field.
 JSS(DirectoryNode);          // ledger type.
 JSS(EnableAmendment);        // transaction type.
@@ -203,8 +202,6 @@ JSS(dbKBTransaction);         // out: getCounts
 JSS(debug_signing);           // in: TransactionSign
 JSS(deletion_blockers_only);  // in: AccountObjects
 JSS(delivered_amount);        // out: insertDeliveredAmount
-JSS(deposit_authorized);      // out: deposit_authorized
-JSS(deposit_preauth);         // in: AccountObjects, LedgerData
 JSS(deprecated);              // out
 JSS(descending);              // in: AccountTx*
 JSS(description);             // in/out: Reservations

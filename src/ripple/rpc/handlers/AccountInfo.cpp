@@ -81,7 +81,6 @@ doAccountInfo(RPC::JsonContext& context)
         array<std::pair<std::string_view, LedgerSpecificFlags>, 9>
             lsFlags{
                 {{"defaultRipple", lsfDefaultRipple},
-                 {"depositAuth", lsfDepositAuth},
                  {"disableMasterKey", lsfDisableMaster},
                  {"disallowIncomingXRP", lsfDisallowXRP},
                  {"globalFreeze", lsfGlobalFreeze},

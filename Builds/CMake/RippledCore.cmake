@@ -427,7 +427,6 @@ target_sources (rippled PRIVATE
   src/ripple/app/tx/impl/Change.cpp
   src/ripple/app/tx/impl/CreateOffer.cpp
   src/ripple/app/tx/impl/DeleteAccount.cpp
-  src/ripple/app/tx/impl/DepositPreauth.cpp
   src/ripple/app/tx/impl/InvariantCheck.cpp
   src/ripple/app/tx/impl/OfferStream.cpp
   src/ripple/app/tx/impl/Payment.cpp
@@ -578,7 +577,6 @@ target_sources (rippled PRIVATE
   src/ripple/rpc/handlers/Connect.cpp
   src/ripple/rpc/handlers/ConsensusInfo.cpp
   src/ripple/rpc/handlers/CrawlShards.cpp
-  src/ripple/rpc/handlers/DepositAuthorized.cpp
   src/ripple/rpc/handlers/DownloadShard.cpp
   src/ripple/rpc/handlers/Feature1.cpp
   src/ripple/rpc/handlers/Fee1.cpp
@@ -675,7 +673,6 @@ if (tests)
     src/test/app/AmendmentTable_test.cpp
     src/test/app/CrossingLimits_test.cpp
     src/test/app/DeliverMin_test.cpp
-    src/test/app/DepositAuth_test.cpp
     src/test/app/Discrepancy_test.cpp
     src/test/app/DNS_test.cpp
     src/test/app/FeeVote_test.cpp
@@ -815,7 +812,6 @@ if (tests)
     src/test/jtx/impl/amount.cpp
     src/test/jtx/impl/balance.cpp
     src/test/jtx/impl/delivermin.cpp
-    src/test/jtx/impl/deposit.cpp
     src/test/jtx/impl/envconfig.cpp
     src/test/jtx/impl/fee.cpp
     src/test/jtx/impl/flags.cpp
@@ -921,7 +917,6 @@ if (tests)
     src/test/rpc/AccountTx_test.cpp
     src/test/rpc/AmendmentBlocked_test.cpp
     src/test/rpc/Book_test.cpp
-    src/test/rpc/DepositAuthorized_test.cpp
     src/test/rpc/DeliveredAmount_test.cpp
     src/test/rpc/Feature_test.cpp
     src/test/rpc/GatewayBalances_test.cpp

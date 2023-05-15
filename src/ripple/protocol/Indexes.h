@@ -151,20 +151,6 @@ static next_t const next{};
 Keylet
 signers(AccountID const& account) noexcept;
 
-/** @} */
-
-/** A DepositPreauth */
-/** @{ */
-Keylet
-depositPreauth(AccountID const& owner, AccountID const& preauthorized) noexcept;
-
-inline Keylet
-depositPreauth(uint256 const& key) noexcept
-{
-    return {ltDEPOSIT_PREAUTH, key};
-}
-/** @} */
-
 //------------------------------------------------------------------------------
 
 /** Any ledger entry */

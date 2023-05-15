@@ -57,7 +57,6 @@ enum class LedgerNameSpace : std::uint16_t {
     SIGNER_LIST = 'S',
     XRP_PAYMENT_CHANNEL = 'x',
     CHECK = 'C',
-    DEPOSIT_PREAUTH = 'p',
     NEGATIVE_UNL = 'N',
 
     // No longer used or supported. Left here to reserve the space
@@ -259,14 +258,6 @@ Keylet
 signers(AccountID const& account) noexcept
 {
     return signers(account, 0);
-}
-
-Keylet
-depositPreauth(AccountID const& owner, AccountID const& preauthorized) noexcept
-{
-    return {
-        ltDEPOSIT_PREAUTH,
-        indexHash(LedgerNameSpace::DEPOSIT_PREAUTH, owner, preauthorized)};
 }
 
 //------------------------------------------------------------------------------

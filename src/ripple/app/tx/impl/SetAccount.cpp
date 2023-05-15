@@ -386,23 +386,6 @@ SetAccount::doApply()
     }
 
     //
-    // DepositAuth
-    //
-    if (view().rules().enabled(featureDepositAuth))
-    {
-        if (uSetFlag == asfDepositAuth)
-        {
-            JLOG(j_.trace()) << "Set lsfDepositAuth.";
-            uFlagsOut |= lsfDepositAuth;
-        }
-        else if (uClearFlag == asfDepositAuth)
-        {
-            JLOG(j_.trace()) << "Clear lsfDepositAuth.";
-            uFlagsOut &= ~lsfDepositAuth;
-        }
-    }
-
-    //
     // EmailHash
     //
     if (tx.isFieldPresent(sfEmailHash))

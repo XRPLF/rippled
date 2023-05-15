@@ -510,20 +510,6 @@ private:
         return jvRequest;
     }
 
-    // deposit_authorized <source_account> <destination_account> [<ledger>]
-    Json::Value
-    parseDepositAuthorized(Json::Value const& jvParams)
-    {
-        Json::Value jvRequest(Json::objectValue);
-        jvRequest[jss::source_account] = jvParams[0u].asString();
-        jvRequest[jss::destination_account] = jvParams[1u].asString();
-
-        if (jvParams.size() == 3)
-            jvParseLedger(jvRequest, jvParams[2u].asString());
-
-        return jvRequest;
-    }
-
     // Return an error for attemping to subscribe/unsubscribe via RPC.
     Json::Value
     parseEvented(Json::Value const& jvParams)
@@ -1259,7 +1245,6 @@ public:
             {"channel_verify", &RPCParser::parseChannelVerify, 4, 4},
             {"connect", &RPCParser::parseConnect, 1, 2},
             {"consensus_info", &RPCParser::parseAsIs, 0, 0},
-            {"deposit_authorized", &RPCParser::parseDepositAuthorized, 2, 3},
             {"download_shard", &RPCParser::parseDownloadShard, 2, -1},
             {"feature", &RPCParser::parseFeature, 0, 2},
             {"fetch_info", &RPCParser::parseFetchInfo, 0, 1},

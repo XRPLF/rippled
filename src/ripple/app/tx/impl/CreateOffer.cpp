@@ -180,9 +180,7 @@ CreateOffer::preclaim(PreclaimContext const& ctx)
         // The return code change is attached to featureDepositPreauth as a
         // convenience, as the change is not big enough to deserve its own
         // amendment.
-        return ctx.view.rules().enabled(featureDepositPreauth)
-            ? TER{tecEXPIRED}
-            : TER{tesSUCCESS};
+        return TER{tesSUCCESS};
     }
 
     // Make sure that we are authorized to hold what the taker will pay us.
@@ -226,9 +224,9 @@ CreateOffer::checkAcceptAsset(
     // This code is attached to the DepositPreauth amendment as a matter of
     // convenience.  The change is not significant enough to deserve its
     // own amendment.
-    if (view.rules().enabled(featureDepositPreauth) && (issue.account == id))
+    /*if (view.rules().enabled(featureDepositPreauth) && (issue.account == id))
         // An account can always accept its own issuance.
-        return tesSUCCESS;
+        return tesSUCCESS;*/
 
     if ((*issuerAccount)[sfFlags] & lsfRequireAuth)
     {
@@ -951,9 +949,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         //
         // The return code change is attached to featureDepositPreauth as a
         // convenience.  The change is not big enough to deserve a fix code.
-        TER const ter{
-            sb.rules().enabled(featureDepositPreauth) ? TER{tecEXPIRED}
-                                                      : TER{tesSUCCESS}};
+        TER const ter{TER{tesSUCCESS}};
         return {ter, true};
     }
 

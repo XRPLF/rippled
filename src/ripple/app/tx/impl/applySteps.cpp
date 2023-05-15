@@ -23,7 +23,6 @@
 #include <ripple/app/tx/impl/Change.h>
 #include <ripple/app/tx/impl/CreateOffer.h>
 #include <ripple/app/tx/impl/DeleteAccount.h>
-#include <ripple/app/tx/impl/DepositPreauth.h>
 #include <ripple/app/tx/impl/Payment.h>
 #include <ripple/app/tx/impl/SetAccount.h>
 #include <ripple/app/tx/impl/SetRegularKey.h>
@@ -88,8 +87,6 @@ invoke_preflight(PreflightContext const& ctx)
             return invoke_preflight_helper<DeleteAccount>(ctx);
         case ttACCOUNT_SET:
             return invoke_preflight_helper<SetAccount>(ctx);
-        case ttDEPOSIT_PREAUTH:
-            return invoke_preflight_helper<DepositPreauth>(ctx);
         case ttOFFER_CANCEL:
             return invoke_preflight_helper<CancelOffer>(ctx);
         case ttOFFER_CREATE:
@@ -159,8 +156,6 @@ invoke_preclaim(PreclaimContext const& ctx)
             return invoke_preclaim<DeleteAccount>(ctx);
         case ttACCOUNT_SET:
             return invoke_preclaim<SetAccount>(ctx);
-        case ttDEPOSIT_PREAUTH:
-            return invoke_preclaim<DepositPreauth>(ctx);
         case ttOFFER_CANCEL:
             return invoke_preclaim<CancelOffer>(ctx);
         case ttOFFER_CREATE:
@@ -192,8 +187,6 @@ invoke_calculateBaseFee(ReadView const& view, STTx const& tx)
             return DeleteAccount::calculateBaseFee(view, tx);
         case ttACCOUNT_SET:
             return SetAccount::calculateBaseFee(view, tx);
-        case ttDEPOSIT_PREAUTH:
-            return DepositPreauth::calculateBaseFee(view, tx);
         case ttOFFER_CANCEL:
             return CancelOffer::calculateBaseFee(view, tx);
         case ttOFFER_CREATE:
@@ -266,10 +259,6 @@ invoke_apply(ApplyContext& ctx)
         }
         case ttACCOUNT_SET: {
             SetAccount p(ctx);
-            return p();
-        }
-        case ttDEPOSIT_PREAUTH: {
-            DepositPreauth p(ctx);
             return p();
         }
         case ttOFFER_CANCEL: {

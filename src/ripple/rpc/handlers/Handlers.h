@@ -51,8 +51,6 @@ doConnect(RPC::JsonContext&);
 Json::Value
 doConsensusInfo(RPC::JsonContext&);
 Json::Value
-doDepositAuthorized(RPC::JsonContext&);
-Json::Value
 doDownloadShard(RPC::JsonContext&);
 Json::Value
 doFeature(RPC::JsonContext&);

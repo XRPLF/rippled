@@ -414,12 +414,10 @@ REGISTER_FEATURE(OwnerPaysFee,                  Supported::no,  VoteBehavior::De
 REGISTER_FEATURE(Flow,                          Supported::yes, VoteBehavior::DefaultYes);
 REGISTER_FEATURE(FlowCross,                     Supported::yes, VoteBehavior::DefaultYes);
 REGISTER_FIX    (fix1513,                       Supported::yes, VoteBehavior::DefaultYes);
-REGISTER_FEATURE(DepositAuth,                   Supported::yes, VoteBehavior::DefaultYes);
 REGISTER_FEATURE(Checks,                        Supported::yes, VoteBehavior::DefaultYes);
 REGISTER_FIX    (fix1571,                       Supported::yes, VoteBehavior::DefaultYes);
 REGISTER_FIX    (fix1543,                       Supported::yes, VoteBehavior::DefaultYes);
 REGISTER_FIX    (fix1623,                       Supported::yes, VoteBehavior::DefaultYes);
-REGISTER_FEATURE(DepositPreauth,                Supported::yes, VoteBehavior::DefaultYes);
 // Use liquidity from strands that consume max offers, but mark as dry
 REGISTER_FIX    (fix1515,                       Supported::yes, VoteBehavior::DefaultYes);
 REGISTER_FIX    (fix1578,                       Supported::yes, VoteBehavior::DefaultYes);

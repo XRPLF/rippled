@@ -94,9 +94,6 @@ enum TxType : std::uint16_t
     /** This transaction type modifies the signer list associated with an account. */
     ttSIGNER_LIST_SET = 12,
 
-    /** This transaction type grants or revokes authorization to transfer funds. */
-    ttDEPOSIT_PREAUTH = 19,
-
     /** This transaction type modifies a trustline between two accounts. */
     ttTRUST_SET = 20,
 

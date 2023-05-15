@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <ripple/app/tx/impl/DeleteAccount.h>
-#include <ripple/app/tx/impl/DepositPreauth.h>
 #include <ripple/app/tx/impl/SetSignerList.h>
 #include <ripple/basics/FeeUnits.h>
 #include <ripple/basics/Log.h>
@@ -105,18 +104,6 @@ removeTicketFromLedger(
     return Transactor::ticketDelete(view, account, delIndex, j);
 }
 
-TER
-removeDepositPreauthFromLedger(
-    Application& app,
-    ApplyView& view,
-    AccountID const& account,
-    uint256 const& delIndex,
-    std::shared_ptr<SLE> const& sleDel,
-    beast::Journal j)
-{
-    return DepositPreauth::removeFromLedger(app, view, delIndex, j);
-}
-
 // Return nullptr if the LedgerEntryType represents an obligation that can't
 // be deleted.  Otherwise return the pointer to the function that can delete
 // the non-obligation
@@ -129,8 +116,6 @@ nonObligationDeleter(LedgerEntryType t)
             return offerDelete;
         case ltSIGNER_LIST:
             return removeSignersFromLedger;
-        case ltDEPOSIT_PREAUTH:
-            return removeDepositPreauthFromLedger;
         default:
             return nullptr;
     }
@@ -151,14 +136,6 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
 
     if ((*sleDst)[sfFlags] & lsfRequireDestTag && !ctx.tx[~sfDestinationTag])
         return tecDST_TAG_NEEDED;
-
-    // Check whether the destination account requires deposit authorization.
-    if (ctx.view.rules().enabled(featureDepositAuth) &&
-        (sleDst->getFlags() & lsfDepositAuth))
-    {
-        if (!ctx.view.exists(keylet::depositPreauth(dst, account)))
-            return tecNO_PERMISSION;
-    }
 
     auto sleAccount = ctx.view.read(keylet::account(account));
     assert(sleAccount);

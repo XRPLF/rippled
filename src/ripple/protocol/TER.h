@@ -115,7 +115,6 @@ enum TEMcodes : TERUnderlyingType {
     temBAD_WEIGHT,
     temBAD_TICK_SIZE,
     temINVALID_ACCOUNT_ID,
-    temCANNOT_PREAUTH_SELF,
     temINVALID_COUNT,
 
     temUNCERTAIN,  // An internal intermediate result; should never be returned.

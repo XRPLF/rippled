@@ -158,7 +158,6 @@ transResults()
         MAKE_ERROR(temDISABLED,                  "The transaction requires logic that is currently disabled."),
         MAKE_ERROR(temBAD_TICK_SIZE,             "Malformed: Tick size out of range."),
         MAKE_ERROR(temINVALID_ACCOUNT_ID,        "Malformed: A field contains an invalid account ID."),
-        MAKE_ERROR(temCANNOT_PREAUTH_SELF,       "Malformed: An account may not preauthorize itself."),
         MAKE_ERROR(temINVALID_COUNT,             "Malformed: Count field outside valid range."),
         MAKE_ERROR(temSEQ_AND_TICKET,            "Transaction contains a TicketSequence and a non-zero Sequence."),
 

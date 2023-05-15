@@ -168,17 +168,6 @@ LedgerFormats::LedgerFormats()
         },
         commonFields);
 
-    add(jss::DepositPreauth,
-        ltDEPOSIT_PREAUTH,
-        {
-            {sfAccount,              soeREQUIRED},
-            {sfAuthorize,            soeREQUIRED},
-            {sfOwnerNode,            soeREQUIRED},
-            {sfPreviousTxnID,        soeREQUIRED},
-            {sfPreviousTxnLgrSeq,    soeREQUIRED},
-        },
-        commonFields);
-
     add(jss::NegativeUNL,
         ltNEGATIVE_UNL,
         {

@@ -170,15 +170,6 @@ TxFormats::TxFormats()
             {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
-
-    add(jss::DepositPreauth,
-        ttDEPOSIT_PREAUTH,
-        {
-            {sfAuthorize, soeOPTIONAL},
-            {sfUnauthorize, soeOPTIONAL},
-            {sfTicketSequence, soeOPTIONAL},
-        },
-        commonFields);
 }
 
 TxFormats const&

@@ -298,7 +298,6 @@ LedgerEntryTypesMatch::visitEntry(
             case ltLEDGER_HASHES:
             case ltAMENDMENTS:
             case ltFEE_SETTINGS:
-            case ltDEPOSIT_PREAUTH:
             case ltNEGATIVE_UNL:
                 break;
             default:

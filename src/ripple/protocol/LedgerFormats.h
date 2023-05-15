@@ -111,12 +111,6 @@ enum LedgerEntryType : std::uint16_t
      */
     ltFEE_SETTINGS = 0x0073,
 
-    /** A ledger object which describes a deposit preauthorization.
-
-        \sa keylet::depositPreauth
-     */
-    ltDEPOSIT_PREAUTH = 0x0070,
-
     /** The ledger object which tracks the current negative UNL state.
 
         \note This is a singleton: only one such object exists in the ledger.
@@ -195,7 +189,6 @@ enum LedgerSpecificFlags {
     lsfGlobalFreeze = 0x00400000,   // True, all assets frozen
     lsfDefaultRipple =
         0x00800000,               // True, trust lines allow rippling by default
-    lsfDepositAuth = 0x01000000,  // True, all deposits require authorization
     lsfDisallowIncomingTrustline =
         0x20000000,               // True, reject new trustlines (only if no issued assets)
 

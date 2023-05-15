@@ -911,7 +911,6 @@ chooseLedgerEntryType(Json::Value const& params)
             types{
                 {{jss::account, ltACCOUNT_ROOT},
                  {jss::amendments, ltAMENDMENTS},
-                 {jss::deposit_preauth, ltDEPOSIT_PREAUTH},
                  {jss::directory, ltDIR_NODE},
                  {jss::fee, ltFEE_SETTINGS},
                  {jss::hashes, ltLEDGER_HASHES},

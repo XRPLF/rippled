@@ -79,7 +79,6 @@ constexpr std::uint32_t asfAccountTxnID                    =  5;
 constexpr std::uint32_t asfNoFreeze                        =  6;
 constexpr std::uint32_t asfGlobalFreeze                    =  7;
 constexpr std::uint32_t asfDefaultRipple                   =  8;
-constexpr std::uint32_t asfDepositAuth                     =  9;
 
 constexpr std::uint32_t asfDisallowIncomingTrustline       = 15;
 

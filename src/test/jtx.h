@@ -32,7 +32,6 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>
 #include <test/jtx/delivermin.h>
-#include <test/jtx/deposit.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/invoice_id.h>
