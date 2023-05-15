@@ -68,7 +68,7 @@ jobs:
         uses: actions/cache@v2
         with:
             path: ${{ steps.conan-cache.outputs.dir }}
-            key: ${{ hashFiles('~/.conan/profiles/default', 'conanfile.py', 'external/rocksdb/*', '.github/workflows/windows.yml') }}
+            key: ${{ hashFiles('~/.conan/profiles/default', 'conanfile.py', '.github/workflows/windows.yml') }}
       - name: export custom recipes
         run: |
           conan export external/snappy snappy/1.1.9@

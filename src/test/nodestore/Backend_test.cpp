@@ -20,7 +20,6 @@
 #include <ripple/beast/utility/temp_dir.h>
 #include <ripple/nodestore/DummyScheduler.h>
 #include <ripple/nodestore/Manager.h>
-#include <ripple/unity/rocksdb.h>
 #include <algorithm>
 #include <test/nodestore/TestBase.h>
 #include <test/unit_test/SuiteJournal.h>
@@ -107,9 +106,6 @@ public:
 
         testBackend("nudb", seedValue);
 
-#if RIPPLE_ROCKSDB_AVAILABLE
-        testBackend("rocksdb", seedValue);
-#endif
 
 #ifdef RIPPLE_ENABLE_SQLITE_BACKEND_TESTS
         testBackend("sqlite", seedValue);

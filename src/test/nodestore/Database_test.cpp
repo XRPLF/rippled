@@ -664,19 +664,12 @@ public:
         // Persistent backend tests
         {
             testNodeStore("nudb", true, seedValue);
-
-#if RIPPLE_ROCKSDB_AVAILABLE
-            testNodeStore("rocksdb", true, seedValue);
-#endif
         }
 
         // Import tests
         {
             testImport("nudb", "nudb", seedValue);
 
-#if RIPPLE_ROCKSDB_AVAILABLE
-            testImport("rocksdb", "rocksdb", seedValue);
-#endif
 
 #if RIPPLE_ENABLE_SQLITE_BACKEND_TESTS
             testImport("sqlite", "sqlite", seedValue);

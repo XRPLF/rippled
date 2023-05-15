@@ -100,7 +100,7 @@ rm -fv CMakeFiles/CMakeOutput.log CMakeFiles/CMakeError.log
 # Clean up NIH directories which should be git repos, but aren't
 for nih_path in ${NIH_CACHE_ROOT}/*/*/*/src ${NIH_CACHE_ROOT}/*/*/src
 do
-  for dir in lz4 snappy rocksdb
+  for dir in lz4 snappy
   do
     if [ -e ${nih_path}/${dir} -a \! -e ${nih_path}/${dir}/.git ]
     then

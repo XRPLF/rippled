@@ -82,15 +82,6 @@ find_package(SOCI REQUIRED)
 find_package(SQLite3 REQUIRED)
 find_package(Snappy REQUIRED)
 
-option(rocksdb "Enable RocksDB" ON)
-if(rocksdb)
-  find_package(RocksDB REQUIRED)
-  set_target_properties(RocksDB::rocksdb PROPERTIES
-    INTERFACE_COMPILE_DEFINITIONS RIPPLE_ROCKSDB_AVAILABLE=1
-  )
-  target_link_libraries(ripple_libs INTERFACE RocksDB::rocksdb)
-endif()
-
 find_package(nudb REQUIRED)
 find_package(date REQUIRED)
 include(deps/Protobuf)

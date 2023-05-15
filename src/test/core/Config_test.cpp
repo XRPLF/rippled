@@ -73,7 +73,6 @@ medium
 # external administrative command to initiate deletion.
 [node_db]
 type=memory
-path=/Users/dummy/ripple/config/db/rocksdb
 open_files=2000
 filter_bits=12
 cache_mb=256

@@ -102,20 +102,6 @@ SHAMapStoreImp::SHAMapStoreImp(
             "] entry in configuration file");
     }
 
-    // RocksDB only. Use sensible defaults if no values specified.
-    if (boost::iequals(get(section, "type"), "RocksDB"))
-    {
-        if (!section.exists("cache_mb"))
-        {
-            section.set(
-                "cache_mb",
-                std::to_string(config.getValueFor(SizedItem::hashNodeDBCache)));
-        }
-
-        if (!section.exists("filter_bits") && (config.NODE_SIZE >= 2))
-            section.set("filter_bits", "10");
-    }
-
     get_if_exists(section, "online_delete", deleteInterval_);
 
     if (deleteInterval_)

@@ -26,7 +26,6 @@
 #include <ripple/beast/xor_shift_engine.h>
 #include <ripple/nodestore/DummyScheduler.h>
 #include <ripple/nodestore/Manager.h>
-#include <ripple/unity/rocksdb.h>
 #include <boost/algorithm/string.hpp>
 #include <atomic>
 #include <chrono>
@@ -746,10 +745,6 @@ public:
         */
         std::string default_args =
             "type=nudb"
-#if RIPPLE_ROCKSDB_AVAILABLE
-            ";type=rocksdb,open_files=2000,filter_bits=12,cache_mb=256,"
-            "file_size_mb=8,file_size_mult=2"
-#endif
 #if 0
             ";type=memory|path=NodeStore"
 #endif

@@ -16,7 +16,6 @@ class Xrpl(ConanFile):
         'fPIC': [True, False],
         'jemalloc': [True, False],
         'reporting': [True, False],
-        'rocksdb': [True, False],
         'shared': [True, False],
         'static': [True, False],
         'tests': [True, False],
@@ -44,7 +43,6 @@ class Xrpl(ConanFile):
         'fPIC': True,
         'jemalloc': False,
         'reporting': False,
-        'rocksdb': True,
         'shared': False,
         'static': True,
         'tests': True,
@@ -74,13 +72,6 @@ class Xrpl(ConanFile):
         'openssl:shared': False,
         'protobuf:shared': False,
         'protobuf:with_zlib': True,
-        'rocksdb:enable_sse': False,
-        'rocksdb:lite': False,
-        'rocksdb:shared': False,
-        'rocksdb:use_rtti': True,
-        'rocksdb:with_jemalloc': False,
-        'rocksdb:with_lz4': True,
-        'rocksdb:with_snappy': True,
         'snappy:shared': False,
         'soci:shared': False,
         'soci:with_sqlite3': True,
@@ -105,8 +96,6 @@ class Xrpl(ConanFile):
         if self.options.reporting:
             self.requires('cassandra-cpp-driver/2.15.3')
             self.requires('libpq/13.6')
-        if self.options.rocksdb:
-            self.requires('rocksdb/6.27.3')
 
     exports_sources = (
         'CMakeLists.txt', 'Builds/*', 'bin/getRippledInfo', 'src/*', 'cfg/*'
@@ -126,7 +115,6 @@ class Xrpl(ConanFile):
         tc.variables['coverage'] = self.options.coverage
         tc.variables['jemalloc'] = self.options.jemalloc
         tc.variables['reporting'] = self.options.reporting
-        tc.variables['rocksdb'] = self.options.rocksdb
         tc.variables['BUILD_SHARED_LIBS'] = self.options.shared
         tc.variables['static'] = self.options.static
         tc.variables['unity'] = self.options.unity
