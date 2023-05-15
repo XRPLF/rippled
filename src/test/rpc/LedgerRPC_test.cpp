@@ -848,7 +848,6 @@ class LedgerRPC_test : public beast::unit_test::suite
                 "json", "ledger_entry", to_string(jvParams))[jss::result];
             BEAST_EXPECT(
                 jrr[jss::node][sfLedgerEntryType.jsonName] == jss::Ticket);
-            BEAST_EXPECT(jrr[jss::node][sfTicketSequence.jsonName] == tkt1);
         }
         {
             // Second real ticket requested by account and sequence.

@@ -55,7 +55,6 @@ TxFormats::TxFormats()
             {sfSetFlag, soeOPTIONAL},
             {sfClearFlag, soeOPTIONAL},
             {sfTickSize, soeOPTIONAL},
-            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -65,7 +64,6 @@ TxFormats::TxFormats()
             {sfLimitAmount, soeOPTIONAL},
             {sfQualityIn, soeOPTIONAL},
             {sfQualityOut, soeOPTIONAL},
-            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -76,7 +74,6 @@ TxFormats::TxFormats()
             {sfTakerGets, soeREQUIRED},
             {sfExpiration, soeOPTIONAL},
             {sfOfferSequence, soeOPTIONAL},
-            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -84,7 +81,6 @@ TxFormats::TxFormats()
         ttOFFER_CANCEL,
         {
             {sfOfferSequence, soeREQUIRED},
-            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -92,7 +88,6 @@ TxFormats::TxFormats()
         ttREGULAR_KEY_SET,
         {
             {sfRegularKey, soeOPTIONAL},
-            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -106,7 +101,6 @@ TxFormats::TxFormats()
             {sfInvoiceID, soeOPTIONAL},
             {sfDestinationTag, soeOPTIONAL},
             {sfDeliverMin, soeOPTIONAL},
-            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -143,14 +137,6 @@ TxFormats::TxFormats()
         },
         commonFields);
 
-    add(jss::TicketCreate,
-        ttTICKET_CREATE,
-        {
-            {sfTicketCount, soeREQUIRED},
-            {sfTicketSequence, soeOPTIONAL},
-        },
-        commonFields);
-
     // The SignerEntries are optional because a SignerList is deleted by
     // setting the SignerQuorum to zero and omitting SignerEntries.
     add(jss::SignerListSet,
@@ -158,7 +144,6 @@ TxFormats::TxFormats()
         {
             {sfSignerQuorum, soeREQUIRED},
             {sfSignerEntries, soeOPTIONAL},
-            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -167,7 +152,6 @@ TxFormats::TxFormats()
         {
             {sfDestination, soeREQUIRED},
             {sfDestinationTag, soeOPTIONAL},
-            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 }

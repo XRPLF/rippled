@@ -442,18 +442,7 @@ transactionPreProcessImpl(
     {
         if (!tx_json.isMember(jss::Sequence))
         {
-            bool const hasTicketSeq =
-                tx_json.isMember(sfTicketSequence.jsonName);
-            if (!hasTicketSeq && !sle)
-            {
-                JLOG(j.debug())
-                    << "transactionSign: Failed to find source account "
-                    << "in current ledger: " << toBase58(srcAddressID);
-
-                return rpcError(rpcSRC_ACT_NOT_FOUND);
-            }
-            tx_json[jss::Sequence] =
-                hasTicketSeq ? 0 : app.getTxQ().nextQueuableSeq(sle).value();
+            tx_json[jss::Sequence] = 0
         }
 
         if (!tx_json.isMember(jss::Flags))

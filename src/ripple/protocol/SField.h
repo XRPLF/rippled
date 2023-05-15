@@ -348,10 +348,6 @@ extern SF_UINT16 const sfTransferFee;
 
 // 16-bit integers (uncommon)
 extern SF_UINT16 const sfVersion;
-extern SF_UINT16 const sfHookStateChangeCount;
-extern SF_UINT16 const sfHookEmitCount;
-extern SF_UINT16 const sfHookExecutionIndex;
-extern SF_UINT16 const sfHookApiVersion;
 
 // 32-bit integers (common)
 extern SF_UINT32 const sfNetworkID;
@@ -394,9 +390,6 @@ extern SF_UINT32 const sfCancelAfter;
 extern SF_UINT32 const sfFinishAfter;
 extern SF_UINT32 const sfSignerListID;
 extern SF_UINT32 const sfSettleDelay;
-extern SF_UINT32 const sfTicketCount;
-extern SF_UINT32 const sfTicketSequence;
-extern SF_UINT32 const sfHookStateCount;
 extern SF_UINT32 const sfEmitGeneration;
 
 // 64-bit integers (common)
@@ -414,9 +407,6 @@ extern SF_UINT64 const sfServerVersion;
 extern SF_UINT64 const sfEmitBurden;
 
 // 64-bit integers (uncommon)
-extern SF_UINT64 const sfHookOn;
-extern SF_UINT64 const sfHookInstructionCount;
-extern SF_UINT64 const sfHookReturnCode;
 extern SF_UINT64 const sfReferenceCount;
 
 // 128-bit
@@ -440,7 +430,6 @@ extern SF_UINT256 const sfRootIndex;
 extern SF_UINT256 const sfAccountTxnID;
 extern SF_UINT256 const sfEmitParentTxnID;
 extern SF_UINT256 const sfEmitNonce;
-extern SF_UINT256 const sfEmitHookHash;
 
 // 256-bit (uncommon)
 extern SF_UINT256 const sfBookDirectory;
@@ -454,10 +443,6 @@ extern SF_UINT256 const sfCheckID;
 extern SF_UINT256 const sfValidatedHash;
 extern SF_UINT256 const sfPreviousPageMin;
 extern SF_UINT256 const sfNextPageMin;
-extern SF_UINT256 const sfHookStateKey;
-extern SF_UINT256 const sfHookHash;
-extern SF_UINT256 const sfHookNamespace;
-extern SF_UINT256 const sfHookSetTxnID;
 
 // currency amount (common)
 extern SF_AMOUNT const sfAmount;
@@ -498,16 +483,10 @@ extern SF_VL const sfMemoData;
 extern SF_VL const sfMemoFormat;
 
 // variable length (uncommon)
-extern SF_VL const sfFulfillment;
-extern SF_VL const sfCondition;
 extern SF_VL const sfMasterSignature;
 extern SF_VL const sfUNLModifyValidator;
 extern SF_VL const sfValidatorToDisable;
 extern SF_VL const sfValidatorToReEnable;
-extern SF_VL const sfHookStateData;
-extern SF_VL const sfHookReturnString;
-extern SF_VL const sfHookParameterName;
-extern SF_VL const sfHookParameterValue;
 
 // account
 extern SF_ACCOUNT const sfAccount;
@@ -520,7 +499,6 @@ extern SF_ACCOUNT const sfRegularKey;
 extern SF_ACCOUNT const sfEmitCallback;
 
 // account (uncommon)
-extern SF_ACCOUNT const sfHookAccount;
 
 // path set
 extern SField const sfPaths;
@@ -564,7 +542,6 @@ extern SField const sfNecessary;
 extern SField const sfSufficient;
 extern SField const sfAffectedNodes;
 extern SField const sfMemos;
-extern SField const sfHooks;
 
 // array of objects (uncommon)
 extern SField const sfMajorities;

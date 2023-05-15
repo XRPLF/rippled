@@ -51,7 +51,6 @@ LedgerFormats::LedgerFormats()
             {sfTransferRate,         soeOPTIONAL},
             {sfDomain,               soeOPTIONAL},
             {sfTickSize,             soeOPTIONAL},
-            {sfTicketCount,          soeOPTIONAL},
         },
         commonFields);
 

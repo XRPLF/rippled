@@ -681,7 +681,6 @@ public:
             auto const& ticket = resp[jss::result][jss::account_objects][0u];
             BEAST_EXPECT(ticket[sfAccount.jsonName] == gw.human());
             BEAST_EXPECT(ticket[sfLedgerEntryType.jsonName] == jss::Ticket);
-            BEAST_EXPECT(ticket[sfTicketSequence.jsonName].asUInt() == 13);
         }
         {
             // See how "deletion_blockers_only" handles gw's directory.
