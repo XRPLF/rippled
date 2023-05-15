@@ -367,7 +367,6 @@ LedgerEntryTypesMatch::visitEntry(
             case ltFEE_SETTINGS:
             case ltESCROW:
             case ltPAYCHAN:
-            case ltCHECK:
             case ltDEPOSIT_PREAUTH:
             case ltNEGATIVE_UNL:
             case ltNFTOKEN_PAGE:

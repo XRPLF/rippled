@@ -278,12 +278,6 @@ signers(AccountID const& account) noexcept
 }
 
 Keylet
-check(AccountID const& id, std::uint32_t seq) noexcept
-{
-    return {ltCHECK, indexHash(LedgerNameSpace::CHECK, id, seq)};
-}
-
-Keylet
 depositPreauth(AccountID const& owner, AccountID const& preauthorized) noexcept
 {
     return {

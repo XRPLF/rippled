@@ -170,16 +170,6 @@ static ticket_t const ticket{};
 Keylet
 signers(AccountID const& account) noexcept;
 
-/** A Check */
-/** @{ */
-Keylet
-check(AccountID const& id, std::uint32_t seq) noexcept;
-
-inline Keylet
-check(uint256 const& key) noexcept
-{
-    return {ltCHECK, key};
-}
 /** @} */
 
 /** A DepositPreauth */

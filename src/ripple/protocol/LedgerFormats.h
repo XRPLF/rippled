@@ -129,11 +129,11 @@ enum LedgerEntryType : std::uint16_t
      */
     ltPAYCHAN = 0x0078,
 
-    /** A ledger object which describes a check.
-
-        \sa keylet::check
-     */
-    ltCHECK = 0x0043,
+//    /** A ledger object which describes a check.
+//
+//        \sa keylet::check
+//     */
+//    ltCHECK = 0x0043,
 
     /** A ledger object which describes a deposit preauthorization.
 

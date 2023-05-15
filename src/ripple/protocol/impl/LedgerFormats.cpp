@@ -204,24 +204,6 @@ LedgerFormats::LedgerFormats()
         },
         commonFields);
 
-    add(jss::Check,
-        ltCHECK,
-        {
-            {sfAccount,              soeREQUIRED},
-            {sfDestination,          soeREQUIRED},
-            {sfSendMax,              soeREQUIRED},
-            {sfSequence,             soeREQUIRED},
-            {sfOwnerNode,            soeREQUIRED},
-            {sfDestinationNode,      soeREQUIRED},
-            {sfExpiration,           soeOPTIONAL},
-            {sfInvoiceID,            soeOPTIONAL},
-            {sfSourceTag,            soeOPTIONAL},
-            {sfDestinationTag,       soeOPTIONAL},
-            {sfPreviousTxnID,        soeREQUIRED},
-            {sfPreviousTxnLgrSeq,    soeREQUIRED},
-        },
-        commonFields);
-
     add(jss::DepositPreauth,
         ltDEPOSIT_PREAUTH,
         {

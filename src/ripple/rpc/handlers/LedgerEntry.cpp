@@ -67,16 +67,6 @@ doLedgerEntry(RPC::JsonContext& context)
         else
             uNodeIndex = keylet::account(*account).key;
     }
-    else if (context.params.isMember(jss::check))
-    {
-        expectedType = ltCHECK;
-
-        if (!uNodeIndex.parseHex(context.params[jss::check].asString()))
-        {
-            uNodeIndex = beast::zero;
-            jvResult[jss::error] = "malformedRequest";
-        }
-    }
     else if (context.params.isMember(jss::deposit_preauth))
     {
         expectedType = ltDEPOSIT_PREAUTH;

@@ -202,7 +202,6 @@ doAccountObjects(RPC::JsonContext& context)
             Json::StaticString name;
             LedgerEntryType type;
         } static constexpr deletionBlockers[] = {
-            {jss::check, ltCHECK},
             {jss::escrow, ltESCROW},
             {jss::nft_page, ltNFTOKEN_PAGE},
             {jss::payment_channel, ltPAYCHAN},
