@@ -654,31 +654,6 @@ public:
             BEAST_EXPECT(offer[sfTakerGets.jsonName].asUInt() == 14'000'000);
             BEAST_EXPECT(offer[sfTakerPays.jsonName][jss::value].asUInt() == 7);
         }
-        {
-            // Create a payment channel from qw to alice that we can look for.
-            Json::Value jvPayChan;
-            jvPayChan[jss::TransactionType] = jss::PaymentChannelCreate;
-            jvPayChan[jss::Flags] = tfUniversal;
-            jvPayChan[jss::Account] = gw.human();
-            jvPayChan[jss::Destination] = alice.human();
-            jvPayChan[jss::Amount] =
-                XRP(300).value().getJson(JsonOptions::none);
-            jvPayChan[sfSettleDelay.jsonName] = 24 * 60 * 60;
-            jvPayChan[sfPublicKey.jsonName] = strHex(gw.pk().slice());
-            env(jvPayChan);
-            env.close();
-        }
-        {
-            // Find the payment channel.
-            Json::Value const resp = acct_objs(gw, jss::payment_channel);
-            BEAST_EXPECT(acct_objs_is_size(resp, 1));
-
-            auto const& payChan = resp[jss::result][jss::account_objects][0u];
-            BEAST_EXPECT(payChan[sfAccount.jsonName] == gw.human());
-            BEAST_EXPECT(payChan[sfAmount.jsonName].asUInt() == 300'000'000);
-            BEAST_EXPECT(
-                payChan[sfSettleDelay.jsonName].asUInt() == 24 * 60 * 60);
-        }
         // Make gw multisigning by adding a signerList.
         env(signers(gw, 6, {{alice, 7}}));
         env.close();

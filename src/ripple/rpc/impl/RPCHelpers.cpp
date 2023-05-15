@@ -123,8 +123,8 @@ isRelatedToAccount(
     else if (sle->isFieldPresent(sfAccount))
     {
         // If there's an sfAccount present, also test the sfDestination, if
-        // present. This will match objects such as Escrows (ltESCROW), Payment
-        // Channels (ltPAYCHAN), and Checks (ltCHECK) because those are added to
+        // present. This will match objects such as Escrows (ltESCROW),
+        // and Checks (ltCHECK) because those are added to
         // the Destination account's directory. It intentionally EXCLUDES
         // NFToken Offers (ltNFTOKEN_OFFER). NFToken Offers are NOT added to the
         // Destination account's directory.
@@ -990,7 +990,6 @@ chooseLedgerEntryType(Json::Value const& params)
                  {jss::fee, ltFEE_SETTINGS},
                  {jss::hashes, ltLEDGER_HASHES},
                  {jss::offer, ltOFFER},
-                 {jss::payment_channel, ltPAYCHAN},
                  {jss::signer_list, ltSIGNER_LIST},
                  {jss::state, ltRIPPLE_STATE},
                  {jss::ticket, ltTICKET},

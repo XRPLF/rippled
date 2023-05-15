@@ -86,7 +86,6 @@ constexpr std::uint32_t asfTshCollect                      = 11;
 */
 constexpr std::uint32_t asfDisallowIncomingNFTokenOffer    = 12;
 constexpr std::uint32_t asfDisallowIncomingCheck           = 13;
-constexpr std::uint32_t asfDisallowIncomingPayChan         = 14;
 constexpr std::uint32_t asfDisallowIncomingTrustline       = 15;
 
 // OfferCreate flags:
@@ -121,7 +120,6 @@ constexpr std::uint32_t tfLostMajority                     = 0x00020000;
 // PaymentChannelClaim flags:
 constexpr std::uint32_t tfRenew                            = 0x00010000;
 constexpr std::uint32_t tfClose                            = 0x00020000;
-constexpr std::uint32_t tfPayChanClaimMask = ~(tfUniversal | tfRenew | tfClose);
 
 // NFTokenMint flags:
 constexpr std::uint32_t const tfBurnable                   = 0x00000001;

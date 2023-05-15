@@ -117,18 +117,6 @@ enum LedgerEntryType : std::uint16_t
      */
     ltFEE_SETTINGS = 0x0073,
 
-    /** A ledger object describing a single escrow.
-
-        \sa keylet::escrow
-     */
-//    ltESCROW = 0x0075,
-
-    /** A ledger object describing a single unidirectional XRP payment channel.
-
-        \sa keylet::payChan
-     */
-    ltPAYCHAN = 0x0078,
-
     /** A ledger object which describes a deposit preauthorization.
 
         \sa keylet::depositPreauth
@@ -233,8 +221,6 @@ enum LedgerSpecificFlags {
         0x04000000,               // True, reject new incoming NFT offers
     lsfDisallowIncomingCheck =
         0x08000000,               // True, reject new checks
-    lsfDisallowIncomingPayChan =
-        0x10000000,               // True, reject new paychans
     lsfDisallowIncomingTrustline =
         0x20000000,               // True, reject new trustlines (only if no issued assets)
 

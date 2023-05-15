@@ -207,17 +207,6 @@ doLedgerEntry(RPC::JsonContext& context)
                         .key;
         }
     }
-    else if (context.params.isMember(jss::payment_channel))
-    {
-        expectedType = ltPAYCHAN;
-
-        if (!uNodeIndex.parseHex(
-                context.params[jss::payment_channel].asString()))
-        {
-            uNodeIndex = beast::zero;
-            jvResult[jss::error] = "malformedRequest";
-        }
-    }
     else if (context.params.isMember(jss::ripple_state))
     {
         expectedType = ltRIPPLE_STATE;

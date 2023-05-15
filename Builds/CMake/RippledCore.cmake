@@ -436,7 +436,6 @@ target_sources (rippled PRIVATE
   src/ripple/app/tx/impl/NFTokenCreateOffer.cpp
   src/ripple/app/tx/impl/NFTokenMint.cpp
   src/ripple/app/tx/impl/OfferStream.cpp
-  src/ripple/app/tx/impl/PayChan.cpp
   src/ripple/app/tx/impl/Payment.cpp
   src/ripple/app/tx/impl/SetAccount.cpp
   src/ripple/app/tx/impl/SetRegularKey.cpp
@@ -611,7 +610,6 @@ target_sources (rippled PRIVATE
   src/ripple/rpc/handlers/NoRippleCheck.cpp
   src/ripple/rpc/handlers/OwnerInfo.cpp
   src/ripple/rpc/handlers/PathFind.cpp
-  src/ripple/rpc/handlers/PayChanClaim.cpp
   src/ripple/rpc/handlers/Peers.cpp
   src/ripple/rpc/handlers/Ping.cpp
   src/ripple/rpc/handlers/Print.cpp
@@ -706,7 +704,6 @@ if (tests)
     src/test/app/Offer_test.cpp
     src/test/app/OversizeMeta_test.cpp
     src/test/app/Path_test.cpp
-    src/test/app/PayChan_test.cpp
     src/test/app/PayStrand_test.cpp
     src/test/app/PseudoTx_test.cpp
     src/test/app/RCLCensorshipDetector_test.cpp
@@ -932,7 +929,6 @@ if (tests)
     #]===============================]
     src/test/rpc/AccountCurrencies_test.cpp
     src/test/rpc/AccountInfo_test.cpp
-    src/test/rpc/AccountLinesRPC_test.cpp
     src/test/rpc/AccountObjects_test.cpp
     src/test/rpc/AccountOffers_test.cpp
     src/test/rpc/AccountSet_test.cpp

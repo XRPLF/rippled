@@ -203,7 +203,6 @@ doAccountObjects(RPC::JsonContext& context)
             LedgerEntryType type;
         } static constexpr deletionBlockers[] = {
             {jss::nft_page, ltNFTOKEN_PAGE},
-            {jss::payment_channel, ltPAYCHAN},
             {jss::state, ltRIPPLE_STATE}};
 
         typeFilter.emplace();

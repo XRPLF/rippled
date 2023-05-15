@@ -283,48 +283,6 @@ class AccountTx_test : public beast::unit_test::suite
         // SignerListSet
         env(signers(alice, 1, {{"bogie", 1}, {"demon", 1}}), sig(alie));
 
-        // PayChan
-        {
-            std::uint32_t payChanSeq{env.seq(alice)};
-            Json::Value payChanCreate;
-            payChanCreate[jss::TransactionType] = jss::PaymentChannelCreate;
-            payChanCreate[jss::Flags] = tfUniversal;
-            payChanCreate[jss::Account] = alice.human();
-            payChanCreate[jss::Destination] = gw.human();
-            payChanCreate[jss::Amount] =
-                XRP(500).value().getJson(JsonOptions::none);
-            payChanCreate[sfSettleDelay.jsonName] =
-                NetClock::duration{100s}.count();
-            payChanCreate[sfPublicKey.jsonName] = strHex(alice.pk().slice());
-            env(payChanCreate, sig(alie));
-            env.close();
-
-            std::string const payChanIndex{
-                strHex(keylet::payChan(alice, gw, payChanSeq).key)};
-
-            {
-                Json::Value payChanFund;
-                payChanFund[jss::TransactionType] = jss::PaymentChannelFund;
-                payChanFund[jss::Flags] = tfUniversal;
-                payChanFund[jss::Account] = alice.human();
-                payChanFund[sfChannel.jsonName] = payChanIndex;
-                payChanFund[jss::Amount] =
-                    XRP(200).value().getJson(JsonOptions::none);
-                env(payChanFund, sig(alie));
-                env.close();
-            }
-            {
-                Json::Value payChanClaim;
-                payChanClaim[jss::TransactionType] = jss::PaymentChannelClaim;
-                payChanClaim[jss::Flags] = tfClose;
-                payChanClaim[jss::Account] = gw.human();
-                payChanClaim[sfChannel.jsonName] = payChanIndex;
-                payChanClaim[sfPublicKey.jsonName] = strHex(alice.pk().slice());
-                env(payChanClaim);
-                env.close();
-            }
-        }
-
         {
             // Deposit preauthorization with a Ticket.
             std::uint32_t const tktSeq{env.seq(alice) + 1};
@@ -361,7 +319,6 @@ class AccountTx_test : public beast::unit_test::suite
             {4,  jss::CheckCreate,            {jss::Check},                                               {},                               {jss::AccountRoot, jss::AccountRoot, jss::DirectoryNode, jss::DirectoryNode}},
             {5,  jss::CheckCreate,            {jss::Check},                                               {},                               {jss::AccountRoot, jss::AccountRoot, jss::DirectoryNode, jss::DirectoryNode}},
             {6,  jss::PaymentChannelClaim,    {},                                                         {jss::PayChannel},                {jss::AccountRoot, jss::AccountRoot, jss::DirectoryNode, jss::DirectoryNode}},
-            {7,  jss::PaymentChannelFund,     {},                                                         {},                               {jss::AccountRoot, jss::PayChannel}},
             {8,  jss::PaymentChannelCreate,   {jss::PayChannel},                                          {},                               {jss::AccountRoot, jss::AccountRoot, jss::DirectoryNode, jss::DirectoryNode}},
             {13, jss::SignerListSet,          {jss::SignerList},                                          {},                               {jss::AccountRoot, jss::DirectoryNode}},
             {14, jss::OfferCancel,            {},                                                         {jss::Offer, jss::DirectoryNode}, {jss::AccountRoot, jss::DirectoryNode}},

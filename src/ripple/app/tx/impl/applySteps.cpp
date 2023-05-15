@@ -30,7 +30,6 @@
 #include <ripple/app/tx/impl/NFTokenCancelOffer.h>
 #include <ripple/app/tx/impl/NFTokenCreateOffer.h>
 #include <ripple/app/tx/impl/NFTokenMint.h>
-#include <ripple/app/tx/impl/PayChan.h>
 #include <ripple/app/tx/impl/Payment.h>
 #include <ripple/app/tx/impl/SetAccount.h>
 #include <ripple/app/tx/impl/SetRegularKey.h>
@@ -101,12 +100,6 @@ invoke_preflight(PreflightContext const& ctx)
             return invoke_preflight_helper<CancelOffer>(ctx);
         case ttOFFER_CREATE:
             return invoke_preflight_helper<CreateOffer>(ctx);
-        case ttPAYCHAN_CLAIM:
-            return invoke_preflight_helper<PayChanClaim>(ctx);
-        case ttPAYCHAN_CREATE:
-            return invoke_preflight_helper<PayChanCreate>(ctx);
-        case ttPAYCHAN_FUND:
-            return invoke_preflight_helper<PayChanFund>(ctx);
         case ttPAYMENT:
             return invoke_preflight_helper<Payment>(ctx);
         case ttREGULAR_KEY_SET:
@@ -190,12 +183,6 @@ invoke_preclaim(PreclaimContext const& ctx)
             return invoke_preclaim<CancelOffer>(ctx);
         case ttOFFER_CREATE:
             return invoke_preclaim<CreateOffer>(ctx);
-        case ttPAYCHAN_CLAIM:
-            return invoke_preclaim<PayChanClaim>(ctx);
-        case ttPAYCHAN_CREATE:
-            return invoke_preclaim<PayChanCreate>(ctx);
-        case ttPAYCHAN_FUND:
-            return invoke_preclaim<PayChanFund>(ctx);
         case ttPAYMENT:
             return invoke_preclaim<Payment>(ctx);
         case ttREGULAR_KEY_SET:
@@ -241,12 +228,6 @@ invoke_calculateBaseFee(ReadView const& view, STTx const& tx)
             return CancelOffer::calculateBaseFee(view, tx);
         case ttOFFER_CREATE:
             return CreateOffer::calculateBaseFee(view, tx);
-        case ttPAYCHAN_CLAIM:
-            return PayChanClaim::calculateBaseFee(view, tx);
-        case ttPAYCHAN_CREATE:
-            return PayChanCreate::calculateBaseFee(view, tx);
-        case ttPAYCHAN_FUND:
-            return PayChanFund::calculateBaseFee(view, tx);
         case ttPAYMENT:
             return Payment::calculateBaseFee(view, tx);
         case ttREGULAR_KEY_SET:
@@ -339,18 +320,6 @@ invoke_apply(ApplyContext& ctx)
         }
         case ttOFFER_CREATE: {
             CreateOffer p(ctx);
-            return p();
-        }
-        case ttPAYCHAN_CLAIM: {
-            PayChanClaim p(ctx);
-            return p();
-        }
-        case ttPAYCHAN_CREATE: {
-            PayChanCreate p(ctx);
-            return p();
-        }
-        case ttPAYCHAN_FUND: {
-            PayChanFund p(ctx);
             return p();
         }
         case ttPAYMENT: {

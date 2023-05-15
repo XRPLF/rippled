@@ -94,24 +94,6 @@ enum TxType : std::uint16_t
     /** This transaction type modifies the signer list associated with an account. */
     ttSIGNER_LIST_SET = 12,
 
-    /** This transaction type creates a new unidirectional XRP payment channel. */
-    ttPAYCHAN_CREATE = 13,
-
-    /** This transaction type funds an existing unidirectional XRP payment channel. */
-    ttPAYCHAN_FUND = 14,
-
-    /** This transaction type submits a claim against an existing unidirectional payment channel. */
-    ttPAYCHAN_CLAIM = 15,
-
-    /** This transaction type creates a new check. */
-//    ttCHECK_CREATE = 16,
-
-    /** This transaction type cashes an existing check. */
-//    ttCHECK_CASH = 17,
-
-    /** This transaction type cancels an existing check. */
-//    ttCHECK_CANCEL = 18,
-
     /** This transaction type grants or revokes authorization to transfer funds. */
     ttDEPOSIT_PREAUTH = 19,
 

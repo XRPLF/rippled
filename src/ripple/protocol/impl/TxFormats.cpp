@@ -163,41 +163,6 @@ TxFormats::TxFormats()
         },
         commonFields);
 
-    add(jss::PaymentChannelCreate,
-        ttPAYCHAN_CREATE,
-        {
-            {sfDestination, soeREQUIRED},
-            {sfAmount, soeREQUIRED},
-            {sfSettleDelay, soeREQUIRED},
-            {sfPublicKey, soeREQUIRED},
-            {sfCancelAfter, soeOPTIONAL},
-            {sfDestinationTag, soeOPTIONAL},
-            {sfTicketSequence, soeOPTIONAL},
-        },
-        commonFields);
-
-    add(jss::PaymentChannelFund,
-        ttPAYCHAN_FUND,
-        {
-            {sfChannel, soeREQUIRED},
-            {sfAmount, soeREQUIRED},
-            {sfExpiration, soeOPTIONAL},
-            {sfTicketSequence, soeOPTIONAL},
-        },
-        commonFields);
-
-    add(jss::PaymentChannelClaim,
-        ttPAYCHAN_CLAIM,
-        {
-            {sfChannel, soeREQUIRED},
-            {sfAmount, soeOPTIONAL},
-            {sfBalance, soeOPTIONAL},
-            {sfSignature, soeOPTIONAL},
-            {sfPublicKey, soeOPTIONAL},
-            {sfTicketSequence, soeOPTIONAL},
-        },
-        commonFields);
-
     add(jss::AccountDelete,
         ttACCOUNT_DELETE,
         {

@@ -551,11 +551,6 @@ SetAccount::doApply()
         else if (uClearFlag == asfDisallowIncomingCheck)
             uFlagsOut &= ~lsfDisallowIncomingCheck;
 
-        if (uSetFlag == asfDisallowIncomingPayChan)
-            uFlagsOut |= lsfDisallowIncomingPayChan;
-        else if (uClearFlag == asfDisallowIncomingPayChan)
-            uFlagsOut &= ~lsfDisallowIncomingPayChan;
-
         if (uSetFlag == asfDisallowIncomingTrustline)
             uFlagsOut |= lsfDisallowIncomingTrustline;
         else if (uClearFlag == asfDisallowIncomingTrustline)

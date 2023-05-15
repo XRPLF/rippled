@@ -184,26 +184,6 @@ LedgerFormats::LedgerFormats()
         },
         commonFields);
 
-    add(jss::PayChannel,
-        ltPAYCHAN,
-        {
-            {sfAccount,              soeREQUIRED},
-            {sfDestination,          soeREQUIRED},
-            {sfAmount,               soeREQUIRED},
-            {sfBalance,              soeREQUIRED},
-            {sfPublicKey,            soeREQUIRED},
-            {sfSettleDelay,          soeREQUIRED},
-            {sfExpiration,           soeOPTIONAL},
-            {sfCancelAfter,          soeOPTIONAL},
-            {sfSourceTag,            soeOPTIONAL},
-            {sfDestinationTag,       soeOPTIONAL},
-            {sfOwnerNode,            soeREQUIRED},
-            {sfPreviousTxnID,        soeREQUIRED},
-            {sfPreviousTxnLgrSeq,    soeREQUIRED},
-            {sfDestinationNode,      soeOPTIONAL},
-        },
-        commonFields);
-
     add(jss::DepositPreauth,
         ltDEPOSIT_PREAUTH,
         {

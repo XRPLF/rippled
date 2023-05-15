@@ -319,7 +319,6 @@ extern uint256 const featureMultiSignReserve;
 extern uint256 const fixTakerDryOfferRemoval;
 extern uint256 const fixMasterKeyAsRegularKey;
 extern uint256 const fixCheckThreading;
-extern uint256 const fixPayChanRecipientOwnerDir;
 extern uint256 const featureDeletableAccounts;
 extern uint256 const fixQualityUpperBound;
 extern uint256 const featureRequireFullyCanonicalSig;

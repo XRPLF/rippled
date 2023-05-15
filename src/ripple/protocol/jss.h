@@ -80,7 +80,6 @@ JSS(OfferCancel);            // transaction type.
 JSS(OfferCreate);            // transaction type.
 JSS(OfferSequence);          // field.
 JSS(Paths);                  // in/out: TransactionSign
-JSS(PayChannel);             // ledger type.
 JSS(Payment);                // transaction type.
 JSS(PaymentChannelClaim);    // transaction type.
 JSS(PaymentChannelCreate);   // transaction type.

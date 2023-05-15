@@ -548,12 +548,11 @@ public:
         static constexpr std::
             array<std::pair<std::string_view, std::uint32_t>, 4>
                 disallowIncomingFlags{
-                    {{"disallowIncomingCheck", asfDisallowIncomingCheck},
-                     {"disallowIncomingNFTokenOffer",
-                      asfDisallowIncomingNFTokenOffer},
-                     {"disallowIncomingPayChan", asfDisallowIncomingPayChan},
-                     {"disallowIncomingTrustline",
-                      asfDisallowIncomingTrustline}}};
+                    {
+                     {"disallowIncomingNFTokenOffer",asfDisallowIncomingNFTokenOffer},
+
+                     {"disallowIncomingTrustline",asfDisallowIncomingTrustline}}
+                };
 
         if (features[featureDisallowIncoming])
         {

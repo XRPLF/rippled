@@ -769,63 +769,6 @@ class LedgerRPC_test : public beast::unit_test::suite
     }
 
     void
-    testLedgerEntryPayChan()
-    {
-        testcase("ledger_entry Request Pay Chan");
-        using namespace test::jtx;
-        using namespace std::literals::chrono_literals;
-        Env env{*this};
-        Account const alice{"alice"};
-
-        env.fund(XRP(10000), alice);
-        env.close();
-
-        // Lambda to create a PayChan.
-        auto payChanCreate = [](test::jtx::Account const& account,
-                                test::jtx::Account const& to,
-                                STAmount const& amount,
-                                NetClock::duration const& settleDelay,
-                                PublicKey const& pk) {
-            Json::Value jv;
-            jv[jss::TransactionType] = jss::PaymentChannelCreate;
-            jv[jss::Account] = account.human();
-            jv[jss::Destination] = to.human();
-            jv[jss::Amount] = amount.getJson(JsonOptions::none);
-            jv[sfSettleDelay.jsonName] = settleDelay.count();
-            jv[sfPublicKey.jsonName] = strHex(pk.slice());
-            return jv;
-        };
-
-        env(payChanCreate(alice, env.master, XRP(57), 18s, alice.pk()));
-        env.close();
-
-        std::string const ledgerHash{to_string(env.closed()->info().hash)};
-
-        uint256 const payChanIndex{
-            keylet::payChan(alice, env.master, env.seq(alice) - 1).key};
-        {
-            // Request the payment channel using its index.
-            Json::Value jvParams;
-            jvParams[jss::payment_channel] = to_string(payChanIndex);
-            jvParams[jss::ledger_hash] = ledgerHash;
-            Json::Value const jrr = env.rpc(
-                "json", "ledger_entry", to_string(jvParams))[jss::result];
-            BEAST_EXPECT(jrr[jss::node][sfAmount.jsonName] == "57000000");
-            BEAST_EXPECT(jrr[jss::node][sfBalance.jsonName] == "0");
-            BEAST_EXPECT(jrr[jss::node][sfSettleDelay.jsonName] == 18);
-        }
-        {
-            // Request an index that is not a payment channel.
-            Json::Value jvParams;
-            jvParams[jss::payment_channel] = ledgerHash;
-            jvParams[jss::ledger_hash] = ledgerHash;
-            Json::Value const jrr = env.rpc(
-                "json", "ledger_entry", to_string(jvParams))[jss::result];
-            checkErrorValue(jrr, "entryNotFound", "");
-        }
-    }
-
-    void
     testLedgerEntryRippleState()
     {
         testcase("ledger_entry Request RippleState");
@@ -1628,7 +1571,6 @@ public:
         testLedgerEntryDirectory();
         testLedgerEntryEscrow();
         testLedgerEntryOffer();
-        testLedgerEntryPayChan();
         testLedgerEntryRippleState();
         testLedgerEntryTicket();
         testLedgerEntryUnknownOption();

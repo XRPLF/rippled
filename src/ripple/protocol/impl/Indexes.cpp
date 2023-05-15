@@ -309,14 +309,6 @@ page(uint256 const& key, std::uint64_t index) noexcept
 }
 
 Keylet
-payChan(AccountID const& src, AccountID const& dst, std::uint32_t seq) noexcept
-{
-    return {
-        ltPAYCHAN,
-        indexHash(LedgerNameSpace::XRP_PAYMENT_CHANNEL, src, dst, seq)};
-}
-
-Keylet
 nftpage_min(AccountID const& owner)
 {
     std::array<std::uint8_t, 32> buf{};

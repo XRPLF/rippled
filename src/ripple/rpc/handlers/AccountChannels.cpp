@@ -178,14 +178,6 @@ doAccountChannels(RPC::JsonContext& context)
                     nextHint = RPC::getStartHint(sleCur, visitData.accountID);
                 }
 
-                if (count <= limit && sleCur->getType() == ltPAYCHAN &&
-                    (*sleCur)[sfAccount] == accountID &&
-                    (!visitData.hasDst ||
-                     visitData.raDstAccount == (*sleCur)[sfDestination]))
-                {
-                    visitData.items.emplace_back(sleCur);
-                }
-
                 return true;
             }))
     {

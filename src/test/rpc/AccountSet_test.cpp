@@ -85,7 +85,6 @@ public:
                 }
 
                 if (flag == asfDisallowIncomingCheck ||
-                    flag == asfDisallowIncomingPayChan ||
                     flag == asfDisallowIncomingNFTokenOffer ||
                     flag == asfDisallowIncomingTrustline)
                 {

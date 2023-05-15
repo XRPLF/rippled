@@ -98,10 +98,6 @@ XRPNotCreated::visitEntry(
             case ltACCOUNT_ROOT:
                 drops_ -= (*before)[sfBalance].xrp().drops();
                 break;
-            case ltPAYCHAN:
-                drops_ -=
-                    ((*before)[sfAmount] - (*before)[sfBalance]).xrp().drops();
-                break;
             default:
                 break;
         }
@@ -113,12 +109,6 @@ XRPNotCreated::visitEntry(
         {
             case ltACCOUNT_ROOT:
                 drops_ += (*after)[sfBalance].xrp().drops();
-                break;
-            case ltPAYCHAN:
-                if (!isDelete)
-                    drops_ += ((*after)[sfAmount] - (*after)[sfBalance])
-                                  .xrp()
-                                  .drops();
                 break;
             default:
                 break;
@@ -311,7 +301,6 @@ LedgerEntryTypesMatch::visitEntry(
             case ltLEDGER_HASHES:
             case ltAMENDMENTS:
             case ltFEE_SETTINGS:
-            case ltPAYCHAN:
             case ltDEPOSIT_PREAUTH:
             case ltNEGATIVE_UNL:
             case ltNFTOKEN_PAGE:
