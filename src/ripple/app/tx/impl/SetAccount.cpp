@@ -518,11 +518,6 @@ SetAccount::doApply()
     // Set or clear flags for disallowing various incoming instruments
     if (ctx_.view().rules().enabled(featureDisallowIncoming))
     {
-        if (uSetFlag == asfDisallowIncomingCheck)
-            uFlagsOut |= lsfDisallowIncomingCheck;
-        else if (uClearFlag == asfDisallowIncomingCheck)
-            uFlagsOut &= ~lsfDisallowIncomingCheck;
-
         if (uSetFlag == asfDisallowIncomingTrustline)
             uFlagsOut |= lsfDisallowIncomingTrustline;
         else if (uClearFlag == asfDisallowIncomingTrustline)
