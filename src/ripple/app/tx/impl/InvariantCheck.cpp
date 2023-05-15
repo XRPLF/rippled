@@ -102,9 +102,6 @@ XRPNotCreated::visitEntry(
                 drops_ -=
                     ((*before)[sfAmount] - (*before)[sfBalance]).xrp().drops();
                 break;
-            case ltESCROW:
-                drops_ -= (*before)[sfAmount].xrp().drops();
-                break;
             default:
                 break;
         }
@@ -122,10 +119,6 @@ XRPNotCreated::visitEntry(
                     drops_ += ((*after)[sfAmount] - (*after)[sfBalance])
                                   .xrp()
                                   .drops();
-                break;
-            case ltESCROW:
-                if (!isDelete)
-                    drops_ += (*after)[sfAmount].xrp().drops();
                 break;
             default:
                 break;
@@ -255,53 +248,6 @@ NoBadOffers::finalize(
     return true;
 }
 
-//------------------------------------------------------------------------------
-
-void
-NoZeroEscrow::visitEntry(
-    bool isDelete,
-    std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
-{
-    auto isBad = [](STAmount const& amount) {
-        if (!amount.native())
-            return true;
-
-        if (amount.xrp() <= XRPAmount{0})
-            return true;
-
-        if (amount.xrp() >= INITIAL_XRP)
-            return true;
-
-        return false;
-    };
-
-    if (before && before->getType() == ltESCROW)
-        bad_ |= isBad((*before)[sfAmount]);
-
-    if (after && after->getType() == ltESCROW)
-        bad_ |= isBad((*after)[sfAmount]);
-}
-
-bool
-NoZeroEscrow::finalize(
-    STTx const&,
-    TER const,
-    XRPAmount const,
-    ReadView const&,
-    beast::Journal const& j)
-{
-    if (bad_)
-    {
-        JLOG(j.fatal()) << "Invariant failed: escrow specifies invalid amount";
-        return false;
-    }
-
-    return true;
-}
-
-//------------------------------------------------------------------------------
-
 void
 AccountRootsNotDeleted::visitEntry(
     bool isDelete,
@@ -365,7 +311,6 @@ LedgerEntryTypesMatch::visitEntry(
             case ltLEDGER_HASHES:
             case ltAMENDMENTS:
             case ltFEE_SETTINGS:
-            case ltESCROW:
             case ltPAYCHAN:
             case ltDEPOSIT_PREAUTH:
             case ltNEGATIVE_UNL:

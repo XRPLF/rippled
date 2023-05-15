@@ -333,7 +333,6 @@ public:
               jss::signer_list,
               jss::state,
               jss::ticket,
-              jss::escrow,
               jss::payment_channel,
               jss::deposit_preauth})
         {
@@ -362,19 +361,6 @@ public:
         env(signers(
             Account{"bob0"}, 1, {{Account{"bob1"}, 1}, {Account{"bob2"}, 1}}));
         env(ticket::create(env.master, 1));
-
-        {
-            Json::Value jv;
-            jv[jss::TransactionType] = jss::EscrowCreate;
-            jv[jss::Flags] = tfUniversal;
-            jv[jss::Account] = Account{"bob5"}.human();
-            jv[jss::Destination] = Account{"bob6"}.human();
-            jv[jss::Amount] = XRP(50).value().getJson(JsonOptions::none);
-            jv[sfFinishAfter.fieldName] = NetClock::time_point{env.now() + 10s}
-                                              .time_since_epoch()
-                                              .count();
-            env(jv);
-        }
 
         {
             Json::Value jv;
@@ -468,13 +454,6 @@ public:
             BEAST_EXPECT(checkArraySize(jrr[jss::state], 1));
             for (auto const& j : jrr[jss::state])
                 BEAST_EXPECT(j["LedgerEntryType"] == jss::Ticket);
-        }
-
-        {  // jvParams[jss::type] = "escrow";
-            auto const jrr = makeRequest(jss::escrow);
-            BEAST_EXPECT(checkArraySize(jrr[jss::state], 1));
-            for (auto const& j : jrr[jss::state])
-                BEAST_EXPECT(j["LedgerEntryType"] == jss::Escrow);
         }
 
         {  // jvParams[jss::type] = "payment_channel";

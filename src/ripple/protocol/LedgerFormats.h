@@ -121,19 +121,13 @@ enum LedgerEntryType : std::uint16_t
 
         \sa keylet::escrow
      */
-    ltESCROW = 0x0075,
+//    ltESCROW = 0x0075,
 
     /** A ledger object describing a single unidirectional XRP payment channel.
 
         \sa keylet::payChan
      */
     ltPAYCHAN = 0x0078,
-
-//    /** A ledger object which describes a check.
-//
-//        \sa keylet::check
-//     */
-//    ltCHECK = 0x0043,
 
     /** A ledger object which describes a deposit preauthorization.
 

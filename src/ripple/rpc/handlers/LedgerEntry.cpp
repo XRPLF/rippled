@@ -176,37 +176,6 @@ doLedgerEntry(RPC::JsonContext& context)
             }
         }
     }
-    else if (context.params.isMember(jss::escrow))
-    {
-        expectedType = ltESCROW;
-        if (!context.params[jss::escrow].isObject())
-        {
-            if (!uNodeIndex.parseHex(context.params[jss::escrow].asString()))
-            {
-                uNodeIndex = beast::zero;
-                jvResult[jss::error] = "malformedRequest";
-            }
-        }
-        else if (
-            !context.params[jss::escrow].isMember(jss::owner) ||
-            !context.params[jss::escrow].isMember(jss::seq) ||
-            !context.params[jss::escrow][jss::seq].isIntegral())
-        {
-            jvResult[jss::error] = "malformedRequest";
-        }
-        else
-        {
-            auto const id = parseBase58<AccountID>(
-                context.params[jss::escrow][jss::owner].asString());
-            if (!id)
-                jvResult[jss::error] = "malformedOwner";
-            else
-                uNodeIndex =
-                    keylet::escrow(
-                        *id, context.params[jss::escrow][jss::seq].asUInt())
-                        .key;
-        }
-    }
     else if (context.params.isMember(jss::offer))
     {
         expectedType = ltOFFER;

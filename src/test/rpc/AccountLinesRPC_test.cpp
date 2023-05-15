@@ -544,22 +544,6 @@ public:
         env.fund(XRP(10000), alice, becky, gw1);
         env.close();
 
-        // A couple of helper lambdas
-        auto escrow = [&env](
-                          Account const& account,
-                          Account const& to,
-                          STAmount const& amount) {
-            Json::Value jv;
-            jv[jss::TransactionType] = jss::EscrowCreate;
-            jv[jss::Flags] = tfUniversal;
-            jv[jss::Account] = account.human();
-            jv[jss::Destination] = to.human();
-            jv[jss::Amount] = amount.getJson(JsonOptions::none);
-            NetClock::time_point finish = env.now() + 1s;
-            jv[sfFinishAfter.jsonName] = finish.time_since_epoch().count();
-            return jv;
-        };
-
         auto payChan = [](Account const& account,
                           Account const& to,
                           STAmount const& amount,

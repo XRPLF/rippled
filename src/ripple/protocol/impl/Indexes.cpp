@@ -309,12 +309,6 @@ page(uint256 const& key, std::uint64_t index) noexcept
 }
 
 Keylet
-escrow(AccountID const& src, std::uint32_t seq) noexcept
-{
-    return {ltESCROW, indexHash(LedgerNameSpace::ESCROW, src, seq)};
-}
-
-Keylet
 payChan(AccountID const& src, AccountID const& dst, std::uint32_t seq) noexcept
 {
     return {

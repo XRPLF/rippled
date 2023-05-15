@@ -188,12 +188,6 @@ class Invariants_test : public beast::unit_test::suite
                 if (!sle)
                     return false;
 
-                // make a dummy escrow ledger entry, then change the type to an
-                // unsupported value so that the valid type invariant check
-                // will fail.
-                auto sleNew = std::make_shared<SLE>(
-                    keylet::escrow(A1, (*sle)[sfSequence] + 2));
-
                 // We don't use ltNICKNAME directly since it's marked deprecated
                 // to prevent accidental use elsewhere.
                 sleNew->type_ = static_cast<LedgerEntryType>('n');
@@ -356,60 +350,6 @@ class Invariants_test : public beast::unit_test::suite
     }
 
     void
-    testNoZeroEscrow()
-    {
-        using namespace test::jtx;
-        testcase << "no zero escrow";
-
-        doInvariantCheck(
-            {{"Cannot return non-native STAmount as XRPAmount"}},
-            [](Account const& A1, Account const& A2, ApplyContext& ac) {
-                // escrow with nonnative amount
-                auto const sle = ac.view().peek(keylet::account(A1.id()));
-                if (!sle)
-                    return false;
-                auto sleNew = std::make_shared<SLE>(
-                    keylet::escrow(A1, (*sle)[sfSequence] + 2));
-                STAmount nonNative(A2["USD"](51));
-                sleNew->setFieldAmount(sfAmount, nonNative);
-                ac.view().insert(sleNew);
-                return true;
-            });
-
-        doInvariantCheck(
-            {{"XRP net change of -1000000 doesn't match fee 0"},
-             {"escrow specifies invalid amount"}},
-            [](Account const& A1, Account const&, ApplyContext& ac) {
-                // escrow with negative amount
-                auto const sle = ac.view().peek(keylet::account(A1.id()));
-                if (!sle)
-                    return false;
-                auto sleNew = std::make_shared<SLE>(
-                    keylet::escrow(A1, (*sle)[sfSequence] + 2));
-                sleNew->setFieldAmount(sfAmount, XRP(-1));
-                ac.view().insert(sleNew);
-                return true;
-            });
-
-        doInvariantCheck(
-            {{"XRP net change was positive: 100000000000000001"},
-             {"escrow specifies invalid amount"}},
-            [](Account const& A1, Account const&, ApplyContext& ac) {
-                // escrow with too-large amount
-                auto const sle = ac.view().peek(keylet::account(A1.id()));
-                if (!sle)
-                    return false;
-                auto sleNew = std::make_shared<SLE>(
-                    keylet::escrow(A1, (*sle)[sfSequence] + 2));
-                // Use `drops(1)` to bypass a call to STAmount::canonicalize
-                // with an invalid value
-                sleNew->setFieldAmount(sfAmount, INITIAL_XRP + drops(1));
-                ac.view().insert(sleNew);
-                return true;
-            });
-    }
-
-    void
     testValidNewAccountRoot()
     {
         using namespace test::jtx;
@@ -472,7 +412,6 @@ public:
         testXRPBalanceCheck();
         testTransactionFeeCheck();
         testNoBadOffers();
-        testNoZeroEscrow();
         testValidNewAccountRoot();
     }
 };

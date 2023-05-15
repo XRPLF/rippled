@@ -109,23 +109,23 @@ LedgerFormats::LedgerFormats()
         },
         commonFields);
 
-    add(jss::Escrow,
-        ltESCROW,
-        {
-            {sfAccount,              soeREQUIRED},
-            {sfDestination,          soeREQUIRED},
-            {sfAmount,               soeREQUIRED},
-            {sfCondition,            soeOPTIONAL},
-            {sfCancelAfter,          soeOPTIONAL},
-            {sfFinishAfter,          soeOPTIONAL},
-            {sfSourceTag,            soeOPTIONAL},
-            {sfDestinationTag,       soeOPTIONAL},
-            {sfOwnerNode,            soeREQUIRED},
-            {sfPreviousTxnID,        soeREQUIRED},
-            {sfPreviousTxnLgrSeq,    soeREQUIRED},
-            {sfDestinationNode,      soeOPTIONAL},
-        },
-        commonFields);
+//    add(jss::Escrow,
+//        ltESCROW,
+//        {
+//            {sfAccount,              soeREQUIRED},
+//            {sfDestination,          soeREQUIRED},
+//            {sfAmount,               soeREQUIRED},
+//            {sfCondition,            soeOPTIONAL},
+//            {sfCancelAfter,          soeOPTIONAL},
+//            {sfFinishAfter,          soeOPTIONAL},
+//            {sfSourceTag,            soeOPTIONAL},
+//            {sfDestinationTag,       soeOPTIONAL},
+//            {sfOwnerNode,            soeREQUIRED},
+//            {sfPreviousTxnID,        soeREQUIRED},
+//            {sfPreviousTxnLgrSeq,    soeREQUIRED},
+//            {sfDestinationNode,      soeOPTIONAL},
+//        },
+//        commonFields);
 
     add(jss::LedgerHashes,
         ltLEDGER_HASHES,

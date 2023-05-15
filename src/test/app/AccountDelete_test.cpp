@@ -359,52 +359,6 @@ public:
         env(check::cancel(becky, checkId));
         env.close();
 
-        // Lambda to create an escrow.
-        auto escrowCreate = [](jtx::Account const& account,
-                               jtx::Account const& to,
-                               STAmount const& amount,
-                               NetClock::time_point const& cancelAfter) {
-            Json::Value jv;
-            jv[jss::TransactionType] = jss::EscrowCreate;
-            jv[jss::Flags] = tfUniversal;
-            jv[jss::Account] = account.human();
-            jv[jss::Destination] = to.human();
-            jv[jss::Amount] = amount.getJson(JsonOptions::none);
-            jv[sfFinishAfter.jsonName] =
-                cancelAfter.time_since_epoch().count() + 1;
-            jv[sfCancelAfter.jsonName] =
-                cancelAfter.time_since_epoch().count() + 2;
-            return jv;
-        };
-
-        using namespace std::chrono_literals;
-        std::uint32_t const escrowSeq{env.seq(alice)};
-        env(escrowCreate(alice, becky, XRP(333), env.now() + 2s));
-        env.close();
-
-        // alice and becky should be unable to delete their accounts because
-        // of the escrow.
-        env(acctdelete(alice, gw), fee(acctDelFee), ter(tecHAS_OBLIGATIONS));
-        env(acctdelete(becky, gw), fee(acctDelFee), ter(tecHAS_OBLIGATIONS));
-        env.close();
-
-        // Now cancel the escrow, but create a payment channel between
-        // alice and becky.
-
-        // Lambda to cancel an escrow.
-        auto escrowCancel =
-            [](Account const& account, Account const& from, std::uint32_t seq) {
-                Json::Value jv;
-                jv[jss::TransactionType] = jss::EscrowCancel;
-                jv[jss::Flags] = tfUniversal;
-                jv[jss::Account] = account.human();
-                jv[sfOwner.jsonName] = from.human();
-                jv[sfOfferSequence.jsonName] = seq;
-                return jv;
-            };
-        env(escrowCancel(becky, alice, escrowSeq));
-        env.close();
-
         Keylet const alicePayChanKey{
             keylet::payChan(alice, becky, env.seq(alice))};
 

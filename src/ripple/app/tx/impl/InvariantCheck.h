@@ -111,7 +111,7 @@ public:
  * @brief Invariant: A transaction must not create XRP and should only destroy
  * the XRP fee.
  *
- * We iterate through all account roots, payment channels and escrow entries
+ * We iterate through all account roots and payment channels entries
  * that were modified and calculate the net change in XRP caused by the
  * transactions.
  */
@@ -269,30 +269,6 @@ public:
 };
 
 /**
- * @brief Invariant: an escrow entry must take a value between 0 and
- *                   INITIAL_XRP drops exclusive.
- */
-class NoZeroEscrow
-{
-    bool bad_ = false;
-
-public:
-    void
-    visitEntry(
-        bool,
-        std::shared_ptr<SLE const> const&,
-        std::shared_ptr<SLE const> const&);
-
-    bool
-    finalize(
-        STTx const&,
-        TER const,
-        XRPAmount const,
-        ReadView const&,
-        beast::Journal const&);
-};
-
-/**
  * @brief Invariant: a new account root must be the consequence of a payment,
  *                   must have the right starting sequence, and the payment
  *                   may not create more than one new account root.
@@ -375,7 +351,6 @@ using InvariantChecks = std::tuple<
     XRPNotCreated,
     NoXRPTrustLines,
     NoBadOffers,
-    NoZeroEscrow,
     ValidNewAccountRoot,
     ValidNFTokenPage,
     NFTokenCountTracking>;

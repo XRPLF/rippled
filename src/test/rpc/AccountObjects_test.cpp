@@ -576,7 +576,6 @@ public:
         BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::check), 0));
         BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::deposit_preauth), 0));
         BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::directory), 0));
-        BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::escrow), 0));
         BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::fee), 0));
         BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::hashes), 0));
         BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::nft_page), 0));
@@ -641,29 +640,6 @@ public:
             auto const& preauth = resp[jss::result][jss::account_objects][0u];
             BEAST_EXPECT(preauth[sfAccount.jsonName] == gw.human());
             BEAST_EXPECT(preauth[sfAuthorize.jsonName] == alice.human());
-        }
-        {
-            // gw creates an escrow that we can look for in the ledger.
-            Json::Value jvEscrow;
-            jvEscrow[jss::TransactionType] = jss::EscrowCreate;
-            jvEscrow[jss::Flags] = tfUniversal;
-            jvEscrow[jss::Account] = gw.human();
-            jvEscrow[jss::Destination] = gw.human();
-            jvEscrow[jss::Amount] = XRP(100).value().getJson(JsonOptions::none);
-            jvEscrow[sfFinishAfter.jsonName] =
-                env.now().time_since_epoch().count() + 1;
-            env(jvEscrow);
-            env.close();
-        }
-        {
-            // Find the escrow.
-            Json::Value const resp = acct_objs(gw, jss::escrow);
-            BEAST_EXPECT(acct_objs_is_size(resp, 1));
-
-            auto const& escrow = resp[jss::result][jss::account_objects][0u];
-            BEAST_EXPECT(escrow[sfAccount.jsonName] == gw.human());
-            BEAST_EXPECT(escrow[sfDestination.jsonName] == gw.human());
-            BEAST_EXPECT(escrow[sfAmount.jsonName].asUInt() == 100'000'000);
         }
         // gw creates an offer that we can look for in the ledger.
         env(offer(gw, USD(7), XRP(14)));
