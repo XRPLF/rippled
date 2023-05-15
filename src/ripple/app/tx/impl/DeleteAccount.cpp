@@ -20,7 +20,6 @@
 #include <ripple/app/tx/impl/DeleteAccount.h>
 #include <ripple/app/tx/impl/DepositPreauth.h>
 #include <ripple/app/tx/impl/SetSignerList.h>
-#include <ripple/app/tx/impl/details/NFTokenUtils.h>
 #include <ripple/basics/FeeUnits.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/mulDiv.h>
@@ -118,21 +117,6 @@ removeDepositPreauthFromLedger(
     return DepositPreauth::removeFromLedger(app, view, delIndex, j);
 }
 
-TER
-removeNFTokenOfferFromLedger(
-    Application& app,
-    ApplyView& view,
-    AccountID const& account,
-    uint256 const& delIndex,
-    std::shared_ptr<SLE> const& sleDel,
-    beast::Journal)
-{
-    if (!nft::deleteTokenOffer(view, sleDel))
-        return tefBAD_LEDGER;
-
-    return tesSUCCESS;
-}
-
 // Return nullptr if the LedgerEntryType represents an obligation that can't
 // be deleted.  Otherwise return the pointer to the function that can delete
 // the non-obligation
@@ -149,8 +133,6 @@ nonObligationDeleter(LedgerEntryType t)
             return removeTicketFromLedger;
         case ltDEPOSIT_PREAUTH:
             return removeDepositPreauthFromLedger;
-        case ltNFTOKEN_OFFER:
-            return removeNFTokenOfferFromLedger;
         default:
             return nullptr;
     }
@@ -185,25 +167,6 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     if (!sleAccount)
         return terNO_ACCOUNT;
 
-    if (ctx.view.rules().enabled(featureNonFungibleTokensV1))
-    {
-        // If an issuer has any issued NFTs resident in the ledger then it
-        // cannot be deleted.
-        if ((*sleAccount)[~sfMintedNFTokens] !=
-            (*sleAccount)[~sfBurnedNFTokens])
-            return tecHAS_OBLIGATIONS;
-
-        // If the account owns any NFTs it cannot be deleted.
-        Keylet const first = keylet::nftpage_min(account);
-        Keylet const last = keylet::nftpage_max(account);
-
-        auto const cp = ctx.view.read(Keylet(
-            ltNFTOKEN_PAGE,
-            ctx.view.succ(first.key, last.key.next()).value_or(last.key)));
-        if (cp)
-            return tecHAS_OBLIGATIONS;
-    }
-
     // We don't allow an account to be deleted if its sequence number
     // is within 256 of the current ledger.  This prevents replay of old
     // transactions if this account is resurrected after it is deleted.
@@ -212,23 +175,6 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     // Sequence in preparation for Tickets.
     constexpr std::uint32_t seqDelta{255};
     if ((*sleAccount)[sfSequence] + seqDelta > ctx.view.seq())
-        return tecTOO_SOON;
-
-    // When fixNFTokenRemint is enabled, we don't allow an account to be
-    // deleted if <FirstNFTokenSequence + MintedNFTokens> is within 256 of the
-    // current ledger. This is to prevent having duplicate NFTokenIDs after
-    // account re-creation.
-    //
-    // Without this restriction, duplicate NFTokenIDs can be reproduced when
-    // authorized minting is involved. Because when the minter mints a NFToken,
-    // the issuer's sequence does not change. So when the issuer re-creates
-    // their account and mints a NFToken, it is possible that the
-    // NFTokenSequence of this NFToken is the same as the one that the
-    // authorized minter minted in a previous ledger.
-    if (ctx.view.rules().enabled(fixNFTokenRemint) &&
-        ((*sleAccount)[~sfFirstNFTokenSequence].value_or(0) +
-             (*sleAccount)[~sfMintedNFTokens].value_or(0) + seqDelta >
-         ctx.view.seq()))
         return tecTOO_SOON;
 
     // Verify that the account does not own any objects that would prevent

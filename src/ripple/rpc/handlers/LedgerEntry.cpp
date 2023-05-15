@@ -275,23 +275,6 @@ doLedgerEntry(RPC::JsonContext& context)
                     *id, context.params[jss::ticket][jss::ticket_seq].asUInt());
         }
     }
-    else if (context.params.isMember(jss::nft_page))
-    {
-        expectedType = ltNFTOKEN_PAGE;
-
-        if (context.params[jss::nft_page].isString())
-        {
-            if (!uNodeIndex.parseHex(context.params[jss::nft_page].asString()))
-            {
-                uNodeIndex = beast::zero;
-                jvResult[jss::error] = "malformedRequest";
-            }
-        }
-        else
-        {
-            jvResult[jss::error] = "malformedRequest";
-        }
-    }
     else
     {
         if (context.params.isMember("params") &&

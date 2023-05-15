@@ -81,10 +81,6 @@ transResults()
         MAKE_ERROR(tecHAS_OBLIGATIONS,               "The account cannot be deleted since it has obligations."),
         MAKE_ERROR(tecTOO_SOON,                      "It is too early to attempt the requested operation. Please wait."),
         MAKE_ERROR(tecMAX_SEQUENCE_REACHED,          "The maximum sequence number was reached."),
-        MAKE_ERROR(tecNO_SUITABLE_NFTOKEN_PAGE,      "A suitable NFToken page could not be located."),
-        MAKE_ERROR(tecNFTOKEN_BUY_SELL_MISMATCH,     "The 'Buy' and 'Sell' NFToken offers are mismatched."),
-        MAKE_ERROR(tecNFTOKEN_OFFER_TYPE_MISMATCH,   "The type of NFToken offer is incorrect."),
-        MAKE_ERROR(tecCANT_ACCEPT_OWN_NFTOKEN_OFFER, "An NFToken offer cannot be claimed by its owner."),
         MAKE_ERROR(tecINSUFFICIENT_FUNDS,            "Not enough funds available to complete requested transaction."),
         MAKE_ERROR(tecOBJECT_NOT_FOUND,              "A requested object could not be located."),
         MAKE_ERROR(tecINSUFFICIENT_PAYMENT,          "The payment is not sufficient."),
@@ -109,7 +105,7 @@ transResults()
         MAKE_ERROR(tefINVARIANT_FAILED,            "Fee claim violated invariants for the transaction."),
         MAKE_ERROR(tefTOO_BIG,                     "Transaction affects too many items."),
         MAKE_ERROR(tefNO_TICKET,                   "Ticket is not in ledger."),
-        MAKE_ERROR(tefNFTOKEN_IS_NOT_TRANSFERABLE, "The specified NFToken is not transferable."),
+
 
         MAKE_ERROR(telLOCAL_ERROR,            "Local failure."),
         MAKE_ERROR(telBAD_DOMAIN,             "Domain too long."),
@@ -165,7 +161,6 @@ transResults()
         MAKE_ERROR(temCANNOT_PREAUTH_SELF,       "Malformed: An account may not preauthorize itself."),
         MAKE_ERROR(temINVALID_COUNT,             "Malformed: Count field outside valid range."),
         MAKE_ERROR(temSEQ_AND_TICKET,            "Transaction contains a TicketSequence and a non-zero Sequence."),
-        MAKE_ERROR(temBAD_NFTOKEN_TRANSFER_FEE,  "Malformed: The NFToken transfer fee must be between 1 and 5000, inclusive."),
 
         MAKE_ERROR(terRETRY,                  "Retry transaction."),
         MAKE_ERROR(terFUNDS_SPENT,            "DEPRECATED."),

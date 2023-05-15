@@ -93,8 +93,8 @@ doAccountInfo(RPC::JsonContext& context)
     static constexpr std::
         array<std::pair<std::string_view, LedgerSpecificFlags>, 4>
             disallowIncomingFlags{
-                {{"disallowIncomingNFTokenOffer",lsfDisallowIncomingNFTokenOffer},
-                 {"disallowIncomingTrustline", lsfDisallowIncomingTrustline}}};
+                {{"disallowIncomingTrustline", lsfDisallowIncomingTrustline}}
+            };
 
     auto const sleAccepted = ledger->read(keylet::account(accountID));
     if (sleAccepted)

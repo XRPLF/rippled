@@ -23,12 +23,10 @@
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/app/paths/TrustLine.h>
 #include <ripple/app/rdb/RelationalDatabase.h>
-#include <ripple/app/tx/impl/details/NFTokenUtils.h>
 #include <ripple/ledger/View.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/AccountID.h>
 #include <ripple/protocol/Feature.h>
-#include <ripple/protocol/nftPageMask.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/DeliveredAmount.h>
@@ -137,12 +135,6 @@ isRelatedToAccount(
         Keylet const accountSignerList = keylet::signers(accountID);
         return sle->key() == accountSignerList.key;
     }
-    else if (sle->getType() == ltNFTOKEN_OFFER)
-    {
-        // Do not check the sfDestination field. NFToken Offers are NOT added to
-        // the Destination account's directory.
-        return sle->getAccountID(sfOwner) == accountID;
-    }
 
     return false;
 }
@@ -163,77 +155,7 @@ getAccountObjects(
         return it != typeFilter.end();
     };
 
-    // if dirIndex != 0, then all NFTs have already been returned.  only
-    // iterate NFT pages if the filter says so AND dirIndex == 0
-    bool iterateNFTPages =
-        (!typeFilter.has_value() ||
-         typeMatchesFilter(typeFilter.value(), ltNFTOKEN_PAGE)) &&
-        dirIndex == beast::zero;
-
-    Keylet const firstNFTPage = keylet::nftpage_min(account);
-
-    // we need to check the marker to see if it is an NFTTokenPage index.
-    if (iterateNFTPages && entryIndex != beast::zero)
-    {
-        // if it is we will try to iterate the pages up to the limit
-        // and then change over to the owner directory
-
-        if (firstNFTPage.key != (entryIndex & ~nft::pageMask))
-            iterateNFTPages = false;
-    }
-
     auto& jvObjects = (jvResult[jss::account_objects] = Json::arrayValue);
-
-    // this is a mutable version of limit, used to seemlessly switch
-    // to iterating directory entries when nftokenpages are exhausted
-    uint32_t mlimit = limit;
-
-    // iterate NFTokenPages preferentially
-    if (iterateNFTPages)
-    {
-        Keylet const first = entryIndex == beast::zero
-            ? firstNFTPage
-            : Keylet{ltNFTOKEN_PAGE, entryIndex};
-
-        Keylet const last = keylet::nftpage_max(account);
-
-        // current key
-        uint256 ck = ledger.succ(first.key, last.key.next()).value_or(last.key);
-
-        // current page
-        auto cp = ledger.read(Keylet{ltNFTOKEN_PAGE, ck});
-
-        while (cp)
-        {
-            jvObjects.append(cp->getJson(JsonOptions::none));
-            auto const npm = (*cp)[~sfNextPageMin];
-            if (npm)
-                cp = ledger.read(Keylet(ltNFTOKEN_PAGE, *npm));
-            else
-                cp = nullptr;
-
-            if (--mlimit == 0)
-            {
-                if (cp)
-                {
-                    jvResult[jss::limit] = limit;
-                    jvResult[jss::marker] = std::string("0,") + to_string(ck);
-                    return true;
-                }
-            }
-
-            if (!npm)
-                break;
-
-            ck = *npm;
-        }
-
-        // if execution reaches here then we're about to transition
-        // to iterating the root directory (and the conventional
-        // behaviour of this RPC function.) Therefore we should
-        // zero entryIndex so as not to terribly confuse things.
-        entryIndex = beast::zero;
-    }
 
     auto const root = keylet::ownerDir(account);
     auto found = false;
@@ -993,8 +915,7 @@ chooseLedgerEntryType(Json::Value const& params)
                  {jss::signer_list, ltSIGNER_LIST},
                  {jss::state, ltRIPPLE_STATE},
                  {jss::ticket, ltTICKET},
-                 {jss::nft_offer, ltNFTOKEN_OFFER},
-                 {jss::nft_page, ltNFTOKEN_PAGE}}};
+               }};
 
         auto const& p = params[jss::type];
         if (!p.isString())

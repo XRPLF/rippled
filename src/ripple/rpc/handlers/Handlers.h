@@ -33,8 +33,6 @@ doAccountLines(RPC::JsonContext&);
 Json::Value
 doAccountChannels(RPC::JsonContext&);
 Json::Value
-doAccountNFTs(RPC::JsonContext&);
-Json::Value
 doAccountObjects(RPC::JsonContext&);
 Json::Value
 doAccountOffers(RPC::JsonContext&);
@@ -92,10 +90,6 @@ Json::Value
 doLogRotate(RPC::JsonContext&);
 Json::Value
 doManifest(RPC::JsonContext&);
-Json::Value
-doNFTBuyOffers(RPC::JsonContext&);
-Json::Value
-doNFTSellOffers(RPC::JsonContext&);
 Json::Value
 doNodeToShard(RPC::JsonContext&);
 Json::Value

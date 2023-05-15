@@ -122,7 +122,6 @@ enum TEMcodes : TERUnderlyingType {
     temUNKNOWN,    // An internal intermediate result; should never be returned.
 
     temSEQ_AND_TICKET,
-    temBAD_NFTOKEN_TRANSFER_FEE,
 };
 
 //------------------------------------------------------------------------------
@@ -165,7 +164,6 @@ enum TEFcodes : TERUnderlyingType {
     tefINVARIANT_FAILED,
     tefTOO_BIG,
     tefNO_TICKET,
-    tefNFTOKEN_IS_NOT_TRANSFERABLE,
 };
 
 //------------------------------------------------------------------------------
@@ -285,10 +283,6 @@ enum TECcodes : TERUnderlyingType {
     tecTOO_SOON = 152,
     tecHOOK_ERROR [[maybe_unused]] = 153,
     tecMAX_SEQUENCE_REACHED = 154,
-    tecNO_SUITABLE_NFTOKEN_PAGE = 155,
-    tecNFTOKEN_BUY_SELL_MISMATCH = 156,
-    tecNFTOKEN_OFFER_TYPE_MISMATCH = 157,
-    tecCANT_ACCEPT_OWN_NFTOKEN_OFFER = 158,
     tecINSUFFICIENT_FUNDS = 159,
     tecOBJECT_NOT_FOUND = 160,
     tecINSUFFICIENT_PAYMENT = 161,

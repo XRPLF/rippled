@@ -172,18 +172,6 @@ SetAccount::preflight(PreflightContext const& ctx)
         return telBAD_DOMAIN;
     }
 
-    if (ctx.rules.enabled(featureNonFungibleTokensV1))
-    {
-        // Configure authorized minting account:
-        if (uSetFlag == asfAuthorizedNFTokenMinter &&
-            !tx.isFieldPresent(sfNFTokenMinter))
-            return temMALFORMED;
-
-        if (uClearFlag == asfAuthorizedNFTokenMinter &&
-            tx.isFieldPresent(sfNFTokenMinter))
-            return temMALFORMED;
-    }
-
     return preflight2(ctx);
 }
 
@@ -527,25 +515,9 @@ SetAccount::doApply()
         }
     }
 
-    // Configure authorized minting account:
-    if (ctx_.view().rules().enabled(featureNonFungibleTokensV1))
-    {
-        if (uSetFlag == asfAuthorizedNFTokenMinter)
-            sle->setAccountID(sfNFTokenMinter, ctx_.tx[sfNFTokenMinter]);
-
-        if (uClearFlag == asfAuthorizedNFTokenMinter &&
-            sle->isFieldPresent(sfNFTokenMinter))
-            sle->makeFieldAbsent(sfNFTokenMinter);
-    }
-
     // Set or clear flags for disallowing various incoming instruments
     if (ctx_.view().rules().enabled(featureDisallowIncoming))
     {
-        if (uSetFlag == asfDisallowIncomingNFTokenOffer)
-            uFlagsOut |= lsfDisallowIncomingNFTokenOffer;
-        else if (uClearFlag == asfDisallowIncomingNFTokenOffer)
-            uFlagsOut &= ~lsfDisallowIncomingNFTokenOffer;
-
         if (uSetFlag == asfDisallowIncomingCheck)
             uFlagsOut |= lsfDisallowIncomingCheck;
         else if (uClearFlag == asfDisallowIncomingCheck)

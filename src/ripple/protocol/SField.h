@@ -396,12 +396,8 @@ extern SF_UINT32 const sfSignerListID;
 extern SF_UINT32 const sfSettleDelay;
 extern SF_UINT32 const sfTicketCount;
 extern SF_UINT32 const sfTicketSequence;
-extern SF_UINT32 const sfNFTokenTaxon;
-extern SF_UINT32 const sfMintedNFTokens;
-extern SF_UINT32 const sfBurnedNFTokens;
 extern SF_UINT32 const sfHookStateCount;
 extern SF_UINT32 const sfEmitGeneration;
-extern SF_UINT32 const sfFirstNFTokenSequence;
 
 // 64-bit integers (common)
 extern SF_UINT64 const sfIndexNext;
@@ -415,7 +411,6 @@ extern SF_UINT64 const sfHighNode;
 extern SF_UINT64 const sfDestinationNode;
 extern SF_UINT64 const sfCookie;
 extern SF_UINT64 const sfServerVersion;
-extern SF_UINT64 const sfNFTokenOfferNode;
 extern SF_UINT64 const sfEmitBurden;
 
 // 64-bit integers (uncommon)
@@ -443,7 +438,6 @@ extern SF_UINT256 const sfLedgerIndex;
 extern SF_UINT256 const sfWalletLocator;
 extern SF_UINT256 const sfRootIndex;
 extern SF_UINT256 const sfAccountTxnID;
-extern SF_UINT256 const sfNFTokenID;
 extern SF_UINT256 const sfEmitParentTxnID;
 extern SF_UINT256 const sfEmitNonce;
 extern SF_UINT256 const sfEmitHookHash;
@@ -460,8 +454,6 @@ extern SF_UINT256 const sfCheckID;
 extern SF_UINT256 const sfValidatedHash;
 extern SF_UINT256 const sfPreviousPageMin;
 extern SF_UINT256 const sfNextPageMin;
-extern SF_UINT256 const sfNFTokenBuyOffer;
-extern SF_UINT256 const sfNFTokenSellOffer;
 extern SF_UINT256 const sfHookStateKey;
 extern SF_UINT256 const sfHookHash;
 extern SF_UINT256 const sfHookNamespace;
@@ -483,7 +475,6 @@ extern SF_AMOUNT const sfDeliverMin;
 extern SF_AMOUNT const sfMinimumOffer;
 extern SF_AMOUNT const sfRippleEscrow;
 extern SF_AMOUNT const sfDeliveredAmount;
-extern SF_AMOUNT const sfNFTokenBrokerFee;
 
 // currency amount (fees)
 extern SF_AMOUNT const sfBaseFeeDrops;
@@ -526,7 +517,6 @@ extern SF_ACCOUNT const sfIssuer;
 extern SF_ACCOUNT const sfAuthorize;
 extern SF_ACCOUNT const sfUnauthorize;
 extern SF_ACCOUNT const sfRegularKey;
-extern SF_ACCOUNT const sfNFTokenMinter;
 extern SF_ACCOUNT const sfEmitCallback;
 
 // account (uncommon)
@@ -539,7 +529,6 @@ extern SField const sfPaths;
 extern SF_VECTOR256 const sfIndexes;
 extern SF_VECTOR256 const sfHashes;
 extern SF_VECTOR256 const sfAmendments;
-extern SF_VECTOR256 const sfNFTokenOffers;
 
 // inner object
 // OBJECT/1 is reserved for end of object
@@ -553,7 +542,6 @@ extern SField const sfNewFields;
 extern SField const sfTemplateEntry;
 extern SField const sfMemo;
 extern SField const sfSignerEntry;
-extern SField const sfNFToken;
 extern SField const sfEmitDetails;
 extern SField const sfHook;
 
@@ -576,7 +564,6 @@ extern SField const sfNecessary;
 extern SField const sfSufficient;
 extern SField const sfAffectedNodes;
 extern SField const sfMemos;
-extern SField const sfNFTokens;
 extern SField const sfHooks;
 
 // array of objects (uncommon)

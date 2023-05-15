@@ -294,52 +294,6 @@ public:
         beast::Journal const&);
 };
 
-class ValidNFTokenPage
-{
-    bool badEntry_ = false;
-    bool badLink_ = false;
-    bool badSort_ = false;
-    bool badURI_ = false;
-    bool invalidSize_ = false;
-
-public:
-    void
-    visitEntry(
-        bool,
-        std::shared_ptr<SLE const> const&,
-        std::shared_ptr<SLE const> const&);
-
-    bool
-    finalize(
-        STTx const&,
-        TER const,
-        XRPAmount const,
-        ReadView const&,
-        beast::Journal const&);
-};
-
-class NFTokenCountTracking
-{
-    std::uint32_t beforeMintedTotal = 0;
-    std::uint32_t beforeBurnedTotal = 0;
-    std::uint32_t afterMintedTotal = 0;
-    std::uint32_t afterBurnedTotal = 0;
-
-public:
-    void
-    visitEntry(
-        bool,
-        std::shared_ptr<SLE const> const&,
-        std::shared_ptr<SLE const> const&);
-
-    bool
-    finalize(
-        STTx const&,
-        TER const,
-        XRPAmount const,
-        ReadView const&,
-        beast::Journal const&);
-};
 
 // additional invariant checks can be declared above and then added to this
 // tuple
@@ -351,9 +305,7 @@ using InvariantChecks = std::tuple<
     XRPNotCreated,
     NoXRPTrustLines,
     NoBadOffers,
-    ValidNewAccountRoot,
-    ValidNFTokenPage,
-    NFTokenCountTracking>;
+    ValidNewAccountRoot>;
 
 /**
  * @brief get a tuple of all invariant checks

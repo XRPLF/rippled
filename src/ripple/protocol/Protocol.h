@@ -57,17 +57,11 @@ std::size_t constexpr dirNodeMaxEntries = 32;
 /** The maximum number of pages allowed in a directory */
 std::uint64_t constexpr dirNodeMaxPages = 262144;
 
-/** The maximum number of items in an NFT page */
-std::size_t constexpr dirMaxTokensPerPage = 32;
-
 /** The maximum number of owner directory entries for account to be deletable */
 std::size_t constexpr maxDeletableDirEntries = 1000;
 
 /** The maximum number of token offers that can be canceled at once */
 std::size_t constexpr maxTokenOfferCancelCount = 500;
-
-/** The maximum number of offers in an offer directory for NFT to be burnable */
-std::size_t constexpr maxDeletableTokenOfferEntries = 500;
 
 /** The maximum token transfer fee allowed.
 
@@ -79,9 +73,6 @@ std::size_t constexpr maxDeletableTokenOfferEntries = 500;
     calculated fee will be 0.
  */
 std::uint16_t constexpr maxTransferFee = 50000;
-
-/** The maximum length of a URI inside an NFT */
-std::size_t constexpr maxTokenURILength = 256;
 
 /** The maximum length of a domain */
 std::size_t constexpr maxDomainLength = 256;

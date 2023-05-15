@@ -52,10 +52,6 @@ LedgerFormats::LedgerFormats()
             {sfDomain,               soeOPTIONAL},
             {sfTickSize,             soeOPTIONAL},
             {sfTicketCount,          soeOPTIONAL},
-            {sfNFTokenMinter,        soeOPTIONAL},
-            {sfMintedNFTokens,       soeDEFAULT},
-            {sfBurnedNFTokens,       soeDEFAULT},
-            {sfFirstNFTokenSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -72,7 +68,6 @@ LedgerFormats::LedgerFormats()
             {sfRootIndex,            soeREQUIRED},
             {sfIndexNext,            soeOPTIONAL},
             {sfIndexPrevious,        soeOPTIONAL},
-            {sfNFTokenID,            soeOPTIONAL},
         },
         commonFields);
 
@@ -204,31 +199,7 @@ LedgerFormats::LedgerFormats()
         },
         commonFields);
 
-    add(jss::NFTokenPage,
-        ltNFTOKEN_PAGE,
-        {
-            {sfPreviousPageMin,      soeOPTIONAL},
-            {sfNextPageMin,          soeOPTIONAL},
-            {sfNFTokens,             soeREQUIRED},
-            {sfPreviousTxnID,        soeREQUIRED},
-            {sfPreviousTxnLgrSeq,    soeREQUIRED}
-        },
-        commonFields);
 
-    add(jss::NFTokenOffer,
-        ltNFTOKEN_OFFER,
-        {
-            {sfOwner,                soeREQUIRED},
-            {sfNFTokenID,            soeREQUIRED},
-            {sfAmount,               soeREQUIRED},
-            {sfOwnerNode,            soeREQUIRED},
-            {sfNFTokenOfferNode,     soeREQUIRED},
-            {sfDestination,          soeOPTIONAL},
-            {sfExpiration,           soeOPTIONAL},
-            {sfPreviousTxnID,        soeREQUIRED},
-            {sfPreviousTxnLgrSeq,    soeREQUIRED}
-        },
-        commonFields);
     // clang-format on
 }
 

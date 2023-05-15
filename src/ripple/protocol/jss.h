@@ -68,13 +68,6 @@ JSS(LastLedgerSequence);     // in: TransactionSign; field
 JSS(LedgerHashes);           // ledger type.
 JSS(LimitAmount);            // field.
 JSS(NetworkID);              // field.
-JSS(NFTokenBurn);            // transaction type.
-JSS(NFTokenMint);            // transaction type.
-JSS(NFTokenOffer);           // ledger type.
-JSS(NFTokenAcceptOffer);     // transaction type.
-JSS(NFTokenCancelOffer);     // transaction type.
-JSS(NFTokenCreateOffer);     // transaction type.
-JSS(NFTokenPage);            // ledger type.
 JSS(Offer);                  // ledger type.
 JSS(OfferCancel);            // transaction type.
 JSS(OfferCreate);            // transaction type.
@@ -113,7 +106,6 @@ JSS(account_data);           // out: AccountInfo
 JSS(account_flags);          // out: AccountInfo
 JSS(account_hash);           // out: LedgerToJson
 JSS(account_id);             // out: WalletPropose
-JSS(account_nfts);           // out: AccountNFTs
 JSS(account_objects);        // out: AccountObjects
 JSS(account_root);           // in: LedgerEntry
 JSS(account_sequence_next);  // out: SubmitTransaction
@@ -216,7 +208,6 @@ JSS(deposit_preauth);         // in: AccountObjects, LedgerData
 JSS(deprecated);              // out
 JSS(descending);              // in: AccountTx*
 JSS(description);             // in/out: Reservations
-JSS(destination);             // in: nft_buy_offers, nft_sell_offers
 JSS(destination_account);     // in: PathRequest, RipplePathFind, account_lines
                               // out: AccountChannels
 JSS(destination_amount);      // in: PathRequest, RipplePathFind
@@ -305,7 +296,6 @@ JSS(invalid_API_version);  // out: Many, when a request has an invalid
                            //      version
 JSS(io_latency_ms);        // out: NetworkOPs
 JSS(ip);                   // in: Connect, out: OverlayImpl
-JSS(is_burned);            // out: nft_info (clio)
 JSS(issuer);               // in: RipplePathFind, Subscribe,
                            //     Unsubscribe, BookOffers
                            // out: STPathSet, STAmount
@@ -405,12 +395,6 @@ JSS(needed_transaction_hashes);  // out: InboundLedger
 JSS(network_id);                 // out: NetworkOPs
 JSS(network_ledger);             // out: NetworkOPs
 JSS(next_refresh_time);          // out: ValidatorSite
-JSS(nft_id);                     // in: nft_sell_offers, nft_buy_offers
-JSS(nft_offer);                  // in: LedgerEntry
-JSS(nft_offer_index);            // out nft_buy_offers, nft_sell_offers
-JSS(nft_page);                   // in: LedgerEntry
-JSS(nft_serial);                 // out: account_nfts
-JSS(nft_taxon);                  // out: nft_info (clio)
 JSS(no_ripple);                  // out: AccountLines
 JSS(no_ripple_peer);             // out: AccountLines
 JSS(node);                       // out: LedgerEntry
@@ -583,7 +567,6 @@ JSS(transaction);             // in: Tx
 JSS(transaction_hash);        // out: RCLCxPeerPos, LedgerToJson
 JSS(transactions);            // out: LedgerToJson,
                               // in: AccountTx*, Unsubscribe
-JSS(transfer_rate);           // out: nft_info (clio)
 JSS(transitions);             // out: NetworkOPs
 JSS(treenode_cache_size);     // out: GetCounts
 JSS(treenode_track_size);     // out: GetCounts

@@ -80,12 +80,7 @@ constexpr std::uint32_t asfNoFreeze                        =  6;
 constexpr std::uint32_t asfGlobalFreeze                    =  7;
 constexpr std::uint32_t asfDefaultRipple                   =  8;
 constexpr std::uint32_t asfDepositAuth                     =  9;
-constexpr std::uint32_t asfAuthorizedNFTokenMinter         = 10;
-/*  // reserved for Hooks amendment
-constexpr std::uint32_t asfTshCollect                      = 11;
-*/
-constexpr std::uint32_t asfDisallowIncomingNFTokenOffer    = 12;
-constexpr std::uint32_t asfDisallowIncomingCheck           = 13;
+
 constexpr std::uint32_t asfDisallowIncomingTrustline       = 15;
 
 // OfferCreate flags:
@@ -120,42 +115,6 @@ constexpr std::uint32_t tfLostMajority                     = 0x00020000;
 // PaymentChannelClaim flags:
 constexpr std::uint32_t tfRenew                            = 0x00010000;
 constexpr std::uint32_t tfClose                            = 0x00020000;
-
-// NFTokenMint flags:
-constexpr std::uint32_t const tfBurnable                   = 0x00000001;
-constexpr std::uint32_t const tfOnlyXRP                    = 0x00000002;
-constexpr std::uint32_t const tfTrustLine                  = 0x00000004;
-constexpr std::uint32_t const tfTransferable               = 0x00000008;
-
-// Prior to fixRemoveNFTokenAutoTrustLine, transfer of an NFToken between
-// accounts allowed a TrustLine to be added to the issuer of that token
-// without explicit permission from that issuer.  This was enabled by
-// minting the NFToken with the tfTrustLine flag set.
-//
-// That capability could be used to attack the NFToken issuer.  It
-// would be possible for two accounts to trade the NFToken back and forth
-// building up any number of TrustLines on the issuer, increasing the
-// issuer's reserve without bound.
-//
-// The fixRemoveNFTokenAutoTrustLine amendment disables minting with the
-// tfTrustLine flag as a way to prevent the attack.  But until the
-// amendment passes we still need to keep the old behavior available.
-constexpr std::uint32_t const tfNFTokenMintOldMask =
-    ~(tfUniversal | tfBurnable | tfOnlyXRP | tfTrustLine | tfTransferable);
-
-constexpr std::uint32_t const tfNFTokenMintMask =
-    ~(tfUniversal | tfBurnable | tfOnlyXRP | tfTransferable);
-
-// NFTokenCreateOffer flags:
-constexpr std::uint32_t const tfSellNFToken                = 0x00000001;
-constexpr std::uint32_t const tfNFTokenCreateOfferMask =
-    ~(tfUniversal | tfSellNFToken);
-
-// NFTokenCancelOffer flags:
-constexpr std::uint32_t const tfNFTokenCancelOfferMask     = ~(tfUniversal);
-
-// NFTokenAcceptOffer flags:
-constexpr std::uint32_t const tfNFTokenAcceptOfferMask     = ~tfUniversal;
 
 // clang-format on
 

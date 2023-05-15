@@ -90,13 +90,6 @@ divideRound(
     Issue const& issue,
     bool roundUp);
 
-namespace nft {
-/** Given a transfer fee (in basis points) convert it to a transfer rate. */
-Rate
-transferFeeAsRate(std::uint16_t fee);
-
-}  // namespace nft
-
 /** A transfer rate signifying a 1:1 exchange */
 extern Rate const parityRate;
 

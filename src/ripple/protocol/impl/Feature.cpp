@@ -444,13 +444,10 @@ REGISTER_FEATURE(CheckCashMakesTrustLine,       Supported::yes, VoteBehavior::De
 REGISTER_FEATURE(ExpandedSignerList,            Supported::yes, VoteBehavior::DefaultNo);
 REGISTER_FEATURE(NonFungibleTokensV1_1,         Supported::yes, VoteBehavior::DefaultNo);
 REGISTER_FIX    (fixTrustLinesToSelf,           Supported::yes, VoteBehavior::DefaultNo);
-REGISTER_FIX    (fixRemoveNFTokenAutoTrustLine, Supported::yes, VoteBehavior::DefaultYes);
 REGISTER_FEATURE(ImmediateOfferKilled,          Supported::yes, VoteBehavior::DefaultNo);
 REGISTER_FEATURE(DisallowIncoming,              Supported::yes, VoteBehavior::DefaultNo);
 REGISTER_FEATURE(XRPFees,                       Supported::yes, VoteBehavior::DefaultNo);
 REGISTER_FIX    (fixUniversalNumber,            Supported::yes, VoteBehavior::DefaultNo);
-REGISTER_FIX    (fixNonFungibleTokensV1_2,      Supported::yes, VoteBehavior::DefaultNo);
-REGISTER_FIX    (fixNFTokenRemint,              Supported::yes, VoteBehavior::DefaultNo);
 
 // The following amendments are obsolete, but must remain supported
 // because they could potentially get enabled.
@@ -464,9 +461,6 @@ REGISTER_FIX    (fixNFTokenRemint,              Supported::yes, VoteBehavior::De
 // If a feature remains obsolete for long enough that no clients are able
 // to vote for it, the feature can be removed (entirely?) from the code.
 REGISTER_FEATURE(CryptoConditionsSuite, Supported::yes, VoteBehavior::Obsolete);
-REGISTER_FEATURE(NonFungibleTokensV1,   Supported::yes, VoteBehavior::Obsolete);
-REGISTER_FIX    (fixNFTokenDirV1,       Supported::yes, VoteBehavior::Obsolete);
-REGISTER_FIX    (fixNFTokenNegOffer,    Supported::yes, VoteBehavior::Obsolete);
 
 // The following amendments have been active for at least two years. Their
 // pre-amendment code has been removed and the identifiers are deprecated.

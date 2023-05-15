@@ -430,11 +430,6 @@ target_sources (rippled PRIVATE
   src/ripple/app/tx/impl/DeleteAccount.cpp
   src/ripple/app/tx/impl/DepositPreauth.cpp
   src/ripple/app/tx/impl/InvariantCheck.cpp
-  src/ripple/app/tx/impl/NFTokenAcceptOffer.cpp
-  src/ripple/app/tx/impl/NFTokenBurn.cpp
-  src/ripple/app/tx/impl/NFTokenCancelOffer.cpp
-  src/ripple/app/tx/impl/NFTokenCreateOffer.cpp
-  src/ripple/app/tx/impl/NFTokenMint.cpp
   src/ripple/app/tx/impl/OfferStream.cpp
   src/ripple/app/tx/impl/Payment.cpp
   src/ripple/app/tx/impl/SetAccount.cpp
@@ -446,7 +441,6 @@ target_sources (rippled PRIVATE
   src/ripple/app/tx/impl/Transactor.cpp
   src/ripple/app/tx/impl/apply.cpp
   src/ripple/app/tx/impl/applySteps.cpp
-  src/ripple/app/tx/impl/details/NFTokenUtils.cpp
   #[===============================[
      main sources:
        subdir: basics (partial)
@@ -605,7 +599,6 @@ target_sources (rippled PRIVATE
   src/ripple/rpc/handlers/LogLevel.cpp
   src/ripple/rpc/handlers/LogRotate.cpp
   src/ripple/rpc/handlers/Manifest.cpp
-  src/ripple/rpc/handlers/NFTOffers.cpp
   src/ripple/rpc/handlers/NodeToShard.cpp
   src/ripple/rpc/handlers/NoRippleCheck.cpp
   src/ripple/rpc/handlers/OwnerInfo.cpp
@@ -697,9 +690,6 @@ if (tests)
     src/test/app/Manifest_test.cpp
     src/test/app/MultiSign_test.cpp
     src/test/app/NetworkID_test.cpp
-    src/test/app/NFToken_test.cpp
-    src/test/app/NFTokenBurn_test.cpp
-    src/test/app/NFTokenDir_test.cpp
     src/test/app/OfferStream_test.cpp
     src/test/app/Offer_test.cpp
     src/test/app/OversizeMeta_test.cpp
@@ -848,7 +838,6 @@ if (tests)
     src/test/jtx/impl/sig.cpp
     src/test/jtx/impl/tag.cpp
     src/test/jtx/impl/ticket.cpp
-    src/test/jtx/impl/token.cpp
     src/test/jtx/impl/trust.cpp
     src/test/jtx/impl/txflags.cpp
     src/test/jtx/impl/utility.cpp

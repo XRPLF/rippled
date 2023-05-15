@@ -211,44 +211,6 @@ page(Keylet const& root, std::uint64_t index = 0) noexcept
 Keylet
 escrow(AccountID const& src, std::uint32_t seq) noexcept;
 
-/** NFT page keylets
-
-    Unlike objects whose ledger identifiers are produced by hashing data,
-    NFT page identifiers are composite identifiers, consisting of the owner's
-    160-bit AccountID, followed by a 96-bit value that determines which NFT
-    tokens are candidates for that page.
- */
-/** @{ */
-/** A keylet for the owner's first possible NFT page. */
-Keylet
-nftpage_min(AccountID const& owner);
-
-/** A keylet for the owner's last possible NFT page. */
-Keylet
-nftpage_max(AccountID const& owner);
-
-Keylet
-nftpage(Keylet const& k, uint256 const& token);
-/** @} */
-
-/** An offer from an account to buy or sell an NFT */
-Keylet
-nftoffer(AccountID const& owner, std::uint32_t seq);
-
-inline Keylet
-nftoffer(uint256 const& offer)
-{
-    return {ltNFTOKEN_OFFER, offer};
-}
-
-/** The directory of buy offers for the specified NFT */
-Keylet
-nft_buys(uint256 const& id) noexcept;
-
-/** The directory of sell offers for the specified NFT */
-Keylet
-nft_sells(uint256 const& id) noexcept;
-
 }  // namespace keylet
 
 // Everything below is deprecated and should be removed in favor of keylets:

@@ -146,14 +146,10 @@ CONSTRUCT_TYPED_SFIELD(sfSignerListID,          "SignerListID",         UINT32, 
 CONSTRUCT_TYPED_SFIELD(sfSettleDelay,           "SettleDelay",          UINT32,    39);
 CONSTRUCT_TYPED_SFIELD(sfTicketCount,           "TicketCount",          UINT32,    40);
 CONSTRUCT_TYPED_SFIELD(sfTicketSequence,        "TicketSequence",       UINT32,    41);
-CONSTRUCT_TYPED_SFIELD(sfNFTokenTaxon,          "NFTokenTaxon",         UINT32,    42);
-CONSTRUCT_TYPED_SFIELD(sfMintedNFTokens,        "MintedNFTokens",       UINT32,    43);
-CONSTRUCT_TYPED_SFIELD(sfBurnedNFTokens,        "BurnedNFTokens",       UINT32,    44);
 CONSTRUCT_TYPED_SFIELD(sfHookStateCount,        "HookStateCount",       UINT32,    45);
 CONSTRUCT_TYPED_SFIELD(sfEmitGeneration,        "EmitGeneration",       UINT32,    46);
 // Three field values of 47, 48 and 49 are reserved for 
 // LockCount(Hooks), VoteWeight(AMM), DiscountedFee(AMM)
-CONSTRUCT_TYPED_SFIELD(sfFirstNFTokenSequence,  "FirstNFTokenSequence", UINT32,    50);
 
 // 64-bit integers (common)
 CONSTRUCT_TYPED_SFIELD(sfIndexNext,             "IndexNext",            UINT64,     1);
@@ -167,7 +163,6 @@ CONSTRUCT_TYPED_SFIELD(sfHighNode,              "HighNode",             UINT64, 
 CONSTRUCT_TYPED_SFIELD(sfDestinationNode,       "DestinationNode",      UINT64,     9);
 CONSTRUCT_TYPED_SFIELD(sfCookie,                "Cookie",               UINT64,    10);
 CONSTRUCT_TYPED_SFIELD(sfServerVersion,         "ServerVersion",        UINT64,    11);
-CONSTRUCT_TYPED_SFIELD(sfNFTokenOfferNode,      "NFTokenOfferNode",     UINT64,    12);
 CONSTRUCT_TYPED_SFIELD(sfEmitBurden,            "EmitBurden",           UINT64,    13);
 
 // 64-bit integers (uncommon)
@@ -195,7 +190,6 @@ CONSTRUCT_TYPED_SFIELD(sfLedgerIndex,           "LedgerIndex",          UINT256,
 CONSTRUCT_TYPED_SFIELD(sfWalletLocator,         "WalletLocator",        UINT256,    7);
 CONSTRUCT_TYPED_SFIELD(sfRootIndex,             "RootIndex",            UINT256,    8, SField::sMD_Always);
 CONSTRUCT_TYPED_SFIELD(sfAccountTxnID,          "AccountTxnID",         UINT256,    9);
-CONSTRUCT_TYPED_SFIELD(sfNFTokenID,             "NFTokenID",            UINT256,   10);
 CONSTRUCT_TYPED_SFIELD(sfEmitParentTxnID,       "EmitParentTxnID",      UINT256,   11);
 CONSTRUCT_TYPED_SFIELD(sfEmitNonce,             "EmitNonce",            UINT256,   12);
 CONSTRUCT_TYPED_SFIELD(sfEmitHookHash,          "EmitHookHash",         UINT256,   13);
@@ -213,8 +207,6 @@ CONSTRUCT_TYPED_SFIELD(sfCheckID,               "CheckID",              UINT256,
 CONSTRUCT_TYPED_SFIELD(sfValidatedHash,         "ValidatedHash",        UINT256,   25);
 CONSTRUCT_TYPED_SFIELD(sfPreviousPageMin,       "PreviousPageMin",      UINT256,   26);
 CONSTRUCT_TYPED_SFIELD(sfNextPageMin,           "NextPageMin",          UINT256,   27);
-CONSTRUCT_TYPED_SFIELD(sfNFTokenBuyOffer,       "NFTokenBuyOffer",      UINT256,   28);
-CONSTRUCT_TYPED_SFIELD(sfNFTokenSellOffer,      "NFTokenSellOffer",     UINT256,   29);
 CONSTRUCT_TYPED_SFIELD(sfHookStateKey,          "HookStateKey",         UINT256,   30);
 CONSTRUCT_TYPED_SFIELD(sfHookHash,              "HookHash",             UINT256,   31);
 CONSTRUCT_TYPED_SFIELD(sfHookNamespace,         "HookNamespace",        UINT256,   32);
@@ -236,7 +228,6 @@ CONSTRUCT_TYPED_SFIELD(sfDeliverMin,            "DeliverMin",           AMOUNT, 
 CONSTRUCT_TYPED_SFIELD(sfMinimumOffer,          "MinimumOffer",         AMOUNT,    16);
 CONSTRUCT_TYPED_SFIELD(sfRippleEscrow,          "RippleEscrow",         AMOUNT,    17);
 CONSTRUCT_TYPED_SFIELD(sfDeliveredAmount,       "DeliveredAmount",      AMOUNT,    18);
-CONSTRUCT_TYPED_SFIELD(sfNFTokenBrokerFee,      "NFTokenBrokerFee",     AMOUNT,    19);
 
 // Reserve 20 & 21 for Hooks
 
@@ -282,7 +273,6 @@ CONSTRUCT_TYPED_SFIELD(sfAuthorize,             "Authorize",            ACCOUNT,
 CONSTRUCT_TYPED_SFIELD(sfUnauthorize,           "Unauthorize",          ACCOUNT,    6);
 //                                                                                  7 is currently unused
 CONSTRUCT_TYPED_SFIELD(sfRegularKey,            "RegularKey",           ACCOUNT,    8);
-CONSTRUCT_TYPED_SFIELD(sfNFTokenMinter,         "NFTokenMinter",        ACCOUNT,    9);
 CONSTRUCT_TYPED_SFIELD(sfEmitCallback,          "EmitCallback",         ACCOUNT,   10);
 
 // account (uncommon)
@@ -292,7 +282,6 @@ CONSTRUCT_TYPED_SFIELD(sfHookAccount,           "HookAccount",          ACCOUNT,
 CONSTRUCT_TYPED_SFIELD(sfIndexes,               "Indexes",              VECTOR256,  1, SField::sMD_Never);
 CONSTRUCT_TYPED_SFIELD(sfHashes,                "Hashes",               VECTOR256,  2);
 CONSTRUCT_TYPED_SFIELD(sfAmendments,            "Amendments",           VECTOR256,  3);
-CONSTRUCT_TYPED_SFIELD(sfNFTokenOffers,         "NFTokenOffers",        VECTOR256,  4);
 
 // path set
 CONSTRUCT_UNTYPED_SFIELD(sfPaths,               "Paths",                PATHSET,    1);
@@ -309,7 +298,6 @@ CONSTRUCT_UNTYPED_SFIELD(sfNewFields,           "NewFields",            OBJECT, 
 CONSTRUCT_UNTYPED_SFIELD(sfTemplateEntry,       "TemplateEntry",        OBJECT,     9);
 CONSTRUCT_UNTYPED_SFIELD(sfMemo,                "Memo",                 OBJECT,    10);
 CONSTRUCT_UNTYPED_SFIELD(sfSignerEntry,         "SignerEntry",          OBJECT,    11);
-CONSTRUCT_UNTYPED_SFIELD(sfNFToken,             "NFToken",              OBJECT,    12);
 CONSTRUCT_UNTYPED_SFIELD(sfEmitDetails,         "EmitDetails",          OBJECT,    13);
 CONSTRUCT_UNTYPED_SFIELD(sfHook,                "Hook",                 OBJECT,    14);
 
@@ -334,7 +322,6 @@ CONSTRUCT_UNTYPED_SFIELD(sfNecessary,           "Necessary",            ARRAY,  
 CONSTRUCT_UNTYPED_SFIELD(sfSufficient,          "Sufficient",           ARRAY,      7);
 CONSTRUCT_UNTYPED_SFIELD(sfAffectedNodes,       "AffectedNodes",        ARRAY,      8);
 CONSTRUCT_UNTYPED_SFIELD(sfMemos,               "Memos",                ARRAY,      9);
-CONSTRUCT_UNTYPED_SFIELD(sfNFTokens,            "NFTokens",             ARRAY,     10);
 CONSTRUCT_UNTYPED_SFIELD(sfHooks,               "Hooks",                ARRAY,     11);
 
 // array of objects (uncommon)
