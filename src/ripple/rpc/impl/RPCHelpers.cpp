@@ -157,6 +157,10 @@ getAccountObjects(
 
     auto& jvObjects = (jvResult[jss::account_objects] = Json::arrayValue);
 
+    // this is a mutable version of limit, used to seemlessly switch
+    // to iterating directory entries when nftokenpages are exhausted
+    uint32_t mlimit = limit;
+
     auto const root = keylet::ownerDir(account);
     auto found = false;
 
