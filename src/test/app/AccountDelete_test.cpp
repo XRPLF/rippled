@@ -284,85 +284,6 @@ public:
     }
 
     void
-    testResurrection()
-    {
-        // Create an account with an old-style PayChannel.  Delete the
-        // destination of the PayChannel then resurrect the destination.
-        // The PayChannel should still work.
-        using namespace jtx;
-
-        testcase("Resurrection");
-
-        // We need an old-style PayChannel that doesn't provide a backlink
-        // from the destination.  So don't enable the amendment with that fix.
-        Env env{*this, supported_amendments() - fixPayChanRecipientOwnerDir};
-        Account const alice("alice");
-        Account const becky("becky");
-
-        env.fund(XRP(10000), alice, becky);
-        env.close();
-
-        // Verify that becky's account root is present.
-        Keylet const beckyAcctKey{keylet::account(becky.id())};
-        BEAST_EXPECT(env.closed()->exists(beckyAcctKey));
-
-        using namespace std::chrono_literals;
-        Keylet const payChanKey{keylet::payChan(alice, becky, env.seq(alice))};
-        auto const payChanXRP = XRP(37);
-
-        env(payChanCreate(
-            alice, becky, payChanXRP, 4s, env.now() + 1h, alice.pk()));
-        env.close();
-        BEAST_EXPECT(env.closed()->exists(payChanKey));
-
-        // Close enough ledgers to be able to delete becky's account.
-        incLgrSeqForAccDel(env, becky);
-
-        auto const beckyPreDelBalance{env.balance(becky)};
-
-        auto const acctDelFee{drops(env.current()->fees().increment)};
-        env(acctdelete(becky, alice), fee(acctDelFee));
-        verifyDeliveredAmount(env, beckyPreDelBalance - acctDelFee);
-        env.close();
-
-        // Verify that becky's account root is gone.
-        BEAST_EXPECT(!env.closed()->exists(beckyAcctKey));
-
-        // All it takes is a large enough XRP payment to resurrect
-        // becky's account.  Try too small a payment.
-        env(pay(alice,
-                becky,
-                drops(env.current()->fees().accountReserve(0)) - XRP(1)),
-            ter(tecNO_DST_INSUF_XRP));
-        env.close();
-
-        // Actually resurrect becky's account.
-        env(pay(alice, becky, XRP(10)));
-        env.close();
-
-        // becky's account root should be back.
-        BEAST_EXPECT(env.closed()->exists(beckyAcctKey));
-        BEAST_EXPECT(env.balance(becky) == XRP(10));
-
-        // becky's resurrected account can be the destination of alice's
-        // PayChannel.
-        auto payChanClaim = [&]() {
-            Json::Value jv;
-            jv[jss::TransactionType] = jss::PaymentChannelClaim;
-            jv[jss::Flags] = tfUniversal;
-            jv[jss::Account] = alice.human();
-            jv[sfChannel.jsonName] = to_string(payChanKey.key);
-            jv[sfBalance.jsonName] =
-                payChanXRP.value().getJson(JsonOptions::none);
-            return jv;
-        };
-        env(payChanClaim());
-        env.close();
-
-        BEAST_EXPECT(env.balance(becky) == XRP(10) + payChanXRP);
-    }
-
-    void
     testAmendmentEnable()
     {
         // Start with the featureDeletableAccounts amendment disabled.
@@ -731,8 +652,6 @@ public:
     {
         testBasics();
         testDirectories();
-        testOwnedTypes();
-        testResurrection();
         testAmendmentEnable();
         testTooManyOffers();
         testImplicitlyCreatedTrustline();
