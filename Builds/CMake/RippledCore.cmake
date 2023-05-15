@@ -423,11 +423,8 @@ target_sources (rippled PRIVATE
   src/ripple/app/rdb/impl/Wallet.cpp
   src/ripple/app/tx/impl/ApplyContext.cpp
   src/ripple/app/tx/impl/BookTip.cpp
-  src/ripple/app/tx/impl/CancelCheck.cpp
   src/ripple/app/tx/impl/CancelOffer.cpp
-  src/ripple/app/tx/impl/CashCheck.cpp
   src/ripple/app/tx/impl/Change.cpp
-  src/ripple/app/tx/impl/CreateCheck.cpp
   src/ripple/app/tx/impl/CreateOffer.cpp
   src/ripple/app/tx/impl/CreateTicket.cpp
   src/ripple/app/tx/impl/DeleteAccount.cpp
@@ -687,7 +684,6 @@ if (tests)
     src/test/app/AccountDelete_test.cpp
     src/test/app/AccountTxPaging_test.cpp
     src/test/app/AmendmentTable_test.cpp
-    src/test/app/Check_test.cpp
     src/test/app/CrossingLimits_test.cpp
     src/test/app/DeliverMin_test.cpp
     src/test/app/DepositAuth_test.cpp
@@ -835,7 +831,6 @@ if (tests)
     src/test/jtx/impl/account_txn_id.cpp
     src/test/jtx/impl/amount.cpp
     src/test/jtx/impl/balance.cpp
-    src/test/jtx/impl/check.cpp
     src/test/jtx/impl/delivermin.cpp
     src/test/jtx/impl/deposit.cpp
     src/test/jtx/impl/envconfig.cpp

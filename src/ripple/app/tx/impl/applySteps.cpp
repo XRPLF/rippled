@@ -19,11 +19,8 @@
 
 #include <ripple/app/tx/applySteps.h>
 #include <ripple/app/tx/impl/ApplyContext.h>
-#include <ripple/app/tx/impl/CancelCheck.h>
 #include <ripple/app/tx/impl/CancelOffer.h>
-#include <ripple/app/tx/impl/CashCheck.h>
 #include <ripple/app/tx/impl/Change.h>
-#include <ripple/app/tx/impl/CreateCheck.h>
 #include <ripple/app/tx/impl/CreateOffer.h>
 #include <ripple/app/tx/impl/CreateTicket.h>
 #include <ripple/app/tx/impl/DeleteAccount.h>
@@ -99,12 +96,6 @@ invoke_preflight(PreflightContext const& ctx)
             return invoke_preflight_helper<DeleteAccount>(ctx);
         case ttACCOUNT_SET:
             return invoke_preflight_helper<SetAccount>(ctx);
-        case ttCHECK_CANCEL:
-            return invoke_preflight_helper<CancelCheck>(ctx);
-        case ttCHECK_CASH:
-            return invoke_preflight_helper<CashCheck>(ctx);
-        case ttCHECK_CREATE:
-            return invoke_preflight_helper<CreateCheck>(ctx);
         case ttDEPOSIT_PREAUTH:
             return invoke_preflight_helper<DepositPreauth>(ctx);
         case ttOFFER_CANCEL:
@@ -200,12 +191,6 @@ invoke_preclaim(PreclaimContext const& ctx)
             return invoke_preclaim<DeleteAccount>(ctx);
         case ttACCOUNT_SET:
             return invoke_preclaim<SetAccount>(ctx);
-        case ttCHECK_CANCEL:
-            return invoke_preclaim<CancelCheck>(ctx);
-        case ttCHECK_CASH:
-            return invoke_preclaim<CashCheck>(ctx);
-        case ttCHECK_CREATE:
-            return invoke_preclaim<CreateCheck>(ctx);
         case ttDEPOSIT_PREAUTH:
             return invoke_preclaim<DepositPreauth>(ctx);
         case ttOFFER_CANCEL:
@@ -263,12 +248,6 @@ invoke_calculateBaseFee(ReadView const& view, STTx const& tx)
             return DeleteAccount::calculateBaseFee(view, tx);
         case ttACCOUNT_SET:
             return SetAccount::calculateBaseFee(view, tx);
-        case ttCHECK_CANCEL:
-            return CancelCheck::calculateBaseFee(view, tx);
-        case ttCHECK_CASH:
-            return CashCheck::calculateBaseFee(view, tx);
-        case ttCHECK_CREATE:
-            return CreateCheck::calculateBaseFee(view, tx);
         case ttDEPOSIT_PREAUTH:
             return DepositPreauth::calculateBaseFee(view, tx);
         case ttOFFER_CANCEL:
@@ -367,18 +346,6 @@ invoke_apply(ApplyContext& ctx)
         }
         case ttACCOUNT_SET: {
             SetAccount p(ctx);
-            return p();
-        }
-        case ttCHECK_CANCEL: {
-            CancelCheck p(ctx);
-            return p();
-        }
-        case ttCHECK_CASH: {
-            CashCheck p(ctx);
-            return p();
-        }
-        case ttCHECK_CREATE: {
-            CreateCheck p(ctx);
             return p();
         }
         case ttDEPOSIT_PREAUTH: {

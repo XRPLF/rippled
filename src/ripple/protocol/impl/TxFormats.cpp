@@ -231,36 +231,6 @@ TxFormats::TxFormats()
         },
         commonFields);
 
-    add(jss::CheckCreate,
-        ttCHECK_CREATE,
-        {
-            {sfDestination, soeREQUIRED},
-            {sfSendMax, soeREQUIRED},
-            {sfExpiration, soeOPTIONAL},
-            {sfDestinationTag, soeOPTIONAL},
-            {sfInvoiceID, soeOPTIONAL},
-            {sfTicketSequence, soeOPTIONAL},
-        },
-        commonFields);
-
-    add(jss::CheckCash,
-        ttCHECK_CASH,
-        {
-            {sfCheckID, soeREQUIRED},
-            {sfAmount, soeOPTIONAL},
-            {sfDeliverMin, soeOPTIONAL},
-            {sfTicketSequence, soeOPTIONAL},
-        },
-        commonFields);
-
-    add(jss::CheckCancel,
-        ttCHECK_CANCEL,
-        {
-            {sfCheckID, soeREQUIRED},
-            {sfTicketSequence, soeOPTIONAL},
-        },
-        commonFields);
-
     add(jss::AccountDelete,
         ttACCOUNT_DELETE,
         {

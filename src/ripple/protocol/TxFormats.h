@@ -104,13 +104,13 @@ enum TxType : std::uint16_t
     ttPAYCHAN_CLAIM = 15,
 
     /** This transaction type creates a new check. */
-    ttCHECK_CREATE = 16,
+//    ttCHECK_CREATE = 16,
 
     /** This transaction type cashes an existing check. */
-    ttCHECK_CASH = 17,
+//    ttCHECK_CASH = 17,
 
     /** This transaction type cancels an existing check. */
-    ttCHECK_CANCEL = 18,
+//    ttCHECK_CANCEL = 18,
 
     /** This transaction type grants or revokes authorization to transfer funds. */
     ttDEPOSIT_PREAUTH = 19,
