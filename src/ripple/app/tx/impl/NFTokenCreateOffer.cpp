@@ -133,7 +133,7 @@ NFTokenCreateOffer::preclaim(PreclaimContext const& ctx)
 
     if (issuer != ctx.tx[sfAccount] && !(nftFlags & nft::flagTransferable))
     {
-        auto const root = ctx.view.read(keylet::account(issuer));
+        auto const root = ctx.view.readSLE(keylet::account(issuer));
         assert(root);
 
         if (auto minter = (*root)[~sfNFTokenMinter];
@@ -182,7 +182,7 @@ NFTokenCreateOffer::preclaim(PreclaimContext const& ctx)
     {
         // If a destination is specified, the destination must already be in
         // the ledger.
-        auto const sleDst = ctx.view.read(keylet::account(*destination));
+        auto const sleDst = ctx.view.readSLE(keylet::account(*destination));
 
         if (!sleDst)
             return tecNO_DST;
@@ -203,7 +203,7 @@ NFTokenCreateOffer::preclaim(PreclaimContext const& ctx)
         // Check if the owner (buy offer) has disallowed incoming offers
         if (ctx.view.rules().enabled(featureDisallowIncoming))
         {
-            auto const sleOwner = ctx.view.read(keylet::account(*owner));
+            auto const sleOwner = ctx.view.readSLE(keylet::account(*owner));
 
             // defensively check
             // it should not be possible to specify owner that doesn't exist
@@ -221,7 +221,7 @@ NFTokenCreateOffer::preclaim(PreclaimContext const& ctx)
 TER
 NFTokenCreateOffer::doApply()
 {
-    if (auto const acct = view().read(keylet::account(ctx_.tx[sfAccount]));
+    if (auto const acct = view().readSLE(keylet::account(ctx_.tx[sfAccount]));
         mPriorBalance < view().fees().accountReserve((*acct)[sfOwnerCount] + 1))
         return tecINSUFFICIENT_RESERVE;
 
@@ -279,7 +279,7 @@ NFTokenCreateOffer::doApply()
     }
 
     // Update owner count.
-    adjustOwnerCount(view(), view().peek(keylet::account(account_)), 1, j_);
+    adjustOwnerCount(view(), view().peekSLE(keylet::account(account_)), 1, j_);
 
     return tesSUCCESS;
 }

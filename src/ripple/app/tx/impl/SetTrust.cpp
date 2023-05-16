@@ -85,7 +85,7 @@ SetTrust::preclaim(PreclaimContext const& ctx)
 {
     auto const id = ctx.tx[sfAccount];
 
-    auto const sle = ctx.view.read(keylet::account(id));
+    auto const sle = ctx.view.readSLE(keylet::account(id));
     if (!sle)
         return terNO_ACCOUNT;
 
@@ -117,7 +117,7 @@ SetTrust::preclaim(PreclaimContext const& ctx)
             // unless one has somehow already been created
             // (in which case doApply will clean it up).
             auto const sleDelete =
-                ctx.view.read(keylet::line(id, uDstAccountID, currency));
+                ctx.view.readSLE(keylet::line(id, uDstAccountID, currency));
 
             if (!sleDelete)
             {
@@ -132,7 +132,7 @@ SetTrust::preclaim(PreclaimContext const& ctx)
     // then honour that flag
     if (ctx.view.rules().enabled(featureDisallowIncoming))
     {
-        auto const sleDst = ctx.view.read(keylet::account(uDstAccountID));
+        auto const sleDst = ctx.view.readSLE(keylet::account(uDstAccountID));
 
         if (!sleDst)
             return tecNO_DST;
@@ -160,7 +160,7 @@ SetTrust::doApply()
     // true, iff current is high account.
     bool const bHigh = account_ > uDstAccountID;
 
-    auto const sle = view().peek(keylet::account(account_));
+    auto const sle = view().peekSLE(keylet::account(account_));
     if (!sle)
         return tefINTERNAL;
 
@@ -214,13 +214,13 @@ SetTrust::doApply()
     {
         return trustDelete(
             view(),
-            view().peek(keylet::line(account_, uDstAccountID, currency)),
+            view().peekSLE(keylet::line(account_, uDstAccountID, currency)),
             account_,
             uDstAccountID,
             viewJ);
     }
 
-    SLE::pointer sleDst = view().peek(keylet::account(uDstAccountID));
+    SLE::pointer sleDst = view().peekSLE(keylet::account(uDstAccountID));
 
     if (!sleDst)
     {
@@ -233,7 +233,7 @@ SetTrust::doApply()
     saLimitAllow.setIssuer(account_);
 
     SLE::pointer sleRippleState =
-        view().peek(keylet::line(account_, uDstAccountID, currency));
+        view().peekSLE(keylet::line(account_, uDstAccountID, currency));
 
     if (sleRippleState)
     {

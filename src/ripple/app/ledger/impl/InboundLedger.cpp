@@ -157,7 +157,7 @@ InboundLedger::init(ScopedLockType& collectionLock)
                            << " local store. " << hash_;
     assert(
         mLedger->info().seq < XRP_LEDGER_EARLIEST_FEES ||
-        mLedger->read(keylet::fees()));
+        mLedger->readSLE(keylet::fees()));
     mLedger->setImmutable();
 
     if (mReason == Reason::HISTORY || mReason == Reason::SHARD)
@@ -421,7 +421,7 @@ InboundLedger::tryDB(NodeStore::Database& srcDB)
         complete_ = true;
         assert(
             mLedger->info().seq < XRP_LEDGER_EARLIEST_FEES ||
-            mLedger->read(keylet::fees()));
+            mLedger->readSLE(keylet::fees()));
         mLedger->setImmutable();
     }
 }
@@ -521,7 +521,7 @@ InboundLedger::done()
     {
         assert(
             mLedger->info().seq < XRP_LEDGER_EARLIEST_FEES ||
-            mLedger->read(keylet::fees()));
+            mLedger->readSLE(keylet::fees()));
         mLedger->setImmutable();
         switch (mReason)
         {

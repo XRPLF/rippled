@@ -99,7 +99,7 @@ doAccountInfo(RPC::JsonContext& context)
                  {"disallowIncomingPayChan", lsfDisallowIncomingPayChan},
                  {"disallowIncomingTrustline", lsfDisallowIncomingTrustline}}};
 
-    auto const sleAccepted = ledger->read(keylet::account(accountID));
+    auto const sleAccepted = ledger->readSLE(keylet::account(accountID));
     if (sleAccepted)
     {
         auto const queue =
@@ -137,7 +137,7 @@ doAccountInfo(RPC::JsonContext& context)
 
             // This code will need to be revisited if in the future we support
             // multiple SignerLists on one account.
-            auto const sleSigners = ledger->read(keylet::signers(accountID));
+            auto const sleSigners = ledger->readSLE(keylet::signers(accountID));
             if (sleSigners)
                 jvSignerList.append(sleSigners->getJson(JsonOptions::none));
 

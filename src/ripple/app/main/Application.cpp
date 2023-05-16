@@ -1712,7 +1712,7 @@ ApplicationImp::startGenesisLedger()
     next->updateSkipList();
     assert(
         next->info().seq < XRP_LEDGER_EARLIEST_FEES ||
-        next->read(keylet::fees()));
+        next->readSLE(keylet::fees()));
     next->setImmutable();
     openLedger_.emplace(next, cachedSLEs_, logs_->journal("OpenLedger"));
     m_ledgerMaster->storeLedger(next);
@@ -1733,7 +1733,7 @@ ApplicationImp::getLastFullLedger()
 
         assert(
             ledger->info().seq < XRP_LEDGER_EARLIEST_FEES ||
-            ledger->read(keylet::fees()));
+            ledger->readSLE(keylet::fees()));
         ledger->setImmutable();
 
         if (getLedgerMaster().haveLedger(seq))
@@ -1887,7 +1887,7 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
 
         assert(
             loadLedger->info().seq < XRP_LEDGER_EARLIEST_FEES ||
-            loadLedger->read(keylet::fees()));
+            loadLedger->readSLE(keylet::fees()));
         loadLedger->setAccepted(
             closeTime, closeTimeResolution, !closeTimeEstimated);
 

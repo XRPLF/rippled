@@ -77,7 +77,7 @@ buildLedgerImpl(
     // Accept ledger
     assert(
         built->info().seq < XRP_LEDGER_EARLIEST_FEES ||
-        built->read(keylet::fees()));
+        built->readSLE(keylet::fees()));
     built->setAccepted(closeTime, closeResolution, closeTimeCorrect);
 
     return built;

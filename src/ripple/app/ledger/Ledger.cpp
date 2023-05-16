@@ -450,7 +450,7 @@ Ledger::succ(uint256 const& key, std::optional<uint256> const& last) const
 }
 
 std::shared_ptr<SLE const>
-Ledger::read(KeyletBase const& k) const
+Ledger::readSLE(KeyletBase const& k) const
 {
     if (k.key == beast::zero)
     {
@@ -626,7 +626,7 @@ Ledger::setup()
 
     try
     {
-        if (auto const sle = read(keylet::fees()))
+        if (auto const sle = readSLE(keylet::fees()))
         {
             bool oldFees = false;
             bool newFees = false;
@@ -697,7 +697,7 @@ Ledger::defaultFees(Config const& config)
 }
 
 std::shared_ptr<SLE>
-Ledger::peek(KeyletBase const& k) const
+Ledger::peekSLE(KeyletBase const& k) const
 {
     auto const& value = stateMap_.peekItem(k.key);
     if (!value)
@@ -712,7 +712,7 @@ hash_set<PublicKey>
 Ledger::negativeUNL() const
 {
     hash_set<PublicKey> negUnl;
-    if (auto sle = read(keylet::negativeUNL());
+    if (auto sle = readSLE(keylet::negativeUNL());
         sle && sle->isFieldPresent(sfDisabledValidators))
     {
         auto const& nUnlData = sle->getFieldArray(sfDisabledValidators);
@@ -737,7 +737,7 @@ Ledger::negativeUNL() const
 std::optional<PublicKey>
 Ledger::validatorToDisable() const
 {
-    if (auto sle = read(keylet::negativeUNL());
+    if (auto sle = readSLE(keylet::negativeUNL());
         sle && sle->isFieldPresent(sfValidatorToDisable))
     {
         auto d = sle->getFieldVL(sfValidatorToDisable);
@@ -752,7 +752,7 @@ Ledger::validatorToDisable() const
 std::optional<PublicKey>
 Ledger::validatorToReEnable() const
 {
-    if (auto sle = read(keylet::negativeUNL());
+    if (auto sle = readSLE(keylet::negativeUNL());
         sle && sle->isFieldPresent(sfValidatorToReEnable))
     {
         auto d = sle->getFieldVL(sfValidatorToReEnable);
@@ -767,7 +767,7 @@ Ledger::validatorToReEnable() const
 void
 Ledger::updateNegativeUNL()
 {
-    auto sle = peek(keylet::negativeUNL());
+    auto sle = peekSLE(keylet::negativeUNL());
     if (!sle)
         return;
 
@@ -902,7 +902,7 @@ Ledger::updateSkipList()
     if ((prevIndex & 0xff) == 0)
     {
         auto const k = keylet::skip(prevIndex);
-        auto sle = peek(k);
+        auto sle = peekSLE(k);
         std::vector<uint256> hashes;
 
         bool created;
@@ -929,7 +929,7 @@ Ledger::updateSkipList()
 
     // update record of past 256 ledger
     auto const k = keylet::skip();
-    auto sle = peek(k);
+    auto sle = peekSLE(k);
     std::vector<uint256> hashes;
     bool created;
     if (!sle)
@@ -1101,7 +1101,7 @@ finishLoadByIndexOrHash(
 
     assert(
         ledger->info().seq < XRP_LEDGER_EARLIEST_FEES ||
-        ledger->read(keylet::fees()));
+        ledger->readSLE(keylet::fees()));
     ledger->setImmutable();
 
     JLOG(j.trace()) << "Loaded ledger: " << to_string(ledger->info().hash);

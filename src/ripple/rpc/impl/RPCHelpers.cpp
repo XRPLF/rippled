@@ -201,14 +201,14 @@ getAccountObjects(
         uint256 ck = ledger.succ(first.key, last.key.next()).value_or(last.key);
 
         // current page
-        auto cp = ledger.read(Keylet{ltNFTOKEN_PAGE, ck});
+        auto cp = ledger.readSLE(Keylet{ltNFTOKEN_PAGE, ck});
 
         while (cp)
         {
             jvObjects.append(cp->getJson(JsonOptions::none));
             auto const npm = (*cp)[~sfNextPageMin];
             if (npm)
-                cp = ledger.read(Keylet(ltNFTOKEN_PAGE, *npm));
+                cp = ledger.readSLE(Keylet(ltNFTOKEN_PAGE, *npm));
             else
                 cp = nullptr;
 
@@ -244,7 +244,7 @@ getAccountObjects(
         found = true;
     }
 
-    auto dir = ledger.read(Keylet(ltDIR_NODE, dirIndex));
+    auto dir = ledger.readSLE(Keylet(ltDIR_NODE, dirIndex));
     if (!dir)
     {
         // it's possible the user had nftoken pages but no
@@ -279,7 +279,7 @@ getAccountObjects(
 
         for (; iter != entries.end(); ++iter)
         {
-            auto const sleNode = ledger.read(keylet::child(*iter));
+            auto const sleNode = ledger.readSLE(keylet::child(*iter));
 
             if (!typeFilter.has_value() ||
                 typeMatchesFilter(typeFilter.value(), sleNode->getType()))
@@ -306,7 +306,7 @@ getAccountObjects(
             return true;
 
         dirIndex = keylet::page(root, nodeIndex).key;
-        dir = ledger.read(Keylet(ltDIR_NODE, dirIndex));
+        dir = ledger.readSLE(Keylet(ltDIR_NODE, dirIndex));
         if (!dir)
             return true;
 

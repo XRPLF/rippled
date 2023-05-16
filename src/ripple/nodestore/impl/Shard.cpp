@@ -690,7 +690,7 @@ Shard::finalize(bool writeSQLite, std::optional<uint256> const& referenceHash)
         ledger->txMap().setLedgerSeq(ledgerSeq);
         assert(
             ledger->info().seq < XRP_LEDGER_EARLIEST_FEES ||
-            ledger->read(keylet::fees()));
+            ledger->readSLE(keylet::fees()));
         ledger->setImmutable();
         if (!ledger->stateMap().fetchRoot(
                 SHAMapHash{ledger->info().accountHash}, nullptr))

@@ -42,7 +42,7 @@ locatePage(ReadView const& view, AccountID owner, uint256 const& id)
     // This NFT can only be found in the first page with a key that's strictly
     // greater than `first`, so look for that, up until the maximum possible
     // page.
-    return view.read(Keylet(
+    return view.readSLE(Keylet(
         ltNFTOKEN_PAGE,
         view.succ(first.key, last.key.next()).value_or(last.key)));
 }
@@ -56,7 +56,7 @@ locatePage(ApplyView& view, AccountID owner, uint256 const& id)
     // This NFT can only be found in the first page with a key that's strictly
     // greater than `first`, so look for that, up until the maximum possible
     // page.
-    return view.peek(Keylet(
+    return view.peekSLE(Keylet(
         ltNFTOKEN_PAGE,
         view.succ(first.key, last.key.next()).value_or(last.key)));
 }
@@ -75,7 +75,7 @@ getPageForToken(
     // This NFT can only be found in the first page with a key that's strictly
     // greater than `first`, so look for that, up until the maximum possible
     // page.
-    auto cp = view.peek(Keylet(
+    auto cp = view.peekSLE(Keylet(
         ltNFTOKEN_PAGE,
         view.succ(first.key, last.key.next()).value_or(last.key)));
 
@@ -198,7 +198,7 @@ getPageForToken(
     {
         np->setFieldH256(sfPreviousPageMin, *ppm);
 
-        if (auto p3 = view.peek(Keylet(ltNFTOKEN_PAGE, *ppm)))
+        if (auto p3 = view.peekSLE(Keylet(ltNFTOKEN_PAGE, *ppm)))
         {
             p3->setFieldH256(sfNextPageMin, np->key());
             view.update(p3);
@@ -254,7 +254,7 @@ insertToken(ApplyView& view, AccountID owner, STObject&& nft)
         [](ApplyView& view, AccountID const& owner) {
             adjustOwnerCount(
                 view,
-                view.peek(keylet::account(owner)),
+                view.peekSLE(keylet::account(owner)),
                 1,
                 beast::Journal{beast::Journal::getNullSink()});
         });
@@ -327,7 +327,7 @@ mergePages(
 
     if (auto const ppm = (*p1)[~sfPreviousPageMin])
     {
-        auto p0 = view.peek(Keylet(ltNFTOKEN_PAGE, *ppm));
+        auto p0 = view.peekSLE(Keylet(ltNFTOKEN_PAGE, *ppm));
 
         if (!p0)
             Throw<std::runtime_error>("mergePages: p0 can't be located!");
@@ -388,7 +388,7 @@ removeToken(
 
         if (auto const id = (*page1)[~field])
         {
-            page2 = view.peek(Keylet(ltNFTOKEN_PAGE, *id));
+            page2 = view.peekSLE(Keylet(ltNFTOKEN_PAGE, *id));
 
             if (!page2)
                 Throw<std::runtime_error>(
@@ -421,7 +421,7 @@ removeToken(
         if (cnt != 0)
             adjustOwnerCount(
                 view,
-                view.peek(keylet::account(owner)),
+                view.peekSLE(keylet::account(owner)),
                 cnt,
                 beast::Journal{beast::Journal::getNullSink()});
 
@@ -466,13 +466,13 @@ removeToken(
     if (prev && next &&
         mergePages(
             view,
-            view.peek(Keylet(ltNFTOKEN_PAGE, prev->key())),
-            view.peek(Keylet(ltNFTOKEN_PAGE, next->key()))))
+            view.peekSLE(Keylet(ltNFTOKEN_PAGE, prev->key())),
+            view.peekSLE(Keylet(ltNFTOKEN_PAGE, next->key()))))
         cnt++;
 
     adjustOwnerCount(
         view,
-        view.peek(keylet::account(owner)),
+        view.peekSLE(keylet::account(owner)),
         -1 * cnt,
         beast::Journal{beast::Journal::getNullSink()});
 
@@ -538,7 +538,7 @@ removeTokenOffersWithLimit(
 
     do
     {
-        auto const page = view.peek(keylet::page(directory, *pageIndex));
+        auto const page = view.peekSLE(keylet::page(directory, *pageIndex));
         if (!page)
             break;
 
@@ -556,7 +556,8 @@ removeTokenOffersWithLimit(
         // deleting during iteration.
         for (int i = offerIndexes.size() - 1; i >= 0; --i)
         {
-            if (auto const offer = view.peek(keylet::nftoffer(offerIndexes[i])))
+            if (auto const offer =
+                    view.peekSLE(keylet::nftoffer(offerIndexes[i])))
             {
                 if (deleteTokenOffer(view, offer))
                     ++deletedOffersCount;
@@ -628,7 +629,7 @@ deleteTokenOffer(ApplyView& view, std::shared_ptr<SLE> const& offer)
 
     adjustOwnerCount(
         view,
-        view.peek(keylet::account(owner)),
+        view.peekSLE(keylet::account(owner)),
         -1,
         beast::Journal{beast::Journal::getNullSink()});
 
