@@ -77,44 +77,46 @@ constexpr std::uint32_t asfRequireAuth                     =  2;
 constexpr std::uint32_t asfDisallowXRP                     =  3;
 constexpr std::uint32_t asfDisableMaster                   =  4;
 constexpr std::uint32_t asfAccountTxnID                    =  5;
-constexpr std::uint32_t asfNoFreeze                        =  6;
-constexpr std::uint32_t asfGlobalFreeze                    =  7;
-constexpr std::uint32_t asfDefaultRipple                   =  8;
+//constexpr std::uint32_t asfNoFreeze                        =  6;
+//constexpr std::uint32_t asfGlobalFreeze                    =  7;
+//constexpr std::uint32_t asfDefaultRipple                   =  8;
 
-constexpr std::uint32_t asfDisallowIncomingTrustline       = 15;
+//constexpr std::uint32_t asfDisallowIncomingTrustline       = 15;
 
 // OfferCreate flags:
-constexpr std::uint32_t tfPassive                          = 0x00010000;
-constexpr std::uint32_t tfImmediateOrCancel                = 0x00020000;
-constexpr std::uint32_t tfFillOrKill                       = 0x00040000;
-constexpr std::uint32_t tfSell                             = 0x00080000;
-constexpr std::uint32_t tfOfferCreateMask =
-    ~(tfUniversal | tfPassive | tfImmediateOrCancel | tfFillOrKill | tfSell);
+//constexpr std::uint32_t tfPassive                          = 0x00010000;
+//constexpr std::uint32_t tfImmediateOrCancel                = 0x00020000;
+//constexpr std::uint32_t tfFillOrKill                       = 0x00040000;
+//constexpr std::uint32_t tfSell                             = 0x00080000;
+//constexpr std::uint32_t tfOfferCreateMask =
+//    ~(tfUniversal | tfPassive | tfImmediateOrCancel | tfFillOrKill | tfSell);
 
 // Payment flags:
-constexpr std::uint32_t tfNoRippleDirect                   = 0x00010000;
-constexpr std::uint32_t tfPartialPayment                   = 0x00020000;
-constexpr std::uint32_t tfLimitQuality                     = 0x00040000;
+//constexpr std::uint32_t tfNoRippleDirect                   = 0x00010000;
+//constexpr std::uint32_t tfPartialPayment                   = 0x00020000;
+//constexpr std::uint32_t tfLimitQuality                     = 0x00040000;
 constexpr std::uint32_t tfPaymentMask =
-    ~(tfUniversal | tfPartialPayment | tfLimitQuality | tfNoRippleDirect);
+    ~(tfUniversal
+//| tfPartialPayment | tfLimitQuality | tfNoRippleDirect
+);
 
 // TrustSet flags:
-constexpr std::uint32_t tfSetfAuth                         = 0x00010000;
-constexpr std::uint32_t tfSetNoRipple                      = 0x00020000;
-constexpr std::uint32_t tfClearNoRipple                    = 0x00040000;
-constexpr std::uint32_t tfSetFreeze                        = 0x00100000;
-constexpr std::uint32_t tfClearFreeze                      = 0x00200000;
-constexpr std::uint32_t tfTrustSetMask =
-    ~(tfUniversal | tfSetfAuth | tfSetNoRipple | tfClearNoRipple | tfSetFreeze |
-      tfClearFreeze);
+//constexpr std::uint32_t tfSetfAuth                         = 0x00010000;
+//constexpr std::uint32_t tfSetNoRipple                      = 0x00020000;
+//constexpr std::uint32_t tfClearNoRipple                    = 0x00040000;
+//constexpr std::uint32_t tfSetFreeze                        = 0x00100000;
+//constexpr std::uint32_t tfClearFreeze                      = 0x00200000;
+//constexpr std::uint32_t tfTrustSetMask =
+//    ~(tfUniversal | tfSetfAuth | tfSetNoRipple | tfClearNoRipple | tfSetFreeze |
+//      tfClearFreeze);
 
 // EnableAmendment flags:
 constexpr std::uint32_t tfGotMajority                      = 0x00010000;
 constexpr std::uint32_t tfLostMajority                     = 0x00020000;
 
 // PaymentChannelClaim flags:
-constexpr std::uint32_t tfRenew                            = 0x00010000;
-constexpr std::uint32_t tfClose                            = 0x00020000;
+//constexpr std::uint32_t tfRenew                            = 0x00010000;
+//constexpr std::uint32_t tfClose                            = 0x00020000;
 
 // clang-format on
 
