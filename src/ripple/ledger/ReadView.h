@@ -21,7 +21,6 @@
 #define RIPPLE_LEDGER_READVIEW_H_INCLUDED
 
 #include <ripple/basics/FeeUnits.h>
-#include <ripple/basics/IOUAmount.h>
 #include <ripple/basics/XRPAmount.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/beast/hash/uhash.h>

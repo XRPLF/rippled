@@ -62,12 +62,13 @@ constexpr std::uint32_t tfUniversalMask                    = ~tfUniversal;
 // AccountSet flags:
 constexpr std::uint32_t tfRequireDestTag                   = 0x00010000;
 constexpr std::uint32_t tfOptionalDestTag                  = 0x00020000;
-constexpr std::uint32_t tfRequireAuth                      = 0x00040000;
+//constexpr std::uint32_t tfRequireAuth                      = 0x00040000;
 constexpr std::uint32_t tfOptionalAuth                     = 0x00080000;
 constexpr std::uint32_t tfDisallowXRP                      = 0x00100000;
 constexpr std::uint32_t tfAllowXRP                         = 0x00200000;
 constexpr std::uint32_t tfAccountSetMask =
-    ~(tfUniversal | tfRequireDestTag | tfOptionalDestTag | tfRequireAuth |
+    ~(tfUniversal | tfRequireDestTag | tfOptionalDestTag |
+//tfRequireAuth |
       tfOptionalAuth | tfDisallowXRP | tfAllowXRP);
 
 // AccountSet SetFlag/ClearFlag values

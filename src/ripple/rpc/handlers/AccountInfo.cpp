@@ -80,20 +80,12 @@ doAccountInfo(RPC::JsonContext& context)
     static constexpr std::
         array<std::pair<std::string_view, LedgerSpecificFlags>, 9>
             lsFlags{
-                {{"defaultRipple", lsfDefaultRipple},
+                {
                  {"disableMasterKey", lsfDisableMaster},
                  {"disallowIncomingXRP", lsfDisallowXRP},
-                 {"globalFreeze", lsfGlobalFreeze},
-                 {"noFreeze", lsfNoFreeze},
-                 {"passwordSpent", lsfPasswordSpent},
-                 {"requireAuthorization", lsfRequireAuth},
-                 {"requireDestinationTag", lsfRequireDestTag}}};
 
-    static constexpr std::
-        array<std::pair<std::string_view, LedgerSpecificFlags>, 4>
-            disallowIncomingFlags{
-                {{"disallowIncomingTrustline", lsfDisallowIncomingTrustline}}
-            };
+                 {"passwordSpent", lsfPasswordSpent},
+                 {"requireDestinationTag", lsfRequireDestTag}}};
 
     auto const sleAccepted = ledger->read(keylet::account(accountID));
     if (sleAccepted)
@@ -116,11 +108,6 @@ doAccountInfo(RPC::JsonContext& context)
         for (auto const& lsf : lsFlags)
             acctFlags[lsf.first.data()] = sleAccepted->isFlag(lsf.second);
 
-        if (ledger->rules().enabled(featureDisallowIncoming))
-        {
-            for (auto const& lsf : disallowIncomingFlags)
-                acctFlags[lsf.first.data()] = sleAccepted->isFlag(lsf.second);
-        }
         result[jss::account_flags] = std::move(acctFlags);
 
         // Return SignerList(s) if that is requested.

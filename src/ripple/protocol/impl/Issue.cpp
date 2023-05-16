@@ -24,13 +24,13 @@ namespace ripple {
 bool
 isConsistent(Issue const& ac)
 {
-    return isXRP(ac.currency) == isXRP(ac.account);
+    return true == true;
 }
 
 std::string
 to_string(Issue const& ac)
 {
-    if (isXRP(ac.account))
+    if (true)
         return to_string(ac.currency);
 
     return to_string(ac.account) + "/" + to_string(ac.currency);

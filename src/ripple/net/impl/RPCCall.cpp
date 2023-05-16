@@ -117,38 +117,6 @@ private:
         return true;
     }
 
-    // Build a object { "currency" : "XYZ", "issuer" : "rXYX" }
-    static Json::Value
-    jvParseCurrencyIssuer(std::string const& strCurrencyIssuer)
-    {
-        static boost::regex reCurIss("\\`([[:alpha:]]{3})(?:/(.+))?\\'");
-
-        boost::smatch smMatch;
-
-        if (boost::regex_match(strCurrencyIssuer, smMatch, reCurIss))
-        {
-            Json::Value jvResult(Json::objectValue);
-            std::string strCurrency = smMatch[1];
-            std::string strIssuer = smMatch[2];
-
-            jvResult[jss::currency] = strCurrency;
-
-            if (strIssuer.length())
-            {
-                // Could confirm issuer is a valid Ripple address.
-                jvResult[jss::issuer] = strIssuer;
-            }
-
-            return jvResult;
-        }
-        else
-        {
-            return RPC::make_param_error(
-                std::string("Invalid currency/issuer '") + strCurrencyIssuer +
-                "'");
-        }
-    }
-
     static bool
     validPublicKey(
         std::string const& strPk,
@@ -400,66 +368,6 @@ private:
             if (iParams >= 4)
                 jvRequest[jss::limit] = jvParams[3u].asInt();
         }
-
-        return jvRequest;
-    }
-
-    // book_offers <taker_pays> <taker_gets> [<taker> [<ledger> [<limit>
-    // [<proof> [<marker>]]]]] limit: 0 = no limit proof: 0 or 1
-    //
-    // Mnemonic: taker pays --> offer --> taker gets
-    Json::Value
-    parseBookOffers(Json::Value const& jvParams)
-    {
-        Json::Value jvRequest(Json::objectValue);
-
-        Json::Value jvTakerPays =
-            jvParseCurrencyIssuer(jvParams[0u].asString());
-        Json::Value jvTakerGets =
-            jvParseCurrencyIssuer(jvParams[1u].asString());
-
-        if (isRpcError(jvTakerPays))
-        {
-            return jvTakerPays;
-        }
-        else
-        {
-            jvRequest[jss::taker_pays] = jvTakerPays;
-        }
-
-        if (isRpcError(jvTakerGets))
-        {
-            return jvTakerGets;
-        }
-        else
-        {
-            jvRequest[jss::taker_gets] = jvTakerGets;
-        }
-
-        if (jvParams.size() >= 3)
-        {
-            jvRequest[jss::issuer] = jvParams[2u].asString();
-        }
-
-        if (jvParams.size() >= 4 &&
-            !jvParseLedger(jvRequest, jvParams[3u].asString()))
-            return jvRequest;
-
-        if (jvParams.size() >= 5)
-        {
-            int iLimit = jvParams[5u].asInt();
-
-            if (iLimit > 0)
-                jvRequest[jss::limit] = iLimit;
-        }
-
-        if (jvParams.size() >= 6 && jvParams[5u].asInt())
-        {
-            jvRequest[jss::proof] = true;
-        }
-
-        if (jvParams.size() == 7)
-            jvRequest[jss::marker] = jvParams[6u];
 
         return jvRequest;
     }
@@ -772,138 +680,6 @@ private:
         return parseAccountRaw1(jvParams);
     }
 
-    Json::Value
-    parseAccountCurrencies(Json::Value const& jvParams)
-    {
-        return parseAccountRaw1(jvParams);
-    }
-
-    // account_lines <account> <account>|"" [<ledger>]
-    Json::Value
-    parseAccountLines(Json::Value const& jvParams)
-    {
-        return parseAccountRaw2(jvParams, jss::peer);
-    }
-
-    // account_channels <account> <account>|"" [<ledger>]
-    Json::Value
-    parseAccountChannels(Json::Value const& jvParams)
-    {
-        return parseAccountRaw2(jvParams, jss::destination_account);
-    }
-
-    // channel_authorize: <private_key> [<key_type>] <channel_id> <drops>
-    Json::Value
-    parseChannelAuthorize(Json::Value const& jvParams)
-    {
-        Json::Value jvRequest(Json::objectValue);
-
-        unsigned int index = 0;
-
-        if (jvParams.size() == 4)
-        {
-            jvRequest[jss::passphrase] = jvParams[index];
-            index++;
-
-            if (!keyTypeFromString(jvParams[index].asString()))
-                return rpcError(rpcBAD_KEY_TYPE);
-            jvRequest[jss::key_type] = jvParams[index];
-            index++;
-        }
-        else
-        {
-            jvRequest[jss::secret] = jvParams[index];
-            index++;
-        }
-
-        {
-            // verify the channel id is a valid 256 bit number
-            uint256 channelId;
-            if (!channelId.parseHex(jvParams[index].asString()))
-                return rpcError(rpcCHANNEL_MALFORMED);
-            jvRequest[jss::channel_id] = to_string(channelId);
-            index++;
-        }
-
-        if (!jvParams[index].isString() ||
-            !to_uint64(jvParams[index].asString()))
-            return rpcError(rpcCHANNEL_AMT_MALFORMED);
-        jvRequest[jss::amount] = jvParams[index];
-
-        // If additional parameters are appended, be sure to increment index
-        // here
-
-        return jvRequest;
-    }
-
-    // channel_verify <public_key> <channel_id> <drops> <signature>
-    Json::Value
-    parseChannelVerify(Json::Value const& jvParams)
-    {
-        std::string const strPk = jvParams[0u].asString();
-
-        if (!validPublicKey(strPk))
-            return rpcError(rpcPUBLIC_MALFORMED);
-
-        Json::Value jvRequest(Json::objectValue);
-
-        jvRequest[jss::public_key] = strPk;
-        {
-            // verify the channel id is a valid 256 bit number
-            uint256 channelId;
-            if (!channelId.parseHex(jvParams[1u].asString()))
-                return rpcError(rpcCHANNEL_MALFORMED);
-        }
-        jvRequest[jss::channel_id] = jvParams[1u].asString();
-
-        if (!jvParams[2u].isString() || !to_uint64(jvParams[2u].asString()))
-            return rpcError(rpcCHANNEL_AMT_MALFORMED);
-        jvRequest[jss::amount] = jvParams[2u];
-
-        jvRequest[jss::signature] = jvParams[3u].asString();
-
-        return jvRequest;
-    }
-
-    Json::Value
-    parseAccountRaw2(Json::Value const& jvParams, char const* const acc2Field)
-    {
-        std::array<char const* const, 2> accFields{{jss::account, acc2Field}};
-        auto const nParams = jvParams.size();
-        Json::Value jvRequest(Json::objectValue);
-        for (auto i = 0; i < nParams; ++i)
-        {
-            std::string strParam = jvParams[i].asString();
-
-            if (i == 1 && strParam.empty())
-                continue;
-
-            // Parameters 0 and 1 are accounts
-            if (i < 2)
-            {
-                if (parseBase58<PublicKey>(
-                        TokenType::AccountPublic, strParam) ||
-                    parseBase58<AccountID>(strParam) ||
-                    parseGenericSeed(strParam))
-                {
-                    jvRequest[accFields[i]] = std::move(strParam);
-                }
-                else
-                {
-                    return rpcError(rpcACT_MALFORMED);
-                }
-            }
-            else
-            {
-                if (jvParseLedger(jvRequest, strParam))
-                    return jvRequest;
-                return rpcError(rpcLGR_IDX_MALFORMED);
-            }
-        }
-
-        return jvRequest;
-    }
-
     // TODO: Get index from an alternate syntax: rXYZ:<index>
     Json::Value
     parseAccountRaw1(Json::Value const& jvParams)
@@ -965,29 +741,6 @@ private:
         Json::Value jvRequest;
         jvRequest[jss::public_key] = jvParams[0u].asString();
         return jvRequest;
-    }
-
-    // ripple_path_find <json> [<ledger>]
-    Json::Value
-    parseRipplePathFind(Json::Value const& jvParams)
-    {
-        Json::Reader reader;
-        Json::Value jvRequest{Json::objectValue};
-        bool bLedger = 2 == jvParams.size();
-
-        JLOG(j_.trace()) << "RPC json: " << jvParams[0u];
-
-        if (reader.parse(jvParams[0u].asString(), jvRequest))
-        {
-            if (bLedger)
-            {
-                jvParseLedger(jvRequest, jvParams[1u].asString());
-            }
-
-            return jvRequest;
-        }
-
-        return rpcError(rpcINVALID_PARAMS);
     }
 
     // sign/submit any transaction to the network
@@ -1148,44 +901,6 @@ private:
     // gateway_balances [<ledger>] <issuer_account> [ <hotwallet> [ <hotwallet>
     // ]]
 
-    Json::Value
-    parseGatewayBalances(Json::Value const& jvParams)
-    {
-        unsigned int index = 0;
-        const unsigned int size = jvParams.size();
-
-        Json::Value jvRequest{Json::objectValue};
-
-        std::string param = jvParams[index++].asString();
-        if (param.empty())
-            return RPC::make_param_error("Invalid first parameter");
-
-        if (param[0] != 'r')
-        {
-            if (param.size() == 64)
-                jvRequest[jss::ledger_hash] = param;
-            else
-                jvRequest[jss::ledger_index] = param;
-
-            if (size <= index)
-                return RPC::make_param_error("Invalid hotwallet");
-
-            param = jvParams[index++].asString();
-        }
-
-        jvRequest[jss::account] = param;
-
-        if (index < size)
-        {
-            Json::Value& hotWallets =
-                (jvRequest["hotwallet"] = Json::arrayValue);
-            while (index < size)
-                hotWallets.append(jvParams[index++].asString());
-        }
-
-        return jvRequest;
-    }
-
     // server_info [counters]
     Json::Value
     parseServerInfo(Json::Value const& jvParams)
@@ -1231,24 +946,14 @@ public:
             // Request-response methods
             // - Returns an error, or the request.
             // - To modify the method, provide a new method in the request.
-            {"account_currencies", &RPCParser::parseAccountCurrencies, 1, 3},
             {"account_info", &RPCParser::parseAccountItems, 1, 3},
-            {"account_lines", &RPCParser::parseAccountLines, 1, 5},
-            {"account_channels", &RPCParser::parseAccountChannels, 1, 3},
-            {"account_objects", &RPCParser::parseAccountItems, 1, 5},
-            {"account_offers", &RPCParser::parseAccountItems, 1, 4},
             {"account_tx", &RPCParser::parseAccountTransactions, 1, 8},
-            {"book_changes", &RPCParser::parseLedgerId, 1, 1},
-            {"book_offers", &RPCParser::parseBookOffers, 2, 7},
             {"can_delete", &RPCParser::parseCanDelete, 0, 1},
-            {"channel_authorize", &RPCParser::parseChannelAuthorize, 3, 4},
-            {"channel_verify", &RPCParser::parseChannelVerify, 4, 4},
             {"connect", &RPCParser::parseConnect, 1, 2},
             {"consensus_info", &RPCParser::parseAsIs, 0, 0},
             {"download_shard", &RPCParser::parseDownloadShard, 2, -1},
             {"feature", &RPCParser::parseFeature, 0, 2},
             {"fetch_info", &RPCParser::parseFetchInfo, 0, 1},
-            {"gateway_balances", &RPCParser::parseGatewayBalances, 1, -1},
             {"get_counts", &RPCParser::parseGetCounts, 0, 1},
             {"json", &RPCParser::parseJson, 2, 2},
             {"json2", &RPCParser::parseJson2, 1, 1},
@@ -1256,8 +961,6 @@ public:
             {"ledger_accept", &RPCParser::parseAsIs, 0, 0},
             {"ledger_closed", &RPCParser::parseAsIs, 0, 0},
             {"ledger_current", &RPCParser::parseAsIs, 0, 0},
-            //      {   "ledger_entry",         &RPCParser::parseLedgerEntry,
-            //      -1, -1   },
             {"ledger_header", &RPCParser::parseLedgerId, 1, 1},
             {"ledger_request", &RPCParser::parseLedgerId, 1, 1},
             {"log_level", &RPCParser::parseLogLevel, 0, 2},
@@ -1268,8 +971,6 @@ public:
             {"peers", &RPCParser::parseAsIs, 0, 0},
             {"ping", &RPCParser::parseAsIs, 0, 0},
             {"print", &RPCParser::parseAsIs, 0, 1},
-            //      {   "profile",              &RPCParser::parseProfile, 1,  9
-            //      },
             {"random", &RPCParser::parseAsIs, 0, 0},
             {"peer_reservations_add",
              &RPCParser::parsePeerReservationsAdd,
@@ -1280,7 +981,6 @@ public:
              1,
              1},
             {"peer_reservations_list", &RPCParser::parseAsIs, 0, 0},
-            {"ripple_path_find", &RPCParser::parseRipplePathFind, 1, 2},
             {"sign", &RPCParser::parseSignSubmit, 2, 3},
             {"sign_for", &RPCParser::parseSignFor, 3, 4},
             {"submit", &RPCParser::parseSignSubmit, 1, 3},
@@ -1301,7 +1001,6 @@ public:
             {"internal", &RPCParser::parseInternal, 1, -1},
 
             // Evented methods
-            {"path_find", &RPCParser::parseEvented, -1, -1},
             {"subscribe", &RPCParser::parseEvented, -1, -1},
             {"unsubscribe", &RPCParser::parseEvented, -1, -1},
         };

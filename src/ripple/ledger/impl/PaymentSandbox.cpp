@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <ripple/app/paths/impl/AmountSpec.h>
 #include <ripple/ledger/PaymentSandbox.h>
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/Feature.h>
@@ -208,7 +207,7 @@ PaymentSandbox::balanceHook(
     auto adjustedAmt = std::min({amount, lastBal - delta, minBal});
     adjustedAmt.setIssuer(amount.getIssuer());
 
-    if (isXRP(issuer) && adjustedAmt < beast::zero)
+    if (adjustedAmt < beast::zero)
         // A calculated negative XRP balance is not an error case. Consider a
         // payment snippet that credits a large XRP amount and then debits the
         // same amount. The credit can't be used but we subtract the debit and
@@ -302,15 +301,6 @@ PaymentSandbox::balanceChanges(ReadView const& view) const
                     oldBalance = (*before)[sfBalance];
                     newBalance = oldBalance.zeroed();
                     break;
-                case ltRIPPLE_STATE:
-                    lowID = (*before)[sfLowLimit].getIssuer();
-                    highID = (*before)[sfHighLimit].getIssuer();
-                    oldBalance = (*before)[sfBalance];
-                    newBalance = oldBalance.zeroed();
-                    break;
-                case ltOFFER:
-                    // TBD
-                    break;
                 default:
                     break;
             }
@@ -326,15 +316,6 @@ PaymentSandbox::balanceChanges(ReadView const& view) const
                     highID = (*after)[sfAccount];
                     newBalance = (*after)[sfBalance];
                     oldBalance = newBalance.zeroed();
-                    break;
-                case ltRIPPLE_STATE:
-                    lowID = (*after)[sfLowLimit].getIssuer();
-                    highID = (*after)[sfHighLimit].getIssuer();
-                    newBalance = (*after)[sfBalance];
-                    oldBalance = newBalance.zeroed();
-                    break;
-                case ltOFFER:
-                    // TBD
                     break;
                 default:
                     break;
@@ -352,15 +333,6 @@ PaymentSandbox::balanceChanges(ReadView const& view) const
                     highID = (*after)[sfAccount];
                     oldBalance = (*before)[sfBalance];
                     newBalance = (*after)[sfBalance];
-                    break;
-                case ltRIPPLE_STATE:
-                    lowID = (*after)[sfLowLimit].getIssuer();
-                    highID = (*after)[sfHighLimit].getIssuer();
-                    oldBalance = (*before)[sfBalance];
-                    newBalance = (*after)[sfBalance];
-                    break;
-                case ltOFFER:
-                    // TBD
                     break;
                 default:
                     break;

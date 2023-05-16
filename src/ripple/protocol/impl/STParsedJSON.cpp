@@ -30,7 +30,6 @@
 #include <ripple/protocol/STBlob.h>
 #include <ripple/protocol/STInteger.h>
 #include <ripple/protocol/STParsedJSON.h>
-#include <ripple/protocol/STPathSet.h>
 #include <ripple/protocol/STVector256.h>
 #include <ripple/protocol/TER.h>
 #include <ripple/protocol/TxFormats.h>
@@ -139,13 +138,13 @@ array_expected(std::string const& object, std::string const& field)
         "Field '" + make_name(object, field) + "' must be a JSON array.");
 }
 
-static Json::Value
-string_expected(std::string const& object, std::string const& field)
-{
-    return RPC::make_error(
-        rpcINVALID_PARAMS,
-        "Field '" + make_name(object, field) + "' must be a string.");
-}
+//static Json::Value
+//string_expected(std::string const& object, std::string const& field)
+//{
+//    return RPC::make_error(
+//        rpcINVALID_PARAMS,
+//        "Field '" + make_name(object, field) + "' must be a string.");
+//}
 
 static Json::Value
 too_deep(std::string const& object)
@@ -556,143 +555,6 @@ parseLeaf(
                     tail.push_back(s);
                 }
                 ret = detail::make_stvar<STVector256>(std::move(tail));
-            }
-            catch (std::exception const&)
-            {
-                error = invalid_data(json_name, fieldName);
-                return ret;
-            }
-
-            break;
-
-        case STI_PATHSET:
-            if (!value.isArrayOrNull())
-            {
-                error = array_expected(json_name, fieldName);
-                return ret;
-            }
-
-            try
-            {
-                STPathSet tail(field);
-
-                for (Json::UInt i = 0; value.isValidIndex(i); ++i)
-                {
-                    STPath p;
-
-                    if (!value[i].isArrayOrNull())
-                    {
-                        std::stringstream ss;
-                        ss << fieldName << "[" << i << "]";
-                        error = array_expected(json_name, ss.str());
-                        return ret;
-                    }
-
-                    for (Json::UInt j = 0; value[i].isValidIndex(j); ++j)
-                    {
-                        std::stringstream ss;
-                        ss << fieldName << "[" << i << "][" << j << "]";
-                        std::string const element_name(
-                            json_name + "." + ss.str());
-
-                        // each element in this path has some combination of
-                        // account, currency, or issuer
-
-                        Json::Value pathEl = value[i][j];
-
-                        if (!pathEl.isObject())
-                        {
-                            error = not_an_object(element_name);
-                            return ret;
-                        }
-
-                        Json::Value const& account = pathEl["account"];
-                        Json::Value const& currency = pathEl["currency"];
-                        Json::Value const& issuer = pathEl["issuer"];
-                        bool hasCurrency = false;
-                        AccountID uAccount, uIssuer;
-                        Currency uCurrency;
-
-                        if (account)
-                        {
-                            // human account id
-                            if (!account.isString())
-                            {
-                                error =
-                                    string_expected(element_name, "account");
-                                return ret;
-                            }
-
-                            // If we have what looks like a 160-bit hex value,
-                            // we set it, otherwise, we assume it's an AccountID
-                            if (!uAccount.parseHex(account.asString()))
-                            {
-                                auto const a =
-                                    parseBase58<AccountID>(account.asString());
-                                if (!a)
-                                {
-                                    error =
-                                        invalid_data(element_name, "account");
-                                    return ret;
-                                }
-                                uAccount = *a;
-                            }
-                        }
-
-                        if (currency)
-                        {
-                            // human currency
-                            if (!currency.isString())
-                            {
-                                error =
-                                    string_expected(element_name, "currency");
-                                return ret;
-                            }
-
-                            hasCurrency = true;
-
-                            if (!uCurrency.parseHex(currency.asString()))
-                            {
-                                if (!to_currency(
-                                        uCurrency, currency.asString()))
-                                {
-                                    error =
-                                        invalid_data(element_name, "currency");
-                                    return ret;
-                                }
-                            }
-                        }
-
-                        if (issuer)
-                        {
-                            // human account id
-                            if (!issuer.isString())
-                            {
-                                error = string_expected(element_name, "issuer");
-                                return ret;
-                            }
-
-                            if (!uIssuer.parseHex(issuer.asString()))
-                            {
-                                auto const a =
-                                    parseBase58<AccountID>(issuer.asString());
-                                if (!a)
-                                {
-                                    error =
-                                        invalid_data(element_name, "issuer");
-                                    return ret;
-                                }
-                                uIssuer = *a;
-                            }
-                        }
-
-                        p.emplace_back(
-                            uAccount, uCurrency, uIssuer, hasCurrency);
-                    }
-
-                    tail.push_back(p);
-                }
-                ret = detail::make_stvar<STPathSet>(std::move(tail));
             }
             catch (std::exception const&)
             {

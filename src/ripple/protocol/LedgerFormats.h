@@ -65,25 +65,11 @@ enum LedgerEntryType : std::uint16_t
      */
     ltDIR_NODE = 0x0064,
 
-    /** A ledger object which describes a bidirectional trust line.
-
-        @note Per Vinnie Falco this should be renamed to ltTRUST_LINE
-
-        \sa keylet::line
-     */
-    ltRIPPLE_STATE = 0x0072,
-
     /** A ledger object which contains a signer list for an account.
 
         \sa keylet::signers
      */
     ltSIGNER_LIST = 0x0053,
-
-    /** A ledger object which describes an offer on the DEX.
-
-        \sa keylet::offer
-     */
-    ltOFFER = 0x006f,
 
     /** A ledger object that contains a list of ledger hashes.
 
@@ -157,30 +143,30 @@ enum LedgerSpecificFlags {
     lsfPasswordSpent = 0x00010000,  // True, if password set fee is spent.
     lsfRequireDestTag =
         0x00020000,  // True, to require a DestinationTag for payments.
-    lsfRequireAuth =
-        0x00040000,  // True, to require a authorization to hold IOUs.
+//    lsfRequireAuth =
+//        0x00040000,  // True, to require a authorization to hold IOUs.
     lsfDisallowXRP = 0x00080000,    // True, to disallow sending XRP.
     lsfDisableMaster = 0x00100000,  // True, force regular key
-    lsfNoFreeze = 0x00200000,       // True, cannot freeze ripple states
-    lsfGlobalFreeze = 0x00400000,   // True, all assets frozen
-    lsfDefaultRipple =
-        0x00800000,               // True, trust lines allow rippling by default
-    lsfDisallowIncomingTrustline =
-        0x20000000,               // True, reject new trustlines (only if no issued assets)
+//    lsfNoFreeze = 0x00200000,       // True, cannot freeze ripple states
+//    lsfGlobalFreeze = 0x00400000,   // True, all assets frozen
+//    lsfDefaultRipple =
+//        0x00800000,               // True, trust lines allow rippling by default
+//    lsfDisallowIncomingTrustline =
+//        0x20000000,               // True, reject new trustlines (only if no issued assets)
 
     // ltOFFER
-    lsfPassive = 0x00010000,
-    lsfSell = 0x00020000,  // True, offer was placed as a sell.
+//    lsfPassive = 0x00010000,
+//    lsfSell = 0x00020000,  // True, offer was placed as a sell.
 
-    // ltRIPPLE_STATE
-    lsfLowReserve = 0x00010000,  // True, if entry counts toward reserve.
-    lsfHighReserve = 0x00020000,
-    lsfLowAuth = 0x00040000,
-    lsfHighAuth = 0x00080000,
-    lsfLowNoRipple = 0x00100000,
-    lsfHighNoRipple = 0x00200000,
-    lsfLowFreeze = 0x00400000,   // True, low side has set freeze flag
-    lsfHighFreeze = 0x00800000,  // True, high side has set freeze flag
+//    // ltRIPPLE_STATE
+//    lsfLowReserve = 0x00010000,  // True, if entry counts toward reserve.
+//    lsfHighReserve = 0x00020000,
+//    lsfLowAuth = 0x00040000,
+//    lsfHighAuth = 0x00080000,
+//    lsfLowNoRipple = 0x00100000,
+//    lsfHighNoRipple = 0x00200000,
+//    lsfLowFreeze = 0x00400000,   // True, low side has set freeze flag
+//    lsfHighFreeze = 0x00800000,  // True, high side has set freeze flag
 
     // ltSIGNER_LIST
     lsfOneOwnerCount = 0x00010000,  // True, uses only one OwnerCount

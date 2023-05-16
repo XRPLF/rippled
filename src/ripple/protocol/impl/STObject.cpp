@@ -606,13 +606,6 @@ STObject::getFieldAmount(SField const& field) const
     return getFieldByConstRef<STAmount>(field, empty);
 }
 
-STPathSet const&
-STObject::getFieldPathSet(SField const& field) const
-{
-    static STPathSet const empty{};
-    return getFieldByConstRef<STPathSet>(field, empty);
-}
-
 const STVector256&
 STObject::getFieldV256(SField const& field) const
 {
@@ -705,12 +698,6 @@ STObject::setFieldVL(SField const& field, Slice const& s)
 
 void
 STObject::setFieldAmount(SField const& field, STAmount const& v)
-{
-    setFieldUsingAssignment(field, v);
-}
-
-void
-STObject::setFieldPathSet(SField const& field, STPathSet const& v)
 {
     setFieldUsingAssignment(field, v);
 }

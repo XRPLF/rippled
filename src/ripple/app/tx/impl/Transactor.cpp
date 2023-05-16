@@ -89,7 +89,7 @@ preflight1(PreflightContext const& ctx)
 
     // No point in going any further if the transaction fee is malformed.
     auto const fee = ctx.tx.getFieldAmount(sfFee);
-    if (!fee.native() || fee.negative() || !isLegalAmount(fee.xrp()))
+    if (fee.negative() || !isLegalAmount(fee.xrp()))
     {
         JLOG(ctx.j.debug()) << "preflight1: invalid fee";
         return temBAD_FEE;
@@ -170,9 +170,6 @@ Transactor::minimumFee(
 TER
 Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
 {
-    if (!ctx.tx[sfFee].native())
-        return temBAD_FEE;
-
     auto const feePaid = ctx.tx[sfFee].xrp();
     if (!isLegalAmount(feePaid) || feePaid < beast::zero)
         return temBAD_FEE;
@@ -613,27 +610,6 @@ Transactor::checkMultiSign(PreclaimContext const& ctx)
 
 //------------------------------------------------------------------------------
 
-static void
-removeUnfundedOffers(
-    ApplyView& view,
-    std::vector<uint256> const& offers,
-    beast::Journal viewJ)
-{
-    int removed = 0;
-
-    for (auto const& index : offers)
-    {
-        if (auto const sleOffer = view.peek(keylet::offer(index)))
-        {
-            // offer is unfunded
-            offerDelete(view, sleOffer, viewJ);
-            if (++removed == unfundedOfferRemoveLimit)
-                return;
-        }
-    }
-}
-
-
 /** Reset the context, discarding any changes made and adjust the fee */
 std::pair<TER, XRPAmount>
 Transactor::reset(XRPAmount fee)
@@ -680,7 +656,7 @@ Transactor::operator()()
     JLOG(j_.trace()) << "apply: " << ctx_.tx.getTransactionID();
 
     STAmountSO stAmountSO{view().rules().enabled(fixSTAmountCanonicalize)};
-    NumberSO stNumberSO{view().rules().enabled(fixUniversalNumber)};
+//    NumberSO stNumberSO{view().rules().enabled(fixUniversalNumber)};
 
 #ifdef DEBUG
     {
@@ -730,33 +706,6 @@ Transactor::operator()()
     {
         JLOG(j_.trace()) << "reapplying because of " << transToken(result);
 
-        // FIXME: This mechanism for doing work while returning a `tec` is
-        //        awkward and very limiting. A more general purpose approach
-        //        should be used, making it possible to do more useful work
-        //        when transactions fail with a `tec` code.
-        std::vector<uint256> removedOffers;
-
-        if ((result == tecOVERSIZE) || (result == tecKILLED))
-        {
-            ctx_.visit([&removedOffers](
-                           uint256 const& index,
-                           bool isDelete,
-                           std::shared_ptr<SLE const> const& before,
-                           std::shared_ptr<SLE const> const& after) {
-                if (isDelete)
-                {
-                    assert(before && after);
-                    if (before && after && (before->getType() == ltOFFER) &&
-                        (before->getFieldAmount(sfTakerPays) ==
-                         after->getFieldAmount(sfTakerPays)))
-                    {
-                        // Removal of offer found or made unfunded
-                        removedOffers.push_back(index);
-                    }
-                }
-            });
-        }
-
         // Reset the context, potentially adjusting the fee.
         {
             auto const resetResult = reset(fee);
@@ -765,11 +714,6 @@ Transactor::operator()()
 
             fee = resetResult.second;
         }
-
-        // If necessary, remove any offers found unfunded during processing
-        if ((result == tecOVERSIZE) || (result == tecKILLED))
-            removeUnfundedOffers(
-                view(), removedOffers, ctx_.app.journal("View"));
 
         applied = isTecClaim(result);
     }

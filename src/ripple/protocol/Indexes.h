@@ -21,7 +21,6 @@
 #define RIPPLE_PROTOCOL_INDEXES_H_INCLUDED
 
 #include <ripple/basics/base_uint.h>
-#include <ripple/protocol/Book.h>
 #include <ripple/protocol/Keylet.h>
 #include <ripple/protocol/LedgerFormats.h>
 #include <ripple/protocol/Protocol.h>
@@ -90,62 +89,15 @@ fees() noexcept;
 Keylet const&
 negativeUNL() noexcept;
 
-/** The beginning of an order book */
-struct book_t
-{
-    explicit book_t() = default;
-
-    Keylet
-    operator()(Book const& b) const;
-};
-static book_t const book{};
-
-/** The index of a trust line for a given currency
-
-    Note that a trustline is *shared* between two accounts (commonly referred
-    to as the issuer and the holder); if Alice sets up a trust line to Bob for
-    BTC, and Bob trusts Alice for BTC, here is only a single BTC trust line
-    between them.
-*/
-/** @{ */
-Keylet
-line(
-    AccountID const& id0,
-    AccountID const& id1,
-    Currency const& currency) noexcept;
-
-inline Keylet
-line(AccountID const& id, Issue const& issue) noexcept
-{
-    return line(id, issue.account, issue.currency);
-}
-/** @} */
-
-/** An offer from an account */
-/** @{ */
-Keylet
-offer(AccountID const& id, std::uint32_t seq) noexcept;
-
-inline Keylet
-offer(uint256 const& key) noexcept
-{
-    return {ltOFFER, key};
-}
-/** @} */
-
-/** The initial directory page for a specific quality */
-Keylet
-quality(Keylet const& k, std::uint64_t q) noexcept;
-
-/** The directory for the next lower quality */
-struct next_t
-{
-    explicit next_t() = default;
-
-    Keylet
-    operator()(Keylet const& k) const;
-};
-static next_t const next{};
+///** The directory for the next lower quality */
+// struct next_t
+//{
+//     explicit next_t() = default;
+//
+//     Keylet
+//     operator()(Keylet const& k) const;
+// };
+// static next_t const next{};
 
 /** A SignerList */
 Keylet
@@ -174,30 +126,7 @@ page(Keylet const& root, std::uint64_t index = 0) noexcept
 }
 /** @} */
 
-/** An escrow entry */
-Keylet
-escrow(AccountID const& src, std::uint32_t seq) noexcept;
-
-}  // namespace keylet
-
-// Everything below is deprecated and should be removed in favor of keylets:
-
-uint256
-getBookBase(Book const& book);
-
-uint256
-getQualityNext(uint256 const& uBase);
-
-// VFALCO This name could be better
-std::uint64_t
-getQuality(uint256 const& uBase);
-
-uint256
-getTicketIndex(AccountID const& account, std::uint32_t uSequence);
-
-uint256
-getTicketIndex(AccountID const& account, SeqProxy ticketSeq);
-
 }  // namespace ripple
 
+}
 #endif

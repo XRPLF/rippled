@@ -20,7 +20,6 @@
 #ifndef RIPPLE_TX_PAYMENT_H_INCLUDED
 #define RIPPLE_TX_PAYMENT_H_INCLUDED
 
-#include <ripple/app/paths/RippleCalc.h>
 #include <ripple/app/tx/impl/Transactor.h>
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/TxFlags.h>

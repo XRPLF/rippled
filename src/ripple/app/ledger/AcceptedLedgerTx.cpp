@@ -66,7 +66,6 @@ AcceptedLedgerTx::AcceptedLedgerTx(
                 *ledger,
                 account,
                 amount,
-                fhIGNORE_FREEZE,
                 beast::Journal{beast::Journal::getNullSink()});
             mJson[jss::transaction][jss::owner_funds] = ownerFunds.getText();
         }

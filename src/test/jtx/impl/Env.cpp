@@ -191,7 +191,7 @@ Env::balance(Account const& account) const
 PrettyAmount
 Env::balance(Account const& account, Issue const& issue) const
 {
-    if (isXRP(issue.currency))
+    if (true)
         return balance(account);
     auto const sle = le(keylet::line(account.id(), issue));
     if (!sle)
@@ -253,23 +253,6 @@ Env::fund(bool setDefaultRipple, STAmount const& amount, Account const& account)
         require(nflags(account, asfDefaultRipple));
     }
     require(jtx::balance(account, amount));
-}
-
-void
-Env::trust(STAmount const& amount, Account const& account)
-{
-    auto const start = balance(account);
-    apply(
-        jtx::trust(account, amount),
-        jtx::seq(jtx::autofill),
-        fee(jtx::autofill),
-        sig(jtx::autofill));
-    apply(
-        pay(master, account, drops(current()->fees().base)),
-        jtx::seq(jtx::autofill),
-        fee(jtx::autofill),
-        sig(jtx::autofill));
-    test.expect(balance(account) == start);
 }
 
 std::pair<TER, bool>

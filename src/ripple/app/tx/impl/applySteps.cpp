@@ -19,15 +19,12 @@
 
 #include <ripple/app/tx/applySteps.h>
 #include <ripple/app/tx/impl/ApplyContext.h>
-#include <ripple/app/tx/impl/CancelOffer.h>
 #include <ripple/app/tx/impl/Change.h>
-#include <ripple/app/tx/impl/CreateOffer.h>
 #include <ripple/app/tx/impl/DeleteAccount.h>
 #include <ripple/app/tx/impl/Payment.h>
 #include <ripple/app/tx/impl/SetAccount.h>
 #include <ripple/app/tx/impl/SetRegularKey.h>
 #include <ripple/app/tx/impl/SetSignerList.h>
-#include <ripple/app/tx/impl/SetTrust.h>
 
 namespace ripple {
 
@@ -87,18 +84,12 @@ invoke_preflight(PreflightContext const& ctx)
             return invoke_preflight_helper<DeleteAccount>(ctx);
         case ttACCOUNT_SET:
             return invoke_preflight_helper<SetAccount>(ctx);
-        case ttOFFER_CANCEL:
-            return invoke_preflight_helper<CancelOffer>(ctx);
-        case ttOFFER_CREATE:
-            return invoke_preflight_helper<CreateOffer>(ctx);
         case ttPAYMENT:
             return invoke_preflight_helper<Payment>(ctx);
         case ttREGULAR_KEY_SET:
             return invoke_preflight_helper<SetRegularKey>(ctx);
         case ttSIGNER_LIST_SET:
             return invoke_preflight_helper<SetSignerList>(ctx);
-        case ttTRUST_SET:
-            return invoke_preflight_helper<SetTrust>(ctx);
         case ttAMENDMENT:
         case ttFEE:
         case ttUNL_MODIFY:
@@ -156,18 +147,12 @@ invoke_preclaim(PreclaimContext const& ctx)
             return invoke_preclaim<DeleteAccount>(ctx);
         case ttACCOUNT_SET:
             return invoke_preclaim<SetAccount>(ctx);
-        case ttOFFER_CANCEL:
-            return invoke_preclaim<CancelOffer>(ctx);
-        case ttOFFER_CREATE:
-            return invoke_preclaim<CreateOffer>(ctx);
         case ttPAYMENT:
             return invoke_preclaim<Payment>(ctx);
         case ttREGULAR_KEY_SET:
             return invoke_preclaim<SetRegularKey>(ctx);
         case ttSIGNER_LIST_SET:
             return invoke_preclaim<SetSignerList>(ctx);
-        case ttTRUST_SET:
-            return invoke_preclaim<SetTrust>(ctx);
         case ttAMENDMENT:
         case ttFEE:
         case ttUNL_MODIFY:
@@ -187,18 +172,12 @@ invoke_calculateBaseFee(ReadView const& view, STTx const& tx)
             return DeleteAccount::calculateBaseFee(view, tx);
         case ttACCOUNT_SET:
             return SetAccount::calculateBaseFee(view, tx);
-        case ttOFFER_CANCEL:
-            return CancelOffer::calculateBaseFee(view, tx);
-        case ttOFFER_CREATE:
-            return CreateOffer::calculateBaseFee(view, tx);
         case ttPAYMENT:
             return Payment::calculateBaseFee(view, tx);
         case ttREGULAR_KEY_SET:
             return SetRegularKey::calculateBaseFee(view, tx);
         case ttSIGNER_LIST_SET:
             return SetSignerList::calculateBaseFee(view, tx);
-        case ttTRUST_SET:
-            return SetTrust::calculateBaseFee(view, tx);
         case ttAMENDMENT:
         case ttFEE:
         case ttUNL_MODIFY:
@@ -221,9 +200,7 @@ TxConsequences::TxConsequences(NotTEC pfresult)
 
 TxConsequences::TxConsequences(STTx const& tx)
     : isBlocker_(false)
-    , fee_(
-          tx[sfFee].native() && !tx[sfFee].negative() ? tx[sfFee].xrp()
-                                                      : beast::zero)
+    , fee_(!tx[sfFee].negative() ? tx[sfFee].xrp() : beast::zero)
     , potentialSpend_(beast::zero)
     , seqProx_(tx.getSeqProxy())
     , sequencesConsumed_(tx.getSeqProxy().isSeq() ? 1 : 0)
@@ -261,14 +238,6 @@ invoke_apply(ApplyContext& ctx)
             SetAccount p(ctx);
             return p();
         }
-        case ttOFFER_CANCEL: {
-            CancelOffer p(ctx);
-            return p();
-        }
-        case ttOFFER_CREATE: {
-            CreateOffer p(ctx);
-            return p();
-        }
         case ttPAYMENT: {
             Payment p(ctx);
             return p();
@@ -279,10 +248,6 @@ invoke_apply(ApplyContext& ctx)
         }
         case ttSIGNER_LIST_SET: {
             SetSignerList p(ctx);
-            return p();
-        }
-        case ttTRUST_SET: {
-            SetTrust p(ctx);
             return p();
         }
         case ttAMENDMENT:

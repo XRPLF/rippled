@@ -259,7 +259,7 @@ public:
             BEAST_EXPECT(!wsc->getMsg(10ms));
 
             // Transactions concerning alice
-            env.trust(Account("bob")["USD"](100), "alice");
+//            env.trust(Account("bob")["USD"](100), "alice");
             env.close();
 
             // Check stream updates

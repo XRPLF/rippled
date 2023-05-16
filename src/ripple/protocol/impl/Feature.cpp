@@ -424,7 +424,6 @@ REGISTER_FIX    (fix1578,                       Supported::yes, VoteBehavior::De
 REGISTER_FEATURE(MultiSignReserve,              Supported::yes, VoteBehavior::DefaultYes);
 REGISTER_FIX    (fixTakerDryOfferRemoval,       Supported::yes, VoteBehavior::DefaultYes);
 REGISTER_FIX    (fixMasterKeyAsRegularKey,      Supported::yes, VoteBehavior::DefaultYes);
-REGISTER_FIX    (fixCheckThreading,             Supported::yes, VoteBehavior::DefaultYes);
 REGISTER_FEATURE(DeletableAccounts,             Supported::yes, VoteBehavior::DefaultYes);
 // fixQualityUpperBound should be activated before FlowCross
 REGISTER_FIX    (fixQualityUpperBound,          Supported::yes, VoteBehavior::DefaultYes);
@@ -434,15 +433,8 @@ REGISTER_FIX    (fix1781,                       Supported::yes, VoteBehavior::De
 REGISTER_FEATURE(HardenedValidations,           Supported::yes, VoteBehavior::DefaultYes);
 REGISTER_FIX    (fixAmendmentMajorityCalc,      Supported::yes, VoteBehavior::DefaultYes);
 REGISTER_FEATURE(NegativeUNL,                   Supported::yes, VoteBehavior::DefaultYes);
-REGISTER_FEATURE(TicketBatch,                   Supported::yes, VoteBehavior::DefaultYes);
-REGISTER_FEATURE(FlowSortStrands,               Supported::yes, VoteBehavior::DefaultYes);
 REGISTER_FIX    (fixSTAmountCanonicalize,       Supported::yes, VoteBehavior::DefaultYes);
-REGISTER_FIX    (fixRmSmallIncreasedQOffers,    Supported::yes, VoteBehavior::DefaultYes);
-REGISTER_FEATURE(CheckCashMakesTrustLine,       Supported::yes, VoteBehavior::DefaultNo);
 REGISTER_FEATURE(ExpandedSignerList,            Supported::yes, VoteBehavior::DefaultNo);
-REGISTER_FEATURE(NonFungibleTokensV1_1,         Supported::yes, VoteBehavior::DefaultNo);
-REGISTER_FIX    (fixTrustLinesToSelf,           Supported::yes, VoteBehavior::DefaultNo);
-REGISTER_FEATURE(ImmediateOfferKilled,          Supported::yes, VoteBehavior::DefaultNo);
 REGISTER_FEATURE(DisallowIncoming,              Supported::yes, VoteBehavior::DefaultNo);
 REGISTER_FEATURE(XRPFees,                       Supported::yes, VoteBehavior::DefaultNo);
 REGISTER_FIX    (fixUniversalNumber,            Supported::yes, VoteBehavior::DefaultNo);
@@ -454,18 +446,8 @@ REGISTER_FIX    (fixUniversalNumber,            Supported::yes, VoteBehavior::De
 [[deprecated("The referenced amendment has been retired"), maybe_unused]]
 uint256 const
     retiredMultiSign         = retireFeature("MultiSign"),
-    retiredTrustSetAuth      = retireFeature("TrustSetAuth"),
     retiredFeeEscalation     = retireFeature("FeeEscalation"),
-    retiredTickSize          = retireFeature("TickSize"),
-    retiredFix1368           = retireFeature("fix1368"),
-    retiredEscrow            = retireFeature("Escrow"),
-    retiredFix1373           = retireFeature("fix1373"),
-    retiredEnforceInvariants = retireFeature("EnforceInvariants"),
-    retiredSortedDirectories = retireFeature("SortedDirectories"),
-    retiredFix1201           = retireFeature("fix1201"),
-    retiredFix1512           = retireFeature("fix1512"),
-    retiredFix1523           = retireFeature("fix1523"),
-    retiredFix1528           = retireFeature("fix1528");
+    retiredFix1368           = retireFeature("fix1368");
 
 // clang-format on
 

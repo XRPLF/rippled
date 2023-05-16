@@ -52,7 +52,7 @@ public:
         auto const USD_bob = bob["USD"];
 
         env.fund(XRP(10000), gw, bob);
-        env.trust(USD_gw(1000), bob);
+//        env.trust(USD_gw(1000), bob);
 
         // this is to provide some USD from gw in the
         // bob account so that it can rightly

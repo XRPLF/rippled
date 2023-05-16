@@ -216,59 +216,6 @@ public:
 };
 
 /**
- * @brief Invariant: Trust lines using XRP are not allowed.
- *
- * We iterate all the trust lines created by this transaction and ensure
- * that they are against a valid issuer.
- */
-class NoXRPTrustLines
-{
-    bool xrpTrustLine_ = false;
-
-public:
-    void
-    visitEntry(
-        bool,
-        std::shared_ptr<SLE const> const&,
-        std::shared_ptr<SLE const> const&);
-
-    bool
-    finalize(
-        STTx const&,
-        TER const,
-        XRPAmount const,
-        ReadView const&,
-        beast::Journal const&);
-};
-
-/**
- * @brief Invariant: offers should be for non-negative amounts and must not
- *                   be XRP to XRP.
- *
- * Examine all offers modified by the transaction and ensure that there are
- * no offers which contain negative amounts or which exchange XRP for XRP.
- */
-class NoBadOffers
-{
-    bool bad_ = false;
-
-public:
-    void
-    visitEntry(
-        bool,
-        std::shared_ptr<SLE const> const&,
-        std::shared_ptr<SLE const> const&);
-
-    bool
-    finalize(
-        STTx const&,
-        TER const,
-        XRPAmount const,
-        ReadView const&,
-        beast::Journal const&);
-};
-
-/**
  * @brief Invariant: a new account root must be the consequence of a payment,
  *                   must have the right starting sequence, and the payment
  *                   may not create more than one new account root.
@@ -303,8 +250,6 @@ using InvariantChecks = std::tuple<
     LedgerEntryTypesMatch,
     XRPBalanceChecks,
     XRPNotCreated,
-    NoXRPTrustLines,
-    NoBadOffers,
     ValidNewAccountRoot>;
 
 /**

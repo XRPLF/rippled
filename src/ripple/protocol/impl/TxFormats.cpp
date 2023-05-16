@@ -54,33 +54,6 @@ TxFormats::TxFormats()
             {sfTransferRate, soeOPTIONAL},
             {sfSetFlag, soeOPTIONAL},
             {sfClearFlag, soeOPTIONAL},
-            {sfTickSize, soeOPTIONAL},
-        },
-        commonFields);
-
-    add(jss::TrustSet,
-        ttTRUST_SET,
-        {
-            {sfLimitAmount, soeOPTIONAL},
-            {sfQualityIn, soeOPTIONAL},
-            {sfQualityOut, soeOPTIONAL},
-        },
-        commonFields);
-
-    add(jss::OfferCreate,
-        ttOFFER_CREATE,
-        {
-            {sfTakerPays, soeREQUIRED},
-            {sfTakerGets, soeREQUIRED},
-            {sfExpiration, soeOPTIONAL},
-            {sfOfferSequence, soeOPTIONAL},
-        },
-        commonFields);
-
-    add(jss::OfferCancel,
-        ttOFFER_CANCEL,
-        {
-            {sfOfferSequence, soeREQUIRED},
         },
         commonFields);
 
@@ -97,7 +70,7 @@ TxFormats::TxFormats()
             {sfDestination, soeREQUIRED},
             {sfAmount, soeREQUIRED},
             {sfSendMax, soeOPTIONAL},
-            {sfPaths, soeDEFAULT},
+//            {sfPaths, soeDEFAULT},
             {sfInvoiceID, soeOPTIONAL},
             {sfDestinationTag, soeOPTIONAL},
             {sfDeliverMin, soeOPTIONAL},

@@ -49,10 +49,6 @@ JSS(AccountRoot);            // ledger type.
 JSS(AccountSet);             // transaction type.
 JSS(Amendments);             // ledger type.
 JSS(Amount);                 // in: TransactionSign; field.
-JSS(Check);                  // ledger type.
-JSS(CheckCancel);            // transaction type.
-JSS(CheckCash);              // transaction type.
-JSS(CheckCreate);            // transaction type.
 JSS(ClearFlag);              // field.
 JSS(DeliverMin);             // in: TransactionSign
 JSS(Destination);            // in: TransactionSign; field.
@@ -67,16 +63,7 @@ JSS(LastLedgerSequence);     // in: TransactionSign; field
 JSS(LedgerHashes);           // ledger type.
 JSS(LimitAmount);            // field.
 JSS(NetworkID);              // field.
-JSS(Offer);                  // ledger type.
-JSS(OfferCancel);            // transaction type.
-JSS(OfferCreate);            // transaction type.
-JSS(OfferSequence);          // field.
-JSS(Paths);                  // in/out: TransactionSign
 JSS(Payment);                // transaction type.
-JSS(PaymentChannelClaim);    // transaction type.
-JSS(PaymentChannelCreate);   // transaction type.
-JSS(PaymentChannelFund);     // transaction type.
-JSS(RippleState);            // ledger type.
 JSS(SLE_hit_rate);           // out: GetCounts.
 JSS(SetFee);                 // transaction type.
 JSS(UNLModify);              // transaction type.
@@ -88,14 +75,9 @@ JSS(SetRegularKey);          // transaction type.
 JSS(SignerList);             // ledger type.
 JSS(SignerListSet);          // transaction type.
 JSS(SigningPubKey);          // field.
-JSS(TakerGets);              // field.
-JSS(TakerPays);              // field.
-JSS(Ticket);                 // ledger type.
-JSS(TicketCreate);           // transaction type.
 JSS(TxnSignature);           // field.
 JSS(TransactionType);        // in: TransactionSign.
 JSS(TransferRate);           // in: TransferRate.
-JSS(TrustSet);               // transaction type.
 JSS(aborted);                // out: InboundLedger
 JSS(accepted);               // out: LedgerToJson, OwnerInfo, SubmitTransaction
 JSS(account);                // in/out: many
@@ -205,10 +187,6 @@ JSS(delivered_amount);        // out: insertDeliveredAmount
 JSS(deprecated);              // out
 JSS(descending);              // in: AccountTx*
 JSS(description);             // in/out: Reservations
-JSS(destination_account);     // in: PathRequest, RipplePathFind, account_lines
-                              // out: AccountChannels
-JSS(destination_amount);      // in: PathRequest, RipplePathFind
-JSS(destination_currencies);  // in: PathRequest, RipplePathFind
 JSS(destination_tag);         // in: PathRequest
                               // out: AccountChannels
 JSS(details);                 // out: Manifest, server_info
@@ -293,9 +271,6 @@ JSS(invalid_API_version);  // out: Many, when a request has an invalid
                            //      version
 JSS(io_latency_ms);        // out: NetworkOPs
 JSS(ip);                   // in: Connect, out: OverlayImpl
-JSS(issuer);               // in: RipplePathFind, Subscribe,
-                           //     Unsubscribe, BookOffers
-                           // out: STPathSet, STAmount
 JSS(job);
 JSS(job_queue);
 JSS(jobs);
@@ -410,8 +385,8 @@ JSS(node_writes_duration_us);    // out: GetCounts
 JSS(node_write_retries);         // out: GetCounts
 JSS(node_writes_delayed);        // out::GetCounts
 JSS(obligations);                // out: GatewayBalances
-JSS(offer);                      // in: LedgerEntry
-JSS(offers);                     // out: NetworkOPs, AccountOffers, Subscribe
+//JSS(offer);                      // in: LedgerEntry
+//JSS(offers);                     // out: NetworkOPs, AccountOffers, Subscribe
 JSS(offline);                    // in: TransactionSign
 JSS(offset);                     // in/out: AccountTxOld
 JSS(open);                       // out: handlers/Ledger
@@ -427,10 +402,6 @@ JSS(parent_hash);                 // out: LedgerToJson
 JSS(partition);                   // in: LogLevel
 JSS(passphrase);                  // in: WalletPropose
 JSS(password);                    // in: Subscribe
-JSS(paths);                       // in: RipplePathFind
-JSS(paths_canonical);             // out: RipplePathFind
-JSS(paths_computed);              // out: PathRequest, RipplePathFind
-JSS(payment_channel);             // in: LedgerEntry
 JSS(peer);                        // in: AccountLines
 JSS(peer_authorized);             // out: AccountLines
 JSS(peer_id);                     // out: RCLCxPeerPos
@@ -480,14 +451,13 @@ JSS(reserve_inc);           // out: NetworkOPs
 JSS(reserve_inc_xrp);       // out: NetworkOPs
 JSS(response);              // websocket
 JSS(result);                // RPC
-JSS(ripple_lines);          // out: NetworkOPs
-JSS(ripple_state);          // in: LedgerEntr
+//JSS(ripple_lines);          // out: NetworkOPs
+//JSS(ripple_state);          // in: LedgerEntr
 JSS(ripplerpc);             // ripple RPC version
 JSS(role);                  // out: Ping.cpp
 JSS(rpc);
 JSS(rt_accounts);  // in: Subscribe, Unsubscribe
 JSS(running_duration_us);
-JSS(search_depth);              // in: RipplePathFind
 JSS(searched_all);              // out: Tx
 JSS(secret);                    // in: TransactionSign,
                                 //     ValidationCreate, ValidationSeed,
@@ -495,7 +465,6 @@ JSS(secret);                    // in: TransactionSign,
 JSS(seed);                      //
 JSS(seed_hex);                  // in: WalletPropose, TransactionSign
 JSS(send_currencies);           // out: AccountCurrencies
-JSS(send_max);                  // in: PathRequest, RipplePathFind
 JSS(seq);                       // in: LedgerEntry;
                                 // out: NetworkOPs, RPCSub, AccountOffers,
                                 //      ValidatorList, ValidatorInfo, Manifest
@@ -518,9 +487,6 @@ JSS(signing_time);              // out: NetworkOPs
 JSS(signer_list);               // in: AccountObjects
 JSS(signer_lists);              // in/out: AccountInfo
 JSS(snapshot);                  // in: Subscribe
-JSS(source_account);            // in: PathRequest, RipplePathFind
-JSS(source_amount);             // in: PathRequest, RipplePathFind
-JSS(source_currencies);         // in: PathRequest, RipplePathFind
 JSS(source_tag);                // out: AccountChannels
 JSS(stand_alone);               // out: NetworkOPs
 JSS(start);                     // in: TxHistory

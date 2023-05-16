@@ -27,7 +27,6 @@
 #include <ripple/ledger/RawView.h>
 #include <ripple/ledger/ReadView.h>
 #include <ripple/protocol/Protocol.h>
-#include <ripple/protocol/Rate.h>
 #include <ripple/protocol/STLedgerEntry.h>
 #include <ripple/protocol/STObject.h>
 #include <ripple/protocol/STTx.h>
@@ -72,18 +71,6 @@ namespace ripple {
 [[nodiscard]] bool
 hasExpired(ReadView const& view, std::optional<std::uint32_t> const& exp);
 
-/** Controls the treatment of frozen account balances */
-enum FreezeHandling { fhIGNORE_FREEZE, fhZERO_IF_FROZEN };
-
-[[nodiscard]] bool
-isGlobalFrozen(ReadView const& view, AccountID const& issuer);
-
-[[nodiscard]] bool
-isFrozen(
-    ReadView const& view,
-    AccountID const& account,
-    Currency const& currency,
-    AccountID const& issuer);
 
 // Returns the amount an account can spend without going into debt.
 //
@@ -94,7 +81,6 @@ accountHolds(
     AccountID const& account,
     Currency const& currency,
     AccountID const& issuer,
-    FreezeHandling zeroIfFrozen,
     beast::Journal j);
 
 // Returns the amount an account can spend of the currency type saDefault, or
@@ -107,7 +93,6 @@ accountFunds(
     ReadView const& view,
     AccountID const& id,
     STAmount const& saDefault,
-    FreezeHandling freezeHandling,
     beast::Journal j);
 
 // Return the account's liquid (not reserved) XRP.  Generally prefer
@@ -172,9 +157,6 @@ forEachItemAfter(
 {
     return forEachItemAfter(view, keylet::ownerDir(id), after, hint, limit, f);
 }
-
-[[nodiscard]] Rate
-transferRate(ReadView const& view, AccountID const& issuer);
 
 /** Returns `true` if the directory is empty
     @param key The key of the directory
@@ -322,69 +304,11 @@ dirNext(
 [[nodiscard]] std::function<void(SLE::ref)>
 describeOwnerDir(AccountID const& account);
 
-// VFALCO NOTE Both STAmount parameters should just
-//             be "Amount", a unit-less number.
-//
-/** Create a trust line
-
-    This can set an initial balance.
-*/
-[[nodiscard]] TER
-trustCreate(
-    ApplyView& view,
-    const bool bSrcHigh,
-    AccountID const& uSrcAccountID,
-    AccountID const& uDstAccountID,
-    uint256 const& uIndex,      // --> ripple state entry
-    SLE::ref sleAccount,        // --> the account being set.
-    const bool bAuth,           // --> authorize account.
-    const bool bNoRipple,       // --> others cannot ripple through
-    const bool bFreeze,         // --> funds cannot leave
-    STAmount const& saBalance,  // --> balance of account being set.
-                                // Issuer should be noAccount()
-    STAmount const& saLimit,    // --> limit for account being set.
-                                // Issuer should be the account being set.
-    std::uint32_t uSrcQualityIn,
-    std::uint32_t uSrcQualityOut,
-    beast::Journal j);
-
-[[nodiscard]] TER
-trustDelete(
-    ApplyView& view,
-    std::shared_ptr<SLE> const& sleRippleState,
-    AccountID const& uLowAccountID,
-    AccountID const& uHighAccountID,
-    beast::Journal j);
-
-/** Delete an offer.
-
-    Requirements:
-        The passed `sle` be obtained from a prior
-        call to view.peek()
-*/
-// [[nodiscard]] // nodiscard commented out so Flow, BookTip and others compile.
-TER
-offerDelete(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j);
-
 //------------------------------------------------------------------------------
 
 //
 // Money Transfers
 //
-
-// Direct send w/o fees:
-// - Redeeming IOUs and/or sending sender's own IOUs.
-// - Create trust line of needed.
-// --> bCheckIssuer : normally require issuer to be involved.
-// [[nodiscard]] // nodiscard commented out so DirectStep.cpp compiles.
-TER
-rippleCredit(
-    ApplyView& view,
-    AccountID const& uSenderID,
-    AccountID const& uReceiverID,
-    const STAmount& saAmount,
-    bool bCheckIssuer,
-    beast::Journal j);
 
 [[nodiscard]] TER
 accountSend(
@@ -394,21 +318,6 @@ accountSend(
     const STAmount& saAmount,
     beast::Journal j);
 
-[[nodiscard]] TER
-issueIOU(
-    ApplyView& view,
-    AccountID const& account,
-    STAmount const& amount,
-    Issue const& issue,
-    beast::Journal j);
-
-[[nodiscard]] TER
-redeemIOU(
-    ApplyView& view,
-    AccountID const& account,
-    STAmount const& amount,
-    Issue const& issue,
-    beast::Journal j);
 
 [[nodiscard]] TER
 transferXRP(

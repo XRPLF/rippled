@@ -24,7 +24,6 @@
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/PublicKey.h>
-#include <ripple/protocol/Quality.h>
 #include <ripple/protocol/st.h>
 
 namespace ripple {
@@ -35,10 +34,6 @@ SetAccount::makeTxConsequences(PreflightContext const& ctx)
     // The SetAccount may be a blocker, but only if it sets or clears
     // specific account flags.
     auto getTxConsequencesCategory = [](STTx const& tx) {
-        if (std::uint32_t const uTxFlags = tx.getFlags();
-            uTxFlags & (tfRequireAuth | tfOptionalAuth))
-            return TxConsequences::blocker;
-
         if (auto const uSetFlag = tx[~sfSetFlag]; uSetFlag &&
             (*uSetFlag == asfRequireAuth || *uSetFlag == asfDisableMaster ||
              *uSetFlag == asfAccountTxnID))
@@ -82,20 +77,6 @@ SetAccount::preflight(PreflightContext const& ctx)
     }
 
     //
-    // RequireAuth
-    //
-    bool bSetRequireAuth =
-        (uTxFlags & tfRequireAuth) || (uSetFlag == asfRequireAuth);
-    bool bClearRequireAuth =
-        (uTxFlags & tfOptionalAuth) || (uClearFlag == asfRequireAuth);
-
-    if (bSetRequireAuth && bClearRequireAuth)
-    {
-        JLOG(j.trace()) << "Malformed transaction: Contradictory flags set.";
-        return temINVALID_FLAG;
-    }
-
-    //
     // RequireDestTag
     //
     bool bSetRequireDest =
@@ -123,38 +104,25 @@ SetAccount::preflight(PreflightContext const& ctx)
         return temINVALID_FLAG;
     }
 
-    // TransferRate
-    if (tx.isFieldPresent(sfTransferRate))
-    {
-        std::uint32_t uRate = tx.getFieldU32(sfTransferRate);
-
-        if (uRate && (uRate < QUALITY_ONE))
-        {
-            JLOG(j.trace())
-                << "Malformed transaction: Transfer rate too small.";
-            return temBAD_TRANSFER_RATE;
-        }
-
-        if (uRate > 2 * QUALITY_ONE)
-        {
-            JLOG(j.trace())
-                << "Malformed transaction: Transfer rate too large.";
-            return temBAD_TRANSFER_RATE;
-        }
-    }
-
-    // TickSize
-    if (tx.isFieldPresent(sfTickSize))
-    {
-        auto uTickSize = tx[sfTickSize];
-        if (uTickSize &&
-            ((uTickSize < Quality::minTickSize) ||
-             (uTickSize > Quality::maxTickSize)))
-        {
-            JLOG(j.trace()) << "Malformed transaction: Bad tick size.";
-            return temBAD_TICK_SIZE;
-        }
-    }
+//    // TransferRate
+//    if (tx.isFieldPresent(sfTransferRate))
+//    {
+//        std::uint32_t uRate = tx.getFieldU32(sfTransferRate);
+//
+//        if (uRate && (uRate < QUALITY_ONE))
+//        {
+//            JLOG(j.trace())
+//                << "Malformed transaction: Transfer rate too small.";
+//            return temBAD_TRANSFER_RATE;
+//        }
+//
+//        if (uRate > 2 * QUALITY_ONE)
+//        {
+//            JLOG(j.trace())
+//                << "Malformed transaction: Transfer rate too large.";
+//            return temBAD_TRANSFER_RATE;
+//        }
+//    }
 
     if (auto const mk = tx[~sfMessageKey])
     {
@@ -191,20 +159,22 @@ SetAccount::preclaim(PreclaimContext const& ctx)
     std::uint32_t const uSetFlag = ctx.tx.getFieldU32(sfSetFlag);
 
     // legacy AccountSet flags
-    bool bSetRequireAuth =
-        (uTxFlags & tfRequireAuth) || (uSetFlag == asfRequireAuth);
+//    bool bSetRequireAuth =
+//        (uTxFlags & tfRequireAuth) || (uSetFlag == asfRequireAuth);
 
     //
     // RequireAuth
     //
-    if (bSetRequireAuth && !(uFlagsIn & lsfRequireAuth))
-    {
-        if (!dirIsEmpty(ctx.view, keylet::ownerDir(id)))
-        {
-            JLOG(ctx.j.trace()) << "Retry: Owner directory not empty.";
-            return (ctx.flags & tapRETRY) ? TER{terOWNERS} : TER{tecOWNERS};
-        }
-    }
+//    if (bSetRequireAuth
+////        && !(uFlagsIn & lsfRequireAuth)
+//        )
+//    {
+//        if (!dirIsEmpty(ctx.view, keylet::ownerDir(id)))
+//        {
+//            JLOG(ctx.j.trace()) << "Retry: Owner directory not empty.";
+//            return (ctx.flags & tapRETRY) ? TER{terOWNERS} : TER{tecOWNERS};
+//        }
+//    }
 
     return tesSUCCESS;
 }
@@ -229,8 +199,6 @@ SetAccount::doApply()
         (uTxFlags & tfRequireDestTag) || (uSetFlag == asfRequireDest)};
     bool const bClearRequireDest{
         (uTxFlags & tfOptionalDestTag) || (uClearFlag == asfRequireDest)};
-    bool const bSetRequireAuth{
-        (uTxFlags & tfRequireAuth) || (uSetFlag == asfRequireAuth)};
     bool const bClearRequireAuth{
         (uTxFlags & tfOptionalAuth) || (uClearFlag == asfRequireAuth)};
     bool const bSetDisallowXRP{
@@ -250,21 +218,6 @@ SetAccount::doApply()
         }
         return false;
     }()};
-
-    //
-    // RequireAuth
-    //
-    if (bSetRequireAuth && !(uFlagsIn & lsfRequireAuth))
-    {
-        JLOG(j_.trace()) << "Set RequireAuth.";
-        uFlagsOut |= lsfRequireAuth;
-    }
-
-    if (bClearRequireAuth && (uFlagsIn & lsfRequireAuth))
-    {
-        JLOG(j_.trace()) << "Clear RequireAuth.";
-        uFlagsOut &= ~lsfRequireAuth;
-    }
 
     //
     // RequireDestTag
@@ -322,52 +275,6 @@ SetAccount::doApply()
     {
         JLOG(j_.trace()) << "Clear lsfDisableMaster.";
         uFlagsOut &= ~lsfDisableMaster;
-    }
-
-    //
-    // DefaultRipple
-    //
-    if (uSetFlag == asfDefaultRipple)
-    {
-        JLOG(j_.trace()) << "Set lsfDefaultRipple.";
-        uFlagsOut |= lsfDefaultRipple;
-    }
-    else if (uClearFlag == asfDefaultRipple)
-    {
-        JLOG(j_.trace()) << "Clear lsfDefaultRipple.";
-        uFlagsOut &= ~lsfDefaultRipple;
-    }
-
-    //
-    // NoFreeze
-    //
-    if (uSetFlag == asfNoFreeze)
-    {
-        if (!sigWithMaster && !(uFlagsIn & lsfDisableMaster))
-        {
-            JLOG(j_.trace()) << "Must use master key to set NoFreeze.";
-            return tecNEED_MASTER_KEY;
-        }
-
-        JLOG(j_.trace()) << "Set NoFreeze flag";
-        uFlagsOut |= lsfNoFreeze;
-    }
-
-    // Anyone may set global freeze
-    if (uSetFlag == asfGlobalFreeze)
-    {
-        JLOG(j_.trace()) << "Set GlobalFreeze flag";
-        uFlagsOut |= lsfGlobalFreeze;
-    }
-
-    // If you have set NoFreeze, you may not clear GlobalFreeze
-    // This prevents those who have set NoFreeze from using
-    // GlobalFreeze strategically.
-    if ((uSetFlag != asfGlobalFreeze) && (uClearFlag == asfGlobalFreeze) &&
-        ((uFlagsOut & lsfNoFreeze) == 0))
-    {
-        JLOG(j_.trace()) << "Clear GlobalFreeze flag";
-        uFlagsOut &= ~lsfGlobalFreeze;
     }
 
     //
@@ -459,52 +366,6 @@ SetAccount::doApply()
             JLOG(j_.trace()) << "set domain";
             sle->setFieldVL(sfDomain, domain);
         }
-    }
-
-    //
-    // TransferRate
-    //
-    if (tx.isFieldPresent(sfTransferRate))
-    {
-        std::uint32_t uRate = tx.getFieldU32(sfTransferRate);
-
-        if (uRate == 0 || uRate == QUALITY_ONE)
-        {
-            JLOG(j_.trace()) << "unset transfer rate";
-            sle->makeFieldAbsent(sfTransferRate);
-        }
-        else
-        {
-            JLOG(j_.trace()) << "set transfer rate";
-            sle->setFieldU32(sfTransferRate, uRate);
-        }
-    }
-
-    //
-    // TickSize
-    //
-    if (tx.isFieldPresent(sfTickSize))
-    {
-        auto uTickSize = tx[sfTickSize];
-        if ((uTickSize == 0) || (uTickSize == Quality::maxTickSize))
-        {
-            JLOG(j_.trace()) << "unset tick size";
-            sle->makeFieldAbsent(sfTickSize);
-        }
-        else
-        {
-            JLOG(j_.trace()) << "set tick size";
-            sle->setFieldU8(sfTickSize, uTickSize);
-        }
-    }
-
-    // Set or clear flags for disallowing various incoming instruments
-    if (ctx_.view().rules().enabled(featureDisallowIncoming))
-    {
-        if (uSetFlag == asfDisallowIncomingTrustline)
-            uFlagsOut |= lsfDisallowIncomingTrustline;
-        else if (uClearFlag == asfDisallowIncomingTrustline)
-            uFlagsOut &= ~lsfDisallowIncomingTrustline;
     }
 
     if (uFlagsIn != uFlagsOut)

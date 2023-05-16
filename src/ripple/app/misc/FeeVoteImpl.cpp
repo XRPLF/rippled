@@ -218,7 +218,7 @@ FeeVoteImpl::doVoting(
                          detail::VotableValue& value,
                          SF_AMOUNT const& xrpField) {
             if (auto const field = ~val->at(~xrpField);
-                field && field->native())
+                field && true)
             {
                 auto const vote = field->xrp();
                 if (isLegalAmountSigned(vote))

@@ -22,7 +22,6 @@
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/LedgerToJson.h>
-#include <ripple/app/ledger/OrderBookDB.h>
 #include <ripple/app/ledger/PendingSaves.h>
 #include <ripple/app/ledger/TransactionMaster.h>
 #include <ripple/app/main/Application.h>
@@ -652,10 +651,7 @@ Ledger::setup()
                                   std::optional<STAmount> const& src) {
                     if (src)
                     {
-                        if (src->native())
-                            dest = src->xrp();
-                        else
-                            ret = false;
+                        dest = src->xrp();
                     }
                 };
                 assign(fees_.base, baseFeeXRP);

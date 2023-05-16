@@ -25,7 +25,6 @@
 #include <ripple/app/ledger/LedgerToJson.h>
 #include <ripple/app/ledger/LocalTxs.h>
 #include <ripple/app/ledger/OpenLedger.h>
-#include <ripple/app/ledger/OrderBookDB.h>
 #include <ripple/app/ledger/TransactionMaster.h>
 #include <ripple/app/main/LoadManager.h>
 #include <ripple/app/misc/AmendmentTable.h>
@@ -62,7 +61,6 @@
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/resource/ResourceManager.h>
-#include <ripple/rpc/BookChanges.h>
 #include <ripple/rpc/DeliveredAmount.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 #include <boost/asio/ip/host_name.hpp>
@@ -339,15 +337,15 @@ public:
     // Book functions.
     //
 
-    void
-    getBookPage(
-        std::shared_ptr<ReadView const>& lpLedger,
-        Book const&,
-        AccountID const& uTakerID,
-        const bool bProof,
-        unsigned int iLimit,
-        Json::Value const& jvMarker,
-        Json::Value& jvResult) override;
+//    void
+//    getBookPage(
+//        std::shared_ptr<ReadView const>& lpLedger,
+//        Book const&,
+//        AccountID const& uTakerID,
+//        const bool bProof,
+//        unsigned int iLimit,
+//        Json::Value const& jvMarker,
+//        Json::Value& jvResult) override;
 
     // Ledger proposal/close functions.
     bool
@@ -503,10 +501,10 @@ public:
     bool
     unsubLedger(std::uint64_t uListener) override;
 
-    bool
-    subBookChanges(InfoSub::ref ispListener) override;
-    bool
-    unsubBookChanges(std::uint64_t uListener) override;
+//    bool
+//    subBookChanges(InfoSub::ref ispListener) override;
+//    bool
+//    unsubBookChanges(std::uint64_t uListener) override;
 
     bool
     subServer(InfoSub::ref ispListener, Json::Value& jvResult, bool admin)
@@ -514,10 +512,10 @@ public:
     bool
     unsubServer(std::uint64_t uListener) override;
 
-    bool
-    subBook(InfoSub::ref ispListener, Book const&) override;
-    bool
-    unsubBook(std::uint64_t uListener, Book const&) override;
+//    bool
+//    subBook(InfoSub::ref ispListener, Book const&) override;
+//    bool
+//    unsubBook(std::uint64_t uListener, Book const&) override;
 
     bool
     subManifests(InfoSub::ref ispListener) override;
@@ -749,9 +747,9 @@ private:
         sValidations,     // Received validations.
         sPeerStatus,      // Peer status changes.
         sConsensusPhase,  // Consensus phase
-        sBookChanges,     // Per-ledger order book changes
+//        sBookChanges,     // Per-ledger order book changes
 
-        sLastEntry = sBookChanges  // as this name implies, any new entry
+        sLastEntry = sConsensusPhase  // as this name implies, any new entry
                                    // must be ADDED ABOVE this one
     };
     std::array<SubMapType, SubTypes::sLastEntry + 1> mStreamMaps;
@@ -1536,26 +1534,6 @@ NetworkOPsImp::getOwnerInfo(
 
                 switch (sleCur->getType())
                 {
-                    case ltOFFER:
-                        if (!jvObjects.isMember(jss::offers))
-                            jvObjects[jss::offers] =
-                                Json::Value(Json::arrayValue);
-
-                        jvObjects[jss::offers].append(
-                            sleCur->getJson(JsonOptions::none));
-                        break;
-
-                    case ltRIPPLE_STATE:
-                        if (!jvObjects.isMember(jss::ripple_lines))
-                        {
-                            jvObjects[jss::ripple_lines] =
-                                Json::Value(Json::arrayValue);
-                        }
-
-                        jvObjects[jss::ripple_lines].append(
-                            sleCur->getJson(JsonOptions::none));
-                        break;
-
                     case ltACCOUNT_ROOT:
                     case ltDIR_NODE:
                     default:
@@ -2183,16 +2161,15 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
 
         // (The ~ operator converts the Proxy to a std::optional, which
         //  simplifies later operations)
-        if (auto const baseFeeXRP = ~val->at(~sfBaseFeeDrops);
-            baseFeeXRP && baseFeeXRP->native())
+        if (auto const baseFeeXRP = ~val->at(~sfBaseFeeDrops); baseFeeXRP)
             jvObj[jss::base_fee] = baseFeeXRP->xrp().jsonClipped();
 
         if (auto const reserveBaseXRP = ~val->at(~sfReserveBaseDrops);
-            reserveBaseXRP && reserveBaseXRP->native())
+            reserveBaseXRP)
             jvObj[jss::reserve_base] = reserveBaseXRP->xrp().jsonClipped();
 
         if (auto const reserveIncXRP = ~val->at(~sfReserveIncrementDrops);
-            reserveIncXRP && reserveIncXRP->native())
+            reserveIncXRP)
             jvObj[jss::reserve_inc] = reserveIncXRP->xrp().jsonClipped();
 
         for (auto i = mStreamMaps[sValidations].begin();
@@ -2928,23 +2905,23 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
             }
         }
 
-        if (!mStreamMaps[sBookChanges].empty())
-        {
-            Json::Value jvObj = ripple::RPC::computeBookChanges(lpAccepted);
-
-            auto it = mStreamMaps[sBookChanges].begin();
-            while (it != mStreamMaps[sBookChanges].end())
-            {
-                InfoSub::pointer p = it->second.lock();
-                if (p)
-                {
-                    p->send(jvObj, true);
-                    ++it;
-                }
-                else
-                    it = mStreamMaps[sBookChanges].erase(it);
-            }
-        }
+//        if (!mStreamMaps[sBookChanges].empty())
+//        {
+//            Json::Value jvObj = ripple::RPC::computeBookChanges(lpAccepted);
+//
+//            auto it = mStreamMaps[sBookChanges].begin();
+//            while (it != mStreamMaps[sBookChanges].end())
+//            {
+//                InfoSub::pointer p = it->second.lock();
+//                if (p)
+//                {
+//                    p->send(jvObj, true);
+//                    ++it;
+//                }
+//                else
+//                    it = mStreamMaps[sBookChanges].erase(it);
+//            }
+//        }
 
         {
             static bool firstTime = true;
@@ -3067,7 +3044,7 @@ NetworkOPsImp::transJson(
                 *ledger,
                 account,
                 amount,
-                fhIGNORE_FREEZE,
+//                fhIGNORE_FREEZE,
                 app_.journal("View"));
             jvObj[jss::transaction][jss::owner_funds] = ownerFunds.getText();
         }
@@ -3125,8 +3102,8 @@ NetworkOPsImp::pubValidatedTransaction(
         }
     }
 
-    if (transaction.getResult() == tesSUCCESS)
-        app_.getOrderBookDB().processTxn(ledger, transaction, jvObj);
+//    if (transaction.getResult() == tesSUCCESS)
+//        app_.getOrderBookDB().processTxn(ledger, transaction, jvObj);
 
     pubAccountTransaction(ledger, transaction);
 }
@@ -3857,25 +3834,6 @@ NetworkOPsImp::unsubAccountHistoryInternal(
     }
 }
 
-bool
-NetworkOPsImp::subBook(InfoSub::ref isrListener, Book const& book)
-{
-    if (auto listeners = app_.getOrderBookDB().makeBookListeners(book))
-        listeners->addSubscriber(isrListener);
-    else
-        assert(false);
-    return true;
-}
-
-bool
-NetworkOPsImp::unsubBook(std::uint64_t uSeq, Book const& book)
-{
-    if (auto listeners = app_.getOrderBookDB().getBookListeners(book))
-        listeners->removeSubscriber(uSeq);
-
-    return true;
-}
-
 std::uint32_t
 NetworkOPsImp::acceptLedger(
     std::optional<std::chrono::milliseconds> consensusDelay)
@@ -3925,30 +3883,12 @@ NetworkOPsImp::subLedger(InfoSub::ref isrListener, Json::Value& jvResult)
         .second;
 }
 
-// <-- bool: true=added, false=already there
-bool
-NetworkOPsImp::subBookChanges(InfoSub::ref isrListener)
-{
-    std::lock_guard sl(mSubLock);
-    return mStreamMaps[sBookChanges]
-        .emplace(isrListener->getSeq(), isrListener)
-        .second;
-}
-
 // <-- bool: true=erased, false=was not there
 bool
 NetworkOPsImp::unsubLedger(std::uint64_t uSeq)
 {
     std::lock_guard sl(mSubLock);
     return mStreamMaps[sLedger].erase(uSeq);
-}
-
-// <-- bool: true=erased, false=was not there
-bool
-NetworkOPsImp::unsubBookChanges(std::uint64_t uSeq)
-{
-    std::lock_guard sl(mSubLock);
-    return mStreamMaps[sBookChanges].erase(uSeq);
 }
 
 // <-- bool: true=added, false=already there
@@ -4145,351 +4085,6 @@ NetworkOPsImp::tryRemoveRpcSub(std::string const& strUrl)
     mRpcSubMap.erase(strUrl);
     return true;
 }
-
-#ifndef USE_NEW_BOOK_PAGE
-
-// NIKB FIXME this should be looked at. There's no reason why this shouldn't
-//            work, but it demonstrated poor performance.
-//
-void
-NetworkOPsImp::getBookPage(
-    std::shared_ptr<ReadView const>& lpLedger,
-    Book const& book,
-    AccountID const& uTakerID,
-    bool const bProof,
-    unsigned int iLimit,
-    Json::Value const& jvMarker,
-    Json::Value& jvResult)
-{  // CAUTION: This is the old get book page logic
-    Json::Value& jvOffers =
-        (jvResult[jss::offers] = Json::Value(Json::arrayValue));
-
-    std::unordered_map<AccountID, STAmount> umBalance;
-    const uint256 uBookBase = getBookBase(book);
-    const uint256 uBookEnd = getQualityNext(uBookBase);
-    uint256 uTipIndex = uBookBase;
-
-    if (auto stream = m_journal.trace())
-    {
-        stream << "getBookPage:" << book;
-        stream << "getBookPage: uBookBase=" << uBookBase;
-        stream << "getBookPage: uBookEnd=" << uBookEnd;
-        stream << "getBookPage: uTipIndex=" << uTipIndex;
-    }
-
-    ReadView const& view = *lpLedger;
-
-    bool const bGlobalFreeze = isGlobalFrozen(view, book.out.account) ||
-        isGlobalFrozen(view, book.in.account);
-
-    bool bDone = false;
-    bool bDirectAdvance = true;
-
-    std::shared_ptr<SLE const> sleOfferDir;
-    uint256 offerIndex;
-    unsigned int uBookEntry;
-    STAmount saDirRate;
-
-    auto const rate = transferRate(view, book.out.account);
-    auto viewJ = app_.journal("View");
-
-    while (!bDone && iLimit-- > 0)
-    {
-        if (bDirectAdvance)
-        {
-            bDirectAdvance = false;
-
-            JLOG(m_journal.trace()) << "getBookPage: bDirectAdvance";
-
-            auto const ledgerIndex = view.succ(uTipIndex, uBookEnd);
-            if (ledgerIndex)
-                sleOfferDir = view.read(keylet::page(*ledgerIndex));
-            else
-                sleOfferDir.reset();
-
-            if (!sleOfferDir)
-            {
-                JLOG(m_journal.trace()) << "getBookPage: bDone";
-                bDone = true;
-            }
-            else
-            {
-                uTipIndex = sleOfferDir->key();
-                saDirRate = amountFromQuality(getQuality(uTipIndex));
-
-                cdirFirst(view, uTipIndex, sleOfferDir, uBookEntry, offerIndex);
-
-                JLOG(m_journal.trace())
-                    << "getBookPage:   uTipIndex=" << uTipIndex;
-                JLOG(m_journal.trace())
-                    << "getBookPage: offerIndex=" << offerIndex;
-            }
-        }
-
-        if (!bDone)
-        {
-            auto sleOffer = view.read(keylet::offer(offerIndex));
-
-            if (sleOffer)
-            {
-                auto const uOfferOwnerID = sleOffer->getAccountID(sfAccount);
-                auto const& saTakerGets = sleOffer->getFieldAmount(sfTakerGets);
-                auto const& saTakerPays = sleOffer->getFieldAmount(sfTakerPays);
-                STAmount saOwnerFunds;
-                bool firstOwnerOffer(true);
-
-                if (book.out.account == uOfferOwnerID)
-                {
-                    // If an offer is selling issuer's own IOUs, it is fully
-                    // funded.
-                    saOwnerFunds = saTakerGets;
-                }
-                else if (bGlobalFreeze)
-                {
-                    // If either asset is globally frozen, consider all offers
-                    // that aren't ours to be totally unfunded
-                    saOwnerFunds.clear(book.out);
-                }
-                else
-                {
-                    auto umBalanceEntry = umBalance.find(uOfferOwnerID);
-                    if (umBalanceEntry != umBalance.end())
-                    {
-                        // Found in running balance table.
-
-                        saOwnerFunds = umBalanceEntry->second;
-                        firstOwnerOffer = false;
-                    }
-                    else
-                    {
-                        // Did not find balance in table.
-
-                        saOwnerFunds = accountHolds(
-                            view,
-                            uOfferOwnerID,
-                            book.out.currency,
-                            book.out.account,
-                            fhZERO_IF_FROZEN,
-                            viewJ);
-
-                        if (saOwnerFunds < beast::zero)
-                        {
-                            // Treat negative funds as zero.
-
-                            saOwnerFunds.clear();
-                        }
-                    }
-                }
-
-                Json::Value jvOffer = sleOffer->getJson(JsonOptions::none);
-
-                STAmount saTakerGetsFunded;
-                STAmount saOwnerFundsLimit = saOwnerFunds;
-                Rate offerRate = parityRate;
-
-                if (rate != parityRate
-                    // Have a tranfer fee.
-                    && uTakerID != book.out.account
-                    // Not taking offers of own IOUs.
-                    && book.out.account != uOfferOwnerID)
-                // Offer owner not issuing ownfunds
-                {
-                    // Need to charge a transfer fee to offer owner.
-                    offerRate = rate;
-                    saOwnerFundsLimit = divide(saOwnerFunds, offerRate);
-                }
-
-                if (saOwnerFundsLimit >= saTakerGets)
-                {
-                    // Sufficient funds no shenanigans.
-                    saTakerGetsFunded = saTakerGets;
-                }
-                else
-                {
-                    // Only provide, if not fully funded.
-
-                    saTakerGetsFunded = saOwnerFundsLimit;
-
-                    saTakerGetsFunded.setJson(jvOffer[jss::taker_gets_funded]);
-                    std::min(
-                        saTakerPays,
-                        multiply(
-                            saTakerGetsFunded, saDirRate, saTakerPays.issue()))
-                        .setJson(jvOffer[jss::taker_pays_funded]);
-                }
-
-                STAmount saOwnerPays = (parityRate == offerRate)
-                    ? saTakerGetsFunded
-                    : std::min(
-                          saOwnerFunds, multiply(saTakerGetsFunded, offerRate));
-
-                umBalance[uOfferOwnerID] = saOwnerFunds - saOwnerPays;
-
-                // Include all offers funded and unfunded
-                Json::Value& jvOf = jvOffers.append(jvOffer);
-                jvOf[jss::quality] = saDirRate.getText();
-
-                if (firstOwnerOffer)
-                    jvOf[jss::owner_funds] = saOwnerFunds.getText();
-            }
-            else
-            {
-                JLOG(m_journal.warn()) << "Missing offer";
-            }
-
-            if (!cdirNext(view, uTipIndex, sleOfferDir, uBookEntry, offerIndex))
-            {
-                bDirectAdvance = true;
-            }
-            else
-            {
-                JLOG(m_journal.trace())
-                    << "getBookPage: offerIndex=" << offerIndex;
-            }
-        }
-    }
-
-    //  jvResult[jss::marker]  = Json::Value(Json::arrayValue);
-    //  jvResult[jss::nodes]   = Json::Value(Json::arrayValue);
-}
-
-#else
-
-// This is the new code that uses the book iterators
-// It has temporarily been disabled
-
-void
-NetworkOPsImp::getBookPage(
-    std::shared_ptr<ReadView const> lpLedger,
-    Book const& book,
-    AccountID const& uTakerID,
-    bool const bProof,
-    unsigned int iLimit,
-    Json::Value const& jvMarker,
-    Json::Value& jvResult)
-{
-    auto& jvOffers = (jvResult[jss::offers] = Json::Value(Json::arrayValue));
-
-    std::map<AccountID, STAmount> umBalance;
-
-    MetaView lesActive(lpLedger, tapNONE, true);
-    OrderBookIterator obIterator(lesActive, book);
-
-    auto const rate = transferRate(lesActive, book.out.account);
-
-    const bool bGlobalFreeze = lesActive.isGlobalFrozen(book.out.account) ||
-        lesActive.isGlobalFrozen(book.in.account);
-
-    while (iLimit-- > 0 && obIterator.nextOffer())
-    {
-        SLE::pointer sleOffer = obIterator.getCurrentOffer();
-        if (sleOffer)
-        {
-            auto const uOfferOwnerID = sleOffer->getAccountID(sfAccount);
-            auto const& saTakerGets = sleOffer->getFieldAmount(sfTakerGets);
-            auto const& saTakerPays = sleOffer->getFieldAmount(sfTakerPays);
-            STAmount saDirRate = obIterator.getCurrentRate();
-            STAmount saOwnerFunds;
-
-            if (book.out.account == uOfferOwnerID)
-            {
-                // If offer is selling issuer's own IOUs, it is fully funded.
-                saOwnerFunds = saTakerGets;
-            }
-            else if (bGlobalFreeze)
-            {
-                // If either asset is globally frozen, consider all offers
-                // that aren't ours to be totally unfunded
-                saOwnerFunds.clear(book.out);
-            }
-            else
-            {
-                auto umBalanceEntry = umBalance.find(uOfferOwnerID);
-
-                if (umBalanceEntry != umBalance.end())
-                {
-                    // Found in running balance table.
-
-                    saOwnerFunds = umBalanceEntry->second;
-                }
-                else
-                {
-                    // Did not find balance in table.
-
-                    saOwnerFunds = lesActive.accountHolds(
-                        uOfferOwnerID,
-                        book.out.currency,
-                        book.out.account,
-                        fhZERO_IF_FROZEN);
-
-                    if (saOwnerFunds.isNegative())
-                    {
-                        // Treat negative funds as zero.
-
-                        saOwnerFunds.zero();
-                    }
-                }
-            }
-
-            Json::Value jvOffer = sleOffer->getJson(JsonOptions::none);
-
-            STAmount saTakerGetsFunded;
-            STAmount saOwnerFundsLimit = saOwnerFunds;
-            Rate offerRate = parityRate;
-
-            if (rate != parityRate
-                // Have a tranfer fee.
-                && uTakerID != book.out.account
-                // Not taking offers of own IOUs.
-                && book.out.account != uOfferOwnerID)
-            // Offer owner not issuing ownfunds
-            {
-                // Need to charge a transfer fee to offer owner.
-                offerRate = rate;
-                saOwnerFundsLimit = divide(saOwnerFunds, offerRate);
-            }
-
-            if (saOwnerFundsLimit >= saTakerGets)
-            {
-                // Sufficient funds no shenanigans.
-                saTakerGetsFunded = saTakerGets;
-            }
-            else
-            {
-                // Only provide, if not fully funded.
-                saTakerGetsFunded = saOwnerFundsLimit;
-
-                saTakerGetsFunded.setJson(jvOffer[jss::taker_gets_funded]);
-
-                // TOOD(tom): The result of this expression is not used - what's
-                // going on here?
-                std::min(
-                    saTakerPays,
-                    multiply(saTakerGetsFunded, saDirRate, saTakerPays.issue()))
-                    .setJson(jvOffer[jss::taker_pays_funded]);
-            }
-
-            STAmount saOwnerPays = (parityRate == offerRate)
-                ? saTakerGetsFunded
-                : std::min(
-                      saOwnerFunds, multiply(saTakerGetsFunded, offerRate));
-
-            umBalance[uOfferOwnerID] = saOwnerFunds - saOwnerPays;
-
-            if (!saOwnerFunds.isZero() || uOfferOwnerID == uTakerID)
-            {
-                // Only provide funded offers and offers of the taker.
-                Json::Value& jvOf = jvOffers.append(jvOffer);
-                jvOf[jss::quality] = saDirRate.getText();
-            }
-        }
-    }
-
-    //  jvResult[jss::marker]  = Json::Value(Json::arrayValue);
-    //  jvResult[jss::nodes]   = Json::Value(Json::arrayValue);
-}
-
-#endif
 
 inline void
 NetworkOPsImp::collect_metrics()

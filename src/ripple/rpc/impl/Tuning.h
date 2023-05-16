@@ -33,28 +33,11 @@ struct LimitRange
     unsigned int rmin, rdefault, rmax;
 };
 
-/** Limits for the account_lines command. */
-static LimitRange constexpr accountLines = {10, 200, 400};
-
-/** Limits for the account_channels command. */
-static LimitRange constexpr accountChannels = {10, 200, 400};
-
 /** Limits for the account_objects command. */
 static LimitRange constexpr accountObjects = {10, 200, 400};
 
-/** Limits for the account_offers command. */
-static LimitRange constexpr accountOffers = {10, 200, 400};
-
-/** Limits for the book_offers command. */
-static LimitRange constexpr bookOffers = {0, 60, 100};
-
-/** Limits for the no_ripple_check command. */
-static LimitRange constexpr noRippleCheck = {10, 300, 400};
-
 static int constexpr defaultAutoFillFeeMultiplier = 10;
 static int constexpr defaultAutoFillFeeDivisor = 1;
-static int constexpr maxPathfindsInProgress = 2;
-static int constexpr maxPathfindJobCount = 50;
 static int constexpr maxJobQueueClients = 500;
 auto constexpr maxValidatedLedgerAge = std::chrono::minutes{2};
 static int constexpr maxRequestSize = 1000000;

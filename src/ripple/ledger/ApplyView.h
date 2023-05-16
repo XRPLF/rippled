@@ -274,12 +274,6 @@ public:
         Keylet const& key,
         std::function<void(std::shared_ptr<SLE> const&)> const& describe)
     {
-        if (key.type != ltOFFER)
-        {
-            assert(!"Only Offers are appended to book directories.  "
-                "Call dirInsert() instead.");
-            return std::nullopt;
-        }
         return dirAdd(true, directory, key.key, describe);
     }
     /** @} */

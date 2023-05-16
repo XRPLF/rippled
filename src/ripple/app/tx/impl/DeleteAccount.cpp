@@ -68,17 +68,6 @@ using DeleterFuncPtr = TER (*)(
     beast::Journal j);
 
 // Local function definitions that provides signature compatibility.
-TER
-offerDelete(
-    Application& app,
-    ApplyView& view,
-    AccountID const& account,
-    uint256 const& delIndex,
-    std::shared_ptr<SLE> const& sleDel,
-    beast::Journal j)
-{
-    return offerDelete(view, sleDel, j);
-}
 
 TER
 removeSignersFromLedger(
@@ -92,18 +81,6 @@ removeSignersFromLedger(
     return SetSignerList::removeFromLedger(app, view, account, j);
 }
 
-TER
-removeTicketFromLedger(
-    Application&,
-    ApplyView& view,
-    AccountID const& account,
-    uint256 const& delIndex,
-    std::shared_ptr<SLE> const&,
-    beast::Journal j)
-{
-    return Transactor::ticketDelete(view, account, delIndex, j);
-}
-
 // Return nullptr if the LedgerEntryType represents an obligation that can't
 // be deleted.  Otherwise return the pointer to the function that can delete
 // the non-obligation
@@ -112,8 +89,6 @@ nonObligationDeleter(LedgerEntryType t)
 {
     switch (t)
     {
-        case ltOFFER:
-            return offerDelete;
         case ltSIGNER_LIST:
             return removeSignersFromLedger;
         default:

@@ -25,7 +25,6 @@
 #include <ripple/app/ledger/LedgerReplayer.h>
 #include <ripple/app/ledger/LedgerToJson.h>
 #include <ripple/app/ledger/OpenLedger.h>
-#include <ripple/app/ledger/OrderBookDB.h>
 #include <ripple/app/ledger/PendingSaves.h>
 #include <ripple/app/ledger/TransactionMaster.h>
 #include <ripple/app/main/Application.h>
@@ -44,7 +43,6 @@
 #include <ripple/app/misc/TxQ.h>
 #include <ripple/app/misc/ValidatorKeys.h>
 #include <ripple/app/misc/ValidatorSite.h>
-#include <ripple/app/paths/PathRequests.h>
 #include <ripple/app/rdb/Wallet.h>
 #include <ripple/app/rdb/backend/PostgresDatabase.h>
 #include <ripple/app/reporting/ReportingETL.h>
@@ -196,8 +194,7 @@ public:
     std::unique_ptr<ShardFamily> shardFamily_;
     std::unique_ptr<RPC::ShardArchiveHandler> shardArchiveHandler_;
     // VFALCO TODO Make OrderBookDB abstract
-    OrderBookDB m_orderBookDB;
-    std::unique_ptr<PathRequests> m_pathRequests;
+//    OrderBookDB m_orderBookDB;
     std::unique_ptr<LedgerMaster> m_ledgerMaster;
     std::unique_ptr<LedgerCleaner> ledgerCleaner_;
     std::unique_ptr<InboundLedgers> m_inboundLedgers;
@@ -367,12 +364,7 @@ public:
               4,
               logs_->journal("ShardStore")))
 
-        , m_orderBookDB(*this)
-
-        , m_pathRequests(std::make_unique<PathRequests>(
-              *this,
-              logs_->journal("PathRequest"),
-              m_collectorManager->collector()))
+//        , m_orderBookDB(*this)
 
         , m_ledgerMaster(std::make_unique<LedgerMaster>(
               *this,
@@ -765,17 +757,11 @@ public:
         return *m_resourceManager;
     }
 
-    OrderBookDB&
-    getOrderBookDB() override
-    {
-        return m_orderBookDB;
-    }
-
-    PathRequests&
-    getPathRequests() override
-    {
-        return *m_pathRequests;
-    }
+//    OrderBookDB&
+//    getOrderBookDB() override
+//    {
+//        return m_orderBookDB;
+//    }
 
     CachedSLEs&
     cachedSLEs() override
@@ -1220,7 +1206,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
             logs_->journal("Amendments"));
     }
 
-    Pathfinder::initPathTable();
+//    Pathfinder::initPathTable();
 
     auto const startUp = config_->START_UP;
     JLOG(m_journal.debug()) << "startUp: " << startUp;
@@ -1272,8 +1258,8 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         }
     }
 
-    if (!config().reporting())
-        m_orderBookDB.setup(getLedgerMaster().getCurrentLedger());
+//    if (!config().reporting())
+//        m_orderBookDB.setup(getLedgerMaster().getCurrentLedger());
 
     nodeIdentity_ = getNodeIdentity(*this, cmdline);
 

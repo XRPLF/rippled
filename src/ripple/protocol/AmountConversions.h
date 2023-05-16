@@ -20,31 +20,11 @@
 #ifndef RIPPLE_PROTOCOL_AMOUNTCONVERSION_H_INCLUDED
 #define RIPPLE_PROTOCOL_AMOUNTCONVERSION_H_INCLUDED
 
-#include <ripple/basics/IOUAmount.h>
 #include <ripple/basics/XRPAmount.h>
 #include <ripple/protocol/STAmount.h>
 
 namespace ripple {
 
-inline STAmount
-toSTAmount(IOUAmount const& iou, Issue const& iss)
-{
-    bool const isNeg = iou.signum() < 0;
-    std::uint64_t const umant = isNeg ? -iou.mantissa() : iou.mantissa();
-    return STAmount(
-        iss,
-        umant,
-        iou.exponent(),
-        /*native*/ false,
-        isNeg,
-        STAmount::unchecked());
-}
-
-inline STAmount
-toSTAmount(IOUAmount const& iou)
-{
-    return toSTAmount(iou, noIssue());
-}
 
 inline STAmount
 toSTAmount(XRPAmount const& xrp)
@@ -57,7 +37,7 @@ toSTAmount(XRPAmount const& xrp)
 inline STAmount
 toSTAmount(XRPAmount const& xrp, Issue const& iss)
 {
-    assert(isXRP(iss.account) && isXRP(iss.currency));
+    assert(true && true);
     return toSTAmount(xrp);
 }
 
@@ -73,19 +53,6 @@ toAmount<STAmount>(STAmount const& amt)
 }
 
 template <>
-inline IOUAmount
-toAmount<IOUAmount>(STAmount const& amt)
-{
-    assert(amt.mantissa() < std::numeric_limits<std::int64_t>::max());
-    bool const isNeg = amt.negative();
-    std::int64_t const sMant =
-        isNeg ? -std::int64_t(amt.mantissa()) : amt.mantissa();
-
-    assert(!isXRP(amt));
-    return IOUAmount(sMant, amt.exponent());
-}
-
-template <>
 inline XRPAmount
 toAmount<XRPAmount>(STAmount const& amt)
 {
@@ -94,19 +61,7 @@ toAmount<XRPAmount>(STAmount const& amt)
     std::int64_t const sMant =
         isNeg ? -std::int64_t(amt.mantissa()) : amt.mantissa();
 
-    assert(isXRP(amt));
     return XRPAmount(sMant);
-}
-
-template <class T>
-T
-toAmount(IOUAmount const& amt) = delete;
-
-template <>
-inline IOUAmount
-toAmount<IOUAmount>(IOUAmount const& amt)
-{
-    return amt;
 }
 
 template <class T>

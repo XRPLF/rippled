@@ -23,7 +23,6 @@
 #include <ripple/app/misc/LoadFeeTrack.h>
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/app/misc/TxQ.h>
-#include <ripple/app/paths/Pathfinder.h>
 #include <ripple/app/tx/apply.h>  // Validity::Valid
 #include <ripple/basics/Log.h>
 #include <ripple/basics/mulDiv.h>
@@ -35,7 +34,6 @@
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/protocol/Sign.h>
 #include <ripple/protocol/TxFlags.h>
-#include <ripple/rpc/impl/LegacyPathFind.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 #include <ripple/rpc/impl/TransactionSign.h>
 #include <ripple/rpc/impl/Tuning.h>
@@ -188,69 +186,70 @@ checkPayment(
             rpcINVALID_PARAMS,
             "Field 'build_path' not allowed in this context.");
 
-    if (tx_json.isMember(jss::Paths) && params.isMember(jss::build_path))
-        return RPC::make_error(
-            rpcINVALID_PARAMS,
-            "Cannot specify both 'tx_json.Paths' and 'build_path'");
-
-    if (!tx_json.isMember(jss::Paths) && params.isMember(jss::build_path))
-    {
-        STAmount sendMax;
-
-        if (tx_json.isMember(jss::SendMax))
-        {
-            if (!amountFromJsonNoThrow(sendMax, tx_json[jss::SendMax]))
-                return RPC::invalid_field_error("tx_json.SendMax");
-        }
-        else
-        {
-            // If no SendMax, default to Amount with sender as issuer.
-            sendMax = amount;
-            sendMax.setIssuer(srcAddressID);
-        }
-
-        if (sendMax.native() && amount.native())
-            return RPC::make_error(
-                rpcINVALID_PARAMS, "Cannot build XRP to XRP paths.");
-
-        {
-            LegacyPathFind lpf(isUnlimited(role), app);
-            if (!lpf.isOk())
-                return rpcError(rpcTOO_BUSY);
-
-            STPathSet result;
-
-            if (auto ledger = app.openLedger().current())
-            {
-                Pathfinder pf(
-                    std::make_shared<RippleLineCache>(
-                        ledger, app.journal("RippleLineCache")),
-                    srcAddressID,
-                    *dstAccountID,
-                    sendMax.issue().currency,
-                    sendMax.issue().account,
-                    amount,
-                    std::nullopt,
-                    app);
-                if (pf.findPaths(app.config().PATH_SEARCH_OLD))
-                {
-                    // 4 is the maxium paths
-                    pf.computePathRanks(4);
-                    STPath fullLiquidityPath;
-                    STPathSet paths;
-                    result = pf.getBestPaths(
-                        4, fullLiquidityPath, paths, sendMax.issue().account);
-                }
-            }
-
-            auto j = app.journal("RPCHandler");
-            JLOG(j.debug()) << "transactionSign: build_path: "
-                            << result.getJson(JsonOptions::none);
-
-            if (!result.empty())
-                tx_json[jss::Paths] = result.getJson(JsonOptions::none);
-        }
-    }
+//    if (tx_json.isMember(jss::Paths) && params.isMember(jss::build_path))
+//        return RPC::make_error(
+//            rpcINVALID_PARAMS,
+//            "Cannot specify both 'tx_json.Paths' and 'build_path'");
+//
+//    if (!tx_json.isMember(jss::Paths) && params.isMember(jss::build_path))
+//    {
+//        STAmount sendMax;
+//
+//        if (tx_json.isMember(jss::SendMax))
+//        {
+//            if (!amountFromJsonNoThrow(sendMax, tx_json[jss::SendMax]))
+//                return RPC::invalid_field_error("tx_json.SendMax");
+//        }
+//        else
+//        {
+//            // If no SendMax, default to Amount with sender as issuer.
+//            sendMax = amount;
+//            sendMax.setIssuer(srcAddressID);
+//        }
+//
+//        return RPC::make_error(
+//            rpcINVALID_PARAMS, "Cannot build XRP to XRP paths.");
+//
+//        //        {
+//        //            LegacyPathFind lpf(isUnlimited(role), app);
+//        //            if (!lpf.isOk())
+//        //                return rpcError(rpcTOO_BUSY);
+//        //
+//        //            STPathSet result;
+//        //
+//        //            if (auto ledger = app.openLedger().current())
+//        //            {
+//        //                Pathfinder pf(
+//        //                    std::make_shared<RippleLineCache>(
+//        //                        ledger, app.journal("RippleLineCache")),
+//        //                    srcAddressID,
+//        //                    *dstAccountID,
+//        //                    sendMax.issue().currency,
+//        //                    sendMax.issue().account,
+//        //                    amount,
+//        //                    std::nullopt,
+//        //                    app);
+//        //                if (pf.findPaths(app.config().PATH_SEARCH_OLD))
+//        //                {
+//        //                    // 4 is the maxium paths
+//        //                    pf.computePathRanks(4);
+//        //                    STPath fullLiquidityPath;
+//        //                    STPathSet paths;
+//        //                    result = pf.getBestPaths(
+//        //                        4, fullLiquidityPath, paths,
+//        //                        sendMax.issue().account);
+//        //                }
+//        //            }
+//        //
+//        //            auto j = app.journal("RPCHandler");
+//        //            JLOG(j.debug()) << "transactionSign: build_path: "
+//        //                            << result.getJson(JsonOptions::none);
+//        //
+//        //            if (!result.empty())
+//        //                tx_json[jss::Paths] =
+//        //                result.getJson(JsonOptions::none);
+//        //        }
+//    }
     return Json::Value();
 }
 

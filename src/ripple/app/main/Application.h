@@ -229,8 +229,6 @@ public:
     getLedgerReplayer() = 0;
     virtual NetworkOPs&
     getOPs() = 0;
-    virtual OrderBookDB&
-    getOrderBookDB() = 0;
     virtual TransactionMaster&
     getMasterTransaction() = 0;
     virtual perf::PerfLog&
@@ -244,8 +242,6 @@ public:
 
     virtual Resource::Manager&
     getResourceManager() = 0;
-    virtual PathRequests&
-    getPathRequests() = 0;
     virtual SHAMapStore&
     getSHAMapStore() = 0;
     virtual PendingSaves&

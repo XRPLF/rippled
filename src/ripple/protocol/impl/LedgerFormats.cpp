@@ -50,7 +50,6 @@ LedgerFormats::LedgerFormats()
             {sfMessageKey,           soeOPTIONAL},
             {sfTransferRate,         soeOPTIONAL},
             {sfDomain,               soeOPTIONAL},
-            {sfTickSize,             soeOPTIONAL},
         },
         commonFields);
 
@@ -67,39 +66,6 @@ LedgerFormats::LedgerFormats()
             {sfRootIndex,            soeREQUIRED},
             {sfIndexNext,            soeOPTIONAL},
             {sfIndexPrevious,        soeOPTIONAL},
-        },
-        commonFields);
-
-    add(jss::Offer,
-        ltOFFER,
-        {
-            {sfAccount,              soeREQUIRED},
-            {sfSequence,             soeREQUIRED},
-            {sfTakerPays,            soeREQUIRED},
-            {sfTakerGets,            soeREQUIRED},
-            {sfBookDirectory,        soeREQUIRED},
-            {sfBookNode,             soeREQUIRED},
-            {sfOwnerNode,            soeREQUIRED},
-            {sfPreviousTxnID,        soeREQUIRED},
-            {sfPreviousTxnLgrSeq,    soeREQUIRED},
-            {sfExpiration,           soeOPTIONAL},
-        },
-        commonFields);
-
-    add(jss::RippleState,
-        ltRIPPLE_STATE,
-        {
-            {sfBalance,              soeREQUIRED},
-            {sfLowLimit,             soeREQUIRED},
-            {sfHighLimit,            soeREQUIRED},
-            {sfPreviousTxnID,        soeREQUIRED},
-            {sfPreviousTxnLgrSeq,    soeREQUIRED},
-            {sfLowNode,              soeOPTIONAL},
-            {sfLowQualityIn,         soeOPTIONAL},
-            {sfLowQualityOut,        soeOPTIONAL},
-            {sfHighNode,             soeOPTIONAL},
-            {sfHighQualityIn,        soeOPTIONAL},
-            {sfHighQualityOut,       soeOPTIONAL},
         },
         commonFields);
 

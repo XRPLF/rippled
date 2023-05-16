@@ -628,11 +628,11 @@ ApplyStateTable::threadOwners(
             // Nothing to do
             break;
         }
-        case ltRIPPLE_STATE: {
-            threadTx(base, meta, (*sle)[sfLowLimit].getIssuer(), mods, j);
-            threadTx(base, meta, (*sle)[sfHighLimit].getIssuer(), mods, j);
-            break;
-        }
+//        case ltRIPPLE_STATE: {
+//            threadTx(base, meta, (*sle)[sfLowLimit].getIssuer(), mods, j);
+//            threadTx(base, meta, (*sle)[sfHighLimit].getIssuer(), mods, j);
+//            break;
+//        }
         default: {
             // If sfAccount is present, thread to that account
             if (auto const optSleAcct{(*sle)[~sfAccount]})

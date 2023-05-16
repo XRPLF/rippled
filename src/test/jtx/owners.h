@@ -82,12 +82,6 @@ public:
     operator()(Env& env) const;
 };
 
-/** Match the number of trust lines in the account's owner directory */
-using lines = owner_count<ltRIPPLE_STATE>;
-
-/** Match the number of offers in the account's owner directory */
-using offers = owner_count<ltOFFER>;
-
 }  // namespace jtx
 }  // namespace test
 }  // namespace ripple

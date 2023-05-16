@@ -239,12 +239,12 @@ public:
 
     void
     tryAdvance();
-    bool
-    newPathRequest();  // Returns true if path request successfully placed.
-    bool
-    isNewPathRequest();
-    bool
-    newOrderBookDB();  // Returns true if able to fulfill request.
+//    bool
+//    newPathRequest();  // Returns true if path request successfully placed.
+//    bool
+//    isNewPathRequest();
+//    bool
+//    newOrderBookDB();  // Returns true if able to fulfill request.
 
     bool
     fixIndex(LedgerIndex ledgerIndex, LedgerHash const& ledgerHash);
@@ -323,13 +323,13 @@ private:
     std::vector<std::shared_ptr<Ledger const>>
     findNewLedgersToPublish(std::unique_lock<std::recursive_mutex>&);
 
-    void
-    updatePaths();
+//    void
+//    updatePaths();
 
     // Returns true if work started.  Always called with m_mutex locked.
     // The passed lock is a reminder to callers.
-    bool
-    newPFWork(const char* name, std::unique_lock<std::recursive_mutex>&);
+//    bool
+//    newPFWork(const char* name, std::unique_lock<std::recursive_mutex>&);
 
     Application& app_;
     beast::Journal m_journal;
@@ -346,7 +346,7 @@ private:
     std::shared_ptr<Ledger const> mPubLedger;
 
     // The last ledger we did pathfinding against.
-    std::shared_ptr<Ledger const> mPathLedger;
+//    std::shared_ptr<Ledger const> mPathLedger;
 
     // The last ledger we handled fetching history
     std::shared_ptr<Ledger const> mHistLedger;
@@ -374,8 +374,8 @@ private:
     bool mAdvanceWork{false};
     int mFillInProgress{0};
 
-    int mPathFindThread{0};  // Pathfinder jobs dispatched
-    bool mPathFindNewRequest{false};
+//    int mPathFindThread{0};  // Pathfinder jobs dispatched
+//    bool mPathFindNewRequest{false};
 
     std::atomic_flag mGotFetchPackThread =
         ATOMIC_FLAG_INIT;  // GotFetchPack jobs dispatched

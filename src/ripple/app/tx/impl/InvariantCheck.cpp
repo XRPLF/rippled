@@ -151,9 +151,6 @@ XRPBalanceChecks::visitEntry(
     std::shared_ptr<SLE const> const& after)
 {
     auto isBad = [](STAmount const& balance) {
-        if (!balance.native())
-            return true;
-
         auto const drops = balance.xrp();
 
         // Can't have more than the number of drops instantiated
@@ -194,47 +191,6 @@ XRPBalanceChecks::finalize(
 
 //------------------------------------------------------------------------------
 
-void
-NoBadOffers::visitEntry(
-    bool isDelete,
-    std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
-{
-    auto isBad = [](STAmount const& pays, STAmount const& gets) {
-        // An offer should never be negative
-        if (pays < beast::zero)
-            return true;
-
-        if (gets < beast::zero)
-            return true;
-
-        // Can't have an XRP to XRP offer:
-        return pays.native() && gets.native();
-    };
-
-    if (before && before->getType() == ltOFFER)
-        bad_ |= isBad((*before)[sfTakerPays], (*before)[sfTakerGets]);
-
-    if (after && after->getType() == ltOFFER)
-        bad_ |= isBad((*after)[sfTakerPays], (*after)[sfTakerGets]);
-}
-
-bool
-NoBadOffers::finalize(
-    STTx const&,
-    TER const,
-    XRPAmount const,
-    ReadView const&,
-    beast::Journal const& j)
-{
-    if (bad_)
-    {
-        JLOG(j.fatal()) << "Invariant failed: offer with a bad amount";
-        return false;
-    }
-
-    return true;
-}
 
 void
 AccountRootsNotDeleted::visitEntry(
@@ -292,9 +248,7 @@ LedgerEntryTypesMatch::visitEntry(
         {
             case ltACCOUNT_ROOT:
             case ltDIR_NODE:
-            case ltRIPPLE_STATE:
             case ltSIGNER_LIST:
-            case ltOFFER:
             case ltLEDGER_HASHES:
             case ltAMENDMENTS:
             case ltFEE_SETTINGS:
@@ -330,42 +284,6 @@ LedgerEntryTypesMatch::finalize(
 
     return false;
 }
-
-//------------------------------------------------------------------------------
-
-void
-NoXRPTrustLines::visitEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const& after)
-{
-    if (after && after->getType() == ltRIPPLE_STATE)
-    {
-        // checking the issue directly here instead of
-        // relying on .native() just in case native somehow
-        // were systematically incorrect
-        xrpTrustLine_ =
-            after->getFieldAmount(sfLowLimit).issue() == xrpIssue() ||
-            after->getFieldAmount(sfHighLimit).issue() == xrpIssue();
-    }
-}
-
-bool
-NoXRPTrustLines::finalize(
-    STTx const&,
-    TER const,
-    XRPAmount const,
-    ReadView const&,
-    beast::Journal const& j)
-{
-    if (!xrpTrustLine_)
-        return true;
-
-    JLOG(j.fatal()) << "Invariant failed: an XRP trust line was created";
-    return false;
-}
-
-//------------------------------------------------------------------------------
 
 void
 ValidNewAccountRoot::visitEntry(

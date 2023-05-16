@@ -23,7 +23,6 @@
 #include <ripple/app/misc/Manifest.h>
 #include <ripple/basics/CountedObject.h>
 #include <ripple/json/json_value.h>
-#include <ripple/protocol/Book.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/resource/Consumer.h>
 #include <mutex>
@@ -128,10 +127,10 @@ public:
         virtual bool
         unsubLedger(std::uint64_t uListener) = 0;
 
-        virtual bool
-        subBookChanges(ref ispListener) = 0;
-        virtual bool
-        unsubBookChanges(std::uint64_t uListener) = 0;
+//        virtual bool
+//        subBookChanges(ref ispListener) = 0;
+//        virtual bool
+//        unsubBookChanges(std::uint64_t uListener) = 0;
 
         virtual bool
         subManifests(ref ispListener) = 0;
@@ -144,11 +143,6 @@ public:
         subServer(ref ispListener, Json::Value& jvResult, bool admin) = 0;
         virtual bool
         unsubServer(std::uint64_t uListener) = 0;
-
-        virtual bool
-        subBook(ref ispListener, Book const&) = 0;
-        virtual bool
-        unsubBook(std::uint64_t uListener, Book const&) = 0;
 
         virtual bool
         subTransactions(ref ispListener) = 0;

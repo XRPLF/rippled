@@ -600,39 +600,6 @@ public:
             fund(amount, args...);
     }
 
-    /** Establish trust lines.
-
-        These convenience functions are for easy set-up
-        of the environment, they bypass fee, seq, and sig
-        settings.
-
-        Preconditions:
-            The account must already exist
-
-        Effects:
-            A trust line is added for the account.
-            The account's sequence number is incremented.
-            The account is refunded for the transaction fee
-                to set the trust line.
-
-        The refund comes from the master account.
-    */
-    /** @{ */
-    void
-    trust(STAmount const& amount, Account const& account);
-
-    template <class... Accounts>
-    void
-    trust(
-        STAmount const& amount,
-        Account const& to0,
-        Account const& to1,
-        Accounts const&... toN)
-    {
-        trust(amount, to0);
-        trust(amount, to1, toN...);
-    }
-    /** @} */
 
 protected:
     int trace_ = 0;

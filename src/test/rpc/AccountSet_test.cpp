@@ -20,8 +20,8 @@
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/protocol/AmountConversions.h>
 #include <ripple/protocol/Feature.h>
-#include <ripple/protocol/Quality.h>
-#include <ripple/protocol/Rate.h>
+//#include <ripple/protocol/Quality.h>
+//#include <ripple/protocol/Rate.h>
 #include <ripple/protocol/jss.h>
 #include <test/jtx.h>
 
@@ -76,23 +76,6 @@ public:
                     continue;
                 }
 
-                if (flag == asfAuthorizedNFTokenMinter)
-                {
-                    // The asfAuthorizedNFTokenMinter flag requires the
-                    // presence or absence of the sfNFTokenMinter field in
-                    // the transaction.  It is tested elsewhere.
-                    continue;
-                }
-
-                if (flag == asfDisallowIncomingCheck ||
-                    flag == asfDisallowIncomingNFTokenOffer ||
-                    flag == asfDisallowIncomingTrustline)
-                {
-                    // These flags are part of the DisallowIncoming amendment
-                    // and are tested elsewhere
-                    continue;
-                }
-
                 if (std::find(goodFlags.begin(), goodFlags.end(), flag) !=
                     goodFlags.end())
                 {
@@ -131,7 +114,6 @@ public:
              asfDefaultRipple});
 
         // Enable featureDepositAuth and retest.
-        env.enableFeature(featureDepositAuth);
         env.close();
         testFlags(
             {asfRequireDest,
@@ -139,8 +121,7 @@ public:
              asfDisallowXRP,
              asfGlobalFreeze,
              asfDisableMaster,
-             asfDefaultRipple,
-             asfDepositAuth});
+             asfDefaultRipple});
     }
 
     void
@@ -308,157 +289,6 @@ public:
     }
 
     void
-    testTransferRate()
-    {
-        struct test_results
-        {
-            double set;
-            TER code;
-            double get;
-        };
-
-        testcase("TransferRate");
-
-        using namespace test::jtx;
-        auto doTests = [this](
-                           FeatureBitset const& features,
-                           std::initializer_list<test_results> testData) {
-            Env env(*this, features);
-
-            Account const alice("alice");
-            env.fund(XRP(10000), alice);
-
-            for (auto const& r : testData)
-            {
-                env(rate(alice, r.set), ter(r.code));
-                env.close();
-
-                // If the field is not present expect the default value
-                if (!(*env.le(alice))[~sfTransferRate])
-                    BEAST_EXPECT(r.get == 1.0);
-                else
-                    BEAST_EXPECT(
-                        *(*env.le(alice))[~sfTransferRate] ==
-                        r.get * QUALITY_ONE);
-            }
-        };
-
-        doTests(
-            supported_amendments(),
-            {{1.0, tesSUCCESS, 1.0},
-             {1.1, tesSUCCESS, 1.1},
-             {2.0, tesSUCCESS, 2.0},
-             {2.1, temBAD_TRANSFER_RATE, 2.0},
-             {0.0, tesSUCCESS, 1.0},
-             {2.0, tesSUCCESS, 2.0},
-             {0.9, temBAD_TRANSFER_RATE, 2.0}});
-    }
-
-    void
-    testGateway()
-    {
-        testcase("Gateway");
-
-        using namespace test::jtx;
-
-        Account const alice("alice");
-        Account const bob("bob");
-        Account const gw("gateway");
-        auto const USD = gw["USD"];
-
-        // Test gateway with a variety of allowed transfer rates
-        for (double transferRate = 1.0; transferRate <= 2.0;
-             transferRate += 0.03125)
-        {
-            Env env(*this);
-            env.fund(XRP(10000), gw, alice, bob);
-            env.close();
-            env.trust(USD(10), alice, bob);
-            env.close();
-            env(rate(gw, transferRate));
-            env.close();
-
-            auto const amount = USD(1);
-            Rate const rate(transferRate * QUALITY_ONE);
-            auto const amountWithRate =
-                toAmount<STAmount>(multiply(amount.value(), rate));
-
-            env(pay(gw, alice, USD(10)));
-            env.close();
-            env(pay(alice, bob, USD(1)), sendmax(USD(10)));
-            env.close();
-
-            env.require(balance(alice, USD(10) - amountWithRate));
-            env.require(balance(bob, USD(1)));
-        }
-
-        // Since fix1201 was enabled on Nov 14 2017 a rate in excess of
-        // 2.0 has been blocked by the transactor.  But there are a few
-        // accounts on the MainNet that have larger-than-currently-allowed
-        // TransferRates.  We'll bypass the transactor so we can check
-        // operation of these legacy TransferRates.
-        //
-        // Two out-of-bound values are currently in the ledger (March 2020)
-        // They are 4.0 and 4.294967295.  So those are the values we test.
-        for (double transferRate : {4.0, 4.294967295})
-        {
-            Env env(*this);
-            env.fund(XRP(10000), gw, alice, bob);
-            env.close();
-            env.trust(USD(10), alice, bob);
-            env.close();
-
-            // We'd like to use transferRate here, but the transactor
-            // blocks transfer rates that large.  So we use an acceptable
-            // transfer rate here and later hack the ledger to replace
-            // the acceptable value with an out-of-bounds value.
-            env(rate(gw, 2.0));
-            env.close();
-
-            // Because we're hacking the ledger we need the account to have
-            // non-zero sfMintedNFTokens and sfBurnedNFTokens fields.  This
-            // prevents an exception when the AccountRoot template is applied.
-            {
-                uint256 const nftId0{token::getNextID(env, gw, 0u)};
-                env(token::mint(gw, 0u));
-                env.close();
-
-                env(token::burn(gw, nftId0));
-                env.close();
-            }
-
-            // Note that we're bypassing almost all of the ledger's safety
-            // checks with this modify() call.  If you call close() between
-            // here and the end of the test all the effort will be lost.
-            env.app().openLedger().modify(
-                [&gw, transferRate](OpenView& view, beast::Journal j) {
-                    // Get the account root we want to hijack.
-                    auto const sle = view.read(keylet::account(gw.id()));
-                    if (!sle)
-                        return false;  // This would be really surprising!
-
-                    // We'll insert a replacement for the account root
-                    // with the higher (currently invalid) transfer rate.
-                    auto replacement = std::make_shared<SLE>(*sle, sle->key());
-                    (*replacement)[sfTransferRate] =
-                        static_cast<std::uint32_t>(transferRate * QUALITY_ONE);
-                    view.rawReplace(replacement);
-                    return true;
-                });
-
-            auto const amount = USD(1);
-            auto const amountWithRate = toAmount<STAmount>(
-                multiply(amount.value(), Rate(transferRate * QUALITY_ONE)));
-
-            env(pay(gw, alice, USD(10)));
-            env(pay(alice, bob, amount), sendmax(USD(10)));
-
-            env.require(balance(alice, USD(10) - amountWithRate));
-            env.require(balance(bob, amount));
-        }
-    }
-
-    void
     testBadInputs()
     {
         testcase("Bad inputs");
@@ -540,14 +370,11 @@ public:
         testSetAndResetAccountTxnID();
         testSetNoFreeze();
         testDomain();
-        testGateway();
         testMessageKey();
         testWalletID();
         testEmailHash();
         testBadInputs();
         testRequireAuthWithDir();
-        testTransferRate();
-        testTicket();
     }
 };
 

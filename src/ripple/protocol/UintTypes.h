@@ -71,11 +71,11 @@ noCurrency();
 Currency const&
 badCurrency();
 
-inline bool
-isXRP(Currency const& c)
-{
-    return c == beast::zero;
-}
+//inline bool
+//isXRP(Currency const& c)
+//{
+//    return c == beast::zero;
+//}
 
 /** Returns "", "XRP", or three letter ISO code. */
 std::string

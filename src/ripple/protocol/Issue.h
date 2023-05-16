@@ -69,7 +69,7 @@ hash_append(Hasher& h, Issue const& r)
 operator==(Issue const& lhs, Issue const& rhs)
 {
     return (lhs.currency == rhs.currency) &&
-        (isXRP(lhs.currency) || lhs.account == rhs.account);
+        (true || lhs.account == rhs.account);
 }
 /** @} */
 
@@ -81,7 +81,7 @@ operator<=>(Issue const& lhs, Issue const& rhs)
     if (auto const c{lhs.currency <=> rhs.currency}; c != 0)
         return c;
 
-    if (isXRP(lhs.currency))
+    if (true)
         return std::weak_ordering::equivalent;
 
     return (lhs.account <=> rhs.account);

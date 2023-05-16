@@ -86,7 +86,6 @@ CONSTRUCT_TYPED_SFIELD(sfMethod,                "Method",               UINT8,  
 CONSTRUCT_TYPED_SFIELD(sfTransactionResult,     "TransactionResult",    UINT8,      3);
 
 // 8-bit integers (uncommon)
-CONSTRUCT_TYPED_SFIELD(sfTickSize,              "TickSize",             UINT8,     16);
 CONSTRUCT_TYPED_SFIELD(sfUNLModifyDisabling,    "UNLModifyDisabling",   UINT8,     17);
 CONSTRUCT_TYPED_SFIELD(sfHookResult,            "HookResult",           UINT8,     18);
 
@@ -125,7 +124,6 @@ CONSTRUCT_TYPED_SFIELD(sfQualityOut,            "QualityOut",           UINT32, 
 CONSTRUCT_TYPED_SFIELD(sfStampEscrow,           "StampEscrow",          UINT32,    22);
 CONSTRUCT_TYPED_SFIELD(sfBondAmount,            "BondAmount",           UINT32,    23);
 CONSTRUCT_TYPED_SFIELD(sfLoadFee,               "LoadFee",              UINT32,    24);
-CONSTRUCT_TYPED_SFIELD(sfOfferSequence,         "OfferSequence",        UINT32,    25);
 CONSTRUCT_TYPED_SFIELD(sfFirstLedgerSequence,   "FirstLedgerSequence",  UINT32,    26);
 CONSTRUCT_TYPED_SFIELD(sfLastLedgerSequence,    "LastLedgerSequence",   UINT32,    27);
 CONSTRUCT_TYPED_SFIELD(sfTransactionIndex,      "TransactionIndex",     UINT32,    28);
@@ -263,9 +261,6 @@ CONSTRUCT_TYPED_SFIELD(sfHookAccount,           "HookAccount",          ACCOUNT,
 CONSTRUCT_TYPED_SFIELD(sfIndexes,               "Indexes",              VECTOR256,  1, SField::sMD_Never);
 CONSTRUCT_TYPED_SFIELD(sfHashes,                "Hashes",               VECTOR256,  2);
 CONSTRUCT_TYPED_SFIELD(sfAmendments,            "Amendments",           VECTOR256,  3);
-
-// path set
-CONSTRUCT_UNTYPED_SFIELD(sfPaths,               "Paths",                PATHSET,    1);
 
 // inner object
 // OBJECT/1 is reserved for end of object

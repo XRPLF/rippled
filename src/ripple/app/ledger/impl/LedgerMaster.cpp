@@ -22,7 +22,6 @@
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/LedgerReplayer.h>
 #include <ripple/app/ledger/OpenLedger.h>
-#include <ripple/app/ledger/OrderBookDB.h>
 #include <ripple/app/ledger/PendingSaves.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/AmendmentTable.h>
@@ -33,7 +32,6 @@
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/app/misc/TxQ.h>
 #include <ripple/app/misc/ValidatorList.h>
-#include <ripple/app/paths/PathRequests.h>
 #include <ripple/app/rdb/backend/PostgresDatabase.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/basics/Log.h>
@@ -948,7 +946,7 @@ LedgerMaster::setFullLedger(
         if (!mPubLedger)
         {
             setPubLedger(ledger);
-            app_.getOrderBookDB().setup(ledger);
+//            app_.getOrderBookDB().setup(ledger);
         }
 
         if (ledger->info().seq != 0 && haveLedger(ledger->info().seq - 1))
@@ -1076,7 +1074,7 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
     {
         pendSaveValidated(app_, ledger, true, true);
         setPubLedger(ledger);
-        app_.getOrderBookDB().setup(ledger);
+//        app_.getOrderBookDB().setup(ledger);
     }
 
     std::uint32_t const base = app_.getFeeTrack().getLoadBase();
@@ -1340,7 +1338,7 @@ LedgerMaster::findNewLedgersToPublish(
         auto valLedger = mValidLedger.get();
         ret.push_back(valLedger);
         setPubLedger(valLedger);
-        app_.getOrderBookDB().setup(valLedger);
+//        app_.getOrderBookDB().setup(valLedger);
 
         return {valLedger};
     }
@@ -1487,161 +1485,161 @@ LedgerMaster::tryAdvance()
     }
 }
 
-void
-LedgerMaster::updatePaths()
-{
-    {
-        std::lock_guard ml(m_mutex);
-        if (app_.getOPs().isNeedNetworkLedger())
-        {
-            --mPathFindThread;
-            JLOG(m_journal.debug()) << "Need network ledger for updating paths";
-            return;
-        }
-    }
+//void
+//LedgerMaster::updatePaths()
+//{
+//    {
+//        std::lock_guard ml(m_mutex);
+//        if (app_.getOPs().isNeedNetworkLedger())
+//        {
+//            --mPathFindThread;
+//            JLOG(m_journal.debug()) << "Need network ledger for updating paths";
+//            return;
+//        }
+//    }
+//
+//    while (!app_.getJobQueue().isStopping())
+//    {
+//        JLOG(m_journal.debug()) << "updatePaths running";
+//        std::shared_ptr<ReadView const> lastLedger;
+//        {
+//            std::lock_guard ml(m_mutex);
+//
+//            if (!mValidLedger.empty() &&
+//                (!mPathLedger || (mPathLedger->info().seq != mValidLedgerSeq)))
+//            {  // We have a new valid ledger since the last full pathfinding
+//                mPathLedger = mValidLedger.get();
+//                lastLedger = mPathLedger;
+//            }
+//            else if (mPathFindNewRequest)
+//            {  // We have a new request but no new ledger
+//                lastLedger = app_.openLedger().current();
+//            }
+//            else
+//            {  // Nothing to do
+//                --mPathFindThread;
+//                JLOG(m_journal.debug()) << "Nothing to do for updating paths";
+//                return;
+//            }
+//        }
+//
+//        if (!standalone_)
+//        {  // don't pathfind with a ledger that's more than 60 seconds old
+//            using namespace std::chrono;
+//            auto age = time_point_cast<seconds>(app_.timeKeeper().closeTime()) -
+//                lastLedger->info().closeTime;
+//            if (age > 1min)
+//            {
+//                JLOG(m_journal.debug())
+//                    << "Published ledger too old for updating paths";
+//                std::lock_guard ml(m_mutex);
+//                --mPathFindThread;
+//                return;
+//            }
+//        }
+//
+////        try
+////        {
+////            auto& pathRequests = app_.getPathRequests();
+////            {
+////                std::lock_guard ml(m_mutex);
+////                if (!pathRequests.requestsPending())
+////                {
+////                    --mPathFindThread;
+////                    JLOG(m_journal.debug())
+////                        << "No path requests found. Nothing to do for updating "
+////                           "paths. "
+////                        << mPathFindThread << " jobs remaining";
+////                    return;
+////                }
+////            }
+////            JLOG(m_journal.debug()) << "Updating paths";
+////            pathRequests.updateAll(lastLedger);
+////
+////            std::lock_guard ml(m_mutex);
+////            if (!pathRequests.requestsPending())
+////            {
+////                JLOG(m_journal.debug())
+////                    << "No path requests left. No need for further updating "
+////                       "paths";
+////                --mPathFindThread;
+////                return;
+////            }
+////        }
+////        catch (SHAMapMissingNode const& mn)
+////        {
+////            JLOG(m_journal.info()) << "During pathfinding: " << mn.what();
+////            if (lastLedger->open())
+////            {
+////                // our parent is the problem
+////                app_.getInboundLedgers().acquire(
+////                    lastLedger->info().parentHash,
+////                    lastLedger->info().seq - 1,
+////                    InboundLedger::Reason::GENERIC);
+////            }
+////            else
+////            {
+////                // this ledger is the problem
+////                app_.getInboundLedgers().acquire(
+////                    lastLedger->info().hash,
+////                    lastLedger->info().seq,
+////                    InboundLedger::Reason::GENERIC);
+////            }
+////        }
+//    }
+//}
 
-    while (!app_.getJobQueue().isStopping())
-    {
-        JLOG(m_journal.debug()) << "updatePaths running";
-        std::shared_ptr<ReadView const> lastLedger;
-        {
-            std::lock_guard ml(m_mutex);
-
-            if (!mValidLedger.empty() &&
-                (!mPathLedger || (mPathLedger->info().seq != mValidLedgerSeq)))
-            {  // We have a new valid ledger since the last full pathfinding
-                mPathLedger = mValidLedger.get();
-                lastLedger = mPathLedger;
-            }
-            else if (mPathFindNewRequest)
-            {  // We have a new request but no new ledger
-                lastLedger = app_.openLedger().current();
-            }
-            else
-            {  // Nothing to do
-                --mPathFindThread;
-                JLOG(m_journal.debug()) << "Nothing to do for updating paths";
-                return;
-            }
-        }
-
-        if (!standalone_)
-        {  // don't pathfind with a ledger that's more than 60 seconds old
-            using namespace std::chrono;
-            auto age = time_point_cast<seconds>(app_.timeKeeper().closeTime()) -
-                lastLedger->info().closeTime;
-            if (age > 1min)
-            {
-                JLOG(m_journal.debug())
-                    << "Published ledger too old for updating paths";
-                std::lock_guard ml(m_mutex);
-                --mPathFindThread;
-                return;
-            }
-        }
-
-        try
-        {
-            auto& pathRequests = app_.getPathRequests();
-            {
-                std::lock_guard ml(m_mutex);
-                if (!pathRequests.requestsPending())
-                {
-                    --mPathFindThread;
-                    JLOG(m_journal.debug())
-                        << "No path requests found. Nothing to do for updating "
-                           "paths. "
-                        << mPathFindThread << " jobs remaining";
-                    return;
-                }
-            }
-            JLOG(m_journal.debug()) << "Updating paths";
-            pathRequests.updateAll(lastLedger);
-
-            std::lock_guard ml(m_mutex);
-            if (!pathRequests.requestsPending())
-            {
-                JLOG(m_journal.debug())
-                    << "No path requests left. No need for further updating "
-                       "paths";
-                --mPathFindThread;
-                return;
-            }
-        }
-        catch (SHAMapMissingNode const& mn)
-        {
-            JLOG(m_journal.info()) << "During pathfinding: " << mn.what();
-            if (lastLedger->open())
-            {
-                // our parent is the problem
-                app_.getInboundLedgers().acquire(
-                    lastLedger->info().parentHash,
-                    lastLedger->info().seq - 1,
-                    InboundLedger::Reason::GENERIC);
-            }
-            else
-            {
-                // this ledger is the problem
-                app_.getInboundLedgers().acquire(
-                    lastLedger->info().hash,
-                    lastLedger->info().seq,
-                    InboundLedger::Reason::GENERIC);
-            }
-        }
-    }
-}
-
-bool
-LedgerMaster::newPathRequest()
-{
-    std::unique_lock ml(m_mutex);
-    mPathFindNewRequest = newPFWork("pf:newRequest", ml);
-    return mPathFindNewRequest;
-}
-
-bool
-LedgerMaster::isNewPathRequest()
-{
-    std::lock_guard ml(m_mutex);
-    bool const ret = mPathFindNewRequest;
-    mPathFindNewRequest = false;
-    return ret;
-}
+//bool
+//LedgerMaster::newPathRequest()
+//{
+//    std::unique_lock ml(m_mutex);
+//    mPathFindNewRequest = newPFWork("pf:newRequest", ml);
+//    return mPathFindNewRequest;
+//}
+//
+//bool
+//LedgerMaster::isNewPathRequest()
+//{
+//    std::lock_guard ml(m_mutex);
+//    bool const ret = mPathFindNewRequest;
+//    mPathFindNewRequest = false;
+//    return ret;
+//}
 
 // If the order book is radically updated, we need to reprocess all
 // pathfinding requests.
-bool
-LedgerMaster::newOrderBookDB()
-{
-    std::unique_lock ml(m_mutex);
-    mPathLedger.reset();
-
-    return newPFWork("pf:newOBDB", ml);
-}
+//bool
+//LedgerMaster::newOrderBookDB()
+//{
+//    std::unique_lock ml(m_mutex);
+//    //mPathLedger.reset();
+//
+//    return newPFWork("pf:newOBDB", ml);
+//}
 
 /** A thread needs to be dispatched to handle pathfinding work of some kind.
  */
-bool
-LedgerMaster::newPFWork(
-    const char* name,
-    std::unique_lock<std::recursive_mutex>&)
-{
-    if (!app_.isStopping() && mPathFindThread < 2 &&
-        app_.getPathRequests().requestsPending())
-    {
-        JLOG(m_journal.debug())
-            << "newPFWork: Creating job. path find threads: "
-            << mPathFindThread;
-        if (app_.getJobQueue().addJob(
-                jtUPDATE_PF, name, [this]() { updatePaths(); }))
-        {
-            ++mPathFindThread;
-        }
-    }
-    // If we're stopping don't give callers the expectation that their
-    // request will be fulfilled, even if it may be serviced.
-    return mPathFindThread > 0 && !app_.isStopping();
-}
+//bool
+//LedgerMaster::newPFWork(
+//    const char* name,
+//    std::unique_lock<std::recursive_mutex>&)
+//{
+//    if (!app_.isStopping() && mPathFindThread < 2 &&
+//        app_.getPathRequests().requestsPending())
+//    {
+//        JLOG(m_journal.debug())
+//            << "newPFWork: Creating job. path find threads: "
+//            << mPathFindThread;
+//        if (app_.getJobQueue().addJob(
+//                jtUPDATE_PF, name, [this]() { updatePaths(); }))
+//        {
+//            ++mPathFindThread;
+//        }
+//    }
+//    // If we're stopping don't give callers the expectation that their
+//    // request will be fulfilled, even if it may be serviced.
+//    return mPathFindThread > 0 && !app_.isStopping();
+//}
 
 std::recursive_mutex&
 LedgerMaster::peekMutex()
@@ -2129,7 +2127,7 @@ LedgerMaster::doAdvance(std::unique_lock<std::recursive_mutex>& sl)
             }
 
             app_.getOPs().clearNeedNetworkLedger();
-            progress = newPFWork("pf:newLedger", sl);
+            progress = false;
         }
         if (progress)
             mAdvanceWork = true;

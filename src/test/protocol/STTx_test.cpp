@@ -1667,23 +1667,6 @@ public:
             BEAST_EXPECT(got.empty());
         }
         {
-            // Make a payment with a defaulted PathSet field, which is invalid.
-            STObject defaultPath{getPayment()};
-            defaultPath.setFieldPathSet(sfPaths, STPathSet{});
-
-            std::string got;
-            try
-            {
-                STTx{std::move(defaultPath)};
-            }
-            catch (STTx::FieldErr const& err)
-            {
-                got = err.what();
-            }
-            BEAST_EXPECT(
-                got == "Field 'Paths' may not be explicitly set to default.");
-        }
-        {
             // Make a Payment with an extra "SignerWeight" field.
             STObject extraField{getPayment()};
             extraField.setFieldU16(sfSignerWeight, 7);

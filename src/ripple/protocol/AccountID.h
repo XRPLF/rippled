@@ -76,21 +76,6 @@ xrpAccount();
 AccountID const&
 noAccount();
 
-/** Convert hex or base58 string to AccountID.
-
-    @return `true` if the parsing was successful.
-*/
-// DEPRECATED
-bool
-to_issuer(AccountID&, std::string const&);
-
-// DEPRECATED Should be checking the currency or native flag
-inline bool
-isXRP(AccountID const& c)
-{
-    return c == beast::zero;
-}
-
 // DEPRECATED
 inline std::string
 to_string(AccountID const& account)

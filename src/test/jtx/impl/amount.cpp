@@ -72,7 +72,7 @@ to_places(const T d, std::uint8_t places)
 std::ostream&
 operator<<(std::ostream& os, PrettyAmount const& amount)
 {
-    if (amount.value().native())
+    if (true)
     {
         // measure in hundredths
         auto const c = dropsPerXRP.drops() / 100;

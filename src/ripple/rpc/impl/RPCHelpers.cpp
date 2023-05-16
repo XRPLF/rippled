@@ -21,7 +21,6 @@
 #include <ripple/app/ledger/LedgerToJson.h>
 #include <ripple/app/ledger/OpenLedger.h>
 #include <ripple/app/misc/Transaction.h>
-#include <ripple/app/paths/TrustLine.h>
 #include <ripple/app/rdb/RelationalDatabase.h>
 #include <ripple/ledger/View.h>
 #include <ripple/net/RPCErr.h>
@@ -93,14 +92,6 @@ accountFromString(AccountID& result, std::string const& strIdent, bool bStrict)
 std::uint64_t
 getStartHint(std::shared_ptr<SLE const> const& sle, AccountID const& accountID)
 {
-    if (sle->getType() == ltRIPPLE_STATE)
-    {
-        if (sle->getFieldAmount(sfLowLimit).getIssuer() == accountID)
-            return sle->getFieldU64(sfLowNode);
-        else if (sle->getFieldAmount(sfHighLimit).getIssuer() == accountID)
-            return sle->getFieldU64(sfHighNode);
-    }
-
     if (!sle->isFieldPresent(sfOwnerNode))
         return 0;
 
@@ -113,12 +104,8 @@ isRelatedToAccount(
     std::shared_ptr<SLE const> const& sle,
     AccountID const& accountID)
 {
-    if (sle->getType() == ltRIPPLE_STATE)
-    {
-        return (sle->getFieldAmount(sfLowLimit).getIssuer() == accountID) ||
-            (sle->getFieldAmount(sfHighLimit).getIssuer() == accountID);
-    }
-    else if (sle->isFieldPresent(sfAccount))
+
+    if (sle->isFieldPresent(sfAccount))
     {
         // If there's an sfAccount present, also test the sfDestination, if
         // present. This will match objects such as Escrows (ltESCROW),
@@ -914,9 +901,7 @@ chooseLedgerEntryType(Json::Value const& params)
                  {jss::directory, ltDIR_NODE},
                  {jss::fee, ltFEE_SETTINGS},
                  {jss::hashes, ltLEDGER_HASHES},
-                 {jss::offer, ltOFFER},
                  {jss::signer_list, ltSIGNER_LIST},
-                 {jss::state, ltRIPPLE_STATE},
                }};
 
         auto const& p = params[jss::type];

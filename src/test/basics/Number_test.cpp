@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <ripple/basics/IOUAmount.h>
 #include <ripple/basics/Number.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/protocol/STAmount.h>
@@ -442,32 +441,6 @@ public:
     }
 
     void
-    testConversions()
-    {
-        testcase("testConversions");
-
-        IOUAmount x{5, 6};
-        Number y = x;
-        BEAST_EXPECT((y == Number{5, 6}));
-        IOUAmount z{y};
-        BEAST_EXPECT(x == z);
-        XRPAmount xrp{500};
-        STAmount st = xrp;
-        Number n = st;
-        BEAST_EXPECT(XRPAmount{n} == xrp);
-        IOUAmount x0{0, 0};
-        Number y0 = x0;
-        BEAST_EXPECT((y0 == Number{0}));
-        IOUAmount z0{y0};
-        BEAST_EXPECT(x0 == z0);
-        XRPAmount xrp0{0};
-        Number n0 = xrp0;
-        BEAST_EXPECT(n0 == Number{0});
-        XRPAmount xrp1{n0};
-        BEAST_EXPECT(xrp1 == xrp0);
-    }
-
-    void
     test_to_integer()
     {
         testcase("test_to_integer");
@@ -699,7 +672,7 @@ public:
     void
     test_toSTAmount()
     {
-        NumberSO stNumberSO{true};
+//        NumberSO stNumberSO{true};
         Issue const issue;
         Number const n{7'518'783'80596, -5};
         saveNumberRoundMode const save{Number::setround(Number::to_nearest)};

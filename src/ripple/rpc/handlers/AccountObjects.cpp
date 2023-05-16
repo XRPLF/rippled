@@ -46,7 +46,6 @@ namespace ripple {
     }
 */
 
-
 Json::Value
 doAccountObjects(RPC::JsonContext& context)
 {
@@ -76,45 +75,45 @@ doAccountObjects(RPC::JsonContext& context)
 
     std::optional<std::vector<LedgerEntryType>> typeFilter;
 
-    if (params.isMember(jss::deletion_blockers_only) &&
-        params[jss::deletion_blockers_only].asBool())
+    //    if (params.isMember(jss::deletion_blockers_only) &&
+    //        params[jss::deletion_blockers_only].asBool())
+    //    {
+    ////        struct
+    ////        {
+    ////            Json::StaticString name;
+    ////            LedgerEntryType type;
+    ////        } static constexpr deletionBlockers[] = {
+    //////            {jss::state, ltRIPPLE_STATE}
+    ////        };
+    //
+    ////        typeFilter.emplace();
+    ////        typeFilter->reserve(std::size(deletionBlockers));
+    //
+    ////        for (auto [name, type] : deletionBlockers)
+    ////        {
+    ////            if (params.isMember(jss::type) && name != params[jss::type])
+    ////            {
+    ////                continue;
+    ////            }
+    ////
+    ////            typeFilter->push_back(type);
+    ////        }
+    //    }
+    //    else
+    //    {
+    auto [rpcStatus, type] = RPC::chooseLedgerEntryType(params);
+
+    if (rpcStatus)
     {
-        struct
-        {
-            Json::StaticString name;
-            LedgerEntryType type;
-        } static constexpr deletionBlockers[] = {
-            {jss::state, ltRIPPLE_STATE}
-        };
-
-        typeFilter.emplace();
-        typeFilter->reserve(std::size(deletionBlockers));
-
-        for (auto [name, type] : deletionBlockers)
-        {
-            if (params.isMember(jss::type) && name != params[jss::type])
-            {
-                continue;
-            }
-
-            typeFilter->push_back(type);
-        }
+        result.clear();
+        rpcStatus.inject(result);
+        return result;
     }
-    else
+    else if (type != ltANY)
     {
-        auto [rpcStatus, type] = RPC::chooseLedgerEntryType(params);
-
-        if (rpcStatus)
-        {
-            result.clear();
-            rpcStatus.inject(result);
-            return result;
-        }
-        else if (type != ltANY)
-        {
-            typeFilter = std::vector<LedgerEntryType>({type});
-        }
+        typeFilter = std::vector<LedgerEntryType>({type});
     }
+    //    }
 
     unsigned int limit;
     if (auto err = readLimitField(limit, RPC::Tuning::accountObjects, context))

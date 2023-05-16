@@ -21,7 +21,6 @@
 #define RIPPLE_PROTOCOL_STAMOUNT_H_INCLUDED
 
 #include <ripple/basics/CountedObject.h>
-#include <ripple/basics/IOUAmount.h>
 #include <ripple/basics/LocalValue.h>
 #include <ripple/basics/Number.h>
 #include <ripple/basics/XRPAmount.h>
@@ -53,7 +52,6 @@ private:
     Issue mIssue;
     mantissa_type mValue;
     exponent_type mOffset;
-    bool mIsNative;  // A shorthand for isXRP(mIssue).
     bool mIsNegative;
 
 public:
@@ -88,7 +86,7 @@ public:
         Issue const& issue,
         mantissa_type mantissa,
         exponent_type exponent,
-        bool native,
+//        bool native,
         bool negative,
         unchecked);
 
@@ -96,7 +94,7 @@ public:
         Issue const& issue,
         mantissa_type mantissa,
         exponent_type exponent,
-        bool native,
+//        bool native,
         bool negative,
         unchecked);
 
@@ -106,8 +104,9 @@ public:
         Issue const& issue,
         mantissa_type mantissa,
         exponent_type exponent,
-        bool native,
-        bool negative);
+//        bool native,
+        bool negative
+        );
 
     STAmount(SField const& name, std::int64_t mantissa);
 
@@ -116,12 +115,13 @@ public:
         std::uint64_t mantissa = 0,
         bool negative = false);
 
-    STAmount(
-        SField const& name,
-        Issue const& issue,
-        std::uint64_t mantissa = 0,
-        int exponent = 0,
-        bool negative = false);
+//    STAmount(
+//        SField const& name,
+//        Issue const& issue,
+//        std::uint64_t mantissa = 0,
+//        int exponent = 0,
+//        bool negative = false
+//        );
 
     explicit STAmount(std::uint64_t mantissa = 0, bool negative = false);
 
@@ -142,8 +142,6 @@ public:
 
     STAmount(Issue const& issue, int mantissa, int exponent = 0);
 
-    // Legacy support for new-style amounts
-    STAmount(IOUAmount const& amount, Issue const& issue);
     STAmount(XRPAmount const& amount);
     operator Number() const;
 
@@ -156,8 +154,9 @@ public:
     int
     exponent() const noexcept;
 
-    bool
-    native() const noexcept;
+    // TODO: Always True
+//    bool
+//    native() const noexcept;
 
     bool
     negative() const noexcept;
@@ -260,8 +259,6 @@ public:
 
     XRPAmount
     xrp() const;
-    IOUAmount
-    iou() const;
 
 private:
     static std::unique_ptr<STAmount>
@@ -276,9 +273,6 @@ private:
     copy(std::size_t n, void* buf) const override;
     STBase*
     move(std::size_t n, void* buf) override;
-
-    STAmount&
-    operator=(IOUAmount const& iou);
 
     friend class detail::STVar;
 
@@ -325,11 +319,11 @@ STAmount::exponent() const noexcept
     return mOffset;
 }
 
-inline bool
-STAmount::native() const noexcept
-{
-    return mIsNative;
-}
+//inline bool
+//STAmount::native() const noexcept
+//{
+//    return mIsNative;
+//}
 
 inline bool
 STAmount::negative() const noexcept
@@ -380,12 +374,11 @@ inline STAmount::operator bool() const noexcept
 
 inline STAmount::operator Number() const
 {
-    if (mIsNative)
-        return xrp();
-    return iou();
+    return xrp();
 }
 
-inline STAmount& STAmount::operator=(beast::Zero)
+inline STAmount&
+STAmount::operator=(beast::Zero)
 {
     clear();
     return *this;
@@ -410,7 +403,7 @@ STAmount::clear()
 {
     // The -100 is used to allow 0 to sort less than a small positive values
     // which have a negative exponent.
-    mOffset = mIsNative ? 0 : -100;
+    mOffset = 0;
     mValue = 0;
     mIsNegative = false;
 }
@@ -445,7 +438,7 @@ STAmount::value() const noexcept
 inline bool
 isLegalNet(STAmount const& value)
 {
-    return !value.native() || (value.mantissa() <= STAmount::cMaxNativeN);
+    return (value.mantissa() <= STAmount::cMaxNativeN);
 }
 
 //------------------------------------------------------------------------------
@@ -526,11 +519,11 @@ getRate(STAmount const& offerOut, STAmount const& offerIn);
 
 //------------------------------------------------------------------------------
 
-inline bool
-isXRP(STAmount const& amount)
-{
-    return isXRP(amount.issue().currency);
-}
+//inline bool
+//isXRP(STAmount const& amount)
+//{
+//    return isXRP(amount.issue().currency);
+//}
 
 // Since `canonicalize` does not have access to a ledger, this is needed to put
 // the low-level routine stAmountCanonicalize on an amendment switch. Only

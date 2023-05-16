@@ -70,7 +70,6 @@ enum SerializedTypeID {
     // types (uncommon)
     STI_UINT8 = 16,
     STI_UINT160 = 17,
-    STI_PATHSET = 18,
     STI_VECTOR256 = 19,
     STI_UINT96 = 20,
     STI_UINT192 = 21,
@@ -336,7 +335,6 @@ extern SF_UINT8 const sfMethod;
 extern SF_UINT8 const sfTransactionResult;
 
 // 8-bit integers (uncommon)
-extern SF_UINT8 const sfTickSize;
 extern SF_UINT8 const sfUNLModifyDisabling;
 extern SF_UINT8 const sfHookResult;
 
@@ -499,9 +497,6 @@ extern SF_ACCOUNT const sfRegularKey;
 extern SF_ACCOUNT const sfEmitCallback;
 
 // account (uncommon)
-
-// path set
-extern SField const sfPaths;
 
 // vector of 256-bit
 extern SF_VECTOR256 const sfIndexes;

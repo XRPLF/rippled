@@ -52,7 +52,6 @@ target_sources (xrpl_core PRIVATE
   src/ripple/basics/impl/contract.cpp
   src/ripple/basics/impl/CountedObject.cpp
   src/ripple/basics/impl/FileUtilities.cpp
-  src/ripple/basics/impl/IOUAmount.cpp
   src/ripple/basics/impl/Log.cpp
   src/ripple/basics/impl/Number.cpp
   src/ripple/basics/impl/StringUtilities.cpp
@@ -74,7 +73,6 @@ target_sources (xrpl_core PRIVATE
       subdir: protocol
   #]===============================]
   src/ripple/protocol/impl/AccountID.cpp
-  src/ripple/protocol/impl/Book.cpp
   src/ripple/protocol/impl/BuildInfo.cpp
   src/ripple/protocol/impl/ErrorCodes.cpp
   src/ripple/protocol/impl/Feature.cpp
@@ -84,8 +82,6 @@ target_sources (xrpl_core PRIVATE
   src/ripple/protocol/impl/Keylet.cpp
   src/ripple/protocol/impl/LedgerFormats.cpp
   src/ripple/protocol/impl/PublicKey.cpp
-  src/ripple/protocol/impl/Quality.cpp
-  src/ripple/protocol/impl/Rate2.cpp
   src/ripple/protocol/impl/Rules.cpp
   src/ripple/protocol/impl/SField.cpp
   src/ripple/protocol/impl/SOTemplate.cpp
@@ -98,7 +94,6 @@ target_sources (xrpl_core PRIVATE
   src/ripple/protocol/impl/STLedgerEntry.cpp
   src/ripple/protocol/impl/STObject.cpp
   src/ripple/protocol/impl/STParsedJSON.cpp
-  src/ripple/protocol/impl/STPathSet.cpp
   src/ripple/protocol/impl/STTx.cpp
   src/ripple/protocol/impl/STValidation.cpp
   src/ripple/protocol/impl/STVar.cpp
@@ -154,7 +149,6 @@ install (
     src/ripple/basics/Buffer.h
     src/ripple/basics/CountedObject.h
     src/ripple/basics/FileUtilities.h
-    src/ripple/basics/IOUAmount.h
     src/ripple/basics/LocalValue.h
     src/ripple/basics/Log.h
     src/ripple/basics/MathUtilities.h
@@ -201,7 +195,6 @@ install (
   FILES
     src/ripple/protocol/AccountID.h
     src/ripple/protocol/AmountConversions.h
-    src/ripple/protocol/Book.h
     src/ripple/protocol/BuildInfo.h
     src/ripple/protocol/ErrorCodes.h
     src/ripple/protocol/Feature.h
@@ -216,7 +209,6 @@ install (
     src/ripple/protocol/Protocol.h
     src/ripple/protocol/PublicKey.h
     src/ripple/protocol/Quality.h
-    src/ripple/protocol/Rate.h
     src/ripple/protocol/Rules.h
     src/ripple/protocol/SField.h
     src/ripple/protocol/SOTemplate.h
@@ -231,7 +223,6 @@ install (
     src/ripple/protocol/STLedgerEntry.h
     src/ripple/protocol/STObject.h
     src/ripple/protocol/STParsedJSON.h
-    src/ripple/protocol/STPathSet.h
     src/ripple/protocol/STTx.h
     src/ripple/protocol/STValidation.h
     src/ripple/protocol/STVector256.h
@@ -345,11 +336,9 @@ target_sources (rippled PRIVATE
   src/ripple/app/ledger/AcceptedLedger.cpp
   src/ripple/app/ledger/AcceptedLedgerTx.cpp
   src/ripple/app/ledger/AccountStateSF.cpp
-  src/ripple/app/ledger/BookListeners.cpp
   src/ripple/app/ledger/ConsensusTransSetSF.cpp
   src/ripple/app/ledger/Ledger.cpp
   src/ripple/app/ledger/LedgerHistory.cpp
-  src/ripple/app/ledger/OrderBookDB.cpp
   src/ripple/app/ledger/TransactionStateSF.cpp
   src/ripple/app/ledger/impl/BuildLedger.cpp
   src/ripple/app/ledger/impl/InboundLedger.cpp
@@ -396,19 +385,6 @@ target_sources (rippled PRIVATE
   src/ripple/app/misc/impl/ValidatorKeys.cpp
   src/ripple/app/misc/impl/ValidatorList.cpp
   src/ripple/app/misc/impl/ValidatorSite.cpp
-  src/ripple/app/paths/AccountCurrencies.cpp
-  src/ripple/app/paths/Credit.cpp
-  src/ripple/app/paths/Flow.cpp
-  src/ripple/app/paths/PathRequest.cpp
-  src/ripple/app/paths/PathRequests.cpp
-  src/ripple/app/paths/Pathfinder.cpp
-  src/ripple/app/paths/RippleCalc.cpp
-  src/ripple/app/paths/RippleLineCache.cpp
-  src/ripple/app/paths/TrustLine.cpp
-  src/ripple/app/paths/impl/BookStep.cpp
-  src/ripple/app/paths/impl/DirectStep.cpp
-  src/ripple/app/paths/impl/PaySteps.cpp
-  src/ripple/app/paths/impl/XRPEndpointStep.cpp
   src/ripple/app/rdb/backend/detail/impl/Node.cpp
   src/ripple/app/rdb/backend/detail/impl/Shard.cpp
   src/ripple/app/rdb/backend/impl/PostgresDatabase.cpp
@@ -422,20 +398,14 @@ target_sources (rippled PRIVATE
   src/ripple/app/rdb/impl/Vacuum.cpp
   src/ripple/app/rdb/impl/Wallet.cpp
   src/ripple/app/tx/impl/ApplyContext.cpp
-  src/ripple/app/tx/impl/BookTip.cpp
-  src/ripple/app/tx/impl/CancelOffer.cpp
   src/ripple/app/tx/impl/Change.cpp
-  src/ripple/app/tx/impl/CreateOffer.cpp
   src/ripple/app/tx/impl/DeleteAccount.cpp
   src/ripple/app/tx/impl/InvariantCheck.cpp
-  src/ripple/app/tx/impl/OfferStream.cpp
   src/ripple/app/tx/impl/Payment.cpp
   src/ripple/app/tx/impl/SetAccount.cpp
   src/ripple/app/tx/impl/SetRegularKey.cpp
   src/ripple/app/tx/impl/SetSignerList.cpp
-  src/ripple/app/tx/impl/SetTrust.cpp
   src/ripple/app/tx/impl/SignerEntries.cpp
-  src/ripple/app/tx/impl/Taker.cpp
   src/ripple/app/tx/impl/Transactor.cpp
   src/ripple/app/tx/impl/apply.cpp
   src/ripple/app/tx/impl/applySteps.cpp
@@ -478,7 +448,6 @@ target_sources (rippled PRIVATE
   src/ripple/ledger/impl/ApplyView.cpp
   src/ripple/ledger/impl/ApplyViewBase.cpp
   src/ripple/ledger/impl/ApplyViewImpl.cpp
-  src/ripple/ledger/impl/BookDirs.cpp
   src/ripple/ledger/impl/CachedView.cpp
   src/ripple/ledger/impl/Directory.cpp
   src/ripple/ledger/impl/OpenView.cpp
@@ -557,15 +526,10 @@ target_sources (rippled PRIVATE
      main sources:
        subdir: rpc
   #]===============================]
-  src/ripple/rpc/handlers/AccountChannels.cpp
-  src/ripple/rpc/handlers/AccountCurrenciesHandler.cpp
   src/ripple/rpc/handlers/AccountInfo.cpp
-  src/ripple/rpc/handlers/AccountLines.cpp
   src/ripple/rpc/handlers/AccountObjects.cpp
-  src/ripple/rpc/handlers/AccountOffers.cpp
   src/ripple/rpc/handlers/AccountTx.cpp
   src/ripple/rpc/handlers/BlackList.cpp
-  src/ripple/rpc/handlers/BookOffers.cpp
   src/ripple/rpc/handlers/CanDelete.cpp
   src/ripple/rpc/handlers/Connect.cpp
   src/ripple/rpc/handlers/ConsensusInfo.cpp
@@ -574,7 +538,6 @@ target_sources (rippled PRIVATE
   src/ripple/rpc/handlers/Feature1.cpp
   src/ripple/rpc/handlers/Fee1.cpp
   src/ripple/rpc/handlers/FetchInfo.cpp
-  src/ripple/rpc/handlers/GatewayBalances.cpp
   src/ripple/rpc/handlers/GetCounts.cpp
   src/ripple/rpc/handlers/LedgerAccept.cpp
   src/ripple/rpc/handlers/LedgerCleanerHandler.cpp
@@ -590,15 +553,12 @@ target_sources (rippled PRIVATE
   src/ripple/rpc/handlers/LogRotate.cpp
   src/ripple/rpc/handlers/Manifest.cpp
   src/ripple/rpc/handlers/NodeToShard.cpp
-  src/ripple/rpc/handlers/NoRippleCheck.cpp
   src/ripple/rpc/handlers/OwnerInfo.cpp
-  src/ripple/rpc/handlers/PathFind.cpp
   src/ripple/rpc/handlers/Peers.cpp
   src/ripple/rpc/handlers/Ping.cpp
   src/ripple/rpc/handlers/Print.cpp
   src/ripple/rpc/handlers/Random.cpp
   src/ripple/rpc/handlers/Reservations.cpp
-  src/ripple/rpc/handlers/RipplePathFind.cpp
   src/ripple/rpc/handlers/ServerInfo.cpp
   src/ripple/rpc/handlers/ServerState.cpp
   src/ripple/rpc/handlers/SignFor.cpp
@@ -620,7 +580,6 @@ target_sources (rippled PRIVATE
   src/ripple/rpc/handlers/WalletPropose.cpp
   src/ripple/rpc/impl/DeliveredAmount.cpp
   src/ripple/rpc/impl/Handler.cpp
-  src/ripple/rpc/impl/LegacyPathFind.cpp
   src/ripple/rpc/impl/RPCHandler.cpp
   src/ripple/rpc/impl/RPCHelpers.cpp
   src/ripple/rpc/impl/Role.cpp
@@ -664,13 +623,10 @@ if (tests)
     src/test/app/AccountDelete_test.cpp
     src/test/app/AccountTxPaging_test.cpp
     src/test/app/AmendmentTable_test.cpp
-    src/test/app/CrossingLimits_test.cpp
     src/test/app/DeliverMin_test.cpp
     src/test/app/Discrepancy_test.cpp
     src/test/app/DNS_test.cpp
     src/test/app/FeeVote_test.cpp
-    src/test/app/Flow_test.cpp
-    src/test/app/Freeze_test.cpp
     src/test/app/HashRouter_test.cpp
     src/test/app/LedgerHistory_test.cpp
     src/test/app/LedgerLoad_test.cpp
@@ -679,8 +635,6 @@ if (tests)
     src/test/app/Manifest_test.cpp
     src/test/app/MultiSign_test.cpp
     src/test/app/NetworkID_test.cpp
-    src/test/app/OfferStream_test.cpp
-    src/test/app/Offer_test.cpp
     src/test/app/OversizeMeta_test.cpp
     src/test/app/Path_test.cpp
     src/test/app/PayStrand_test.cpp
@@ -691,11 +645,8 @@ if (tests)
     src/test/app/SHAMapStore_test.cpp
     src/test/app/SetAuth_test.cpp
     src/test/app/SetRegularKey_test.cpp
-    src/test/app/SetTrust_test.cpp
-    src/test/app/Taker_test.cpp
     src/test/app/TheoreticalQuality_test.cpp
     src/test/app/Transaction_ordering_test.cpp
-    src/test/app/TrustAndBalance_test.cpp
     src/test/app/TxQ_test.cpp
     src/test/app/ValidatorKeys_test.cpp
     src/test/app/ValidatorList_test.cpp
@@ -709,7 +660,6 @@ if (tests)
     src/test/basics/DetectCrash_test.cpp
     src/test/basics/Expected_test.cpp
     src/test/basics/FileUtilities_test.cpp
-    src/test/basics/IOUAmount_test.cpp
     src/test/basics/KeyCache_test.cpp
     src/test/basics/Number_test.cpp
     src/test/basics/PerfLog_test.cpp
@@ -808,26 +758,16 @@ if (tests)
     src/test/jtx/impl/last_ledger_sequence.cpp
     src/test/jtx/impl/memo.cpp
     src/test/jtx/impl/multisign.cpp
-    src/test/jtx/impl/offer.cpp
     src/test/jtx/impl/owners.cpp
-    src/test/jtx/impl/paths.cpp
     src/test/jtx/impl/pay.cpp
-    src/test/jtx/impl/quality2.cpp
-    src/test/jtx/impl/rate.cpp
     src/test/jtx/impl/regkey.cpp
     src/test/jtx/impl/sendmax.cpp
     src/test/jtx/impl/seq.cpp
     src/test/jtx/impl/sig.cpp
     src/test/jtx/impl/tag.cpp
-    src/test/jtx/impl/trust.cpp
     src/test/jtx/impl/txflags.cpp
     src/test/jtx/impl/utility.cpp
 
-    #[===============================[
-       test sources:
-         subdir: ledger
-    #]===============================]
-    src/test/ledger/BookDirs_test.cpp
     src/test/ledger/Directory_test.cpp
     src/test/ledger/Invariants_test.cpp
     src/test/ledger/PaymentSandbox_test.cpp
@@ -896,17 +836,13 @@ if (tests)
        test sources:
          subdir: rpc
     #]===============================]
-    src/test/rpc/AccountCurrencies_test.cpp
     src/test/rpc/AccountInfo_test.cpp
     src/test/rpc/AccountObjects_test.cpp
-    src/test/rpc/AccountOffers_test.cpp
     src/test/rpc/AccountSet_test.cpp
     src/test/rpc/AccountTx_test.cpp
     src/test/rpc/AmendmentBlocked_test.cpp
-    src/test/rpc/Book_test.cpp
     src/test/rpc/DeliveredAmount_test.cpp
     src/test/rpc/Feature_test.cpp
-    src/test/rpc/GatewayBalances_test.cpp
     src/test/rpc/GetCounts_test.cpp
     src/test/rpc/JSONRPC_test.cpp
     src/test/rpc/KeyGeneration_test.cpp
@@ -916,8 +852,6 @@ if (tests)
     src/test/rpc/LedgerRequestRPC_test.cpp
     src/test/rpc/ManifestRPC_test.cpp
     src/test/rpc/NodeToShardRPC_test.cpp
-    src/test/rpc/NoRippleCheck_test.cpp
-    src/test/rpc/NoRipple_test.cpp
     src/test/rpc/OwnerInfo_test.cpp
     src/test/rpc/Peers_test.cpp
     src/test/rpc/ReportingETL_test.cpp

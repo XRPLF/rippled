@@ -25,23 +25,11 @@
 namespace ripple {
 
 Json::Value
-doAccountCurrencies(RPC::JsonContext&);
-Json::Value
 doAccountInfo(RPC::JsonContext&);
-Json::Value
-doAccountLines(RPC::JsonContext&);
-Json::Value
-doAccountChannels(RPC::JsonContext&);
 Json::Value
 doAccountObjects(RPC::JsonContext&);
 Json::Value
-doAccountOffers(RPC::JsonContext&);
-Json::Value
 doAccountTxJson(RPC::JsonContext&);
-Json::Value
-doBookOffers(RPC::JsonContext&);
-Json::Value
-doBookChanges(RPC::JsonContext&);
 Json::Value
 doBlackList(RPC::JsonContext&);
 Json::Value
@@ -58,8 +46,6 @@ Json::Value
 doFee(RPC::JsonContext&);
 Json::Value
 doFetchInfo(RPC::JsonContext&);
-Json::Value
-doGatewayBalances(RPC::JsonContext&);
 Json::Value
 doGetCounts(RPC::JsonContext&);
 Json::Value
@@ -87,11 +73,7 @@ doManifest(RPC::JsonContext&);
 Json::Value
 doNodeToShard(RPC::JsonContext&);
 Json::Value
-doNoRippleCheck(RPC::JsonContext&);
-Json::Value
 doOwnerInfo(RPC::JsonContext&);
-Json::Value
-doPathFind(RPC::JsonContext&);
 Json::Value
 doPause(RPC::JsonContext&);
 Json::Value
@@ -110,8 +92,6 @@ Json::Value
 doPeerReservationsDel(RPC::JsonContext&);
 Json::Value
 doPeerReservationsList(RPC::JsonContext&);
-Json::Value
-doRipplePathFind(RPC::JsonContext&);
 Json::Value
 doServerInfo(RPC::JsonContext&);  // for humans
 Json::Value

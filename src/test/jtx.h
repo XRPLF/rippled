@@ -46,7 +46,6 @@
 #include <test/jtx/pay.h>
 #include <test/jtx/prop.h>
 #include <test/jtx/quality.h>
-#include <test/jtx/rate.h>
 #include <test/jtx/regkey.h>
 #include <test/jtx/require.h>
 #include <test/jtx/requires.h>

@@ -45,25 +45,25 @@ namespace ripple {
 enum class LedgerNameSpace : std::uint16_t {
     ACCOUNT = 'a',
     DIR_NODE = 'd',
-    TRUST_LINE = 'r',
-    OFFER = 'o',
+//    TRUST_LINE = 'r',
+//    OFFER = 'o',
     OWNER_DIR = 'O',
-    BOOK_DIR = 'B',
+//    BOOK_DIR = 'B',
     SKIP_LIST = 's',
-    ESCROW = 'u',
+//    ESCROW = 'u',
     AMENDMENTS = 'f',
     FEE_SETTINGS = 'e',
-    TICKET = 'T',
+//    TICKET = 'T',
     SIGNER_LIST = 'S',
-    XRP_PAYMENT_CHANNEL = 'x',
-    CHECK = 'C',
+//    XRP_PAYMENT_CHANNEL = 'x',
+//    CHECK = 'C',
     NEGATIVE_UNL = 'N',
 
     // No longer used or supported. Left here to reserve the space
     // to avoid accidental reuse.
-    CONTRACT [[deprecated]] = 'c',
-    GENERATOR [[deprecated]] = 'g',
-    NICKNAME [[deprecated]] = 'n',
+//    CONTRACT [[deprecated]] = 'c',
+//    GENERATOR [[deprecated]] = 'g',
+//    NICKNAME [[deprecated]] = 'n',
 };
 
 template <class... Args>
@@ -73,52 +73,52 @@ indexHash(LedgerNameSpace space, Args const&... args)
     return sha512Half(safe_cast<std::uint16_t>(space), args...);
 }
 
-uint256
-getBookBase(Book const& book)
-{
-    assert(isConsistent(book));
+//uint256
+//getBookBase(Book const& book)
+//{
+//    assert(isConsistent(book));
+//
+//    auto const index = indexHash(
+//        LedgerNameSpace::BOOK_DIR,
+//        book.in.currency,
+//        book.out.currency,
+//        book.in.account,
+//        book.out.account);
+//
+//    // Return with quality 0.
+//    auto k = keylet::quality({ltDIR_NODE, index}, 0);
+//
+//    return k.key;
+//}
 
-    auto const index = indexHash(
-        LedgerNameSpace::BOOK_DIR,
-        book.in.currency,
-        book.out.currency,
-        book.in.account,
-        book.out.account);
+//uint256
+//getQualityNext(uint256 const& uBase)
+//{
+//    static constexpr uint256 nextq(
+//        "0000000000000000000000000000000000000000000000010000000000000000");
+//    return uBase + nextq;
+//}
 
-    // Return with quality 0.
-    auto k = keylet::quality({ltDIR_NODE, index}, 0);
+//std::uint64_t
+//getQuality(uint256 const& uBase)
+//{
+//    // VFALCO [base_uint] This assumes a certain storage format
+//    return boost::endian::big_to_native(((std::uint64_t*)uBase.end())[-1]);
+//}
 
-    return k.key;
-}
+//uint256
+//getTicketIndex(AccountID const& account, std::uint32_t ticketSeq)
+//{
+//    return indexHash(
+//        LedgerNameSpace::TICKET, account, std::uint32_t(ticketSeq));
+//}
 
-uint256
-getQualityNext(uint256 const& uBase)
-{
-    static constexpr uint256 nextq(
-        "0000000000000000000000000000000000000000000000010000000000000000");
-    return uBase + nextq;
-}
-
-std::uint64_t
-getQuality(uint256 const& uBase)
-{
-    // VFALCO [base_uint] This assumes a certain storage format
-    return boost::endian::big_to_native(((std::uint64_t*)uBase.end())[-1]);
-}
-
-uint256
-getTicketIndex(AccountID const& account, std::uint32_t ticketSeq)
-{
-    return indexHash(
-        LedgerNameSpace::TICKET, account, std::uint32_t(ticketSeq));
-}
-
-uint256
-getTicketIndex(AccountID const& account, SeqProxy ticketSeq)
-{
-    assert(ticketSeq.isTicket());
-    return getTicketIndex(account, ticketSeq.value());
-}
+//uint256
+//getTicketIndex(AccountID const& account, SeqProxy ticketSeq)
+//{
+//    assert(ticketSeq.isTicket());
+//    return getTicketIndex(account, ticketSeq.value());
+//}
 
 //------------------------------------------------------------------------------
 
@@ -178,71 +178,71 @@ negativeUNL() noexcept
     return ret;
 }
 
-Keylet
-book_t::operator()(Book const& b) const
-{
-    return {ltDIR_NODE, getBookBase(b)};
-}
+//Keylet
+//book_t::operator()(Book const& b) const
+//{
+//    return {ltDIR_NODE, getBookBase(b)};
+//}
 
-Keylet
-line(
-    AccountID const& id0,
-    AccountID const& id1,
-    Currency const& currency) noexcept
-{
-    // There is code in SetTrust that calls us with id0 == id1, to allow users
-    // to locate and delete such "weird" trustlines. If we remove that code, we
-    // could enable this assert:
-    // assert(id0 != id1);
+//Keylet
+//line(
+//    AccountID const& id0,
+//    AccountID const& id1,
+//    Currency const& currency) noexcept
+//{
+//    // There is code in SetTrust that calls us with id0 == id1, to allow users
+//    // to locate and delete such "weird" trustlines. If we remove that code, we
+//    // could enable this assert:
+//    // assert(id0 != id1);
+//
+//    // A trust line is shared between two accounts; while we typically think
+//    // of this as an "issuer" and a "holder" the relationship is actually fully
+//    // bidirectional.
+//    //
+//    // So that we can generate a unique ID for a trust line, regardess of which
+//    // side of the line we're looking at, we define a "canonical" order for the
+//    // two accounts (smallest then largest)  and hash them in that order:
+//    auto const accounts = std::minmax(id0, id1);
+//
+//    return {
+//        ltRIPPLE_STATE,
+//        indexHash(
+//            LedgerNameSpace::TRUST_LINE,
+//            accounts.first,
+//            accounts.second,
+//            currency)};
+//}
 
-    // A trust line is shared between two accounts; while we typically think
-    // of this as an "issuer" and a "holder" the relationship is actually fully
-    // bidirectional.
-    //
-    // So that we can generate a unique ID for a trust line, regardess of which
-    // side of the line we're looking at, we define a "canonical" order for the
-    // two accounts (smallest then largest)  and hash them in that order:
-    auto const accounts = std::minmax(id0, id1);
+//Keylet
+//offer(AccountID const& id, std::uint32_t seq) noexcept
+//{
+//    return {ltOFFER, indexHash(LedgerNameSpace::OFFER, id, seq)};
+//}
 
-    return {
-        ltRIPPLE_STATE,
-        indexHash(
-            LedgerNameSpace::TRUST_LINE,
-            accounts.first,
-            accounts.second,
-            currency)};
-}
+//Keylet
+//quality(Keylet const& k, std::uint64_t q) noexcept
+//{
+//    assert(k.type == ltDIR_NODE);
+//
+//    // Indexes are stored in big endian format: they print as hex as stored.
+//    // Most significant bytes are first and the least significant bytes
+//    // represent adjacent entries. We place the quality, in big endian format,
+//    // in the 8 right most bytes; this way, incrementing goes to the next entry
+//    // for indexes.
+//    uint256 x = k.key;
+//
+//    // FIXME This is ugly and we can and should do better...
+//    ((std::uint64_t*)x.end())[-1] = boost::endian::native_to_big(q);
+//
+//    return {ltDIR_NODE, x};
+//}
 
-Keylet
-offer(AccountID const& id, std::uint32_t seq) noexcept
-{
-    return {ltOFFER, indexHash(LedgerNameSpace::OFFER, id, seq)};
-}
-
-Keylet
-quality(Keylet const& k, std::uint64_t q) noexcept
-{
-    assert(k.type == ltDIR_NODE);
-
-    // Indexes are stored in big endian format: they print as hex as stored.
-    // Most significant bytes are first and the least significant bytes
-    // represent adjacent entries. We place the quality, in big endian format,
-    // in the 8 right most bytes; this way, incrementing goes to the next entry
-    // for indexes.
-    uint256 x = k.key;
-
-    // FIXME This is ugly and we can and should do better...
-    ((std::uint64_t*)x.end())[-1] = boost::endian::native_to_big(q);
-
-    return {ltDIR_NODE, x};
-}
-
-Keylet
-next_t::operator()(Keylet const& k) const
-{
-    assert(k.type == ltDIR_NODE);
-    return {ltDIR_NODE, getQualityNext(k.key)};
-}
+//Keylet
+//next_t::operator()(Keylet const& k) const
+//{
+//    assert(k.type == ltDIR_NODE);
+//    return {ltDIR_NODE, getQualityNext(k.key)};
+//}
 
 // This function is presently static, since it's never accessed from anywhere
 // else. If we ever support multiple pages of signer lists, this would be the

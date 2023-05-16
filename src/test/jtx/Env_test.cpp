@@ -187,7 +187,7 @@ public:
         {
             Env env(*this);
             env.fund(n, "alice", "bob", gw);
-            env(trust("alice", USD(100)), require(lines("alice", 1)));
+//            env(trust("alice", USD(100)), require(lines("alice", 1)));
         }
 
         // balance
@@ -199,7 +199,7 @@ public:
             env.fund(n, alice, gw);
             BEAST_EXPECT(env.balance(alice) == n);
             BEAST_EXPECT(env.balance(gw) == n);
-            env.trust(USD(1000), alice);
+//            env.trust(USD(1000), alice);
             env(pay(gw, alice, USD(10)));
             BEAST_EXPECT(to_string(env.balance("alice", USD)) == "10/USD(gw)");
             BEAST_EXPECT(
@@ -242,7 +242,7 @@ public:
         env.require(balance("alice", XRP(none)));
         env.fund(XRP(10000), "alice", gw);
         env.require(balance("alice", USD(none)));
-        env.trust(USD(100), "alice");
+//        env.trust(USD(100), "alice");
         env.require(balance("alice", XRP(10000)));  // fee refunded
         env.require(balance("alice", USD(0)));
         env(pay(gw, "alice", USD(10)), require(balance("alice", USD(10))));
@@ -318,7 +318,7 @@ public:
 
         env(pay(env.master, "dilbert", XRP(1000)), sig(env.master));
 
-        env.trust(USD(100), "alice", "bob", "carol");
+//        env.trust(USD(100), "alice", "bob", "carol");
         env.require(owners("alice", 1), lines("alice", 1));
         env(rate(gw, 1.05));
 

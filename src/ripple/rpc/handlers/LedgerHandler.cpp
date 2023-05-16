@@ -238,61 +238,6 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
                             lb->key().data(), lb->key().size());
                     if (ub != desired->stateMap().end())
                         obj->set_successor(ub->key().data(), ub->key().size());
-                    if (objectType == ltDIR_NODE)
-                    {
-                        auto sle = std::make_shared<SLE>(SerialIter{blob}, k);
-                        if (!sle->isFieldPresent(sfOwner))
-                        {
-                            auto bookBase = keylet::quality({ltDIR_NODE, k}, 0);
-                            if (!inBase && inDesired)
-                            {
-                                auto firstBook =
-                                    desired->stateMap().upper_bound(
-                                        bookBase.key);
-                                if (firstBook != desired->stateMap().end() &&
-                                    firstBook->key() <
-                                        getQualityNext(bookBase.key) &&
-                                    firstBook->key() == k)
-                                {
-                                    auto succ = response.add_book_successors();
-                                    succ->set_book_base(
-                                        bookBase.key.data(),
-                                        bookBase.key.size());
-                                    succ->set_first_book(
-                                        firstBook->key().data(),
-                                        firstBook->key().size());
-                                }
-                            }
-                            if (inBase && !inDesired)
-                            {
-                                auto oldFirstBook =
-                                    base->stateMap().upper_bound(bookBase.key);
-                                if (oldFirstBook != base->stateMap().end() &&
-                                    oldFirstBook->key() <
-                                        getQualityNext(bookBase.key) &&
-                                    oldFirstBook->key() == k)
-                                {
-                                    auto succ = response.add_book_successors();
-                                    succ->set_book_base(
-                                        bookBase.key.data(),
-                                        bookBase.key.size());
-                                    auto newFirstBook =
-                                        desired->stateMap().upper_bound(
-                                            bookBase.key);
-
-                                    if (newFirstBook !=
-                                            desired->stateMap().end() &&
-                                        newFirstBook->key() <
-                                            getQualityNext(bookBase.key))
-                                    {
-                                        succ->set_first_book(
-                                            newFirstBook->key().data(),
-                                            newFirstBook->key().size());
-                                    }
-                                }
-                            }
-                        }
-                    }
                 }
             }
         }

@@ -26,7 +26,6 @@
 #include <ripple/protocol/STBlob.h>
 #include <ripple/protocol/STInteger.h>
 #include <ripple/protocol/STObject.h>
-#include <ripple/protocol/STPathSet.h>
 #include <ripple/protocol/STVector256.h>
 #include <ripple/protocol/impl/STVar.h>
 
@@ -148,9 +147,6 @@ STVar::STVar(SerialIter& sit, SField const& name, int depth)
         case STI_ACCOUNT:
             construct<STAccount>(sit, name);
             return;
-        case STI_PATHSET:
-            construct<STPathSet>(sit, name);
-            return;
         case STI_OBJECT:
             construct<STObject>(sit, name, depth);
             return;
@@ -202,9 +198,6 @@ STVar::STVar(SerializedTypeID id, SField const& name)
             return;
         case STI_ACCOUNT:
             construct<STAccount>(name);
-            return;
-        case STI_PATHSET:
-            construct<STPathSet>(name);
             return;
         case STI_OBJECT:
             construct<STObject>(name);

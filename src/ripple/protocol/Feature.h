@@ -302,38 +302,22 @@ foreachFeature(FeatureBitset bs, F&& f)
             f(bitsetIndexToFeature(i));
 }
 
-extern uint256 const featureOwnerPaysFee;
-extern uint256 const featureFlow;
-extern uint256 const featureFlowCross;
 extern uint256 const fix1513;
-extern uint256 const featureChecks;
 extern uint256 const fix1571;
 extern uint256 const fix1543;
 extern uint256 const fix1623;
 extern uint256 const fix1515;
 extern uint256 const fix1578;
 extern uint256 const featureMultiSignReserve;
-extern uint256 const fixTakerDryOfferRemoval;
 extern uint256 const fixMasterKeyAsRegularKey;
-extern uint256 const fixCheckThreading;
 extern uint256 const featureDeletableAccounts;
-extern uint256 const fixQualityUpperBound;
 extern uint256 const featureRequireFullyCanonicalSig;
 extern uint256 const fix1781;
 extern uint256 const featureHardenedValidations;
 extern uint256 const fixAmendmentMajorityCalc;
 extern uint256 const featureNegativeUNL;
-extern uint256 const featureTicketBatch;
-extern uint256 const featureFlowSortStrands;
 extern uint256 const fixSTAmountCanonicalize;
-extern uint256 const fixRmSmallIncreasedQOffers;
-extern uint256 const featureCheckCashMakesTrustLine;
-extern uint256 const featureNonFungibleTokensV1;
 extern uint256 const featureExpandedSignerList;
-extern uint256 const featureNonFungibleTokensV1_1;
-extern uint256 const fixTrustLinesToSelf;
-extern uint256 const featureImmediateOfferKilled;
-extern uint256 const featureDisallowIncoming;
 extern uint256 const featureXRPFees;
 extern uint256 const fixUniversalNumber;
 

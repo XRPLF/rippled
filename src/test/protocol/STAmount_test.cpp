@@ -41,7 +41,7 @@ public:
     STAmount
     roundSelf(STAmount const& amount)
     {
-        if (amount.native())
+        if (true)
             return amount;
 
         std::uint64_t mantissa = amount.mantissa();
