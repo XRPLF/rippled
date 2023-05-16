@@ -441,7 +441,15 @@ transactionPreProcessImpl(
     {
         if (!tx_json.isMember(jss::Sequence))
         {
-            tx_json[jss::Sequence] = 0;
+            if (!sle)
+            {
+                JLOG(j.debug())
+                    << "transactionSign: Failed to find source account "
+                    << "in current ledger: " << toBase58(srcAddressID);
+
+                return rpcError(rpcSRC_ACT_NOT_FOUND);
+            }
+            tx_json[jss::Sequence] = app.getTxQ().nextQueuableSeq(sle).value();
         }
 
         if (!tx_json.isMember(jss::Flags))
