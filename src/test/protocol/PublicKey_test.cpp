@@ -434,10 +434,31 @@ public:
     }
 
     void
+    testMiscOperations()
+    {
+        testcase("Miscellaneous operations");
+
+        auto const pk1 = derivePublicKey(
+            KeyType::secp256k1,
+            generateSecretKey(
+                KeyType::secp256k1, generateSeed("masterpassphrase")));
+
+        PublicKey pk2(pk1);
+        BEAST_EXPECT(pk1 == pk2);
+        BEAST_EXPECT(pk2 == pk1);
+
+        PublicKey pk3;
+        pk3 = pk2;
+        BEAST_EXPECT(pk3 == pk2);
+        BEAST_EXPECT(pk1 == pk3);
+    }
+
+    void
     run() override
     {
         testBase58();
         testCanonical();
+        testMiscOperations();
     }
 };
 
