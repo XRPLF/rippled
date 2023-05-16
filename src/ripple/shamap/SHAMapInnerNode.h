@@ -147,7 +147,7 @@ public:
     getChildHash(int m) const;
 
     void
-    setChild(int m, std::shared_ptr<SHAMapTreeNode> const& child);
+    setChild(int m, std::shared_ptr<SHAMapTreeNode> child);
 
     void
     shareChild(int m, std::shared_ptr<SHAMapTreeNode> const& child);

@@ -86,9 +86,11 @@ RCLConsensus::Adaptor::Adaptor(
     , inboundTransactions_{inboundTransactions}
     , j_(journal)
     , validatorKeys_(validatorKeys)
-    , valCookie_{rand_int<std::uint64_t>(
-          1,
-          std::numeric_limits<std::uint64_t>::max())}
+    , valCookie_(
+          1 +
+          rand_int(
+              crypto_prng(),
+              std::numeric_limits<std::uint64_t>::max() - 1))
     , nUnlVote_(validatorKeys_.nodeID, j_)
 {
     assert(valCookie_ != 0);
@@ -179,7 +181,7 @@ RCLConsensus::Adaptor::share(RCLCxTx const& tx)
     if (app_.getHashRouter().shouldRelay(tx.id()))
     {
         JLOG(j_.debug()) << "Relaying disputed tx " << tx.id();
-        auto const slice = tx.tx_.slice();
+        auto const slice = tx.tx_->slice();
         protocol::TMTransaction msg;
         msg.set_rawtransaction(slice.data(), slice.size());
         msg.set_status(protocol::tsNEW);
@@ -211,15 +213,10 @@ RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
     prop.set_nodepubkey(
         validatorKeys_.publicKey.data(), validatorKeys_.publicKey.size());
 
-    auto signingHash = sha512Half(
-        HashPrefix::proposal,
-        std::uint32_t(proposal.proposeSeq()),
-        proposal.closeTime().time_since_epoch().count(),
-        proposal.prevLedger(),
-        proposal.position());
-
     auto sig = signDigest(
-        validatorKeys_.publicKey, validatorKeys_.secretKey, signingHash);
+        validatorKeys_.publicKey,
+        validatorKeys_.secretKey,
+        proposal.signingHash());
 
     prop.set_signature(sig.data(), sig.size());
 
@@ -328,7 +325,7 @@ RCLConsensus::Adaptor::onClose(
         tx.first->add(s);
         initialSet->addItem(
             SHAMapNodeType::tnTRANSACTION_NM,
-            SHAMapItem(tx.first->getTransactionID(), s.slice()));
+            make_shamapitem(tx.first->getTransactionID(), s.slice()));
     }
 
     // Add pseudo-transactions to the set
@@ -340,7 +337,7 @@ RCLConsensus::Adaptor::onClose(
             // pseudo-transactions
             auto validations = app_.validators().negativeUNLFilter(
                 app_.getValidations().getTrustedForLedger(
-                    prevLedger->info().parentHash));
+                    prevLedger->info().parentHash, prevLedger->seq() - 1));
             if (validations.size() >= app_.validators().quorum())
             {
                 feeVote_->doVoting(prevLedger, validations, initialSet);
@@ -372,7 +369,8 @@ RCLConsensus::Adaptor::onClose(
         RCLCensorshipDetector<TxID, LedgerIndex>::TxIDSeqVec proposed;
 
         initialSet->visitLeaves(
-            [&proposed, seq](std::shared_ptr<SHAMapItem const> const& item) {
+            [&proposed,
+             seq](boost::intrusive_ptr<SHAMapItem const> const& item) {
                 proposed.emplace_back(item->key(), seq);
             });
 
@@ -421,7 +419,9 @@ RCLConsensus::Adaptor::onAccept(
     Json::Value&& consensusJson)
 {
     app_.getJobQueue().addJob(
-        jtACCEPT, "acceptLedger", [=, cj = std::move(consensusJson)]() mutable {
+        jtACCEPT,
+        "acceptLedger",
+        [=, this, cj = std::move(consensusJson)]() mutable {
             // Note that no lock is held or acquired during this job.
             // This is because generic Consensus guarantees that once a ledger
             // is accepted, the consensus results and capture by reference state
@@ -499,10 +499,11 @@ RCLConsensus::Adaptor::doAccept(
                 std::make_shared<STTx const>(SerialIter{item.slice()}));
             JLOG(j_.debug()) << "    Tx: " << item.key();
         }
-        catch (std::exception const&)
+        catch (std::exception const& ex)
         {
             failed.insert(item.key());
-            JLOG(j_.warn()) << "    Tx: " << item.key() << " throws!";
+            JLOG(j_.warn())
+                << "    Tx: " << item.key() << " throws: " << ex.what();
         }
     }
 
@@ -529,7 +530,7 @@ RCLConsensus::Adaptor::doAccept(
         std::vector<TxID> accepted;
 
         result.txns.map_->visitLeaves(
-            [&accepted](std::shared_ptr<SHAMapItem const> const& item) {
+            [&accepted](boost::intrusive_ptr<SHAMapItem const> const& item) {
                 accepted.push_back(item->key());
             });
 
@@ -604,7 +605,7 @@ RCLConsensus::Adaptor::doAccept(
                         << "Test applying disputed transaction that did"
                         << " not get in " << dispute.tx().id();
 
-                    SerialIter sit(dispute.tx().tx_.slice());
+                    SerialIter sit(dispute.tx().tx_->slice());
                     auto txn = std::make_shared<STTx const>(sit);
 
                     // Disputed pseudo-transactions that were not accepted
@@ -616,10 +617,11 @@ RCLConsensus::Adaptor::doAccept(
 
                     anyDisputes = true;
                 }
-                catch (std::exception const&)
+                catch (std::exception const& ex)
                 {
-                    JLOG(j_.debug())
-                        << "Failed to apply transaction we voted NO on";
+                    JLOG(j_.debug()) << "Failed to apply transaction we voted "
+                                        "NO on. Exception: "
+                                     << ex.what();
                 }
             }
         }
@@ -840,7 +842,8 @@ RCLConsensus::Adaptor::validate(
             if (ledger.ledger_->isVotingLedger())
             {
                 // Fees:
-                feeVote_->doValidation(ledger.ledger_->fees(), v);
+                feeVote_->doValidation(
+                    ledger.ledger_->fees(), ledger.ledger_->rules(), v);
 
                 // Amendments
                 // FIXME: pass `v` and have the function insert the array

@@ -203,7 +203,7 @@ public:
         wait_for(std::chrono::duration<Rep, Period> const& rel_time)
         {
             std::unique_lock<std::mutex> lk(mutex_);
-            auto b = cv_.wait_for(lk, rel_time, [=] { return signaled_; });
+            auto b = cv_.wait_for(lk, rel_time, [this] { return signaled_; });
             signaled_ = false;
             return b;
         }

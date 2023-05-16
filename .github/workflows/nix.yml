@@ -1,0 +1,111 @@
+name: nix
+on: [push, pull_request]
+
+jobs:
+
+  dependencies:
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - linux
+        compiler:
+          - gcc
+          - clang
+        configuration:
+          - Debug
+          - Release
+        include:
+          - compiler: gcc
+            profile:
+              version: 11
+              cc: /usr/bin/gcc
+              cxx: /usr/bin/g++
+          - compiler: clang
+            profile:
+              version: 14
+              cc: /usr/bin/clang-14
+              cxx: /usr/bin/clang++-14
+    runs-on: [self-hosted, heavy]
+    container: thejohnfreeman/rippled-build-ubuntu:12e19cd9034b
+    env:
+      build_dir: .build
+    steps:
+      - name: check environment
+        run: |
+          echo ${PATH} | tr ':' '\n'
+          conan --version
+          cmake --version
+          env
+      - name: configure Conan
+        run: |
+          conan profile new default --detect
+          conan profile update settings.compiler.cppstd=20 default
+          conan profile update settings.compiler=${{ matrix.compiler }} default
+          conan profile update settings.compiler.version=${{ matrix.profile.version }} default
+          conan profile update settings.compiler.libcxx=libstdc++11 default
+          conan profile update env.CC=${{ matrix.profile.cc }} default
+          conan profile update env.CXX=${{ matrix.profile.cxx }} default
+          conan profile update conf.tools.build:compiler_executables='{"c": "${{ matrix.profile.cc }}", "cpp": "${{ matrix.profile.cxx }}"}' default
+      - name: checkout
+        uses: actions/checkout@v3
+      - name: dependencies
+        uses: ./.github/actions/dependencies
+        with:
+          configuration: ${{ matrix.configuration }}
+      - name: archive cache
+        run: tar -czf conan.tar -C ~/.conan .
+      - name: upload cache
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
+          path: conan.tar
+
+
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - linux
+        compiler:
+          - gcc
+          - clang
+        configuration:
+          - Debug
+          - Release
+        cmake-args:
+          -
+          - "-Dunity=ON"
+    needs: dependencies
+    runs-on: [self-hosted, heavy]
+    container: thejohnfreeman/rippled-build-ubuntu:12e19cd9034b
+    env:
+      build_dir: .build
+    steps:
+      - name: download cache
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
+      - name: extract cache
+        run: |
+          mkdir -p ~/.conan
+          tar -xzf conan.tar -C ~/.conan
+      - name: check environment
+        run: |
+          echo ${PATH} | tr ':' '\n'
+          conan --version
+          cmake --version
+          env
+          ls ~/.conan
+      - name: checkout
+        uses: actions/checkout@v3
+      - name: build
+        uses: ./.github/actions/build
+        with:
+          generator: Ninja
+          configuration: ${{ matrix.configuration }}
+          cmake-args: ${{ matrix.cmake-args }}
+      - name: test
+        run: |
+          ${build_dir}/rippled --unittest --unittest-jobs $(nproc)

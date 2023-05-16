@@ -23,9 +23,11 @@
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/tx/impl/Change.h>
 #include <ripple/basics/Log.h>
+#include <ripple/ledger/Sandbox.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/TxFlags.h>
+#include <string_view>
 
 namespace ripple {
 
@@ -88,8 +90,46 @@ Change::preclaim(PreclaimContext const& ctx)
 
     switch (ctx.tx.getTxnType())
     {
-        case ttAMENDMENT:
         case ttFEE:
+            if (ctx.view.rules().enabled(featureXRPFees))
+            {
+                // The ttFEE transaction format defines these fields as
+                // optional, but once the XRPFees feature is enabled, they are
+                // required.
+                if (!ctx.tx.isFieldPresent(sfBaseFeeDrops) ||
+                    !ctx.tx.isFieldPresent(sfReserveBaseDrops) ||
+                    !ctx.tx.isFieldPresent(sfReserveIncrementDrops))
+                    return temMALFORMED;
+                // The ttFEE transaction format defines these fields as
+                // optional, but once the XRPFees feature is enabled, they are
+                // forbidden.
+                if (ctx.tx.isFieldPresent(sfBaseFee) ||
+                    ctx.tx.isFieldPresent(sfReferenceFeeUnits) ||
+                    ctx.tx.isFieldPresent(sfReserveBase) ||
+                    ctx.tx.isFieldPresent(sfReserveIncrement))
+                    return temMALFORMED;
+            }
+            else
+            {
+                // The ttFEE transaction format formerly defined these fields
+                // as required. When the XRPFees feature was implemented, they
+                // were changed to be optional. Until the feature has been
+                // enabled, they are required.
+                if (!ctx.tx.isFieldPresent(sfBaseFee) ||
+                    !ctx.tx.isFieldPresent(sfReferenceFeeUnits) ||
+                    !ctx.tx.isFieldPresent(sfReserveBase) ||
+                    !ctx.tx.isFieldPresent(sfReserveIncrement))
+                    return temMALFORMED;
+                // The ttFEE transaction format defines these fields as
+                // optional, but without the XRPFees feature, they are
+                // forbidden.
+                if (ctx.tx.isFieldPresent(sfBaseFeeDrops) ||
+                    ctx.tx.isFieldPresent(sfReserveBaseDrops) ||
+                    ctx.tx.isFieldPresent(sfReserveIncrementDrops))
+                    return temDISABLED;
+            }
+            return tesSUCCESS;
+        case ttAMENDMENT:
         case ttUNL_MODIFY:
             return tesSUCCESS;
         default:
@@ -118,6 +158,88 @@ void
 Change::preCompute()
 {
     assert(account_ == beast::zero);
+}
+
+void
+Change::activateTrustLinesToSelfFix()
+{
+    JLOG(j_.warn()) << "fixTrustLinesToSelf amendment activation code starting";
+
+    auto removeTrustLineToSelf = [this](Sandbox& sb, uint256 id) {
+        auto tl = sb.peek(keylet::child(id));
+
+        if (tl == nullptr)
+        {
+            JLOG(j_.warn()) << id << ": Unable to locate trustline";
+            return true;
+        }
+
+        if (tl->getType() != ltRIPPLE_STATE)
+        {
+            JLOG(j_.warn()) << id << ": Unexpected type "
+                            << static_cast<std::uint16_t>(tl->getType());
+            return true;
+        }
+
+        auto const& lo = tl->getFieldAmount(sfLowLimit);
+        auto const& hi = tl->getFieldAmount(sfHighLimit);
+
+        if (lo != hi)
+        {
+            JLOG(j_.warn()) << id << ": Trustline doesn't meet requirements";
+            return true;
+        }
+
+        if (auto const page = tl->getFieldU64(sfLowNode); !sb.dirRemove(
+                keylet::ownerDir(lo.getIssuer()), page, tl->key(), false))
+        {
+            JLOG(j_.error()) << id << ": failed to remove low entry from "
+                             << toBase58(lo.getIssuer()) << ":" << page
+                             << " owner directory";
+            return false;
+        }
+
+        if (auto const page = tl->getFieldU64(sfHighNode); !sb.dirRemove(
+                keylet::ownerDir(hi.getIssuer()), page, tl->key(), false))
+        {
+            JLOG(j_.error()) << id << ": failed to remove high entry from "
+                             << toBase58(hi.getIssuer()) << ":" << page
+                             << " owner directory";
+            return false;
+        }
+
+        if (tl->getFlags() & lsfLowReserve)
+            adjustOwnerCount(
+                sb, sb.peek(keylet::account(lo.getIssuer())), -1, j_);
+
+        if (tl->getFlags() & lsfHighReserve)
+            adjustOwnerCount(
+                sb, sb.peek(keylet::account(hi.getIssuer())), -1, j_);
+
+        sb.erase(tl);
+
+        JLOG(j_.warn()) << "Successfully deleted trustline " << id;
+
+        return true;
+    };
+
+    using namespace std::literals;
+
+    Sandbox sb(&view());
+
+    if (removeTrustLineToSelf(
+            sb,
+            uint256{
+                "2F8F21EFCAFD7ACFB07D5BB04F0D2E18587820C7611305BB674A64EAB0FA71E1"sv}) &&
+        removeTrustLineToSelf(
+            sb,
+            uint256{
+                "326035D5C0560A9DA8636545DD5A1B0DFCFF63E68D491B5522B767BB00564B1A"sv}))
+    {
+        JLOG(j_.warn()) << "fixTrustLinesToSelf amendment activation code "
+                           "executed successfully";
+        sb.apply(ctx_.rawView());
+    }
 }
 
 TER
@@ -196,6 +318,9 @@ Change::applyAmendment()
         amendments.push_back(amendment);
         amendmentObject->setFieldV256(sfAmendments, amendments);
 
+        if (amendment == fixTrustLinesToSelf)
+            activateTrustLinesToSelfFix();
+
         ctx_.app.getAmendmentTable().enable(amendment);
 
         if (!ctx_.app.getAmendmentTable().isSupported(amendment))
@@ -228,13 +353,27 @@ Change::applyFee()
         feeObject = std::make_shared<SLE>(k);
         view().insert(feeObject);
     }
-
-    feeObject->setFieldU64(sfBaseFee, ctx_.tx.getFieldU64(sfBaseFee));
-    feeObject->setFieldU32(
-        sfReferenceFeeUnits, ctx_.tx.getFieldU32(sfReferenceFeeUnits));
-    feeObject->setFieldU32(sfReserveBase, ctx_.tx.getFieldU32(sfReserveBase));
-    feeObject->setFieldU32(
-        sfReserveIncrement, ctx_.tx.getFieldU32(sfReserveIncrement));
+    auto set = [](SLE::pointer& feeObject, STTx const& tx, auto const& field) {
+        feeObject->at(field) = tx[field];
+    };
+    if (view().rules().enabled(featureXRPFees))
+    {
+        set(feeObject, ctx_.tx, sfBaseFeeDrops);
+        set(feeObject, ctx_.tx, sfReserveBaseDrops);
+        set(feeObject, ctx_.tx, sfReserveIncrementDrops);
+        // Ensure the old fields are removed
+        feeObject->makeFieldAbsent(sfBaseFee);
+        feeObject->makeFieldAbsent(sfReferenceFeeUnits);
+        feeObject->makeFieldAbsent(sfReserveBase);
+        feeObject->makeFieldAbsent(sfReserveIncrement);
+    }
+    else
+    {
+        set(feeObject, ctx_.tx, sfBaseFee);
+        set(feeObject, ctx_.tx, sfReferenceFeeUnits);
+        set(feeObject, ctx_.tx, sfReserveBase);
+        set(feeObject, ctx_.tx, sfReserveIncrement);
+    }
 
     view().update(feeObject);
 

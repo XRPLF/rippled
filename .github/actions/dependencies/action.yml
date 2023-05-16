@@ -1,0 +1,23 @@
+name: dependencies
+inputs:
+  configuration:
+    required: true
+# An implicit input is the environment variable `build_dir`.
+runs:
+  using: composite
+  steps:
+    - name: export custom recipes
+      shell: bash
+      run: |
+        conan export external/snappy snappy/1.1.9@
+        conan export external/soci soci/4.0.3@
+    - name: install dependencies
+      shell: bash
+      run: |
+        mkdir ${build_dir}
+        cd ${build_dir}
+        conan install \
+          --output-folder . \
+          --build missing \
+          --settings build_type=${{ inputs.configuration }} \
+          ..

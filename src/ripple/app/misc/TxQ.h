@@ -860,7 +860,7 @@ setup_TxQ(Config const&);
 
 template <class T>
 XRPAmount
-toDrops(FeeLevel<T> const& level, XRPAmount const& baseFee)
+toDrops(FeeLevel<T> const& level, XRPAmount baseFee)
 {
     if (auto const drops = mulDiv(level, baseFee, TxQ::baseLevel); drops.first)
         return drops.second;

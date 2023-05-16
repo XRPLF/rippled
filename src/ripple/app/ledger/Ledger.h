@@ -83,6 +83,10 @@ public:
     Ledger&
     operator=(Ledger const&) = delete;
 
+    Ledger(Ledger&&) = delete;
+    Ledger&
+    operator=(Ledger&&) = delete;
+
     /** Create the Genesis ledger.
 
         The Genesis ledger contains a single account whose
@@ -266,11 +270,10 @@ public:
     setAccepted(
         NetClock::time_point closeTime,
         NetClock::duration closeResolution,
-        bool correctCloseTime,
-        Config const& config);
+        bool correctCloseTime);
 
     void
-    setImmutable(Config const& config, bool rehash = true);
+    setImmutable(bool rehash = true);
 
     bool
     isImmutable() const
@@ -291,10 +294,10 @@ public:
     void
     setFull() const
     {
-        txMap_->setFull();
-        stateMap_->setFull();
-        txMap_->setLedgerSeq(info_.seq);
-        stateMap_->setLedgerSeq(info_.seq);
+        txMap_.setFull();
+        txMap_.setLedgerSeq(info_.seq);
+        stateMap_.setFull();
+        stateMap_.setLedgerSeq(info_.seq);
     }
 
     void
@@ -306,25 +309,25 @@ public:
     SHAMap const&
     stateMap() const
     {
-        return *stateMap_;
+        return stateMap_;
     }
 
     SHAMap&
     stateMap()
     {
-        return *stateMap_;
+        return stateMap_;
     }
 
     SHAMap const&
     txMap() const
     {
-        return *txMap_;
+        return txMap_;
     }
 
     SHAMap&
     txMap()
     {
-        return *txMap_;
+        return txMap_;
     }
 
     // returns false on error
@@ -395,12 +398,18 @@ private:
     class txs_iter_impl;
 
     bool
-    setup(Config const& config);
+    setup();
+
+    void
+    defaultFees(Config const& config);
 
     bool mImmutable;
 
-    std::shared_ptr<SHAMap> txMap_;
-    std::shared_ptr<SHAMap> stateMap_;
+    // A SHAMap containing the transactions associated with this ledger.
+    SHAMap mutable txMap_;
+
+    // A SHAMap containing the state objects for this ledger.
+    SHAMap mutable stateMap_;
 
     // Protects fee variables
     std::mutex mutable mutex_;
@@ -408,6 +417,7 @@ private:
     Fees fees_;
     Rules rules_;
     LedgerInfo info_;
+    beast::Journal j_;
 };
 
 /** A ledger wrapped in a CachedView. */

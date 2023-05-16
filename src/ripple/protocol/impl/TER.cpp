@@ -77,7 +77,7 @@ transResults()
         MAKE_ERROR(tecINVARIANT_FAILED,              "One or more invariants for the transaction were not satisfied."),
         MAKE_ERROR(tecEXPIRED,                       "Expiration time is passed."),
         MAKE_ERROR(tecDUPLICATE,                     "Ledger object already exists."),
-        MAKE_ERROR(tecKILLED,                        "FillOrKill offer killed."),
+        MAKE_ERROR(tecKILLED,                        "No funds transferred and no offer created."),
         MAKE_ERROR(tecHAS_OBLIGATIONS,               "The account cannot be deleted since it has obligations."),
         MAKE_ERROR(tecTOO_SOON,                      "It is too early to attempt the requested operation. Please wait."),
         MAKE_ERROR(tecMAX_SEQUENCE_REACHED,          "The maximum sequence number was reached."),
@@ -124,6 +124,9 @@ transResults()
         MAKE_ERROR(telCAN_NOT_QUEUE_BLOCKED,  "Can not queue at this time: blocking transaction in queue."),
         MAKE_ERROR(telCAN_NOT_QUEUE_FEE,      "Can not queue at this time: fee insufficient to replace queued transaction."),
         MAKE_ERROR(telCAN_NOT_QUEUE_FULL,     "Can not queue at this time: queue is full."),
+        MAKE_ERROR(telWRONG_NETWORK,          "Transaction specifies a Network ID that differs from that of the local node."),
+        MAKE_ERROR(telREQUIRES_NETWORK_ID,    "Transactions submitted to this node/network must include a correct NetworkID field."),
+        MAKE_ERROR(telNETWORK_ID_MAKES_TX_NON_CANONICAL, "Transactions submitted to this node/network must NOT include a NetworkID field."),
 
         MAKE_ERROR(temMALFORMED,                 "Malformed transaction."),
         MAKE_ERROR(temBAD_AMOUNT,                "Can only send positive amounts."),

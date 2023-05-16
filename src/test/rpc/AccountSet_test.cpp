@@ -75,6 +75,7 @@ public:
                     // elsewhere.
                     continue;
                 }
+
                 if (flag == asfAuthorizedNFTokenMinter)
                 {
                     // The asfAuthorizedNFTokenMinter flag requires the
@@ -82,8 +83,18 @@ public:
                     // the transaction.  It is tested elsewhere.
                     continue;
                 }
-                else if (
-                    std::find(goodFlags.begin(), goodFlags.end(), flag) !=
+
+                if (flag == asfDisallowIncomingCheck ||
+                    flag == asfDisallowIncomingPayChan ||
+                    flag == asfDisallowIncomingNFTokenOffer ||
+                    flag == asfDisallowIncomingTrustline)
+                {
+                    // These flags are part of the DisallowIncoming amendment
+                    // and are tested elsewhere
+                    continue;
+                }
+
+                if (std::find(goodFlags.begin(), goodFlags.end(), flag) !=
                     goodFlags.end())
                 {
                     // Good flag

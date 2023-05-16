@@ -151,7 +151,7 @@ doAccountChannels(RPC::JsonContext& context)
         if (!sle)
             return rpcError(rpcINVALID_PARAMS);
 
-        if (!RPC::isOwnedByAccount(*ledger, sle, accountID))
+        if (!RPC::isRelatedToAccount(*ledger, sle, accountID))
             return rpcError(rpcINVALID_PARAMS);
     }
 
@@ -202,7 +202,7 @@ doAccountChannels(RPC::JsonContext& context)
             to_string(*marker) + "," + std::to_string(nextHint);
     }
 
-    result[jss::account] = context.app.accountIDCache().toBase58(accountID);
+    result[jss::account] = toBase58(accountID);
 
     for (auto const& item : visitData.items)
         addChannel(jsonChannels, *item);

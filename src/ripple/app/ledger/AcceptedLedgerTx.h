@@ -46,8 +46,7 @@ public:
     AcceptedLedgerTx(
         std::shared_ptr<ReadView const> const& ledger,
         std::shared_ptr<STTx const> const&,
-        std::shared_ptr<STObject const> const&,
-        AccountIDCache const&);
+        std::shared_ptr<STObject const> const&);
 
     std::shared_ptr<STTx const> const&
     getTxn() const

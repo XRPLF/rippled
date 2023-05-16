@@ -481,11 +481,10 @@ isMemoOkay(STObject const& st, std::string& reason)
             // The only allowed characters for MemoType and MemoFormat are the
             // characters allowed in URLs per RFC 3986: alphanumerics and the
             // following symbols: -._~:/?#[]@!$&'()*+,;=%
-            static std::array<char, 256> const allowedSymbols = [] {
-                std::array<char, 256> a;
-                a.fill(0);
+            static constexpr std::array<char, 256> const allowedSymbols = []() {
+                std::array<char, 256> a{};
 
-                std::string symbols(
+                std::string_view symbols(
                     "0123456789"
                     "-._~:/?#[]@!$&'()*+,;=%"
                     "ABCDEFGHIJKLMNOPQRSTUVWXYZ"

@@ -642,11 +642,6 @@ PeerImp::gracefulClose()
     assert(socket_.is_open());
     assert(!gracefulClose_);
     gracefulClose_ = true;
-#if 0
-    // Flush messages
-    while(send_queue_.size() > 1)
-        send_queue_.pop_back();
-#endif
     if (send_queue_.size() > 0)
         return;
     setTimer();
@@ -1613,10 +1608,11 @@ PeerImp::handleTransaction(
                 });
         }
     }
-    catch (std::exception const&)
+    catch (std::exception const& ex)
     {
         JLOG(p_journal_.warn())
-            << "Transaction invalid: " << strHex(m->rawtransaction());
+            << "Transaction invalid: " << strHex(m->rawtransaction())
+            << ". Exception: " << ex.what();
     }
 }
 
@@ -2119,7 +2115,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMStatusChange> const& m)
             m->ledgerseq(), app_.getLedgerMaster().getValidLedgerIndex());
     }
 
-    app_.getOPs().pubPeerStatus([=]() -> Json::Value {
+    app_.getOPs().pubPeerStatus([=, this]() -> Json::Value {
         Json::Value j = Json::objectValue;
 
         if (m->has_newstatus())
@@ -3115,8 +3111,10 @@ PeerImp::checkTransaction(
         app_.getOPs().processTransaction(
             tx, trusted, false, NetworkOPs::FailHard::no);
     }
-    catch (std::exception const&)
+    catch (std::exception const& ex)
     {
+        JLOG(p_journal_.warn())
+            << "Exception in " << __func__ << ": " << ex.what();
         app_.getHashRouter().setFlags(stx->getTransactionID(), SF_BAD);
         charge(Resource::feeBadData);
     }
@@ -3200,9 +3198,10 @@ PeerImp::checkValidation(
             }
         }
     }
-    catch (std::exception const&)
+    catch (std::exception const& ex)
     {
-        JLOG(p_journal_.trace()) << "Exception processing validation";
+        JLOG(p_journal_.trace())
+            << "Exception processing validation: " << ex.what();
         charge(Resource::feeInvalidRequest);
     }
 }
@@ -3571,7 +3570,7 @@ PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
                         << "processLedgerRequest: getNodeFat returns false";
                 }
             }
-            catch (std::exception& e)
+            catch (std::exception const& e)
             {
                 std::string info;
                 switch (itype)

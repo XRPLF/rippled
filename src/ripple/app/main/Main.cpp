@@ -133,8 +133,9 @@ printHelp(const po::options_description& desc)
            "     account_objects <account> [<ledger>] [strict]\n"
            "     account_offers <account>|<account_public_key> [<ledger>] "
            "[strict]\n"
-           "     account_tx accountID [ledger_min [ledger_max [limit "
-           "[offset]]]] [binary] [count] [descending]\n"
+           "     account_tx accountID [ledger_index_min [ledger_index_max "
+           "[limit "
+           "]]] [binary]\n"
            "     book_changes [<ledger hash|id>]\n"
            "     book_offers <taker_pays> <taker_gets> [<taker [<ledger> "
            "[<limit> [<proof> [<marker>]]]]]\n"
@@ -160,6 +161,7 @@ printHelp(const po::options_description& desc)
            "     ledger_request <ledger>\n"
            "     log_level [[<partition>] <severity>]\n"
            "     logrotate\n"
+           "     manifest <public_key>\n"
            "     node_to_shard [status|start|stop]\n"
            "     peers\n"
            "     ping\n"
@@ -179,6 +181,7 @@ printHelp(const po::options_description& desc)
            "     submit_multisigned <tx_json>\n"
            "     tx <id>\n"
            "     validation_create [<seed>|<pass_phrase>|<key>]\n"
+           "     validator_info\n"
            "     validators\n"
            "     validator_list_sites\n"
            "     version\n"
@@ -369,6 +372,10 @@ run(int argc, char** argv)
         "conf", po::value<std::string>(), "Specify the configuration file.")(
         "debug", "Enable normally suppressed debug logging")(
         "help,h", "Display this message.")(
+        "newnodeid", "Generate a new node identity for this server.")(
+        "nodeid",
+        po::value<std::string>(),
+        "Specify the node identity for this server.")(
         "quorum",
         po::value<std::size_t>(),
         "Override the minimum validation quorum.")(
@@ -753,7 +760,7 @@ run(int argc, char** argv)
         auto app = make_Application(
             std::move(config), std::move(logs), std::move(timeKeeper));
 
-        if (!app->setup())
+        if (!app->setup(vm))
             return -1;
 
         // With our configuration parsed, ensure we have

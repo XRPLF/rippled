@@ -494,16 +494,11 @@ template <typename clock_type>
 std::set<typename Peer::id_t>
 Slot<clock_type>::getSelected() const
 {
-    std::set<id_t> init;
-    return std::accumulate(
-        peers_.begin(), peers_.end(), init, [](auto& init, auto const& it) {
-            if (it.second.state == PeerState::Selected)
-            {
-                init.insert(it.first);
-                return init;
-            }
-            return init;
-        });
+    std::set<id_t> r;
+    for (auto const& [id, info] : peers_)
+        if (info.state == PeerState::Selected)
+            r.insert(id);
+    return r;
 }
 
 template <typename clock_type>
@@ -513,20 +508,20 @@ std::unordered_map<
 Slot<clock_type>::getPeers() const
 {
     using namespace std::chrono;
-    auto init = std::unordered_map<
+    auto r = std::unordered_map<
         id_t,
         std::tuple<PeerState, std::uint16_t, std::uint32_t, std::uint32_t>>();
-    return std::accumulate(
-        peers_.begin(), peers_.end(), init, [](auto& init, auto const& it) {
-            init.emplace(std::make_pair(
-                it.first,
-                std::move(std::make_tuple(
-                    it.second.state,
-                    it.second.count,
-                    epoch<milliseconds>(it.second.expire).count(),
-                    epoch<milliseconds>(it.second.lastMessage).count()))));
-            return init;
-        });
+
+    for (auto const& [id, info] : peers_)
+        r.emplace(std::make_pair(
+            id,
+            std::move(std::make_tuple(
+                info.state,
+                info.count,
+                epoch<milliseconds>(info.expire).count(),
+                epoch<milliseconds>(info.lastMessage).count()))));
+
+    return r;
 }
 
 /** Slots is a container for validator's Slot and handles Slot update

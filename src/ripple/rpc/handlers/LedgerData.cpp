@@ -25,7 +25,6 @@
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/GRPCHandlers.h>
 #include <ripple/rpc/Role.h>
-#include <ripple/rpc/impl/GRPCHelpers.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 #include <ripple/rpc/impl/Tuning.h>
 
@@ -95,6 +94,10 @@ doLedgerData(RPC::JsonContext& context)
         return jvResult;
     }
     Json::Value& nodes = jvResult[jss::state];
+    if (nodes.type() == Json::nullValue)
+    {
+        nodes = Json::Value(Json::arrayValue);
+    }
 
     auto e = lpLedger->sles.end();
     for (auto i = lpLedger->sles.upper_bound(key); i != e; ++i)

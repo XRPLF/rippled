@@ -40,6 +40,7 @@ TxFormats::TxFormats()
         {sfSigningPubKey, soeREQUIRED},
         {sfTxnSignature, soeOPTIONAL},
         {sfSigners, soeOPTIONAL},  // submit_multisigned
+        {sfNetworkID, soeOPTIONAL},
     };
 
     add(jss::AccountSet,
@@ -155,10 +156,15 @@ TxFormats::TxFormats()
         ttFEE,
         {
             {sfLedgerSequence, soeOPTIONAL},
-            {sfBaseFee, soeREQUIRED},
-            {sfReferenceFeeUnits, soeREQUIRED},
-            {sfReserveBase, soeREQUIRED},
-            {sfReserveIncrement, soeREQUIRED},
+            // Old version uses raw numbers
+            {sfBaseFee, soeOPTIONAL},
+            {sfReferenceFeeUnits, soeOPTIONAL},
+            {sfReserveBase, soeOPTIONAL},
+            {sfReserveIncrement, soeOPTIONAL},
+            // New version uses Amounts
+            {sfBaseFeeDrops, soeOPTIONAL},
+            {sfReserveBaseDrops, soeOPTIONAL},
+            {sfReserveIncrementDrops, soeOPTIONAL},
         },
         commonFields);
 

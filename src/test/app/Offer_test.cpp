@@ -950,9 +950,14 @@ public:
             env(pay(gw, alice, USD(1000)), ter(tesSUCCESS));
 
             // No cross:
-            env(offer(alice, XRP(1000), USD(1000)),
-                txflags(tfImmediateOrCancel),
-                ter(tesSUCCESS));
+            {
+                TER const expectedCode = features[featureImmediateOfferKilled]
+                    ? static_cast<TER>(tecKILLED)
+                    : static_cast<TER>(tesSUCCESS);
+                env(offer(alice, XRP(1000), USD(1000)),
+                    txflags(tfImmediateOrCancel),
+                    ter(expectedCode));
+            }
 
             env.require(
                 balance(alice, startBalance - f - f),
@@ -2074,7 +2079,8 @@ public:
         BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "100");
         jrr = ledgerEntryRoot(env, alice);
         BEAST_EXPECT(
-            jrr[jss::node][sfBalance.fieldName] == XRP(350).value().getText());
+            jrr[jss::node][sfBalance.fieldName] ==
+            STAmount(env.current()->fees().accountReserve(3)).getText());
 
         jrr = ledgerEntryState(env, bob, gw1, "USD");
         BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "-400");
@@ -2087,37 +2093,53 @@ public:
 
         using namespace jtx;
 
-        Env env{*this, features};
+        for (auto NumberSwitchOver : {false, true})
+        {
+            Env env{*this, features};
+            if (NumberSwitchOver)
+                env.enableFeature(fixUniversalNumber);
+            else
+                env.disableFeature(fixUniversalNumber);
 
-        auto const gw = Account{"gateway"};
-        auto const alice = Account{"alice"};
-        auto const bob = Account{"bob"};
-        auto const USD = gw["USD"];
+            auto const gw = Account{"gateway"};
+            auto const alice = Account{"alice"};
+            auto const bob = Account{"bob"};
+            auto const USD = gw["USD"];
 
-        env.fund(XRP(10000), gw, alice, bob);
+            env.fund(XRP(10000), gw, alice, bob);
 
-        env(rate(gw, 1.005));
+            env(rate(gw, 1.005));
 
-        env(trust(alice, USD(1000)));
-        env(trust(bob, USD(1000)));
-        env(trust(gw, alice["USD"](50)));
+            env(trust(alice, USD(1000)));
+            env(trust(bob, USD(1000)));
+            env(trust(gw, alice["USD"](50)));
 
-        env(pay(gw, bob, bob["USD"](1)));
-        env(pay(alice, gw, USD(50)));
+            env(pay(gw, bob, bob["USD"](1)));
+            env(pay(alice, gw, USD(50)));
 
-        env(trust(gw, alice["USD"](0)));
+            env(trust(gw, alice["USD"](0)));
 
-        env(offer(alice, USD(50), XRP(150000)));
-        env(offer(bob, XRP(100), USD(0.1)));
+            env(offer(alice, USD(50), XRP(150000)));
+            env(offer(bob, XRP(100), USD(0.1)));
 
-        auto jrr = ledgerEntryState(env, alice, gw, "USD");
-        BEAST_EXPECT(
-            jrr[jss::node][sfBalance.fieldName][jss::value] ==
-            "49.96666666666667");
-        jrr = ledgerEntryState(env, bob, gw, "USD");
-        BEAST_EXPECT(
-            jrr[jss::node][sfBalance.fieldName][jss::value] ==
-            "-0.966500000033334");
+            auto jrr = ledgerEntryState(env, alice, gw, "USD");
+            BEAST_EXPECT(
+                jrr[jss::node][sfBalance.fieldName][jss::value] ==
+                "49.96666666666667");
+            jrr = ledgerEntryState(env, bob, gw, "USD");
+            if (NumberSwitchOver)
+            {
+                BEAST_EXPECT(
+                    jrr[jss::node][sfBalance.fieldName][jss::value] ==
+                    "-0.9665000000333333");
+            }
+            else
+            {
+                BEAST_EXPECT(
+                    jrr[jss::node][sfBalance.fieldName][jss::value] ==
+                    "-0.966500000033334");
+            }
+        }
     }
 
     void
@@ -2155,7 +2177,8 @@ public:
         BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "-100");
         jrr = ledgerEntryRoot(env, alice);
         BEAST_EXPECT(
-            jrr[jss::node][sfBalance.fieldName] == XRP(250).value().getText());
+            jrr[jss::node][sfBalance.fieldName] ==
+            STAmount(env.current()->fees().accountReserve(1)).getText());
 
         jrr = ledgerEntryState(env, bob, gw, "USD");
         BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "-400");
@@ -2198,7 +2221,8 @@ public:
         BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "-200");
         jrr = ledgerEntryRoot(env, alice);
         BEAST_EXPECT(
-            jrr[jss::node][sfBalance.fieldName] == XRP(250).value().getText());
+            jrr[jss::node][sfBalance.fieldName] ==
+            STAmount(env.current()->fees().accountReserve(1)).getText());
 
         jrr = ledgerEntryState(env, bob, gw, "USD");
         BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "-300");
@@ -5165,11 +5189,12 @@ public:
         FeatureBitset const flowCross{featureFlowCross};
         FeatureBitset const takerDryOffer{fixTakerDryOfferRemoval};
         FeatureBitset const rmSmallIncreasedQOffers{fixRmSmallIncreasedQOffers};
+        FeatureBitset const immediateOfferKilled{featureImmediateOfferKilled};
 
-        testAll(all - takerDryOffer);
-        testAll(all - flowCross - takerDryOffer);
-        testAll(all - flowCross);
-        testAll(all - rmSmallIncreasedQOffers);
+        testAll(all - takerDryOffer - immediateOfferKilled);
+        testAll(all - flowCross - takerDryOffer - immediateOfferKilled);
+        testAll(all - flowCross - immediateOfferKilled);
+        testAll(all - rmSmallIncreasedQOffers - immediateOfferKilled);
         testAll(all);
         testFalseAssert();
     }
@@ -5184,11 +5209,12 @@ class Offer_manual_test : public Offer_test
         FeatureBitset const all{supported_amendments()};
         FeatureBitset const flowCross{featureFlowCross};
         FeatureBitset const f1513{fix1513};
+        FeatureBitset const immediateOfferKilled{featureImmediateOfferKilled};
         FeatureBitset const takerDryOffer{fixTakerDryOfferRemoval};
 
-        testAll(all - flowCross - f1513);
-        testAll(all - flowCross);
-        testAll(all - f1513);
+        testAll(all - flowCross - f1513 - immediateOfferKilled);
+        testAll(all - flowCross - immediateOfferKilled);
+        testAll(all - immediateOfferKilled);
         testAll(all);
 
         testAll(all - flowCross - takerDryOffer);

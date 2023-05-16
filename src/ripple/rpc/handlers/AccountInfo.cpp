@@ -27,7 +27,6 @@
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/GRPCHandlers.h>
-#include <ripple/rpc/impl/GRPCHelpers.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 #include <grpc/status.h>
 
@@ -78,6 +77,28 @@ doAccountInfo(RPC::JsonContext& context)
     if (jvAccepted)
         return jvAccepted;
 
+    static constexpr std::
+        array<std::pair<std::string_view, LedgerSpecificFlags>, 9>
+            lsFlags{
+                {{"defaultRipple", lsfDefaultRipple},
+                 {"depositAuth", lsfDepositAuth},
+                 {"disableMasterKey", lsfDisableMaster},
+                 {"disallowIncomingXRP", lsfDisallowXRP},
+                 {"globalFreeze", lsfGlobalFreeze},
+                 {"noFreeze", lsfNoFreeze},
+                 {"passwordSpent", lsfPasswordSpent},
+                 {"requireAuthorization", lsfRequireAuth},
+                 {"requireDestinationTag", lsfRequireDestTag}}};
+
+    static constexpr std::
+        array<std::pair<std::string_view, LedgerSpecificFlags>, 4>
+            disallowIncomingFlags{
+                {{"disallowIncomingNFTokenOffer",
+                  lsfDisallowIncomingNFTokenOffer},
+                 {"disallowIncomingCheck", lsfDisallowIncomingCheck},
+                 {"disallowIncomingPayChan", lsfDisallowIncomingPayChan},
+                 {"disallowIncomingTrustline", lsfDisallowIncomingTrustline}}};
+
     auto const sleAccepted = ledger->read(keylet::account(accountID));
     if (sleAccepted)
     {
@@ -94,6 +115,17 @@ doAccountInfo(RPC::JsonContext& context)
 
         RPC::injectSLE(jvAccepted, *sleAccepted);
         result[jss::account_data] = jvAccepted;
+
+        Json::Value acctFlags{Json::objectValue};
+        for (auto const& lsf : lsFlags)
+            acctFlags[lsf.first.data()] = sleAccepted->isFlag(lsf.second);
+
+        if (ledger->rules().enabled(featureDisallowIncoming))
+        {
+            for (auto const& lsf : disallowIncomingFlags)
+                acctFlags[lsf.first.data()] = sleAccepted->isFlag(lsf.second);
+        }
+        result[jss::account_flags] = std::move(acctFlags);
 
         // Return SignerList(s) if that is requested.
         if (params.isMember(jss::signer_lists) &&
@@ -215,102 +247,11 @@ doAccountInfo(RPC::JsonContext& context)
     }
     else
     {
-        result[jss::account] = context.app.accountIDCache().toBase58(accountID);
+        result[jss::account] = toBase58(accountID);
         RPC::inject_error(rpcACT_NOT_FOUND, result);
     }
 
     return result;
-}
-
-std::pair<org::xrpl::rpc::v1::GetAccountInfoResponse, grpc::Status>
-doAccountInfoGrpc(
-    RPC::GRPCContext<org::xrpl::rpc::v1::GetAccountInfoRequest>& context)
-{
-    // Return values
-    org::xrpl::rpc::v1::GetAccountInfoResponse result;
-    grpc::Status status = grpc::Status::OK;
-
-    // input
-    org::xrpl::rpc::v1::GetAccountInfoRequest& params = context.params;
-
-    // get ledger
-    std::shared_ptr<ReadView const> ledger;
-    auto lgrStatus = RPC::ledgerFromRequest(ledger, context);
-    if (lgrStatus || !ledger)
-    {
-        grpc::Status errorStatus;
-        if (lgrStatus.toErrorCode() == rpcINVALID_PARAMS)
-        {
-            errorStatus = grpc::Status(
-                grpc::StatusCode::INVALID_ARGUMENT, lgrStatus.message());
-        }
-        else
-        {
-            errorStatus =
-                grpc::Status(grpc::StatusCode::NOT_FOUND, lgrStatus.message());
-        }
-        return {result, errorStatus};
-    }
-
-    result.set_ledger_index(ledger->info().seq);
-    result.set_validated(
-        RPC::isValidated(context.ledgerMaster, *ledger, context.app));
-
-    // decode account
-    AccountID accountID;
-    std::string strIdent = params.account().address();
-    error_code_i code =
-        RPC::accountFromStringWithCode(accountID, strIdent, params.strict());
-    if (code != rpcSUCCESS)
-    {
-        grpc::Status errorStatus{
-            grpc::StatusCode::INVALID_ARGUMENT, "invalid account"};
-        return {result, errorStatus};
-    }
-
-    // get account data
-    auto const sleAccepted = ledger->read(keylet::account(accountID));
-    if (sleAccepted)
-    {
-        RPC::convert(*result.mutable_account_data(), *sleAccepted);
-
-        // signer lists
-        if (params.signer_lists())
-        {
-            auto const sleSigners = ledger->read(keylet::signers(accountID));
-            if (sleSigners)
-            {
-                org::xrpl::rpc::v1::SignerList& signerListProto =
-                    *result.mutable_signer_list();
-                RPC::convert(signerListProto, *sleSigners);
-            }
-        }
-
-        // queued transactions
-        if (params.queue())
-        {
-            if (!ledger->open())
-            {
-                grpc::Status errorStatus{
-                    grpc::StatusCode::INVALID_ARGUMENT,
-                    "requested queue but ledger is not open"};
-                return {result, errorStatus};
-            }
-            std::vector<TxQ::TxDetails> const txs =
-                context.app.getTxQ().getAccountTxs(accountID);
-            org::xrpl::rpc::v1::QueueData& queueData =
-                *result.mutable_queue_data();
-            RPC::convert(queueData, txs);
-        }
-    }
-    else
-    {
-        grpc::Status errorStatus{
-            grpc::StatusCode::NOT_FOUND, "account not found"};
-        return {result, errorStatus};
-    }
-
-    return {result, status};
 }
 
 }  // namespace ripple

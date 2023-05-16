@@ -52,20 +52,11 @@ DeleteAccount::preflight(PreflightContext const& ctx)
     return preflight2(ctx);
 }
 
-FeeUnit64
+XRPAmount
 DeleteAccount::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
-    // The fee required for AccountDelete is one owner reserve.  But the
-    // owner reserve is stored in drops.  We need to convert it to fee units.
-    Fees const& fees{view.fees()};
-    std::pair<bool, FeeUnit64> const mulDivResult{
-        mulDiv(fees.increment, safe_cast<FeeUnit64>(fees.units), fees.base)};
-    if (mulDivResult.first)
-        return mulDivResult.second;
-
-    // If mulDiv returns false then overflow happened.  Punt by using the
-    // standard calculation.
-    return Transactor::calculateBaseFee(view, tx);
+    // The fee required for AccountDelete is one owner reserve.
+    return view.fees().increment;
 }
 
 namespace {
@@ -221,6 +212,23 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     // Sequence in preparation for Tickets.
     constexpr std::uint32_t seqDelta{255};
     if ((*sleAccount)[sfSequence] + seqDelta > ctx.view.seq())
+        return tecTOO_SOON;
+
+    // When fixNFTokenRemint is enabled, we don't allow an account to be
+    // deleted if <FirstNFTokenSequence + MintedNFTokens> is within 256 of the
+    // current ledger. This is to prevent having duplicate NFTokenIDs after
+    // account re-creation.
+    //
+    // Without this restriction, duplicate NFTokenIDs can be reproduced when
+    // authorized minting is involved. Because when the minter mints a NFToken,
+    // the issuer's sequence does not change. So when the issuer re-creates
+    // their account and mints a NFToken, it is possible that the
+    // NFTokenSequence of this NFToken is the same as the one that the
+    // authorized minter minted in a previous ledger.
+    if (ctx.view.rules().enabled(fixNFTokenRemint) &&
+        ((*sleAccount)[~sfFirstNFTokenSequence].value_or(0) +
+             (*sleAccount)[~sfMintedNFTokens].value_or(0) + seqDelta >
+         ctx.view.seq()))
         return tecTOO_SOON;
 
     // Verify that the account does not own any objects that would prevent

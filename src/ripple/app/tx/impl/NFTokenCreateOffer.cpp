@@ -153,23 +153,67 @@ NFTokenCreateOffer::preclaim(PreclaimContext const& ctx)
     // offer may later become unfunded.
     if (!isSellOffer)
     {
-        auto const funds = accountHolds(
-            ctx.view,
-            ctx.tx[sfAccount],
-            amount.getCurrency(),
-            amount.getIssuer(),
-            FreezeHandling::fhZERO_IF_FROZEN,
-            ctx.j);
-
-        if (funds.signum() <= 0)
+        // After this amendment, we allow an IOU issuer to make a buy offer
+        // using their own currency.
+        if (ctx.view.rules().enabled(fixNonFungibleTokensV1_2))
+        {
+            if (accountFunds(
+                    ctx.view,
+                    ctx.tx[sfAccount],
+                    amount,
+                    FreezeHandling::fhZERO_IF_FROZEN,
+                    ctx.j)
+                    .signum() <= 0)
+                return tecUNFUNDED_OFFER;
+        }
+        else if (
+            accountHolds(
+                ctx.view,
+                ctx.tx[sfAccount],
+                amount.getCurrency(),
+                amount.getIssuer(),
+                FreezeHandling::fhZERO_IF_FROZEN,
+                ctx.j)
+                .signum() <= 0)
             return tecUNFUNDED_OFFER;
     }
 
-    // If a destination is specified, the destination must already be in
-    // the ledger.
-    if (auto const destination = ctx.tx[~sfDestination];
-        destination && !ctx.view.exists(keylet::account(*destination)))
-        return tecNO_DST;
+    if (auto const destination = ctx.tx[~sfDestination])
+    {
+        // If a destination is specified, the destination must already be in
+        // the ledger.
+        auto const sleDst = ctx.view.read(keylet::account(*destination));
+
+        if (!sleDst)
+            return tecNO_DST;
+
+        // check if the destination has disallowed incoming offers
+        if (ctx.view.rules().enabled(featureDisallowIncoming))
+        {
+            // flag cannot be set unless amendment is enabled but
+            // out of an abundance of caution check anyway
+
+            if (sleDst->getFlags() & lsfDisallowIncomingNFTokenOffer)
+                return tecNO_PERMISSION;
+        }
+    }
+
+    if (auto const owner = ctx.tx[~sfOwner])
+    {
+        // Check if the owner (buy offer) has disallowed incoming offers
+        if (ctx.view.rules().enabled(featureDisallowIncoming))
+        {
+            auto const sleOwner = ctx.view.read(keylet::account(*owner));
+
+            // defensively check
+            // it should not be possible to specify owner that doesn't exist
+            if (!sleOwner)
+                return tecNO_TARGET;
+
+            if (sleOwner->getFlags() & lsfDisallowIncomingNFTokenOffer)
+                return tecNO_PERMISSION;
+        }
+    }
 
     return tesSUCCESS;
 }

@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   check:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     env:
       CLANG_VERSION: 10
     steps:

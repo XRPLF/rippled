@@ -123,7 +123,7 @@ public:
             jrr[jss::ledger_current_index].isIntegral() &&
             jrr[jss::ledger_current_index].asInt() > 0);
         BEAST_EXPECT(!jrr.isMember(jss::marker));
-        BEAST_EXPECT(checkArraySize(jrr[jss::state], num_accounts + 3));
+        BEAST_EXPECT(checkArraySize(jrr[jss::state], num_accounts + 4));
     }
 
     void
@@ -314,6 +314,33 @@ public:
         auto const USD = gw["USD"];
         env.fund(XRP(100000), gw);
 
+        auto makeRequest = [&env](Json::StaticString const& type) {
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = "current";
+            jvParams[jss::type] = type;
+            return env.rpc(
+                "json",
+                "ledger_data",
+                boost::lexical_cast<std::string>(jvParams))[jss::result];
+        };
+
+        // Assert that state is an empty array.
+        for (auto const& type :
+             {jss::amendments,
+              jss::check,
+              jss::directory,
+              jss::offer,
+              jss::signer_list,
+              jss::state,
+              jss::ticket,
+              jss::escrow,
+              jss::payment_channel,
+              jss::deposit_preauth})
+        {
+            auto const jrr = makeRequest(type);
+            BEAST_EXPECT(checkArraySize(jrr[jss::state], 0));
+        }
+
         int const num_accounts = 10;
 
         for (auto i = 0; i < num_accounts; i++)
@@ -372,15 +399,6 @@ public:
         env.close();
 
         // Now fetch each type
-        auto makeRequest = [&env](Json::StaticString t) {
-            Json::Value jvParams;
-            jvParams[jss::ledger_index] = "current";
-            jvParams[jss::type] = t;
-            return env.rpc(
-                "json",
-                "ledger_data",
-                boost::lexical_cast<std::string>(jvParams))[jss::result];
-        };
 
         {  // jvParams[jss::type] = "account";
             auto const jrr = makeRequest(jss::account);

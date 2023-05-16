@@ -80,7 +80,7 @@ doGatewayBalances(RPC::JsonContext& context)
 
     context.loadType = Resource::feeHighBurdenRPC;
 
-    result[jss::account] = context.app.accountIDCache().toBase58(accountID);
+    result[jss::account] = toBase58(accountID);
 
     // Parse the specified hotwallet(s), if any
     std::set<AccountID> hotWallets;
@@ -184,7 +184,23 @@ doGatewayBalances(RPC::JsonContext& context)
                         bal = -rs->getBalance();
                     }
                     else
-                        bal -= rs->getBalance();
+                    {
+                        try
+                        {
+                            bal -= rs->getBalance();
+                        }
+                        catch (std::runtime_error const&)
+                        {
+                            // Presumably the exception was caused by overflow.
+                            // On overflow return the largest valid STAmount.
+                            // Very large sums of STAmount are approximations
+                            // anyway.
+                            bal = STAmount(
+                                bal.issue(),
+                                STAmount::cMaxValue,
+                                STAmount::cMaxOffset);
+                        }
+                    }
                 }
             });
     }

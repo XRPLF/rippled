@@ -294,7 +294,7 @@ public:
         {
             Json::Value params;
             params[jss::account] = bob.human();
-            params[jss::type] = "state";
+            params[jss::type] = jss::state;
             auto resp = env.rpc("json", "account_objects", to_string(params));
             BEAST_EXPECT(!resp.isMember(jss::marker));
 
@@ -321,14 +321,217 @@ public:
                 auto& aobj = aobjs[0U];
                 if (i < 3)
                     BEAST_EXPECT(resp[jss::result][jss::limit] == 1);
+                else
+                    BEAST_EXPECT(!resp[jss::result].isMember(jss::limit));
 
                 aobj.removeMember("PreviousTxnID");
                 aobj.removeMember("PreviousTxnLgrSeq");
 
                 BEAST_EXPECT(aobj == bobj[i]);
 
-                auto resume_marker = resp[jss::result][jss::marker];
-                params[jss::marker] = resume_marker;
+                params[jss::marker] = resp[jss::result][jss::marker];
+            }
+        }
+    }
+
+    void
+    testUnsteppedThenSteppedWithNFTs()
+    {
+        // The preceding test case, unsteppedThenStepped(), found a bug in the
+        // support for NFToken Pages.  So we're leaving that test alone when
+        // adding tests to exercise NFTokenPages.
+        testcase("unsteppedThenSteppedWithNFTs");
+
+        using namespace jtx;
+        Env env(*this);
+
+        Account const gw1{"G1"};
+        Account const gw2{"G2"};
+        Account const bob{"bob"};
+
+        auto const USD1 = gw1["USD"];
+        auto const USD2 = gw2["USD"];
+
+        env.fund(XRP(1000), gw1, gw2, bob);
+        env.close();
+
+        // Check behavior if there are no account objects.
+        {
+            // Unpaged
+            Json::Value params;
+            params[jss::account] = bob.human();
+            auto resp = env.rpc("json", "account_objects", to_string(params));
+            BEAST_EXPECT(!resp.isMember(jss::marker));
+            BEAST_EXPECT(resp[jss::result][jss::account_objects].size() == 0);
+
+            // Limit == 1
+            params[jss::limit] = 1;
+            resp = env.rpc("json", "account_objects", to_string(params));
+            BEAST_EXPECT(!resp.isMember(jss::marker));
+            BEAST_EXPECT(resp[jss::result][jss::account_objects].size() == 0);
+        }
+
+        // Check behavior if there are only NFTokens.
+        env(token::mint(bob, 0u), txflags(tfTransferable));
+        env.close();
+
+        // test 'unstepped'
+        // i.e. request account objects without explicit limit/marker paging
+        Json::Value unpaged;
+        {
+            Json::Value params;
+            params[jss::account] = bob.human();
+            auto resp = env.rpc("json", "account_objects", to_string(params));
+            BEAST_EXPECT(!resp.isMember(jss::marker));
+
+            unpaged = resp[jss::result][jss::account_objects];
+            BEAST_EXPECT(unpaged.size() == 1);
+        }
+        // test request with type parameter as filter, unstepped
+        {
+            Json::Value params;
+            params[jss::account] = bob.human();
+            params[jss::type] = jss::nft_page;
+            auto resp = env.rpc("json", "account_objects", to_string(params));
+            BEAST_EXPECT(!resp.isMember(jss::marker));
+            Json::Value& aobjs = resp[jss::result][jss::account_objects];
+            BEAST_EXPECT(aobjs.size() == 1);
+            BEAST_EXPECT(
+                aobjs[0u][sfLedgerEntryType.jsonName] == jss::NFTokenPage);
+            BEAST_EXPECT(aobjs[0u][sfNFTokens.jsonName].size() == 1);
+        }
+        // test stepped one-at-a-time with limit=1, resume from prev marker
+        {
+            Json::Value params;
+            params[jss::account] = bob.human();
+            params[jss::limit] = 1;
+
+            Json::Value resp =
+                env.rpc("json", "account_objects", to_string(params));
+            Json::Value& aobjs = resp[jss::result][jss::account_objects];
+            BEAST_EXPECT(aobjs.size() == 1);
+            auto& aobj = aobjs[0U];
+            BEAST_EXPECT(!resp[jss::result].isMember(jss::limit));
+            BEAST_EXPECT(!resp[jss::result].isMember(jss::marker));
+
+            BEAST_EXPECT(aobj == unpaged[0u]);
+        }
+
+        // Add more objects in addition to the NFToken Page.
+        env.trust(USD1(1000), bob);
+        env.trust(USD2(1000), bob);
+
+        env(pay(gw1, bob, USD1(1000)));
+        env(pay(gw2, bob, USD2(1000)));
+
+        env(offer(bob, XRP(100), bob["USD"](1)), txflags(tfPassive));
+        env(offer(bob, XRP(100), USD1(1)), txflags(tfPassive));
+        env.close();
+
+        // test 'unstepped'
+        {
+            Json::Value params;
+            params[jss::account] = bob.human();
+            auto resp = env.rpc("json", "account_objects", to_string(params));
+            BEAST_EXPECT(!resp.isMember(jss::marker));
+
+            unpaged = resp[jss::result][jss::account_objects];
+            BEAST_EXPECT(unpaged.size() == 5);
+        }
+        // test request with type parameter as filter, unstepped
+        {
+            Json::Value params;
+            params[jss::account] = bob.human();
+            params[jss::type] = jss::nft_page;
+            auto resp = env.rpc("json", "account_objects", to_string(params));
+            BEAST_EXPECT(!resp.isMember(jss::marker));
+            Json::Value& aobjs = resp[jss::result][jss::account_objects];
+            BEAST_EXPECT(aobjs.size() == 1);
+            BEAST_EXPECT(
+                aobjs[0u][sfLedgerEntryType.jsonName] == jss::NFTokenPage);
+            BEAST_EXPECT(aobjs[0u][sfNFTokens.jsonName].size() == 1);
+        }
+        // test stepped one-at-a-time with limit=1, resume from prev marker
+        {
+            Json::Value params;
+            params[jss::account] = bob.human();
+            params[jss::limit] = 1;
+            for (int i = 0; i < 5; ++i)
+            {
+                Json::Value resp =
+                    env.rpc("json", "account_objects", to_string(params));
+                Json::Value& aobjs = resp[jss::result][jss::account_objects];
+                BEAST_EXPECT(aobjs.size() == 1);
+                auto& aobj = aobjs[0U];
+                if (i < 4)
+                {
+                    BEAST_EXPECT(resp[jss::result][jss::limit] == 1);
+                    BEAST_EXPECT(resp[jss::result].isMember(jss::marker));
+                }
+                else
+                {
+                    BEAST_EXPECT(!resp[jss::result].isMember(jss::limit));
+                    BEAST_EXPECT(!resp[jss::result].isMember(jss::marker));
+                }
+
+                BEAST_EXPECT(aobj == unpaged[i]);
+
+                params[jss::marker] = resp[jss::result][jss::marker];
+            }
+        }
+
+        // Make sure things still work if there is more than 1 NFT Page.
+        for (int i = 0; i < 32; ++i)
+        {
+            env(token::mint(bob, 0u), txflags(tfTransferable));
+            env.close();
+        }
+        // test 'unstepped'
+        {
+            Json::Value params;
+            params[jss::account] = bob.human();
+            auto resp = env.rpc("json", "account_objects", to_string(params));
+            BEAST_EXPECT(!resp.isMember(jss::marker));
+
+            unpaged = resp[jss::result][jss::account_objects];
+            BEAST_EXPECT(unpaged.size() == 6);
+        }
+        // test request with type parameter as filter, unstepped
+        {
+            Json::Value params;
+            params[jss::account] = bob.human();
+            params[jss::type] = jss::nft_page;
+            auto resp = env.rpc("json", "account_objects", to_string(params));
+            BEAST_EXPECT(!resp.isMember(jss::marker));
+            Json::Value& aobjs = resp[jss::result][jss::account_objects];
+            BEAST_EXPECT(aobjs.size() == 2);
+        }
+        // test stepped one-at-a-time with limit=1, resume from prev marker
+        {
+            Json::Value params;
+            params[jss::account] = bob.human();
+            params[jss::limit] = 1;
+            for (int i = 0; i < 6; ++i)
+            {
+                Json::Value resp =
+                    env.rpc("json", "account_objects", to_string(params));
+                Json::Value& aobjs = resp[jss::result][jss::account_objects];
+                BEAST_EXPECT(aobjs.size() == 1);
+                auto& aobj = aobjs[0U];
+                if (i < 5)
+                {
+                    BEAST_EXPECT(resp[jss::result][jss::limit] == 1);
+                    BEAST_EXPECT(resp[jss::result].isMember(jss::marker));
+                }
+                else
+                {
+                    BEAST_EXPECT(!resp[jss::result].isMember(jss::limit));
+                    BEAST_EXPECT(!resp[jss::result].isMember(jss::marker));
+                }
+
+                BEAST_EXPECT(aobj == unpaged[i]);
+
+                params[jss::marker] = resp[jss::result][jss::marker];
             }
         }
     }
@@ -376,11 +579,28 @@ public:
         BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::escrow), 0));
         BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::fee), 0));
         BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::hashes), 0));
+        BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::nft_page), 0));
         BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::offer), 0));
         BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::payment_channel), 0));
         BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::signer_list), 0));
         BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::state), 0));
         BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::ticket), 0));
+
+        // gw mints an NFT so we can find it.
+        uint256 const nftID{token::getNextID(env, gw, 0u, tfTransferable)};
+        env(token::mint(gw, 0u), txflags(tfTransferable));
+        env.close();
+        {
+            // Find the NFToken page and make sure it's the right one.
+            Json::Value const resp = acct_objs(gw, jss::nft_page);
+            BEAST_EXPECT(acct_objs_is_size(resp, 1));
+
+            auto const& nftPage = resp[jss::result][jss::account_objects][0u];
+            BEAST_EXPECT(nftPage[sfNFTokens.jsonName].size() == 1);
+            BEAST_EXPECT(
+                nftPage[sfNFTokens.jsonName][0u][sfNFToken.jsonName]
+                       [sfNFTokenID.jsonName] == to_string(nftID));
+        }
 
         // Set up a trust line so we can find it.
         env.trust(USD(1000), alice);
@@ -510,7 +730,7 @@ public:
             auto const& ticket = resp[jss::result][jss::account_objects][0u];
             BEAST_EXPECT(ticket[sfAccount.jsonName] == gw.human());
             BEAST_EXPECT(ticket[sfLedgerEntryType.jsonName] == jss::Ticket);
-            BEAST_EXPECT(ticket[sfTicketSequence.jsonName].asUInt() == 12);
+            BEAST_EXPECT(ticket[sfTicketSequence.jsonName].asUInt() == 13);
         }
         {
             // See how "deletion_blockers_only" handles gw's directory.
@@ -523,6 +743,7 @@ public:
                 std::vector<std::string> v{
                     jss::Escrow.c_str(),
                     jss::Check.c_str(),
+                    jss::NFTokenPage.c_str(),
                     jss::RippleState.c_str(),
                     jss::PayChannel.c_str()};
                 std::sort(v.begin(), v.end());
@@ -583,6 +804,7 @@ public:
     {
         testErrors();
         testUnsteppedThenStepped();
+        testUnsteppedThenSteppedWithNFTs();
         testObjectTypes();
     }
 };

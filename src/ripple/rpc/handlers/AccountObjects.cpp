@@ -160,7 +160,7 @@ doAccountNFTs(RPC::JsonContext& context)
             cp = nullptr;
     }
 
-    result[jss::account] = context.app.accountIDCache().toBase58(accountID);
+    result[jss::account] = toBase58(accountID);
     context.loadType = Resource::feeMediumBurdenRPC;
     return result;
 }
@@ -204,6 +204,7 @@ doAccountObjects(RPC::JsonContext& context)
         } static constexpr deletionBlockers[] = {
             {jss::check, ltCHECK},
             {jss::escrow, ltESCROW},
+            {jss::nft_page, ltNFTOKEN_PAGE},
             {jss::payment_channel, ltPAYCHAN},
             {jss::state, ltRIPPLE_STATE}};
 
@@ -275,7 +276,7 @@ doAccountObjects(RPC::JsonContext& context)
         result[jss::account_objects] = Json::arrayValue;
     }
 
-    result[jss::account] = context.app.accountIDCache().toBase58(accountID);
+    result[jss::account] = toBase58(accountID);
     context.loadType = Resource::feeMediumBurdenRPC;
     return result;
 }

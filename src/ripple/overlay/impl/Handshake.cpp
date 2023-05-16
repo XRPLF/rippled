@@ -204,6 +204,8 @@ buildHandshake(
         h.insert("Session-Signature", base64_encode(sig.data(), sig.size()));
     }
 
+    h.insert("Instance-Cookie", std::to_string(app.instanceID()));
+
     if (!app.config().SERVER_DOMAIN.empty())
         h.insert("Server-Domain", app.config().SERVER_DOMAIN);
 
@@ -215,14 +217,8 @@ buildHandshake(
 
     if (auto const cl = app.getLedgerMaster().getClosedLedger())
     {
-        // TODO: Use hex for these
-        h.insert(
-            "Closed-Ledger",
-            base64_encode(cl->info().hash.begin(), cl->info().hash.size()));
-        h.insert(
-            "Previous-Ledger",
-            base64_encode(
-                cl->info().parentHash.begin(), cl->info().parentHash.size()));
+        h.insert("Closed-Ledger", strHex(cl->info().hash));
+        h.insert("Previous-Ledger", strHex(cl->info().parentHash));
     }
 }
 
@@ -305,9 +301,6 @@ verifyHandshake(
         throw std::runtime_error("Bad node public key");
     }();
 
-    if (publicKey == app.nodeIdentity().first)
-        throw std::runtime_error("Self connection");
-
     // This check gets two birds with one stone:
     //
     // 1) it verifies that the node we are talking to has access to the
@@ -325,6 +318,9 @@ verifyHandshake(
         if (!verifyDigest(publicKey, sharedValue, makeSlice(sig), false))
             throw std::runtime_error("Failed to verify session");
     }
+
+    if (publicKey == app.nodeIdentity().first)
+        throw std::runtime_error("Self connection");
 
     if (auto const iter = headers.find("Local-IP"); iter != headers.end())
     {
