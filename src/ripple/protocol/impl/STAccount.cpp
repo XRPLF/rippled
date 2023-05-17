@@ -71,7 +71,7 @@ STAccount::move(std::size_t n, void* buf)
     return emplace(n, buf, std::move(*this));
 }
 
-SerializedTypeID
+int
 STAccount::getSType() const
 {
     return STI_ACCOUNT;

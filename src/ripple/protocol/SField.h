@@ -48,6 +48,7 @@ class STBitString;
 template <class>
 class STInteger;
 class STVector256;
+class STPluginType;
 
 enum SerializedTypeID {
     // special types
@@ -86,16 +87,16 @@ enum SerializedTypeID {
 
 // constexpr
 inline int
-field_code(SerializedTypeID id, int index)
+field_code(int id, int index)
 {
-    return (safe_cast<int>(id) << 16) | index;
+    return (id << 16) | index;
 }
 
 // constexpr
 inline int
-field_code(int id, int index)
+field_code(SerializedTypeID id, int index)
 {
-    return (id << 16) | index;
+    return field_code(safe_cast<int>(id), index);
 }
 
 /** Identifies fields.
@@ -126,7 +127,7 @@ public:
     static IsSigning const notSigning = IsSigning::no;
 
     int const fieldCode;               // (type<<16)|index
-    SerializedTypeID const fieldType;  // STI_*
+    int const fieldType;  // STI_*
     int const fieldValue;              // Code number for protocol
     std::string const fieldName;
     int const fieldMeta;
@@ -134,12 +135,12 @@ public:
     IsSigning const signingField;
     Json::StaticString const jsonName;
 
-    SField(SField const&) = delete;
-    SField&
-    operator=(SField const&) = delete;
-    SField(SField&&) = delete;
-    SField&
-    operator=(SField&&) = delete;
+    //    SField(SField const&) = delete;
+    //    SField&
+    //    operator=(SField const&) = delete;
+    //    SField(SField&&) = delete;
+    //    SField&
+    //    operator=(SField&&) = delete;
 
 public:
     struct private_access_tag_t;  // public, but still an implementation detail
@@ -147,7 +148,14 @@ public:
     // These constructors can only be called from SField.cpp
     SField(
         private_access_tag_t,
-        SerializedTypeID tid,
+        int tid,
+        int fv,
+        const char* fn,
+        int meta = sMD_Default,
+        IsSigning signing = IsSigning::yes);
+
+    SField(
+        int tid,
         int fv,
         const char* fn,
         int meta = sMD_Default,
@@ -229,7 +237,7 @@ public:
     static int
     getNumFields()
     {
-        return num;
+        return knownCodeToField.size();
     }
 
     bool
@@ -260,9 +268,10 @@ public:
     static int
     compare(const SField& f1, const SField& f2);
 
+    static std::map<int, SField const&> knownCodeToField;
+
 private:
     static int num;
-    static std::map<int, SField const*> knownCodeToField;
 };
 
 /** A field with a type known at compile time. */
@@ -279,6 +288,27 @@ struct TypedField : SField
     TypedField(TypedField&& u) : SField(std::move(u))
     {
     }
+};
+
+struct SFieldInfo {
+    int typeId;
+    int fieldValue;
+    const char * txtName;
+};
+
+typedef SField const& (*createNewSFieldPtr)(int tid, int fv, const char* fn);
+
+void
+registerSField(SFieldInfo const& sfield);
+
+void
+registerSType(int typeId, createNewSFieldPtr ptr);
+
+// TODO: moved from SField.cpp
+// Give only this translation unit permission to construct SFields
+struct SField::private_access_tag_t
+{
+    explicit private_access_tag_t() = default;
 };
 
 /** Indicate std::optional field semantics. */
@@ -319,6 +349,7 @@ using SF_ACCOUNT = TypedField<STAccount>;
 using SF_AMOUNT = TypedField<STAmount>;
 using SF_VL = TypedField<STBlob>;
 using SF_VECTOR256 = TypedField<STVector256>;
+using SF_PLUGIN_TYPE = TypedField<STPluginType>;
 
 //------------------------------------------------------------------------------
 

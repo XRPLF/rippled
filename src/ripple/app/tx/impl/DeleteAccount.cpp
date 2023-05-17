@@ -177,36 +177,36 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
 }
 
 TER
-DeleteAccount::doApply()
+DeleteAccount::doApply(ApplyContext& ctx, XRPAmount mPriorBalance, XRPAmount mSourceBalance)
 {
-    auto src = view().peek(keylet::account(account_));
+    auto src = ctx.view().peek(keylet::account(ctx.tx.getAccountID(sfAccount)));
     assert(src);
 
-    auto dst = view().peek(keylet::account(ctx_.tx[sfDestination]));
+    auto dst = ctx.view().peek(keylet::account(ctx.tx[sfDestination]));
     assert(dst);
 
     if (!src || !dst)
         return tefBAD_LEDGER;
 
     // Delete all of the entries in the account directory.
-    Keylet const ownerDirKeylet{keylet::ownerDir(account_)};
+    Keylet const ownerDirKeylet{keylet::ownerDir(ctx.tx.getAccountID(sfAccount))};
     std::shared_ptr<SLE> sleDirNode{};
     unsigned int uDirEntry{0};
     uint256 dirEntry{beast::zero};
 
-    if (view().exists(ownerDirKeylet) &&
-        dirFirst(view(), ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry))
+    if (ctx.view().exists(ownerDirKeylet) &&
+        dirFirst(ctx.view(), ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry))
     {
         do
         {
             // Choose the right way to delete each directory node.
-            auto sleItem = view().peek(keylet::child(dirEntry));
+            auto sleItem = ctx.view().peek(keylet::child(dirEntry));
             if (!sleItem)
             {
                 // Directory node has an invalid index.  Bail out.
-                JLOG(j_.fatal())
+                JLOG(ctx.journal.fatal())
                     << "DeleteAccount: Directory node in ledger "
-                    << view().seq() << " has index to object that is missing: "
+                    << ctx.view().seq() << " has index to object that is missing: "
                     << to_string(dirEntry);
                 return tefBAD_LEDGER;
             }
@@ -217,7 +217,7 @@ DeleteAccount::doApply()
             if (auto deleter = nonObligationDeleter(nodeType))
             {
                 TER const result{
-                    deleter(ctx_.app, view(), account_, dirEntry, sleItem, j_)};
+                    deleter(ctx.app, ctx.view(), ctx.tx.getAccountID(sfAccount), dirEntry, sleItem, ctx.journal)};
 
                 if (!isTesSuccess(result))
                     return result;
@@ -225,7 +225,7 @@ DeleteAccount::doApply()
             else
             {
                 assert(!"Undeletable entry should be found in preclaim.");
-                JLOG(j_.error())
+                JLOG(ctx.journal.error())
                     << "DeleteAccount undeletable item not found in preclaim.";
                 return tecHAS_OBLIGATIONS;
             }
@@ -249,29 +249,29 @@ DeleteAccount::doApply()
             assert(uDirEntry == 1);
             if (uDirEntry != 1)
             {
-                JLOG(j_.error())
+                JLOG(ctx.journal.error())
                     << "DeleteAccount iterator re-validation failed.";
                 return tefBAD_LEDGER;
             }
             uDirEntry = 0;
 
         } while (dirNext(
-            view(), ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry));
+            ctx.view(), ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry));
     }
 
     // Transfer any XRP remaining after the fee is paid to the destination:
     (*dst)[sfBalance] = (*dst)[sfBalance] + mSourceBalance;
     (*src)[sfBalance] = (*src)[sfBalance] - mSourceBalance;
-    ctx_.deliver(mSourceBalance);
+    ctx.deliver(mSourceBalance);
 
     assert((*src)[sfBalance] == XRPAmount(0));
 
     // If there's still an owner directory associated with the source account
     // delete it.
-    if (view().exists(ownerDirKeylet) && !view().emptyDirDelete(ownerDirKeylet))
+    if (ctx.view().exists(ownerDirKeylet) && !ctx.view().emptyDirDelete(ownerDirKeylet))
     {
-        JLOG(j_.error()) << "DeleteAccount cannot delete root dir node of "
-                         << toBase58(account_);
+        JLOG(ctx.journal.error()) << "DeleteAccount cannot delete root dir node of "
+                         << toBase58(ctx.tx.getAccountID(sfAccount));
         return tecHAS_OBLIGATIONS;
     }
 
@@ -279,8 +279,8 @@ DeleteAccount::doApply()
     if (mSourceBalance > XRPAmount(0) && dst->isFlag(lsfPasswordSpent))
         dst->clearFlag(lsfPasswordSpent);
 
-    view().update(dst);
-    view().erase(src);
+    ctx.view().update(dst);
+    ctx.view().erase(src);
 
     return tesSUCCESS;
 }

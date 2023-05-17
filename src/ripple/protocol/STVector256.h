@@ -40,7 +40,7 @@ public:
     STVector256(SField const& n, std::vector<uint256> const& vector);
     STVector256(SerialIter& sit, SField const& name);
 
-    SerializedTypeID
+    int
     getSType() const override;
 
     void

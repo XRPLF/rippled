@@ -1,0 +1,4 @@
+[requires]
+boost/1.77.0@
+openssl/1.1.1m@
+date/3.0.1@

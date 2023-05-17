@@ -19,11 +19,11 @@
 
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/LoadFeeTrack.h>
-#include <ripple/app/tx/apply.h>
 #include <ripple/app/tx/impl/SignerEntries.h>
 #include <ripple/app/tx/impl/Transactor.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/contract.h>
+#include <ripple/app/tx/validity.h>
 #include <ripple/core/Config.h>
 #include <ripple/json/to_string.h>
 #include <ripple/ledger/View.h>
@@ -134,8 +134,8 @@ PreflightContext::PreflightContext(
 
 //------------------------------------------------------------------------------
 
-Transactor::Transactor(ApplyContext& ctx)
-    : ctx_(ctx), j_(ctx.journal), account_(ctx.tx.getAccountID(sfAccount))
+Transactor::Transactor(ApplyContext& applyCtx)
+    : ctx(applyCtx)
 {
 }
 
@@ -220,9 +220,9 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
 TER
 Transactor::payFee()
 {
-    auto const feePaid = ctx_.tx[sfFee].xrp();
+    auto const feePaid = ctx.tx[sfFee].xrp();
 
-    auto const sle = view().peek(keylet::account(account_));
+    auto const sle = ctx.view().peek(keylet::account(ctx.tx.getAccountID(sfAccount)));
     if (!sle)
         return tefINTERNAL;
 
@@ -232,7 +232,7 @@ Transactor::payFee()
     mSourceBalance -= feePaid;
     sle->setFieldAmount(sfBalance, mSourceBalance);
 
-    // VFALCO Should we call view().rawDestroyXRP() here as well?
+    // VFALCO Should we call ctx.view().rawDestroyXRP() here as well?
 
     return tesSUCCESS;
 }
@@ -313,7 +313,7 @@ TER
 Transactor::consumeSeqProxy(SLE::pointer const& sleAccount)
 {
     assert(sleAccount);
-    SeqProxy const seqProx = ctx_.tx.getSeqProxy();
+    SeqProxy const seqProx = ctx.tx.getSeqProxy();
     sleAccount->setFieldU32(sfSequence, seqProx.value() + 1);
     return tesSUCCESS;
 }
@@ -322,7 +322,7 @@ Transactor::consumeSeqProxy(SLE::pointer const& sleAccount)
 void
 Transactor::preCompute()
 {
-    assert(account_ != beast::zero);
+    assert(ctx.tx.getAccountID(sfAccount) != beast::zero);
 }
 
 TER
@@ -332,11 +332,11 @@ Transactor::apply()
 
     // If the transactor requires a valid account and the transaction doesn't
     // list one, preflight will have already a flagged a failure.
-    auto const sle = view().peek(keylet::account(account_));
+    auto const sle = ctx.view().peek(keylet::account(ctx.tx.getAccountID(sfAccount)));
 
     // sle must exist except for transactions
     // that allow zero account.
-    assert(sle != nullptr || account_ == beast::zero);
+    assert(sle != nullptr || ctx.tx.getAccountID(sfAccount) == beast::zero);
 
     if (sle)
     {
@@ -352,12 +352,12 @@ Transactor::apply()
             return result;
 
         if (sle->isFieldPresent(sfAccountTxnID))
-            sle->setFieldH256(sfAccountTxnID, ctx_.tx.getTransactionID());
+            sle->setFieldH256(sfAccountTxnID, ctx.tx.getTransactionID());
 
-        view().update(sle);
+        ctx.view().update(sle);
     }
 
-    return doApply();
+    return doApply(ctx, mPriorBalance, mSourceBalance);
 }
 
 NotTEC
@@ -608,10 +608,10 @@ Transactor::checkMultiSign(PreclaimContext const& ctx)
 std::pair<TER, XRPAmount>
 Transactor::reset(XRPAmount fee)
 {
-    ctx_.discard();
+    ctx.discard();
 
     auto const txnAcct =
-        view().peek(keylet::account(ctx_.tx.getAccountID(sfAccount)));
+        ctx.view().peek(keylet::account(ctx.tx.getAccountID(sfAccount)));
     if (!txnAcct)
         // The account should never be missing from the ledger.  But if it
         // is missing then we can't very well charge it a fee, can we?
@@ -620,7 +620,7 @@ Transactor::reset(XRPAmount fee)
     auto const balance = txnAcct->getFieldAmount(sfBalance).xrp();
 
     // balance should have already been checked in checkFee / preFlight.
-    assert(balance != beast::zero && (!view().open() || balance >= fee));
+    assert(balance != beast::zero && (!ctx.view().open() || balance >= fee));
 
     // We retry/reject the transaction if the account balance is zero or we're
     // applying against an open ledger and the balance is less than the fee
@@ -638,7 +638,7 @@ Transactor::reset(XRPAmount fee)
     assert(isTesSuccess(ter));
 
     if (isTesSuccess(ter))
-        view().update(txnAcct);
+        ctx.view().update(txnAcct);
 
     return {ter, fee};
 }
@@ -647,29 +647,29 @@ Transactor::reset(XRPAmount fee)
 std::pair<TER, bool>
 Transactor::operator()()
 {
-    JLOG(j_.trace()) << "apply: " << ctx_.tx.getTransactionID();
+    JLOG(ctx.journal.trace()) << "apply: " << ctx.tx.getTransactionID();
 
-    STAmountSO stAmountSO{view().rules().enabled(fixSTAmountCanonicalize)};
-//    NumberSO stNumberSO{view().rules().enabled(fixUniversalNumber)};
+    STAmountSO stAmountSO{ctx.view().rules().enabled(fixSTAmountCanonicalize)};
+//    NumberSO stNumberSO{ctx.view().rules().enabled(fixUniversalNumber)};
 
 #ifdef DEBUG
     {
         Serializer ser;
-        ctx_.tx.add(ser);
+        ctx.tx.add(ser);
         SerialIter sit(ser.slice());
         STTx s2(sit);
 
-        if (!s2.isEquivalent(ctx_.tx))
+        if (!s2.isEquivalent(ctx.tx))
         {
-            JLOG(j_.fatal()) << "Transaction serdes mismatch";
-            JLOG(j_.info()) << to_string(ctx_.tx.getJson(JsonOptions::none));
-            JLOG(j_.fatal()) << s2.getJson(JsonOptions::none);
+            JLOG(ctx.journal.fatal()) << "Transaction serdes mismatch";
+            JLOG(ctx.journal.info()) << to_string(ctx.tx.getJson(JsonOptions::none));
+            JLOG(ctx.journal.fatal()) << s2.getJson(JsonOptions::none);
             assert(false);
         }
     }
 #endif
 
-    auto result = ctx_.preclaimResult;
+    auto result = ctx.preclaimResult;
     if (result == tesSUCCESS)
         result = apply();
 
@@ -677,28 +677,28 @@ Transactor::operator()()
     // and it can't be passed in from a preclaim.
     assert(result != temUNKNOWN);
 
-    if (auto stream = j_.trace())
+    if (auto stream = ctx.journal.trace())
         stream << "preclaim result: " << transToken(result);
 
     bool applied = isTesSuccess(result);
-    auto fee = ctx_.tx.getFieldAmount(sfFee).xrp();
+    auto fee = ctx.tx.getFieldAmount(sfFee).xrp();
 
-    if (ctx_.size() > oversizeMetaDataCap)
+    if (ctx.size() > oversizeMetaDataCap)
         result = tecOVERSIZE;
 
-    if (isTecClaim(result) && (view().flags() & tapFAIL_HARD))
+    if (isTecClaim(result) && (ctx.view().flags() & tapFAIL_HARD))
     {
         // If the tapFAIL_HARD flag is set, a tec result
         // must not do anything
 
-        ctx_.discard();
+        ctx.discard();
         applied = false;
     }
     else if (
         (result == tecOVERSIZE) || (result == tecKILLED) ||
-        (result == tecEXPIRED) || (isTecClaimHardFail(result, view().flags())))
+        (result == tecEXPIRED) || (isTecClaimHardFail(result, ctx.view().flags())))
     {
-        JLOG(j_.trace()) << "reapplying because of " << transToken(result);
+        JLOG(ctx.journal.trace()) << "reapplying because of " << transToken(result);
 
         // Reset the context, potentially adjusting the fee.
         {
@@ -716,7 +716,7 @@ Transactor::operator()()
     {
         // Check invariants: if `tecINVARIANT_FAILED` is not returned, we can
         // proceed to apply the tx
-        result = ctx_.checkInvariants(result, fee);
+        result = ctx.checkInvariants(result, fee);
 
         if (result == tecINVARIANT_FAILED)
         {
@@ -731,7 +731,7 @@ Transactor::operator()()
             // Check invariants again to ensure the fee claiming doesn't
             // violate invariants.
             if (isTesSuccess(result) || isTecClaim(result))
-                result = ctx_.checkInvariants(result, fee);
+                result = ctx.checkInvariants(result, fee);
         }
 
         // We ran through the invariant checker, which can, in some cases,
@@ -755,14 +755,14 @@ Transactor::operator()()
         // deducted from the balance of the account that issued the
         // transaction. We just need to account for it in the ledger
         // header.
-        if (!view().open() && fee != beast::zero)
-            ctx_.destroyXRP(fee);
+        if (!ctx.view().open() && fee != beast::zero)
+            ctx.destroyXRP(fee);
 
         // Once we call apply, we will no longer be able to look at view()
-        ctx_.apply(result);
+        ctx.apply(result);
     }
 
-    JLOG(j_.trace()) << (applied ? "applied" : "not applied")
+    JLOG(ctx.journal.trace()) << (applied ? "applied" : "not applied")
                      << transToken(result);
 
     return {result, applied};

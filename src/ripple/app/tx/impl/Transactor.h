@@ -46,6 +46,14 @@ public:
 
     PreflightContext&
     operator=(PreflightContext const&) = delete;
+
+    constexpr STTx const& getTx() const {
+        return tx;
+    }
+
+    constexpr Rules const& getRules() const {
+        return rules;
+    }
 };
 
 /** State information when determining if a tx is likely to claim a fee. */
@@ -79,16 +87,13 @@ public:
     operator=(PreclaimContext const&) = delete;
 };
 
-class TxConsequences;
 struct PreflightResult;
 
 class Transactor
 {
 protected:
-    ApplyContext& ctx_;
-    beast::Journal const j_;
+    ApplyContext& ctx;
 
-    AccountID const account_;
     XRPAmount mPriorBalance;   // Balance before fees.
     XRPAmount mSourceBalance;  // Balance after fees.
 
@@ -102,18 +107,6 @@ public:
     /** Process the transaction. */
     std::pair<TER, bool>
     operator()();
-
-    ApplyView&
-    view()
-    {
-        return ctx_.view();
-    }
-
-    ApplyView const&
-    view() const
-    {
-        return ctx_.view();
-    }
 
     /////////////////////////////////////////////////////
     /*
@@ -150,41 +143,35 @@ public:
     }
     /////////////////////////////////////////////////////
 
-    // Interface used by DeleteAccount
-    static TER
-    ticketDelete(
-        ApplyView& view,
-        AccountID const& account,
-        uint256 const& ticketIndex,
-        beast::Journal j);
-
-protected:
-    TER
-    apply();
-
-    explicit Transactor(ApplyContext& ctx);
-
-    virtual void
-    preCompute();
-
-    virtual TER
-    doApply() = 0;
-
     /** Compute the minimum fee required to process a transaction
-        with a given baseFee based on the current server load.
+            with a given baseFee based on the current server load.
 
-        @param app The application hosting the server
+    @param app The application hosting the server
         @param baseFee The base fee of a candidate transaction
-            @see ripple::calculateBaseFee
+        @see ripple::calculateBaseFee
         @param fees Fee settings from the current ledger
         @param flags Transaction processing fees
-     */
+            */
     static XRPAmount
     minimumFee(
         Application& app,
         XRPAmount baseFee,
         Fees const& fees,
         ApplyFlags flags);
+protected:
+    TER
+    apply();
+
+    explicit Transactor(ApplyContext& applyCtx);
+
+    virtual void
+    preCompute();
+
+    static TER
+    doApply(ApplyContext& ctx, XRPAmount mPriorBalance, XRPAmount mSourceBalance)
+    {
+        return tesSUCCESS;
+    }
 
 private:
     std::pair<TER, XRPAmount>

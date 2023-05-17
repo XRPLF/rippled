@@ -466,7 +466,7 @@ STAmount::setJson(Json::Value& elem) const
 //
 //------------------------------------------------------------------------------
 
-SerializedTypeID
+int
 STAmount::getSType() const
 {
     return STI_AMOUNT;

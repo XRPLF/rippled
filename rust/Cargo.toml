@@ -1,0 +1,7 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/rippled-bridge",
+    "crates/plugin-transactor",
+    "crates/dummy_tx"
+]

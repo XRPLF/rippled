@@ -110,7 +110,7 @@ NegativeUNLVote::addTx(
     NegativeUNLModify modify,
     std::shared_ptr<SHAMap> const& initialSet)
 {
-    STTx negUnlTx(ttUNL_MODIFY, [&](auto& obj) {
+    STTx negUnlTx(getTxTypeFromName("ttUNL_MODIFY"), [&](auto& obj) {
         obj.setFieldU8(sfUNLModifyDisabling, modify == ToDisable ? 1 : 0);
         obj.setFieldU32(sfLedgerSequence, seq);
         obj.setFieldVL(sfUNLModifyValidator, vp.slice());

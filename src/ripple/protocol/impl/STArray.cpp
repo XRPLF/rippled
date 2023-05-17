@@ -165,7 +165,7 @@ STArray::add(Serializer& s) const
     }
 }
 
-SerializedTypeID
+int
 STArray::getSType() const
 {
     return STI_ARRAY;

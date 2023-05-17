@@ -34,5 +34,6 @@
 #include <ripple/protocol/STTx.h>
 #include <ripple/protocol/STValidation.h>
 #include <ripple/protocol/STVector256.h>
+#include <ripple/protocol/STPluginType.h>
 
 #endif

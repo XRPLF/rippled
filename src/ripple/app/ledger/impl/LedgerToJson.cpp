@@ -133,7 +133,7 @@ fillJsonTx(
             txJson[jss::metaData] = stMeta->getJson(JsonOptions::none);
 
             // If applicable, insert delivered amount
-            if (txnType == ttPAYMENT)
+            if (txnType == getTxTypeFromName("ttPAYMENT"))
                 RPC::insertDeliveredAmount(
                     txJson[jss::metaData],
                     fill.ledger,

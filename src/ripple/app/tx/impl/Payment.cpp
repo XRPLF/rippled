@@ -161,7 +161,7 @@ Payment::preclaim(PreclaimContext const& ctx)
 }
 
 TER
-Payment::doApply()
+Payment::doApply(ApplyContext& ctx, XRPAmount mPriorBalance, XRPAmount mSourceBalance)
 {
     //    auto const deliverMin = ctx_.tx[~sfDeliverMin];
 
@@ -173,8 +173,8 @@ Payment::doApply()
     //    auto const paths = ctx_.tx.isFieldPresent(sfPaths);
     //    auto const sendMax = ctx_.tx[~sfSendMax];
 
-    AccountID const uDstAccountID(ctx_.tx.getAccountID(sfDestination));
-    STAmount const saDstAmount(ctx_.tx.getFieldAmount(sfAmount));
+    AccountID const uDstAccountID(ctx.tx.getAccountID(sfDestination));
+    STAmount const saDstAmount(ctx.tx.getFieldAmount(sfAmount));
     //    STAmount maxSourceAmount;
     //    if (sendMax)
     //        maxSourceAmount = *sendMax;
@@ -187,18 +187,18 @@ Payment::doApply()
     //            saDstAmount.exponent(),
     //            saDstAmount < beast::zero);
 
-    JLOG(j_.trace())
+    JLOG(ctx.journal.trace())
         //        << "maxSourceAmount=" << maxSourceAmount.getFullText()
         << " saDstAmount=" << saDstAmount.getFullText();
 
     // Open a ledger for editing.
     auto const k = keylet::account(uDstAccountID);
-    SLE::pointer sleDst = view().peek(k);
+    SLE::pointer sleDst = ctx.view().peek(k);
 
     if (!sleDst)
     {
         std::uint32_t const seqno{
-            view().rules().enabled(featureDeletableAccounts) ? view().seq()
+            ctx.view().rules().enabled(featureDeletableAccounts) ? ctx.view().seq()
                                                              : 1};
 
         // Create the account.
@@ -206,21 +206,21 @@ Payment::doApply()
         sleDst->setAccountID(sfAccount, uDstAccountID);
         sleDst->setFieldU32(sfSequence, seqno);
 
-        view().insert(sleDst);
+        ctx.view().insert(sleDst);
     }
     else
     {
         // Tell the engine that we are intending to change the destination
         // account.  The source account gets always charged a fee so it's always
         // marked as modified.
-        view().update(sleDst);
+        ctx.view().update(sleDst);
     }
 
     //    assert(saDstAmount.native());
 
     // Direct XRP payment.
 
-    auto const sleSrc = view().peek(keylet::account(account_));
+    auto const sleSrc = ctx.view().peek(keylet::account(ctx.tx.getAccountID(sfAccount)));
     if (!sleSrc)
         return tefINTERNAL;
 
@@ -229,18 +229,18 @@ Payment::doApply()
     auto const uOwnerCount = sleSrc->getFieldU32(sfOwnerCount);
 
     // This is the total reserve in drops.
-    auto const reserve = view().fees().accountReserve(uOwnerCount);
+    auto const reserve = ctx.view().fees().accountReserve(uOwnerCount);
 
     // mPriorBalance is the balance on the sending account BEFORE the
     // fees were charged. We want to make sure we have enough reserve
     // to send. Allow final spend to use reserve for fee.
-    auto const mmm = std::max(reserve, ctx_.tx.getFieldAmount(sfFee).xrp());
+    auto const mmm = std::max(reserve, ctx.tx.getFieldAmount(sfFee).xrp());
 
     if (mPriorBalance < saDstAmount.xrp() + mmm)
     {
         // Vote no. However the transaction might succeed, if applied in
         // a different order.
-        JLOG(j_.trace()) << "Delay transaction: Insufficient funds: "
+        JLOG(ctx.journal.trace()) << "Delay transaction: Insufficient funds: "
                          << " " << to_string(mPriorBalance) << " / "
                          << to_string(saDstAmount.xrp() + mmm) << " ("
                          << to_string(reserve) << ")";

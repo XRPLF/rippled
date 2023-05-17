@@ -28,12 +28,21 @@
 #include <ripple/protocol/STObject.h>
 #include <ripple/protocol/STVector256.h>
 #include <ripple/protocol/impl/STVar.h>
+#include <map>
 
 namespace ripple {
 namespace detail {
 
 defaultObject_t defaultObject;
 nonPresentObject_t nonPresentObject;
+
+struct constructSTypePtrs
+{
+    constructSTypePtr functionPtr;
+    constructSTypePtr2 functionPtr2;
+};
+
+std::map<int, constructSTypePtrs> constructPluginSTypeMap{};
 
 //------------------------------------------------------------------------------
 
@@ -154,11 +163,18 @@ STVar::STVar(SerialIter& sit, SField const& name, int depth)
             construct<STArray>(sit, name, depth);
             return;
         default:
-            Throw<std::runtime_error>("Unknown object type");
+            if (auto it = constructPluginSTypeMap.find(name.fieldType);
+                it != constructPluginSTypeMap.end())
+            {
+                p_ = it->second.functionPtr(sit, name);
+            } else
+            {
+                Throw<std::runtime_error>("Unknown object type");
+            }
     }
 }
 
-STVar::STVar(SerializedTypeID id, SField const& name)
+STVar::STVar(int id, SField const& name)
 {
     assert((id == STI_NOTPRESENT) || (id == name.fieldType));
     switch (id)
@@ -206,7 +222,14 @@ STVar::STVar(SerializedTypeID id, SField const& name)
             construct<STArray>(name);
             return;
         default:
-            Throw<std::runtime_error>("Unknown object type");
+            if (auto it = constructPluginSTypeMap.find(id);
+                it != constructPluginSTypeMap.end())
+            {
+                p_ = it->second.functionPtr2(name);
+            } else
+            {
+                Throw<std::runtime_error>("Unknown object type");
+            }
     }
 }
 
@@ -222,4 +245,11 @@ STVar::destroy()
 }
 
 }  // namespace detail
+
+void
+registerSTConstructor(int type, constructSTypePtr functionPtr, constructSTypePtr2 functionPtr2)
+{
+    detail::constructPluginSTypeMap.insert({ type, {functionPtr, functionPtr2} });
+}
+
 }  // namespace ripple

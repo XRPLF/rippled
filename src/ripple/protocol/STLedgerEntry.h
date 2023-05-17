@@ -43,7 +43,7 @@ public:
     STLedgerEntry(SerialIter&& sit, uint256 const& index);
     STLedgerEntry(STObject const& object, uint256 const& index);
 
-    SerializedTypeID
+    int
     getSType() const override;
 
     std::string

@@ -42,7 +42,7 @@
 namespace ripple {
 
 static auto
-getTxFormat(TxType type)
+getTxFormat(std::uint16_t type)
 {
     auto format = TxFormats::getInstance().findByType(type);
 
@@ -50,7 +50,7 @@ getTxFormat(TxType type)
     {
         Throw<std::runtime_error>(
             "Invalid transaction type " +
-            std::to_string(safe_cast<std::underlying_type_t<TxType>>(type)));
+            std::to_string(type));
     }
 
     return format;
@@ -58,7 +58,7 @@ getTxFormat(TxType type)
 
 STTx::STTx(STObject&& object) : STObject(std::move(object))
 {
-    tx_type_ = safe_cast<TxType>(getFieldU16(sfTransactionType));
+    tx_type_ = safe_cast<std::uint16_t>(getFieldU16(sfTransactionType));
     applyTemplate(getTxFormat(tx_type_)->getSOTemplate());  //  may throw
     tid_ = getHash(HashPrefix::transactionID);
 }
@@ -73,13 +73,13 @@ STTx::STTx(SerialIter& sit) : STObject(sfTransaction)
     if (set(sit))
         Throw<std::runtime_error>("Transaction contains an object terminator");
 
-    tx_type_ = safe_cast<TxType>(getFieldU16(sfTransactionType));
+    tx_type_ = safe_cast<std::uint16_t>(getFieldU16(sfTransactionType));
 
     applyTemplate(getTxFormat(tx_type_)->getSOTemplate());  // May throw
     tid_ = getHash(HashPrefix::transactionID);
 }
 
-STTx::STTx(TxType type, std::function<void(STObject&)> assembler)
+STTx::STTx(std::uint16_t type, std::function<void(STObject&)> assembler)
     : STObject(sfTransaction)
 {
     auto format = getTxFormat(type);
@@ -89,7 +89,7 @@ STTx::STTx(TxType type, std::function<void(STObject&)> assembler)
 
     assembler(*this);
 
-    tx_type_ = safe_cast<TxType>(getFieldU16(sfTransactionType));
+    tx_type_ = safe_cast<std::uint16_t>(getFieldU16(sfTransactionType));
 
     if (tx_type_ != type)
         LogicError("Transaction type was mutated during assembly");
@@ -110,7 +110,7 @@ STTx::move(std::size_t n, void* buf)
 }
 
 // STObject functions.
-SerializedTypeID
+int
 STTx::getSType() const
 {
     return STI_TRANSACTION;
@@ -555,8 +555,8 @@ isPseudoTx(STObject const& tx)
     auto t = tx[~sfTransactionType];
     if (!t)
         return false;
-    auto tt = safe_cast<TxType>(*t);
-    return tt == ttAMENDMENT || tt == ttFEE || tt == ttUNL_MODIFY;
+    auto tt = safe_cast<std::uint16_t>(*t);
+    return tt == getTxTypeFromName("ttAMENDMENT") || tt == getTxTypeFromName("ttFEE") || tt == getTxTypeFromName("ttUNL_MODIFY");
 }
 
 }  // namespace ripple

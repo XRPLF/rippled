@@ -585,9 +585,9 @@ transactionConstructImpl(
                     app.getHashRouter(),
                     sttxNew->getTransactionID(),
                     Validity::SigGoodOnly);
-            if (checkValidity(
-                    app.getHashRouter(), *sttxNew, rules, app.config())
-                    .first != Validity::Valid)
+            const std::pair<Validity, std::string> &validity = checkValidity(
+                app.getHashRouter(), *sttxNew, rules, app.config());
+            if (validity.first != Validity::Valid)
             {
                 ret.first = RPC::make_error(rpcINTERNAL, "Invalid signature.");
                 return ret;

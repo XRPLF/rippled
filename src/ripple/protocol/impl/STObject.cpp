@@ -23,6 +23,7 @@
 #include <ripple/protocol/STArray.h>
 #include <ripple/protocol/STBlob.h>
 #include <ripple/protocol/STObject.h>
+#include <ripple/protocol/STPluginType.h>
 
 namespace ripple {
 
@@ -69,7 +70,7 @@ STObject::move(std::size_t n, void* buf)
     return emplace(n, buf, std::move(*this));
 }
 
-SerializedTypeID
+int
 STObject::getSType() const
 {
     return STI_OBJECT;
@@ -591,6 +592,13 @@ STObject::getAccountID(SField const& field) const
     return getFieldByValue<STAccount>(field);
 }
 
+STPluginType const&
+STObject::getPluginType(SField const& field) const
+{
+    STPluginType empty;
+    return getFieldByConstRef<STPluginType>(field, empty);
+}
+
 Blob
 STObject::getFieldVL(SField const& field) const
 {
@@ -682,6 +690,11 @@ void
 STObject::setAccountID(SField const& field, AccountID const& v)
 {
     setFieldUsingSetValue<STAccount>(field, v);
+}
+
+void
+STObject::setPluginType(SField const& field, STPluginType const& v) {
+    setFieldUsingSetValue<STPluginType>(field, Buffer(v.data(), v.size()));
 }
 
 void
@@ -778,7 +791,7 @@ STObject::add(Serializer& s, WhichFields whichFields) const
         // When we serialize an object inside another object,
         // the type associated by rule with this field name
         // must be OBJECT, or the object cannot be deserialized
-        SerializedTypeID const sType{field->getSType()};
+        int const sType{field->getSType()};
         assert(
             (sType != STI_OBJECT) ||
             (field->getFName().fieldType == STI_OBJECT));

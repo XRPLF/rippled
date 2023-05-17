@@ -110,3 +110,6 @@ CMakeUserPresets.json
 bld.rippled/
 /.build
 /cmake-build-debug
+
+# Rust target
+target/

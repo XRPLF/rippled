@@ -180,16 +180,17 @@ SetAccount::preclaim(PreclaimContext const& ctx)
 }
 
 TER
-SetAccount::doApply()
+SetAccount::doApply(ApplyContext& ctx, XRPAmount mPriorBalance, XRPAmount mSourceBalance)
 {
-    auto const sle = view().peek(keylet::account(account_));
+    AccountID const account_ = ctx.tx.getAccountID(sfAccount);
+    auto const sle = ctx.view().peek(keylet::account(ctx.tx.getAccountID(sfAccount)));
     if (!sle)
         return tefINTERNAL;
 
     std::uint32_t const uFlagsIn = sle->getFieldU32(sfFlags);
     std::uint32_t uFlagsOut = uFlagsIn;
 
-    STTx const& tx{ctx_.tx};
+    STTx const& tx{ctx.tx};
     std::uint32_t const uSetFlag{tx.getFieldU32(sfSetFlag)};
     std::uint32_t const uClearFlag{tx.getFieldU32(sfClearFlag)};
 
@@ -224,13 +225,13 @@ SetAccount::doApply()
     //
     if (bSetRequireDest && !(uFlagsIn & lsfRequireDestTag))
     {
-        JLOG(j_.trace()) << "Set lsfRequireDestTag.";
+        JLOG(ctx.journal.trace()) << "Set lsfRequireDestTag.";
         uFlagsOut |= lsfRequireDestTag;
     }
 
     if (bClearRequireDest && (uFlagsIn & lsfRequireDestTag))
     {
-        JLOG(j_.trace()) << "Clear lsfRequireDestTag.";
+        JLOG(ctx.journal.trace()) << "Clear lsfRequireDestTag.";
         uFlagsOut &= ~lsfRequireDestTag;
     }
 
@@ -239,13 +240,13 @@ SetAccount::doApply()
     //
     if (bSetDisallowXRP && !(uFlagsIn & lsfDisallowXRP))
     {
-        JLOG(j_.trace()) << "Set lsfDisallowXRP.";
+        JLOG(ctx.journal.trace()) << "Set lsfDisallowXRP.";
         uFlagsOut |= lsfDisallowXRP;
     }
 
     if (bClearDisallowXRP && (uFlagsIn & lsfDisallowXRP))
     {
-        JLOG(j_.trace()) << "Clear lsfDisallowXRP.";
+        JLOG(ctx.journal.trace()) << "Clear lsfDisallowXRP.";
         uFlagsOut &= ~lsfDisallowXRP;
     }
 
@@ -256,24 +257,24 @@ SetAccount::doApply()
     {
         if (!sigWithMaster)
         {
-            JLOG(j_.trace()) << "Must use master key to disable master key.";
+            JLOG(ctx.journal.trace()) << "Must use master key to disable master key.";
             return tecNEED_MASTER_KEY;
         }
 
         if ((!sle->isFieldPresent(sfRegularKey)) &&
-            (!view().peek(keylet::signers(account_))))
+            (!ctx.view().peek(keylet::signers(ctx.tx.getAccountID(sfAccount)))))
         {
             // Account has no regular key or multi-signer signer list.
             return tecNO_ALTERNATIVE_KEY;
         }
 
-        JLOG(j_.trace()) << "Set lsfDisableMaster.";
+        JLOG(ctx.journal.trace()) << "Set lsfDisableMaster.";
         uFlagsOut |= lsfDisableMaster;
     }
 
     if ((uClearFlag == asfDisableMaster) && (uFlagsIn & lsfDisableMaster))
     {
-        JLOG(j_.trace()) << "Clear lsfDisableMaster.";
+        JLOG(ctx.journal.trace()) << "Clear lsfDisableMaster.";
         uFlagsOut &= ~lsfDisableMaster;
     }
 
@@ -282,13 +283,13 @@ SetAccount::doApply()
     //
     if ((uSetFlag == asfAccountTxnID) && !sle->isFieldPresent(sfAccountTxnID))
     {
-        JLOG(j_.trace()) << "Set AccountTxnID.";
+        JLOG(ctx.journal.trace()) << "Set AccountTxnID.";
         sle->makeFieldPresent(sfAccountTxnID);
     }
 
     if ((uClearFlag == asfAccountTxnID) && sle->isFieldPresent(sfAccountTxnID))
     {
-        JLOG(j_.trace()) << "Clear AccountTxnID.";
+        JLOG(ctx.journal.trace()) << "Clear AccountTxnID.";
         sle->makeFieldAbsent(sfAccountTxnID);
     }
 
@@ -301,12 +302,12 @@ SetAccount::doApply()
 
         if (!uHash)
         {
-            JLOG(j_.trace()) << "unset email hash";
+            JLOG(ctx.journal.trace()) << "unset email hash";
             sle->makeFieldAbsent(sfEmailHash);
         }
         else
         {
-            JLOG(j_.trace()) << "set email hash";
+            JLOG(ctx.journal.trace()) << "set email hash";
             sle->setFieldH128(sfEmailHash, uHash);
         }
     }
@@ -320,12 +321,12 @@ SetAccount::doApply()
 
         if (!uHash)
         {
-            JLOG(j_.trace()) << "unset wallet locator";
+            JLOG(ctx.journal.trace()) << "unset wallet locator";
             sle->makeFieldAbsent(sfWalletLocator);
         }
         else
         {
-            JLOG(j_.trace()) << "set wallet locator";
+            JLOG(ctx.journal.trace()) << "set wallet locator";
             sle->setFieldH256(sfWalletLocator, uHash);
         }
     }
@@ -339,12 +340,12 @@ SetAccount::doApply()
 
         if (messageKey.empty())
         {
-            JLOG(j_.debug()) << "set message key";
+            JLOG(ctx.journal.debug()) << "set message key";
             sle->makeFieldAbsent(sfMessageKey);
         }
         else
         {
-            JLOG(j_.debug()) << "set message key";
+            JLOG(ctx.journal.debug()) << "set message key";
             sle->setFieldVL(sfMessageKey, messageKey);
         }
     }
@@ -358,12 +359,12 @@ SetAccount::doApply()
 
         if (domain.empty())
         {
-            JLOG(j_.trace()) << "unset domain";
+            JLOG(ctx.journal.trace()) << "unset domain";
             sle->makeFieldAbsent(sfDomain);
         }
         else
         {
-            JLOG(j_.trace()) << "set domain";
+            JLOG(ctx.journal.trace()) << "set domain";
             sle->setFieldVL(sfDomain, domain);
         }
     }

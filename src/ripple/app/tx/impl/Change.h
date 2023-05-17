@@ -41,8 +41,8 @@ public:
     static NotTEC
     preflight(PreflightContext const& ctx);
 
-    TER
-    doApply() override;
+    static TER
+    doApply(ApplyContext& ctx, XRPAmount mPriorBalance, XRPAmount mSourceBalance);
     void
     preCompute() override;
 
@@ -57,14 +57,14 @@ public:
 
 private:
 
-    TER
-    applyAmendment();
+    static TER
+    applyAmendment(ApplyContext& ctx, XRPAmount mPriorBalance, XRPAmount mSourceBalance);
 
-    TER
-    applyFee();
+    static TER
+    applyFee(ApplyContext& ctx, XRPAmount mPriorBalance, XRPAmount mSourceBalance);
 
-    TER
-    applyUNLModify();
+    static TER
+    applyUNLModify(ApplyContext& ctx, XRPAmount mPriorBalance, XRPAmount mSourceBalance);
 };
 
 }  // namespace ripple

@@ -19,85 +19,103 @@
 
 #include <ripple/app/tx/applySteps.h>
 #include <ripple/app/tx/impl/ApplyContext.h>
+#include <ripple/app/tx/impl/ApplyHandler.h>
 #include <ripple/app/tx/impl/Change.h>
 #include <ripple/app/tx/impl/DeleteAccount.h>
 #include <ripple/app/tx/impl/Payment.h>
 #include <ripple/app/tx/impl/SetAccount.h>
 #include <ripple/app/tx/impl/SetRegularKey.h>
 #include <ripple/app/tx/impl/SetSignerList.h>
+#include <dlfcn.h>
+#include <iostream>
+#include <map>
 
 namespace ripple {
 
-// Templates so preflight does the right thing with T::ConsequencesFactory.
-//
-// This could be done more easily using if constexpr, but Visual Studio
-// 2017 doesn't handle if constexpr correctly.  So once we're no longer
-// building with Visual Studio 2017 we can consider replacing the four
-// templates with a single template function that uses if constexpr.
-//
-// For Transactor::Normal
-template <
-    class T,
-    std::enable_if_t<T::ConsequencesFactory == Transactor::Normal, int> = 0>
-TxConsequences
-consequences_helper(PreflightContext const& ctx)
+typedef NotTEC (*preflightPtr)(PreflightContext const&);
+typedef TER (*preclaimPtr)(PreclaimContext const&);
+typedef XRPAmount (*calculateBaseFeePtr)(ReadView const& view, STTx const& tx);
+typedef TER (*doApplyPtr)(
+    ApplyContext& ctx,
+    XRPAmount mPriorBalance,
+    XRPAmount mSourceBalance);
+
+struct TransactorWrapper
 {
-    return TxConsequences(ctx.tx);
+    preflightPtr preflight;
+    preclaimPtr preclaim;
+    calculateBaseFeePtr calculateBaseFee;
+    doApplyPtr doApply;
 };
 
-// For Transactor::Blocker
-template <
-    class T,
-    std::enable_if_t<T::ConsequencesFactory == Transactor::Blocker, int> = 0>
-TxConsequences
-consequences_helper(PreflightContext const& ctx)
+std::pair<TER, bool>
+doApply_helper(ApplyContext& ctx, doApplyPtr doApplyFn)
 {
-    return TxConsequences(ctx.tx, TxConsequences::blocker);
-};
-
-// For Transactor::Custom
-template <
-    class T,
-    std::enable_if_t<T::ConsequencesFactory == Transactor::Custom, int> = 0>
-TxConsequences
-consequences_helper(PreflightContext const& ctx)
-{
-    return T::makeTxConsequences(ctx);
-};
+    ApplyHandler p(ctx, doApplyFn);
+    return p();
+}
 
 template <class T>
-std::pair<NotTEC, TxConsequences>
-invoke_preflight_helper(PreflightContext const& ctx)
+TransactorWrapper
+transactor_helper()
 {
-    auto const tec = T::preflight(ctx);
     return {
-        tec,
-        isTesSuccess(tec) ? consequences_helper<T>(ctx) : TxConsequences{tec}};
+        T::preflight,
+        T::preclaim,
+        T::calculateBaseFee,
+        T::doApply,
+    };
+};
+
+TransactorWrapper
+transactor_helper(std::string pathToLib)
+{
+    void* handle = dlopen(pathToLib.c_str(), RTLD_LAZY);
+    return {
+        (preflightPtr)dlsym(handle, "preflight"),
+        (preclaimPtr)dlsym(handle, "preclaim"),
+        (calculateBaseFeePtr)dlsym(handle, "calculateBaseFee"),
+        (doApplyPtr)dlsym(handle, "doApply"),
+    };
+};
+
+std::map<std::uint16_t, TransactorWrapper> transactorMap{
+    {0, transactor_helper<Payment>()},
+    {3, transactor_helper<SetAccount>()},
+    {5, transactor_helper<SetRegularKey>()},
+    {12, transactor_helper<SetSignerList>()},
+    {21, transactor_helper<DeleteAccount>()},
+    {100, transactor_helper<Change>()},
+    {101, transactor_helper<Change>()},
+    {102, transactor_helper<Change>()},
+};
+
+void
+addToTransactorMap(std::uint16_t type, std::string dynamicLib)
+{
+    transactorMap.insert({type, transactor_helper(dynamicLib)});
+}
+
+TxConsequences
+consequences_helper(PreflightContext const& ctx)
+{
+    // TODO: add support for Blocker and Custom TxConsequences values
+    return TxConsequences(ctx.tx);
 }
 
 static std::pair<NotTEC, TxConsequences>
 invoke_preflight(PreflightContext const& ctx)
 {
-    switch (ctx.tx.getTxnType())
+    if (auto it = transactorMap.find(ctx.tx.getTxnType());
+        it != transactorMap.end())
     {
-        case ttACCOUNT_DELETE:
-            return invoke_preflight_helper<DeleteAccount>(ctx);
-        case ttACCOUNT_SET:
-            return invoke_preflight_helper<SetAccount>(ctx);
-        case ttPAYMENT:
-            return invoke_preflight_helper<Payment>(ctx);
-        case ttREGULAR_KEY_SET:
-            return invoke_preflight_helper<SetRegularKey>(ctx);
-        case ttSIGNER_LIST_SET:
-            return invoke_preflight_helper<SetSignerList>(ctx);
-        case ttAMENDMENT:
-        case ttFEE:
-        case ttUNL_MODIFY:
-            return invoke_preflight_helper<Change>(ctx);
-        default:
-            assert(false);
-            return {temUNKNOWN, TxConsequences{temUNKNOWN}};
+        auto const tec = it->second.preflight(ctx);
+        return {
+            tec,
+            isTesSuccess(tec) ? consequences_helper(ctx) : TxConsequences{tec}};
     }
+    assert(false);
+    return {temUNKNOWN, TxConsequences{temUNKNOWN}};
 }
 
 /* invoke_preclaim<T> uses name hiding to accomplish
@@ -114,22 +132,22 @@ invoke_preclaim(PreclaimContext const& ctx)
 
     if (id != beast::zero)
     {
-        TER result = T::checkSeqProxy(ctx.view, ctx.tx, ctx.j);
+        TER result = Transactor::checkSeqProxy(ctx.view, ctx.tx, ctx.j);
 
         if (result != tesSUCCESS)
             return result;
 
-        result = T::checkPriorTxAndLastLedger(ctx);
+        result = Transactor::checkPriorTxAndLastLedger(ctx);
 
         if (result != tesSUCCESS)
             return result;
 
-        result = T::checkFee(ctx, calculateBaseFee(ctx.view, ctx.tx));
+        result = Transactor::checkFee(ctx, calculateBaseFee(ctx.view, ctx.tx));
 
         if (result != tesSUCCESS)
             return result;
 
-        result = T::checkSign(ctx);
+        result = Transactor::checkSign(ctx);
 
         if (result != tesSUCCESS)
             return result;
@@ -141,125 +159,65 @@ invoke_preclaim(PreclaimContext const& ctx)
 static TER
 invoke_preclaim(PreclaimContext const& ctx)
 {
-    switch (ctx.tx.getTxnType())
+    if (auto it = transactorMap.find(ctx.tx.getTxnType());
+        it != transactorMap.end())
     {
-        case ttACCOUNT_DELETE:
-            return invoke_preclaim<DeleteAccount>(ctx);
-        case ttACCOUNT_SET:
-            return invoke_preclaim<SetAccount>(ctx);
-        case ttPAYMENT:
-            return invoke_preclaim<Payment>(ctx);
-        case ttREGULAR_KEY_SET:
-            return invoke_preclaim<SetRegularKey>(ctx);
-        case ttSIGNER_LIST_SET:
-            return invoke_preclaim<SetSignerList>(ctx);
-        case ttAMENDMENT:
-        case ttFEE:
-        case ttUNL_MODIFY:
-            return invoke_preclaim<Change>(ctx);
-        default:
-            assert(false);
-            return temUNKNOWN;
+        // If the transactor requires a valid account and the transaction
+        // doesn't list one, preflight will have already a flagged a failure.
+        auto const id = ctx.tx.getAccountID(sfAccount);
+
+        if (id != beast::zero)
+        {
+            TER result = Transactor::checkSeqProxy(ctx.view, ctx.tx, ctx.j);
+
+            if (result != tesSUCCESS)
+                return result;
+
+            result = Transactor::checkPriorTxAndLastLedger(ctx);
+
+            if (result != tesSUCCESS)
+                return result;
+
+            result =
+                Transactor::checkFee(ctx, calculateBaseFee(ctx.view, ctx.tx));
+
+            if (result != tesSUCCESS)
+                return result;
+
+            result = Transactor::checkSign(ctx);
+
+            if (result != tesSUCCESS)
+                return result;
+        }
+
+        return it->second.preclaim(ctx);
     }
+    assert(false);
+    return temUNKNOWN;
 }
 
 static XRPAmount
 invoke_calculateBaseFee(ReadView const& view, STTx const& tx)
 {
-    switch (tx.getTxnType())
+    if (auto it = transactorMap.find(tx.getTxnType());
+        it != transactorMap.end())
     {
-        case ttACCOUNT_DELETE:
-            return DeleteAccount::calculateBaseFee(view, tx);
-        case ttACCOUNT_SET:
-            return SetAccount::calculateBaseFee(view, tx);
-        case ttPAYMENT:
-            return Payment::calculateBaseFee(view, tx);
-        case ttREGULAR_KEY_SET:
-            return SetRegularKey::calculateBaseFee(view, tx);
-        case ttSIGNER_LIST_SET:
-            return SetSignerList::calculateBaseFee(view, tx);
-        case ttAMENDMENT:
-        case ttFEE:
-        case ttUNL_MODIFY:
-            return Change::calculateBaseFee(view, tx);
-        default:
-            assert(false);
-            return XRPAmount{0};
+        return it->second.calculateBaseFee(view, tx);
     }
-}
-
-TxConsequences::TxConsequences(NotTEC pfresult)
-    : isBlocker_(false)
-    , fee_(beast::zero)
-    , potentialSpend_(beast::zero)
-    , seqProx_(SeqProxy::sequence(0))
-    , sequencesConsumed_(0)
-{
-    assert(!isTesSuccess(pfresult));
-}
-
-TxConsequences::TxConsequences(STTx const& tx)
-    : isBlocker_(false)
-    , fee_(!tx[sfFee].negative() ? tx[sfFee].xrp() : beast::zero)
-    , potentialSpend_(beast::zero)
-    , seqProx_(tx.getSeqProxy())
-    , sequencesConsumed_(tx.getSeqProxy().isSeq() ? 1 : 0)
-{
-}
-
-TxConsequences::TxConsequences(STTx const& tx, Category category)
-    : TxConsequences(tx)
-{
-    isBlocker_ = (category == blocker);
-}
-
-TxConsequences::TxConsequences(STTx const& tx, XRPAmount potentialSpend)
-    : TxConsequences(tx)
-{
-    potentialSpend_ = potentialSpend;
-}
-
-TxConsequences::TxConsequences(STTx const& tx, std::uint32_t sequencesConsumed)
-    : TxConsequences(tx)
-{
-    sequencesConsumed_ = sequencesConsumed;
+    assert(false);
+    return XRPAmount{0};
 }
 
 static std::pair<TER, bool>
 invoke_apply(ApplyContext& ctx)
 {
-    switch (ctx.tx.getTxnType())
+    if (auto it = transactorMap.find(ctx.tx.getTxnType());
+        it != transactorMap.end())
     {
-        case ttACCOUNT_DELETE: {
-            DeleteAccount p(ctx);
-            return p();
-        }
-        case ttACCOUNT_SET: {
-            SetAccount p(ctx);
-            return p();
-        }
-        case ttPAYMENT: {
-            Payment p(ctx);
-            return p();
-        }
-        case ttREGULAR_KEY_SET: {
-            SetRegularKey p(ctx);
-            return p();
-        }
-        case ttSIGNER_LIST_SET: {
-            SetSignerList p(ctx);
-            return p();
-        }
-        case ttAMENDMENT:
-        case ttFEE:
-        case ttUNL_MODIFY: {
-            Change p(ctx);
-            return p();
-        }
-        default:
-            assert(false);
-            return {temUNKNOWN, false};
+        return doApply_helper(ctx, it->second.doApply);
     }
+    assert(false);
+    return {temUNKNOWN, false};
 }
 
 PreflightResult
