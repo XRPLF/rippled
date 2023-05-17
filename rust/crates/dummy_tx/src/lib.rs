@@ -74,7 +74,7 @@ pub fn preclaim(ctx: &rippled::PreclaimContext) -> TER {
 }
 
 #[no_mangle]
-pub fn calculateBaseFee(view: &rippled::ReadView, tx: &rippled::STTx) -> XRPAmount {
+pub unsafe fn calculateBaseFee(view: &rippled::ReadView, tx: &rippled::STTx) -> XRPAmount {
     DummyTx2::calculateBaseFee(view, STTx::new(tx)).into()
 }
 
@@ -243,7 +243,7 @@ pub fn getTTName() -> *const i8 {
 }
 
 #[no_mangle]
-pub fn getTxFormat(mut elements: Pin<&mut CxxVector<FakeSOElement>>) {
+pub unsafe fn getTxFormat(mut elements: Pin<&mut CxxVector<FakeSOElement>>) {
     let tx_format = DummyTx2::tx_format();
     for element in tx_format {
         push_soelement(element.field_code, element.style, elements.as_mut());

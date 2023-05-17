@@ -3,5 +3,6 @@ resolver = "2"
 members = [
     "crates/rippled-bridge",
     "crates/plugin-transactor",
-    "crates/dummy_tx"
+    "crates/dummy_tx",
+    "crates/cft-light/CFTokenIssuanceCreate"
 ]
