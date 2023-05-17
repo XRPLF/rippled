@@ -64,17 +64,8 @@ enum TxType : std::uint16_t
     /** This transaction type sets or clears an account's "regular key". */
     ttREGULAR_KEY_SET = 5,
 
-    /** This transaction type creates an offer to trade one asset for another. */
-    ttOFFER_CREATE = 7,
-
-    /** This transaction type cancels existing offers to trade one asset for another. */
-    ttOFFER_CANCEL = 8,
-
     /** This transaction type modifies the signer list associated with an account. */
     ttSIGNER_LIST_SET = 12,
-
-    /** This transaction type modifies a trustline between two accounts. */
-    ttTRUST_SET = 20,
 
     /** This transaction type deletes an existing account. */
     ttACCOUNT_DELETE = 21,

@@ -80,12 +80,18 @@ doSubmit(RPC::JsonContext& context)
     if (!ret || !ret->size())
         return rpcError(rpcINVALID_PARAMS);
 
+    // TODO: Allow rust to deserialize
     SerialIter sitTrans(makeSlice(*ret));
 
     std::shared_ptr<STTx const> stpTrans;
 
     try
     {
+        // TODO: Allow rust to make its own STTx, returning a Result
+        //      which will get handled here and error messages will get
+        //      set in json if Err.
+        //      The Result Ok should contain a shared struct with the transactionID
+        //      and any other common fields needed in the below validity calls
         stpTrans = std::make_shared<STTx const>(std::ref(sitTrans));
     }
     catch (std::exception& e)
@@ -97,6 +103,8 @@ doSubmit(RPC::JsonContext& context)
     }
 
     {
+        // TODO: Call these methods with fields from shared tx struct (comes from rust)
+        //      instead of STTx.
         if (!context.app.checkSigs())
             forceValidity(
                 context.app.getHashRouter(),
@@ -117,6 +125,8 @@ doSubmit(RPC::JsonContext& context)
     }
 
     std::string reason;
+    // TODO: Make Transaction hold a Blob, not an STTx. Will have to pass in
+    //  the transaction ID as well as the blob to the constructor.
     auto tpTrans = std::make_shared<Transaction>(stpTrans, reason, context.app);
     if (tpTrans->getStatus() != NEW)
     {
@@ -130,6 +140,8 @@ doSubmit(RPC::JsonContext& context)
     {
         auto const failType = getFailHard(context);
 
+        // TODO: This implementation will have to change to deal with Blobs
+        //  instead of STTxs inside of tpTrans
         context.netOps.processTransaction(
             tpTrans, isUnlimited(context.role), true, failType);
     }
@@ -143,6 +155,8 @@ doSubmit(RPC::JsonContext& context)
 
     try
     {
+        // TODO: Shared transaction struct will need to expose a method
+        //      that returns json strings
         jvResult[jss::tx_json] = tpTrans->getJson(JsonOptions::none);
         jvResult[jss::tx_blob] =
             strHex(tpTrans->getSTransaction()->getSerializer().peekData());

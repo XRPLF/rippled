@@ -30,8 +30,7 @@ TxConsequences
 Payment::makeTxConsequences(PreflightContext const& ctx)
 {
     auto calculateMaxXRPSpend = [](STTx const& tx) -> XRPAmount {
-        STAmount const maxAmount =
-            tx.isFieldPresent(sfSendMax) ? tx[sfSendMax] : tx[sfAmount];
+        STAmount const maxAmount = tx[sfAmount];
 
         // If there's no sfSendMax in XRP, and the sfAmount isn't
         // in XRP, then the transaction does not spend XRP.
@@ -59,30 +58,24 @@ Payment::preflight(PreflightContext const& ctx)
         return temINVALID_FLAG;
     }
 
-    bool const partialPaymentAllowed = uTxFlags & tfPartialPayment;
-    bool const limitQuality = uTxFlags & tfLimitQuality;
-    bool const defaultPathsAllowed = !(uTxFlags & tfNoRippleDirect);
+//    bool const partialPaymentAllowed = uTxFlags & tfPartialPayment;
+//    bool const limitQuality = uTxFlags & tfLimitQuality;
+//    bool const defaultPathsAllowed = !(uTxFlags & tfNoRippleDirect);
     //    bool const bPaths = tx.isFieldPresent(sfPaths);
-    bool const bMax = tx.isFieldPresent(sfSendMax);
+//    bool const bMax = tx.isFieldPresent(sfSendMax);
 
     STAmount const saDstAmount(tx.getFieldAmount(sfAmount));
 
-    STAmount maxSourceAmount;
     auto const account = tx.getAccountID(sfAccount);
 
-    if (bMax)
-        maxSourceAmount = tx.getFieldAmount(sfSendMax);
-    else  // if (saDstAmount.native())
-        maxSourceAmount = saDstAmount;
-
-    auto const& uSrcCurrency = maxSourceAmount.getCurrency();
+    auto const& uSrcCurrency = saDstAmount.getCurrency();
     auto const& uDstCurrency = saDstAmount.getCurrency();
 
     // isZero() is XRP.  FIX!
     //    bool const bXRPDirect = uSrcCurrency.isZero() &&
     //    uDstCurrency.isZero();
 
-    if (!isLegalNet(saDstAmount) || !isLegalNet(maxSourceAmount))
+    if (!isLegalNet(saDstAmount) || !isLegalNet(saDstAmount))
         return temBAD_AMOUNT;
 
     auto const uDstAccountID = tx.getAccountID(sfDestination);
@@ -93,19 +86,13 @@ Payment::preflight(PreflightContext const& ctx)
                         << "Payment destination account not specified.";
         return temDST_NEEDED;
     }
-    if (bMax && maxSourceAmount <= beast::zero)
-    {
-        JLOG(j.trace()) << "Malformed transaction: "
-                        << "bad max amount: " << maxSourceAmount.getFullText();
-        return temBAD_AMOUNT;
-    }
     if (saDstAmount <= beast::zero)
     {
         JLOG(j.trace()) << "Malformed transaction: "
                         << "bad dst amount: " << saDstAmount.getFullText();
         return temBAD_AMOUNT;
     }
-    if (badCurrency() == uSrcCurrency || badCurrency() == uDstCurrency)
+    if (xrpCurrency() != uSrcCurrency || xrpCurrency() != uDstCurrency)
     {
         JLOG(j.trace()) << "Malformed transaction: "
                         << "Bad currency.";
@@ -120,70 +107,6 @@ Payment::preflight(PreflightContext const& ctx)
                         << to_string(uDstCurrency);
         return temREDUNDANT;
     }
-    if (bMax)
-    {
-        // Consistent but redundant transaction.
-        JLOG(j.trace()) << "Malformed transaction: "
-                        << "SendMax specified for XRP to XRP.";
-        return temBAD_SEND_XRP_MAX;
-    }
-    if (partialPaymentAllowed)
-    {
-        // Consistent but redundant transaction.
-        JLOG(j.trace()) << "Malformed transaction: "
-                        << "Partial payment specified for XRP to XRP.";
-        return temBAD_SEND_XRP_PARTIAL;
-    }
-    if (limitQuality)
-    {
-        // Consistent but redundant transaction.
-        JLOG(j.trace()) << "Malformed transaction: "
-                        << "Limit quality specified for XRP to XRP.";
-        return temBAD_SEND_XRP_LIMIT;
-    }
-    if (!defaultPathsAllowed)
-    {
-        // Consistent but redundant transaction.
-        JLOG(j.trace()) << "Malformed transaction: "
-                        << "No ripple direct specified for XRP to XRP.";
-        return temBAD_SEND_XRP_NO_DIRECT;
-    }
-
-    auto const deliverMin = tx[~sfDeliverMin];
-    if (deliverMin)
-    {
-        if (!partialPaymentAllowed)
-        {
-            JLOG(j.trace()) << "Malformed transaction: Partial payment not "
-                               "specified for "
-                            << jss::DeliverMin.c_str() << ".";
-            return temBAD_AMOUNT;
-        }
-
-        auto const dMin = *deliverMin;
-        if (!isLegalNet(dMin) || dMin <= beast::zero)
-        {
-            JLOG(j.trace())
-                << "Malformed transaction: Invalid " << jss::DeliverMin.c_str()
-                << " amount. " << dMin.getFullText();
-            return temBAD_AMOUNT;
-        }
-        if (dMin.issue() != saDstAmount.issue())
-        {
-            JLOG(j.trace())
-                << "Malformed transaction: Dst issue differs "
-                   "from "
-                << jss::DeliverMin.c_str() << ". " << dMin.getFullText();
-            return temBAD_AMOUNT;
-        }
-        if (dMin > saDstAmount)
-        {
-            JLOG(j.trace())
-                << "Malformed transaction: Dst amount less than "
-                << jss::DeliverMin.c_str() << ". " << dMin.getFullText();
-            return temBAD_AMOUNT;
-        }
-    }
 
     return preflight2(ctx);
 }
@@ -192,10 +115,10 @@ TER
 Payment::preclaim(PreclaimContext const& ctx)
 {
     // Ripple if source or destination is non-native or if there are paths.
-    std::uint32_t const uTxFlags = ctx.tx.getFlags();
-    bool const partialPaymentAllowed = uTxFlags & tfPartialPayment;
+//    std::uint32_t const uTxFlags = ctx.tx.getFlags();
+//    bool const partialPaymentAllowed = uTxFlags & tfPartialPayment;
     //    auto const paths = ctx.tx.isFieldPresent(sfPaths);
-    auto const sendMax = ctx.tx[~sfSendMax];
+//    auto const sendMax = ctx.tx[~sfSendMax];
 
     AccountID const uDstAccountID(ctx.tx[sfDestination]);
     STAmount const saDstAmount(ctx.tx[sfAmount]);
@@ -205,18 +128,7 @@ Payment::preclaim(PreclaimContext const& ctx)
 
     if (!sleDst)
     {
-        if (ctx.view.open() && partialPaymentAllowed)
-        {
-            // You cannot fund an account with a partial payment.
-            // Make retry work smaller, by rejecting this.
-            JLOG(ctx.j.trace()) << "Delay transaction: Partial payment not "
-                                   "allowed to create account.";
-
-            // Another transaction could create the account and then this
-            // transaction would succeed.
-            return telNO_DST_PARTIAL;
-        }
-        else if (saDstAmount < STAmount(ctx.view.fees().accountReserve(0)))
+        if (saDstAmount < STAmount(ctx.view.fees().accountReserve(0)))
         {
             // accountReserve is the minimum amount that an account can have.
             // Reserve is not scaled by load.

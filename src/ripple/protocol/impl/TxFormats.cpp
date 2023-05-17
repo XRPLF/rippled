@@ -69,11 +69,11 @@ TxFormats::TxFormats()
         {
             {sfDestination, soeREQUIRED},
             {sfAmount, soeREQUIRED},
-            {sfSendMax, soeOPTIONAL},
+//            {sfSendMax, soeOPTIONAL},
 //            {sfPaths, soeDEFAULT},
             {sfInvoiceID, soeOPTIONAL},
             {sfDestinationTag, soeOPTIONAL},
-            {sfDeliverMin, soeOPTIONAL},
+//            {sfDeliverMin, soeOPTIONAL},
         },
         commonFields);
 
