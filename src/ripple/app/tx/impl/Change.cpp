@@ -67,7 +67,7 @@ Change::preflight(PreflightContext const& ctx)
         return temBAD_SEQUENCE;
     }
 
-    if (ctx.tx.getTxnType() == ttUNL_MODIFY &&
+    if (ctx.tx.getTxnType() == getTxTypeFromName("ttUNL_MODIFY") &&
         !ctx.rules.enabled(featureNegativeUNL))
     {
         JLOG(ctx.j.warn()) << "Change: NegativeUNL not enabled";
@@ -90,7 +90,7 @@ Change::preclaim(PreclaimContext const& ctx)
 
     switch (ctx.tx.getTxnType())
     {
-        case ttFEE:
+        case 101: // ttFEE
             if (ctx.view.rules().enabled(featureXRPFees))
             {
                 // The ttFEE transaction format defines these fields as
@@ -129,8 +129,8 @@ Change::preclaim(PreclaimContext const& ctx)
                     return temDISABLED;
             }
             return tesSUCCESS;
-        case ttAMENDMENT:
-        case ttUNL_MODIFY:
+        case 100:  // ttAMENDMENT
+        case 102:  // ttUNL_MODIFY
             return tesSUCCESS;
         default:
             return temUNKNOWN;
@@ -138,16 +138,16 @@ Change::preclaim(PreclaimContext const& ctx)
 }
 
 TER
-Change::doApply()
+Change::doApply(ApplyContext& ctx, XRPAmount mPriorBalance, XRPAmount mSourceBalance)
 {
-    switch (ctx_.tx.getTxnType())
+    switch (ctx.tx.getTxnType())
     {
-        case ttAMENDMENT:
-            return applyAmendment();
-        case ttFEE:
-            return applyFee();
-        case ttUNL_MODIFY:
-            return applyUNLModify();
+        case 100:  // ttAMENDMENT
+            return applyAmendment(ctx, mPriorBalance, mSourceBalance);
+        case 101:  // ttFEE
+            return applyFee(ctx, mPriorBalance, mSourceBalance);
+        case 102:  // ttUNL_MODIFY
+            return applyUNLModify(ctx, mPriorBalance, mSourceBalance);
         default:
             assert(0);
             return tefFAILURE;
@@ -157,22 +157,22 @@ Change::doApply()
 void
 Change::preCompute()
 {
-    assert(account_ == beast::zero);
+    assert(ctx.tx.getAccountID(sfAccount) == beast::zero);
 }
 
 TER
-Change::applyAmendment()
+Change::applyAmendment(ApplyContext& ctx, XRPAmount mPriorBalance, XRPAmount mSourceBalance)
 {
-    uint256 amendment(ctx_.tx.getFieldH256(sfAmendment));
+    uint256 amendment(ctx.tx.getFieldH256(sfAmendment));
 
     auto const k = keylet::amendments();
 
-    SLE::pointer amendmentObject = view().peek(k);
+    SLE::pointer amendmentObject = ctx.view().peek(k);
 
     if (!amendmentObject)
     {
         amendmentObject = std::make_shared<SLE>(k);
-        view().insert(amendmentObject);
+        ctx.view().insert(amendmentObject);
     }
 
     STVector256 amendments = amendmentObject->getFieldV256(sfAmendments);
@@ -181,7 +181,7 @@ Change::applyAmendment()
         amendments.end())
         return tefALREADY;
 
-    auto flags = ctx_.tx.getFlags();
+    auto flags = ctx.tx.getFlags();
 
     const bool gotMajority = (flags & tfGotMajority) != 0;
     const bool lostMajority = (flags & tfLostMajority) != 0;
@@ -222,11 +222,11 @@ Change::applyAmendment()
         auto& entry = newMajorities.back();
         entry.emplace_back(STUInt256(sfAmendment, amendment));
         entry.emplace_back(STUInt32(
-            sfCloseTime, view().parentCloseTime().time_since_epoch().count()));
+            sfCloseTime, ctx.view().parentCloseTime().time_since_epoch().count()));
 
-        if (!ctx_.app.getAmendmentTable().isSupported(amendment))
+        if (!ctx.app.getAmendmentTable().isSupported(amendment))
         {
-            JLOG(j_.warn()) << "Unsupported amendment " << amendment
+            JLOG(ctx.journal.warn()) << "Unsupported amendment " << amendment
                             << " received a majority.";
         }
     }
@@ -236,13 +236,13 @@ Change::applyAmendment()
         amendments.push_back(amendment);
         amendmentObject->setFieldV256(sfAmendments, amendments);
 
-        ctx_.app.getAmendmentTable().enable(amendment);
+        ctx.app.getAmendmentTable().enable(amendment);
 
-        if (!ctx_.app.getAmendmentTable().isSupported(amendment))
+        if (!ctx.app.getAmendmentTable().isSupported(amendment))
         {
-            JLOG(j_.error()) << "Unsupported amendment " << amendment
+            JLOG(ctx.journal.error()) << "Unsupported amendment " << amendment
                              << " activated: server blocked.";
-            ctx_.app.getOPs().setAmendmentBlocked();
+            ctx.app.getOPs().setAmendmentBlocked();
         }
     }
 
@@ -251,31 +251,31 @@ Change::applyAmendment()
     else
         amendmentObject->setFieldArray(sfMajorities, newMajorities);
 
-    view().update(amendmentObject);
+    ctx.view().update(amendmentObject);
 
     return tesSUCCESS;
 }
 
 TER
-Change::applyFee()
+Change::applyFee(ApplyContext& ctx, XRPAmount mPriorBalance, XRPAmount mSourceBalance)
 {
     auto const k = keylet::fees();
 
-    SLE::pointer feeObject = view().peek(k);
+    SLE::pointer feeObject = ctx.view().peek(k);
 
     if (!feeObject)
     {
         feeObject = std::make_shared<SLE>(k);
-        view().insert(feeObject);
+        ctx.view().insert(feeObject);
     }
     auto set = [](SLE::pointer& feeObject, STTx const& tx, auto const& field) {
         feeObject->at(field) = tx[field];
     };
-    if (view().rules().enabled(featureXRPFees))
+    if (ctx.view().rules().enabled(featureXRPFees))
     {
-        set(feeObject, ctx_.tx, sfBaseFeeDrops);
-        set(feeObject, ctx_.tx, sfReserveBaseDrops);
-        set(feeObject, ctx_.tx, sfReserveIncrementDrops);
+        set(feeObject, ctx.tx, sfBaseFeeDrops);
+        set(feeObject, ctx.tx, sfReserveBaseDrops);
+        set(feeObject, ctx.tx, sfReserveIncrementDrops);
         // Ensure the old fields are removed
         feeObject->makeFieldAbsent(sfBaseFee);
         feeObject->makeFieldAbsent(sfReferenceFeeUnits);
@@ -284,63 +284,63 @@ Change::applyFee()
     }
     else
     {
-        set(feeObject, ctx_.tx, sfBaseFee);
-        set(feeObject, ctx_.tx, sfReferenceFeeUnits);
-        set(feeObject, ctx_.tx, sfReserveBase);
-        set(feeObject, ctx_.tx, sfReserveIncrement);
+        set(feeObject, ctx.tx, sfBaseFee);
+        set(feeObject, ctx.tx, sfReferenceFeeUnits);
+        set(feeObject, ctx.tx, sfReserveBase);
+        set(feeObject, ctx.tx, sfReserveIncrement);
     }
 
-    view().update(feeObject);
+    ctx.view().update(feeObject);
 
-    JLOG(j_.warn()) << "Fees have been changed";
+    JLOG(ctx.journal.warn()) << "Fees have been changed";
     return tesSUCCESS;
 }
 
 TER
-Change::applyUNLModify()
+Change::applyUNLModify(ApplyContext& ctx, XRPAmount mPriorBalance, XRPAmount mSourceBalance)
 {
-    if (!isFlagLedger(view().seq()))
+    if (!isFlagLedger(ctx.view().seq()))
     {
-        JLOG(j_.warn()) << "N-UNL: applyUNLModify, not a flag ledger, seq="
-                        << view().seq();
+        JLOG(ctx.journal.warn()) << "N-UNL: applyUNLModify, not a flag ledger, seq="
+                        << ctx.view().seq();
         return tefFAILURE;
     }
 
-    if (!ctx_.tx.isFieldPresent(sfUNLModifyDisabling) ||
-        ctx_.tx.getFieldU8(sfUNLModifyDisabling) > 1 ||
-        !ctx_.tx.isFieldPresent(sfLedgerSequence) ||
-        !ctx_.tx.isFieldPresent(sfUNLModifyValidator))
+    if (!ctx.tx.isFieldPresent(sfUNLModifyDisabling) ||
+        ctx.tx.getFieldU8(sfUNLModifyDisabling) > 1 ||
+        !ctx.tx.isFieldPresent(sfLedgerSequence) ||
+        !ctx.tx.isFieldPresent(sfUNLModifyValidator))
     {
-        JLOG(j_.warn()) << "N-UNL: applyUNLModify, wrong Tx format.";
+        JLOG(ctx.journal.warn()) << "N-UNL: applyUNLModify, wrong Tx format.";
         return tefFAILURE;
     }
 
-    bool const disabling = ctx_.tx.getFieldU8(sfUNLModifyDisabling);
-    auto const seq = ctx_.tx.getFieldU32(sfLedgerSequence);
-    if (seq != view().seq())
+    bool const disabling = ctx.tx.getFieldU8(sfUNLModifyDisabling);
+    auto const seq = ctx.tx.getFieldU32(sfLedgerSequence);
+    if (seq != ctx.view().seq())
     {
-        JLOG(j_.warn()) << "N-UNL: applyUNLModify, wrong ledger seq=" << seq;
+        JLOG(ctx.journal.warn()) << "N-UNL: applyUNLModify, wrong ledger seq=" << seq;
         return tefFAILURE;
     }
 
-    Blob const validator = ctx_.tx.getFieldVL(sfUNLModifyValidator);
+    Blob const validator = ctx.tx.getFieldVL(sfUNLModifyValidator);
     if (!publicKeyType(makeSlice(validator)))
     {
-        JLOG(j_.warn()) << "N-UNL: applyUNLModify, bad validator key";
+        JLOG(ctx.journal.warn()) << "N-UNL: applyUNLModify, bad validator key";
         return tefFAILURE;
     }
 
-    JLOG(j_.info()) << "N-UNL: applyUNLModify, "
+    JLOG(ctx.journal.info()) << "N-UNL: applyUNLModify, "
                     << (disabling ? "ToDisable" : "ToReEnable")
                     << " seq=" << seq
                     << " validator data:" << strHex(validator);
 
     auto const k = keylet::negativeUNL();
-    SLE::pointer negUnlObject = view().peek(k);
+    SLE::pointer negUnlObject = ctx.view().peek(k);
     if (!negUnlObject)
     {
         negUnlObject = std::make_shared<SLE>(k);
-        view().insert(negUnlObject);
+        ctx.view().insert(negUnlObject);
     }
 
     bool const found = [&] {
@@ -363,7 +363,7 @@ Change::applyUNLModify()
         // cannot have more than one toDisable
         if (negUnlObject->isFieldPresent(sfValidatorToDisable))
         {
-            JLOG(j_.warn()) << "N-UNL: applyUNLModify, already has ToDisable";
+            JLOG(ctx.journal.warn()) << "N-UNL: applyUNLModify, already has ToDisable";
             return tefFAILURE;
         }
 
@@ -372,7 +372,7 @@ Change::applyUNLModify()
         {
             if (negUnlObject->getFieldVL(sfValidatorToReEnable) == validator)
             {
-                JLOG(j_.warn())
+                JLOG(ctx.journal.warn())
                     << "N-UNL: applyUNLModify, ToDisable is same as ToReEnable";
                 return tefFAILURE;
             }
@@ -381,7 +381,7 @@ Change::applyUNLModify()
         // cannot be in negative UNL already
         if (found)
         {
-            JLOG(j_.warn())
+            JLOG(ctx.journal.warn())
                 << "N-UNL: applyUNLModify, ToDisable already in negative UNL";
             return tefFAILURE;
         }
@@ -393,7 +393,7 @@ Change::applyUNLModify()
         // cannot have more than one toReEnable
         if (negUnlObject->isFieldPresent(sfValidatorToReEnable))
         {
-            JLOG(j_.warn()) << "N-UNL: applyUNLModify, already has ToReEnable";
+            JLOG(ctx.journal.warn()) << "N-UNL: applyUNLModify, already has ToReEnable";
             return tefFAILURE;
         }
 
@@ -402,7 +402,7 @@ Change::applyUNLModify()
         {
             if (negUnlObject->getFieldVL(sfValidatorToDisable) == validator)
             {
-                JLOG(j_.warn())
+                JLOG(ctx.journal.warn())
                     << "N-UNL: applyUNLModify, ToReEnable is same as ToDisable";
                 return tefFAILURE;
             }
@@ -411,7 +411,7 @@ Change::applyUNLModify()
         // must be in negative UNL
         if (!found)
         {
-            JLOG(j_.warn())
+            JLOG(ctx.journal.warn())
                 << "N-UNL: applyUNLModify, ToReEnable is not in negative UNL";
             return tefFAILURE;
         }
@@ -419,7 +419,7 @@ Change::applyUNLModify()
         negUnlObject->setFieldVL(sfValidatorToReEnable, validator);
     }
 
-    view().update(negUnlObject);
+    ctx.view().update(negUnlObject);
     return tesSUCCESS;
 }
 

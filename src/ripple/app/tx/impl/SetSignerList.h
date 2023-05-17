@@ -44,8 +44,6 @@ class SetSignerList : public Transactor
 private:
     // Values determined during preCompute for use later.
     enum Operation { unknown, set, destroy };
-    Operation do_{unknown};
-    std::uint32_t quorum_{0};
     std::vector<SignerEntries::SignerEntry> signers_;
 
 public:
@@ -58,8 +56,9 @@ public:
     static NotTEC
     preflight(PreflightContext const& ctx);
 
-    TER
-    doApply() override;
+    static TER
+    doApply(ApplyContext& ctx, XRPAmount mPriorBalance, XRPAmount mSourceBalance);
+
     void
     preCompute() override;
 
@@ -87,14 +86,22 @@ private:
         beast::Journal j,
         Rules const&);
 
-    TER
-    replaceSignerList();
-    TER
-    destroySignerList();
+    static TER
+    replaceSignerList(
+        ApplyContext& ctx,
+        XRPAmount mPriorBalance,
+        std::vector<SignerEntries::SignerEntry> signers,
+        std::uint32_t quorum);
+    static TER
+    destroySignerList(ApplyContext& ctx);
 
-    void
-    writeSignersToSLE(SLE::pointer const& ledgerEntry, std::uint32_t flags)
-        const;
+    static void
+    writeSignersToSLE(
+        ApplyContext& ctx,
+        std::vector<SignerEntries::SignerEntry> signers,
+        std::uint32_t quorum,
+        SLE::pointer const& ledgerEntry,
+        std::uint32_t flags);
 };
 
 }  // namespace ripple

@@ -21,6 +21,7 @@
 #define RIPPLE_PROTOCOL_STPARSEDJSON_H_INCLUDED
 
 #include <ripple/protocol/STArray.h>
+#include <ripple/protocol/ErrorCodes.h>
 #include <optional>
 
 namespace ripple {
@@ -80,6 +81,182 @@ public:
     /** On failure, an appropriate set of error values. */
     Json::Value error;
 };
+
+template <typename U, typename S>
+constexpr std::
+    enable_if_t<std::is_unsigned<U>::value && std::is_signed<S>::value, U>
+    to_unsigned(S value)
+{
+    if (value < 0 || std::numeric_limits<U>::max() < value)
+        Throw<std::runtime_error>("Value out of range");
+    return static_cast<U>(value);
+}
+
+template <typename U1, typename U2>
+constexpr std::
+    enable_if_t<std::is_unsigned<U1>::value && std::is_unsigned<U2>::value, U1>
+    to_unsigned(U2 value)
+{
+    if (std::numeric_limits<U1>::max() < value)
+        Throw<std::runtime_error>("Value out of range");
+    return static_cast<U1>(value);
+}
+
+static std::string
+make_name(std::string const& object, std::string const& field)
+{
+    if (field.empty())
+        return object;
+
+    return object + "." + field;
+}
+
+static Json::Value
+not_an_object(std::string const& object, std::string const& field)
+{
+    return RPC::make_error(
+        rpcINVALID_PARAMS,
+        "Field '" + make_name(object, field) + "' is not a JSON object.");
+}
+
+static Json::Value
+not_an_object(std::string const& object)
+{
+    return not_an_object(object, "");
+}
+
+static Json::Value
+not_an_array(std::string const& object)
+{
+    return RPC::make_error(
+        rpcINVALID_PARAMS, "Field '" + object + "' is not a JSON array.");
+}
+
+static Json::Value
+unknown_field(std::string const& object, std::string const& field)
+{
+    return RPC::make_error(
+        rpcINVALID_PARAMS,
+        "Field '" + make_name(object, field) + "' is unknown.");
+}
+
+static Json::Value
+out_of_range(std::string const& object, std::string const& field)
+{
+    return RPC::make_error(
+        rpcINVALID_PARAMS,
+        "Field '" + make_name(object, field) + "' is out of range.");
+}
+
+static Json::Value
+bad_type(std::string const& object, std::string const& field)
+{
+    return RPC::make_error(
+        rpcINVALID_PARAMS,
+        "Field '" + make_name(object, field) + "' has bad type.");
+}
+
+static Json::Value
+unknown_type(std::string const& object, std::string const& field, int fieldType)
+{
+    return RPC::make_error(
+        rpcINVALID_PARAMS,
+        "Field '" + make_name(object, field) + "' has unknown type value " + std::to_string(fieldType) + ".");
+}
+
+static Json::Value
+invalid_data(std::string const& object, std::string const& field)
+{
+    return RPC::make_error(
+        rpcINVALID_PARAMS,
+        "Field '" + make_name(object, field) + "' has invalid data.");
+}
+
+static Json::Value
+invalid_data(std::string const& object)
+{
+    return invalid_data(object, "");
+}
+
+static Json::Value
+array_expected(std::string const& object, std::string const& field)
+{
+    return RPC::make_error(
+        rpcINVALID_PARAMS,
+        "Field '" + make_name(object, field) + "' must be a JSON array.");
+}
+
+static Json::Value
+string_expected(std::string const& object, std::string const& field)
+{
+    return RPC::make_error(
+        rpcINVALID_PARAMS,
+        "Field '" + make_name(object, field) + "' must be a string.");
+}
+
+static Json::Value
+too_deep(std::string const& object)
+{
+    return RPC::make_error(
+        rpcINVALID_PARAMS,
+        "Field '" + object + "' exceeds nesting depth limit.");
+}
+
+static Json::Value
+singleton_expected(std::string const& object, unsigned int index)
+{
+    return RPC::make_error(
+        rpcINVALID_PARAMS,
+        "Field '" + object + "[" + std::to_string(index) +
+            "]' must be an object with a single key/object value.");
+}
+
+static Json::Value
+template_mismatch(SField const& sField)
+{
+    return RPC::make_error(
+        rpcINVALID_PARAMS,
+        "Object '" + sField.getName() +
+            "' contents did not meet requirements for that type.");
+}
+
+static Json::Value
+non_object_in_array(std::string const& item, Json::UInt index)
+{
+    return RPC::make_error(
+        rpcINVALID_PARAMS,
+        "Item '" + item + "' at index " + std::to_string(index) +
+            " is not an object.  Arrays may only contain objects.");
+}
+
+template <typename T>
+std::optional<detail::STVar>
+parseLeafType(
+    SField const& field,
+    std::string const& json_name,
+    std::string const& fieldName,
+    SField const* name,
+    Json::Value const& value,
+    Json::Value& error);
+
+typedef const std::optional<detail::STVar>* (*parseLeafTypePtr)(
+    SField const&,
+    std::string const&,
+    std::string const&,
+    SField const*,
+    Json::Value const&,
+    Json::Value&);
+
+typedef std::optional<detail::STVar> (*parseLeafTypePtr2)(
+    SField const&,
+    std::string const&,
+    std::string const&,
+    SField const*,
+    Json::Value const&,
+    Json::Value&);
+
+void
+registerLeafType(int type, parseLeafTypePtr functionPtr);
 
 }  // namespace ripple
 

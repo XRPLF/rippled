@@ -45,7 +45,7 @@ enum TxnSql : char {
 class STTx final : public STObject, public CountedObject<STTx>
 {
     uint256 tid_;
-    TxType tx_type_;
+    std::uint16_t tx_type_;
 
 public:
     static std::size_t const minMultiSigners = 1;
@@ -75,10 +75,10 @@ public:
         any fields that the callback function adds to the object
         that's passed in.
     */
-    STTx(TxType type, std::function<void(STObject&)> assembler);
+    STTx(std::uint16_t type, std::function<void(STObject&)> assembler);
 
     // STObject functions.
-    SerializedTypeID
+    int
     getSType() const override;
 
     std::string
@@ -91,7 +91,7 @@ public:
     uint256
     getSigningHash() const;
 
-    TxType
+    std::uint16_t
     getTxnType() const;
 
     Blob
@@ -175,7 +175,7 @@ inline STTx::STTx(SerialIter&& sit) : STTx(sit)
 {
 }
 
-inline TxType
+inline std::uint16_t
 STTx::getTxnType() const
 {
     return tx_type_;

@@ -38,7 +38,7 @@ public:
     STInteger(SField const& n, Integer v = 0);
     STInteger(SerialIter& sit, SField const& name);
 
-    SerializedTypeID
+    int
     getSType() const override;
 
     Json::Value getJson(JsonOptions) const override;

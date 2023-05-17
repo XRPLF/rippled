@@ -1,0 +1,19 @@
+[package]
+name = "rippled-bridge"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "rippled_bridge"
+path = "src/lib.rs"
+#crate-type = ["dylib", "staticlib"]
+
+[dependencies]
+cxx = "1.0.94"
+"xrpl-rust-sdk-core" = { path = "../../../../xrpl-rust-sdk/xrpl-rust-sdk-core" }
+
+[build-dependencies]
+cxx-build = "1.0.94"
+conan = "0.3.0"
+serde_json = "1.0.96"

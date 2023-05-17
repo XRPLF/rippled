@@ -48,7 +48,7 @@ public:
         Item(
             char const* name,
             KeyType type,
-            std::initializer_list<SOElement> uniqueFields,
+            std::vector<SOElement> uniqueFields,
             std::initializer_list<SOElement> commonFields)
             : soTemplate_(uniqueFields, commonFields), name_(name), type_(type)
         {
@@ -169,7 +169,7 @@ protected:
     Item const&
     add(char const* name,
         KeyType type,
-        std::initializer_list<SOElement> uniqueFields,
+        std::vector<SOElement> uniqueFields,
         std::initializer_list<SOElement> commonFields = {})
     {
         if (auto const item = findByType(type))

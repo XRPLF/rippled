@@ -93,7 +93,7 @@ public:
         added, modified, or removed.
     */
     SOTemplate(
-        std::initializer_list<SOElement> uniqueFields,
+        std::vector<SOElement> uniqueFields,
         std::initializer_list<SOElement> commonFields = {});
 
     /* Provide for the enumeration of fields */

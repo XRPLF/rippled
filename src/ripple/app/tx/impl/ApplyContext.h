@@ -50,6 +50,18 @@ public:
     XRPAmount const baseFee;
     beast::Journal const journal;
 
+    constexpr STTx const& getTx() const {
+        return tx;
+    }
+
+    constexpr Application& getApp() {
+        return app;
+    }
+
+    constexpr XRPAmount getBaseFee() {
+        return baseFee;
+    }
+
     ApplyView&
     view()
     {

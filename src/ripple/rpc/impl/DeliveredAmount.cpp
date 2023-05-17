@@ -94,8 +94,8 @@ canHaveDeliveredAmountHelp(
         return false;
 
     {
-        TxType const tt{serializedTx->getTxnType()};
-        if (tt != ttPAYMENT && tt != ttACCOUNT_DELETE)
+        std::uint16_t const tt{serializedTx->getTxnType()};
+        if (tt != getTxTypeFromName("ttPAYMENT") && tt != getTxTypeFromName("ttACCOUNT_DELETE"))
             return false;
     }
 

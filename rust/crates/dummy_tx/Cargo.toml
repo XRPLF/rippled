@@ -1,0 +1,16 @@
+[package]
+name = "dummy_tx"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["dylib"]
+
+[dependencies]
+plugin-transactor = { path = "../plugin-transactor" }
+rippled-bridge = { path = "../rippled-bridge" }
+xrpl-rust-sdk-core = {path = "../../../../xrpl-rust-sdk/xrpl-rust-sdk-core"}
+cxx = "1.0.94"
+libc = "0.2.142"
+once_cell = "1.17.1"
+hex = "0.4.3"

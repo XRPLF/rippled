@@ -21,9 +21,13 @@
 #define RIPPLE_PROTOCOL_TXFORMATS_H_INCLUDED
 
 #include <ripple/protocol/KnownFormats.h>
+#include <map>
 
 namespace ripple {
-
+struct FakeSOElement {
+    int fieldCode;
+    ripple::SOEStyle style;
+};
 /** Transaction type identifiers.
 
     These are part of the binary message format.
@@ -52,47 +56,53 @@ namespace ripple {
 
     @ingroup protocol
 */
+
+std::uint16_t
+getTxTypeFromName(std::string name);
+
+void
+addToTxTypes(std::uint16_t const type, std::string dynamicLib);
 // clang-format off
-enum TxType : std::uint16_t
+/*enum TxType : std::uint16_t
 {
-    /** This transaction type executes a payment. */
+    *//** This transaction type executes a payment. *//*
     ttPAYMENT = 0,
 
-    /** This transaction type adjusts various account settings. */
+    *//** This transaction type adjusts various account settings. *//*
     ttACCOUNT_SET = 3,
 
-    /** This transaction type sets or clears an account's "regular key". */
+    *//** This transaction type sets or clears an account's "regular key". *//*
     ttREGULAR_KEY_SET = 5,
 
-    /** This transaction type modifies the signer list associated with an account. */
+    *//** This transaction type modifies the signer list associated with an account. *//*
     ttSIGNER_LIST_SET = 12,
 
-    /** This transaction type deletes an existing account. */
+    *//** This transaction type deletes an existing account. *//*
     ttACCOUNT_DELETE = 21,
 
-    /** This system-generated transaction type is used to update the status of the various amendments.
+    *//** This system-generated transaction type is used to update the status of the various amendments.
 
         For details, see: https://xrpl.org/amendments.html
-     */
+     *//*
     ttAMENDMENT = 100,
 
-    /** This system-generated transaction type is used to update the network's fee settings.
+    *//** This system-generated transaction type is used to update the network's fee settings.
 
         For details, see: https://xrpl.org/fee-voting.html
-     */
+     *//*
     ttFEE = 101,
 
-    /** This system-generated transaction type is used to update the network's negative UNL
+    *//** This system-generated transaction type is used to update the network's negative UNL
 
         For details, see: https://xrpl.org/negative-unl.html
-     */
+     *//*
     ttUNL_MODIFY = 102,
-};
+};*/
 // clang-format on
 
 /** Manages the list of known transaction formats.
  */
-class TxFormats : public KnownFormats<TxType, TxFormats>
+class TxFormats : public KnownFormats<std::uint16_t, TxFormats>
 {
 private:
     /** Create the object.
@@ -104,6 +114,9 @@ public:
     static TxFormats const&
     getInstance();
 };
+
+void
+addToTxFormats(std::uint16_t type, std::string dynamicLib);
 
 }  // namespace ripple
 

@@ -293,7 +293,7 @@ FeeVoteImpl::doVoting(
             << "We are voting for a fee change: " << baseFee.first << "/"
             << baseReserve.first << "/" << incReserve.first;
 
-        STTx feeTx(ttFEE, [=, &rules](auto& obj) {
+        STTx feeTx(getTxTypeFromName("ttFEE"), [=, &rules](auto& obj) {
             obj[sfAccount] = AccountID();
             obj[sfLedgerSequence] = seq;
             if (rules.enabled(featureXRPFees))

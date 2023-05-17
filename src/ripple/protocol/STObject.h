@@ -126,7 +126,7 @@ public:
     bool
     set(SerialIter& u, int depth = 0);
 
-    SerializedTypeID
+    int
     getSType() const override;
 
     bool
@@ -223,7 +223,8 @@ public:
     getFieldH256(SField const& field) const;
     AccountID
     getAccountID(SField const& field) const;
-
+    STPluginType const&
+    getPluginType(SField const& field) const;
     Blob
     getFieldVL(SField const& field) const;
     STAmount const&
@@ -355,7 +356,8 @@ public:
 
     void
     setAccountID(SField const& field, AccountID const&);
-
+    void
+    setPluginType(SField const& field, STPluginType const&);
     void
     setFieldAmount(SField const& field, STAmount const&);
     void
@@ -1058,7 +1060,7 @@ STObject::getFieldByValue(SField const& field) const
     if (!rf)
         throwFieldNotFound(field);
 
-    SerializedTypeID id = rf->getSType();
+    int id = rf->getSType();
 
     if (id == STI_NOTPRESENT)
         return V();  // optional field not present
@@ -1085,7 +1087,7 @@ STObject::getFieldByConstRef(SField const& field, V const& empty) const
     if (!rf)
         throwFieldNotFound(field);
 
-    SerializedTypeID id = rf->getSType();
+    int id = rf->getSType();
 
     if (id == STI_NOTPRESENT)
         return empty;  // optional field not present

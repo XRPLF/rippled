@@ -82,6 +82,7 @@
 #include <chrono>
 #include <condition_variable>
 #include <cstring>
+#include <dlfcn.h>
 #include <iostream>
 #include <limits>
 #include <mutex>
@@ -91,6 +92,8 @@
 #include <variant>
 
 namespace ripple {
+
+typedef std::uint16_t (*getTxTypePtr)();
 
 // VFALCO TODO Move the function definitions into the class declaration
 class ApplicationImp : public Application, public BasicApp
@@ -1100,6 +1103,43 @@ private:
 
 //------------------------------------------------------------------------------
 
+typedef void (*getSFieldsPtr)(std::vector<SFieldInfo>&);
+
+struct STypeExport {
+    int typeId;
+    createNewSFieldPtr createPtr;
+    parseLeafTypePtr parsePtr;
+    constructSTypePtr constructPtr;
+    constructSTypePtr2 constructPtr2;
+};
+
+typedef void (*getSTypesPtr)(std::vector<STypeExport>&);
+typedef char const* (*getTxNamePtr)();
+
+void
+addPluginTransactor(std::string libPath)
+{
+    void* handle = dlopen(libPath.c_str(), RTLD_LAZY);
+    auto const type = ((getTxTypePtr)dlsym(handle, "getTxType"))();
+    std::vector<STypeExport> stypes = std::vector<STypeExport>{};
+    ((getSTypesPtr)dlsym(handle, "getSTypes"))(stypes);
+    for (auto const& stype : stypes)
+    {
+        registerSType(stype.typeId, stype.createPtr);
+        registerLeafType(stype.typeId, stype.parsePtr);
+        registerSTConstructor(stype.typeId, stype.constructPtr, stype.constructPtr2);
+    }
+    std::vector<SFieldInfo> sfields = std::vector<SFieldInfo>{};
+    ((getSFieldsPtr)dlsym(handle, "getSFields"))(sfields);
+    for (auto const& sfield : sfields)
+    {
+        registerSField(sfield);
+    }
+    addToTxTypes(type, libPath);
+    addToTxFormats(type, libPath);
+    addToTransactorMap(type, libPath);
+}
+
 // TODO Break this up into smaller, more digestible initialization segments.
 bool
 ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
@@ -1125,6 +1165,11 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
             if (signum == SIGTERM || signum == SIGINT)
                 signalStop();
         });
+
+    // Add plugin transactors
+    // addPluginTransactor("/Users/mvadari/Documents/plugin_transactor/python/libdummy_tx.dylib");
+    //    addPluginTransactor("/Users/mvadari/Documents/plugin_transactor/cpp/build/libplugin_transactor.dylib");
+    addPluginTransactor("/Users/nkramer/Documents/dev/rippled-scaffold/rust/target/debug/libdummy_tx.dylib");
 
     auto debug_log = config_->getDebugLogFile();
 

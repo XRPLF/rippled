@@ -36,7 +36,7 @@ STInteger<unsigned char>::STInteger(SerialIter& sit, SField const& name)
 }
 
 template <>
-SerializedTypeID
+int
 STUInt8::getSType() const
 {
     return STI_UINT8;
@@ -86,7 +86,7 @@ STInteger<std::uint16_t>::STInteger(SerialIter& sit, SField const& name)
 }
 
 template <>
-SerializedTypeID
+int
 STUInt16::getSType() const
 {
     return STI_UINT16;
@@ -108,7 +108,7 @@ STUInt16::getText() const
     if (getFName() == sfTransactionType)
     {
         auto item =
-            TxFormats::getInstance().findByType(safe_cast<TxType>(value_));
+            TxFormats::getInstance().findByType(safe_cast<std::uint16_t>(value_));
 
         if (item != nullptr)
             return item->getName();
@@ -132,7 +132,7 @@ Json::Value STUInt16::getJson(JsonOptions) const
     if (getFName() == sfTransactionType)
     {
         auto item =
-            TxFormats::getInstance().findByType(safe_cast<TxType>(value_));
+            TxFormats::getInstance().findByType(safe_cast<std::uint16_t>(value_));
 
         if (item != nullptr)
             return item->getName();
@@ -150,7 +150,7 @@ STInteger<std::uint32_t>::STInteger(SerialIter& sit, SField const& name)
 }
 
 template <>
-SerializedTypeID
+int
 STUInt32::getSType() const
 {
     return STI_UINT32;
@@ -178,7 +178,7 @@ STInteger<std::uint64_t>::STInteger(SerialIter& sit, SField const& name)
 }
 
 template <>
-SerializedTypeID
+int
 STUInt64::getSType() const
 {
     return STI_UINT64;

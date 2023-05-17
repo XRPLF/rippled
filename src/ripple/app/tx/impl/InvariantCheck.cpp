@@ -210,7 +210,7 @@ AccountRootsNotDeleted::finalize(
     ReadView const&,
     beast::Journal const& j)
 {
-    if (tx.getTxnType() == ttACCOUNT_DELETE && result == tesSUCCESS)
+    if (tx.getTxnType() == getTxTypeFromName("ttACCOUNT_DELETE") && result == tesSUCCESS)
     {
         if (accountsDeleted_ == 1)
             return true;
@@ -317,7 +317,7 @@ ValidNewAccountRoot::finalize(
     }
 
     // From this point on we know exactly one account was created.
-    if (tx.getTxnType() == ttPAYMENT && result == tesSUCCESS)
+    if (tx.getTxnType() == getTxTypeFromName("ttPAYMENT") && result == tesSUCCESS)
     {
         std::uint32_t const startingSeq{
             view.rules().enabled(featureDeletableAccounts) ? view.seq() : 1};
