@@ -50,7 +50,7 @@ fillTransaction(
 }
 
 // {
-//   account: <account>|<account_public_key>
+//   account: <account>
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>
 //   limit: integer                 // optional, number of problems
@@ -92,17 +92,13 @@ doNoRippleCheck(RPC::JsonContext& context)
     Json::Value& jvTransactions =
         transactions ? (result[jss::transactions] = Json::arrayValue) : dummy;
 
-    std::string strIdent(params[jss::account].asString());
-    AccountID accountID;
-
-    if (auto jv = RPC::accountFromString(accountID, strIdent))
+    auto id = parseBase58<AccountID>(params[jss::account].asString());
+    if (!id)
     {
-        for (auto it(jv.begin()); it != jv.end(); ++it)
-            result[it.memberName()] = *it;
-
+        RPC::inject_error(rpcACT_MALFORMED, result);
         return result;
     }
-
+    auto const accountID{std::move(id.value())};
     auto const sle = ledger->read(keylet::account(accountID));
     if (!sle)
         return rpcError(rpcACT_NOT_FOUND);

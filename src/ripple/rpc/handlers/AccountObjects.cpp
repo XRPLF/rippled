@@ -39,7 +39,7 @@ namespace ripple {
 
 /** General RPC command that can retrieve objects in the account root.
     {
-      account: <account>|<account_public_key>
+      account: <account>
       ledger_hash: <string> // optional
       ledger_index: <string | unsigned integer> // optional
       type: <string> // optional, defaults to all account objects types
@@ -60,17 +60,13 @@ doAccountNFTs(RPC::JsonContext& context)
     if (ledger == nullptr)
         return result;
 
-    AccountID accountID;
+    auto id = parseBase58<AccountID>(params[jss::account].asString());
+    if (!id)
     {
-        auto const strIdent = params[jss::account].asString();
-        if (auto jv = RPC::accountFromString(accountID, strIdent))
-        {
-            for (auto it = jv.begin(); it != jv.end(); ++it)
-                result[it.memberName()] = *it;
-
-            return result;
-        }
+        RPC::inject_error(rpcACT_MALFORMED, result);
+        return result;
     }
+    auto const accountID{std::move(id.value())};
 
     if (!ledger->exists(keylet::account(accountID)))
         return rpcError(rpcACT_NOT_FOUND);
@@ -177,17 +173,13 @@ doAccountObjects(RPC::JsonContext& context)
     if (ledger == nullptr)
         return result;
 
-    AccountID accountID;
+    auto const id = parseBase58<AccountID>(params[jss::account].asString());
+    if (!id)
     {
-        auto const strIdent = params[jss::account].asString();
-        if (auto jv = RPC::accountFromString(accountID, strIdent))
-        {
-            for (auto it = jv.begin(); it != jv.end(); ++it)
-                result[it.memberName()] = *it;
-
-            return result;
-        }
+        RPC::inject_error(rpcACT_MALFORMED, result);
+        return result;
     }
+    auto const accountID{std::move(id.value())};
 
     if (!ledger->exists(keylet::account(accountID)))
         return rpcError(rpcACT_NOT_FOUND);
