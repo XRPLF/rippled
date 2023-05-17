@@ -319,15 +319,15 @@ $(function() {
 <div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;                <span class="stringliteral">&quot;json&quot;</span>,</div>
 <div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;                <span class="stringliteral">&quot;account_offers&quot;</span>,</div>
 <div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;                jvParams.<a class="code" href="classJson_1_1Value.html#a3696d34c1a1833742b4bf8e5b247f125">toStyledString</a>())[jss::result];</div>
-<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;            BEAST_EXPECT(jrr[jss::error] == <span class="stringliteral">&quot;badSeed&quot;</span>);</div>
+<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;            BEAST_EXPECT(jrr[jss::error] == <span class="stringliteral">&quot;actMalformed&quot;</span>);</div>
 <div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;            BEAST_EXPECT(jrr[jss::status] == <span class="stringliteral">&quot;error&quot;</span>);</div>
-<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;            BEAST_EXPECT(jrr[jss::error_message] == <span class="stringliteral">&quot;Disallowed seed.&quot;</span>);</div>
+<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;            BEAST_EXPECT(jrr[jss::error_message] == <span class="stringliteral">&quot;Account malformed.&quot;</span>);</div>
 <div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;        }</div>
 <div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160; </div>
 <div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;        {</div>
 <div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;            <span class="comment">// bogus account value</span></div>
-<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> jrr =</div>
-<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;                env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a0f3a59ffc07ea469d2999d1ae0aeea77">rpc</a>(<span class="stringliteral">&quot;account_offers&quot;</span>, <span class="stringliteral">&quot;rNOT_AN_ACCOUNT&quot;</span>)[jss::result];</div>
+<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> jrr = env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a0f3a59ffc07ea469d2999d1ae0aeea77">rpc</a>(</div>
+<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;                <span class="stringliteral">&quot;account_offers&quot;</span>, <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a>(<span class="stringliteral">&quot;bogus&quot;</span>).human())[jss::result];</div>
 <div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;            BEAST_EXPECT(jrr[jss::error] == <span class="stringliteral">&quot;actNotFound&quot;</span>);</div>
 <div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;            BEAST_EXPECT(jrr[jss::status] == <span class="stringliteral">&quot;error&quot;</span>);</div>
 <div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;            BEAST_EXPECT(jrr[jss::error_message] == <span class="stringliteral">&quot;Account not found.&quot;</span>);</div>
