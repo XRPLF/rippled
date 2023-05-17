@@ -3032,24 +3032,6 @@ NetworkOPsImp::transJson(
     jvObj[jss::engine_result_code] = result;
     jvObj[jss::engine_result_message] = sHuman;
 
-    if (transaction.getTxnType() == ttOFFER_CREATE)
-    {
-        auto const account = transaction.getAccountID(sfAccount);
-        auto const amount = transaction.getFieldAmount(sfTakerGets);
-
-        // If the offer create is not self funded then add the owner balance
-        if (account != amount.issue().account)
-        {
-            auto const ownerFunds = accountFunds(
-                *ledger,
-                account,
-                amount,
-//                fhIGNORE_FREEZE,
-                app_.journal("View"));
-            jvObj[jss::transaction][jss::owner_funds] = ownerFunds.getText();
-        }
-    }
-
     return jvObj;
 }
 

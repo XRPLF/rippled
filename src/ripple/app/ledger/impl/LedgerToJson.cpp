@@ -142,25 +142,6 @@ fillJsonTx(
         }
     }
 
-    if ((fill.options & LedgerFill::ownerFunds) &&
-        txn->getTxnType() == ttOFFER_CREATE)
-    {
-        auto const account = txn->getAccountID(sfAccount);
-        auto const amount = txn->getFieldAmount(sfTakerGets);
-
-        // If the offer create is not self funded then add the
-        // owner balance
-        if (account != amount.getIssuer())
-        {
-            auto const ownerFunds = accountFunds(
-                fill.ledger,
-                account,
-                amount,
-                beast::Journal{beast::Journal::getNullSink()});
-            txJson[jss::owner_funds] = ownerFunds.getText();
-        }
-    }
-
     return txJson;
 }
 
