@@ -314,14 +314,8 @@ Transactor::consumeSeqProxy(SLE::pointer const& sleAccount)
 {
     assert(sleAccount);
     SeqProxy const seqProx = ctx_.tx.getSeqProxy();
-    if (seqProx.isSeq())
-    {
-        // Note that if this transaction is a TicketCreate, then
-        // the transaction will modify the account root sfSequence
-        // yet again.
-        sleAccount->setFieldU32(sfSequence, seqProx.value() + 1);
-        return tesSUCCESS;
-    }
+    sleAccount->setFieldU32(sfSequence, seqProx.value() + 1);
+    return tesSUCCESS;
 }
 
 // check stuff before you bother to lock the ledger

@@ -451,8 +451,6 @@ extern SF_AMOUNT const sfTakerGets;
 extern SF_AMOUNT const sfLowLimit;
 extern SF_AMOUNT const sfHighLimit;
 extern SF_AMOUNT const sfFee;
-extern SF_AMOUNT const sfSendMax;
-extern SF_AMOUNT const sfDeliverMin;
 
 // currency amount (uncommon)
 extern SF_AMOUNT const sfMinimumOffer;
