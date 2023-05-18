@@ -6638,61 +6638,294 @@ $(function() {
 <div class="line"><a name="l06567"></a><span class="lineno"> 6567</span>&#160;    }</div>
 <div class="line"><a name="l06568"></a><span class="lineno"> 6568</span>&#160; </div>
 <div class="line"><a name="l06569"></a><span class="lineno"> 6569</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l06570"></a><span class="lineno"><a class="line" href="classripple_1_1NFToken__test.html#a9803c7de6754575c9c2ef618723ea992"> 6570</a></span>&#160;    <a class="code" href="classripple_1_1NFToken__test.html#a9803c7de6754575c9c2ef618723ea992">testWithFeats</a>(<a class="code" href="classripple_1_1FeatureBitset.html">FeatureBitset</a> features)</div>
+<div class="line"><a name="l06570"></a><span class="lineno"><a class="line" href="classripple_1_1NFToken__test.html#ae6673d16231ba1c1e8e3b448591ec8d1"> 6570</a></span>&#160;    <a class="code" href="classripple_1_1NFToken__test.html#ae6673d16231ba1c1e8e3b448591ec8d1">testTxJsonMetaFields</a>(<a class="code" href="classripple_1_1FeatureBitset.html">FeatureBitset</a> features)</div>
 <div class="line"><a name="l06571"></a><span class="lineno"> 6571</span>&#160;    {</div>
-<div class="line"><a name="l06572"></a><span class="lineno"> 6572</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#a23b15de9cc22dfe47d37027f38c31520">testEnabled</a>(features);</div>
-<div class="line"><a name="l06573"></a><span class="lineno"> 6573</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#a4fa174342f91139419a8cee375a42c5e">testMintReserve</a>(features);</div>
-<div class="line"><a name="l06574"></a><span class="lineno"> 6574</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#adba0712a7e3bd7bf58ba93ba924298fa">testMintMaxTokens</a>(features);</div>
-<div class="line"><a name="l06575"></a><span class="lineno"> 6575</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#ad6f1e4afca782ac191439529176a8204">testMintInvalid</a>(features);</div>
-<div class="line"><a name="l06576"></a><span class="lineno"> 6576</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#a4660d9fdbb52a9a13238e716dfbe36da">testBurnInvalid</a>(features);</div>
-<div class="line"><a name="l06577"></a><span class="lineno"> 6577</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#a28488b36f2896fe9ebca0a86654c1dd6">testCreateOfferInvalid</a>(features);</div>
-<div class="line"><a name="l06578"></a><span class="lineno"> 6578</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#ab223279ae389ff167de3ef01f571f547">testCancelOfferInvalid</a>(features);</div>
-<div class="line"><a name="l06579"></a><span class="lineno"> 6579</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#a5d099220026357041a817d6e9312ca4a">testAcceptOfferInvalid</a>(features);</div>
-<div class="line"><a name="l06580"></a><span class="lineno"> 6580</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#aedcc095ef08d2ab65dfaddfa696b9eeb">testMintFlagBurnable</a>(features);</div>
-<div class="line"><a name="l06581"></a><span class="lineno"> 6581</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#a6d94d954897430c36ec41741d823afed">testMintFlagOnlyXRP</a>(features);</div>
-<div class="line"><a name="l06582"></a><span class="lineno"> 6582</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#ab164cab872009a6d3c6a4089a21d1fe2">testMintFlagCreateTrustLine</a>(features);</div>
-<div class="line"><a name="l06583"></a><span class="lineno"> 6583</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#ab5ca1e7940fb6f47f861c00566f0191c">testMintFlagTransferable</a>(features);</div>
-<div class="line"><a name="l06584"></a><span class="lineno"> 6584</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#ac84ba5e05114d24632398bb99f5c3ada">testMintTransferFee</a>(features);</div>
-<div class="line"><a name="l06585"></a><span class="lineno"> 6585</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#af7ca84e64082c98ef337f2ddc67e2e04">testMintTaxon</a>(features);</div>
-<div class="line"><a name="l06586"></a><span class="lineno"> 6586</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#a47ea564a5c6ce51a026bf46d6fa3a347">testMintURI</a>(features);</div>
-<div class="line"><a name="l06587"></a><span class="lineno"> 6587</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#a3fda849339a6861d62c8043c5c319f05">testCreateOfferDestination</a>(features);</div>
-<div class="line"><a name="l06588"></a><span class="lineno"> 6588</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#a176ca66618987f913f4c85ed4541109e">testCreateOfferDestinationDisallowIncoming</a>(features);</div>
-<div class="line"><a name="l06589"></a><span class="lineno"> 6589</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#a038e965b2f468648a06e124983fdb9e7">testCreateOfferExpiration</a>(features);</div>
-<div class="line"><a name="l06590"></a><span class="lineno"> 6590</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#a7fd7e4d5c4b8e8707538e555a84eb217">testCancelOffers</a>(features);</div>
-<div class="line"><a name="l06591"></a><span class="lineno"> 6591</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#afb533782bcfc983a466380e9554ca8bf">testCancelTooManyOffers</a>(features);</div>
-<div class="line"><a name="l06592"></a><span class="lineno"> 6592</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#af1838e1023cd443529fa3a22fe068668">testBrokeredAccept</a>(features);</div>
-<div class="line"><a name="l06593"></a><span class="lineno"> 6593</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#a3ac09e5a1862d4ee507510f013a1ce76">testNFTokenOfferOwner</a>(features);</div>
-<div class="line"><a name="l06594"></a><span class="lineno"> 6594</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#ae72f7a60a5a19e52c607320ccb629e97">testNFTokenWithTickets</a>(features);</div>
-<div class="line"><a name="l06595"></a><span class="lineno"> 6595</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#aea38294687229b83d1d190a88a2c5a23">testNFTokenDeleteAccount</a>(features);</div>
-<div class="line"><a name="l06596"></a><span class="lineno"> 6596</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#a9f5649ffe4c3474168d02ceaa3164732">testNftXxxOffers</a>(features);</div>
-<div class="line"><a name="l06597"></a><span class="lineno"> 6597</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#a3ae9ee1fb1ce43b27deaa2e002d5db50">testFixNFTokenNegOffer</a>(features);</div>
-<div class="line"><a name="l06598"></a><span class="lineno"> 6598</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#aeb9fda6d9e581395fddf7c9de15f37ae">testIOUWithTransferFee</a>(features);</div>
-<div class="line"><a name="l06599"></a><span class="lineno"> 6599</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#a9d388441c0dc60d7ba8472a477b1ef2e">testBrokeredSaleToSelf</a>(features);</div>
-<div class="line"><a name="l06600"></a><span class="lineno"> 6600</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#a74e2effbd2b8a72524981cc49d12a318">testFixNFTokenRemint</a>(features);</div>
-<div class="line"><a name="l06601"></a><span class="lineno"> 6601</span>&#160;    }</div>
+<div class="line"><a name="l06572"></a><span class="lineno"> 6572</span>&#160;        <span class="comment">// `nftoken_id` is added in the `tx` response for NFTokenMint and</span></div>
+<div class="line"><a name="l06573"></a><span class="lineno"> 6573</span>&#160;        <span class="comment">// NFTokenAcceptOffer.</span></div>
+<div class="line"><a name="l06574"></a><span class="lineno"> 6574</span>&#160;        <span class="comment">//</span></div>
+<div class="line"><a name="l06575"></a><span class="lineno"> 6575</span>&#160;        <span class="comment">// `nftoken_ids` is added in the `tx` response for NFTokenCancelOffer</span></div>
+<div class="line"><a name="l06576"></a><span class="lineno"> 6576</span>&#160;        <span class="comment">//</span></div>
+<div class="line"><a name="l06577"></a><span class="lineno"> 6577</span>&#160;        <span class="comment">// `offer_id` is added in the `tx` response for NFTokenCreateOffer</span></div>
+<div class="line"><a name="l06578"></a><span class="lineno"> 6578</span>&#160;        <span class="comment">//</span></div>
+<div class="line"><a name="l06579"></a><span class="lineno"> 6579</span>&#160;        <span class="comment">// The values of these fields are dependent on the NFTokenID/OfferID</span></div>
+<div class="line"><a name="l06580"></a><span class="lineno"> 6580</span>&#160;        <span class="comment">// changed in its corresponding transaction. We want to validate each</span></div>
+<div class="line"><a name="l06581"></a><span class="lineno"> 6581</span>&#160;        <span class="comment">// transaction to make sure the synethic fields hold the right values.</span></div>
+<div class="line"><a name="l06582"></a><span class="lineno"> 6582</span>&#160; </div>
+<div class="line"><a name="l06583"></a><span class="lineno"> 6583</span>&#160;        testcase(<span class="stringliteral">&quot;Test synthetic fields from JSON response&quot;</span>);</div>
+<div class="line"><a name="l06584"></a><span class="lineno"> 6584</span>&#160; </div>
+<div class="line"><a name="l06585"></a><span class="lineno"> 6585</span>&#160;        <span class="keyword">using namespace </span>test::jtx;</div>
+<div class="line"><a name="l06586"></a><span class="lineno"> 6586</span>&#160; </div>
+<div class="line"><a name="l06587"></a><span class="lineno"> 6587</span>&#160;        Account <span class="keyword">const</span> alice{<span class="stringliteral">&quot;alice&quot;</span>};</div>
+<div class="line"><a name="l06588"></a><span class="lineno"> 6588</span>&#160;        Account <span class="keyword">const</span> bob{<span class="stringliteral">&quot;bob&quot;</span>};</div>
+<div class="line"><a name="l06589"></a><span class="lineno"> 6589</span>&#160;        Account <span class="keyword">const</span> broker{<span class="stringliteral">&quot;broker&quot;</span>};</div>
+<div class="line"><a name="l06590"></a><span class="lineno"> 6590</span>&#160; </div>
+<div class="line"><a name="l06591"></a><span class="lineno"> 6591</span>&#160;        Env env{*<span class="keyword">this</span>, features};</div>
+<div class="line"><a name="l06592"></a><span class="lineno"> 6592</span>&#160;        env.fund(XRP(10000), alice, bob, broker);</div>
+<div class="line"><a name="l06593"></a><span class="lineno"> 6593</span>&#160;        env.close();</div>
+<div class="line"><a name="l06594"></a><span class="lineno"> 6594</span>&#160; </div>
+<div class="line"><a name="l06595"></a><span class="lineno"> 6595</span>&#160;        <span class="comment">// Verify `nftoken_id` value equals to the NFTokenID that was</span></div>
+<div class="line"><a name="l06596"></a><span class="lineno"> 6596</span>&#160;        <span class="comment">// changed in the most recent NFTokenMint or NFTokenAcceptOffer</span></div>
+<div class="line"><a name="l06597"></a><span class="lineno"> 6597</span>&#160;        <span class="comment">// transaction</span></div>
+<div class="line"><a name="l06598"></a><span class="lineno"> 6598</span>&#160;        <span class="keyword">auto</span> verifyNFTokenID = [&amp;](<a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; actualNftID) {</div>
+<div class="line"><a name="l06599"></a><span class="lineno"> 6599</span>&#160;            <span class="comment">// Get the hash for the most recent transaction.</span></div>
+<div class="line"><a name="l06600"></a><span class="lineno"> 6600</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span> txHash{</div>
+<div class="line"><a name="l06601"></a><span class="lineno"> 6601</span>&#160;                env.tx()-&gt;getJson(<a class="code" href="namespaceripple.html#a169967ff418b80729654b6d45ade8711a334c4a4c42fdb79d7ebc3e73b517e6f8">JsonOptions::none</a>)[jss::hash].asString()};</div>
 <div class="line"><a name="l06602"></a><span class="lineno"> 6602</span>&#160; </div>
-<div class="line"><a name="l06603"></a><span class="lineno"> 6603</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l06604"></a><span class="lineno"> 6604</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l06605"></a><span class="lineno"><a class="line" href="classripple_1_1NFToken__test.html#a7ee91ac9cb9d611e4887b3e7adf6c836"> 6605</a></span>&#160;    <a class="code" href="classripple_1_1NFToken__test.html#a7ee91ac9cb9d611e4887b3e7adf6c836">run</a>()<span class="keyword"> override</span></div>
-<div class="line"><a name="l06606"></a><span class="lineno"> 6606</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l06607"></a><span class="lineno"> 6607</span>&#160;        <span class="keyword">using namespace </span>test::jtx;</div>
-<div class="line"><a name="l06608"></a><span class="lineno"> 6608</span>&#160;        <a class="code" href="classripple_1_1FeatureBitset.html">FeatureBitset</a> <span class="keyword">const</span> <a class="code" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66ccaa181a603769c1f98ad927e7367c7aa51">all</a>{supported_amendments()};</div>
-<div class="line"><a name="l06609"></a><span class="lineno"> 6609</span>&#160;        <a class="code" href="classripple_1_1FeatureBitset.html">FeatureBitset</a> <span class="keyword">const</span> fixNFTDir{<a class="code" href="namespaceripple.html#adc24572ec82470f0e8510bcd85ed6100">fixNFTokenDirV1</a>};</div>
+<div class="line"><a name="l06603"></a><span class="lineno"> 6603</span>&#160;            env.close();</div>
+<div class="line"><a name="l06604"></a><span class="lineno"> 6604</span>&#160;            <a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span> meta =</div>
+<div class="line"><a name="l06605"></a><span class="lineno"> 6605</span>&#160;                env.rpc(<span class="stringliteral">&quot;tx&quot;</span>, txHash)[jss::result][jss::meta];</div>
+<div class="line"><a name="l06606"></a><span class="lineno"> 6606</span>&#160; </div>
+<div class="line"><a name="l06607"></a><span class="lineno"> 6607</span>&#160;            <span class="comment">// Expect nftokens_id field</span></div>
+<div class="line"><a name="l06608"></a><span class="lineno"> 6608</span>&#160;            <span class="keywordflow">if</span> (!BEAST_EXPECT(meta.<a class="code" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::nftoken_id)))</div>
+<div class="line"><a name="l06609"></a><span class="lineno"> 6609</span>&#160;                <span class="keywordflow">return</span>;</div>
 <div class="line"><a name="l06610"></a><span class="lineno"> 6610</span>&#160; </div>
-<div class="line"><a name="l06611"></a><span class="lineno"> 6611</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#a9803c7de6754575c9c2ef618723ea992">testWithFeats</a>(</div>
-<div class="line"><a name="l06612"></a><span class="lineno"> 6612</span>&#160;            <a class="code" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66ccaa181a603769c1f98ad927e7367c7aa51">all</a> - fixNFTDir - <a class="code" href="namespaceripple.html#a831b340e9f96cdaec47e018aeff72dec">fixNonFungibleTokensV1_2</a> - <a class="code" href="namespaceripple.html#a2abe44fcd04710b216e3f9f774e4849d">fixNFTokenRemint</a>);</div>
-<div class="line"><a name="l06613"></a><span class="lineno"> 6613</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#a9803c7de6754575c9c2ef618723ea992">testWithFeats</a>(</div>
-<div class="line"><a name="l06614"></a><span class="lineno"> 6614</span>&#160;            <a class="code" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66ccaa181a603769c1f98ad927e7367c7aa51">all</a> - <a class="code" href="classripple_1_1NFToken__test.html#abb7c6f6eb3636cf3e51597fc69c175af">disallowIncoming</a> - <a class="code" href="namespaceripple.html#a831b340e9f96cdaec47e018aeff72dec">fixNonFungibleTokensV1_2</a> -</div>
-<div class="line"><a name="l06615"></a><span class="lineno"> 6615</span>&#160;            <a class="code" href="namespaceripple.html#a2abe44fcd04710b216e3f9f774e4849d">fixNFTokenRemint</a>);</div>
-<div class="line"><a name="l06616"></a><span class="lineno"> 6616</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#a9803c7de6754575c9c2ef618723ea992">testWithFeats</a>(<a class="code" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66ccaa181a603769c1f98ad927e7367c7aa51">all</a> - <a class="code" href="namespaceripple.html#a831b340e9f96cdaec47e018aeff72dec">fixNonFungibleTokensV1_2</a> - <a class="code" href="namespaceripple.html#a2abe44fcd04710b216e3f9f774e4849d">fixNFTokenRemint</a>);</div>
-<div class="line"><a name="l06617"></a><span class="lineno"> 6617</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#a9803c7de6754575c9c2ef618723ea992">testWithFeats</a>(<a class="code" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66ccaa181a603769c1f98ad927e7367c7aa51">all</a> - <a class="code" href="namespaceripple.html#a2abe44fcd04710b216e3f9f774e4849d">fixNFTokenRemint</a>);</div>
-<div class="line"><a name="l06618"></a><span class="lineno"> 6618</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#a9803c7de6754575c9c2ef618723ea992">testWithFeats</a>(<a class="code" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66ccaa181a603769c1f98ad927e7367c7aa51">all</a>);</div>
-<div class="line"><a name="l06619"></a><span class="lineno"> 6619</span>&#160;    }</div>
-<div class="line"><a name="l06620"></a><span class="lineno"> 6620</span>&#160;};</div>
-<div class="line"><a name="l06621"></a><span class="lineno"> 6621</span>&#160; </div>
-<div class="line"><a name="l06622"></a><span class="lineno"> 6622</span>&#160;<a class="code" href="namespaceripple.html#abb6db96ce083bd9c8676f09faf02c5f0">BEAST_DEFINE_TESTSUITE_PRIO</a>(NFToken, tx, <a class="code" href="namespaceripple.html">ripple</a>, 2);</div>
-<div class="line"><a name="l06623"></a><span class="lineno"> 6623</span>&#160; </div>
-<div class="line"><a name="l06624"></a><span class="lineno"> 6624</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l06611"></a><span class="lineno"> 6611</span>&#160;            <span class="comment">// Check the value of NFT ID in the meta with the</span></div>
+<div class="line"><a name="l06612"></a><span class="lineno"> 6612</span>&#160;            <span class="comment">// actual value</span></div>
+<div class="line"><a name="l06613"></a><span class="lineno"> 6613</span>&#160;            <a class="code" href="classripple_1_1base__uint.html">uint256</a> nftID;</div>
+<div class="line"><a name="l06614"></a><span class="lineno"> 6614</span>&#160;            BEAST_EXPECT(nftID.<a class="code" href="classripple_1_1base__uint.html#a698d3fd0c0f0155995c87d2f48ac90d5">parseHex</a>(meta[jss::nftoken_id].<a class="code" href="classJson_1_1Value.html#ab0d86bf425efefd03513e8dbfaca317b">asString</a>()));</div>
+<div class="line"><a name="l06615"></a><span class="lineno"> 6615</span>&#160;            BEAST_EXPECT(nftID == actualNftID);</div>
+<div class="line"><a name="l06616"></a><span class="lineno"> 6616</span>&#160;        };</div>
+<div class="line"><a name="l06617"></a><span class="lineno"> 6617</span>&#160; </div>
+<div class="line"><a name="l06618"></a><span class="lineno"> 6618</span>&#160;        <span class="comment">// Verify `nftoken_ids` value equals to the NFTokenIDs that were</span></div>
+<div class="line"><a name="l06619"></a><span class="lineno"> 6619</span>&#160;        <span class="comment">// changed in the most recent NFTokenCancelOffer transaction</span></div>
+<div class="line"><a name="l06620"></a><span class="lineno"> 6620</span>&#160;        <span class="keyword">auto</span> verifyNFTokenIDsInCancelOffer =</div>
+<div class="line"><a name="l06621"></a><span class="lineno"> 6621</span>&#160;            [&amp;](<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;uint256&gt;</a> actualNftIDs) {</div>
+<div class="line"><a name="l06622"></a><span class="lineno"> 6622</span>&#160;                <span class="comment">// Get the hash for the most recent transaction.</span></div>
+<div class="line"><a name="l06623"></a><span class="lineno"> 6623</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span> txHash{</div>
+<div class="line"><a name="l06624"></a><span class="lineno"> 6624</span>&#160;                    env.tx()-&gt;getJson(<a class="code" href="namespaceripple.html#a169967ff418b80729654b6d45ade8711a334c4a4c42fdb79d7ebc3e73b517e6f8">JsonOptions::none</a>)[jss::hash].asString()};</div>
+<div class="line"><a name="l06625"></a><span class="lineno"> 6625</span>&#160; </div>
+<div class="line"><a name="l06626"></a><span class="lineno"> 6626</span>&#160;                env.close();</div>
+<div class="line"><a name="l06627"></a><span class="lineno"> 6627</span>&#160;                <a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span> meta =</div>
+<div class="line"><a name="l06628"></a><span class="lineno"> 6628</span>&#160;                    env.rpc(<span class="stringliteral">&quot;tx&quot;</span>, txHash)[jss::result][jss::meta];</div>
+<div class="line"><a name="l06629"></a><span class="lineno"> 6629</span>&#160; </div>
+<div class="line"><a name="l06630"></a><span class="lineno"> 6630</span>&#160;                <span class="comment">// Expect nftokens_ids field and verify the values</span></div>
+<div class="line"><a name="l06631"></a><span class="lineno"> 6631</span>&#160;                <span class="keywordflow">if</span> (!BEAST_EXPECT(meta.<a class="code" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::nftoken_ids)))</div>
+<div class="line"><a name="l06632"></a><span class="lineno"> 6632</span>&#160;                    <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l06633"></a><span class="lineno"> 6633</span>&#160; </div>
+<div class="line"><a name="l06634"></a><span class="lineno"> 6634</span>&#160;                <span class="comment">// Convert NFT IDs from Json::Value to uint256</span></div>
+<div class="line"><a name="l06635"></a><span class="lineno"> 6635</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;uint256&gt;</a> metaIDs;</div>
+<div class="line"><a name="l06636"></a><span class="lineno"> 6636</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/transform.html">std::transform</a>(</div>
+<div class="line"><a name="l06637"></a><span class="lineno"> 6637</span>&#160;                    meta[jss::nftoken_ids].begin(),</div>
+<div class="line"><a name="l06638"></a><span class="lineno"> 6638</span>&#160;                    meta[jss::nftoken_ids].end(),</div>
+<div class="line"><a name="l06639"></a><span class="lineno"> 6639</span>&#160;                    <a class="codeRef" href="http://en.cppreference.com/w/cpp/iterator/back_inserter.html">std::back_inserter</a>(metaIDs),</div>
+<div class="line"><a name="l06640"></a><span class="lineno"> 6640</span>&#160;                    [<span class="keyword">this</span>](<a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keywordtype">id</span>) {</div>
+<div class="line"><a name="l06641"></a><span class="lineno"> 6641</span>&#160;                        <a class="code" href="classripple_1_1base__uint.html">uint256</a> nftID;</div>
+<div class="line"><a name="l06642"></a><span class="lineno"> 6642</span>&#160;                        BEAST_EXPECT(nftID.<a class="code" href="classripple_1_1base__uint.html#a698d3fd0c0f0155995c87d2f48ac90d5">parseHex</a>(<span class="keywordtype">id</span>.asString()));</div>
+<div class="line"><a name="l06643"></a><span class="lineno"> 6643</span>&#160;                        <span class="keywordflow">return</span> nftID;</div>
+<div class="line"><a name="l06644"></a><span class="lineno"> 6644</span>&#160;                    });</div>
+<div class="line"><a name="l06645"></a><span class="lineno"> 6645</span>&#160; </div>
+<div class="line"><a name="l06646"></a><span class="lineno"> 6646</span>&#160;                <span class="comment">// Sort both array to prepare for comparison</span></div>
+<div class="line"><a name="l06647"></a><span class="lineno"> 6647</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/sort.html">std::sort</a>(metaIDs.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/begin.html">begin</a>(), metaIDs.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/end.html">end</a>());</div>
+<div class="line"><a name="l06648"></a><span class="lineno"> 6648</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/sort.html">std::sort</a>(actualNftIDs.begin(), actualNftIDs.end());</div>
+<div class="line"><a name="l06649"></a><span class="lineno"> 6649</span>&#160; </div>
+<div class="line"><a name="l06650"></a><span class="lineno"> 6650</span>&#160;                <span class="comment">// Make sure the expect number of NFTs is correct</span></div>
+<div class="line"><a name="l06651"></a><span class="lineno"> 6651</span>&#160;                BEAST_EXPECT(metaIDs.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/size.html">size</a>() == actualNftIDs.size());</div>
+<div class="line"><a name="l06652"></a><span class="lineno"> 6652</span>&#160; </div>
+<div class="line"><a name="l06653"></a><span class="lineno"> 6653</span>&#160;                <span class="comment">// Check the value of NFT ID in the meta with the</span></div>
+<div class="line"><a name="l06654"></a><span class="lineno"> 6654</span>&#160;                <span class="comment">// actual values</span></div>
+<div class="line"><a name="l06655"></a><span class="lineno"> 6655</span>&#160;                <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> i = 0; i &lt; metaIDs.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/size.html">size</a>(); ++i)</div>
+<div class="line"><a name="l06656"></a><span class="lineno"> 6656</span>&#160;                    BEAST_EXPECT(metaIDs[i] == actualNftIDs[i]);</div>
+<div class="line"><a name="l06657"></a><span class="lineno"> 6657</span>&#160;            };</div>
+<div class="line"><a name="l06658"></a><span class="lineno"> 6658</span>&#160; </div>
+<div class="line"><a name="l06659"></a><span class="lineno"> 6659</span>&#160;        <span class="comment">// Verify `offer_id` value equals to the offerID that was</span></div>
+<div class="line"><a name="l06660"></a><span class="lineno"> 6660</span>&#160;        <span class="comment">// changed in the most recent NFTokenCreateOffer tx</span></div>
+<div class="line"><a name="l06661"></a><span class="lineno"> 6661</span>&#160;        <span class="keyword">auto</span> verifyNFTokenOfferID = [&amp;](<a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; offerID) {</div>
+<div class="line"><a name="l06662"></a><span class="lineno"> 6662</span>&#160;            <span class="comment">// Get the hash for the most recent transaction.</span></div>
+<div class="line"><a name="l06663"></a><span class="lineno"> 6663</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span> txHash{</div>
+<div class="line"><a name="l06664"></a><span class="lineno"> 6664</span>&#160;                env.tx()-&gt;getJson(<a class="code" href="namespaceripple.html#a169967ff418b80729654b6d45ade8711a334c4a4c42fdb79d7ebc3e73b517e6f8">JsonOptions::none</a>)[jss::hash].asString()};</div>
+<div class="line"><a name="l06665"></a><span class="lineno"> 6665</span>&#160; </div>
+<div class="line"><a name="l06666"></a><span class="lineno"> 6666</span>&#160;            env.close();</div>
+<div class="line"><a name="l06667"></a><span class="lineno"> 6667</span>&#160;            <a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span> meta =</div>
+<div class="line"><a name="l06668"></a><span class="lineno"> 6668</span>&#160;                env.rpc(<span class="stringliteral">&quot;tx&quot;</span>, txHash)[jss::result][jss::meta];</div>
+<div class="line"><a name="l06669"></a><span class="lineno"> 6669</span>&#160; </div>
+<div class="line"><a name="l06670"></a><span class="lineno"> 6670</span>&#160;            <span class="comment">// Expect offer_id field and verify the value</span></div>
+<div class="line"><a name="l06671"></a><span class="lineno"> 6671</span>&#160;            <span class="keywordflow">if</span> (!BEAST_EXPECT(meta.<a class="code" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::offer_id)))</div>
+<div class="line"><a name="l06672"></a><span class="lineno"> 6672</span>&#160;                <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l06673"></a><span class="lineno"> 6673</span>&#160; </div>
+<div class="line"><a name="l06674"></a><span class="lineno"> 6674</span>&#160;            <a class="code" href="classripple_1_1base__uint.html">uint256</a> metaOfferID;</div>
+<div class="line"><a name="l06675"></a><span class="lineno"> 6675</span>&#160;            BEAST_EXPECT(metaOfferID.<a class="code" href="classripple_1_1base__uint.html#a698d3fd0c0f0155995c87d2f48ac90d5">parseHex</a>(meta[jss::offer_id].<a class="code" href="classJson_1_1Value.html#ab0d86bf425efefd03513e8dbfaca317b">asString</a>()));</div>
+<div class="line"><a name="l06676"></a><span class="lineno"> 6676</span>&#160;            BEAST_EXPECT(metaOfferID == offerID);</div>
+<div class="line"><a name="l06677"></a><span class="lineno"> 6677</span>&#160;        };</div>
+<div class="line"><a name="l06678"></a><span class="lineno"> 6678</span>&#160; </div>
+<div class="line"><a name="l06679"></a><span class="lineno"> 6679</span>&#160;        <span class="comment">// Check new fields in tx meta when for all NFTtransactions</span></div>
+<div class="line"><a name="l06680"></a><span class="lineno"> 6680</span>&#160;        {</div>
+<div class="line"><a name="l06681"></a><span class="lineno"> 6681</span>&#160;            <span class="comment">// Alice mints 2 NFTs</span></div>
+<div class="line"><a name="l06682"></a><span class="lineno"> 6682</span>&#160;            <span class="comment">// Verify the NFTokenIDs are correct in the NFTokenMint tx meta</span></div>
+<div class="line"><a name="l06683"></a><span class="lineno"> 6683</span>&#160;            <a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span> nftId1{</div>
+<div class="line"><a name="l06684"></a><span class="lineno"> 6684</span>&#160;                token::getNextID(env, alice, 0u, <a class="code" href="namespaceripple.html#a467ff3737a47707e0aa7669c4db3ed17">tfTransferable</a>)};</div>
+<div class="line"><a name="l06685"></a><span class="lineno"> 6685</span>&#160;            env(token::mint(alice, 0u), txflags(<a class="code" href="namespaceripple.html#a467ff3737a47707e0aa7669c4db3ed17">tfTransferable</a>));</div>
+<div class="line"><a name="l06686"></a><span class="lineno"> 6686</span>&#160;            env.close();</div>
+<div class="line"><a name="l06687"></a><span class="lineno"> 6687</span>&#160;            verifyNFTokenID(nftId1);</div>
+<div class="line"><a name="l06688"></a><span class="lineno"> 6688</span>&#160; </div>
+<div class="line"><a name="l06689"></a><span class="lineno"> 6689</span>&#160;            <a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span> nftId2{</div>
+<div class="line"><a name="l06690"></a><span class="lineno"> 6690</span>&#160;                token::getNextID(env, alice, 0u, <a class="code" href="namespaceripple.html#a467ff3737a47707e0aa7669c4db3ed17">tfTransferable</a>)};</div>
+<div class="line"><a name="l06691"></a><span class="lineno"> 6691</span>&#160;            env(token::mint(alice, 0u), txflags(<a class="code" href="namespaceripple.html#a467ff3737a47707e0aa7669c4db3ed17">tfTransferable</a>));</div>
+<div class="line"><a name="l06692"></a><span class="lineno"> 6692</span>&#160;            env.close();</div>
+<div class="line"><a name="l06693"></a><span class="lineno"> 6693</span>&#160;            verifyNFTokenID(nftId2);</div>
+<div class="line"><a name="l06694"></a><span class="lineno"> 6694</span>&#160; </div>
+<div class="line"><a name="l06695"></a><span class="lineno"> 6695</span>&#160;            <span class="comment">// Alice creates one sell offer for each NFT</span></div>
+<div class="line"><a name="l06696"></a><span class="lineno"> 6696</span>&#160;            <span class="comment">// Verify the offer indexes are correct in the NFTokenCreateOffer tx</span></div>
+<div class="line"><a name="l06697"></a><span class="lineno"> 6697</span>&#160;            <span class="comment">// meta</span></div>
+<div class="line"><a name="l06698"></a><span class="lineno"> 6698</span>&#160;            <a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span> aliceOfferIndex1 =</div>
+<div class="line"><a name="l06699"></a><span class="lineno"> 6699</span>&#160;                <a class="code" href="namespaceripple_1_1keylet.html#af22d78dcae7bfcc9d36e53f2223875f4">keylet::nftoffer</a>(alice, env.seq(alice)).<a class="code" href="structripple_1_1Keylet.html#a482983062843a8682fcea76a309c73db">key</a>;</div>
+<div class="line"><a name="l06700"></a><span class="lineno"> 6700</span>&#160;            env(token::createOffer(alice, nftId1, drops(1)),</div>
+<div class="line"><a name="l06701"></a><span class="lineno"> 6701</span>&#160;                txflags(<a class="code" href="namespaceripple.html#a0a58f25b2ddd02a1c0fcfc4c056e4fa8">tfSellNFToken</a>));</div>
+<div class="line"><a name="l06702"></a><span class="lineno"> 6702</span>&#160;            env.close();</div>
+<div class="line"><a name="l06703"></a><span class="lineno"> 6703</span>&#160;            verifyNFTokenOfferID(aliceOfferIndex1);</div>
+<div class="line"><a name="l06704"></a><span class="lineno"> 6704</span>&#160; </div>
+<div class="line"><a name="l06705"></a><span class="lineno"> 6705</span>&#160;            <a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span> aliceOfferIndex2 =</div>
+<div class="line"><a name="l06706"></a><span class="lineno"> 6706</span>&#160;                <a class="code" href="namespaceripple_1_1keylet.html#af22d78dcae7bfcc9d36e53f2223875f4">keylet::nftoffer</a>(alice, env.seq(alice)).<a class="code" href="structripple_1_1Keylet.html#a482983062843a8682fcea76a309c73db">key</a>;</div>
+<div class="line"><a name="l06707"></a><span class="lineno"> 6707</span>&#160;            env(token::createOffer(alice, nftId2, drops(1)),</div>
+<div class="line"><a name="l06708"></a><span class="lineno"> 6708</span>&#160;                txflags(<a class="code" href="namespaceripple.html#a0a58f25b2ddd02a1c0fcfc4c056e4fa8">tfSellNFToken</a>));</div>
+<div class="line"><a name="l06709"></a><span class="lineno"> 6709</span>&#160;            env.close();</div>
+<div class="line"><a name="l06710"></a><span class="lineno"> 6710</span>&#160;            verifyNFTokenOfferID(aliceOfferIndex2);</div>
+<div class="line"><a name="l06711"></a><span class="lineno"> 6711</span>&#160; </div>
+<div class="line"><a name="l06712"></a><span class="lineno"> 6712</span>&#160;            <span class="comment">// Alice cancels two offers she created</span></div>
+<div class="line"><a name="l06713"></a><span class="lineno"> 6713</span>&#160;            <span class="comment">// Verify the NFTokenIDs are correct in the NFTokenCancelOffer tx</span></div>
+<div class="line"><a name="l06714"></a><span class="lineno"> 6714</span>&#160;            <span class="comment">// meta</span></div>
+<div class="line"><a name="l06715"></a><span class="lineno"> 6715</span>&#160;            env(token::cancelOffer(</div>
+<div class="line"><a name="l06716"></a><span class="lineno"> 6716</span>&#160;                alice, {aliceOfferIndex1, aliceOfferIndex2}));</div>
+<div class="line"><a name="l06717"></a><span class="lineno"> 6717</span>&#160;            env.close();</div>
+<div class="line"><a name="l06718"></a><span class="lineno"> 6718</span>&#160;            verifyNFTokenIDsInCancelOffer({nftId1, nftId2});</div>
+<div class="line"><a name="l06719"></a><span class="lineno"> 6719</span>&#160; </div>
+<div class="line"><a name="l06720"></a><span class="lineno"> 6720</span>&#160;            <span class="comment">// Bobs creates a buy offer for nftId1</span></div>
+<div class="line"><a name="l06721"></a><span class="lineno"> 6721</span>&#160;            <span class="comment">// Verify the offer id is correct in the NFTokenCreateOffer tx meta</span></div>
+<div class="line"><a name="l06722"></a><span class="lineno"> 6722</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> bobBuyOfferIndex =</div>
+<div class="line"><a name="l06723"></a><span class="lineno"> 6723</span>&#160;                <a class="code" href="namespaceripple_1_1keylet.html#af22d78dcae7bfcc9d36e53f2223875f4">keylet::nftoffer</a>(bob, env.seq(bob)).<a class="code" href="structripple_1_1Keylet.html#a482983062843a8682fcea76a309c73db">key</a>;</div>
+<div class="line"><a name="l06724"></a><span class="lineno"> 6724</span>&#160;            env(token::createOffer(bob, nftId1, drops(1)), token::owner(alice));</div>
+<div class="line"><a name="l06725"></a><span class="lineno"> 6725</span>&#160;            env.close();</div>
+<div class="line"><a name="l06726"></a><span class="lineno"> 6726</span>&#160;            verifyNFTokenOfferID(bobBuyOfferIndex);</div>
+<div class="line"><a name="l06727"></a><span class="lineno"> 6727</span>&#160; </div>
+<div class="line"><a name="l06728"></a><span class="lineno"> 6728</span>&#160;            <span class="comment">// Alice accepts bob&#39;s buy offer</span></div>
+<div class="line"><a name="l06729"></a><span class="lineno"> 6729</span>&#160;            <span class="comment">// Verify the NFTokenID is correct in the NFTokenAcceptOffer tx meta</span></div>
+<div class="line"><a name="l06730"></a><span class="lineno"> 6730</span>&#160;            env(token::acceptBuyOffer(alice, bobBuyOfferIndex));</div>
+<div class="line"><a name="l06731"></a><span class="lineno"> 6731</span>&#160;            env.close();</div>
+<div class="line"><a name="l06732"></a><span class="lineno"> 6732</span>&#160;            verifyNFTokenID(nftId1);</div>
+<div class="line"><a name="l06733"></a><span class="lineno"> 6733</span>&#160;        }</div>
+<div class="line"><a name="l06734"></a><span class="lineno"> 6734</span>&#160; </div>
+<div class="line"><a name="l06735"></a><span class="lineno"> 6735</span>&#160;        <span class="comment">// Check `nftoken_ids` in brokered mode</span></div>
+<div class="line"><a name="l06736"></a><span class="lineno"> 6736</span>&#160;        {</div>
+<div class="line"><a name="l06737"></a><span class="lineno"> 6737</span>&#160;            <span class="comment">// Alice mints a NFT</span></div>
+<div class="line"><a name="l06738"></a><span class="lineno"> 6738</span>&#160;            <a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span> nftId{</div>
+<div class="line"><a name="l06739"></a><span class="lineno"> 6739</span>&#160;                token::getNextID(env, alice, 0u, <a class="code" href="namespaceripple.html#a467ff3737a47707e0aa7669c4db3ed17">tfTransferable</a>)};</div>
+<div class="line"><a name="l06740"></a><span class="lineno"> 6740</span>&#160;            env(token::mint(alice, 0u), txflags(<a class="code" href="namespaceripple.html#a467ff3737a47707e0aa7669c4db3ed17">tfTransferable</a>));</div>
+<div class="line"><a name="l06741"></a><span class="lineno"> 6741</span>&#160;            env.close();</div>
+<div class="line"><a name="l06742"></a><span class="lineno"> 6742</span>&#160;            verifyNFTokenID(nftId);</div>
+<div class="line"><a name="l06743"></a><span class="lineno"> 6743</span>&#160; </div>
+<div class="line"><a name="l06744"></a><span class="lineno"> 6744</span>&#160;            <span class="comment">// Alice creates sell offer and set broker as destination</span></div>
+<div class="line"><a name="l06745"></a><span class="lineno"> 6745</span>&#160;            <a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span> offerAliceToBroker =</div>
+<div class="line"><a name="l06746"></a><span class="lineno"> 6746</span>&#160;                <a class="code" href="namespaceripple_1_1keylet.html#af22d78dcae7bfcc9d36e53f2223875f4">keylet::nftoffer</a>(alice, env.seq(alice)).<a class="code" href="structripple_1_1Keylet.html#a482983062843a8682fcea76a309c73db">key</a>;</div>
+<div class="line"><a name="l06747"></a><span class="lineno"> 6747</span>&#160;            env(token::createOffer(alice, nftId, drops(1)),</div>
+<div class="line"><a name="l06748"></a><span class="lineno"> 6748</span>&#160;                token::destination(broker),</div>
+<div class="line"><a name="l06749"></a><span class="lineno"> 6749</span>&#160;                txflags(<a class="code" href="namespaceripple.html#a0a58f25b2ddd02a1c0fcfc4c056e4fa8">tfSellNFToken</a>));</div>
+<div class="line"><a name="l06750"></a><span class="lineno"> 6750</span>&#160;            env.close();</div>
+<div class="line"><a name="l06751"></a><span class="lineno"> 6751</span>&#160;            verifyNFTokenOfferID(offerAliceToBroker);</div>
+<div class="line"><a name="l06752"></a><span class="lineno"> 6752</span>&#160; </div>
+<div class="line"><a name="l06753"></a><span class="lineno"> 6753</span>&#160;            <span class="comment">// Bob creates buy offer</span></div>
+<div class="line"><a name="l06754"></a><span class="lineno"> 6754</span>&#160;            <a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span> offerBobToBroker =</div>
+<div class="line"><a name="l06755"></a><span class="lineno"> 6755</span>&#160;                <a class="code" href="namespaceripple_1_1keylet.html#af22d78dcae7bfcc9d36e53f2223875f4">keylet::nftoffer</a>(bob, env.seq(bob)).<a class="code" href="structripple_1_1Keylet.html#a482983062843a8682fcea76a309c73db">key</a>;</div>
+<div class="line"><a name="l06756"></a><span class="lineno"> 6756</span>&#160;            env(token::createOffer(bob, nftId, drops(1)), token::owner(alice));</div>
+<div class="line"><a name="l06757"></a><span class="lineno"> 6757</span>&#160;            env.close();</div>
+<div class="line"><a name="l06758"></a><span class="lineno"> 6758</span>&#160;            verifyNFTokenOfferID(offerBobToBroker);</div>
+<div class="line"><a name="l06759"></a><span class="lineno"> 6759</span>&#160; </div>
+<div class="line"><a name="l06760"></a><span class="lineno"> 6760</span>&#160;            <span class="comment">// Check NFTokenID meta for NFTokenAcceptOffer in brokered mode</span></div>
+<div class="line"><a name="l06761"></a><span class="lineno"> 6761</span>&#160;            env(token::brokerOffers(</div>
+<div class="line"><a name="l06762"></a><span class="lineno"> 6762</span>&#160;                broker, offerBobToBroker, offerAliceToBroker));</div>
+<div class="line"><a name="l06763"></a><span class="lineno"> 6763</span>&#160;            env.close();</div>
+<div class="line"><a name="l06764"></a><span class="lineno"> 6764</span>&#160;            verifyNFTokenID(nftId);</div>
+<div class="line"><a name="l06765"></a><span class="lineno"> 6765</span>&#160;        }</div>
+<div class="line"><a name="l06766"></a><span class="lineno"> 6766</span>&#160; </div>
+<div class="line"><a name="l06767"></a><span class="lineno"> 6767</span>&#160;        <span class="comment">// Check if there are no duplicate nft id in Cancel transactions where</span></div>
+<div class="line"><a name="l06768"></a><span class="lineno"> 6768</span>&#160;        <span class="comment">// multiple offers are cancelled for the same NFT</span></div>
+<div class="line"><a name="l06769"></a><span class="lineno"> 6769</span>&#160;        {</div>
+<div class="line"><a name="l06770"></a><span class="lineno"> 6770</span>&#160;            <span class="comment">// Alice mints a NFT</span></div>
+<div class="line"><a name="l06771"></a><span class="lineno"> 6771</span>&#160;            <a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span> nftId{</div>
+<div class="line"><a name="l06772"></a><span class="lineno"> 6772</span>&#160;                token::getNextID(env, alice, 0u, <a class="code" href="namespaceripple.html#a467ff3737a47707e0aa7669c4db3ed17">tfTransferable</a>)};</div>
+<div class="line"><a name="l06773"></a><span class="lineno"> 6773</span>&#160;            env(token::mint(alice, 0u), txflags(<a class="code" href="namespaceripple.html#a467ff3737a47707e0aa7669c4db3ed17">tfTransferable</a>));</div>
+<div class="line"><a name="l06774"></a><span class="lineno"> 6774</span>&#160;            env.close();</div>
+<div class="line"><a name="l06775"></a><span class="lineno"> 6775</span>&#160;            verifyNFTokenID(nftId);</div>
+<div class="line"><a name="l06776"></a><span class="lineno"> 6776</span>&#160; </div>
+<div class="line"><a name="l06777"></a><span class="lineno"> 6777</span>&#160;            <span class="comment">// Alice creates 2 sell offers for the same NFT</span></div>
+<div class="line"><a name="l06778"></a><span class="lineno"> 6778</span>&#160;            <a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span> aliceOfferIndex1 =</div>
+<div class="line"><a name="l06779"></a><span class="lineno"> 6779</span>&#160;                <a class="code" href="namespaceripple_1_1keylet.html#af22d78dcae7bfcc9d36e53f2223875f4">keylet::nftoffer</a>(alice, env.seq(alice)).<a class="code" href="structripple_1_1Keylet.html#a482983062843a8682fcea76a309c73db">key</a>;</div>
+<div class="line"><a name="l06780"></a><span class="lineno"> 6780</span>&#160;            env(token::createOffer(alice, nftId, drops(1)),</div>
+<div class="line"><a name="l06781"></a><span class="lineno"> 6781</span>&#160;                txflags(<a class="code" href="namespaceripple.html#a0a58f25b2ddd02a1c0fcfc4c056e4fa8">tfSellNFToken</a>));</div>
+<div class="line"><a name="l06782"></a><span class="lineno"> 6782</span>&#160;            env.close();</div>
+<div class="line"><a name="l06783"></a><span class="lineno"> 6783</span>&#160;            verifyNFTokenOfferID(aliceOfferIndex1);</div>
+<div class="line"><a name="l06784"></a><span class="lineno"> 6784</span>&#160; </div>
+<div class="line"><a name="l06785"></a><span class="lineno"> 6785</span>&#160;            <a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span> aliceOfferIndex2 =</div>
+<div class="line"><a name="l06786"></a><span class="lineno"> 6786</span>&#160;                <a class="code" href="namespaceripple_1_1keylet.html#af22d78dcae7bfcc9d36e53f2223875f4">keylet::nftoffer</a>(alice, env.seq(alice)).<a class="code" href="structripple_1_1Keylet.html#a482983062843a8682fcea76a309c73db">key</a>;</div>
+<div class="line"><a name="l06787"></a><span class="lineno"> 6787</span>&#160;            env(token::createOffer(alice, nftId, drops(1)),</div>
+<div class="line"><a name="l06788"></a><span class="lineno"> 6788</span>&#160;                txflags(<a class="code" href="namespaceripple.html#a0a58f25b2ddd02a1c0fcfc4c056e4fa8">tfSellNFToken</a>));</div>
+<div class="line"><a name="l06789"></a><span class="lineno"> 6789</span>&#160;            env.close();</div>
+<div class="line"><a name="l06790"></a><span class="lineno"> 6790</span>&#160;            verifyNFTokenOfferID(aliceOfferIndex2);</div>
+<div class="line"><a name="l06791"></a><span class="lineno"> 6791</span>&#160; </div>
+<div class="line"><a name="l06792"></a><span class="lineno"> 6792</span>&#160;            <span class="comment">// Make sure the metadata only has 1 nft id, since both offers are</span></div>
+<div class="line"><a name="l06793"></a><span class="lineno"> 6793</span>&#160;            <span class="comment">// for the same nft</span></div>
+<div class="line"><a name="l06794"></a><span class="lineno"> 6794</span>&#160;            env(token::cancelOffer(</div>
+<div class="line"><a name="l06795"></a><span class="lineno"> 6795</span>&#160;                alice, {aliceOfferIndex1, aliceOfferIndex2}));</div>
+<div class="line"><a name="l06796"></a><span class="lineno"> 6796</span>&#160;            env.close();</div>
+<div class="line"><a name="l06797"></a><span class="lineno"> 6797</span>&#160;            verifyNFTokenIDsInCancelOffer({nftId});</div>
+<div class="line"><a name="l06798"></a><span class="lineno"> 6798</span>&#160;        }</div>
+<div class="line"><a name="l06799"></a><span class="lineno"> 6799</span>&#160;    }</div>
+<div class="line"><a name="l06800"></a><span class="lineno"> 6800</span>&#160; </div>
+<div class="line"><a name="l06801"></a><span class="lineno"> 6801</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l06802"></a><span class="lineno"><a class="line" href="classripple_1_1NFToken__test.html#a9803c7de6754575c9c2ef618723ea992"> 6802</a></span>&#160;    <a class="code" href="classripple_1_1NFToken__test.html#a9803c7de6754575c9c2ef618723ea992">testWithFeats</a>(<a class="code" href="classripple_1_1FeatureBitset.html">FeatureBitset</a> features)</div>
+<div class="line"><a name="l06803"></a><span class="lineno"> 6803</span>&#160;    {</div>
+<div class="line"><a name="l06804"></a><span class="lineno"> 6804</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#a23b15de9cc22dfe47d37027f38c31520">testEnabled</a>(features);</div>
+<div class="line"><a name="l06805"></a><span class="lineno"> 6805</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#a4fa174342f91139419a8cee375a42c5e">testMintReserve</a>(features);</div>
+<div class="line"><a name="l06806"></a><span class="lineno"> 6806</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#adba0712a7e3bd7bf58ba93ba924298fa">testMintMaxTokens</a>(features);</div>
+<div class="line"><a name="l06807"></a><span class="lineno"> 6807</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#ad6f1e4afca782ac191439529176a8204">testMintInvalid</a>(features);</div>
+<div class="line"><a name="l06808"></a><span class="lineno"> 6808</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#a4660d9fdbb52a9a13238e716dfbe36da">testBurnInvalid</a>(features);</div>
+<div class="line"><a name="l06809"></a><span class="lineno"> 6809</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#a28488b36f2896fe9ebca0a86654c1dd6">testCreateOfferInvalid</a>(features);</div>
+<div class="line"><a name="l06810"></a><span class="lineno"> 6810</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#ab223279ae389ff167de3ef01f571f547">testCancelOfferInvalid</a>(features);</div>
+<div class="line"><a name="l06811"></a><span class="lineno"> 6811</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#a5d099220026357041a817d6e9312ca4a">testAcceptOfferInvalid</a>(features);</div>
+<div class="line"><a name="l06812"></a><span class="lineno"> 6812</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#aedcc095ef08d2ab65dfaddfa696b9eeb">testMintFlagBurnable</a>(features);</div>
+<div class="line"><a name="l06813"></a><span class="lineno"> 6813</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#a6d94d954897430c36ec41741d823afed">testMintFlagOnlyXRP</a>(features);</div>
+<div class="line"><a name="l06814"></a><span class="lineno"> 6814</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#ab164cab872009a6d3c6a4089a21d1fe2">testMintFlagCreateTrustLine</a>(features);</div>
+<div class="line"><a name="l06815"></a><span class="lineno"> 6815</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#ab5ca1e7940fb6f47f861c00566f0191c">testMintFlagTransferable</a>(features);</div>
+<div class="line"><a name="l06816"></a><span class="lineno"> 6816</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#ac84ba5e05114d24632398bb99f5c3ada">testMintTransferFee</a>(features);</div>
+<div class="line"><a name="l06817"></a><span class="lineno"> 6817</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#af7ca84e64082c98ef337f2ddc67e2e04">testMintTaxon</a>(features);</div>
+<div class="line"><a name="l06818"></a><span class="lineno"> 6818</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#a47ea564a5c6ce51a026bf46d6fa3a347">testMintURI</a>(features);</div>
+<div class="line"><a name="l06819"></a><span class="lineno"> 6819</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#a3fda849339a6861d62c8043c5c319f05">testCreateOfferDestination</a>(features);</div>
+<div class="line"><a name="l06820"></a><span class="lineno"> 6820</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#a176ca66618987f913f4c85ed4541109e">testCreateOfferDestinationDisallowIncoming</a>(features);</div>
+<div class="line"><a name="l06821"></a><span class="lineno"> 6821</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#a038e965b2f468648a06e124983fdb9e7">testCreateOfferExpiration</a>(features);</div>
+<div class="line"><a name="l06822"></a><span class="lineno"> 6822</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#a7fd7e4d5c4b8e8707538e555a84eb217">testCancelOffers</a>(features);</div>
+<div class="line"><a name="l06823"></a><span class="lineno"> 6823</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#afb533782bcfc983a466380e9554ca8bf">testCancelTooManyOffers</a>(features);</div>
+<div class="line"><a name="l06824"></a><span class="lineno"> 6824</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#af1838e1023cd443529fa3a22fe068668">testBrokeredAccept</a>(features);</div>
+<div class="line"><a name="l06825"></a><span class="lineno"> 6825</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#a3ac09e5a1862d4ee507510f013a1ce76">testNFTokenOfferOwner</a>(features);</div>
+<div class="line"><a name="l06826"></a><span class="lineno"> 6826</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#ae72f7a60a5a19e52c607320ccb629e97">testNFTokenWithTickets</a>(features);</div>
+<div class="line"><a name="l06827"></a><span class="lineno"> 6827</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#aea38294687229b83d1d190a88a2c5a23">testNFTokenDeleteAccount</a>(features);</div>
+<div class="line"><a name="l06828"></a><span class="lineno"> 6828</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#a9f5649ffe4c3474168d02ceaa3164732">testNftXxxOffers</a>(features);</div>
+<div class="line"><a name="l06829"></a><span class="lineno"> 6829</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#a3ae9ee1fb1ce43b27deaa2e002d5db50">testFixNFTokenNegOffer</a>(features);</div>
+<div class="line"><a name="l06830"></a><span class="lineno"> 6830</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#aeb9fda6d9e581395fddf7c9de15f37ae">testIOUWithTransferFee</a>(features);</div>
+<div class="line"><a name="l06831"></a><span class="lineno"> 6831</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#a9d388441c0dc60d7ba8472a477b1ef2e">testBrokeredSaleToSelf</a>(features);</div>
+<div class="line"><a name="l06832"></a><span class="lineno"> 6832</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#a74e2effbd2b8a72524981cc49d12a318">testFixNFTokenRemint</a>(features);</div>
+<div class="line"><a name="l06833"></a><span class="lineno"> 6833</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#ae6673d16231ba1c1e8e3b448591ec8d1">testTxJsonMetaFields</a>(features);</div>
+<div class="line"><a name="l06834"></a><span class="lineno"> 6834</span>&#160;    }</div>
+<div class="line"><a name="l06835"></a><span class="lineno"> 6835</span>&#160; </div>
+<div class="line"><a name="l06836"></a><span class="lineno"> 6836</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l06837"></a><span class="lineno"> 6837</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l06838"></a><span class="lineno"><a class="line" href="classripple_1_1NFToken__test.html#a7ee91ac9cb9d611e4887b3e7adf6c836"> 6838</a></span>&#160;    <a class="code" href="classripple_1_1NFToken__test.html#a7ee91ac9cb9d611e4887b3e7adf6c836">run</a>()<span class="keyword"> override</span></div>
+<div class="line"><a name="l06839"></a><span class="lineno"> 6839</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l06840"></a><span class="lineno"> 6840</span>&#160;        <span class="keyword">using namespace </span>test::jtx;</div>
+<div class="line"><a name="l06841"></a><span class="lineno"> 6841</span>&#160;        <a class="code" href="classripple_1_1FeatureBitset.html">FeatureBitset</a> <span class="keyword">const</span> <a class="code" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66ccaa181a603769c1f98ad927e7367c7aa51">all</a>{supported_amendments()};</div>
+<div class="line"><a name="l06842"></a><span class="lineno"> 6842</span>&#160;        <a class="code" href="classripple_1_1FeatureBitset.html">FeatureBitset</a> <span class="keyword">const</span> fixNFTDir{<a class="code" href="namespaceripple.html#adc24572ec82470f0e8510bcd85ed6100">fixNFTokenDirV1</a>};</div>
+<div class="line"><a name="l06843"></a><span class="lineno"> 6843</span>&#160; </div>
+<div class="line"><a name="l06844"></a><span class="lineno"> 6844</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#a9803c7de6754575c9c2ef618723ea992">testWithFeats</a>(</div>
+<div class="line"><a name="l06845"></a><span class="lineno"> 6845</span>&#160;            <a class="code" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66ccaa181a603769c1f98ad927e7367c7aa51">all</a> - fixNFTDir - <a class="code" href="namespaceripple.html#a831b340e9f96cdaec47e018aeff72dec">fixNonFungibleTokensV1_2</a> - <a class="code" href="namespaceripple.html#a2abe44fcd04710b216e3f9f774e4849d">fixNFTokenRemint</a>);</div>
+<div class="line"><a name="l06846"></a><span class="lineno"> 6846</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#a9803c7de6754575c9c2ef618723ea992">testWithFeats</a>(</div>
+<div class="line"><a name="l06847"></a><span class="lineno"> 6847</span>&#160;            <a class="code" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66ccaa181a603769c1f98ad927e7367c7aa51">all</a> - <a class="code" href="classripple_1_1NFToken__test.html#abb7c6f6eb3636cf3e51597fc69c175af">disallowIncoming</a> - <a class="code" href="namespaceripple.html#a831b340e9f96cdaec47e018aeff72dec">fixNonFungibleTokensV1_2</a> -</div>
+<div class="line"><a name="l06848"></a><span class="lineno"> 6848</span>&#160;            <a class="code" href="namespaceripple.html#a2abe44fcd04710b216e3f9f774e4849d">fixNFTokenRemint</a>);</div>
+<div class="line"><a name="l06849"></a><span class="lineno"> 6849</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#a9803c7de6754575c9c2ef618723ea992">testWithFeats</a>(<a class="code" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66ccaa181a603769c1f98ad927e7367c7aa51">all</a> - <a class="code" href="namespaceripple.html#a831b340e9f96cdaec47e018aeff72dec">fixNonFungibleTokensV1_2</a> - <a class="code" href="namespaceripple.html#a2abe44fcd04710b216e3f9f774e4849d">fixNFTokenRemint</a>);</div>
+<div class="line"><a name="l06850"></a><span class="lineno"> 6850</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#a9803c7de6754575c9c2ef618723ea992">testWithFeats</a>(<a class="code" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66ccaa181a603769c1f98ad927e7367c7aa51">all</a> - <a class="code" href="namespaceripple.html#a2abe44fcd04710b216e3f9f774e4849d">fixNFTokenRemint</a>);</div>
+<div class="line"><a name="l06851"></a><span class="lineno"> 6851</span>&#160;        <a class="code" href="classripple_1_1NFToken__test.html#a9803c7de6754575c9c2ef618723ea992">testWithFeats</a>(<a class="code" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66ccaa181a603769c1f98ad927e7367c7aa51">all</a>);</div>
+<div class="line"><a name="l06852"></a><span class="lineno"> 6852</span>&#160;    }</div>
+<div class="line"><a name="l06853"></a><span class="lineno"> 6853</span>&#160;};</div>
+<div class="line"><a name="l06854"></a><span class="lineno"> 6854</span>&#160; </div>
+<div class="line"><a name="l06855"></a><span class="lineno"> 6855</span>&#160;<a class="code" href="namespaceripple.html#abb6db96ce083bd9c8676f09faf02c5f0">BEAST_DEFINE_TESTSUITE_PRIO</a>(NFToken, tx, <a class="code" href="namespaceripple.html">ripple</a>, 2);</div>
+<div class="line"><a name="l06856"></a><span class="lineno"> 6856</span>&#160; </div>
+<div class="line"><a name="l06857"></a><span class="lineno"> 6857</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aclassripple_1_1NFToken__test_html_aea38294687229b83d1d190a88a2c5a23"><div class="ttname"><a href="classripple_1_1NFToken__test.html#aea38294687229b83d1d190a88a2c5a23">ripple::NFToken_test::testNFTokenDeleteAccount</a></div><div class="ttdeci">void testNFTokenDeleteAccount(FeatureBitset features)</div><div class="ttdef"><b>Definition:</b> <a href="NFToken__test_8cpp_source.html#l04643">NFToken_test.cpp:4643</a></div></div>
 <div class="ttc" id="anamespaceripple_html_aa298e929e02f59c2b05a30ee8805b38ca5d1f0daadc43667fc3775d53cd6e3420"><div class="ttname"><a href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38ca5d1f0daadc43667fc3775d53cd6e3420">ripple::tecUNFUNDED_OFFER</a></div><div class="ttdeci">@ tecUNFUNDED_OFFER</div><div class="ttdef"><b>Definition:</b> <a href="TER_8h_source.html#l00251">TER.h:251</a></div></div>
@@ -6726,6 +6959,7 @@ $(function() {
 <div class="ttc" id="afind_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/algorithm/find.html">std::find</a></div><div class="ttdeci">T find(T... args)</div></div>
 <div class="ttc" id="asize_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/set/size.html">std::set::size</a></div><div class="ttdeci">T size(T... args)</div></div>
 <div class="ttc" id="aclassripple_1_1STAmount_html_a02bef3696a9cb07b72e5ec750e7ea456"><div class="ttname"><a href="classripple_1_1STAmount.html#a02bef3696a9cb07b72e5ec750e7ea456">ripple::STAmount::getJson</a></div><div class="ttdeci">Json::Value getJson(JsonOptions) const override</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8cpp_source.html#l00634">STAmount.cpp:634</a></div></div>
+<div class="ttc" id="aback_inserter_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/iterator/back_inserter.html">std::back_inserter</a></div><div class="ttdeci">T back_inserter(T... args)</div></div>
 <div class="ttc" id="anamespaceripple_html_a6d7b8e9e6bc61d5f9da0611cf70c66fc"><div class="ttname"><a href="namespaceripple.html#a6d7b8e9e6bc61d5f9da0611cf70c66fc">ripple::sfMintedNFTokens</a></div><div class="ttdeci">const SF_UINT32 sfMintedNFTokens</div></div>
 <div class="ttc" id="anamespaceripple_1_1keylet_html_af22d78dcae7bfcc9d36e53f2223875f4"><div class="ttname"><a href="namespaceripple_1_1keylet.html#af22d78dcae7bfcc9d36e53f2223875f4">ripple::keylet::nftoffer</a></div><div class="ttdeci">Keylet nftoffer(AccountID const &amp;owner, std::uint32_t seq)</div><div class="ttdoc">An offer from an account to buy or sell an NFT.</div><div class="ttdef"><b>Definition:</b> <a href="Indexes_8cpp_source.html#l00355">Indexes.cpp:355</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Account_html_aee0c1b197f33ad230162080a4ff2be16"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Account.html#aee0c1b197f33ad230162080a4ff2be16">ripple::test::jtx::Account::human</a></div><div class="ttdeci">std::string const  &amp; human() const</div><div class="ttdoc">Returns the human readable public key.</div><div class="ttdef"><b>Definition:</b> <a href="Account_8h_source.html#l00113">Account.h:113</a></div></div>
@@ -6746,9 +6980,10 @@ $(function() {
 <div class="ttc" id="anamespaceripple_html_a2abe44fcd04710b216e3f9f774e4849d"><div class="ttname"><a href="namespaceripple.html#a2abe44fcd04710b216e3f9f774e4849d">ripple::fixNFTokenRemint</a></div><div class="ttdeci">const uint256 fixNFTokenRemint</div></div>
 <div class="ttc" id="apush_back_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string/push_back.html">std::string::push_back</a></div><div class="ttdeci">T push_back(T... args)</div></div>
 <div class="ttc" id="aclassripple_1_1NFToken__test_html_a7fd7e4d5c4b8e8707538e555a84eb217"><div class="ttname"><a href="classripple_1_1NFToken__test.html#a7fd7e4d5c4b8e8707538e555a84eb217">ripple::NFToken_test::testCancelOffers</a></div><div class="ttdeci">void testCancelOffers(FeatureBitset features)</div><div class="ttdef"><b>Definition:</b> <a href="NFToken__test_8cpp_source.html#l03651">NFToken_test.cpp:3651</a></div></div>
+<div class="ttc" id="aclassripple_1_1NFToken__test_html_ae6673d16231ba1c1e8e3b448591ec8d1"><div class="ttname"><a href="classripple_1_1NFToken__test.html#ae6673d16231ba1c1e8e3b448591ec8d1">ripple::NFToken_test::testTxJsonMetaFields</a></div><div class="ttdeci">void testTxJsonMetaFields(FeatureBitset features)</div><div class="ttdef"><b>Definition:</b> <a href="NFToken__test_8cpp_source.html#l06570">NFToken_test.cpp:6570</a></div></div>
 <div class="ttc" id="astructripple_1_1Keylet_html_a482983062843a8682fcea76a309c73db"><div class="ttname"><a href="structripple_1_1Keylet.html#a482983062843a8682fcea76a309c73db">ripple::Keylet::key</a></div><div class="ttdeci">uint256 key</div><div class="ttdef"><b>Definition:</b> <a href="Keylet_8h_source.html#l00040">Keylet.h:40</a></div></div>
 <div class="ttc" id="aclassripple_1_1base__uint_html"><div class="ttname"><a href="classripple_1_1base__uint.html">ripple::base_uint&lt; 256 &gt;</a></div></div>
-<div class="ttc" id="aclassripple_1_1NFToken__test_html_a9803c7de6754575c9c2ef618723ea992"><div class="ttname"><a href="classripple_1_1NFToken__test.html#a9803c7de6754575c9c2ef618723ea992">ripple::NFToken_test::testWithFeats</a></div><div class="ttdeci">void testWithFeats(FeatureBitset features)</div><div class="ttdef"><b>Definition:</b> <a href="NFToken__test_8cpp_source.html#l06570">NFToken_test.cpp:6570</a></div></div>
+<div class="ttc" id="aclassripple_1_1NFToken__test_html_a9803c7de6754575c9c2ef618723ea992"><div class="ttname"><a href="classripple_1_1NFToken__test.html#a9803c7de6754575c9c2ef618723ea992">ripple::NFToken_test::testWithFeats</a></div><div class="ttdeci">void testWithFeats(FeatureBitset features)</div><div class="ttdef"><b>Definition:</b> <a href="NFToken__test_8cpp_source.html#l06802">NFToken_test.cpp:6802</a></div></div>
 <div class="ttc" id="anamespaceripple_html_afe21c8454670d46fb93751a5edffed46aa4754e0f122658747650b3b1c0a846a8"><div class="ttname"><a href="namespaceripple.html#afe21c8454670d46fb93751a5edffed46aa4754e0f122658747650b3b1c0a846a8">ripple::temINVALID_FLAG</a></div><div class="ttdeci">@ temINVALID_FLAG</div><div class="ttdef"><b>Definition:</b> <a href="TER_8h_source.html#l00109">TER.h:109</a></div></div>
 <div class="ttc" id="aclassripple_1_1NFToken__test_html_abb7c6f6eb3636cf3e51597fc69c175af"><div class="ttname"><a href="classripple_1_1NFToken__test.html#abb7c6f6eb3636cf3e51597fc69c175af">ripple::NFToken_test::disallowIncoming</a></div><div class="ttdeci">const FeatureBitset disallowIncoming</div><div class="ttdef"><b>Definition:</b> <a href="NFToken__test_8cpp_source.html#l00032">NFToken_test.cpp:32</a></div></div>
 <div class="ttc" id="anamespaceripple_html_aa298e929e02f59c2b05a30ee8805b38ca5aa4027660a8e9e7330ea6d872eb6ffb"><div class="ttname"><a href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38ca5aa4027660a8e9e7330ea6d872eb6ffb">ripple::tecNFTOKEN_OFFER_TYPE_MISMATCH</a></div><div class="ttdeci">@ tecNFTOKEN_OFFER_TYPE_MISMATCH</div><div class="ttdef"><b>Definition:</b> <a href="TER_8h_source.html#l00290">TER.h:290</a></div></div>
@@ -6760,7 +6995,7 @@ $(function() {
 <div class="ttc" id="anamespaceripple_html_a75cb21d7f1df42f2fdc8efddb79b63f4a6700b7b7664a3b6c0611d9f943b5625f"><div class="ttname"><a href="namespaceripple.html#a75cb21d7f1df42f2fdc8efddb79b63f4a6700b7b7664a3b6c0611d9f943b5625f">ripple::tefNFTOKEN_IS_NOT_TRANSFERABLE</a></div><div class="ttdeci">@ tefNFTOKEN_IS_NOT_TRANSFERABLE</div><div class="ttdef"><b>Definition:</b> <a href="TER_8h_source.html#l00168">TER.h:168</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a2abe85419644def21413627f484a8df0"><div class="ttname"><a href="namespaceripple.html#a2abe85419644def21413627f484a8df0">ripple::featureDisallowIncoming</a></div><div class="ttdeci">const uint256 featureDisallowIncoming</div></div>
 <div class="ttc" id="anamespaceripple_html_a85870fe5e629b0a50482d1bb68bb8028"><div class="ttname"><a href="namespaceripple.html#a85870fe5e629b0a50482d1bb68bb8028">ripple::sfNFTokenMinter</a></div><div class="ttdeci">const SF_ACCOUNT sfNFTokenMinter</div></div>
-<div class="ttc" id="aclassripple_1_1NFToken__test_html_a7ee91ac9cb9d611e4887b3e7adf6c836"><div class="ttname"><a href="classripple_1_1NFToken__test.html#a7ee91ac9cb9d611e4887b3e7adf6c836">ripple::NFToken_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="NFToken__test_8cpp_source.html#l06605">NFToken_test.cpp:6605</a></div></div>
+<div class="ttc" id="aclassripple_1_1NFToken__test_html_a7ee91ac9cb9d611e4887b3e7adf6c836"><div class="ttname"><a href="classripple_1_1NFToken__test.html#a7ee91ac9cb9d611e4887b3e7adf6c836">ripple::NFToken_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="NFToken__test_8cpp_source.html#l06838">NFToken_test.cpp:6838</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a169967ff418b80729654b6d45ade8711a334c4a4c42fdb79d7ebc3e73b517e6f8"><div class="ttname"><a href="namespaceripple.html#a169967ff418b80729654b6d45ade8711a334c4a4c42fdb79d7ebc3e73b517e6f8">ripple::JsonOptions::none</a></div><div class="ttdeci">@ none</div></div>
 <div class="ttc" id="aclassripple_1_1TERSubset_html"><div class="ttname"><a href="classripple_1_1TERSubset.html">ripple::TERSubset&lt; CanCvtToTER &gt;</a></div></div>
 <div class="ttc" id="aclassripple_1_1NFToken__test_html_a9f5649ffe4c3474168d02ceaa3164732"><div class="ttname"><a href="classripple_1_1NFToken__test.html#a9f5649ffe4c3474168d02ceaa3164732">ripple::NFToken_test::testNftXxxOffers</a></div><div class="ttdeci">void testNftXxxOffers(FeatureBitset features)</div><div class="ttdef"><b>Definition:</b> <a href="NFToken__test_8cpp_source.html#l04736">NFToken_test.cpp:4736</a></div></div>
@@ -6786,6 +7021,7 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1NFToken__test_html_ac84ba5e05114d24632398bb99f5c3ada"><div class="ttname"><a href="classripple_1_1NFToken__test.html#ac84ba5e05114d24632398bb99f5c3ada">ripple::NFToken_test::testMintTransferFee</a></div><div class="ttdeci">void testMintTransferFee(FeatureBitset features)</div><div class="ttdef"><b>Definition:</b> <a href="NFToken__test_8cpp_source.html#l02092">NFToken_test.cpp:2092</a></div></div>
 <div class="ttc" id="anamespaceripple_html_adc24572ec82470f0e8510bcd85ed6100"><div class="ttname"><a href="namespaceripple.html#adc24572ec82470f0e8510bcd85ed6100">ripple::fixNFTokenDirV1</a></div><div class="ttdeci">const uint256 fixNFTokenDirV1</div></div>
 <div class="ttc" id="anamespaceripple_html_afe21c8454670d46fb93751a5edffed46a3210708be8e611097ad2ae1e1a1734fb"><div class="ttname"><a href="namespaceripple.html#afe21c8454670d46fb93751a5edffed46a3210708be8e611097ad2ae1e1a1734fb">ripple::temBAD_FEE</a></div><div class="ttdeci">@ temBAD_FEE</div><div class="ttdef"><b>Definition:</b> <a href="TER_8h_source.html#l00090">TER.h:90</a></div></div>
+<div class="ttc" id="atransform_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/algorithm/transform.html">std::transform</a></div><div class="ttdeci">T transform(T... args)</div></div>
 <div class="ttc" id="anamespaceripple_html_a3a5cf4d650e693612303ab9c6bbb1b9a"><div class="ttname"><a href="namespaceripple.html#a3a5cf4d650e693612303ab9c6bbb1b9a">ripple::maxTokenURILength</a></div><div class="ttdeci">constexpr std::size_t maxTokenURILength</div><div class="ttdoc">The maximum length of a URI inside an NFT.</div><div class="ttdef"><b>Definition:</b> <a href="Protocol_8h_source.html#l00084">Protocol.h:84</a></div></div>
 <div class="ttc" id="aclassripple_1_1NFToken__test_html_a176ca66618987f913f4c85ed4541109e"><div class="ttname"><a href="classripple_1_1NFToken__test.html#a176ca66618987f913f4c85ed4541109e">ripple::NFToken_test::testCreateOfferDestinationDisallowIncoming</a></div><div class="ttdeci">void testCreateOfferDestinationDisallowIncoming(FeatureBitset features)</div><div class="ttdef"><b>Definition:</b> <a href="NFToken__test_8cpp_source.html#l03048">NFToken_test.cpp:3048</a></div></div>
 <div class="ttc" id="anamespaceripple_html_aa298e929e02f59c2b05a30ee8805b38ca44bd180d908c1a35ffd236f7c88c180c"><div class="ttname"><a href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38ca44bd180d908c1a35ffd236f7c88c180c">ripple::tecTOO_SOON</a></div><div class="ttdeci">@ tecTOO_SOON</div><div class="ttdef"><b>Definition:</b> <a href="TER_8h_source.html#l00285">TER.h:285</a></div></div>
@@ -6836,6 +7072,7 @@ $(function() {
 <div class="ttc" id="anamespaceripple_html_afe21c8454670d46fb93751a5edffed46a6c750a245b6efb84fdc4ab34dc010328"><div class="ttname"><a href="namespaceripple.html#afe21c8454670d46fb93751a5edffed46a6c750a245b6efb84fdc4ab34dc010328">ripple::temMALFORMED</a></div><div class="ttdeci">@ temMALFORMED</div><div class="ttdef"><b>Definition:</b> <a href="TER_8h_source.html#l00085">TER.h:85</a></div></div>
 <div class="ttc" id="aclassripple_1_1tagged__integer_html"><div class="ttname"><a href="classripple_1_1tagged__integer.html">ripple::tagged_integer</a></div><div class="ttdoc">A type-safe wrap around standard integral types.</div><div class="ttdef"><b>Definition:</b> <a href="tagged__integer_8h_source.html#l00044">tagged_integer.h:44</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a831b340e9f96cdaec47e018aeff72dec"><div class="ttname"><a href="namespaceripple.html#a831b340e9f96cdaec47e018aeff72dec">ripple::fixNonFungibleTokensV1_2</a></div><div class="ttdeci">const uint256 fixNonFungibleTokensV1_2</div></div>
+<div class="ttc" id="aclassripple_1_1base__uint_html_a698d3fd0c0f0155995c87d2f48ac90d5"><div class="ttname"><a href="classripple_1_1base__uint.html#a698d3fd0c0f0155995c87d2f48ac90d5">ripple::base_uint::parseHex</a></div><div class="ttdeci">constexpr bool parseHex(std::string_view sv)</div><div class="ttdoc">Parse a hex string into a base_uint.</div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00496">base_uint.h:496</a></div></div>
 <div class="ttc" id="anamespaceripple_html_afe21c8454670d46fb93751a5edffed46a8845e05d481141ea5e8e5274796f45a7"><div class="ttname"><a href="namespaceripple.html#afe21c8454670d46fb93751a5edffed46a8845e05d481141ea5e8e5274796f45a7">ripple::temBAD_EXPIRATION</a></div><div class="ttdeci">@ temBAD_EXPIRATION</div><div class="ttdef"><b>Definition:</b> <a href="TER_8h_source.html#l00089">TER.h:89</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a24534b314339a482114c02d14754ecb1"><div class="ttname"><a href="namespaceripple.html#a24534b314339a482114c02d14754ecb1">ripple::sfBurnedNFTokens</a></div><div class="ttdeci">const SF_UINT32 sfBurnedNFTokens</div></div>
 <div class="ttc" id="anamespaceripple_1_1keylet_html_a66624dcb8f66cb8548d032ff97030aa4"><div class="ttname"><a href="namespaceripple_1_1keylet.html#a66624dcb8f66cb8548d032ff97030aa4">ripple::keylet::check</a></div><div class="ttdeci">Keylet check(AccountID const &amp;id, std::uint32_t seq) noexcept</div><div class="ttdoc">A Check.</div><div class="ttdef"><b>Definition:</b> <a href="Indexes_8cpp_source.html#l00281">Indexes.cpp:281</a></div></div>

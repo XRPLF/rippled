@@ -1527,6 +1527,250 @@ template&lt;class T &gt; </div>
 
 </div>
 </div>
+<a id="a31d32ffeb3e4e173c7c167d6d588f130"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a31d32ffeb3e4e173c7c167d6d588f130">&#9670;&nbsp;</a></span>canHaveNFTokenID()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ripple::RPC::canHaveNFTokenID </td>
+          <td>(</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1STTx.html">STTx</a> const &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>serializedTx</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1TxMeta.html">TxMeta</a> const &amp;&#160;</td>
+          <td class="paramname"><em>transactionMeta</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Add a <code>nftoken_ids</code> field to the <code>meta</code> output parameter. </p>
+<p>The field is only added to successful <a class="el" href="classripple_1_1NFTokenMint.html">NFTokenMint</a>, <a class="el" href="classripple_1_1NFTokenAcceptOffer.html">NFTokenAcceptOffer</a>, and <a class="el" href="classripple_1_1NFTokenCancelOffer.html">NFTokenCancelOffer</a> transactions.</p>
+<p>Helper functions are not static because they can be used by Clio. </p>
+
+<p class="definition">Definition at line <a class="el" href="NFTokenID_8cpp_source.html#l00037">37</a> of file <a class="el" href="NFTokenID_8cpp_source.html">NFTokenID.cpp</a>.</p>
+
+</div>
+</div>
+<a id="afc21a577ff2694eeccd36ad694fb74f2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afc21a577ff2694eeccd36ad694fb74f2">&#9670;&nbsp;</a></span>getNFTokenIDFromPage()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt; ripple::RPC::getNFTokenIDFromPage </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1TxMeta.html">TxMeta</a> const &amp;&#160;</td>
+          <td class="paramname"><em>transactionMeta</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="NFTokenID_8cpp_source.html#l00057">57</a> of file <a class="el" href="NFTokenID_8cpp_source.html">NFTokenID.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a4dde1e0a23afbf5b05c840a8eb89583e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4dde1e0a23afbf5b05c840a8eb89583e">&#9670;&nbsp;</a></span>getNFTokenIDFromDeletedOffer()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt; ripple::RPC::getNFTokenIDFromDeletedOffer </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1TxMeta.html">TxMeta</a> const &amp;&#160;</td>
+          <td class="paramname"><em>transactionMeta</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="NFTokenID_8cpp_source.html#l00142">142</a> of file <a class="el" href="NFTokenID_8cpp_source.html">NFTokenID.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a13d6515ca2932dd1ff50e56e69667a05"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a13d6515ca2932dd1ff50e56e69667a05">&#9670;&nbsp;</a></span>insertNFTokenID()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::RPC::insertNFTokenID </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classJson_1_1Value.html">Json::Value</a> &amp;&#160;</td>
+          <td class="paramname"><em>response</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1STTx.html">STTx</a> const &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>transaction</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1TxMeta.html">TxMeta</a> const &amp;&#160;</td>
+          <td class="paramname"><em>transactionMeta</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="NFTokenID_8cpp_source.html#l00167">167</a> of file <a class="el" href="NFTokenID_8cpp_source.html">NFTokenID.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a4bfeb3707c4009fe04bebc7e84225993"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4bfeb3707c4009fe04bebc7e84225993">&#9670;&nbsp;</a></span>canHaveNFTokenOfferID()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ripple::RPC::canHaveNFTokenOfferID </td>
+          <td>(</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1STTx.html">STTx</a> const &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>serializedTx</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1TxMeta.html">TxMeta</a> const &amp;&#160;</td>
+          <td class="paramname"><em>transactionMeta</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Add an <code>offer_id</code> field to the <code>meta</code> output parameter. </p>
+<p>The field is only added to successful <a class="el" href="classripple_1_1NFTokenCreateOffer.html">NFTokenCreateOffer</a> transactions.</p>
+<p>Helper functions are not static because they can be used by Clio. </p>
+
+<p class="definition">Definition at line <a class="el" href="NFTokenOfferID_8cpp_source.html#l00037">37</a> of file <a class="el" href="NFTokenOfferID_8cpp_source.html">NFTokenOfferID.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a9549cb07bd5109d9ec39906377991597"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9549cb07bd5109d9ec39906377991597">&#9670;&nbsp;</a></span>getOfferIDFromCreatedOffer()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt; ripple::RPC::getOfferIDFromCreatedOffer </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1TxMeta.html">TxMeta</a> const &amp;&#160;</td>
+          <td class="paramname"><em>transactionMeta</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="NFTokenOfferID_8cpp_source.html#l00056">56</a> of file <a class="el" href="NFTokenOfferID_8cpp_source.html">NFTokenOfferID.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a83d30528f574c3f0811e063bcedbe082"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a83d30528f574c3f0811e063bcedbe082">&#9670;&nbsp;</a></span>insertNFTokenOfferID()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::RPC::insertNFTokenOfferID </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classJson_1_1Value.html">Json::Value</a> &amp;&#160;</td>
+          <td class="paramname"><em>response</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1STTx.html">STTx</a> const &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>transaction</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1TxMeta.html">TxMeta</a> const &amp;&#160;</td>
+          <td class="paramname"><em>transactionMeta</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="NFTokenOfferID_8cpp_source.html#l00070">70</a> of file <a class="el" href="NFTokenOfferID_8cpp_source.html">NFTokenOfferID.cpp</a>.</p>
+
+</div>
+</div>
+<a id="aeebf9d018a1e1b05d570840df00e7c21"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aeebf9d018a1e1b05d570840df00e7c21">&#9670;&nbsp;</a></span>insertNFTSyntheticInJson()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::RPC::insertNFTSyntheticInJson </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classJson_1_1Value.html">Json::Value</a> &amp;&#160;</td>
+          <td class="paramname"><em>response</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structripple_1_1RPC_1_1JsonContext.html">RPC::JsonContext</a> const &amp;&#160;</td>
+          <td class="paramname"><em>context</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1STTx.html">STTx</a> const &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>transaction</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1TxMeta.html">TxMeta</a> const &amp;&#160;</td>
+          <td class="paramname"><em>transactionMeta</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Adds common synthetic fields to transaction-related JSON responses. </p>
+
+<p class="definition">Definition at line <a class="el" href="NFTSyntheticSerializer_8cpp_source.html#l00039">39</a> of file <a class="el" href="NFTSyntheticSerializer_8cpp_source.html">NFTSyntheticSerializer.cpp</a>.</p>
+
+</div>
+</div>
 <a id="a7d14d5ae6f47355a9d9d51ae58e7101a"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a7d14d5ae6f47355a9d9d51ae58e7101a">&#9670;&nbsp;</a></span>injectReportingWarning()</h2>
 

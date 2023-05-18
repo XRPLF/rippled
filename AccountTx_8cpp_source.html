@@ -105,381 +105,384 @@ $(function() {
 <div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;<span class="preprocessor">#include &lt;ripple/resource/Fees.h&gt;</span></div>
 <div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;<span class="preprocessor">#include &lt;ripple/rpc/Context.h&gt;</span></div>
 <div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;<span class="preprocessor">#include &lt;ripple/rpc/DeliveredAmount.h&gt;</span></div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;<span class="preprocessor">#include &lt;ripple/rpc/Role.h&gt;</span></div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;<span class="preprocessor">#include &lt;ripple/rpc/impl/RPCHelpers.h&gt;</span></div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;<span class="preprocessor">#include &lt;grpcpp/grpcpp.h&gt;</span></div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160; </div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160; </div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;<span class="keyword">using</span> <a class="code" href="namespaceripple.html#a46508aab3aecbc7722a2e70bbbbeb27e">TxnsData</a> = <a class="code" href="classripple_1_1RelationalDatabase.html#a1af9139d7f4c8f662c7b8e49473a21e2">RelationalDatabase::AccountTxs</a>;</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;<span class="keyword">using</span> <a class="code" href="namespaceripple.html#a091aa2583051396c4aa230c8421c7029">TxnsDataBinary</a> = <a class="code" href="classripple_1_1RelationalDatabase.html#a183ed7f35d368ec4564d8083fe9656f3">RelationalDatabase::MetaTxsList</a>;</div>
-<div class="line"><a name="l00046"></a><span class="lineno"><a class="line" href="namespaceripple.html#ad4a640314f01d8f55db96633996b1884">   46</a></span>&#160;<span class="keyword">using</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/tuple.html">TxnDataBinary</a> = <a class="code" href="classripple_1_1RelationalDatabase.html#ad49d721f8f069c1ee9652b93a3485423">RelationalDatabase::txnMetaLedgerType</a>;</div>
-<div class="line"><a name="l00047"></a><span class="lineno"><a class="line" href="namespaceripple.html#ab4fb63a55af13ad051b3a5046b867e6f">   47</a></span>&#160;<span class="keyword">using</span> <a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxArgs.html">AccountTxArgs</a> = <a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxArgs.html">RelationalDatabase::AccountTxArgs</a>;</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;<span class="keyword">using</span> <a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html">AccountTxResult</a> = <a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html">RelationalDatabase::AccountTxResult</a>;</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
-<div class="line"><a name="l00050"></a><span class="lineno"><a class="line" href="namespaceripple.html#acd63f6e8cce9825a0d498eb107eb07a1">   50</a></span>&#160;<span class="keyword">using</span> <a class="code" href="namespaceripple_1_1RPC.html#a4c04e509451d50d9449cff3d477ff4f2">LedgerShortcut</a> = <a class="code" href="classripple_1_1RelationalDatabase.html#a99c471461c2b0858d240f98034c6fda3">RelationalDatabase::LedgerShortcut</a>;</div>
-<div class="line"><a name="l00051"></a><span class="lineno"><a class="line" href="namespaceripple.html#a8f9ba329e357041ee11d59add281b978">   51</a></span>&#160;<span class="keyword">using</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/variant.html">LedgerSpecifier</a> = <a class="code" href="classripple_1_1RelationalDatabase.html#ae6edb30f534bd5669ee659789aa22e86">RelationalDatabase::LedgerSpecifier</a>;</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160; </div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;<span class="comment">// parses args into a ledger specifier, or returns a Json object on error</span></div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/variant.html">std::variant&lt;std::optional&lt;LedgerSpecifier&gt;</a>, <a class="code" href="classJson_1_1Value.html">Json::Value</a>&gt;</div>
-<div class="line"><a name="l00055"></a><span class="lineno"><a class="line" href="namespaceripple.html#ad38e4f9f1bf3089d9ad15f225cd53b06">   55</a></span>&#160;<a class="code" href="namespaceripple.html#ad38e4f9f1bf3089d9ad15f225cd53b06">parseLedgerArgs</a>(<a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span>&amp; params)</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;{</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a> response;</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <span class="keywordflow">if</span> (params.<a class="code" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::ledger_index_min) ||</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;        params.<a class="code" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::ledger_index_max))</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    {</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;        uint32_t min = params.<a class="code" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::ledger_index_min) &amp;&amp;</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;                params[jss::ledger_index_min].<a class="code" href="classJson_1_1Value.html#a614d635bc248a592593feb322cd15ab8">asInt</a>() &gt;= 0</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;            ? params[jss::ledger_index_min].<a class="code" href="classJson_1_1Value.html#a74b305583ec3aacf4f9dd06e799dc265">asUInt</a>()</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;            : 0;</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;        uint32_t max = params.<a class="code" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::ledger_index_max) &amp;&amp;</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;                params[jss::ledger_index_max].<a class="code" href="classJson_1_1Value.html#a614d635bc248a592593feb322cd15ab8">asInt</a>() &gt;= 0</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;            ? params[jss::ledger_index_max].<a class="code" href="classJson_1_1Value.html#a74b305583ec3aacf4f9dd06e799dc265">asUInt</a>()</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;            : UINT32_MAX;</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160; </div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="structripple_1_1LedgerRange.html">LedgerRange</a>{min, max};</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    }</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    <span class="keywordflow">else</span> <span class="keywordflow">if</span> (params.<a class="code" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::ledger_hash))</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    {</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;        <span class="keyword">auto</span>&amp; hashValue = params[jss::ledger_hash];</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;        <span class="keywordflow">if</span> (!hashValue.isString())</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;        {</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;            <a class="code" href="structripple_1_1RPC_1_1Status.html">RPC::Status</a> status{<a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a82ddebc5ec7a37ff38892487277bf9c4">rpcINVALID_PARAMS</a>, <span class="stringliteral">&quot;ledgerHashNotString&quot;</span>};</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;            status.inject(response);</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;            <span class="keywordflow">return</span> response;</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;        }</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160; </div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;        <a class="code" href="classripple_1_1base__uint.html">LedgerHash</a> hash;</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;        <span class="keywordflow">if</span> (!hash.<a class="code" href="classripple_1_1base__uint.html#a698d3fd0c0f0155995c87d2f48ac90d5">parseHex</a>(hashValue.asString()))</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;        {</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;            <a class="code" href="structripple_1_1RPC_1_1Status.html">RPC::Status</a> status{<a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a82ddebc5ec7a37ff38892487277bf9c4">rpcINVALID_PARAMS</a>, <span class="stringliteral">&quot;ledgerHashMalformed&quot;</span>};</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;            status.inject(response);</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;            <span class="keywordflow">return</span> response;</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;        }</div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;        <span class="keywordflow">return</span> hash;</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;    }</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    <span class="keywordflow">else</span> <span class="keywordflow">if</span> (params.<a class="code" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::ledger_index))</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;    {</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/variant.html">LedgerSpecifier</a> ledger;</div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;        <span class="keywordflow">if</span> (params[jss::ledger_index].isNumeric())</div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;            ledger = params[jss::ledger_index].<a class="code" href="classJson_1_1Value.html#a74b305583ec3aacf4f9dd06e799dc265">asUInt</a>();</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;        <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;        {</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> ledgerStr = params[jss::ledger_index].<a class="code" href="classJson_1_1Value.html#ab0d86bf425efefd03513e8dbfaca317b">asString</a>();</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160; </div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;            <span class="keywordflow">if</span> (ledgerStr == <span class="stringliteral">&quot;current&quot;</span> || ledgerStr.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/empty.html">empty</a>())</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;                ledger = LedgerShortcut::CURRENT;</div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;            <span class="keywordflow">else</span> <span class="keywordflow">if</span> (ledgerStr == <span class="stringliteral">&quot;closed&quot;</span>)</div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;                ledger = LedgerShortcut::CLOSED;</div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;            <span class="keywordflow">else</span> <span class="keywordflow">if</span> (ledgerStr == <span class="stringliteral">&quot;validated&quot;</span>)</div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;                ledger = LedgerShortcut::VALIDATED;</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;            <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;            {</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;                <a class="code" href="structripple_1_1RPC_1_1Status.html">RPC::Status</a> status{</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;                    <a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a82ddebc5ec7a37ff38892487277bf9c4">rpcINVALID_PARAMS</a>, <span class="stringliteral">&quot;ledger_index string malformed&quot;</span>};</div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;                status.inject(response);</div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;                <span class="keywordflow">return</span> response;</div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;            }</div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;        }</div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;        <span class="keywordflow">return</span> ledger;</div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;    }</div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;    <span class="keywordflow">return</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;LedgerSpecifier&gt;</a>{};</div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;}</div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160; </div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/variant.html">std::variant&lt;LedgerRange, RPC::Status&gt;</a></div>
-<div class="line"><a name="l00120"></a><span class="lineno"><a class="line" href="namespaceripple.html#abed7ca1c0bfd3868ba0cd63fbcd15066">  120</a></span>&#160;<a class="code" href="namespaceripple.html#abed7ca1c0bfd3868ba0cd63fbcd15066">getLedgerRange</a>(</div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;    <a class="code" href="structripple_1_1RPC_1_1Context.html">RPC::Context</a>&amp; context,</div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;LedgerSpecifier&gt;</a> <span class="keyword">const</span>&amp; ledgerSpecifier)</div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;{</div>
-<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> uValidatedMin;</div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> uValidatedMax;</div>
-<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;    <span class="keywordtype">bool</span> bValidated =</div>
-<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;        context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a92c98828663b6b80d3eb15850ec6897a">ledgerMaster</a>.<a class="code" href="classripple_1_1LedgerMaster.html#a777c77ff2d32f4bd6692f92f5a960471">getValidatedRange</a>(uValidatedMin, uValidatedMax);</div>
-<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160; </div>
-<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;    <span class="keywordflow">if</span> (!bValidated)</div>
-<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;    {</div>
-<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;        <span class="comment">// Don&#39;t have a validated ledger range.</span></div>
-<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;        <span class="keywordflow">if</span> (context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a0eab3b46cc23d67a6d16d1fb6bcaf0a2">apiVersion</a> == 1)</div>
-<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;            <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a9523d81ad23bb880bc9169950a780501">rpcLGR_IDXS_INVALID</a>;</div>
-<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932af301bbeaf5fcfb44db08132e6eae4ac2">rpcNOT_SYNCED</a>;</div>
-<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;    }</div>
-<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160; </div>
-<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> uLedgerMin = uValidatedMin;</div>
-<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> uLedgerMax = uValidatedMax;</div>
-<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;    <span class="comment">// Does request specify a ledger or ledger range?</span></div>
-<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;    <span class="keywordflow">if</span> (ledgerSpecifier)</div>
-<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;    {</div>
-<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> status = <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/variant/visit.html">std::visit</a>(</div>
-<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;            [&amp;](<span class="keyword">auto</span> <span class="keyword">const</span>&amp; ls) -&gt; <a class="code" href="structripple_1_1RPC_1_1Status.html">RPC::Status</a> {</div>
-<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;                <span class="keyword">using</span> T = <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/decay.html">std::decay_t</a>&lt;decltype(ls)&gt;;</div>
-<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;                <span class="keywordflow">if</span> constexpr (std::is_same_v&lt;T, LedgerRange&gt;)</div>
-<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;                {</div>
-<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;                    <span class="keywordflow">if</span> (ls.min &gt; uValidatedMin)</div>
-<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;                    {</div>
-<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;                        uLedgerMin = ls.min;</div>
-<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;                    }</div>
-<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;                    <span class="keywordflow">if</span> (ls.max &lt; uValidatedMax)</div>
-<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;                    {</div>
-<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;                        uLedgerMax = ls.max;</div>
-<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;                    }</div>
-<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;                    <span class="keywordflow">if</span> (uLedgerMax &lt; uLedgerMin)</div>
-<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;                    {</div>
-<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;                        <span class="keywordflow">if</span> (context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a0eab3b46cc23d67a6d16d1fb6bcaf0a2">apiVersion</a> == 1)</div>
-<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;                            <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a9523d81ad23bb880bc9169950a780501">rpcLGR_IDXS_INVALID</a>;</div>
-<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;                        <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a2a99d997786c15b8688fdcd6242d386f">rpcINVALID_LGR_RANGE</a>;</div>
-<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;                    }</div>
-<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;                }</div>
-<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;                <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;                {</div>
-<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;                    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;ReadView const&gt;</a> ledgerView;</div>
-<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;                    <span class="keyword">auto</span> <span class="keyword">const</span> status = getLedger(ledgerView, ls, context);</div>
-<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;                    <span class="keywordflow">if</span> (!ledgerView)</div>
-<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;                    {</div>
-<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;                        <span class="keywordflow">return</span> status;</div>
-<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;                    }</div>
-<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160; </div>
-<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;                    <span class="keywordtype">bool</span> validated = <a class="code" href="namespaceripple_1_1RPC.html#a917fae72b7b1397139e909f58fe058ca">RPC::isValidated</a>(</div>
-<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;                        context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a92c98828663b6b80d3eb15850ec6897a">ledgerMaster</a>, *ledgerView, context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a7878751d68ed7fd43c385913c5e6ff04">app</a>);</div>
-<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160; </div>
-<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;                    <span class="keywordflow">if</span> (!validated || ledgerView-&gt;<a class="code" href="classripple_1_1ReadView.html#a9263b10d706a447166b229ad8e3b574c">info</a>().<a class="code" href="structripple_1_1LedgerInfo.html#a06608577034840a474361d55624ce9a0">seq</a> &gt; uValidatedMax ||</div>
-<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;                        ledgerView-&gt;<a class="code" href="classripple_1_1ReadView.html#a9263b10d706a447166b229ad8e3b574c">info</a>().<a class="code" href="structripple_1_1LedgerInfo.html#a06608577034840a474361d55624ce9a0">seq</a> &lt; uValidatedMin)</div>
-<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;                    {</div>
-<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;                        <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a3df7a80b8a138b99a8e0723d2364d798">rpcLGR_NOT_VALIDATED</a>;</div>
-<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;                    }</div>
-<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;                    uLedgerMin = uLedgerMax = ledgerView-&gt;<a class="code" href="classripple_1_1ReadView.html#a9263b10d706a447166b229ad8e3b574c">info</a>().<a class="code" href="structripple_1_1LedgerInfo.html#a06608577034840a474361d55624ce9a0">seq</a>;</div>
-<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;                }</div>
-<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;                <span class="keywordflow">return</span> <a class="code" href="structripple_1_1RPC_1_1Status.html#a139a692adaa9b37c6eebe52042a2ae5f">RPC::Status::OK</a>;</div>
-<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;            },</div>
-<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;            *ledgerSpecifier);</div>
-<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160; </div>
-<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;        <span class="keywordflow">if</span> (status)</div>
-<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;            <span class="keywordflow">return</span> status;</div>
-<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;    }</div>
-<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="structripple_1_1LedgerRange.html">LedgerRange</a>{uLedgerMin, uLedgerMax};</div>
-<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;}</div>
-<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160; </div>
-<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;AccountTxResult, RPC::Status&gt;</a></div>
-<div class="line"><a name="l00192"></a><span class="lineno"><a class="line" href="namespaceripple.html#aa1d492196b5280d0b8c755741435564b">  192</a></span>&#160;<a class="code" href="namespaceripple.html#aa1d492196b5280d0b8c755741435564b">doAccountTxHelp</a>(<a class="code" href="structripple_1_1RPC_1_1Context.html">RPC::Context</a>&amp; context, <a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxArgs.html">AccountTxArgs</a> <span class="keyword">const</span>&amp; args)</div>
-<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;{</div>
-<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;    context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a53cf66700be4d73f6249db71ed263bc4">loadType</a> = <a class="code" href="namespaceripple_1_1Resource.html#abde9c8db0d3084fcdbedd459001f7463">Resource::feeMediumBurdenRPC</a>;</div>
-<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;    <span class="keywordflow">if</span> (context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a7878751d68ed7fd43c385913c5e6ff04">app</a>.<a class="code" href="classripple_1_1Application.html#aca56b7c63030174e59720ab51d739422">config</a>().<a class="code" href="classripple_1_1Config.html#a8fdf3fd3b2112759b3a0a7fa4d8afa05">reporting</a>())</div>
-<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;    {</div>
-<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> db = <span class="keyword">dynamic_cast&lt;</span><a class="code" href="classripple_1_1PostgresDatabase.html">PostgresDatabase</a>*<span class="keyword">&gt;</span>(</div>
-<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;            &amp;context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a7878751d68ed7fd43c385913c5e6ff04">app</a>.<a class="code" href="classripple_1_1Application.html#a883969ede6f0abdb0d5243fa988ab84f">getRelationalDatabase</a>());</div>
-<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160; </div>
-<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;        <span class="keywordflow">if</span> (!db)</div>
-<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;            Throw&lt;std::runtime_error&gt;(<span class="stringliteral">&quot;Failed to get relational database&quot;</span>);</div>
-<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160; </div>
-<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;        <span class="keywordflow">return</span> db-&gt;getAccountTx(args);</div>
-<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;    }</div>
-<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160; </div>
-<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;    <a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html">AccountTxResult</a> result;</div>
-<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160; </div>
-<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;    <span class="keyword">auto</span> lgrRange = <a class="code" href="namespaceripple.html#abed7ca1c0bfd3868ba0cd63fbcd15066">getLedgerRange</a>(context, args.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxArgs.html#a98e857b5bc5149d64ae2fe3a19d052f6">ledger</a>);</div>
-<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;    <span class="keywordflow">if</span> (<span class="keyword">auto</span> stat = std::get_if&lt;RPC::Status&gt;(&amp;lgrRange))</div>
-<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;    {</div>
-<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;        <span class="comment">// An error occurred getting the requested ledger range</span></div>
-<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;        <span class="keywordflow">return</span> {result, *stat};</div>
-<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;    }</div>
-<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160; </div>
-<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;    result.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html#aad5d28a6cfe900d6d34087b7077ba37e">ledgerRange</a> = std::get&lt;LedgerRange&gt;(lgrRange);</div>
-<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160; </div>
-<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;    result.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html#a1591fdfc514f0b923e002951b0ac09fb">marker</a> = args.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxArgs.html#a7756201e6bb598050a01f445d4ef61e0">marker</a>;</div>
-<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160; </div>
-<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;    <a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxPageOptions.html">RelationalDatabase::AccountTxPageOptions</a> options = {</div>
-<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;        args.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxArgs.html#a2df887a4acea4839f84f70a8b7b5ae74">account</a>,</div>
-<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;        result.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html#aad5d28a6cfe900d6d34087b7077ba37e">ledgerRange</a>.<a class="code" href="structripple_1_1LedgerRange.html#a823ea62ac90523714bb914f82c803f86">min</a>,</div>
-<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;        result.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html#aad5d28a6cfe900d6d34087b7077ba37e">ledgerRange</a>.<a class="code" href="structripple_1_1LedgerRange.html#a7e0a57dae4c124f10c091fb1cf0af155">max</a>,</div>
-<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;        result.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html#a1591fdfc514f0b923e002951b0ac09fb">marker</a>,</div>
-<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;        args.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxArgs.html#ab42ec99c697abee74193bef313518543">limit</a>,</div>
-<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;        <a class="code" href="namespaceripple.html#a6909f61053b6e084f46665fa9f4ee673">isUnlimited</a>(context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a20ec6d6aa84f8c76eeb90ad92fe25e20">role</a>)};</div>
-<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160; </div>
-<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> db =</div>
-<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;        <span class="keyword">dynamic_cast&lt;</span><a class="code" href="classripple_1_1SQLiteDatabase.html">SQLiteDatabase</a>*<span class="keyword">&gt;</span>(&amp;context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a7878751d68ed7fd43c385913c5e6ff04">app</a>.<a class="code" href="classripple_1_1Application.html#a883969ede6f0abdb0d5243fa988ab84f">getRelationalDatabase</a>());</div>
-<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160; </div>
-<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;    <span class="keywordflow">if</span> (!db)</div>
-<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;        Throw&lt;std::runtime_error&gt;(<span class="stringliteral">&quot;Failed to get relational database&quot;</span>);</div>
-<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160; </div>
-<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;    <span class="keywordflow">if</span> (args.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxArgs.html#a6c4bb3e0e05718428cf601a435ad381a">binary</a>)</div>
-<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;    {</div>
-<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;        <span class="keywordflow">if</span> (args.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxArgs.html#ab798755660bdb0995a3c53a2f1baeec7">forward</a>)</div>
-<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;        {</div>
-<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;            <span class="keyword">auto</span> [tx, marker] = db-&gt;oldestAccountTxPageB(options);</div>
-<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;            result.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html#a6cab3498452cb41a5110dd0b78837223">transactions</a> = tx;</div>
-<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;            result.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html#a1591fdfc514f0b923e002951b0ac09fb">marker</a> = marker;</div>
-<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;        }</div>
-<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;        <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;        {</div>
-<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;            <span class="keyword">auto</span> [tx, marker] = db-&gt;newestAccountTxPageB(options);</div>
-<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;            result.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html#a6cab3498452cb41a5110dd0b78837223">transactions</a> = tx;</div>
-<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;            result.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html#a1591fdfc514f0b923e002951b0ac09fb">marker</a> = marker;</div>
-<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;        }</div>
-<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;    }</div>
-<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;    <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;    {</div>
-<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;        <span class="keywordflow">if</span> (args.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxArgs.html#ab798755660bdb0995a3c53a2f1baeec7">forward</a>)</div>
-<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;        {</div>
-<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;            <span class="keyword">auto</span> [tx, marker] = db-&gt;oldestAccountTxPage(options);</div>
-<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;            result.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html#a6cab3498452cb41a5110dd0b78837223">transactions</a> = tx;</div>
-<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;            result.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html#a1591fdfc514f0b923e002951b0ac09fb">marker</a> = marker;</div>
-<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;        }</div>
-<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;        <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;        {</div>
-<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;            <span class="keyword">auto</span> [tx, marker] = db-&gt;newestAccountTxPage(options);</div>
-<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;            result.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html#a6cab3498452cb41a5110dd0b78837223">transactions</a> = tx;</div>
-<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;            result.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html#a1591fdfc514f0b923e002951b0ac09fb">marker</a> = marker;</div>
-<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;        }</div>
-<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;    }</div>
-<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160; </div>
-<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;    result.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html#af121f7ac83689271cf038239cac88ad2">limit</a> = args.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxArgs.html#ab42ec99c697abee74193bef313518543">limit</a>;</div>
-<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;    JLOG(context.<a class="code" href="structripple_1_1RPC_1_1Context.html#ac6ec0f79fbac84b6c8911117792ed0e6">j</a>.<a class="code" href="classbeast_1_1Journal.html#a556228cb60bcf405c225d3f64b7b01ae">debug</a>()) &lt;&lt; __func__ &lt;&lt; <span class="stringliteral">&quot; : finished&quot;</span>;</div>
-<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160; </div>
-<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;    <span class="keywordflow">return</span> {result, <a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a6f69b339743d28bbc421fa3b31437173">rpcSUCCESS</a>};</div>
-<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;}</div>
-<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160; </div>
-<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;<a class="code" href="classJson_1_1Value.html">Json::Value</a></div>
-<div class="line"><a name="l00271"></a><span class="lineno"><a class="line" href="namespaceripple.html#abf027fe1a653ac30d984f64a96cdfa55">  271</a></span>&#160;<a class="code" href="namespaceripple.html#abf027fe1a653ac30d984f64a96cdfa55">populateJsonResponse</a>(</div>
-<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;AccountTxResult, RPC::Status&gt;</a> <span class="keyword">const</span>&amp; res,</div>
-<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;    <a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxArgs.html">AccountTxArgs</a> <span class="keyword">const</span>&amp; args,</div>
-<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;    <a class="code" href="structripple_1_1RPC_1_1JsonContext.html">RPC::JsonContext</a> <span class="keyword">const</span>&amp; context)</div>
-<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;{</div>
-<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a> response;</div>
-<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;    <a class="code" href="structripple_1_1RPC_1_1Status.html">RPC::Status</a> <span class="keyword">const</span>&amp; error = res.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">second</a>;</div>
-<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;    <span class="keywordflow">if</span> (error.toErrorCode() != <a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a6f69b339743d28bbc421fa3b31437173">rpcSUCCESS</a>)</div>
-<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;    {</div>
-<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;        error.inject(response);</div>
-<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;    }</div>
-<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;    <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;    {</div>
-<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;        <a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html">AccountTxResult</a> <span class="keyword">const</span>&amp; result = res.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">first</a>;</div>
-<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;        response[jss::validated] = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;        response[jss::limit] = result.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html#af121f7ac83689271cf038239cac88ad2">limit</a>;</div>
-<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;        response[jss::account] = context.<a class="code" href="structripple_1_1RPC_1_1JsonContext.html#a036b2c14552fbca49011c3d0e78017fa">params</a>[jss::account].<a class="code" href="classJson_1_1Value.html#ab0d86bf425efefd03513e8dbfaca317b">asString</a>();</div>
-<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;        response[jss::ledger_index_min] = result.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html#aad5d28a6cfe900d6d34087b7077ba37e">ledgerRange</a>.<a class="code" href="structripple_1_1LedgerRange.html#a823ea62ac90523714bb914f82c803f86">min</a>;</div>
-<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;        response[jss::ledger_index_max] = result.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html#aad5d28a6cfe900d6d34087b7077ba37e">ledgerRange</a>.<a class="code" href="structripple_1_1LedgerRange.html#a7e0a57dae4c124f10c091fb1cf0af155">max</a>;</div>
-<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160; </div>
-<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;        <a class="code" href="classJson_1_1Value.html">Json::Value</a>&amp; jvTxns = (response[jss::transactions] = <a class="code" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eadc8f264f36b55b063c78126b335415f4">Json::arrayValue</a>);</div>
-<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160; </div>
-<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;        <span class="keywordflow">if</span> (<span class="keyword">auto</span> txnsData = std::get_if&lt;TxnsData&gt;(&amp;result.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html#a6cab3498452cb41a5110dd0b78837223">transactions</a>))</div>
-<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;        {</div>
-<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;            assert(!args.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxArgs.html#a6c4bb3e0e05718428cf601a435ad381a">binary</a>);</div>
-<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; [txn, txnMeta] : *txnsData)</div>
-<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;            {</div>
-<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;                <span class="keywordflow">if</span> (txn)</div>
-<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;                {</div>
-<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;                    <a class="code" href="classJson_1_1Value.html">Json::Value</a>&amp; jvObj = jvTxns.<a class="code" href="classJson_1_1Value.html#a7e49ac977e4bcf59745a09d426669f75">append</a>(<a class="code" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6">Json::objectValue</a>);</div>
-<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160; </div>
-<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;                    jvObj[jss::tx] = txn-&gt;getJson(<a class="code" href="namespaceripple.html#a169967ff418b80729654b6d45ade8711a48680239f46f3fdb40cb2e7e4d92a903">JsonOptions::include_date</a>);</div>
-<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;                    <span class="keywordflow">if</span> (txnMeta)</div>
-<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;                    {</div>
-<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;                        jvObj[jss::meta] =</div>
-<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;                            txnMeta-&gt;getJson(<a class="code" href="namespaceripple.html#a169967ff418b80729654b6d45ade8711a48680239f46f3fdb40cb2e7e4d92a903">JsonOptions::include_date</a>);</div>
-<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;                        jvObj[jss::validated] = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;                        insertDeliveredAmount(</div>
-<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;                            jvObj[jss::meta], context, txn, *txnMeta);</div>
-<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;                    }</div>
-<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;                }</div>
-<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;            }</div>
-<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;        }</div>
-<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;        <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;        {</div>
-<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;            assert(args.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxArgs.html#a6c4bb3e0e05718428cf601a435ad381a">binary</a>);</div>
-<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160; </div>
-<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; binaryData :</div>
-<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;                 std::get&lt;TxnsDataBinary&gt;(result.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html#a6cab3498452cb41a5110dd0b78837223">transactions</a>))</div>
-<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;            {</div>
-<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;                <a class="code" href="classJson_1_1Value.html">Json::Value</a>&amp; jvObj = jvTxns.<a class="code" href="classJson_1_1Value.html#a7e49ac977e4bcf59745a09d426669f75">append</a>(<a class="code" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6">Json::objectValue</a>);</div>
-<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160; </div>
-<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;                jvObj[jss::tx_blob] = <a class="code" href="namespaceripple.html#a86e358ce3f06ff049af13c2342791cf8">strHex</a>(std::get&lt;0&gt;(binaryData));</div>
-<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;                jvObj[jss::meta] = <a class="code" href="namespaceripple.html#a86e358ce3f06ff049af13c2342791cf8">strHex</a>(std::get&lt;1&gt;(binaryData));</div>
-<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;                jvObj[jss::ledger_index] = std::get&lt;2&gt;(binaryData);</div>
-<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;                jvObj[jss::validated] = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;            }</div>
-<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;        }</div>
-<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160; </div>
-<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;        <span class="keywordflow">if</span> (result.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html#a1591fdfc514f0b923e002951b0ac09fb">marker</a>)</div>
-<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;        {</div>
-<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;            response[jss::marker] = <a class="code" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6">Json::objectValue</a>;</div>
-<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;            response[jss::marker][jss::ledger] = result.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html#a1591fdfc514f0b923e002951b0ac09fb">marker</a>-&gt;ledgerSeq;</div>
-<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;            response[jss::marker][jss::seq] = result.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html#a1591fdfc514f0b923e002951b0ac09fb">marker</a>-&gt;txnSeq;</div>
-<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;        }</div>
-<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;        <span class="keywordflow">if</span> (context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a7878751d68ed7fd43c385913c5e6ff04">app</a>.<a class="code" href="classripple_1_1Application.html#aca56b7c63030174e59720ab51d739422">config</a>().<a class="code" href="classripple_1_1Config.html#a8fdf3fd3b2112759b3a0a7fa4d8afa05">reporting</a>())</div>
-<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;            response[<span class="stringliteral">&quot;used_postgres&quot;</span>] = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;    }</div>
-<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160; </div>
-<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;    JLOG(context.<a class="code" href="structripple_1_1RPC_1_1Context.html#ac6ec0f79fbac84b6c8911117792ed0e6">j</a>.<a class="code" href="classbeast_1_1Journal.html#a556228cb60bcf405c225d3f64b7b01ae">debug</a>()) &lt;&lt; __func__ &lt;&lt; <span class="stringliteral">&quot; : finished&quot;</span>;</div>
-<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;    <span class="keywordflow">return</span> response;</div>
-<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;}</div>
-<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160; </div>
-<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;<span class="comment">// {</span></div>
-<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;<span class="comment">//   account: account,</span></div>
-<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;<span class="comment">//   ledger_index_min: ledger_index  // optional, defaults to earliest</span></div>
-<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;<span class="comment">//   ledger_index_max: ledger_index, // optional, defaults to latest</span></div>
-<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;<span class="comment">//   binary: boolean,                // optional, defaults to false</span></div>
-<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;<span class="comment">//   forward: boolean,               // optional, defaults to false</span></div>
-<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;<span class="comment">//   limit: integer,                 // optional</span></div>
-<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;<span class="comment">//   marker: object {ledger: ledger_index, seq: txn_sequence} // optional,</span></div>
-<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;<span class="comment">//   resume previous query</span></div>
-<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;<span class="comment">// }</span></div>
-<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;<a class="code" href="classJson_1_1Value.html">Json::Value</a></div>
-<div class="line"><a name="l00355"></a><span class="lineno"><a class="line" href="namespaceripple.html#a49278e98ca5f0fd6da22d26278cdd2d5">  355</a></span>&#160;<a class="code" href="namespaceripple.html#a49278e98ca5f0fd6da22d26278cdd2d5">doAccountTxJson</a>(<a class="code" href="structripple_1_1RPC_1_1JsonContext.html">RPC::JsonContext</a>&amp; context)</div>
-<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;{</div>
-<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;    <span class="keywordflow">if</span> (!context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a7878751d68ed7fd43c385913c5e6ff04">app</a>.<a class="code" href="classripple_1_1Application.html#aca56b7c63030174e59720ab51d739422">config</a>().<a class="code" href="classripple_1_1Config.html#aa09be5266eca22f68f27e60169291ec5">useTxTables</a>())</div>
-<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a67869382f83fd55cf3096d2591a57b07">rpcError</a>(<a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932ac6b74149815b431c392a0538b5df7b39">rpcNOT_ENABLED</a>);</div>
-<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160; </div>
-<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;    <span class="keyword">auto</span>&amp; params = context.<a class="code" href="structripple_1_1RPC_1_1JsonContext.html#a036b2c14552fbca49011c3d0e78017fa">params</a>;</div>
-<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;    <a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxArgs.html">AccountTxArgs</a> args;</div>
-<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a> response;</div>
-<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160; </div>
-<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;    args.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxArgs.html#ab42ec99c697abee74193bef313518543">limit</a> = params.isMember(jss::limit) ? params[jss::limit].asUInt() : 0;</div>
-<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;    args.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxArgs.html#a6c4bb3e0e05718428cf601a435ad381a">binary</a> = params.isMember(jss::binary) &amp;&amp; params[jss::binary].asBool();</div>
-<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;    args.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxArgs.html#ab798755660bdb0995a3c53a2f1baeec7">forward</a> =</div>
-<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;        params.isMember(jss::forward) &amp;&amp; params[jss::forward].asBool();</div>
-<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160; </div>
-<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;    <span class="keywordflow">if</span> (!params.isMember(jss::account))</div>
-<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a67869382f83fd55cf3096d2591a57b07">rpcError</a>(<a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a82ddebc5ec7a37ff38892487277bf9c4">rpcINVALID_PARAMS</a>);</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;<span class="preprocessor">#include &lt;ripple/rpc/NFTSyntheticSerializer.h&gt;</span></div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;<span class="preprocessor">#include &lt;ripple/rpc/Role.h&gt;</span></div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;<span class="preprocessor">#include &lt;ripple/rpc/impl/RPCHelpers.h&gt;</span></div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160; </div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;<span class="preprocessor">#include &lt;grpcpp/grpcpp.h&gt;</span></div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160; </div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160; </div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;<span class="keyword">using</span> <a class="code" href="namespaceripple.html#a46508aab3aecbc7722a2e70bbbbeb27e">TxnsData</a> = <a class="code" href="classripple_1_1RelationalDatabase.html#a1af9139d7f4c8f662c7b8e49473a21e2">RelationalDatabase::AccountTxs</a>;</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;<span class="keyword">using</span> <a class="code" href="namespaceripple.html#a091aa2583051396c4aa230c8421c7029">TxnsDataBinary</a> = <a class="code" href="classripple_1_1RelationalDatabase.html#a183ed7f35d368ec4564d8083fe9656f3">RelationalDatabase::MetaTxsList</a>;</div>
+<div class="line"><a name="l00047"></a><span class="lineno"><a class="line" href="namespaceripple.html#ad4a640314f01d8f55db96633996b1884">   47</a></span>&#160;<span class="keyword">using</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/tuple.html">TxnDataBinary</a> = <a class="code" href="classripple_1_1RelationalDatabase.html#ad49d721f8f069c1ee9652b93a3485423">RelationalDatabase::txnMetaLedgerType</a>;</div>
+<div class="line"><a name="l00048"></a><span class="lineno"><a class="line" href="namespaceripple.html#ab4fb63a55af13ad051b3a5046b867e6f">   48</a></span>&#160;<span class="keyword">using</span> <a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxArgs.html">AccountTxArgs</a> = <a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxArgs.html">RelationalDatabase::AccountTxArgs</a>;</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;<span class="keyword">using</span> <a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html">AccountTxResult</a> = <a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html">RelationalDatabase::AccountTxResult</a>;</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160; </div>
+<div class="line"><a name="l00051"></a><span class="lineno"><a class="line" href="namespaceripple.html#acd63f6e8cce9825a0d498eb107eb07a1">   51</a></span>&#160;<span class="keyword">using</span> <a class="code" href="namespaceripple_1_1RPC.html#a4c04e509451d50d9449cff3d477ff4f2">LedgerShortcut</a> = <a class="code" href="classripple_1_1RelationalDatabase.html#a99c471461c2b0858d240f98034c6fda3">RelationalDatabase::LedgerShortcut</a>;</div>
+<div class="line"><a name="l00052"></a><span class="lineno"><a class="line" href="namespaceripple.html#a8f9ba329e357041ee11d59add281b978">   52</a></span>&#160;<span class="keyword">using</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/variant.html">LedgerSpecifier</a> = <a class="code" href="classripple_1_1RelationalDatabase.html#ae6edb30f534bd5669ee659789aa22e86">RelationalDatabase::LedgerSpecifier</a>;</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160; </div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;<span class="comment">// parses args into a ledger specifier, or returns a Json object on error</span></div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/variant.html">std::variant&lt;std::optional&lt;LedgerSpecifier&gt;</a>, <a class="code" href="classJson_1_1Value.html">Json::Value</a>&gt;</div>
+<div class="line"><a name="l00056"></a><span class="lineno"><a class="line" href="namespaceripple.html#ad38e4f9f1bf3089d9ad15f225cd53b06">   56</a></span>&#160;<a class="code" href="namespaceripple.html#ad38e4f9f1bf3089d9ad15f225cd53b06">parseLedgerArgs</a>(<a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span>&amp; params)</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;{</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a> response;</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    <span class="keywordflow">if</span> (params.<a class="code" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::ledger_index_min) ||</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;        params.<a class="code" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::ledger_index_max))</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    {</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;        uint32_t min = params.<a class="code" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::ledger_index_min) &amp;&amp;</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;                params[jss::ledger_index_min].<a class="code" href="classJson_1_1Value.html#a614d635bc248a592593feb322cd15ab8">asInt</a>() &gt;= 0</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;            ? params[jss::ledger_index_min].<a class="code" href="classJson_1_1Value.html#a74b305583ec3aacf4f9dd06e799dc265">asUInt</a>()</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;            : 0;</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;        uint32_t max = params.<a class="code" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::ledger_index_max) &amp;&amp;</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;                params[jss::ledger_index_max].<a class="code" href="classJson_1_1Value.html#a614d635bc248a592593feb322cd15ab8">asInt</a>() &gt;= 0</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;            ? params[jss::ledger_index_max].<a class="code" href="classJson_1_1Value.html#a74b305583ec3aacf4f9dd06e799dc265">asUInt</a>()</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;            : UINT32_MAX;</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160; </div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="structripple_1_1LedgerRange.html">LedgerRange</a>{min, max};</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    }</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    <span class="keywordflow">else</span> <span class="keywordflow">if</span> (params.<a class="code" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::ledger_hash))</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    {</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;        <span class="keyword">auto</span>&amp; hashValue = params[jss::ledger_hash];</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;        <span class="keywordflow">if</span> (!hashValue.isString())</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;        {</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;            <a class="code" href="structripple_1_1RPC_1_1Status.html">RPC::Status</a> status{<a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a82ddebc5ec7a37ff38892487277bf9c4">rpcINVALID_PARAMS</a>, <span class="stringliteral">&quot;ledgerHashNotString&quot;</span>};</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;            status.inject(response);</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;            <span class="keywordflow">return</span> response;</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;        }</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160; </div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;        <a class="code" href="classripple_1_1base__uint.html">LedgerHash</a> hash;</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;        <span class="keywordflow">if</span> (!hash.<a class="code" href="classripple_1_1base__uint.html#a698d3fd0c0f0155995c87d2f48ac90d5">parseHex</a>(hashValue.asString()))</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;        {</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;            <a class="code" href="structripple_1_1RPC_1_1Status.html">RPC::Status</a> status{<a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a82ddebc5ec7a37ff38892487277bf9c4">rpcINVALID_PARAMS</a>, <span class="stringliteral">&quot;ledgerHashMalformed&quot;</span>};</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;            status.inject(response);</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;            <span class="keywordflow">return</span> response;</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;        }</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;        <span class="keywordflow">return</span> hash;</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    }</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;    <span class="keywordflow">else</span> <span class="keywordflow">if</span> (params.<a class="code" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::ledger_index))</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;    {</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/variant.html">LedgerSpecifier</a> ledger;</div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;        <span class="keywordflow">if</span> (params[jss::ledger_index].isNumeric())</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;            ledger = params[jss::ledger_index].<a class="code" href="classJson_1_1Value.html#a74b305583ec3aacf4f9dd06e799dc265">asUInt</a>();</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;        <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;        {</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> ledgerStr = params[jss::ledger_index].<a class="code" href="classJson_1_1Value.html#ab0d86bf425efefd03513e8dbfaca317b">asString</a>();</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160; </div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;            <span class="keywordflow">if</span> (ledgerStr == <span class="stringliteral">&quot;current&quot;</span> || ledgerStr.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/empty.html">empty</a>())</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;                ledger = LedgerShortcut::CURRENT;</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;            <span class="keywordflow">else</span> <span class="keywordflow">if</span> (ledgerStr == <span class="stringliteral">&quot;closed&quot;</span>)</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;                ledger = LedgerShortcut::CLOSED;</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;            <span class="keywordflow">else</span> <span class="keywordflow">if</span> (ledgerStr == <span class="stringliteral">&quot;validated&quot;</span>)</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;                ledger = LedgerShortcut::VALIDATED;</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;            <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;            {</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;                <a class="code" href="structripple_1_1RPC_1_1Status.html">RPC::Status</a> status{</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;                    <a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a82ddebc5ec7a37ff38892487277bf9c4">rpcINVALID_PARAMS</a>, <span class="stringliteral">&quot;ledger_index string malformed&quot;</span>};</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;                status.inject(response);</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;                <span class="keywordflow">return</span> response;</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;            }</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;        }</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;        <span class="keywordflow">return</span> ledger;</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;    }</div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;    <span class="keywordflow">return</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;LedgerSpecifier&gt;</a>{};</div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;}</div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160; </div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/variant.html">std::variant&lt;LedgerRange, RPC::Status&gt;</a></div>
+<div class="line"><a name="l00121"></a><span class="lineno"><a class="line" href="namespaceripple.html#abed7ca1c0bfd3868ba0cd63fbcd15066">  121</a></span>&#160;<a class="code" href="namespaceripple.html#abed7ca1c0bfd3868ba0cd63fbcd15066">getLedgerRange</a>(</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;    <a class="code" href="structripple_1_1RPC_1_1Context.html">RPC::Context</a>&amp; context,</div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;LedgerSpecifier&gt;</a> <span class="keyword">const</span>&amp; ledgerSpecifier)</div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;{</div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> uValidatedMin;</div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> uValidatedMax;</div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;    <span class="keywordtype">bool</span> bValidated =</div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;        context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a92c98828663b6b80d3eb15850ec6897a">ledgerMaster</a>.<a class="code" href="classripple_1_1LedgerMaster.html#a777c77ff2d32f4bd6692f92f5a960471">getValidatedRange</a>(uValidatedMin, uValidatedMax);</div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160; </div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;    <span class="keywordflow">if</span> (!bValidated)</div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;    {</div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;        <span class="comment">// Don&#39;t have a validated ledger range.</span></div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;        <span class="keywordflow">if</span> (context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a0eab3b46cc23d67a6d16d1fb6bcaf0a2">apiVersion</a> == 1)</div>
+<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;            <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a9523d81ad23bb880bc9169950a780501">rpcLGR_IDXS_INVALID</a>;</div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932af301bbeaf5fcfb44db08132e6eae4ac2">rpcNOT_SYNCED</a>;</div>
+<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;    }</div>
+<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160; </div>
+<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> uLedgerMin = uValidatedMin;</div>
+<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> uLedgerMax = uValidatedMax;</div>
+<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;    <span class="comment">// Does request specify a ledger or ledger range?</span></div>
+<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;    <span class="keywordflow">if</span> (ledgerSpecifier)</div>
+<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;    {</div>
+<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> status = <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/variant/visit.html">std::visit</a>(</div>
+<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;            [&amp;](<span class="keyword">auto</span> <span class="keyword">const</span>&amp; ls) -&gt; <a class="code" href="structripple_1_1RPC_1_1Status.html">RPC::Status</a> {</div>
+<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;                <span class="keyword">using</span> T = <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/decay.html">std::decay_t</a>&lt;decltype(ls)&gt;;</div>
+<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;                <span class="keywordflow">if</span> constexpr (std::is_same_v&lt;T, LedgerRange&gt;)</div>
+<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;                {</div>
+<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;                    <span class="keywordflow">if</span> (ls.min &gt; uValidatedMin)</div>
+<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;                    {</div>
+<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;                        uLedgerMin = ls.min;</div>
+<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;                    }</div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;                    <span class="keywordflow">if</span> (ls.max &lt; uValidatedMax)</div>
+<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;                    {</div>
+<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;                        uLedgerMax = ls.max;</div>
+<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;                    }</div>
+<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;                    <span class="keywordflow">if</span> (uLedgerMax &lt; uLedgerMin)</div>
+<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;                    {</div>
+<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;                        <span class="keywordflow">if</span> (context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a0eab3b46cc23d67a6d16d1fb6bcaf0a2">apiVersion</a> == 1)</div>
+<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;                            <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a9523d81ad23bb880bc9169950a780501">rpcLGR_IDXS_INVALID</a>;</div>
+<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;                        <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a2a99d997786c15b8688fdcd6242d386f">rpcINVALID_LGR_RANGE</a>;</div>
+<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;                    }</div>
+<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;                }</div>
+<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;                <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;                {</div>
+<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;                    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;ReadView const&gt;</a> ledgerView;</div>
+<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;                    <span class="keyword">auto</span> <span class="keyword">const</span> status = getLedger(ledgerView, ls, context);</div>
+<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;                    <span class="keywordflow">if</span> (!ledgerView)</div>
+<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;                    {</div>
+<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;                        <span class="keywordflow">return</span> status;</div>
+<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;                    }</div>
+<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160; </div>
+<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;                    <span class="keywordtype">bool</span> validated = <a class="code" href="namespaceripple_1_1RPC.html#a917fae72b7b1397139e909f58fe058ca">RPC::isValidated</a>(</div>
+<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;                        context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a92c98828663b6b80d3eb15850ec6897a">ledgerMaster</a>, *ledgerView, context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a7878751d68ed7fd43c385913c5e6ff04">app</a>);</div>
+<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160; </div>
+<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;                    <span class="keywordflow">if</span> (!validated || ledgerView-&gt;<a class="code" href="classripple_1_1ReadView.html#a9263b10d706a447166b229ad8e3b574c">info</a>().<a class="code" href="structripple_1_1LedgerInfo.html#a06608577034840a474361d55624ce9a0">seq</a> &gt; uValidatedMax ||</div>
+<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;                        ledgerView-&gt;<a class="code" href="classripple_1_1ReadView.html#a9263b10d706a447166b229ad8e3b574c">info</a>().<a class="code" href="structripple_1_1LedgerInfo.html#a06608577034840a474361d55624ce9a0">seq</a> &lt; uValidatedMin)</div>
+<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;                    {</div>
+<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;                        <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a3df7a80b8a138b99a8e0723d2364d798">rpcLGR_NOT_VALIDATED</a>;</div>
+<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;                    }</div>
+<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;                    uLedgerMin = uLedgerMax = ledgerView-&gt;<a class="code" href="classripple_1_1ReadView.html#a9263b10d706a447166b229ad8e3b574c">info</a>().<a class="code" href="structripple_1_1LedgerInfo.html#a06608577034840a474361d55624ce9a0">seq</a>;</div>
+<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;                }</div>
+<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;                <span class="keywordflow">return</span> <a class="code" href="structripple_1_1RPC_1_1Status.html#a139a692adaa9b37c6eebe52042a2ae5f">RPC::Status::OK</a>;</div>
+<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;            },</div>
+<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;            *ledgerSpecifier);</div>
+<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160; </div>
+<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;        <span class="keywordflow">if</span> (status)</div>
+<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;            <span class="keywordflow">return</span> status;</div>
+<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;    }</div>
+<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="structripple_1_1LedgerRange.html">LedgerRange</a>{uLedgerMin, uLedgerMax};</div>
+<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;}</div>
+<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160; </div>
+<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;AccountTxResult, RPC::Status&gt;</a></div>
+<div class="line"><a name="l00193"></a><span class="lineno"><a class="line" href="namespaceripple.html#aa1d492196b5280d0b8c755741435564b">  193</a></span>&#160;<a class="code" href="namespaceripple.html#aa1d492196b5280d0b8c755741435564b">doAccountTxHelp</a>(<a class="code" href="structripple_1_1RPC_1_1Context.html">RPC::Context</a>&amp; context, <a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxArgs.html">AccountTxArgs</a> <span class="keyword">const</span>&amp; args)</div>
+<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;{</div>
+<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;    context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a53cf66700be4d73f6249db71ed263bc4">loadType</a> = <a class="code" href="namespaceripple_1_1Resource.html#abde9c8db0d3084fcdbedd459001f7463">Resource::feeMediumBurdenRPC</a>;</div>
+<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;    <span class="keywordflow">if</span> (context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a7878751d68ed7fd43c385913c5e6ff04">app</a>.<a class="code" href="classripple_1_1Application.html#aca56b7c63030174e59720ab51d739422">config</a>().<a class="code" href="classripple_1_1Config.html#a8fdf3fd3b2112759b3a0a7fa4d8afa05">reporting</a>())</div>
+<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;    {</div>
+<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> db = <span class="keyword">dynamic_cast&lt;</span><a class="code" href="classripple_1_1PostgresDatabase.html">PostgresDatabase</a>*<span class="keyword">&gt;</span>(</div>
+<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;            &amp;context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a7878751d68ed7fd43c385913c5e6ff04">app</a>.<a class="code" href="classripple_1_1Application.html#a883969ede6f0abdb0d5243fa988ab84f">getRelationalDatabase</a>());</div>
+<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160; </div>
+<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;        <span class="keywordflow">if</span> (!db)</div>
+<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;            Throw&lt;std::runtime_error&gt;(<span class="stringliteral">&quot;Failed to get relational database&quot;</span>);</div>
+<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160; </div>
+<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;        <span class="keywordflow">return</span> db-&gt;getAccountTx(args);</div>
+<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;    }</div>
+<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160; </div>
+<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;    <a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html">AccountTxResult</a> result;</div>
+<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160; </div>
+<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;    <span class="keyword">auto</span> lgrRange = <a class="code" href="namespaceripple.html#abed7ca1c0bfd3868ba0cd63fbcd15066">getLedgerRange</a>(context, args.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxArgs.html#a98e857b5bc5149d64ae2fe3a19d052f6">ledger</a>);</div>
+<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;    <span class="keywordflow">if</span> (<span class="keyword">auto</span> stat = std::get_if&lt;RPC::Status&gt;(&amp;lgrRange))</div>
+<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;    {</div>
+<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;        <span class="comment">// An error occurred getting the requested ledger range</span></div>
+<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;        <span class="keywordflow">return</span> {result, *stat};</div>
+<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;    }</div>
+<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160; </div>
+<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;    result.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html#aad5d28a6cfe900d6d34087b7077ba37e">ledgerRange</a> = std::get&lt;LedgerRange&gt;(lgrRange);</div>
+<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160; </div>
+<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;    result.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html#a1591fdfc514f0b923e002951b0ac09fb">marker</a> = args.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxArgs.html#a7756201e6bb598050a01f445d4ef61e0">marker</a>;</div>
+<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160; </div>
+<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;    <a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxPageOptions.html">RelationalDatabase::AccountTxPageOptions</a> options = {</div>
+<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;        args.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxArgs.html#a2df887a4acea4839f84f70a8b7b5ae74">account</a>,</div>
+<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;        result.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html#aad5d28a6cfe900d6d34087b7077ba37e">ledgerRange</a>.<a class="code" href="structripple_1_1LedgerRange.html#a823ea62ac90523714bb914f82c803f86">min</a>,</div>
+<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;        result.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html#aad5d28a6cfe900d6d34087b7077ba37e">ledgerRange</a>.<a class="code" href="structripple_1_1LedgerRange.html#a7e0a57dae4c124f10c091fb1cf0af155">max</a>,</div>
+<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;        result.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html#a1591fdfc514f0b923e002951b0ac09fb">marker</a>,</div>
+<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;        args.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxArgs.html#ab42ec99c697abee74193bef313518543">limit</a>,</div>
+<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;        <a class="code" href="namespaceripple.html#a6909f61053b6e084f46665fa9f4ee673">isUnlimited</a>(context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a20ec6d6aa84f8c76eeb90ad92fe25e20">role</a>)};</div>
+<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160; </div>
+<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> db =</div>
+<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;        <span class="keyword">dynamic_cast&lt;</span><a class="code" href="classripple_1_1SQLiteDatabase.html">SQLiteDatabase</a>*<span class="keyword">&gt;</span>(&amp;context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a7878751d68ed7fd43c385913c5e6ff04">app</a>.<a class="code" href="classripple_1_1Application.html#a883969ede6f0abdb0d5243fa988ab84f">getRelationalDatabase</a>());</div>
+<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160; </div>
+<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;    <span class="keywordflow">if</span> (!db)</div>
+<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;        Throw&lt;std::runtime_error&gt;(<span class="stringliteral">&quot;Failed to get relational database&quot;</span>);</div>
+<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160; </div>
+<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;    <span class="keywordflow">if</span> (args.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxArgs.html#a6c4bb3e0e05718428cf601a435ad381a">binary</a>)</div>
+<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;    {</div>
+<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;        <span class="keywordflow">if</span> (args.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxArgs.html#ab798755660bdb0995a3c53a2f1baeec7">forward</a>)</div>
+<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;        {</div>
+<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;            <span class="keyword">auto</span> [tx, marker] = db-&gt;oldestAccountTxPageB(options);</div>
+<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;            result.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html#a6cab3498452cb41a5110dd0b78837223">transactions</a> = tx;</div>
+<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;            result.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html#a1591fdfc514f0b923e002951b0ac09fb">marker</a> = marker;</div>
+<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;        }</div>
+<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;        <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;        {</div>
+<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;            <span class="keyword">auto</span> [tx, marker] = db-&gt;newestAccountTxPageB(options);</div>
+<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;            result.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html#a6cab3498452cb41a5110dd0b78837223">transactions</a> = tx;</div>
+<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;            result.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html#a1591fdfc514f0b923e002951b0ac09fb">marker</a> = marker;</div>
+<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;        }</div>
+<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;    }</div>
+<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;    <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;    {</div>
+<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;        <span class="keywordflow">if</span> (args.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxArgs.html#ab798755660bdb0995a3c53a2f1baeec7">forward</a>)</div>
+<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;        {</div>
+<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;            <span class="keyword">auto</span> [tx, marker] = db-&gt;oldestAccountTxPage(options);</div>
+<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;            result.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html#a6cab3498452cb41a5110dd0b78837223">transactions</a> = tx;</div>
+<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;            result.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html#a1591fdfc514f0b923e002951b0ac09fb">marker</a> = marker;</div>
+<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;        }</div>
+<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;        <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;        {</div>
+<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;            <span class="keyword">auto</span> [tx, marker] = db-&gt;newestAccountTxPage(options);</div>
+<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;            result.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html#a6cab3498452cb41a5110dd0b78837223">transactions</a> = tx;</div>
+<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;            result.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html#a1591fdfc514f0b923e002951b0ac09fb">marker</a> = marker;</div>
+<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;        }</div>
+<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;    }</div>
+<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160; </div>
+<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;    result.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html#af121f7ac83689271cf038239cac88ad2">limit</a> = args.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxArgs.html#ab42ec99c697abee74193bef313518543">limit</a>;</div>
+<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;    JLOG(context.<a class="code" href="structripple_1_1RPC_1_1Context.html#ac6ec0f79fbac84b6c8911117792ed0e6">j</a>.<a class="code" href="classbeast_1_1Journal.html#a556228cb60bcf405c225d3f64b7b01ae">debug</a>()) &lt;&lt; __func__ &lt;&lt; <span class="stringliteral">&quot; : finished&quot;</span>;</div>
+<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160; </div>
+<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;    <span class="keywordflow">return</span> {result, <a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a6f69b339743d28bbc421fa3b31437173">rpcSUCCESS</a>};</div>
+<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;}</div>
+<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160; </div>
+<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;<a class="code" href="classJson_1_1Value.html">Json::Value</a></div>
+<div class="line"><a name="l00272"></a><span class="lineno"><a class="line" href="namespaceripple.html#abf027fe1a653ac30d984f64a96cdfa55">  272</a></span>&#160;<a class="code" href="namespaceripple.html#abf027fe1a653ac30d984f64a96cdfa55">populateJsonResponse</a>(</div>
+<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;AccountTxResult, RPC::Status&gt;</a> <span class="keyword">const</span>&amp; res,</div>
+<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;    <a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxArgs.html">AccountTxArgs</a> <span class="keyword">const</span>&amp; args,</div>
+<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;    <a class="code" href="structripple_1_1RPC_1_1JsonContext.html">RPC::JsonContext</a> <span class="keyword">const</span>&amp; context)</div>
+<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;{</div>
+<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a> response;</div>
+<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;    <a class="code" href="structripple_1_1RPC_1_1Status.html">RPC::Status</a> <span class="keyword">const</span>&amp; error = res.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">second</a>;</div>
+<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;    <span class="keywordflow">if</span> (error.toErrorCode() != <a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a6f69b339743d28bbc421fa3b31437173">rpcSUCCESS</a>)</div>
+<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;    {</div>
+<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;        error.inject(response);</div>
+<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;    }</div>
+<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;    <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;    {</div>
+<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;        <a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html">AccountTxResult</a> <span class="keyword">const</span>&amp; result = res.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">first</a>;</div>
+<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;        response[jss::validated] = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;        response[jss::limit] = result.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html#af121f7ac83689271cf038239cac88ad2">limit</a>;</div>
+<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;        response[jss::account] = context.<a class="code" href="structripple_1_1RPC_1_1JsonContext.html#a036b2c14552fbca49011c3d0e78017fa">params</a>[jss::account].<a class="code" href="classJson_1_1Value.html#ab0d86bf425efefd03513e8dbfaca317b">asString</a>();</div>
+<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;        response[jss::ledger_index_min] = result.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html#aad5d28a6cfe900d6d34087b7077ba37e">ledgerRange</a>.<a class="code" href="structripple_1_1LedgerRange.html#a823ea62ac90523714bb914f82c803f86">min</a>;</div>
+<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;        response[jss::ledger_index_max] = result.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html#aad5d28a6cfe900d6d34087b7077ba37e">ledgerRange</a>.<a class="code" href="structripple_1_1LedgerRange.html#a7e0a57dae4c124f10c091fb1cf0af155">max</a>;</div>
+<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160; </div>
+<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;        <a class="code" href="classJson_1_1Value.html">Json::Value</a>&amp; jvTxns = (response[jss::transactions] = <a class="code" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eadc8f264f36b55b063c78126b335415f4">Json::arrayValue</a>);</div>
+<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160; </div>
+<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;        <span class="keywordflow">if</span> (<span class="keyword">auto</span> txnsData = std::get_if&lt;TxnsData&gt;(&amp;result.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html#a6cab3498452cb41a5110dd0b78837223">transactions</a>))</div>
+<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;        {</div>
+<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;            assert(!args.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxArgs.html#a6c4bb3e0e05718428cf601a435ad381a">binary</a>);</div>
+<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; [txn, txnMeta] : *txnsData)</div>
+<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;            {</div>
+<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;                <span class="keywordflow">if</span> (txn)</div>
+<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;                {</div>
+<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160;                    <a class="code" href="classJson_1_1Value.html">Json::Value</a>&amp; jvObj = jvTxns.<a class="code" href="classJson_1_1Value.html#a7e49ac977e4bcf59745a09d426669f75">append</a>(<a class="code" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6">Json::objectValue</a>);</div>
+<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160; </div>
+<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;                    jvObj[jss::tx] = txn-&gt;getJson(<a class="code" href="namespaceripple.html#a169967ff418b80729654b6d45ade8711a48680239f46f3fdb40cb2e7e4d92a903">JsonOptions::include_date</a>);</div>
+<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;                    <span class="keywordflow">if</span> (txnMeta)</div>
+<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;                    {</div>
+<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;                        jvObj[jss::meta] =</div>
+<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;                            txnMeta-&gt;getJson(<a class="code" href="namespaceripple.html#a169967ff418b80729654b6d45ade8711a48680239f46f3fdb40cb2e7e4d92a903">JsonOptions::include_date</a>);</div>
+<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;                        jvObj[jss::validated] = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;                        insertDeliveredAmount(</div>
+<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;                            jvObj[jss::meta], context, txn, *txnMeta);</div>
+<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;                        insertNFTSyntheticInJson(</div>
+<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;                            jvObj, context, txn-&gt;getSTransaction(), *txnMeta);</div>
+<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;                    }</div>
+<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;                }</div>
+<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;            }</div>
+<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;        }</div>
+<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;        <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;        {</div>
+<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;            assert(args.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxArgs.html#a6c4bb3e0e05718428cf601a435ad381a">binary</a>);</div>
+<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160; </div>
+<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; binaryData :</div>
+<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;                 std::get&lt;TxnsDataBinary&gt;(result.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html#a6cab3498452cb41a5110dd0b78837223">transactions</a>))</div>
+<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;            {</div>
+<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;                <a class="code" href="classJson_1_1Value.html">Json::Value</a>&amp; jvObj = jvTxns.<a class="code" href="classJson_1_1Value.html#a7e49ac977e4bcf59745a09d426669f75">append</a>(<a class="code" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6">Json::objectValue</a>);</div>
+<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160; </div>
+<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;                jvObj[jss::tx_blob] = <a class="code" href="namespaceripple.html#a86e358ce3f06ff049af13c2342791cf8">strHex</a>(std::get&lt;0&gt;(binaryData));</div>
+<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;                jvObj[jss::meta] = <a class="code" href="namespaceripple.html#a86e358ce3f06ff049af13c2342791cf8">strHex</a>(std::get&lt;1&gt;(binaryData));</div>
+<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;                jvObj[jss::ledger_index] = std::get&lt;2&gt;(binaryData);</div>
+<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;                jvObj[jss::validated] = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;            }</div>
+<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;        }</div>
+<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160; </div>
+<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;        <span class="keywordflow">if</span> (result.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html#a1591fdfc514f0b923e002951b0ac09fb">marker</a>)</div>
+<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;        {</div>
+<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;            response[jss::marker] = <a class="code" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6">Json::objectValue</a>;</div>
+<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;            response[jss::marker][jss::ledger] = result.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html#a1591fdfc514f0b923e002951b0ac09fb">marker</a>-&gt;ledgerSeq;</div>
+<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;            response[jss::marker][jss::seq] = result.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html#a1591fdfc514f0b923e002951b0ac09fb">marker</a>-&gt;txnSeq;</div>
+<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;        }</div>
+<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;        <span class="keywordflow">if</span> (context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a7878751d68ed7fd43c385913c5e6ff04">app</a>.<a class="code" href="classripple_1_1Application.html#aca56b7c63030174e59720ab51d739422">config</a>().<a class="code" href="classripple_1_1Config.html#a8fdf3fd3b2112759b3a0a7fa4d8afa05">reporting</a>())</div>
+<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;            response[<span class="stringliteral">&quot;used_postgres&quot;</span>] = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;    }</div>
+<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160; </div>
+<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;    JLOG(context.<a class="code" href="structripple_1_1RPC_1_1Context.html#ac6ec0f79fbac84b6c8911117792ed0e6">j</a>.<a class="code" href="classbeast_1_1Journal.html#a556228cb60bcf405c225d3f64b7b01ae">debug</a>()) &lt;&lt; __func__ &lt;&lt; <span class="stringliteral">&quot; : finished&quot;</span>;</div>
+<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;    <span class="keywordflow">return</span> response;</div>
+<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;}</div>
+<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160; </div>
+<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;<span class="comment">// {</span></div>
+<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;<span class="comment">//   account: account,</span></div>
+<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;<span class="comment">//   ledger_index_min: ledger_index  // optional, defaults to earliest</span></div>
+<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;<span class="comment">//   ledger_index_max: ledger_index, // optional, defaults to latest</span></div>
+<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;<span class="comment">//   binary: boolean,                // optional, defaults to false</span></div>
+<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;<span class="comment">//   forward: boolean,               // optional, defaults to false</span></div>
+<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;<span class="comment">//   limit: integer,                 // optional</span></div>
+<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;<span class="comment">//   marker: object {ledger: ledger_index, seq: txn_sequence} // optional,</span></div>
+<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;<span class="comment">//   resume previous query</span></div>
+<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;<span class="comment">// }</span></div>
+<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;<a class="code" href="classJson_1_1Value.html">Json::Value</a></div>
+<div class="line"><a name="l00358"></a><span class="lineno"><a class="line" href="namespaceripple.html#a49278e98ca5f0fd6da22d26278cdd2d5">  358</a></span>&#160;<a class="code" href="namespaceripple.html#a49278e98ca5f0fd6da22d26278cdd2d5">doAccountTxJson</a>(<a class="code" href="structripple_1_1RPC_1_1JsonContext.html">RPC::JsonContext</a>&amp; context)</div>
+<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;{</div>
+<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;    <span class="keywordflow">if</span> (!context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a7878751d68ed7fd43c385913c5e6ff04">app</a>.<a class="code" href="classripple_1_1Application.html#aca56b7c63030174e59720ab51d739422">config</a>().<a class="code" href="classripple_1_1Config.html#aa09be5266eca22f68f27e60169291ec5">useTxTables</a>())</div>
+<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a67869382f83fd55cf3096d2591a57b07">rpcError</a>(<a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932ac6b74149815b431c392a0538b5df7b39">rpcNOT_ENABLED</a>);</div>
+<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160; </div>
+<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;    <span class="keyword">auto</span>&amp; params = context.<a class="code" href="structripple_1_1RPC_1_1JsonContext.html#a036b2c14552fbca49011c3d0e78017fa">params</a>;</div>
+<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;    <a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxArgs.html">AccountTxArgs</a> args;</div>
+<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a> response;</div>
+<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160; </div>
+<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;    args.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxArgs.html#ab42ec99c697abee74193bef313518543">limit</a> = params.isMember(jss::limit) ? params[jss::limit].asUInt() : 0;</div>
+<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;    args.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxArgs.html#a6c4bb3e0e05718428cf601a435ad381a">binary</a> = params.isMember(jss::binary) &amp;&amp; params[jss::binary].asBool();</div>
+<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;    args.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxArgs.html#ab798755660bdb0995a3c53a2f1baeec7">forward</a> =</div>
+<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;        params.isMember(jss::forward) &amp;&amp; params[jss::forward].asBool();</div>
 <div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160; </div>
-<div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> account =</div>
-<div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160;        parseBase58&lt;AccountID&gt;(params[jss::account].asString());</div>
-<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;    <span class="keywordflow">if</span> (!account)</div>
-<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a67869382f83fd55cf3096d2591a57b07">rpcError</a>(<a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a4fba57dbbed9bfaa196e1a0e0915dc8a">rpcACT_MALFORMED</a>);</div>
-<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160; </div>
-<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;    args.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxArgs.html#a2df887a4acea4839f84f70a8b7b5ae74">account</a> = *account;</div>
-<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160; </div>
-<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;    <span class="keyword">auto</span> parseRes = <a class="code" href="namespaceripple.html#ad38e4f9f1bf3089d9ad15f225cd53b06">parseLedgerArgs</a>(params);</div>
-<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;    <span class="keywordflow">if</span> (<span class="keyword">auto</span> jv = std::get_if&lt;Json::Value&gt;(&amp;parseRes))</div>
-<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;    {</div>
-<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;        <span class="keywordflow">return</span> *jv;</div>
-<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;    }</div>
-<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;    <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160;    {</div>
-<div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;        args.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxArgs.html#a98e857b5bc5149d64ae2fe3a19d052f6">ledger</a> = std::get&lt;std::optional&lt;LedgerSpecifier&gt;&gt;(parseRes);</div>
-<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160;    }</div>
-<div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160; </div>
-<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;    <span class="keywordflow">if</span> (params.isMember(jss::marker))</div>
-<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;    {</div>
-<div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160;        <span class="keyword">auto</span>&amp; token = params[jss::marker];</div>
-<div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160;        <span class="keywordflow">if</span> (!token.isMember(jss::ledger) || !token.isMember(jss::seq) ||</div>
-<div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;            !token[jss::ledger].isConvertibleTo(Json::ValueType::uintValue) ||</div>
-<div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160;            !token[jss::seq].isConvertibleTo(Json::ValueType::uintValue))</div>
-<div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160;        {</div>
-<div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160;            <a class="code" href="structripple_1_1RPC_1_1Status.html">RPC::Status</a> status{</div>
-<div class="line"><a name="l00397"></a><span class="lineno">  397</span>&#160;                <a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a82ddebc5ec7a37ff38892487277bf9c4">rpcINVALID_PARAMS</a>,</div>
-<div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160;                <span class="stringliteral">&quot;invalid marker. Provide ledger index via ledger field, and &quot;</span></div>
-<div class="line"><a name="l00399"></a><span class="lineno">  399</span>&#160;                <span class="stringliteral">&quot;transaction sequence number via seq field&quot;</span>};</div>
-<div class="line"><a name="l00400"></a><span class="lineno">  400</span>&#160;            status.inject(response);</div>
-<div class="line"><a name="l00401"></a><span class="lineno">  401</span>&#160;            <span class="keywordflow">return</span> response;</div>
-<div class="line"><a name="l00402"></a><span class="lineno">  402</span>&#160;        }</div>
-<div class="line"><a name="l00403"></a><span class="lineno">  403</span>&#160;        args.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxArgs.html#a7756201e6bb598050a01f445d4ef61e0">marker</a> = {token[jss::ledger].asUInt(), token[jss::seq].asUInt()};</div>
-<div class="line"><a name="l00404"></a><span class="lineno">  404</span>&#160;    }</div>
-<div class="line"><a name="l00405"></a><span class="lineno">  405</span>&#160; </div>
-<div class="line"><a name="l00406"></a><span class="lineno">  406</span>&#160;    <span class="keyword">auto</span> res = <a class="code" href="namespaceripple.html#aa1d492196b5280d0b8c755741435564b">doAccountTxHelp</a>(context, args);</div>
-<div class="line"><a name="l00407"></a><span class="lineno">  407</span>&#160;    JLOG(context.<a class="code" href="structripple_1_1RPC_1_1Context.html#ac6ec0f79fbac84b6c8911117792ed0e6">j</a>.<a class="code" href="classbeast_1_1Journal.html#a556228cb60bcf405c225d3f64b7b01ae">debug</a>()) &lt;&lt; __func__ &lt;&lt; <span class="stringliteral">&quot; populating response&quot;</span>;</div>
-<div class="line"><a name="l00408"></a><span class="lineno">  408</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#abf027fe1a653ac30d984f64a96cdfa55">populateJsonResponse</a>(res, args, context);</div>
-<div class="line"><a name="l00409"></a><span class="lineno">  409</span>&#160;}</div>
-<div class="line"><a name="l00410"></a><span class="lineno">  410</span>&#160; </div>
-<div class="line"><a name="l00411"></a><span class="lineno">  411</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;    <span class="keywordflow">if</span> (!params.isMember(jss::account))</div>
+<div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a67869382f83fd55cf3096d2591a57b07">rpcError</a>(<a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a82ddebc5ec7a37ff38892487277bf9c4">rpcINVALID_PARAMS</a>);</div>
+<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160; </div>
+<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> account =</div>
+<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160;        parseBase58&lt;AccountID&gt;(params[jss::account].asString());</div>
+<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;    <span class="keywordflow">if</span> (!account)</div>
+<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a67869382f83fd55cf3096d2591a57b07">rpcError</a>(<a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a4fba57dbbed9bfaa196e1a0e0915dc8a">rpcACT_MALFORMED</a>);</div>
+<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160; </div>
+<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;    args.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxArgs.html#a2df887a4acea4839f84f70a8b7b5ae74">account</a> = *account;</div>
+<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160; </div>
+<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;    <span class="keyword">auto</span> parseRes = <a class="code" href="namespaceripple.html#ad38e4f9f1bf3089d9ad15f225cd53b06">parseLedgerArgs</a>(params);</div>
+<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;    <span class="keywordflow">if</span> (<span class="keyword">auto</span> jv = std::get_if&lt;Json::Value&gt;(&amp;parseRes))</div>
+<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;    {</div>
+<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160;        <span class="keywordflow">return</span> *jv;</div>
+<div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;    }</div>
+<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160;    <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160;    {</div>
+<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;        args.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxArgs.html#a98e857b5bc5149d64ae2fe3a19d052f6">ledger</a> = std::get&lt;std::optional&lt;LedgerSpecifier&gt;&gt;(parseRes);</div>
+<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;    }</div>
+<div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160; </div>
+<div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160;    <span class="keywordflow">if</span> (params.isMember(jss::marker))</div>
+<div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;    {</div>
+<div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160;        <span class="keyword">auto</span>&amp; token = params[jss::marker];</div>
+<div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160;        <span class="keywordflow">if</span> (!token.isMember(jss::ledger) || !token.isMember(jss::seq) ||</div>
+<div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160;            !token[jss::ledger].isConvertibleTo(Json::ValueType::uintValue) ||</div>
+<div class="line"><a name="l00397"></a><span class="lineno">  397</span>&#160;            !token[jss::seq].isConvertibleTo(Json::ValueType::uintValue))</div>
+<div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160;        {</div>
+<div class="line"><a name="l00399"></a><span class="lineno">  399</span>&#160;            <a class="code" href="structripple_1_1RPC_1_1Status.html">RPC::Status</a> status{</div>
+<div class="line"><a name="l00400"></a><span class="lineno">  400</span>&#160;                <a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a82ddebc5ec7a37ff38892487277bf9c4">rpcINVALID_PARAMS</a>,</div>
+<div class="line"><a name="l00401"></a><span class="lineno">  401</span>&#160;                <span class="stringliteral">&quot;invalid marker. Provide ledger index via ledger field, and &quot;</span></div>
+<div class="line"><a name="l00402"></a><span class="lineno">  402</span>&#160;                <span class="stringliteral">&quot;transaction sequence number via seq field&quot;</span>};</div>
+<div class="line"><a name="l00403"></a><span class="lineno">  403</span>&#160;            status.inject(response);</div>
+<div class="line"><a name="l00404"></a><span class="lineno">  404</span>&#160;            <span class="keywordflow">return</span> response;</div>
+<div class="line"><a name="l00405"></a><span class="lineno">  405</span>&#160;        }</div>
+<div class="line"><a name="l00406"></a><span class="lineno">  406</span>&#160;        args.<a class="code" href="structripple_1_1RelationalDatabase_1_1AccountTxArgs.html#a7756201e6bb598050a01f445d4ef61e0">marker</a> = {token[jss::ledger].asUInt(), token[jss::seq].asUInt()};</div>
+<div class="line"><a name="l00407"></a><span class="lineno">  407</span>&#160;    }</div>
+<div class="line"><a name="l00408"></a><span class="lineno">  408</span>&#160; </div>
+<div class="line"><a name="l00409"></a><span class="lineno">  409</span>&#160;    <span class="keyword">auto</span> res = <a class="code" href="namespaceripple.html#aa1d492196b5280d0b8c755741435564b">doAccountTxHelp</a>(context, args);</div>
+<div class="line"><a name="l00410"></a><span class="lineno">  410</span>&#160;    JLOG(context.<a class="code" href="structripple_1_1RPC_1_1Context.html#ac6ec0f79fbac84b6c8911117792ed0e6">j</a>.<a class="code" href="classbeast_1_1Journal.html#a556228cb60bcf405c225d3f64b7b01ae">debug</a>()) &lt;&lt; __func__ &lt;&lt; <span class="stringliteral">&quot; populating response&quot;</span>;</div>
+<div class="line"><a name="l00411"></a><span class="lineno">  411</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#abf027fe1a653ac30d984f64a96cdfa55">populateJsonResponse</a>(res, args, context);</div>
+<div class="line"><a name="l00412"></a><span class="lineno">  412</span>&#160;}</div>
+<div class="line"><a name="l00413"></a><span class="lineno">  413</span>&#160; </div>
+<div class="line"><a name="l00414"></a><span class="lineno">  414</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aclassripple_1_1SQLiteDatabase_html"><div class="ttname"><a href="classripple_1_1SQLiteDatabase.html">ripple::SQLiteDatabase</a></div><div class="ttdef"><b>Definition:</b> <a href="SQLiteDatabase_8h_source.html#l00027">SQLiteDatabase.h:27</a></div></div>
 <div class="ttc" id="aclassripple_1_1ReadView_html_a9263b10d706a447166b229ad8e3b574c"><div class="ttname"><a href="classripple_1_1ReadView.html#a9263b10d706a447166b229ad8e3b574c">ripple::ReadView::info</a></div><div class="ttdeci">virtual LedgerInfo const  &amp; info() const =0</div><div class="ttdoc">Returns information about the ledger.</div></div>
@@ -508,9 +511,9 @@ $(function() {
 <div class="ttc" id="astructripple_1_1RPC_1_1Context_html_a20ec6d6aa84f8c76eeb90ad92fe25e20"><div class="ttname"><a href="structripple_1_1RPC_1_1Context.html#a20ec6d6aa84f8c76eeb90ad92fe25e20">ripple::RPC::Context::role</a></div><div class="ttdeci">Role role</div><div class="ttdef"><b>Definition:</b> <a href="Context_8h_source.html#l00047">Context.h:47</a></div></div>
 <div class="ttc" id="astructripple_1_1RelationalDatabase_1_1AccountTxArgs_html_a2df887a4acea4839f84f70a8b7b5ae74"><div class="ttname"><a href="structripple_1_1RelationalDatabase_1_1AccountTxArgs.html#a2df887a4acea4839f84f70a8b7b5ae74">ripple::RelationalDatabase::AccountTxArgs::account</a></div><div class="ttdeci">AccountID account</div><div class="ttdef"><b>Definition:</b> <a href="RelationalDatabase_8h_source.html#l00098">RelationalDatabase.h:98</a></div></div>
 <div class="ttc" id="astructripple_1_1RelationalDatabase_1_1AccountTxResult_html"><div class="ttname"><a href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html">ripple::RelationalDatabase::AccountTxResult</a></div><div class="ttdef"><b>Definition:</b> <a href="RelationalDatabase_8h_source.html#l00106">RelationalDatabase.h:106</a></div></div>
-<div class="ttc" id="anamespaceripple_html_aa1d492196b5280d0b8c755741435564b"><div class="ttname"><a href="namespaceripple.html#aa1d492196b5280d0b8c755741435564b">ripple::doAccountTxHelp</a></div><div class="ttdeci">std::pair&lt; AccountTxResult, RPC::Status &gt; doAccountTxHelp(RPC::Context &amp;context, AccountTxArgs const &amp;args)</div><div class="ttdef"><b>Definition:</b> <a href="AccountTx_8cpp_source.html#l00192">AccountTx.cpp:192</a></div></div>
+<div class="ttc" id="anamespaceripple_html_aa1d492196b5280d0b8c755741435564b"><div class="ttname"><a href="namespaceripple.html#aa1d492196b5280d0b8c755741435564b">ripple::doAccountTxHelp</a></div><div class="ttdeci">std::pair&lt; AccountTxResult, RPC::Status &gt; doAccountTxHelp(RPC::Context &amp;context, AccountTxArgs const &amp;args)</div><div class="ttdef"><b>Definition:</b> <a href="AccountTx_8cpp_source.html#l00193">AccountTx.cpp:193</a></div></div>
 <div class="ttc" id="astructripple_1_1RPC_1_1Context_html_ac6ec0f79fbac84b6c8911117792ed0e6"><div class="ttname"><a href="structripple_1_1RPC_1_1Context.html#ac6ec0f79fbac84b6c8911117792ed0e6">ripple::RPC::Context::j</a></div><div class="ttdeci">const beast::Journal j</div><div class="ttdef"><b>Definition:</b> <a href="Context_8h_source.html#l00041">Context.h:41</a></div></div>
-<div class="ttc" id="anamespaceripple_html_abed7ca1c0bfd3868ba0cd63fbcd15066"><div class="ttname"><a href="namespaceripple.html#abed7ca1c0bfd3868ba0cd63fbcd15066">ripple::getLedgerRange</a></div><div class="ttdeci">std::variant&lt; LedgerRange, RPC::Status &gt; getLedgerRange(RPC::Context &amp;context, std::optional&lt; LedgerSpecifier &gt; const &amp;ledgerSpecifier)</div><div class="ttdef"><b>Definition:</b> <a href="AccountTx_8cpp_source.html#l00120">AccountTx.cpp:120</a></div></div>
+<div class="ttc" id="anamespaceripple_html_abed7ca1c0bfd3868ba0cd63fbcd15066"><div class="ttname"><a href="namespaceripple.html#abed7ca1c0bfd3868ba0cd63fbcd15066">ripple::getLedgerRange</a></div><div class="ttdeci">std::variant&lt; LedgerRange, RPC::Status &gt; getLedgerRange(RPC::Context &amp;context, std::optional&lt; LedgerSpecifier &gt; const &amp;ledgerSpecifier)</div><div class="ttdef"><b>Definition:</b> <a href="AccountTx_8cpp_source.html#l00121">AccountTx.cpp:121</a></div></div>
 <div class="ttc" id="astructripple_1_1RelationalDatabase_1_1AccountTxResult_html_aad5d28a6cfe900d6d34087b7077ba37e"><div class="ttname"><a href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html#aad5d28a6cfe900d6d34087b7077ba37e">ripple::RelationalDatabase::AccountTxResult::ledgerRange</a></div><div class="ttdeci">LedgerRange ledgerRange</div><div class="ttdef"><b>Definition:</b> <a href="RelationalDatabase_8h_source.html#l00109">RelationalDatabase.h:109</a></div></div>
 <div class="ttc" id="aclassripple_1_1base__uint_html"><div class="ttname"><a href="classripple_1_1base__uint.html">ripple::base_uint&lt; 256 &gt;</a></div></div>
 <div class="ttc" id="astructripple_1_1RPC_1_1Status_html_a139a692adaa9b37c6eebe52042a2ae5f"><div class="ttname"><a href="structripple_1_1RPC_1_1Status.html#a139a692adaa9b37c6eebe52042a2ae5f">ripple::RPC::Status::OK</a></div><div class="ttdeci">static constexpr Code OK</div><div class="ttdef"><b>Definition:</b> <a href="Status_8h_source.html#l00046">Status.h:46</a></div></div>
@@ -536,11 +539,11 @@ $(function() {
 <div class="ttc" id="anamespaceripple_html_a6909f61053b6e084f46665fa9f4ee673"><div class="ttname"><a href="namespaceripple.html#a6909f61053b6e084f46665fa9f4ee673">ripple::isUnlimited</a></div><div class="ttdeci">bool isUnlimited(Role const &amp;role)</div><div class="ttdoc">ADMIN and IDENTIFIED roles shall have unlimited resources.</div><div class="ttdef"><b>Definition:</b> <a href="Role_8cpp_source.html#l00124">Role.cpp:124</a></div></div>
 <div class="ttc" id="astructripple_1_1RelationalDatabase_1_1AccountTxArgs_html_ab798755660bdb0995a3c53a2f1baeec7"><div class="ttname"><a href="structripple_1_1RelationalDatabase_1_1AccountTxArgs.html#ab798755660bdb0995a3c53a2f1baeec7">ripple::RelationalDatabase::AccountTxArgs::forward</a></div><div class="ttdeci">bool forward</div><div class="ttdef"><b>Definition:</b> <a href="RelationalDatabase_8h_source.html#l00101">RelationalDatabase.h:101</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
-<div class="ttc" id="anamespaceripple_html_abf027fe1a653ac30d984f64a96cdfa55"><div class="ttname"><a href="namespaceripple.html#abf027fe1a653ac30d984f64a96cdfa55">ripple::populateJsonResponse</a></div><div class="ttdeci">Json::Value populateJsonResponse(std::pair&lt; AccountTxResult, RPC::Status &gt; const &amp;res, AccountTxArgs const &amp;args, RPC::JsonContext const &amp;context)</div><div class="ttdef"><b>Definition:</b> <a href="AccountTx_8cpp_source.html#l00271">AccountTx.cpp:271</a></div></div>
+<div class="ttc" id="anamespaceripple_html_abf027fe1a653ac30d984f64a96cdfa55"><div class="ttname"><a href="namespaceripple.html#abf027fe1a653ac30d984f64a96cdfa55">ripple::populateJsonResponse</a></div><div class="ttdeci">Json::Value populateJsonResponse(std::pair&lt; AccountTxResult, RPC::Status &gt; const &amp;res, AccountTxArgs const &amp;args, RPC::JsonContext const &amp;context)</div><div class="ttdef"><b>Definition:</b> <a href="AccountTx_8cpp_source.html#l00272">AccountTx.cpp:272</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1RPC_html_a917fae72b7b1397139e909f58fe058ca"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a917fae72b7b1397139e909f58fe058ca">ripple::RPC::isValidated</a></div><div class="ttdeci">bool isValidated(LedgerMaster &amp;ledgerMaster, ReadView const &amp;ledger, Application &amp;app)</div><div class="ttdef"><b>Definition:</b> <a href="RPCHelpers_8cpp_source.html#l00603">RPCHelpers.cpp:603</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a32d6d3ce1a48272b677d2c88b1d30932a4fba57dbbed9bfaa196e1a0e0915dc8a"><div class="ttname"><a href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a4fba57dbbed9bfaa196e1a0e0915dc8a">ripple::rpcACT_MALFORMED</a></div><div class="ttdeci">@ rpcACT_MALFORMED</div><div class="ttdef"><b>Definition:</b> <a href="ErrorCodes_8h_source.html#l00090">ErrorCodes.h:90</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a32d6d3ce1a48272b677d2c88b1d30932a3df7a80b8a138b99a8e0723d2364d798"><div class="ttname"><a href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a3df7a80b8a138b99a8e0723d2364d798">ripple::rpcLGR_NOT_VALIDATED</a></div><div class="ttdeci">@ rpcLGR_NOT_VALIDATED</div><div class="ttdef"><b>Definition:</b> <a href="ErrorCodes_8h_source.html#l00073">ErrorCodes.h:73</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a49278e98ca5f0fd6da22d26278cdd2d5"><div class="ttname"><a href="namespaceripple.html#a49278e98ca5f0fd6da22d26278cdd2d5">ripple::doAccountTxJson</a></div><div class="ttdeci">Json::Value doAccountTxJson(RPC::JsonContext &amp;context)</div><div class="ttdef"><b>Definition:</b> <a href="AccountTx_8cpp_source.html#l00355">AccountTx.cpp:355</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a49278e98ca5f0fd6da22d26278cdd2d5"><div class="ttname"><a href="namespaceripple.html#a49278e98ca5f0fd6da22d26278cdd2d5">ripple::doAccountTxJson</a></div><div class="ttdeci">Json::Value doAccountTxJson(RPC::JsonContext &amp;context)</div><div class="ttdef"><b>Definition:</b> <a href="AccountTx_8cpp_source.html#l00358">AccountTx.cpp:358</a></div></div>
 <div class="ttc" id="astructripple_1_1LedgerRange_html_a7e0a57dae4c124f10c091fb1cf0af155"><div class="ttname"><a href="structripple_1_1LedgerRange.html#a7e0a57dae4c124f10c091fb1cf0af155">ripple::LedgerRange::max</a></div><div class="ttdeci">uint32_t max</div><div class="ttdef"><b>Definition:</b> <a href="RelationalDatabase_8h_source.html#l00045">RelationalDatabase.h:45</a></div></div>
 <div class="ttc" id="aclassJson_1_1Value_html_a74b305583ec3aacf4f9dd06e799dc265"><div class="ttname"><a href="classJson_1_1Value.html#a74b305583ec3aacf4f9dd06e799dc265">Json::Value::asUInt</a></div><div class="ttdeci">UInt asUInt() const</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8cpp_source.html#l00545">json_value.cpp:545</a></div></div>
 <div class="ttc" id="aclassripple_1_1PostgresDatabase_html"><div class="ttname"><a href="classripple_1_1PostgresDatabase.html">ripple::PostgresDatabase</a></div><div class="ttdef"><b>Definition:</b> <a href="PostgresDatabase_8h_source.html#l00027">PostgresDatabase.h:27</a></div></div>
@@ -557,7 +560,7 @@ $(function() {
 <div class="ttc" id="astructripple_1_1LedgerRange_html"><div class="ttname"><a href="structripple_1_1LedgerRange.html">ripple::LedgerRange</a></div><div class="ttdef"><b>Definition:</b> <a href="RelationalDatabase_8h_source.html#l00042">RelationalDatabase.h:42</a></div></div>
 <div class="ttc" id="aclassripple_1_1base__uint_html_a698d3fd0c0f0155995c87d2f48ac90d5"><div class="ttname"><a href="classripple_1_1base__uint.html#a698d3fd0c0f0155995c87d2f48ac90d5">ripple::base_uint::parseHex</a></div><div class="ttdeci">constexpr bool parseHex(std::string_view sv)</div><div class="ttdoc">Parse a hex string into a base_uint.</div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00496">base_uint.h:496</a></div></div>
 <div class="ttc" id="astructripple_1_1LedgerRange_html_a823ea62ac90523714bb914f82c803f86"><div class="ttname"><a href="structripple_1_1LedgerRange.html#a823ea62ac90523714bb914f82c803f86">ripple::LedgerRange::min</a></div><div class="ttdeci">uint32_t min</div><div class="ttdef"><b>Definition:</b> <a href="RelationalDatabase_8h_source.html#l00044">RelationalDatabase.h:44</a></div></div>
-<div class="ttc" id="anamespaceripple_html_ad38e4f9f1bf3089d9ad15f225cd53b06"><div class="ttname"><a href="namespaceripple.html#ad38e4f9f1bf3089d9ad15f225cd53b06">ripple::parseLedgerArgs</a></div><div class="ttdeci">std::variant&lt; std::optional&lt; LedgerSpecifier &gt;, Json::Value &gt; parseLedgerArgs(Json::Value const &amp;params)</div><div class="ttdef"><b>Definition:</b> <a href="AccountTx_8cpp_source.html#l00055">AccountTx.cpp:55</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ad38e4f9f1bf3089d9ad15f225cd53b06"><div class="ttname"><a href="namespaceripple.html#ad38e4f9f1bf3089d9ad15f225cd53b06">ripple::parseLedgerArgs</a></div><div class="ttdeci">std::variant&lt; std::optional&lt; LedgerSpecifier &gt;, Json::Value &gt; parseLedgerArgs(Json::Value const &amp;params)</div><div class="ttdef"><b>Definition:</b> <a href="AccountTx_8cpp_source.html#l00056">AccountTx.cpp:56</a></div></div>
 <div class="ttc" id="astructripple_1_1RelationalDatabase_1_1AccountTxResult_html_af121f7ac83689271cf038239cac88ad2"><div class="ttname"><a href="structripple_1_1RelationalDatabase_1_1AccountTxResult.html#af121f7ac83689271cf038239cac88ad2">ripple::RelationalDatabase::AccountTxResult::limit</a></div><div class="ttdeci">uint32_t limit</div><div class="ttdef"><b>Definition:</b> <a href="RelationalDatabase_8h_source.html#l00110">RelationalDatabase.h:110</a></div></div>
 <div class="ttc" id="astructripple_1_1RPC_1_1JsonContext_html_a036b2c14552fbca49011c3d0e78017fa"><div class="ttname"><a href="structripple_1_1RPC_1_1JsonContext.html#a036b2c14552fbca49011c3d0e78017fa">ripple::RPC::JsonContext::params</a></div><div class="ttdeci">Json::Value params</div><div class="ttdef"><b>Definition:</b> <a href="Context_8h_source.html#l00064">Context.h:64</a></div></div>
 <div class="ttc" id="astructripple_1_1RPC_1_1Context_html"><div class="ttname"><a href="structripple_1_1RPC_1_1Context.html">ripple::RPC::Context</a></div><div class="ttdoc">The context of information needed to call an RPC.</div><div class="ttdef"><b>Definition:</b> <a href="Context_8h_source.html#l00039">Context.h:39</a></div></div>
