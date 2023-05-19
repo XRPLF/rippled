@@ -20,6 +20,7 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/app/paths/TrustLine.h>
 #include <ripple/ledger/ReadView.h>
+#include <ripple/net/RPCErr.h>
 #include <ripple/protocol/AccountID.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/PublicKey.h>
@@ -68,16 +69,11 @@ doGatewayBalances(RPC::JsonContext& context)
         params.isMember(jss::account) ? params[jss::account].asString()
                                       : params[jss::ident].asString());
 
-    bool const bStrict =
-        params.isMember(jss::strict) && params[jss::strict].asBool();
-
     // Get info on account.
-    AccountID accountID;
-    auto jvAccepted = RPC::accountFromString(accountID, strIdent, bStrict);
-
-    if (jvAccepted)
-        return jvAccepted;
-
+    auto id = parseBase58<AccountID>(strIdent);
+    if (!id)
+        return rpcError(rpcACT_MALFORMED);
+    auto const accountID{std::move(id.value())};
     context.loadType = Resource::feeHighBurdenRPC;
 
     result[jss::account] = toBase58(accountID);
@@ -90,19 +86,9 @@ doGatewayBalances(RPC::JsonContext& context)
         auto addHotWallet = [&hotWallets](Json::Value const& j) {
             if (j.isString())
             {
-                auto const pk = parseBase58<PublicKey>(
-                    TokenType::AccountPublic, j.asString());
-                if (pk)
+                if (auto id = parseBase58<AccountID>(j.asString()); id)
                 {
-                    hotWallets.insert(calcAccountID(*pk));
-                    return true;
-                }
-
-                auto const id = parseBase58<AccountID>(j.asString());
-
-                if (id)
-                {
-                    hotWallets.insert(*id);
+                    hotWallets.insert(std::move(id.value()));
                     return true;
                 }
             }

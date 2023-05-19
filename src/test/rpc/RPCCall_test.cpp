@@ -86,7 +86,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
      __LINE__,
      {"account_channels",
       "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-      "FEDCBA9876543210FEDCBA9876543210FEDCBA9876543210FEDCBA9876543210"},
+      "rD5MbavGfiSC5m7mkxy1FANuT7s3HxqpoF"},
      RPCCallTestData::no_exception,
      R"({
     "method" : "account_channels",
@@ -94,13 +94,15 @@ static RPCCallTestData const rpcCallTestArray[] = {
       {
          "api_version" : %MAX_API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-         "destination_account" : "FEDCBA9876543210FEDCBA9876543210FEDCBA9876543210FEDCBA9876543210"
+         "destination_account" : "rD5MbavGfiSC5m7mkxy1FANuT7s3HxqpoF"
       }
     ]
     })"},
     {"account_channels: account and ledger index.",
      __LINE__,
-     {"account_channels", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "closed"},
+     {"account_channels",
+      "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+      "r9emE59aTWb85t64dAebKrxYMBTpzK5yR7"},
      RPCCallTestData::no_exception,
      R"({
     "method" : "account_channels",
@@ -108,7 +110,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       {
          "api_version" : %MAX_API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-         "destination_account" : "closed"
+         "destination_account" : "r9emE59aTWb85t64dAebKrxYMBTpzK5yR7"
       }
     ]
     })"},
@@ -186,7 +188,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
       "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
       "current",
-      "strict"},
+      "extra"},
      RPCCallTestData::no_exception,
      R"({
     "method" : "account_channels",
@@ -218,7 +220,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
 
     // account_currencies
     // ----------------------------------------------------------
-    {"account_currencies: minimal.",
+    {"account_currencies: minimal 1.",
      __LINE__,
      {"account_currencies", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"},
      RPCCallTestData::no_exception,
@@ -231,17 +233,16 @@ static RPCCallTestData const rpcCallTestArray[] = {
       }
     ]
     })"},
-    {"account_currencies: strict.",
+    {"account_currencies: minimal 2.",
      __LINE__,
-     {"account_currencies", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "strict"},
+     {"account_currencies", "racb4o3DrdYxuCfyVa6vsLb7vgju9RFbBr"},
      RPCCallTestData::no_exception,
      R"({
     "method" : "account_currencies",
     "params" : [
       {
          "api_version" : %MAX_API_VER%,
-         "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-         "strict" : 1
+         "account" : "racb4o3DrdYxuCfyVa6vsLb7vgju9RFbBr"
       }
     ]
     })"},
@@ -275,10 +276,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     })"},
     {"account_currencies: current ledger.",
      __LINE__,
-     {"account_currencies",
-      "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-      "current",
-      "strict"},
+     {"account_currencies", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "current"},
      RPCCallTestData::no_exception,
      R"({
     "method" : "account_currencies",
@@ -286,8 +284,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       {
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "api_version" : %MAX_API_VER%,
-         "ledger_index" : "current",
-         "strict" : 1
+         "ledger_index" : "current"
       }
     ]
     })"},
@@ -312,8 +309,8 @@ static RPCCallTestData const rpcCallTestArray[] = {
      {"account_currencies",
       "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
       "current",
-      "strict",
-      "spare"},
+      "spare1",
+      "spare2"},
      RPCCallTestData::no_exception,
      R"({
     "method" : "account_currencies",
@@ -358,20 +355,6 @@ static RPCCallTestData const rpcCallTestArray[] = {
     ]
     })",
     },
-    {"account_currencies: floating point first argument.",
-     __LINE__,
-     {"account_currencies", "3.14159", "strict"},
-     RPCCallTestData::no_exception,
-     R"({
-    "method" : "account_currencies",
-    "params" : [
-      {
-         "api_version" : %MAX_API_VER%,
-         "account" : "3.14159",
-         "strict" : 1
-      }
-    ]
-    })"},
 
     // account_info
     // ----------------------------------------------------------------
@@ -432,26 +415,9 @@ static RPCCallTestData const rpcCallTestArray[] = {
       }
     ]
     })"},
-    {"account_info: strict.",
+    {"account_info: with ledger index.",
      __LINE__,
-     {"account_info", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "strict"},
-     RPCCallTestData::no_exception,
-     R"({
-    "method" : "account_info",
-    "params" : [
-      {
-         "api_version" : %MAX_API_VER%,
-         "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-         "strict" : 1
-      }
-    ]
-    })"},
-    {"account_info: with ledger index and strict.",
-     __LINE__,
-     {"account_info",
-      "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-      "validated",
-      "strict"},
+     {"account_info", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "validated"},
      RPCCallTestData::no_exception,
      R"({
     "method" : "account_info",
@@ -459,8 +425,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       {
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "api_version" : %MAX_API_VER%,
-         "ledger_index" : "validated",
-         "strict" : 1
+         "ledger_index" : "validated"
       }
     ]
     })"},
@@ -485,8 +450,8 @@ static RPCCallTestData const rpcCallTestArray[] = {
      {"account_info",
       "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
       "current",
-      "strict",
-      "extra"},
+      "extra1",
+      "extra2"},
      RPCCallTestData::no_exception,
      R"({
     "method" : "account_info",
@@ -798,9 +763,9 @@ static RPCCallTestData const rpcCallTestArray[] = {
       }
     ]
     })"},
-    {"account_objects: strict.",
+    {"account_objects: with ledger index.",
      __LINE__,
-     {"account_objects", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "strict"},
+     {"account_objects", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "validated"},
      RPCCallTestData::no_exception,
      R"({
     "method" : "account_objects",
@@ -808,25 +773,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       {
          "api_version" : %MAX_API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-         "strict" : 1
-      }
-    ]
-    })"},
-    {"account_objects: with ledger index and strict.",
-     __LINE__,
-     {"account_objects",
-      "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-      "validated",
-      "strict"},
-     RPCCallTestData::no_exception,
-     R"({
-    "method" : "account_objects",
-    "params" : [
-      {
-         "api_version" : %MAX_API_VER%,
-         "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-         "ledger_index" : "validated",
-         "strict" : 1
+         "ledger_index" : "validated"
       }
     ]
     })"},
@@ -853,8 +800,8 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "account_objects",
          "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "current",
-         "extra",
-         "strict",
+         "extra1",
+         "extra2",
      },
      RPCCallTestData::no_exception,
      R"({
@@ -862,8 +809,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "params" : [
       {
          "api_version" : %MAX_API_VER%,
-         "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-         "strict" : 1
+         "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"
       }
     ]
     })"},
@@ -876,7 +822,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "current",
          "extra1",
          "extra2",
-         "strict",
+         "extra3",
      },
      RPCCallTestData::no_exception,
      R"({
@@ -884,8 +830,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "params" : [
       {
          "api_version" : %MAX_API_VER%,
-         "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-         "strict" : 1
+         "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"
       }
     ]
     })"},
@@ -898,7 +843,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "extra1",
          "extra2",
          "extra3",
-         "strict",
+         "extra4",
      },
      RPCCallTestData::no_exception,
      R"({
@@ -953,10 +898,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
         // cannot currently occur because jvParseLedger() always returns true.
         "account_objects: invalid ledger selection 2.",
         __LINE__,
-        {"account_objects",
-         "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-         "no_ledger",
-         "strict"},
+        {"account_objects", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "no_ledger"},
         RPCCallTestData::no_exception,
         R"({
     "method" : "account_objects",
@@ -964,8 +906,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
        {
          "api_version" : %MAX_API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-         "ledger_index" : 0,
-         "strict" : 1
+         "ledger_index" : 0
        }
     ]
     })",
@@ -1030,9 +971,9 @@ static RPCCallTestData const rpcCallTestArray[] = {
       }
     ]
     })"},
-    {"account_offers: strict.",
+    {"account_offers: with ledger index.",
      __LINE__,
-     {"account_offers", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "strict"},
+     {"account_offers", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "validated"},
      RPCCallTestData::no_exception,
      R"({
     "method" : "account_offers",
@@ -1040,25 +981,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       {
          "api_version" : %MAX_API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-         "strict" : 1
-      }
-    ]
-    })"},
-    {"account_offers: with ledger index and strict.",
-     __LINE__,
-     {"account_offers",
-      "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-      "validated",
-      "strict"},
-     RPCCallTestData::no_exception,
-     R"({
-    "method" : "account_offers",
-    "params" : [
-      {
-         "api_version" : %MAX_API_VER%,
-         "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-         "ledger_index" : "validated",
-         "strict" : 1
+         "ledger_index" : "validated"
       }
     ]
     })"},
@@ -1081,21 +1004,17 @@ static RPCCallTestData const rpcCallTestArray[] = {
     {// Note: I believe this _ought_ to be detected as too many arguments.
      "account_offers: four arguments.",
      __LINE__,
-     {
-         "account_offers",
-         "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-         "current",
-         "extra",
-         "strict",
-     },
+     {"account_offers",
+      "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+      "current",
+      "extra"},
      RPCCallTestData::no_exception,
      R"({
     "method" : "account_offers",
     "params" : [
       {
          "api_version" : %MAX_API_VER%,
-         "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-         "strict" : 1
+         "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"
       }
     ]
     })"},
@@ -1107,7 +1026,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "current",
          "extra1",
          "extra2",
-         "strict",
+         "extra3",
      },
      RPCCallTestData::no_exception,
      R"({
@@ -1162,10 +1081,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
         // cannot currently occur because jvParseLedger() always returns true.
         "account_offers: invalid ledger selection 2.",
         __LINE__,
-        {"account_offers",
-         "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-         "no_ledger",
-         "strict"},
+        {"account_offers", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "no_ledger"},
         RPCCallTestData::no_exception,
         R"({
     "method" : "account_offers",
@@ -1173,8 +1089,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
        {
          "api_version" : %MAX_API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-         "ledger_index" : 0,
-         "strict" : 1
+         "ledger_index" : 0
        }
     ]
     })",
@@ -4475,26 +4390,9 @@ static RPCCallTestData const rpcCallTestArray[] = {
       }
     ]
     })"},
-    {"owner_info: strict.",
+    {"owner_info: with ledger index.",
      __LINE__,
-     {"owner_info", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "strict"},
-     RPCCallTestData::no_exception,
-     R"({
-    "method" : "owner_info",
-    "params" : [
-      {
-         "api_version" : %MAX_API_VER%,
-         "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-         "strict" : 1
-      }
-    ]
-    })"},
-    {"owner_info: with ledger index and strict.",
-     __LINE__,
-     {"owner_info",
-      "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-      "validated",
-      "strict"},
+     {"owner_info", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "validated"},
      RPCCallTestData::no_exception,
      R"({
     "method" : "owner_info",
@@ -4502,8 +4400,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       {
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "api_version" : %MAX_API_VER%,
-         "ledger_index" : "validated",
-         "strict" : 1
+         "ledger_index" : "validated"
       }
     ]
     })"},
@@ -4529,8 +4426,8 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "owner_info",
          "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "current",
-         "extra",
-         "strict",
+         "extra1",
+         "extra2",
      },
      RPCCallTestData::no_exception,
      R"({
@@ -4583,12 +4480,9 @@ static RPCCallTestData const rpcCallTestArray[] = {
     {
         // Note: there is code in place to return rpcLGR_IDX_MALFORMED.  That
         // cannot currently occur because jvParseLedger() always returns true.
-        "owner_info: invalid ledger selection and strict.",
+        "owner_info: invalid ledger selection.",
         __LINE__,
-        {"owner_info",
-         "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-         "no_ledger",
-         "strict"},
+        {"owner_info", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "no_ledger"},
         RPCCallTestData::no_exception,
         R"({
     "method" : "owner_info",
@@ -4596,8 +4490,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
        {
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "api_version" : %MAX_API_VER%,
-         "ledger_index" : 0,
-         "strict" : 1
+         "ledger_index" : 0
        }
     ]
     })",

@@ -418,6 +418,8 @@ JSS(nft_offer_index);            // out nft_buy_offers, nft_sell_offers
 JSS(nft_page);                   // in: LedgerEntry
 JSS(nft_serial);                 // out: account_nfts
 JSS(nft_taxon);                  // out: nft_info (clio)
+JSS(nftoken_id);                 // out: insertNFTokenID
+JSS(nftoken_ids);                // out: insertNFTokenID
 JSS(no_ripple);                  // out: AccountLines
 JSS(no_ripple_peer);             // out: AccountLines
 JSS(node);                       // out: LedgerEntry
@@ -438,6 +440,7 @@ JSS(node_writes_delayed);        // out::GetCounts
 JSS(obligations);                // out: GatewayBalances
 JSS(offer);                      // in: LedgerEntry
 JSS(offers);                     // out: NetworkOPs, AccountOffers, Subscribe
+JSS(offer_id);                   // out: insertNFTokenOfferID
 JSS(offline);                    // in: TransactionSign
 JSS(offset);                     // in/out: AccountTxOld
 JSS(open);                       // out: handlers/Ledger

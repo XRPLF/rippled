@@ -34,6 +34,7 @@
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/DeliveredAmount.h>
+#include <ripple/rpc/NFTSyntheticSerializer.h>
 #include <ripple/rpc/Role.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 
@@ -307,6 +308,8 @@ populateJsonResponse(
                         jvObj[jss::validated] = true;
                         insertDeliveredAmount(
                             jvObj[jss::meta], context, txn, *txnMeta);
+                        insertNFTSyntheticInJson(
+                            jvObj, context, txn->getSTransaction(), *txnMeta);
                     }
                 }
             }

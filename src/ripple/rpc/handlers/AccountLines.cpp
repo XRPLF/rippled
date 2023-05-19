@@ -30,17 +30,6 @@
 
 namespace ripple {
 
-struct VisitData
-{
-    std::vector<RPCTrustLine> items;
-    AccountID const& accountID;
-    bool hasPeer;
-    AccountID const& raPeerAccount;
-
-    bool ignoreDefault;
-    uint32_t foundCount;
-};
-
 void
 addLine(Json::Value& jsonLines, RPCTrustLine const& line)
 {
@@ -88,7 +77,7 @@ addLine(Json::Value& jsonLines, RPCTrustLine const& line)
 }
 
 // {
-//   account: <account>|<account_public_key>
+//   account: <account>
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>
 //   limit: integer                 // optional
@@ -108,15 +97,13 @@ doAccountLines(RPC::JsonContext& context)
     if (!ledger)
         return result;
 
-    std::string strIdent(params[jss::account].asString());
-    AccountID accountID;
-
-    if (auto jv = RPC::accountFromString(accountID, strIdent))
+    auto id = parseBase58<AccountID>(params[jss::account].asString());
+    if (!id)
     {
-        for (auto it = jv.begin(); it != jv.end(); ++it)
-            result[it.memberName()] = *it;
+        RPC::inject_error(rpcACT_MALFORMED, result);
         return result;
     }
+    auto const accountID{std::move(id.value())};
 
     if (!ledger->exists(keylet::account(accountID)))
         return rpcError(rpcACT_NOT_FOUND);
@@ -124,17 +111,14 @@ doAccountLines(RPC::JsonContext& context)
     std::string strPeer;
     if (params.isMember(jss::peer))
         strPeer = params[jss::peer].asString();
-    auto hasPeer = !strPeer.empty();
 
-    AccountID raPeerAccount;
-    if (hasPeer)
+    auto const raPeerAccount = [&]() -> std::optional<AccountID> {
+        return strPeer.empty() ? std::nullopt : parseBase58<AccountID>(strPeer);
+    }();
+    if (!strPeer.empty() && !raPeerAccount)
     {
-        if (auto jv = RPC::accountFromString(raPeerAccount, strPeer))
-        {
-            for (auto it = jv.begin(); it != jv.end(); ++it)
-                result[it.memberName()] = *it;
-            return result;
-        }
+        RPC::inject_error(rpcACT_MALFORMED, result);
+        return result;
     }
 
     unsigned int limit;
@@ -150,8 +134,15 @@ doAccountLines(RPC::JsonContext& context)
         params[jss::ignore_default].asBool();
 
     Json::Value& jsonLines(result[jss::lines] = Json::arrayValue);
-    VisitData visitData = {
-        {}, accountID, hasPeer, raPeerAccount, ignoreDefault, 0};
+    struct VisitData
+    {
+        std::vector<RPCTrustLine> items;
+        AccountID const& accountID;
+        std::optional<AccountID> const& raPeerAccount;
+        bool ignoreDefault;
+        uint32_t foundCount;
+    };
+    VisitData visitData = {{}, accountID, raPeerAccount, ignoreDefault, 0};
     uint256 startAfter = beast::zero;
     std::uint64_t startHint = 0;
 
@@ -239,8 +230,8 @@ doAccountLines(RPC::JsonContext& context)
                             RPCTrustLine::makeItem(visitData.accountID, sleCur);
 
                         if (line &&
-                            (!visitData.hasPeer ||
-                             visitData.raPeerAccount ==
+                            (!visitData.raPeerAccount ||
+                             *visitData.raPeerAccount ==
                                  line->getAccountIDPeer()))
                         {
                             visitData.items.emplace_back(*line);

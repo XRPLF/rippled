@@ -53,7 +53,9 @@ public:
                 "{\"account\": "
                 "\"n94JNrQYkDrpt62bbSR7nVEhdyAvcJXRAsjEkFYyqRkh9SUTYEqV\"}");
             BEAST_EXPECT(
-                info[jss::result][jss::error_message] == "Disallowed seed.");
+                info[jss::result][jss::error_code] == rpcACT_MALFORMED);
+            BEAST_EXPECT(
+                info[jss::result][jss::error_message] == "Account malformed.");
         }
         {
             // account_info with an account that's not in the ledger.
@@ -61,9 +63,20 @@ public:
             auto const info = env.rpc(
                 "json",
                 "account_info",
-                std::string("{ ") + "\"account\": \"" + bogie.human() + "\"}");
+                R"({ "account": ")" + bogie.human() + R"("})");
+            BEAST_EXPECT(
+                info[jss::result][jss::error_code] == rpcACT_NOT_FOUND);
             BEAST_EXPECT(
                 info[jss::result][jss::error_message] == "Account not found.");
+        }
+        {
+            // Cannot use a seed as account
+            auto const info =
+                env.rpc("json", "account_info", R"({"account": "foo"})");
+            BEAST_EXPECT(
+                info[jss::result][jss::error_code] == rpcACT_MALFORMED);
+            BEAST_EXPECT(
+                info[jss::result][jss::error_message] == "Account malformed.");
         }
     }
 

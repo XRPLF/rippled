@@ -34,8 +34,6 @@ namespace ripple {
 
 // {
 //   account: <ident>,
-//   strict: <bool>        // optional (default false)
-//                         //   if true only allow public keys and addresses.
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>
 //   signer_lists : <bool> // optional (default false)
@@ -67,15 +65,14 @@ doAccountInfo(RPC::JsonContext& context)
     if (!ledger)
         return result;
 
-    bool bStrict = params.isMember(jss::strict) && params[jss::strict].asBool();
-    AccountID accountID;
-
     // Get info on account.
-
-    auto jvAccepted = RPC::accountFromString(accountID, strIdent, bStrict);
-
-    if (jvAccepted)
-        return jvAccepted;
+    auto id = parseBase58<AccountID>(strIdent);
+    if (!id)
+    {
+        RPC::inject_error(rpcACT_MALFORMED, result);
+        return result;
+    }
+    auto const accountID{std::move(id.value())};
 
     static constexpr std::
         array<std::pair<std::string_view, LedgerSpecificFlags>, 9>
@@ -113,6 +110,7 @@ doAccountInfo(RPC::JsonContext& context)
             return result;
         }
 
+        Json::Value jvAccepted(Json::objectValue);
         RPC::injectSLE(jvAccepted, *sleAccepted);
         result[jss::account_data] = jvAccepted;
 
