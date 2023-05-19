@@ -105,7 +105,8 @@ struct AccountRootKeylet final : public KeyletBase
 
     using KeyletBase::check;
 
-    AccountRootKeylet(uint256 const& key) : KeyletBase(ltACCOUNT_ROOT, key)
+    explicit AccountRootKeylet(uint256 const& key)
+        : KeyletBase(ltACCOUNT_ROOT, key)
     {
     }
 };

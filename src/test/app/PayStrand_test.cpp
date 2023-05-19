@@ -499,10 +499,10 @@ struct ExistingElementPool
         std::uint64_t totalXRP = 0;
         auto add = [&](auto const& a) {
             // XRP balance
-            auto const sle = v.readSLE(keylet::account(a));
-            if (!sle)
+            auto const acctRoot = v.read(keylet::account(a));
+            if (!acctRoot)
                 return;
-            auto const b = (*sle)[sfBalance];
+            auto const b = acctRoot->balance();
             totalXRP += b.mantissa();
         };
         for (auto const& a : accounts)

@@ -132,7 +132,7 @@ namespace keylet {
 AccountRootKeylet
 account(AccountID const& id) noexcept
 {
-    return {indexHash(LedgerNameSpace::ACCOUNT, id)};
+    return AccountRootKeylet(indexHash(LedgerNameSpace::ACCOUNT, id));
 }
 
 Keylet

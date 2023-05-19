@@ -67,10 +67,10 @@ fill_seq(Json::Value& jv, ReadView const& view)
     auto const account = parseBase58<AccountID>(jv[jss::Account].asString());
     if (!account)
         Throw<parse_error>("unexpected invalid Account");
-    auto const ar = view.readSLE(keylet::account(*account));
-    if (!ar)
+    auto const acctRoot = view.read(keylet::account(*account));
+    if (!acctRoot)
         Throw<parse_error>("unexpected missing account root");
-    jv[jss::Sequence] = ar->getFieldU32(sfSequence);
+    jv[jss::Sequence] = acctRoot->sequence();
 }
 
 }  // namespace jtx

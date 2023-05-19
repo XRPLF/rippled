@@ -132,13 +132,12 @@ SetTrust::preclaim(PreclaimContext const& ctx)
     // then honour that flag
     if (ctx.view.rules().enabled(featureDisallowIncoming))
     {
-        auto const sleDst = ctx.view.readSLE(keylet::account(uDstAccountID));
+        auto const dstAcct = ctx.view.read(keylet::account(uDstAccountID));
 
-        if (!sleDst)
+        if (!dstAcct)
             return tecNO_DST;
 
-        auto const dstFlags = sleDst->getFlags();
-        if (dstFlags & lsfDisallowIncomingTrustline)
+        if (dstAcct->isFlag(lsfDisallowIncomingTrustline))
             return tecNO_PERMISSION;
     }
 

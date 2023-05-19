@@ -50,10 +50,10 @@ struct PayChan_test : public beast::unit_test::suite
         jtx::Account const& account,
         jtx::Account const& dst)
     {
-        auto const sle = view.readSLE(keylet::account(account));
-        if (!sle)
+        auto const acctRoot = view.read(keylet::account(account));
+        if (!acctRoot)
             return {};
-        auto const k = keylet::payChan(account, dst, (*sle)[sfSequence] - 1);
+        auto const k = keylet::payChan(account, dst, acctRoot->sequence() - 1);
         return {k.key, view.readSLE(k)};
     }
 
