@@ -48,25 +48,6 @@ private:
     friend class ApplyView;
 
 public:
-    AcctRootImpl(AcctRootImpl const&) = default;
-    AcctRootImpl(AcctRootImpl&&) = default;
-
-    AcctRootImpl&
-    operator=(AcctRootImpl const& rhs)
-    {
-        Base::operator=(rhs);
-        return *this;
-    }
-
-    AcctRootImpl&
-    operator=(AcctRootImpl&& rhs)
-    {
-        Base::operator=(std::move(rhs));
-        return *this;
-    }
-
-    ~AcctRootImpl() = default;
-
     // Conversion operator from AcctRootImpl<true> to AcctRootImpl<false>.
     operator AcctRootImpl<true>() const
     {
