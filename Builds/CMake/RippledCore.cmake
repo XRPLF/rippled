@@ -559,6 +559,11 @@ target_sources (rippled PRIVATE
   src/ripple/overlay/impl/TxMetrics.cpp
   #[===============================[
      main sources:
+       subdir: peerclient
+  #]===============================]
+  src/ripple/peerclient/impl/MessageScheduler.cpp
+  #[===============================[
+     main sources:
        subdir: peerfinder
   #]===============================]
   src/ripple/peerfinder/impl/Bootcache.cpp
