@@ -26,6 +26,7 @@
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/JobQueue.h>
+#include <ripple/ledger/LedgerHeader.h>
 #include <ripple/nodestore/DatabaseShard.h>
 #include <ripple/overlay/Overlay.h>
 #include <ripple/protocol/HashPrefix.h>
@@ -269,36 +270,6 @@ InboundLedger::neededStateHashes(int max, SHAMapSyncFilter* filter) const
 {
     return neededHashes(
         mLedger->info().accountHash, mLedger->stateMap(), max, filter);
-}
-
-LedgerInfo
-deserializeHeader(Slice data, bool hasHash)
-{
-    SerialIter sit(data.data(), data.size());
-
-    LedgerInfo info;
-
-    info.seq = sit.get32();
-    info.drops = sit.get64();
-    info.parentHash = sit.get256();
-    info.txHash = sit.get256();
-    info.accountHash = sit.get256();
-    info.parentCloseTime =
-        NetClock::time_point{NetClock::duration{sit.get32()}};
-    info.closeTime = NetClock::time_point{NetClock::duration{sit.get32()}};
-    info.closeTimeResolution = NetClock::duration{sit.get8()};
-    info.closeFlags = sit.get8();
-
-    if (hasHash)
-        info.hash = sit.get256();
-
-    return info;
-}
-
-LedgerInfo
-deserializePrefixedHeader(Slice data, bool hasHash)
-{
-    return deserializeHeader(data + 4, hasHash);
 }
 
 // See how much of the ledger data is stored locally
@@ -568,10 +539,9 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
 
     if (auto stream = journal_.trace())
     {
+        stream << "Trigger acquiring ledger " << hash_;
         if (peer)
-            stream << "Trigger acquiring ledger " << hash_ << " from " << peer;
-        else
-            stream << "Trigger acquiring ledger " << hash_;
+            stream << " from " << peer;
 
         if (complete_ || failed_)
             stream << "complete=" << complete_ << " failed=" << failed_;

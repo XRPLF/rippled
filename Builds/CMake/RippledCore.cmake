@@ -501,6 +501,7 @@ target_sources (rippled PRIVATE
   src/ripple/ledger/impl/BookDirs.cpp
   src/ripple/ledger/impl/CachedView.cpp
   src/ripple/ledger/impl/Directory.cpp
+  src/ripple/ledger/impl/LedgerHeader.cpp
   src/ripple/ledger/impl/OpenView.cpp
   src/ripple/ledger/impl/PaymentSandbox.cpp
   src/ripple/ledger/impl/RawStateTable.cpp

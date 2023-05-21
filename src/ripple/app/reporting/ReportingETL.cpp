@@ -23,6 +23,7 @@
 #include <ripple/beast/core/CurrentThreadName.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/json/json_writer.h>
+#include <ripple/ledger/LedgerHeader.h>
 #include <boost/asio/connect.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/beast/core.hpp>

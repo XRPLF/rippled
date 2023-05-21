@@ -22,6 +22,7 @@
 #include <ripple/app/rdb/backend/detail/Shard.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/core/ConfigSections.h>
+#include <ripple/ledger/LedgerHeader.h>
 #include <ripple/nodestore/Manager.h>
 #include <ripple/nodestore/impl/DeterministicShard.h>
 #include <ripple/nodestore/impl/Shard.h>
