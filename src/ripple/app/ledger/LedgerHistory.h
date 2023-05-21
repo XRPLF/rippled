@@ -61,7 +61,7 @@ public:
 
     /** Retrieve a ledger given its hash */
     std::shared_ptr<Ledger const>
-    getLedgerByHash(LedgerHash const& ledgerHash);
+    getLedgerByHash(LedgerHash const& ledgerHash, bool acquire = true);
 
     /** Get a ledger's hash given its sequence number
         @param ledgerIndex The sequence number of the desired ledger

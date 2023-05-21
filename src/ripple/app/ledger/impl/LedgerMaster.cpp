@@ -1851,9 +1851,9 @@ LedgerMaster::getLedgerBySeq(std::uint32_t index)
 }
 
 std::shared_ptr<Ledger const>
-LedgerMaster::getLedgerByHash(uint256 const& hash)
+LedgerMaster::getLedgerByHash(uint256 const& hash, bool acquire)
 {
-    if (auto ret = mLedgerHistory.getLedgerByHash(hash))
+    if (auto ret = mLedgerHistory.getLedgerByHash(hash, acquire))
         return ret;
 
     auto ret = mClosedLedger.get();
