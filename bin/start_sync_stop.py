@@ -38,7 +38,8 @@ PATIENCE = 120
 DEFAULT_SYNC_DURATION = 60
 # Number of seconds between polls of state.
 DEFAULT_POLL_INTERVAL = 5
-SYNC_STATES = ('full', 'validating', 'proposing')
+# The 'proposing' state does not yet have a copy of the ledger.
+SYNC_STATES = ('full', 'validating')
 
 
 def read_config(config_file):
@@ -66,13 +67,16 @@ def find_log_file(config_file):
     """Try to figure out what log file the user has chosen. Raises all kinds
     of exceptions if there is any possibility of ambiguity."""
     config = read_config(config_file)
+    if 'debug_logfile' not in config:
+        raise ValueError(
+            f'no [debug_logfile] in configuration file: {config_file}')
     values = list(config['debug_logfile'].keys())
     if len(values) < 1:
         raise ValueError(
-            f'no [debug_logfile] in configuration file: {config_file}')
+            f'no values under [debug_logfile] in configuration file: {config_file}')
     if len(values) > 1:
         raise ValueError(
-            f'too many [debug_logfile] in configuration file: {config_file}')
+            f'too many values under [debug_logfile] in configuration file: {config_file}')
     return values[0]
 
 
@@ -90,12 +94,16 @@ def find_http_port(config_file):
 async def rippled(exe=DEFAULT_EXE, config_file=DEFAULT_CONFIGURATION_FILE):
     """A context manager for a rippled process."""
     # Start the server.
+    # The `[debug_logfile]` does not capture stderr,
+    # which includes failed assertions.
+    # Thus, we capture everything in a separate file.
+    logfile = open('rippled.log', 'w')
     process = await asyncio.create_subprocess_exec(
         str(exe),
         '--conf',
         str(config_file),
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
+        stdout=logfile,
+        stderr=subprocess.STDOUT,
     )
     logging.info(f'rippled started with pid {process.pid}')
     try:
@@ -119,6 +127,7 @@ async def rippled(exe=DEFAULT_EXE, config_file=DEFAULT_CONFIGURATION_FILE):
 
         code = await process.wait()
         end = time.time()
+        logfile.close()
         logging.info(
             f'rippled stopped after {end - start:.1f} seconds with code {code}'
         )

@@ -18,8 +18,6 @@
 //==============================================================================
 
 #include <ripple/app/main/Application.h>
-#include <ripple/core/JobQueue.h>
-#include <ripple/overlay/Overlay.h>
 #include <ripple/overlay/PeerSet.h>
 
 namespace ripple {
@@ -27,7 +25,7 @@ namespace ripple {
 class PeerSetImpl : public PeerSet
 {
 public:
-    PeerSetImpl(Application& app);
+    PeerSetImpl(beast::Journal const& journal, Overlay const& overlay);
 
     void
     addPeers(
@@ -46,17 +44,15 @@ public:
     getPeerIds() const override;
 
 private:
-    // Used in this class for access to boost::asio::io_service and
-    // ripple::Overlay.
-    Application& app_;
     beast::Journal journal_;
+    Overlay const& overlay_;
 
     /** The identifiers of the peers we are tracking. */
     std::set<Peer::id_t> peers_;
 };
 
-PeerSetImpl::PeerSetImpl(Application& app)
-    : app_(app), journal_(app.journal("PeerSet"))
+PeerSetImpl::PeerSetImpl(beast::Journal const& journal, Overlay const& overlay)
+    : journal_(journal), overlay_(overlay)
 {
 }
 
@@ -68,12 +64,10 @@ PeerSetImpl::addPeers(
 {
     using ScoredPeer = std::pair<int, std::shared_ptr<Peer>>;
 
-    auto const& overlay = app_.overlay();
-
     std::vector<ScoredPeer> pairs;
-    pairs.reserve(overlay.size());
+    pairs.reserve(overlay_.size());
 
-    overlay.foreach([&](auto const& peer) {
+    overlay_.foreach([&](auto const& peer) {
         auto const score = peer->getScore(hasItem(peer));
         pairs.emplace_back(score, std::move(peer));
     });
@@ -112,7 +106,7 @@ PeerSetImpl::sendRequest(
 
     for (auto id : peers_)
     {
-        if (auto p = app_.overlay().findPeerByShortID(id))
+        if (auto p = overlay_.findPeerByShortID(id))
             p->send(packet);
     }
 }
@@ -133,7 +127,8 @@ public:
     virtual std::unique_ptr<PeerSet>
     build() override
     {
-        return std::make_unique<PeerSetImpl>(app_);
+        return std::make_unique<PeerSetImpl>(
+            app_.journal("PeerSet"), app_.overlay());
     }
 
 private:
@@ -149,7 +144,7 @@ make_PeerSetBuilder(Application& app)
 class DummyPeerSet : public PeerSet
 {
 public:
-    DummyPeerSet(Application& app) : j_(app.journal("DummyPeerSet"))
+    DummyPeerSet(beast::Journal const& journal) : journal_(journal)
     {
     }
 
@@ -159,7 +154,7 @@ public:
         std::function<bool(std::shared_ptr<Peer> const&)> hasItem,
         std::function<void(std::shared_ptr<Peer> const&)> onPeerAdded) override
     {
-        JLOG(j_.error()) << "DummyPeerSet addPeers should not be called";
+        JLOG(journal_.error()) << "DummyPeerSet addPeers should not be called";
     }
 
     void
@@ -168,25 +163,27 @@ public:
         protocol::MessageType type,
         std::shared_ptr<Peer> const& peer) override
     {
-        JLOG(j_.error()) << "DummyPeerSet sendRequest should not be called";
+        JLOG(journal_.error())
+            << "DummyPeerSet sendRequest should not be called";
     }
 
     const std::set<Peer::id_t>&
     getPeerIds() const override
     {
         static std::set<Peer::id_t> emptyPeers;
-        JLOG(j_.error()) << "DummyPeerSet getPeerIds should not be called";
+        JLOG(journal_.error())
+            << "DummyPeerSet getPeerIds should not be called";
         return emptyPeers;
     }
 
 private:
-    beast::Journal j_;
+    beast::Journal journal_;
 };
 
 std::unique_ptr<PeerSet>
 make_DummyPeerSet(Application& app)
 {
-    return std::make_unique<DummyPeerSet>(app);
+    return std::make_unique<DummyPeerSet>(app.journal("DummyPeerSet"));
 }
 
 }  // namespace ripple

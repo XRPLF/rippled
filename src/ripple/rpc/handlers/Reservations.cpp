@@ -19,6 +19,7 @@
 
 #include <ripple/json/json_value.h>
 #include <ripple/net/RPCErr.h>
+#include <ripple/overlay/PeerReservationTable.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/jss.h>

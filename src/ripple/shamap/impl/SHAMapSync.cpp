@@ -538,7 +538,6 @@ SHAMap::addRootNode(
         return SHAMapAddNode::duplicate();
     }
 
-    assert(cowid_ >= 1);
     auto node = SHAMapTreeNode::makeFromWire(rootNode);
     if (!node || node->getHash() != hash)
         return SHAMapAddNode::invalid();
@@ -546,7 +545,7 @@ SHAMap::addRootNode(
     if (backed_)
         canonicalize(hash, node);
 
-    root_ = node;
+    setRootNode(node);
 
     if (root_->isLeaf())
         clearSynching();

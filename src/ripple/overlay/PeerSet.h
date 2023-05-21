@@ -21,12 +21,11 @@
 #define RIPPLE_APP_PEERS_PEERSET_H_INCLUDED
 
 #include <ripple/app/main/Application.h>
-#include <ripple/beast/clock/abstract_clock.h>
 #include <ripple/beast/utility/Journal.h>
+#include <ripple/overlay/Overlay.h>
 #include <ripple/overlay/Peer.h>
 #include <ripple/overlay/impl/ProtocolMessage.h>
-#include <boost/asio/basic_waitable_timer.hpp>
-#include <mutex>
+
 #include <set>
 
 namespace ripple {
@@ -86,6 +85,11 @@ public:
     build() = 0;
 };
 
+/**
+ * This constructor requires an Application because sometimes an Overlay is
+ * not built, and even when it is, it is built after the objects that want
+ * PeerSets. It is non-const because it may construct a new Journal.
+ */
 std::unique_ptr<PeerSetBuilder>
 make_PeerSetBuilder(Application& app);
 
