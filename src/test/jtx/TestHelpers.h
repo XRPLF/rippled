@@ -221,6 +221,15 @@ finish(Account const& account, Account const& from, std::uint32_t seq)
     return finish(account.id(), from.id(), seq);
 }
 
+Json::Value
+cancel(AccountID const& account, Account const& from, std::uint32_t seq);
+
+inline Json::Value
+cancel(Account const& account, Account const& from, std::uint32_t seq)
+{
+    return cancel(account.id(), from, seq);
+}
+
 std::array<std::uint8_t, 39> constexpr cb1 = {
     {0xA0, 0x25, 0x80, 0x20, 0xE3, 0xB0, 0xC4, 0x42, 0x98, 0xFC,
      0x1C, 0x14, 0x9A, 0xFB, 0xF4, 0xC8, 0x99, 0x6F, 0xB9, 0x24,
@@ -245,6 +254,24 @@ public:
     operator()(Env&, JTx& jt) const
     {
         jt.jv[sfFinishAfter.jsonName] = value_.time_since_epoch().count();
+    }
+};
+
+/** Set the "CancelAfter" time tag on a JTx */
+struct cancel_time
+{
+private:
+    NetClock::time_point value_;
+
+public:
+    explicit cancel_time(NetClock::time_point const& value) : value_(value)
+    {
+    }
+
+    void
+    operator()(jtx::Env&, jtx::JTx& jt) const
+    {
+        jt.jv[sfCancelAfter.jsonName] = value_.time_since_epoch().count();
     }
 };
 
@@ -351,6 +378,9 @@ channel(Account const& account, Account const& dst, std::uint32_t seqProxyValue)
 
 STAmount
 channelBalance(ReadView const& view, uint256 const& chan);
+
+bool
+channelExists(ReadView const& view, uint256 const& chan);
 
 /* Crossing Limits */
 /******************************************************************************/

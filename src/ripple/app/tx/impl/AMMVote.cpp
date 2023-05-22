@@ -194,12 +194,29 @@ applyVote(
         }
     }
 
-    // Update the vote entries and the trading fee.
+    // Update the vote entries and the trading/discounted fee.
     ammSle->setFieldArray(sfVoteSlots, updatedVoteSlots);
     if (auto const fee = static_cast<std::int64_t>(num / den))
+    {
         ammSle->setFieldU16(sfTradingFee, fee);
+        if (ammSle->isFieldPresent(sfAuctionSlot))
+        {
+            auto& auctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
+            if (auto const discountedFee = fee / 10)
+                auctionSlot.setFieldU32(sfDiscountedFee, discountedFee);
+            else
+                auctionSlot.makeFieldAbsent(sfDiscountedFee);
+        }
+    }
     else
+    {
         ammSle->makeFieldAbsent(sfTradingFee);
+        if (ammSle->isFieldPresent(sfAuctionSlot))
+        {
+            auto& auctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
+            auctionSlot.makeFieldAbsent(sfDiscountedFee);
+        }
+    }
     sb.update(ammSle);
 
     return {tesSUCCESS, true};

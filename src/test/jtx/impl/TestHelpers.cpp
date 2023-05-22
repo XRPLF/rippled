@@ -232,6 +232,18 @@ finish(AccountID const& account, AccountID const& from, std::uint32_t seq)
     return jv;
 }
 
+Json::Value
+cancel(AccountID const& account, Account const& from, std::uint32_t seq)
+{
+    Json::Value jv;
+    jv[jss::TransactionType] = jss::EscrowCancel;
+    jv[jss::Flags] = tfUniversal;
+    jv[jss::Account] = to_string(account);
+    jv[sfOwner.jsonName] = from.human();
+    jv[sfOfferSequence.jsonName] = seq;
+    return jv;
+}
+
 /* Payment Channel */
 /******************************************************************************/
 Json::Value
@@ -319,6 +331,13 @@ channelBalance(ReadView const& view, uint256 const& chan)
     if (!slep)
         return XRPAmount{-1};
     return (*slep)[sfBalance];
+}
+
+bool
+channelExists(ReadView const& view, uint256 const& chan)
+{
+    auto const slep = view.read({ltPAYCHAN, chan});
+    return bool(slep);
 }
 
 /* Crossing Limits */

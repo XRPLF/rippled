@@ -60,13 +60,6 @@ struct PayChan_test : public beast::unit_test::suite
         return sign(pk, sk, msg.slice());
     }
 
-    static bool
-    channelExists(ReadView const& view, uint256 const& chan)
-    {
-        auto const slep = view.read({ltPAYCHAN, chan});
-        return bool(slep);
-    }
-
     static STAmount
     channelAmount(ReadView const& view, uint256 const& chan)
     {

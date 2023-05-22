@@ -128,7 +128,7 @@ public:
                     return;
                 BEAST_EXPECT(
                     auctionSlot[jss::account].asString() == alice.human() &&
-                    auctionSlot[jss::discounted_fee].asUInt() == 0 &&
+                    auctionSlot[jss::discounted_fee].asUInt() == 17 &&
                     auctionSlot[jss::price][jss::value].asString() == "100" &&
                     auctionSlot[jss::price][jss::currency].asString() ==
                         to_string(ammAlice.lptIssue().currency) &&

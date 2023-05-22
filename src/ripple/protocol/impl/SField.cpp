@@ -256,7 +256,7 @@ CONSTRUCT_TYPED_SFIELD(sfLPTokenOut,            "LPTokenOut",           AMOUNT, 
 CONSTRUCT_TYPED_SFIELD(sfLPTokenIn,             "LPTokenIn",            AMOUNT,    26);
 CONSTRUCT_TYPED_SFIELD(sfEPrice,                "EPrice",               AMOUNT,    27);
 CONSTRUCT_TYPED_SFIELD(sfPrice,                 "Price",                AMOUNT,    28);
-CONSTRUCT_TYPED_SFIELD(sfLPTokenBalance,        "LPTokenBalance",       AMOUNT,    29);
+CONSTRUCT_TYPED_SFIELD(sfLPTokenBalance,        "LPTokenBalance",       AMOUNT,    31);
 
 // variable length (common)
 CONSTRUCT_TYPED_SFIELD(sfPublicKey,             "PublicKey",            VL,         1);

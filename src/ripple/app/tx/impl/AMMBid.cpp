@@ -178,6 +178,8 @@ applyBid(
         duration_cast<seconds>(
             ctx_.view().info().parentCloseTime.time_since_epoch())
             .count();
+    // Auction slot discounted fee
+    auto const discountedFee = (*ammSle)[sfTradingFee] / 10;
 
     std::uint32_t constexpr nIntervals = 20;
     std::uint32_t constexpr tailingSlot = nIntervals - 1;
@@ -279,7 +281,7 @@ applyBid(
         if (auto const payPrice = getPayPrice(MinSlotPrice); !payPrice)
             return {payPrice.error(), false};
         else
-            res = updateSlot(0, *payPrice, *payPrice);
+            res = updateSlot(discountedFee, *payPrice, *payPrice);
     }
     else
     {
@@ -325,7 +327,7 @@ applyBid(
         }
 
         auto const burn = *payPrice - refund;
-        res = updateSlot(0, *payPrice, burn);
+        res = updateSlot(discountedFee, *payPrice, burn);
         if (res != tesSUCCESS)
             return {res, false};
     }
