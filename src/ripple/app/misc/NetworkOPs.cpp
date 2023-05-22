@@ -2669,7 +2669,6 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
     static_assert(std::is_sorted(std::begin(protocols), std::end(protocols)));
     {
         Json::Value ports{Json::arrayValue};
-        std::vector<std::string> proto;
         for (auto const& port : app_.getServerHandler().setup().ports)
         {
             // Don't publish admin ports for non-admin users
@@ -2677,7 +2676,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
                 !(port.admin_nets_v4.empty() && port.admin_nets_v6.empty() &&
                   port.admin_user.empty() && port.admin_password.empty()))
                 continue;
-            proto.clear();
+            std::vector<std::string> proto;
             std::set_intersection(
                 std::begin(port.protocol),
                 std::end(port.protocol),
@@ -2703,7 +2702,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
                 auto& jv = ports.append(Json::Value(Json::objectValue));
                 jv[jss::port] = *optPort;
                 jv[jss::protocol] = Json::Value{Json::arrayValue};
-                jv[jss::protocol].append("port_grpc");
+                jv[jss::protocol].append("grpc");
             }
         }
         info[jss::ports] = std::move(ports);
