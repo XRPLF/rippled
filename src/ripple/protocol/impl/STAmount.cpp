@@ -34,7 +34,28 @@
 
 namespace ripple {
 
-LocalValue<bool> stAmountCanonicalizeSwitchover(true);
+namespace {
+
+// Use a static inside a function to help prevent order-of-initialzation issues
+LocalValue<bool>&
+getStaticSTAmountCanonicalizeSwitchover()
+{
+    static LocalValue<bool> r{true};
+    return r;
+}
+}  // namespace
+
+bool
+getSTAmountCanonicalizeSwitchover()
+{
+    return *getStaticSTAmountCanonicalizeSwitchover();
+}
+
+void
+setSTAmountCanonicalizeSwitchover(bool v)
+{
+    *getStaticSTAmountCanonicalizeSwitchover() = v;
+}
 
 static const std::uint64_t tenTo14 = 100000000000000ull;
 static const std::uint64_t tenTo14m1 = tenTo14 - 1;
@@ -395,7 +416,7 @@ operator+(STAmount const& v1, STAmount const& v2)
     if (v1.native())
         return {v1.getFName(), getSNValue(v1) + getSNValue(v2)};
 
-    if (*stNumberSwitchover)
+    if (getSTNumberSwitchover())
     {
         auto x = v1;
         x = v1.iou() + v2.iou();
@@ -717,7 +738,7 @@ STAmount::canonicalize()
             return;
         }
 
-        if (*stAmountCanonicalizeSwitchover)
+        if (getSTAmountCanonicalizeSwitchover())
         {
             // log(cMaxNativeN, 10) == 17
             if (mOffset > 17)
@@ -725,7 +746,7 @@ STAmount::canonicalize()
                     "Native currency amount out of range");
         }
 
-        if (*stNumberSwitchover && *stAmountCanonicalizeSwitchover)
+        if (getSTNumberSwitchover() && getSTAmountCanonicalizeSwitchover())
         {
             Number num(
                 mIsNegative ? -mValue : mValue, mOffset, Number::unchecked{});
@@ -744,7 +765,7 @@ STAmount::canonicalize()
 
             while (mOffset > 0)
             {
-                if (*stAmountCanonicalizeSwitchover)
+                if (getSTAmountCanonicalizeSwitchover())
                 {
                     // N.B. do not move the overflow check to after the
                     // multiplication
@@ -765,7 +786,7 @@ STAmount::canonicalize()
 
     mIsNative = false;
 
-    if (*stNumberSwitchover)
+    if (getSTNumberSwitchover())
     {
         *this = iou();
         return;
@@ -1208,7 +1229,7 @@ multiply(STAmount const& v1, STAmount const& v2, Issue const& issue)
         return STAmount(v1.getFName(), minV * maxV);
     }
 
-    if (*stNumberSwitchover)
+    if (getSTNumberSwitchover())
         return {IOUAmount{Number{v1} * Number{v2}}, issue};
 
     std::uint64_t value1 = v1.mantissa();
