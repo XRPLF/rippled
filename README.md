@@ -60,7 +60,7 @@ git-subtree. See those directories' README files for more details.
 
 * [XRP Ledger Dev Portal](https://xrpl.org/)
 * [Setup and Installation](https://xrpl.org/install-rippled.html)
-* [Source Documentation (Doxygen)](https://xrplf.github.io/rippled/
+* [Source Documentation (Doxygen)](https://xrplf.github.io/rippled/)
 
 ## See Also
 
