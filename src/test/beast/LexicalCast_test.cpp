@@ -221,6 +221,7 @@ public:
 
             expect(lexicalCastChecked(out, "-0"), "0");
             expect(lexicalCastChecked(out, "0"), "0");
+            expect(lexicalCastChecked(out, "+0"), "0");
         }
 
         {
@@ -228,6 +229,7 @@ public:
 
             expect(!lexicalCastChecked(out, "-0"), "0");
             expect(lexicalCastChecked(out, "0"), "0");
+            expect(lexicalCastChecked(out, "+0"), "0");
         }
     }
 
