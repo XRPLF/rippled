@@ -181,7 +181,7 @@ CreateCheck::doApply()
     // Note that we use the value from the sequence or ticket as the
     // Check sequence.  For more explanation see comments in SeqProxy.h.
     std::uint32_t const seq = ctx_.tx.getSeqProxy().value();
-    Keylet const checkKeylet = keylet::check(account_, seq);
+    ChecksKeylet const checkKeylet = keylet::check(account_, seq);
     auto sleCheck = std::make_shared<SLE>(checkKeylet);
 
     sleCheck->setAccountID(sfAccount, account_);

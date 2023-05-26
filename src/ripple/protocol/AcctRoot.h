@@ -27,6 +27,63 @@
 namespace ripple {
 
 template <bool Writable>
+class ChecksImpl final : public  LedgerEntryWrapper<Writable> {
+private:
+    using Base = LedgerEntryWrapper<Writable>;
+    using SleT = typename Base::SleT;
+    using Base::wrapped_;
+
+    ChecksImpl(std::shared_ptr<SleT>&& w) : Base(std::move(w))
+    {
+    }
+
+    // Friend declarations of factory functions.
+    //
+    // For classes that contain factories we must declare the entire class
+    // as a friend unless the class declaration is visible at this point.
+    friend class ReadView;
+    friend class ApplyView;
+
+public:
+    // Conversion operator from ChecksImpl<true> to ChecksImpl<false>.
+    operator ChecksImpl<true>() const
+    {
+        return ChecksImpl<false>(
+            std::const_pointer_cast<std::shared_ptr<STLedgerEntry const>>(
+                wrapped_));
+    }
+
+    uint256 key() const {
+        return wrapped_->key();
+    }
+
+    auto getCheckExpiration() const {
+        return wrapped_->at(~sfExpiration);
+    }
+
+    // Keshava: I think this is identical to the function STObject::getAccountID ?
+    // should I piggy-back on that function instead?
+    AccountID getCheckCreator() const
+    {
+        return wrapped_->at(sfAccount);
+    }
+
+    AccountID getCheckRecipient() const {
+        return wrapped_->at(sfDestination);
+    }
+
+    // Keshava: The below two functions refer to a page in a directory of an account.
+    // What is an appropriate name? These function names are cryptic :((
+    std::uint64_t getDestinationNode() const {
+        return wrapped_->at(sfDestinationNode);
+    }
+
+    std::uint64_t getOwnerNode() const {
+        return wrapped_->at(sfOwnerNode);
+    }
+};
+
+template <bool Writable>
 class AcctRootImpl final : public LedgerEntryWrapper<Writable>
 {
 private:

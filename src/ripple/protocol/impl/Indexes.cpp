@@ -277,10 +277,10 @@ signers(AccountID const& account) noexcept
     return signers(account, 0);
 }
 
-Keylet
+ChecksKeylet
 check(AccountID const& id, std::uint32_t seq) noexcept
 {
-    return {ltCHECK, indexHash(LedgerNameSpace::CHECK, id, seq)};
+    return ChecksKeylet(indexHash(LedgerNameSpace::CHECK, id, seq));
 }
 
 Keylet

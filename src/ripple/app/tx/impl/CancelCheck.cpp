@@ -53,8 +53,8 @@ CancelCheck::preflight(PreflightContext const& ctx)
 TER
 CancelCheck::preclaim(PreclaimContext const& ctx)
 {
-    auto const sleCheck = ctx.view.readSLE(keylet::check(ctx.tx[sfCheckID]));
-    if (!sleCheck)
+    auto const check = ctx.view.read(keylet::check(ctx.tx[sfCheckID]));
+    if (!check)
     {
         JLOG(ctx.j.warn()) << "Check does not exist.";
         return tecNO_ENTRY;
@@ -62,7 +62,7 @@ CancelCheck::preclaim(PreclaimContext const& ctx)
 
     using duration = NetClock::duration;
     using timepoint = NetClock::time_point;
-    auto const optExpiry = (*sleCheck)[~sfExpiration];
+    auto const optExpiry = check->getCheckExpiration();
 
     // Expiration is defined in terms of the close time of the parent
     // ledger, because we definitively know the time that it closed but
@@ -74,8 +74,8 @@ CancelCheck::preclaim(PreclaimContext const& ctx)
         // If the check is not yet expired, then only the creator or the
         // destination may cancel the check.
         AccountID const acctId{ctx.tx[sfAccount]};
-        if (acctId != (*sleCheck)[sfAccount] &&
-            acctId != (*sleCheck)[sfDestination])
+        if (acctId != check->getCheckCreator() &&
+            acctId != check->getCheckRecipient())
         {
             JLOG(ctx.j.warn()) << "Check is not expired and canceler is "
                                   "neither check source nor destination.";
@@ -88,34 +88,34 @@ CancelCheck::preclaim(PreclaimContext const& ctx)
 TER
 CancelCheck::doApply()
 {
-    auto const sleCheck = view().peekSLE(keylet::check(ctx_.tx[sfCheckID]));
-    if (!sleCheck)
+    std::optional<ChecksImpl<true>> check = view().peek(keylet::check(ctx_.tx[sfCheckID]));
+    if (!check)
     {
         // Error should have been caught in preclaim.
         JLOG(j_.warn()) << "Check does not exist.";
         return tecNO_ENTRY;
     }
 
-    AccountID const srcId{sleCheck->getAccountID(sfAccount)};
-    AccountID const dstId{sleCheck->getAccountID(sfDestination)};
+    AccountID const srcId{check->getCheckCreator()};
+    AccountID const dstId{check->getCheckRecipient()};
     auto viewJ = ctx_.app.journal("View");
 
     // If the check is not written to self (and it shouldn't be), remove the
     // check from the destination account root.
     if (srcId != dstId)
     {
-        std::uint64_t const page{(*sleCheck)[sfDestinationNode]};
+        std::uint64_t const page{check->getDestinationNode()};
         if (!view().dirRemove(
-                keylet::ownerDir(dstId), page, sleCheck->key(), true))
+                keylet::ownerDir(dstId), page, check->key(), true))
         {
             JLOG(j_.fatal()) << "Unable to delete check from destination.";
             return tefBAD_LEDGER;
         }
     }
     {
-        std::uint64_t const page{(*sleCheck)[sfOwnerNode]};
+        std::uint64_t const page{check->getOwnerNode()};
         if (!view().dirRemove(
-                keylet::ownerDir(srcId), page, sleCheck->key(), true))
+                keylet::ownerDir(srcId), page, check->key(), true))
         {
             JLOG(j_.fatal()) << "Unable to delete check from owner.";
             return tefBAD_LEDGER;
@@ -127,7 +127,7 @@ CancelCheck::doApply()
     adjustOwnerCount(view(), *srcAcctRoot, -1, viewJ);
 
     // Remove check from ledger.
-    view().erase(sleCheck);
+    view().erase(*check);
     return tesSUCCESS;
 }
 

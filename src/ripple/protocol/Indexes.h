@@ -172,13 +172,13 @@ signers(AccountID const& account) noexcept;
 
 /** A Check */
 /** @{ */
-Keylet
+ChecksKeylet
 check(AccountID const& id, std::uint32_t seq) noexcept;
 
-inline Keylet
+inline ChecksKeylet
 check(uint256 const& key) noexcept
 {
-    return {ltCHECK, key};
+    return ChecksKeylet(key);
 }
 /** @} */
 
