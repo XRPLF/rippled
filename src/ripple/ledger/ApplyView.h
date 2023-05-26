@@ -343,7 +343,7 @@ public:
     std::optional<std::uint64_t>
     dirInsert(
         Keylet const& directory,
-        Keylet const& key,
+        KeyletBase const& key,
         std::function<void(std::shared_ptr<SLE> const&)> const& describe)
     {
         return dirAdd(false, directory, key.key, describe);
