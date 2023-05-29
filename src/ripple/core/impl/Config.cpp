@@ -300,7 +300,7 @@ Config::setupControl(bool bQuiet, bool bSilent, bool bStandalone)
         // Adjust the size based on the number of hardware threads of
         // execution available to us:
         if (auto const hc = std::thread::hardware_concurrency(); hc != 0)
-            NODE_SIZE = std::min<std::size_t>(hc / 2, 4);
+            NODE_SIZE = std::min<std::size_t>(hc / 2, NODE_SIZE);
     }
 
     assert(NODE_SIZE <= 4);
