@@ -561,21 +561,22 @@ class Transaction_test : public beast::unit_test::suite
         BEAST_EXPECT(RPC::encodeCTID(13249191UL, 12911U, 65535U) == expected14);
 
         // Test case 2: ledger_seq greater than 0xFFFFFFF
-        BEAST_EXPECT(!RPC::encodeCTID(0x10000000UL, 0xFFFFU, 0xFFFFU));
+        BEAST_EXPECT(!RPC::encodeCTID(0x1000'0000UL, 0xFFFFU, 0xFFFFU));
 
         // Test case 3: txn_index greater than 0xFFFF
         // this test case is impossible in c++ due to the type, left in for
         // completeness
         auto const expected3 = std::optional<std::string>("CFFFFFFF0000FFFF");
         BEAST_EXPECT(
-            RPC::encodeCTID(0xFFFFFFF, (uint16_t)0x10000, 0xFFFF) == expected3);
+            RPC::encodeCTID(0xFFFF'FFF, (uint16_t)0x10000, 0xFFFF) ==
+            expected3);
 
         // Test case 4: network_id greater than 0xFFFF
         // this test case is impossible in c++ due to the type, left in for
         // completeness
         auto const expected4 = std::optional<std::string>("CFFFFFFFFFFF0000");
         BEAST_EXPECT(
-            RPC::encodeCTID(0xFFFFFFFUL, 0xFFFFU, (uint16_t)0x10000U) ==
+            RPC::encodeCTID(0xFFFF'FFFUL, 0xFFFFU, (uint16_t)0x1000'0U) ==
             expected4);
 
         // Test case 5: Valid input values
@@ -609,24 +610,24 @@ class Transaction_test : public beast::unit_test::suite
 
         // Test case 11: Valid input values
         BEAST_EXPECT(
-            (RPC::decodeCTID(0xCFFFFFFFFFFFFFFFULL) ==
+            (RPC::decodeCTID(0xCFFF'FFFF'FFFF'FFFFULL) ==
              std::optional<std::tuple<int32_t, uint16_t, uint16_t>>(
                  std::make_tuple(0xFFFFFFFUL, 0xFFFFU, 0xFFFFU))));
         BEAST_EXPECT(
-            (RPC::decodeCTID(0xC000000000000000ULL) ==
+            (RPC::decodeCTID(0xC000'0000'0000'0000ULL) ==
              std::optional<std::tuple<int32_t, uint16_t, uint16_t>>(
                  std::make_tuple(0, 0, 0))));
         BEAST_EXPECT(
-            (RPC::decodeCTID(0xC000000100020003ULL) ==
+            (RPC::decodeCTID(0xC000'0001'0002'0003ULL) ==
              std::optional<std::tuple<int32_t, uint16_t, uint16_t>>(
                  std::make_tuple(1U, 2U, 3U))));
         BEAST_EXPECT(
-            (RPC::decodeCTID(0xC0CA2AA7326FC045ULL) ==
+            (RPC::decodeCTID(0xC0CA'2AA7'326F'C045ULL) ==
              std::optional<std::tuple<int32_t, uint16_t, uint16_t>>(
                  std::make_tuple(13249191UL, 12911U, 49221U))));
 
         // Test case 12: ctid not exactly 16 nibbles
-        BEAST_EXPECT(!RPC::decodeCTID(0xC003FFFFFFFFFFF));
+        BEAST_EXPECT(!RPC::decodeCTID(0xC003'FFFF'FFFF'FFF));
 
         // Test case 13: ctid too large to be a valid CTID value
         // this test case is not possible in c++ because it would overflow the
@@ -634,7 +635,7 @@ class Transaction_test : public beast::unit_test::suite
         // BEAST_EXPECT(!RPC::decodeCTID(0xCFFFFFFFFFFFFFFFFULL));
 
         // Test case 14: ctid doesn't start with a C nibble
-        BEAST_EXPECT(!RPC::decodeCTID(0xFFFFFFFFFFFFFFFFULL));
+        BEAST_EXPECT(!RPC::decodeCTID(0xFFFF'FFFF'FFFF'FFFFULL));
     }
 
     void
