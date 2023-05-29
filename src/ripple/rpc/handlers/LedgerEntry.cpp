@@ -358,7 +358,7 @@ doLedgerEntry(RPC::JsonContext& context)
             }
         }
         else
-            jvResult[jss::error] = "unknownOption";
+            jvResult[jss::error] = "invalidParams";
     }
 
     if (uNodeIndex.isNonZero())
