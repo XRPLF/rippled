@@ -72,8 +72,7 @@ decodeCTID(const T ctid) noexcept
     else
         return {};
 
-    if (ctidValue > 0xFFFF'FFFF'FFFF'FFFFULL ||
-            (ctidValue & 0xF000'0000'0000'0000ULL) != 0xC000'0000'0000'0000ULL)
+    if ((ctidValue & 0xF000'0000'0000'0000ULL) != 0xC000'0000'0000'0000ULL)
         return {};
 
     uint32_t ledger_seq = (ctidValue >> 32) & 0xFFFF'FFFUL;
