@@ -71,12 +71,13 @@ XRP</h1>
 <p><a href="https://xrpl.org/xrp.html">XRP</a> is a public, counterparty-free asset native to the XRP Ledger, and is designed to bridge the many different currencies in use worldwide. XRP is traded on the open-market and is available for anyone to access. The XRP Ledger was created in 2012 with a finite supply of 100 billion units of XRP.</p>
 <h1><a class="anchor" id="autotoc_md314"></a>
 rippled</h1>
-<p>The server software that powers the XRP Ledger is called <code>rippled</code> and is available in this repository under the permissive ISC open-source license. The <code>rippled</code> server software is written primarily in C++ and runs on a variety of platforms. The <code>rippled</code> server software can run in several modes depending on its <a href="https://xrpl.org/rippled-server-modes.html">configuration</a>. <br  />
-</p>
+<p>The server software that powers the XRP Ledger is called <code>rippled</code> and is available in this repository under the permissive ISC open-source license. The <code>rippled</code> server software is written primarily in C++ and runs on a variety of platforms. The <code>rippled</code> server software can run in several modes depending on its <a href="https://xrpl.org/rippled-server-modes.html">configuration</a>.</p>
+<p>If you are interested in running an <b>API Server</b> (including a <b>Full History Server</b>) or a <b>Reporting Mode</b> server, take a look at <a href="https://github.com/XRPLF/clio">Clio</a>. rippled Reporting Mode is expected to be replaced by Clio.</p>
 <h2><a class="anchor" id="autotoc_md315"></a>
 Build from Source</h2>
 <ul>
 <li>Read the build instructions in `BUILD.md`</li>
+<li>If you encounter any issues, please <a href="https://github.com/XRPLF/rippled/issues">open an issue</a></li>
 </ul>
 <h1><a class="anchor" id="autotoc_md316"></a>
 Key Features of the XRP Ledger</h1>
@@ -115,11 +116,16 @@ Repository Contents</h2>
 </table>
 <p>Some of the directories under <code>src</code> are external repositories included using git-subtree. See those directories' README files for more details.</p>
 <h1><a class="anchor" id="autotoc_md319"></a>
-See Also</h1>
+Additional Documentation</h1>
 <ul>
 <li><a href="https://xrpl.org/">XRP Ledger Dev Portal</a></li>
 <li><a href="https://xrpl.org/install-rippled.html">Setup and Installation</a></li>
 <li><a href="https://xrplf.github.io/rippled/">Source Documentation (Doxygen)</a></li>
+</ul>
+<h1><a class="anchor" id="autotoc_md320"></a>
+See Also</h1>
+<ul>
+<li><a href="https://github.com/XRPLF/clio">Clio API Server for the XRP Ledger</a></li>
 <li><a href="https://groups.google.com/g/ripple-server">Mailing List for Release Announcements</a></li>
 <li><a href="https://www.youtube.com/playlist?list=PLJQ55Tj1hIVZtJ_JdTvSum2qMTsedWkNi">Learn more about the XRP Ledger (YouTube)</a> </li>
 </ul>
