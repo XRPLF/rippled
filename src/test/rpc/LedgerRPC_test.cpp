@@ -1220,9 +1220,9 @@ class LedgerRPC_test : public beast::unit_test::suite
     }
 
     void
-    testLedgerEntryUnknownOption()
+    testLedgerEntryInvalidParams()
     {
-        testcase("ledger_entry Request Unknown Option");
+        testcase("ledger_entry Request Invalid Parameters");
         using namespace test::jtx;
         Env env{*this};
 
@@ -1234,7 +1234,7 @@ class LedgerRPC_test : public beast::unit_test::suite
         jvParams[jss::ledger_hash] = ledgerHash;
         Json::Value const jrr =
             env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
-        checkErrorValue(jrr, "unknownOption", "");
+        checkErrorValue(jrr, "invalidParams", "");
     }
 
     /// @brief ledger RPC requests as a way to drive
@@ -1732,7 +1732,7 @@ public:
         testLedgerEntryPayChan();
         testLedgerEntryRippleState();
         testLedgerEntryTicket();
-        testLedgerEntryUnknownOption();
+        testLedgerEntryInvalidParams();
         testLookupLedger();
         testNoQueue();
         testQueue();
