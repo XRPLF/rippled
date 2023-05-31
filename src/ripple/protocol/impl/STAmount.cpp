@@ -1361,6 +1361,11 @@ public:
         : saved_{Number::setround(mode)}
     {
     }
+
+    NumberRoundModeGuard(NumberRoundModeGuard const&) = delete;
+
+    NumberRoundModeGuard&
+    operator=(NumberRoundModeGuard const&) = delete;
 };
 
 // We need a class that has an interface similar to NumberRoundModeGuard
@@ -1371,6 +1376,11 @@ public:
     explicit DontAffectNumberRoundMode(Number::rounding_mode mode) noexcept
     {
     }
+
+    DontAffectNumberRoundMode(DontAffectNumberRoundMode const&) = delete;
+
+    DontAffectNumberRoundMode&
+    operator=(DontAffectNumberRoundMode const&) = delete;
 };
 
 }  // anonymous namespace
