@@ -82,7 +82,7 @@ protected:
     testAMM(
         std::function<void(jtx::AMM&, jtx::Env&)>&& cb,
         std::optional<std::pair<STAmount, STAmount>> const& pool = std::nullopt,
-        std::uint32_t fee = 0,
+        std::uint16_t tfee = 0,
         std::optional<jtx::ter> const& ter = std::nullopt,
         std::optional<FeatureBitset> const& features = std::nullopt);
 };

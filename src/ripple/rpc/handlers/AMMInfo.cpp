@@ -153,7 +153,8 @@ doAMMInfo(RPC::JsonContext& context)
             auto const timeSlot = ammAuctionTimeSlot(
                 ledger->info().parentCloseTime.time_since_epoch().count(),
                 auctionSlot);
-            auction[jss::time_interval] = timeSlot ? *timeSlot : 0;
+            auction[jss::time_interval] =
+                timeSlot ? *timeSlot : AUCTION_SLOT_TIME_INTERVALS;
             auctionSlot[sfPrice].setJson(auction[jss::price]);
             auction[jss::discounted_fee] = auctionSlot[sfDiscountedFee];
             auction[jss::account] =

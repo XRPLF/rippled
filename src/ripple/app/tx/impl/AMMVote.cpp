@@ -133,7 +133,7 @@ applyVote(
         newEntry.setFieldU32(
             sfVoteWeight,
             static_cast<std::int64_t>(
-                Number(lpTokens) * 100000 / lptAMMBalance));
+                Number(lpTokens) * VOTE_WEIGHT_SCALE_FACTOR / lptAMMBalance));
 
         // Find an entry with the least tokens/fee. Make the order deterministic
         // if the tokens/fees are equal.
@@ -161,7 +161,8 @@ applyVote(
             newEntry.setFieldU32(
                 sfVoteWeight,
                 static_cast<std::int64_t>(
-                    Number(lpTokensNew) * 100000 / lptAMMBalance));
+                    Number(lpTokensNew) * VOTE_WEIGHT_SCALE_FACTOR /
+                    lptAMMBalance));
             newEntry.setAccountID(sfAccount, account_);
             num += feeNew * lpTokensNew;
             den += lpTokensNew;
@@ -172,8 +173,7 @@ applyVote(
         };
         // Add new entry if the number of the vote entries
         // is less than Max.
-        constexpr std::uint8_t MaxVoteSlots = 8;
-        if (updatedVoteSlots.size() < MaxVoteSlots)
+        if (updatedVoteSlots.size() < VOTE_MAX_SLOTS)
             update();
         // Add the entry if the account has more tokens than
         // the least token holder.
@@ -185,12 +185,12 @@ applyVote(
             den -= *minTokens;
             update(minPos);
         }
-        // All slots are full and the account does not hold more LPTokens
+        // All slots are full and the account does not hold more LPTokens.
+        // Update anyway to refresh the slots.
         else
         {
             JLOG(j_.debug()) << "AMMVote::applyVote, insufficient tokens to "
                                 "override other votes";
-            return {tecAMM_FAILED_VOTE, false};
         }
     }
 
@@ -202,8 +202,9 @@ applyVote(
         if (ammSle->isFieldPresent(sfAuctionSlot))
         {
             auto& auctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
-            if (auto const discountedFee = fee / 10)
-                auctionSlot.setFieldU32(sfDiscountedFee, discountedFee);
+            if (auto const discountedFee =
+                    fee / AUCTION_SLOT_DISCOUNTED_FEE_FRACTION)
+                auctionSlot.setFieldU16(sfDiscountedFee, discountedFee);
             else
                 auctionSlot.makeFieldAbsent(sfDiscountedFee);
         }

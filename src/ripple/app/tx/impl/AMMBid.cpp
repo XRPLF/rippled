@@ -72,9 +72,8 @@ AMMBid::preflight(PreflightContext const& ctx)
 
     if (ctx.tx.isFieldPresent(sfAuthAccounts))
     {
-        std::uint8_t constexpr maxAuthAccounts = 4;
         if (auto const authAccounts = ctx.tx.getFieldArray(sfAuthAccounts);
-            authAccounts.size() > maxAuthAccounts)
+            authAccounts.size() > AUCTION_SLOT_MAX_AUTH_ACCOUNTS)
         {
             JLOG(ctx.j.debug()) << "AMM Bid: Invalid number of AuthAccounts.";
             return temMALFORMED;
@@ -148,7 +147,7 @@ AMMBid::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    if (bidMin && bidMax && bidMin >= bidMax)
+    if (bidMin && bidMax && bidMin > bidMax)
     {
         JLOG(ctx.j.debug()) << "AMM Bid: Invalid Max/MinSlotPrice.";
         return tecAMM_INVALID_TOKENS;
@@ -179,10 +178,14 @@ applyBid(
             ctx_.view().info().parentCloseTime.time_since_epoch())
             .count();
     // Auction slot discounted fee
-    auto const discountedFee = (*ammSle)[sfTradingFee] / 10;
+    auto const discountedFee =
+        (*ammSle)[sfTradingFee] / AUCTION_SLOT_DISCOUNTED_FEE_FRACTION;
+    auto const tradingFee = getFee((*ammSle)[sfTradingFee]);
+    // Min price
+    auto const minSlotPrice =
+        lptAMMBalance * tradingFee / AUCTION_SLOT_MIN_FEE_FRACTION;
 
-    std::uint32_t constexpr nIntervals = 20;
-    std::uint32_t constexpr tailingSlot = nIntervals - 1;
+    std::uint32_t constexpr tailingSlot = AUCTION_SLOT_TIME_INTERVALS - 1;
 
     // If seated then it is the current slot-holder time slot, otherwise
     // the auction slot is not owned. Slot range is in {0-19}
@@ -204,7 +207,7 @@ applyBid(
         if (fee == 0)
             auctionSlot.makeFieldAbsent(sfDiscountedFee);
         else
-            auctionSlot.setFieldU32(sfDiscountedFee, fee);
+            auctionSlot.setFieldU16(sfDiscountedFee, fee);
         auctionSlot.setFieldAmount(
             sfPrice, toSTAmount(lpTokens.issue(), minPrice));
         if (ctx_.tx.isFieldPresent(sfAuthAccounts))
@@ -213,7 +216,8 @@ applyBid(
         else
             auctionSlot.makeFieldAbsent(sfAuthAccounts);
         // Burn the remaining bid amount
-        auto const saBurn = toSTAmount(lpTokens.issue(), burn);
+        auto const saBurn = adjustLPTokens(
+            lptAMMBalance, toSTAmount(lptAMMBalance.issue(), burn), false);
         if (saBurn >= lptAMMBalance)
         {
             JLOG(ctx_.journal.debug())
@@ -237,19 +241,17 @@ applyBid(
     auto const bidMin = ctx_.tx[~sfBidMin];
     auto const bidMax = ctx_.tx[~sfBidMax];
 
-    Number const MinSlotPrice = 0;
-
     auto getPayPrice =
         [&](Number const& computedPrice) -> Expected<Number, TER> {
         auto const payPrice = [&]() -> std::optional<Number> {
             // Both min/max bid price are defined
             if (bidMin && bidMax)
             {
-                if (computedPrice >= *bidMin && computedPrice <= *bidMax)
-                    return computedPrice;
+                if (computedPrice <= *bidMax)
+                    return std::max(computedPrice, Number(*bidMin));
                 JLOG(ctx_.journal.debug())
-                    << "AMM Bid: not in range " << computedPrice << *bidMin
-                    << " " << *bidMax;
+                    << "AMM Bid: not in range " << computedPrice << " "
+                    << *bidMin << " " << *bidMax;
                 return std::nullopt;
             }
             // Bidder pays max(bidPrice, computedPrice)
@@ -278,7 +280,7 @@ applyBid(
     // No one owns the slot or expired slot.
     if (auto const acct = auctionSlot[~sfAccount]; !acct || !validOwner(*acct))
     {
-        if (auto const payPrice = getPayPrice(MinSlotPrice); !payPrice)
+        if (auto const payPrice = getPayPrice(minSlotPrice); !payPrice)
             return {payPrice.error(), false};
         else
             res = updateSlot(discountedFee, *payPrice, *payPrice);
@@ -288,16 +290,17 @@ applyBid(
         // Price the slot was purchased at.
         STAmount const pricePurchased = auctionSlot[sfPrice];
         assert(timeSlot);
-        auto const fractionUsed = (Number(*timeSlot) + 1) / nIntervals;
+        auto const fractionUsed =
+            (Number(*timeSlot) + 1) / AUCTION_SLOT_TIME_INTERVALS;
         auto const fractionRemaining = Number(1) - fractionUsed;
         auto const computedPrice = [&]() -> Number {
             auto const p1_05 = Number(105, -2);
             // First interval slot price
             if (*timeSlot == 0)
-                return pricePurchased * p1_05 + MinSlotPrice;
+                return pricePurchased * p1_05 + minSlotPrice;
             // Other intervals slot price
             return pricePurchased * p1_05 * (1 - power(fractionUsed, 60)) +
-                MinSlotPrice;
+                minSlotPrice;
         }();
 
         auto const payPrice = getPayPrice(computedPrice);
@@ -306,7 +309,7 @@ applyBid(
             return {payPrice.error(), false};
 
         // Refund the previous owner. If the time slot is 0 then
-        // the owner is refunded full amount.
+        // the owner is refunded 95% of the amount.
         auto const refund = fractionRemaining * pricePurchased;
         if (refund > *payPrice)
         {

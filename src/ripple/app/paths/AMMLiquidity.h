@@ -131,6 +131,8 @@ private:
      * The sequence corresponds to the payment engine iterations with AMM
      * liquidity. Iterations that don't consume AMM offers don't count.
      * The number of iterations with AMM offers is limited.
+     * If the generated offer exceeds the pool balance then the function
+     * throws overflow exception.
      */
     TAmounts<TIn, TOut>
     generateFibSeqOffer(TAmounts<TIn, TOut> const& balances) const;

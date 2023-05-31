@@ -52,7 +52,7 @@ AMM::AMM(
     STAmount const& asset1,
     STAmount const& asset2,
     bool log,
-    std::uint32_t tfee,
+    std::uint16_t tfee,
     std::uint32_t fee,
     std::optional<std::uint32_t> flags,
     std::optional<jtx::seq> seq,
@@ -65,7 +65,6 @@ AMM::AMM(
     , initialLPTokens_(initialTokens(asset1, asset2))
     , log_(log)
     , lastPurchasePrice_(0)
-    , minSlotPrice_(0)
     , bidMin_()
     , bidMax_()
     , msig_(ms)
@@ -236,31 +235,6 @@ bool
 AMM::expectAuctionSlot(
     std::uint32_t fee,
     std::optional<std::uint8_t> timeSlot,
-    std::optional<std::uint8_t> purchasedTimeSlot) const
-{
-    return expectAuctionSlot([&](std::uint32_t slotFee,
-                                 std::optional<std::uint8_t> slotInterval,
-                                 IOUAmount const& slotPrice,
-                                 auto const&) {
-        if (!purchasedTimeSlot)
-            purchasedTimeSlot = timeSlot;
-
-        auto const lastPurchasePrice =
-            !purchasedTimeSlot ? IOUAmount{0} : lastPurchasePrice_;
-        auto const expectedPrice =
-            expectedPurchasePrice(purchasedTimeSlot, lastPurchasePrice);
-        return slotFee == fee &&
-            // Auction slot might be expired, in which case slotInterval is
-            // 0
-            ((!timeSlot && slotInterval == 0) || slotInterval == timeSlot) &&
-            slotPrice == expectedPrice;
-    });
-}
-
-bool
-AMM::expectAuctionSlot(
-    std::uint32_t fee,
-    std::optional<std::uint8_t> timeSlot,
     IOUAmount expectedPrice) const
 {
     return expectAuctionSlot([&](std::uint32_t slotFee,
@@ -372,7 +346,7 @@ AMM::setTokens(
     }
 }
 
-void
+IOUAmount
 AMM::deposit(
     std::optional<Account> const& account,
     Json::Value& jv,
@@ -380,15 +354,18 @@ AMM::deposit(
     std::optional<jtx::seq> const& seq,
     std::optional<ter> const& ter)
 {
-    jv[jss::Account] = account ? account->human() : creatorAccount_.human();
+    auto const& acct = account ? *account : creatorAccount_;
+    auto const lpTokens = getLPTokensBalance(acct);
+    jv[jss::Account] = acct.human();
     setTokens(jv, assets);
     jv[jss::TransactionType] = jss::AMMDeposit;
     if (fee_ != 0)
         jv[jss::Fee] = std::to_string(fee_);
     submit(jv, seq, ter);
+    return getLPTokensBalance(acct) - lpTokens;
 }
 
-void
+IOUAmount
 AMM::deposit(
     std::optional<Account> const& account,
     LPToken tokens,
@@ -396,7 +373,7 @@ AMM::deposit(
     std::optional<std::uint32_t> const& flags,
     std::optional<ter> const& ter)
 {
-    deposit(
+    return deposit(
         account,
         tokens,
         asset1In,
@@ -408,7 +385,7 @@ AMM::deposit(
         ter);
 }
 
-void
+IOUAmount
 AMM::deposit(
     std::optional<Account> const& account,
     STAmount const& asset1In,
@@ -418,7 +395,7 @@ AMM::deposit(
     std::optional<ter> const& ter)
 {
     assert(!(asset2In && maxEP));
-    deposit(
+    return deposit(
         account,
         std::nullopt,
         asset1In,
@@ -430,7 +407,7 @@ AMM::deposit(
         ter);
 }
 
-void
+IOUAmount
 AMM::deposit(
     std::optional<Account> const& account,
     std::optional<LPToken> tokens,
@@ -468,7 +445,7 @@ AMM::deposit(
             jvflags |= tfSingleAsset;
     }
     jv[jss::Flags] = jvflags;
-    deposit(account, jv, assets, seq, ter);
+    return deposit(account, jv, assets, seq, ter);
 }
 
 void
@@ -659,37 +636,6 @@ AMM::bid(
     if (fee_ != 0)
         jv[jss::Fee] = std::to_string(fee_);
     submit(jv, seq, ter);
-}
-
-IOUAmount
-AMM::expectedPurchasePrice(
-    std::optional<std::uint8_t> timeSlot,
-    IOUAmount const& lastPurchasePrice) const
-{
-    auto const p1_05 = Number(105, -2);
-    std::uint32_t constexpr nIntervals = 20;
-
-    if (!timeSlot)
-    {
-        if (bidMin_ && !bidMax_)
-            return *bidMin_;
-        return IOUAmount(0);
-    }
-
-    auto const computedPrice = [&]() {
-        if (timeSlot == 0)
-            return IOUAmount(lastPurchasePrice * p1_05 + minSlotPrice_);
-
-        auto const fractionUsed = (Number(*timeSlot) + 1) / nIntervals;
-        return IOUAmount(
-            lastPurchasePrice * p1_05 * (1 - power(fractionUsed, 60)) +
-            minSlotPrice_);
-    }();
-
-    // assume price is in range
-    if (bidMin_ && !bidMax_)
-        return std::max(computedPrice, *bidMin_);
-    return computedPrice;
 }
 
 void

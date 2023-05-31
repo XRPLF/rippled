@@ -96,6 +96,7 @@ CONSTRUCT_TYPED_SFIELD(sfTransactionType,       "TransactionType",      UINT16, 
 CONSTRUCT_TYPED_SFIELD(sfSignerWeight,          "SignerWeight",         UINT16,     3);
 CONSTRUCT_TYPED_SFIELD(sfTransferFee,           "TransferFee",          UINT16,     4);
 CONSTRUCT_TYPED_SFIELD(sfTradingFee,            "TradingFee",           UINT16,     5);
+CONSTRUCT_TYPED_SFIELD(sfDiscountedFee,         "DiscountedFee",        UINT16,     6);
 
 // 16-bit integers (uncommon)
 CONSTRUCT_TYPED_SFIELD(sfVersion,               "Version",              UINT16,    16);
@@ -154,7 +155,6 @@ CONSTRUCT_TYPED_SFIELD(sfHookStateCount,        "HookStateCount",       UINT32, 
 CONSTRUCT_TYPED_SFIELD(sfEmitGeneration,        "EmitGeneration",       UINT32,    46);
 // 47 is reserved for LockCount(Hooks)
 CONSTRUCT_TYPED_SFIELD(sfVoteWeight,            "VoteWeight",           UINT32,    48);
-CONSTRUCT_TYPED_SFIELD(sfDiscountedFee,         "DiscountedFee",        UINT32,    49);
 CONSTRUCT_TYPED_SFIELD(sfFirstNFTokenSequence,  "FirstNFTokenSequence", UINT32,    50);
 
 // 64-bit integers (common)

@@ -45,7 +45,7 @@ class Sandbox;
  *     by the amount of LPTokens.
  * Asset1Out and EPrice - transaction assumes withdrawal of single
  *     asset with the following constraints:
- *         a. Amount of asset1 if specified in Asset1Out specifies
+ *         a. Amount of asset1 if specified (not 0) in Asset1Out specifies
  *             the minimum amount of asset1 that the trader is willing
  *             to withdraw.
  *         b. The effective price of asset traded out does not exceed
@@ -77,7 +77,6 @@ public:
     static TER
     preclaim(PreclaimContext const& ctx);
 
-    /** Attempt to create the AMM instance. */
     TER
     doApply() override;
 
@@ -89,10 +88,12 @@ private:
      * Return new total LPToken balance.
      * @param view
      * @param ammAccount
+     * @param amountBalance
      * @param amountWithdraw
      * @param amount2Withdraw
      * @param lpTokensAMMBalance current AMM LPT balance
      * @param lpTokensWithdraw
+     * @param tfee
      * @return
      */
     std::pair<TER, STAmount>
@@ -100,9 +101,11 @@ private:
         Sandbox& view,
         AccountID const& ammAccount,
         STAmount const& amountWithdraw,
+        STAmount const& amountBalance,
         std::optional<STAmount> const& amount2Withdraw,
         STAmount const& lpTokensAMMBalance,
-        STAmount const& lpTokensWithdraw);
+        STAmount const& lpTokensWithdraw,
+        std::uint16_t tfee);
 
     /** Equal-asset withdrawal (LPTokens) of some AMM instance pools
      * shares represented by the number of LPTokens .
@@ -114,6 +117,7 @@ private:
      * @param lptAMMBalance current AMM LPT balance
      * @param lpTokens current LPT balance
      * @param lpTokensWithdraw amount of tokens to withdraw
+     * @param tfee trading fee in basis points
      * @return
      */
     std::pair<TER, STAmount>
@@ -124,7 +128,8 @@ private:
         STAmount const& amount2Balance,
         STAmount const& lptAMMBalance,
         STAmount const& lpTokens,
-        STAmount const& lpTokensWithdraw);
+        STAmount const& lpTokensWithdraw,
+        std::uint16_t tfee);
 
     /** Withdraw both assets (Asset1Out, Asset2Out) with the constraints
      * on the maximum amount of each asset that the trader is willing
@@ -136,6 +141,7 @@ private:
      * @param lptAMMBalance current AMM LPT balance
      * @param amount asset1 withdraw amount
      * @param amount2 max asset2 withdraw amount
+     * @param tfee trading fee in basis points
      * @return
      */
     std::pair<TER, STAmount>
@@ -146,11 +152,11 @@ private:
         STAmount const& amount2Balance,
         STAmount const& lptAMMBalance,
         STAmount const& amount,
-        STAmount const& amount2);
+        STAmount const& amount2,
+        std::uint16_t tfee);
 
     /** Single asset withdrawal (Asset1Out) equivalent to the amount specified
      * in Asset1Out. The trading fee is charged.
-     * @param ctx
      * @param view
      * @param ammAccount
      * @param amountBalance current AMM asset1 balance

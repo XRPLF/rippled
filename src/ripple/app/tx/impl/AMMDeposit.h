@@ -35,8 +35,8 @@ class Sandbox;
  * LPTokens - transaction assumes proportional deposit of pools assets in
  *     exchange for the specified amount of LPTokens of the AMM instance.
  * Asset1In - transaction assumes single asset deposit of the amount of asset
- *     specified by Asset1In. This is essentially an equal asset deposit
- *     and a swap.
+ *     specified by Asset1In. This is essentially a swap and an equal asset
+ *     deposit.
  * Asset1In and Asset2In - transaction assumes proportional deposit of pool
  *     assets with the constraints on the maximum amount of each asset that
  *     the trader is willing to deposit.
@@ -45,20 +45,17 @@ class Sandbox;
  *     represented by amount of LPTokens.
  * Asset1In and EPrice - transaction assumes single asset deposit with
  *     the following two constraints:
- *         a. amount of asset1 if specified in Asset1In specifies the maximum
- *             amount of asset1 that the trader is willing to deposit
- *         b. The effective-price of the LPTokens traded out does not exceed
- *             the specified EPrice.
- * Following updates after a successful AMMDeposit transaction:
- * The deposited asset, if XRP, is transferred from the account that initiated
- *     the transaction to the AMM instance account, thus changing the Balance
- *     field of each account.
- * The deposited asset, if tokens, are balanced between the AMM account
- *     and the issuer account trustline.
- * The LPTokens are issued by the AMM instance account to the account
- *     that initiated the transaction and a new trustline is created,
- *     if there does not exist one.
- * The pool composition is updated.
+ *         a. amount of asset1 if specified (not 0) in Asset1In specifies the
+ * maximum amount of asset1 that the trader is willing to deposit b. The
+ * effective-price of the LPTokens traded out does not exceed the specified
+ * EPrice. Following updates after a successful AMMDeposit transaction: The
+ * deposited asset, if XRP, is transferred from the account that initiated the
+ * transaction to the AMM instance account, thus changing the Balance field of
+ * each account. The deposited asset, if tokens, are balanced between the AMM
+ * account and the issuer account trustline. The LPTokens are issued by the AMM
+ * instance account to the account that initiated the transaction and a new
+ * trustline is created, if there does not exist one. The pool composition is
+ * updated.
  * @see [XLS30d:AMMDeposit
  * transaction](https://github.com/XRPLF/XRPL-Standards/discussions/78)
  */
@@ -77,7 +74,6 @@ public:
     static TER
     preclaim(PreclaimContext const& ctx);
 
-    /** Attempt to create the AMM instance. */
     TER
     doApply() override;
 
@@ -87,22 +83,26 @@ private:
 
     /** Deposit requested assets and token amount into LP account.
      * Return new total LPToken balance.
-     * @param deposit
+     * @param view
      * @param ammAccount
+     * @param amountBalance current AMM asset1 balance
      * @param amountDeposit
      * @param amount2Deposit
-     * @param lptTokensAMMBalance current AMM LPT balance
+     * @param lptAMMBalance current AMM LPT balance
      * @param lpTokensDeposit amount of tokens to deposit
+     * @param tfee trading fee in basis points
      * @return
      */
     std::pair<TER, STAmount>
     deposit(
-        Sandbox& deposit,
+        Sandbox& view,
         AccountID const& ammAccount,
+        STAmount const& amountBalance,
         STAmount const& amountDeposit,
         std::optional<STAmount> const& amount2Deposit,
-        STAmount const& lptTokensAMMBalance,
-        STAmount const& lpTokensDeposit);
+        STAmount const& lptAMMBalance,
+        STAmount const& lpTokensDeposit,
+        std::uint16_t tfee);
 
     /** Equal asset deposit (LPTokens) for the specified share of
      * the AMM instance pools. The trading fee is not charged.
@@ -112,6 +112,7 @@ private:
      * @param amount2Balance current AMM asset2 balance
      * @param lptAMMBalance current AMM LPT balance
      * @param lpTokensDeposit amount of tokens to deposit
+     * @param tfee trading fee in basis points
      * @return
      */
     std::pair<TER, STAmount>
@@ -121,7 +122,8 @@ private:
         STAmount const& amountBalance,
         STAmount const& amount2Balance,
         STAmount const& lptAMMBalance,
-        STAmount const& lpTokensDeposit);
+        STAmount const& lpTokensDeposit,
+        std::uint16_t tfee);
 
     /** Equal asset deposit (Asset1In, Asset2In) with the constraint on
      * the maximum amount of both assets that the trader is willing to deposit.
@@ -133,6 +135,7 @@ private:
      * @param lptAMMBalance current AMM LPT balance
      * @param amount maximum asset1 deposit amount
      * @param amount2 maximum asset2 deposit amount
+     * @param tfee trading fee in basis points
      * @return
      */
     std::pair<TER, STAmount>
@@ -143,7 +146,8 @@ private:
         STAmount const& amount2Balance,
         STAmount const& lptAMMBalance,
         STAmount const& amount,
-        STAmount const& amount2);
+        STAmount const& amount2,
+        std::uint16_t tfee);
 
     /** Single asset deposit (Asset1In) by the amount.
      * The trading fee is charged.

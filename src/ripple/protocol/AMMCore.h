@@ -30,7 +30,19 @@ namespace ripple {
 
 std::uint16_t constexpr TRADING_FEE_THRESHOLD = 1000;  // 1%
 
+// Auction slot
 std::uint32_t constexpr TOTAL_TIME_SLOT_SECS = 24 * 3600;
+std::uint16_t constexpr AUCTION_SLOT_TIME_INTERVALS = 20;
+std::uint16_t constexpr AUCTION_SLOT_MAX_AUTH_ACCOUNTS = 4;
+std::uint32_t constexpr AUCTION_SLOT_FEE_SCALE_FACTOR = 100000;
+std::uint32_t constexpr AUCTION_SLOT_DISCOUNTED_FEE_FRACTION = 10;
+std::uint32_t constexpr AUCTION_SLOT_MIN_FEE_FRACTION = 25;
+std::uint32_t constexpr AUCTION_SLOT_INTERVAL_DURATION =
+    TOTAL_TIME_SLOT_SECS / AUCTION_SLOT_TIME_INTERVALS;
+
+// Votes
+std::uint16_t constexpr VOTE_MAX_SLOTS = 8;
+std::uint32_t constexpr VOTE_WEIGHT_SCALE_FACTOR = 100000;
 
 class STObject;
 class STAmount;
@@ -96,7 +108,7 @@ ammEnabled(Rules const&);
 inline Number
 getFee(std::uint16_t tfee)
 {
-    return Number{tfee} / 100000;
+    return Number{tfee} / AUCTION_SLOT_FEE_SCALE_FACTOR;
 }
 
 /** Get fee multiplier (1 - tfee)

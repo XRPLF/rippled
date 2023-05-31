@@ -308,7 +308,7 @@ applyCreate(
     }
 
     JLOG(j_.debug()) << "AMM Instance: success " << *ammAccount << " "
-                     << ammKeylet.key << " " << lptIss << " " << amount << " "
+                     << ammKeylet.key << " " << lpTokens << " " << amount << " "
                      << amount2;
     auto addOrderBook =
         [&](Issue const& issueIn, Issue const& issueOut, std::uint64_t uRate) {

@@ -167,8 +167,8 @@ JSS(asks);                   // out: Subscribe
 JSS(asset);                  // in: amm_info
 JSS(asset2);                 // in: amm_info
 JSS(assets);                 // out: GatewayBalances
-JSS(asset_frozen);           // in: amm_info
-JSS(asset2_frozen);          // in: amm_info
+JSS(asset_frozen);           // out: amm_info
+JSS(asset2_frozen);          // out: amm_info
 JSS(auction_slot);           // out: amm_info
 JSS(authorized);             // out: AccountLines
 JSS(auth_accounts);          // out: amm_info

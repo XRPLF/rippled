@@ -357,6 +357,7 @@ extern SF_UINT16 const sfHookStateChangeCount;
 extern SF_UINT16 const sfHookEmitCount;
 extern SF_UINT16 const sfHookExecutionIndex;
 extern SF_UINT16 const sfHookApiVersion;
+extern SF_UINT16 const sfDiscountedFee;
 
 // 32-bit integers (common)
 extern SF_UINT32 const sfNetworkID;
@@ -373,7 +374,6 @@ extern SF_UINT32 const sfTransferRate;
 extern SF_UINT32 const sfWalletSize;
 extern SF_UINT32 const sfOwnerCount;
 extern SF_UINT32 const sfDestinationTag;
-extern SF_UINT32 const sfDiscountedFee;
 
 // 32-bit integers (uncommon)
 extern SF_UINT32 const sfHighQualityIn;

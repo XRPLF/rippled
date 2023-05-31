@@ -77,7 +77,6 @@ public:
     static TER
     preclaim(PreclaimContext const& ctx);
 
-    /** Attempt to create the AMM instance. */
     TER
     doApply() override;
 };

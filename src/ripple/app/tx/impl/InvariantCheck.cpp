@@ -495,7 +495,8 @@ ValidNewAccountRoot::finalize(
     }
 
     JLOG(j.fatal()) << "Invariant failed: account root created "
-                       "by a non-Payment or by an unsuccessful transaction";
+                       "by a non-Payment, by an unsuccessful transaction, "
+                       "or by AMM";
     return false;
 }
 

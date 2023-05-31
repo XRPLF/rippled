@@ -101,7 +101,7 @@ void
 AMMTestBase::testAMM(
     std::function<void(jtx::AMM&, jtx::Env&)>&& cb,
     std::optional<std::pair<STAmount, STAmount>> const& pool,
-    std::uint32_t fee,
+    std::uint16_t tfee,
     std::optional<jtx::ter> const& ter,
     std::optional<FeatureBitset> const& features)
 {
@@ -138,7 +138,7 @@ AMMTestBase::testAMM(
     else if (asset2.native())
         fund(env, gw, {alice, carol}, toFund2, {toFund1}, Fund::All);
 
-    AMM ammAlice(env, alice, asset1, asset2, false, fee);
+    AMM ammAlice(env, alice, asset1, asset2, false, tfee);
     BEAST_EXPECT(ammAlice.expectBalances(asset1, asset2, ammAlice.tokens()));
     cb(ammAlice, env);
 }

@@ -47,7 +47,7 @@ ammLPTokens(
 /** Calculate LP Tokens given asset's deposit amount.
  * @param asset1Balance current AMM asset1 balance
  * @param asset1Deposit requested asset1 deposit amount
- * @param lpTokensBalance LP Tokens balance
+ * @param lptAMMBalance AMM LPT balance
  * @param tfee trading fee in basis points
  * @return tokens
  */
@@ -55,28 +55,28 @@ STAmount
 lpTokensIn(
     STAmount const& asset1Balance,
     STAmount const& asset1Deposit,
-    STAmount const& lpTokensBalance,
+    STAmount const& lptAMMBalance,
     std::uint16_t tfee);
 
 /** Calculate asset deposit given LP Tokens.
  * @param asset1Balance current AMM asset1 balance
- * @param lpTokensBalance LP Tokens balance
- * @param ammTokensBalance AMM LPT balance
+ * @param lpTokens LP Tokens
+ * @param lptAMMBalance AMM LPT balance
  * @param tfee trading fee in basis points
  * @return
  */
 STAmount
 ammAssetIn(
     STAmount const& asset1Balance,
-    STAmount const& lpTokensBalance,
-    STAmount const& ammTokensBalance,
+    STAmount const& lptAMMBalance,
+    STAmount const& lpTokens,
     std::uint16_t tfee);
 
 /** Calculate LP Tokens given asset's withdraw amount. Return 0
  * if can't calculate.
  * @param asset1Balance current AMM asset1 balance
  * @param asset1Withdraw requested asset1 withdraw amount
- * @param lpTokensBalance LP Tokens balance
+ * @param lptAMMBalance AMM LPT balance
  * @param tfee trading fee in basis points
  * @return tokens out amount
  */
@@ -84,7 +84,7 @@ STAmount
 lpTokensOut(
     STAmount const& asset1Balance,
     STAmount const& asset1Withdraw,
-    STAmount const& lpTokensBalance,
+    STAmount const& lptAMMBalance,
     std::uint16_t tfee);
 
 /** Calculate asset withdrawal by tokens
@@ -99,7 +99,7 @@ withdrawByTokens(
     STAmount const& assetBalance,
     STAmount const& lptAMMBalance,
     STAmount const& lpTokens,
-    std::uint32_t tfee);
+    std::uint16_t tfee);
 
 /** Check if the relative distance between the qualities
  * is within the requested distance.
@@ -137,7 +137,7 @@ std::optional<TAmounts<TIn, TOut>>
 changeSpotPriceQuality(
     TAmounts<TIn, TOut> const& pool,
     Quality const& quality,
-    std::uint32_t tfee)
+    std::uint16_t tfee)
 {
     auto const f = feeMult(tfee);  // 1 - fee
     auto const& a = f;
@@ -237,6 +237,50 @@ swapAssetOut(
  */
 Number
 square(Number const& n);
+
+/** Adjust LP tokens to deposit/withdraw.
+ * Amount type keeps 16 digits. Maintaining the LP balance by adding deposited
+ * tokens or subtracting withdrawn LP tokens from LP balance results in
+ * loosing precision in LP balance. I.e. the resulting LP balance
+ * is less than the actual sum of LP tokens. To adjust for this, subtract
+ * old tokens balance from the new one for deposit or vice versa for withdraw
+ * to cancel out the precision loss.
+ * @param lptAMMBalance LPT AMM Balance
+ * @param lpTokens LP tokens to deposit or withdraw
+ * @param isDeposit true if deposit, false if withdraw
+ */
+STAmount
+adjustLPTokens(
+    STAmount const& lptAMMBalance,
+    STAmount const& lpTokens,
+    bool isDeposit);
+
+/** Calls adjustLPTokens() and adjusts deposit or withdraw amounts if
+ * the adjusted LP tokens are less than the provided LP tokens.
+ * @param amountBalance asset1 pool balance
+ * @param amount asset1 to deposit or withdraw
+ * @param amount2 asset2 to deposit or withdraw
+ * @param lptAMMBalance LPT AMM Balance
+ * @param lpTokens LP tokens to deposit or withdraw
+ * @param tfee trading fee in basis points
+ * @param isDeposit true if deposit, false if withdraw
+ * @return
+ */
+std::tuple<STAmount, std::optional<STAmount>, STAmount>
+adjustAmountsByLPTokens(
+    STAmount const& amountBalance,
+    STAmount const& amount,
+    std::optional<STAmount> const& amount2,
+    STAmount const& lptAMMBalance,
+    STAmount const& lpTokens,
+    std::uint16_t tfee,
+    bool isDeposit);
+
+/** Positive solution for quadratic equation:
+ * x = (-b + sqrt(b**2 + 4*a*c))/(2*a)
+ */
+Number
+solveQuadraticEq(Number const& a, Number const& b, Number const& c);
 
 }  // namespace ripple
 

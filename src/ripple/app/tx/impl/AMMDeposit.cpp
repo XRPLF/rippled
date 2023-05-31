@@ -189,9 +189,11 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
             // Adjust the reserve if LP doesn't have LPToken trustline
             auto const sle = ctx.view.read(
                 keylet::line(accountID, lpIssue.account, lpIssue.currency));
-            return (xrpLiquid(ctx.view, accountID, !sle, ctx.j) >= deposit)
-                ? TER(tesSUCCESS)
-                : (!sle ? tecINSUF_RESERVE_LINE : tecAMM_UNFUNDED);
+            if (xrpLiquid(ctx.view, accountID, !sle, ctx.j) >= deposit)
+                return TER(tesSUCCESS);
+            if (sle)
+                return tecAMM_UNFUNDED;
+            return tecINSUF_RESERVE_LINE;
         }
         return (accountID == deposit.issue().account ||
                 accountHolds(
@@ -208,7 +210,8 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
     auto const amount2 = ctx.tx[~sfAmount2];
     auto const ammAccountID = ammSle->getAccountID(sfAccount);
 
-    auto checkAmount = [&](std::optional<STAmount> const& amount) -> TER {
+    auto checkAmount = [&](std::optional<STAmount> const& amount,
+                           bool checkBalance) -> TER {
         if (amount)
         {
             // This normally should not happen.
@@ -238,21 +241,24 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
                                     << to_string(amount->issue().currency);
                 return tecFROZEN;
             }
-            if (auto const ter = balance(*amount))
+            if (checkBalance)
             {
-                JLOG(ctx.j.debug())
-                    << "AMM Deposit: account has insufficient funds, "
-                    << *amount;
-                return ter;
+                if (auto const ter = balance(*amount))
+                {
+                    JLOG(ctx.j.debug())
+                        << "AMM Deposit: account has insufficient funds, "
+                        << *amount;
+                    return ter;
+                }
             }
         }
         return tesSUCCESS;
     };
 
-    if (auto const ter = checkAmount(amount))
+    if (auto const ter = checkAmount(amount, true))
         return ter;
 
-    if (auto const ter = checkAmount(amount2))
+    if (auto const ter = checkAmount(amount2, true))
         return ter;
 
     // Equal deposit lp tokens
@@ -263,18 +269,12 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
         return temAMM_BAD_TOKENS;
     }
 
-    if ((ctx.tx.getFlags() & tfLPToken) &&
-        (isFrozen(ctx.view, ammAccountID, ctx.tx[sfAsset]) ||
-         isFrozen(ctx.view, ammAccountID, ctx.tx[sfAsset2]) ||
-         isIndividualFrozen(ctx.view, accountID, ctx.tx[sfAsset]) ||
-         isIndividualFrozen(ctx.view, accountID, ctx.tx[sfAsset2])))
+    if (ctx.tx.getFlags() & (tfLPToken | tfWithdrawAll))
     {
-        JLOG(ctx.j.debug())
-            << "AMM Deposit: (AMM) account or currency is frozen, "
-            << to_string(ammAccountID) << " " << to_string(accountID) << " "
-            << to_string(ctx.tx[sfAsset].currency) << " "
-            << to_string(ctx.tx[sfAsset2].currency);
-        return tecFROZEN;
+        if (auto const ter = checkAmount(amountBalance, false))
+            return ter;
+        if (auto const ter = checkAmount(amount2Balance, false))
+            return ter;
     }
 
     // Check the reserve for LPToken trustline if not LP.
@@ -333,7 +333,8 @@ AMMDeposit::applyGuts(Sandbox& sb)
                 amount2Balance,
                 lptAMMBalance,
                 *amount,
-                *amount2);
+                *amount2,
+                tfee);
         if (subTxType & tfOneAssetLPToken)
             return singleDepositTokens(
                 sb,
@@ -362,7 +363,8 @@ AMMDeposit::applyGuts(Sandbox& sb)
                 amountBalance,
                 amount2Balance,
                 lptAMMBalance,
-                *lpTokensDeposit);
+                *lpTokensDeposit,
+                tfee);
         // should not happen.
         JLOG(j_.error()) << "AMM Deposit: invalid options.";
         return std::make_pair(tecINTERNAL, STAmount{});
@@ -395,10 +397,12 @@ std::pair<TER, STAmount>
 AMMDeposit::deposit(
     Sandbox& view,
     AccountID const& ammAccount,
+    STAmount const& amountBalance,
     STAmount const& amountDeposit,
     std::optional<STAmount> const& amount2Deposit,
-    STAmount const& lpTokensAMMBalance,
-    STAmount const& lpTokensDeposit)
+    STAmount const& lptAMMBalance,
+    STAmount const& lpTokensDeposit,
+    std::uint16_t tfee)
 {
     // Check account has sufficient funds.
     // Return true if it does, false otherwise.
@@ -420,63 +424,70 @@ AMMDeposit::deposit(
                 ctx_.journal) >= deposit;
     };
 
+    auto const
+        [amountDepositActual, amount2DepositActual, lpTokensDepositActual] =
+            adjustAmountsByLPTokens(
+                amountBalance,
+                amountDeposit,
+                amount2Deposit,
+                lptAMMBalance,
+                lpTokensDeposit,
+                tfee,
+                true);
+
+    if (lpTokensDepositActual <= beast::zero)
+    {
+        JLOG(ctx_.journal.debug()) << "AMM Deposit: adjusted tokens zero";
+        return {tecAMM_FAILED_DEPOSIT, STAmount{}};
+    }
+
     // Deposit amountDeposit
-    if (!balance(amountDeposit))
+    if (!balance(amountDepositActual))
     {
         JLOG(ctx_.journal.debug())
             << "AMM Deposit: account has insufficient balance to deposit "
-            << amountDeposit;
+            << amountDepositActual;
         return {tecAMM_UNFUNDED, STAmount{}};
     }
-    if (amountDeposit <= beast::zero)
+    if (amountDepositActual <= beast::zero)
     {
         JLOG(ctx_.journal.debug()) << "AMM Deposit: deposit is 0";
         return {tecAMM_FAILED_DEPOSIT, STAmount{}};
     }
 
-    auto res =
-        accountSend(view, account_, ammAccount, amountDeposit, ctx_.journal);
+    auto res = accountSend(
+        view, account_, ammAccount, amountDepositActual, ctx_.journal);
     if (res != tesSUCCESS)
     {
         JLOG(ctx_.journal.debug())
-            << "AMM Deposit: failed to deposit " << amountDeposit;
+            << "AMM Deposit: failed to deposit " << amountDepositActual;
         return {res, STAmount{}};
     }
 
     // Deposit amount2Deposit
-    if (amount2Deposit)
+    if (amount2DepositActual)
     {
-        if (!balance(*amount2Deposit))
+        if (!balance(*amount2DepositActual))
         {
             JLOG(ctx_.journal.debug())
                 << "AMM Deposit: account has insufficient balance to deposit "
-                << *amount2Deposit;
+                << *amount2DepositActual;
             return {tecAMM_UNFUNDED, STAmount{}};
         }
-        if (*amount2Deposit <= beast::zero)
+        if (*amount2DepositActual <= beast::zero)
         {
             JLOG(ctx_.journal.debug()) << "AMM Deposit: deposit2 is 0";
             return {tecAMM_FAILED_DEPOSIT, STAmount{}};
         }
         res = accountSend(
-            view, account_, ammAccount, *amount2Deposit, ctx_.journal);
+            view, account_, ammAccount, *amount2DepositActual, ctx_.journal);
         if (res != tesSUCCESS)
         {
             JLOG(ctx_.journal.debug())
-                << "AMM Deposit: failed to deposit " << *amount2Deposit;
+                << "AMM Deposit: failed to deposit " << *amount2DepositActual;
             return {res, STAmount{}};
         }
     }
-
-    // New LPToken balance
-    auto const newLPTokenBalance = lpTokensAMMBalance + lpTokensDeposit;
-    // Actual tokens to deposit
-    // Amount types keep 16 digits. Summing up tokens from LP results in
-    // loosing precision in the total balance; i.e. the resulting total balance
-    // is less than the actual sum of lp tokens. To adjust for this, subtract
-    // old tokens balance from the new one to cancel out the precision loss.
-    // A similar adjustment is done in withdraw.
-    auto const lpTokensDepositActual = newLPTokenBalance - lpTokensAMMBalance;
 
     // Deposit LP tokens
     res = accountSend(
@@ -487,7 +498,7 @@ AMMDeposit::deposit(
         return {res, STAmount{}};
     }
 
-    return {tesSUCCESS, lpTokensAMMBalance + lpTokensDepositActual};
+    return {tesSUCCESS, lptAMMBalance + lpTokensDepositActual};
 }
 
 /** Proportional deposit of pools assets in exchange for the specified
@@ -500,7 +511,8 @@ AMMDeposit::equalDepositTokens(
     STAmount const& amountBalance,
     STAmount const& amount2Balance,
     STAmount const& lptAMMBalance,
-    STAmount const& lpTokensDeposit)
+    STAmount const& lpTokensDeposit,
+    std::uint16_t tfee)
 {
     try
     {
@@ -509,10 +521,12 @@ AMMDeposit::equalDepositTokens(
         return deposit(
             view,
             ammAccount,
+            amountBalance,
             multiply(amountBalance, frac, amountBalance.issue()),
             multiply(amount2Balance, frac, amount2Balance.issue()),
             lptAMMBalance,
-            lpTokensDeposit);
+            lpTokensDeposit,
+            tfee);
     }
     catch (std::exception const& e)
     {
@@ -532,7 +546,7 @@ AMMDeposit::equalDepositTokens(
  *      a: balance of asset A being added
  *      b: balance of asset B being added
  *      t: balance of LPTokens issued to LP after a successful transaction
- * Use equation 1 to compute the amount of , given the amount in Asset1In.
+ * Use equation 1 to compute the amount of t, given the amount in Asset1In.
  *     Let this be Z
  * Use equation 2 to compute the amount of asset2, given  t~Z. Let
  *     the computed amount of asset2 be X.
@@ -558,7 +572,8 @@ AMMDeposit::equalDepositLimit(
     STAmount const& amount2Balance,
     STAmount const& lptAMMBalance,
     STAmount const& amount,
-    STAmount const& amount2)
+    STAmount const& amount2,
+    std::uint16_t tfee)
 {
     auto frac = Number{amount} / amountBalance;
     auto tokens = toSTAmount(lptAMMBalance.issue(), lptAMMBalance * frac);
@@ -569,10 +584,12 @@ AMMDeposit::equalDepositLimit(
         return deposit(
             view,
             ammAccount,
+            amountBalance,
             amount,
             toSTAmount(amount2Balance.issue(), amount2Deposit),
             lptAMMBalance,
-            tokens);
+            tokens,
+            tfee);
     frac = Number{amount2} / amount2Balance;
     tokens = toSTAmount(lptAMMBalance.issue(), lptAMMBalance * frac);
     if (tokens == beast::zero)
@@ -582,15 +599,20 @@ AMMDeposit::equalDepositLimit(
         return deposit(
             view,
             ammAccount,
+            amountBalance,
             toSTAmount(amountBalance.issue(), amountDeposit),
             amount2,
             lptAMMBalance,
-            tokens);
+            tokens,
+            tfee);
     return {tecAMM_FAILED_DEPOSIT, STAmount{}};
 }
 
 /** Single asset deposit of the amount of asset specified by Asset1In.
- *       t = T * (sqrt(1 + (b - 0.5 * tfee * b) / B) - 1) (3)
+ *       t = T * (b / B - x) / (1 + x) (3)
+ *      where
+ *         f1 = (1 - 0.5 * tfee) / (1 - tfee)
+ *         x = sqrt(f1**2 + b / (B * (1 - tfee)) - f1
  * Use equation 3 @see singleDeposit to compute amount of LPTokens to be issued,
  * given the amount in Asset1In.
  */
@@ -607,15 +629,22 @@ AMMDeposit::singleDeposit(
     if (tokens == beast::zero)
         return {tecAMM_FAILED_DEPOSIT, STAmount{}};
     return deposit(
-        view, ammAccount, amount, std::nullopt, lptAMMBalance, tokens);
+        view,
+        ammAccount,
+        amountBalance,
+        amount,
+        std::nullopt,
+        lptAMMBalance,
+        tokens,
+        tfee);
 }
 
 /** Single asset asset1 is deposited to obtain some share of
  * the AMM instance's pools represented by amount of LPTokens.
- *       b = (((t/T + 1)**2 - 1) / (1 - 0.5 * tfee)) * B (4)
  * Use equation 4 to compute the amount of asset1 to be deposited,
- * given t represented by amount of LPTokens. Fail if b exceeds
- * specified Max amount to deposit.
+ * given t represented by amount of LPTokens. Equation 4 solves
+ * equation 3 @see singleDeposit for b. Fail if b exceeds specified
+ * Max amount to deposit.
  */
 std::pair<TER, STAmount>
 AMMDeposit::singleDepositTokens(
@@ -628,20 +657,22 @@ AMMDeposit::singleDepositTokens(
     std::uint16_t tfee)
 {
     auto const amountDeposit =
-        ammAssetIn(amountBalance, lpTokensDeposit, lptAMMBalance, tfee);
+        ammAssetIn(amountBalance, lptAMMBalance, lpTokensDeposit, tfee);
     if (amountDeposit > amount)
         return {tecAMM_FAILED_DEPOSIT, STAmount{}};
     return deposit(
         view,
         ammAccount,
+        amountBalance,
         amountDeposit,
         std::nullopt,
         lptAMMBalance,
-        lpTokensDeposit);
+        lpTokensDeposit,
+        tfee);
 }
 
 /** Single asset deposit with two constraints.
- * a. Amount of asset1 if specified in Asset1In specifies the maximum
+ * a. Amount of asset1 if specified (not 0) in Asset1In specifies the maximum
  *     amount of asset1 that the trader is willing to deposit.
  * b. The effective-price of the LPToken traded out does not exceed
  *     the specified EPrice.
@@ -679,25 +710,61 @@ AMMDeposit::singleDepositEPrice(
     {
         auto const tokens =
             lpTokensIn(amountBalance, amount, lptAMMBalance, tfee);
-        if (tokens == beast::zero)
+        if (tokens <= beast::zero)
             return {tecAMM_FAILED_DEPOSIT, STAmount{}};
         auto const ep = Number{amount} / tokens;
         if (ep <= ePrice)
             return deposit(
-                view, ammAccount, amount, std::nullopt, lptAMMBalance, tokens);
+                view,
+                ammAccount,
+                amountBalance,
+                amount,
+                std::nullopt,
+                lptAMMBalance,
+                tokens,
+                tfee);
     }
 
-    // LPTokens is asset out => EP = b / t
-    // substituting t in formula 3 as b/EP and simplifying
-    // b = (T * EP)**2 * (1 - 0.5 * tfee) / B - 2 * T * EP
+    // LPTokens is asset out => E = b / t
+    // substituting t in formula (3) as b/E:
+    // b/E = T * [b/B - sqrt(t2**2 + b/(f1*B)) + t2]/
+    //                      [1 + sqrt(t2**2 + b/(f1*B)) -t2] (A)
+    // where f1 = 1 - fee, f2 = (1 - fee/2)/f1
+    // Let R = b/(f1*B), then b/B = f1*R and b = R*f1*B
+    // Then (A) is
+    // R*f1*B = E*T*[R*f1 -sqrt(f2**2 + R) + f2]/[1 + sqrt(f2**2 + R) - f2] =>
+    // Let c = f1*B/(E*T) =>
+    // R*c*(1 + sqrt(f2**2 + R) + f2) = R*f1 - sqrt(f2**2 + R) - f2 =>
+    // (R*c + 1)*sqrt(f2**2 + R) = R*(f1 + c*f2 - c) + f2 =>
+    // Let d = f1 + c*f2 - c =>
+    // (R*c + 1)*sqrt(f2**2 + R) = R*d + f2 =>
+    // (R*c + 1)**2 * (f2**2 + R) = (R*d + f2)**2 =>
+    // (R*c)**2 + R*((c*f2)**2 + 2*c - d**2) + 2*c*f2**2 + 1 -2*d*f2 = 0 =>
+    // a1 = c**2, b1 = (c*f2)**2 + 2*c - d**2, c1 = 2*c*f2**2 + 1 - 2*d*f2
+    // R = (-b1 + sqrt(b1**2 + 4*a1*c1))/(2*a1)
+    auto const f1 = feeMult(tfee);
+    auto const f2 = feeMultHalf(tfee) / f1;
+    auto const c = f1 * amountBalance / (ePrice * lptAMMBalance);
+    auto const d = f1 + c * f2 - c;
+    auto const a1 = c * c;
+    auto const b1 = c * c * f2 * f2 + 2 * c - d * d;
+    auto const c1 = 2 * c * f2 * f2 + 1 - 2 * d * f2;
     auto const amountDeposit = toSTAmount(
         amountBalance.issue(),
-        square(ePrice * lptAMMBalance) * feeMultHalf(tfee) / amountBalance -
-            2 * ePrice * lptAMMBalance);
+        f1 * amountBalance * solveQuadraticEq(a1, b1, c1));
+    if (amountDeposit <= beast::zero)
+        return {tecAMM_FAILED_DEPOSIT, STAmount{}};
     auto const tokens =
         toSTAmount(lptAMMBalance.issue(), amountDeposit / ePrice);
     return deposit(
-        view, ammAccount, amountDeposit, std::nullopt, lptAMMBalance, tokens);
+        view,
+        ammAccount,
+        amountBalance,
+        amountDeposit,
+        std::nullopt,
+        lptAMMBalance,
+        tokens,
+        tfee);
 }
 
 }  // namespace ripple

@@ -69,7 +69,6 @@ class AMM
     bool log_;
     // Predict next purchase price
     IOUAmount lastPurchasePrice_;
-    Number const minSlotPrice_;
     std::optional<IOUAmount> bidMin_;
     std::optional<IOUAmount> bidMax_;
     // Multi-signature
@@ -85,7 +84,7 @@ public:
         STAmount const& asset1,
         STAmount const& asset2,
         bool log = false,
-        std::uint32_t tfee = 0,
+        std::uint16_t tfee = 0,
         std::uint32_t fee = 0,
         std::optional<std::uint32_t> flags = std::nullopt,
         std::optional<jtx::seq> seq = std::nullopt,
@@ -129,13 +128,8 @@ public:
     /**
      * @param fee expected discounted fee
      * @param timeSlot expected time slot
-     * @param purchasedTimeSlot time slot corresponding to the purchased price
+     * @param expectedPrice expected slot price
      */
-    [[nodiscard]] bool
-    expectAuctionSlot(
-        std::uint32_t fee,
-        std::optional<std::uint8_t> timeSlot,
-        std::optional<std::uint8_t> purchasedTimeSlot = std::nullopt) const;
     [[nodiscard]] bool
     expectAuctionSlot(
         std::uint32_t fee,
@@ -159,7 +153,7 @@ public:
     [[nodiscard]] bool
     ammExists() const;
 
-    void
+    IOUAmount
     deposit(
         std::optional<Account> const& account,
         LPToken tokens,
@@ -167,7 +161,7 @@ public:
         std::optional<std::uint32_t> const& flags = std::nullopt,
         std::optional<ter> const& ter = std::nullopt);
 
-    void
+    IOUAmount
     deposit(
         std::optional<Account> const& account,
         STAmount const& asset1InDetails,
@@ -176,7 +170,7 @@ public:
         std::optional<std::uint32_t> const& flags = std::nullopt,
         std::optional<ter> const& ter = std::nullopt);
 
-    void
+    IOUAmount
     deposit(
         std::optional<Account> const& account,
         std::optional<LPToken> tokens,
@@ -305,7 +299,7 @@ private:
         std::optional<jtx::seq> const& seq = std::nullopt,
         std::optional<ter> const& ter = std::nullopt);
 
-    void
+    IOUAmount
     deposit(
         std::optional<Account> const& account,
         Json::Value& jv,
@@ -333,11 +327,6 @@ private:
         STAmount const& asset2,
         IOUAmount const& balance,
         Json::Value const& jv) const;
-
-    [[nodiscard]] IOUAmount
-    expectedPurchasePrice(
-        std::optional<std::uint8_t> timeSlot,
-        IOUAmount const& lastPurchasePrice) const;
 
     void
     submit(
