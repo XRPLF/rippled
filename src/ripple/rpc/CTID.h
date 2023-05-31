@@ -58,7 +58,7 @@ decodeCTID(const T ctid) noexcept
         std::is_same_v<T, std::string> || std::is_same_v<T, char*> ||
         std::is_same_v<T, const char*> || std::is_same_v<T, std::string_view>)
     {
-        const std::string ctidString(ctid);
+        std::string const ctidString(ctid);
 
         if (ctidString.length() != 16)
             return {};
