@@ -552,7 +552,7 @@ class Transaction_test : public beast::unit_test::suite
         // Test case 1: Valid input values
         auto const expected11 = std::optional<std::string>("CFFFFFFFFFFFFFFF");
         BEAST_EXPECT(
-            RPC::encodeCTID(0xFFFFFFFUL, 0xFFFFU, 0xFFFFU) == expected11);
+            RPC::encodeCTID(0x0FFF'FFFFUL, 0xFFFFU, 0xFFFFU) == expected11);
         auto const expected12 = std::optional<std::string>("C000000000000000");
         BEAST_EXPECT(RPC::encodeCTID(0, 0, 0) == expected12);
         auto const expected13 = std::optional<std::string>("C000000100020003");
@@ -568,7 +568,7 @@ class Transaction_test : public beast::unit_test::suite
         // completeness
         auto const expected3 = std::optional<std::string>("CFFFFFFF0000FFFF");
         BEAST_EXPECT(
-            RPC::encodeCTID(0xFFFF'FFF, (uint16_t)0x10000, 0xFFFF) ==
+            RPC::encodeCTID(0x0FFF'FFFF, (uint16_t)0x10000, 0xFFFF) ==
             expected3);
 
         // Test case 4: network_id greater than 0xFFFF
@@ -576,7 +576,7 @@ class Transaction_test : public beast::unit_test::suite
         // completeness
         auto const expected4 = std::optional<std::string>("CFFFFFFFFFFF0000");
         BEAST_EXPECT(
-            RPC::encodeCTID(0xFFFF'FFFUL, 0xFFFFU, (uint16_t)0x1000'0U) ==
+            RPC::encodeCTID(0x0FFF'FFFFUL, 0xFFFFU, (uint16_t)0x1000'0U) ==
             expected4);
 
         // Test case 5: Valid input values
@@ -612,7 +612,7 @@ class Transaction_test : public beast::unit_test::suite
         BEAST_EXPECT(
             (RPC::decodeCTID(0xCFFF'FFFF'FFFF'FFFFULL) ==
              std::optional<std::tuple<int32_t, uint16_t, uint16_t>>(
-                 std::make_tuple(0xFFFFFFFUL, 0xFFFFU, 0xFFFFU))));
+                 std::make_tuple(0x0FFF'FFFFUL, 0xFFFFU, 0xFFFFU))));
         BEAST_EXPECT(
             (RPC::decodeCTID(0xC000'0000'0000'0000ULL) ==
              std::optional<std::tuple<int32_t, uint16_t, uint16_t>>(
@@ -624,7 +624,7 @@ class Transaction_test : public beast::unit_test::suite
         BEAST_EXPECT(
             (RPC::decodeCTID(0xC0CA'2AA7'326F'C045ULL) ==
              std::optional<std::tuple<int32_t, uint16_t, uint16_t>>(
-                 std::make_tuple(13249191UL, 12911U, 49221U))));
+                 std::make_tuple(1324'9191UL, 12911U, 49221U))));
 
         // Test case 12: ctid not exactly 16 nibbles
         BEAST_EXPECT(!RPC::decodeCTID(0xC003'FFFF'FFFF'FFF));
