@@ -24,6 +24,7 @@
 #include <optional>
 #include <regex>
 #include <sstream>
+#include <boost/regex.hpp>
 
 namespace ripple {
 
@@ -62,7 +63,7 @@ decodeCTID(const T ctid) noexcept
         if (ctidString.length() != 16)
             return {};
 
-        if (!std::regex_match(ctidString, std::regex("^[0-9A-F]+$")))
+        if (!boost::regex_match(ctidString, boost::regex("^[0-9A-F]+$")))
             return {};
 
         ctidValue = std::stoull(ctidString, nullptr, 16);
