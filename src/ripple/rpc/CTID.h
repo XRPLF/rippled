@@ -21,10 +21,10 @@
 #define RIPPLE_RPC_CTID_H_INCLUDED
 
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/regex.hpp>
 #include <optional>
 #include <regex>
 #include <sstream>
-#include <boost/regex.hpp>
 
 namespace ripple {
 
