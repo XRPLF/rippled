@@ -562,6 +562,10 @@ target_sources (rippled PRIVATE
        subdir: peerclient
   #]===============================]
   src/ripple/peerclient/impl/MessageScheduler.cpp
+  src/ripple/peerclient/impl/ObjectsRequester.cpp
+  src/ripple/peerclient/impl/PeerClient.cpp
+  src/ripple/peerclient/impl/ProofRequester.cpp
+  src/ripple/peerclient/impl/TxSetRequester.cpp
   #[===============================[
      main sources:
        subdir: peerfinder
