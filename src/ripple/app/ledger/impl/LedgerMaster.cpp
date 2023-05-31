@@ -52,6 +52,7 @@
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/resource/Fees.h>
+#include <ripple/sync/LedgerGetter.h>
 #include <algorithm>
 #include <cassert>
 #include <chrono>
@@ -1019,8 +1020,11 @@ LedgerMaster::checkAccept(uint256 const& hash, std::uint32_t seq)
 
         // FIXME: We may not want to fetch a ledger with just one
         // trusted validation
-        ledger = app_.getInboundLedgers().acquire(
-            hash, seq, InboundLedger::Reason::GENERIC);
+        auto future = app_.getLedgerGetter().get(hash);
+        if (future->fulfilled())
+        {
+            ledger = future->value();
+        }
     }
 
     if (ledger)

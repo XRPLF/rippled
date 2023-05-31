@@ -561,6 +561,7 @@ target_sources (rippled PRIVATE
      main sources:
        subdir: peerclient
   #]===============================]
+  src/ripple/peerclient/impl/CommunicationMeter.cpp
   src/ripple/peerclient/impl/MessageScheduler.cpp
   src/ripple/peerclient/impl/ObjectsRequester.cpp
   src/ripple/peerclient/impl/PeerClient.cpp
@@ -690,7 +691,17 @@ target_sources (rippled PRIVATE
   src/ripple/shamap/impl/SHAMapNodeID.cpp
   src/ripple/shamap/impl/SHAMapSync.cpp
   src/ripple/shamap/impl/SHAMapTreeNode.cpp
-  src/ripple/shamap/impl/ShardFamily.cpp)
+  src/ripple/shamap/impl/ShardFamily.cpp
+  #[===============================[
+     main sources:
+       subdir: sync
+  #]===============================]
+  src/ripple/sync/CopyLedger.cpp
+  src/ripple/sync/LedgerGetter.cpp
+  src/ripple/sync/ObjectRequester.cpp
+  src/ripple/sync/ReplayLedger.cpp
+  src/ripple/sync/ReplayLedgers.cpp
+)
 
   #[===============================[
      test sources:

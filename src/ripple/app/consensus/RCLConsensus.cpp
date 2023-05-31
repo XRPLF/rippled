@@ -43,6 +43,7 @@
 #include <ripple/protocol/BuildInfo.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/digest.h>
+#include <ripple/sync/LedgerGetter.h>
 
 #include <algorithm>
 #include <mutex>
@@ -133,9 +134,8 @@ RCLConsensus::Adaptor::acquireLedger(LedgerHash const& hash)
             acquiringLedger_ = hash;
 
             app_.getJobQueue().addJob(
-                jtADVANCE, "getConsensusLedger", [id = hash, &app = app_]() {
-                    app.getInboundLedgers().acquire(
-                        id, 0, InboundLedger::Reason::CONSENSUS);
+                jtADVANCE, "getConsensusLedger", [&app = app_, hash]() {
+                    app.getLedgerGetter().get(hash);
                 });
         }
         return std::nullopt;

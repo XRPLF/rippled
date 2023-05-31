@@ -75,6 +75,7 @@
 #include <ripple/rpc/impl/RPCHelpers.h>
 #include <ripple/shamap/NodeFamily.h>
 #include <ripple/shamap/ShardFamily.h>
+#include <ripple/sync/LedgerGetter.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio/steady_timer.hpp>
@@ -207,6 +208,7 @@ public:
     TaggedCache<uint256, AcceptedLedger> m_acceptedLedgerCache;
     std::unique_ptr<NetworkOPs> m_networkOPs;
     std::unique_ptr<MessageScheduler> messageScheduler_;
+    std::unique_ptr<sync::LedgerGetter> ledgerGetter_;
     std::unique_ptr<Cluster> cluster_;
     std::unique_ptr<PeerReservationTable> peerReservations_;
     std::unique_ptr<ManifestCache> validatorManifests_;
@@ -429,6 +431,8 @@ public:
               get_io_service(),
               logs_->journal("MessageScheduler")))
 
+        , ledgerGetter_(std::make_unique<sync::LedgerGetter>(*this))
+
         , cluster_(std::make_unique<Cluster>(logs_->journal("Overlay")))
 
         , peerReservations_(std::make_unique<PeerReservationTable>(
@@ -624,6 +628,12 @@ public:
     getMessageScheduler() override
     {
         return *messageScheduler_;
+    }
+
+    sync::LedgerGetter&
+    getLedgerGetter() override
+    {
+        return *ledgerGetter_;
     }
 
     LedgerMaster&

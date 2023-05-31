@@ -49,6 +49,9 @@ class PerfLog;
 namespace RPC {
 class ShardArchiveHandler;
 }
+namespace sync {
+class LedgerGetter;
+}
 
 // VFALCO TODO Fix forward declares required for header dependency loops
 class AmendmentTable;
@@ -216,6 +219,8 @@ public:
 
     virtual MessageScheduler&
     getMessageScheduler() = 0;
+    virtual sync::LedgerGetter&
+    getLedgerGetter() = 0;
     virtual LedgerMaster&
     getLedgerMaster() = 0;
     virtual LedgerCleaner&
