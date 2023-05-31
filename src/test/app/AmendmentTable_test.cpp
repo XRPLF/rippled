@@ -501,9 +501,9 @@ public:
     }
 
     static NetClock::time_point
-    weekTime(weeks w)
+    hourTime(std::chrono::hours h)
     {
-        return NetClock::time_point{w};
+        return NetClock::time_point{h};
     }
 
     // Execute a pretend consensus round for a flag ledger
@@ -511,7 +511,7 @@ public:
     doRound(
         Rules const& rules,
         AmendmentTable& table,
-        weeks week,
+        std::chrono::hours hour,
         std::vector<std::pair<PublicKey, SecretKey>> const& validators,
         std::vector<std::pair<uint256, int>> const& votes,
         std::vector<uint256>& ourVotes,
@@ -529,7 +529,7 @@ public:
         // enabled:    In/out enabled amendments
         // majority:   In/our majority amendments (and when they got a majority)
 
-        auto const roundTime = weekTime(week);
+        auto const roundTime = hourTime(hour);
 
         // Build validations
         std::vector<std::shared_ptr<STValidation>> validations;
@@ -652,7 +652,7 @@ public:
         BEAST_EXPECT(ourVotes.empty());
         BEAST_EXPECT(enabled.empty());
 
-        majority[testAmendment] = weekTime(weeks{1});
+        majority[testAmendment] = hourTime(weeks{1});
 
         // Note that the simulation code assumes others behave as we do,
         // so the amendment won't get enabled
@@ -719,7 +719,7 @@ public:
         BEAST_EXPECT(ourVotes.empty());
         BEAST_EXPECT(enabled.empty());
 
-        majority[testAmendment] = weekTime(weeks{1});
+        majority[testAmendment] = hourTime(weeks{1});
 
         doRound(
             env.current()->rules(),
@@ -784,7 +784,7 @@ public:
         BEAST_EXPECT(enabled.empty());
 
         for (auto const& i : yes_)
-            BEAST_EXPECT(majority[amendmentId(i)] == weekTime(weeks{2}));
+            BEAST_EXPECT(majority[amendmentId(i)] == hourTime(weeks{2}));
 
         // Week 5: We should enable the amendment
         doRound(
@@ -1053,9 +1053,7 @@ public:
         }
         {
             // One of the validators goes flaky and doesn't send validations
-            // (without the UNL changing).
-            //  - Before fixAmendmentFlapping the amendment would lose majority.
-            //  - After fixAmendmentFlapping the amendment retains majority.
+            // (without the UNL changing) so the amendment loses majority.
             std::pair<PublicKey, SecretKey> const savedValidator =
                 validators.front();
             validators.erase(validators.begin());
@@ -1076,7 +1074,7 @@ public:
                 majority);
 
             BEAST_EXPECT(enabled.empty());
-            BEAST_EXPECT(majority.empty() != feat[fixAmendmentFlapping]);
+            BEAST_EXPECT(majority.empty());
 
             // Simulate the validator re-syncing to the network by adding it
             // back to the validators vector
@@ -1121,7 +1119,9 @@ public:
         }
     }
 
-    // Exercise a validator losing connectivity and then regaining it.
+    // Exercise a validator losing connectivity and then regaining it after
+    // extended delays.  Depending on how long that delay is an amendment
+    // either will or will not go live.
     void
     testValidatorFlapping(FeatureBitset const& feat)
     {
@@ -1131,70 +1131,90 @@ public:
 
         testcase("validatorFlapping");
 
-        test::jtx::Env env{*this, feat};
-        auto const testAmendment = amendmentId("validatorFlapping");
-        auto table = makeTable(
-            env,
-            weeks(8),
-            makeDefaultYes(testAmendment),
+        // We run a test where a validator flaps on and off every 23 hours
+        // and another one one where it flaps on and off every 25 hours.
+        //
+        // If the fixAmendmentFlapping amendment is not live, then the
+        // amendment will never go live.
+        //
+        // If the fixAmendmentFlapping amendment is live, since the local
+        // validator record expires after 24 hours, with 23 hour flapping
+        // the amendment will go live.  But with 25 hour flapping the
+        // amendment will not go live.
+        using namespace std::chrono;
+        for (int flapRateHours : {23, 25})
+        {
+            test::jtx::Env env{*this, feat};
+            auto const testAmendment = amendmentId("validatorFlapping");
+            auto table = makeTable(
+                env,
+                weeks(1),
+                makeDefaultYes(testAmendment),
             emptySection_,
             emptySection_);
 
-        // Make two lists of validators, one with a missing validator, to
-        // make it easy to simulate validator flapping.
-        auto const allValidators = makeValidators(11, table);
-        decltype(allValidators) const mostValidators(
-            allValidators.begin() + 1, allValidators.end());
-        BEAST_EXPECT(allValidators.size() == mostValidators.size() + 1);
+            // Make two lists of validators, one with a missing validator, to
+            // make it easy to simulate validator flapping.
+            auto const allValidators = makeValidators(11, table);
+            decltype(allValidators) const mostValidators(
+                allValidators.begin() + 1, allValidators.end());
+            BEAST_EXPECT(allValidators.size() == mostValidators.size() + 1);
 
-        std::set<uint256> enabled;
-        majorityAmendments_t majority;
+            std::set<uint256> enabled;
+            majorityAmendments_t majority;
 
-        // This for loop runs for 8 weeks with one validator going missing
-        // on alternating weeks.
-        //  - Without fixAmendmentFlapping the amendment will not get enabled.
-        //  - With fixAmendmentFlapping the amendment will be enabled..
-        std::vector<std::pair<uint256, int>> votes;
-        std::vector<uint256> ourVotes;
+            std::vector<std::pair<uint256, int>> votes;
+            std::vector<uint256> ourVotes;
 
-        votes.emplace_back(testAmendment, allValidators.size() - 2);
+            votes.emplace_back(testAmendment, allValidators.size() - 2);
 
-        for (int week = 1; week < 10; ++week)
-        {
-            decltype(allValidators) const& thisWeeksValidators =
-                (week & 0x1) ? allValidators : mostValidators;
-            votes.front().second = thisWeeksValidators.size() - 2;
-
-            doRound(
-                env.current()->rules(),
-                *table,
-                weeks{week},
-                thisWeeksValidators,
-                votes,
-                ourVotes,
-                enabled,
-                majority);
-
-            if (week < 9 || !feat[fixAmendmentFlapping])
+            int delay = flapRateHours;
+            // Loop for 1 week plus a day.
+            for (int hour = 1; hour < (24 * 8); ++hour)
             {
-                // The amendment should not be enabled under any circumstance
-                // until week 9.
-                BEAST_EXPECT(enabled.empty());
+                decltype(allValidators) const& thisHoursValidators =
+                    (delay < flapRateHours) ? mostValidators : allValidators;
+                delay = delay == flapRateHours ? 0 : delay + 1;
 
-                // If fixAmendmentFlapping is enabled there should be no
-                // flapping.  Otherwise we should only have majority if
-                // allValidators vote -- no missing validators.
-                bool const expectMajority = feat[fixAmendmentFlapping]
-                    ? true
-                    : &thisWeeksValidators == &allValidators;
-                BEAST_EXPECT(majority.empty() != expectMajority);
-            }
-            else
-            {
-                // We're in week nine and fixAmendmentFlapping is active.
-                // The amendment should be enabled.
-                BEAST_EXPECT(!enabled.empty());
-                BEAST_EXPECT(majority.empty());
+                votes.front().second = thisHoursValidators.size() - 2;
+
+                doRound(
+                    env.current()->rules(),
+                    *table,
+                    hours(hour),
+                    thisHoursValidators,
+                    votes,
+                    ourVotes,
+                    enabled,
+                    majority);
+
+                if (hour <= (24 * 7) || !feat[fixAmendmentFlapping] ||
+                    flapRateHours > 24)
+                {
+                    // The amendment should not be enabled under any
+                    // circumstance until one week has elapsed.
+                    BEAST_EXPECT(enabled.empty());
+
+                    // If fixAmendmentFlapping is enabled  and flapping is
+                    // less than 24 hours, there should be no flapping.
+                    // Otherwise we should only have majority if allValidators
+                    // vote -- which means there are no missing validators.
+                    bool const expectMajority =
+                        (feat[fixAmendmentFlapping] && delay <= 24)
+                        ? true
+                        : &thisHoursValidators == &allValidators;
+                    BEAST_EXPECT(majority.empty() != expectMajority);
+                }
+                else
+                {
+                    // We're...
+                    //  o Past one week,
+                    //  o AmendmentFlapping was less than 24 hours, and
+                    //  o fixAmendmentFlapping is active.
+                    // The amendment should be enabled.
+                    BEAST_EXPECT(!enabled.empty());
+                    BEAST_EXPECT(majority.empty());
+                }
             }
         }
     }

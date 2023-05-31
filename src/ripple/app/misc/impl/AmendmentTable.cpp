@@ -79,12 +79,26 @@ parseSection(Section const& section)
     TrustedVotes addresses the problem by holding on to the last vote seen
     from every trusted validator.  So if any given validator is off line near
     a flag ledger we can assume that they did not change their vote.
+
+    If we haven't seen any STValidations from a validator for several hours we
+    lose confidence that the validator hasn't changed their position.  So
+    there's a timeout.  We remove upVotes if they haven't been updated in
+    several hours.
 */
 class TrustedVotes
 {
 private:
-    // Associates each trusted validator with the last votes we saw from them.
-    hash_map<PublicKey, std::vector<uint256>> recordedVotes_;
+    static constexpr NetClock::time_point maxTimeout =
+        NetClock::time_point::max();
+
+    // Associates each trusted validator with the last votes we saw from them
+    // and an expiration for that record.
+    struct UpvotesAndTimeout
+    {
+        std::vector<uint256> upVotes;
+        NetClock::time_point timeout = maxTimeout;
+    };
+    hash_map<PublicKey, UpvotesAndTimeout> recordedVotes_;
 
 public:
     TrustedVotes() = default;
@@ -116,7 +130,7 @@ public:
             else
             {
                 // New validators have a starting position of no on everything.
-                // Add the entry with an empty vector.
+                // Add the entry with an empty vector and maxTimeout.
                 newRecordedVotes[trusted];
             }
         }
@@ -132,8 +146,23 @@ public:
     recordVotes(
         Rules const& rules,
         std::vector<std::shared_ptr<STValidation>> const& valSet,
+        NetClock::time_point const closeTime,
         std::lock_guard<std::mutex> const& lock)
     {
+        // When we get an STValidation we save the upVotes it contains, but
+        // we also set an expiration for those upVotes.  The following constant
+        // controls the timeout.
+        //
+        // There really is no "best" timeout to choose for when we finally
+        // lose confidence that we know how a validator is voting.  But part
+        // of the point of recording validator votes is to avoid flapping of
+        // amendment votes.  A 24h timeout says that we will change the local
+        // record of a validator's vote to "no" 24h after the last vote seen
+        // from that validator.  So flapping due to that validator being off
+        // line will happen less frequently than every 24 hours.
+        using namespace std::chrono_literals;
+        static constexpr NetClock::duration expiresAfter = 24h;
+
         // Walk all validations and replace previous votes from trusted
         // validators with these newest votes.
         for (auto const& val : valSet)
@@ -142,18 +171,31 @@ public:
             if (auto const iter = recordedVotes_.find(val->getSignerPublic());
                 iter != recordedVotes_.end())
             {
+                iter->second.timeout = closeTime + expiresAfter;
                 if (val->isFieldPresent(sfAmendments))
                 {
                     auto const& choices = val->getFieldV256(sfAmendments);
-                    iter->second.assign(choices.begin(), choices.end());
+                    iter->second.upVotes.assign(choices.begin(), choices.end());
                 }
                 else
                 {
-                    // This validator does not support any amendments right now.
-                    iter->second.clear();
+                    // This validator does not upVote any amendments right now.
+                    iter->second.upVotes.clear();
                 }
             }
         }
+
+        // Now remove any expired records from recordedVotes_.
+        std::for_each(
+            recordedVotes_.begin(),
+            recordedVotes_.end(),
+            [&closeTime](decltype(recordedVotes_)::value_type& votes) {
+                if (closeTime > votes.second.timeout)
+                {
+                    votes.second.timeout = maxTimeout;
+                    votes.second.upVotes.clear();
+                }
+            });
     }
 
     // Return the information needed by AmendmentSet to determine votes.
@@ -165,7 +207,7 @@ public:
         hash_map<uint256, int> ret;
         for (auto& validatorVotes : recordedVotes_)
         {
-            for (uint256 const& amendment : validatorVotes.second)
+            for (uint256 const& amendment : validatorVotes.second.upVotes)
             {
                 ret[amendment] += 1;
             }
@@ -770,7 +812,7 @@ AmendmentTableImpl::doVoting(
 
     // We need to call recordVotes() before fixAmendmentFlapping is enabled
     // so we have current state when it does enable.
-    previousTrustedVotes_.recordVotes(rules, valSet, lock);
+    previousTrustedVotes_.recordVotes(rules, valSet, closeTime, lock);
 
     // The way we compute votes changes based on fixAmendmentFlapping.
     auto vote = rules.enabled(fixAmendmentFlapping)
