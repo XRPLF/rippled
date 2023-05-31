@@ -36,7 +36,7 @@ encodeCTID(
     uint16_t txn_index,
     uint16_t network_id) noexcept
 {
-    if (ledger_seq > 0xFFFF'FFF)
+    if (ledger_seq > 0x0FFF'FFFF)
         return {};
 
     uint64_t ctidValue =
