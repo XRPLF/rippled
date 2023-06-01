@@ -21,11 +21,10 @@
 #include <ripple/ledger/Directory.h>
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/Feature.h>
+#include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/protocol/st.h>
-#include <boost/endian/conversion.hpp>
-#include <array>
 
 namespace ripple {
 
@@ -102,7 +101,7 @@ Clawback::preclaim(PreclaimContext const& ctx)
             issuer,
             fhIGNORE_FREEZE,
             ctx.j) <= beast::zero)
-        return tecNO_LINE;
+        return tecINSUFFICIENT_FUNDS;
 
     return tesSUCCESS;
 }

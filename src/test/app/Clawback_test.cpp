@@ -314,7 +314,7 @@ class Clawback_test : public beast::unit_test::suite
             env.require(balance(alice, bob["USD"](0)));
 
             // clawback fails because because balance is 0
-            env(claw(alice, bob["USD"](5)), ter(tecNO_LINE));
+            env(claw(alice, bob["USD"](5)), ter(tecINSUFFICIENT_FUNDS));
             env.close();
 
             // set the limit to default, which should delete the trustline
