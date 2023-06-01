@@ -448,7 +448,7 @@ AMM::deposit(
     return deposit(account, jv, assets, seq, ter);
 }
 
-void
+IOUAmount
 AMM::withdraw(
     std::optional<Account> const& account,
     Json::Value& jv,
@@ -456,15 +456,18 @@ AMM::withdraw(
     std::optional<std::pair<Issue, Issue>> const& assets,
     std::optional<ter> const& ter)
 {
-    jv[jss::Account] = account ? account->human() : creatorAccount_.human();
+    auto const& acct = account ? *account : creatorAccount_;
+    auto const lpTokens = getLPTokensBalance(acct);
+    jv[jss::Account] = acct.human();
     setTokens(jv, assets);
     jv[jss::TransactionType] = jss::AMMWithdraw;
     if (fee_ != 0)
         jv[jss::Fee] = std::to_string(fee_);
     submit(jv, seq, ter);
+    return lpTokens - getLPTokensBalance(acct);
 }
 
-void
+IOUAmount
 AMM::withdraw(
     std::optional<Account> const& account,
     std::optional<LPToken> const& tokens,
@@ -472,7 +475,7 @@ AMM::withdraw(
     std::optional<std::uint32_t> const& flags,
     std::optional<ter> const& ter)
 {
-    withdraw(
+    return withdraw(
         account,
         tokens,
         asset1Out,
@@ -484,7 +487,7 @@ AMM::withdraw(
         ter);
 }
 
-void
+IOUAmount
 AMM::withdraw(
     std::optional<Account> const& account,
     STAmount const& asset1Out,
@@ -493,7 +496,7 @@ AMM::withdraw(
     std::optional<ter> const& ter)
 {
     assert(!(asset2Out && maxEP));
-    withdraw(
+    return withdraw(
         account,
         std::nullopt,
         asset1Out,
@@ -505,7 +508,7 @@ AMM::withdraw(
         ter);
 }
 
-void
+IOUAmount
 AMM::withdraw(
     std::optional<Account> const& account,
     std::optional<LPToken> const& tokens,
@@ -546,7 +549,7 @@ AMM::withdraw(
             jvflags |= tfSingleAsset;
     }
     jv[jss::Flags] = jvflags;
-    withdraw(account, jv, seq, assets, ter);
+    return withdraw(account, jv, seq, assets, ter);
 }
 
 void

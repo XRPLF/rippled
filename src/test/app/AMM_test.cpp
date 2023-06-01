@@ -4786,35 +4786,43 @@ private:
 
         // Single deposit with EP not exceeding specified:
         // 100USD with EP not to exceed 0.1 (AssetIn/TokensOut). 1% fee.
-        testAMM([&](AMM& ammAlice, Env&) {
-            auto tokens = ammAlice.deposit(
-                carol, USD(1000), std::nullopt, STAmount{USD, 1, -1});
-            BEAST_EXPECT(tokens == IOUAmount(48808848170151, -8));
-            ammAlice.withdrawAll(carol, USD(0));
-            ammAlice.vote(alice, 1000);
-            BEAST_EXPECT(ammAlice.expectTradingFee(1000));
-            tokens = ammAlice.deposit(
-                carol, USD(1000), std::nullopt, STAmount{USD, 1, -1});
-            // carol gets ~2452 fewer LPTokens
-            BEAST_EXPECT(tokens == IOUAmount(4856360611129, -7));
-            BEAST_EXPECT(ammAlice.expectBalances(
-                XRP(10000), USD(11000), IOUAmount{104856360611129, -7}));
-        });
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                auto const balance = env.balance(carol, USD);
+                auto tokensFee = ammAlice.deposit(
+                    carol, USD(1000), std::nullopt, STAmount{USD, 1, -1});
+                auto const deposit = balance - env.balance(carol, USD);
+                ammAlice.withdrawAll(carol, USD(0));
+                ammAlice.vote(alice, 0);
+                BEAST_EXPECT(ammAlice.expectTradingFee(0));
+                auto const tokensNoFee = ammAlice.deposit(carol, deposit);
+                // carol pays ~2008 LPTokens in fees or ~0.5% of the no-fee
+                // LPTokens
+                BEAST_EXPECT(tokensFee == IOUAmount(4856360611129, -7));
+                BEAST_EXPECT(tokensNoFee == IOUAmount(48764485901109, -8));
+            },
+            std::nullopt,
+            1000);
 
         // Single deposit with EP not exceeding specified:
         // 200USD with EP not to exceed 0.002020 (AssetIn/TokensOut). 1% fee
-        testAMM([&](AMM& ammAlice, Env&) {
-            auto tokens = ammAlice.deposit(
-                carol, USD(200), std::nullopt, STAmount{USD, 2020, -6});
-            BEAST_EXPECT(tokens == IOUAmount(9950493836207, -8));
-            ammAlice.withdrawAll(carol, USD(0));
-            ammAlice.vote(alice, 1000);
-            BEAST_EXPECT(ammAlice.expectTradingFee(1000));
-            tokens = ammAlice.deposit(
-                carol, USD(200), std::nullopt, STAmount{USD, 2020, -6});
-            // carol gets ~1504 fewer LPTokens
-            BEAST_EXPECT(tokens == IOUAmount(9800000000002, -8));
-        });
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                auto const balance = env.balance(carol, USD);
+                auto const tokensFee = ammAlice.deposit(
+                    carol, USD(200), std::nullopt, STAmount{USD, 2020, -6});
+                auto const deposit = balance - env.balance(carol, USD);
+                ammAlice.withdrawAll(carol, USD(0));
+                ammAlice.vote(alice, 0);
+                BEAST_EXPECT(ammAlice.expectTradingFee(0));
+                auto const tokensNoFee = ammAlice.deposit(carol, deposit);
+                // carol pays ~475 LPTokens in fees or ~0.5% of the no-fee
+                // LPTokens
+                BEAST_EXPECT(tokensFee == IOUAmount(9800000000002, -8));
+                BEAST_EXPECT(tokensNoFee == IOUAmount(9847581871545, -8));
+            },
+            std::nullopt,
+            1000);
 
         // Single Withdrawal, 1% fee
         testAMM(
@@ -4837,26 +4845,32 @@ private:
             {{USD(1000), EUR(1000)}});
 
         // Withdraw with EPrice limit, 1% fee.
-        testAMM([&](AMM& ammAlice, Env& env) {
-            ammAlice.deposit(carol, 1000000);
-            ammAlice.withdraw(carol, USD(100), std::nullopt, IOUAmount{520, 0});
-            // carol withdraws ~1,627.22USD
-            BEAST_EXPECT(
-                env.balance(carol, USD) ==
-                STAmount(USD, UINT64_C(3062721893491124), -11));
-            // Set to original pool size
-            ammAlice.deposit(
-                carol,
-                USD(11000) - STAmount{USD, UINT64_C(9372781065088757), -12});
-            // fee 1%
-            ammAlice.vote(alice, 1000);
-            BEAST_EXPECT(ammAlice.expectTradingFee(1000));
-            ammAlice.withdraw(carol, USD(100), std::nullopt, IOUAmount{520, 0});
-            // carol withdraws ~1,443.44USD, which is ~184USD less
-            BEAST_EXPECT(
-                env.balance(carol, USD) ==
-                STAmount(USD, UINT64_C(3044343891402712), -11));
-        });
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                ammAlice.deposit(carol, 1000000);
+                auto const tokensFee = ammAlice.withdraw(
+                    carol, USD(100), std::nullopt, IOUAmount{520, 0});
+                // carol withdraws ~1,443.44USD
+                auto const balanceAfterWithdraw =
+                    STAmount(USD, UINT64_C(3044343891402715), -11);
+                BEAST_EXPECT(env.balance(carol, USD) == balanceAfterWithdraw);
+                // Set to original pool size
+                auto const deposit = balanceAfterWithdraw - USD(29000);
+                ammAlice.deposit(carol, deposit);
+                // fee 0%
+                ammAlice.vote(alice, 0);
+                BEAST_EXPECT(ammAlice.expectTradingFee(0));
+                auto const tokensNoFee = ammAlice.withdraw(carol, deposit);
+                BEAST_EXPECT(
+                    env.balance(carol, USD) ==
+                    STAmount(USD, UINT64_C(3044343891402717), -11));
+                // carol pays ~4008 LPTokens in fees or ~0.5% of the no-fee
+                // LPTokens
+                BEAST_EXPECT(tokensNoFee == IOUAmount(74657980779913, -8));
+                BEAST_EXPECT(tokensFee == IOUAmount(75058823529411, -8));
+            },
+            std::nullopt,
+            1000);
 
         // Payment, 1% fee
         testAMM(

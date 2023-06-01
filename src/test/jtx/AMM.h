@@ -182,7 +182,7 @@ public:
         std::optional<jtx::seq> const& seq,
         std::optional<ter> const& ter = std::nullopt);
 
-    void
+    IOUAmount
     withdraw(
         std::optional<Account> const& account,
         std::optional<LPToken> const& tokens,
@@ -190,12 +190,12 @@ public:
         std::optional<std::uint32_t> const& flags = std::nullopt,
         std::optional<ter> const& ter = std::nullopt);
 
-    void
+    IOUAmount
     withdrawAll(
         std::optional<Account> const& account,
         std::optional<STAmount> const& asset1OutDetails = std::nullopt)
     {
-        withdraw(
+        return withdraw(
             account,
             std::nullopt,
             asset1OutDetails,
@@ -203,7 +203,7 @@ public:
             std::nullopt);
     }
 
-    void
+    IOUAmount
     withdraw(
         std::optional<Account> const& account,
         STAmount const& asset1Out,
@@ -211,7 +211,7 @@ public:
         std::optional<IOUAmount> const& maxEP = std::nullopt,
         std::optional<ter> const& ter = std::nullopt);
 
-    void
+    IOUAmount
     withdraw(
         std::optional<Account> const& account,
         std::optional<LPToken> const& tokens,
@@ -307,7 +307,7 @@ private:
         std::optional<jtx::seq> const& seq = std::nullopt,
         std::optional<ter> const& ter = std::nullopt);
 
-    void
+    IOUAmount
     withdraw(
         std::optional<Account> const& account,
         Json::Value& jv,

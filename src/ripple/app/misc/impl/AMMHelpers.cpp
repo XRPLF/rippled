@@ -103,8 +103,8 @@ lpTokensOut(
  * c - 2*t/T = sqrt(c**2 - 4*R) =>
  * c**2 - 4*c*t/T + 4*t**2/T**2 = c**2 - 4*R =>
  * -4*c*t/T + 4*t**2/T**2 = -4*R => -c*t/T + t**2/T**2 = -R
- * substitute c = R*f +2 - f =>
- * -t**R*f + 2 - f) + t**2/T**2 = -R, let t1 = t/T =>
+ * substitute c = R*f + 2 - f =>
+ * -(t/T)*(R*f + 2 - f) + (t/T)**2 = -R, let t1 = t/T =>
  * -t1*R*f -2*t1 +t1*f +t1**2 = -R =>
  * R = (t1**2 + t1*(f - 2)) / (t1*f - 1)
  */
