@@ -27,6 +27,7 @@
 #include <ripple/protocol/STArray.h>
 #include <ripple/protocol/SystemParameters.h>
 #include <ripple/protocol/nftPageMask.h>
+#include <ripple/ledger/View.h>
 
 namespace ripple {
 
@@ -711,6 +712,67 @@ NFTokenCountTracking::finalize(
                 << "Invariant failed: burning changed the number of "
                    "minted tokens.";
             return false;
+        }
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------------
+
+void
+ValidClawback::visitEntry(
+    bool,
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
+{
+    if (before && before->getType() == ltRIPPLE_STATE)
+        trustlineChanged++;
+}
+
+bool
+ValidClawback::finalize(
+    STTx const& tx,
+    TER const result,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    if (tx.getTxnType() != ttCLAWBACK)
+        return true;
+
+    if (result == tesSUCCESS)
+    {
+        // a successful clawback transaction will ALWAYS claw back some funds
+        // from ONE trustline
+        if (trustlineChanged != 1){
+            JLOG(j.fatal())
+                << "Invariant failed: wrong number of trustline changed.";
+            return false;                
+        }
+
+        AccountID const issuer = tx.getAccountID(sfAccount);
+        STAmount const amount = tx.getFieldAmount(sfAmount);
+        AccountID const holder = amount.getIssuer();
+        STAmount const holderBalance = accountHolds(
+            view,
+            holder,
+            amount.getCurrency(),
+            issuer,
+            fhIGNORE_FREEZE,
+            j);
+        
+        if (holderBalance.signum() < 0){
+            JLOG(j.fatal())
+                << "Invariant failed: trustline balance is negative";
+            return false;                
+        }
+    }
+    else{
+        if (trustlineChanged != 0){
+            JLOG(j.fatal())
+                << "Invariant failed: trustline changed.";
+            return false;                
         }
     }
 

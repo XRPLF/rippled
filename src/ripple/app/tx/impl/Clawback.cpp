@@ -116,22 +116,7 @@ Clawback::clawback(
     if (amount <= beast::zero || issuer != amount.getIssuer())
         return tecINTERNAL;
 
-    auto const result = accountSend(view(), holder, issuer, amount, j_);
-
-    if (!isTesSuccess(result))
-        return result;
-
-    if (accountHolds(
-            view(),
-            holder,
-            amount.getCurrency(),
-            amount.getIssuer(),
-            fhIGNORE_FREEZE,
-            j_)
-            .signum() < 0)
-        return tecINTERNAL;
-
-    return tesSUCCESS;
+    return accountSend(view(), holder, issuer, amount, j_);
 }
 
 TER
