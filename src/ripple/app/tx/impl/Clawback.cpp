@@ -117,19 +117,6 @@ Clawback::clawback(
     if (amount <= beast::zero || issuer != amount.getIssuer())
         return tecINTERNAL;
 
-    STAmount const holderBalance = accountHolds(
-        view(),
-        holder,
-        amount.getCurrency(),
-        amount.getIssuer(),
-        fhIGNORE_FREEZE,
-        j_);
-
-    // The amount to be clawed back can never exceed the amount that
-    // the token holder current owns
-    if (amount > holderBalance)
-        return tecINTERNAL;
-
     auto const result = accountSend(view(), holder, issuer, amount, j_);
 
     if (!isTesSuccess(result))
@@ -155,7 +142,7 @@ Clawback::doApply()
     STAmount clawAmount(ctx_.tx.getFieldAmount(sfAmount));
     AccountID const holder = clawAmount.getIssuer();
 
-    // Replace the `issuer` field with holder's account
+    // Replace the `issuer` field with issuer's account
     clawAmount.setIssuer(issuer);
 
     // Get the spendable balance. Must use `accountHolds`.
