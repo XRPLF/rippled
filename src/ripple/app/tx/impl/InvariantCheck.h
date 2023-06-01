@@ -373,7 +373,7 @@ public:
  */
 class ValidClawback
 {
-    std::uint32_t trustlineChanged = 0;
+    std::uint32_t trustlinesChanged = 0;
 
 public:
     void

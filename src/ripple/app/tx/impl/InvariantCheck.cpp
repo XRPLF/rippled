@@ -727,7 +727,7 @@ ValidClawback::visitEntry(
     std::shared_ptr<SLE const> const& after)
 {
     if (before && before->getType() == ltRIPPLE_STATE)
-        trustlineChanged++;
+        trustlinesChanged++;
 }
 
 bool
@@ -745,7 +745,7 @@ ValidClawback::finalize(
     {
         // a successful clawback transaction will ALWAYS claw back some funds
         // from ONE trustline
-        if (trustlineChanged != 1)
+        if (trustlinesChanged != 1)
         {
             JLOG(j.fatal())
                 << "Invariant failed: wrong number of trustline changed.";
@@ -767,7 +767,7 @@ ValidClawback::finalize(
     }
     else
     {
-        if (trustlineChanged != 0)
+        if (trustlinesChanged != 0)
         {
             JLOG(j.fatal()) << "Invariant failed: trustline changed.";
             return false;
