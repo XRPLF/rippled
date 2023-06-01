@@ -23,11 +23,11 @@
 #include <ripple/basics/FeeUnits.h>
 #include <ripple/basics/Log.h>
 #include <ripple/ledger/ReadView.h>
+#include <ripple/ledger/View.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/STArray.h>
 #include <ripple/protocol/SystemParameters.h>
 #include <ripple/protocol/nftPageMask.h>
-#include <ripple/ledger/View.h>
 
 namespace ripple {
 
@@ -745,34 +745,32 @@ ValidClawback::finalize(
     {
         // a successful clawback transaction will ALWAYS claw back some funds
         // from ONE trustline
-        if (trustlineChanged != 1){
+        if (trustlineChanged != 1)
+        {
             JLOG(j.fatal())
                 << "Invariant failed: wrong number of trustline changed.";
-            return false;                
+            return false;
         }
 
         AccountID const issuer = tx.getAccountID(sfAccount);
         STAmount const amount = tx.getFieldAmount(sfAmount);
         AccountID const holder = amount.getIssuer();
         STAmount const holderBalance = accountHolds(
-            view,
-            holder,
-            amount.getCurrency(),
-            issuer,
-            fhIGNORE_FREEZE,
-            j);
-        
-        if (holderBalance.signum() < 0){
+            view, holder, amount.getCurrency(), issuer, fhIGNORE_FREEZE, j);
+
+        if (holderBalance.signum() < 0)
+        {
             JLOG(j.fatal())
                 << "Invariant failed: trustline balance is negative";
-            return false;                
+            return false;
         }
     }
-    else{
-        if (trustlineChanged != 0){
-            JLOG(j.fatal())
-                << "Invariant failed: trustline changed.";
-            return false;                
+    else
+    {
+        if (trustlineChanged != 0)
+        {
+            JLOG(j.fatal()) << "Invariant failed: trustline changed.";
+            return false;
         }
     }
 
