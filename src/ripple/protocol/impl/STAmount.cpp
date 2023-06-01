@@ -1564,8 +1564,11 @@ divRoundImpl(
 
     STAmount result = [&]() {
         // If appropriate, tell Number the rounding mode we are using.
+        // Note that "roundUp == true" actually means "round away from zero".
+        // Otherwise round toward zero.
+        using enum Number::rounding_mode;
         MightSaveRound const savedRound(
-            roundUp ? Number::upward : Number::towards_zero);
+            roundUp ^ resultNegative ? upward : downward);
         return STAmount(issue, amount, offset, resultNegative);
     }();
 
