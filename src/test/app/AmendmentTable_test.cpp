@@ -1134,14 +1134,9 @@ public:
         // We run a test where a validator flaps on and off every 23 hours
         // and another one one where it flaps on and off every 25 hours.
         //
-        // If the fixAmendmentFlapping amendment is not live, then the
-        // amendment will never go live.
-        //
-        // If the fixAmendmentFlapping amendment is live, since the local
-        // validator record expires after 24 hours, with 23 hour flapping
-        // the amendment will go live.  But with 25 hour flapping the
-        // amendment will not go live.
-        using namespace std::chrono;
+        // Since the local validator vote record expires after 24 hours,
+        // with 23 hour flapping the amendment will go live.  But with 25
+        // hour flapping the amendment will not go live.
         for (int flapRateHours : {23, 25})
         {
             test::jtx::Env env{*this, feat};
@@ -1150,8 +1145,8 @@ public:
                 env,
                 weeks(1),
                 makeDefaultYes(testAmendment),
-            emptySection_,
-            emptySection_);
+                emptySection_,
+                emptySection_);
 
             // Make two lists of validators, one with a missing validator, to
             // make it easy to simulate validator flapping.
@@ -1178,6 +1173,7 @@ public:
 
                 votes.front().second = thisHoursValidators.size() - 2;
 
+                using namespace std::chrono;
                 doRound(
                     env.current()->rules(),
                     *table,
@@ -1188,19 +1184,17 @@ public:
                     enabled,
                     majority);
 
-                if (hour <= (24 * 7) || !feat[fixAmendmentFlapping] ||
-                    flapRateHours > 24)
+                if (hour <= (24 * 7) || flapRateHours > 24)
                 {
                     // The amendment should not be enabled under any
                     // circumstance until one week has elapsed.
                     BEAST_EXPECT(enabled.empty());
 
-                    // If fixAmendmentFlapping is enabled  and flapping is
-                    // less than 24 hours, there should be no flapping.
-                    // Otherwise we should only have majority if allValidators
-                    // vote -- which means there are no missing validators.
-                    bool const expectMajority =
-                        (feat[fixAmendmentFlapping] && delay <= 24)
+                    // If flapping is less than 24 hours, there should be
+                    // no flapping.  Otherwise we should only have majority
+                    // if allValidators vote -- which means there are no
+                    // missing validators.
+                    bool const expectMajority = (delay <= 24)
                         ? true
                         : &thisHoursValidators == &allValidators;
                     BEAST_EXPECT(majority.empty() != expectMajority);
@@ -1208,9 +1202,8 @@ public:
                 else
                 {
                     // We're...
-                    //  o Past one week,
-                    //  o AmendmentFlapping was less than 24 hours, and
-                    //  o fixAmendmentFlapping is active.
+                    //  o Past one week, and
+                    //  o AmendmentFlapping was less than 24 hours.
                     // The amendment should be enabled.
                     BEAST_EXPECT(!enabled.empty());
                     BEAST_EXPECT(majority.empty());
@@ -1279,15 +1272,13 @@ public:
     {
         FeatureBitset const all{test::jtx::supported_amendments()};
         FeatureBitset const fixMajorityCalc{fixAmendmentMajorityCalc};
-        FeatureBitset const fixFlapping{fixAmendmentFlapping};
 
         testConstruct();
         testGet();
         testBadConfig();
         testEnableVeto();
         testHasUnsupported();
-        testFeature(all - fixMajorityCalc - fixFlapping);
-        testFeature(all - fixFlapping);
+        testFeature(all - fixMajorityCalc);
         testFeature(all);
     }
 };

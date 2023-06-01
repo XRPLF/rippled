@@ -274,31 +274,6 @@ private:
 public:
     AmendmentSet(
         Rules const& rules,
-        std::vector<std::shared_ptr<STValidation>> const& valSet)
-        : rules_(rules)
-    {
-        // process validations for ledger before flag ledger
-        for (auto const& val : valSet)
-        {
-            if (val->isTrusted())
-            {
-                if (val->isFieldPresent(sfAmendments))
-                {
-                    auto const choices = val->getFieldV256(sfAmendments);
-                    std::for_each(
-                        choices.begin(),
-                        choices.end(),
-                        [&](auto const& amendment) { ++votes_[amendment]; });
-                }
-
-                ++trustedValidations_;
-            }
-        }
-        computeThreshold(trustedValidations_, rules);
-    }
-
-    AmendmentSet(
-        Rules const& rules,
         TrustedVotes const& trustedVotes,
         std::lock_guard<std::mutex> const& lock)
         : rules_(rules)
@@ -810,14 +785,12 @@ AmendmentTableImpl::doVoting(
 
     std::lock_guard lock(mutex_);
 
-    // We need to call recordVotes() before fixAmendmentFlapping is enabled
-    // so we have current state when it does enable.
+    // Keep a record of the votes we received.
     previousTrustedVotes_.recordVotes(rules, valSet, closeTime, lock);
 
-    // The way we compute votes changes based on fixAmendmentFlapping.
-    auto vote = rules.enabled(fixAmendmentFlapping)
-        ? std::make_unique<AmendmentSet>(rules, previousTrustedVotes_, lock)
-        : std::make_unique<AmendmentSet>(rules, valSet);
+    // Tally the most recent votes.
+    auto vote =
+        std::make_unique<AmendmentSet>(rules, previousTrustedVotes_, lock);
     JLOG(j_.debug()) << "Received " << vote->trustedValidations()
                      << " trusted validations, threshold is: "
                      << vote->threshold();
