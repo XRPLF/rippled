@@ -26,13 +26,6 @@ namespace ripple {
 
 class Clawback : public Transactor
 {
-private:
-    TER
-    clawback(
-        AccountID const& issuer,
-        AccountID const& holder,
-        STAmount const& amount);
-
 public:
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 

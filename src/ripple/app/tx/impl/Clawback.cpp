@@ -107,19 +107,6 @@ Clawback::preclaim(PreclaimContext const& ctx)
 }
 
 TER
-Clawback::clawback(
-    AccountID const& issuer,
-    AccountID const& holder,
-    STAmount const& amount)
-{
-    // This should never happen
-    if (amount <= beast::zero || issuer != amount.getIssuer())
-        return tecINTERNAL;
-
-    return accountSend(view(), holder, issuer, amount, j_);
-}
-
-TER
 Clawback::doApply()
 {
     AccountID const issuer = account_;
@@ -138,7 +125,7 @@ Clawback::doApply()
         fhIGNORE_FREEZE,
         j_);
 
-    return clawback(issuer, holder, std::min(spendableAmount, clawAmount));
+    return accountSend(view(), holder, issuer, std::min(spendableAmount, clawAmount), j_);
 }
 
 }  // namespace ripple
