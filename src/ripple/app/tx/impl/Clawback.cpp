@@ -125,7 +125,8 @@ Clawback::doApply()
         fhIGNORE_FREEZE,
         j_);
 
-    return accountSend(view(), holder, issuer, std::min(spendableAmount, clawAmount), j_);
+    return accountSend(
+        view(), holder, issuer, std::min(spendableAmount, clawAmount), j_);
 }
 
 }  // namespace ripple
