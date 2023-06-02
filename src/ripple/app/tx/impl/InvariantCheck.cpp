@@ -724,7 +724,7 @@ void
 ValidClawback::visitEntry(
     bool,
     std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+    std::shared_ptr<SLE const> const&)
 {
     if (before && before->getType() == ltRIPPLE_STATE)
         trustlinesChanged++;
