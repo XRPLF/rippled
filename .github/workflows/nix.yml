@@ -1,6 +1,24 @@
 name: nix
 on: [push, pull_request]
 
+# This workflow has two job matrixes.
+# They can be considered phases because the second matrix ("test")
+# depends on the first ("dependencies").
+#
+# The first phase has a job in the matrix for each combination of
+# variables that affects dependency ABI:
+# platform, compiler, and configuration.
+# It creates a GitHub artifact holding the Conan profile,
+# and builds and caches binaries for all the dependencies.
+# If an Artifactory remote is configured, they are cached there.
+# If not, they are added to the GitHub artifact.
+# GitHub's "cache" action has a size limit that is too small.
+# We must use the "{upload,download}-artifact" actions instead.
+#
+# The second phase has a job in the matrix for each test configuration.
+# It installs dependency binaries from the cache, whichever was used,
+# and builds and tests rippled.
+
 jobs:
 
   dependencies:
@@ -31,6 +49,8 @@ jobs:
     env:
       build_dir: .build
     steps:
+      - name: checkout
+        uses: actions/checkout@v3
       - name: check environment
         run: |
           echo ${PATH} | tr ':' '\n'
@@ -47,19 +67,40 @@ jobs:
           conan profile update env.CC=${{ matrix.profile.cc }} default
           conan profile update env.CXX=${{ matrix.profile.cxx }} default
           conan profile update conf.tools.build:compiler_executables='{"c": "${{ matrix.profile.cc }}", "cpp": "${{ matrix.profile.cxx }}"}' default
-      - name: checkout
-        uses: actions/checkout@v3
-      - name: dependencies
+      - name: try to add ripple Conan remote
+        id: remote
+        continue-on-error: true
+        run: |
+          conan remote add ripple ${{ secrets.CONAN_URL }} --insert 0
+          conan user --remote ripple ${{ secrets.CONAN_USERNAME }} --password ${{ secrets.CONAN_TOKEN }}
+      - name: archive profile
+        # Create this archive before dependencies are added to the local cache.
+        run: tar -czf conan.tar -C ~/.conan .
+      - name: count number of missing binaries
+        id: binaries
+        continue-on-error: true
+        # The subcommand here counts the number of dependencies that would
+        # need to be built locally. We exit with that number.
+        # A non-zero number means we have "failed" to cache binaries remotely.
+        run: |
+          exit $(conan info . --build missing --json 2>/dev/null  | grep '^\[' | tee /dev/tty | jq length)
+      - name: build dependencies
+        if: (steps.binaries.outcome == 'failure')
         uses: ./.github/actions/dependencies
         with:
           configuration: ${{ matrix.configuration }}
-      - name: archive cache
+      - name: upload dependencies to remote
+        if: (steps.binaries.outcome == 'failure') && (steps.remote.outcome == 'success') 
+        run: conan upload --remote ripple '*' --all --parallel --confirm
+      - name: recreate archive with dependencies
+        if: (steps.binaries.outcome == 'failure') && (steps.remote.outcome == 'failure') 
         run: tar -czf conan.tar -C ~/.conan .
-      - name: upload cache
+      - name: upload archive
         uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
           path: conan.tar
+          if-no-files-found: error
 
 
   test:
