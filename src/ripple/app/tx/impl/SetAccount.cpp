@@ -235,14 +235,15 @@ SetAccount::preclaim(PreclaimContext const& ctx)
             {
                 JLOG(ctx.j.trace()) << "Owner directory not empty.";
                 return tecOWNERS;
-            }            
+            }
         }
         else if (uSetFlag == asfNoFreeze)
         {
             // Cannot set NoFreeze if clawback is enabled
             if (uFlagsIn & lsfAllowClawback)
             {
-                JLOG(ctx.j.trace()) << "Can't set NoFreeze if clawback is enabled";
+                JLOG(ctx.j.trace())
+                    << "Can't set NoFreeze if clawback is enabled";
                 return tecNO_PERMISSION;
             }
         }
