@@ -174,7 +174,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
     {
         JLOG(ctx.j.debug())
             << "AMM Deposit: reserves or tokens balance is zero.";
-        return tecAMM_BALANCE;
+        return tecINTERNAL;
     }
 
     // Check account has sufficient funds.
@@ -269,7 +269,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
         return temAMM_BAD_TOKENS;
     }
 
-    if (ctx.tx.getFlags() & (tfLPToken | tfWithdrawAll))
+    if (ctx.tx.getFlags() & tfLPToken)
     {
         if (auto const ter = checkAmount(amountBalance, false))
             return ter;
@@ -370,8 +370,9 @@ AMMDeposit::applyGuts(Sandbox& sb)
         return std::make_pair(tecINTERNAL, STAmount{});
     }();
 
-    if (result == tesSUCCESS && newLPTokenBalance > beast::zero)
+    if (result == tesSUCCESS)
     {
+        assert(newLPTokenBalance > beast::zero);
         ammSle->setFieldAmount(sfLPTokenBalance, newLPTokenBalance);
         sb.update(ammSle);
     }
@@ -406,22 +407,28 @@ AMMDeposit::deposit(
 {
     // Check account has sufficient funds.
     // Return true if it does, false otherwise.
-    auto balance = [&](auto const& deposit) -> bool {
-        if (isXRP(deposit))
+    auto checkBalance = [&](auto const& depositAmount) -> TER {
+        if (depositAmount <= beast::zero)
+            return tecAMM_FAILED_DEPOSIT;
+        if (isXRP(depositAmount))
         {
             auto const& lpIssue = lpTokensDeposit.issue();
             // Adjust the reserve if LP doesn't have LPToken trustline
             auto const sle = view.read(
                 keylet::line(account_, lpIssue.account, lpIssue.currency));
-            return xrpLiquid(view, account_, !sle, j_) >= deposit;
+            if (xrpLiquid(view, account_, !sle, j_) >= depositAmount)
+                return tesSUCCESS;
         }
-        return account_ == deposit.issue().account ||
+        else if (
+            account_ == depositAmount.issue().account ||
             accountHolds(
                 view,
                 account_,
-                deposit.issue(),
+                depositAmount.issue(),
                 FreezeHandling::fhIGNORE_FREEZE,
-                ctx_.journal) >= deposit;
+                ctx_.journal) >= depositAmount)
+            return tesSUCCESS;
+        return tecAMM_UNFUNDED;
     };
 
     auto const
@@ -442,17 +449,12 @@ AMMDeposit::deposit(
     }
 
     // Deposit amountDeposit
-    if (!balance(amountDepositActual))
+    if (auto const ter = checkBalance(amountDepositActual))
     {
-        JLOG(ctx_.journal.debug())
-            << "AMM Deposit: account has insufficient balance to deposit "
-            << amountDepositActual;
-        return {tecAMM_UNFUNDED, STAmount{}};
-    }
-    if (amountDepositActual <= beast::zero)
-    {
-        JLOG(ctx_.journal.debug()) << "AMM Deposit: deposit is 0";
-        return {tecAMM_FAILED_DEPOSIT, STAmount{}};
+        JLOG(ctx_.journal.debug()) << "AMM Deposit: account has insufficient "
+                                      "checkBalance to deposit or is 0"
+                                   << amountDepositActual;
+        return {ter, STAmount{}};
     }
 
     auto res = accountSend(
@@ -467,18 +469,15 @@ AMMDeposit::deposit(
     // Deposit amount2Deposit
     if (amount2DepositActual)
     {
-        if (!balance(*amount2DepositActual))
+        if (auto const ter = checkBalance(*amount2DepositActual))
         {
             JLOG(ctx_.journal.debug())
-                << "AMM Deposit: account has insufficient balance to deposit "
+                << "AMM Deposit: account has insufficient checkBalance to "
+                   "deposit or is 0"
                 << *amount2DepositActual;
-            return {tecAMM_UNFUNDED, STAmount{}};
+            return {ter, STAmount{}};
         }
-        if (*amount2DepositActual <= beast::zero)
-        {
-            JLOG(ctx_.journal.debug()) << "AMM Deposit: deposit2 is 0";
-            return {tecAMM_FAILED_DEPOSIT, STAmount{}};
-        }
+
         res = accountSend(
             view, account_, ammAccount, *amount2DepositActual, ctx_.journal);
         if (res != tesSUCCESS)

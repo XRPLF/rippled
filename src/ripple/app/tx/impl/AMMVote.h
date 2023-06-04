@@ -35,7 +35,7 @@ namespace ripple {
  * VoteWeight - LPTokens owned by the account in basis points.
  * TradingFee is calculated as sum(VoteWeight_i * fee_i)/sum(VoteWeight_i).
  * Every time AMMVote transaction is submitted, the transactor
- * - Fails the transaction is the account doesn't hold LPTokens
+ * - Fails the transaction if the account doesn't hold LPTokens
  * - Removes VoteEntry for accounts that don't hold LPTokens
  * - If there are fewer than eight VoteEntry objects then add new VoteEntry
  *     object for the account.

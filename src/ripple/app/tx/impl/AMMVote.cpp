@@ -69,6 +69,13 @@ AMMVote::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.debug()) << "AMM Vote: Invalid asset pair.";
         return terNO_AMM;
     }
+    else if (auto const lpTokensNew =
+                 ammLPHolds(ctx.view, *ammSle, ctx.tx[sfAccount], ctx.j);
+             lpTokensNew == beast::zero)
+    {
+        JLOG(ctx.j.debug()) << "AMM Vote: account is not LP.";
+        return tecAMM_INVALID_TOKENS;
+    }
 
     return tesSUCCESS;
 }
@@ -86,12 +93,6 @@ applyVote(
         return {tecINTERNAL, false};
     STAmount const lptAMMBalance = (*ammSle)[sfLPTokenBalance];
     auto const lpTokensNew = ammLPHolds(sb, *ammSle, account_, ctx_.journal);
-    if (lpTokensNew == beast::zero)
-    {
-        JLOG(ctx_.journal.debug()) << "AMM Vote: account is not LP.";
-        return {tecAMM_INVALID_TOKENS, false};
-    }
-
     std::optional<STAmount> minTokens;
     std::size_t minPos{0};
     AccountID minAccount{0};
@@ -176,8 +177,10 @@ applyVote(
         if (updatedVoteSlots.size() < VOTE_MAX_SLOTS)
             update();
         // Add the entry if the account has more tokens than
-        // the least token holder.
-        else if (lpTokensNew > *minTokens)
+        // the least token holder or same tokens and higher fee.
+        else if (
+            lpTokensNew > *minTokens ||
+            (lpTokensNew == *minTokens && feeNew > minFee))
         {
             auto const entry = updatedVoteSlots.begin() + minPos;
             // Remove the least token vote entry.

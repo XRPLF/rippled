@@ -706,6 +706,7 @@ if (tests)
     src/test/app/AmendmentTable_test.cpp
     src/test/app/AMM_test.cpp
     src/test/app/AMMCalc_test.cpp
+    src/test/app/AMMExtended_test.cpp
     src/test/app/Check_test.cpp
     src/test/app/CrossingLimits_test.cpp
     src/test/app/DeliverMin_test.cpp

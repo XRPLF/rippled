@@ -28,12 +28,13 @@ namespace test {
 
 /** AMM Calculator. Uses AMM formulas to simulate the payment engine
  * expected results. Assuming the formulas are correct some unit-tests can
- * be verified. Currently supported operations are: swapIn - find out given
- * in. in can flow through multiple AMM/Offer steps. swapOut - find in given
- * out. out can flow through multiple AMM/Offer steps. lptokens - find
- * lptokens given pool composition changespq - change AMM spot price (SP)
- * quality. given AMM and Offer find out AMM offer, which changes AMM's SP
- * quality to the Offer's quality.
+ * be verified. Currently supported operations are:
+ *  - swapIn, find out given in. in can flow through multiple AMM/Offer steps.
+ *  - swapOut, find in given out. out can flow through multiple AMM/Offer steps.
+ *  - lptokens, find lptokens given pool composition.
+ *  - changespq, change AMM spot price (SP) quality. given AMM and Offer
+ *      find out AMM offer, which changes AMM's SP quality to
+ *      the Offer's quality.
  */
 class AMMCalc_test : public beast::unit_test::suite
 {
@@ -42,26 +43,23 @@ class AMMCalc_test : public beast::unit_test::suite
     using trates = std::map<std::string, std::uint32_t>;
     using swapargs = std::tuple<steps, STAmount, trates, std::uint32_t>;
     jtx::Account const gw{jtx::Account("gw")};
+    token_iter const end_;
+
     std::optional<STAmount>
-    getAmt(token_iter& p, bool* delimeted = nullptr)
+    getAmt(token_iter const& p, bool* delimited = nullptr)
     {
         using namespace jtx;
-        token_iter end;
-        if (p == end)
+        if (p == end_)
             return STAmount{};
-        std::string str = *p++;
+        std::string str = *p;
         str = boost::regex_replace(str, boost::regex("^(A|O)[(]"), "");
         boost::smatch match;
         // XXX(val))?
         boost::regex rx("^([^(]+)[(]([^)]+)[)]([)])?$");
         if (boost::regex_search(str, match, rx))
         {
-            if (delimeted)
-            {
-                *delimeted = false;
-                if (match[3] != "")
-                    *delimeted = true;
-            }
+            if (delimited)
+                *delimited = (match[3] != "");
             if (match[1] == "XRP")
                 return XRP(std::stoll(match[2]));
             // drops
@@ -73,12 +71,11 @@ class AMMCalc_test : public beast::unit_test::suite
     }
 
     std::optional<std::tuple<std::string, std::uint32_t, bool>>
-    getRate(token_iter& p)
+    getRate(token_iter const& p)
     {
-        token_iter end;
-        if (p == end)
+        if (p == end_)
             return std::nullopt;
-        std::string str = *p++;
+        std::string str = *p;
         str = boost::regex_replace(str, boost::regex("^T[(]"), "");
         // XXX(rate))?
         boost::smatch match;
@@ -95,12 +92,11 @@ class AMMCalc_test : public beast::unit_test::suite
     }
 
     std::uint32_t
-    getFee(token_iter& p)
+    getFee(token_iter const& p)
     {
-        token_iter end;
-        if (p != end)
+        if (p != end_)
         {
-            std::string const s = *p++;
+            std::string const s = *p;
             return std::stoll(s);
         }
         return 0;
@@ -109,15 +105,14 @@ class AMMCalc_test : public beast::unit_test::suite
     std::optional<std::pair<Amounts, bool>>
     getAmounts(token_iter& p)
     {
-        token_iter end;
-        if (p == end)
+        if (p == end_)
             return std::nullopt;
         std::string const s = *p;
         bool const amm = s[0] == 'O' ? false : true;
-        auto const a1 = getAmt(p);
-        if (!a1 || p == end)
+        auto const a1 = getAmt(p++);
+        if (!a1 || p == end_)
             return std::nullopt;
-        auto const a2 = getAmt(p);
+        auto const a2 = getAmt(p++);
         if (!a2)
             return std::nullopt;
         return {{{*a1, *a2}, amm}};
@@ -126,21 +121,20 @@ class AMMCalc_test : public beast::unit_test::suite
     std::optional<trates>
     getTransferRate(token_iter& p)
     {
-        token_iter end;
         trates rates{};
-        if (p == end)
+        if (p == end_)
             return rates;
         std::string str = *p;
         if (str[0] != 'T')
             return rates;
         // T(USD(rate),GBP(rate), ...)
-        while (true)
+        while (p != end_)
         {
-            if (auto const rate = getRate(p))
+            if (auto const rate = getRate(p++))
             {
-                auto const [currency, trate, delimeted] = *rate;
+                auto const [currency, trate, delimited] = *rate;
                 rates[currency] = trate;
-                if (delimeted)
+                if (delimited)
                     break;
             }
             else
@@ -152,7 +146,6 @@ class AMMCalc_test : public beast::unit_test::suite
     std::optional<swapargs>
     getSwap(token_iter& p)
     {
-        token_iter end;
         // pairs of amm pool or offer
         steps pairs;
         // either amm pool or offer
@@ -164,12 +157,12 @@ class AMMCalc_test : public beast::unit_test::suite
         while (isPair(p))
         {
             auto const res = getAmounts(p);
-            if (!res || p == end)
+            if (!res || p == end_)
                 return std::nullopt;
             pairs.push_back(*res);
         }
         // swap in/out amount
-        auto const swap = getAmt(p);
+        auto const swap = getAmt(p++);
         if (!swap)
             return std::nullopt;
         // optional transfer rate
@@ -236,6 +229,8 @@ class AMMCalc_test : public beast::unit_test::suite
                 sin = amts.in;
                 limitingStep = vp.rend() - it - 1;
                 limitStepOut = amts.out;
+                if (it == vp.rbegin())
+                    resultOut = amts.out;
             }
             resultIn = sin;
         }
@@ -336,16 +331,35 @@ class AMMCalc_test : public beast::unit_test::suite
         auto const a = arg();
         boost::regex re(",");
         token_iter p(a.begin(), a.end(), re, -1);
-        // AMM must be in the order poolGets/poolPays
-        // Offer must be in the order takerPays/takerGets
-        auto const res = [&]() -> bool {
-            // Swap in to the pool
-            // swapin,A(USD(1000),XRP(1000)),T(USD(125)),XRP(10),10 -
-            //   steps,trates,fee
-            // steps are comma separated A():AMM or O():Offer
-            // trates and fee are optional
-            // trates is comma separated rate for each currency
-            // trate is 100 * rate, no fraction
+        // Token is denoted as CUR(xxx), where CUR is the currency code
+        //    and xxx is the amount, for instance: XRP(100) or USD(11.5)
+        // AMM is denoted as A(CUR1(xxx1),CUR2(xxx2)), for instance:
+        //    A(XRP(1000),USD(1000)), the tokens must be in the order
+        //    poolGets/poolPays
+        // Offer is denoted as O(CUR1(xxx1),CUR2(xxx2)), for instance:
+        //    O(XRP(100),USD(100)), the tokens must be in the order
+        //    takerPays/takerGets
+        // Transfer rate is denoted as a comma separated list for each
+        // currency with the transfer rate, for instance:
+        //   T(USD(175),...,EUR(100)).
+        //   the transfer rate is 100 * rate, with no fraction, for instance:
+        //     1.75 = 1.75 * 100 = 175
+        //   the transfer rate is optional
+        // AMM trading fee is an integer in {0,1000}, 1000 represents 1%
+        //   the trading fee is optional
+        auto const exec = [&]() -> bool {
+            if (p == end_)
+                return true;
+            // Swap in to the steps. Execute steps in forward direction first.
+            // swapin,A(XRP(1000),USD(1000)),O(USD(10),EUR(10)),XRP(11),
+            //     T(USD(125)),1000
+            // where
+            //   A(...),O(...) are the payment steps, in this case
+            //     consisting of AMM and Offer.
+            //   XRP(11) is the swapIn value. Note the order of tokens in AMM;
+            //     i.e. poolGets/poolPays.
+            //   T(USD(125) is the transfer rate of 1.25%.
+            //   1000 is AMM trading fee of 1%, the fee is optional.
             if (*p == "swapin")
             {
                 if (auto const swap = getSwap(++p); swap)
@@ -354,13 +368,15 @@ class AMMCalc_test : public beast::unit_test::suite
                     return true;
                 }
             }
-            // Swap out of the pool
-            // swapout,A(USD(1000),XRP(1000)),T(USD(125)),XRP(10),10 -
-            //   steps,trates,fee
-            // steps are comma separated A():AMM or O():Offer
-            // trates and fee are optional
-            // trates is comma separated rate for each currency
-            // trate is 100 * rate, no fraction
+            // Swap out of the steps. Execute steps in reverse direction first.
+            // swapout,A(USD(1000),XRP(1000)),XRP(10),T(USD(100)),100
+            // where
+            //   A(...) is the payment step, in this case
+            //     consisting of AMM.
+            //   XRP(10) is the swapOut value. Note the order of tokens in AMM:
+            //     i.e. poolGets/poolPays.
+            //   T(USD(100) is the transfer rate of 1%.
+            //   100 is AMM trading fee of 0.1%.
             else if (*p == "swapout")
             {
                 if (auto const swap = getSwap(++p); swap)
@@ -369,8 +385,10 @@ class AMMCalc_test : public beast::unit_test::suite
                     return true;
                 }
             }
-            // Pool's lptokens
+            // Calculate AMM lptokens
             // lptokens,USD(1000),XRP(1000)
+            // where
+            //  USD(...),XRP(...) is the pool composition
             else if (*p == "lptokens")
             {
                 if (auto const pool = getAmounts(++p); pool)
@@ -385,9 +403,14 @@ class AMMCalc_test : public beast::unit_test::suite
                     return true;
                 }
             }
-            // Change spot price quality
-            // changespq,A(XRP(1000),USD(1000)),O(XRP(100),USD(99)),10 -
-            //   AMM,Offer,fee
+            // Change spot price quality - generates AMM offer such that
+            // when consumed the updated AMM spot price quality is equal
+            // to the CLOB offer quality
+            // changespq,A(XRP(1000),USD(1000)),O(XRP(100),USD(99)),10
+            //   where
+            //     A(...) is AMM
+            //     O(...) is CLOB offer
+            //     10 is AMM trading fee
             else if (*p == "changespq")
             {
                 if (auto const pool = getAmounts(++p))
@@ -414,7 +437,16 @@ class AMMCalc_test : public beast::unit_test::suite
                 }
             }
             return false;
-        }();
+        };
+        bool res = false;
+        try
+        {
+            res = exec();
+        }
+        catch (std::exception const& ex)
+        {
+            std::cout << ex.what() << std::endl;
+        }
         BEAST_EXPECT(res);
     }
 };

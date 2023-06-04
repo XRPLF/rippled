@@ -466,6 +466,11 @@ Payment::doApply()
         return tecUNFUNDED_PAYMENT;
     }
 
+    // AMMs can never receive an XRP payment.
+    // Must use AMMDeposit transaction instead.
+    if (sleDst->getFlags() & lsfAMM)
+        return tecNO_PERMISSION;
+
     // The source account does have enough money.  Make sure the
     // source account has authority to deposit to the destination.
     if (reqDepositAuth)
@@ -477,7 +482,7 @@ Payment::doApply()
         //  3. If the destination's XRP balance is
         //    a. less than or equal to the base reserve and
         //    b. the deposit amount is less than or equal to the base reserve,
-        // then we allow the deposit unless the destination is AMM account.
+        // then we allow the deposit.
         //
         // Rule 3 is designed to keep an account from getting wedged
         // in an unusable state if it sets the lsfDepositAuth flag and
@@ -493,9 +498,7 @@ Payment::doApply()
             if (!view().exists(keylet::depositPreauth(uDstAccountID, account_)))
             {
                 // Get the base reserve.
-                XRPAmount const dstReserve = sleDst->getFlags() & lsfAMM
-                    ? XRPAmount{0}
-                    : view().fees().accountReserve(0);
+                XRPAmount const dstReserve{view().fees().accountReserve(0)};
 
                 if (saDstAmount > dstReserve ||
                     sleDst->getFieldAmount(sfBalance) > dstReserve)

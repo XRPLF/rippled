@@ -256,6 +256,7 @@ CONSTRUCT_TYPED_SFIELD(sfLPTokenOut,            "LPTokenOut",           AMOUNT, 
 CONSTRUCT_TYPED_SFIELD(sfLPTokenIn,             "LPTokenIn",            AMOUNT,    26);
 CONSTRUCT_TYPED_SFIELD(sfEPrice,                "EPrice",               AMOUNT,    27);
 CONSTRUCT_TYPED_SFIELD(sfPrice,                 "Price",                AMOUNT,    28);
+// 29 and 30 are reserved for side-chains
 CONSTRUCT_TYPED_SFIELD(sfLPTokenBalance,        "LPTokenBalance",       AMOUNT,    31);
 
 // variable length (common)

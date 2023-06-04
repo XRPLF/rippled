@@ -46,7 +46,7 @@ namespace ripple {
  * f(x) = X * 1.05 + min_slot_price
  * The bid price of slot any time is
  * f(x) = X * 1.05 * (1 - x^60) + min_slot_price, where min_slot_price
- * is some constant minimum slot price.
+ * is a constant fraction of the total LPTokens.
  * The revenue from a successful bid is split between the current slot-holder
  * and the pool. The current slot holder is always refunded the remaining slot
  * value f(x) = (1 - x) * X.
@@ -54,7 +54,7 @@ namespace ripple {
  * The auction information is maintained in AuctionSlot of ltAMM object.
  * AuctionSlot contains:
  * Account - account id, which owns the slot.
- * TimeStamp - the time (since ripple epoch) when slot was bought.
+ * Expiration - slot expiration time
  * DiscountedFee - trading fee charged to the account, default is 0.
  * Price - price paid for the slot in LPTokens.
  * AuthAccounts - up to four accounts authorized to trade at

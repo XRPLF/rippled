@@ -193,10 +193,10 @@ applyBid(
 
     // Account must exist and the slot not expired.
     auto validOwner = [&](AccountID const& account) {
-        return sb.read(keylet::account(account)) &&
-            // Valid range is 0-19 but the tailing slot pays MinSlotPrice
-            // and doesn't refund so the check is < instead of <= to optimize.
-            timeSlot && *timeSlot < tailingSlot;
+        // Valid range is 0-19 but the tailing slot pays MinSlotPrice
+        // and doesn't refund so the check is < instead of <= to optimize.
+        return timeSlot && *timeSlot < tailingSlot &&
+            sb.read(keylet::account(account));
     };
 
     auto updateSlot = [&](std::uint32_t fee,
@@ -331,11 +331,9 @@ applyBid(
 
         auto const burn = *payPrice - refund;
         res = updateSlot(discountedFee, *payPrice, burn);
-        if (res != tesSUCCESS)
-            return {res, false};
     }
 
-    return {tesSUCCESS, true};
+    return {res, res == tesSUCCESS};
 }
 
 TER

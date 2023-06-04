@@ -198,7 +198,7 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
     {
         JLOG(ctx.j.debug())
             << "AMM Withdraw: reserves or tokens balance is zero.";
-        return tecAMM_BALANCE;
+        return tecINTERNAL;
     }
 
     auto const ammAccountID = ammSle->getAccountID(sfAccount);
@@ -207,6 +207,13 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
                            auto const& balance) -> TER {
         if (amount)
         {
+            if (amount > balance)
+            {
+                JLOG(ctx.j.debug())
+                    << "AMM Withdraw: withdrawing more than the balance, "
+                    << *amount;
+                return tecAMM_BALANCE;
+            }
             if (auto const ter =
                     requireAuth(ctx.view, amount->issue(), accountID))
             {
@@ -230,13 +237,6 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
                                     << to_string(accountID) << " "
                                     << to_string(amount->issue().currency);
                 return tecFROZEN;
-            }
-            if (amount > balance)
-            {
-                JLOG(ctx.j.debug())
-                    << "AMM Withdraw: withdrawing more than the balance, "
-                    << *amount;
-                return tecAMM_BALANCE;
             }
         }
         return tesSUCCESS;
@@ -577,8 +577,7 @@ AMMWithdraw::equalWithdrawTokens(
     try
     {
         // Withdrawing all tokens in the pool
-        if ((ctx_.tx[sfFlags] & tfWithdrawAll) &&
-            lpTokensWithdraw == lptAMMBalance)
+        if (lpTokensWithdraw == lptAMMBalance)
             return withdraw(
                 view,
                 ammAccount,
@@ -588,46 +587,19 @@ AMMWithdraw::equalWithdrawTokens(
                 lptAMMBalance,
                 lpTokensWithdraw,
                 tfee);
+
         auto const frac = divide(lpTokensWithdraw, lptAMMBalance, noIssue());
-        auto getAmounts = [&](auto const& frac) {
-            return std::make_pair(
-                multiply(amountBalance, frac, amountBalance.issue()),
-                multiply(amount2Balance, frac, amount2Balance.issue()));
-        };
-        auto const [withdrawAmount, withdraw2Amount] = getAmounts(frac);
-        // The amount of requested tokens to withdraw results
-        // in one-sided pool withdrawal
+        auto const withdrawAmount =
+            multiply(amountBalance, frac, amountBalance.issue());
+        auto const withdraw2Amount =
+            multiply(amount2Balance, frac, amount2Balance.issue());
+        // LP is making equal withdrawal by tokens but the requested amount
+        // of LP tokens is likely too small and results in one-sided pool
+        // withdrawal due to round off. Fail so the user withdraws
+        // more tokens.
         if (withdrawAmount == beast::zero || withdraw2Amount == beast::zero)
-        {
-            // LP can request more tokens to withdraw, which doesn't result
-            // in single pool withdrawal
-            if (lpTokensWithdraw < lpTokens)
-            {
-                auto const fracP = divide(lpTokens, lptAMMBalance, noIssue());
-                auto const [withdrawAmountP, withdraw2AmountP] =
-                    getAmounts(fracP);
-                if (withdrawAmountP != beast::zero &&
-                    withdraw2AmountP != beast::zero)
-                    return {tecAMM_FAILED_WITHDRAW, STAmount{}};
-                // Total LP tokens withdrawal still result in single pool
-                // withdrawal
-            }
-            // LP withdrawing all tokens, treat as the single tokens withdraw
-            // with no fee
-            auto const amount = withdrawAmount != beast::zero ? withdrawAmount
-                                                              : withdraw2Amount;
-            auto const balance = amount.issue() == amountBalance.issue()
-                ? amountBalance
-                : amount2Balance;
-            return singleWithdrawTokens(
-                view,
-                ammAccount,
-                balance,
-                lptAMMBalance,
-                amount,
-                lpTokensWithdraw,
-                0);
-        }
+            return {tecAMM_FAILED_WITHDRAW, STAmount{}};
+
         return withdraw(
             view,
             ammAccount,
@@ -653,19 +625,19 @@ AMMWithdraw::equalWithdrawTokens(
  *       where
  *      A,B: current pool composition
  *      T: current balance of outstanding LPTokens
- *      a: balance of asset A being added
- *      b: balance of asset B being added
+ *      a: balance of asset A being withdrawn
+ *      b: balance of asset B being withdrawn
  *      t: balance of LPTokens issued to LP after a successful transaction
- * Use equation 5 to compute , given the amount in Asset1Out. Let this be Z
- * Use equation 6 to compute the amount of asset2, given  t~Z. Let
+ * Use equation 5 to compute t, given the amount in Asset1Out. Let this be Z
+ * Use equation 6 to compute the amount of asset2, given Z. Let
  *     the computed amount of asset2 be X
  * If X <= amount in Asset2Out:
  *   The amount of asset1 to be withdrawn is the one specified in Asset1Out
  *   The amount of asset2 to be withdrawn is X
  *   The amount of LPTokens redeemed is Z
  * If X> amount in Asset2Out:
- *   Use equation 5 to compute , given the amount in Asset2Out. Let this be Q
- *   Use equation 6 to compute the amount of asset1, given t~Q.
+ *   Use equation 5 to compute t, given the amount in Asset2Out. Let this be Q
+ *   Use equation 6 to compute the amount of asset1, given Q.
  *     Let the computed amount of asset1 be W
  *   The amount of asset2 to be withdrawn is the one specified in Asset2Out
  *   The amount of asset1 to be withdrawn is W

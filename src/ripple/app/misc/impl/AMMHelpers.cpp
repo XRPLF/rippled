@@ -33,8 +33,8 @@ ammLPTokens(
 
 /*
  * Equation 3:
- * t = T * [(b/B - sqrt(f2**2 - b/(B*f1)) + f2) /
- *          (1 + sqrt(f2**2 - b/(B*f1)) + f2)]
+ * t = T * [(b/B - (sqrt(f2**2 - b/(B*f1)) - f2)) /
+ *          (1 + sqrt(f2**2 - b/(B*f1)) - f2)]
  * where f1 = 1 - tfee, f2 = (1 - tfee/2)/f1
  */
 STAmount
@@ -59,7 +59,8 @@ lpTokensIn(
  * sqrt(f2**2 + R/f1)*(t1 + 1) = R + f2 + t1*f2 - t1 =>
  * sqrt(f2**2 + R/f1)*t2 = R + t2*f2 - t1 =>
  * sqrt(f2**2 + R/f1) = R/t2 + f2 - t1/t2, let d = f2 - t1/t2 =>
- * sqrt(f2**2 + R/f1) = R/t2 + d => f2**2 + R/f1 = (R/t2)**2 +2*d*R/t2 + d**2 =>
+ * sqrt(f2**2 + R/f1) = R/t2 + d =>
+ * f2**2 + R/f1 = (R/t2)**2 +2*d*R/t2 + d**2 =>
  * (R/t2)**2 + R*(2*d/t2 - 1/f1) + d**2 - f2**2 = 0
  */
 STAmount
@@ -102,7 +103,8 @@ lpTokensOut(
 /* Equation 8 solves equation 7 for b:
  * c - 2*t/T = sqrt(c**2 - 4*R) =>
  * c**2 - 4*c*t/T + 4*t**2/T**2 = c**2 - 4*R =>
- * -4*c*t/T + 4*t**2/T**2 = -4*R => -c*t/T + t**2/T**2 = -R
+ * -4*c*t/T + 4*t**2/T**2 = -4*R =>
+ * -c*t/T + t**2/T**2 = -R -=>
  * substitute c = R*f + 2 - f =>
  * -(t/T)*(R*f + 2 - f) + (t/T)**2 = -R, let t1 = t/T =>
  * -t1*R*f -2*t1 +t1*f +t1**2 = -R =>

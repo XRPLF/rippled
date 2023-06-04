@@ -241,7 +241,7 @@ square(Number const& n);
 /** Adjust LP tokens to deposit/withdraw.
  * Amount type keeps 16 digits. Maintaining the LP balance by adding deposited
  * tokens or subtracting withdrawn LP tokens from LP balance results in
- * loosing precision in LP balance. I.e. the resulting LP balance
+ * losing precision in LP balance. I.e. the resulting LP balance
  * is less than the actual sum of LP tokens. To adjust for this, subtract
  * old tokens balance from the new one for deposit or vice versa for withdraw
  * to cancel out the precision loss.
