@@ -357,14 +357,14 @@ public:
  * @brief Invariant: Validates counts of NFTokens after all transaction types.
  *
  * The following checks are made:
- *  - The number of minted or burned tokens may only be changed by
+ *  - The number of minted or burned NFTokens can only be changed by
  *    NFTokenMint or NFTokenBurn transactions.
  *  - A successful NFTokenMint must increase the number of NFTokens.
  *  - A failed NFTokenMint must not change the number of minted NFTokens.
- *  - An NFTokenMint transaction may not change the number of burned NFTokens,
+ *  - An NFTokenMint transaction cannot change the number of burned NFTokens.
  *  - A successful NFTokenBurn must increase the number of burned NFTokens.
  *  - A failed NFTokenBurn must not change the number of burned NFTokens.
- *  - An NFTokenBurn transaction may not change the number of minted NFTokens.
+ *  - An NFTokenBurn transaction cannot change the number of minted NFTokens.
  */
 class NFTokenCountTracking
 {
