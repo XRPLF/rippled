@@ -54,7 +54,7 @@ AMMCreate::preflight(PreflightContext const& ctx)
     {
         JLOG(ctx.j.debug())
             << "AMM Instance: tokens can not have the same currency/issuer.";
-        return temAMM_BAD_TOKENS;
+        return temBAD_AMM_TOKENS;
     }
 
     if (auto const err = invalidAMMAmount(amount))
@@ -149,7 +149,7 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
     {
         JLOG(ctx.j.debug())
             << "AMM Instance: insufficient funds, " << amount << " " << amount2;
-        return tecAMM_UNFUNDED;
+        return tecUNFUNDED_AMM;
     }
 
     return tesSUCCESS;
@@ -209,10 +209,11 @@ applyCreate(
     // rippling (AMM LPToken can be used as a token in another AMM, which must
     // support payments and offer crossing), and enable deposit authorization to
     // prevent payments into AMM.
-    // Note, that the trustlines created by AMM have 0 credit limit. This
-    // prevents shifting the balance between accounts via AMM. This is
-    // a desired behavior, though not an ideal solution; i.e. 0 means no
-    // trust except for AMMs where it means infinite trust.
+    // Note, that the trustlines created by AMM have 0 credit limit.
+    // This prevents shifting the balance between accounts via AMM,
+    // or sending unsolicited LPTokens. This is a desired behavior.
+    // A user can only receive LPTokens through affirmative action -
+    // either an AMMDeposit, TrustSet, crossing an offer, etc.
     sleAMMRoot->setFieldU32(
         sfFlags, lsfAMM | lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth);
     sb.insert(sleAMMRoot);

@@ -144,19 +144,19 @@ AMMTestBase::testAMM(
 }
 
 XRPAmount
-Test::reserve(jtx::Env& env, std::uint32_t count) const
+AMMTest::reserve(jtx::Env& env, std::uint32_t count) const
 {
     return env.current()->fees().accountReserve(count);
 }
 
 XRPAmount
-Test::ammCrtFee(jtx::Env& env) const
+AMMTest::ammCrtFee(jtx::Env& env) const
 {
     return env.current()->fees().increment;
 }
 
 jtx::Env
-Test::pathTestEnv()
+AMMTest::pathTestEnv()
 {
     // These tests were originally written with search parameters that are
     // different from the current defaults. This function creates an env
@@ -170,7 +170,7 @@ Test::pathTestEnv()
 }
 
 Json::Value
-Test::find_paths_request(
+AMMTest::find_paths_request(
     jtx::Env& env,
     jtx::Account const& src,
     jtx::Account const& dst,
@@ -229,7 +229,7 @@ Test::find_paths_request(
 }
 
 std::tuple<STPathSet, STAmount, STAmount>
-Test::find_paths(
+AMMTest::find_paths(
     jtx::Env& env,
     jtx::Account const& src,
     jtx::Account const& dst,

@@ -64,7 +64,7 @@ transResults()
         MAKE_ERROR(tecOVERSIZE,                      "Object exceeded serialization limits."),
         MAKE_ERROR(tecUNFUNDED,                      "Not enough XRP to satisfy the reserve requirement."),
         MAKE_ERROR(tecUNFUNDED_ADD,                  "DEPRECATED."),
-        MAKE_ERROR(tecAMM_UNFUNDED,                  "Insufficient balance to fund AMM."),
+        MAKE_ERROR(tecUNFUNDED_AMM,                  "Insufficient balance to fund AMM."),
         MAKE_ERROR(tecUNFUNDED_OFFER,                "Insufficient balance to fund created offer."),
         MAKE_ERROR(tecUNFUNDED_PAYMENT,              "Insufficient XRP balance to send."),
         MAKE_ERROR(tecOWNERS,                        "Non-zero owner count."),
@@ -136,7 +136,7 @@ transResults()
         MAKE_ERROR(telNETWORK_ID_MAKES_TX_NON_CANONICAL, "Transactions submitted to this node/network must NOT include a NetworkID field."),
 
         MAKE_ERROR(temMALFORMED,                 "Malformed transaction."),
-        MAKE_ERROR(temAMM_BAD_TOKENS,            "Malformed: Invalid LPTokens."),
+        MAKE_ERROR(temBAD_AMM_TOKENS,            "Malformed: Invalid LPTokens."),
         MAKE_ERROR(temBAD_AMOUNT,                "Can only send positive amounts."),
         MAKE_ERROR(temBAD_CURRENCY,              "Malformed: Bad currency."),
         MAKE_ERROR(temBAD_EXPIRATION,            "Malformed: Bad expiration."),

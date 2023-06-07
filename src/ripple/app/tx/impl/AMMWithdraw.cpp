@@ -112,13 +112,13 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
     {
         JLOG(ctx.j.debug()) << "AMM Withdraw: invalid tokens, same issue."
                             << amount->issue() << " " << amount2->issue();
-        return temAMM_BAD_TOKENS;
+        return temBAD_AMM_TOKENS;
     }
 
     if (lpTokens && *lpTokens <= beast::zero)
     {
         JLOG(ctx.j.debug()) << "AMM Withdraw: invalid tokens.";
-        return temAMM_BAD_TOKENS;
+        return temBAD_AMM_TOKENS;
     }
 
     if (amount)
@@ -262,7 +262,7 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
     if (lpTokensWithdraw && lpTokensWithdraw->issue() != lpTokens.issue())
     {
         JLOG(ctx.j.debug()) << "AMM Withdraw: invalid LPTokens.";
-        return temAMM_BAD_TOKENS;
+        return temBAD_AMM_TOKENS;
     }
 
     if (lpTokensWithdraw && *lpTokensWithdraw > lpTokens)
@@ -275,7 +275,7 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
         ePrice && ePrice->issue() != lpTokens.issue())
     {
         JLOG(ctx.j.debug()) << "AMM Withdraw: invalid EPrice.";
-        return temAMM_BAD_TOKENS;
+        return temBAD_AMM_TOKENS;
     }
 
     if (ctx.tx.getFlags() & (tfLPToken | tfWithdrawAll))
@@ -668,6 +668,7 @@ AMMWithdraw::equalWithdrawLimit(
             tfee);
     frac = Number{amount2} / amount2Balance;
     auto const amountWithdraw = amountBalance * frac;
+    assert(amountWithdraw <= amount);
     return withdraw(
         view,
         ammAccount,

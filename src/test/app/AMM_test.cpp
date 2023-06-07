@@ -38,7 +38,7 @@
 namespace ripple {
 namespace test {
 
-struct AMM_test : public jtx::Test
+struct AMM_test : public jtx::AMMTest
 {
 private:
     void
@@ -124,7 +124,7 @@ private:
             Env env{*this};
             fund(env, gw, {alice}, {USD(30000)}, Fund::All);
             AMM ammAlice(
-                env, alice, XRP(10000), XRP(10000), ter(temAMM_BAD_TOKENS));
+                env, alice, XRP(10000), XRP(10000), ter(temBAD_AMM_TOKENS));
             BEAST_EXPECT(!ammAlice.ammExists());
         }
 
@@ -133,7 +133,7 @@ private:
             Env env{*this};
             fund(env, gw, {alice}, {USD(30000)}, Fund::All);
             AMM ammAlice(
-                env, alice, USD(10000), USD(10000), ter(temAMM_BAD_TOKENS));
+                env, alice, USD(10000), USD(10000), ter(temBAD_AMM_TOKENS));
             BEAST_EXPECT(!ammAlice.ammExists());
         }
 
@@ -167,7 +167,7 @@ private:
             Env env{*this};
             fund(env, gw, {alice}, {USD(30000)}, Fund::All);
             AMM ammAlice(
-                env, alice, XRP(10000), USD(40000), ter(tecAMM_UNFUNDED));
+                env, alice, XRP(10000), USD(40000), ter(tecUNFUNDED_AMM));
             BEAST_EXPECT(!ammAlice.ammExists());
         }
 
@@ -176,7 +176,7 @@ private:
             Env env{*this};
             fund(env, gw, {alice}, {USD(30000)}, Fund::All);
             AMM ammAlice(
-                env, alice, XRP(40000), USD(10000), ter(tecAMM_UNFUNDED));
+                env, alice, XRP(40000), USD(10000), ter(tecUNFUNDED_AMM));
             BEAST_EXPECT(!ammAlice.ammExists());
         }
 
@@ -296,7 +296,7 @@ private:
             env(offer(alice, XRP(101), USD(100)));
             env(offer(alice, XRP(102), USD(100)));
             AMM ammAlice(
-                env, alice, XRP(1000), USD(1000), ter(tecAMM_UNFUNDED));
+                env, alice, XRP(1000), USD(1000), ter(tecUNFUNDED_AMM));
         }
 
         // Insufficient reserve, IOU/IOU
@@ -385,13 +385,13 @@ private:
 
             // Invalid tokens
             ammAlice.deposit(
-                alice, 0, std::nullopt, std::nullopt, ter(temAMM_BAD_TOKENS));
+                alice, 0, std::nullopt, std::nullopt, ter(temBAD_AMM_TOKENS));
             ammAlice.deposit(
                 alice,
                 IOUAmount{-1},
                 std::nullopt,
                 std::nullopt,
-                ter(temAMM_BAD_TOKENS));
+                ter(temBAD_AMM_TOKENS));
 
             // Invalid tokens - bogus currency
             {
@@ -416,7 +416,7 @@ private:
                 std::nullopt,
                 std::nullopt,
                 std::nullopt,
-                ter(temAMM_BAD_TOKENS));
+                ter(temBAD_AMM_TOKENS));
 
             // Depositing mismatched token, invalid Asset2In.issue
             ammAlice.deposit(
@@ -425,7 +425,7 @@ private:
                 GBP(100),
                 std::nullopt,
                 std::nullopt,
-                ter(temAMM_BAD_TOKENS));
+                ter(temBAD_AMM_TOKENS));
 
             // Depositing mismatched token, Asset1In.issue == Asset2In.issue
             ammAlice.deposit(
@@ -434,7 +434,7 @@ private:
                 USD(100),
                 std::nullopt,
                 std::nullopt,
-                ter(temAMM_BAD_TOKENS));
+                ter(temBAD_AMM_TOKENS));
 
             // Invalid amount value
             ammAlice.deposit(
@@ -528,7 +528,7 @@ private:
                 std::nullopt,
                 STAmount{USD, 1, -1},
                 std::nullopt,
-                ter(tecAMM_UNFUNDED));
+                ter(tecUNFUNDED_AMM));
             // Calculated amount is 0
             ammAlice.deposit(
                 alice,
@@ -624,7 +624,7 @@ private:
                 std::nullopt,
                 std::nullopt,
                 std::nullopt,
-                ter(tecAMM_UNFUNDED));
+                ter(tecUNFUNDED_AMM));
         });
 
         // Insufficient USD balance
@@ -637,7 +637,7 @@ private:
                 std::nullopt,
                 std::nullopt,
                 std::nullopt,
-                ter(tecAMM_UNFUNDED));
+                ter(tecUNFUNDED_AMM));
         });
 
         // Insufficient USD balance by tokens
@@ -653,7 +653,7 @@ private:
                 std::nullopt,
                 std::nullopt,
                 std::nullopt,
-                ter(tecAMM_UNFUNDED));
+                ter(tecUNFUNDED_AMM));
         });
 
         // Insufficient XRP balance by tokens
@@ -672,7 +672,7 @@ private:
                 std::nullopt,
                 std::nullopt,
                 std::nullopt,
-                ter(tecAMM_UNFUNDED));
+                ter(tecUNFUNDED_AMM));
         });
 
         // Insufficient reserve, XRP/IOU
@@ -1052,13 +1052,13 @@ private:
 
             // Invalid tokens
             ammAlice.withdraw(
-                alice, 0, std::nullopt, std::nullopt, ter(temAMM_BAD_TOKENS));
+                alice, 0, std::nullopt, std::nullopt, ter(temBAD_AMM_TOKENS));
             ammAlice.withdraw(
                 alice,
                 IOUAmount{-1},
                 std::nullopt,
                 std::nullopt,
-                ter(temAMM_BAD_TOKENS));
+                ter(temBAD_AMM_TOKENS));
 
             // Mismatched token, invalid Asset1Out issue
             ammAlice.withdraw(
@@ -1066,7 +1066,7 @@ private:
                 GBP(100),
                 std::nullopt,
                 std::nullopt,
-                ter(temAMM_BAD_TOKENS));
+                ter(temBAD_AMM_TOKENS));
 
             // Mismatched token, invalid Asset2Out issue
             ammAlice.withdraw(
@@ -1074,7 +1074,7 @@ private:
                 USD(100),
                 GBP(100),
                 std::nullopt,
-                ter(temAMM_BAD_TOKENS));
+                ter(temBAD_AMM_TOKENS));
 
             // Mismatched token, Asset1Out.issue == Asset2Out.issue
             ammAlice.withdraw(
@@ -1082,7 +1082,7 @@ private:
                 USD(100),
                 USD(100),
                 std::nullopt,
-                ter(temAMM_BAD_TOKENS));
+                ter(temBAD_AMM_TOKENS));
 
             // Invalid amount value
             ammAlice.withdraw(
@@ -1944,7 +1944,7 @@ private:
                 std::nullopt,
                 std::nullopt,
                 std::nullopt,
-                ter(temAMM_BAD_TOKENS));
+                ter(temBAD_AMM_TOKENS));
             ammAlice.bid(
                 alice,
                 STAmount{USD, 100},
@@ -1953,7 +1953,7 @@ private:
                 std::nullopt,
                 std::nullopt,
                 std::nullopt,
-                ter(temAMM_BAD_TOKENS));
+                ter(temBAD_AMM_TOKENS));
         });
 
         // Invalid AMM
@@ -2403,28 +2403,18 @@ private:
 
         // Can't pay into AMM with escrow.
         testAMM([&](AMM& ammAlice, Env& env) {
-            auto const seq1 = env.seq(carol);
             env(escrow(carol, ammAlice.ammAccount(), XRP(1)),
                 condition(cb1),
                 finish_time(env.now() + 1s),
                 cancel_time(env.now() + 2s),
                 fee(1500),
-                ter(tesSUCCESS));
-            env.close();
-            env(finish(carol, carol, seq1),
-                condition(cb1),
-                fulfillment(fb1),
-                fee(1500),
                 ter(tecNO_PERMISSION));
-            env(cancel(carol, carol, seq1));
         });
 
         // Can't pay into AMM with paychan.
         testAMM([&](AMM& ammAlice, Env& env) {
             auto const pk = carol.pk();
             auto const settleDelay = 100s;
-            auto const chan =
-                channel(carol, ammAlice.ammAccount(), env.seq(carol));
             NetClock::time_point const cancelAfter =
                 env.current()->info().parentCloseTime + 200s;
             env(create(
@@ -2434,14 +2424,7 @@ private:
                     settleDelay,
                     pk,
                     cancelAfter),
-                ter(tesSUCCESS));
-            env(fund(carol, chan, XRP(1000)), ter(tesSUCCESS));
-            auto const reqBal = channelBalance(*env.current(), chan) + XRP(500);
-            auto const authAmt = reqBal + XRP(100);
-            env(claim(carol, chan, reqBal, authAmt), ter(tecNO_PERMISSION));
-            env.close(cancelAfter);
-            env(claim(carol, chan), txflags(tfClose));
-            BEAST_EXPECT(!channelExists(*env.current(), chan));
+                ter(tecNO_PERMISSION));
         });
 
         // Pay amounts close to one side of the pool

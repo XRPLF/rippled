@@ -87,7 +87,7 @@ protected:
         std::optional<FeatureBitset> const& features = std::nullopt);
 };
 
-class Test : public jtx::AMMTestBase
+class AMMTest : public jtx::AMMTestBase
 {
 protected:
     XRPAmount

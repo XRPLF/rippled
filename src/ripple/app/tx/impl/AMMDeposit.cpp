@@ -99,13 +99,13 @@ AMMDeposit::preflight(PreflightContext const& ctx)
     {
         JLOG(ctx.j.debug()) << "AMM Deposit: invalid tokens, same issue."
                             << amount->issue() << " " << amount2->issue();
-        return temAMM_BAD_TOKENS;
+        return temBAD_AMM_TOKENS;
     }
 
     if (lpTokens && *lpTokens <= beast::zero)
     {
         JLOG(ctx.j.debug()) << "AMM Deposit: invalid LPTokens";
-        return temAMM_BAD_TOKENS;
+        return temBAD_AMM_TOKENS;
     }
 
     if (amount)
@@ -192,7 +192,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
             if (xrpLiquid(ctx.view, accountID, !sle, ctx.j) >= deposit)
                 return TER(tesSUCCESS);
             if (sle)
-                return tecAMM_UNFUNDED;
+                return tecUNFUNDED_AMM;
             return tecINSUF_RESERVE_LINE;
         }
         return (accountID == deposit.issue().account ||
@@ -203,7 +203,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
                     FreezeHandling::fhIGNORE_FREEZE,
                     ctx.j) >= deposit)
             ? TER(tesSUCCESS)
-            : tecAMM_UNFUNDED;
+            : tecUNFUNDED_AMM;
     };
 
     auto const amount = ctx.tx[~sfAmount];
@@ -266,7 +266,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
         lpTokens && lpTokens->issue() != lptAMMBalance.issue())
     {
         JLOG(ctx.j.debug()) << "AMM Deposit: invalid LPTokens.";
-        return temAMM_BAD_TOKENS;
+        return temBAD_AMM_TOKENS;
     }
 
     if (ctx.tx.getFlags() & tfLPToken)
@@ -428,7 +428,7 @@ AMMDeposit::deposit(
                 FreezeHandling::fhIGNORE_FREEZE,
                 ctx_.journal) >= depositAmount)
             return tesSUCCESS;
-        return tecAMM_UNFUNDED;
+        return tecUNFUNDED_AMM;
     };
 
     auto const

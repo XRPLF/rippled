@@ -71,7 +71,7 @@ invalidAMMAsset(
     if (isXRP(issue) && issue.account.isNonZero())
         return temBAD_ISSUER;
     if (pair && issue != pair->first && issue != pair->second)
-        return temAMM_BAD_TOKENS;
+        return temBAD_AMM_TOKENS;
     return tesSUCCESS;
 }
 
@@ -82,7 +82,7 @@ invalidAMMAssetPair(
     std::optional<std::pair<Issue, Issue>> const& pair)
 {
     if (issue1 == issue2)
-        return temAMM_BAD_TOKENS;
+        return temBAD_AMM_TOKENS;
     if (auto const res = invalidAMMAsset(issue1, pair))
         return res;
     if (auto const res = invalidAMMAsset(issue2, pair))

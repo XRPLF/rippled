@@ -58,6 +58,17 @@ getIssue(Json::Value const& v, beast::Journal j)
     return Unexpected(rpcISSUE_MALFORMED);
 }
 
+std::string
+to_iso8601(NetClock::time_point tp)
+{
+    // 2000-01-01 00:00:00 UTC is 946684800s from 1970-01-01 00:00:00 UTC
+    using namespace std::chrono;
+    return date::format(
+        "%Y-%Om-%dT%H:%M:%OS%z",
+        date::sys_time<system_clock::duration>(
+            system_clock::time_point{tp.time_since_epoch() + 946684800s}));
+}
+
 Json::Value
 doAMMInfo(RPC::JsonContext& context)
 {
@@ -159,7 +170,7 @@ doAMMInfo(RPC::JsonContext& context)
             auction[jss::discounted_fee] = auctionSlot[sfDiscountedFee];
             auction[jss::account] =
                 to_string(auctionSlot.getAccountID(sfAccount));
-            auction[jss::expiration] = to_string(NetClock::time_point{
+            auction[jss::expiration] = to_iso8601(NetClock::time_point{
                 NetClock::duration{auctionSlot[sfExpiration]}});
             if (auctionSlot.isFieldPresent(sfAuthAccounts))
             {
