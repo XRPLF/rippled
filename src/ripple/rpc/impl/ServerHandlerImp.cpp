@@ -1148,6 +1148,12 @@ parse_Ports(Config const& config, std::ostream& log)
             log << "Missing section: [" << name << "]";
             Throw<std::exception>();
         }
+
+        // grpc ports are parsed by GRPCServer class. Do not validate
+        // grpc port information in this file.
+        if (name == "port_grpc")
+            continue;
+
         ParsedPort parsed = common;
         parsed.name = name;
         parse_Port(parsed, config[name], log);
