@@ -365,7 +365,8 @@ CONSTRUCT_UNTYPED_SFIELD(sfDisabledValidators,  "DisabledValidators",   ARRAY,  
 CONSTRUCT_UNTYPED_SFIELD(sfHookExecutions,      "HookExecutions",       ARRAY,     18);
 CONSTRUCT_UNTYPED_SFIELD(sfHookParameters,      "HookParameters",       ARRAY,     19);
 CONSTRUCT_UNTYPED_SFIELD(sfHookGrants,          "HookGrants",           ARRAY,     20);
-CONSTRUCT_UNTYPED_SFIELD(sfAuthAccounts,        "AuthAccounts",         ARRAY,     21);
+// 21-24 is reserved for side-chains
+CONSTRUCT_UNTYPED_SFIELD(sfAuthAccounts,        "AuthAccounts",         ARRAY,     25);
 
 // clang-format on
 
