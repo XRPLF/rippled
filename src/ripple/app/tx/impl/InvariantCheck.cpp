@@ -743,12 +743,10 @@ ValidClawback::finalize(
 
     if (result == tesSUCCESS)
     {
-        // a successful clawback transaction will ALWAYS claw back some funds
-        // from ONE trustline
-        if (trustlinesChanged != 1)
+        if (trustlinesChanged > 1)
         {
             JLOG(j.fatal())
-                << "Invariant failed: wrong number of trustline changed.";
+                << "Invariant failed: more than one trustline changed.";
             return false;
         }
 
