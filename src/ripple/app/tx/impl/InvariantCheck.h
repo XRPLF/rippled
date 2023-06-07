@@ -324,7 +324,7 @@ public:
  * The following checks are made:
  *  - The page is correctly associated with the owner.
  *  - The page is correctly ordered between the next and previous links.
- *  - The page contains a valid number of NFTokens.
+ *  - The page contains at least one and no more than 32 NFTokens.
  *  - The NFTokens on this page do not belong on a lower or higher page.
  *  - The NFTokens are correctly sorted on the page.
  *  - Each URI, if present, is not empty.
