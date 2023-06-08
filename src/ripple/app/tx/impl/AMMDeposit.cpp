@@ -409,7 +409,7 @@ AMMDeposit::deposit(
     // Return true if it does, false otherwise.
     auto checkBalance = [&](auto const& depositAmount) -> TER {
         if (depositAmount <= beast::zero)
-            return tecAMM_FAILED_DEPOSIT;
+            return temBAD_AMOUNT;
         if (isXRP(depositAmount))
         {
             auto const& lpIssue = lpTokensDeposit.issue();
@@ -445,7 +445,7 @@ AMMDeposit::deposit(
     if (lpTokensDepositActual <= beast::zero)
     {
         JLOG(ctx_.journal.debug()) << "AMM Deposit: adjusted tokens zero";
-        return {tecAMM_FAILED_DEPOSIT, STAmount{}};
+        return {tecAMM_INVALID_TOKENS, STAmount{}};
     }
 
     // Deposit amountDeposit
@@ -577,7 +577,7 @@ AMMDeposit::equalDepositLimit(
     auto frac = Number{amount} / amountBalance;
     auto tokens = toSTAmount(lptAMMBalance.issue(), lptAMMBalance * frac);
     if (tokens == beast::zero)
-        return {tecAMM_FAILED_DEPOSIT, STAmount{}};
+        return {tecAMM_FAILED, STAmount{}};
     auto const amount2Deposit = amount2Balance * frac;
     if (amount2Deposit <= amount2)
         return deposit(
@@ -592,7 +592,7 @@ AMMDeposit::equalDepositLimit(
     frac = Number{amount2} / amount2Balance;
     tokens = toSTAmount(lptAMMBalance.issue(), lptAMMBalance * frac);
     if (tokens == beast::zero)
-        return {tecAMM_FAILED_DEPOSIT, STAmount{}};
+        return {tecAMM_FAILED, STAmount{}};
     auto const amountDeposit = amountBalance * frac;
     if (amountDeposit <= amount)
         return deposit(
@@ -604,7 +604,7 @@ AMMDeposit::equalDepositLimit(
             lptAMMBalance,
             tokens,
             tfee);
-    return {tecAMM_FAILED_DEPOSIT, STAmount{}};
+    return {tecAMM_FAILED, STAmount{}};
 }
 
 /** Single asset deposit of the amount of asset specified by Asset1In.
@@ -626,7 +626,7 @@ AMMDeposit::singleDeposit(
 {
     auto const tokens = lpTokensIn(amountBalance, amount, lptAMMBalance, tfee);
     if (tokens == beast::zero)
-        return {tecAMM_FAILED_DEPOSIT, STAmount{}};
+        return {tecAMM_FAILED, STAmount{}};
     return deposit(
         view,
         ammAccount,
@@ -658,7 +658,7 @@ AMMDeposit::singleDepositTokens(
     auto const amountDeposit =
         ammAssetIn(amountBalance, lptAMMBalance, lpTokensDeposit, tfee);
     if (amountDeposit > amount)
-        return {tecAMM_FAILED_DEPOSIT, STAmount{}};
+        return {tecAMM_FAILED, STAmount{}};
     return deposit(
         view,
         ammAccount,
@@ -710,7 +710,7 @@ AMMDeposit::singleDepositEPrice(
         auto const tokens =
             lpTokensIn(amountBalance, amount, lptAMMBalance, tfee);
         if (tokens <= beast::zero)
-            return {tecAMM_FAILED_DEPOSIT, STAmount{}};
+            return {tecAMM_FAILED, STAmount{}};
         auto const ep = Number{amount} / tokens;
         if (ep <= ePrice)
             return deposit(
@@ -752,7 +752,7 @@ AMMDeposit::singleDepositEPrice(
         amountBalance.issue(),
         f1 * amountBalance * solveQuadraticEq(a1, b1, c1));
     if (amountDeposit <= beast::zero)
-        return {tecAMM_FAILED_DEPOSIT, STAmount{}};
+        return {tecAMM_FAILED, STAmount{}};
     auto const tokens =
         toSTAmount(lptAMMBalance.issue(), amountDeposit / ePrice);
     return deposit(

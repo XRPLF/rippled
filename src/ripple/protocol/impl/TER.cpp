@@ -44,10 +44,7 @@ transResults()
     {
         MAKE_ERROR(tecAMM_BALANCE,                   "AMM has invalid balance."),
         MAKE_ERROR(tecAMM_INVALID_TOKENS,            "AMM invalid LP tokens."),
-        MAKE_ERROR(tecAMM_FAILED_DEPOSIT,            "AMM failed deposit."),
-        MAKE_ERROR(tecAMM_FAILED_WITHDRAW,           "AMM failed withdraw."),
-        MAKE_ERROR(tecAMM_FAILED_BID,                "AMM failed bid."),
-        MAKE_ERROR(tecAMM_FAILED_VOTE,               "AMM failed vote."),
+        MAKE_ERROR(tecAMM_FAILED,                    "AMM transaction failed."),
         MAKE_ERROR(tecCLAIM,                         "Fee claimed. Sequence used. No action."),
         MAKE_ERROR(tecDIR_FULL,                      "Can not add entry to full directory."),
         MAKE_ERROR(tecFAILED_PROCESSING,             "Failed to correctly process transaction."),

@@ -505,7 +505,7 @@ private:
                 std::nullopt,
                 std::nullopt,
                 std::nullopt,
-                ter(tecAMM_FAILED_DEPOSIT));
+                ter(tecAMM_FAILED));
 
             // Single deposit: 100000 tokens worth of XRP
             // Amount to deposit exceeds Max
@@ -518,7 +518,7 @@ private:
                 std::nullopt,
                 std::nullopt,
                 std::nullopt,
-                ter(tecAMM_FAILED_DEPOSIT));
+                ter(tecAMM_FAILED));
 
             // Deposit amount is invalid
             // Calculated amount to deposit is 98,000,000
@@ -536,7 +536,7 @@ private:
                 std::nullopt,
                 STAmount{USD, 2000, -6},
                 std::nullopt,
-                ter(tecAMM_FAILED_DEPOSIT));
+                ter(tecAMM_FAILED));
 
             // Tiny deposit
             ammAlice.deposit(
@@ -544,14 +544,14 @@ private:
                 IOUAmount{1, -4},
                 std::nullopt,
                 std::nullopt,
-                ter(tecAMM_FAILED_DEPOSIT));
+                ter(temBAD_AMOUNT));
             ammAlice.deposit(
                 carol,
                 STAmount{USD, 1, -12},
                 std::nullopt,
                 std::nullopt,
                 std::nullopt,
-                ter(tecAMM_FAILED_DEPOSIT));
+                ter(tecAMM_INVALID_TOKENS));
         });
 
         // Invalid AMM
@@ -1107,13 +1107,13 @@ private:
                 USD(10000),
                 std::nullopt,
                 std::nullopt,
-                ter(tecAMM_FAILED_WITHDRAW));
+                ter(tecAMM_BALANCE));
             ammAlice.withdraw(
                 alice,
                 XRP(10000),
                 std::nullopt,
                 std::nullopt,
-                ter(tecAMM_FAILED_WITHDRAW));
+                ter(tecAMM_BALANCE));
             ammAlice.withdraw(
                 alice,
                 std::nullopt,
@@ -1123,7 +1123,7 @@ private:
                 tfOneAssetWithdrawAll,
                 std::nullopt,
                 std::nullopt,
-                ter(tecAMM_FAILED_WITHDRAW));
+                ter(tecAMM_BALANCE));
 
             // Bad currency
             ammAlice.withdraw(
@@ -1172,7 +1172,7 @@ private:
                 IOUAmount{99999999999, -4},
                 std::nullopt,
                 std::nullopt,
-                ter(tecAMM_FAILED_WITHDRAW));
+                ter(tecAMM_BALANCE));
             // Withdrawing from one side.
             // XRP by tokens
             ammAlice.withdraw(
@@ -1180,28 +1180,28 @@ private:
                 IOUAmount(99999999999, -4),
                 XRP(0),
                 std::nullopt,
-                ter(tecAMM_FAILED_WITHDRAW));
+                ter(tecAMM_BALANCE));
             // USD by tokens
             ammAlice.withdraw(
                 alice,
                 IOUAmount(99999999, -1),
                 USD(0),
                 std::nullopt,
-                ter(tecAMM_FAILED_WITHDRAW));
+                ter(tecAMM_BALANCE));
             // XRP
             ammAlice.withdraw(
                 alice,
                 XRP(10000),
                 std::nullopt,
                 std::nullopt,
-                ter(tecAMM_FAILED_WITHDRAW));
+                ter(tecAMM_BALANCE));
             // USD
             ammAlice.withdraw(
                 alice,
                 STAmount{USD, UINT64_C(99999999999999999), -13},
                 std::nullopt,
                 std::nullopt,
-                ter(tecAMM_FAILED_WITHDRAW));
+                ter(tecAMM_BALANCE));
         });
 
         // Invalid AMM
@@ -1274,7 +1274,7 @@ private:
                 USD(100),
                 std::nullopt,
                 IOUAmount{500, 0},
-                ter(tecAMM_FAILED_WITHDRAW));
+                ter(tecAMM_FAILED));
         });
 
         // Withdraw with EPrice limit. Fails to withdraw, calculated tokens
@@ -1286,7 +1286,7 @@ private:
                 USD(100),
                 std::nullopt,
                 IOUAmount{600, 0},
-                ter(tecAMM_FAILED_WITHDRAW));
+                ter(tecAMM_INVALID_TOKENS));
         });
 
         // Withdraw with EPrice limit. Fails to withdraw, amount1
@@ -1298,7 +1298,7 @@ private:
                 USD(1700),
                 std::nullopt,
                 IOUAmount{520, 0},
-                ter(tecAMM_FAILED_WITHDRAW));
+                ter(tecAMM_FAILED));
         });
 
         // Deposit/Withdraw the same amount with the trading fee
@@ -1310,7 +1310,7 @@ private:
                     USD(1000),
                     std::nullopt,
                     std::nullopt,
-                    ter(tecAMM_FAILED_WITHDRAW));
+                    ter(tecAMM_INVALID_TOKENS));
             },
             std::nullopt,
             1000);
@@ -1322,7 +1322,7 @@ private:
                     XRP(1000),
                     std::nullopt,
                     std::nullopt,
-                    ter(tecAMM_FAILED_WITHDRAW));
+                    ter(tecAMM_INVALID_TOKENS));
             },
             std::nullopt,
             1000);
@@ -1335,7 +1335,7 @@ private:
                 STAmount{USD, 1, -6},
                 std::nullopt,
                 std::nullopt,
-                ter(tecAMM_FAILED_WITHDRAW));
+                ter(tecAMM_INVALID_TOKENS));
         });
 
         // Withdraw close to one side of the pool. Account's LP tokens
@@ -1346,7 +1346,7 @@ private:
                 STAmount{USD, UINT64_C(9999999999999999), -12},
                 std::nullopt,
                 std::nullopt,
-                ter(tecAMM_FAILED_WITHDRAW));
+                ter(tecAMM_BALANCE));
         });
 
         // Tiny withdraw
@@ -1357,27 +1357,27 @@ private:
                 IOUAmount{1, -5},
                 std::nullopt,
                 std::nullopt,
-                ter(tecAMM_FAILED_WITHDRAW));
+                ter(tecAMM_FAILED));
             // Calculated tokens to withdraw are 0
             ammAlice.withdraw(
                 alice,
                 std::nullopt,
                 STAmount{USD, 1, -11},
                 std::nullopt,
-                ter(tecAMM_FAILED_WITHDRAW));
+                ter(tecAMM_INVALID_TOKENS));
             ammAlice.deposit(carol, STAmount{USD, 1, -10});
             ammAlice.withdraw(
                 carol,
                 std::nullopt,
                 STAmount{USD, 1, -9},
                 std::nullopt,
-                ter(tecAMM_FAILED_WITHDRAW));
+                ter(tecAMM_INVALID_TOKENS));
             ammAlice.withdraw(
                 carol,
                 std::nullopt,
                 XRPAmount{1},
                 std::nullopt,
-                ter(tecAMM_FAILED_WITHDRAW));
+                ter(tecAMM_INVALID_TOKENS));
         });
     }
 
@@ -2048,7 +2048,7 @@ private:
                 std::nullopt,
                 std::nullopt,
                 std::nullopt,
-                ter(tecAMM_FAILED_BID));
+                ter(tecAMM_FAILED));
         }
     }
 
@@ -2108,7 +2108,7 @@ private:
                 std::nullopt,
                 std::nullopt,
                 std::nullopt,
-                ter(tecAMM_FAILED_BID));
+                ter(tecAMM_FAILED));
             // Bid MaxSlotPrice succeeds - pay computed price
             ammAlice.bid(carol, std::nullopt, 600);
             BEAST_EXPECT(
@@ -2124,7 +2124,7 @@ private:
                 std::nullopt,
                 std::nullopt,
                 std::nullopt,
-                ter(tecAMM_FAILED_BID));
+                ter(tecAMM_FAILED));
             // Bid Min/MaxSlotPrice succeeds - pay computed price
             ammAlice.bid(carol, 100, 600);
             BEAST_EXPECT(

@@ -222,7 +222,7 @@ applyBid(
         {
             JLOG(ctx_.journal.debug())
                 << "AMM Bid: invalid burn " << burn << " " << lptAMMBalance;
-            return tecAMM_FAILED_BID;
+            return tecAMM_BALANCE;
         }
         auto res =
             redeemIOU(sb, account_, saBurn, lpTokens.issue(), ctx_.journal);
@@ -271,7 +271,7 @@ applyBid(
                 return computedPrice;
         }();
         if (!payPrice)
-            return Unexpected(tecAMM_FAILED_BID);
+            return Unexpected(tecAMM_FAILED);
         else if (payPrice > lpTokens)
             return Unexpected(tecAMM_INVALID_TOKENS);
         return *payPrice;
@@ -315,7 +315,7 @@ applyBid(
         {
             JLOG(ctx_.journal.debug())
                 << "AMM Bid: invalid refund " << refund << " " << *payPrice;
-            return {tecAMM_FAILED_BID, false};
+            return {tecINSUFFICIENT_PAYMENT, false};
         }
         res = accountSend(
             sb,

@@ -297,11 +297,8 @@ enum TECcodes : TERUnderlyingType {
     tecINSUFFICIENT_PAYMENT = 161,
     tecUNFUNDED_AMM = 162,
     tecAMM_BALANCE = 163,
-    tecAMM_FAILED_DEPOSIT = 164,
-    tecAMM_FAILED_WITHDRAW = 165,
-    tecAMM_INVALID_TOKENS = 166,
-    tecAMM_FAILED_BID = 167,
-    tecAMM_FAILED_VOTE = 168
+    tecAMM_FAILED = 164,
+    tecAMM_INVALID_TOKENS = 165
 };
 
 //------------------------------------------------------------------------------

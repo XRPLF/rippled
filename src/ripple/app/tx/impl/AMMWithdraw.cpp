@@ -468,7 +468,7 @@ AMMWithdraw::withdraw(
             << "AMM Withdraw: failed to withdraw, invalid LP tokens "
             << " tokens: " << lpTokensWithdrawActual << " " << lpTokens << " "
             << lpTokensAMMBalance;
-        return {tecAMM_FAILED_WITHDRAW, STAmount{}};
+        return {tecAMM_INVALID_TOKENS, STAmount{}};
     }
 
     // Withdrawing one side of the pool
@@ -482,7 +482,7 @@ AMMWithdraw::withdraw(
             << " curBalance: " << curBalance << " " << amountWithdrawActual
             << " lpTokensBalance: " << lpTokensWithdraw << " lptBalance "
             << lpTokensAMMBalance;
-        return {tecAMM_FAILED_WITHDRAW, STAmount{}};
+        return {tecAMM_BALANCE, STAmount{}};
     }
 
     // May happen if withdrawing an amount close to one side of the pool
@@ -496,7 +496,7 @@ AMMWithdraw::withdraw(
             << " curBalance2: " << amount2WithdrawActual.value_or(STAmount{0})
             << " lpTokensBalance: " << lpTokensWithdraw << " lptBalance "
             << lpTokensAMMBalance;
-        return {tecAMM_FAILED_WITHDRAW, STAmount{}};
+        return {tecAMM_BALANCE, STAmount{}};
     }
 
     // Withdrawing more than the pool's balance
@@ -510,7 +510,7 @@ AMMWithdraw::withdraw(
             << (amount2WithdrawActual ? *amount2WithdrawActual : STAmount{})
             << " lpTokensBalance: " << lpTokensWithdraw << " lptBalance "
             << lpTokensAMMBalance;
-        return {tecAMM_FAILED_WITHDRAW, STAmount{}};
+        return {tecAMM_BALANCE, STAmount{}};
     }
 
     // Withdraw amountWithdraw
@@ -598,7 +598,7 @@ AMMWithdraw::equalWithdrawTokens(
         // withdrawal due to round off. Fail so the user withdraws
         // more tokens.
         if (withdrawAmount == beast::zero || withdraw2Amount == beast::zero)
-            return {tecAMM_FAILED_WITHDRAW, STAmount{}};
+            return {tecAMM_FAILED, STAmount{}};
 
         return withdraw(
             view,
@@ -696,7 +696,7 @@ AMMWithdraw::singleWithdraw(
 {
     auto const tokens = lpTokensOut(amountBalance, amount, lptAMMBalance, tfee);
     if (tokens == beast::zero)
-        return {tecAMM_FAILED_WITHDRAW, STAmount{}};
+        return {tecAMM_FAILED, STAmount{}};
     return withdraw(
         view,
         ammAccount,
@@ -740,7 +740,7 @@ AMMWithdraw::singleWithdrawTokens(
             lptAMMBalance,
             lpTokensWithdraw,
             tfee);
-    return {tecAMM_FAILED_WITHDRAW, STAmount{}};
+    return {tecAMM_FAILED, STAmount{}};
 }
 
 /** Withdraw single asset with two constraints.
@@ -787,7 +787,7 @@ AMMWithdraw::singleWithdrawEPrice(
     auto const tokens = lptAMMBalance * (lptAMMBalance + ae * (f - 2)) /
         (lptAMMBalance * f - ae);
     if (tokens <= 0)
-        return {tecAMM_FAILED_WITHDRAW, STAmount{}};
+        return {tecAMM_FAILED, STAmount{}};
     auto const amountWithdraw = toSTAmount(amount.issue(), tokens / ePrice);
     if (amount == beast::zero || amountWithdraw >= amount)
         return withdraw(
@@ -800,7 +800,7 @@ AMMWithdraw::singleWithdrawEPrice(
             toSTAmount(lptAMMBalance.issue(), tokens),
             tfee);
 
-    return {tecAMM_FAILED_WITHDRAW, STAmount{}};
+    return {tecAMM_FAILED, STAmount{}};
 }
 
 }  // namespace ripple
