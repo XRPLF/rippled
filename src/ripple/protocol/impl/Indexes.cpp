@@ -63,6 +63,7 @@ enum class LedgerNameSpace : std::uint16_t {
     NFTOKEN_OFFER = 'q',
     NFTOKEN_BUY_OFFERS = 'h',
     NFTOKEN_SELL_OFFERS = 'i',
+    CFTOKEN_ISSUANCE = '~',
 
     // No longer used or supported. Left here to reserve the space
     // to avoid accidental reuse.
@@ -368,6 +369,12 @@ Keylet
 nft_sells(uint256 const& id) noexcept
 {
     return {ltDIR_NODE, indexHash(LedgerNameSpace::NFTOKEN_SELL_OFFERS, id)};
+}
+
+Keylet
+cft_issuance(AccountID const& issuer, uint160 const& asset) noexcept
+{
+    return {ltCFTOKEN_ISSUANCE, indexHash(LedgerNameSpace::CFTOKEN_ISSUANCE, issuer, asset)};
 }
 
 }  // namespace keylet

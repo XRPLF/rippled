@@ -49,6 +49,8 @@ JSS(AccountRoot);            // ledger type.
 JSS(AccountSet);             // transaction type.
 JSS(Amendments);             // ledger type.
 JSS(Amount);                 // in: TransactionSign; field.
+JSS(CFTokenIssuance);        // ledger type.
+JSS(CFTokenIssuanceCreate);  // transaction type.
 JSS(Check);                  // ledger type.
 JSS(CheckCancel);            // transaction type.
 JSS(CheckCash);              // transaction type.

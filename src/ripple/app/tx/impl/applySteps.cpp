@@ -19,6 +19,7 @@
 
 #include <ripple/app/tx/applySteps.h>
 #include <ripple/app/tx/impl/ApplyContext.h>
+#include <ripple/app/tx/impl/CFTokenIssuanceCreate.h>
 #include <ripple/app/tx/impl/CancelCheck.h>
 #include <ripple/app/tx/impl/CancelOffer.h>
 #include <ripple/app/tx/impl/CashCheck.h>
@@ -147,6 +148,8 @@ invoke_preflight(PreflightContext const& ctx)
             return invoke_preflight_helper<NFTokenCancelOffer>(ctx);
         case ttNFTOKEN_ACCEPT_OFFER:
             return invoke_preflight_helper<NFTokenAcceptOffer>(ctx);
+        case ttCFTOKEN_ISSUANCE_CREATE:
+            return invoke_preflight_helper<CFTokenIssuanceCreate>(ctx);
         default:
             assert(false);
             return {temUNKNOWN, TxConsequences{temUNKNOWN}};
@@ -248,6 +251,8 @@ invoke_preclaim(PreclaimContext const& ctx)
             return invoke_preclaim<NFTokenCancelOffer>(ctx);
         case ttNFTOKEN_ACCEPT_OFFER:
             return invoke_preclaim<NFTokenAcceptOffer>(ctx);
+        case ttCFTOKEN_ISSUANCE_CREATE:
+            return invoke_preclaim<CFTokenIssuanceCreate>(ctx);
         default:
             assert(false);
             return temUNKNOWN;
@@ -311,6 +316,8 @@ invoke_calculateBaseFee(ReadView const& view, STTx const& tx)
             return NFTokenCancelOffer::calculateBaseFee(view, tx);
         case ttNFTOKEN_ACCEPT_OFFER:
             return NFTokenAcceptOffer::calculateBaseFee(view, tx);
+        case ttCFTOKEN_ISSUANCE_CREATE:
+            return CFTokenIssuanceCreate::calculateBaseFee(view, tx);
         default:
             assert(false);
             return XRPAmount{0};
@@ -461,6 +468,10 @@ invoke_apply(ApplyContext& ctx)
         }
         case ttNFTOKEN_ACCEPT_OFFER: {
             NFTokenAcceptOffer p(ctx);
+            return p();
+        }
+        case ttCFTOKEN_ISSUANCE_CREATE: {
+            CFTokenIssuanceCreate p(ctx);
             return p();
         }
         default:

@@ -328,6 +328,17 @@ TxFormats::TxFormats()
             {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
+
+    add(jss::CFTokenIssuanceCreate,
+        ttCFTOKEN_ISSUANCE_CREATE,
+        {
+            {sfAssetCode, soeREQUIRED},
+            {sfAssetScale, soeREQUIRED},
+            {sfTransferFee, soeOPTIONAL},
+            {sfMaximumAmount, soeOPTIONAL},
+            {sfCFTokenMetadata, soeOPTIONAL},
+        },
+        commonFields);
 }
 
 TxFormats const&

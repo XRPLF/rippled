@@ -161,6 +161,13 @@ enum LedgerEntryType : std::uint16_t
      */
     ltNFTOKEN_OFFER = 0x0037,
 
+    /** A ledger object representing an individual CFToken asset type, but not
+     * any balances of that asset itself.
+
+        TODO: \sa
+     */
+    ltCFTOKEN_ISSUANCE = 0x007e,
+
     //---------------------------------------------------------------------------
     /** A special type, matching any ledger entry type.
 
@@ -267,6 +274,14 @@ enum LedgerSpecificFlags {
 
     // ltNFTOKEN_OFFER
     lsfSellNFToken = 0x00000001,
+
+    // ltCFTOKEN_ISSUANCE
+    lsfFrozen = 0x00000001,
+    lsfCannotFreezeBalances = 0x00000002,
+    lsfRequiresAuthorization = 0x00000004,
+    lsfTransferable = 0x00000008,
+    lsfCanTrade = 0x00000010,
+    lsfCanEscrow = 0x00000020,
 };
 
 //------------------------------------------------------------------------------

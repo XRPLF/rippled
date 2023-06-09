@@ -123,6 +123,7 @@ enum TEMcodes : TERUnderlyingType {
 
     temSEQ_AND_TICKET,
     temBAD_NFTOKEN_TRANSFER_FEE,
+    temBAD_CFTOKEN_TRANSFER_FEE,
 };
 
 //------------------------------------------------------------------------------

@@ -123,11 +123,19 @@ constexpr std::uint32_t tfRenew                            = 0x00010000;
 constexpr std::uint32_t tfClose                            = 0x00020000;
 constexpr std::uint32_t tfPayChanClaimMask = ~(tfUniversal | tfRenew | tfClose);
 
-// NFTokenMint flags:
+// NFT/CFT flags:
 constexpr std::uint32_t const tfBurnable                   = 0x00000001;
+constexpr std::uint32_t const tfTransferable               = 0x00000008;
+
+// NFTokenMint flags:
 constexpr std::uint32_t const tfOnlyXRP                    = 0x00000002;
 constexpr std::uint32_t const tfTrustLine                  = 0x00000004;
-constexpr std::uint32_t const tfTransferable               = 0x00000008;
+
+// CFTokenIssuanceCreate flags:
+constexpr std::uint32_t const tfCannotFreezeBalances       = 0x00000002;
+constexpr std::uint32_t const tfRequiresAuthorization      = 0x00000004;
+constexpr std::uint32_t const tfCanTrade                   = 0x00000010;
+constexpr std::uint32_t const tfCanEscrow                  = 0x00000020;
 
 // Prior to fixRemoveNFTokenAutoTrustLine, transfer of an NFToken between
 // accounts allowed a TrustLine to be added to the issuer of that token
@@ -158,6 +166,10 @@ constexpr std::uint32_t const tfNFTokenCancelOfferMask     = ~(tfUniversal);
 
 // NFTokenAcceptOffer flags:
 constexpr std::uint32_t const tfNFTokenAcceptOfferMask     = ~tfUniversal;
+
+// CFTokenIssuanceCreate flags:
+constexpr std::uint32_t const tfCFTokenIssuanceCreateMask  =
+  ~(tfBurnable | tfCannotFreezeBalances | tfRequiresAuthorization | tfCanEscrow | tfCanTrade | tfTransferable);
 
 // clang-format on
 

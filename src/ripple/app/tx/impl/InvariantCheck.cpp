@@ -372,6 +372,7 @@ LedgerEntryTypesMatch::visitEntry(
             case ltNEGATIVE_UNL:
             case ltNFTOKEN_PAGE:
             case ltNFTOKEN_OFFER:
+            case ltCFTOKEN_ISSUANCE:
                 break;
             default:
                 invalidTypeAdded_ = true;

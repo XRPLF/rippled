@@ -452,6 +452,7 @@ REGISTER_FEATURE(XRPFees,                       Supported::yes, VoteBehavior::De
 REGISTER_FIX    (fixUniversalNumber,            Supported::yes, VoteBehavior::DefaultNo);
 REGISTER_FIX    (fixNonFungibleTokensV1_2,      Supported::yes, VoteBehavior::DefaultNo);
 REGISTER_FIX    (fixNFTokenRemint,              Supported::yes, VoteBehavior::DefaultNo);
+REGISTER_FEATURE(CFTokensV1,                    Supported::yes, VoteBehavior::DefaultNo);
 
 // The following amendments are obsolete, but must remain supported
 // because they could potentially get enabled.

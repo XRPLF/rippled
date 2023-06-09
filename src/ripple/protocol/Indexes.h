@@ -263,6 +263,15 @@ nft_buys(uint256 const& id) noexcept;
 Keylet
 nft_sells(uint256 const& id) noexcept;
 
+inline Keylet
+cft_issuance(uint256 const& cft)
+{
+    return {ltCFTOKEN_ISSUANCE, cft};
+}
+
+Keylet
+cft_issuance(AccountID const& issuer, uint160 const& asset) noexcept;
+
 }  // namespace keylet
 
 // Everything below is deprecated and should be removed in favor of keylets:
