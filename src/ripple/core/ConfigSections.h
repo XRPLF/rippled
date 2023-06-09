@@ -101,6 +101,8 @@ struct ConfigSection
 #define SECTION_SWEEP_INTERVAL "sweep_interval"
 #define SECTION_NETWORK_ID "network_id"
 
+#define PORT_GRPC "port_grpc"
+
 }  // namespace ripple
 
 #endif

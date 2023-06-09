@@ -50,6 +50,7 @@
 #include <algorithm>
 #include <mutex>
 #include <stdexcept>
+#include <ripple/core/ConfigSections.h>
 
 namespace ripple {
 
@@ -1151,7 +1152,7 @@ parse_Ports(Config const& config, std::ostream& log)
 
         // grpc ports are parsed by GRPCServer class. Do not validate
         // grpc port information in this file.
-        if (name == "port_grpc")
+        if (name == PORT_GRPC)
             continue;
 
         ParsedPort parsed = common;
