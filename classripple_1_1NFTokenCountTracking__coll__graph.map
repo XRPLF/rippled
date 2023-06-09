@@ -1,4 +1,4 @@
 <map id="ripple::NFTokenCountTracking" name="ripple::NFTokenCountTracking">
-<area shape="rect" id="node1" title=" " alt="" coords="5,139,220,165"/>
+<area shape="rect" id="node1" title="Invariant: Validates counts of NFTokens after all transaction types." alt="" coords="5,139,220,165"/>
 <area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="61,5,164,32"/>
 </map>

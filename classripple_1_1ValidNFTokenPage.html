@@ -73,6 +73,9 @@ $(function() {
 <div class="title">ripple::ValidNFTokenPage Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
+
+<p>Invariant: Validates several invariants for NFToken pages.  
+ <a href="classripple_1_1ValidNFTokenPage.html#details">More...</a></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -95,8 +98,17 @@ Private Attributes</h2></td></tr>
 <tr class="separator:a8d257e0b5fde0f4f2810ad3afdd052b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock">
-<p class="definition">Definition at line <a class="el" href="InvariantCheck_8h_source.html#l00321">321</a> of file <a class="el" href="InvariantCheck_8h_source.html">InvariantCheck.h</a>.</p>
+<div class="textblock"><p>Invariant: Validates several invariants for NFToken pages. </p>
+<p>The following checks are made:</p><ul>
+<li>The page is correctly associated with the owner.</li>
+<li>The page is correctly ordered between the next and previous links.</li>
+<li>The page contains at least one and no more than 32 NFTokens.</li>
+<li>The NFTokens on this page do not belong on a lower or higher page.</li>
+<li>The NFTokens are correctly sorted on the page.</li>
+<li>Each URI, if present, is not empty. </li>
+</ul>
+
+<p class="definition">Definition at line <a class="el" href="InvariantCheck_8h_source.html#l00332">332</a> of file <a class="el" href="InvariantCheck_8h_source.html">InvariantCheck.h</a>.</p>
 </div><h2 class="groupheader">Member Function Documentation</h2>
 <a id="ac8b191d8882cac3ecaf3ab47650ed18b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ac8b191d8882cac3ecaf3ab47650ed18b">&#9670;&nbsp;</a></span>visitEntry()</h2>
@@ -203,7 +215,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InvariantCheck_8h_source.html#l00323">323</a> of file <a class="el" href="InvariantCheck_8h_source.html">InvariantCheck.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InvariantCheck_8h_source.html#l00334">334</a> of file <a class="el" href="InvariantCheck_8h_source.html">InvariantCheck.h</a>.</p>
 
 </div>
 </div>
@@ -227,7 +239,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InvariantCheck_8h_source.html#l00324">324</a> of file <a class="el" href="InvariantCheck_8h_source.html">InvariantCheck.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InvariantCheck_8h_source.html#l00335">335</a> of file <a class="el" href="InvariantCheck_8h_source.html">InvariantCheck.h</a>.</p>
 
 </div>
 </div>
@@ -251,7 +263,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InvariantCheck_8h_source.html#l00325">325</a> of file <a class="el" href="InvariantCheck_8h_source.html">InvariantCheck.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InvariantCheck_8h_source.html#l00336">336</a> of file <a class="el" href="InvariantCheck_8h_source.html">InvariantCheck.h</a>.</p>
 
 </div>
 </div>
@@ -275,7 +287,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InvariantCheck_8h_source.html#l00326">326</a> of file <a class="el" href="InvariantCheck_8h_source.html">InvariantCheck.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InvariantCheck_8h_source.html#l00337">337</a> of file <a class="el" href="InvariantCheck_8h_source.html">InvariantCheck.h</a>.</p>
 
 </div>
 </div>
@@ -299,7 +311,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InvariantCheck_8h_source.html#l00327">327</a> of file <a class="el" href="InvariantCheck_8h_source.html">InvariantCheck.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InvariantCheck_8h_source.html#l00338">338</a> of file <a class="el" href="InvariantCheck_8h_source.html">InvariantCheck.h</a>.</p>
 
 </div>
 </div>
