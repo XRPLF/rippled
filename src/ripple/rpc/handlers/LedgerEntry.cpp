@@ -358,7 +358,12 @@ doLedgerEntry(RPC::JsonContext& context)
             }
         }
         else
-            jvResult[jss::error] = "invalidParams";
+        {
+            if (context.apiVersion == 1)
+                jvResult[jss::error] = "unknownOption";
+            else
+                jvResult[jss::error] = "invalidParams";
+        }
     }
 
     if (uNodeIndex.isNonZero())
