@@ -140,8 +140,8 @@ std::unique_ptr<Config>
 addGrpcConfig(std::unique_ptr<Config> cfg)
 {
     std::string port_grpc = std::to_string(port_base + 3);
-    (*cfg)["port_grpc"].set("ip", getEnvLocalhostAddr());
-    (*cfg)["port_grpc"].set("port", port_grpc);
+    (*cfg)[PORT_GRPC].set("ip", getEnvLocalhostAddr());
+    (*cfg)[PORT_GRPC].set("port", port_grpc);
     return cfg;
 }
 
@@ -151,9 +151,9 @@ addGrpcConfigWithSecureGateway(
     std::string const& secureGateway)
 {
     std::string port_grpc = std::to_string(port_base + 3);
-    (*cfg)["port_grpc"].set("ip", getEnvLocalhostAddr());
-    (*cfg)["port_grpc"].set("port", port_grpc);
-    (*cfg)["port_grpc"].set("secure_gateway", secureGateway);
+    (*cfg)[PORT_GRPC].set("ip", getEnvLocalhostAddr());
+    (*cfg)[PORT_GRPC].set("port", port_grpc);
+    (*cfg)[PORT_GRPC].set("secure_gateway", secureGateway);
     return cfg;
 }
 

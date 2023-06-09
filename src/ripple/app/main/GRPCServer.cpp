@@ -23,6 +23,7 @@
 #include <ripple/resource/Fees.h>
 
 #include <ripple/beast/net/IPAddressConversion.h>
+#include <ripple/core/ConfigSections.h>
 
 namespace ripple {
 
@@ -427,9 +428,9 @@ GRPCServerImpl::GRPCServerImpl(Application& app)
     : app_(app), journal_(app_.journal("gRPC Server"))
 {
     // if present, get endpoint from config
-    if (app_.config().exists("port_grpc"))
+    if (app_.config().exists(PORT_GRPC))
     {
-        Section section = app_.config().section("port_grpc");
+        Section section = app_.config().section(PORT_GRPC);
 
         auto const optIp = section.get("ip");
         if (!optIp)
@@ -659,7 +660,7 @@ GRPCServerImpl::setupListeners()
             secureGatewayIPs_));
     }
     return requests;
-};
+}
 
 bool
 GRPCServerImpl::start()
