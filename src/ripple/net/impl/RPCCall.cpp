@@ -121,7 +121,8 @@ private:
     static Json::Value
     jvParseCurrencyIssuer(std::string const& strCurrencyIssuer)
     {
-        static boost::regex reCurIss("\\`([[:alpha:]]{3})(?:/(.+))?\\'");
+        static boost::regex reCurIss(
+            "\\`([][:alnum:]<>(){}[|?!@#$%^&*]{3})(?:/(.+))?\\'");
 
         boost::smatch smMatch;
 
