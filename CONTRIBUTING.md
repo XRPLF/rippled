@@ -121,14 +121,14 @@ this:
 You can format individual files in place by running `clang-format -i <file>...`
 from any directory within this project.
 
-There is a Continuous Integration job that runs clang-format on PRs. If the code does not comply, an artifact will be generated which is a patch file that corrects any auto-fixable formatting issues.
+There is a Continuous Integration job that runs clang-format on pull requests. If the code doesn't comply, a patch file that corrects auto-fixable formatting issues is generated.
 
 To download the patch file:
 
 1. Next to `clang-format / check (pull_request) Failing after #s` -> click **Details** to open the details page.
 2. Left menu -> click **Summary**
 3. Scroll down to near the bottom-right under `Artifacts` -> click **clang-format.patch**
-4. Download it to your local git repo and then run `git apply [patch-file-name]`.
+4. Download the file to your local git repository and run `git apply [patch-file-name]`.
 5. Commit and push.
 
 
