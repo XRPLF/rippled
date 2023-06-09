@@ -1220,9 +1220,28 @@ class LedgerRPC_test : public beast::unit_test::suite
     }
 
     void
+    testLedgerEntryUnknownOption()
+    {
+        testcase("ledger_entry v1 Request Unknown Option");
+        using namespace test::jtx;
+        Env env{*this};
+
+        std::string const ledgerHash{to_string(env.closed()->info().hash)};
+
+        // "features" is not an option supported by ledger_entry.
+        Json::Value jvParams;
+        jvParams[jss::api_version] = 1;
+        jvParams[jss::features] = ledgerHash;
+        jvParams[jss::ledger_hash] = ledgerHash;
+        Json::Value const jrr =
+            env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
+        checkErrorValue(jrr, "unknownOption", "");
+    }
+
+    void
     testLedgerEntryInvalidParams()
     {
-        testcase("ledger_entry Request Invalid Parameters");
+        testcase("ledger_entry v2 Request Invalid Parameters");
         using namespace test::jtx;
         Env env{*this};
 
@@ -1732,6 +1751,7 @@ public:
         testLedgerEntryPayChan();
         testLedgerEntryRippleState();
         testLedgerEntryTicket();
+        testLedgerEntryUnknownOption();
         testLedgerEntryInvalidParams();
         testLookupLedger();
         testNoQueue();
