@@ -767,7 +767,8 @@ ValidClawback::finalize(
     {
         if (trustlinesChanged != 0)
         {
-            JLOG(j.fatal()) << "Invariant failed: some trustlines were changed despite failure of the transaction.";
+            JLOG(j.fatal()) << "Invariant failed: some trustlines were changed "
+                               "despite failure of the transaction.";
             return false;
         }
     }
