@@ -214,11 +214,12 @@ public:
         Account const alice{"alice"};
         env.fund(XRP(1000), alice);
 
-        auto const withoutSigners =
-            std::string("{ ") + "\"account\": \"" + alice.human() + "\"}";
+        auto const withoutSigners = std::string("{ ") +
+            "\"api_version\": 2, \"account\": \"" + alice.human() + "\"}";
 
-        auto const withSigners = std::string("{ ") + "\"account\": \"" +
-            alice.human() + "\", " + "\"signer_lists\": true }";
+        auto const withSigners = std::string("{ ") +
+            "\"api_version\": 2, \"account\": \"" + alice.human() + "\", " +
+            "\"signer_lists\": true }";
 
         // Alice has no SignerList yet.
         {
