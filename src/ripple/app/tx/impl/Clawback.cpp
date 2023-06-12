@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <ripple/app/tx/impl/Clawback.h>
-#include <ripple/ledger/Directory.h>
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
