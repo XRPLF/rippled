@@ -89,11 +89,12 @@ public:
         Account const alice{"alice"};
         env.fund(XRP(1000), alice);
 
-        auto const withoutSigners =
-            std::string("{ ") + "\"account\": \"" + alice.human() + "\"}";
+        auto const withoutSigners = std::string("{ ") +
+            "\"api_version\": 1, \"account\": \"" + alice.human() + "\"}";
 
-        auto const withSigners = std::string("{ ") + "\"account\": \"" +
-            alice.human() + "\", " + "\"signer_lists\": true }";
+        auto const withSigners = std::string("{ ") +
+            "\"api_version\": 1, \"account\": \"" + alice.human() + "\", " +
+            "\"signer_lists\": true }";
 
         // Alice has no SignerList yet.
         {
@@ -213,12 +214,11 @@ public:
         Account const alice{"alice"};
         env.fund(XRP(1000), alice);
 
-        auto const withoutSigners = std::string("{ ") +
-            "\"api_version\": 2, \"account\": \"" + alice.human() + "\"}";
+        auto const withoutSigners =
+            std::string("{ ") + "\"account\": \"" + alice.human() + "\"}";
 
-        auto const withSigners = std::string("{ ") +
-            "\"api_version\": 2, \"account\": \"" + alice.human() + "\", " +
-            "\"signer_lists\": true }";
+        auto const withSigners = std::string("{ ") + "\"account\": \"" +
+            alice.human() + "\", " + "\"signer_lists\": true }";
 
         // Alice has no SignerList yet.
         {
@@ -329,6 +329,7 @@ public:
             "\"id\": 5, "
             "\"method\": \"account_info\", "
             "\"params\": { "
+            "\"api_version\": 1, "
             "\"account\": \"" +
             alice.human() + "\"}}";
 
@@ -338,6 +339,7 @@ public:
             "\"id\": 6, "
             "\"method\": \"account_info\", "
             "\"params\": { "
+            "\"api_version\": 1, "
             "\"account\": \"" +
             alice.human() + "\", " + "\"signer_lists\": true }}";
         // Alice has no SignerList yet.
