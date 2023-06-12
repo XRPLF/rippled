@@ -22,11 +22,11 @@
 #include <ripple/beast/unit_test.h>
 #include <ripple/rpc/impl/Tuning.h>
 
+#include <ripple/core/ConfigSections.h>
 #include <test/jtx.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/envconfig.h>
 #include <test/rpc/GRPCTestClientBase.h>
-#include <ripple/core/ConfigSections.h>
 
 namespace ripple {
 namespace test {

@@ -25,6 +25,7 @@
 #include <ripple/basics/make_SSLContext.h>
 #include <ripple/beast/net/IPAddressConversion.h>
 #include <ripple/beast/rfc2616.h>
+#include <ripple/core/ConfigSections.h>
 #include <ripple/core/JobQueue.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/json/to_string.h>
@@ -46,11 +47,8 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/beast/http/fields.hpp>
 #include <boost/beast/http/string_body.hpp>
-#include <boost/type_traits.hpp>
 #include <algorithm>
-#include <mutex>
 #include <stdexcept>
-#include <ripple/core/ConfigSections.h>
 
 namespace ripple {
 
