@@ -76,24 +76,22 @@ jobs:
       - name: archive profile
         # Create this archive before dependencies are added to the local cache.
         run: tar -czf conan.tar -C ~/.conan .
-      - name: count number of missing binaries
+      - name: list missing binaries
         id: binaries
-        continue-on-error: true
-        # The subcommand here counts the number of dependencies that would
-        # need to be built locally. We exit with that number.
+        # Print the list of dependencies that would need to be built locally.
         # A non-zero number means we have "failed" to cache binaries remotely.
         run: |
-          exit $(conan info . --build missing --json 2>/dev/null  | grep '^\[' | tee /dev/tty | jq length)
+          echo missing=$(conan info . --build missing --json 2>/dev/null  | grep '^\[') | tee ${GITHUB_OUTPUT}
       - name: build dependencies
-        if: (steps.binaries.outcome == 'failure')
+        if: (steps.binaries.outputs.missing != '[]')
         uses: ./.github/actions/dependencies
         with:
           configuration: ${{ matrix.configuration }}
       - name: upload dependencies to remote
-        if: (steps.binaries.outcome == 'failure') && (steps.remote.outcome == 'success') 
+        if: (steps.binaries.outputs.missing != '[]') && (steps.remote.outcome == 'success')
         run: conan upload --remote ripple '*' --all --parallel --confirm
       - name: recreate archive with dependencies
-        if: (steps.binaries.outcome == 'failure') && (steps.remote.outcome == 'failure') 
+        if: (steps.binaries.outputs.missing != '[]') && (steps.remote.outcome == 'failure')
         run: tar -czf conan.tar -C ~/.conan .
       - name: upload archive
         uses: actions/upload-artifact@v3
