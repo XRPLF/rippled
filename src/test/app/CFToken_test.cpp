@@ -25,7 +25,6 @@ namespace ripple {
 
 class CFToken_test : public beast::unit_test::suite
 {
-
     // TODO move into lib?
     // Helper function that returns the owner count of an account root.
     static std::uint32_t
@@ -46,15 +45,14 @@ class CFToken_test : public beast::unit_test::suite
         {
             // If the CFT amendment is not enabled, you should not be able to
             // create CFTokenIssuances
-            Env env{
-                *this,
-                    features - featureCFTokensV1};
+            Env env{*this, features - featureCFTokensV1};
             Account const& master = env.master;
 
             BEAST_EXPECT(ownerCount(env, master) == 0);
 
             // TODO why not working with short codes?
-            env(cft::issue(master, "0158415500000000C1F76FF6ECB0BAC600000000"), ter(temDISABLED));
+            env(cft::issue(master, "0158415500000000C1F76FF6ECB0BAC600000000"),
+                ter(temDISABLED));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, master) == 0);
@@ -62,9 +60,7 @@ class CFToken_test : public beast::unit_test::suite
         {
             // If the CFT amendment IS enabled, you should be able to create
             // CFTokenIssuances
-            Env env{
-                *this,
-                    features | featureCFTokensV1};
+            Env env{*this, features | featureCFTokensV1};
             Account const& master = env.master;
 
             BEAST_EXPECT(ownerCount(env, master) == 0);
@@ -76,7 +72,6 @@ class CFToken_test : public beast::unit_test::suite
             BEAST_EXPECT(ownerCount(env, master) == 1);
         }
     }
-
 
 public:
     void

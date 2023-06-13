@@ -47,14 +47,16 @@ CFTokenIssuanceCreate::preflight(PreflightContext const& ctx)
         if (fee > 0u && !ctx.tx.isFlag(tfTransferable))
             return temMALFORMED;
     }
-    
+
     // TODO length?
-    // if (auto const code = ctx.tx[~sfAssetCode]; code.length() > maxAssetCodeLength)
+    // if (auto const code = ctx.tx[~sfAssetCode]; code.length() >
+    // maxAssetCodeLength)
     //     return temMALFORMED;
 
     if (auto const metadata = ctx.tx[~sfCFTokenMetadata])
     {
-        if (metadata->length() == 0 || metadata->length() > maxCFTokenMetadataLength)
+        if (metadata->length() == 0 ||
+            metadata->length() > maxCFTokenMetadataLength)
             return temMALFORMED;
     }
 
@@ -68,9 +70,10 @@ CFTokenIssuanceCreate::preclaim(PreclaimContext const& ctx)
 
     // if already a CFT with this asset code - error
     // TODO - need to check this again before insert too?
-    if (ctx.view.read(keylet::cft_issuance(ctx.tx[sfAccount], ctx.tx[sfAssetCode])))
+    if (ctx.view.read(
+            keylet::cft_issuance(ctx.tx[sfAccount], ctx.tx[sfAssetCode])))
         return tecDUPLICATE;
-   
+
     return tesSUCCESS;
 }
 

@@ -374,7 +374,9 @@ nft_sells(uint256 const& id) noexcept
 Keylet
 cft_issuance(AccountID const& issuer, uint160 const& asset) noexcept
 {
-    return {ltCFTOKEN_ISSUANCE, indexHash(LedgerNameSpace::CFTOKEN_ISSUANCE, issuer, asset)};
+    return {
+        ltCFTOKEN_ISSUANCE,
+        indexHash(LedgerNameSpace::CFTOKEN_ISSUANCE, issuer, asset)};
 }
 
 }  // namespace keylet

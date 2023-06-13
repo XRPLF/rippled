@@ -28,7 +28,10 @@ namespace jtx {
 namespace cft {
 
 Json::Value
-issue(jtx::Account const& account, std::string const& asset, std::uint8_t const scale)
+issue(
+    jtx::Account const& account,
+    std::string const& asset,
+    std::uint8_t const scale)
 {
     auto const assetCurrency = to_currency(asset);
     assert(assetCurrency != noCurrency());
