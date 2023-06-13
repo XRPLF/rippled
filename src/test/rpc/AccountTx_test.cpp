@@ -166,11 +166,21 @@ class AccountTx_test : public beast::unit_test::suite
 
             p[jss::ledger_index_min] = 0;
             p[jss::ledger_index_max] = 100;
-            BEAST_EXPECT(hasTxs(env.rpc("json", "account_tx", to_string(p))));
+            RPC::apiMaximumSupportedVersion == 1
+                ? BEAST_EXPECT(
+                      hasTxs(env.rpc("json", "account_tx", to_string(p))))
+                : BEAST_EXPECT(isErr(
+                      env.rpc("json", "account_tx", to_string(p)),
+                      rpcLGR_IDX_MALFORMED));
 
             p[jss::ledger_index_min] = 1;
             p[jss::ledger_index_max] = 2;
-            BEAST_EXPECT(noTxs(env.rpc("json", "account_tx", to_string(p))));
+            RPC::apiMaximumSupportedVersion == 1
+                ? BEAST_EXPECT(
+                      noTxs(env.rpc("json", "account_tx", to_string(p))))
+                : BEAST_EXPECT(isErr(
+                      env.rpc("json", "account_tx", to_string(p)),
+                      rpcLGR_IDX_MALFORMED));
 
             p[jss::ledger_index_min] = 2;
             p[jss::ledger_index_max] = 1;
@@ -187,6 +197,14 @@ class AccountTx_test : public beast::unit_test::suite
             BEAST_EXPECT(hasTxs(env.rpc("json", "account_tx", to_string(p))));
 
             p[jss::ledger_index_min] = 1;
+            RPC::apiMaximumSupportedVersion == 1
+                ? BEAST_EXPECT(
+                      hasTxs(env.rpc("json", "account_tx", to_string(p))))
+                : BEAST_EXPECT(isErr(
+                      env.rpc("json", "account_tx", to_string(p)),
+                      rpcLGR_IDX_MALFORMED));
+
+            p[jss::ledger_index_min] = 2;
             BEAST_EXPECT(hasTxs(env.rpc("json", "account_tx", to_string(p))));
 
             p[jss::ledger_index_min] = env.current()->info().seq;
@@ -203,6 +221,14 @@ class AccountTx_test : public beast::unit_test::suite
             BEAST_EXPECT(hasTxs(env.rpc("json", "account_tx", to_string(p))));
 
             p[jss::ledger_index_max] = env.current()->info().seq;
+            RPC::apiMaximumSupportedVersion == 1
+                ? BEAST_EXPECT(
+                      hasTxs(env.rpc("json", "account_tx", to_string(p))))
+                : BEAST_EXPECT(isErr(
+                      env.rpc("json", "account_tx", to_string(p)),
+                      rpcLGR_IDX_MALFORMED));
+
+            p[jss::ledger_index_max] = 3;
             BEAST_EXPECT(hasTxs(env.rpc("json", "account_tx", to_string(p))));
 
             p[jss::ledger_index_max] = env.closed()->info().seq;
@@ -210,6 +236,21 @@ class AccountTx_test : public beast::unit_test::suite
 
             p[jss::ledger_index_max] = env.closed()->info().seq - 1;
             BEAST_EXPECT(noTxs(env.rpc("json", "account_tx", to_string(p))));
+        }
+
+        // Ledger index max/min/index
+        // ERRORS out with invalid Parenthesis
+        {
+            Json::Value p{jParms};
+            p[jss::ledger_index_max] = -1;
+            p[jss::ledger_index_min] = -1;
+            p[jss::ledger_index] = -1;
+            RPC::apiMaximumSupportedVersion == 1
+                ? BEAST_EXPECT(
+                      hasTxs(env.rpc("json", "account_tx", to_string(p))))
+                : BEAST_EXPECT(isErr(
+                      env.rpc("json", "account_tx", to_string(p)),
+                      rpcINVALID_PARAMS));
         }
 
         // Ledger Sequence
