@@ -206,10 +206,7 @@ public:
     testSignerListsApiVersion2()
     {
         using namespace jtx;
-        Env env{*this, envconfig([](std::unique_ptr<Config> c) {
-                    c->loadFromString("\n[beta_rpc_api]\n1\n");
-                    return c;
-                })};
+        Env env{*this};
         Account const alice{"alice"};
         env.fund(XRP(1000), alice);
 
