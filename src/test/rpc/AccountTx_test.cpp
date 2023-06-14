@@ -177,7 +177,7 @@ class AccountTx_test : public beast::unit_test::suite
             p[jss::ledger_index_max] = 1;
             BEAST_EXPECT(isErr(
                 env.rpc("json", "account_tx", to_string(p)),
-                 (RPC::apiMaximumSupportedVersion == 1 ? rpcLGR_IDXS_INVALID
+                (RPC::apiMaximumSupportedVersion == 1 ? rpcLGR_IDXS_INVALID
                                                       : rpcINVALID_LGR_RANGE)));
         }
 
@@ -193,7 +193,7 @@ class AccountTx_test : public beast::unit_test::suite
             p[jss::ledger_index_min] = env.current()->info().seq;
             BEAST_EXPECT(isErr(
                 env.rpc("json", "account_tx", to_string(p)),
-                 (RPC::apiMaximumSupportedVersion == 1 ? rpcLGR_IDXS_INVALID
+                (RPC::apiMaximumSupportedVersion == 1 ? rpcLGR_IDXS_INVALID
                                                       : rpcINVALID_LGR_RANGE)));
         }
 
@@ -256,7 +256,7 @@ class AccountTx_test : public beast::unit_test::suite
         Env env{*this, envconfig([](std::unique_ptr<Config> c) {
                     c->loadFromString("\n[beta_rpc_api]\n1\n");
                     return c;
-        })};
+                })};
         Account A1{"A1"};
         env.fund(XRP(10000), A1);
         env.close();
@@ -276,7 +276,7 @@ class AccountTx_test : public beast::unit_test::suite
                 j[jss::result].isMember(jss::error) &&
                 j[jss::result][jss::error] == RPC::get_error_info(code).token;
         };
-        
+
         Json::Value jParms;
         jParms[jss::api_version] = 2;
         jParms[jss::account] = A1.human();
