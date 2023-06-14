@@ -58,6 +58,8 @@ jobs:
           cmake --version
           env
       - name: configure Conan
+        env:
+          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
         run: |
           conan profile new default --detect
           conan profile update settings.compiler.cppstd=20 default
@@ -67,7 +69,9 @@ jobs:
           conan profile update env.CC=${{ matrix.profile.cc }} default
           conan profile update env.CXX=${{ matrix.profile.cxx }} default
           conan profile update conf.tools.build:compiler_executables='{"c": "${{ matrix.profile.cc }}", "cpp": "${{ matrix.profile.cxx }}"}' default
-          conan remote add ripple ${{ vars.CONAN_URL }} --insert 0
+          # Do not quote the URL. An empty string will be accepted (with
+          # a non-fatal warning), but a missing argument will not.
+          conan remote add ripple ${{ env.CONAN_URL }} --insert 0
       - name: try to authenticate to ripple Conan remote
         id: remote
         continue-on-error: true
