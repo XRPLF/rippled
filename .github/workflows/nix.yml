@@ -67,11 +67,11 @@ jobs:
           conan profile update env.CC=${{ matrix.profile.cc }} default
           conan profile update env.CXX=${{ matrix.profile.cxx }} default
           conan profile update conf.tools.build:compiler_executables='{"c": "${{ matrix.profile.cc }}", "cpp": "${{ matrix.profile.cxx }}"}' default
-      - name: try to add ripple Conan remote
+          conan remote add ripple ${{ vars.CONAN_URL }} --insert 0
+      - name: try to authenticate to ripple Conan remote
         id: remote
         continue-on-error: true
         run: |
-          conan remote add ripple ${{ secrets.CONAN_URL }} --insert 0
           conan user --remote ripple ${{ secrets.CONAN_USERNAME }} --password ${{ secrets.CONAN_TOKEN }}
       - name: archive profile
         # Create this archive before dependencies are added to the local cache.
