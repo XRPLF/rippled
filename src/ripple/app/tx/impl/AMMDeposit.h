@@ -90,6 +90,9 @@ private:
      * @param amount2Deposit
      * @param lptAMMBalance current AMM LPT balance
      * @param lpTokensDeposit amount of tokens to deposit
+     * @param depositMin minimum accepted amount deposit
+     * @param deposit2Min minimum accepted amount2 deposit
+     * @param lpTokensDepositMin minimum accepted LPTokens deposit
      * @param tfee trading fee in basis points
      * @return
      */
@@ -102,6 +105,9 @@ private:
         std::optional<STAmount> const& amount2Deposit,
         STAmount const& lptAMMBalance,
         STAmount const& lpTokensDeposit,
+        std::optional<STAmount> const& depositMin,
+        std::optional<STAmount> const& deposit2Min,
+        std::optional<STAmount> const& lpTokensDepositMin,
         std::uint16_t tfee);
 
     /** Equal asset deposit (LPTokens) for the specified share of
@@ -112,6 +118,8 @@ private:
      * @param amount2Balance current AMM asset2 balance
      * @param lptAMMBalance current AMM LPT balance
      * @param lpTokensDeposit amount of tokens to deposit
+     * @param depositMin minimum accepted amount deposit
+     * @param deposit2Min minimum accepted amount2 deposit
      * @param tfee trading fee in basis points
      * @return
      */
@@ -123,6 +131,8 @@ private:
         STAmount const& amount2Balance,
         STAmount const& lptAMMBalance,
         STAmount const& lpTokensDeposit,
+        std::optional<STAmount> const& depositMin,
+        std::optional<STAmount> const& deposit2Min,
         std::uint16_t tfee);
 
     /** Equal asset deposit (Asset1In, Asset2In) with the constraint on
@@ -135,6 +145,7 @@ private:
      * @param lptAMMBalance current AMM LPT balance
      * @param amount maximum asset1 deposit amount
      * @param amount2 maximum asset2 deposit amount
+     * @param lpTokensDepositMin minimum accepted LPTokens deposit
      * @param tfee trading fee in basis points
      * @return
      */
@@ -147,6 +158,7 @@ private:
         STAmount const& lptAMMBalance,
         STAmount const& amount,
         STAmount const& amount2,
+        std::optional<STAmount> const& lpTokensDepositMin,
         std::uint16_t tfee);
 
     /** Single asset deposit (Asset1In) by the amount.
@@ -156,6 +168,7 @@ private:
      * @param amountBalance current AMM asset1 balance
      * @param lptAMMBalance current AMM LPT balance
      * @param amount requested asset1 deposit amount
+     * @param lpTokensDepositMin minimum accepted LPTokens deposit
      * @param tfee trading fee in basis points
      * @return
      */
@@ -166,6 +179,7 @@ private:
         STAmount const& amountBalance,
         STAmount const& lptAMMBalance,
         STAmount const& amount,
+        std::optional<STAmount> const& lpTokensDepositMin,
         std::uint16_t tfee);
 
     /** Single asset deposit (Asset1In, LPTokens) by the tokens.

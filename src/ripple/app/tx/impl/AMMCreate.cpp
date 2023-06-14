@@ -152,6 +152,20 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
         return tecUNFUNDED_AMM;
     }
 
+    auto isLPToken = [&](STAmount const& amount) -> bool {
+        if (auto const sle =
+                ctx.view.read(keylet::account(amount.issue().account)))
+            return (sle->getFlags() & lsfAMM);
+        return false;
+    };
+
+    if (isLPToken(amount) || isLPToken(amount2))
+    {
+        JLOG(ctx.j.debug()) << "AMM Instance: can't create with LPTokens "
+                            << amount << " " << amount2;
+        return tecAMM_INVALID_TOKENS;
+    }
+
     return tesSUCCESS;
 }
 

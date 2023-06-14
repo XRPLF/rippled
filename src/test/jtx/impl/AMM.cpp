@@ -431,6 +431,9 @@ AMM::deposit(
     std::uint32_t jvflags = 0;
     if (flags)
         jvflags = *flags;
+    // If including asset1In and asset2In or tokens as
+    // deposit min amounts then must set the flags
+    // explicitly instead of relying on this logic.
     if (!(jvflags & tfDepositSubTx))
     {
         if (tokens && !asset1In)

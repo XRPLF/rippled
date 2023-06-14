@@ -51,9 +51,9 @@ AMMDeposit::preflight(PreflightContext const& ctx)
     auto const ePrice = ctx.tx[~sfEPrice];
     auto const lpTokens = ctx.tx[~sfLPTokenOut];
     // Valid options are:
-    //   LPTokens
-    //   Amount
-    //   Amount and Amount2
+    //   LPTokens, Amount, Amount2
+    //   Amount, LPTokens
+    //   Amount, Amount2, LPTokens
     //   AssetLPToken and LPTokens
     //   Amount and EPrice
     if (std::bitset<32>(flags & tfDepositSubTx).count() != 1)
@@ -63,17 +63,20 @@ AMMDeposit::preflight(PreflightContext const& ctx)
     }
     else if (flags & tfLPToken)
     {
-        if (!lpTokens || amount || amount2 || ePrice)
+        // if included then both amount and amount2 are deposit min
+        if (!lpTokens || ePrice || (amount && !amount2) || (!amount && amount2))
             return temMALFORMED;
     }
     else if (flags & tfSingleAsset)
     {
-        if (!amount || lpTokens || amount2 || ePrice)
+        // if included then lpTokens is deposit min
+        if (!amount || amount2 || ePrice)
             return temMALFORMED;
     }
     else if (flags & tfTwoAsset)
     {
-        if (!amount || !amount2 || lpTokens || ePrice)
+        // if included then lpTokens is deposit min
+        if (!amount || !amount2 || ePrice)
             return temMALFORMED;
     }
     else if (flags & tfOneAssetLPToken)
@@ -115,7 +118,7 @@ AMMDeposit::preflight(PreflightContext const& ctx)
                 std::make_optional(std::make_pair(asset, asset2)),
                 ePrice.has_value()))
         {
-            JLOG(ctx.j.debug()) << "AMM Deposit: invalid Asset1In";
+            JLOG(ctx.j.debug()) << "AMM Deposit: invalid amount";
             return res;
         }
     }
@@ -125,7 +128,7 @@ AMMDeposit::preflight(PreflightContext const& ctx)
         if (auto const res = invalidAMMAmount(
                 *amount2, std::make_optional(std::make_pair(asset, asset2))))
         {
-            JLOG(ctx.j.debug()) << "AMM Deposit: invalid Asset2InAmount";
+            JLOG(ctx.j.debug()) << "AMM Deposit: invalid amount2";
             return res;
         }
     }
@@ -255,11 +258,22 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
         return tesSUCCESS;
     };
 
-    if (auto const ter = checkAmount(amount, true))
-        return ter;
+    // amount and amount2 are deposit min in case of tfLPToken
+    if (!(ctx.tx.getFlags() & tfLPToken))
+    {
+        if (auto const ter = checkAmount(amount, true))
+            return ter;
 
-    if (auto const ter = checkAmount(amount2, true))
-        return ter;
+        if (auto const ter = checkAmount(amount2, true))
+            return ter;
+    }
+    else
+    {
+        if (auto const ter = checkAmount(amountBalance, false))
+            return ter;
+        if (auto const ter = checkAmount(amount2Balance, false))
+            return ter;
+    }
 
     // Equal deposit lp tokens
     if (auto const lpTokens = ctx.tx[~sfLPTokenOut];
@@ -267,14 +281,6 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
     {
         JLOG(ctx.j.debug()) << "AMM Deposit: invalid LPTokens.";
         return temBAD_AMM_TOKENS;
-    }
-
-    if (ctx.tx.getFlags() & tfLPToken)
-    {
-        if (auto const ter = checkAmount(amountBalance, false))
-            return ter;
-        if (auto const ter = checkAmount(amount2Balance, false))
-            return ter;
     }
 
     // Check the reserve for LPToken trustline if not LP.
@@ -334,6 +340,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
                 lptAMMBalance,
                 *amount,
                 *amount2,
+                lpTokensDeposit,
                 tfee);
         if (subTxType & tfOneAssetLPToken)
             return singleDepositTokens(
@@ -355,7 +362,13 @@ AMMDeposit::applyGuts(Sandbox& sb)
                 tfee);
         if (subTxType & tfSingleAsset)
             return singleDeposit(
-                sb, ammAccountID, amountBalance, lptAMMBalance, *amount, tfee);
+                sb,
+                ammAccountID,
+                amountBalance,
+                lptAMMBalance,
+                *amount,
+                lpTokensDeposit,
+                tfee);
         if (subTxType & tfLPToken)
             return equalDepositTokens(
                 sb,
@@ -364,6 +377,8 @@ AMMDeposit::applyGuts(Sandbox& sb)
                 amount2Balance,
                 lptAMMBalance,
                 *lpTokensDeposit,
+                amount,
+                amount2,
                 tfee);
         // should not happen.
         JLOG(j_.error()) << "AMM Deposit: invalid options.";
@@ -403,6 +418,9 @@ AMMDeposit::deposit(
     std::optional<STAmount> const& amount2Deposit,
     STAmount const& lptAMMBalance,
     STAmount const& lpTokensDeposit,
+    std::optional<STAmount> const& depositMin,
+    std::optional<STAmount> const& deposit2Min,
+    std::optional<STAmount> const& lpTokensDepositMin,
     std::uint16_t tfee)
 {
     // Check account has sufficient funds.
@@ -446,6 +464,19 @@ AMMDeposit::deposit(
     {
         JLOG(ctx_.journal.debug()) << "AMM Deposit: adjusted tokens zero";
         return {tecAMM_INVALID_TOKENS, STAmount{}};
+    }
+
+    if (amountDepositActual < depositMin ||
+        amount2DepositActual < deposit2Min ||
+        lpTokensDepositActual < lpTokensDepositMin)
+    {
+        JLOG(ctx_.journal.debug())
+            << "AMM Deposit: min deposit fails " << amountDepositActual << " "
+            << depositMin.value_or(STAmount{}) << " "
+            << amount2DepositActual.value_or(STAmount{}) << " "
+            << deposit2Min.value_or(STAmount{}) << " " << lpTokensDepositActual
+            << " " << lpTokensDepositMin.value_or(STAmount{});
+        return {tecAMM_FAILED, STAmount{}};
     }
 
     // Deposit amountDeposit
@@ -511,6 +542,8 @@ AMMDeposit::equalDepositTokens(
     STAmount const& amount2Balance,
     STAmount const& lptAMMBalance,
     STAmount const& lpTokensDeposit,
+    std::optional<STAmount> const& depositMin,
+    std::optional<STAmount> const& deposit2Min,
     std::uint16_t tfee)
 {
     try
@@ -525,6 +558,9 @@ AMMDeposit::equalDepositTokens(
             multiply(amount2Balance, frac, amount2Balance.issue()),
             lptAMMBalance,
             lpTokensDeposit,
+            depositMin,
+            deposit2Min,
+            std::nullopt,
             tfee);
     }
     catch (std::exception const& e)
@@ -572,6 +608,7 @@ AMMDeposit::equalDepositLimit(
     STAmount const& lptAMMBalance,
     STAmount const& amount,
     STAmount const& amount2,
+    std::optional<STAmount> const& lpTokensDepositMin,
     std::uint16_t tfee)
 {
     auto frac = Number{amount} / amountBalance;
@@ -588,6 +625,9 @@ AMMDeposit::equalDepositLimit(
             toSTAmount(amount2Balance.issue(), amount2Deposit),
             lptAMMBalance,
             tokens,
+            std::nullopt,
+            std::nullopt,
+            lpTokensDepositMin,
             tfee);
     frac = Number{amount2} / amount2Balance;
     tokens = toSTAmount(lptAMMBalance.issue(), lptAMMBalance * frac);
@@ -603,6 +643,9 @@ AMMDeposit::equalDepositLimit(
             amount2,
             lptAMMBalance,
             tokens,
+            std::nullopt,
+            std::nullopt,
+            lpTokensDepositMin,
             tfee);
     return {tecAMM_FAILED, STAmount{}};
 }
@@ -622,6 +665,7 @@ AMMDeposit::singleDeposit(
     STAmount const& amountBalance,
     STAmount const& lptAMMBalance,
     STAmount const& amount,
+    std::optional<STAmount> const& lpTokensDepositMin,
     std::uint16_t tfee)
 {
     auto const tokens = lpTokensIn(amountBalance, amount, lptAMMBalance, tfee);
@@ -635,6 +679,9 @@ AMMDeposit::singleDeposit(
         std::nullopt,
         lptAMMBalance,
         tokens,
+        std::nullopt,
+        std::nullopt,
+        lpTokensDepositMin,
         tfee);
 }
 
@@ -667,6 +714,9 @@ AMMDeposit::singleDepositTokens(
         std::nullopt,
         lptAMMBalance,
         lpTokensDeposit,
+        std::nullopt,
+        std::nullopt,
+        std::nullopt,
         tfee);
 }
 
@@ -721,6 +771,9 @@ AMMDeposit::singleDepositEPrice(
                 std::nullopt,
                 lptAMMBalance,
                 tokens,
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
                 tfee);
     }
 
@@ -763,6 +816,9 @@ AMMDeposit::singleDepositEPrice(
         std::nullopt,
         lptAMMBalance,
         tokens,
+        std::nullopt,
+        std::nullopt,
+        std::nullopt,
         tfee);
 }
 
