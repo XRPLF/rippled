@@ -313,7 +313,7 @@ private:
 
         BEAST_EXPECT(expectLine(env, bob, STAmount{USD, 101}));
         BEAST_EXPECT(expectLedgerEntryRoot(
-            env, bob, XRP(30'0000) - xrpTransferred - txfee(env, 1)));
+            env, bob, XRP(300'000) - xrpTransferred - txfee(env, 1)));
         BEAST_EXPECT(expectOffers(env, bob, 0));
     }
 

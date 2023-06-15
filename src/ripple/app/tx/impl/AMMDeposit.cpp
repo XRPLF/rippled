@@ -50,12 +50,12 @@ AMMDeposit::preflight(PreflightContext const& ctx)
     auto const amount2 = ctx.tx[~sfAmount2];
     auto const ePrice = ctx.tx[~sfEPrice];
     auto const lpTokens = ctx.tx[~sfLPTokenOut];
-    // Valid options are:
-    //   LPTokens, Amount, Amount2
-    //   Amount, LPTokens
-    //   Amount, Amount2, LPTokens
-    //   AssetLPToken and LPTokens
-    //   Amount and EPrice
+    // Valid options for the flags are:
+    //   tfLPTokens: LPTokenOut, [Amount, Amount2]
+    //   tfSingleAsset: Amount, [LPTokenOut]
+    //   tfTwoAsset: Amount, Amount2, [LPTokenOut]
+    //   tfOnAssetLPToken: Amount and LPTokenOut
+    //   tfLimitLPToken: Amount and EPrice
     if (std::bitset<32>(flags & tfDepositSubTx).count() != 1)
     {
         JLOG(ctx.j.debug()) << "AMM Deposit: invalid flags.";
@@ -504,7 +504,7 @@ AMMDeposit::deposit(
         {
             JLOG(ctx_.journal.debug())
                 << "AMM Deposit: account has insufficient checkBalance to "
-                   " deposit or is 0 "
+                   "deposit or is 0 "
                 << *amount2DepositActual;
             return {ter, STAmount{}};
         }
