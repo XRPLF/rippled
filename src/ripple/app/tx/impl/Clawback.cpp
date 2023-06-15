@@ -39,11 +39,11 @@ Clawback::preflight(PreflightContext const& ctx)
     if (ctx.tx.getFlags() & tfClawbackMask)
         return temINVALID_FLAG;
 
-    AccountID const issuer = ctx.tx.getAccountID(sfAccount);
-    STAmount const clawAmount(ctx.tx.getFieldAmount(sfAmount));
+    AccountID const issuer = ctx.tx[sfAccount];
+    STAmount const clawAmount = ctx.tx[sfAmount];
 
     // The issuer field is used for the token holder instead
-    AccountID const holder = clawAmount.getIssuer();
+    AccountID const& holder = clawAmount.getIssuer();
 
     if (issuer == holder || isXRP(clawAmount) || clawAmount <= beast::zero)
         return temBAD_AMOUNT;
@@ -54,9 +54,9 @@ Clawback::preflight(PreflightContext const& ctx)
 TER
 Clawback::preclaim(PreclaimContext const& ctx)
 {
-    AccountID const issuer = ctx.tx.getAccountID(sfAccount);
-    STAmount const clawAmount(ctx.tx.getFieldAmount(sfAmount));
-    AccountID const holder = clawAmount.getIssuer();
+    AccountID const issuer = ctx.tx[sfAccount];
+    STAmount const clawAmount = ctx.tx[sfAmount];
+    AccountID const& holder = clawAmount.getIssuer();
 
     auto const sleIssuer = ctx.view.read(keylet::account(issuer));
     auto const sleHolder = ctx.view.read(keylet::account(holder));
@@ -74,7 +74,7 @@ Clawback::preclaim(PreclaimContext const& ctx)
     if (!sleRippleState)
         return tecNO_LINE;
 
-    STAmount const balance = sleRippleState->getFieldAmount(sfBalance);
+    STAmount const balance = (*sleRippleState)[sfBalance];
 
     // If balance is positive, issuer must have higher address than holder
     if (balance > beast::zero && issuer < holder)
@@ -108,12 +108,14 @@ Clawback::preclaim(PreclaimContext const& ctx)
 TER
 Clawback::doApply()
 {
-    AccountID const issuer = account_;
-    STAmount clawAmount(ctx_.tx.getFieldAmount(sfAmount));
-    AccountID const holder = clawAmount.getIssuer();
+    AccountID const& issuer = account_;
+    STAmount clawAmount = ctx_.tx[sfAmount];
+    AccountID const holder = clawAmount.getIssuer(); // cannot be reference
 
     // Replace the `issuer` field with issuer's account
     clawAmount.setIssuer(issuer);
+    if (holder == issuer)
+        return tecINTERNAL;
 
     // Get the spendable balance. Must use `accountHolds`.
     STAmount const spendableAmount = accountHolds(
@@ -124,8 +126,13 @@ Clawback::doApply()
         fhIGNORE_FREEZE,
         j_);
 
-    return accountSend(
-        view(), holder, issuer, std::min(spendableAmount, clawAmount), j_);
+    return rippleCredit(
+        view(),
+        holder,
+        issuer,
+        std::min(spendableAmount, clawAmount),
+        true,
+        j_);
 }
 
 }  // namespace ripple
