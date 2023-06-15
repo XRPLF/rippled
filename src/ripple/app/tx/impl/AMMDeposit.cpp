@@ -504,7 +504,7 @@ AMMDeposit::deposit(
         {
             JLOG(ctx_.journal.debug())
                 << "AMM Deposit: account has insufficient checkBalance to "
-                   "deposit or is 0"
+                   " deposit or is 0 "
                 << *amount2DepositActual;
             return {ter, STAmount{}};
         }

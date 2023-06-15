@@ -124,6 +124,24 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
         return tecFROZEN;
     }
 
+    auto noDefaultRipple = [](ReadView const& view, Issue const& issue) {
+        if (isXRP(issue))
+            return false;
+
+        if (auto const issuerAccount =
+                view.read(keylet::account(issue.account)))
+            return (issuerAccount->getFlags() & lsfDefaultRipple) == 0;
+
+        return false;
+    };
+
+    if (noDefaultRipple(ctx.view, amount.issue()) ||
+        noDefaultRipple(ctx.view, amount2.issue()))
+    {
+        JLOG(ctx.j.debug()) << "AMM Instance: DefaultRipple not set";
+        return terNO_RIPPLE;
+    }
+
     // Check the reserve for LPToken trustline
     STAmount const xrpBalance = xrpLiquid(ctx.view, accountID, 1, ctx.j);
     // Insufficient reserve

@@ -369,6 +369,30 @@ private:
                 STAmount{token2, 1'000'000},
                 ter(tecAMM_INVALID_TOKENS));
         });
+
+        // Issuer has DefaultRipple disabled
+        {
+            Env env(*this);
+            env.fund(XRP(30'000), gw);
+            env(fclear(gw, asfDefaultRipple));
+            AMM ammGw(env, gw, XRP(10'000), USD(10'000), ter(terNO_RIPPLE));
+            env.fund(XRP(30'000), alice);
+            env.trust(USD(30'000), alice);
+            env(pay(gw, alice, USD(30'000)));
+            AMM ammAlice(
+                env, alice, XRP(10'000), USD(10'000), ter(terNO_RIPPLE));
+            Account const gw1("gw1");
+            env.fund(XRP(30'000), gw1);
+            env(fclear(gw1, asfDefaultRipple));
+            env.trust(USD(30'000), gw1);
+            env(pay(gw, gw1, USD(30'000)));
+            auto const USD1 = gw1["USD"];
+            AMM ammGwGw1(env, gw, USD(10'000), USD1(10'000), ter(terNO_RIPPLE));
+            env.trust(USD1(30'000), alice);
+            env(pay(gw1, alice, USD1(30'000)));
+            AMM ammAlice1(
+                env, alice, USD(10'000), USD1(10'000), ter(terNO_RIPPLE));
+        }
     }
 
     void
