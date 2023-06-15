@@ -366,10 +366,12 @@ public:
 };
 
 /**
- * @brief Invariant: Token holder's trustline balance cannot be negative after Clawback.
+ * @brief Invariant: Token holder's trustline balance cannot be negative after
+ * Clawback.
  *
  * We iterate all the trust lines affected by this transaction and ensure
- * that no more than one trustline is modified, and also holder's balance is non-negative.
+ * that no more than one trustline is modified, and also holder's balance is
+ * non-negative.
  */
 class ValidClawback
 {

@@ -110,7 +110,7 @@ Clawback::doApply()
 {
     AccountID const& issuer = account_;
     STAmount clawAmount = ctx_.tx[sfAmount];
-    AccountID const holder = clawAmount.getIssuer(); // cannot be reference
+    AccountID const holder = clawAmount.getIssuer();  // cannot be reference
 
     // Replace the `issuer` field with issuer's account
     clawAmount.setIssuer(issuer);
