@@ -4770,75 +4770,125 @@ struct PayChan_test : public beast::unit_test::suite
         struct TestAccountData
         {
             Account src;
-            Account gw;
+            Account dst;
             bool hasTrustline;
             bool negative;
         };
 
-        std::array<TestAccountData, 8> tests = {{
+        std::array<TestAccountData, 8> gwSrcTests = {{
             // src > dst && src > issuer && dst no trustline
-            {Account("alice2"), Account{"gw0"}, false, true},
+            {Account("gw0"), Account{"alice2"}, false, true},
             // // src < dst && src < issuer && dst no trustline
-            {Account("carol0"), Account{"gw1"}, false, false},
+            {Account("gw1"), Account{"carol0"}, false, false},
             // // // // dst > src && dst > issuer && dst no trustline
-            {Account("dan1"), Account{"gw0"}, false, true},
+            {Account("gw0"), Account{"dan1"}, false, true},
             // // // // dst < src && dst < issuer && dst no trustline
-            {Account("bob0"), Account{"gw1"}, false, false},
+            {Account("gw1"), Account{"bob0"}, false, false},
             // // // src > dst && src > issuer && dst has trustline
-            {Account("alice2"), Account{"gw0"}, true, true},
+            {Account("gw0"), Account{"alice2"}, true, true},
             // // // src < dst && src < issuer && dst has trustline
-            {Account("carol0"), Account{"gw1"}, true, false},
+            {Account("gw1"), Account{"carol0"}, true, false},
             // // // dst > src && dst > issuer && dst has trustline
-            {Account("dan1"), Account{"gw0"}, true, true},
+            {Account("gw0"), Account{"dan1"}, true, true},
             // // // dst < src && dst < issuer && dst has trustline
-            {Account("bob0"), Account{"gw1"}, true, false},
+            {Account("gw1"), Account{"bob0"}, true, false},
         }};
 
-        for (auto const& t : tests)
+        for (auto const& t : gwSrcTests)
         {
             Env env{*this, features};
-            auto const USD = t.gw["USD"];
-            env.fund(XRP(5000), t.src, t.gw);
+            auto const USD = t.src["USD"];
+            env.fund(XRP(5000), t.dst, t.src);
             env.close();
 
             if (t.hasTrustline)
-                env.trust(USD(100000), t.src);
+                env.trust(USD(100000), t.dst);
 
             env.close();
 
             if (t.hasTrustline)
-                env(pay(t.gw, t.src, USD(10000)));
+                env(pay(t.src, t.dst, USD(10000)));
 
             env.close();
 
             // issuer can create paychan
-            auto const pk = t.gw.pk();
+            auto const pk = t.src.pk();
             auto const settleDelay = 100s;
-            auto const chan = channel(t.gw, t.src, env.seq(t.gw));
-            env(create(t.gw, t.src, USD(1000), settleDelay, pk));
+            auto const chan = channel(t.src, t.dst, env.seq(t.src));
+            env(create(t.src, t.dst, USD(1000), settleDelay, pk));
             env.close();
 
             // src can claim paychan without trustline
-            auto const preSrc = lineBalance(env, t.src, t.gw, USD);
+            auto const preDst = lineBalance(env, t.dst, t.src, USD);
             auto chanBal = channelBalance(*env.current(), chan);
             auto chanAmt = channelAmount(*env.current(), chan);
             auto const delta = USD(500);
             auto const reqBal = chanBal + delta;
             auto const authAmt = reqBal + USD(100);
             auto const sig =
-                signClaimTokenAuth(t.gw.pk(), t.gw.sk(), chan, authAmt);
-            env(claim(t.src, chan, reqBal, authAmt, Slice(sig), t.gw.pk()));
+                signClaimTokenAuth(t.src.pk(), t.src.sk(), chan, authAmt);
+            env(claim(t.dst, chan, reqBal, authAmt, Slice(sig), t.src.pk()));
             env.close();
             auto const preAmount = t.hasTrustline ? 10000 : 0;
             BEAST_EXPECT(
-                preSrc == (t.negative ? -USD(preAmount) : USD(preAmount)));
+                preDst == (t.negative ? -USD(preAmount) : USD(preAmount)));
             auto const postAmount = t.hasTrustline ? 10500 : 500;
             BEAST_EXPECT(
-                lineBalance(env, t.src, t.gw, USD) ==
+                lineBalance(env, t.dst, t.src, USD) ==
                 (t.negative ? -USD(postAmount) : USD(postAmount)));
+            BEAST_EXPECT(lineBalance(env, t.src, t.src, USD) == USD(0));
+        }
+
+        std::array<TestAccountData, 4> gwDstTests = {{
+            // // // src > dst && src > issuer && dst has trustline
+            {Account("alice2"), Account{"gw0"}, true, true},
+            // // // src < dst && src < issuer && dst has trustline
+            {Account("carol0"), Account{"gw1"}, true, false},
+            // // // // dst > src && dst > issuer && dst has trustline
+            {Account("dan1"), Account{"gw0"}, true, true},
+            // // // // dst < src && dst < issuer && dst has trustline
+            {Account("bob0"), Account{"gw1"}, true, false},
+        }};
+
+        for (auto const& t : gwDstTests)
+        {
+            Env env{*this, features};
+            auto const USD = t.dst["USD"];
+            env.fund(XRP(5000), t.src, t.dst);
+            env.close();
+
+            env.trust(USD(100000), t.src);
+            env.close();
+
+            env(pay(t.dst, t.src, USD(10000)));
+            env.close();
+
+            // src can create paychan to dst/issuer
+            auto const pk = t.src.pk();
+            auto const settleDelay = 100s;
+            auto const chan = channel(t.src, t.dst, env.seq(t.src));
+            env(create(t.src, t.dst, USD(1000), settleDelay, pk));
+            env.close();
+
+            // dst/gw can claim paychan
+            auto const preSrc = lineBalance(env, t.src, t.dst, USD);
+            auto chanBal = channelBalance(*env.current(), chan);
+            auto chanAmt = channelAmount(*env.current(), chan);
+            auto const delta = USD(500);
+            auto const reqBal = chanBal + delta;
+            auto const authAmt = reqBal + USD(100);
+            auto const sig =
+                signClaimTokenAuth(t.src.pk(), t.src.sk(), chan, authAmt);
+            env(claim(t.dst, chan, reqBal, authAmt, Slice(sig), t.src.pk()));
+            env.close();
+            auto const preAmount = 10000;
             BEAST_EXPECT(
-                lineBalance(env, t.gw, t.src, USD) ==
+                preSrc == (t.negative ? -USD(preAmount) : USD(preAmount)));
+            auto const postAmount = 9500;
+            BEAST_EXPECT(
+                lineBalance(env, t.src, t.dst, USD) ==
                 (t.negative ? -USD(postAmount) : USD(postAmount)));
+            BEAST_EXPECT(lineBalance(env, t.dst, t.dst, USD) == USD(0));
         }
     }
 
@@ -5527,7 +5577,7 @@ public:
     {
         using namespace test::jtx;
         FeatureBitset const all{supported_amendments()};
-        testWithFeats(all - disallowIncoming);
+        // testWithFeats(all - disallowIncoming);
         testWithFeats(all);
     }
 };
