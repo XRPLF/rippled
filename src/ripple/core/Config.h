@@ -203,7 +203,7 @@ public:
     int PATH_SEARCH_MAX = 3;
 
     // Validation
-    std::optional<std::size_t>
+    std::optional<std::int64_t>
         VALIDATION_QUORUM;  // validations to consider ledger authoritative
 
     FeeSetup FEES;

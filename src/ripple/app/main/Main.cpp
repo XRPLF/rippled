@@ -48,6 +48,7 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <sstream>
 #include <stdexcept>
 #include <utility>
 
@@ -375,7 +376,7 @@ run(int argc, char** argv)
         po::value<std::string>(),
         "Specify the node identity for this server.")(
         "quorum",
-        po::value<std::size_t>(),
+        po::value<std::int64_t>(),
         "Override the minimum validation quorum.")(
         "reportingReadOnly", "Run in read-only reporting mode")(
         "silent", "No output to the console after startup.")(
@@ -704,10 +705,12 @@ run(int argc, char** argv)
     {
         try
         {
-            config->VALIDATION_QUORUM = vm["quorum"].as<std::size_t>();
-            if (config->VALIDATION_QUORUM == std::size_t{})
+            config->VALIDATION_QUORUM = vm["quorum"].as<std::int64_t>();
+            if (*config->VALIDATION_QUORUM < 1)
             {
-                throw std::domain_error("0");
+                std::stringstream ss;
+                ss << *config->VALIDATION_QUORUM;
+                throw std::domain_error(ss.str());
             }
         }
         catch (std::exception const& e)
