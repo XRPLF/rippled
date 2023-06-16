@@ -1230,7 +1230,6 @@ class LedgerRPC_test : public beast::unit_test::suite
 
         // "features" is not an option supported by ledger_entry.
         Json::Value jvParams;
-        jvParams[jss::api_version] = 1;
         jvParams[jss::features] = ledgerHash;
         jvParams[jss::ledger_hash] = ledgerHash;
         Json::Value const jrr =
@@ -1243,12 +1242,16 @@ class LedgerRPC_test : public beast::unit_test::suite
     {
         testcase("ledger_entry v2 Request Invalid Parameters");
         using namespace test::jtx;
-        Env env{*this};
+        Env env{*this, envconfig([](std::unique_ptr<Config> c) {
+                    c->loadFromString("\n[beta_rpc_api]\n1\n");
+                    return c;
+                })};
 
         std::string const ledgerHash{to_string(env.closed()->info().hash)};
 
         // "features" is not an option supported by ledger_entry.
         Json::Value jvParams;
+        jvParams[jss::api_version] = 2;
         jvParams[jss::features] = ledgerHash;
         jvParams[jss::ledger_hash] = ledgerHash;
         Json::Value const jrr =
