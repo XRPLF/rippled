@@ -149,6 +149,33 @@ public:
     }
 
     void
+    testGWBApiV2(FeatureBitset features)
+    {
+        using namespace std::chrono_literals;
+        using namespace jtx;
+        Env env{*this, envconfig([](std::unique_ptr<Config> c) {
+                    c->loadFromString("\n[beta_rpc_api]\n1\n");
+                    return c;
+                }), features};
+        env.close();
+
+        // Gateway account and assets
+        Account const alice{"alice"};
+        Account const hw{"hw"};
+        auto wsc = makeWSClient(env.app().config());
+
+        Json::Value qry2;
+        qry2[jss::api_version] = 2;
+        qry2[jss::account] = "rNGQLojaFxTYphuQUJ24QUhyGBUMMbqBMx";
+        qry2[jss::hotwallet] = hw.human();
+        auto jv = wsc->invoke("gateway_balances", qry2);
+        expect(jv[jss::status] == "error");
+        
+        auto response = jv[jss::result];
+        expect(response[jss::error] == "actNotFound");
+    }
+
+    void
     testGWBOverflow()
     {
         using namespace std::chrono_literals;
@@ -209,6 +236,7 @@ public:
         auto const sa = supported_amendments();
         testGWB(sa - featureFlowCross);
         testGWB(sa);
+        testGWBApiV2(sa);
 
         testGWBOverflow();
     }

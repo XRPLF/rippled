@@ -207,7 +207,7 @@ std::optional<Seed>
 parseRippleLibSeed(Json::Value const& params);
 
 std::pair<PublicKey, SecretKey>
-keypairForSignature(Json::Value const& params, Json::Value& error);
+keypairForSignature(Json::Value const& params, Json::Value& error, std::optional<std::reference_wrapper<JsonContext>> context = std::nullopt);
 
 /**
  * API version numbers used in API version 1

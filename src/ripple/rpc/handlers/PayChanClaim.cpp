@@ -55,7 +55,7 @@ doChannelAuthorize(RPC::JsonContext& context)
         return RPC::missing_field_error(jss::secret);
 
     Json::Value result;
-    auto const [pk, sk] = RPC::keypairForSignature(params, result);
+    auto const [pk, sk] = RPC::keypairForSignature(params, result, context);
     if (RPC::contains_error(result))
         return result;
 

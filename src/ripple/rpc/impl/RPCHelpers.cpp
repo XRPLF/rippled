@@ -846,7 +846,10 @@ getSeedFromRPC(Json::Value const& params, Json::Value& error)
 }
 
 std::pair<PublicKey, SecretKey>
-keypairForSignature(Json::Value const& params, Json::Value& error)
+keypairForSignature(
+    Json::Value const& params,
+    Json::Value& error,
+    std::optional<std::reference_wrapper<JsonContext>> context)
 {
     bool const has_key_type = params.isMember(jss::key_type);
 
@@ -900,7 +903,14 @@ keypairForSignature(Json::Value const& params, Json::Value& error)
 
         if (!keyType)
         {
-            error = RPC::invalid_field_error(jss::key_type);
+            if (context.has_value() && context.value().get().apiVersion > 1)
+            {
+                error = RPC::make_error(rpcBAD_KEY_TYPE);
+            }
+            else
+            {
+                error = RPC::invalid_field_error(jss::key_type);
+            }
             return {};
         }
 
