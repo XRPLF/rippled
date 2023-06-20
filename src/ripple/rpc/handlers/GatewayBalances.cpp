@@ -80,7 +80,7 @@ doGatewayBalances(RPC::JsonContext& context)
 
     auto const sleAccepted = ledger->read(keylet::account(accountID));
     if (!sleAccepted && context.apiVersion == 2)
-    {   
+    {
         RPC::inject_error(rpcACT_NOT_FOUND, result);
         return result;
     }

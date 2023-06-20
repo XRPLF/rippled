@@ -153,10 +153,13 @@ public:
     {
         using namespace std::chrono_literals;
         using namespace jtx;
-        Env env{*this, envconfig([](std::unique_ptr<Config> c) {
-                    c->loadFromString("\n[beta_rpc_api]\n1\n");
-                    return c;
-                }), features};
+        Env env{
+            *this,
+            envconfig([](std::unique_ptr<Config> c) {
+                c->loadFromString("\n[beta_rpc_api]\n1\n");
+                return c;
+            }),
+            features};
         env.close();
 
         // Gateway account and assets
@@ -170,7 +173,7 @@ public:
         qry2[jss::hotwallet] = hw.human();
         auto jv = wsc->invoke("gateway_balances", qry2);
         expect(jv[jss::status] == "error");
-        
+
         auto response = jv[jss::result];
         expect(response[jss::error] == "actNotFound");
     }
