@@ -78,8 +78,7 @@ doGatewayBalances(RPC::JsonContext& context)
 
     result[jss::account] = toBase58(accountID);
 
-    auto const sleAccepted = ledger->read(keylet::account(accountID));
-    if (!sleAccepted && context.apiVersion == 2)
+    if (!ledger->exists(keylet::account(accountID)) && context.apiVersion == 2)
     {
         RPC::inject_error(rpcACT_NOT_FOUND, result);
         return result;
