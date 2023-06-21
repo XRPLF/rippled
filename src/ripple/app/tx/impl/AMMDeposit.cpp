@@ -28,6 +28,8 @@
 #include <ripple/protocol/STAccount.h>
 #include <ripple/protocol/TxFlags.h>
 
+#include <bit>
+
 namespace ripple {
 
 NotTEC
@@ -56,12 +58,12 @@ AMMDeposit::preflight(PreflightContext const& ctx)
     //   tfTwoAsset: Amount, Amount2, [LPTokenOut]
     //   tfOnAssetLPToken: Amount and LPTokenOut
     //   tfLimitLPToken: Amount and EPrice
-    if (std::bitset<32>(flags & tfDepositSubTx).count() != 1)
+    if (std::popcount(flags & tfDepositSubTx) != 1)
     {
         JLOG(ctx.j.debug()) << "AMM Deposit: invalid flags.";
         return temMALFORMED;
     }
-    else if (flags & tfLPToken)
+    if (flags & tfLPToken)
     {
         // if included then both amount and amount2 are deposit min
         if (!lpTokens || ePrice || (amount && !amount2) || (!amount && amount2))
