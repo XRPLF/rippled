@@ -133,7 +133,7 @@ closeChannel(
             keylet::line(src, amount.getIssuer(), amount.getCurrency()));
 
         // dry run
-        TER result =
+        TER const result =
             trustAdjustLockedBalance(view, sleLine, -amount, -1, j, DryRun);
 
         JLOG(j.trace()) << "closeChannel: trustAdjustLockedBalance(dry) result="
@@ -178,7 +178,7 @@ closeChannel(
         (*sle)[sfBalance] = (*sle)[sfBalance] + amount;
     else
     {
-        TER result =
+        TER const result =
             trustAdjustLockedBalance(view, sleLine, -amount, -1, j, WetRun);
 
         JLOG(j.trace()) << "closeChannel: trustAdjustLockedBalance(wet) result="
@@ -257,7 +257,7 @@ PayChanCreate::preclaim(PreclaimContext const& ctx)
         return tecINSUFFICIENT_RESERVE;
 
     auto const dst = ctx.tx[sfDestination];
-    bool isIssuer = amount.getIssuer() == account;
+    bool const isIssuer = amount.getIssuer() == account;
 
     // Check reserve and funds availability
     if (isXRP(amount) && balance < reserve + amount)
@@ -272,7 +272,7 @@ PayChanCreate::preclaim(PreclaimContext const& ctx)
         // check for any possible bars to a channel existing
         // between these accounts for this asset
         {
-            TER result = trustTransferAllowed(
+            TER const result = trustTransferAllowed(
                 ctx.view, {account, dst}, amount.issue(), ctx.j);
             JLOG(ctx.j.trace())
                 << "PayChanCreate::preclaim trustTransferAllowed result="
@@ -287,7 +287,7 @@ PayChanCreate::preclaim(PreclaimContext const& ctx)
         {
             auto sleLine = ctx.view.read(keylet::line(
                 account, amount.getIssuer(), amount.getCurrency()));
-            TER result = trustAdjustLockedBalance(
+            TER const result = trustAdjustLockedBalance(
                 ctx.view, sleLine, amount, 1, ctx.j, DryRun);
             JLOG(ctx.j.trace()) << "PayChanCreate::preclaim "
                                    "trustAdjustLockedBalance(dry) result="
@@ -334,7 +334,7 @@ PayChanCreate::doApply()
     auto const dst = ctx_.tx[sfDestination];
 
     STAmount const amount{ctx_.tx[sfAmount]};
-    bool isIssuer = amount.getIssuer() == account;
+    bool const isIssuer = amount.getIssuer() == account;
 
     // Create PayChan in ledger.
     //
@@ -401,7 +401,7 @@ PayChanCreate::doApply()
             if (!sleLine)
                 return tecNO_LINE;
 
-            TER result = trustAdjustLockedBalance(
+            TER const result = trustAdjustLockedBalance(
                 ctx_.view(), sleLine, amount, 1, ctx_.journal, WetRun);
 
             JLOG(ctx_.journal.trace())
@@ -473,7 +473,7 @@ PayChanFund::doApply()
     AccountID const src = (*slep)[sfAccount];
     auto const txAccount = ctx_.tx[sfAccount];
     auto const expiration = (*slep)[~sfExpiration];
-    bool isIssuer = amount.getIssuer() == txAccount;
+    bool const isIssuer = amount.getIssuer() == txAccount;
 
     // if this is a Fund operation on an IOU then perform a dry run here
     if (!isXRP(amount) &&
@@ -481,7 +481,7 @@ PayChanFund::doApply()
     {
         // adjust transfer rate
         Rate lockedRate = ripple::Rate(slep->getFieldU32(sfTransferRate));
-        auto issuerAccID = amount.getIssuer();
+        auto const issuerAccID = amount.getIssuer();
         auto const xferRate = transferRate(view(), issuerAccID);
 
         // update if issuer rate less than locked rate
@@ -501,7 +501,7 @@ PayChanFund::doApply()
             sleLine = ctx_.view().peek(keylet::line(
                 (*slep)[sfAccount], amount.getIssuer(), amount.getCurrency()));
 
-            TER result = trustAdjustLockedBalance(
+            TER const result = trustAdjustLockedBalance(
                 ctx_.view(), sleLine, amount, 1, ctx_.journal, DryRun);
 
             JLOG(ctx_.journal.trace())
@@ -575,7 +575,7 @@ PayChanFund::doApply()
         // issuer does not need to lock anything
         if (!isIssuer)
         {
-            TER result = trustAdjustLockedBalance(
+            TER const result = trustAdjustLockedBalance(
                 ctx_.view(), sleLine, amount, 1, ctx_.journal, WetRun);
 
             JLOG(ctx_.journal.trace())
@@ -765,7 +765,7 @@ PayChanClaim::doApply()
 
             // compute transfer fee, if any
             Rate lockedRate = ripple::Rate(slep->getFieldU32(sfTransferRate));
-            auto issuerAccID = chanFunds.getIssuer();
+            auto const issuerAccID = chanFunds.getIssuer();
             auto const xferRate = transferRate(view(), issuerAccID);
             // update if issuer rate is less than locked rate
             if (xferRate < lockedRate)
@@ -775,7 +775,7 @@ PayChanClaim::doApply()
             }
 
             auto sleSrcAcc = ctx_.view().peek(keylet::account(src));
-            TER result = trustTransferLockedBalance(
+            TER const result = trustTransferLockedBalance(
                 ctx_.view(),
                 txAccount,
                 sleSrcAcc,

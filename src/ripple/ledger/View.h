@@ -506,12 +506,12 @@ trustAdjustLockedBalance(
     // auto const currency = deltaAmt.getCurrency();
     auto const issuer = deltaAmt.getIssuer();
 
-    STAmount lowLimit = sleLine->getFieldAmount(sfLowLimit);
+    STAmount const lowLimit = sleLine->getFieldAmount(sfLowLimit);
 
     // the account which is modifying the LockedBalance is always
     // the side that isn't the issuer, so if the low side is the
     // issuer then the high side is the account.
-    bool high = lowLimit.getIssuer() == issuer;
+    bool const high = lowLimit.getIssuer() == issuer;
 
     std::vector<AccountID> parties{
         high ? sleLine->getFieldAmount(sfHighLimit).getIssuer()
@@ -519,7 +519,7 @@ trustAdjustLockedBalance(
 
     // check for freezes & auth
     {
-        TER result = trustTransferAllowed(view, parties, deltaAmt.issue(), j);
+        TER const result = trustTransferAllowed(view, parties, deltaAmt.issue(), j);
 
         JLOG(j.trace())
             << "trustAdjustLockedBalance: trustTransferAllowed result="
@@ -809,19 +809,19 @@ trustTransferLockedBalance(
         return tecINTERNAL;
     }
 
-    auto issuerAccID = amount.getIssuer();
-    auto currency = amount.getCurrency();
-    auto srcAccID = sleSrcAcc->getAccountID(sfAccount);
-    auto dstAccID = sleDstAcc->getAccountID(sfAccount);
+    auto const issuerAccID = amount.getIssuer();
+    auto const currency = amount.getCurrency();
+    auto const srcAccID = sleSrcAcc->getAccountID(sfAccount);
+    auto const dstAccID = sleDstAcc->getAccountID(sfAccount);
 
-    bool srcHigh = srcAccID > issuerAccID;
-    bool dstHigh = dstAccID > issuerAccID;
-    bool srcIssuer = issuerAccID == srcAccID;
-    bool dstIssuer = issuerAccID == dstAccID;
+    bool const srcHigh = srcAccID > issuerAccID;
+    bool const dstHigh = dstAccID > issuerAccID;
+    bool const srcIssuer = issuerAccID == srcAccID;
+    bool const dstIssuer = issuerAccID == dstAccID;
 
     // check for freezing, auth, no ripple and TL sanity
     {
-        TER result = trustTransferAllowed(
+        TER const result = trustTransferAllowed(
             view, {srcAccID, dstAccID}, {currency, issuerAccID}, j);
 
         JLOG(j.trace())
@@ -874,10 +874,6 @@ trustTransferLockedBalance(
                 : (*sleSrcLine)[sfLockedBalance];
 
             uint32_t priorLockCount = (*sleSrcLine)[sfLockCount];
-
-            AccountID srcIssuerAccID =
-                sleSrcLine->getFieldAmount(srcHigh ? sfLowLimit : sfHighLimit)
-                    .getIssuer();
 
             // check they have sufficient funds
             if (amount > priorLockedBalance)

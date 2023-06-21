@@ -260,8 +260,8 @@ accountHolds(
         if (view.rules().enabled(featurePaychanAndEscrowForTokens) &&
             sle->isFieldPresent(sfLockedBalance))
         {
-            STAmount lockedBalance = sle->getFieldAmount(sfLockedBalance);
-            STAmount spendableBalance =
+            STAmount const lockedBalance = sle->getFieldAmount(sfLockedBalance);
+            STAmount const spendableBalance =
                 amount - (account > issuer ? -lockedBalance : lockedBalance);
 
             // RH NOTE: this is defensively programmed, it should never fire
@@ -919,18 +919,18 @@ isTrustDefault(
 {
     assert(acc && line);
 
-    uint32_t tlFlags = line->getFieldU32(sfFlags);
+    uint32_t const tlFlags = line->getFieldU32(sfFlags);
 
-    AccountID highAccID = line->getFieldAmount(sfHighLimit).issue().account;
-    AccountID lowAccID = line->getFieldAmount(sfLowLimit).issue().account;
+    AccountID const highAccID = line->getFieldAmount(sfHighLimit).issue().account;
+    AccountID const lowAccID = line->getFieldAmount(sfLowLimit).issue().account;
 
-    AccountID accID = acc->getAccountID(sfAccount);
+    AccountID const accID = acc->getAccountID(sfAccount);
 
     assert(accID == highAccID || accID == lowAccID);
 
-    bool high = accID == highAccID;
+    bool const high = accID == highAccID;
 
-    uint32_t acFlags = line->getFieldU32(sfFlags);
+    uint32_t const acFlags = line->getFieldU32(sfFlags);
 
     const auto fNoRipple{high ? lsfHighNoRipple : lsfLowNoRipple};
     const auto fFreeze{high ? lsfHighFreeze : lsfLowFreeze};
@@ -950,9 +950,9 @@ isTrustDefault(
     if (line->getFieldAmount(high ? sfHighLimit : sfLowLimit) != beast::zero)
         return false;
 
-    uint32_t qualityIn =
+    uint32_t const qualityIn =
         line->getFieldU32(high ? sfHighQualityIn : sfLowQualityIn);
-    uint32_t qualityOut =
+    uint32_t const qualityOut =
         line->getFieldU32(high ? sfHighQualityOut : sfLowQualityOut);
 
     if (qualityIn && qualityIn != QUALITY_ONE)
