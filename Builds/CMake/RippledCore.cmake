@@ -449,6 +449,7 @@ target_sources (rippled PRIVATE
   src/ripple/app/tx/impl/SignerEntries.cpp
   src/ripple/app/tx/impl/Taker.cpp
   src/ripple/app/tx/impl/Transactor.cpp
+  src/ripple/app/tx/impl/URIToken.cpp
   src/ripple/app/tx/impl/apply.cpp
   src/ripple/app/tx/impl/applySteps.cpp
   src/ripple/app/tx/impl/details/NFTokenUtils.cpp
@@ -732,6 +733,7 @@ if (tests)
     src/test/app/Transaction_ordering_test.cpp
     src/test/app/TrustAndBalance_test.cpp
     src/test/app/TxQ_test.cpp
+    src/test/app/URIToken_test.cpp
     src/test/app/ValidatorKeys_test.cpp
     src/test/app/ValidatorList_test.cpp
     src/test/app/ValidatorSite_test.cpp

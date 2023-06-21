@@ -139,6 +139,13 @@ enum TxType : std::uint16_t
     /** This transaction accepts an existing offer to buy or sell an existing  NFT. */
     ttNFTOKEN_ACCEPT_OFFER = 29,
 
+    /** This transaction mints/burns/buys/sells a URI TOKEN */
+    ttURITOKEN_MINT = 45,
+    ttURITOKEN_BURN = 46,
+    ttURITOKEN_BUY = 47,
+    ttURITOKEN_CREATE_SELL_OFFER = 48,
+    ttURITOKEN_CANCEL_SELL_OFFER = 49,
+
     /** This system-generated transaction type is used to update the status of the various amendments.
 
         For details, see: https://xrpl.org/amendments.html

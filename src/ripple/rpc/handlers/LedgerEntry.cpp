@@ -259,6 +259,16 @@ doLedgerEntry(RPC::JsonContext& context)
             jvResult[jss::error] = "malformedRequest";
         }
     }
+    else if (context.params.isMember(jss::uri_token))
+    {
+        expectedType = ltURI_TOKEN;
+
+        if (!uNodeIndex.parseHex(context.params[jss::uri_token].asString()))
+        {
+            uNodeIndex = beast::zero;
+            jvResult[jss::error] = "malformedRequest";
+        }
+    }
     else if (context.params.isMember(jss::ripple_state))
     {
         expectedType = ltRIPPLE_STATE;

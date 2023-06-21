@@ -40,6 +40,7 @@
 #include <ripple/app/tx/impl/SetRegularKey.h>
 #include <ripple/app/tx/impl/SetSignerList.h>
 #include <ripple/app/tx/impl/SetTrust.h>
+#include <ripple/app/tx/impl/URIToken.h>
 
 namespace ripple {
 
@@ -147,6 +148,12 @@ invoke_preflight(PreflightContext const& ctx)
             return invoke_preflight_helper<NFTokenCancelOffer>(ctx);
         case ttNFTOKEN_ACCEPT_OFFER:
             return invoke_preflight_helper<NFTokenAcceptOffer>(ctx);
+        case ttURITOKEN_MINT:
+        case ttURITOKEN_BURN:
+        case ttURITOKEN_BUY:
+        case ttURITOKEN_CREATE_SELL_OFFER:
+        case ttURITOKEN_CANCEL_SELL_OFFER:
+            return invoke_preflight_helper<URIToken>(ctx);
         default:
             assert(false);
             return {temUNKNOWN, TxConsequences{temUNKNOWN}};
@@ -248,6 +255,12 @@ invoke_preclaim(PreclaimContext const& ctx)
             return invoke_preclaim<NFTokenCancelOffer>(ctx);
         case ttNFTOKEN_ACCEPT_OFFER:
             return invoke_preclaim<NFTokenAcceptOffer>(ctx);
+        case ttURITOKEN_MINT:
+        case ttURITOKEN_BURN:
+        case ttURITOKEN_BUY:
+        case ttURITOKEN_CREATE_SELL_OFFER:
+        case ttURITOKEN_CANCEL_SELL_OFFER:
+            return invoke_preclaim<URIToken>(ctx);
         default:
             assert(false);
             return temUNKNOWN;
@@ -311,6 +324,12 @@ invoke_calculateBaseFee(ReadView const& view, STTx const& tx)
             return NFTokenCancelOffer::calculateBaseFee(view, tx);
         case ttNFTOKEN_ACCEPT_OFFER:
             return NFTokenAcceptOffer::calculateBaseFee(view, tx);
+        case ttURITOKEN_MINT:
+        case ttURITOKEN_BURN:
+        case ttURITOKEN_BUY:
+        case ttURITOKEN_CREATE_SELL_OFFER:
+        case ttURITOKEN_CANCEL_SELL_OFFER:
+            return URIToken::calculateBaseFee(view, tx);
         default:
             assert(false);
             return XRPAmount{0};
@@ -461,6 +480,14 @@ invoke_apply(ApplyContext& ctx)
         }
         case ttNFTOKEN_ACCEPT_OFFER: {
             NFTokenAcceptOffer p(ctx);
+            return p();
+        }
+        case ttURITOKEN_MINT:
+        case ttURITOKEN_BURN:
+        case ttURITOKEN_BUY:
+        case ttURITOKEN_CREATE_SELL_OFFER:
+        case ttURITOKEN_CANCEL_SELL_OFFER: {
+            URIToken p(ctx);
             return p();
         }
         default:

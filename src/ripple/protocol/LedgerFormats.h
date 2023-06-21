@@ -161,6 +161,12 @@ enum LedgerEntryType : std::uint16_t
      */
     ltNFTOKEN_OFFER = 0x0037,
 
+    /** A unique ledger object which contains an up to 256 byte URI
+        
+        \sa keylet::uritoken
+    */
+    ltURI_TOKEN = 0x0055,
+
     //---------------------------------------------------------------------------
     /** A special type, matching any ledger entry type.
 

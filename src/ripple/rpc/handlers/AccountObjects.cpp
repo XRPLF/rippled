@@ -197,6 +197,7 @@ doAccountObjects(RPC::JsonContext& context)
             {jss::escrow, ltESCROW},
             {jss::nft_page, ltNFTOKEN_PAGE},
             {jss::payment_channel, ltPAYCHAN},
+            {jss::uri_token, ltURI_TOKEN},
             {jss::state, ltRIPPLE_STATE}};
 
         typeFilter.emplace();

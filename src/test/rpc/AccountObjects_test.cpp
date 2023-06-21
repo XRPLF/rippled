@@ -585,6 +585,7 @@ public:
         BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::signer_list), 0));
         BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::state), 0));
         BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::ticket), 0));
+        BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::uri_token), 0));
 
         // gw mints an NFT so we can find it.
         uint256 const nftID{token::getNextID(env, gw, 0u, tfTransferable)};
@@ -733,6 +734,28 @@ public:
             BEAST_EXPECT(ticket[sfTicketSequence.jsonName].asUInt() == 13);
         }
         {
+            // Create a uri token.
+            std::string const uri(maxTokenURILength, '?');
+            Json::Value jfURIToken;
+            jfURIToken[jss::TransactionType] = jss::URITokenMint;
+            jfURIToken[jss::Flags] = tfBurnable;
+            jfURIToken[jss::Account] = gw.human();
+            jfURIToken[sfURI.jsonName] = strHex(uri);
+            env(jfURIToken);
+            env.close();
+        }
+        {
+            // Find the uri token.
+            std::string const uri(maxTokenURILength, '?');
+            Json::Value const resp = acct_objs(gw, jss::uri_token);
+            BEAST_EXPECT(acct_objs_is_size(resp, 1));
+
+            auto const& uritoken = resp[jss::result][jss::account_objects][0u];
+            BEAST_EXPECT(uritoken[sfOwner.jsonName] == gw.human());
+            BEAST_EXPECT(uritoken[sfIssuer.jsonName] == gw.human());
+            BEAST_EXPECT(uritoken[sfURI.jsonName] == strHex(uri));
+        }
+        {
             // See how "deletion_blockers_only" handles gw's directory.
             Json::Value params;
             params[jss::account] = gw.human();
@@ -745,7 +768,8 @@ public:
                     jss::Check.c_str(),
                     jss::NFTokenPage.c_str(),
                     jss::RippleState.c_str(),
-                    jss::PayChannel.c_str()};
+                    jss::PayChannel.c_str(),
+                    jss::URIToken.c_str()};
                 std::sort(v.begin(), v.end());
                 return v;
             }();
