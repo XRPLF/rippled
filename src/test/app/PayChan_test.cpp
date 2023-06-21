@@ -5540,6 +5540,11 @@ struct PayChan_test : public beast::unit_test::suite
         testMetaAndOwnership(features);
         testAccountDelete(features);
         testUsingTickets(features);
+    }
+
+    void
+    testXLS34WithFeats(FeatureBitset features)
+    {
         testTokenSimple(features);
         testTokenCancelAfter(features);
         testTokenSettleDelay(features);
@@ -5577,8 +5582,11 @@ public:
     {
         using namespace test::jtx;
         FeatureBitset const all{supported_amendments()};
-        // testWithFeats(all - disallowIncoming);
+        testWithFeats(all - disallowIncoming);
+        testWithFeats(all - disallowIncoming - featurePaychanAndEscrowForTokens);
         testWithFeats(all);
+        testXLS34WithFeats(all - disallowIncoming);
+        testXLS34WithFeats(all);
     }
 };
 

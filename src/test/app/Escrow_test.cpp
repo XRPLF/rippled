@@ -4328,6 +4328,11 @@ struct Escrow_test : public beast::unit_test::suite
         testMetaAndOwnership(features);
         testConsequences(features);
         testEscrowWithTickets(features);
+    }
+
+    void
+    testXLS34WithFeats(FeatureBitset features)
+    {
         testTokenEnablement(features);
         testTokenTiming(features);
         testTokenTags(features);
@@ -4355,7 +4360,9 @@ public:
     {
         using namespace test::jtx;
         FeatureBitset const all{supported_amendments()};
+        testWithFeats(all - featurePaychanAndEscrowForTokens);
         testWithFeats(all);
+        testXLS34WithFeats(all);
     }
 };
 
