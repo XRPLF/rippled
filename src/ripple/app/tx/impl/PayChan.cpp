@@ -719,11 +719,11 @@ PayChanClaim::doApply()
         }
 
         if (reqBalance > chanFunds)
-            return tecINSUFFICIENT_FUNDS;
+            return tecUNFUNDED_PAYMENT;
 
         if (reqBalance <= chanBalance)
             // nothing requested
-            return tecINSUFFICIENT_FUNDS;
+            return tecUNFUNDED_PAYMENT;
 
         auto sled = ctx_.view().peek(keylet::account(dst));
         if (!sled)
