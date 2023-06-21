@@ -921,7 +921,8 @@ isTrustDefault(
 
     uint32_t const tlFlags = line->getFieldU32(sfFlags);
 
-    AccountID const highAccID = line->getFieldAmount(sfHighLimit).issue().account;
+    AccountID const highAccID =
+        line->getFieldAmount(sfHighLimit).issue().account;
     AccountID const lowAccID = line->getFieldAmount(sfLowLimit).issue().account;
 
     AccountID const accID = acc->getAccountID(sfAccount);

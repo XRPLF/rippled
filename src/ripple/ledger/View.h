@@ -519,7 +519,8 @@ trustAdjustLockedBalance(
 
     // check for freezes & auth
     {
-        TER const result = trustTransferAllowed(view, parties, deltaAmt.issue(), j);
+        TER const result =
+            trustTransferAllowed(view, parties, deltaAmt.issue(), j);
 
         JLOG(j.trace())
             << "trustAdjustLockedBalance: trustTransferAllowed result="
