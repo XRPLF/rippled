@@ -295,19 +295,23 @@ EscrowCreate::doApply()
 
     // Create escrow in ledger.  Note that we we use the value from the
     // sequence or ticket.  For more explanation see comments in SeqProxy.h.
-    auto xferRate = transferRate(view(), amount.getIssuer());
     Keylet const escrowKeylet =
         keylet::escrow(account, ctx_.tx.getSeqProxy().value());
     auto const slep = std::make_shared<SLE>(escrowKeylet);
     (*slep)[sfAmount] = ctx_.tx[sfAmount];
     (*slep)[sfAccount] = account;
-    (*slep)[sfTransferRate] = xferRate.value;
     (*slep)[~sfCondition] = ctx_.tx[~sfCondition];
     (*slep)[~sfSourceTag] = ctx_.tx[~sfSourceTag];
     (*slep)[sfDestination] = ctx_.tx[sfDestination];
     (*slep)[~sfCancelAfter] = ctx_.tx[~sfCancelAfter];
     (*slep)[~sfFinishAfter] = ctx_.tx[~sfFinishAfter];
     (*slep)[~sfDestinationTag] = ctx_.tx[~sfDestinationTag];
+
+    if (ctx_.view().rules().enabled(featurePaychanAndEscrowForTokens))
+    {
+        auto xferRate = transferRate(view(), amount.getIssuer());
+        (*slep)[~sfTransferRate] = xferRate.value;
+    }
 
     ctx_.view().insert(slep);
 
