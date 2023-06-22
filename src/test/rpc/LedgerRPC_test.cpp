@@ -1242,10 +1242,7 @@ class LedgerRPC_test : public beast::unit_test::suite
     {
         testcase("ledger_entry v2 Request Invalid Parameters");
         using namespace test::jtx;
-        Env env{*this, envconfig([](std::unique_ptr<Config> c) {
-                    c->loadFromString("\n[beta_rpc_api]\n1\n");
-                    return c;
-                })};
+        Env env{*this};
 
         std::string const ledgerHash{to_string(env.closed()->info().hash)};
 
