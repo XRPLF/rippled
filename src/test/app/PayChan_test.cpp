@@ -1167,13 +1167,7 @@ struct PayChan_test : public beast::unit_test::suite
         using namespace jtx;
         using namespace std::literals::chrono_literals;
 
-        Env env{
-            *this,
-            envconfig([](std::unique_ptr<Config> c) {
-                c->loadFromString("\n[beta_rpc_api]\n1\n");
-                return c;
-            }),
-            features};
+        Env env{*this, features};
         auto const alice = Account("alice");
         auto const bob = Account("bob");
         auto const charlie = Account("charlie", KeyType::ed25519);
