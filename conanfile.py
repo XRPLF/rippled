@@ -149,6 +149,8 @@ class Xrpl(ConanFile):
             'libxrpl_core.a',
             'libed25519.a',
             'libsecp256k1.a',
+            'libgrpc_pbufs.a',
+            'libpbufs.a',
         ]
         libxrpl.includedirs = ['include']
         libxrpl.requires = [

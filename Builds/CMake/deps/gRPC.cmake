@@ -60,3 +60,5 @@ target_compile_options(grpc_pbufs
       -Wno-deprecated-dynamic-exception-spec
     >)
 add_library(Ripple::grpc_pbufs ALIAS grpc_pbufs)
+install(DIRECTORY ${GRPC_GEN_DIR}/ DESTINATION include)
+install(TARGETS grpc_pbufs DESTINATION lib)

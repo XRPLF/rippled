@@ -20,3 +20,5 @@ target_compile_options(pbufs
     >
 )
 add_library(Ripple::pbufs ALIAS pbufs)
+install(DIRECTORY ${CMAKE_BINARY_DIR}/proto_gen/src/ DESTINATION include)
+install(TARGETS pbufs DESTINATION lib)
