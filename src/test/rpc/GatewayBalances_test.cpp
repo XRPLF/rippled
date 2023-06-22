@@ -153,7 +153,13 @@ public:
     {
         using namespace std::chrono_literals;
         using namespace jtx;
-        Env env{*this, features};
+        Env env{
+            *this,
+            envconfig([](std::unique_ptr<Config> c) {
+                c->loadFromString("\n[beta_rpc_api]\n1\n");
+                return c;
+            }),
+            features};
         env.close();
 
         // Gateway account and assets
