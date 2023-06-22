@@ -220,6 +220,10 @@ public:
             "\"api_version\": 2, \"account\": \"" + alice.human() + "\", " +
             "\"signer_lists\": true }";
 
+        auto const withSignersAsString = std::string("{ ") +
+            "\"api_version\": 2, \"account\": \"" + alice.human() + "\", " +
+            "\"signer_lists\": asdfgh }";
+
         // Alice has no SignerList yet.
         {
             // account_info without the "signer_lists" argument.
@@ -236,6 +240,13 @@ public:
             auto const& signerLists = data[jss::signer_lists];
             BEAST_EXPECT(signerLists.isArray());
             BEAST_EXPECT(signerLists.size() == 0);
+        }
+        {
+            // expects error if string used for signer_lists
+            auto const info =
+                env.rpc("json", "account_info", withSignersAsString);
+            BEAST_EXPECT(info[jss::status] == "error");
+            BEAST_EXPECT(info[jss::error] == "invalidParams");
         }
 
         // Give alice a SignerList.
