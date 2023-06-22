@@ -19,8 +19,10 @@
 
 #include <ripple/basics/contract.h>
 #include <ripple/json/json_reader.h>
+
 #include <algorithm>
 #include <cctype>
+#include <cstdint>
 #include <istream>
 #include <string>
 
