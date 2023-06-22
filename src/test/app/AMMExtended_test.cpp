@@ -1041,7 +1041,7 @@ private:
             env(trust(carol, USD(15'000)));
             env.close();
 
-            env(pay(gw, alice, USD(11'000)));
+            env(pay(gw, alice, USD(12'625)));
             env(pay(gw, carol, EUR(1'000)), sendmax(EUR(10'000)));
             env.close();
             // 1000 / 0.8
@@ -1085,7 +1085,7 @@ private:
             env(trust(carol, USD(15'000)));
             env.close();
 
-            env(pay(gw, alice, USD(11'000)));
+            env(pay(gw, alice, USD(12'625)));
             env(pay(gw, carol, EUR(1'000)), sendmax(EUR(10'000)));
             env.close();
             BEAST_EXPECT(expectLine(env, carol, EUR(1'000)));
@@ -1488,7 +1488,7 @@ private:
         env.fund(XRP(10'000), alice, bob, carol, gw);
         env(rate(gw, 1.1));
         env.trust(AUD(2'000), bob, carol);
-        env(pay(gw, carol, AUD(50)));
+        env(pay(gw, carol, AUD(55)));
         env.close();
         AMM ammCarol(env, carol, XRP(40), AUD(50));
         env(pay(alice, bob, AUD(10)), sendmax(XRP(100)), paths(XRP));
