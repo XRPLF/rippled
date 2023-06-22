@@ -3,7 +3,7 @@ from conan.tools.cmake import CMake, CMakeToolchain, cmake_layout
 import re
 
 class Xrpl(ConanFile):
-    name = 'xrpl'
+    name = 'clio-xrpl'
 
     license = 'ISC'
     author = 'John Freeman <jfreeman@ripple.com>'
@@ -47,7 +47,7 @@ class Xrpl(ConanFile):
         'rocksdb': True,
         'shared': False,
         'static': True,
-        'tests': True,
+        'tests': False,
         'unity': False,
 
         'cassandra-cpp-driver:shared': False,
