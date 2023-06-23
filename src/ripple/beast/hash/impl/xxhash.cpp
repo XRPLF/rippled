@@ -33,6 +33,8 @@ You can contact the author at :
 
 #include <ripple/beast/hash/impl/xxhash.h>
 
+#include <cstring>
+
 //**************************************
 // Tuning parameters
 //**************************************
@@ -87,7 +89,7 @@ You can contact the author at :
 //**************************************
 // Includes & Memory related functions
 //**************************************
-//#include "xxhash.h"
+// #include "xxhash.h"
 // Modify the local functions below should you wish to use some other memory
 // routines for malloc(), free()
 #include <stdlib.h>
@@ -260,7 +262,13 @@ FORCE_INLINE U64
 XXH_readLE64_align(const void* ptr, XXH_endianess endian, XXH_alignment align)
 {
     if (align == XXH_unaligned)
-        return endian == XXH_littleEndian ? A64(ptr) : XXH_swap64(A64(ptr));
+    {
+        // Use memcpy to avoid unaligned UB
+        U64 tmp_aligned;
+        std::memcpy(&tmp_aligned, ptr, sizeof(U64));
+        return endian == XXH_littleEndian ? tmp_aligned
+                                          : XXH_swap64(tmp_aligned);
+    }
     else
         return endian == XXH_littleEndian ? *(U64*)ptr : XXH_swap64(*(U64*)ptr);
 }

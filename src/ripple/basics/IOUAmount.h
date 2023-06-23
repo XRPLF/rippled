@@ -186,7 +186,14 @@ mulRatio(
     std::uint32_t den,
     bool roundUp);
 
-extern LocalValue<bool> stNumberSwitchover;
+// Since many uses of the number class do not have access to a ledger,
+// getSTNumberSwitchover needs to be globally accessible.
+
+bool
+getSTNumberSwitchover();
+
+void
+setSTNumberSwitchover(bool v);
 
 /** RAII class to set and restore the Number switchover.
  */
@@ -198,16 +205,16 @@ class NumberSO
 public:
     ~NumberSO()
     {
-        *stNumberSwitchover = saved_;
+        setSTNumberSwitchover(saved_);
     }
 
     NumberSO(NumberSO const&) = delete;
     NumberSO&
     operator=(NumberSO const&) = delete;
 
-    explicit NumberSO(bool v) : saved_(*stNumberSwitchover)
+    explicit NumberSO(bool v) : saved_(getSTNumberSwitchover())
     {
-        *stNumberSwitchover = v;
+        setSTNumberSwitchover(v);
     }
 };
 

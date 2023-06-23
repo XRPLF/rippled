@@ -68,10 +68,8 @@ namespace detail {
 [[nodiscard]] std::uint64_t
 getMemorySize()
 {
-    struct sysinfo si;
-
-    if (sysinfo(&si) == 0)
-        return static_cast<std::uint64_t>(si.totalram);
+    if (struct sysinfo si; sysinfo(&si) == 0)
+        return static_cast<std::uint64_t>(si.totalram) * si.mem_unit;
 
     return 0;
 }
@@ -128,7 +126,7 @@ sizedItems
     {SizedItem::lgrDBCache,         {{      4,       8,      16,      32,     128 }}},
     {SizedItem::openFinalLimit,     {{      8,      16,      32,      64,     128 }}},
     {SizedItem::burstSize,          {{      4,       8,      16,      32,      48 }}},
-    {SizedItem::ramSizeGB,          {{      8,      12,      16,      24,      32 }}},
+    {SizedItem::ramSizeGB,          {{      6,       8,      12,      24,       0 }}},
     {SizedItem::accountIdCacheSize, {{  20047,   50053,   77081,  150061,  300007 }}}
 }};
 
@@ -265,7 +263,8 @@ getEnvVar(char const* name)
 }
 
 Config::Config()
-    : j_(beast::Journal::getNullSink()), ramSize_(detail::getMemorySize())
+    : j_(beast::Journal::getNullSink())
+    , ramSize_(detail::getMemorySize() / (1024 * 1024 * 1024))
 {
 }
 
@@ -290,22 +289,18 @@ Config::setupControl(bool bQuiet, bool bSilent, bool bStandalone)
             threshold.second.begin(),
             threshold.second.end(),
             [this](std::size_t limit) {
-                return (ramSize_ / (1024 * 1024 * 1024)) < limit;
+                return (limit == 0) || (ramSize_ < limit);
             });
+
+        assert(ns != threshold.second.end());
 
         if (ns != threshold.second.end())
             NODE_SIZE = std::distance(threshold.second.begin(), ns);
 
         // Adjust the size based on the number of hardware threads of
         // execution available to us:
-        if (auto const hc = std::thread::hardware_concurrency())
-        {
-            if (hc == 1)
-                NODE_SIZE = 0;
-
-            if (hc < 4)
-                NODE_SIZE = std::min<std::size_t>(NODE_SIZE, 1);
-        }
+        if (auto const hc = std::thread::hardware_concurrency(); hc != 0)
+            NODE_SIZE = std::min<std::size_t>(hc / 2, NODE_SIZE);
     }
 
     assert(NODE_SIZE <= 4);
