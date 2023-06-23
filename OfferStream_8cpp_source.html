@@ -253,208 +253,224 @@ $(function() {
 <div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;    }</div>
 <div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160; </div>
 <div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;    TTakerGets <span class="keyword">const</span> ownerFunds = toAmount&lt;TTakerGets&gt;(*ownerFunds_);</div>
-<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160; </div>
-<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> effectiveAmounts = [&amp;] {</div>
-<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;        <span class="keywordflow">if</span> (offer_.owner() != offer_.issueOut().account &amp;&amp;</div>
-<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;            ownerFunds &lt; ofrAmts.out)</div>
-<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;        {</div>
-<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;            <span class="comment">// adjust the amounts by owner funds</span></div>
-<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;            <span class="keywordflow">return</span> offer_.quality().ceil_out(ofrAmts, ownerFunds);</div>
-<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;        }</div>
-<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;        <span class="keywordflow">return</span> ofrAmts;</div>
-<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;    }();</div>
-<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160; </div>
-<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;    <span class="keywordflow">if</span> (effectiveAmounts.in &gt; TTakerPays::minPositiveAmount())</div>
-<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160; </div>
-<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;    Quality <span class="keyword">const</span> effectiveQuality{effectiveAmounts};</div>
-<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;    <span class="keywordflow">return</span> effectiveQuality &lt; offer_.quality();</div>
-<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;}</div>
-<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160; </div>
-<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> TIn, <span class="keyword">class</span> TOut&gt;</div>
-<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;<span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00205"></a><span class="lineno"><a class="line" href="classripple_1_1TOfferStreamBase.html#a4aeb5e78bbc94d5d899b40fd0bfa7620">  205</a></span>&#160;<a class="code" href="classripple_1_1TOfferStreamBase.html">TOfferStreamBase&lt;TIn, TOut&gt;::step</a>()</div>
-<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;{</div>
-<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;    <span class="comment">// Modifying the order or logic of these</span></div>
-<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;    <span class="comment">// operations causes a protocol breaking change.</span></div>
-<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160; </div>
-<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;    <span class="keywordflow">if</span> (!validBook_)</div>
-<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160; </div>
-<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;    <span class="keywordflow">for</span> (;;)</div>
-<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;    {</div>
-<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;        ownerFunds_ = std::nullopt;</div>
-<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;        <span class="comment">// BookTip::step deletes the current offer from the view before</span></div>
-<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;        <span class="comment">// advancing to the next (unless the ledger entry is missing).</span></div>
-<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;        <span class="keywordflow">if</span> (!tip_.step(j_))</div>
-<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160; </div>
-<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;SLE&gt;</a> entry = tip_.entry();</div>
-<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160; </div>
-<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;        <span class="comment">// If we exceed the maximum number of allowed steps, we&#39;re done.</span></div>
-<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;        <span class="keywordflow">if</span> (!counter_.step())</div>
-<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160; </div>
-<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;        <span class="comment">// Remove if missing</span></div>
-<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;        <span class="keywordflow">if</span> (!entry)</div>
-<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;        {</div>
-<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;            <a class="code" href="namespaceripple.html#aa761b49f905eb9fd8c8ae754a0eb7504">erase</a>(view_);</div>
-<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;            <a class="code" href="namespaceripple.html#aa761b49f905eb9fd8c8ae754a0eb7504">erase</a>(cancelView_);</div>
-<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;            <span class="keywordflow">continue</span>;</div>
-<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;        }</div>
-<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160; </div>
-<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;        <span class="comment">// Remove if expired</span></div>
-<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;        <span class="keyword">using</span> d = <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">NetClock::duration</a>;</div>
-<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;        <span class="keyword">using</span> tp = <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/time_point.html">NetClock::time_point</a>;</div>
-<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;        <span class="keywordflow">if</span> (entry-&gt;isFieldPresent(<a class="code" href="namespaceripple.html#ae3182ff3db5f7f67e4fe8bcd69316727">sfExpiration</a>) &amp;&amp;</div>
-<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;            tp{d{(*entry)[sfExpiration]}} &lt;= expire_)</div>
-<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;        {</div>
-<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;            JLOG(j_.<a class="code" href="classbeast_1_1Journal.html#abbe082bd27ca0f1d1365af2824e4f85b">trace</a>()) &lt;&lt; <span class="stringliteral">&quot;Removing expired offer &quot;</span> &lt;&lt; entry-&gt;key();</div>
-<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;            permRmOffer(entry-&gt;key());</div>
-<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;            <span class="keywordflow">continue</span>;</div>
-<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;        }</div>
-<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160; </div>
-<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;        offer_ = <a class="code" href="classripple_1_1TOffer.html">TOffer&lt;TIn, TOut&gt;</a>(entry, tip_.quality());</div>
-<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160; </div>
-<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> amount(offer_.amount());</div>
-<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160; </div>
-<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;        <span class="comment">// Remove if either amount is zero</span></div>
-<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;        <span class="keywordflow">if</span> (amount.empty())</div>
-<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;        {</div>
-<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;            JLOG(j_.<a class="code" href="classbeast_1_1Journal.html#ad8fefe3e8ad583e1ed1bf02094ac3d8f">warn</a>()) &lt;&lt; <span class="stringliteral">&quot;Removing bad offer &quot;</span> &lt;&lt; entry-&gt;key();</div>
-<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;            permRmOffer(entry-&gt;key());</div>
-<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;            offer_ = <a class="code" href="classripple_1_1TOffer.html">TOffer&lt;TIn, TOut&gt;</a>{};</div>
-<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;            <span class="keywordflow">continue</span>;</div>
-<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;        }</div>
-<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160; </div>
-<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;        <span class="comment">// Calculate owner funds</span></div>
-<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;        ownerFunds_ = <a class="code" href="namespaceripple.html#a5441d13c9f36c9971aa1e05dc6ff44b8">accountFundsHelper</a>(</div>
-<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;            view_,</div>
-<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;            offer_.owner(),</div>
-<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;            amount.out,</div>
-<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;            offer_.issueOut(),</div>
-<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;            <a class="code" href="namespaceripple.html#a17a9a9b903b66e49f5413d82ce79f085a852cabbbe21a9b4d63aff777eceab2fd">fhZERO_IF_FROZEN</a>,</div>
-<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;            j_);</div>
-<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160; </div>
-<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;        <span class="comment">// Check for unfunded offer</span></div>
-<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;        <span class="keywordflow">if</span> (*ownerFunds_ &lt;= beast::zero)</div>
-<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;        {</div>
-<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;            <span class="comment">// If the owner&#39;s balance in the pristine view is the same,</span></div>
-<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;            <span class="comment">// we haven&#39;t modified the balance and therefore the</span></div>
-<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;            <span class="comment">// offer is &quot;found unfunded&quot; versus &quot;became unfunded&quot;</span></div>
-<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> original_funds = <a class="code" href="namespaceripple.html#a5441d13c9f36c9971aa1e05dc6ff44b8">accountFundsHelper</a>(</div>
-<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;                cancelView_,</div>
-<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;                offer_.owner(),</div>
-<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;                amount.out,</div>
-<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;                offer_.issueOut(),</div>
-<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;                <a class="code" href="namespaceripple.html#a17a9a9b903b66e49f5413d82ce79f085a852cabbbe21a9b4d63aff777eceab2fd">fhZERO_IF_FROZEN</a>,</div>
-<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;                j_);</div>
-<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160; </div>
-<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;            <span class="keywordflow">if</span> (original_funds == *ownerFunds_)</div>
-<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;            {</div>
-<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;                permRmOffer(entry-&gt;key());</div>
-<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;                JLOG(j_.<a class="code" href="classbeast_1_1Journal.html#abbe082bd27ca0f1d1365af2824e4f85b">trace</a>()) &lt;&lt; <span class="stringliteral">&quot;Removing unfunded offer &quot;</span> &lt;&lt; entry-&gt;key();</div>
-<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;            }</div>
-<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;            <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;            {</div>
-<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;                JLOG(j_.<a class="code" href="classbeast_1_1Journal.html#abbe082bd27ca0f1d1365af2824e4f85b">trace</a>())</div>
-<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;                    &lt;&lt; <span class="stringliteral">&quot;Removing became unfunded offer &quot;</span> &lt;&lt; entry-&gt;key();</div>
-<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;            }</div>
-<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;            offer_ = <a class="code" href="classripple_1_1TOffer.html">TOffer&lt;TIn, TOut&gt;</a>{};</div>
-<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;            <span class="comment">// See comment at top of loop for how the offer is removed</span></div>
-<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;            <span class="keywordflow">continue</span>;</div>
-<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;        }</div>
-<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160; </div>
-<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;        <span class="keywordtype">bool</span> <span class="keyword">const</span> rmSmallIncreasedQOffer = [&amp;] {</div>
-<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;            <span class="keywordtype">bool</span> <span class="keyword">const</span> inIsXRP = <a class="code" href="namespaceripple.html#a20d30277b9c78756b3d14493055a307c">isXRP</a>(offer_.issueIn());</div>
-<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;            <span class="keywordtype">bool</span> <span class="keyword">const</span> outIsXRP = <a class="code" href="namespaceripple.html#a20d30277b9c78756b3d14493055a307c">isXRP</a>(offer_.issueOut());</div>
-<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;            <span class="keywordflow">if</span> (inIsXRP &amp;&amp; !outIsXRP)</div>
-<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160;            {</div>
-<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;                <span class="comment">// Without the `if constexpr`, the</span></div>
-<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;                <span class="comment">// `shouldRmSmallIncreasedQOffer` template will be instantiated</span></div>
-<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;                <span class="comment">// even if it is never used. This can cause compiler errors in</span></div>
-<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;                <span class="comment">// some cases, hence the `if constexpr` guard.</span></div>
-<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;                <span class="comment">// Note that TIn can be XRPAmount or STAmount, and TOut can be</span></div>
-<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;                <span class="comment">// IOUAmount or STAmount.</span></div>
-<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;                <span class="keywordflow">if</span> constexpr (!(std::is_same_v&lt;TIn, IOUAmount&gt; ||</div>
-<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;                                std::is_same_v&lt;TOut, XRPAmount&gt;))</div>
-<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;                    <span class="keywordflow">return</span> shouldRmSmallIncreasedQOffer&lt;XRPAmount, IOUAmount&gt;();</div>
-<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;            }</div>
-<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;            <span class="keywordflow">if</span> (!inIsXRP &amp;&amp; outIsXRP)</div>
-<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;            {</div>
-<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;                <span class="comment">// See comment above for `if constexpr` rationale</span></div>
-<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;                <span class="keywordflow">if</span> constexpr (!(std::is_same_v&lt;TIn, XRPAmount&gt; ||</div>
-<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;                                std::is_same_v&lt;TOut, IOUAmount&gt;))</div>
-<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;                    <span class="keywordflow">return</span> shouldRmSmallIncreasedQOffer&lt;IOUAmount, XRPAmount&gt;();</div>
-<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;            }</div>
-<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;            <span class="keywordflow">if</span> (!inIsXRP &amp;&amp; !outIsXRP)</div>
-<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;            {</div>
-<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;                <span class="comment">// See comment above for `if constexpr` rationale</span></div>
-<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;                <span class="keywordflow">if</span> constexpr (!(std::is_same_v&lt;TIn, XRPAmount&gt; ||</div>
-<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;                                std::is_same_v&lt;TOut, XRPAmount&gt;))</div>
-<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;                    <span class="keywordflow">return</span> shouldRmSmallIncreasedQOffer&lt;IOUAmount, IOUAmount&gt;();</div>
-<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;            }</div>
-<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;            assert(0);  <span class="comment">// xrp/xrp offer!?! should never happen</span></div>
-<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;        }();</div>
-<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160; </div>
-<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;        <span class="keywordflow">if</span> (rmSmallIncreasedQOffer)</div>
-<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;        {</div>
-<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> original_funds = <a class="code" href="namespaceripple.html#a5441d13c9f36c9971aa1e05dc6ff44b8">accountFundsHelper</a>(</div>
-<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;                cancelView_,</div>
-<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;                offer_.owner(),</div>
-<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;                amount.out,</div>
-<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;                offer_.issueOut(),</div>
-<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;                <a class="code" href="namespaceripple.html#a17a9a9b903b66e49f5413d82ce79f085a852cabbbe21a9b4d63aff777eceab2fd">fhZERO_IF_FROZEN</a>,</div>
-<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;                j_);</div>
-<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160; </div>
-<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;            <span class="keywordflow">if</span> (original_funds == *ownerFunds_)</div>
-<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;            {</div>
-<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;                permRmOffer(entry-&gt;key());</div>
-<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;                JLOG(j_.<a class="code" href="classbeast_1_1Journal.html#abbe082bd27ca0f1d1365af2824e4f85b">trace</a>())</div>
-<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;                    &lt;&lt; <span class="stringliteral">&quot;Removing tiny offer due to reduced quality &quot;</span></div>
-<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;                    &lt;&lt; entry-&gt;key();</div>
-<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;            }</div>
-<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;            <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;            {</div>
-<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;                JLOG(j_.<a class="code" href="classbeast_1_1Journal.html#abbe082bd27ca0f1d1365af2824e4f85b">trace</a>()) &lt;&lt; <span class="stringliteral">&quot;Removing tiny offer that became tiny due &quot;</span></div>
-<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;                                    <span class="stringliteral">&quot;to reduced quality &quot;</span></div>
-<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;                                 &lt;&lt; entry-&gt;key();</div>
-<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;            }</div>
-<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;            offer_ = <a class="code" href="classripple_1_1TOffer.html">TOffer&lt;TIn, TOut&gt;</a>{};</div>
-<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;            <span class="comment">// See comment at top of loop for how the offer is removed</span></div>
-<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;            <span class="keywordflow">continue</span>;</div>
-<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;        }</div>
-<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160; </div>
-<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;        <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;    }</div>
-<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160; </div>
-<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;}</div>
-<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160; </div>
-<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l00365"></a><span class="lineno"><a class="line" href="classripple_1_1OfferStream.html#ac1d8ec4a933ecd3986985d3231e278c2">  365</a></span>&#160;OfferStream::permRmOffer(<a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; offerIndex)</div>
-<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;{</div>
-<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;    <a class="code" href="namespaceripple.html#a66af773abebf361a8c930c1dc457a740">offerDelete</a>(cancelView_, cancelView_.peek(keylet::offer(offerIndex)), j_);</div>
-<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;}</div>
-<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160; </div>
-<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> TIn, <span class="keyword">class</span> TOut&gt;</div>
-<div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l00372"></a><span class="lineno"><a class="line" href="classripple_1_1FlowOfferStream.html#a9940206ba76f1698cbbf2db11afa12d5">  372</a></span>&#160;<a class="code" href="classripple_1_1FlowOfferStream.html">FlowOfferStream&lt;TIn, TOut&gt;::permRmOffer</a>(<a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; offerIndex)</div>
-<div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160;{</div>
-<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;    permToRemove_.insert(offerIndex);</div>
-<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;}</div>
+<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;    <span class="keywordtype">bool</span> <span class="keyword">const</span> fixReduced = view_.rules().enabled(<a class="code" href="namespaceripple.html#a18847fa4f816853e34b0458e46587530">fixReducedOffersV1</a>);</div>
+<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160; </div>
+<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> effectiveAmounts = [&amp;] {</div>
+<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;        <span class="keywordflow">if</span> (offer_.owner() != offer_.issueOut().account &amp;&amp;</div>
+<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;            ownerFunds &lt; ofrAmts.out)</div>
+<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;        {</div>
+<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;            <span class="comment">// adjust the amounts by owner funds.</span></div>
+<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;            <span class="comment">//</span></div>
+<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;            <span class="comment">// It turns out we can prevent order book blocking by rounding down</span></div>
+<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;            <span class="comment">// the ceil_out() result.  This adjustment changes transaction</span></div>
+<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;            <span class="comment">// results, so it must be made under an amendment.</span></div>
+<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;            <span class="keywordflow">if</span> (fixReduced)</div>
+<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;                <span class="keywordflow">return</span> offer_.quality().ceil_out_strict(</div>
+<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;                    ofrAmts, ownerFunds, <span class="comment">/* roundUp */</span> <span class="keyword">false</span>);</div>
+<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160; </div>
+<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;            <span class="keywordflow">return</span> offer_.quality().ceil_out(ofrAmts, ownerFunds);</div>
+<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;        }</div>
+<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;        <span class="keywordflow">return</span> ofrAmts;</div>
+<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;    }();</div>
+<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160; </div>
+<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;    <span class="comment">// If either the effective in or out are zero then remove the offer.</span></div>
+<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;    <span class="comment">// This can happen with fixReducedOffersV1 since it rounds down.</span></div>
+<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;    <span class="keywordflow">if</span> (fixReduced &amp;&amp;</div>
+<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;        (effectiveAmounts.in.signum() &lt;= 0 ||</div>
+<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;         effectiveAmounts.out.signum() &lt;= 0))</div>
+<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160; </div>
+<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;    <span class="keywordflow">if</span> (effectiveAmounts.in &gt; TTakerPays::minPositiveAmount())</div>
+<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160; </div>
+<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;    Quality <span class="keyword">const</span> effectiveQuality{effectiveAmounts};</div>
+<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;    <span class="keywordflow">return</span> effectiveQuality &lt; offer_.quality();</div>
+<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;}</div>
+<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160; </div>
+<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> TIn, <span class="keyword">class</span> TOut&gt;</div>
+<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;<span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00221"></a><span class="lineno"><a class="line" href="classripple_1_1TOfferStreamBase.html#a4aeb5e78bbc94d5d899b40fd0bfa7620">  221</a></span>&#160;<a class="code" href="classripple_1_1TOfferStreamBase.html">TOfferStreamBase&lt;TIn, TOut&gt;::step</a>()</div>
+<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;{</div>
+<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;    <span class="comment">// Modifying the order or logic of these</span></div>
+<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;    <span class="comment">// operations causes a protocol breaking change.</span></div>
+<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160; </div>
+<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;    <span class="keywordflow">if</span> (!validBook_)</div>
+<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160; </div>
+<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;    <span class="keywordflow">for</span> (;;)</div>
+<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;    {</div>
+<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;        ownerFunds_ = std::nullopt;</div>
+<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;        <span class="comment">// BookTip::step deletes the current offer from the view before</span></div>
+<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;        <span class="comment">// advancing to the next (unless the ledger entry is missing).</span></div>
+<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;        <span class="keywordflow">if</span> (!tip_.step(j_))</div>
+<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160; </div>
+<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;SLE&gt;</a> entry = tip_.entry();</div>
+<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160; </div>
+<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;        <span class="comment">// If we exceed the maximum number of allowed steps, we&#39;re done.</span></div>
+<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;        <span class="keywordflow">if</span> (!counter_.step())</div>
+<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160; </div>
+<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;        <span class="comment">// Remove if missing</span></div>
+<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;        <span class="keywordflow">if</span> (!entry)</div>
+<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;        {</div>
+<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;            <a class="code" href="namespaceripple.html#aa761b49f905eb9fd8c8ae754a0eb7504">erase</a>(view_);</div>
+<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;            <a class="code" href="namespaceripple.html#aa761b49f905eb9fd8c8ae754a0eb7504">erase</a>(cancelView_);</div>
+<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;            <span class="keywordflow">continue</span>;</div>
+<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;        }</div>
+<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160; </div>
+<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;        <span class="comment">// Remove if expired</span></div>
+<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;        <span class="keyword">using</span> d = <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">NetClock::duration</a>;</div>
+<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;        <span class="keyword">using</span> tp = <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/time_point.html">NetClock::time_point</a>;</div>
+<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;        <span class="keywordflow">if</span> (entry-&gt;isFieldPresent(<a class="code" href="namespaceripple.html#ae3182ff3db5f7f67e4fe8bcd69316727">sfExpiration</a>) &amp;&amp;</div>
+<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;            tp{d{(*entry)[sfExpiration]}} &lt;= expire_)</div>
+<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;        {</div>
+<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;            JLOG(j_.<a class="code" href="classbeast_1_1Journal.html#abbe082bd27ca0f1d1365af2824e4f85b">trace</a>()) &lt;&lt; <span class="stringliteral">&quot;Removing expired offer &quot;</span> &lt;&lt; entry-&gt;key();</div>
+<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;            permRmOffer(entry-&gt;key());</div>
+<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;            <span class="keywordflow">continue</span>;</div>
+<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;        }</div>
+<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160; </div>
+<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;        offer_ = <a class="code" href="classripple_1_1TOffer.html">TOffer&lt;TIn, TOut&gt;</a>(entry, tip_.quality());</div>
+<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160; </div>
+<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> amount(offer_.amount());</div>
+<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160; </div>
+<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;        <span class="comment">// Remove if either amount is zero</span></div>
+<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;        <span class="keywordflow">if</span> (amount.empty())</div>
+<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;        {</div>
+<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;            JLOG(j_.<a class="code" href="classbeast_1_1Journal.html#ad8fefe3e8ad583e1ed1bf02094ac3d8f">warn</a>()) &lt;&lt; <span class="stringliteral">&quot;Removing bad offer &quot;</span> &lt;&lt; entry-&gt;key();</div>
+<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;            permRmOffer(entry-&gt;key());</div>
+<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;            offer_ = <a class="code" href="classripple_1_1TOffer.html">TOffer&lt;TIn, TOut&gt;</a>{};</div>
+<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;            <span class="keywordflow">continue</span>;</div>
+<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;        }</div>
+<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160; </div>
+<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;        <span class="comment">// Calculate owner funds</span></div>
+<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;        ownerFunds_ = <a class="code" href="namespaceripple.html#a5441d13c9f36c9971aa1e05dc6ff44b8">accountFundsHelper</a>(</div>
+<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;            view_,</div>
+<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;            offer_.owner(),</div>
+<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;            amount.out,</div>
+<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;            offer_.issueOut(),</div>
+<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;            <a class="code" href="namespaceripple.html#a17a9a9b903b66e49f5413d82ce79f085a852cabbbe21a9b4d63aff777eceab2fd">fhZERO_IF_FROZEN</a>,</div>
+<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;            j_);</div>
+<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160; </div>
+<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;        <span class="comment">// Check for unfunded offer</span></div>
+<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;        <span class="keywordflow">if</span> (*ownerFunds_ &lt;= beast::zero)</div>
+<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;        {</div>
+<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;            <span class="comment">// If the owner&#39;s balance in the pristine view is the same,</span></div>
+<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;            <span class="comment">// we haven&#39;t modified the balance and therefore the</span></div>
+<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;            <span class="comment">// offer is &quot;found unfunded&quot; versus &quot;became unfunded&quot;</span></div>
+<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> original_funds = <a class="code" href="namespaceripple.html#a5441d13c9f36c9971aa1e05dc6ff44b8">accountFundsHelper</a>(</div>
+<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;                cancelView_,</div>
+<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;                offer_.owner(),</div>
+<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;                amount.out,</div>
+<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;                offer_.issueOut(),</div>
+<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;                <a class="code" href="namespaceripple.html#a17a9a9b903b66e49f5413d82ce79f085a852cabbbe21a9b4d63aff777eceab2fd">fhZERO_IF_FROZEN</a>,</div>
+<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;                j_);</div>
+<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160; </div>
+<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;            <span class="keywordflow">if</span> (original_funds == *ownerFunds_)</div>
+<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;            {</div>
+<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;                permRmOffer(entry-&gt;key());</div>
+<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160;                JLOG(j_.<a class="code" href="classbeast_1_1Journal.html#abbe082bd27ca0f1d1365af2824e4f85b">trace</a>()) &lt;&lt; <span class="stringliteral">&quot;Removing unfunded offer &quot;</span> &lt;&lt; entry-&gt;key();</div>
+<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;            }</div>
+<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;            <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;            {</div>
+<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;                JLOG(j_.<a class="code" href="classbeast_1_1Journal.html#abbe082bd27ca0f1d1365af2824e4f85b">trace</a>())</div>
+<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;                    &lt;&lt; <span class="stringliteral">&quot;Removing became unfunded offer &quot;</span> &lt;&lt; entry-&gt;key();</div>
+<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;            }</div>
+<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;            offer_ = <a class="code" href="classripple_1_1TOffer.html">TOffer&lt;TIn, TOut&gt;</a>{};</div>
+<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;            <span class="comment">// See comment at top of loop for how the offer is removed</span></div>
+<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;            <span class="keywordflow">continue</span>;</div>
+<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;        }</div>
+<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160; </div>
+<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;        <span class="keywordtype">bool</span> <span class="keyword">const</span> rmSmallIncreasedQOffer = [&amp;] {</div>
+<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;            <span class="keywordtype">bool</span> <span class="keyword">const</span> inIsXRP = <a class="code" href="namespaceripple.html#a20d30277b9c78756b3d14493055a307c">isXRP</a>(offer_.issueIn());</div>
+<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;            <span class="keywordtype">bool</span> <span class="keyword">const</span> outIsXRP = <a class="code" href="namespaceripple.html#a20d30277b9c78756b3d14493055a307c">isXRP</a>(offer_.issueOut());</div>
+<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;            <span class="keywordflow">if</span> (inIsXRP &amp;&amp; !outIsXRP)</div>
+<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;            {</div>
+<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;                <span class="comment">// Without the `if constexpr`, the</span></div>
+<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;                <span class="comment">// `shouldRmSmallIncreasedQOffer` template will be instantiated</span></div>
+<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;                <span class="comment">// even if it is never used. This can cause compiler errors in</span></div>
+<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;                <span class="comment">// some cases, hence the `if constexpr` guard.</span></div>
+<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;                <span class="comment">// Note that TIn can be XRPAmount or STAmount, and TOut can be</span></div>
+<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;                <span class="comment">// IOUAmount or STAmount.</span></div>
+<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;                <span class="keywordflow">if</span> constexpr (!(std::is_same_v&lt;TIn, IOUAmount&gt; ||</div>
+<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;                                std::is_same_v&lt;TOut, XRPAmount&gt;))</div>
+<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;                    <span class="keywordflow">return</span> shouldRmSmallIncreasedQOffer&lt;XRPAmount, IOUAmount&gt;();</div>
+<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;            }</div>
+<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;            <span class="keywordflow">if</span> (!inIsXRP &amp;&amp; outIsXRP)</div>
+<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;            {</div>
+<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;                <span class="comment">// See comment above for `if constexpr` rationale</span></div>
+<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;                <span class="keywordflow">if</span> constexpr (!(std::is_same_v&lt;TIn, XRPAmount&gt; ||</div>
+<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;                                std::is_same_v&lt;TOut, IOUAmount&gt;))</div>
+<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;                    <span class="keywordflow">return</span> shouldRmSmallIncreasedQOffer&lt;IOUAmount, XRPAmount&gt;();</div>
+<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;            }</div>
+<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;            <span class="keywordflow">if</span> (!inIsXRP &amp;&amp; !outIsXRP)</div>
+<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;            {</div>
+<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;                <span class="comment">// See comment above for `if constexpr` rationale</span></div>
+<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;                <span class="keywordflow">if</span> constexpr (!(std::is_same_v&lt;TIn, XRPAmount&gt; ||</div>
+<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;                                std::is_same_v&lt;TOut, XRPAmount&gt;))</div>
+<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;                    <span class="keywordflow">return</span> shouldRmSmallIncreasedQOffer&lt;IOUAmount, IOUAmount&gt;();</div>
+<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;            }</div>
+<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;            assert(0);  <span class="comment">// xrp/xrp offer!?! should never happen</span></div>
+<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;        }();</div>
+<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160; </div>
+<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;        <span class="keywordflow">if</span> (rmSmallIncreasedQOffer)</div>
+<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;        {</div>
+<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> original_funds = <a class="code" href="namespaceripple.html#a5441d13c9f36c9971aa1e05dc6ff44b8">accountFundsHelper</a>(</div>
+<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;                cancelView_,</div>
+<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;                offer_.owner(),</div>
+<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;                amount.out,</div>
+<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;                offer_.issueOut(),</div>
+<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;                <a class="code" href="namespaceripple.html#a17a9a9b903b66e49f5413d82ce79f085a852cabbbe21a9b4d63aff777eceab2fd">fhZERO_IF_FROZEN</a>,</div>
+<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;                j_);</div>
+<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160; </div>
+<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;            <span class="keywordflow">if</span> (original_funds == *ownerFunds_)</div>
+<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;            {</div>
+<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;                permRmOffer(entry-&gt;key());</div>
+<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;                JLOG(j_.<a class="code" href="classbeast_1_1Journal.html#abbe082bd27ca0f1d1365af2824e4f85b">trace</a>())</div>
+<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;                    &lt;&lt; <span class="stringliteral">&quot;Removing tiny offer due to reduced quality &quot;</span></div>
+<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;                    &lt;&lt; entry-&gt;key();</div>
+<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;            }</div>
+<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;            <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;            {</div>
+<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;                JLOG(j_.<a class="code" href="classbeast_1_1Journal.html#abbe082bd27ca0f1d1365af2824e4f85b">trace</a>()) &lt;&lt; <span class="stringliteral">&quot;Removing tiny offer that became tiny due &quot;</span></div>
+<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;                                    <span class="stringliteral">&quot;to reduced quality &quot;</span></div>
+<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;                                 &lt;&lt; entry-&gt;key();</div>
+<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;            }</div>
+<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;            offer_ = <a class="code" href="classripple_1_1TOffer.html">TOffer&lt;TIn, TOut&gt;</a>{};</div>
+<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;            <span class="comment">// See comment at top of loop for how the offer is removed</span></div>
+<div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160;            <span class="keywordflow">continue</span>;</div>
+<div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;        }</div>
+<div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160; </div>
+<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;        <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;    }</div>
 <div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160; </div>
-<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;<span class="keyword">template</span> <span class="keyword">class </span><a class="code" href="classripple_1_1FlowOfferStream.html">FlowOfferStream&lt;STAmount, STAmount&gt;</a>;</div>
-<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;<span class="keyword">template</span> <span class="keyword">class </span><a class="code" href="classripple_1_1FlowOfferStream.html">FlowOfferStream&lt;IOUAmount, IOUAmount&gt;</a>;</div>
-<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;<span class="keyword">template</span> <span class="keyword">class </span><a class="code" href="classripple_1_1FlowOfferStream.html">FlowOfferStream&lt;XRPAmount, IOUAmount&gt;</a>;</div>
-<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;<span class="keyword">template</span> <span class="keyword">class </span><a class="code" href="classripple_1_1FlowOfferStream.html">FlowOfferStream&lt;IOUAmount, XRPAmount&gt;</a>;</div>
-<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160; </div>
-<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;<span class="keyword">template</span> <span class="keyword">class </span><a class="code" href="classripple_1_1TOfferStreamBase.html">TOfferStreamBase&lt;STAmount, STAmount&gt;</a>;</div>
-<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;<span class="keyword">template</span> <span class="keyword">class </span><a class="code" href="classripple_1_1TOfferStreamBase.html">TOfferStreamBase&lt;IOUAmount, IOUAmount&gt;</a>;</div>
-<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;<span class="keyword">template</span> <span class="keyword">class </span><a class="code" href="classripple_1_1TOfferStreamBase.html">TOfferStreamBase&lt;XRPAmount, IOUAmount&gt;</a>;</div>
-<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160;<span class="keyword">template</span> <span class="keyword">class </span><a class="code" href="classripple_1_1TOfferStreamBase.html">TOfferStreamBase&lt;IOUAmount, XRPAmount&gt;</a>;</div>
-<div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;}</div>
+<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160; </div>
+<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00381"></a><span class="lineno"><a class="line" href="classripple_1_1OfferStream.html#ac1d8ec4a933ecd3986985d3231e278c2">  381</a></span>&#160;OfferStream::permRmOffer(<a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; offerIndex)</div>
+<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;{</div>
+<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;    <a class="code" href="namespaceripple.html#a66af773abebf361a8c930c1dc457a740">offerDelete</a>(cancelView_, cancelView_.peek(keylet::offer(offerIndex)), j_);</div>
+<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;}</div>
+<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160; </div>
+<div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> TIn, <span class="keyword">class</span> TOut&gt;</div>
+<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00388"></a><span class="lineno"><a class="line" href="classripple_1_1FlowOfferStream.html#a9940206ba76f1698cbbf2db11afa12d5">  388</a></span>&#160;<a class="code" href="classripple_1_1FlowOfferStream.html">FlowOfferStream&lt;TIn, TOut&gt;::permRmOffer</a>(<a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; offerIndex)</div>
+<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;{</div>
+<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;    permToRemove_.insert(offerIndex);</div>
+<div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160;}</div>
+<div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160; </div>
+<div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;<span class="keyword">template</span> <span class="keyword">class </span><a class="code" href="classripple_1_1FlowOfferStream.html">FlowOfferStream&lt;STAmount, STAmount&gt;</a>;</div>
+<div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160;<span class="keyword">template</span> <span class="keyword">class </span><a class="code" href="classripple_1_1FlowOfferStream.html">FlowOfferStream&lt;IOUAmount, IOUAmount&gt;</a>;</div>
+<div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160;<span class="keyword">template</span> <span class="keyword">class </span><a class="code" href="classripple_1_1FlowOfferStream.html">FlowOfferStream&lt;XRPAmount, IOUAmount&gt;</a>;</div>
+<div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160;<span class="keyword">template</span> <span class="keyword">class </span><a class="code" href="classripple_1_1FlowOfferStream.html">FlowOfferStream&lt;IOUAmount, XRPAmount&gt;</a>;</div>
+<div class="line"><a name="l00397"></a><span class="lineno">  397</span>&#160; </div>
+<div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160;<span class="keyword">template</span> <span class="keyword">class </span><a class="code" href="classripple_1_1TOfferStreamBase.html">TOfferStreamBase&lt;STAmount, STAmount&gt;</a>;</div>
+<div class="line"><a name="l00399"></a><span class="lineno">  399</span>&#160;<span class="keyword">template</span> <span class="keyword">class </span><a class="code" href="classripple_1_1TOfferStreamBase.html">TOfferStreamBase&lt;IOUAmount, IOUAmount&gt;</a>;</div>
+<div class="line"><a name="l00400"></a><span class="lineno">  400</span>&#160;<span class="keyword">template</span> <span class="keyword">class </span><a class="code" href="classripple_1_1TOfferStreamBase.html">TOfferStreamBase&lt;XRPAmount, IOUAmount&gt;</a>;</div>
+<div class="line"><a name="l00401"></a><span class="lineno">  401</span>&#160;<span class="keyword">template</span> <span class="keyword">class </span><a class="code" href="classripple_1_1TOfferStreamBase.html">TOfferStreamBase&lt;IOUAmount, XRPAmount&gt;</a>;</div>
+<div class="line"><a name="l00402"></a><span class="lineno">  402</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aclassripple_1_1Issue_html"><div class="ttname"><a href="classripple_1_1Issue.html">ripple::Issue</a></div><div class="ttdoc">A currency issued by an account.</div><div class="ttdef"><b>Definition:</b> <a href="Issue_8h_source.html#l00034">Issue.h:34</a></div></div>
 <div class="ttc" id="ashared_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a></div><div class="ttdoc">STL class.</div></div>
@@ -463,6 +479,7 @@ $(function() {
 <div class="ttc" id="aclassbeast_1_1Journal_html_abbe082bd27ca0f1d1365af2824e4f85b"><div class="ttname"><a href="classbeast_1_1Journal.html#abbe082bd27ca0f1d1365af2824e4f85b">beast::Journal::trace</a></div><div class="ttdeci">Stream trace() const</div><div class="ttdoc">Severity stream access functions.</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00309">Journal.h:309</a></div></div>
 <div class="ttc" id="aclassripple_1_1ApplyView_html_aad9fb1233dec10dcc10c2e3b1da6a723"><div class="ttname"><a href="classripple_1_1ApplyView.html#aad9fb1233dec10dcc10c2e3b1da6a723">ripple::ApplyView::peek</a></div><div class="ttdeci">virtual std::shared_ptr&lt; SLE &gt; peek(Keylet const &amp;k)=0</div><div class="ttdoc">Prepare to modify the SLE associated with key.</div></div>
 <div class="ttc" id="afind_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/algorithm/find.html">std::find</a></div><div class="ttdeci">T find(T... args)</div></div>
+<div class="ttc" id="anamespaceripple_html_a18847fa4f816853e34b0458e46587530"><div class="ttname"><a href="namespaceripple.html#a18847fa4f816853e34b0458e46587530">ripple::fixReducedOffersV1</a></div><div class="ttdeci">const uint256 fixReducedOffersV1</div></div>
 <div class="ttc" id="anamespaceripple_html_ab001e43f50e612727b1ce5985a2770d6"><div class="ttname"><a href="namespaceripple.html#ab001e43f50e612727b1ce5985a2770d6">ripple::accountHolds</a></div><div class="ttdeci">STAmount accountHolds(ReadView const &amp;view, AccountID const &amp;account, Currency const &amp;currency, AccountID const &amp;issuer, FreezeHandling zeroIfFrozen, beast::Journal j)</div><div class="ttdef"><b>Definition:</b> <a href="View_8cpp_source.html#l00223">View.cpp:223</a></div></div>
 <div class="ttc" id="aduration_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::duration</a></div></div>
 <div class="ttc" id="aclassripple_1_1Issue_html_a4b723aa4198e4c630e41de06586e2fe7"><div class="ttname"><a href="classripple_1_1Issue.html#a4b723aa4198e4c630e41de06586e2fe7">ripple::Issue::currency</a></div><div class="ttdeci">Currency currency</div><div class="ttdef"><b>Definition:</b> <a href="Issue_8h_source.html#l00037">Issue.h:37</a></div></div>

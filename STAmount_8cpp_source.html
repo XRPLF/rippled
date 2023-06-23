@@ -1337,200 +1337,373 @@ $(function() {
 <div class="line"><a name="l01266"></a><span class="lineno"> 1266</span>&#160;        v1.<a class="code" href="classripple_1_1STAmount.html#aa830654962840253139aa891659f7551">negative</a>() != v2.<a class="code" href="classripple_1_1STAmount.html#aa830654962840253139aa891659f7551">negative</a>());</div>
 <div class="line"><a name="l01267"></a><span class="lineno"> 1267</span>&#160;}</div>
 <div class="line"><a name="l01268"></a><span class="lineno"> 1268</span>&#160; </div>
-<div class="line"><a name="l01269"></a><span class="lineno"> 1269</span>&#160;<span class="keyword">static</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l01270"></a><span class="lineno"><a class="line" href="namespaceripple.html#af5a98b092dca8d35b8913320f354fb1f"> 1270</a></span>&#160;<a class="code" href="namespaceripple.html#af5a98b092dca8d35b8913320f354fb1f">canonicalizeRound</a>(<span class="keywordtype">bool</span> native, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>&amp; value, <span class="keywordtype">int</span>&amp; offset)</div>
-<div class="line"><a name="l01271"></a><span class="lineno"> 1271</span>&#160;{</div>
-<div class="line"><a name="l01272"></a><span class="lineno"> 1272</span>&#160;    <span class="keywordflow">if</span> (native)</div>
-<div class="line"><a name="l01273"></a><span class="lineno"> 1273</span>&#160;    {</div>
-<div class="line"><a name="l01274"></a><span class="lineno"> 1274</span>&#160;        <span class="keywordflow">if</span> (offset &lt; 0)</div>
-<div class="line"><a name="l01275"></a><span class="lineno"> 1275</span>&#160;        {</div>
-<div class="line"><a name="l01276"></a><span class="lineno"> 1276</span>&#160;            <span class="keywordtype">int</span> loops = 0;</div>
-<div class="line"><a name="l01277"></a><span class="lineno"> 1277</span>&#160; </div>
-<div class="line"><a name="l01278"></a><span class="lineno"> 1278</span>&#160;            <span class="keywordflow">while</span> (offset &lt; -1)</div>
-<div class="line"><a name="l01279"></a><span class="lineno"> 1279</span>&#160;            {</div>
-<div class="line"><a name="l01280"></a><span class="lineno"> 1280</span>&#160;                value /= 10;</div>
-<div class="line"><a name="l01281"></a><span class="lineno"> 1281</span>&#160;                ++offset;</div>
-<div class="line"><a name="l01282"></a><span class="lineno"> 1282</span>&#160;                ++loops;</div>
-<div class="line"><a name="l01283"></a><span class="lineno"> 1283</span>&#160;            }</div>
-<div class="line"><a name="l01284"></a><span class="lineno"> 1284</span>&#160; </div>
-<div class="line"><a name="l01285"></a><span class="lineno"> 1285</span>&#160;            value += (loops &gt;= 2) ? 9 : 10;  <span class="comment">// add before last divide</span></div>
-<div class="line"><a name="l01286"></a><span class="lineno"> 1286</span>&#160;            value /= 10;</div>
-<div class="line"><a name="l01287"></a><span class="lineno"> 1287</span>&#160;            ++offset;</div>
-<div class="line"><a name="l01288"></a><span class="lineno"> 1288</span>&#160;        }</div>
-<div class="line"><a name="l01289"></a><span class="lineno"> 1289</span>&#160;    }</div>
-<div class="line"><a name="l01290"></a><span class="lineno"> 1290</span>&#160;    <span class="keywordflow">else</span> <span class="keywordflow">if</span> (value &gt; <a class="code" href="classripple_1_1STAmount.html#af88c7b9a2ee49408f4fd17e1ee9f20df">STAmount::cMaxValue</a>)</div>
-<div class="line"><a name="l01291"></a><span class="lineno"> 1291</span>&#160;    {</div>
-<div class="line"><a name="l01292"></a><span class="lineno"> 1292</span>&#160;        <span class="keywordflow">while</span> (value &gt; (10 * <a class="code" href="classripple_1_1STAmount.html#af88c7b9a2ee49408f4fd17e1ee9f20df">STAmount::cMaxValue</a>))</div>
-<div class="line"><a name="l01293"></a><span class="lineno"> 1293</span>&#160;        {</div>
-<div class="line"><a name="l01294"></a><span class="lineno"> 1294</span>&#160;            value /= 10;</div>
-<div class="line"><a name="l01295"></a><span class="lineno"> 1295</span>&#160;            ++offset;</div>
-<div class="line"><a name="l01296"></a><span class="lineno"> 1296</span>&#160;        }</div>
+<div class="line"><a name="l01269"></a><span class="lineno"> 1269</span>&#160;<span class="comment">// This is the legacy version of canonicalizeRound.  It&#39;s been in use</span></div>
+<div class="line"><a name="l01270"></a><span class="lineno"> 1270</span>&#160;<span class="comment">// for years, so it is deeply embedded in the behavior of cross-currency</span></div>
+<div class="line"><a name="l01271"></a><span class="lineno"> 1271</span>&#160;<span class="comment">// transactions.</span></div>
+<div class="line"><a name="l01272"></a><span class="lineno"> 1272</span>&#160;<span class="comment">//</span></div>
+<div class="line"><a name="l01273"></a><span class="lineno"> 1273</span>&#160;<span class="comment">// However in 2022 it was noticed that the rounding characteristics were</span></div>
+<div class="line"><a name="l01274"></a><span class="lineno"> 1274</span>&#160;<span class="comment">// surprising.  When the code converts from IOU-like to XRP-like there may</span></div>
+<div class="line"><a name="l01275"></a><span class="lineno"> 1275</span>&#160;<span class="comment">// be a fraction of the IOU-like representation that is too small to be</span></div>
+<div class="line"><a name="l01276"></a><span class="lineno"> 1276</span>&#160;<span class="comment">// represented in drops.  `canonicalizeRound()` currently does some unusual</span></div>
+<div class="line"><a name="l01277"></a><span class="lineno"> 1277</span>&#160;<span class="comment">// rounding.</span></div>
+<div class="line"><a name="l01278"></a><span class="lineno"> 1278</span>&#160;<span class="comment">//</span></div>
+<div class="line"><a name="l01279"></a><span class="lineno"> 1279</span>&#160;<span class="comment">//  1. If the fractional part is greater than or equal to 0.1, then the</span></div>
+<div class="line"><a name="l01280"></a><span class="lineno"> 1280</span>&#160;<span class="comment">//     number of drops is rounded up.</span></div>
+<div class="line"><a name="l01281"></a><span class="lineno"> 1281</span>&#160;<span class="comment">//</span></div>
+<div class="line"><a name="l01282"></a><span class="lineno"> 1282</span>&#160;<span class="comment">//  2. However, if the fractional part is less than 0.1 (for example,</span></div>
+<div class="line"><a name="l01283"></a><span class="lineno"> 1283</span>&#160;<span class="comment">//     0.099999), then the number of drops is rounded down.</span></div>
+<div class="line"><a name="l01284"></a><span class="lineno"> 1284</span>&#160;<span class="comment">//</span></div>
+<div class="line"><a name="l01285"></a><span class="lineno"> 1285</span>&#160;<span class="comment">// The XRP Ledger has this rounding behavior baked in.  But there are</span></div>
+<div class="line"><a name="l01286"></a><span class="lineno"> 1286</span>&#160;<span class="comment">// situations where this rounding behavior led to undesirable outcomes.</span></div>
+<div class="line"><a name="l01287"></a><span class="lineno"> 1287</span>&#160;<span class="comment">// So an alternative rounding approach was introduced.  You&#39;ll see that</span></div>
+<div class="line"><a name="l01288"></a><span class="lineno"> 1288</span>&#160;<span class="comment">// alternative below.</span></div>
+<div class="line"><a name="l01289"></a><span class="lineno"> 1289</span>&#160;<span class="keyword">static</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l01290"></a><span class="lineno"><a class="line" href="namespaceripple.html#afed19a57936c35db382a67f1d58b6884"> 1290</a></span>&#160;<a class="code" href="namespaceripple.html#afed19a57936c35db382a67f1d58b6884">canonicalizeRound</a>(<span class="keywordtype">bool</span> native, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>&amp; value, <span class="keywordtype">int</span>&amp; offset, <span class="keywordtype">bool</span>)</div>
+<div class="line"><a name="l01291"></a><span class="lineno"> 1291</span>&#160;{</div>
+<div class="line"><a name="l01292"></a><span class="lineno"> 1292</span>&#160;    <span class="keywordflow">if</span> (native)</div>
+<div class="line"><a name="l01293"></a><span class="lineno"> 1293</span>&#160;    {</div>
+<div class="line"><a name="l01294"></a><span class="lineno"> 1294</span>&#160;        <span class="keywordflow">if</span> (offset &lt; 0)</div>
+<div class="line"><a name="l01295"></a><span class="lineno"> 1295</span>&#160;        {</div>
+<div class="line"><a name="l01296"></a><span class="lineno"> 1296</span>&#160;            <span class="keywordtype">int</span> loops = 0;</div>
 <div class="line"><a name="l01297"></a><span class="lineno"> 1297</span>&#160; </div>
-<div class="line"><a name="l01298"></a><span class="lineno"> 1298</span>&#160;        value += 9;  <span class="comment">// add before last divide</span></div>
-<div class="line"><a name="l01299"></a><span class="lineno"> 1299</span>&#160;        value /= 10;</div>
-<div class="line"><a name="l01300"></a><span class="lineno"> 1300</span>&#160;        ++offset;</div>
-<div class="line"><a name="l01301"></a><span class="lineno"> 1301</span>&#160;    }</div>
-<div class="line"><a name="l01302"></a><span class="lineno"> 1302</span>&#160;}</div>
-<div class="line"><a name="l01303"></a><span class="lineno"> 1303</span>&#160; </div>
-<div class="line"><a name="l01304"></a><span class="lineno"> 1304</span>&#160;STAmount</div>
-<div class="line"><a name="l01305"></a><span class="lineno"><a class="line" href="namespaceripple.html#a7806e73f2a04df365821602cfcf89ff2"> 1305</a></span>&#160;<a class="code" href="namespaceripple.html#a7806e73f2a04df365821602cfcf89ff2">mulRound</a>(</div>
-<div class="line"><a name="l01306"></a><span class="lineno"> 1306</span>&#160;    <a class="code" href="classripple_1_1STAmount.html">STAmount</a> <span class="keyword">const</span>&amp; v1,</div>
-<div class="line"><a name="l01307"></a><span class="lineno"> 1307</span>&#160;    <a class="code" href="classripple_1_1STAmount.html">STAmount</a> <span class="keyword">const</span>&amp; v2,</div>
-<div class="line"><a name="l01308"></a><span class="lineno"> 1308</span>&#160;    <a class="code" href="classripple_1_1Issue.html">Issue</a> <span class="keyword">const</span>&amp; issue,</div>
-<div class="line"><a name="l01309"></a><span class="lineno"> 1309</span>&#160;    <span class="keywordtype">bool</span> roundUp)</div>
-<div class="line"><a name="l01310"></a><span class="lineno"> 1310</span>&#160;{</div>
-<div class="line"><a name="l01311"></a><span class="lineno"> 1311</span>&#160;    <span class="keywordflow">if</span> (v1 == beast::zero || v2 == beast::zero)</div>
-<div class="line"><a name="l01312"></a><span class="lineno"> 1312</span>&#160;        <span class="keywordflow">return</span> {issue};</div>
-<div class="line"><a name="l01313"></a><span class="lineno"> 1313</span>&#160; </div>
-<div class="line"><a name="l01314"></a><span class="lineno"> 1314</span>&#160;    <span class="keywordtype">bool</span> <span class="keyword">const</span> xrp = <a class="code" href="namespaceripple.html#a20d30277b9c78756b3d14493055a307c">isXRP</a>(issue);</div>
-<div class="line"><a name="l01315"></a><span class="lineno"> 1315</span>&#160; </div>
-<div class="line"><a name="l01316"></a><span class="lineno"> 1316</span>&#160;    <span class="keywordflow">if</span> (v1.<a class="code" href="classripple_1_1STAmount.html#af3a02d7e9cd0b11509a90e0e6980bd64">native</a>() &amp;&amp; v2.<a class="code" href="classripple_1_1STAmount.html#af3a02d7e9cd0b11509a90e0e6980bd64">native</a>() &amp;&amp; xrp)</div>
-<div class="line"><a name="l01317"></a><span class="lineno"> 1317</span>&#160;    {</div>
-<div class="line"><a name="l01318"></a><span class="lineno"> 1318</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> minV =</div>
-<div class="line"><a name="l01319"></a><span class="lineno"> 1319</span>&#160;            (<a class="code" href="namespaceripple.html#a82a40c2d1b4a954d5626d74423af9c4c">getSNValue</a>(v1) &lt; <a class="code" href="namespaceripple.html#a82a40c2d1b4a954d5626d74423af9c4c">getSNValue</a>(v2)) ? <a class="code" href="namespaceripple.html#a82a40c2d1b4a954d5626d74423af9c4c">getSNValue</a>(v1) : <a class="code" href="namespaceripple.html#a82a40c2d1b4a954d5626d74423af9c4c">getSNValue</a>(v2);</div>
-<div class="line"><a name="l01320"></a><span class="lineno"> 1320</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> maxV =</div>
-<div class="line"><a name="l01321"></a><span class="lineno"> 1321</span>&#160;            (<a class="code" href="namespaceripple.html#a82a40c2d1b4a954d5626d74423af9c4c">getSNValue</a>(v1) &lt; <a class="code" href="namespaceripple.html#a82a40c2d1b4a954d5626d74423af9c4c">getSNValue</a>(v2)) ? <a class="code" href="namespaceripple.html#a82a40c2d1b4a954d5626d74423af9c4c">getSNValue</a>(v2) : <a class="code" href="namespaceripple.html#a82a40c2d1b4a954d5626d74423af9c4c">getSNValue</a>(v1);</div>
-<div class="line"><a name="l01322"></a><span class="lineno"> 1322</span>&#160; </div>
-<div class="line"><a name="l01323"></a><span class="lineno"> 1323</span>&#160;        <span class="keywordflow">if</span> (minV &gt; 3000000000ull)  <span class="comment">// sqrt(cMaxNative)</span></div>
-<div class="line"><a name="l01324"></a><span class="lineno"> 1324</span>&#160;            Throw&lt;std::runtime_error&gt;(<span class="stringliteral">&quot;Native value overflow&quot;</span>);</div>
-<div class="line"><a name="l01325"></a><span class="lineno"> 1325</span>&#160; </div>
-<div class="line"><a name="l01326"></a><span class="lineno"> 1326</span>&#160;        <span class="keywordflow">if</span> (((maxV &gt;&gt; 32) * minV) &gt; 2095475792ull)  <span class="comment">// cMaxNative / 2^32</span></div>
-<div class="line"><a name="l01327"></a><span class="lineno"> 1327</span>&#160;            Throw&lt;std::runtime_error&gt;(<span class="stringliteral">&quot;Native value overflow&quot;</span>);</div>
-<div class="line"><a name="l01328"></a><span class="lineno"> 1328</span>&#160; </div>
-<div class="line"><a name="l01329"></a><span class="lineno"> 1329</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="classripple_1_1STAmount.html">STAmount</a>(v1.<a class="code" href="classripple_1_1STBase.html#a48097bca334d2f32a1d7861b59ae2e30">getFName</a>(), minV * maxV);</div>
-<div class="line"><a name="l01330"></a><span class="lineno"> 1330</span>&#160;    }</div>
-<div class="line"><a name="l01331"></a><span class="lineno"> 1331</span>&#160; </div>
-<div class="line"><a name="l01332"></a><span class="lineno"> 1332</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> value1 = v1.<a class="code" href="classripple_1_1STAmount.html#ae7f9ce5e872fd96b92b0cedbf8f09f81">mantissa</a>(), value2 = v2.<a class="code" href="classripple_1_1STAmount.html#ae7f9ce5e872fd96b92b0cedbf8f09f81">mantissa</a>();</div>
-<div class="line"><a name="l01333"></a><span class="lineno"> 1333</span>&#160;    <span class="keywordtype">int</span> offset1 = v1.<a class="code" href="classripple_1_1STAmount.html#a2885d73708e1b809f31a46ffaea5ad7f">exponent</a>(), offset2 = v2.<a class="code" href="classripple_1_1STAmount.html#a2885d73708e1b809f31a46ffaea5ad7f">exponent</a>();</div>
-<div class="line"><a name="l01334"></a><span class="lineno"> 1334</span>&#160; </div>
-<div class="line"><a name="l01335"></a><span class="lineno"> 1335</span>&#160;    <span class="keywordflow">if</span> (v1.<a class="code" href="classripple_1_1STAmount.html#af3a02d7e9cd0b11509a90e0e6980bd64">native</a>())</div>
+<div class="line"><a name="l01298"></a><span class="lineno"> 1298</span>&#160;            <span class="keywordflow">while</span> (offset &lt; -1)</div>
+<div class="line"><a name="l01299"></a><span class="lineno"> 1299</span>&#160;            {</div>
+<div class="line"><a name="l01300"></a><span class="lineno"> 1300</span>&#160;                value /= 10;</div>
+<div class="line"><a name="l01301"></a><span class="lineno"> 1301</span>&#160;                ++offset;</div>
+<div class="line"><a name="l01302"></a><span class="lineno"> 1302</span>&#160;                ++loops;</div>
+<div class="line"><a name="l01303"></a><span class="lineno"> 1303</span>&#160;            }</div>
+<div class="line"><a name="l01304"></a><span class="lineno"> 1304</span>&#160; </div>
+<div class="line"><a name="l01305"></a><span class="lineno"> 1305</span>&#160;            value += (loops &gt;= 2) ? 9 : 10;  <span class="comment">// add before last divide</span></div>
+<div class="line"><a name="l01306"></a><span class="lineno"> 1306</span>&#160;            value /= 10;</div>
+<div class="line"><a name="l01307"></a><span class="lineno"> 1307</span>&#160;            ++offset;</div>
+<div class="line"><a name="l01308"></a><span class="lineno"> 1308</span>&#160;        }</div>
+<div class="line"><a name="l01309"></a><span class="lineno"> 1309</span>&#160;    }</div>
+<div class="line"><a name="l01310"></a><span class="lineno"> 1310</span>&#160;    <span class="keywordflow">else</span> <span class="keywordflow">if</span> (value &gt; <a class="code" href="classripple_1_1STAmount.html#af88c7b9a2ee49408f4fd17e1ee9f20df">STAmount::cMaxValue</a>)</div>
+<div class="line"><a name="l01311"></a><span class="lineno"> 1311</span>&#160;    {</div>
+<div class="line"><a name="l01312"></a><span class="lineno"> 1312</span>&#160;        <span class="keywordflow">while</span> (value &gt; (10 * <a class="code" href="classripple_1_1STAmount.html#af88c7b9a2ee49408f4fd17e1ee9f20df">STAmount::cMaxValue</a>))</div>
+<div class="line"><a name="l01313"></a><span class="lineno"> 1313</span>&#160;        {</div>
+<div class="line"><a name="l01314"></a><span class="lineno"> 1314</span>&#160;            value /= 10;</div>
+<div class="line"><a name="l01315"></a><span class="lineno"> 1315</span>&#160;            ++offset;</div>
+<div class="line"><a name="l01316"></a><span class="lineno"> 1316</span>&#160;        }</div>
+<div class="line"><a name="l01317"></a><span class="lineno"> 1317</span>&#160; </div>
+<div class="line"><a name="l01318"></a><span class="lineno"> 1318</span>&#160;        value += 9;  <span class="comment">// add before last divide</span></div>
+<div class="line"><a name="l01319"></a><span class="lineno"> 1319</span>&#160;        value /= 10;</div>
+<div class="line"><a name="l01320"></a><span class="lineno"> 1320</span>&#160;        ++offset;</div>
+<div class="line"><a name="l01321"></a><span class="lineno"> 1321</span>&#160;    }</div>
+<div class="line"><a name="l01322"></a><span class="lineno"> 1322</span>&#160;}</div>
+<div class="line"><a name="l01323"></a><span class="lineno"> 1323</span>&#160; </div>
+<div class="line"><a name="l01324"></a><span class="lineno"> 1324</span>&#160;<span class="comment">// The original canonicalizeRound did not allow the rounding direction to</span></div>
+<div class="line"><a name="l01325"></a><span class="lineno"> 1325</span>&#160;<span class="comment">// be specified.  It also ignored some of the bits that could contribute to</span></div>
+<div class="line"><a name="l01326"></a><span class="lineno"> 1326</span>&#160;<span class="comment">// rounding decisions.  canonicalizeRoundStrict() tracks all of the bits in</span></div>
+<div class="line"><a name="l01327"></a><span class="lineno"> 1327</span>&#160;<span class="comment">// the value being rounded.</span></div>
+<div class="line"><a name="l01328"></a><span class="lineno"> 1328</span>&#160;<span class="keyword">static</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l01329"></a><span class="lineno"><a class="line" href="namespaceripple.html#a07a687e3a16e605ec3b4ecfd29bb6232"> 1329</a></span>&#160;<a class="code" href="namespaceripple.html#a07a687e3a16e605ec3b4ecfd29bb6232">canonicalizeRoundStrict</a>(</div>
+<div class="line"><a name="l01330"></a><span class="lineno"> 1330</span>&#160;    <span class="keywordtype">bool</span> native,</div>
+<div class="line"><a name="l01331"></a><span class="lineno"> 1331</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>&amp; value,</div>
+<div class="line"><a name="l01332"></a><span class="lineno"> 1332</span>&#160;    <span class="keywordtype">int</span>&amp; offset,</div>
+<div class="line"><a name="l01333"></a><span class="lineno"> 1333</span>&#160;    <span class="keywordtype">bool</span> roundUp)</div>
+<div class="line"><a name="l01334"></a><span class="lineno"> 1334</span>&#160;{</div>
+<div class="line"><a name="l01335"></a><span class="lineno"> 1335</span>&#160;    <span class="keywordflow">if</span> (native)</div>
 <div class="line"><a name="l01336"></a><span class="lineno"> 1336</span>&#160;    {</div>
-<div class="line"><a name="l01337"></a><span class="lineno"> 1337</span>&#160;        <span class="keywordflow">while</span> (value1 &lt; <a class="code" href="classripple_1_1STAmount.html#ad845bc67616b999387da6badf56f7290">STAmount::cMinValue</a>)</div>
+<div class="line"><a name="l01337"></a><span class="lineno"> 1337</span>&#160;        <span class="keywordflow">if</span> (offset &lt; 0)</div>
 <div class="line"><a name="l01338"></a><span class="lineno"> 1338</span>&#160;        {</div>
-<div class="line"><a name="l01339"></a><span class="lineno"> 1339</span>&#160;            value1 *= 10;</div>
-<div class="line"><a name="l01340"></a><span class="lineno"> 1340</span>&#160;            --offset1;</div>
-<div class="line"><a name="l01341"></a><span class="lineno"> 1341</span>&#160;        }</div>
-<div class="line"><a name="l01342"></a><span class="lineno"> 1342</span>&#160;    }</div>
-<div class="line"><a name="l01343"></a><span class="lineno"> 1343</span>&#160; </div>
-<div class="line"><a name="l01344"></a><span class="lineno"> 1344</span>&#160;    <span class="keywordflow">if</span> (v2.<a class="code" href="classripple_1_1STAmount.html#af3a02d7e9cd0b11509a90e0e6980bd64">native</a>())</div>
-<div class="line"><a name="l01345"></a><span class="lineno"> 1345</span>&#160;    {</div>
-<div class="line"><a name="l01346"></a><span class="lineno"> 1346</span>&#160;        <span class="keywordflow">while</span> (value2 &lt; <a class="code" href="classripple_1_1STAmount.html#ad845bc67616b999387da6badf56f7290">STAmount::cMinValue</a>)</div>
-<div class="line"><a name="l01347"></a><span class="lineno"> 1347</span>&#160;        {</div>
-<div class="line"><a name="l01348"></a><span class="lineno"> 1348</span>&#160;            value2 *= 10;</div>
-<div class="line"><a name="l01349"></a><span class="lineno"> 1349</span>&#160;            --offset2;</div>
-<div class="line"><a name="l01350"></a><span class="lineno"> 1350</span>&#160;        }</div>
-<div class="line"><a name="l01351"></a><span class="lineno"> 1351</span>&#160;    }</div>
-<div class="line"><a name="l01352"></a><span class="lineno"> 1352</span>&#160; </div>
-<div class="line"><a name="l01353"></a><span class="lineno"> 1353</span>&#160;    <span class="keywordtype">bool</span> <span class="keyword">const</span> resultNegative = v1.<a class="code" href="classripple_1_1STAmount.html#aa830654962840253139aa891659f7551">negative</a>() != v2.<a class="code" href="classripple_1_1STAmount.html#aa830654962840253139aa891659f7551">negative</a>();</div>
-<div class="line"><a name="l01354"></a><span class="lineno"> 1354</span>&#160; </div>
-<div class="line"><a name="l01355"></a><span class="lineno"> 1355</span>&#160;    <span class="comment">// We multiply the two mantissas (each is between 10^15</span></div>
-<div class="line"><a name="l01356"></a><span class="lineno"> 1356</span>&#160;    <span class="comment">// and 10^16), so their product is in the 10^30 to 10^32</span></div>
-<div class="line"><a name="l01357"></a><span class="lineno"> 1357</span>&#160;    <span class="comment">// range. Dividing their product by 10^14 maintains the</span></div>
-<div class="line"><a name="l01358"></a><span class="lineno"> 1358</span>&#160;    <span class="comment">// precision, by scaling the result to 10^16 to 10^18.</span></div>
-<div class="line"><a name="l01359"></a><span class="lineno"> 1359</span>&#160;    <span class="comment">//</span></div>
-<div class="line"><a name="l01360"></a><span class="lineno"> 1360</span>&#160;    <span class="comment">// If the we&#39;re rounding up, we want to round up away</span></div>
-<div class="line"><a name="l01361"></a><span class="lineno"> 1361</span>&#160;    <span class="comment">// from zero, and if we&#39;re rounding down, truncation</span></div>
-<div class="line"><a name="l01362"></a><span class="lineno"> 1362</span>&#160;    <span class="comment">// is implicit.</span></div>
-<div class="line"><a name="l01363"></a><span class="lineno"> 1363</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> amount = <a class="code" href="namespaceripple.html#ae745102449603924823f094157604641">muldiv_round</a>(</div>
-<div class="line"><a name="l01364"></a><span class="lineno"> 1364</span>&#160;        value1, value2, <a class="code" href="namespaceripple.html#a1b237be5c5c7faa68434cdf539f3120a">tenTo14</a>, (resultNegative != roundUp) ? <a class="code" href="namespaceripple.html#a4e2d5fc0ab98ac97423905610e7c20e5">tenTo14m1</a> : 0);</div>
-<div class="line"><a name="l01365"></a><span class="lineno"> 1365</span>&#160; </div>
-<div class="line"><a name="l01366"></a><span class="lineno"> 1366</span>&#160;    <span class="keywordtype">int</span> offset = offset1 + offset2 + 14;</div>
-<div class="line"><a name="l01367"></a><span class="lineno"> 1367</span>&#160;    <span class="keywordflow">if</span> (resultNegative != roundUp)</div>
-<div class="line"><a name="l01368"></a><span class="lineno"> 1368</span>&#160;        <a class="code" href="namespaceripple.html#af5a98b092dca8d35b8913320f354fb1f">canonicalizeRound</a>(xrp, amount, offset);</div>
-<div class="line"><a name="l01369"></a><span class="lineno"> 1369</span>&#160;    <a class="code" href="classripple_1_1STAmount.html">STAmount</a> result(issue, amount, offset, resultNegative);</div>
-<div class="line"><a name="l01370"></a><span class="lineno"> 1370</span>&#160; </div>
-<div class="line"><a name="l01371"></a><span class="lineno"> 1371</span>&#160;    <span class="keywordflow">if</span> (roundUp &amp;&amp; !resultNegative &amp;&amp; !result)</div>
-<div class="line"><a name="l01372"></a><span class="lineno"> 1372</span>&#160;    {</div>
-<div class="line"><a name="l01373"></a><span class="lineno"> 1373</span>&#160;        <span class="keywordflow">if</span> (xrp)</div>
-<div class="line"><a name="l01374"></a><span class="lineno"> 1374</span>&#160;        {</div>
-<div class="line"><a name="l01375"></a><span class="lineno"> 1375</span>&#160;            <span class="comment">// return the smallest value above zero</span></div>
-<div class="line"><a name="l01376"></a><span class="lineno"> 1376</span>&#160;            amount = 1;</div>
-<div class="line"><a name="l01377"></a><span class="lineno"> 1377</span>&#160;            offset = 0;</div>
-<div class="line"><a name="l01378"></a><span class="lineno"> 1378</span>&#160;        }</div>
-<div class="line"><a name="l01379"></a><span class="lineno"> 1379</span>&#160;        <span class="keywordflow">else</span></div>
-<div class="line"><a name="l01380"></a><span class="lineno"> 1380</span>&#160;        {</div>
-<div class="line"><a name="l01381"></a><span class="lineno"> 1381</span>&#160;            <span class="comment">// return the smallest value above zero</span></div>
-<div class="line"><a name="l01382"></a><span class="lineno"> 1382</span>&#160;            amount = <a class="code" href="classripple_1_1STAmount.html#ad845bc67616b999387da6badf56f7290">STAmount::cMinValue</a>;</div>
-<div class="line"><a name="l01383"></a><span class="lineno"> 1383</span>&#160;            offset = <a class="code" href="classripple_1_1STAmount.html#ade4056a07e14fcd243fd2609eedba34d">STAmount::cMinOffset</a>;</div>
-<div class="line"><a name="l01384"></a><span class="lineno"> 1384</span>&#160;        }</div>
-<div class="line"><a name="l01385"></a><span class="lineno"> 1385</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="classripple_1_1STAmount.html">STAmount</a>(issue, amount, offset, resultNegative);</div>
-<div class="line"><a name="l01386"></a><span class="lineno"> 1386</span>&#160;    }</div>
-<div class="line"><a name="l01387"></a><span class="lineno"> 1387</span>&#160;    <span class="keywordflow">return</span> result;</div>
-<div class="line"><a name="l01388"></a><span class="lineno"> 1388</span>&#160;}</div>
-<div class="line"><a name="l01389"></a><span class="lineno"> 1389</span>&#160; </div>
-<div class="line"><a name="l01390"></a><span class="lineno"> 1390</span>&#160;STAmount</div>
-<div class="line"><a name="l01391"></a><span class="lineno"><a class="line" href="namespaceripple.html#a47b15adfd6fb69767c64f50d860a11cc"> 1391</a></span>&#160;<a class="code" href="namespaceripple.html#a47b15adfd6fb69767c64f50d860a11cc">divRound</a>(</div>
-<div class="line"><a name="l01392"></a><span class="lineno"> 1392</span>&#160;    <a class="code" href="classripple_1_1STAmount.html">STAmount</a> <span class="keyword">const</span>&amp; num,</div>
-<div class="line"><a name="l01393"></a><span class="lineno"> 1393</span>&#160;    <a class="code" href="classripple_1_1STAmount.html">STAmount</a> <span class="keyword">const</span>&amp; den,</div>
-<div class="line"><a name="l01394"></a><span class="lineno"> 1394</span>&#160;    <a class="code" href="classripple_1_1Issue.html">Issue</a> <span class="keyword">const</span>&amp; issue,</div>
-<div class="line"><a name="l01395"></a><span class="lineno"> 1395</span>&#160;    <span class="keywordtype">bool</span> roundUp)</div>
-<div class="line"><a name="l01396"></a><span class="lineno"> 1396</span>&#160;{</div>
-<div class="line"><a name="l01397"></a><span class="lineno"> 1397</span>&#160;    <span class="keywordflow">if</span> (den == beast::zero)</div>
-<div class="line"><a name="l01398"></a><span class="lineno"> 1398</span>&#160;        Throw&lt;std::runtime_error&gt;(<span class="stringliteral">&quot;division by zero&quot;</span>);</div>
-<div class="line"><a name="l01399"></a><span class="lineno"> 1399</span>&#160; </div>
-<div class="line"><a name="l01400"></a><span class="lineno"> 1400</span>&#160;    <span class="keywordflow">if</span> (num == beast::zero)</div>
-<div class="line"><a name="l01401"></a><span class="lineno"> 1401</span>&#160;        <span class="keywordflow">return</span> {issue};</div>
+<div class="line"><a name="l01339"></a><span class="lineno"> 1339</span>&#160;            <span class="keywordtype">bool</span> hadRemainder = <span class="keyword">false</span>;</div>
+<div class="line"><a name="l01340"></a><span class="lineno"> 1340</span>&#160; </div>
+<div class="line"><a name="l01341"></a><span class="lineno"> 1341</span>&#160;            <span class="keywordflow">while</span> (offset &lt; -1)</div>
+<div class="line"><a name="l01342"></a><span class="lineno"> 1342</span>&#160;            {</div>
+<div class="line"><a name="l01343"></a><span class="lineno"> 1343</span>&#160;                <span class="comment">// It would be better to use std::lldiv than to separately</span></div>
+<div class="line"><a name="l01344"></a><span class="lineno"> 1344</span>&#160;                <span class="comment">// compute the remainder.  But std::lldiv does not support</span></div>
+<div class="line"><a name="l01345"></a><span class="lineno"> 1345</span>&#160;                <span class="comment">// unsigned arguments.</span></div>
+<div class="line"><a name="l01346"></a><span class="lineno"> 1346</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> <span class="keyword">const</span> newValue = value / 10;</div>
+<div class="line"><a name="l01347"></a><span class="lineno"> 1347</span>&#160;                hadRemainder |= (value != (newValue * 10));</div>
+<div class="line"><a name="l01348"></a><span class="lineno"> 1348</span>&#160;                value = newValue;</div>
+<div class="line"><a name="l01349"></a><span class="lineno"> 1349</span>&#160;                ++offset;</div>
+<div class="line"><a name="l01350"></a><span class="lineno"> 1350</span>&#160;            }</div>
+<div class="line"><a name="l01351"></a><span class="lineno"> 1351</span>&#160;            value +=</div>
+<div class="line"><a name="l01352"></a><span class="lineno"> 1352</span>&#160;                (hadRemainder &amp;&amp; roundUp) ? 10 : 9;  <span class="comment">// Add before last divide</span></div>
+<div class="line"><a name="l01353"></a><span class="lineno"> 1353</span>&#160;            value /= 10;</div>
+<div class="line"><a name="l01354"></a><span class="lineno"> 1354</span>&#160;            ++offset;</div>
+<div class="line"><a name="l01355"></a><span class="lineno"> 1355</span>&#160;        }</div>
+<div class="line"><a name="l01356"></a><span class="lineno"> 1356</span>&#160;    }</div>
+<div class="line"><a name="l01357"></a><span class="lineno"> 1357</span>&#160;    <span class="keywordflow">else</span> <span class="keywordflow">if</span> (value &gt; <a class="code" href="classripple_1_1STAmount.html#af88c7b9a2ee49408f4fd17e1ee9f20df">STAmount::cMaxValue</a>)</div>
+<div class="line"><a name="l01358"></a><span class="lineno"> 1358</span>&#160;    {</div>
+<div class="line"><a name="l01359"></a><span class="lineno"> 1359</span>&#160;        <span class="keywordflow">while</span> (value &gt; (10 * <a class="code" href="classripple_1_1STAmount.html#af88c7b9a2ee49408f4fd17e1ee9f20df">STAmount::cMaxValue</a>))</div>
+<div class="line"><a name="l01360"></a><span class="lineno"> 1360</span>&#160;        {</div>
+<div class="line"><a name="l01361"></a><span class="lineno"> 1361</span>&#160;            value /= 10;</div>
+<div class="line"><a name="l01362"></a><span class="lineno"> 1362</span>&#160;            ++offset;</div>
+<div class="line"><a name="l01363"></a><span class="lineno"> 1363</span>&#160;        }</div>
+<div class="line"><a name="l01364"></a><span class="lineno"> 1364</span>&#160;        value += 9;  <span class="comment">// add before last divide</span></div>
+<div class="line"><a name="l01365"></a><span class="lineno"> 1365</span>&#160;        value /= 10;</div>
+<div class="line"><a name="l01366"></a><span class="lineno"> 1366</span>&#160;        ++offset;</div>
+<div class="line"><a name="l01367"></a><span class="lineno"> 1367</span>&#160;    }</div>
+<div class="line"><a name="l01368"></a><span class="lineno"> 1368</span>&#160;}</div>
+<div class="line"><a name="l01369"></a><span class="lineno"> 1369</span>&#160; </div>
+<div class="line"><a name="l01370"></a><span class="lineno"> 1370</span>&#160;<span class="keyword">namespace </span>{</div>
+<div class="line"><a name="l01371"></a><span class="lineno"> 1371</span>&#160; </div>
+<div class="line"><a name="l01372"></a><span class="lineno"> 1372</span>&#160;<span class="comment">// saveNumberRoundMode doesn&#39;t do quite enough for us.  What we want is a</span></div>
+<div class="line"><a name="l01373"></a><span class="lineno"> 1373</span>&#160;<span class="comment">// Number::RoundModeGuard that sets the new mode and restores the old mode</span></div>
+<div class="line"><a name="l01374"></a><span class="lineno"> 1374</span>&#160;<span class="comment">// when it leaves scope.  Since Number doesn&#39;t have that facility, we&#39;ll</span></div>
+<div class="line"><a name="l01375"></a><span class="lineno"> 1375</span>&#160;<span class="comment">// build it here.</span></div>
+<div class="line"><a name="l01376"></a><span class="lineno"> 1376</span>&#160;<span class="keyword">class </span>NumberRoundModeGuard</div>
+<div class="line"><a name="l01377"></a><span class="lineno"> 1377</span>&#160;{</div>
+<div class="line"><a name="l01378"></a><span class="lineno"> 1378</span>&#160;    saveNumberRoundMode saved_;</div>
+<div class="line"><a name="l01379"></a><span class="lineno"> 1379</span>&#160; </div>
+<div class="line"><a name="l01380"></a><span class="lineno"> 1380</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l01381"></a><span class="lineno"> 1381</span>&#160;    <span class="keyword">explicit</span> NumberRoundModeGuard(<a class="code" href="classripple_1_1Number.html#a33e3d8e7a95979bd1eb22c59703c8534">Number::rounding_mode</a> mode) noexcept</div>
+<div class="line"><a name="l01382"></a><span class="lineno"> 1382</span>&#160;        : saved_{<a class="code" href="classripple_1_1Number.html#a9f2a0df7ad0f278908643927a19592f2">Number::setround</a>(mode)}</div>
+<div class="line"><a name="l01383"></a><span class="lineno"> 1383</span>&#160;    {</div>
+<div class="line"><a name="l01384"></a><span class="lineno"> 1384</span>&#160;    }</div>
+<div class="line"><a name="l01385"></a><span class="lineno"> 1385</span>&#160; </div>
+<div class="line"><a name="l01386"></a><span class="lineno"> 1386</span>&#160;    NumberRoundModeGuard(NumberRoundModeGuard <span class="keyword">const</span>&amp;) = <span class="keyword">delete</span>;</div>
+<div class="line"><a name="l01387"></a><span class="lineno"> 1387</span>&#160; </div>
+<div class="line"><a name="l01388"></a><span class="lineno"> 1388</span>&#160;    NumberRoundModeGuard&amp;</div>
+<div class="line"><a name="l01389"></a><span class="lineno"> 1389</span>&#160;    operator=(NumberRoundModeGuard <span class="keyword">const</span>&amp;) = <span class="keyword">delete</span>;</div>
+<div class="line"><a name="l01390"></a><span class="lineno"> 1390</span>&#160;};</div>
+<div class="line"><a name="l01391"></a><span class="lineno"> 1391</span>&#160; </div>
+<div class="line"><a name="l01392"></a><span class="lineno"> 1392</span>&#160;<span class="comment">// We need a class that has an interface similar to NumberRoundModeGuard</span></div>
+<div class="line"><a name="l01393"></a><span class="lineno"> 1393</span>&#160;<span class="comment">// but does nothing.</span></div>
+<div class="line"><a name="l01394"></a><span class="lineno"> 1394</span>&#160;<span class="keyword">class </span>DontAffectNumberRoundMode</div>
+<div class="line"><a name="l01395"></a><span class="lineno"> 1395</span>&#160;{</div>
+<div class="line"><a name="l01396"></a><span class="lineno"> 1396</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l01397"></a><span class="lineno"> 1397</span>&#160;    <span class="keyword">explicit</span> DontAffectNumberRoundMode(<a class="code" href="classripple_1_1Number.html#a33e3d8e7a95979bd1eb22c59703c8534">Number::rounding_mode</a> mode) noexcept</div>
+<div class="line"><a name="l01398"></a><span class="lineno"> 1398</span>&#160;    {</div>
+<div class="line"><a name="l01399"></a><span class="lineno"> 1399</span>&#160;    }</div>
+<div class="line"><a name="l01400"></a><span class="lineno"> 1400</span>&#160; </div>
+<div class="line"><a name="l01401"></a><span class="lineno"> 1401</span>&#160;    DontAffectNumberRoundMode(DontAffectNumberRoundMode <span class="keyword">const</span>&amp;) = <span class="keyword">delete</span>;</div>
 <div class="line"><a name="l01402"></a><span class="lineno"> 1402</span>&#160; </div>
-<div class="line"><a name="l01403"></a><span class="lineno"> 1403</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> numVal = num.<a class="code" href="classripple_1_1STAmount.html#ae7f9ce5e872fd96b92b0cedbf8f09f81">mantissa</a>(), denVal = den.<a class="code" href="classripple_1_1STAmount.html#ae7f9ce5e872fd96b92b0cedbf8f09f81">mantissa</a>();</div>
-<div class="line"><a name="l01404"></a><span class="lineno"> 1404</span>&#160;    <span class="keywordtype">int</span> numOffset = num.<a class="code" href="classripple_1_1STAmount.html#a2885d73708e1b809f31a46ffaea5ad7f">exponent</a>(), denOffset = den.<a class="code" href="classripple_1_1STAmount.html#a2885d73708e1b809f31a46ffaea5ad7f">exponent</a>();</div>
-<div class="line"><a name="l01405"></a><span class="lineno"> 1405</span>&#160; </div>
-<div class="line"><a name="l01406"></a><span class="lineno"> 1406</span>&#160;    <span class="keywordflow">if</span> (num.<a class="code" href="classripple_1_1STAmount.html#af3a02d7e9cd0b11509a90e0e6980bd64">native</a>())</div>
-<div class="line"><a name="l01407"></a><span class="lineno"> 1407</span>&#160;    {</div>
-<div class="line"><a name="l01408"></a><span class="lineno"> 1408</span>&#160;        <span class="keywordflow">while</span> (numVal &lt; <a class="code" href="classripple_1_1STAmount.html#ad845bc67616b999387da6badf56f7290">STAmount::cMinValue</a>)</div>
-<div class="line"><a name="l01409"></a><span class="lineno"> 1409</span>&#160;        {</div>
-<div class="line"><a name="l01410"></a><span class="lineno"> 1410</span>&#160;            numVal *= 10;</div>
-<div class="line"><a name="l01411"></a><span class="lineno"> 1411</span>&#160;            --numOffset;</div>
-<div class="line"><a name="l01412"></a><span class="lineno"> 1412</span>&#160;        }</div>
-<div class="line"><a name="l01413"></a><span class="lineno"> 1413</span>&#160;    }</div>
-<div class="line"><a name="l01414"></a><span class="lineno"> 1414</span>&#160; </div>
-<div class="line"><a name="l01415"></a><span class="lineno"> 1415</span>&#160;    <span class="keywordflow">if</span> (den.<a class="code" href="classripple_1_1STAmount.html#af3a02d7e9cd0b11509a90e0e6980bd64">native</a>())</div>
-<div class="line"><a name="l01416"></a><span class="lineno"> 1416</span>&#160;    {</div>
-<div class="line"><a name="l01417"></a><span class="lineno"> 1417</span>&#160;        <span class="keywordflow">while</span> (denVal &lt; <a class="code" href="classripple_1_1STAmount.html#ad845bc67616b999387da6badf56f7290">STAmount::cMinValue</a>)</div>
-<div class="line"><a name="l01418"></a><span class="lineno"> 1418</span>&#160;        {</div>
-<div class="line"><a name="l01419"></a><span class="lineno"> 1419</span>&#160;            denVal *= 10;</div>
-<div class="line"><a name="l01420"></a><span class="lineno"> 1420</span>&#160;            --denOffset;</div>
-<div class="line"><a name="l01421"></a><span class="lineno"> 1421</span>&#160;        }</div>
-<div class="line"><a name="l01422"></a><span class="lineno"> 1422</span>&#160;    }</div>
-<div class="line"><a name="l01423"></a><span class="lineno"> 1423</span>&#160; </div>
-<div class="line"><a name="l01424"></a><span class="lineno"> 1424</span>&#160;    <span class="keywordtype">bool</span> <span class="keyword">const</span> resultNegative = (num.<a class="code" href="classripple_1_1STAmount.html#aa830654962840253139aa891659f7551">negative</a>() != den.<a class="code" href="classripple_1_1STAmount.html#aa830654962840253139aa891659f7551">negative</a>());</div>
+<div class="line"><a name="l01403"></a><span class="lineno"> 1403</span>&#160;    DontAffectNumberRoundMode&amp;</div>
+<div class="line"><a name="l01404"></a><span class="lineno"> 1404</span>&#160;    operator=(DontAffectNumberRoundMode <span class="keyword">const</span>&amp;) = <span class="keyword">delete</span>;</div>
+<div class="line"><a name="l01405"></a><span class="lineno"> 1405</span>&#160;};</div>
+<div class="line"><a name="l01406"></a><span class="lineno"> 1406</span>&#160; </div>
+<div class="line"><a name="l01407"></a><span class="lineno"> 1407</span>&#160;}  <span class="comment">// anonymous namespace</span></div>
+<div class="line"><a name="l01408"></a><span class="lineno"> 1408</span>&#160; </div>
+<div class="line"><a name="l01409"></a><span class="lineno"> 1409</span>&#160;<span class="comment">// Pass the canonicalizeRound function pointer as a template parameter.</span></div>
+<div class="line"><a name="l01410"></a><span class="lineno"> 1410</span>&#160;<span class="comment">//</span></div>
+<div class="line"><a name="l01411"></a><span class="lineno"> 1411</span>&#160;<span class="comment">// We might need to use NumberRoundModeGuard.  Allow the caller</span></div>
+<div class="line"><a name="l01412"></a><span class="lineno"> 1412</span>&#160;<span class="comment">// to pass either that or a replacement as a template parameter.</span></div>
+<div class="line"><a name="l01413"></a><span class="lineno"> 1413</span>&#160;<span class="keyword">template</span> &lt;</div>
+<div class="line"><a name="l01414"></a><span class="lineno"> 1414</span>&#160;    void (*CanonicalizeFunc)(bool, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>&amp;, <span class="keywordtype">int</span>&amp;, bool),</div>
+<div class="line"><a name="l01415"></a><span class="lineno"> 1415</span>&#160;    <span class="keyword">typename</span> MightSaveRound&gt;</div>
+<div class="line"><a name="l01416"></a><span class="lineno"> 1416</span>&#160;<span class="keyword">static</span> STAmount</div>
+<div class="line"><a name="l01417"></a><span class="lineno"><a class="line" href="namespaceripple.html#a66208551f9f42710e224cee24b7ba206"> 1417</a></span>&#160;<a class="code" href="namespaceripple.html#a66208551f9f42710e224cee24b7ba206">mulRoundImpl</a>(</div>
+<div class="line"><a name="l01418"></a><span class="lineno"> 1418</span>&#160;    <a class="code" href="classripple_1_1STAmount.html">STAmount</a> <span class="keyword">const</span>&amp; v1,</div>
+<div class="line"><a name="l01419"></a><span class="lineno"> 1419</span>&#160;    <a class="code" href="classripple_1_1STAmount.html">STAmount</a> <span class="keyword">const</span>&amp; v2,</div>
+<div class="line"><a name="l01420"></a><span class="lineno"> 1420</span>&#160;    <a class="code" href="classripple_1_1Issue.html">Issue</a> <span class="keyword">const</span>&amp; issue,</div>
+<div class="line"><a name="l01421"></a><span class="lineno"> 1421</span>&#160;    <span class="keywordtype">bool</span> roundUp)</div>
+<div class="line"><a name="l01422"></a><span class="lineno"> 1422</span>&#160;{</div>
+<div class="line"><a name="l01423"></a><span class="lineno"> 1423</span>&#160;    <span class="keywordflow">if</span> (v1 == beast::zero || v2 == beast::zero)</div>
+<div class="line"><a name="l01424"></a><span class="lineno"> 1424</span>&#160;        <span class="keywordflow">return</span> {issue};</div>
 <div class="line"><a name="l01425"></a><span class="lineno"> 1425</span>&#160; </div>
-<div class="line"><a name="l01426"></a><span class="lineno"> 1426</span>&#160;    <span class="comment">// We divide the two mantissas (each is between 10^15</span></div>
-<div class="line"><a name="l01427"></a><span class="lineno"> 1427</span>&#160;    <span class="comment">// and 10^16). To maintain precision, we multiply the</span></div>
-<div class="line"><a name="l01428"></a><span class="lineno"> 1428</span>&#160;    <span class="comment">// numerator by 10^17 (the product is in the range of</span></div>
-<div class="line"><a name="l01429"></a><span class="lineno"> 1429</span>&#160;    <span class="comment">// 10^32 to 10^33) followed by a division, so the result</span></div>
-<div class="line"><a name="l01430"></a><span class="lineno"> 1430</span>&#160;    <span class="comment">// is in the range of 10^16 to 10^15.</span></div>
-<div class="line"><a name="l01431"></a><span class="lineno"> 1431</span>&#160;    <span class="comment">//</span></div>
-<div class="line"><a name="l01432"></a><span class="lineno"> 1432</span>&#160;    <span class="comment">// We round away from zero if we&#39;re rounding up or</span></div>
-<div class="line"><a name="l01433"></a><span class="lineno"> 1433</span>&#160;    <span class="comment">// truncate if we&#39;re rounding down.</span></div>
-<div class="line"><a name="l01434"></a><span class="lineno"> 1434</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> amount = <a class="code" href="namespaceripple.html#ae745102449603924823f094157604641">muldiv_round</a>(</div>
-<div class="line"><a name="l01435"></a><span class="lineno"> 1435</span>&#160;        numVal, <a class="code" href="namespaceripple.html#abc2f04db8f54f17ec5d0268d566b7a4d">tenTo17</a>, denVal, (resultNegative != roundUp) ? denVal - 1 : 0);</div>
-<div class="line"><a name="l01436"></a><span class="lineno"> 1436</span>&#160; </div>
-<div class="line"><a name="l01437"></a><span class="lineno"> 1437</span>&#160;    <span class="keywordtype">int</span> offset = numOffset - denOffset - 17;</div>
-<div class="line"><a name="l01438"></a><span class="lineno"> 1438</span>&#160; </div>
-<div class="line"><a name="l01439"></a><span class="lineno"> 1439</span>&#160;    <span class="keywordflow">if</span> (resultNegative != roundUp)</div>
-<div class="line"><a name="l01440"></a><span class="lineno"> 1440</span>&#160;        <a class="code" href="namespaceripple.html#af5a98b092dca8d35b8913320f354fb1f">canonicalizeRound</a>(<a class="code" href="namespaceripple.html#a20d30277b9c78756b3d14493055a307c">isXRP</a>(issue), amount, offset);</div>
-<div class="line"><a name="l01441"></a><span class="lineno"> 1441</span>&#160; </div>
-<div class="line"><a name="l01442"></a><span class="lineno"> 1442</span>&#160;    <a class="code" href="classripple_1_1STAmount.html">STAmount</a> result(issue, amount, offset, resultNegative);</div>
-<div class="line"><a name="l01443"></a><span class="lineno"> 1443</span>&#160;    <span class="keywordflow">if</span> (roundUp &amp;&amp; !resultNegative &amp;&amp; !result)</div>
-<div class="line"><a name="l01444"></a><span class="lineno"> 1444</span>&#160;    {</div>
-<div class="line"><a name="l01445"></a><span class="lineno"> 1445</span>&#160;        <span class="keywordflow">if</span> (<a class="code" href="namespaceripple.html#a20d30277b9c78756b3d14493055a307c">isXRP</a>(issue))</div>
-<div class="line"><a name="l01446"></a><span class="lineno"> 1446</span>&#160;        {</div>
-<div class="line"><a name="l01447"></a><span class="lineno"> 1447</span>&#160;            <span class="comment">// return the smallest value above zero</span></div>
-<div class="line"><a name="l01448"></a><span class="lineno"> 1448</span>&#160;            amount = 1;</div>
-<div class="line"><a name="l01449"></a><span class="lineno"> 1449</span>&#160;            offset = 0;</div>
-<div class="line"><a name="l01450"></a><span class="lineno"> 1450</span>&#160;        }</div>
-<div class="line"><a name="l01451"></a><span class="lineno"> 1451</span>&#160;        <span class="keywordflow">else</span></div>
-<div class="line"><a name="l01452"></a><span class="lineno"> 1452</span>&#160;        {</div>
-<div class="line"><a name="l01453"></a><span class="lineno"> 1453</span>&#160;            <span class="comment">// return the smallest value above zero</span></div>
-<div class="line"><a name="l01454"></a><span class="lineno"> 1454</span>&#160;            amount = <a class="code" href="classripple_1_1STAmount.html#ad845bc67616b999387da6badf56f7290">STAmount::cMinValue</a>;</div>
-<div class="line"><a name="l01455"></a><span class="lineno"> 1455</span>&#160;            offset = <a class="code" href="classripple_1_1STAmount.html#ade4056a07e14fcd243fd2609eedba34d">STAmount::cMinOffset</a>;</div>
-<div class="line"><a name="l01456"></a><span class="lineno"> 1456</span>&#160;        }</div>
-<div class="line"><a name="l01457"></a><span class="lineno"> 1457</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="classripple_1_1STAmount.html">STAmount</a>(issue, amount, offset, resultNegative);</div>
-<div class="line"><a name="l01458"></a><span class="lineno"> 1458</span>&#160;    }</div>
-<div class="line"><a name="l01459"></a><span class="lineno"> 1459</span>&#160;    <span class="keywordflow">return</span> result;</div>
-<div class="line"><a name="l01460"></a><span class="lineno"> 1460</span>&#160;}</div>
-<div class="line"><a name="l01461"></a><span class="lineno"> 1461</span>&#160; </div>
-<div class="line"><a name="l01462"></a><span class="lineno"> 1462</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l01426"></a><span class="lineno"> 1426</span>&#160;    <span class="keywordtype">bool</span> <span class="keyword">const</span> xrp = <a class="code" href="namespaceripple.html#a20d30277b9c78756b3d14493055a307c">isXRP</a>(issue);</div>
+<div class="line"><a name="l01427"></a><span class="lineno"> 1427</span>&#160; </div>
+<div class="line"><a name="l01428"></a><span class="lineno"> 1428</span>&#160;    <span class="keywordflow">if</span> (v1.<a class="code" href="classripple_1_1STAmount.html#af3a02d7e9cd0b11509a90e0e6980bd64">native</a>() &amp;&amp; v2.<a class="code" href="classripple_1_1STAmount.html#af3a02d7e9cd0b11509a90e0e6980bd64">native</a>() &amp;&amp; xrp)</div>
+<div class="line"><a name="l01429"></a><span class="lineno"> 1429</span>&#160;    {</div>
+<div class="line"><a name="l01430"></a><span class="lineno"> 1430</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> minV =</div>
+<div class="line"><a name="l01431"></a><span class="lineno"> 1431</span>&#160;            (<a class="code" href="namespaceripple.html#a82a40c2d1b4a954d5626d74423af9c4c">getSNValue</a>(v1) &lt; <a class="code" href="namespaceripple.html#a82a40c2d1b4a954d5626d74423af9c4c">getSNValue</a>(v2)) ? <a class="code" href="namespaceripple.html#a82a40c2d1b4a954d5626d74423af9c4c">getSNValue</a>(v1) : <a class="code" href="namespaceripple.html#a82a40c2d1b4a954d5626d74423af9c4c">getSNValue</a>(v2);</div>
+<div class="line"><a name="l01432"></a><span class="lineno"> 1432</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> maxV =</div>
+<div class="line"><a name="l01433"></a><span class="lineno"> 1433</span>&#160;            (<a class="code" href="namespaceripple.html#a82a40c2d1b4a954d5626d74423af9c4c">getSNValue</a>(v1) &lt; <a class="code" href="namespaceripple.html#a82a40c2d1b4a954d5626d74423af9c4c">getSNValue</a>(v2)) ? <a class="code" href="namespaceripple.html#a82a40c2d1b4a954d5626d74423af9c4c">getSNValue</a>(v2) : <a class="code" href="namespaceripple.html#a82a40c2d1b4a954d5626d74423af9c4c">getSNValue</a>(v1);</div>
+<div class="line"><a name="l01434"></a><span class="lineno"> 1434</span>&#160; </div>
+<div class="line"><a name="l01435"></a><span class="lineno"> 1435</span>&#160;        <span class="keywordflow">if</span> (minV &gt; 3000000000ull)  <span class="comment">// sqrt(cMaxNative)</span></div>
+<div class="line"><a name="l01436"></a><span class="lineno"> 1436</span>&#160;            Throw&lt;std::runtime_error&gt;(<span class="stringliteral">&quot;Native value overflow&quot;</span>);</div>
+<div class="line"><a name="l01437"></a><span class="lineno"> 1437</span>&#160; </div>
+<div class="line"><a name="l01438"></a><span class="lineno"> 1438</span>&#160;        <span class="keywordflow">if</span> (((maxV &gt;&gt; 32) * minV) &gt; 2095475792ull)  <span class="comment">// cMaxNative / 2^32</span></div>
+<div class="line"><a name="l01439"></a><span class="lineno"> 1439</span>&#160;            Throw&lt;std::runtime_error&gt;(<span class="stringliteral">&quot;Native value overflow&quot;</span>);</div>
+<div class="line"><a name="l01440"></a><span class="lineno"> 1440</span>&#160; </div>
+<div class="line"><a name="l01441"></a><span class="lineno"> 1441</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="classripple_1_1STAmount.html">STAmount</a>(v1.<a class="code" href="classripple_1_1STBase.html#a48097bca334d2f32a1d7861b59ae2e30">getFName</a>(), minV * maxV);</div>
+<div class="line"><a name="l01442"></a><span class="lineno"> 1442</span>&#160;    }</div>
+<div class="line"><a name="l01443"></a><span class="lineno"> 1443</span>&#160; </div>
+<div class="line"><a name="l01444"></a><span class="lineno"> 1444</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> value1 = v1.<a class="code" href="classripple_1_1STAmount.html#ae7f9ce5e872fd96b92b0cedbf8f09f81">mantissa</a>(), value2 = v2.<a class="code" href="classripple_1_1STAmount.html#ae7f9ce5e872fd96b92b0cedbf8f09f81">mantissa</a>();</div>
+<div class="line"><a name="l01445"></a><span class="lineno"> 1445</span>&#160;    <span class="keywordtype">int</span> offset1 = v1.<a class="code" href="classripple_1_1STAmount.html#a2885d73708e1b809f31a46ffaea5ad7f">exponent</a>(), offset2 = v2.<a class="code" href="classripple_1_1STAmount.html#a2885d73708e1b809f31a46ffaea5ad7f">exponent</a>();</div>
+<div class="line"><a name="l01446"></a><span class="lineno"> 1446</span>&#160; </div>
+<div class="line"><a name="l01447"></a><span class="lineno"> 1447</span>&#160;    <span class="keywordflow">if</span> (v1.<a class="code" href="classripple_1_1STAmount.html#af3a02d7e9cd0b11509a90e0e6980bd64">native</a>())</div>
+<div class="line"><a name="l01448"></a><span class="lineno"> 1448</span>&#160;    {</div>
+<div class="line"><a name="l01449"></a><span class="lineno"> 1449</span>&#160;        <span class="keywordflow">while</span> (value1 &lt; <a class="code" href="classripple_1_1STAmount.html#ad845bc67616b999387da6badf56f7290">STAmount::cMinValue</a>)</div>
+<div class="line"><a name="l01450"></a><span class="lineno"> 1450</span>&#160;        {</div>
+<div class="line"><a name="l01451"></a><span class="lineno"> 1451</span>&#160;            value1 *= 10;</div>
+<div class="line"><a name="l01452"></a><span class="lineno"> 1452</span>&#160;            --offset1;</div>
+<div class="line"><a name="l01453"></a><span class="lineno"> 1453</span>&#160;        }</div>
+<div class="line"><a name="l01454"></a><span class="lineno"> 1454</span>&#160;    }</div>
+<div class="line"><a name="l01455"></a><span class="lineno"> 1455</span>&#160; </div>
+<div class="line"><a name="l01456"></a><span class="lineno"> 1456</span>&#160;    <span class="keywordflow">if</span> (v2.<a class="code" href="classripple_1_1STAmount.html#af3a02d7e9cd0b11509a90e0e6980bd64">native</a>())</div>
+<div class="line"><a name="l01457"></a><span class="lineno"> 1457</span>&#160;    {</div>
+<div class="line"><a name="l01458"></a><span class="lineno"> 1458</span>&#160;        <span class="keywordflow">while</span> (value2 &lt; <a class="code" href="classripple_1_1STAmount.html#ad845bc67616b999387da6badf56f7290">STAmount::cMinValue</a>)</div>
+<div class="line"><a name="l01459"></a><span class="lineno"> 1459</span>&#160;        {</div>
+<div class="line"><a name="l01460"></a><span class="lineno"> 1460</span>&#160;            value2 *= 10;</div>
+<div class="line"><a name="l01461"></a><span class="lineno"> 1461</span>&#160;            --offset2;</div>
+<div class="line"><a name="l01462"></a><span class="lineno"> 1462</span>&#160;        }</div>
+<div class="line"><a name="l01463"></a><span class="lineno"> 1463</span>&#160;    }</div>
+<div class="line"><a name="l01464"></a><span class="lineno"> 1464</span>&#160; </div>
+<div class="line"><a name="l01465"></a><span class="lineno"> 1465</span>&#160;    <span class="keywordtype">bool</span> <span class="keyword">const</span> resultNegative = v1.<a class="code" href="classripple_1_1STAmount.html#aa830654962840253139aa891659f7551">negative</a>() != v2.<a class="code" href="classripple_1_1STAmount.html#aa830654962840253139aa891659f7551">negative</a>();</div>
+<div class="line"><a name="l01466"></a><span class="lineno"> 1466</span>&#160; </div>
+<div class="line"><a name="l01467"></a><span class="lineno"> 1467</span>&#160;    <span class="comment">// We multiply the two mantissas (each is between 10^15</span></div>
+<div class="line"><a name="l01468"></a><span class="lineno"> 1468</span>&#160;    <span class="comment">// and 10^16), so their product is in the 10^30 to 10^32</span></div>
+<div class="line"><a name="l01469"></a><span class="lineno"> 1469</span>&#160;    <span class="comment">// range. Dividing their product by 10^14 maintains the</span></div>
+<div class="line"><a name="l01470"></a><span class="lineno"> 1470</span>&#160;    <span class="comment">// precision, by scaling the result to 10^16 to 10^18.</span></div>
+<div class="line"><a name="l01471"></a><span class="lineno"> 1471</span>&#160;    <span class="comment">//</span></div>
+<div class="line"><a name="l01472"></a><span class="lineno"> 1472</span>&#160;    <span class="comment">// If the we&#39;re rounding up, we want to round up away</span></div>
+<div class="line"><a name="l01473"></a><span class="lineno"> 1473</span>&#160;    <span class="comment">// from zero, and if we&#39;re rounding down, truncation</span></div>
+<div class="line"><a name="l01474"></a><span class="lineno"> 1474</span>&#160;    <span class="comment">// is implicit.</span></div>
+<div class="line"><a name="l01475"></a><span class="lineno"> 1475</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> amount = <a class="code" href="namespaceripple.html#ae745102449603924823f094157604641">muldiv_round</a>(</div>
+<div class="line"><a name="l01476"></a><span class="lineno"> 1476</span>&#160;        value1, value2, <a class="code" href="namespaceripple.html#a1b237be5c5c7faa68434cdf539f3120a">tenTo14</a>, (resultNegative != roundUp) ? <a class="code" href="namespaceripple.html#a4e2d5fc0ab98ac97423905610e7c20e5">tenTo14m1</a> : 0);</div>
+<div class="line"><a name="l01477"></a><span class="lineno"> 1477</span>&#160; </div>
+<div class="line"><a name="l01478"></a><span class="lineno"> 1478</span>&#160;    <span class="keywordtype">int</span> offset = offset1 + offset2 + 14;</div>
+<div class="line"><a name="l01479"></a><span class="lineno"> 1479</span>&#160;    <span class="keywordflow">if</span> (resultNegative != roundUp)</div>
+<div class="line"><a name="l01480"></a><span class="lineno"> 1480</span>&#160;    {</div>
+<div class="line"><a name="l01481"></a><span class="lineno"> 1481</span>&#160;        CanonicalizeFunc(xrp, amount, offset, roundUp);</div>
+<div class="line"><a name="l01482"></a><span class="lineno"> 1482</span>&#160;    }</div>
+<div class="line"><a name="l01483"></a><span class="lineno"> 1483</span>&#160;    <a class="code" href="classripple_1_1STAmount.html">STAmount</a> result = [&amp;]() {</div>
+<div class="line"><a name="l01484"></a><span class="lineno"> 1484</span>&#160;        <span class="comment">// If appropriate, tell Number to round down.  This gives the desired</span></div>
+<div class="line"><a name="l01485"></a><span class="lineno"> 1485</span>&#160;        <span class="comment">// result from STAmount::canonicalize.</span></div>
+<div class="line"><a name="l01486"></a><span class="lineno"> 1486</span>&#160;        MightSaveRound <span class="keyword">const</span> savedRound(<a class="code" href="classripple_1_1Number.html#a33e3d8e7a95979bd1eb22c59703c8534afed3119e1980867324d399f42cbf548d">Number::towards_zero</a>);</div>
+<div class="line"><a name="l01487"></a><span class="lineno"> 1487</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="classripple_1_1STAmount.html">STAmount</a>(issue, amount, offset, resultNegative);</div>
+<div class="line"><a name="l01488"></a><span class="lineno"> 1488</span>&#160;    }();</div>
+<div class="line"><a name="l01489"></a><span class="lineno"> 1489</span>&#160; </div>
+<div class="line"><a name="l01490"></a><span class="lineno"> 1490</span>&#160;    <span class="keywordflow">if</span> (roundUp &amp;&amp; !resultNegative &amp;&amp; !result)</div>
+<div class="line"><a name="l01491"></a><span class="lineno"> 1491</span>&#160;    {</div>
+<div class="line"><a name="l01492"></a><span class="lineno"> 1492</span>&#160;        <span class="keywordflow">if</span> (xrp)</div>
+<div class="line"><a name="l01493"></a><span class="lineno"> 1493</span>&#160;        {</div>
+<div class="line"><a name="l01494"></a><span class="lineno"> 1494</span>&#160;            <span class="comment">// return the smallest value above zero</span></div>
+<div class="line"><a name="l01495"></a><span class="lineno"> 1495</span>&#160;            amount = 1;</div>
+<div class="line"><a name="l01496"></a><span class="lineno"> 1496</span>&#160;            offset = 0;</div>
+<div class="line"><a name="l01497"></a><span class="lineno"> 1497</span>&#160;        }</div>
+<div class="line"><a name="l01498"></a><span class="lineno"> 1498</span>&#160;        <span class="keywordflow">else</span></div>
+<div class="line"><a name="l01499"></a><span class="lineno"> 1499</span>&#160;        {</div>
+<div class="line"><a name="l01500"></a><span class="lineno"> 1500</span>&#160;            <span class="comment">// return the smallest value above zero</span></div>
+<div class="line"><a name="l01501"></a><span class="lineno"> 1501</span>&#160;            amount = <a class="code" href="classripple_1_1STAmount.html#ad845bc67616b999387da6badf56f7290">STAmount::cMinValue</a>;</div>
+<div class="line"><a name="l01502"></a><span class="lineno"> 1502</span>&#160;            offset = <a class="code" href="classripple_1_1STAmount.html#ade4056a07e14fcd243fd2609eedba34d">STAmount::cMinOffset</a>;</div>
+<div class="line"><a name="l01503"></a><span class="lineno"> 1503</span>&#160;        }</div>
+<div class="line"><a name="l01504"></a><span class="lineno"> 1504</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="classripple_1_1STAmount.html">STAmount</a>(issue, amount, offset, resultNegative);</div>
+<div class="line"><a name="l01505"></a><span class="lineno"> 1505</span>&#160;    }</div>
+<div class="line"><a name="l01506"></a><span class="lineno"> 1506</span>&#160;    <span class="keywordflow">return</span> result;</div>
+<div class="line"><a name="l01507"></a><span class="lineno"> 1507</span>&#160;}</div>
+<div class="line"><a name="l01508"></a><span class="lineno"> 1508</span>&#160; </div>
+<div class="line"><a name="l01509"></a><span class="lineno"> 1509</span>&#160;STAmount</div>
+<div class="line"><a name="l01510"></a><span class="lineno"><a class="line" href="namespaceripple.html#a7806e73f2a04df365821602cfcf89ff2"> 1510</a></span>&#160;<a class="code" href="namespaceripple.html#a7806e73f2a04df365821602cfcf89ff2">mulRound</a>(</div>
+<div class="line"><a name="l01511"></a><span class="lineno"> 1511</span>&#160;    <a class="code" href="classripple_1_1STAmount.html">STAmount</a> <span class="keyword">const</span>&amp; v1,</div>
+<div class="line"><a name="l01512"></a><span class="lineno"> 1512</span>&#160;    <a class="code" href="classripple_1_1STAmount.html">STAmount</a> <span class="keyword">const</span>&amp; v2,</div>
+<div class="line"><a name="l01513"></a><span class="lineno"> 1513</span>&#160;    <a class="code" href="classripple_1_1Issue.html">Issue</a> <span class="keyword">const</span>&amp; issue,</div>
+<div class="line"><a name="l01514"></a><span class="lineno"> 1514</span>&#160;    <span class="keywordtype">bool</span> roundUp)</div>
+<div class="line"><a name="l01515"></a><span class="lineno"> 1515</span>&#160;{</div>
+<div class="line"><a name="l01516"></a><span class="lineno"> 1516</span>&#160;    <span class="keywordflow">return</span> mulRoundImpl&lt;canonicalizeRound, DontAffectNumberRoundMode&gt;(</div>
+<div class="line"><a name="l01517"></a><span class="lineno"> 1517</span>&#160;        v1, v2, issue, roundUp);</div>
+<div class="line"><a name="l01518"></a><span class="lineno"> 1518</span>&#160;}</div>
+<div class="line"><a name="l01519"></a><span class="lineno"> 1519</span>&#160; </div>
+<div class="line"><a name="l01520"></a><span class="lineno"> 1520</span>&#160;STAmount</div>
+<div class="line"><a name="l01521"></a><span class="lineno"><a class="line" href="namespaceripple.html#ab5dd5d90c482d9f8a2549b7dd3863b8b"> 1521</a></span>&#160;<a class="code" href="namespaceripple.html#ab5dd5d90c482d9f8a2549b7dd3863b8b">mulRoundStrict</a>(</div>
+<div class="line"><a name="l01522"></a><span class="lineno"> 1522</span>&#160;    <a class="code" href="classripple_1_1STAmount.html">STAmount</a> <span class="keyword">const</span>&amp; v1,</div>
+<div class="line"><a name="l01523"></a><span class="lineno"> 1523</span>&#160;    <a class="code" href="classripple_1_1STAmount.html">STAmount</a> <span class="keyword">const</span>&amp; v2,</div>
+<div class="line"><a name="l01524"></a><span class="lineno"> 1524</span>&#160;    <a class="code" href="classripple_1_1Issue.html">Issue</a> <span class="keyword">const</span>&amp; issue,</div>
+<div class="line"><a name="l01525"></a><span class="lineno"> 1525</span>&#160;    <span class="keywordtype">bool</span> roundUp)</div>
+<div class="line"><a name="l01526"></a><span class="lineno"> 1526</span>&#160;{</div>
+<div class="line"><a name="l01527"></a><span class="lineno"> 1527</span>&#160;    <span class="keywordflow">return</span> mulRoundImpl&lt;canonicalizeRoundStrict, NumberRoundModeGuard&gt;(</div>
+<div class="line"><a name="l01528"></a><span class="lineno"> 1528</span>&#160;        v1, v2, issue, roundUp);</div>
+<div class="line"><a name="l01529"></a><span class="lineno"> 1529</span>&#160;}</div>
+<div class="line"><a name="l01530"></a><span class="lineno"> 1530</span>&#160; </div>
+<div class="line"><a name="l01531"></a><span class="lineno"> 1531</span>&#160;<span class="comment">// We might need to use NumberRoundModeGuard.  Allow the caller</span></div>
+<div class="line"><a name="l01532"></a><span class="lineno"> 1532</span>&#160;<span class="comment">// to pass either that or a replacement as a template parameter.</span></div>
+<div class="line"><a name="l01533"></a><span class="lineno"> 1533</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> MightSaveRound&gt;</div>
+<div class="line"><a name="l01534"></a><span class="lineno"> 1534</span>&#160;<span class="keyword">static</span> STAmount</div>
+<div class="line"><a name="l01535"></a><span class="lineno"><a class="line" href="namespaceripple.html#aa2e515ce9112a60a7d65f0829d0efadf"> 1535</a></span>&#160;<a class="code" href="namespaceripple.html#aa2e515ce9112a60a7d65f0829d0efadf">divRoundImpl</a>(</div>
+<div class="line"><a name="l01536"></a><span class="lineno"> 1536</span>&#160;    <a class="code" href="classripple_1_1STAmount.html">STAmount</a> <span class="keyword">const</span>&amp; num,</div>
+<div class="line"><a name="l01537"></a><span class="lineno"> 1537</span>&#160;    <a class="code" href="classripple_1_1STAmount.html">STAmount</a> <span class="keyword">const</span>&amp; den,</div>
+<div class="line"><a name="l01538"></a><span class="lineno"> 1538</span>&#160;    <a class="code" href="classripple_1_1Issue.html">Issue</a> <span class="keyword">const</span>&amp; issue,</div>
+<div class="line"><a name="l01539"></a><span class="lineno"> 1539</span>&#160;    <span class="keywordtype">bool</span> roundUp)</div>
+<div class="line"><a name="l01540"></a><span class="lineno"> 1540</span>&#160;{</div>
+<div class="line"><a name="l01541"></a><span class="lineno"> 1541</span>&#160;    <span class="keywordflow">if</span> (den == beast::zero)</div>
+<div class="line"><a name="l01542"></a><span class="lineno"> 1542</span>&#160;        Throw&lt;std::runtime_error&gt;(<span class="stringliteral">&quot;division by zero&quot;</span>);</div>
+<div class="line"><a name="l01543"></a><span class="lineno"> 1543</span>&#160; </div>
+<div class="line"><a name="l01544"></a><span class="lineno"> 1544</span>&#160;    <span class="keywordflow">if</span> (num == beast::zero)</div>
+<div class="line"><a name="l01545"></a><span class="lineno"> 1545</span>&#160;        <span class="keywordflow">return</span> {issue};</div>
+<div class="line"><a name="l01546"></a><span class="lineno"> 1546</span>&#160; </div>
+<div class="line"><a name="l01547"></a><span class="lineno"> 1547</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> numVal = num.<a class="code" href="classripple_1_1STAmount.html#ae7f9ce5e872fd96b92b0cedbf8f09f81">mantissa</a>(), denVal = den.<a class="code" href="classripple_1_1STAmount.html#ae7f9ce5e872fd96b92b0cedbf8f09f81">mantissa</a>();</div>
+<div class="line"><a name="l01548"></a><span class="lineno"> 1548</span>&#160;    <span class="keywordtype">int</span> numOffset = num.<a class="code" href="classripple_1_1STAmount.html#a2885d73708e1b809f31a46ffaea5ad7f">exponent</a>(), denOffset = den.<a class="code" href="classripple_1_1STAmount.html#a2885d73708e1b809f31a46ffaea5ad7f">exponent</a>();</div>
+<div class="line"><a name="l01549"></a><span class="lineno"> 1549</span>&#160; </div>
+<div class="line"><a name="l01550"></a><span class="lineno"> 1550</span>&#160;    <span class="keywordflow">if</span> (num.<a class="code" href="classripple_1_1STAmount.html#af3a02d7e9cd0b11509a90e0e6980bd64">native</a>())</div>
+<div class="line"><a name="l01551"></a><span class="lineno"> 1551</span>&#160;    {</div>
+<div class="line"><a name="l01552"></a><span class="lineno"> 1552</span>&#160;        <span class="keywordflow">while</span> (numVal &lt; <a class="code" href="classripple_1_1STAmount.html#ad845bc67616b999387da6badf56f7290">STAmount::cMinValue</a>)</div>
+<div class="line"><a name="l01553"></a><span class="lineno"> 1553</span>&#160;        {</div>
+<div class="line"><a name="l01554"></a><span class="lineno"> 1554</span>&#160;            numVal *= 10;</div>
+<div class="line"><a name="l01555"></a><span class="lineno"> 1555</span>&#160;            --numOffset;</div>
+<div class="line"><a name="l01556"></a><span class="lineno"> 1556</span>&#160;        }</div>
+<div class="line"><a name="l01557"></a><span class="lineno"> 1557</span>&#160;    }</div>
+<div class="line"><a name="l01558"></a><span class="lineno"> 1558</span>&#160; </div>
+<div class="line"><a name="l01559"></a><span class="lineno"> 1559</span>&#160;    <span class="keywordflow">if</span> (den.<a class="code" href="classripple_1_1STAmount.html#af3a02d7e9cd0b11509a90e0e6980bd64">native</a>())</div>
+<div class="line"><a name="l01560"></a><span class="lineno"> 1560</span>&#160;    {</div>
+<div class="line"><a name="l01561"></a><span class="lineno"> 1561</span>&#160;        <span class="keywordflow">while</span> (denVal &lt; <a class="code" href="classripple_1_1STAmount.html#ad845bc67616b999387da6badf56f7290">STAmount::cMinValue</a>)</div>
+<div class="line"><a name="l01562"></a><span class="lineno"> 1562</span>&#160;        {</div>
+<div class="line"><a name="l01563"></a><span class="lineno"> 1563</span>&#160;            denVal *= 10;</div>
+<div class="line"><a name="l01564"></a><span class="lineno"> 1564</span>&#160;            --denOffset;</div>
+<div class="line"><a name="l01565"></a><span class="lineno"> 1565</span>&#160;        }</div>
+<div class="line"><a name="l01566"></a><span class="lineno"> 1566</span>&#160;    }</div>
+<div class="line"><a name="l01567"></a><span class="lineno"> 1567</span>&#160; </div>
+<div class="line"><a name="l01568"></a><span class="lineno"> 1568</span>&#160;    <span class="keywordtype">bool</span> <span class="keyword">const</span> resultNegative = (num.<a class="code" href="classripple_1_1STAmount.html#aa830654962840253139aa891659f7551">negative</a>() != den.<a class="code" href="classripple_1_1STAmount.html#aa830654962840253139aa891659f7551">negative</a>());</div>
+<div class="line"><a name="l01569"></a><span class="lineno"> 1569</span>&#160; </div>
+<div class="line"><a name="l01570"></a><span class="lineno"> 1570</span>&#160;    <span class="comment">// We divide the two mantissas (each is between 10^15</span></div>
+<div class="line"><a name="l01571"></a><span class="lineno"> 1571</span>&#160;    <span class="comment">// and 10^16). To maintain precision, we multiply the</span></div>
+<div class="line"><a name="l01572"></a><span class="lineno"> 1572</span>&#160;    <span class="comment">// numerator by 10^17 (the product is in the range of</span></div>
+<div class="line"><a name="l01573"></a><span class="lineno"> 1573</span>&#160;    <span class="comment">// 10^32 to 10^33) followed by a division, so the result</span></div>
+<div class="line"><a name="l01574"></a><span class="lineno"> 1574</span>&#160;    <span class="comment">// is in the range of 10^16 to 10^15.</span></div>
+<div class="line"><a name="l01575"></a><span class="lineno"> 1575</span>&#160;    <span class="comment">//</span></div>
+<div class="line"><a name="l01576"></a><span class="lineno"> 1576</span>&#160;    <span class="comment">// We round away from zero if we&#39;re rounding up or</span></div>
+<div class="line"><a name="l01577"></a><span class="lineno"> 1577</span>&#160;    <span class="comment">// truncate if we&#39;re rounding down.</span></div>
+<div class="line"><a name="l01578"></a><span class="lineno"> 1578</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> amount = <a class="code" href="namespaceripple.html#ae745102449603924823f094157604641">muldiv_round</a>(</div>
+<div class="line"><a name="l01579"></a><span class="lineno"> 1579</span>&#160;        numVal, <a class="code" href="namespaceripple.html#abc2f04db8f54f17ec5d0268d566b7a4d">tenTo17</a>, denVal, (resultNegative != roundUp) ? denVal - 1 : 0);</div>
+<div class="line"><a name="l01580"></a><span class="lineno"> 1580</span>&#160; </div>
+<div class="line"><a name="l01581"></a><span class="lineno"> 1581</span>&#160;    <span class="keywordtype">int</span> offset = numOffset - denOffset - 17;</div>
+<div class="line"><a name="l01582"></a><span class="lineno"> 1582</span>&#160; </div>
+<div class="line"><a name="l01583"></a><span class="lineno"> 1583</span>&#160;    <span class="keywordflow">if</span> (resultNegative != roundUp)</div>
+<div class="line"><a name="l01584"></a><span class="lineno"> 1584</span>&#160;        <a class="code" href="namespaceripple.html#afed19a57936c35db382a67f1d58b6884">canonicalizeRound</a>(<a class="code" href="namespaceripple.html#a20d30277b9c78756b3d14493055a307c">isXRP</a>(issue), amount, offset, roundUp);</div>
+<div class="line"><a name="l01585"></a><span class="lineno"> 1585</span>&#160; </div>
+<div class="line"><a name="l01586"></a><span class="lineno"> 1586</span>&#160;    <a class="code" href="classripple_1_1STAmount.html">STAmount</a> result = [&amp;]() {</div>
+<div class="line"><a name="l01587"></a><span class="lineno"> 1587</span>&#160;        <span class="comment">// If appropriate, tell Number the rounding mode we are using.</span></div>
+<div class="line"><a name="l01588"></a><span class="lineno"> 1588</span>&#160;        <span class="comment">// Note that &quot;roundUp == true&quot; actually means &quot;round away from zero&quot;.</span></div>
+<div class="line"><a name="l01589"></a><span class="lineno"> 1589</span>&#160;        <span class="comment">// Otherwise round toward zero.</span></div>
+<div class="line"><a name="l01590"></a><span class="lineno"> 1590</span>&#160;        <span class="keyword">using</span> <span class="keyword">enum</span> <a class="code" href="classripple_1_1Number.html#a33e3d8e7a95979bd1eb22c59703c8534">Number::rounding_mode</a>;</div>
+<div class="line"><a name="l01591"></a><span class="lineno"> 1591</span>&#160;        MightSaveRound <span class="keyword">const</span> savedRound(</div>
+<div class="line"><a name="l01592"></a><span class="lineno"> 1592</span>&#160;            roundUp ^ resultNegative ? upward : downward);</div>
+<div class="line"><a name="l01593"></a><span class="lineno"> 1593</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="classripple_1_1STAmount.html">STAmount</a>(issue, amount, offset, resultNegative);</div>
+<div class="line"><a name="l01594"></a><span class="lineno"> 1594</span>&#160;    }();</div>
+<div class="line"><a name="l01595"></a><span class="lineno"> 1595</span>&#160; </div>
+<div class="line"><a name="l01596"></a><span class="lineno"> 1596</span>&#160;    <span class="keywordflow">if</span> (roundUp &amp;&amp; !resultNegative &amp;&amp; !result)</div>
+<div class="line"><a name="l01597"></a><span class="lineno"> 1597</span>&#160;    {</div>
+<div class="line"><a name="l01598"></a><span class="lineno"> 1598</span>&#160;        <span class="keywordflow">if</span> (<a class="code" href="namespaceripple.html#a20d30277b9c78756b3d14493055a307c">isXRP</a>(issue))</div>
+<div class="line"><a name="l01599"></a><span class="lineno"> 1599</span>&#160;        {</div>
+<div class="line"><a name="l01600"></a><span class="lineno"> 1600</span>&#160;            <span class="comment">// return the smallest value above zero</span></div>
+<div class="line"><a name="l01601"></a><span class="lineno"> 1601</span>&#160;            amount = 1;</div>
+<div class="line"><a name="l01602"></a><span class="lineno"> 1602</span>&#160;            offset = 0;</div>
+<div class="line"><a name="l01603"></a><span class="lineno"> 1603</span>&#160;        }</div>
+<div class="line"><a name="l01604"></a><span class="lineno"> 1604</span>&#160;        <span class="keywordflow">else</span></div>
+<div class="line"><a name="l01605"></a><span class="lineno"> 1605</span>&#160;        {</div>
+<div class="line"><a name="l01606"></a><span class="lineno"> 1606</span>&#160;            <span class="comment">// return the smallest value above zero</span></div>
+<div class="line"><a name="l01607"></a><span class="lineno"> 1607</span>&#160;            amount = <a class="code" href="classripple_1_1STAmount.html#ad845bc67616b999387da6badf56f7290">STAmount::cMinValue</a>;</div>
+<div class="line"><a name="l01608"></a><span class="lineno"> 1608</span>&#160;            offset = <a class="code" href="classripple_1_1STAmount.html#ade4056a07e14fcd243fd2609eedba34d">STAmount::cMinOffset</a>;</div>
+<div class="line"><a name="l01609"></a><span class="lineno"> 1609</span>&#160;        }</div>
+<div class="line"><a name="l01610"></a><span class="lineno"> 1610</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="classripple_1_1STAmount.html">STAmount</a>(issue, amount, offset, resultNegative);</div>
+<div class="line"><a name="l01611"></a><span class="lineno"> 1611</span>&#160;    }</div>
+<div class="line"><a name="l01612"></a><span class="lineno"> 1612</span>&#160;    <span class="keywordflow">return</span> result;</div>
+<div class="line"><a name="l01613"></a><span class="lineno"> 1613</span>&#160;}</div>
+<div class="line"><a name="l01614"></a><span class="lineno"> 1614</span>&#160; </div>
+<div class="line"><a name="l01615"></a><span class="lineno"> 1615</span>&#160;STAmount</div>
+<div class="line"><a name="l01616"></a><span class="lineno"><a class="line" href="namespaceripple.html#a47b15adfd6fb69767c64f50d860a11cc"> 1616</a></span>&#160;<a class="code" href="namespaceripple.html#a47b15adfd6fb69767c64f50d860a11cc">divRound</a>(</div>
+<div class="line"><a name="l01617"></a><span class="lineno"> 1617</span>&#160;    <a class="code" href="classripple_1_1STAmount.html">STAmount</a> <span class="keyword">const</span>&amp; num,</div>
+<div class="line"><a name="l01618"></a><span class="lineno"> 1618</span>&#160;    <a class="code" href="classripple_1_1STAmount.html">STAmount</a> <span class="keyword">const</span>&amp; den,</div>
+<div class="line"><a name="l01619"></a><span class="lineno"> 1619</span>&#160;    <a class="code" href="classripple_1_1Issue.html">Issue</a> <span class="keyword">const</span>&amp; issue,</div>
+<div class="line"><a name="l01620"></a><span class="lineno"> 1620</span>&#160;    <span class="keywordtype">bool</span> roundUp)</div>
+<div class="line"><a name="l01621"></a><span class="lineno"> 1621</span>&#160;{</div>
+<div class="line"><a name="l01622"></a><span class="lineno"> 1622</span>&#160;    <span class="keywordflow">return</span> divRoundImpl&lt;DontAffectNumberRoundMode&gt;(num, den, issue, roundUp);</div>
+<div class="line"><a name="l01623"></a><span class="lineno"> 1623</span>&#160;}</div>
+<div class="line"><a name="l01624"></a><span class="lineno"> 1624</span>&#160; </div>
+<div class="line"><a name="l01625"></a><span class="lineno"> 1625</span>&#160;STAmount</div>
+<div class="line"><a name="l01626"></a><span class="lineno"><a class="line" href="namespaceripple.html#a2853997797ff121f19b538ff9f8c4ba0"> 1626</a></span>&#160;<a class="code" href="namespaceripple.html#a2853997797ff121f19b538ff9f8c4ba0">divRoundStrict</a>(</div>
+<div class="line"><a name="l01627"></a><span class="lineno"> 1627</span>&#160;    <a class="code" href="classripple_1_1STAmount.html">STAmount</a> <span class="keyword">const</span>&amp; num,</div>
+<div class="line"><a name="l01628"></a><span class="lineno"> 1628</span>&#160;    <a class="code" href="classripple_1_1STAmount.html">STAmount</a> <span class="keyword">const</span>&amp; den,</div>
+<div class="line"><a name="l01629"></a><span class="lineno"> 1629</span>&#160;    <a class="code" href="classripple_1_1Issue.html">Issue</a> <span class="keyword">const</span>&amp; issue,</div>
+<div class="line"><a name="l01630"></a><span class="lineno"> 1630</span>&#160;    <span class="keywordtype">bool</span> roundUp)</div>
+<div class="line"><a name="l01631"></a><span class="lineno"> 1631</span>&#160;{</div>
+<div class="line"><a name="l01632"></a><span class="lineno"> 1632</span>&#160;    <span class="keywordflow">return</span> divRoundImpl&lt;NumberRoundModeGuard&gt;(num, den, issue, roundUp);</div>
+<div class="line"><a name="l01633"></a><span class="lineno"> 1633</span>&#160;}</div>
+<div class="line"><a name="l01634"></a><span class="lineno"> 1634</span>&#160; </div>
+<div class="line"><a name="l01635"></a><span class="lineno"> 1635</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aclassJson_1_1Value_html_aff51d8b52979ca06cf9d909accd5f695"><div class="ttname"><a href="classJson_1_1Value.html#aff51d8b52979ca06cf9d909accd5f695">Json::Value::isInt</a></div><div class="ttdeci">bool isInt() const</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8cpp_source.html#l00979">json_value.cpp:979</a></div></div>
 <div class="ttc" id="aclassripple_1_1STAmount_html_adfc9be8e6e0843a250f7810a4b887f1f"><div class="ttname"><a href="classripple_1_1STAmount.html#adfc9be8e6e0843a250f7810a4b887f1f">ripple::STAmount::mIsNative</a></div><div class="ttdeci">bool mIsNative</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8h_source.html#l00056">STAmount.h:56</a></div></div>
@@ -1560,11 +1733,13 @@ $(function() {
 <div class="ttc" id="afind_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/algorithm/find.html">std::find_if</a></div><div class="ttdeci">T find_if(T... args)</div></div>
 <div class="ttc" id="asize_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string/size.html">std::string::length</a></div><div class="ttdeci">T length(T... args)</div></div>
 <div class="ttc" id="anamespaceripple_html_a3e7e3f29aef85bcca06706da54e950fcaab5dbff88c1be883ec12b49a359d2080"><div class="ttname"><a href="namespaceripple.html#a3e7e3f29aef85bcca06706da54e950fcaab5dbff88c1be883ec12b49a359d2080">ripple::STI_AMOUNT</a></div><div class="ttdeci">@ STI_AMOUNT</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00063">SField.h:63</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ab5dd5d90c482d9f8a2549b7dd3863b8b"><div class="ttname"><a href="namespaceripple.html#ab5dd5d90c482d9f8a2549b7dd3863b8b">ripple::mulRoundStrict</a></div><div class="ttdeci">STAmount mulRoundStrict(STAmount const &amp;v1, STAmount const &amp;v2, Issue const &amp;issue, bool roundUp)</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8cpp_source.html#l01521">STAmount.cpp:1521</a></div></div>
 <div class="ttc" id="aclassripple_1_1STAmount_html_aa65826cb148b5d15412fceecca5ae47c"><div class="ttname"><a href="classripple_1_1STAmount.html#aa65826cb148b5d15412fceecca5ae47c">ripple::STAmount::getText</a></div><div class="ttdeci">std::string getText() const override</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8cpp_source.html#l00571">STAmount.cpp:571</a></div></div>
 <div class="ttc" id="aclassripple_1_1STAmount_html_a02bef3696a9cb07b72e5ec750e7ea456"><div class="ttname"><a href="classripple_1_1STAmount.html#a02bef3696a9cb07b72e5ec750e7ea456">ripple::STAmount::getJson</a></div><div class="ttdeci">Json::Value getJson(JsonOptions) const override</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8cpp_source.html#l00655">STAmount.cpp:655</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a3e7e3f29aef85bcca06706da54e950fc"><div class="ttname"><a href="namespaceripple.html#a3e7e3f29aef85bcca06706da54e950fc">ripple::SerializedTypeID</a></div><div class="ttdeci">SerializedTypeID</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00052">SField.h:52</a></div></div>
 <div class="ttc" id="anamespaceripple_html_ac73696ba9cf84191fe3d33d6ef9043c7"><div class="ttname"><a href="namespaceripple.html#ac73696ba9cf84191fe3d33d6ef9043c7">ripple::operator-</a></div><div class="ttdeci">Number operator-(Number const &amp;x, Number const &amp;y)</div><div class="ttdef"><b>Definition:</b> <a href="Number_8h_source.html#l00277">Number.h:277</a></div></div>
 <div class="ttc" id="aclassripple_1_1STAmount_html_a9cb0ba902ff56a3657d4e710a618fa16"><div class="ttname"><a href="classripple_1_1STAmount.html#a9cb0ba902ff56a3657d4e710a618fa16">ripple::STAmount::mValue</a></div><div class="ttdeci">mantissa_type mValue</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8h_source.html#l00054">STAmount.h:54</a></div></div>
+<div class="ttc" id="anamespaceripple_html_afed19a57936c35db382a67f1d58b6884"><div class="ttname"><a href="namespaceripple.html#afed19a57936c35db382a67f1d58b6884">ripple::canonicalizeRound</a></div><div class="ttdeci">static void canonicalizeRound(bool native, std::uint64_t &amp;value, int &amp;offset, bool)</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8cpp_source.html#l01290">STAmount.cpp:1290</a></div></div>
 <div class="ttc" id="aiterator_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/iterator.html">iterator</a></div></div>
 <div class="ttc" id="aclassripple_1_1Issue_html_a4b723aa4198e4c630e41de06586e2fe7"><div class="ttname"><a href="classripple_1_1Issue.html#a4b723aa4198e4c630e41de06586e2fe7">ripple::Issue::currency</a></div><div class="ttdeci">Currency currency</div><div class="ttdef"><b>Definition:</b> <a href="Issue_8h_source.html#l00037">Issue.h:37</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a1b237be5c5c7faa68434cdf539f3120a"><div class="ttname"><a href="namespaceripple.html#a1b237be5c5c7faa68434cdf539f3120a">ripple::tenTo14</a></div><div class="ttdeci">static const std::uint64_t tenTo14</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8cpp_source.html#l00060">STAmount.cpp:60</a></div></div>
@@ -1580,10 +1755,12 @@ $(function() {
 <div class="ttc" id="aiostream_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/iostream.html">iostream</a></div></div>
 <div class="ttc" id="aclassripple_1_1STAmount_html_a094bda660d23e258021a2c63112ebc9a"><div class="ttname"><a href="classripple_1_1STAmount.html#a094bda660d23e258021a2c63112ebc9a">ripple::STAmount::iou</a></div><div class="ttdeci">IOUAmount iou() const</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8cpp_source.html#l00349">STAmount.cpp:349</a></div></div>
 <div class="ttc" id="aclassripple_1_1STAmount_html_a796e10f39a5856f195555461d5949fdd"><div class="ttname"><a href="classripple_1_1STAmount.html#a796e10f39a5856f195555461d5949fdd">ripple::STAmount::operator-=</a></div><div class="ttdeci">STAmount &amp; operator-=(STAmount const &amp;)</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8cpp_source.html#l00390">STAmount.cpp:390</a></div></div>
+<div class="ttc" id="aclassripple_1_1Number_html_a33e3d8e7a95979bd1eb22c59703c8534"><div class="ttname"><a href="classripple_1_1Number.html#a33e3d8e7a95979bd1eb22c59703c8534">ripple::Number::rounding_mode</a></div><div class="ttdeci">rounding_mode</div><div class="ttdef"><b>Definition:</b> <a href="Number_8h_source.html#l00161">Number.h:161</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a94e13759bd026c8ac305482e17f05adb"><div class="ttname"><a href="namespaceripple.html#a94e13759bd026c8ac305482e17f05adb">ripple::debugLog</a></div><div class="ttdeci">beast::Journal debugLog()</div><div class="ttdoc">Returns a debug journal.</div><div class="ttdef"><b>Definition:</b> <a href="Log_8cpp_source.html#l00452">Log.cpp:452</a></div></div>
 <div class="ttc" id="aclassripple_1_1STAmount_html_a6c2ca92e9c91e2a34493d61e02d79ebf"><div class="ttname"><a href="classripple_1_1STAmount.html#a6c2ca92e9c91e2a34493d61e02d79ebf">ripple::STAmount::xrp</a></div><div class="ttdeci">XRPAmount xrp() const</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8cpp_source.html#l00334">STAmount.cpp:334</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a07a687e3a16e605ec3b4ecfd29bb6232"><div class="ttname"><a href="namespaceripple.html#a07a687e3a16e605ec3b4ecfd29bb6232">ripple::canonicalizeRoundStrict</a></div><div class="ttdeci">static void canonicalizeRoundStrict(bool native, std::uint64_t &amp;value, int &amp;offset, bool roundUp)</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8cpp_source.html#l01329">STAmount.cpp:1329</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a4a7f562868748b9246dbcab39091021c"><div class="ttname"><a href="namespaceripple.html#a4a7f562868748b9246dbcab39091021c">ripple::operator==</a></div><div class="ttdeci">bool operator==(Manifest const &amp;lhs, Manifest const &amp;rhs)</div><div class="ttdef"><b>Definition:</b> <a href="Manifest_8h_source.html#l00165">Manifest.h:165</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a7806e73f2a04df365821602cfcf89ff2"><div class="ttname"><a href="namespaceripple.html#a7806e73f2a04df365821602cfcf89ff2">ripple::mulRound</a></div><div class="ttdeci">STAmount mulRound(STAmount const &amp;v1, STAmount const &amp;v2, Issue const &amp;issue, bool roundUp)</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8cpp_source.html#l01305">STAmount.cpp:1305</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a7806e73f2a04df365821602cfcf89ff2"><div class="ttname"><a href="namespaceripple.html#a7806e73f2a04df365821602cfcf89ff2">ripple::mulRound</a></div><div class="ttdeci">STAmount mulRound(STAmount const &amp;v1, STAmount const &amp;v2, Issue const &amp;issue, bool roundUp)</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8cpp_source.html#l01510">STAmount.cpp:1510</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a73cc988e7ba5d5ee0fd9db53740917ec"><div class="ttname"><a href="namespaceripple.html#a73cc988e7ba5d5ee0fd9db53740917ec">ripple::getRate</a></div><div class="ttdeci">std::uint64_t getRate(STAmount const &amp;offerOut, STAmount const &amp;offerIn)</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8cpp_source.html#l00495">STAmount.cpp:495</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a0ad557cc32ca87dcea19af8e30c63c6a"><div class="ttname"><a href="namespaceripple.html#a0ad557cc32ca87dcea19af8e30c63c6a">ripple::divide</a></div><div class="ttdeci">STAmount divide(STAmount const &amp;amount, Rate const &amp;rate)</div><div class="ttdef"><b>Definition:</b> <a href="Rate2_8cpp_source.html#l00086">Rate2.cpp:86</a></div></div>
 <div class="ttc" id="aclassripple_1_1STAmount_html_aee39db45aa65eddca7002ad9bf3e7877"><div class="ttname"><a href="classripple_1_1STAmount.html#aee39db45aa65eddca7002ad9bf3e7877">ripple::STAmount::getFullText</a></div><div class="ttdeci">std::string getFullText() const override</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8cpp_source.html#l00548">STAmount.cpp:548</a></div></div>
@@ -1598,20 +1775,23 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1SerialIter_html_af720e6387dcaba61af9c9c724e33097e"><div class="ttname"><a href="classripple_1_1SerialIter.html#af720e6387dcaba61af9c9c724e33097e">ripple::SerialIter::get64</a></div><div class="ttdeci">std::uint64_t get64()</div><div class="ttdef"><b>Definition:</b> <a href="Serializer_8cpp_source.html#l00399">Serializer.cpp:399</a></div></div>
 <div class="ttc" id="anamespaceripple_html_ab6d31494e9d7c609592db5a019b2fb7d"><div class="ttname"><a href="namespaceripple.html#ab6d31494e9d7c609592db5a019b2fb7d">ripple::setSTAmountCanonicalizeSwitchover</a></div><div class="ttdeci">void setSTAmountCanonicalizeSwitchover(bool v)</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8cpp_source.html#l00055">STAmount.cpp:55</a></div></div>
 <div class="ttc" id="anamespaceripple_html_ae7f0e432d5fa980cfc588654bb6c77d7"><div class="ttname"><a href="namespaceripple.html#ae7f0e432d5fa980cfc588654bb6c77d7">ripple::operator&lt;</a></div><div class="ttdeci">bool operator&lt;(CanonicalTXSet::Key const &amp;lhs, CanonicalTXSet::Key const &amp;rhs)</div><div class="ttdef"><b>Definition:</b> <a href="CanonicalTXSet_8cpp_source.html#l00025">CanonicalTXSet.cpp:25</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a47b15adfd6fb69767c64f50d860a11cc"><div class="ttname"><a href="namespaceripple.html#a47b15adfd6fb69767c64f50d860a11cc">ripple::divRound</a></div><div class="ttdeci">STAmount divRound(STAmount const &amp;num, STAmount const &amp;den, Issue const &amp;issue, bool roundUp)</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8cpp_source.html#l01391">STAmount.cpp:1391</a></div></div>
+<div class="ttc" id="aclassripple_1_1Number_html_a9f2a0df7ad0f278908643927a19592f2"><div class="ttname"><a href="classripple_1_1Number.html#a9f2a0df7ad0f278908643927a19592f2">ripple::Number::setround</a></div><div class="ttdeci">static rounding_mode setround(rounding_mode mode)</div><div class="ttdef"><b>Definition:</b> <a href="Number_8cpp_source.html#l00047">Number.cpp:47</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a47b15adfd6fb69767c64f50d860a11cc"><div class="ttname"><a href="namespaceripple.html#a47b15adfd6fb69767c64f50d860a11cc">ripple::divRound</a></div><div class="ttdeci">STAmount divRound(STAmount const &amp;num, STAmount const &amp;den, Issue const &amp;issue, bool roundUp)</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8cpp_source.html#l01616">STAmount.cpp:1616</a></div></div>
 <div class="ttc" id="aclassripple_1_1SerialIter_html_a2fe5dd5ca6e8bf2f927b1ddefeb3430b"><div class="ttname"><a href="classripple_1_1SerialIter.html#a2fe5dd5ca6e8bf2f927b1ddefeb3430b">ripple::SerialIter::get160</a></div><div class="ttdeci">uint160 get160()</div><div class="ttdef"><b>Definition:</b> <a href="Serializer_8h_source.html#l00370">Serializer.h:370</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a2853997797ff121f19b538ff9f8c4ba0"><div class="ttname"><a href="namespaceripple.html#a2853997797ff121f19b538ff9f8c4ba0">ripple::divRoundStrict</a></div><div class="ttdeci">STAmount divRoundStrict(STAmount const &amp;num, STAmount const &amp;den, Issue const &amp;issue, bool roundUp)</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8cpp_source.html#l01626">STAmount.cpp:1626</a></div></div>
+<div class="ttc" id="aclassripple_1_1Number_html_a33e3d8e7a95979bd1eb22c59703c8534afed3119e1980867324d399f42cbf548d"><div class="ttname"><a href="classripple_1_1Number.html#a33e3d8e7a95979bd1eb22c59703c8534afed3119e1980867324d399f42cbf548d">ripple::Number::towards_zero</a></div><div class="ttdeci">@ towards_zero</div><div class="ttdef"><b>Definition:</b> <a href="Number_8h_source.html#l00161">Number.h:161</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a6f30ee31f9359c69a5294921d5c10d0b"><div class="ttname"><a href="namespaceripple.html#a6f30ee31f9359c69a5294921d5c10d0b">ripple::safe_cast</a></div><div class="ttdeci">constexpr std::enable_if_t&lt; std::is_same_v&lt; typename Dest::unit_type, typename Src::unit_type &gt; &amp;&amp;std::is_integral_v&lt; typename Dest::value_type &gt; &amp;&amp;std::is_integral_v&lt; typename Src::value_type &gt;, Dest &gt; safe_cast(Src s) noexcept</div><div class="ttdef"><b>Definition:</b> <a href="FeeUnits_8h_source.html#l00532">FeeUnits.h:532</a></div></div>
 <div class="ttc" id="aclassripple_1_1STAmount_html_aa40b0743a468d95eeaaf4914ea555866"><div class="ttname"><a href="classripple_1_1STAmount.html#aa40b0743a468d95eeaaf4914ea555866">ripple::STAmount::value</a></div><div class="ttdeci">STAmount const  &amp; value() const noexcept</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8h_source.html#l00440">STAmount.h:440</a></div></div>
 <div class="ttc" id="ato_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a></div><div class="ttdeci">T to_string(T... args)</div></div>
 <div class="ttc" id="anamespaceripple_html_abfd99ece02b928ee8520192a67595e46"><div class="ttname"><a href="namespaceripple.html#abfd99ece02b928ee8520192a67595e46">ripple::muldiv</a></div><div class="ttdeci">static std::uint64_t muldiv(std::uint64_t multiplier, std::uint64_t multiplicand, std::uint64_t divisor)</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8cpp_source.html#l01121">STAmount.cpp:1121</a></div></div>
 <div class="ttc" id="aclassripple_1_1STAmount_html"><div class="ttname"><a href="classripple_1_1STAmount.html">ripple::STAmount</a></div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8h_source.html#l00045">STAmount.h:45</a></div></div>
+<div class="ttc" id="anamespaceripple_html_aa2e515ce9112a60a7d65f0829d0efadf"><div class="ttname"><a href="namespaceripple.html#aa2e515ce9112a60a7d65f0829d0efadf">ripple::divRoundImpl</a></div><div class="ttdeci">static STAmount divRoundImpl(STAmount const &amp;num, STAmount const &amp;den, Issue const &amp;issue, bool roundUp)</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8cpp_source.html#l01535">STAmount.cpp:1535</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a4b4bd638a3aaa56c3b3dc28ccd4ca3b8"><div class="ttname"><a href="namespaceripple.html#a4b4bd638a3aaa56c3b3dc28ccd4ca3b8">ripple::getSTAmountCanonicalizeSwitchover</a></div><div class="ttdeci">bool getSTAmountCanonicalizeSwitchover()</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8cpp_source.html#l00049">STAmount.cpp:49</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a3c25b36b542a985c4f2d344df683a2dd"><div class="ttname"><a href="namespaceripple.html#a3c25b36b542a985c4f2d344df683a2dd">ripple::amountFromJson</a></div><div class="ttdeci">STAmount amountFromJson(SField const &amp;name, Json::Value const &amp;v)</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8cpp_source.html#l00929">STAmount.cpp:929</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a20d30277b9c78756b3d14493055a307c"><div class="ttname"><a href="namespaceripple.html#a20d30277b9c78756b3d14493055a307c">ripple::isXRP</a></div><div class="ttdeci">bool isXRP(AccountID const &amp;c)</div><div class="ttdef"><b>Definition:</b> <a href="AccountID_8h_source.html#l00089">AccountID.h:89</a></div></div>
 <div class="ttc" id="aclassripple_1_1SerialIter_html"><div class="ttname"><a href="classripple_1_1SerialIter.html">ripple::SerialIter</a></div><div class="ttdef"><b>Definition:</b> <a href="Serializer_8h_source.html#l00310">Serializer.h:310</a></div></div>
 <div class="ttc" id="ainteger_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a></div></div>
 <div class="ttc" id="aclassripple_1_1STAmount_html_a3758d676b17e36e61b94cb3fec90dcdf"><div class="ttname"><a href="classripple_1_1STAmount.html#a3758d676b17e36e61b94cb3fec90dcdf">ripple::STAmount::setIssue</a></div><div class="ttdeci">void setIssue(Issue const &amp;issue)</div><div class="ttdoc">Set the Issue for this amount and update mIsNative.</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8cpp_source.html#l00479">STAmount.cpp:479</a></div></div>
-<div class="ttc" id="anamespaceripple_html_af5a98b092dca8d35b8913320f354fb1f"><div class="ttname"><a href="namespaceripple.html#af5a98b092dca8d35b8913320f354fb1f">ripple::canonicalizeRound</a></div><div class="ttdeci">static void canonicalizeRound(bool native, std::uint64_t &amp;value, int &amp;offset)</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8cpp_source.html#l01270">STAmount.cpp:1270</a></div></div>
 <div class="ttc" id="aclassripple_1_1STAmount_html_a6a24e9e13e8aaaabf693f101c1a8e21b"><div class="ttname"><a href="classripple_1_1STAmount.html#a6a24e9e13e8aaaabf693f101c1a8e21b">ripple::STAmount::construct</a></div><div class="ttdeci">static std::unique_ptr&lt; STAmount &gt; construct(SerialIter &amp;, SField const &amp;name)</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8cpp_source.html#l00311">STAmount.cpp:311</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a4afbbae0910419307600d5545004e5be"><div class="ttname"><a href="namespaceripple.html#a4afbbae0910419307600d5545004e5be">ripple::amountFromQuality</a></div><div class="ttdeci">STAmount amountFromQuality(std::uint64_t rate)</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8cpp_source.html#l00852">STAmount.cpp:852</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a30c2e63999ddc369a258a7c2766e968f"><div class="ttname"><a href="namespaceripple.html#a30c2e63999ddc369a258a7c2766e968f">ripple::areComparable</a></div><div class="ttdeci">static bool areComparable(STAmount const &amp;v1, STAmount const &amp;v2)</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8cpp_source.html#l00082">STAmount.cpp:82</a></div></div>
@@ -1666,6 +1846,7 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1STAmount_html_af88c7b9a2ee49408f4fd17e1ee9f20df"><div class="ttname"><a href="classripple_1_1STAmount.html#af88c7b9a2ee49408f4fd17e1ee9f20df">ripple::STAmount::cMaxValue</a></div><div class="ttdeci">static const std::uint64_t cMaxValue</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8h_source.html#l00067">STAmount.h:67</a></div></div>
 <div class="ttc" id="awhat_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/error/exception/what.html">std::exception::what</a></div><div class="ttdeci">T what(T... args)</div></div>
 <div class="ttc" id="aclassJson_1_1Value_html"><div class="ttname"><a href="classJson_1_1Value.html">Json::Value</a></div><div class="ttdoc">Represents a JSON value.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00145">json_value.h:145</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a66208551f9f42710e224cee24b7ba206"><div class="ttname"><a href="namespaceripple.html#a66208551f9f42710e224cee24b7ba206">ripple::mulRoundImpl</a></div><div class="ttdeci">static STAmount mulRoundImpl(STAmount const &amp;v1, STAmount const &amp;v2, Issue const &amp;issue, bool roundUp)</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8cpp_source.html#l01417">STAmount.cpp:1417</a></div></div>
 <div class="ttc" id="aclassripple_1_1XRPAmount_html"><div class="ttname"><a href="classripple_1_1XRPAmount.html">ripple::XRPAmount</a></div><div class="ttdef"><b>Definition:</b> <a href="XRPAmount_8h_source.html#l00046">XRPAmount.h:46</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a300af819bde0c7c49207d10cd787e62e"><div class="ttname"><a href="namespaceripple.html#a300af819bde0c7c49207d10cd787e62e">ripple::to_issuer</a></div><div class="ttdeci">bool to_issuer(AccountID &amp;, std::string const &amp;)</div><div class="ttdoc">Convert hex or base58 string to AccountID.</div><div class="ttdef"><b>Definition:</b> <a href="AccountID_8cpp_source.html#l00182">AccountID.cpp:182</a></div></div>
 <div class="ttc" id="anamespaceripple_html_abc2f04db8f54f17ec5d0268d566b7a4d"><div class="ttname"><a href="namespaceripple.html#abc2f04db8f54f17ec5d0268d566b7a4d">ripple::tenTo17</a></div><div class="ttdeci">static const std::uint64_t tenTo17</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8cpp_source.html#l00062">STAmount.cpp:62</a></div></div>
