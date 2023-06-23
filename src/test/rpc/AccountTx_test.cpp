@@ -253,10 +253,7 @@ class AccountTx_test : public beast::unit_test::suite
     {
         using namespace test::jtx;
         // test for API version 2
-        Env env{*this, envconfig([](std::unique_ptr<Config> c) {
-                    c->loadFromString("\n[beta_rpc_api]\n1\n");
-                    return c;
-                })};
+        Env env{*this};
         Account A1{"A1"};
         env.fund(XRP(10000), A1);
         env.close();
