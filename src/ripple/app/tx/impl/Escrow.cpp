@@ -309,7 +309,7 @@ EscrowCreate::doApply()
 
     if (ctx_.view().rules().enabled(featurePaychanAndEscrowForTokens))
     {
-        auto xferRate = transferRate(view(), amount.getIssuer());
+        auto const xferRate = transferRate(view(), amount.getIssuer());
         (*slep)[~sfTransferRate] = xferRate.value;
     }
 
@@ -564,7 +564,11 @@ EscrowFinish::doApply()
     {
         if (!ctx_.view().rules().enabled(featurePaychanAndEscrowForTokens))
             return temDISABLED;
-
+        
+        if (slep->isFieldPresent(sfTransferRate))
+        {
+            return tecINTERNAL;
+        }
         Rate lockedRate = ripple::Rate(slep->getFieldU32(sfTransferRate));
         auto const issuerAccID = amount.getIssuer();
         auto const xferRate = transferRate(view(), issuerAccID);
@@ -621,6 +625,10 @@ EscrowFinish::doApply()
     else
     {
         // compute transfer fee, if any
+        if (slep->isFieldPresent(sfTransferRate))
+        {
+            return tecINTERNAL;
+        }
         Rate lockedRate = ripple::Rate(slep->getFieldU32(sfTransferRate));
         auto const issuerAccID = amount.getIssuer();
         auto const xferRate = transferRate(view(), issuerAccID);
