@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2017 Ripple Labs Inc.
+    Copyright (c) 2023 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -132,7 +132,7 @@ URIToken::preflight(PreflightContext const& ctx)
             if (flags & tfURITokenNonMintMask)
                 return temINVALID_FLAG;
 
-            auto amt = ctx.tx.getFieldAmount(sfAmount);
+            auto const amt = ctx.tx.getFieldAmount(sfAmount);
 
             if (!isLegalNet(amt) || amt.signum() < 0)
             {
@@ -312,7 +312,7 @@ URIToken::doApply()
     if (!sle)
         return tefINTERNAL;
 
-    uint16_t tt = ctx_.tx.getFieldU16(sfTransactionType);
+    uint16_t const tt = ctx_.tx.getFieldU16(sfTransactionType);
 
     if (tt == ttURITOKEN_MINT || tt == ttURITOKEN_BUY)
     {
@@ -323,7 +323,7 @@ URIToken::doApply()
             return tecINSUFFICIENT_RESERVE;
     }
 
-    uint32_t flags = ctx_.tx.getFlags();
+    uint32_t const flags = ctx_.tx.getFlags();
 
     std::shared_ptr<SLE> sleU;
     std::optional<AccountID> issuer;
@@ -539,7 +539,7 @@ URIToken::doApply()
 
                 dstAmt = purchaseAmount;
                 static Rate const parityRate(QUALITY_ONE);
-                auto xferRate = transferRate(view(), saleAmount->getIssuer());
+                auto const xferRate = transferRate(view(), saleAmount->getIssuer());
                 if (!sellerIssuer && !buyerIssuer && xferRate != parityRate)
                 {
                     dstAmt = multiplyRound(
@@ -794,8 +794,6 @@ URIToken::doApply()
         }
 
         case ttURITOKEN_CREATE_SELL_OFFER: {
-            if (account_ != *owner)
-                return tecNO_PERMISSION;
 
             auto const txDest = ctx_.tx[~sfDestination];
 
