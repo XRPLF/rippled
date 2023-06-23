@@ -89,6 +89,7 @@ class Overlay;
 class PathRequests;
 class PendingSaves;
 class PublicKey;
+class ServerHandlerImp;
 class SecretKey;
 class STLedgerEntry;
 class TimeKeeper;
@@ -231,6 +232,8 @@ public:
     getOPs() = 0;
     virtual OrderBookDB&
     getOrderBookDB() = 0;
+    virtual ServerHandlerImp&
+    getServerHandler() = 0;
     virtual TransactionMaster&
     getMasterTransaction() = 0;
     virtual perf::PerfLog&
