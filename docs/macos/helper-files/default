@@ -1,0 +1,20 @@
+[settings]
+os=Macos
+os_build=Macos
+arch=armv8
+arch_build=armv8
+compiler=apple-clang
+compiler.version=14
+compiler.libcxx=libc++
+build_type=Release
+compiler.cppstd=20
+[options]
+boost:extra_b2_flags=define=BOOST_ASIO_HAS_STD_INVOKE_RESULT
+[build_requires]
+[env]
+CC=/usr/bin/gcc
+CFLAGS=-DBOOST_ASIO_HAS_STD_INVOKE_RESULT=1
+CXX=/usr/bin/g++
+CXXFLAGS=-DBOOST_ASIO_HAS_STD_INVOKE_RESULT=1
+[conf]
+tools.build:compiler_executables={'c': '/usr/bin/gcc', 'cpp': '/usr/bin/g++'}
