@@ -307,7 +307,7 @@ forwardedFor(http_request_type const& request)
         // http_request_type has a dependency on boost. Explicitly convert such
         // boost::string_view into std::string_view
         return extractIpAddrFromField(
-            std::string_view{it->value().substr(0, found).data(), found});
+            std::string_view{it->value().data(), found});
     }
 
     return {};
