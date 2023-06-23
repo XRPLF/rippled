@@ -2126,18 +2126,17 @@ public:
             BEAST_EXPECT(
                 jrr[jss::node][sfBalance.fieldName][jss::value] ==
                 "49.96666666666667");
+
             jrr = ledgerEntryState(env, bob, gw, "USD");
-            if (NumberSwitchOver)
+            Json::Value const bobsUSD =
+                jrr[jss::node][sfBalance.fieldName][jss::value];
+            if (!NumberSwitchOver)
             {
-                BEAST_EXPECT(
-                    jrr[jss::node][sfBalance.fieldName][jss::value] ==
-                    "-0.9665000000333333");
+                BEAST_EXPECT(bobsUSD == "-0.966500000033334");
             }
             else
             {
-                BEAST_EXPECT(
-                    jrr[jss::node][sfBalance.fieldName][jss::value] ==
-                    "-0.966500000033334");
+                BEAST_EXPECT(bobsUSD == "-0.9665000000333333");
             }
         }
     }

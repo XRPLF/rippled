@@ -503,7 +503,7 @@ divide(STAmount const& v1, STAmount const& v2, Issue const& issue);
 STAmount
 multiply(STAmount const& v1, STAmount const& v2, Issue const& issue);
 
-// multiply, or divide rounding result in specified direction
+// multiply rounding result in specified direction
 STAmount
 mulRound(
     STAmount const& v1,
@@ -511,8 +511,25 @@ mulRound(
     Issue const& issue,
     bool roundUp);
 
+// multiply following the rounding directions more precisely.
+STAmount
+mulRoundStrict(
+    STAmount const& v1,
+    STAmount const& v2,
+    Issue const& issue,
+    bool roundUp);
+
+// divide rounding result in specified direction
 STAmount
 divRound(
+    STAmount const& v1,
+    STAmount const& v2,
+    Issue const& issue,
+    bool roundUp);
+
+// divide following the rounding directions more precisely.
+STAmount
+divRoundStrict(
     STAmount const& v1,
     STAmount const& v2,
     Issue const& issue,
