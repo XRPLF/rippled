@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2023 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,26 +17,42 @@
 */
 //==============================================================================
 
-#include <ripple/nodestore/impl/EncodedBlob.h>
-#include <cstring>
+#ifndef RIPPLE_RPC_NFTSYNTHETICSERIALIZER_H_INCLUDED
+#define RIPPLE_RPC_NFTSYNTHETICSERIALIZER_H_INCLUDED
 
-namespace ripple {
-namespace NodeStore {
+#include <ripple/protocol/Protocol.h>
+#include <ripple/protocol/STBase.h>
 
-void
-EncodedBlob::prepare(std::shared_ptr<NodeObject> const& object)
-{
-    m_key = object->getHash().begin();
+#include <functional>
+#include <memory>
 
-    auto ret = m_data.alloc(object->getData().size() + 9);
-
-    // the first 8 bytes are unused
-    std::memset(ret, 0, 8);
-
-    ret[8] = static_cast<std::uint8_t>(object->getType());
-
-    std::memcpy(ret + 9, object->getData().data(), object->getData().size());
+namespace Json {
+class Value;
 }
 
-}  // namespace NodeStore
+namespace ripple {
+
+class TxMeta;
+class STTx;
+
+namespace RPC {
+
+struct JsonContext;
+
+/**
+   Adds common synthetic fields to transaction-related JSON responses
+
+   @{
+ */
+void
+insertNFTSyntheticInJson(
+    Json::Value&,
+    RPC::JsonContext const&,
+    std::shared_ptr<STTx const> const&,
+    TxMeta const&);
+/** @} */
+
+}  // namespace RPC
 }  // namespace ripple
+
+#endif

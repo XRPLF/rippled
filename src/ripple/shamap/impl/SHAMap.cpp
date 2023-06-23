@@ -30,7 +30,7 @@ namespace ripple {
 [[nodiscard]] std::shared_ptr<SHAMapLeafNode>
 makeTypedLeaf(
     SHAMapNodeType type,
-    std::shared_ptr<SHAMapItem const> item,
+    boost::intrusive_ptr<SHAMapItem const> item,
     std::uint32_t owner)
 {
     if (type == SHAMapNodeType::tnTRANSACTION_NM)
@@ -66,28 +66,28 @@ SHAMap::SHAMap(SHAMapType t, uint256 const& hash, Family& f)
     root_ = std::make_shared<SHAMapInnerNode>(cowid_);
 }
 
+SHAMap::SHAMap(SHAMap const& other, bool isMutable)
+    : f_(other.f_)
+    , journal_(other.f_.journal())
+    , cowid_(other.cowid_ + 1)
+    , ledgerSeq_(other.ledgerSeq_)
+    , root_(other.root_)
+    , state_(isMutable ? SHAMapState::Modifying : SHAMapState::Immutable)
+    , type_(other.type_)
+    , backed_(other.backed_)
+{
+    // If either map may change, they cannot share nodes
+    if ((state_ != SHAMapState::Immutable) ||
+        (other.state_ != SHAMapState::Immutable))
+    {
+        unshare();
+    }
+}
+
 std::shared_ptr<SHAMap>
 SHAMap::snapShot(bool isMutable) const
 {
-    auto ret = std::make_shared<SHAMap>(type_, f_);
-    SHAMap& newMap = *ret;
-
-    if (!isMutable)
-        newMap.state_ = SHAMapState::Immutable;
-
-    newMap.cowid_ = cowid_ + 1;
-    newMap.ledgerSeq_ = ledgerSeq_;
-    newMap.root_ = root_;
-    newMap.backed_ = backed_;
-
-    if ((state_ != SHAMapState::Immutable) ||
-        (newMap.state_ != SHAMapState::Immutable))
-    {
-        // If either map may change, they cannot share nodes
-        newMap.unshare();
-    }
-
-    return ret;
+    return std::make_shared<SHAMap>(*this, isMutable);
 }
 
 void
@@ -173,30 +173,36 @@ SHAMap::finishFetch(
     std::shared_ptr<NodeObject> const& object) const
 {
     assert(backed_);
-    if (!object)
-    {
-        if (full_)
-        {
-            full_ = false;
-            f_.missingNode(ledgerSeq_);
-        }
-        return {};
-    }
 
-    std::shared_ptr<SHAMapTreeNode> node;
     try
     {
-        node =
+        if (!object)
+        {
+            if (full_)
+            {
+                full_ = false;
+                f_.missingNodeAcquireBySeq(ledgerSeq_, hash.as_uint256());
+            }
+            return {};
+        }
+
+        auto node =
             SHAMapTreeNode::makeFromPrefix(makeSlice(object->getData()), hash);
         if (node)
             canonicalize(hash, node);
         return node;
     }
-    catch (std::exception const&)
+    catch (std::runtime_error const& e)
     {
-        JLOG(journal_.warn()) << "Invalid DB node " << hash;
-        return std::shared_ptr<SHAMapTreeNode>();
+        JLOG(journal_.warn()) << "finishFetch exception: " << e.what();
     }
+    catch (...)
+    {
+        JLOG(journal_.warn())
+            << "finishFetch exception: unknonw exception: " << hash;
+    }
+
+    return {};
 }
 
 // See if a sync filter has a node
@@ -501,9 +507,9 @@ SHAMap::firstBelow(
 
     return belowHelper(node, stack, branch, {init, cmp, incr});
 }
-static const std::shared_ptr<SHAMapItem const> no_item;
+static const boost::intrusive_ptr<SHAMapItem const> no_item;
 
-std::shared_ptr<SHAMapItem const> const&
+boost::intrusive_ptr<SHAMapItem const> const&
 SHAMap::onlyBelow(SHAMapTreeNode* node) const
 {
     // If there is only one item below this node, return it
@@ -582,7 +588,7 @@ SHAMap::peekNextItem(uint256 const& id, SharedPtrNodeStack& stack) const
     return nullptr;
 }
 
-std::shared_ptr<SHAMapItem const> const&
+boost::intrusive_ptr<SHAMapItem const> const&
 SHAMap::peekItem(uint256 const& id) const
 {
     SHAMapLeafNode* leaf = findKey(id);
@@ -593,7 +599,7 @@ SHAMap::peekItem(uint256 const& id) const
     return leaf->peekItem();
 }
 
-std::shared_ptr<SHAMapItem const> const&
+boost::intrusive_ptr<SHAMapItem const> const&
 SHAMap::peekItem(uint256 const& id, SHAMapHash& hash) const
 {
     SHAMapLeafNode* leaf = findKey(id);
@@ -765,7 +771,9 @@ SHAMap::delItem(uint256 const& id)
 }
 
 bool
-SHAMap::addGiveItem(SHAMapNodeType type, std::shared_ptr<SHAMapItem const> item)
+SHAMap::addGiveItem(
+    SHAMapNodeType type,
+    boost::intrusive_ptr<SHAMapItem const> item)
 {
     assert(state_ != SHAMapState::Immutable);
     assert(type != SHAMapNodeType::tnINNER);
@@ -802,7 +810,7 @@ SHAMap::addGiveItem(SHAMapNodeType type, std::shared_ptr<SHAMapItem const> item)
         // this is a leaf node that has to be made an inner node holding two
         // items
         auto leaf = std::static_pointer_cast<SHAMapLeafNode>(node);
-        std::shared_ptr<SHAMapItem const> otherItem = leaf->peekItem();
+        auto otherItem = leaf->peekItem();
         assert(otherItem && (tag != otherItem->key()));
 
         node = std::make_shared<SHAMapInnerNode>(node->cowid());
@@ -833,9 +841,11 @@ SHAMap::addGiveItem(SHAMapNodeType type, std::shared_ptr<SHAMapItem const> item)
 }
 
 bool
-SHAMap::addItem(SHAMapNodeType type, SHAMapItem&& i)
+SHAMap::addItem(
+    SHAMapNodeType type,
+    boost::intrusive_ptr<SHAMapItem const> item)
 {
-    return addGiveItem(type, std::make_shared<SHAMapItem const>(std::move(i)));
+    return addGiveItem(type, std::move(item));
 }
 
 SHAMapHash
@@ -853,7 +863,7 @@ SHAMap::getHash() const
 bool
 SHAMap::updateGiveItem(
     SHAMapNodeType type,
-    std::shared_ptr<SHAMapItem const> item)
+    boost::intrusive_ptr<SHAMapItem const> item)
 {
     // can't change the tag but can change the hash
     uint256 tag = item->key();
@@ -878,13 +888,13 @@ SHAMap::updateGiveItem(
 
     if (node->getType() != type)
     {
-        JLOG(journal_.fatal()) << "SHAMap::setItem: cross-type change!";
+        JLOG(journal_.fatal()) << "SHAMap::updateGiveItem: cross-type change!";
         return false;
     }
 
     node = unshareNode(std::move(node), nodeID);
 
-    if (node->setItem(std::move(item)))
+    if (node->setItem(item))
         dirtyUp(stack, tag, node);
 
     return true;

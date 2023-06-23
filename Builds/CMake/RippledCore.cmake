@@ -13,6 +13,10 @@ if (unity)
   set_target_properties(xrpl_core PROPERTIES UNITY_BUILD ON)
 endif ()
 
+add_library(libxrpl INTERFACE)
+target_link_libraries(libxrpl INTERFACE xrpl_core)
+add_library(xrpl::libxrpl ALIAS libxrpl)
+
 
 #[===============================[
     beast/legacy FILES:
@@ -532,7 +536,6 @@ target_sources (rippled PRIVATE
   src/ripple/nodestore/impl/DeterministicShard.cpp
   src/ripple/nodestore/impl/DecodedBlob.cpp
   src/ripple/nodestore/impl/DummyScheduler.cpp
-  src/ripple/nodestore/impl/EncodedBlob.cpp
   src/ripple/nodestore/impl/ManagerImp.cpp
   src/ripple/nodestore/impl/NodeObject.cpp
   src/ripple/nodestore/impl/Shard.cpp
@@ -650,6 +653,9 @@ target_sources (rippled PRIVATE
   src/ripple/rpc/impl/ShardVerificationScheduler.cpp
   src/ripple/rpc/impl/Status.cpp
   src/ripple/rpc/impl/TransactionSign.cpp
+  src/ripple/rpc/impl/NFTokenID.cpp
+  src/ripple/rpc/impl/NFTokenOfferID.cpp
+  src/ripple/rpc/impl/NFTSyntheticSerializer.cpp
   #[===============================[
      main sources:
        subdir: perflog
@@ -702,6 +708,7 @@ if (tests)
     src/test/app/LoadFeeTrack_test.cpp
     src/test/app/Manifest_test.cpp
     src/test/app/MultiSign_test.cpp
+    src/test/app/NetworkID_test.cpp
     src/test/app/NFToken_test.cpp
     src/test/app/NFTokenBurn_test.cpp
     src/test/app/NFTokenDir_test.cpp
@@ -714,6 +721,7 @@ if (tests)
     src/test/app/PseudoTx_test.cpp
     src/test/app/RCLCensorshipDetector_test.cpp
     src/test/app/RCLValidations_test.cpp
+    src/test/app/ReducedOffer_test.cpp
     src/test/app/Regression_test.cpp
     src/test/app/SHAMapStore_test.cpp
     src/test/app/SetAuth_test.cpp

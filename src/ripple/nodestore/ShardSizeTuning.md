@@ -1,4 +1,4 @@
-# Shard Size Tuning
+# Shard size Tuning
 
 The purpose of this document is to compare the sizes of shards containing
 varying amounts of ledgers.

@@ -292,10 +292,13 @@ initAuthenticated(
 
             fclose(f);
         }
-        catch (std::exception const&)
+        catch (std::exception const& ex)
         {
             fclose(f);
-            LogicError("Reading the SSL chain file generated an exception.");
+            LogicError(
+                std::string(
+                    "Reading the SSL chain file generated an exception: ") +
+                ex.what());
         }
     }
 

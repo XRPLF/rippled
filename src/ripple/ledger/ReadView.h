@@ -357,6 +357,9 @@ void
 addRaw(LedgerInfo const&, Serializer&, bool includeHash = false);
 
 Rules
+makeRulesGivenLedger(DigestAwareReadView const& ledger, Rules const& current);
+
+Rules
 makeRulesGivenLedger(
     DigestAwareReadView const& ledger,
     std::unordered_set<uint256, beast::uhash<>> const& presets);

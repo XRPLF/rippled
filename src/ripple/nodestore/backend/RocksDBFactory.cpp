@@ -352,11 +352,9 @@ public:
         assert(m_db);
         rocksdb::WriteBatch wb;
 
-        EncodedBlob encoded;
-
         for (auto const& e : batch)
         {
-            encoded.prepare(e);
+            EncodedBlob encoded(e);
 
             wb.Put(
                 rocksdb::Slice(

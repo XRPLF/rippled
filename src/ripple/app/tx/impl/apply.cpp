@@ -159,9 +159,9 @@ applyTransaction(
         JLOG(j.debug()) << "Transaction retry: " << transHuman(result.first);
         return ApplyResult::Retry;
     }
-    catch (std::exception const&)
+    catch (std::exception const& ex)
     {
-        JLOG(j.warn()) << "Throws";
+        JLOG(j.warn()) << "Throws: " << ex.what();
         return ApplyResult::Fail;
     }
 }

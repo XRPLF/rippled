@@ -27,7 +27,28 @@
 
 namespace ripple {
 
-LocalValue<bool> stNumberSwitchover(true);
+namespace {
+
+// Use a static inside a function to help prevent order-of-initialzation issues
+LocalValue<bool>&
+getStaticSTNumberSwitchover()
+{
+    static LocalValue<bool> r{true};
+    return r;
+}
+}  // namespace
+
+bool
+getSTNumberSwitchover()
+{
+    return *getStaticSTNumberSwitchover();
+}
+
+void
+setSTNumberSwitchover(bool v)
+{
+    *getStaticSTNumberSwitchover() = v;
+}
 
 /* The range for the mantissa when normalized */
 static std::int64_t constexpr minMantissa = 1000000000000000ull;
@@ -51,7 +72,7 @@ IOUAmount::normalize()
         return;
     }
 
-    if (*stNumberSwitchover)
+    if (getSTNumberSwitchover())
     {
         Number const v{mantissa_, exponent_};
         mantissa_ = v.mantissa();
@@ -117,7 +138,7 @@ IOUAmount::operator+=(IOUAmount const& other)
         return *this;
     }
 
-    if (*stNumberSwitchover)
+    if (getSTNumberSwitchover())
     {
         *this = IOUAmount{Number{*this} + Number{other}};
         return *this;

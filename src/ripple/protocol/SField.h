@@ -354,6 +354,7 @@ extern SF_UINT16 const sfHookExecutionIndex;
 extern SF_UINT16 const sfHookApiVersion;
 
 // 32-bit integers (common)
+extern SF_UINT32 const sfNetworkID;
 extern SF_UINT32 const sfFlags;
 extern SF_UINT32 const sfSourceTag;
 extern SF_UINT32 const sfSequence;
@@ -400,6 +401,7 @@ extern SF_UINT32 const sfMintedNFTokens;
 extern SF_UINT32 const sfBurnedNFTokens;
 extern SF_UINT32 const sfHookStateCount;
 extern SF_UINT32 const sfEmitGeneration;
+extern SF_UINT32 const sfFirstNFTokenSequence;
 
 // 64-bit integers (common)
 extern SF_UINT64 const sfIndexNext;

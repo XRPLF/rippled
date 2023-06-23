@@ -1,0 +1,40 @@
+name: macos
+on: [push, pull_request]
+
+jobs:
+
+  test:
+    strategy:
+      matrix:
+        platform:
+          - macos
+        generator:
+          - Ninja
+        configuration:
+          - Release
+    runs-on: [self-hosted, macOS]
+    env:
+      # The `build` action requires these variables.
+      build_dir: .build
+      NUM_PROCESSORS: 12
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+      - name: install Ninja
+        if: matrix.generator == 'Ninja'
+        run: brew install ninja
+      - name: check environment
+        run: |
+          echo ${PATH} | tr ':' '\n'
+          python --version
+          conan --version
+          cmake --version
+          env
+      - name: build
+        uses: ./.github/actions/build
+        with:
+          generator: ${{ matrix.generator }}
+          configuration: ${{ matrix.configuration }}
+      - name: test
+        run: |
+          ${build_dir}/rippled --unittest

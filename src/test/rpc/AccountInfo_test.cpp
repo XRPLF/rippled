@@ -46,14 +46,16 @@ public:
                 "Missing field 'account'.");
         }
         {
-            // account_info with a malformed account sting.
+            // account_info with a malformed account string.
             auto const info = env.rpc(
                 "json",
                 "account_info",
                 "{\"account\": "
                 "\"n94JNrQYkDrpt62bbSR7nVEhdyAvcJXRAsjEkFYyqRkh9SUTYEqV\"}");
             BEAST_EXPECT(
-                info[jss::result][jss::error_message] == "Disallowed seed.");
+                info[jss::result][jss::error_code] == rpcACT_MALFORMED);
+            BEAST_EXPECT(
+                info[jss::result][jss::error_message] == "Account malformed.");
         }
         {
             // account_info with an account that's not in the ledger.
@@ -61,9 +63,20 @@ public:
             auto const info = env.rpc(
                 "json",
                 "account_info",
-                std::string("{ ") + "\"account\": \"" + bogie.human() + "\"}");
+                R"({ "account": ")" + bogie.human() + R"("})");
+            BEAST_EXPECT(
+                info[jss::result][jss::error_code] == rpcACT_NOT_FOUND);
             BEAST_EXPECT(
                 info[jss::result][jss::error_message] == "Account not found.");
+        }
+        {
+            // Cannot use a seed as account
+            auto const info =
+                env.rpc("json", "account_info", R"({"account": "foo"})");
+            BEAST_EXPECT(
+                info[jss::result][jss::error_code] == rpcACT_MALFORMED);
+            BEAST_EXPECT(
+                info[jss::result][jss::error_message] == "Account malformed.");
         }
     }
 
@@ -193,10 +206,7 @@ public:
     testSignerListsApiVersion2()
     {
         using namespace jtx;
-        Env env{*this, envconfig([](std::unique_ptr<Config> c) {
-                    c->loadFromString("\n[beta_rpc_api]\n1\n");
-                    return c;
-                })};
+        Env env{*this};
         Account const alice{"alice"};
         env.fund(XRP(1000), alice);
 
@@ -492,12 +502,111 @@ public:
     }
 
     void
+    testAccountFlags(FeatureBitset const& features)
+    {
+        using namespace jtx;
+
+        Env env(*this, features);
+        Account const alice{"alice"};
+        env.fund(XRP(1000), alice);
+
+        auto getAccountFlag = [&env, &alice](std::string_view fName) {
+            auto const info = env.rpc(
+                "json",
+                "account_info",
+                R"({"account" : ")" + alice.human() + R"("})");
+
+            std::optional<bool> res;
+            if (info[jss::result][jss::status] == "success" &&
+                info[jss::result][jss::account_flags].isMember(fName.data()))
+                res.emplace(info[jss::result][jss::account_flags][fName.data()]
+                                .asBool());
+
+            return res;
+        };
+
+        static constexpr std::
+            array<std::pair<std::string_view, std::uint32_t>, 7>
+                asFlags{
+                    {{"defaultRipple", asfDefaultRipple},
+                     {"depositAuth", asfDepositAuth},
+                     {"disallowIncomingXRP", asfDisallowXRP},
+                     {"globalFreeze", asfGlobalFreeze},
+                     {"noFreeze", asfNoFreeze},
+                     {"requireAuthorization", asfRequireAuth},
+                     {"requireDestinationTag", asfRequireDest}}};
+
+        for (auto& asf : asFlags)
+        {
+            // Clear a flag and check that account_info returns results
+            // as expected
+            env(fclear(alice, asf.second));
+            env.close();
+            auto const f1 = getAccountFlag(asf.first);
+            BEAST_EXPECT(f1.has_value());
+            BEAST_EXPECT(!f1.value());
+
+            // Set a flag and check that account_info returns results
+            // as expected
+            env(fset(alice, asf.second));
+            env.close();
+            auto const f2 = getAccountFlag(asf.first);
+            BEAST_EXPECT(f2.has_value());
+            BEAST_EXPECT(f2.value());
+        }
+
+        static constexpr std::
+            array<std::pair<std::string_view, std::uint32_t>, 4>
+                disallowIncomingFlags{
+                    {{"disallowIncomingCheck", asfDisallowIncomingCheck},
+                     {"disallowIncomingNFTokenOffer",
+                      asfDisallowIncomingNFTokenOffer},
+                     {"disallowIncomingPayChan", asfDisallowIncomingPayChan},
+                     {"disallowIncomingTrustline",
+                      asfDisallowIncomingTrustline}}};
+
+        if (features[featureDisallowIncoming])
+        {
+            for (auto& asf : disallowIncomingFlags)
+            {
+                // Clear a flag and check that account_info returns results
+                // as expected
+                env(fclear(alice, asf.second));
+                env.close();
+                auto const f1 = getAccountFlag(asf.first);
+                BEAST_EXPECT(f1.has_value());
+                BEAST_EXPECT(!f1.value());
+
+                // Set a flag and check that account_info returns results
+                // as expected
+                env(fset(alice, asf.second));
+                env.close();
+                auto const f2 = getAccountFlag(asf.first);
+                BEAST_EXPECT(f2.has_value());
+                BEAST_EXPECT(f2.value());
+            }
+        }
+        else
+        {
+            for (auto& asf : disallowIncomingFlags)
+            {
+                BEAST_EXPECT(!getAccountFlag(asf.first));
+            }
+        }
+    }
+
+    void
     run() override
     {
         testErrors();
         testSignerLists();
         testSignerListsApiVersion2();
         testSignerListsV2();
+
+        FeatureBitset const allFeatures{
+            ripple::test::jtx::supported_amendments()};
+        testAccountFlags(allFeatures);
+        testAccountFlags(allFeatures - featureDisallowIncoming);
     }
 };
 
