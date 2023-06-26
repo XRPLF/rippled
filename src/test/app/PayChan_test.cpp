@@ -114,7 +114,7 @@ struct PayChan_test : public beast::unit_test::suite
     static Rate
     channelRate(ReadView const& view, uint256 const& chan)
     {
-        auto const slep = view.read({ltPAYCHAN, chan});
+        auto const sle = view.read({ltPAYCHAN, chan});
         if (sle->isFieldPresent(sfTransferRate))
             return ripple::Rate((*sle)[sfTransferRate]);
         return Rate{0};
