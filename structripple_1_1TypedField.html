@@ -125,11 +125,9 @@ Public Types</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a19da92421d770181a123b2c1514f411f"><td class="memTemplParams" colspan="2">template&lt;class... Args&gt; </td></tr>
-<tr class="memitem:a19da92421d770181a123b2c1514f411f"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="structripple_1_1TypedField.html#a19da92421d770181a123b2c1514f411f">TypedField</a> (Args &amp;&amp;... args)</td></tr>
-<tr class="separator:a19da92421d770181a123b2c1514f411f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af58fed4c31dc56cca1c7c7504b1376f4"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1TypedField.html#af58fed4c31dc56cca1c7c7504b1376f4">TypedField</a> (<a class="el" href="structripple_1_1TypedField.html">TypedField</a> &amp;&amp;u)</td></tr>
-<tr class="separator:af58fed4c31dc56cca1c7c7504b1376f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab7ae8694d341e2f596fd4a0644e61ac9"><td class="memTemplParams" colspan="2">template&lt;class... Args&gt; </td></tr>
+<tr class="memitem:ab7ae8694d341e2f596fd4a0644e61ac9"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="structripple_1_1TypedField.html#ab7ae8694d341e2f596fd4a0644e61ac9">TypedField</a> (<a class="el" href="structripple_1_1SField_1_1private__access__tag__t.html">private_access_tag_t</a> pat, Args &amp;&amp;... args)</td></tr>
+<tr class="separator:ab7ae8694d341e2f596fd4a0644e61ac9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abcc116274a030ac6e4a8f45314394140"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SField.html#abcc116274a030ac6e4a8f45314394140">getName</a> () const</td></tr>
 <tr class="separator:abcc116274a030ac6e4a8f45314394140"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a39c81719f78ce09f09def6a30494f2ee"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SField.html#a39c81719f78ce09f09def6a30494f2ee">hasName</a> () const</td></tr>
@@ -292,8 +290,8 @@ template&lt;class T &gt; </div>
 </div>
 </div>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a19da92421d770181a123b2c1514f411f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a19da92421d770181a123b2c1514f411f">&#9670;&nbsp;</a></span>TypedField() <span class="overload">[1/2]</span></h2>
+<a id="ab7ae8694d341e2f596fd4a0644e61ac9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab7ae8694d341e2f596fd4a0644e61ac9">&#9670;&nbsp;</a></span>TypedField()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -308,9 +306,19 @@ template&lt;class... Args&gt; </div>
         <tr>
           <td class="memname"><a class="el" href="structripple_1_1TypedField.html">ripple::TypedField</a>&lt; T &gt;::<a class="el" href="structripple_1_1TypedField.html">TypedField</a> </td>
           <td>(</td>
-          <td class="paramtype">Args &amp;&amp;...&#160;</td>
-          <td class="paramname"><em>args</em></td><td>)</td>
+          <td class="paramtype"><a class="el" href="structripple_1_1SField_1_1private__access__tag__t.html">private_access_tag_t</a>&#160;</td>
+          <td class="paramname"><em>pat</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">Args &amp;&amp;...&#160;</td>
+          <td class="paramname"><em>args</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
   </td>
@@ -320,29 +328,7 @@ template&lt;class... Args&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SField_8h_source.html#l00276">276</a> of file <a class="el" href="SField_8h_source.html">SField.h</a>.</p>
-
-</div>
-</div>
-<a id="af58fed4c31dc56cca1c7c7504b1376f4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af58fed4c31dc56cca1c7c7504b1376f4">&#9670;&nbsp;</a></span>TypedField() <span class="overload">[2/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;class T &gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="structripple_1_1TypedField.html">ripple::TypedField</a>&lt; T &gt;::<a class="el" href="structripple_1_1TypedField.html">TypedField</a> </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="structripple_1_1TypedField.html">TypedField</a>&lt; T &gt; &amp;&amp;&#160;</td>
-          <td class="paramname"><em>u</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SField_8h_source.html#l00280">280</a> of file <a class="el" href="SField_8h_source.html">SField.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SField_8cpp_source.html#l00043">43</a> of file <a class="el" href="SField_8cpp_source.html">SField.cpp</a>.</p>
 
 </div>
 </div>
@@ -371,7 +357,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SField_8cpp_source.html#l00387">387</a> of file <a class="el" href="SField_8cpp_source.html">SField.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SField_8cpp_source.html#l00394">394</a> of file <a class="el" href="SField_8cpp_source.html">SField.cpp</a>.</p>
 
 </div>
 </div>
@@ -399,7 +385,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SField_8cpp_source.html#l00415">415</a> of file <a class="el" href="SField_8cpp_source.html">SField.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SField_8cpp_source.html#l00422">422</a> of file <a class="el" href="SField_8cpp_source.html">SField.cpp</a>.</p>
 
 </div>
 </div>
@@ -895,7 +881,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SField_8cpp_source.html#l00399">399</a> of file <a class="el" href="SField_8cpp_source.html">SField.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SField_8cpp_source.html#l00406">406</a> of file <a class="el" href="SField_8cpp_source.html">SField.cpp</a>.</p>
 
 </div>
 </div>

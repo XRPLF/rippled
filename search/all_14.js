@@ -1643,7 +1643,7 @@ var searchData=
   ['typeall_11510',['typeAll',['../classripple_1_1STPathElement.html#add7ef24fbb39a048d81cdfb65aac5ae3ad9c29914b76f0214942819e528705d43',1,'ripple::STPathElement']]],
   ['typeboundary_11511',['typeBoundary',['../classripple_1_1STPathElement.html#add7ef24fbb39a048d81cdfb65aac5ae3a6f3b96d4ec60b2b948cfd8ce678bd9b7',1,'ripple::STPathElement']]],
   ['typecurrency_11512',['typeCurrency',['../classripple_1_1STPathElement.html#add7ef24fbb39a048d81cdfb65aac5ae3ad2680a488d17facbb27aac3e63f136a1',1,'ripple::STPathElement']]],
-  ['typedfield_11513',['TypedField',['../structripple_1_1TypedField.html',1,'ripple::TypedField&lt; T &gt;'],['../structripple_1_1TypedField.html#a19da92421d770181a123b2c1514f411f',1,'ripple::TypedField::TypedField(Args &amp;&amp;... args)'],['../structripple_1_1TypedField.html#af58fed4c31dc56cca1c7c7504b1376f4',1,'ripple::TypedField::TypedField(TypedField &amp;&amp;u)']]],
+  ['typedfield_11513',['TypedField',['../structripple_1_1TypedField.html',1,'ripple::TypedField&lt; T &gt;'],['../structripple_1_1TypedField.html#ab7ae8694d341e2f596fd4a0644e61ac9',1,'ripple::TypedField::TypedField()']]],
   ['typeindex_11514',['typeindex',['http://en.cppreference.com/w/cpp/header/typeindex.html',1,'']]],
   ['typeinfo_11515',['typeinfo',['http://en.cppreference.com/w/cpp/header/typeinfo.html',1,'']]],
   ['typeissuer_11516',['typeIssuer',['../classripple_1_1STPathElement.html#add7ef24fbb39a048d81cdfb65aac5ae3a764e0361967b97a3e2bb09634ebb28f8',1,'ripple::STPathElement']]],
