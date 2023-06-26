@@ -564,7 +564,7 @@ EscrowFinish::doApply()
     {
         if (!ctx_.view().rules().enabled(featurePaychanAndEscrowForTokens))
             return temDISABLED;
-        
+
         if (!slep->isFieldPresent(sfTransferRate))
             return tecINTERNAL;
 
