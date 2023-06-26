@@ -65,9 +65,11 @@
 #include <ripple/rpc/BookChanges.h>
 #include <ripple/rpc/DeliveredAmount.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
+#include <ripple/rpc/impl/ServerHandlerImp.h>
 #include <boost/asio/ip/host_name.hpp>
 #include <boost/asio/steady_timer.hpp>
 
+#include <algorithm>
 #include <mutex>
 #include <string>
 #include <tuple>
@@ -2659,6 +2661,51 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
     else
     {
         info["reporting"] = app_.getReportingETL().getInfo();
+    }
+
+    // This array must be sorted in increasing order.
+    static constexpr std::array<std::string_view, 7> protocols{
+        "http", "https", "peer", "ws", "ws2", "wss", "wss2"};
+    static_assert(std::is_sorted(std::begin(protocols), std::end(protocols)));
+    {
+        Json::Value ports{Json::arrayValue};
+        for (auto const& port : app_.getServerHandler().setup().ports)
+        {
+            // Don't publish admin ports for non-admin users
+            if (!admin &&
+                !(port.admin_nets_v4.empty() && port.admin_nets_v6.empty() &&
+                  port.admin_user.empty() && port.admin_password.empty()))
+                continue;
+            std::vector<std::string> proto;
+            std::set_intersection(
+                std::begin(port.protocol),
+                std::end(port.protocol),
+                std::begin(protocols),
+                std::end(protocols),
+                std::back_inserter(proto));
+            if (!proto.empty())
+            {
+                auto& jv = ports.append(Json::Value(Json::objectValue));
+                jv[jss::port] = std::to_string(port.port);
+                jv[jss::protocol] = Json::Value{Json::arrayValue};
+                for (auto const& p : proto)
+                    jv[jss::protocol].append(p);
+            }
+        }
+
+        if (app_.config().exists("port_grpc"))
+        {
+            auto const& grpcSection = app_.config().section("port_grpc");
+            auto const optPort = grpcSection.get("port");
+            if (optPort && grpcSection.get("ip"))
+            {
+                auto& jv = ports.append(Json::Value(Json::objectValue));
+                jv[jss::port] = *optPort;
+                jv[jss::protocol] = Json::Value{Json::arrayValue};
+                jv[jss::protocol].append("grpc");
+            }
+        }
+        info[jss::ports] = std::move(ports);
     }
 
     return info;
