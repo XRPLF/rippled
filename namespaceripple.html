@@ -297,6 +297,10 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1CheckpointersCollection.html">CheckpointersCollection</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Clawback.html">Clawback</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Clawback__test.html">Clawback_test</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ClosureCounter.html">ClosureCounter</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">The role of a <code><a class="el" href="classripple_1_1ClosureCounter.html" title="The role of a ClosureCounter is to assist in shutdown by letting callers wait for the completion of c...">ClosureCounter</a></code> is to assist in shutdown by letting callers wait for the completion of closures (of a specific type signature) that they previously registered.  <a href="classripple_1_1ClosureCounter.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1266,6 +1270,9 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ValidatorToken.html">ValidatorToken</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ValidClawback.html">ValidClawback</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Invariant: Token holder's trustline balance cannot be negative after <a class="el" href="classripple_1_1Clawback.html">Clawback</a>.  <a href="classripple_1_1ValidClawback.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ValidNewAccountRoot.html">ValidNewAccountRoot</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Invariant: a new account root must be the consequence of a payment, must have the right starting sequence, and the payment may not create more than one new account root.  <a href="classripple_1_1ValidNewAccountRoot.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1334,8 +1341,8 @@ Typedefs</h2></td></tr>
 <tr class="separator:a091aa2583051396c4aa230c8421c7029"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6ccd779019affe95ed50802a06d731d8"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a6ccd779019affe95ed50802a06d731d8">AccountTransactionsData</a> = <a class="el" href="structripple_1_1RelationalDatabase_1_1AccountTransactionsData.html">RelationalDatabase::AccountTransactionsData</a></td></tr>
 <tr class="separator:a6ccd779019affe95ed50802a06d731d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5eab7dbb1f0bc5ac7cd2caeede825ed7"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a5eab7dbb1f0bc5ac7cd2caeede825ed7">InvariantChecks</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/tuple.html">std::tuple</a>&lt; <a class="el" href="classripple_1_1TransactionFeeCheck.html">TransactionFeeCheck</a>, <a class="el" href="classripple_1_1AccountRootsNotDeleted.html">AccountRootsNotDeleted</a>, <a class="el" href="classripple_1_1LedgerEntryTypesMatch.html">LedgerEntryTypesMatch</a>, <a class="el" href="classripple_1_1XRPBalanceChecks.html">XRPBalanceChecks</a>, <a class="el" href="classripple_1_1XRPNotCreated.html">XRPNotCreated</a>, <a class="el" href="classripple_1_1NoXRPTrustLines.html">NoXRPTrustLines</a>, <a class="el" href="classripple_1_1NoBadOffers.html">NoBadOffers</a>, <a class="el" href="classripple_1_1NoZeroEscrow.html">NoZeroEscrow</a>, <a class="el" href="classripple_1_1ValidNewAccountRoot.html">ValidNewAccountRoot</a>, <a class="el" href="classripple_1_1ValidNFTokenPage.html">ValidNFTokenPage</a>, <a class="el" href="classripple_1_1NFTokenCountTracking.html">NFTokenCountTracking</a> &gt;</td></tr>
-<tr class="separator:a5eab7dbb1f0bc5ac7cd2caeede825ed7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4b78a0c554de2369f8e416b364f15f0b"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a4b78a0c554de2369f8e416b364f15f0b">InvariantChecks</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/tuple.html">std::tuple</a>&lt; <a class="el" href="classripple_1_1TransactionFeeCheck.html">TransactionFeeCheck</a>, <a class="el" href="classripple_1_1AccountRootsNotDeleted.html">AccountRootsNotDeleted</a>, <a class="el" href="classripple_1_1LedgerEntryTypesMatch.html">LedgerEntryTypesMatch</a>, <a class="el" href="classripple_1_1XRPBalanceChecks.html">XRPBalanceChecks</a>, <a class="el" href="classripple_1_1XRPNotCreated.html">XRPNotCreated</a>, <a class="el" href="classripple_1_1NoXRPTrustLines.html">NoXRPTrustLines</a>, <a class="el" href="classripple_1_1NoBadOffers.html">NoBadOffers</a>, <a class="el" href="classripple_1_1NoZeroEscrow.html">NoZeroEscrow</a>, <a class="el" href="classripple_1_1ValidNewAccountRoot.html">ValidNewAccountRoot</a>, <a class="el" href="classripple_1_1ValidNFTokenPage.html">ValidNFTokenPage</a>, <a class="el" href="classripple_1_1NFTokenCountTracking.html">NFTokenCountTracking</a>, <a class="el" href="classripple_1_1ValidClawback.html">ValidClawback</a> &gt;</td></tr>
+<tr class="separator:a4b78a0c554de2369f8e416b364f15f0b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a104b942a112488963dab002995f78830"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a104b942a112488963dab002995f78830">Offer</a> = <a class="el" href="classripple_1_1TOffer.html">TOffer</a>&lt;&gt;</td></tr>
 <tr class="separator:a104b942a112488963dab002995f78830"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4d601befed9298ce94e7d95410fa9ce9"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a4d601befed9298ce94e7d95410fa9ce9">uint128</a> = <a class="el" href="classripple_1_1base__uint.html">base_uint</a>&lt; 128 &gt;</td></tr>
@@ -2013,23 +2020,26 @@ Enumerations</h2></td></tr>
 <a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a91c443238e7e5acef466bfb2fe9f1211">lsfDisallowIncomingPayChan</a>, 
 <br />
 &#160;&#160;<a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a99c52494bb88dab0264625ebc5c4206e">lsfDisallowIncomingTrustline</a>, 
+<a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5aa92bc301276504f22d869a02806c0a1f">lsfAMM</a> = 0x40000000, 
+<a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5ac08d95c566e316346e73a5b1d3fbf40e">lsfAllowClawback</a>, 
 <a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5af5bb4ed279c86f7c4ddfe0b2ed89af00">lsfPassive</a> = 0x00010000, 
-<a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5ab4f5e24467c127ce07228288a7b54760">lsfSell</a> = 0x00020000, 
+<br />
+&#160;&#160;<a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5ab4f5e24467c127ce07228288a7b54760">lsfSell</a> = 0x00020000, 
 <a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5ac704b653dce116dabb7ede80b711d953">lsfLowReserve</a> = 0x00010000, 
-<br />
-&#160;&#160;<a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a753e9af2cd366aa69e76f62823acf9ec">lsfHighReserve</a> = 0x00020000, 
+<a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a753e9af2cd366aa69e76f62823acf9ec">lsfHighReserve</a> = 0x00020000, 
 <a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5af37617abe9ad741cd823746961f1fb3a">lsfLowAuth</a> = 0x00040000, 
-<a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5ae6db21adf463a223e362b44f0fd54663">lsfHighAuth</a> = 0x00080000, 
+<br />
+&#160;&#160;<a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5ae6db21adf463a223e362b44f0fd54663">lsfHighAuth</a> = 0x00080000, 
 <a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a503af0c7122f0c0f33e7ea4b7deee1d3">lsfLowNoRipple</a> = 0x00100000, 
-<br />
-&#160;&#160;<a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a3f3817fa4e1147bc1ea78c56aaf12632">lsfHighNoRipple</a> = 0x00200000, 
+<a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a3f3817fa4e1147bc1ea78c56aaf12632">lsfHighNoRipple</a> = 0x00200000, 
 <a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5acc42435bd72cbd8094823e3316721f8d">lsfLowFreeze</a> = 0x00400000, 
-<a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a4693afbe3079a71cd439cffeda515010">lsfHighFreeze</a> = 0x00800000, 
-<a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a273944ab384fe8344c4516557dcf5e84">lsfOneOwnerCount</a> = 0x00010000, 
 <br />
-&#160;&#160;<a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a51e9a2085c035de4de06c8b462382556">lsfNFTokenBuyOffers</a> = 0x00000001, 
+&#160;&#160;<a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a4693afbe3079a71cd439cffeda515010">lsfHighFreeze</a> = 0x00800000, 
+<a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a273944ab384fe8344c4516557dcf5e84">lsfOneOwnerCount</a> = 0x00010000, 
+<a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a51e9a2085c035de4de06c8b462382556">lsfNFTokenBuyOffers</a> = 0x00000001, 
 <a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a6ef34056b7b7b1d985b5f4609c4fa904">lsfNFTokenSellOffers</a> = 0x00000002, 
-<a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5af09cb8ad3ecf501d7149dad344aada65">lsfSellNFToken</a> = 0x00000001
+<br />
+&#160;&#160;<a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5af09cb8ad3ecf501d7149dad344aada65">lsfSellNFToken</a> = 0x00000001
 <br />
  }</td></tr>
 <tr class="separator:a4a9c7b33fef9015d6406302ef80b63c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -2328,7 +2338,8 @@ Enumerations</h2></td></tr>
 <a class="el" href="namespaceripple.html#a2ce3074a39ea65126b82fc59baf43126a0a1c36e9adb99261fc2c9793685e6ba8">ttNFTOKEN_CANCEL_OFFER</a> = 28, 
 <a class="el" href="namespaceripple.html#a2ce3074a39ea65126b82fc59baf43126a3373a57538fca07b2fdce6e45dd375c0">ttNFTOKEN_ACCEPT_OFFER</a> = 29, 
 <br />
-&#160;&#160;<a class="el" href="namespaceripple.html#a2ce3074a39ea65126b82fc59baf43126a0c108e5d380e14099ad0299d5c0ee510">ttAMENDMENT</a> = 100, 
+&#160;&#160;<a class="el" href="namespaceripple.html#a2ce3074a39ea65126b82fc59baf43126a84f52a3dabedfdac2bd755a2dd9ee226">ttCLAWBACK</a> = 30, 
+<a class="el" href="namespaceripple.html#a2ce3074a39ea65126b82fc59baf43126a0c108e5d380e14099ad0299d5c0ee510">ttAMENDMENT</a> = 100, 
 <a class="el" href="namespaceripple.html#a2ce3074a39ea65126b82fc59baf43126aded2ff2e2fb748fa8f007ca05719d8f8">ttFEE</a> = 101, 
 <a class="el" href="namespaceripple.html#a2ce3074a39ea65126b82fc59baf43126a2b1632b6f19b0e05c73086acb1731b48">ttUNL_MODIFY</a> = 102
 <br />
@@ -2872,7 +2883,7 @@ Functions</h2></td></tr>
 <tr class="separator:aebcc26ebe20ddcd3bcbfd5402e0acb89"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8bfde2a725fdf2ec6390e107c0324e0d"><td class="memItemLeft" align="right" valign="top">static bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a8bfde2a725fdf2ec6390e107c0324e0d">checkCondition</a> (<a class="el" href="classripple_1_1Slice.html">Slice</a> f, <a class="el" href="classripple_1_1Slice.html">Slice</a> c)</td></tr>
 <tr class="separator:a8bfde2a725fdf2ec6390e107c0324e0d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aceaff96130b8a2fec303ae3a730d26c6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a5eab7dbb1f0bc5ac7cd2caeede825ed7">InvariantChecks</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aceaff96130b8a2fec303ae3a730d26c6">getInvariantChecks</a> ()</td></tr>
+<tr class="memitem:aceaff96130b8a2fec303ae3a730d26c6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a4b78a0c554de2369f8e416b364f15f0b">InvariantChecks</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aceaff96130b8a2fec303ae3a730d26c6">getInvariantChecks</a> ()</td></tr>
 <tr class="memdesc:aceaff96130b8a2fec303ae3a730d26c6"><td class="mdescLeft">&#160;</td><td class="mdescRight">get a tuple of all invariant checks  <a href="namespaceripple.html#aceaff96130b8a2fec303ae3a730d26c6">More...</a><br /></td></tr>
 <tr class="separator:aceaff96130b8a2fec303ae3a730d26c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad2cbc273400d06e5ff80501de15410e3"><td class="memTemplParams" colspan="2">template&lt;class TIn , class TOut &gt; </td></tr>
@@ -3710,6 +3721,8 @@ Functions</h2></td></tr>
 <tr class="separator:ac8d6f7c5e097cb37a19ae6f74e937228"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a17f197df90ee8ed0576a19516178a58e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a17f197df90ee8ed0576a19516178a58e">REGISTER_FIX</a> (<a class="el" href="namespaceripple.html#a18847fa4f816853e34b0458e46587530">fixReducedOffersV1</a>, Supported::yes, <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a3fcbd083035206240ef4d4488ac18498">VoteBehavior::DefaultNo</a>)</td></tr>
 <tr class="separator:a17f197df90ee8ed0576a19516178a58e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a72dfd8a35d88d96b96e6493bbed66db1"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a72dfd8a35d88d96b96e6493bbed66db1">REGISTER_FEATURE</a> (<a class="el" href="classripple_1_1Clawback.html">Clawback</a>, Supported::yes, <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a3fcbd083035206240ef4d4488ac18498">VoteBehavior::DefaultNo</a>)</td></tr>
+<tr class="separator:a72dfd8a35d88d96b96e6493bbed66db1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0a284d81b944c07c9e0b103422c21e92"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a0a284d81b944c07c9e0b103422c21e92">REGISTER_FEATURE</a> (CryptoConditionsSuite, Supported::yes, <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6aec30c235d0eb792797af1aa1d11759a7">VoteBehavior::Obsolete</a>)</td></tr>
 <tr class="separator:a0a284d81b944c07c9e0b103422c21e92"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a06b7bde287bdc0dc89448a925382d27c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a06b7bde287bdc0dc89448a925382d27c">REGISTER_FEATURE</a> (NonFungibleTokensV1, Supported::yes, <a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6aec30c235d0eb792797af1aa1d11759a7">VoteBehavior::Obsolete</a>)</td></tr>
@@ -4779,6 +4792,8 @@ Functions</h2></td></tr>
 <tr class="separator:afb5372f21ba2fb52ff9a660d0ba0206c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaa484a9c6e720820f5a135b42c8bfdad"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aaa484a9c6e720820f5a135b42c8bfdad">BEAST_DEFINE_TESTSUITE</a> (Check, tx, ripple)</td></tr>
 <tr class="separator:aaa484a9c6e720820f5a135b42c8bfdad"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0c4a5724bef35eab096dbb61b9260227"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a0c4a5724bef35eab096dbb61b9260227">BEAST_DEFINE_TESTSUITE</a> (<a class="el" href="classripple_1_1Clawback.html">Clawback</a>, app, ripple)</td></tr>
+<tr class="separator:a0c4a5724bef35eab096dbb61b9260227"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a01bbe36e1fb6d66f4fa5a93be2d34f4f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a01bbe36e1fb6d66f4fa5a93be2d34f4f">BEAST_DEFINE_TESTSUITE</a> (Discrepancy, app, ripple)</td></tr>
 <tr class="separator:a01bbe36e1fb6d66f4fa5a93be2d34f4f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9f05967f9926212c8708151fd74d4a2c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a9f05967f9926212c8708151fd74d4a2c">BEAST_DEFINE_TESTSUITE</a> (Freeze, app, ripple)</td></tr>
@@ -5161,6 +5176,8 @@ Variables</h2></td></tr>
 <tr class="separator:a2abe44fcd04710b216e3f9f774e4849d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a18847fa4f816853e34b0458e46587530"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a18847fa4f816853e34b0458e46587530">fixReducedOffersV1</a></td></tr>
 <tr class="separator:a18847fa4f816853e34b0458e46587530"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa590b67515aae0d22360a2cc8ab9b28c"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aa590b67515aae0d22360a2cc8ab9b28c">featureClawback</a></td></tr>
+<tr class="separator:aa590b67515aae0d22360a2cc8ab9b28c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2f7698f565e77bb2e9e073143fdcc8f7"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1detail_1_1AccountIdCache.html">detail::AccountIdCache</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a2f7698f565e77bb2e9e073143fdcc8f7">accountIdCache</a></td></tr>
 <tr class="separator:a2f7698f565e77bb2e9e073143fdcc8f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a669e38445782d88a025171f1c39716c2"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a669e38445782d88a025171f1c39716c2">retiredMultiSign</a> = <a class="el" href="namespaceripple.html#a8c231e0a6ac493297e442e8e99af8037">retireFeature</a>(&quot;MultiSign&quot;)</td></tr>
@@ -5749,6 +5766,8 @@ Variables</h2></td></tr>
 <tr class="separator:ac12fbb1864b09bfd3fb4ead410449edd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a72b8ab4faf1078ddedabff623d95b057"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a72b8ab4faf1078ddedabff623d95b057">asfDisallowIncomingTrustline</a> = 15</td></tr>
 <tr class="separator:a72b8ab4faf1078ddedabff623d95b057"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3ac502eaeebe1f069671eeb7b978a1a6"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a3ac502eaeebe1f069671eeb7b978a1a6">asfAllowClawback</a> = 16</td></tr>
+<tr class="separator:a3ac502eaeebe1f069671eeb7b978a1a6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a61d9fbb44b335fbb5e82e3211e6639a2"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a61d9fbb44b335fbb5e82e3211e6639a2">tfPassive</a> = 0x00010000</td></tr>
 <tr class="separator:a61d9fbb44b335fbb5e82e3211e6639a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6257d0a91b5b06dd7712c68af628441d"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a6257d0a91b5b06dd7712c68af628441d">tfImmediateOrCancel</a> = 0x00020000</td></tr>
@@ -5809,6 +5828,8 @@ Variables</h2></td></tr>
 <tr class="separator:a0e6f65f018338f455dd05eb712805ad6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adb1d0221f99c4883a430e13bf72d43e5"><td class="memItemLeft" align="right" valign="top">constexpr const <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#adb1d0221f99c4883a430e13bf72d43e5">tfNFTokenAcceptOfferMask</a> = ~<a class="el" href="namespaceripple.html#aa52329c755ab0ee46e285c09a32b02ec">tfUniversal</a></td></tr>
 <tr class="separator:adb1d0221f99c4883a430e13bf72d43e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab8109130afa691432b804557a7b040d1"><td class="memItemLeft" align="right" valign="top">constexpr const <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ab8109130afa691432b804557a7b040d1">tfClawbackMask</a> = ~<a class="el" href="namespaceripple.html#aa52329c755ab0ee46e285c09a32b02ec">tfUniversal</a></td></tr>
+<tr class="separator:ab8109130afa691432b804557a7b040d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3fb12f151c889976ec76ff65d3c33194"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceJson.html#a91fe494468d6262cf119456ba139de34">Json::Int</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a3fb12f151c889976ec76ff65d3c33194">method_not_found</a> = -32601</td></tr>
 <tr class="separator:a3fb12f151c889976ec76ff65d3c33194"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a33667bb5b5317033ef2354c313ad02d5"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceJson.html#a91fe494468d6262cf119456ba139de34">Json::Int</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a33667bb5b5317033ef2354c313ad02d5">server_overloaded</a> = -32604</td></tr>
@@ -6000,19 +6021,19 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="a5eab7dbb1f0bc5ac7cd2caeede825ed7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5eab7dbb1f0bc5ac7cd2caeede825ed7">&#9670;&nbsp;</a></span>InvariantChecks</h2>
+<a id="a4b78a0c554de2369f8e416b364f15f0b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4b78a0c554de2369f8e416b364f15f0b">&#9670;&nbsp;</a></span>InvariantChecks</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="namespaceripple.html#a5eab7dbb1f0bc5ac7cd2caeede825ed7">ripple::InvariantChecks</a> = typedef <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/tuple.html">std::tuple</a>&lt; <a class="el" href="classripple_1_1TransactionFeeCheck.html">TransactionFeeCheck</a>, <a class="el" href="classripple_1_1AccountRootsNotDeleted.html">AccountRootsNotDeleted</a>, <a class="el" href="classripple_1_1LedgerEntryTypesMatch.html">LedgerEntryTypesMatch</a>, <a class="el" href="classripple_1_1XRPBalanceChecks.html">XRPBalanceChecks</a>, <a class="el" href="classripple_1_1XRPNotCreated.html">XRPNotCreated</a>, <a class="el" href="classripple_1_1NoXRPTrustLines.html">NoXRPTrustLines</a>, <a class="el" href="classripple_1_1NoBadOffers.html">NoBadOffers</a>, <a class="el" href="classripple_1_1NoZeroEscrow.html">NoZeroEscrow</a>, <a class="el" href="classripple_1_1ValidNewAccountRoot.html">ValidNewAccountRoot</a>, <a class="el" href="classripple_1_1ValidNFTokenPage.html">ValidNFTokenPage</a>, <a class="el" href="classripple_1_1NFTokenCountTracking.html">NFTokenCountTracking</a>&gt;</td>
+          <td class="memname">using <a class="el" href="namespaceripple.html#a4b78a0c554de2369f8e416b364f15f0b">ripple::InvariantChecks</a> = typedef <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/tuple.html">std::tuple</a>&lt; <a class="el" href="classripple_1_1TransactionFeeCheck.html">TransactionFeeCheck</a>, <a class="el" href="classripple_1_1AccountRootsNotDeleted.html">AccountRootsNotDeleted</a>, <a class="el" href="classripple_1_1LedgerEntryTypesMatch.html">LedgerEntryTypesMatch</a>, <a class="el" href="classripple_1_1XRPBalanceChecks.html">XRPBalanceChecks</a>, <a class="el" href="classripple_1_1XRPNotCreated.html">XRPNotCreated</a>, <a class="el" href="classripple_1_1NoXRPTrustLines.html">NoXRPTrustLines</a>, <a class="el" href="classripple_1_1NoBadOffers.html">NoBadOffers</a>, <a class="el" href="classripple_1_1NoZeroEscrow.html">NoZeroEscrow</a>, <a class="el" href="classripple_1_1ValidNewAccountRoot.html">ValidNewAccountRoot</a>, <a class="el" href="classripple_1_1ValidNFTokenPage.html">ValidNFTokenPage</a>, <a class="el" href="classripple_1_1NFTokenCountTracking.html">NFTokenCountTracking</a>, <a class="el" href="classripple_1_1ValidClawback.html">ValidClawback</a>&gt;</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InvariantCheck_8h_source.html#l00405">405</a> of file <a class="el" href="InvariantCheck_8h_source.html">InvariantCheck.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InvariantCheck_8h_source.html#l00434">434</a> of file <a class="el" href="InvariantCheck_8h_source.html">InvariantCheck.h</a>.</p>
 
 </div>
 </div>
@@ -8745,6 +8766,8 @@ ledger.
 <tr><td class="fieldname"><a id="a4a9c7b33fef9015d6406302ef80b63c5a494f22c192b84673b1ff1e17e1b4304a"></a>lsfDisallowIncomingCheck&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a4a9c7b33fef9015d6406302ef80b63c5a91c443238e7e5acef466bfb2fe9f1211"></a>lsfDisallowIncomingPayChan&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a4a9c7b33fef9015d6406302ef80b63c5a99c52494bb88dab0264625ebc5c4206e"></a>lsfDisallowIncomingTrustline&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a4a9c7b33fef9015d6406302ef80b63c5aa92bc301276504f22d869a02806c0a1f"></a>lsfAMM&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a4a9c7b33fef9015d6406302ef80b63c5ac08d95c566e316346e73a5b1d3fbf40e"></a>lsfAllowClawback&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a4a9c7b33fef9015d6406302ef80b63c5af5bb4ed279c86f7c4ddfe0b2ed89af00"></a>lsfPassive&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a4a9c7b33fef9015d6406302ef80b63c5ab4f5e24467c127ce07228288a7b54760"></a>lsfSell&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a4a9c7b33fef9015d6406302ef80b63c5ac704b653dce116dabb7ede80b711d953"></a>lsfLowReserve&#160;</td><td class="fielddoc"></td></tr>
@@ -9262,6 +9285,8 @@ ledger.
 <tr><td class="fieldname"><a id="a2ce3074a39ea65126b82fc59baf43126a0a1c36e9adb99261fc2c9793685e6ba8"></a>ttNFTOKEN_CANCEL_OFFER&#160;</td><td class="fielddoc"><p>This transaction cancels an existing offer to buy or sell an existing NFT. </p>
 </td></tr>
 <tr><td class="fieldname"><a id="a2ce3074a39ea65126b82fc59baf43126a3373a57538fca07b2fdce6e45dd375c0"></a>ttNFTOKEN_ACCEPT_OFFER&#160;</td><td class="fielddoc"><p>This transaction accepts an existing offer to buy or sell an existing NFT. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a2ce3074a39ea65126b82fc59baf43126a84f52a3dabedfdac2bd755a2dd9ee226"></a>ttCLAWBACK&#160;</td><td class="fielddoc"><p>This transaction claws back issued tokens. </p>
 </td></tr>
 <tr><td class="fieldname"><a id="a2ce3074a39ea65126b82fc59baf43126a0c108e5d380e14099ad0299d5c0ee510"></a>ttAMENDMENT&#160;</td><td class="fielddoc"><p>This system-generated transaction type is used to update the status of the various amendments. </p>
 <pre class="fragment">For details, see: https://xrpl.org/amendments.html
@@ -16697,7 +16722,7 @@ template&lt;class Request &gt; </div>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="structripple_1_1PreflightResult.html" title="Describes the results of the preflight check.">PreflightResult</a>, <a class="el" href="namespaceripple.html#a5027a5209e954b9478fab70357963466" title="Gate a transaction based on static ledger information.">preclaim</a>, <a class="el" href="namespaceripple.html#a305632c3ccdbb4005fa2b019c51b5ac1" title="Apply a prechecked transaction to an OpenView.">doApply</a>, <a class="el" href="namespaceripple.html#a19f506b57882e3396d15d7c43fa92d92" title="Apply a transaction to an OpenView.">apply</a></dd></dl>
 <dl class="section return"><dt>Returns</dt><dd>A <code><a class="el" href="structripple_1_1PreflightResult.html" title="Describes the results of the preflight check.">PreflightResult</a></code> object containing, among other things, the <code>TER</code> code. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="applySteps_8cpp_source.html#l00473">473</a> of file <a class="el" href="applySteps_8cpp_source.html">applySteps.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="applySteps_8cpp_source.html#l00484">484</a> of file <a class="el" href="applySteps_8cpp_source.html">applySteps.cpp</a>.</p>
 
 </div>
 </div>
@@ -16749,7 +16774,7 @@ template&lt;class Request &gt; </div>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="structripple_1_1PreclaimResult.html" title="Describes the results of the preclaim check.">PreclaimResult</a>, <a class="el" href="namespaceripple.html#a24280b80536d1afd09e24a75f4596922" title="Gate a transaction based on static information.">preflight</a>, <a class="el" href="namespaceripple.html#a305632c3ccdbb4005fa2b019c51b5ac1" title="Apply a prechecked transaction to an OpenView.">doApply</a>, <a class="el" href="namespaceripple.html#a19f506b57882e3396d15d7c43fa92d92" title="Apply a transaction to an OpenView.">apply</a></dd></dl>
 <dl class="section return"><dt>Returns</dt><dd>A <code><a class="el" href="structripple_1_1PreclaimResult.html" title="Describes the results of the preclaim check.">PreclaimResult</a></code> object containing, among other things the <code>TER</code> code and the base fee value for this transaction. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="applySteps_8cpp_source.html#l00493">493</a> of file <a class="el" href="applySteps_8cpp_source.html">applySteps.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="applySteps_8cpp_source.html#l00504">504</a> of file <a class="el" href="applySteps_8cpp_source.html">applySteps.cpp</a>.</p>
 
 </div>
 </div>
@@ -16792,7 +16817,7 @@ template&lt;class Request &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>The base fee. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="applySteps_8cpp_source.html#l00539">539</a> of file <a class="el" href="applySteps_8cpp_source.html">applySteps.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="applySteps_8cpp_source.html#l00550">550</a> of file <a class="el" href="applySteps_8cpp_source.html">applySteps.cpp</a>.</p>
 
 </div>
 </div>
@@ -16833,7 +16858,7 @@ template&lt;class Request &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>The base fee in <a class="el" href="classripple_1_1XRPAmount.html">XRPAmount</a>. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="applySteps_8cpp_source.html#l00545">545</a> of file <a class="el" href="applySteps_8cpp_source.html">applySteps.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="applySteps_8cpp_source.html#l00556">556</a> of file <a class="el" href="applySteps_8cpp_source.html">applySteps.cpp</a>.</p>
 
 </div>
 </div>
@@ -16882,7 +16907,7 @@ template&lt;class Request &gt; </div>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="namespaceripple.html#a24280b80536d1afd09e24a75f4596922" title="Gate a transaction based on static information.">preflight</a>, <a class="el" href="namespaceripple.html#a5027a5209e954b9478fab70357963466" title="Gate a transaction based on static ledger information.">preclaim</a>, <a class="el" href="namespaceripple.html#a19f506b57882e3396d15d7c43fa92d92" title="Apply a transaction to an OpenView.">apply</a></dd></dl>
 <dl class="section return"><dt>Returns</dt><dd>A pair with the <code>TER</code> and a <code>bool</code> indicating whether or not the transaction was applied. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="applySteps_8cpp_source.html#l00551">551</a> of file <a class="el" href="applySteps_8cpp_source.html">applySteps.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="applySteps_8cpp_source.html#l00562">562</a> of file <a class="el" href="applySteps_8cpp_source.html">applySteps.cpp</a>.</p>
 
 </div>
 </div>
@@ -16904,7 +16929,7 @@ template&lt;class T , std::enable_if_t&lt; T::ConsequencesFactory==Transactor::N
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="applySteps_8cpp_source.html#l00058">58</a> of file <a class="el" href="applySteps_8cpp_source.html">applySteps.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="applySteps_8cpp_source.html#l00059">59</a> of file <a class="el" href="applySteps_8cpp_source.html">applySteps.cpp</a>.</p>
 
 </div>
 </div>
@@ -16926,7 +16951,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="applySteps_8cpp_source.html#l00085">85</a> of file <a class="el" href="applySteps_8cpp_source.html">applySteps.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="applySteps_8cpp_source.html#l00086">86</a> of file <a class="el" href="applySteps_8cpp_source.html">applySteps.cpp</a>.</p>
 
 </div>
 </div>
@@ -16954,7 +16979,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="applySteps_8cpp_source.html#l00094">94</a> of file <a class="el" href="applySteps_8cpp_source.html">applySteps.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="applySteps_8cpp_source.html#l00095">95</a> of file <a class="el" href="applySteps_8cpp_source.html">applySteps.cpp</a>.</p>
 
 </div>
 </div>
@@ -16984,7 +17009,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="applySteps_8cpp_source.html#l00162">162</a> of file <a class="el" href="applySteps_8cpp_source.html">applySteps.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="applySteps_8cpp_source.html#l00165">165</a> of file <a class="el" href="applySteps_8cpp_source.html">applySteps.cpp</a>.</p>
 
 </div>
 </div>
@@ -17022,7 +17047,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="applySteps_8cpp_source.html#l00258">258</a> of file <a class="el" href="applySteps_8cpp_source.html">applySteps.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="applySteps_8cpp_source.html#l00263">263</a> of file <a class="el" href="applySteps_8cpp_source.html">applySteps.cpp</a>.</p>
 
 </div>
 </div>
@@ -17050,7 +17075,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="applySteps_8cpp_source.html#l00360">360</a> of file <a class="el" href="applySteps_8cpp_source.html">applySteps.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="applySteps_8cpp_source.html#l00367">367</a> of file <a class="el" href="applySteps_8cpp_source.html">applySteps.cpp</a>.</p>
 
 </div>
 </div>
@@ -17147,7 +17172,7 @@ template&lt;class T &gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="namespaceripple.html#a5eab7dbb1f0bc5ac7cd2caeede825ed7">InvariantChecks</a> ripple::getInvariantChecks </td>
+          <td class="memname"><a class="el" href="namespaceripple.html#a4b78a0c554de2369f8e416b364f15f0b">InvariantChecks</a> ripple::getInvariantChecks </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -17159,7 +17184,7 @@ template&lt;class T &gt; </div>
 <dl class="section return"><dt>Returns</dt><dd><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/tuple.html">std::tuple</a> of instances that implement the required invariant check methods</dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="classripple_1_1InvariantChecker__PROTOTYPE.html" title="Prototype for invariant check implementations.">ripple::InvariantChecker_PROTOTYPE</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="InvariantCheck_8h_source.html#l00416">416</a> of file <a class="el" href="InvariantCheck_8h_source.html">InvariantCheck.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InvariantCheck_8h_source.html#l00445">445</a> of file <a class="el" href="InvariantCheck_8h_source.html">InvariantCheck.h</a>.</p>
 
 </div>
 </div>
@@ -27659,7 +27684,7 @@ template&lt;class Hasher &gt; </div>
 </div>
 </div>
 <a id="a857eef678f2479e90978a6d9415cbc52"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a857eef678f2479e90978a6d9415cbc52">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[1/21]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a857eef678f2479e90978a6d9415cbc52">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[1/22]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -27693,7 +27718,7 @@ template&lt;class Hasher &gt; </div>
 </div>
 </div>
 <a id="a064faf022553336b083aa598020c64df"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a064faf022553336b083aa598020c64df">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[2/21]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a064faf022553336b083aa598020c64df">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[2/22]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -27727,7 +27752,7 @@ template&lt;class Hasher &gt; </div>
 </div>
 </div>
 <a id="a3ad97567490330f9641f9da8c0210502"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3ad97567490330f9641f9da8c0210502">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[3/21]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a3ad97567490330f9641f9da8c0210502">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[3/22]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -27795,7 +27820,7 @@ template&lt;class Hasher &gt; </div>
 </div>
 </div>
 <a id="a6dc35990c5069db541cd1496485fb68e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6dc35990c5069db541cd1496485fb68e">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[4/21]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a6dc35990c5069db541cd1496485fb68e">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[4/22]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -27829,7 +27854,7 @@ template&lt;class Hasher &gt; </div>
 </div>
 </div>
 <a id="a525e7e9ab2f57b6a3d6d78ee4edbd5e9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a525e7e9ab2f57b6a3d6d78ee4edbd5e9">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[5/21]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a525e7e9ab2f57b6a3d6d78ee4edbd5e9">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[5/22]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -27965,7 +27990,7 @@ template&lt;class Hasher &gt; </div>
 </div>
 </div>
 <a id="a15fdcfc05603dcd404e851f61e11e1cf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a15fdcfc05603dcd404e851f61e11e1cf">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[6/21]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a15fdcfc05603dcd404e851f61e11e1cf">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[6/22]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -28067,7 +28092,7 @@ template&lt;class Hasher &gt; </div>
 </div>
 </div>
 <a id="aeefe91b2152e86de87e1f11cfcd8321e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aeefe91b2152e86de87e1f11cfcd8321e">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[7/21]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aeefe91b2152e86de87e1f11cfcd8321e">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[7/22]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -28237,7 +28262,7 @@ template&lt;class Hasher &gt; </div>
 </div>
 </div>
 <a id="aaaba90567299ed9d9a23bb0003680194"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aaaba90567299ed9d9a23bb0003680194">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[8/21]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aaaba90567299ed9d9a23bb0003680194">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[8/22]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -28305,7 +28330,7 @@ template&lt;class Hasher &gt; </div>
 </div>
 </div>
 <a id="ac6bbf51e08a0329474e3642a6e616435"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac6bbf51e08a0329474e3642a6e616435">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[9/21]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ac6bbf51e08a0329474e3642a6e616435">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[9/22]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -28373,7 +28398,7 @@ template&lt;class Hasher &gt; </div>
 </div>
 </div>
 <a id="accc96aba3f22b5100cc37646fc3f005a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#accc96aba3f22b5100cc37646fc3f005a">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[10/21]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#accc96aba3f22b5100cc37646fc3f005a">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[10/22]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -28441,7 +28466,7 @@ template&lt;class Hasher &gt; </div>
 </div>
 </div>
 <a id="a89dc3cae24a32037e8b43cc0f47b2784"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a89dc3cae24a32037e8b43cc0f47b2784">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[11/21]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a89dc3cae24a32037e8b43cc0f47b2784">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[11/22]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -28475,7 +28500,7 @@ template&lt;class Hasher &gt; </div>
 </div>
 </div>
 <a id="a656f71d8c8741debc6a24b9b43db2f56"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a656f71d8c8741debc6a24b9b43db2f56">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[12/21]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a656f71d8c8741debc6a24b9b43db2f56">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[12/22]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -28509,7 +28534,7 @@ template&lt;class Hasher &gt; </div>
 </div>
 </div>
 <a id="a8f68bb4f40600445be927335d3a3a600"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8f68bb4f40600445be927335d3a3a600">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[13/21]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a8f68bb4f40600445be927335d3a3a600">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[13/22]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -28611,7 +28636,7 @@ template&lt;class Hasher &gt; </div>
 </div>
 </div>
 <a id="a95ea67d3787c8d1ad3e1f0a34025a397"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a95ea67d3787c8d1ad3e1f0a34025a397">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[14/21]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a95ea67d3787c8d1ad3e1f0a34025a397">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[14/22]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -28645,7 +28670,7 @@ template&lt;class Hasher &gt; </div>
 </div>
 </div>
 <a id="ae28d2117badb6c1de7f48a2625f56505"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae28d2117badb6c1de7f48a2625f56505">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[15/21]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ae28d2117badb6c1de7f48a2625f56505">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[15/22]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -28679,7 +28704,7 @@ template&lt;class Hasher &gt; </div>
 </div>
 </div>
 <a id="a3ca1f33a4717caa53131490619a5d297"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3ca1f33a4717caa53131490619a5d297">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[16/21]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a3ca1f33a4717caa53131490619a5d297">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[16/22]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -28781,7 +28806,7 @@ template&lt;class Hasher &gt; </div>
 </div>
 </div>
 <a id="acae5dc740946e32d990e55ea05084d3f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acae5dc740946e32d990e55ea05084d3f">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[17/21]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#acae5dc740946e32d990e55ea05084d3f">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[17/22]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -28815,7 +28840,7 @@ template&lt;class Hasher &gt; </div>
 </div>
 </div>
 <a id="a101f91a1117a71e330dd8e5c90dacfec"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a101f91a1117a71e330dd8e5c90dacfec">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[18/21]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a101f91a1117a71e330dd8e5c90dacfec">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[18/22]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -28849,7 +28874,7 @@ template&lt;class Hasher &gt; </div>
 </div>
 </div>
 <a id="aa8ed9ec0e22ae30cd3bba3dacc8a3f5b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa8ed9ec0e22ae30cd3bba3dacc8a3f5b">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[19/21]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aa8ed9ec0e22ae30cd3bba3dacc8a3f5b">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[19/22]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -29018,8 +29043,42 @@ template&lt;class Hasher &gt; </div>
 
 </div>
 </div>
+<a id="a72dfd8a35d88d96b96e6493bbed66db1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a72dfd8a35d88d96b96e6493bbed66db1">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[20/22]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">ripple::REGISTER_FEATURE </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Clawback.html">Clawback</a>&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Supported::yes&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a3fcbd083035206240ef4d4488ac18498">VoteBehavior::DefaultNo</a>&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a0a284d81b944c07c9e0b103422c21e92"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0a284d81b944c07c9e0b103422c21e92">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[20/21]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a0a284d81b944c07c9e0b103422c21e92">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[21/22]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -29053,7 +29112,7 @@ template&lt;class Hasher &gt; </div>
 </div>
 </div>
 <a id="a06b7bde287bdc0dc89448a925382d27c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a06b7bde287bdc0dc89448a925382d27c">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[21/21]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a06b7bde287bdc0dc89448a925382d27c">&#9670;&nbsp;</a></span>REGISTER_FEATURE() <span class="overload">[22/22]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -46084,7 +46143,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="a2701412a11b118c19256a4c901db2938"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2701412a11b118c19256a4c901db2938">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[1/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a2701412a11b118c19256a4c901db2938">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[1/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -46118,7 +46177,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="afb5372f21ba2fb52ff9a660d0ba0206c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afb5372f21ba2fb52ff9a660d0ba0206c">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[2/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#afb5372f21ba2fb52ff9a660d0ba0206c">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[2/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -46152,7 +46211,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="aaa484a9c6e720820f5a135b42c8bfdad"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aaa484a9c6e720820f5a135b42c8bfdad">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[3/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aaa484a9c6e720820f5a135b42c8bfdad">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[3/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -46185,8 +46244,42 @@ template&lt;class Handler &gt; </div>
 
 </div>
 </div>
+<a id="a0c4a5724bef35eab096dbb61b9260227"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0c4a5724bef35eab096dbb61b9260227">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[4/65]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">ripple::BEAST_DEFINE_TESTSUITE </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Clawback.html">Clawback</a>&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">app&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">ripple&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a01bbe36e1fb6d66f4fa5a93be2d34f4f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a01bbe36e1fb6d66f4fa5a93be2d34f4f">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[4/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a01bbe36e1fb6d66f4fa5a93be2d34f4f">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[5/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -46220,7 +46313,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="a9f05967f9926212c8708151fd74d4a2c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9f05967f9926212c8708151fd74d4a2c">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[5/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a9f05967f9926212c8708151fd74d4a2c">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[6/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -46254,7 +46347,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="a0897f400554aaf7f19ab5326ba5d5074"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0897f400554aaf7f19ab5326ba5d5074">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[6/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a0897f400554aaf7f19ab5326ba5d5074">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[7/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -46288,7 +46381,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="a48240e490f755b7b881ece9ebfc17f77"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a48240e490f755b7b881ece9ebfc17f77">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[7/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a48240e490f755b7b881ece9ebfc17f77">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[8/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -46442,7 +46535,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="aedab5d7167dc2d78c71b40c3eedae952"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aedab5d7167dc2d78c71b40c3eedae952">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[8/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aedab5d7167dc2d78c71b40c3eedae952">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[9/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -46476,7 +46569,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="ac6461824da1787612809c88aaff23c90"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac6461824da1787612809c88aaff23c90">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[9/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ac6461824da1787612809c88aaff23c90">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[10/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -46510,7 +46603,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="a03dbf5f241341d950a4b3efbb23e5c98"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a03dbf5f241341d950a4b3efbb23e5c98">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[10/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a03dbf5f241341d950a4b3efbb23e5c98">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[11/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -46544,7 +46637,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="a6cdd712acdbff0518f8e6ad462f2cdd3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6cdd712acdbff0518f8e6ad462f2cdd3">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[11/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a6cdd712acdbff0518f8e6ad462f2cdd3">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[12/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -46578,7 +46671,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="aa7db8f922cdc3258a1b25e2887d25f77"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa7db8f922cdc3258a1b25e2887d25f77">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[12/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aa7db8f922cdc3258a1b25e2887d25f77">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[13/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -46612,7 +46705,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="ae86bf5b713e5abd36976f0afeed0bb71"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae86bf5b713e5abd36976f0afeed0bb71">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[13/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ae86bf5b713e5abd36976f0afeed0bb71">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[14/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -46646,7 +46739,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="ae2f6f0f0cddd8f4a6c55502546508d81"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae2f6f0f0cddd8f4a6c55502546508d81">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[14/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ae2f6f0f0cddd8f4a6c55502546508d81">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[15/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -46680,7 +46773,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="a6eca69c6c297377f3b099fea086aa582"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6eca69c6c297377f3b099fea086aa582">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[15/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a6eca69c6c297377f3b099fea086aa582">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[16/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -46714,7 +46807,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="afe4699b6785fc6d988e73ef268021fa6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afe4699b6785fc6d988e73ef268021fa6">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[16/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#afe4699b6785fc6d988e73ef268021fa6">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[17/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -46748,7 +46841,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="aafd5a992b97119d058df34de5e095478"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aafd5a992b97119d058df34de5e095478">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[17/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aafd5a992b97119d058df34de5e095478">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[18/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -46782,7 +46875,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="a17423ccf408d8907ab2abf83ed99a36b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a17423ccf408d8907ab2abf83ed99a36b">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[18/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a17423ccf408d8907ab2abf83ed99a36b">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[19/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -46816,7 +46909,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="a933cef9da9664b6bd6ff1148cb208a1e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a933cef9da9664b6bd6ff1148cb208a1e">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[19/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a933cef9da9664b6bd6ff1148cb208a1e">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[20/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -46850,7 +46943,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="a40a9d7a6c6f7eec70d24b10933835ae8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a40a9d7a6c6f7eec70d24b10933835ae8">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[20/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a40a9d7a6c6f7eec70d24b10933835ae8">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[21/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -46884,7 +46977,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="aa7cf90d60733517501f553ee73f2e237"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa7cf90d60733517501f553ee73f2e237">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[21/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aa7cf90d60733517501f553ee73f2e237">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[22/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -46918,7 +47011,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="a559f887bd0b820170ef81e1c4c286ae6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a559f887bd0b820170ef81e1c4c286ae6">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[22/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a559f887bd0b820170ef81e1c4c286ae6">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[23/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -46952,7 +47045,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="a814b56a37c04a2c01c28e555fb76347a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a814b56a37c04a2c01c28e555fb76347a">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[23/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a814b56a37c04a2c01c28e555fb76347a">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[24/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -46986,7 +47079,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="a4fef33f462ee545a95317e929f497606"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4fef33f462ee545a95317e929f497606">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[24/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a4fef33f462ee545a95317e929f497606">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[25/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -47020,7 +47113,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="af9f602454bc7e1774c9d2a1bfb191c61"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af9f602454bc7e1774c9d2a1bfb191c61">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[25/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#af9f602454bc7e1774c9d2a1bfb191c61">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[26/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -47054,7 +47147,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="a21e4f715e219bcb80b6716963e2544ac"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a21e4f715e219bcb80b6716963e2544ac">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[26/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a21e4f715e219bcb80b6716963e2544ac">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[27/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -47088,7 +47181,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="a7acb6c4bff5fe58936dbb55c23523a3a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7acb6c4bff5fe58936dbb55c23523a3a">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[27/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a7acb6c4bff5fe58936dbb55c23523a3a">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[28/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -47122,7 +47215,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="af1d0659db6f254777bef7caea8caa4f5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af1d0659db6f254777bef7caea8caa4f5">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[28/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#af1d0659db6f254777bef7caea8caa4f5">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[29/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -47156,7 +47249,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="a6462beaa9588dfb8c3526b1d56f6d826"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6462beaa9588dfb8c3526b1d56f6d826">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[29/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a6462beaa9588dfb8c3526b1d56f6d826">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[30/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -47190,7 +47283,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="a0e4d71656ea917b62973285af2c0b50e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0e4d71656ea917b62973285af2c0b50e">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[30/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a0e4d71656ea917b62973285af2c0b50e">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[31/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -47224,7 +47317,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="a22bb60f949856e6879060387ae8b555a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a22bb60f949856e6879060387ae8b555a">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[31/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a22bb60f949856e6879060387ae8b555a">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[32/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -47258,7 +47351,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="afe2053afb2ff5dbbceba9f9f2f1f7ca6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afe2053afb2ff5dbbceba9f9f2f1f7ca6">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[32/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#afe2053afb2ff5dbbceba9f9f2f1f7ca6">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[33/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -47292,7 +47385,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="aae18687a39603d393d092a3f0bad9ad5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aae18687a39603d393d092a3f0bad9ad5">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[33/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aae18687a39603d393d092a3f0bad9ad5">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[34/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -47326,7 +47419,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="a5df6f03e29b3198a6efe5fbce4b29a0a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5df6f03e29b3198a6efe5fbce4b29a0a">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[34/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a5df6f03e29b3198a6efe5fbce4b29a0a">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[35/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -47360,7 +47453,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="a58d8a91ea77825b7a19be3f05a2beaee"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a58d8a91ea77825b7a19be3f05a2beaee">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[35/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a58d8a91ea77825b7a19be3f05a2beaee">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[36/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -47394,7 +47487,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="a0619e3f7edaca90fbb1f53f542f3c510"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0619e3f7edaca90fbb1f53f542f3c510">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[36/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a0619e3f7edaca90fbb1f53f542f3c510">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[37/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -47428,7 +47521,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="a7e6ed97c08eb9e82cdbe9d67b35fbfb6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7e6ed97c08eb9e82cdbe9d67b35fbfb6">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[37/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a7e6ed97c08eb9e82cdbe9d67b35fbfb6">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[38/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -47462,7 +47555,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="aaec73da6fbefb4f4d5d20f9f812a4feb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aaec73da6fbefb4f4d5d20f9f812a4feb">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[38/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aaec73da6fbefb4f4d5d20f9f812a4feb">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[39/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -47496,7 +47589,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="a07d31708bf6a262a2efedb4d0cf54721"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a07d31708bf6a262a2efedb4d0cf54721">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[39/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a07d31708bf6a262a2efedb4d0cf54721">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[40/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -47530,7 +47623,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="ab4d8d97b94bbef03c9bf7eff4140f8f9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab4d8d97b94bbef03c9bf7eff4140f8f9">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[40/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ab4d8d97b94bbef03c9bf7eff4140f8f9">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[41/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -47564,7 +47657,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="a1dd8248a25d1f72679f48ac97bc56f44"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1dd8248a25d1f72679f48ac97bc56f44">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[41/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a1dd8248a25d1f72679f48ac97bc56f44">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[42/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -47598,7 +47691,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="a932fbe077b6ec3a5f57b210331693c89"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a932fbe077b6ec3a5f57b210331693c89">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[42/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a932fbe077b6ec3a5f57b210331693c89">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[43/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -47632,7 +47725,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="a26bbcf7be28e824c140216fac63345f3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a26bbcf7be28e824c140216fac63345f3">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[43/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a26bbcf7be28e824c140216fac63345f3">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[44/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -47666,7 +47759,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="a3dc34096185cd363aaed0a2ac3a2d845"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3dc34096185cd363aaed0a2ac3a2d845">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[44/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a3dc34096185cd363aaed0a2ac3a2d845">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[45/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -47700,7 +47793,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="a4a8088d5aaa8cc301489a7177c38813b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4a8088d5aaa8cc301489a7177c38813b">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[45/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a4a8088d5aaa8cc301489a7177c38813b">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[46/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -47734,7 +47827,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="ae0ecfa4d4cb97b309255f4c7a12c4fc1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae0ecfa4d4cb97b309255f4c7a12c4fc1">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[46/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ae0ecfa4d4cb97b309255f4c7a12c4fc1">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[47/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -47801,7 +47894,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="ad95ff440efdda3179423cf4b4af61e7b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad95ff440efdda3179423cf4b4af61e7b">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[47/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ad95ff440efdda3179423cf4b4af61e7b">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[48/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -47835,7 +47928,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="a82d97b0ba131cfe79c43d9c7c77563a5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a82d97b0ba131cfe79c43d9c7c77563a5">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[48/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a82d97b0ba131cfe79c43d9c7c77563a5">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[49/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -47869,7 +47962,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="a96c3046f88c54b27ee1d7f18d6439524"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a96c3046f88c54b27ee1d7f18d6439524">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[49/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a96c3046f88c54b27ee1d7f18d6439524">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[50/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -47903,7 +47996,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="aa6dd7ca485e0f4a38d1e7a70b21a799c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa6dd7ca485e0f4a38d1e7a70b21a799c">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[50/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aa6dd7ca485e0f4a38d1e7a70b21a799c">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[51/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -47937,7 +48030,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="a8a84d7b4ed94c1ad2683afb0501da55c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8a84d7b4ed94c1ad2683afb0501da55c">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[51/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a8a84d7b4ed94c1ad2683afb0501da55c">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[52/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -47971,7 +48064,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="a2a990d1f7c5a025be01fff1f55c0a887"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2a990d1f7c5a025be01fff1f55c0a887">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[52/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a2a990d1f7c5a025be01fff1f55c0a887">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[53/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -48045,7 +48138,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="a5105bc3dcb33a3764924315743134fc4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5105bc3dcb33a3764924315743134fc4">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[53/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a5105bc3dcb33a3764924315743134fc4">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[54/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -48079,7 +48172,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="a0f69e2428d6879d0eecfad78a4bbf671"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0f69e2428d6879d0eecfad78a4bbf671">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[54/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a0f69e2428d6879d0eecfad78a4bbf671">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[55/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -48113,7 +48206,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="a6fe5f093a3f7355e7657ef0cfdea2b27"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6fe5f093a3f7355e7657ef0cfdea2b27">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[55/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a6fe5f093a3f7355e7657ef0cfdea2b27">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[56/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -48147,7 +48240,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="ab0d3cc70e0b74e81aa74bcd7918055e8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab0d3cc70e0b74e81aa74bcd7918055e8">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[56/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ab0d3cc70e0b74e81aa74bcd7918055e8">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[57/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -48221,7 +48314,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="a8701631f0bb6febef8a14ab68252df67"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8701631f0bb6febef8a14ab68252df67">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[57/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a8701631f0bb6febef8a14ab68252df67">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[58/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -48255,7 +48348,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="af6b697b0643c5ec976f58fb51dd78ff2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af6b697b0643c5ec976f58fb51dd78ff2">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[58/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#af6b697b0643c5ec976f58fb51dd78ff2">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[59/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -48329,7 +48422,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="a60134e6787fd51a3424332ae3c44d0df"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a60134e6787fd51a3424332ae3c44d0df">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[59/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a60134e6787fd51a3424332ae3c44d0df">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[60/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -48363,7 +48456,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="a9b56a4d10a913739d58afc9980077dd6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9b56a4d10a913739d58afc9980077dd6">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[60/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a9b56a4d10a913739d58afc9980077dd6">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[61/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -48397,7 +48490,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="afb7ca38b990a2096b32ecc0366216c53"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afb7ca38b990a2096b32ecc0366216c53">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[61/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#afb7ca38b990a2096b32ecc0366216c53">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[62/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -48431,7 +48524,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="a23e30ea1b012c17d54d9c6ee67f9775f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a23e30ea1b012c17d54d9c6ee67f9775f">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[62/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a23e30ea1b012c17d54d9c6ee67f9775f">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[63/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -48465,7 +48558,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="a9f292a9734b06a834006849844975c65"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9f292a9734b06a834006849844975c65">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[63/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a9f292a9734b06a834006849844975c65">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[64/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -48499,7 +48592,7 @@ template&lt;class Handler &gt; </div>
 </div>
 </div>
 <a id="a43d1826897d9c36f6873022d072be267"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a43d1826897d9c36f6873022d072be267">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[64/64]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a43d1826897d9c36f6873022d072be267">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[65/65]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -51118,6 +51211,20 @@ template&lt;class Dest , class Src &gt; </div>
 
 </div>
 </div>
+<a id="aa590b67515aae0d22360a2cc8ab9b28c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa590b67515aae0d22360a2cc8ab9b28c">&#9670;&nbsp;</a></span>featureClawback</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::featureClawback</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a2f7698f565e77bb2e9e073143fdcc8f7"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a2f7698f565e77bb2e9e073143fdcc8f7">&#9670;&nbsp;</a></span>accountIdCache</h2>
 
@@ -51154,7 +51261,7 @@ template&lt;class Dest , class Src &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00479">479</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00480">480</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -51170,7 +51277,7 @@ template&lt;class Dest , class Src &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00480">480</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00481">481</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -51186,7 +51293,7 @@ template&lt;class Dest , class Src &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00481">481</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00482">482</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -51202,7 +51309,7 @@ template&lt;class Dest , class Src &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00482">482</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00483">483</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -51218,7 +51325,7 @@ template&lt;class Dest , class Src &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00483">483</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00484">484</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -51234,7 +51341,7 @@ template&lt;class Dest , class Src &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00484">484</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00485">485</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -51250,7 +51357,7 @@ template&lt;class Dest , class Src &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00485">485</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00486">486</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -51266,7 +51373,7 @@ template&lt;class Dest , class Src &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00486">486</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00487">487</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -51282,7 +51389,7 @@ template&lt;class Dest , class Src &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00487">487</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00488">488</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -51298,7 +51405,7 @@ template&lt;class Dest , class Src &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00488">488</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00489">489</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -51314,7 +51421,7 @@ template&lt;class Dest , class Src &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00489">489</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00490">490</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -51330,7 +51437,7 @@ template&lt;class Dest , class Src &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00490">490</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00491">491</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -51346,7 +51453,7 @@ template&lt;class Dest , class Src &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00491">491</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00492">492</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -51362,7 +51469,7 @@ template&lt;class Dest , class Src &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00492">492</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00493">493</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -51378,7 +51485,7 @@ template&lt;class Dest , class Src &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00493">493</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00494">494</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -51404,7 +51511,7 @@ template&lt;class Dest , class Src &gt; </div>
 <b>Initial value:</b><div class="fragment"><div class="line">=</div>
 <div class="line">    featureCollections.registrationIsDone()</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00508">508</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Feature_8cpp_source.html#l00509">509</a> of file <a class="el" href="Feature_8cpp_source.html">Feature.cpp</a>.</p>
 
 </div>
 </div>
@@ -55744,6 +55851,30 @@ template&lt;class Dest , class Src &gt; </div>
 
 </div>
 </div>
+<a id="a3ac502eaeebe1f069671eeb7b978a1a6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3ac502eaeebe1f069671eeb7b978a1a6">&#9670;&nbsp;</a></span>asfAllowClawback</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ripple::asfAllowClawback = 16</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00091">91</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+
+</div>
+</div>
 <a id="a61d9fbb44b335fbb5e82e3211e6639a2"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a61d9fbb44b335fbb5e82e3211e6639a2">&#9670;&nbsp;</a></span>tfPassive</h2>
 
@@ -55764,7 +55895,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00093">93</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00094">94</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -55788,7 +55919,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00094">94</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00095">95</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -55812,7 +55943,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00095">95</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00096">96</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -55836,7 +55967,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00096">96</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00097">97</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -55862,7 +55993,7 @@ template&lt;class Dest , class Src &gt; </div>
 <b>Initial value:</b><div class="fragment"><div class="line">=</div>
 <div class="line">    ~(<a class="code" href="namespaceripple.html#aa52329c755ab0ee46e285c09a32b02ec">tfUniversal</a> | <a class="code" href="namespaceripple.html#a61d9fbb44b335fbb5e82e3211e6639a2">tfPassive</a> | <a class="code" href="namespaceripple.html#a6257d0a91b5b06dd7712c68af628441d">tfImmediateOrCancel</a> | <a class="code" href="namespaceripple.html#a5bdaf22398ee3e51d3c2c3c694f917ec">tfFillOrKill</a> | <a class="code" href="namespaceripple.html#ad3bc01fc1c4e0e3191802ff3192c5493">tfSell</a>)</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00097">97</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00098">98</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -55886,7 +56017,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00101">101</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00102">102</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -55910,7 +56041,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00102">102</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00103">103</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -55934,7 +56065,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00103">103</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00104">104</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -55960,7 +56091,7 @@ template&lt;class Dest , class Src &gt; </div>
 <b>Initial value:</b><div class="fragment"><div class="line">=</div>
 <div class="line">    ~(<a class="code" href="namespaceripple.html#aa52329c755ab0ee46e285c09a32b02ec">tfUniversal</a> | <a class="code" href="namespaceripple.html#a7efcc6de2ed8aa0fa1f3e0a632f2f095">tfPartialPayment</a> | <a class="code" href="namespaceripple.html#abc202169b736c0a032eb947f186b6e63">tfLimitQuality</a> | <a class="code" href="namespaceripple.html#aab3ff08970a7fcec2229fc4c9e5f7d38">tfNoRippleDirect</a>)</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00104">104</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00105">105</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -55984,7 +56115,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00108">108</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00109">109</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -56008,7 +56139,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00109">109</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00110">110</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -56032,7 +56163,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00110">110</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00111">111</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -56056,7 +56187,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00111">111</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00112">112</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -56080,7 +56211,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00112">112</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00113">113</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -56107,7 +56238,7 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="line">    ~(<a class="code" href="namespaceripple.html#aa52329c755ab0ee46e285c09a32b02ec">tfUniversal</a> | <a class="code" href="namespaceripple.html#a918f885752320e5f242f6cf75d895444">tfSetfAuth</a> | <a class="code" href="namespaceripple.html#ae5a4ff779dae30156e2906661a2f9b74">tfSetNoRipple</a> | <a class="code" href="namespaceripple.html#a84d1a5b984c13ef3336e95746ceea0b0">tfClearNoRipple</a> | <a class="code" href="namespaceripple.html#ae34d881cd8926ab3505340a51f91fd8b">tfSetFreeze</a> |</div>
 <div class="line">      <a class="code" href="namespaceripple.html#a98f09aa7b518e640710f4362145dd444">tfClearFreeze</a>)</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00113">113</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00114">114</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -56131,7 +56262,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00118">118</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00119">119</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -56155,7 +56286,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00119">119</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00120">120</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -56179,7 +56310,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00122">122</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00123">123</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -56203,7 +56334,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00123">123</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00124">124</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -56227,7 +56358,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00124">124</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00125">125</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -56251,7 +56382,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00127">127</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00128">128</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -56275,7 +56406,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00128">128</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00129">129</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -56299,7 +56430,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00129">129</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00130">130</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -56323,7 +56454,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00130">130</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00131">131</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -56349,7 +56480,7 @@ template&lt;class Dest , class Src &gt; </div>
 <b>Initial value:</b><div class="fragment"><div class="line">=</div>
 <div class="line">    ~(<a class="code" href="namespaceripple.html#aa52329c755ab0ee46e285c09a32b02ec">tfUniversal</a> | <a class="code" href="namespaceripple.html#a721db69f8d42aa1b4b6ad75df342d039">tfBurnable</a> | <a class="code" href="namespaceripple.html#aa94537c1b61dfe92530d0a977ce727a3">tfOnlyXRP</a> | <a class="code" href="namespaceripple.html#a0e93b23bdd9ad164358d812a690a4979">tfTrustLine</a> | <a class="code" href="namespaceripple.html#a467ff3737a47707e0aa7669c4db3ed17">tfTransferable</a>)</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00145">145</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00146">146</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -56375,7 +56506,7 @@ template&lt;class Dest , class Src &gt; </div>
 <b>Initial value:</b><div class="fragment"><div class="line">=</div>
 <div class="line">    ~(<a class="code" href="namespaceripple.html#aa52329c755ab0ee46e285c09a32b02ec">tfUniversal</a> | <a class="code" href="namespaceripple.html#a721db69f8d42aa1b4b6ad75df342d039">tfBurnable</a> | <a class="code" href="namespaceripple.html#aa94537c1b61dfe92530d0a977ce727a3">tfOnlyXRP</a> | <a class="code" href="namespaceripple.html#a467ff3737a47707e0aa7669c4db3ed17">tfTransferable</a>)</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00148">148</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00149">149</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -56399,7 +56530,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00152">152</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00153">153</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -56425,7 +56556,7 @@ template&lt;class Dest , class Src &gt; </div>
 <b>Initial value:</b><div class="fragment"><div class="line">=</div>
 <div class="line">    ~(<a class="code" href="namespaceripple.html#aa52329c755ab0ee46e285c09a32b02ec">tfUniversal</a> | <a class="code" href="namespaceripple.html#a0a58f25b2ddd02a1c0fcfc4c056e4fa8">tfSellNFToken</a>)</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00153">153</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00154">154</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -56449,7 +56580,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00157">157</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00158">158</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -56473,7 +56604,31 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00160">160</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00161">161</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+
+</div>
+</div>
+<a id="ab8109130afa691432b804557a7b040d1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab8109130afa691432b804557a7b040d1">&#9670;&nbsp;</a></span>tfClawbackMask</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr const <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ripple::tfClawbackMask = ~<a class="el" href="namespaceripple.html#aa52329c755ab0ee46e285c09a32b02ec">tfUniversal</a></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00164">164</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -56719,46 +56874,46 @@ template&lt;class Dest , class Src &gt; </div>
 </div>
 </div><!-- contents -->
 <div class="ttc" id="ais_signed_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/is_signed.html">std::is_signed</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a467ff3737a47707e0aa7669c4db3ed17"><div class="ttname"><a href="namespaceripple.html#a467ff3737a47707e0aa7669c4db3ed17">ripple::tfTransferable</a></div><div class="ttdeci">constexpr const std::uint32_t tfTransferable</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00130">TxFlags.h:130</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a467ff3737a47707e0aa7669c4db3ed17"><div class="ttname"><a href="namespaceripple.html#a467ff3737a47707e0aa7669c4db3ed17">ripple::tfTransferable</a></div><div class="ttdeci">constexpr const std::uint32_t tfTransferable</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00131">TxFlags.h:131</a></div></div>
 <div class="ttc" id="ais_unsigned_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/is_unsigned.html">std::is_unsigned</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a33f8b6e68b5f63faf2e9755cc251563ea80dcf57f5ecd4be3cbfa37eccbcb6f44"><div class="ttname"><a href="namespaceripple.html#a33f8b6e68b5f63faf2e9755cc251563ea80dcf57f5ecd4be3cbfa37eccbcb6f44">ripple::ConsensusMode::proposing</a></div><div class="ttdeci">@ proposing</div><div class="ttdoc">We are normal participant in consensus and propose our position.</div></div>
 <div class="ttc" id="anamespaceripple_html_ae9be4ba34aa8246260964cc25538caee"><div class="ttname"><a href="namespaceripple.html#ae9be4ba34aa8246260964cc25538caee">ripple::alphabetForward</a></div><div class="ttdeci">static constexpr char const  * alphabetForward</div><div class="ttdef"><b>Definition:</b> <a href="tokens_8cpp_source.html#l00033">tokens.cpp:33</a></div></div>
 <div class="ttc" id="anamespaceripple_html_ab008704f566f54118ad09f09e297d791"><div class="ttname"><a href="namespaceripple.html#ab008704f566f54118ad09f09e297d791">ripple::tfDisallowXRP</a></div><div class="ttdeci">constexpr std::uint32_t tfDisallowXRP</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00067">TxFlags.h:67</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a33f8b6e68b5f63faf2e9755cc251563ea1dde5f68261b60a2e4655f5ad1f13e0b"><div class="ttname"><a href="namespaceripple.html#a33f8b6e68b5f63faf2e9755cc251563ea1dde5f68261b60a2e4655f5ad1f13e0b">ripple::ConsensusMode::wrongLedger</a></div><div class="ttdeci">@ wrongLedger</div><div class="ttdoc">We have the wrong ledger and are attempting to acquire it.</div></div>
-<div class="ttc" id="anamespaceripple_html_ae5a4ff779dae30156e2906661a2f9b74"><div class="ttname"><a href="namespaceripple.html#ae5a4ff779dae30156e2906661a2f9b74">ripple::tfSetNoRipple</a></div><div class="ttdeci">constexpr std::uint32_t tfSetNoRipple</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00109">TxFlags.h:109</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ae5a4ff779dae30156e2906661a2f9b74"><div class="ttname"><a href="namespaceripple.html#ae5a4ff779dae30156e2906661a2f9b74">ripple::tfSetNoRipple</a></div><div class="ttdeci">constexpr std::uint32_t tfSetNoRipple</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00110">TxFlags.h:110</a></div></div>
 <div class="ttc" id="aduration_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a33f8b6e68b5f63faf2e9755cc251563eabc8904337817db1a59f2a10ed405b817"><div class="ttname"><a href="namespaceripple.html#a33f8b6e68b5f63faf2e9755cc251563eabc8904337817db1a59f2a10ed405b817">ripple::ConsensusMode::switchedLedger</a></div><div class="ttdeci">@ switchedLedger</div><div class="ttdoc">We switched ledgers since we started this consensus round but are now running on what we believe is t...</div></div>
 <div class="ttc" id="anamespaceripple_html_a0937c341f2f9445f038012ac13cfb8df"><div class="ttname"><a href="namespaceripple.html#a0937c341f2f9445f038012ac13cfb8df">ripple::tfAllowXRP</a></div><div class="ttdeci">constexpr std::uint32_t tfAllowXRP</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00068">TxFlags.h:68</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a61d9fbb44b335fbb5e82e3211e6639a2"><div class="ttname"><a href="namespaceripple.html#a61d9fbb44b335fbb5e82e3211e6639a2">ripple::tfPassive</a></div><div class="ttdeci">constexpr std::uint32_t tfPassive</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00093">TxFlags.h:93</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a24280b80536d1afd09e24a75f4596922"><div class="ttname"><a href="namespaceripple.html#a24280b80536d1afd09e24a75f4596922">ripple::preflight</a></div><div class="ttdeci">PreflightResult preflight(Application &amp;app, Rules const &amp;rules, STTx const &amp;tx, ApplyFlags flags, beast::Journal j)</div><div class="ttdoc">Gate a transaction based on static information.</div><div class="ttdef"><b>Definition:</b> <a href="applySteps_8cpp_source.html#l00473">applySteps.cpp:473</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a61d9fbb44b335fbb5e82e3211e6639a2"><div class="ttname"><a href="namespaceripple.html#a61d9fbb44b335fbb5e82e3211e6639a2">ripple::tfPassive</a></div><div class="ttdeci">constexpr std::uint32_t tfPassive</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00094">TxFlags.h:94</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a24280b80536d1afd09e24a75f4596922"><div class="ttname"><a href="namespaceripple.html#a24280b80536d1afd09e24a75f4596922">ripple::preflight</a></div><div class="ttdeci">PreflightResult preflight(Application &amp;app, Rules const &amp;rules, STTx const &amp;tx, ApplyFlags flags, beast::Journal j)</div><div class="ttdoc">Gate a transaction based on static information.</div><div class="ttdef"><b>Definition:</b> <a href="applySteps_8cpp_source.html#l00484">applySteps.cpp:484</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a355ec605d1063c4316b6f1480359da19"><div class="ttname"><a href="namespaceripple.html#a355ec605d1063c4316b6f1480359da19">ripple::generateKeyPair</a></div><div class="ttdeci">std::pair&lt; PublicKey, SecretKey &gt; generateKeyPair(KeyType type, Seed const &amp;seed)</div><div class="ttdoc">Generate a key pair deterministically.</div><div class="ttdef"><b>Definition:</b> <a href="SecretKey_8cpp_source.html#l00351">SecretKey.cpp:351</a></div></div>
-<div class="ttc" id="anamespaceripple_html_abc202169b736c0a032eb947f186b6e63"><div class="ttname"><a href="namespaceripple.html#abc202169b736c0a032eb947f186b6e63">ripple::tfLimitQuality</a></div><div class="ttdeci">constexpr std::uint32_t tfLimitQuality</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00103">TxFlags.h:103</a></div></div>
+<div class="ttc" id="anamespaceripple_html_abc202169b736c0a032eb947f186b6e63"><div class="ttname"><a href="namespaceripple.html#abc202169b736c0a032eb947f186b6e63">ripple::tfLimitQuality</a></div><div class="ttdeci">constexpr std::uint32_t tfLimitQuality</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00104">TxFlags.h:104</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a33f8b6e68b5f63faf2e9755cc251563eaea5234685f43dcab142e132c0e7be2ce"><div class="ttname"><a href="namespaceripple.html#a33f8b6e68b5f63faf2e9755cc251563eaea5234685f43dcab142e132c0e7be2ce">ripple::ConsensusMode::observing</a></div><div class="ttdeci">@ observing</div><div class="ttdoc">We are observing peer positions, but not proposing our position.</div></div>
-<div class="ttc" id="anamespaceripple_html_a305632c3ccdbb4005fa2b019c51b5ac1"><div class="ttname"><a href="namespaceripple.html#a305632c3ccdbb4005fa2b019c51b5ac1">ripple::doApply</a></div><div class="ttdeci">std::pair&lt; TER, bool &gt; doApply(PreclaimResult const &amp;preclaimResult, Application &amp;app, OpenView &amp;view)</div><div class="ttdoc">Apply a prechecked transaction to an OpenView.</div><div class="ttdef"><b>Definition:</b> <a href="applySteps_8cpp_source.html#l00551">applySteps.cpp:551</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a721db69f8d42aa1b4b6ad75df342d039"><div class="ttname"><a href="namespaceripple.html#a721db69f8d42aa1b4b6ad75df342d039">ripple::tfBurnable</a></div><div class="ttdeci">constexpr const std::uint32_t tfBurnable</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00127">TxFlags.h:127</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a7efcc6de2ed8aa0fa1f3e0a632f2f095"><div class="ttname"><a href="namespaceripple.html#a7efcc6de2ed8aa0fa1f3e0a632f2f095">ripple::tfPartialPayment</a></div><div class="ttdeci">constexpr std::uint32_t tfPartialPayment</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00102">TxFlags.h:102</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a305632c3ccdbb4005fa2b019c51b5ac1"><div class="ttname"><a href="namespaceripple.html#a305632c3ccdbb4005fa2b019c51b5ac1">ripple::doApply</a></div><div class="ttdeci">std::pair&lt; TER, bool &gt; doApply(PreclaimResult const &amp;preclaimResult, Application &amp;app, OpenView &amp;view)</div><div class="ttdoc">Apply a prechecked transaction to an OpenView.</div><div class="ttdef"><b>Definition:</b> <a href="applySteps_8cpp_source.html#l00562">applySteps.cpp:562</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a721db69f8d42aa1b4b6ad75df342d039"><div class="ttname"><a href="namespaceripple.html#a721db69f8d42aa1b4b6ad75df342d039">ripple::tfBurnable</a></div><div class="ttdeci">constexpr const std::uint32_t tfBurnable</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00128">TxFlags.h:128</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a7efcc6de2ed8aa0fa1f3e0a632f2f095"><div class="ttname"><a href="namespaceripple.html#a7efcc6de2ed8aa0fa1f3e0a632f2f095">ripple::tfPartialPayment</a></div><div class="ttdeci">constexpr std::uint32_t tfPartialPayment</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00103">TxFlags.h:103</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a614d8681c8dff84ac2257939751987c5"><div class="ttname"><a href="namespaceripple.html#a614d8681c8dff84ac2257939751987c5">ripple::calcAccountID</a></div><div class="ttdeci">AccountID calcAccountID(PublicKey const &amp;pk)</div><div class="ttdef"><b>Definition:</b> <a href="AccountID_8cpp_source.html#l00158">AccountID.cpp:158</a></div></div>
 <div class="ttc" id="aarray_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/array.html">std::array</a></div><div class="ttdoc">STL class.</div></div>
-<div class="ttc" id="anamespaceripple_html_a84d1a5b984c13ef3336e95746ceea0b0"><div class="ttname"><a href="namespaceripple.html#a84d1a5b984c13ef3336e95746ceea0b0">ripple::tfClearNoRipple</a></div><div class="ttdeci">constexpr std::uint32_t tfClearNoRipple</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00110">TxFlags.h:110</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a0a58f25b2ddd02a1c0fcfc4c056e4fa8"><div class="ttname"><a href="namespaceripple.html#a0a58f25b2ddd02a1c0fcfc4c056e4fa8">ripple::tfSellNFToken</a></div><div class="ttdeci">constexpr const std::uint32_t tfSellNFToken</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00152">TxFlags.h:152</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a84d1a5b984c13ef3336e95746ceea0b0"><div class="ttname"><a href="namespaceripple.html#a84d1a5b984c13ef3336e95746ceea0b0">ripple::tfClearNoRipple</a></div><div class="ttdeci">constexpr std::uint32_t tfClearNoRipple</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00111">TxFlags.h:111</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a0a58f25b2ddd02a1c0fcfc4c056e4fa8"><div class="ttname"><a href="namespaceripple.html#a0a58f25b2ddd02a1c0fcfc4c056e4fa8">ripple::tfSellNFToken</a></div><div class="ttdeci">constexpr const std::uint32_t tfSellNFToken</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00153">TxFlags.h:153</a></div></div>
 <div class="ttc" id="anamespaceripple_html_aae404d2c3f1b465b08d2757d160496be"><div class="ttname"><a href="namespaceripple.html#aae404d2c3f1b465b08d2757d160496be">ripple::tfOptionalAuth</a></div><div class="ttdeci">constexpr std::uint32_t tfOptionalAuth</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00066">TxFlags.h:66</a></div></div>
 <div class="ttc" id="anamespaceripple_html_aa0faf132b3ac4a7638ef97510875887a"><div class="ttname"><a href="namespaceripple.html#aa0faf132b3ac4a7638ef97510875887a">ripple::tfRequireAuth</a></div><div class="ttdeci">constexpr std::uint32_t tfRequireAuth</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00065">TxFlags.h:65</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a5bdaf22398ee3e51d3c2c3c694f917ec"><div class="ttname"><a href="namespaceripple.html#a5bdaf22398ee3e51d3c2c3c694f917ec">ripple::tfFillOrKill</a></div><div class="ttdeci">constexpr std::uint32_t tfFillOrKill</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00095">TxFlags.h:95</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a5bdaf22398ee3e51d3c2c3c694f917ec"><div class="ttname"><a href="namespaceripple.html#a5bdaf22398ee3e51d3c2c3c694f917ec">ripple::tfFillOrKill</a></div><div class="ttdeci">constexpr std::uint32_t tfFillOrKill</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00096">TxFlags.h:96</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a8a16d6f665a032453ec4cbfca01929b6a3e4d891a5df3d6d0d7dd9432a1bc6470"><div class="ttname"><a href="namespaceripple.html#a8a16d6f665a032453ec4cbfca01929b6a3e4d891a5df3d6d0d7dd9432a1bc6470">ripple::ManifestDisposition::accepted</a></div><div class="ttdeci">@ accepted</div><div class="ttdoc">Manifest is valid.</div></div>
-<div class="ttc" id="anamespaceripple_html_a5027a5209e954b9478fab70357963466"><div class="ttname"><a href="namespaceripple.html#a5027a5209e954b9478fab70357963466">ripple::preclaim</a></div><div class="ttdeci">PreclaimResult preclaim(PreflightResult const &amp;preflightResult, Application &amp;app, OpenView const &amp;view)</div><div class="ttdoc">Gate a transaction based on static ledger information.</div><div class="ttdef"><b>Definition:</b> <a href="applySteps_8cpp_source.html#l00493">applySteps.cpp:493</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a5027a5209e954b9478fab70357963466"><div class="ttname"><a href="namespaceripple.html#a5027a5209e954b9478fab70357963466">ripple::preclaim</a></div><div class="ttdeci">PreclaimResult preclaim(PreflightResult const &amp;preflightResult, Application &amp;app, OpenView const &amp;view)</div><div class="ttdoc">Gate a transaction based on static ledger information.</div><div class="ttdef"><b>Definition:</b> <a href="applySteps_8cpp_source.html#l00504">applySteps.cpp:504</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a50df1a645790d124729a6ed973edf519"><div class="ttname"><a href="namespaceripple.html#a50df1a645790d124729a6ed973edf519">ripple::generateSeed</a></div><div class="ttdeci">Seed generateSeed(std::string const &amp;passPhrase)</div><div class="ttdoc">Generate a seed deterministically.</div><div class="ttdef"><b>Definition:</b> <a href="Seed_8cpp_source.html#l00069">Seed.cpp:69</a></div></div>
-<div class="ttc" id="anamespaceripple_html_ad3bc01fc1c4e0e3191802ff3192c5493"><div class="ttname"><a href="namespaceripple.html#ad3bc01fc1c4e0e3191802ff3192c5493">ripple::tfSell</a></div><div class="ttdeci">constexpr std::uint32_t tfSell</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00096">TxFlags.h:96</a></div></div>
-<div class="ttc" id="anamespaceripple_html_ae34d881cd8926ab3505340a51f91fd8b"><div class="ttname"><a href="namespaceripple.html#ae34d881cd8926ab3505340a51f91fd8b">ripple::tfSetFreeze</a></div><div class="ttdeci">constexpr std::uint32_t tfSetFreeze</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00111">TxFlags.h:111</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a918f885752320e5f242f6cf75d895444"><div class="ttname"><a href="namespaceripple.html#a918f885752320e5f242f6cf75d895444">ripple::tfSetfAuth</a></div><div class="ttdeci">constexpr std::uint32_t tfSetfAuth</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00108">TxFlags.h:108</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ad3bc01fc1c4e0e3191802ff3192c5493"><div class="ttname"><a href="namespaceripple.html#ad3bc01fc1c4e0e3191802ff3192c5493">ripple::tfSell</a></div><div class="ttdeci">constexpr std::uint32_t tfSell</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00097">TxFlags.h:97</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ae34d881cd8926ab3505340a51f91fd8b"><div class="ttname"><a href="namespaceripple.html#ae34d881cd8926ab3505340a51f91fd8b">ripple::tfSetFreeze</a></div><div class="ttdeci">constexpr std::uint32_t tfSetFreeze</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00112">TxFlags.h:112</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a918f885752320e5f242f6cf75d895444"><div class="ttname"><a href="namespaceripple.html#a918f885752320e5f242f6cf75d895444">ripple::tfSetfAuth</a></div><div class="ttdeci">constexpr std::uint32_t tfSetfAuth</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00109">TxFlags.h:109</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a77adb10ef53a2e25195ccd38b46bfe9bacfaa89ec89b7e4605665cdc0069a56e1"><div class="ttname"><a href="namespaceripple.html#a77adb10ef53a2e25195ccd38b46bfe9bacfaa89ec89b7e4605665cdc0069a56e1">ripple::ConsensusPhase::establish</a></div><div class="ttdeci">@ establish</div><div class="ttdoc">Establishing consensus by exchanging proposals with our peers.</div></div>
-<div class="ttc" id="anamespaceripple_html_a0e93b23bdd9ad164358d812a690a4979"><div class="ttname"><a href="namespaceripple.html#a0e93b23bdd9ad164358d812a690a4979">ripple::tfTrustLine</a></div><div class="ttdeci">constexpr const std::uint32_t tfTrustLine</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00129">TxFlags.h:129</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a98f09aa7b518e640710f4362145dd444"><div class="ttname"><a href="namespaceripple.html#a98f09aa7b518e640710f4362145dd444">ripple::tfClearFreeze</a></div><div class="ttdeci">constexpr std::uint32_t tfClearFreeze</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00112">TxFlags.h:112</a></div></div>
-<div class="ttc" id="anamespaceripple_html_aa94537c1b61dfe92530d0a977ce727a3"><div class="ttname"><a href="namespaceripple.html#aa94537c1b61dfe92530d0a977ce727a3">ripple::tfOnlyXRP</a></div><div class="ttdeci">constexpr const std::uint32_t tfOnlyXRP</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00128">TxFlags.h:128</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a0e93b23bdd9ad164358d812a690a4979"><div class="ttname"><a href="namespaceripple.html#a0e93b23bdd9ad164358d812a690a4979">ripple::tfTrustLine</a></div><div class="ttdeci">constexpr const std::uint32_t tfTrustLine</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00130">TxFlags.h:130</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a98f09aa7b518e640710f4362145dd444"><div class="ttname"><a href="namespaceripple.html#a98f09aa7b518e640710f4362145dd444">ripple::tfClearFreeze</a></div><div class="ttdeci">constexpr std::uint32_t tfClearFreeze</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00113">TxFlags.h:113</a></div></div>
+<div class="ttc" id="anamespaceripple_html_aa94537c1b61dfe92530d0a977ce727a3"><div class="ttname"><a href="namespaceripple.html#aa94537c1b61dfe92530d0a977ce727a3">ripple::tfOnlyXRP</a></div><div class="ttdeci">constexpr const std::uint32_t tfOnlyXRP</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00129">TxFlags.h:129</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a523d2f05ee15547d5eacd3d122125ae9"><div class="ttname"><a href="namespaceripple.html#a523d2f05ee15547d5eacd3d122125ae9">ripple::tfRequireDestTag</a></div><div class="ttdeci">constexpr std::uint32_t tfRequireDestTag</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00063">TxFlags.h:63</a></div></div>
 <div class="ttc" id="anamespaceripple_html_aa52329c755ab0ee46e285c09a32b02ec"><div class="ttname"><a href="namespaceripple.html#aa52329c755ab0ee46e285c09a32b02ec">ripple::tfUniversal</a></div><div class="ttdeci">constexpr std::uint32_t tfUniversal</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00059">TxFlags.h:59</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a44c6902c9425a64f45a05a0c2491db4a"><div class="ttname"><a href="namespaceripple.html#a44c6902c9425a64f45a05a0c2491db4a">ripple::tfOptionalDestTag</a></div><div class="ttdeci">constexpr std::uint32_t tfOptionalDestTag</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00064">TxFlags.h:64</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a6257d0a91b5b06dd7712c68af628441d"><div class="ttname"><a href="namespaceripple.html#a6257d0a91b5b06dd7712c68af628441d">ripple::tfImmediateOrCancel</a></div><div class="ttdeci">constexpr std::uint32_t tfImmediateOrCancel</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00094">TxFlags.h:94</a></div></div>
-<div class="ttc" id="anamespaceripple_html_aab3ff08970a7fcec2229fc4c9e5f7d38"><div class="ttname"><a href="namespaceripple.html#aab3ff08970a7fcec2229fc4c9e5f7d38">ripple::tfNoRippleDirect</a></div><div class="ttdeci">constexpr std::uint32_t tfNoRippleDirect</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00101">TxFlags.h:101</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a6257d0a91b5b06dd7712c68af628441d"><div class="ttname"><a href="namespaceripple.html#a6257d0a91b5b06dd7712c68af628441d">ripple::tfImmediateOrCancel</a></div><div class="ttdeci">constexpr std::uint32_t tfImmediateOrCancel</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00095">TxFlags.h:95</a></div></div>
+<div class="ttc" id="anamespaceripple_html_aab3ff08970a7fcec2229fc4c9e5f7d38"><div class="ttname"><a href="namespaceripple.html#aab3ff08970a7fcec2229fc4c9e5f7d38">ripple::tfNoRippleDirect</a></div><div class="ttdeci">constexpr std::uint32_t tfNoRippleDirect</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00102">TxFlags.h:102</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a886ed36db831a964fc5f66ebbb4fe3d0"><div class="ttname"><a href="namespaceripple.html#a886ed36db831a964fc5f66ebbb4fe3d0">ripple::open</a></div><div class="ttdeci">void open(soci::session &amp;s, BasicConfig const &amp;config, std::string const &amp;dbName)</div><div class="ttdoc">Open a soci session.</div><div class="ttdef"><b>Definition:</b> <a href="SociDB_8cpp_source.html#l00098">SociDB.cpp:98</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
