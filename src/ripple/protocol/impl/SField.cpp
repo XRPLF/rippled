@@ -38,6 +38,13 @@ struct SField::private_access_tag_t
 
 static SField::private_access_tag_t access;
 
+template <class T>
+template <class... Args>
+TypedField<T>::TypedField(private_access_tag_t pat, Args&&... args)
+    : SField(pat, std::forward<Args>(args)...)
+{
+}
+
 // Construct all compile-time SFields, and register them in the knownCodeToField
 // database:
 
