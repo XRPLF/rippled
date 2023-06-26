@@ -18,7 +18,6 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/reporting/P2pProxy.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/rpc/impl/Tuning.h>
