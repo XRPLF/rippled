@@ -511,7 +511,9 @@ public:
         Account const bob{"bob"};
         env.fund(XRP(1000), alice, bob);
 
-        auto getAccountFlag = [&env](std::string_view fName, Account const& account) {
+        auto getAccountFlag = [&env](
+                                  std::string_view fName,
+                                  Account const& account) {
             auto const info = env.rpc(
                 "json",
                 "account_info",
@@ -595,9 +597,11 @@ public:
             }
         }
 
-        static constexpr std::pair<std::string_view, std::uint32_t> allowClawbackFlag{"allowClawback",asfAllowClawback};
+        static constexpr std::pair<std::string_view, std::uint32_t>
+            allowClawbackFlag{"allowClawback", asfAllowClawback};
 
-        if(features[featureClawback]){
+        if (features[featureClawback])
+        {
             // must use bob's account because alice has noFreeze set
             auto const f1 = getAccountFlag(allowClawbackFlag.first, bob);
             BEAST_EXPECT(f1.has_value());
@@ -610,7 +614,8 @@ public:
             BEAST_EXPECT(f2.has_value());
             BEAST_EXPECT(f2.value());
         }
-        else{
+        else
+        {
             BEAST_EXPECT(!getAccountFlag(allowClawbackFlag.first, bob));
         }
     }
@@ -627,7 +632,8 @@ public:
             ripple::test::jtx::supported_amendments()};
         testAccountFlags(allFeatures);
         testAccountFlags(allFeatures - featureDisallowIncoming);
-        testAccountFlags(allFeatures - featureDisallowIncoming - featureClawback);
+        testAccountFlags(
+            allFeatures - featureDisallowIncoming - featureClawback);
     }
 };
 
