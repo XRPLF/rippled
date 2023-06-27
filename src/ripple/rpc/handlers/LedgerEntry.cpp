@@ -359,7 +359,7 @@ doLedgerEntry(RPC::JsonContext& context)
         }
         else
         {
-            if (context.apiVersion == 1)
+            if (context.apiVersion < 2)
                 jvResult[jss::error] = "unknownOption";
             else
                 jvResult[jss::error] = "invalidParams";
