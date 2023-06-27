@@ -149,31 +149,54 @@ target_link_libraries (xrpl_core
 #]=================================]
 install (
   FILES
+    src/ripple/basics/algorithm.h
+    src/ripple/basics/Archive.h
     src/ripple/basics/base64.h
+    src/ripple/basics/base_uint.h
+    src/ripple/basics/BasicConfig.h
     src/ripple/basics/Blob.h
     src/ripple/basics/Buffer.h
+    src/ripple/basics/ByteUtilities.h
+    src/ripple/basics/chrono.h
+    src/ripple/basics/comparators.h
+    src/ripple/basics/CompressionAlgorithms.h
+    src/ripple/basics/contract.h
     src/ripple/basics/CountedObject.h
+    src/ripple/basics/DecayingSample.h
+    src/ripple/basics/Expected.h
+    src/ripple/basics/FeeUnits.h
     src/ripple/basics/FileUtilities.h
+    src/ripple/basics/hardened_hash.h
     src/ripple/basics/IOUAmount.h
+    src/ripple/basics/join.h
+    src/ripple/basics/KeyCache.h
     src/ripple/basics/LocalValue.h
     src/ripple/basics/Log.h
+    src/ripple/basics/make_SSLContext.h
     src/ripple/basics/MathUtilities.h
+    src/ripple/basics/mulDiv.h
     src/ripple/basics/Number.h
+    src/ripple/basics/partitioned_unordered_map.h
+    src/ripple/basics/PerfLog.h
+    src/ripple/basics/random.h
+    src/ripple/basics/RangeSet.h
+    src/ripple/basics/README.md
+    src/ripple/basics/ResolverAsio.h
+    src/ripple/basics/Resolver.h
     src/ripple/basics/safe_cast.h
+    src/ripple/basics/scope.h
+    src/ripple/basics/SHAMapHash.h
     src/ripple/basics/Slice.h
     src/ripple/basics/spinlock.h
+    src/ripple/basics/strHex.h
     src/ripple/basics/StringUtilities.h
+    src/ripple/basics/TaggedCache.h
+    src/ripple/basics/tagged_integer.h
     src/ripple/basics/ThreadSafetyAnalysis.h
     src/ripple/basics/ToString.h
     src/ripple/basics/UnorderedContainers.h
+    src/ripple/basics/UptimeClock.h
     src/ripple/basics/XRPAmount.h
-    src/ripple/basics/algorithm.h
-    src/ripple/basics/base_uint.h
-    src/ripple/basics/chrono.h
-    src/ripple/basics/contract.h
-    src/ripple/basics/FeeUnits.h
-    src/ripple/basics/hardened_hash.h
-    src/ripple/basics/strHex.h
   DESTINATION include/ripple/basics)
 install (
   FILES
@@ -287,6 +310,26 @@ install (
     src/ripple/beast/unit_test.h
     src/ripple/beast/xor_shift_engine.h
   DESTINATION include/ripple/beast)
+install (
+  FILES
+    src/ripple/beast/unit_test/amount.hpp
+    src/ripple/beast/unit_test/dstream.hpp
+    src/ripple/beast/unit_test/global_suites.hpp
+    src/ripple/beast/unit_test/main.cpp
+    src/ripple/beast/unit_test/match.hpp
+    src/ripple/beast/unit_test/recorder.hpp
+    src/ripple/beast/unit_test/reporter.hpp
+    src/ripple/beast/unit_test/results.hpp
+    src/ripple/beast/unit_test/runner.hpp
+    src/ripple/beast/unit_test/suite.hpp
+    src/ripple/beast/unit_test/suite_info.hpp
+    src/ripple/beast/unit_test/suite_list.hpp
+    src/ripple/beast/unit_test/thread.hpp
+  DESTINATION include/ripple/beast/unit_test)
+install (
+  FILES
+    src/ripple/beast/unit_test/detail/const_container.hpp
+  DESTINATION include/ripple/beast/unit_test/detail)
 install (
   FILES
     src/ripple/beast/utility/Journal.h
