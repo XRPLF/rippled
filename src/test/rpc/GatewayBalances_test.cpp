@@ -18,9 +18,9 @@
 #include <ripple/beast/unit_test.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/jss.h>
+#include <ripple/rpc/impl/RPCHelpers.h>
 #include <test/jtx.h>
 #include <test/jtx/WSClient.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
 
 namespace ripple {
 namespace test {
