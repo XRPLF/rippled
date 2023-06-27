@@ -96,6 +96,8 @@ doAccountInfo(RPC::JsonContext& context)
                  {"disallowIncomingPayChan", lsfDisallowIncomingPayChan},
                  {"disallowIncomingTrustline", lsfDisallowIncomingTrustline}}};
 
+    static constexpr std::pair<std::string_view, LedgerSpecificFlags> allowClawbackFlag{"allowClawback",lsfAllowClawback};
+
     auto const sleAccepted = ledger->read(keylet::account(accountID));
     if (sleAccepted)
     {
@@ -123,6 +125,10 @@ doAccountInfo(RPC::JsonContext& context)
             for (auto const& lsf : disallowIncomingFlags)
                 acctFlags[lsf.first.data()] = sleAccepted->isFlag(lsf.second);
         }
+
+        if (ledger->rules().enabled(featureClawback))
+            acctFlags[allowClawbackFlag.first.data()] = sleAccepted->isFlag(allowClawbackFlag.second);
+
         result[jss::account_flags] = std::move(acctFlags);
 
         // Return SignerList(s) if that is requested.
