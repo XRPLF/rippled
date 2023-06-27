@@ -216,9 +216,6 @@ doTxHelp(RPC::Context& context, TxArgs args)
                 ClosedInterval<uint32_t>(args.ctid->first, args.ctid->second);
     }
 
-    if (!args.hash)
-        return {result, rpcTXN_NOT_FOUND};
-
     if (args.ledgerRange)
     {
         v = context.app.getMasterTransaction().fetch(*(args.hash), range, ec);
@@ -233,6 +230,9 @@ doTxHelp(RPC::Context& context, TxArgs args)
         result.searchedAll = *e;
         return {result, rpcTXN_NOT_FOUND};
     }
+
+    if (!args.hash)
+        return {result, rpcTXN_NOT_FOUND};
 
     auto [txn, meta] = std::get<TxPair>(v);
 
