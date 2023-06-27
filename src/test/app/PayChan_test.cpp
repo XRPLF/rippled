@@ -24,9 +24,9 @@
 #include <ripple/protocol/PayChan.h>
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/protocol/jss.h>
-#include <test/jtx.h>
-
+#include <ripple/rpc/impl/RPCHelpers.h>
 #include <chrono>
+#include <test/jtx.h>
 
 namespace ripple {
 namespace test {
@@ -1161,9 +1161,9 @@ struct PayChan_test : public beast::unit_test::suite
     }
 
     void
-    testAccountChannelAuthorizeApiV2(FeatureBitset features)
+    testAccountChannelAuthorize(FeatureBitset features, unsigned int apiVersion)
     {
-        testcase("PayChan Channel_Auth RPC Api V2");
+        testcase("PayChan Channel_Auth RPC Api " + std::to_string(apiVersion));
         using namespace jtx;
         using namespace std::literals::chrono_literals;
 
@@ -1181,12 +1181,21 @@ struct PayChan_test : public beast::unit_test::suite
 
         // test for api_version 2
         Json::Value args{Json::objectValue};
-        args[jss::api_version] = 2;
+        args[jss::api_version] = apiVersion;
+        args[jss::channel_id] = chan1Str;
+        args[jss::key_type] = "ed255191";
+        args[jss::seed] = "snHq1rzQoN2qiUkC3XF5RyxBzUtN";
+        args[jss::amount] = 51110000;
+        if (apiVersion < 2)
         {
-            args[jss::channel_id] = chan1Str;
-            args[jss::key_type] = "ed255191";
-            args[jss::seed] = "snHq1rzQoN2qiUkC3XF5RyxBzUtN";
-            args[jss::amount] = 51110000;
+            auto const rs = env.rpc(
+                "json",
+                "channel_authorize",
+                args.toStyledString())[jss::result];
+            BEAST_EXPECT(rs[jss::error] == "invalidParams");
+        }
+        else
+        {
             auto const rs = env.rpc(
                 "json",
                 "channel_authorize",
@@ -2174,7 +2183,12 @@ struct PayChan_test : public beast::unit_test::suite
         testAccountChannelsRPC(features);
         testAccountChannelsRPCMarkers(features);
         testAccountChannelsRPCSenderOnly(features);
-        testAccountChannelAuthorizeApiV2(features);
+        for (auto testVersion = RPC::apiMinimumSupportedVersion;
+             testVersion <= RPC::apiBetaVersion;
+             ++testVersion)
+        {
+            testAccountChannelAuthorize(features, testVersion);
+        }
         testAuthVerifyRPC(features);
         testOptionalFields(features);
         testMalformedPK(features);
