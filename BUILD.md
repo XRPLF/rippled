@@ -1,7 +1,7 @@
-> These instructions assume you have a C++ development environment ready
-> with Git, Python, Conan, CMake, and a C++ compiler. For help setting one up
-> on Linux, macOS, or Windows, see [our guide](./docs/build/environment.md).
->
+| :warning: **WARNING** :warning:
+|---|
+| These instructions assume you have a C++ development environment ready with Git, Python, Conan, CMake, and a C++ compiler. For help setting one up on Linux, macOS, or Windows, [see this guide](./docs/build/environment.md). |
+
 > These instructions also assume a basic familiarity with Conan and CMake.
 > If you are unfamiliar with Conan,
 > you can read our [crash course](./docs/build/conan.md)
