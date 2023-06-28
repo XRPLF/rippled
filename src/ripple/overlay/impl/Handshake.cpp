@@ -288,8 +288,8 @@ verifyHandshake(
     PublicKey const publicKey = [&headers] {
         if (auto const iter = headers.find("Public-Key"); iter != headers.end())
         {
-            auto pk = parseBase58<PublicKey>(
-                TokenType::NodePublic, iter->value());
+            auto pk =
+                parseBase58<PublicKey>(TokenType::NodePublic, iter->value());
 
             if (pk)
             {
@@ -327,8 +327,8 @@ verifyHandshake(
     if (auto const iter = headers.find("Local-IP"); iter != headers.end())
     {
         boost::system::error_code ec;
-        auto const local_ip = boost::asio::ip::address::from_string(
-            iter->value(), ec);
+        auto const local_ip =
+            boost::asio::ip::address::from_string(iter->value(), ec);
 
         if (ec)
             throw std::runtime_error("Invalid Local-IP");
@@ -342,8 +342,8 @@ verifyHandshake(
     if (auto const iter = headers.find("Remote-IP"); iter != headers.end())
     {
         boost::system::error_code ec;
-        auto const remote_ip = boost::asio::ip::address::from_string(
-            iter->value(), ec);
+        auto const remote_ip =
+            boost::asio::ip::address::from_string(iter->value(), ec);
 
         if (ec)
             throw std::runtime_error("Invalid Remote-IP");
