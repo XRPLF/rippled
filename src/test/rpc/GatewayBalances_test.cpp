@@ -155,18 +155,33 @@ public:
         {
             // Gateway account and assets
             Account const alice{"alice"};
+            env.fund(XRP(10000), alice);
             Account const hw{"hw"};
+            env.fund(XRP(10000), hw);
+            env.close();
+
             auto wsc = makeWSClient(env.app().config());
 
             Json::Value qry2;
             qry2[jss::api_version] = apiVersion;
-            qry2[jss::account] = "rNGQLojaFxTYphuQUJ24QUhyGBUMMbqBMx";
-            qry2[jss::hotwallet] = hw.human();
-            auto jv = wsc->invoke("gateway_balances", qry2);
-            expect(jv[jss::status] == "error");
+            {
+                qry2[jss::account] = "rNGQLojaFxTYphuQUJ24QUhyGBUMMbqBMx";
+                qry2[jss::hotwallet] = hw.human();
+                auto jv = wsc->invoke("gateway_balances", qry2);
+                expect(jv[jss::status] == "error");
 
-            auto response = jv[jss::result];
-            expect(response[jss::error] == "actNotFound");
+                auto response = jv[jss::result];
+                expect(response[jss::error] == "actNotFound");
+            }
+            {
+                qry2[jss::account] = alice.human();
+                qry2[jss::hotwallet] = "asdf";
+                auto jv = wsc->invoke("gateway_balances", qry2);
+                expect(jv[jss::status] == "error");
+
+                auto response = jv[jss::result];
+                expect(response[jss::error] == "invalidParams");
+            }
         }
     }
 
