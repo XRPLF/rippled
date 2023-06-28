@@ -27,7 +27,6 @@
 #include <ripple/protocol/digest.h>
 
 #include <boost/regex.hpp>
-#include <boost/utility/string_view.hpp>
 
 #include <algorithm>
 #include <chrono>
