@@ -9,7 +9,7 @@ runs:
     - name: export custom recipes
       shell: bash
       run: |
-        conan export external/snappy snappy/1.1.9@
+        conan export external/snappy snappy/1.1.10@
         conan export external/soci soci/4.0.3@
     - name: install dependencies
       shell: bash

@@ -117,7 +117,7 @@ can't build earlier Boost versions.
    which allows you to statically link it with GCC, if you want.
 
    ```
-   conan export external/snappy snappy/1.1.9@
+   conan export external/snappy snappy/1.1.10@
    ```
 
 5. Export our [Conan recipe for SOCI](./external/soci).
