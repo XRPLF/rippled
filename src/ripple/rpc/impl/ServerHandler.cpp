@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <ripple/rpc/ServerHandler.h>
+
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/basics/Log.h>
@@ -36,9 +38,7 @@
 #include <ripple/resource/ResourceManager.h>
 #include <ripple/rpc/RPCHandler.h>
 #include <ripple/rpc/Role.h>
-#include <ripple/rpc/ServerHandler.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
-#include <ripple/rpc/impl/ServerHandlerImp.h>
 #include <ripple/rpc/impl/Tuning.h>
 #include <ripple/rpc/json_body.h>
 #include <ripple/server/Server.h>
@@ -100,7 +100,8 @@ authorized(Port const& port, std::map<std::string, std::string> const& h)
     return strUser == port.user && strPassword == port.password;
 }
 
-ServerHandlerImp::ServerHandlerImp(
+ServerHandler::ServerHandler(
+    ServerHandlerCreator const&,
     Application& app,
     boost::asio::io_service& io_service,
     JobQueue& jobQueue,
@@ -120,13 +121,13 @@ ServerHandlerImp::ServerHandlerImp(
     rpc_time_ = group->make_event("time");
 }
 
-ServerHandlerImp::~ServerHandlerImp()
+ServerHandler::~ServerHandler()
 {
     m_server = nullptr;
 }
 
 void
-ServerHandlerImp::setup(Setup const& setup, beast::Journal journal)
+ServerHandler::setup(Setup const& setup, beast::Journal journal)
 {
     setup_ = setup;
     m_server->ports(setup.ports);
@@ -135,7 +136,7 @@ ServerHandlerImp::setup(Setup const& setup, beast::Journal journal)
 //------------------------------------------------------------------------------
 
 void
-ServerHandlerImp::stop()
+ServerHandler::stop()
 {
     m_server->close();
     {
@@ -147,7 +148,7 @@ ServerHandlerImp::stop()
 //------------------------------------------------------------------------------
 
 bool
-ServerHandlerImp::onAccept(
+ServerHandler::onAccept(
     Session& session,
     boost::asio::ip::tcp::endpoint endpoint)
 {
@@ -169,7 +170,7 @@ ServerHandlerImp::onAccept(
 }
 
 Handoff
-ServerHandlerImp::onHandoff(
+ServerHandler::onHandoff(
     Session& session,
     std::unique_ptr<stream_type>&& bundle,
     http_request_type&& request,
@@ -271,7 +272,7 @@ buffers_to_string(ConstBufferSequence const& bs)
 }
 
 void
-ServerHandlerImp::onRequest(Session& session)
+ServerHandler::onRequest(Session& session)
 {
     // Make sure RPC is enabled on the port
     if (session.port().protocol.count("http") == 0 &&
@@ -311,7 +312,7 @@ ServerHandlerImp::onRequest(Session& session)
 }
 
 void
-ServerHandlerImp::onWSMessage(
+ServerHandler::onWSMessage(
     std::shared_ptr<WSSession> session,
     std::vector<boost::asio::const_buffer> const& buffers)
 {
@@ -361,14 +362,14 @@ ServerHandlerImp::onWSMessage(
 }
 
 void
-ServerHandlerImp::onClose(Session& session, boost::system::error_code const&)
+ServerHandler::onClose(Session& session, boost::system::error_code const&)
 {
     std::lock_guard lock(mutex_);
     --count_[session.port()];
 }
 
 void
-ServerHandlerImp::onStopped(Server&)
+ServerHandler::onStopped(Server&)
 {
     std::lock_guard lock(mutex_);
     stopped_ = true;
@@ -397,7 +398,7 @@ logDuration(
 }
 
 Json::Value
-ServerHandlerImp::processSession(
+ServerHandler::processSession(
     std::shared_ptr<WSSession> const& session,
     std::shared_ptr<JobQueue::Coro> const& coro,
     Json::Value const& jv)
@@ -544,7 +545,7 @@ ServerHandlerImp::processSession(
 
 // Run as a coroutine.
 void
-ServerHandlerImp::processSession(
+ServerHandler::processSession(
     std::shared_ptr<Session> const& session,
     std::shared_ptr<JobQueue::Coro> coro)
 {
@@ -585,7 +586,7 @@ Json::Int constexpr forbidden = -32605;
 Json::Int constexpr wrong_version = -32606;
 
 void
-ServerHandlerImp::processRequest(
+ServerHandler::processRequest(
     Port const& port,
     std::string const& request,
     beast::IP::Endpoint const& remoteIPAddress,
@@ -1021,7 +1022,7 @@ ServerHandlerImp::processRequest(
     is reported, meaning the server can accept more connections.
 */
 Handoff
-ServerHandlerImp::statusResponse(http_request_type const& request) const
+ServerHandler::statusResponse(http_request_type const& request) const
 {
     using namespace boost::beast::http;
     Handoff handoff;
@@ -1257,8 +1258,14 @@ make_ServerHandler(
     Resource::Manager& resourceManager,
     CollectorManager& cm)
 {
-    return std::make_unique<ServerHandlerImp>(
-        app, io_service, jobQueue, networkOPs, resourceManager, cm);
+    return std::make_unique<ServerHandler>(
+        ServerHandler::ServerHandlerCreator(),
+        app,
+        io_service,
+        jobQueue,
+        networkOPs,
+        resourceManager,
+        cm);
 }
 
 }  // namespace ripple
