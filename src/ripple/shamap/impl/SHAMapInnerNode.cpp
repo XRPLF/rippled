@@ -398,7 +398,7 @@ SHAMapInnerNode::canonicalizeChild(
 void
 SHAMapInnerNode::invariants(bool is_root) const
 {
-    unsigned count = 0;
+    [[maybe_unused]] unsigned count = 0;
     auto [numAllocated, hashes, children] =
         hashesAndChildren_.getHashesAndChildren();
 

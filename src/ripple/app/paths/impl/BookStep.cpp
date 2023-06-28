@@ -531,14 +531,22 @@ limitStepOut(
     TOut& ownerGives,
     std::uint32_t transferRateIn,
     std::uint32_t transferRateOut,
-    TOut const& limit)
+    TOut const& limit,
+    Rules const& rules)
 {
     if (limit < stpAmt.out)
     {
         stpAmt.out = limit;
         ownerGives = mulRatio(
             stpAmt.out, transferRateOut, QUALITY_ONE, /*roundUp*/ false);
-        ofrAmt = ofrQ.ceil_out(ofrAmt, stpAmt.out);
+        if (rules.enabled(fixReducedOffersV1))
+            // It turns out that the ceil_out implementation has some slop in
+            // it.  ceil_out_strict removes that slop.  But removing that slop
+            // affects transaction outcomes, so the change must be made using
+            // an amendment.
+            ofrAmt = ofrQ.ceil_out_strict(ofrAmt, stpAmt.out, /*roundUp*/ true);
+        else
+            ofrAmt = ofrQ.ceil_out(ofrAmt, stpAmt.out);
         stpAmt.in =
             mulRatio(ofrAmt.in, transferRateIn, QUALITY_ONE, /*roundUp*/ true);
     }
@@ -577,6 +585,7 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
         sb, afView, book_, sb.parentCloseTime(), counter, j_);
 
     bool const flowCross = afView.rules().enabled(featureFlowCross);
+    bool const fixReduced = afView.rules().enabled(fixReducedOffersV1);
     bool offerAttempted = false;
     std::optional<Quality> ofrQ;
     while (offers.step())
@@ -654,7 +663,16 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
             ownerGives = funds;
             stpAmt.out = mulRatio(
                 ownerGives, QUALITY_ONE, ofrOutRate, /*roundUp*/ false);
-            ofrAmt = ofrQ->ceil_out(ofrAmt, stpAmt.out);
+
+            // It turns out we can prevent order book blocking by (strictly)
+            // rounding down the ceil_out() result.  This adjustment changes
+            // transaction outcomes, so it must be made under an amendment.
+            if (fixReduced)
+                ofrAmt = ofrQ->ceil_out_strict(
+                    ofrAmt, stpAmt.out, /* roundUp */ false);
+            else
+                ofrAmt = ofrQ->ceil_out(ofrAmt, stpAmt.out);
+
             stpAmt.in =
                 mulRatio(ofrAmt.in, ofrInRate, QUALITY_ONE, /*roundUp*/ true);
         }
@@ -770,7 +788,8 @@ BookStep<TIn, TOut, TDerived>::revImp(
                 ownerGivesAdj,
                 transferRateIn,
                 transferRateOut,
-                remainingOut);
+                remainingOut,
+                afView.rules());
             remainingOut = beast::zero;
             savedIns.insert(stpAdjAmt.in);
             savedOuts.insert(remainingOut);
@@ -922,7 +941,8 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
                 ownerGivesAdjRev,
                 transferRateIn,
                 transferRateOut,
-                remainingOut);
+                remainingOut,
+                afView.rules());
 
             if (stpAdjAmtRev.in == remainingIn)
             {

@@ -23,6 +23,7 @@
 #include <ripple/app/tx/impl/CancelOffer.h>
 #include <ripple/app/tx/impl/CashCheck.h>
 #include <ripple/app/tx/impl/Change.h>
+#include <ripple/app/tx/impl/Clawback.h>
 #include <ripple/app/tx/impl/CreateCheck.h>
 #include <ripple/app/tx/impl/CreateOffer.h>
 #include <ripple/app/tx/impl/CreateTicket.h>
@@ -147,6 +148,8 @@ invoke_preflight(PreflightContext const& ctx)
             return invoke_preflight_helper<NFTokenCancelOffer>(ctx);
         case ttNFTOKEN_ACCEPT_OFFER:
             return invoke_preflight_helper<NFTokenAcceptOffer>(ctx);
+        case ttCLAWBACK:
+            return invoke_preflight_helper<Clawback>(ctx);
         default:
             assert(false);
             return {temUNKNOWN, TxConsequences{temUNKNOWN}};
@@ -248,6 +251,8 @@ invoke_preclaim(PreclaimContext const& ctx)
             return invoke_preclaim<NFTokenCancelOffer>(ctx);
         case ttNFTOKEN_ACCEPT_OFFER:
             return invoke_preclaim<NFTokenAcceptOffer>(ctx);
+        case ttCLAWBACK:
+            return invoke_preclaim<Clawback>(ctx);
         default:
             assert(false);
             return temUNKNOWN;
@@ -311,6 +316,8 @@ invoke_calculateBaseFee(ReadView const& view, STTx const& tx)
             return NFTokenCancelOffer::calculateBaseFee(view, tx);
         case ttNFTOKEN_ACCEPT_OFFER:
             return NFTokenAcceptOffer::calculateBaseFee(view, tx);
+        case ttCLAWBACK:
+            return Clawback::calculateBaseFee(view, tx);
         default:
             assert(false);
             return XRPAmount{0};
@@ -461,6 +468,10 @@ invoke_apply(ApplyContext& ctx)
         }
         case ttNFTOKEN_ACCEPT_OFFER: {
             NFTokenAcceptOffer p(ctx);
+            return p();
+        }
+        case ttCLAWBACK: {
+            Clawback p(ctx);
             return p();
         }
         default:
