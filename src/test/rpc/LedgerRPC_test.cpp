@@ -1231,7 +1231,7 @@ class LedgerRPC_test : public beast::unit_test::suite
         Json::Value const jrr =
             env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
 
-        if (apiVersion < 2)
+        if (apiVersion < 2u)
             checkErrorValue(jrr, "unknownOption", "");
         else
             checkErrorValue(jrr, "invalidParams", "");
