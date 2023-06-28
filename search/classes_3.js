@@ -57,7 +57,7 @@ var searchData=
   ['clawback_13194',['Clawback',['../classripple_1_1Clawback.html',1,'ripple']]],
   ['clawback_5ftest_13195',['Clawback_test',['../classripple_1_1Clawback__test.html',1,'ripple']]],
   ['client_13196',['Client',['../classripple_1_1short__read__test_1_1Client.html',1,'ripple::short_read_test']]],
-  ['client_5ft_13197',['client_t',['../structripple_1_1ServerHandlerImp_1_1Setup_1_1client__t.html',1,'ripple::ServerHandlerImp::Setup']]],
+  ['client_5ft_13197',['client_t',['../structripple_1_1ServerHandler_1_1Setup_1_1client__t.html',1,'ripple::ServerHandler::Setup']]],
   ['clock_5ft_13198',['clock_t',['http://en.cppreference.com/w/cpp/chrono/c/clock_t.html',1,'std']]],
   ['clog_13199',['clog',['http://en.cppreference.com/w/cpp/io/clog.html',1,'std']]],
   ['closeledger_13200',['CloseLedger',['../structripple_1_1test_1_1csf_1_1CloseLedger.html',1,'ripple::test::csf']]],

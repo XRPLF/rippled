@@ -97,7 +97,7 @@ var searchData=
   ['lockfreestack_3c_20ripple_3a_3aworkers_3a_3aworker_20_3e_14028',['LockFreeStack&lt; ripple::Workers::Worker &gt;',['../classbeast_1_1LockFreeStack.html',1,'beast']]],
   ['lockfreestack_3c_20ripple_3a_3aworkers_3a_3aworker_2c_20ripple_3a_3aworkers_3a_3apausedtag_20_3e_14029',['LockFreeStack&lt; ripple::Workers::Worker, ripple::Workers::PausedTag &gt;',['../classbeast_1_1LockFreeStack.html',1,'beast']]],
   ['lockfreestackiterator_14030',['LockFreeStackIterator',['../classbeast_1_1LockFreeStackIterator.html',1,'beast']]],
-  ['logic_14031',['Logic',['../classripple_1_1PeerFinder_1_1Logic.html',1,'ripple::PeerFinder::Logic&lt; Checker &gt;'],['../classripple_1_1Resource_1_1Logic.html',1,'ripple::Resource::Logic']]],
+  ['logic_14031',['Logic',['../classripple_1_1Resource_1_1Logic.html',1,'ripple::Resource::Logic'],['../classripple_1_1PeerFinder_1_1Logic.html',1,'ripple::PeerFinder::Logic&lt; Checker &gt;']]],
   ['logic_3c_20decltype_28checker_5f_29_3e_14032',['Logic&lt; decltype(checker_)&gt;',['../classripple_1_1PeerFinder_1_1Logic.html',1,'ripple::PeerFinder']]],
   ['logic_5ferror_14033',['logic_error',['http://en.cppreference.com/w/cpp/error/logic_error.html',1,'std']]],
   ['logical_5fand_14034',['logical_and',['http://en.cppreference.com/w/cpp/utility/functional/logical_and.html',1,'std']]],

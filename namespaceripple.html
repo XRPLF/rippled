@@ -971,7 +971,7 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Server.html">Server</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A multi-protocol server.  <a href="classripple_1_1Server.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ServerHandlerImp.html">ServerHandlerImp</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ServerHandler.html">ServerHandler</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ServerImpl.html">ServerImpl</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1521,8 +1521,6 @@ Typedefs</h2></td></tr>
 <tr class="separator:acd63f6e8cce9825a0d498eb107eb07a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8f9ba329e357041ee11d59add281b978"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a8f9ba329e357041ee11d59add281b978">LedgerSpecifier</a> = <a class="el" href="classripple_1_1RelationalDatabase.html#ae6edb30f534bd5669ee659789aa22e86">RelationalDatabase::LedgerSpecifier</a></td></tr>
 <tr class="separator:a8f9ba329e357041ee11d59add281b978"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0b597236f7807580e783e8c47c7e245a"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a0b597236f7807580e783e8c47c7e245a">ServerHandler</a> = <a class="el" href="classripple_1_1ServerHandlerImp.html">ServerHandlerImp</a></td></tr>
-<tr class="separator:a0b597236f7807580e783e8c47c7e245a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a07b86307adf32095f4693b7b5e7d4b98"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a07b86307adf32095f4693b7b5e7d4b98">Endpoints</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; boost::asio::ip::tcp::endpoint &gt;</td></tr>
 <tr class="separator:a07b86307adf32095f4693b7b5e7d4b98"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad18fcbe19742d7f978f16f21ac70fba5"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ad18fcbe19742d7f978f16f21ac70fba5">FullBelowCache</a> = <a class="el" href="classripple_1_1detail_1_1BasicFullBelowCache.html">detail::BasicFullBelowCache</a></td></tr>
@@ -3480,7 +3478,7 @@ Functions</h2></td></tr>
 <tr class="separator:a9f71fe2c270c185b5fa19a40552b5ee0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adc117aa1e40c420ae8c34dea1f2f1bf1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structripple_1_1Overlay_1_1Setup.html">Overlay::Setup</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#adc117aa1e40c420ae8c34dea1f2f1bf1">setup_Overlay</a> (<a class="el" href="classripple_1_1BasicConfig.html">BasicConfig</a> const &amp;config)</td></tr>
 <tr class="separator:adc117aa1e40c420ae8c34dea1f2f1bf1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afe217b6314ac671b777edb7917d8074d"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1Overlay.html">Overlay</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#afe217b6314ac671b777edb7917d8074d">make_Overlay</a> (<a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, <a class="el" href="structripple_1_1Overlay_1_1Setup.html">Overlay::Setup</a> const  &amp;setup, <a class="el" href="namespaceripple.html#a0b597236f7807580e783e8c47c7e245a">ServerHandler</a> &amp;serverHandler, <a class="el" href="classripple_1_1Resource_1_1Manager.html">Resource::Manager</a> &amp;resourceManager, <a class="el" href="classripple_1_1Resolver.html">Resolver</a> &amp;resolver, boost::asio::io_service &amp;io_service, <a class="el" href="classripple_1_1BasicConfig.html">BasicConfig</a> const  &amp;config, <a class="el" href="classbeast_1_1insight_1_1Collector.html#ad1677ecd39a09b6a8bb8f2e073266bc4">beast::insight::Collector::ptr</a> const  &amp;collector)</td></tr>
+<tr class="memitem:afe217b6314ac671b777edb7917d8074d"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1Overlay.html">Overlay</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#afe217b6314ac671b777edb7917d8074d">make_Overlay</a> (<a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, <a class="el" href="structripple_1_1Overlay_1_1Setup.html">Overlay::Setup</a> const  &amp;setup, <a class="el" href="classripple_1_1ServerHandler.html">ServerHandler</a> &amp;serverHandler, <a class="el" href="classripple_1_1Resource_1_1Manager.html">Resource::Manager</a> &amp;resourceManager, <a class="el" href="classripple_1_1Resolver.html">Resolver</a> &amp;resolver, boost::asio::io_service &amp;io_service, <a class="el" href="classripple_1_1BasicConfig.html">BasicConfig</a> const  &amp;config, <a class="el" href="classbeast_1_1insight_1_1Collector.html#ad1677ecd39a09b6a8bb8f2e073266bc4">beast::insight::Collector::ptr</a> const  &amp;collector)</td></tr>
 <tr class="memdesc:afe217b6314ac671b777edb7917d8074d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates the implementation of <a class="el" href="classripple_1_1Overlay.html" title="Manages the set of connected peers.">Overlay</a>.  <a href="namespaceripple.html#afe217b6314ac671b777edb7917d8074d">More...</a><br /></td></tr>
 <tr class="separator:afe217b6314ac671b777edb7917d8074d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a56ea3162e3d91377dcbcdfa7a65fbd77"><td class="memItemLeft" align="right" valign="top">static bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a56ea3162e3d91377dcbcdfa7a65fbd77">stringIsUint256Sized</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;pBuffStr)</td></tr>
@@ -4732,13 +4730,13 @@ Functions</h2></td></tr>
 <tr class="separator:a1657c1d18a31190f61b59652b4184b3b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1f1695344e39dbde3cc619f8256000f0"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="structripple_1_1Port.html">Port</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a1f1695344e39dbde3cc619f8256000f0">parse_Ports</a> (<a class="el" href="classripple_1_1Config.html">Config</a> const &amp;config, <a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_ostream.html">std::ostream</a> &amp;log)</td></tr>
 <tr class="separator:a1f1695344e39dbde3cc619f8256000f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad3f4a8a0213ea07fa9802d10ee6a4d79"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ad3f4a8a0213ea07fa9802d10ee6a4d79">setup_Client</a> (<a class="el" href="structripple_1_1ServerHandlerImp_1_1Setup.html">ServerHandler::Setup</a> &amp;setup)</td></tr>
+<tr class="memitem:ad3f4a8a0213ea07fa9802d10ee6a4d79"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ad3f4a8a0213ea07fa9802d10ee6a4d79">setup_Client</a> (<a class="el" href="structripple_1_1ServerHandler_1_1Setup.html">ServerHandler::Setup</a> &amp;setup)</td></tr>
 <tr class="separator:ad3f4a8a0213ea07fa9802d10ee6a4d79"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab2ca61e1324164fc5b731835c119b0b1"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ab2ca61e1324164fc5b731835c119b0b1">setup_Overlay</a> (<a class="el" href="structripple_1_1ServerHandlerImp_1_1Setup.html">ServerHandler::Setup</a> &amp;setup)</td></tr>
+<tr class="memitem:ab2ca61e1324164fc5b731835c119b0b1"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ab2ca61e1324164fc5b731835c119b0b1">setup_Overlay</a> (<a class="el" href="structripple_1_1ServerHandler_1_1Setup.html">ServerHandler::Setup</a> &amp;setup)</td></tr>
 <tr class="separator:ab2ca61e1324164fc5b731835c119b0b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9717a8236d67d262b4e5273712ac545c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structripple_1_1ServerHandlerImp_1_1Setup.html">ServerHandler::Setup</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a9717a8236d67d262b4e5273712ac545c">setup_ServerHandler</a> (<a class="el" href="classripple_1_1Config.html">Config</a> const &amp;config, <a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_ostream.html">std::ostream</a> &amp;&amp;log)</td></tr>
+<tr class="memitem:a9717a8236d67d262b4e5273712ac545c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structripple_1_1ServerHandler_1_1Setup.html">ServerHandler::Setup</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a9717a8236d67d262b4e5273712ac545c">setup_ServerHandler</a> (<a class="el" href="classripple_1_1Config.html">Config</a> const &amp;config, <a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_ostream.html">std::ostream</a> &amp;&amp;log)</td></tr>
 <tr class="separator:a9717a8236d67d262b4e5273712ac545c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a44d8c60c9f62e56bb5ad95874dfa9eba"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="namespaceripple.html#a0b597236f7807580e783e8c47c7e245a">ServerHandler</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a44d8c60c9f62e56bb5ad95874dfa9eba">make_ServerHandler</a> (<a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, boost::asio::io_service &amp;io_service, <a class="el" href="classripple_1_1JobQueue.html">JobQueue</a> &amp;jobQueue, <a class="el" href="classripple_1_1NetworkOPs.html">NetworkOPs</a> &amp;networkOPs, <a class="el" href="classripple_1_1Resource_1_1Manager.html">Resource::Manager</a> &amp;resourceManager, <a class="el" href="classripple_1_1CollectorManager.html">CollectorManager</a> &amp;cm)</td></tr>
+<tr class="memitem:a44d8c60c9f62e56bb5ad95874dfa9eba"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1ServerHandler.html">ServerHandler</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a44d8c60c9f62e56bb5ad95874dfa9eba">make_ServerHandler</a> (<a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, boost::asio::io_service &amp;io_service, <a class="el" href="classripple_1_1JobQueue.html">JobQueue</a> &amp;jobQueue, <a class="el" href="classripple_1_1NetworkOPs.html">NetworkOPs</a> &amp;networkOPs, <a class="el" href="classripple_1_1Resource_1_1Manager.html">Resource::Manager</a> &amp;resourceManager, <a class="el" href="classripple_1_1CollectorManager.html">CollectorManager</a> &amp;cm)</td></tr>
 <tr class="separator:a44d8c60c9f62e56bb5ad95874dfa9eba"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ace1e6a8318531f77fa88157e91fadbe4"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ace1e6a8318531f77fa88157e91fadbe4">operator&lt;</a> (<a class="el" href="structripple_1_1Port.html">Port</a> const &amp;lhs, <a class="el" href="structripple_1_1Port.html">Port</a> const &amp;rhs)</td></tr>
 <tr class="separator:ace1e6a8318531f77fa88157e91fadbe4"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -7323,22 +7321,6 @@ template&lt;class Value , class Hash  = hardened_hash&lt;strong_hash&gt;, class 
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="AccountTx_8cpp_source.html#l00052">52</a> of file <a class="el" href="AccountTx_8cpp_source.html">AccountTx.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a0b597236f7807580e783e8c47c7e245a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0b597236f7807580e783e8c47c7e245a">&#9670;&nbsp;</a></span>ServerHandler</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">using <a class="el" href="namespaceripple.html#a0b597236f7807580e783e8c47c7e245a">ripple::ServerHandler</a> = typedef <a class="el" href="classripple_1_1ServerHandlerImp.html">ServerHandlerImp</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="ServerHandler_8h_source.html#l00037">37</a> of file <a class="el" href="ServerHandler_8h_source.html">ServerHandler.h</a>.</p>
 
 </div>
 </div>
@@ -26035,7 +26017,7 @@ template&lt;typename headers &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#a0b597236f7807580e783e8c47c7e245a">ServerHandler</a> &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1ServerHandler.html">ServerHandler</a> &amp;&#160;</td>
           <td class="paramname"><em>serverHandler</em>, </td>
         </tr>
         <tr>
@@ -44994,7 +44976,7 @@ template&lt;typename L , typename R &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ServerHandlerImp_8cpp_source.html#l00057">57</a> of file <a class="el" href="ServerHandlerImp_8cpp_source.html">ServerHandlerImp.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ServerHandler_8cpp_source.html#l00057">57</a> of file <a class="el" href="ServerHandler_8cpp_source.html">ServerHandler.cpp</a>.</p>
 
 </div>
 </div>
@@ -45032,7 +45014,7 @@ template&lt;typename L , typename R &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ServerHandlerImp_8cpp_source.html#l00065">65</a> of file <a class="el" href="ServerHandlerImp_8cpp_source.html">ServerHandlerImp.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ServerHandler_8cpp_source.html#l00065">65</a> of file <a class="el" href="ServerHandler_8cpp_source.html">ServerHandler.cpp</a>.</p>
 
 </div>
 </div>
@@ -45070,7 +45052,7 @@ template&lt;typename L , typename R &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ServerHandlerImp_8cpp_source.html#l00085">85</a> of file <a class="el" href="ServerHandlerImp_8cpp_source.html">ServerHandlerImp.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ServerHandler_8cpp_source.html#l00085">85</a> of file <a class="el" href="ServerHandler_8cpp_source.html">ServerHandler.cpp</a>.</p>
 
 </div>
 </div>
@@ -45098,7 +45080,7 @@ template&lt;typename L , typename R &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ServerHandlerImp_8cpp_source.html#l00237">237</a> of file <a class="el" href="ServerHandlerImp_8cpp_source.html">ServerHandlerImp.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ServerHandler_8cpp_source.html#l00238">238</a> of file <a class="el" href="ServerHandler_8cpp_source.html">ServerHandler.cpp</a>.</p>
 
 </div>
 </div>
@@ -45126,7 +45108,7 @@ template&lt;typename L , typename R &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ServerHandlerImp_8cpp_source.html#l00245">245</a> of file <a class="el" href="ServerHandlerImp_8cpp_source.html">ServerHandlerImp.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ServerHandler_8cpp_source.html#l00246">246</a> of file <a class="el" href="ServerHandler_8cpp_source.html">ServerHandler.cpp</a>.</p>
 
 </div>
 </div>
@@ -45156,7 +45138,7 @@ template&lt;class ConstBufferSequence &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ServerHandlerImp_8cpp_source.html#l00261">261</a> of file <a class="el" href="ServerHandlerImp_8cpp_source.html">ServerHandlerImp.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ServerHandler_8cpp_source.html#l00262">262</a> of file <a class="el" href="ServerHandler_8cpp_source.html">ServerHandler.cpp</a>.</p>
 
 </div>
 </div>
@@ -45194,7 +45176,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ServerHandlerImp_8cpp_source.html#l00383">383</a> of file <a class="el" href="ServerHandlerImp_8cpp_source.html">ServerHandlerImp.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ServerHandler_8cpp_source.html#l00384">384</a> of file <a class="el" href="ServerHandler_8cpp_source.html">ServerHandler.cpp</a>.</p>
 
 </div>
 </div>
@@ -45232,7 +45214,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ServerHandlerImp_8cpp_source.html#l00573">573</a> of file <a class="el" href="ServerHandlerImp_8cpp_source.html">ServerHandlerImp.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ServerHandler_8cpp_source.html#l00574">574</a> of file <a class="el" href="ServerHandler_8cpp_source.html">ServerHandler.cpp</a>.</p>
 
 </div>
 </div>
@@ -45270,7 +45252,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ServerHandlerImp_8cpp_source.html#l01078">1078</a> of file <a class="el" href="ServerHandlerImp_8cpp_source.html">ServerHandlerImp.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ServerHandler_8cpp_source.html#l01079">1079</a> of file <a class="el" href="ServerHandler_8cpp_source.html">ServerHandler.cpp</a>.</p>
 
 </div>
 </div>
@@ -45308,7 +45290,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ServerHandlerImp_8cpp_source.html#l01129">1129</a> of file <a class="el" href="ServerHandlerImp_8cpp_source.html">ServerHandlerImp.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ServerHandler_8cpp_source.html#l01130">1130</a> of file <a class="el" href="ServerHandler_8cpp_source.html">ServerHandler.cpp</a>.</p>
 
 </div>
 </div>
@@ -45324,7 +45306,7 @@ template&lt;class T &gt; </div>
         <tr>
           <td class="memname">static void ripple::setup_Client </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="structripple_1_1ServerHandlerImp_1_1Setup.html">ServerHandler::Setup</a> &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="structripple_1_1ServerHandler_1_1Setup.html">ServerHandler::Setup</a> &amp;&#160;</td>
           <td class="paramname"><em>setup</em></td><td>)</td>
           <td></td>
         </tr>
@@ -45336,7 +45318,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ServerHandlerImp_8cpp_source.html#l01195">1195</a> of file <a class="el" href="ServerHandlerImp_8cpp_source.html">ServerHandlerImp.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ServerHandler_8cpp_source.html#l01196">1196</a> of file <a class="el" href="ServerHandler_8cpp_source.html">ServerHandler.cpp</a>.</p>
 
 </div>
 </div>
@@ -45352,7 +45334,7 @@ template&lt;class T &gt; </div>
         <tr>
           <td class="memname">static void ripple::setup_Overlay </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="structripple_1_1ServerHandlerImp_1_1Setup.html">ServerHandler::Setup</a> &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="structripple_1_1ServerHandler_1_1Setup.html">ServerHandler::Setup</a> &amp;&#160;</td>
           <td class="paramname"><em>setup</em></td><td>)</td>
           <td></td>
         </tr>
@@ -45364,7 +45346,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ServerHandlerImp_8cpp_source.html#l01219">1219</a> of file <a class="el" href="ServerHandlerImp_8cpp_source.html">ServerHandlerImp.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ServerHandler_8cpp_source.html#l01220">1220</a> of file <a class="el" href="ServerHandler_8cpp_source.html">ServerHandler.cpp</a>.</p>
 
 </div>
 </div>
@@ -45375,7 +45357,7 @@ template&lt;class T &gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="structripple_1_1ServerHandlerImp_1_1Setup.html">ServerHandler::Setup</a> ripple::setup_ServerHandler </td>
+          <td class="memname"><a class="el" href="structripple_1_1ServerHandler_1_1Setup.html">ServerHandler::Setup</a> ripple::setup_ServerHandler </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classripple_1_1Config.html">Config</a> const &amp;&#160;</td>
           <td class="paramname"><em>config</em>, </td>
@@ -45394,7 +45376,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ServerHandlerImp_8cpp_source.html#l01235">1235</a> of file <a class="el" href="ServerHandlerImp_8cpp_source.html">ServerHandlerImp.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ServerHandler_8cpp_source.html#l01236">1236</a> of file <a class="el" href="ServerHandler_8cpp_source.html">ServerHandler.cpp</a>.</p>
 
 </div>
 </div>
@@ -45405,7 +45387,7 @@ template&lt;class T &gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="namespaceripple.html#a0b597236f7807580e783e8c47c7e245a">ServerHandler</a> &gt; ripple::make_ServerHandler </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1ServerHandler.html">ServerHandler</a> &gt; ripple::make_ServerHandler </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classripple_1_1Application.html">Application</a> &amp;&#160;</td>
           <td class="paramname"><em>app</em>, </td>
@@ -45448,7 +45430,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ServerHandlerImp_8cpp_source.html#l01247">1247</a> of file <a class="el" href="ServerHandlerImp_8cpp_source.html">ServerHandlerImp.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ServerHandler_8cpp_source.html#l01248">1248</a> of file <a class="el" href="ServerHandler_8cpp_source.html">ServerHandler.cpp</a>.</p>
 
 </div>
 </div>
@@ -45478,7 +45460,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ServerHandlerImp_8h_source.html#l00042">42</a> of file <a class="el" href="ServerHandlerImp_8h_source.html">ServerHandlerImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ServerHandler_8h_source.html#l00042">42</a> of file <a class="el" href="ServerHandler_8h_source.html">ServerHandler.h</a>.</p>
 
 </div>
 </div>
@@ -56652,7 +56634,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ServerHandlerImp_8cpp_source.html#l00583">583</a> of file <a class="el" href="ServerHandlerImp_8cpp_source.html">ServerHandlerImp.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ServerHandler_8cpp_source.html#l00584">584</a> of file <a class="el" href="ServerHandler_8cpp_source.html">ServerHandler.cpp</a>.</p>
 
 </div>
 </div>
@@ -56676,7 +56658,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ServerHandlerImp_8cpp_source.html#l00584">584</a> of file <a class="el" href="ServerHandlerImp_8cpp_source.html">ServerHandlerImp.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ServerHandler_8cpp_source.html#l00585">585</a> of file <a class="el" href="ServerHandler_8cpp_source.html">ServerHandler.cpp</a>.</p>
 
 </div>
 </div>
@@ -56700,7 +56682,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ServerHandlerImp_8cpp_source.html#l00585">585</a> of file <a class="el" href="ServerHandlerImp_8cpp_source.html">ServerHandlerImp.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ServerHandler_8cpp_source.html#l00586">586</a> of file <a class="el" href="ServerHandler_8cpp_source.html">ServerHandler.cpp</a>.</p>
 
 </div>
 </div>
@@ -56724,7 +56706,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ServerHandlerImp_8cpp_source.html#l00586">586</a> of file <a class="el" href="ServerHandlerImp_8cpp_source.html">ServerHandlerImp.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ServerHandler_8cpp_source.html#l00587">587</a> of file <a class="el" href="ServerHandler_8cpp_source.html">ServerHandler.cpp</a>.</p>
 
 </div>
 </div>

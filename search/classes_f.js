@@ -78,7 +78,7 @@ var searchData=
   ['output_5ftest_14339',['Output_test',['../structJson_1_1Output__test.html',1,'Json']]],
   ['overflow_5ferror_14340',['overflow_error',['http://en.cppreference.com/w/cpp/error/overflow_error.html',1,'std']]],
   ['overlay_14341',['Overlay',['../classripple_1_1test_1_1Overlay.html',1,'ripple::test::Overlay'],['../classripple_1_1Overlay.html',1,'ripple::Overlay']]],
-  ['overlay_5ft_14342',['overlay_t',['../structripple_1_1ServerHandlerImp_1_1Setup_1_1overlay__t.html',1,'ripple::ServerHandlerImp::Setup']]],
+  ['overlay_5ft_14342',['overlay_t',['../structripple_1_1ServerHandler_1_1Setup_1_1overlay__t.html',1,'ripple::ServerHandler::Setup']]],
   ['overlayimpl_14343',['OverlayImpl',['../classripple_1_1OverlayImpl.html',1,'ripple']]],
   ['overlaysim_14344',['OverlaySim',['../classripple_1_1test_1_1OverlaySim.html',1,'ripple::test']]],
   ['oversizemeta_5ftest_14345',['OversizeMeta_test',['../classripple_1_1test_1_1OversizeMeta__test.html',1,'ripple::test']]],
