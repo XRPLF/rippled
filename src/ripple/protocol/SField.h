@@ -273,13 +273,7 @@ struct TypedField : SField
     using type = T;
 
     template <class... Args>
-    explicit TypedField(Args&&... args) : SField(std::forward<Args>(args)...)
-    {
-    }
-
-    TypedField(TypedField&& u) : SField(std::move(u))
-    {
-    }
+    explicit TypedField(private_access_tag_t pat, Args&&... args);
 };
 
 /** Indicate std::optional field semantics. */

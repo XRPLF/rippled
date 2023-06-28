@@ -389,6 +389,34 @@ public:
         beast::Journal const&);
 };
 
+/**
+ * @brief Invariant: Token holder's trustline balance cannot be negative after
+ * Clawback.
+ *
+ * We iterate all the trust lines affected by this transaction and ensure
+ * that no more than one trustline is modified, and also holder's balance is
+ * non-negative.
+ */
+class ValidClawback
+{
+    std::uint32_t trustlinesChanged = 0;
+
+public:
+    void
+    visitEntry(
+        bool,
+        std::shared_ptr<SLE const> const&,
+        std::shared_ptr<SLE const> const&);
+
+    bool
+    finalize(
+        STTx const&,
+        TER const,
+        XRPAmount const,
+        ReadView const&,
+        beast::Journal const&);
+};
+
 // additional invariant checks can be declared above and then added to this
 // tuple
 using InvariantChecks = std::tuple<
@@ -402,7 +430,8 @@ using InvariantChecks = std::tuple<
     NoZeroEscrow,
     ValidNewAccountRoot,
     ValidNFTokenPage,
-    NFTokenCountTracking>;
+    NFTokenCountTracking,
+    ValidClawback>;
 
 /**
  * @brief get a tuple of all invariant checks
