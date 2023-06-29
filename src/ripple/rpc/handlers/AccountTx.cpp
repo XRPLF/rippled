@@ -53,9 +53,23 @@ using LedgerSpecifier = RelationalDatabase::LedgerSpecifier;
 
 // parses args into a ledger specifier, or returns a Json object on error
 std::variant<std::optional<LedgerSpecifier>, Json::Value>
-parseLedgerArgs(Json::Value const& params)
+parseLedgerArgs(RPC::Context& context, Json::Value const& params)
 {
     Json::Value response;
+    // if ledger_index_min or max is specified, then ledger_hash or ledger_index
+    // should not be specified. Error out if it is
+    if (context.apiVersion > 1)
+    {
+        if ((params.isMember(jss::ledger_index_min) ||
+             params.isMember(jss::ledger_index_max)) &&
+            (params.isMember(jss::ledger_hash) ||
+             params.isMember(jss::ledger_index)))
+        {
+            RPC::Status status{rpcINVALID_PARAMS, "invalidParams"};
+            status.inject(response);
+            return response;
+        }
+    }
     if (params.isMember(jss::ledger_index_min) ||
         params.isMember(jss::ledger_index_max))
     {
@@ -145,6 +159,17 @@ getLedgerRange(
                 using T = std::decay_t<decltype(ls)>;
                 if constexpr (std::is_same_v<T, LedgerRange>)
                 {
+                    // if ledger_index_min or ledger_index_max is out of
+                    // valid ledger range, error out. exclude -1 as
+                    // it is a valid input
+                    if (context.apiVersion > 1)
+                    {
+                        if ((ls.max > uValidatedMax && ls.max != -1) ||
+                            (ls.min < uValidatedMin && ls.min != 0))
+                        {
+                            return rpcLGR_IDX_MALFORMED;
+                        }
+                    }
                     if (ls.min > uValidatedMin)
                     {
                         uLedgerMin = ls.min;
@@ -379,7 +404,7 @@ doAccountTxJson(RPC::JsonContext& context)
 
     args.account = *account;
 
-    auto parseRes = parseLedgerArgs(params);
+    auto parseRes = parseLedgerArgs(context, params);
     if (auto jv = std::get_if<Json::Value>(&parseRes))
     {
         return *jv;

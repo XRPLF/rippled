@@ -88,6 +88,7 @@ constexpr std::uint32_t asfDisallowIncomingNFTokenOffer    = 12;
 constexpr std::uint32_t asfDisallowIncomingCheck           = 13;
 constexpr std::uint32_t asfDisallowIncomingPayChan         = 14;
 constexpr std::uint32_t asfDisallowIncomingTrustline       = 15;
+constexpr std::uint32_t asfAllowClawback                   = 16;
 
 // OfferCreate flags:
 constexpr std::uint32_t tfPassive                          = 0x00010000;
@@ -158,6 +159,9 @@ constexpr std::uint32_t const tfNFTokenCancelOfferMask     = ~(tfUniversal);
 
 // NFTokenAcceptOffer flags:
 constexpr std::uint32_t const tfNFTokenAcceptOfferMask     = ~tfUniversal;
+
+// Clawback flags:
+constexpr std::uint32_t const tfClawbackMask     = ~tfUniversal;
 
 // clang-format on
 
