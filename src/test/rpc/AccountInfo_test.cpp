@@ -269,7 +269,8 @@ public:
         }
         {
             // account_info with "signer_lists" as not bool should error out
-            auto const info = env.rpc("json", "account_info", withSignersAsString);
+            auto const info =
+                env.rpc("json", "account_info", withSignersAsString);
             BEAST_EXPECT(info[jss::status] == "error");
             BEAST_EXPECT(info[jss::error] == "invalidParams");
         }
