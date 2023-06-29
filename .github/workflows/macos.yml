@@ -1,5 +1,8 @@
 name: macos
 on: [push, pull_request]
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
 
@@ -29,7 +32,7 @@ jobs:
           python --version
           conan --version
           cmake --version
-          env
+          env | sort
       - name: build
         uses: ./.github/actions/build
         with:
