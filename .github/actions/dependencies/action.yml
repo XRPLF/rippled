@@ -6,6 +6,9 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: unlock Conan
+      shell: bash
+      run: conan remove --locks
     - name: export custom recipes
       shell: bash
       run: |
