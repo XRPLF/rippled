@@ -127,7 +127,7 @@ doAccountInfo(RPC::JsonContext& context)
 
         // The document states that signer_lists is a bool, however
         // assigning any string value works. Do not allow this
-        // This for api v2 onwards
+        // this for api v2 onwards
         if (!params[jss::signer_lists].isBool() && context.apiVersion > 1)
         {
             RPC::inject_error(rpcINVALID_PARAMS, result);
