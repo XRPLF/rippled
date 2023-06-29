@@ -528,7 +528,6 @@ JSS(send_max);                  // in: PathRequest, RipplePathFind
 JSS(seq);                       // in: LedgerEntry;
                                 // out: NetworkOPs, RPCSub, AccountOffers,
                                 //      ValidatorList, ValidatorInfo, Manifest
-JSS(seqNum);                    // out: LedgerToJson
 JSS(sequence);                  // in: UNL
 JSS(sequence_count);            // out: AccountInfo
 JSS(server_domain);             // out: NetworkOPs
@@ -583,7 +582,6 @@ JSS(timeouts);                // out: InboundLedger
 JSS(track);                   // out: PeerImp
 JSS(traffic);                 // out: Overlay
 JSS(total);                   // out: counters
-JSS(totalCoins);              // out: LedgerToJson
 JSS(total_bytes_recv);        // out: Peers
 JSS(total_bytes_sent);        // out: Peers
 JSS(total_coins);             // out: LedgerToJson
