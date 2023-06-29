@@ -35,7 +35,7 @@ public:
         using namespace jtx;
         Env env(*this, features);
 
-        if (apiVersion < 2)
+        if (apiVersion < 2u)
         {
             // Gateway account and assets
             Account const alice{"alice"};

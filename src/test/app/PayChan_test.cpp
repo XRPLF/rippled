@@ -1186,7 +1186,7 @@ struct PayChan_test : public beast::unit_test::suite
         args[jss::key_type] = "ed255191";
         args[jss::seed] = "snHq1rzQoN2qiUkC3XF5RyxBzUtN";
         args[jss::amount] = 51110000;
-        if (apiVersion < 2)
+        if (apiVersion < 2u)
         {
             auto const rs = env.rpc(
                 "json",

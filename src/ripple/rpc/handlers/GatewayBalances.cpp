@@ -126,7 +126,7 @@ doGatewayBalances(RPC::JsonContext& context)
             // One or more fields are specified incorrectly.
             // invalidHotwallet should be used when the account exists, but does
             // not have currency issued by the account from the request.
-            if (context.apiVersion < 2)
+            if (context.apiVersion < 2u)
             {
                 result[jss::error] = "invalidHotWallet";
             }
