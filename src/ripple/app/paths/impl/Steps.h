@@ -296,16 +296,6 @@ public:
         return stream;
     }
 
-    /** By default the steps pay the transfer fee if it's set.
-     * Steps that consume AMM liquidity don't pay the transfer
-     * fee.
-     */
-    virtual bool
-    waivesTransferFee(ReadView const&) const
-    {
-        return false;
-    }
-
 private:
     virtual std::string
     logString() const = 0;

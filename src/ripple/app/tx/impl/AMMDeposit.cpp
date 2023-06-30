@@ -491,7 +491,7 @@ AMMDeposit::deposit(
     }
 
     auto res = accountSend(
-        view, account_, ammAccount, amountDepositActual, ctx_.journal);
+        view, account_, ammAccount, amountDepositActual, ctx_.journal, true);
     if (res != tesSUCCESS)
     {
         JLOG(ctx_.journal.debug())
@@ -512,7 +512,12 @@ AMMDeposit::deposit(
         }
 
         res = accountSend(
-            view, account_, ammAccount, *amount2DepositActual, ctx_.journal);
+            view,
+            account_,
+            ammAccount,
+            *amount2DepositActual,
+            ctx_.journal,
+            true);
         if (res != tesSUCCESS)
         {
             JLOG(ctx_.journal.debug())

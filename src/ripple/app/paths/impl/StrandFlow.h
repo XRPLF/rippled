@@ -20,6 +20,7 @@
 #ifndef RIPPLE_APP_PATHS_IMPL_STRANDFLOW_H_INCLUDED
 #define RIPPLE_APP_PATHS_IMPL_STRANDFLOW_H_INCLUDED
 
+#include <ripple/app/misc/AMMHelpers.h>
 #include <ripple/app/paths/AMMContext.h>
 #include <ripple/app/paths/Credit.h>
 #include <ripple/app/paths/Flow.h>
@@ -399,6 +400,9 @@ limitOut(
             return STAmount{
                 remainingOut.issue(), out->mantissa(), out->exponent()};
     }();
+    // A tiny difference could be due to the round off
+    if (withinRelativeDistance(out, remainingOut, Number(1, -9)))
+        return remainingOut;
     return std::min(out, remainingOut);
 };
 /// @endcond
@@ -650,6 +654,7 @@ flow(
                     return limitOut(sb, *strand, remainingOut, *limitQuality);
             return remainingOut;
         }();
+        auto const adjustedRemOut = limitRemainingOut != remainingOut;
 
         boost::container::flat_set<uint256> ofrsToRm;
         std::optional<BestStrand> best;
@@ -705,7 +710,13 @@ flow(
                 << "New flow iter (iter, in, out): " << curTry - 1 << " "
                 << to_string(f.in) << " " << to_string(f.out);
 
-            if (limitQuality && q < *limitQuality)
+            // limitOut() finds output to generate exact requested
+            // limitQuality. But the actual limit quality might be slightly
+            // off due to the round off.
+            if (limitQuality && q < *limitQuality &&
+                ((adjustedRemOut &&
+                  !withinRelativeDistance(q, *limitQuality, Number(1, -7))) ||
+                 !adjustedRemOut))
             {
                 JLOG(j.trace())
                     << "Path rejected by limitQuality"

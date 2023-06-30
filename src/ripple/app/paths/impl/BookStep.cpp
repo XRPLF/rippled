@@ -20,7 +20,6 @@
 #include <ripple/app/misc/AMMUtils.h>
 #include <ripple/app/paths/AMMLiquidity.h>
 #include <ripple/app/paths/AMMOffer.h>
-#include <ripple/app/paths/Credit.h>
 #include <ripple/app/paths/impl/FlatSets.h>
 #include <ripple/app/paths/impl/Steps.h>
 #include <ripple/app/tx/impl/OfferStream.h>
@@ -182,9 +181,6 @@ public:
         return inactive_;
     }
 
-    bool
-    waivesTransferFee(ReadView const&) const override;
-
 protected:
     std::string
     logStringImpl(char const* name) const
@@ -320,7 +316,8 @@ public:
     adjustQualityWithFees(
         ReadView const& v,
         Quality const& ofrQ,
-        DebtDirection prevStepDir) const
+        DebtDirection prevStepDir,
+        bool waiveOwnerPaysFee) const
     {
         // Charge the offer owner, not the sender
         // Charge a fee even if the owner is the same as the issuer
@@ -333,13 +330,10 @@ public:
             return transferRate(v, id);
         };
 
-        auto const prevStepPaysTrFee =
-            !this->prevStep_ || !this->prevStep_->waivesTransferFee(v);
-        auto const trIn = redeems(prevStepDir) && prevStepPaysTrFee
-            ? rate(this->book_.in.account)
-            : parityRate;
+        auto const trIn =
+            redeems(prevStepDir) ? rate(this->book_.in.account) : parityRate;
         // Always charge the transfer fee, even if the owner is the issuer
-        auto const trOut = this->ownerPaysTransferFee_
+        auto const trOut = this->ownerPaysTransferFee_ && !waiveOwnerPaysFee
             ? rate(this->book_.out.account)
             : parityRate;
 
@@ -486,7 +480,8 @@ public:
     adjustQualityWithFees(
         ReadView const& v,
         Quality const& ofrQ,
-        DebtDirection prevStepDir) const
+        DebtDirection prevStepDir,
+        bool waiveOwnerPaysFee) const
     {
         // Offer x-ing does not charge a transfer fee when the offer's owner
         // is the same as the strand dst. It is important that
@@ -532,7 +527,7 @@ BookStep<TIn, TOut, TDerived>::qualityUpperBound(
         return {std::nullopt, dir};
 
     Quality const q = static_cast<TDerived const*>(this)->adjustQualityWithFees(
-        v, std::get<Quality>(*res), prevStepDir);
+        v, std::get<Quality>(*res), prevStepDir, std::get<bool>(*res));
     return {q, dir};
 }
 
@@ -548,12 +543,23 @@ BookStep<TIn, TOut, TDerived>::getQualityFunc(
     if (!res)
         return {std::nullopt, dir};
 
-    // AMM - no fee adjustment
+    // AMM
     if (!res->isConst())
-        return {*res, dir};
+    {
+        auto const qOne = Quality{STAmount::uRateOne};
+        auto const q =
+            static_cast<TDerived const*>(this)->adjustQualityWithFees(
+                v, qOne, prevStepDir, true);
+        if (q == qOne)
+            return {res, dir};
+        QualityFunction qf{q, QualityFunction::CLOBLikeTag{}};
+        qf.combine(*res);
+        return {qf, dir};
+    }
 
+    // CLOB
     Quality const q = static_cast<TDerived const*>(this)->adjustQualityWithFees(
-        v, *(res->quality()), prevStepDir);
+        v, *(res->quality()), prevStepDir, false);
     return {QualityFunction{q, QualityFunction::CLOBLikeTag{}}, dir};
 }
 
@@ -631,11 +637,8 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
         return transferRate(sb, id).value;
     };
 
-    auto const prevStepPaysTrFee =
-        !prevStep_ || !prevStep_->waivesTransferFee(sb);
-    std::uint32_t const trIn = redeems(prevStepDir) && prevStepPaysTrFee
-        ? rate(book_.in.account)
-        : QUALITY_ONE;
+    std::uint32_t const trIn =
+        redeems(prevStepDir) ? rate(book_.in.account) : QUALITY_ONE;
     // Always charge the transfer fee, even if the owner is the issuer
     std::uint32_t const trOut =
         ownerPaysTransferFee_ ? rate(book_.out.account) : QUALITY_ONE;
@@ -852,17 +855,6 @@ BookStep<TIn, TOut, TDerived>::tipOfferQualityF(ReadView const& view) const
         return QualityFunction{*q, QualityFunction::CLOBLikeTag{}};
     else
         return std::get<AMMOffer<TIn, TOut>>(*res).getQualityFunc();
-}
-
-template <class TIn, class TOut, class TDerived>
-bool
-BookStep<TIn, TOut, TDerived>::waivesTransferFee(ReadView const& view) const
-{
-    if (std::optional<std::pair<Quality, bool>> const res =
-            tipOfferQuality(view))
-        // This step doesn't pay the transfer fee if AMM
-        return std::get<bool>(*res);
-    return false;
 }
 
 template <class TCollection>

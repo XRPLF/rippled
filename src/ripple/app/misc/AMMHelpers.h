@@ -121,6 +121,28 @@ withinRelativeDistance(
     return ((min.rate() - max.rate()) / min.rate()) < dist;
 }
 
+/** Check if the relative distance between the amounts
+ * is within the requested distance.
+ * @param calc calculated amount
+ * @param req requested amount
+ * @param dist requested relative distance
+ * @return true if within dist, false otherwise
+ */
+// clang-format off
+template <typename Amt>
+    requires(
+        std::is_same_v<Amt, STAmount> || std::is_same_v<Amt, IOUAmount> ||
+        std::is_same_v<Amt, XRPAmount>)
+bool
+withinRelativeDistance(Amt const& calc, Amt const& req, Number const& dist)
+{
+    if (calc == req)
+        return true;
+    auto const [min, max] = std::minmax(calc, req);
+    return ((max - min) / max) < dist;
+}
+// clang-format on
+
 /** Finds takerPays (i) and takerGets (o) such that given pool composition
  * poolGets(I) and poolPays(O): (O - o) / (I + i) = quality.
  * Where takerGets is calculated as the swapAssetIn (see below).

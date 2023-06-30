@@ -787,10 +787,7 @@ DirectStepI<TDerived>::qualitiesSrcIssues(
     assert(static_cast<TDerived const*>(this)->verifyPrevStepDebtDirection(
         prevStepDebtDirection));
 
-    auto const prevStepPaysTrFee =
-        !prevStep_ || !prevStep_->waivesTransferFee(sb);
-    std::uint32_t const srcQOut =
-        redeems(prevStepDebtDirection) && prevStepPaysTrFee
+    std::uint32_t const srcQOut = redeems(prevStepDebtDirection)
         ? transferRate(sb, src_).value
         : QUALITY_ONE;
     auto dstQIn =

@@ -304,8 +304,8 @@ applyCreate(
     }
 
     auto sendAndTrustSet = [&](STAmount const& amount) -> TER {
-        if (auto const res =
-                accountSend(sb, account_, *ammAccount, amount, ctx_.journal))
+        if (auto const res = accountSend(
+                sb, account_, *ammAccount, amount, ctx_.journal, true))
             return res;
         // Set AMM flag on AMM trustline
         if (!isXRP(amount))
