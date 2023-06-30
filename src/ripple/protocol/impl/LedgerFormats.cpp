@@ -141,6 +141,7 @@ LedgerFormats::LedgerFormats()
         {
             {sfAmendments,           soeOPTIONAL},  // Enabled
             {sfMajorities,           soeOPTIONAL},
+            {sfSequence,             soeOPTIONAL},
         },
         commonFields);
 

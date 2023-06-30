@@ -71,6 +71,11 @@ private:
         std::optional<uint256> const& digest,
         STVector256 const& amendments);
 
+    Rules(
+        std::unordered_set<uint256, beast::uhash<>> const& presets,
+        std::uint32_t sequence,
+        STVector256 const& amendments);
+
     std::unordered_set<uint256, beast::uhash<>> const&
     presets() const;
 

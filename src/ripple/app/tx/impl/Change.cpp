@@ -329,6 +329,15 @@ Change::applyAmendment()
                              << " activated: server blocked.";
             ctx_.app.getOPs().setAmendmentBlocked();
         }
+
+        if (view().rules().enabled(featureAmendmentTableSequence) ||
+            amendment == featureAmendmentTableSequence)
+        {
+            // if amendment is enabled then we do an increase on sequence
+            // by 1
+            amendmentObject->setFieldU32(
+                sfSequence, amendmentObject->getFieldU32(sfSequence) + 1);
+        }
     }
 
     if (newMajorities.empty())

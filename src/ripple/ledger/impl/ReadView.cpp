@@ -76,14 +76,26 @@ makeRulesGivenLedger(
     DigestAwareReadView const& ledger,
     std::unordered_set<uint256, beast::uhash<>> const& presets)
 {
-    Keylet const k = keylet::amendments();
-    std::optional digest = ledger.digest(k.key);
-    if (digest)
+    if (ledger.rules().enabled(featureAmendmentTableSequence))
     {
-        auto const sle = ledger.read(k);
-        if (sle)
-            return Rules(presets, digest, sle->getFieldV256(sfAmendments));
+        if (auto const sle = ledger.read(keylet::amendments()))
+            return Rules(
+                presets,
+                sle->getFieldU32(sfSequence),
+                sle->getFieldV256(sfAmendments));
     }
+    else
+    {
+        Keylet const k = keylet::amendments();
+        std::optional digest = ledger.digest(k.key);
+        if (digest)
+        {
+            auto const sle = ledger.read(k);
+            if (sle)
+                return Rules(presets, digest, sle->getFieldV256(sfAmendments));
+        }
+    }
+
     return Rules(presets);
 }
 

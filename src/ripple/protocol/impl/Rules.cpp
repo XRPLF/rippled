@@ -25,9 +25,10 @@ namespace ripple {
 class Rules::Impl
 {
 private:
+    std::unordered_set<uint256, beast::uhash<>> const& presets_;
     std::unordered_set<uint256, hardened_hash<>> set_;
     std::optional<uint256> digest_;
-    std::unordered_set<uint256, beast::uhash<>> const& presets_;
+    std::optional<std::uint32_t> sequence_;
 
 public:
     explicit Impl(std::unordered_set<uint256, beast::uhash<>> const& presets)
@@ -39,10 +40,20 @@ public:
         std::unordered_set<uint256, beast::uhash<>> const& presets,
         std::optional<uint256> const& digest,
         STVector256 const& amendments)
-        : digest_(digest), presets_(presets)
+        : presets_(presets)
+        , set_(amendments.begin(), amendments.end())
+        , digest_(digest)
     {
-        set_.reserve(amendments.size());
-        set_.insert(amendments.begin(), amendments.end());
+    }
+
+    Impl(
+        std::unordered_set<uint256, beast::uhash<>> const& presets,
+        std::uint32_t sequence,
+        STVector256 const& amendments)
+        : presets_(presets)
+        , set_(amendments.begin(), amendments.end())
+        , sequence_(sequence)
+    {
     }
 
     std::unordered_set<uint256, beast::uhash<>> const&
@@ -62,12 +73,17 @@ public:
     bool
     operator==(Impl const& other) const
     {
-        if (!digest_ && !other.digest_)
-            return true;
-        if (!digest_ || !other.digest_)
-            return false;
-        assert(presets_ == other.presets_);
-        return *digest_ == *other.digest_;
+        auto ret = [this, &other]() {
+            if (sequence_.has_value())
+                return sequence_ == other.sequence_;
+
+            return (digest_ == other.digest_);
+        }();
+
+        // Extra check to be sure the comparason is right
+        assert(!ret || ((set_ == other.set_) && presets_ == other.presets_));
+
+        return ret;
     }
 };
 
@@ -81,6 +97,14 @@ Rules::Rules(
     std::optional<uint256> const& digest,
     STVector256 const& amendments)
     : impl_(std::make_shared<Impl>(presets, digest, amendments))
+{
+}
+
+Rules::Rules(
+    std::unordered_set<uint256, beast::uhash<>> const& presets,
+    std::uint32_t sequence,
+    STVector256 const& amendments)
+    : impl_(std::make_shared<Impl>(presets, sequence, amendments))
 {
 }
 
@@ -113,7 +137,7 @@ bool
 Rules::operator==(Rules const& other) const
 {
     assert(impl_ && other.impl_);
-    if (impl_.get() == other.impl_.get())
+    if (impl_ == other.impl_)
         return true;
     return *impl_ == *other.impl_;
 }
