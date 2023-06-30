@@ -170,14 +170,6 @@ private:
                 env, alice, XRP(10'000), USD(40'000), ter(tecUNFUNDED_AMM));
             BEAST_EXPECT(!ammAlice.ammExists());
         }
-        {
-            Env env{*this};
-            fund(env, gw, {alice}, {USD(30'000)}, Fund::All);
-            env(rate(gw, 1.25));
-            AMM ammAlice(
-                env, alice, XRP(10'000), USD(30'000), ter(tecUNFUNDED_AMM));
-            BEAST_EXPECT(!ammAlice.ammExists());
-        }
 
         // Insufficient XRP balance
         {
@@ -780,18 +772,6 @@ private:
             ammAlice.deposit(
                 bob,
                 USD(1'001),
-                std::nullopt,
-                std::nullopt,
-                std::nullopt,
-                ter(tecUNFUNDED_AMM));
-        });
-        testAMM([&](AMM& ammAlice, Env& env) {
-            fund(env, gw, {bob}, {USD(1'000)}, Fund::Acct);
-            env(rate(gw, 1.25));
-            env.close();
-            ammAlice.deposit(
-                bob,
-                USD(1'000),
                 std::nullopt,
                 std::nullopt,
                 std::nullopt,

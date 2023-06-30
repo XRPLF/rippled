@@ -154,14 +154,13 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
     auto insufficientBalance = [&](STAmount const& asset) {
         if (isXRP(asset))
             return xrpBalance < asset;
-        return accountID != asset.getIssuer() &&
+        return accountID != asset.issue().account &&
             accountHolds(
                 ctx.view,
                 accountID,
                 asset.issue(),
                 FreezeHandling::fhZERO_IF_FROZEN,
-                ctx.j) <
-            multiply(asset, transferRate(ctx.view, asset.getIssuer()));
+                ctx.j) < asset;
     };
 
     if (insufficientBalance(amount) || insufficientBalance(amount2))

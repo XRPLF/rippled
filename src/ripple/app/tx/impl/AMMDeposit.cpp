@@ -200,15 +200,13 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
                 return tecUNFUNDED_AMM;
             return tecINSUF_RESERVE_LINE;
         }
-        return (accountID == deposit.getIssuer() ||
+        return (accountID == deposit.issue().account ||
                 accountHolds(
                     ctx.view,
                     accountID,
                     deposit.issue(),
                     FreezeHandling::fhIGNORE_FREEZE,
-                    ctx.j) >=
-                    multiply(
-                        deposit, transferRate(ctx.view, deposit.getIssuer())))
+                    ctx.j) >= deposit)
             ? TER(tesSUCCESS)
             : tecUNFUNDED_AMM;
     };
