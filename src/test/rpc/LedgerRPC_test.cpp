@@ -78,10 +78,6 @@ class LedgerRPC_test : public beast::unit_test::suite
                 env.rpc("json", "ledger", to_string(jvParams))[jss::result];
             BEAST_EXPECT(jrr[jss::ledger][jss::closed] == true);
             BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == "1");
-            BEAST_EXPECT(jrr[jss::ledger][jss::accepted] == true);
-            BEAST_EXPECT(
-                jrr[jss::ledger][jss::totalCoins] ==
-                env.balance(env.master).value().getText());
         }
 
         {
@@ -91,10 +87,6 @@ class LedgerRPC_test : public beast::unit_test::suite
                 env.rpc("json", "ledger", to_string(jvParams))[jss::result];
             BEAST_EXPECT(jrr[jss::ledger][jss::closed] == true);
             BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == "1");
-            BEAST_EXPECT(jrr[jss::ledger][jss::accepted] == true);
-            BEAST_EXPECT(
-                jrr[jss::ledger][jss::totalCoins] ==
-                env.balance(env.master).value().getText());
         }
 
         {

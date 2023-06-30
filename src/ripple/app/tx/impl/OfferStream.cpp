@@ -182,16 +182,32 @@ TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
     }
 
     TTakerGets const ownerFunds = toAmount<TTakerGets>(*ownerFunds_);
+    bool const fixReduced = view_.rules().enabled(fixReducedOffersV1);
 
     auto const effectiveAmounts = [&] {
         if (offer_.owner() != offer_.issueOut().account &&
             ownerFunds < ofrAmts.out)
         {
-            // adjust the amounts by owner funds
+            // adjust the amounts by owner funds.
+            //
+            // It turns out we can prevent order book blocking by rounding down
+            // the ceil_out() result.  This adjustment changes transaction
+            // results, so it must be made under an amendment.
+            if (fixReduced)
+                return offer_.quality().ceil_out_strict(
+                    ofrAmts, ownerFunds, /* roundUp */ false);
+
             return offer_.quality().ceil_out(ofrAmts, ownerFunds);
         }
         return ofrAmts;
     }();
+
+    // If either the effective in or out are zero then remove the offer.
+    // This can happen with fixReducedOffersV1 since it rounds down.
+    if (fixReduced &&
+        (effectiveAmounts.in.signum() <= 0 ||
+         effectiveAmounts.out.signum() <= 0))
+        return true;
 
     if (effectiveAmounts.in > TTakerPays::minPositiveAmount())
         return false;
