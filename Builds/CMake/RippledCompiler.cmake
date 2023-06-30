@@ -12,6 +12,7 @@ add_library (Ripple::common ALIAS common)
 link_libraries (Ripple::common)
 set_target_properties (common
   PROPERTIES INTERFACE_POSITION_INDEPENDENT_CODE ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 target_compile_definitions (common
   INTERFACE
     $<$<CONFIG:Debug>:DEBUG _DEBUG>
@@ -119,7 +120,7 @@ else ()
   target_link_libraries (common
     INTERFACE
       -rdynamic
-      -Wl,-z,relro,-z,now
+      $<$<NOT:$<BOOL:${APPLE}>>:-Wl,-z,relro,-z,now>
       # link to static libc/c++ iff:
       #   * static option set and
       #   * NOT APPLE (AppleClang does not support static libc/c++) and
