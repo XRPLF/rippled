@@ -217,6 +217,10 @@ public:
             "\"api_version\": 2, \"account\": \"" + alice.human() + "\", " +
             "\"signer_lists\": true }";
 
+        auto const withSignersAsString = std::string("{ ") +
+            "\"api_version\": 2, \"account\": \"" + alice.human() + "\", " +
+            "\"signer_lists\": asdfggh }";
+
         // Alice has no SignerList yet.
         {
             // account_info without the "signer_lists" argument.
@@ -262,6 +266,13 @@ public:
             BEAST_EXPECT(signerEntries.size() == 1);
             auto const& entry0 = signerEntries[0u][sfSignerEntry.jsonName];
             BEAST_EXPECT(entry0[sfSignerWeight.jsonName] == 3);
+        }
+        {
+            // account_info with "signer_lists" as not bool should error out
+            auto const info =
+                env.rpc("json", "account_info", withSignersAsString);
+            BEAST_EXPECT(info[jss::status] == "error");
+            BEAST_EXPECT(info[jss::error] == "invalidParams");
         }
 
         // Give alice a big signer list
