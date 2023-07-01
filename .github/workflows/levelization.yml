@@ -8,7 +8,7 @@ jobs:
     env:
       CLANG_VERSION: 10
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Check levelization
       run: Builds/levelization/levelization.sh
     - name: Check for differences
