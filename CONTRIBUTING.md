@@ -121,6 +121,11 @@ this:
 You can format individual files in place by running `clang-format -i <file>...`
 from any directory within this project.
 
+You can install a pre-commit hook to automatically run `clang-format` before every commit:
+```
+pip3 install pre-commit
+pre-commit install
+```
 
 ## Avoid
 
