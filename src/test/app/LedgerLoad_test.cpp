@@ -63,7 +63,7 @@ class LedgerLoad_test : public beast::unit_test::suite
         retval.ledgerFile = td.file("ledgerdata.json");
 
         Env env{*this};
-        Account prev;
+        Account prev("previous_account");
 
         for (auto i = 0; i < 20; ++i)
         {

@@ -38,7 +38,7 @@ class ValidatorKeys
 public:
     PublicKey masterPublicKey;
     PublicKey publicKey;
-    SecretKey secretKey;
+    std::optional<SecretKey> secretKey;
     NodeID nodeID;
     std::string manifest;
     std::uint32_t sequence = 0;

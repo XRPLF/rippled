@@ -215,7 +215,7 @@ RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
 
     auto sig = signDigest(
         validatorKeys_.publicKey,
-        validatorKeys_.secretKey,
+        *validatorKeys_.secretKey,
         proposal.signingHash());
 
     prop.set_signature(sig.data(), sig.size());
@@ -802,7 +802,7 @@ RCLConsensus::Adaptor::validate(
     auto v = std::make_shared<STValidation>(
         lastValidationTime_,
         validatorKeys_.publicKey,
-        validatorKeys_.secretKey,
+        *validatorKeys_.secretKey,
         validatorKeys_.nodeID,
         [&](STValidation& v) {
             v.setFieldH256(sfLedgerHash, ledger.id());

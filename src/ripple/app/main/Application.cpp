@@ -185,7 +185,7 @@ public:
 
     NodeCache m_tempNodeCache;
     CachedSLEs cachedSLEs_;
-    std::pair<PublicKey, SecretKey> nodeIdentity_;
+    std::optional<std::pair<PublicKey, SecretKey>> nodeIdentity_;
     ValidatorKeys const validatorKeys_;
 
     std::unique_ptr<Resource::Manager> m_resourceManager;
@@ -584,7 +584,7 @@ public:
         return *m_jobQueue;
     }
 
-    std::pair<PublicKey, SecretKey> const&
+    std::optional<std::pair<PublicKey, SecretKey>> const&
     nodeIdentity() override
     {
         return nodeIdentity_;

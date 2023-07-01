@@ -56,7 +56,7 @@ doPeers(RPC::JsonContext& context)
     }
 
     auto const now = context.app.timeKeeper().now();
-    auto const self = context.app.nodeIdentity().first;
+    auto const self = context.app.nodeIdentity()->first;
 
     Json::Value& cluster = (jvResult[jss::cluster] = Json::objectValue);
     std::uint32_t ref = context.app.getFeeTrack().getLoadBase();

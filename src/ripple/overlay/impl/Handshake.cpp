@@ -196,11 +196,11 @@ buildHandshake(
 
     h.insert(
         "Public-Key",
-        toBase58(TokenType::NodePublic, app.nodeIdentity().first));
+        toBase58(TokenType::NodePublic, app.nodeIdentity()->first));
 
     {
         auto const sig = signDigest(
-            app.nodeIdentity().first, app.nodeIdentity().second, sharedValue);
+            app.nodeIdentity()->first, app.nodeIdentity()->second, sharedValue);
         h.insert("Session-Signature", base64_encode(sig.data(), sig.size()));
     }
 
@@ -319,7 +319,7 @@ verifyHandshake(
             throw std::runtime_error("Failed to verify session");
     }
 
-    if (publicKey == app.nodeIdentity().first)
+    if (publicKey == app.nodeIdentity()->first)
         throw std::runtime_error("Self connection");
 
     if (auto const iter = headers.find("Local-IP"); iter != headers.end())

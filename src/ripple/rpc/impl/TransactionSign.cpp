@@ -369,9 +369,14 @@ transactionPreProcessImpl(
     auto j = app.journal("RPCHandler");
 
     Json::Value jvResult;
-    auto const [pk, sk] = keypairForSignature(params, jvResult);
-    if (contains_error(jvResult))
+    std::optional<std::pair<PublicKey, SecretKey>> keyPair =
+        keypairForSignature(params,
+                                                               jvResult);
+    if (!keyPair || contains_error(jvResult))
         return jvResult;
+
+    PublicKey pk = keyPair->first;
+    SecretKey sk = keyPair->second;
 
     bool const verify =
         !(params.isMember(jss::offline) && params[jss::offline].asBool());

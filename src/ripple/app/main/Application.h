@@ -239,7 +239,7 @@ public:
     virtual perf::PerfLog&
     getPerfLog() = 0;
 
-    virtual std::pair<PublicKey, SecretKey> const&
+    virtual std::optional<std::pair<PublicKey, SecretKey>> const&
     nodeIdentity() = 0;
 
     virtual PublicKey const&

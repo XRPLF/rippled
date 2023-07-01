@@ -206,7 +206,7 @@ getSeedFromRPC(Json::Value const& params, Json::Value& error);
 std::optional<Seed>
 parseRippleLibSeed(Json::Value const& params);
 
-std::pair<PublicKey, SecretKey>
+std::optional<std::pair<PublicKey, SecretKey>>
 keypairForSignature(Json::Value const& params, Json::Value& error);
 
 /**

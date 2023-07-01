@@ -16,8 +16,6 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-
-#include <ripple/basics/StringUtilities.h>
 #include <ripple/json/json_value.h>
 #include <ripple/json/json_writer.h>
 #include <ripple/protocol/ErrorCodes.h>
@@ -337,8 +335,8 @@ public:
 
                 auto ret = keypairForSignature(params, error);
                 BEAST_EXPECT(!contains_error(error));
-                BEAST_EXPECT(ret.first.size() != 0);
-                BEAST_EXPECT(ret.first == publicKey);
+                BEAST_EXPECT(ret->first.size() != 0);
+                BEAST_EXPECT(ret->first == publicKey);
             }
 
             {
@@ -348,8 +346,8 @@ public:
 
                 auto ret = keypairForSignature(params, error);
                 BEAST_EXPECT(!contains_error(error));
-                BEAST_EXPECT(ret.first.size() != 0);
-                BEAST_EXPECT(ret.first == publicKey);
+                BEAST_EXPECT(ret->first.size() != 0);
+                BEAST_EXPECT(ret->first == publicKey);
             }
 
             {
@@ -359,8 +357,8 @@ public:
 
                 auto ret = keypairForSignature(params, error);
                 BEAST_EXPECT(!contains_error(error));
-                BEAST_EXPECT(ret.first.size() != 0);
-                BEAST_EXPECT(ret.first == publicKey);
+                BEAST_EXPECT(ret->first.size() != 0);
+                BEAST_EXPECT(ret->first == publicKey);
             }
 
             keyType.emplace("secp256k1");
@@ -375,8 +373,8 @@ public:
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(!contains_error(error));
-            BEAST_EXPECT(ret.first.size() != 0);
-            BEAST_EXPECT(ret.first == publicKey);
+            BEAST_EXPECT(ret->first.size() != 0);
+            BEAST_EXPECT(ret->first == publicKey);
         }
 
         {
@@ -388,8 +386,8 @@ public:
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(!contains_error(error));
-            BEAST_EXPECT(ret.first.size() != 0);
-            BEAST_EXPECT(ret.first == publicKey);
+            BEAST_EXPECT(ret->first.size() != 0);
+            BEAST_EXPECT(ret->first == publicKey);
         }
 
         {
@@ -401,8 +399,8 @@ public:
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(!contains_error(error));
-            BEAST_EXPECT(ret.first.size() != 0);
-            BEAST_EXPECT(ret.first == publicKey);
+            BEAST_EXPECT(ret->first.size() != 0);
+            BEAST_EXPECT(ret->first == publicKey);
         }
     }
 
@@ -416,10 +414,10 @@ public:
             params[jss::secret] = 314159265;
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(contains_error(error));
+            BEAST_EXPECT(!ret);
             BEAST_EXPECT(
                 error[jss::error_message] ==
                 "Invalid field 'secret', not string.");
-            BEAST_EXPECT(ret.first.size() == 0);
         }
 
         {
@@ -430,10 +428,10 @@ public:
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(contains_error(error));
+            BEAST_EXPECT(!ret);
             BEAST_EXPECT(
                 error[jss::error_message] ==
                 "Invalid field 'secret', not string.");
-            BEAST_EXPECT(ret.first.size() == 0);
         }
 
         {
@@ -445,7 +443,7 @@ public:
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(contains_error(error));
-            BEAST_EXPECT(ret.first.size() == 0);
+            BEAST_EXPECT(!ret);
             BEAST_EXPECT(
                 error[jss::error_message] ==
                 "Invalid field 'secret', not string.");
@@ -460,10 +458,10 @@ public:
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(contains_error(error));
+            BEAST_EXPECT(!ret);
             BEAST_EXPECT(
                 error[jss::error_message] ==
                 "The secret field is not allowed if key_type is used.");
-            BEAST_EXPECT(ret.first.size() == 0);
         }
 
         // Specify unknown or bad "key_type"
@@ -475,9 +473,9 @@ public:
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(contains_error(error));
+            BEAST_EXPECT(!ret);
             BEAST_EXPECT(
                 error[jss::error_message] == "Invalid field 'key_type'.");
-            BEAST_EXPECT(ret.first.size() == 0);
         }
 
         {
@@ -488,10 +486,10 @@ public:
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(contains_error(error));
+            BEAST_EXPECT(!ret);
             BEAST_EXPECT(
                 error[jss::error_message] ==
                 "Invalid field 'key_type', not string.");
-            BEAST_EXPECT(ret.first.size() == 0);
         }
 
         {
@@ -502,10 +500,10 @@ public:
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(contains_error(error));
+            BEAST_EXPECT(!ret);
             BEAST_EXPECT(
                 error[jss::error_message] ==
                 "Invalid field 'key_type', not string.");
-            BEAST_EXPECT(ret.first.size() == 0);
         }
 
         // Specify non-string passphrase
@@ -517,10 +515,10 @@ public:
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(contains_error(error));
+            BEAST_EXPECT(!ret);
             BEAST_EXPECT(
                 error[jss::error_message] ==
                 "Invalid field 'passphrase', not string.");
-            BEAST_EXPECT(ret.first.size() == 0);
         }
 
         {  // not a passphrase: object
@@ -531,10 +529,10 @@ public:
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(contains_error(error));
+            BEAST_EXPECT(!ret);
             BEAST_EXPECT(
                 error[jss::error_message] ==
                 "Invalid field 'passphrase', not string.");
-            BEAST_EXPECT(ret.first.size() == 0);
         }
 
         {  // not a passphrase: array
@@ -545,10 +543,10 @@ public:
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(contains_error(error));
+            BEAST_EXPECT(!ret);
             BEAST_EXPECT(
                 error[jss::error_message] ==
                 "Invalid field 'passphrase', not string.");
-            BEAST_EXPECT(ret.first.size() == 0);
         }
 
         {  // not a passphrase: empty string
@@ -559,8 +557,8 @@ public:
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(contains_error(error));
+            BEAST_EXPECT(!ret);
             BEAST_EXPECT(error[jss::error_message] == "Disallowed seed.");
-            BEAST_EXPECT(ret.first.size() == 0);
         }
 
         // Specify non-string or invalid seed
@@ -572,10 +570,10 @@ public:
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(contains_error(error));
+            BEAST_EXPECT(!ret);
             BEAST_EXPECT(
                 error[jss::error_message] ==
                 "Invalid field 'seed', not string.");
-            BEAST_EXPECT(ret.first.size() == 0);
         }
 
         {  // not a string: object
@@ -586,10 +584,10 @@ public:
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(contains_error(error));
+            BEAST_EXPECT(!ret);
             BEAST_EXPECT(
                 error[jss::error_message] ==
                 "Invalid field 'seed', not string.");
-            BEAST_EXPECT(ret.first.size() == 0);
         }
 
         {  // not a string: array
@@ -600,10 +598,10 @@ public:
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(contains_error(error));
+            BEAST_EXPECT(!ret);
             BEAST_EXPECT(
                 error[jss::error_message] ==
                 "Invalid field 'seed', not string.");
-            BEAST_EXPECT(ret.first.size() == 0);
         }
 
         {  // not a seed: empty
@@ -614,8 +612,8 @@ public:
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(contains_error(error));
+            BEAST_EXPECT(!ret);
             BEAST_EXPECT(error[jss::error_message] == "Disallowed seed.");
-            BEAST_EXPECT(ret.first.size() == 0);
         }
 
         {  // not a seed: invalid characters
@@ -626,8 +624,8 @@ public:
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(contains_error(error));
+            BEAST_EXPECT(!ret);
             BEAST_EXPECT(error[jss::error_message] == "Disallowed seed.");
-            BEAST_EXPECT(ret.first.size() == 0);
         }
 
         {  // not a seed: random string
@@ -638,8 +636,8 @@ public:
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(contains_error(error));
+            BEAST_EXPECT(!ret);
             BEAST_EXPECT(error[jss::error_message] == "Disallowed seed.");
-            BEAST_EXPECT(ret.first.size() == 0);
         }
 
         // Specify non-string or invalid seed_hex
@@ -651,10 +649,10 @@ public:
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(contains_error(error));
+            BEAST_EXPECT(!ret);
             BEAST_EXPECT(
                 error[jss::error_message] ==
                 "Invalid field 'seed_hex', not string.");
-            BEAST_EXPECT(ret.first.size() == 0);
         }
 
         {  // not a string: object
@@ -665,10 +663,10 @@ public:
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(contains_error(error));
+            BEAST_EXPECT(!ret);
             BEAST_EXPECT(
                 error[jss::error_message] ==
                 "Invalid field 'seed_hex', not string.");
-            BEAST_EXPECT(ret.first.size() == 0);
         }
 
         {  // not a string: array
@@ -679,10 +677,10 @@ public:
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(contains_error(error));
+            BEAST_EXPECT(!ret);
             BEAST_EXPECT(
                 error[jss::error_message] ==
                 "Invalid field 'seed_hex', not string.");
-            BEAST_EXPECT(ret.first.size() == 0);
         }
 
         {  // empty
@@ -693,8 +691,8 @@ public:
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(contains_error(error));
+            BEAST_EXPECT(!ret);
             BEAST_EXPECT(error[jss::error_message] == "Disallowed seed.");
-            BEAST_EXPECT(ret.first.size() == 0);
         }
 
         {  // short
@@ -705,8 +703,8 @@ public:
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(contains_error(error));
+            BEAST_EXPECT(!ret);
             BEAST_EXPECT(error[jss::error_message] == "Disallowed seed.");
-            BEAST_EXPECT(ret.first.size() == 0);
         }
 
         {  // not hex
@@ -717,8 +715,8 @@ public:
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(contains_error(error));
+            BEAST_EXPECT(!ret);
             BEAST_EXPECT(error[jss::error_message] == "Disallowed seed.");
-            BEAST_EXPECT(ret.first.size() == 0);
         }
 
         {  // overlong
@@ -730,8 +728,8 @@ public:
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(contains_error(error));
+            BEAST_EXPECT(!ret);
             BEAST_EXPECT(error[jss::error_message] == "Disallowed seed.");
-            BEAST_EXPECT(ret.first.size() == 0);
         }
     }
 
@@ -750,8 +748,8 @@ public:
                 auto ret = keypairForSignature(params, error);
 
                 BEAST_EXPECT(!contains_error(error));
-                BEAST_EXPECT(ret.first.size() != 0);
-                BEAST_EXPECT(toBase58(calcAccountID(ret.first)) == addr);
+                BEAST_EXPECT(ret->first.size() != 0);
+                BEAST_EXPECT(toBase58(calcAccountID(ret->first)) == addr);
             }
 
             {
@@ -779,8 +777,8 @@ public:
                 auto ret = keypairForSignature(params, error);
 
                 BEAST_EXPECT(!contains_error(error));
-                BEAST_EXPECT(ret.first.size() != 0);
-                BEAST_EXPECT(toBase58(calcAccountID(ret.first)) == addr);
+                BEAST_EXPECT(ret->first.size() != 0);
+                BEAST_EXPECT(toBase58(calcAccountID(ret->first)) == addr);
             }
 
             {

@@ -911,7 +911,7 @@ NetworkOPsImp::getHostId(bool forAdmin)
     static std::string const shroudedHostId = [this]() {
         auto const& id = app_.nodeIdentity();
 
-        return RFC1751::getWordFromBlob(id.first.data(), id.first.size());
+        return RFC1751::getWordFromBlob(id->first.data(), id->first.size());
     }();
 
     return shroudedHostId;
@@ -1069,7 +1069,7 @@ NetworkOPsImp::processClusterTimer()
     using namespace std::chrono_literals;
 
     bool const update = app_.cluster().update(
-        app_.nodeIdentity().first,
+        app_.nodeIdentity()->first,
         "",
         (m_ledgerMaster.getValidatedLedgerAge() <= 4min)
             ? app_.getFeeTrack().getLocalFee()
@@ -2452,7 +2452,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
     }
 
     info[jss::pubkey_node] =
-        toBase58(TokenType::NodePublic, app_.nodeIdentity().first);
+        toBase58(TokenType::NodePublic, app_.nodeIdentity()->first);
 
     info[jss::complete_ledgers] = app_.getLedgerMaster().getCompleteLedgers();
 
@@ -4038,7 +4038,7 @@ NetworkOPsImp::subServer(
     jvResult[jss::load_factor] = feeTrack.getLoadFactor();
     jvResult[jss::hostid] = getHostId(admin);
     jvResult[jss::pubkey_node] =
-        toBase58(TokenType::NodePublic, app_.nodeIdentity().first);
+        toBase58(TokenType::NodePublic, app_.nodeIdentity()->first);
 
     std::lock_guard sl(mSubLock);
     return mStreamMaps[sServer]

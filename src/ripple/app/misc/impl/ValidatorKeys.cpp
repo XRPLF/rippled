@@ -84,7 +84,7 @@ ValidatorKeys::ValidatorKeys(Config const& config, beast::Journal j)
         else
         {
             secretKey = generateSecretKey(KeyType::secp256k1, *seed);
-            publicKey = derivePublicKey(KeyType::secp256k1, secretKey);
+            publicKey = derivePublicKey(KeyType::secp256k1, *secretKey);
             masterPublicKey = publicKey;
             nodeID = calcNodeID(publicKey);
             sequence = 0;
