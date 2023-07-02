@@ -10,7 +10,7 @@ The API version controls the API behavior you see. This includes what properties
 ## API Version 2
 This version is supported by `rippled` version 1.12.
 
-#### account_info response
+#### V2 account_info response
 
 `signer_lists` is returned in the root of the response, instead of being nested under `account_data` (as it was in API version 1). ([#3770](https://github.com/XRPLF/rippled/pull/3770))
 
@@ -19,6 +19,6 @@ This version is supported by `rippled` version 1.11.
 
 ### Idiosyncrasies
 
-#### account_info response
+#### V1 account_info response
 
 In [the response to the `account_info` command](https://xrpl.org/account_info.html#response-format), there is `account_data` - which is supposed to be an `AccountRoot` object - and `signer_lists` is in this object. However, the docs say that `signer_lists` should be at the root level of the reponse - and this makes more sense, since signer lists are not part of the AccountRoot object. (First reported in [xrpl-dev-portal#938](https://github.com/XRPLF/xrpl-dev-portal/issues/938).) Thanks to [rippled#3770](https://github.com/XRPLF/rippled/pull/3770), this field will be moved in `api_version: 2`.
