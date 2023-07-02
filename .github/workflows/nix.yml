@@ -1,5 +1,8 @@
 name: nix
 on: [push, pull_request]
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 # This workflow has two job matrixes.
 # They can be considered phases because the second matrix ("test")
@@ -57,7 +60,7 @@ jobs:
           echo ${PATH} | tr ':' '\n'
           conan --version
           cmake --version
-          env
+          env | sort
       - name: configure Conan
         env:
           CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
@@ -139,7 +142,7 @@ jobs:
           echo ${PATH} | tr ':' '\n'
           conan --version
           cmake --version
-          env
+          env | sort
           ls ~/.conan
       - name: checkout
         uses: actions/checkout@v3
