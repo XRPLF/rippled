@@ -7,10 +7,10 @@ For info about how API versioning works, view the [XLS-22d spec](https://github.
 
 The API version controls the API behavior you see. This includes what properties you see in responses, what parameters you're permitted to send in requests, and so on. You specify the API version in each of your requests. When a breaking change is introduced to the `rippled` API, a new version is released. To avoid breaking your code, you should set (or increase) your version when you're ready to upgrade.
 
-For a log of breaking changes, see the **API Version [number]** headings. Breaking changes are associated with a particular API Version number. For non-breaking changes, scroll to the **XRP Ledger version x.y.z** headings. Non-breaking changes are associated with a particular XRP Ledger (`rippled`) release.
+For a log of breaking changes, see the **API Version [number]** headings. Breaking changes are associated with a particular API Version number. For non-breaking changes, scroll to the **XRP Ledger version [x.y.z]** headings. Non-breaking changes are associated with a particular XRP Ledger (`rippled`) release.
 
 ## API Version 2
-This version is supported by `rippled` version 1.12.
+This version will be supported by `rippled` version 1.12.
 
 #### V2 account_info response
 
