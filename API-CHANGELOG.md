@@ -1,5 +1,4 @@
 # API Changelog
-Keep track of every change to the API.
 
 This changelog is intended to list all updates to the API.
 
@@ -25,6 +24,10 @@ This version is supported by `rippled` version 1.11.
 
 In [the response to the `account_info` command](https://xrpl.org/account_info.html#response-format), there is `account_data` - which is supposed to be an `AccountRoot` object - and `signer_lists` is in this object. However, the docs say that `signer_lists` should be at the root level of the reponse - and this makes more sense, since signer lists are not part of the AccountRoot object. (First reported in [xrpl-dev-portal#938](https://github.com/XRPLF/xrpl-dev-portal/issues/938).) Thanks to [rippled#3770](https://github.com/XRPLF/rippled/pull/3770), this field will be moved in `api_version: 2`.
 
+#### server_info - network_id
+
+The `network_id` field was added in the `server_info` response in version 1.5.0 (2019), but it was not returned in [reporting mode](https://xrpl.org/rippled-server-modes.html#reporting-mode).
+
 ## XRP Ledger version 1.11.0
 
 ### Breaking changes in 1.11
@@ -37,7 +40,7 @@ In [the response to the `account_info` command](https://xrpl.org/account_info.ht
 
 ### Additions and bug fixes in 1.11
 
-- Added `nftoken_id`, `nftoken_ids` and `offer_id` meta fields into NFT `tx` responses. ([#4447](https://github.com/XRPLF/rippled/pull/4447))
+- Added `nftoken_id`, `nftoken_ids` and `offer_id` meta fields into NFT `tx` and `account_tx` responses. ([#4447](https://github.com/XRPLF/rippled/pull/4447))
 - Added an `account_flags` object to the `account_info` method response. ([#4459](https://github.com/XRPLF/rippled/pull/4459))
 - Added `NFTokenPages` to the `account_objects` RPC. ([#4352](https://github.com/XRPLF/rippled/pull/4352)https://github.com/XRPLF/rippled/pull/4352)
 - Fixed: `marker` returned from the `account_lines` command would not work on subsequent commands. ([#4361](https://github.com/XRPLF/rippled/pull/4361))
