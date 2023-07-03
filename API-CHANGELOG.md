@@ -37,6 +37,7 @@ The `network_id` field was added in the `server_info` response in version 1.5.0 
 - For the `ledger_data` method, when all entries are filtered out, the API now returns an empty list (an empty array, `[]`). (Previously, it would return `null`.) While this is technically a breaking change, the new behavior is consistent with the documentation, so this is considered only a bug fix. ([#4398](https://github.com/XRPLF/rippled/pull/4398))
 - If and when the `fixNFTokenRemint` amendment activates, there will be a new AccountRoot field, `FirstNFTSequence`. This field is set to the current account sequence when the account issues their first NFT. If an account has not issued any NFTs, then the field is not set. ([#4406](https://github.com/XRPLF/rippled/pull/4406))
   - There is a new account deletion restriction: an account can only be deleted if `FirstNFTSequence` + `MintedNFTokens` + `256` is less than the current ledger sequence.
+  - This is potentially a breaking change if clients have logic for determining whether an account can be deleted.
 
 ### Additions and bug fixes in 1.11
 
