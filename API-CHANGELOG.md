@@ -40,7 +40,7 @@ The `network_id` field was added in the `server_info` response in version 1.5.0 
 
 ### Additions and bug fixes in 1.11
 
-- Added `nftoken_id`, `nftoken_ids` and `offer_id` meta fields into NFT `tx` and `account_tx` responses. ([#4447](https://github.com/XRPLF/rippled/pull/4447))
-- Added an `account_flags` object to the `account_info` method response. ([#4459](https://github.com/XRPLF/rippled/pull/4459))
-- Added `NFTokenPages` to the `account_objects` RPC. ([#4352](https://github.com/XRPLF/rippled/pull/4352)https://github.com/XRPLF/rippled/pull/4352)
-- Fixed: `marker` returned from the `account_lines` command would not work on subsequent commands. ([#4361](https://github.com/XRPLF/rippled/pull/4361))
+- Added `nftoken_id`, `nftoken_ids` and `offer_id` meta fields into NFT `tx` and `account_tx` responses. (https://github.com/XRPLF/rippled/pull/4447)
+- Added an `account_flags` object to the `account_info` method response. (https://github.com/XRPLF/rippled/pull/4459)
+- Added `NFTokenPages` to the `account_objects` RPC. (https://github.com/XRPLF/rippled/pull/4352)
+- Fixed: `marker` returned from the `account_lines` command would not work on subsequent commands. (https://github.com/XRPLF/rippled/pull/4361)
