@@ -903,7 +903,7 @@ keypairForSignature(
 
         if (!keyType)
         {
-            if (context.has_value() && context.value().get().apiVersion > 1)
+            if (context.has_value() && context.value().get().apiVersion > 1u)
             {
                 error = RPC::make_error(rpcBAD_KEY_TYPE);
             }
