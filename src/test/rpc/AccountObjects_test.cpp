@@ -261,9 +261,13 @@ public:
             Account const bob{"bob"};
             env.fund(XRP(1000), bob);
             params[jss::account] = bob.human();
-            params[jss::api_version] = 2;
+            params[jss::api_version] = testVersion;
             params[jss::limit] = 1;
             auto resp = env.rpc("json", "account_objects", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "invalidParams");
+
+            params[jss::limit] = 401;
+            resp = env.rpc("json", "account_objects", to_string(params));
             BEAST_EXPECT(resp[jss::result][jss::error] == "invalidParams");
         }
     }

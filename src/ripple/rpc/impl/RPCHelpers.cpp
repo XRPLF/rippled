@@ -761,7 +761,8 @@ readLimitField(
             return RPC::expected_field_error(jss::limit, "unsigned integer");
 
         limit = jvLimit.asUInt();
-        if ((limit < 10 || limit > 400) && context.apiVersion > 1u)
+        if ((limit < range.rmin || limit > range.rmax) &&
+            context.apiVersion > 1u)
         {
             return rpcError(rpcINVALID_PARAMS);
         }
