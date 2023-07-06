@@ -105,13 +105,13 @@ RCLConsensus::Adaptor::Adaptor(
         JLOG(j_.info()) << "Validator identity: "
                         << toBase58(
                                TokenType::NodePublic,
-                               validatorKeys_.masterPublicKey);
+                               *validatorKeys_.masterPublicKey);
 
         if (validatorKeys_.masterPublicKey != validatorKeys_.publicKey)
         {
             JLOG(j_.debug())
                 << "Validator ephemeral signing key: "
-                << toBase58(TokenType::NodePublic, validatorKeys_.publicKey)
+                << toBase58(TokenType::NodePublic, *validatorKeys_.publicKey)
                 << " (seq: " << std::to_string(validatorKeys_.sequence) << ")";
         }
     }
@@ -211,10 +211,10 @@ RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
     prop.set_proposeseq(proposal.proposeSeq());
     prop.set_closetime(proposal.closeTime().time_since_epoch().count());
     prop.set_nodepubkey(
-        validatorKeys_.publicKey.data(), validatorKeys_.publicKey.size());
+        validatorKeys_.publicKey->data(), validatorKeys_.publicKey->size());
 
     auto sig = signDigest(
-        validatorKeys_.publicKey,
+        *validatorKeys_.publicKey,
         *validatorKeys_.secretKey,
         proposal.signingHash());
 
@@ -225,7 +225,7 @@ RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
         proposal.prevLedger(),
         proposal.proposeSeq(),
         proposal.closeTime(),
-        validatorKeys_.publicKey,
+        *validatorKeys_.publicKey,
         sig);
 
     app_.getHashRouter().addSuppression(suppression);
@@ -801,7 +801,7 @@ RCLConsensus::Adaptor::validate(
 
     auto v = std::make_shared<STValidation>(
         lastValidationTime_,
-        validatorKeys_.publicKey,
+        *validatorKeys_.publicKey,
         *validatorKeys_.secretKey,
         validatorKeys_.nodeID,
         [&](STValidation& v) {
@@ -960,7 +960,8 @@ RCLConsensus::Adaptor::preStartRound(
 {
     // We have a key, we do not want out of sync validations after a restart
     // and are not amendment blocked.
-    validating_ = validatorKeys_.publicKey.size() != 0 &&
+    validating_ = validatorKeys_.publicKey && validatorKeys_.publicKey->size()
+            != 0 &&
         prevLgr.seq() >= app_.getMaxDisallowedLedger() &&
         !app_.getOPs().isBlocked();
 
@@ -1033,7 +1034,7 @@ RCLConsensus::Adaptor::laggards(
 bool
 RCLConsensus::Adaptor::validator() const
 {
-    return !validatorKeys_.publicKey.empty();
+    return validatorKeys_.publicKey && !validatorKeys_.publicKey->empty();
 }
 
 void

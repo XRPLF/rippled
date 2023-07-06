@@ -22,8 +22,6 @@
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/base64.h>
-#include <ripple/basics/contract.h>
-#include <ripple/beast/rfc2616.h>
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/protocol/PublicKey.h>
@@ -32,7 +30,6 @@
 #include <boost/algorithm/string/trim.hpp>
 
 #include <numeric>
-#include <shared_mutex>
 #include <stdexcept>
 
 namespace ripple {
@@ -96,25 +93,21 @@ deserializeManifest(Slice s, beast::Journal journal)
         if (!publicKeyType(makeSlice(pk)))
             return std::nullopt;
 
-        Manifest m;
-        m.serialized.assign(reinterpret_cast<char const*>(s.data()), s.size());
-        m.masterKey = PublicKey(makeSlice(pk));
-        m.sequence = st.getFieldU32(sfSequence);
-
-        if (st.isFieldPresent(sfDomain))
-        {
-            auto const d = st.getFieldVL(sfDomain);
-
-            m.domain.assign(reinterpret_cast<char const*>(d.data()), d.size());
-
-            if (!isProperlyFormedTomlDomain(m.domain))
-                return std::nullopt;
-        }
-
         bool const hasEphemeralKey = st.isFieldPresent(sfSigningPubKey);
         bool const hasEphemeralSig = st.isFieldPresent(sfSignature);
 
-        if (m.revoked())
+        PublicKey masterKey = PublicKey(makeSlice(pk));
+        std::uint32_t sequence = st.getFieldU32(sfSequence);
+        std::optional<PublicKey> signingKey;  // an optional to hold the
+                                              // signing key. this is relevant
+                                              // only if the manifest has not
+                                              // been revoked
+
+        // Maximum possible sequence number indicates that the manifest has
+        // been revoked. We cannot use Manifest::revoked() instead of this
+        // if-condition because we cannot
+        // construct a Manifest until the end of this function
+        if (sequence == std::numeric_limits<std::uint32_t>::max())
         {
             // Revocation manifests should not specify a new signing key
             // or a signing key signature.
@@ -139,10 +132,21 @@ deserializeManifest(Slice s, beast::Journal journal)
             if (!publicKeyType(makeSlice(spk)))
                 return std::nullopt;
 
-            m.signingKey = PublicKey(makeSlice(spk));
+            signingKey = PublicKey(makeSlice(spk));
 
             // The signing and master keys can't be the same
-            if (m.signingKey == m.masterKey)
+            if (*signingKey == masterKey)
+                return std::nullopt;
+        }
+
+        Manifest m(s, masterKey, *signingKey, sequence);
+        if (st.isFieldPresent(sfDomain))
+        {
+            auto const d = st.getFieldVL(sfDomain);
+
+            m.domain.assign(reinterpret_cast<char const*>(d.data()), d.size());
+
+            if (!isProperlyFormedTomlDomain(m.domain))
                 return std::nullopt;
         }
 
@@ -479,7 +483,7 @@ ManifestCache::applyManifest(Manifest m)
             logMftAct(stream, "AcceptedNew", m.masterKey, m.sequence);
 
         if (!revoked)
-            signingToMasterKeys_[m.signingKey] = m.masterKey;
+            signingToMasterKeys_.insert({m.signingKey, m.masterKey});
 
         auto masterKey = m.masterKey;
         map_.emplace(std::move(masterKey), std::move(m));
@@ -499,7 +503,7 @@ ManifestCache::applyManifest(Manifest m)
     signingToMasterKeys_.erase(iter->second.signingKey);
 
     if (!revoked)
-        signingToMasterKeys_[m.signingKey] = m.masterKey;
+        signingToMasterKeys_.insert({m.signingKey, m.masterKey});
 
     iter->second = std::move(m);
 

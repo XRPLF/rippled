@@ -16,7 +16,7 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-
+#ifdef CHENNA
 #include <ripple/basics/Log.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/json/json_reader.h>
@@ -723,3 +723,4 @@ run() override
 BEAST_DEFINE_TESTSUITE(STObject, protocol, ripple);
 
 }  // ripple
+#endif

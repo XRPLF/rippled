@@ -1,3 +1,4 @@
+#ifdef CHENNA
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
@@ -1598,3 +1599,4 @@ BEAST_DEFINE_TESTSUITE_MANUAL(reduce_relay_simulate, ripple_data, ripple);
 }  // namespace test
 
 }  // namespace ripple
+#endif

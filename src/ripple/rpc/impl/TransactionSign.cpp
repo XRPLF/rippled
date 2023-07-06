@@ -370,8 +370,7 @@ transactionPreProcessImpl(
 
     Json::Value jvResult;
     std::optional<std::pair<PublicKey, SecretKey>> keyPair =
-        keypairForSignature(params,
-                                                               jvResult);
+        keypairForSignature(params, jvResult);
     if (!keyPair || contains_error(jvResult))
         return jvResult;
 
@@ -982,7 +981,9 @@ transactionSignFor(
 
     // Add and amend fields based on the transaction type.
     Buffer multiSignature;
-    PublicKey multiSignPubKey;
+    PublicKey multiSignPubKey = derivePublicKey(
+        KeyType::secp256k1,
+        generateSecretKey(KeyType::secp256k1, generateSeed("dummyPassPhrase")));
     SigningForParams signForParams(
         *signerAccountID, multiSignPubKey, multiSignature);
 

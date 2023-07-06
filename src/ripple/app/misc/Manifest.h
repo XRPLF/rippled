@@ -94,7 +94,17 @@ struct Manifest
     /// The domain, if one was specified in the manifest; empty otherwise.
     std::string domain;
 
-    Manifest() = default;
+    Manifest() = delete;
+    Manifest(
+        Slice s,
+        PublicKey masterKey_,
+        PublicKey signingKey_,
+        std::uint32_t seq_)
+        : masterKey(masterKey_), signingKey(signingKey_), sequence(seq_)
+    {
+        serialized.assign(reinterpret_cast<char const*>(s.data()), s.size());
+    }
+
     Manifest(Manifest const& other) = delete;
     Manifest&
     operator=(Manifest const& other) = delete;

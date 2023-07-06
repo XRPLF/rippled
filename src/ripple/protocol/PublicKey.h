@@ -65,7 +65,7 @@ protected:
 public:
     using const_iterator = std::uint8_t const*;
 
-    PublicKey() = default;
+    PublicKey() = delete;
     PublicKey(PublicKey const& other);
     PublicKey&
     operator=(PublicKey const& other);

@@ -593,7 +593,7 @@ public:
     PublicKey const&
     getValidationPublicKey() const override
     {
-        return validatorKeys_.publicKey;
+        return *validatorKeys_.publicKey;
     }
 
     NetworkOPs&
@@ -1196,7 +1196,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         return false;
     }
 
-    if (validatorKeys_.publicKey.size())
+    if (validatorKeys_.publicKey->size())
         setMaxDisallowedLedger();
 
     // Configure the amendments the server supports
@@ -1313,7 +1313,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
 
             // Setup trusted validators
             if (!validators_->load(
-                    validatorKeys_.publicKey,
+                    *validatorKeys_.publicKey,
                     config().section(SECTION_VALIDATORS).values(),
                     config().section(SECTION_VALIDATOR_LIST_KEYS).values()))
             {

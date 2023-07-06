@@ -16,7 +16,6 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-
 #include <ripple/beast/unit_test.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/SecretKey.h>
@@ -363,7 +362,8 @@ public:
         }
 
         // Try some random secret keys
-        std::array<PublicKey, 32> keys;
+        std::vector<PublicKey> keys;
+        keys.reserve(32);
 
         for (std::size_t i = 0; i != keys.size(); ++i)
             keys[i] = derivePublicKey(keyType, randomSecretKey());
@@ -447,7 +447,11 @@ public:
         BEAST_EXPECT(pk1 == pk2);
         BEAST_EXPECT(pk2 == pk1);
 
-        PublicKey pk3;
+        unsigned char buf[33];
+        memset(buf, 0, 33);
+        buf[0] = 0xED;
+
+        PublicKey pk3(Slice{buf, sizeof(buf)});
         pk3 = pk2;
         BEAST_EXPECT(pk3 == pk2);
         BEAST_EXPECT(pk1 == pk3);

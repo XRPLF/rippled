@@ -195,8 +195,7 @@ ValidatorList::load(
     localPubKey_ = validatorManifests_.getMasterKey(localSigningKey);
 
     // Treat local validator key as though it was listed in the config
-    if (localPubKey_.size())
-        keyListings_.insert({localPubKey_, 1});
+    keyListings_.insert({*localPubKey_, 1});
 
     JLOG(j_.debug()) << "Loading configured validator keys";
 
@@ -1412,7 +1411,7 @@ PublicKey
 ValidatorList::localPublicKey() const
 {
     std::shared_lock read_lock{mutex_};
-    return localPubKey_;
+    return *localPubKey_;
 }
 
 bool
