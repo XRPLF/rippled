@@ -50,12 +50,17 @@ private:
             FeeLevel32 f{10};
             FeeLevel32 baseFee{100};
 
-            auto drops = mulDiv(baseFee, x, f).second;
+            auto drops = mulDiv(baseFee, x, f);
 
+            BEAST_EXPECT(drops);
             BEAST_EXPECT(drops.value() == 1000);
-            BEAST_EXPECT(
-                (std::is_same_v<decltype(drops)::unit_type, feeunit::dropTag>));
-            BEAST_EXPECT((std::is_same_v<decltype(drops), XRPAmount>));
+            BEAST_EXPECT((std::is_same_v<
+                          std::remove_reference_t<decltype(*drops)>::unit_type,
+                          feeunit::dropTag>));
+
+            BEAST_EXPECT((std::is_same_v<
+                          std::remove_reference_t<decltype(*drops)>,
+                          XRPAmount>));
         }
         {
             XRPAmount x{100};
@@ -70,12 +75,16 @@ private:
             FeeLevel64 f{10};
             FeeLevel64 baseFee{100};
 
-            auto drops = mulDiv(baseFee, x, f).second;
+            auto drops = mulDiv(baseFee, x, f);
 
+            BEAST_EXPECT(drops);
             BEAST_EXPECT(drops.value() == 1000);
-            BEAST_EXPECT(
-                (std::is_same_v<decltype(drops)::unit_type, feeunit::dropTag>));
-            BEAST_EXPECT((std::is_same_v<decltype(drops), XRPAmount>));
+            BEAST_EXPECT((std::is_same_v<
+                          std::remove_reference_t<decltype(*drops)>::unit_type,
+                          feeunit::dropTag>));
+            BEAST_EXPECT((std::is_same_v<
+                          std::remove_reference_t<decltype(*drops)>,
+                          XRPAmount>));
         }
         {
             FeeLevel64 x{1024};
@@ -91,12 +100,16 @@ private:
             XRPAmount basefee{10};
             FeeLevel64 referencefee{256};
 
-            auto drops = mulDiv(x, basefee, referencefee).second;
+            auto drops = mulDiv(x, basefee, referencefee);
 
+            BEAST_EXPECT(drops);
             BEAST_EXPECT(drops.value() == 40);
-            BEAST_EXPECT(
-                (std::is_same_v<decltype(drops)::unit_type, feeunit::dropTag>));
-            BEAST_EXPECT((std::is_same_v<decltype(drops), XRPAmount>));
+            BEAST_EXPECT((std::is_same_v<
+                          std::remove_reference_t<decltype(*drops)>::unit_type,
+                          feeunit::dropTag>));
+            BEAST_EXPECT((std::is_same_v<
+                          std::remove_reference_t<decltype(*drops)>,
+                          XRPAmount>));
         }
     }
 
