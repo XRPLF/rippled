@@ -21,9 +21,9 @@
 #include <ripple/json/json_value.h>
 #include <ripple/json/to_string.h>
 #include <ripple/protocol/jss.h>
-#include <test/jtx.h>
-
+#include <ripple/rpc/impl/RPCHelpers.h>
 #include <boost/utility/string_ref.hpp>
+#include <test/jtx.h>
 
 #include <algorithm>
 
@@ -112,135 +112,159 @@ class AccountObjects_test : public beast::unit_test::suite
 {
 public:
     void
-    testErrors()
+    testErrors(unsigned int testVersion)
     {
-        testcase("error cases");
+        testcase("error cases Api Version " + std::to_string(testVersion));
 
         using namespace jtx;
         Env env(*this);
 
-        // test error on no account
+        if (testVersion < 2)
         {
-            auto resp = env.rpc("json", "account_objects");
-            BEAST_EXPECT(resp[jss::error_message] == "Syntax error.");
-        }
-        // test error on  malformed account string.
-        {
-            Json::Value params;
-            params[jss::account] =
-                "n94JNrQYkDrpt62bbSR7nVEhdyAvcJXRAsjEkFYyqRkh9SUTYEqV";
-            auto resp = env.rpc("json", "account_objects", to_string(params));
-            BEAST_EXPECT(
-                resp[jss::result][jss::error_message] == "Account malformed.");
-        }
-        // test error on account that's not in the ledger.
-        {
-            Json::Value params;
-            params[jss::account] = Account{"bogie"}.human();
-            auto resp = env.rpc("json", "account_objects", to_string(params));
-            BEAST_EXPECT(
-                resp[jss::result][jss::error_message] == "Account not found.");
-        }
-        Account const bob{"bob"};
-        // test error on large ledger_index.
-        {
-            Json::Value params;
-            params[jss::account] = bob.human();
-            params[jss::ledger_index] = 10;
-            auto resp = env.rpc("json", "account_objects", to_string(params));
-            BEAST_EXPECT(
-                resp[jss::result][jss::error_message] == "ledgerNotFound");
-        }
+            // test error on no account
+            {
+                auto resp = env.rpc("json", "account_objects");
+                BEAST_EXPECT(resp[jss::error_message] == "Syntax error.");
+            }
+            // test error on  malformed account string.
+            {
+                Json::Value params;
+                params[jss::account] =
+                    "n94JNrQYkDrpt62bbSR7nVEhdyAvcJXRAsjEkFYyqRkh9SUTYEqV";
+                auto resp =
+                    env.rpc("json", "account_objects", to_string(params));
+                BEAST_EXPECT(
+                    resp[jss::result][jss::error_message] ==
+                    "Account malformed.");
+            }
+            // test error on account that's not in the ledger.
+            {
+                Json::Value params;
+                params[jss::account] = Account{"bogie"}.human();
+                auto resp =
+                    env.rpc("json", "account_objects", to_string(params));
+                BEAST_EXPECT(
+                    resp[jss::result][jss::error_message] ==
+                    "Account not found.");
+            }
+            Account const bob{"bob"};
+            // test error on large ledger_index.
+            {
+                Json::Value params;
+                params[jss::account] = bob.human();
+                params[jss::ledger_index] = 10;
+                auto resp =
+                    env.rpc("json", "account_objects", to_string(params));
+                BEAST_EXPECT(
+                    resp[jss::result][jss::error_message] == "ledgerNotFound");
+            }
 
-        env.fund(XRP(1000), bob);
-        // test error on type param not a string
-        {
-            Json::Value params;
-            params[jss::account] = bob.human();
-            params[jss::type] = 10;
-            auto resp = env.rpc("json", "account_objects", to_string(params));
-            BEAST_EXPECT(
-                resp[jss::result][jss::error_message] ==
-                "Invalid field 'type', not string.");
-        }
-        // test error on type param not a valid type
-        {
-            Json::Value params;
-            params[jss::account] = bob.human();
-            params[jss::type] = "expedited";
-            auto resp = env.rpc("json", "account_objects", to_string(params));
-            BEAST_EXPECT(
-                resp[jss::result][jss::error_message] ==
-                "Invalid field 'type'.");
-        }
-        // test error on limit -ve
-        {
-            Json::Value params;
-            params[jss::account] = bob.human();
-            params[jss::limit] = -1;
-            auto resp = env.rpc("json", "account_objects", to_string(params));
-            BEAST_EXPECT(
-                resp[jss::result][jss::error_message] ==
-                "Invalid field 'limit', not unsigned integer.");
-        }
-        // test errors on marker
-        {
-            Account const gw{"G"};
-            env.fund(XRP(1000), gw);
-            auto const USD = gw["USD"];
-            env.trust(USD(1000), bob);
-            env(pay(gw, bob, XRP(1)));
-            env(offer(bob, XRP(100), bob["USD"](1)), txflags(tfPassive));
+            env.fund(XRP(1000), bob);
+            // test error on type param not a string
+            {
+                Json::Value params;
+                params[jss::account] = bob.human();
+                params[jss::type] = 10;
+                auto resp =
+                    env.rpc("json", "account_objects", to_string(params));
+                BEAST_EXPECT(
+                    resp[jss::result][jss::error_message] ==
+                    "Invalid field 'type', not string.");
+            }
+            // test error on type param not a valid type
+            {
+                Json::Value params;
+                params[jss::account] = bob.human();
+                params[jss::type] = "expedited";
+                auto resp =
+                    env.rpc("json", "account_objects", to_string(params));
+                BEAST_EXPECT(
+                    resp[jss::result][jss::error_message] ==
+                    "Invalid field 'type'.");
+            }
+            // test error on limit -ve
+            {
+                Json::Value params;
+                params[jss::account] = bob.human();
+                params[jss::limit] = -1;
+                auto resp =
+                    env.rpc("json", "account_objects", to_string(params));
+                BEAST_EXPECT(
+                    resp[jss::result][jss::error_message] ==
+                    "Invalid field 'limit', not unsigned integer.");
+            }
+            // test errors on marker
+            {
+                Account const gw{"G"};
+                env.fund(XRP(1000), gw);
+                auto const USD = gw["USD"];
+                env.trust(USD(1000), bob);
+                env(pay(gw, bob, XRP(1)));
+                env(offer(bob, XRP(100), bob["USD"](1)), txflags(tfPassive));
 
+                Json::Value params;
+                params[jss::account] = bob.human();
+                params[jss::limit] = 1;
+                auto resp =
+                    env.rpc("json", "account_objects", to_string(params));
+
+                auto resume_marker = resp[jss::result][jss::marker];
+                std::string mark = to_string(resume_marker);
+                params[jss::marker] = 10;
+                resp = env.rpc("json", "account_objects", to_string(params));
+                BEAST_EXPECT(
+                    resp[jss::result][jss::error_message] ==
+                    "Invalid field 'marker', not string.");
+
+                params[jss::marker] = "This is a string with no comma";
+                resp = env.rpc("json", "account_objects", to_string(params));
+                BEAST_EXPECT(
+                    resp[jss::result][jss::error_message] ==
+                    "Invalid field 'marker'.");
+
+                params[jss::marker] = "This string has a comma, but is not hex";
+                resp = env.rpc("json", "account_objects", to_string(params));
+                BEAST_EXPECT(
+                    resp[jss::result][jss::error_message] ==
+                    "Invalid field 'marker'.");
+
+                params[jss::marker] = std::string(&mark[1U], 64);
+                resp = env.rpc("json", "account_objects", to_string(params));
+                BEAST_EXPECT(
+                    resp[jss::result][jss::error_message] ==
+                    "Invalid field 'marker'.");
+
+                params[jss::marker] = std::string(&mark[1U], 65);
+                resp = env.rpc("json", "account_objects", to_string(params));
+                BEAST_EXPECT(
+                    resp[jss::result][jss::error_message] ==
+                    "Invalid field 'marker'.");
+
+                params[jss::marker] = std::string(&mark[1U], 65) + "not hex";
+                resp = env.rpc("json", "account_objects", to_string(params));
+                BEAST_EXPECT(
+                    resp[jss::result][jss::error_message] ==
+                    "Invalid field 'marker'.");
+
+                // Should this be an error?
+                // A hex digit is absent from the end of marker.
+                // No account objects returned.
+                params[jss::marker] = std::string(&mark[1U], 128);
+                resp = env.rpc("json", "account_objects", to_string(params));
+                BEAST_EXPECT(
+                    resp[jss::result][jss::account_objects].size() == 0);
+            }
+        }
+        else
+        {
             Json::Value params;
+            Account const bob{"bob"};
+            env.fund(XRP(1000), bob);
             params[jss::account] = bob.human();
+            params[jss::api_version] = 2;
             params[jss::limit] = 1;
             auto resp = env.rpc("json", "account_objects", to_string(params));
-
-            auto resume_marker = resp[jss::result][jss::marker];
-            std::string mark = to_string(resume_marker);
-            params[jss::marker] = 10;
-            resp = env.rpc("json", "account_objects", to_string(params));
-            BEAST_EXPECT(
-                resp[jss::result][jss::error_message] ==
-                "Invalid field 'marker', not string.");
-
-            params[jss::marker] = "This is a string with no comma";
-            resp = env.rpc("json", "account_objects", to_string(params));
-            BEAST_EXPECT(
-                resp[jss::result][jss::error_message] ==
-                "Invalid field 'marker'.");
-
-            params[jss::marker] = "This string has a comma, but is not hex";
-            resp = env.rpc("json", "account_objects", to_string(params));
-            BEAST_EXPECT(
-                resp[jss::result][jss::error_message] ==
-                "Invalid field 'marker'.");
-
-            params[jss::marker] = std::string(&mark[1U], 64);
-            resp = env.rpc("json", "account_objects", to_string(params));
-            BEAST_EXPECT(
-                resp[jss::result][jss::error_message] ==
-                "Invalid field 'marker'.");
-
-            params[jss::marker] = std::string(&mark[1U], 65);
-            resp = env.rpc("json", "account_objects", to_string(params));
-            BEAST_EXPECT(
-                resp[jss::result][jss::error_message] ==
-                "Invalid field 'marker'.");
-
-            params[jss::marker] = std::string(&mark[1U], 65) + "not hex";
-            resp = env.rpc("json", "account_objects", to_string(params));
-            BEAST_EXPECT(
-                resp[jss::result][jss::error_message] ==
-                "Invalid field 'marker'.");
-
-            // Should this be an error?
-            // A hex digit is absent from the end of marker.
-            // No account objects returned.
-            params[jss::marker] = std::string(&mark[1U], 128);
-            resp = env.rpc("json", "account_objects", to_string(params));
-            BEAST_EXPECT(resp[jss::result][jss::account_objects].size() == 0);
+            BEAST_EXPECT(resp[jss::result][jss::error] == "invalidParams");
         }
     }
 
@@ -802,7 +826,13 @@ public:
     void
     run() override
     {
-        testErrors();
+        for (unsigned int testVersion = RPC::apiMinimumSupportedVersion;
+             testVersion <= RPC::apiBetaVersion;
+             ++testVersion)
+        {
+            testErrors(testVersion);
+        }
+
         testUnsteppedThenStepped();
         testUnsteppedThenSteppedWithNFTs();
         testObjectTypes();

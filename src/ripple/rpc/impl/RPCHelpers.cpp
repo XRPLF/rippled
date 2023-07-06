@@ -761,6 +761,10 @@ readLimitField(
             return RPC::expected_field_error(jss::limit, "unsigned integer");
 
         limit = jvLimit.asUInt();
+        if ((limit < 10 || limit > 400) && context.apiVersion > 1u)
+        {
+            return rpcError(rpcINVALID_PARAMS);
+        }
         if (!isUnlimited(context.role))
             limit = std::max(range.rmin, std::min(range.rmax, limit));
     }
