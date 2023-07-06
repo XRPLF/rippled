@@ -89,7 +89,7 @@ class Overlay;
 class PathRequests;
 class PendingSaves;
 class PublicKey;
-class ServerHandlerImp;
+class ServerHandler;
 class SecretKey;
 class STLedgerEntry;
 class TimeKeeper;
@@ -232,7 +232,7 @@ public:
     getOPs() = 0;
     virtual OrderBookDB&
     getOrderBookDB() = 0;
-    virtual ServerHandlerImp&
+    virtual ServerHandler&
     getServerHandler() = 0;
     virtual TransactionMaster&
     getMasterTransaction() = 0;

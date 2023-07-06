@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - develop
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   job:
@@ -18,7 +21,7 @@ jobs:
           echo ${PATH} | tr ':' '\n'
           cmake --version
           doxygen --version
-          env
+          env | sort
       - name: build
         run: |
           mkdir build
