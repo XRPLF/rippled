@@ -102,41 +102,41 @@ $(function() {
 <div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;        <span class="keyword">const</span> <span class="keyword">auto</span> max = <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/numeric_limits/max.html">std::numeric_limits&lt;std::uint64_t&gt;::max</a>();</div>
 <div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;        <span class="keyword">const</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> max32 = <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/numeric_limits/max.html">std::numeric_limits&lt;std::uint32_t&gt;::max</a>();</div>
 <div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160; </div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;        <span class="keyword">auto</span> result = <a class="code" href="namespaceripple.html#a2b0f34def9a9d52a662228e4562fb7d4">mulDiv</a>(85, 20, 5);</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;        BEAST_EXPECT(result.first &amp;&amp; result.second == 340);</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;        result = <a class="code" href="namespaceripple.html#a2b0f34def9a9d52a662228e4562fb7d4">mulDiv</a>(20, 85, 5);</div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;        BEAST_EXPECT(result.first &amp;&amp; result.second == 340);</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;        <span class="keyword">auto</span> result = <a class="code" href="namespaceripple.html#aadd701a1cb273bb797f6467ca8ee8fb1">mulDiv</a>(85, 20, 5);</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;        BEAST_EXPECT(result &amp;&amp; *result == 340);</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;        result = <a class="code" href="namespaceripple.html#aadd701a1cb273bb797f6467ca8ee8fb1">mulDiv</a>(20, 85, 5);</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;        BEAST_EXPECT(result &amp;&amp; *result == 340);</div>
 <div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160; </div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;        result = <a class="code" href="namespaceripple.html#a2b0f34def9a9d52a662228e4562fb7d4">mulDiv</a>(0, max - 1, max - 3);</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        BEAST_EXPECT(result.first &amp;&amp; result.second == 0);</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        result = <a class="code" href="namespaceripple.html#a2b0f34def9a9d52a662228e4562fb7d4">mulDiv</a>(max - 1, 0, max - 3);</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;        BEAST_EXPECT(result.first &amp;&amp; result.second == 0);</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;        result = <a class="code" href="namespaceripple.html#aadd701a1cb273bb797f6467ca8ee8fb1">mulDiv</a>(0, max - 1, max - 3);</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        BEAST_EXPECT(result &amp;&amp; *result == 0);</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        result = <a class="code" href="namespaceripple.html#aadd701a1cb273bb797f6467ca8ee8fb1">mulDiv</a>(max - 1, 0, max - 3);</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;        BEAST_EXPECT(result &amp;&amp; *result == 0);</div>
 <div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160; </div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;        result = <a class="code" href="namespaceripple.html#a2b0f34def9a9d52a662228e4562fb7d4">mulDiv</a>(max, 2, max / 2);</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;        BEAST_EXPECT(result.first &amp;&amp; result.second == 4);</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;        result = <a class="code" href="namespaceripple.html#a2b0f34def9a9d52a662228e4562fb7d4">mulDiv</a>(max, 1000, max / 1000);</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        BEAST_EXPECT(result.first &amp;&amp; result.second == 1000000);</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        result = <a class="code" href="namespaceripple.html#a2b0f34def9a9d52a662228e4562fb7d4">mulDiv</a>(max, 1000, max / 1001);</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;        BEAST_EXPECT(result.first &amp;&amp; result.second == 1001000);</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;        result = <a class="code" href="namespaceripple.html#a2b0f34def9a9d52a662228e4562fb7d4">mulDiv</a>(max32 + 1, max32 + 1, 5);</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;        BEAST_EXPECT(result.first &amp;&amp; result.second == 3689348814741910323);</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;        result = <a class="code" href="namespaceripple.html#aadd701a1cb273bb797f6467ca8ee8fb1">mulDiv</a>(max, 2, max / 2);</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;        BEAST_EXPECT(result &amp;&amp; *result == 4);</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;        result = <a class="code" href="namespaceripple.html#aadd701a1cb273bb797f6467ca8ee8fb1">mulDiv</a>(max, 1000, max / 1000);</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        BEAST_EXPECT(result &amp;&amp; *result == 1000000);</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        result = <a class="code" href="namespaceripple.html#aadd701a1cb273bb797f6467ca8ee8fb1">mulDiv</a>(max, 1000, max / 1001);</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;        BEAST_EXPECT(result &amp;&amp; *result == 1001000);</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;        result = <a class="code" href="namespaceripple.html#aadd701a1cb273bb797f6467ca8ee8fb1">mulDiv</a>(max32 + 1, max32 + 1, 5);</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;        BEAST_EXPECT(result &amp;&amp; *result == 3689348814741910323);</div>
 <div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160; </div>
 <div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;        <span class="comment">// Overflow</span></div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;        result = <a class="code" href="namespaceripple.html#a2b0f34def9a9d52a662228e4562fb7d4">mulDiv</a>(max - 1, max - 2, 5);</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;        BEAST_EXPECT(!result.first &amp;&amp; result.second == max);</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;        result = <a class="code" href="namespaceripple.html#aadd701a1cb273bb797f6467ca8ee8fb1">mulDiv</a>(max - 1, max - 2, 5);</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;        BEAST_EXPECT(!result);</div>
 <div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    }</div>
 <div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;};</div>
 <div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160; </div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;<a class="code" href="namespaceripple_1_1test.html#a36e90e9cdf2adf7993483b3190ee8e21">BEAST_DEFINE_TESTSUITE</a>(<a class="code" href="namespaceripple.html#a2b0f34def9a9d52a662228e4562fb7d4">mulDiv</a>, ripple_basics, <a class="code" href="namespaceripple.html">ripple</a>);</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;<a class="code" href="namespaceripple_1_1test.html#a36e90e9cdf2adf7993483b3190ee8e21">BEAST_DEFINE_TESTSUITE</a>(<a class="code" href="namespaceripple.html#aadd701a1cb273bb797f6467ca8ee8fb1">mulDiv</a>, ripple_basics, <a class="code" href="namespaceripple.html">ripple</a>);</div>
 <div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160; </div>
 <div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;}  <span class="comment">// namespace test</span></div>
 <div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
+<div class="ttc" id="anamespaceripple_html_aadd701a1cb273bb797f6467ca8ee8fb1"><div class="ttname"><a href="namespaceripple.html#aadd701a1cb273bb797f6467ca8ee8fb1">ripple::mulDiv</a></div><div class="ttdeci">std::optional&lt; Dest &gt; mulDiv(Source1 value, Dest mul, Source2 div)</div><div class="ttdef"><b>Definition:</b> <a href="FeeUnits_8h_source.html#l00468">FeeUnits.h:468</a></div></div>
 <div class="ttc" id="astructripple_1_1test_1_1mulDiv__test_html"><div class="ttname"><a href="structripple_1_1test_1_1mulDiv__test.html">ripple::test::mulDiv_test</a></div><div class="ttdef"><b>Definition:</b> <a href="mulDiv__test_8cpp_source.html#l00026">mulDiv_test.cpp:26</a></div></div>
 <div class="ttc" id="ainteger_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a></div></div>
 <div class="ttc" id="astructripple_1_1test_1_1mulDiv__test_html_a58e67a9e1b56b7d4ff42eb0b4f89709f"><div class="ttname"><a href="structripple_1_1test_1_1mulDiv__test.html#a58e67a9e1b56b7d4ff42eb0b4f89709f">ripple::test::mulDiv_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="mulDiv__test_8cpp_source.html#l00029">mulDiv_test.cpp:29</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a2b0f34def9a9d52a662228e4562fb7d4"><div class="ttname"><a href="namespaceripple.html#a2b0f34def9a9d52a662228e4562fb7d4">ripple::mulDiv</a></div><div class="ttdeci">std::pair&lt; bool, Dest &gt; mulDiv(Source1 value, Dest mul, Source2 div)</div><div class="ttdef"><b>Definition:</b> <a href="FeeUnits_8h_source.html#l00468">FeeUnits.h:468</a></div></div>
 <div class="ttc" id="amax_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/numeric_limits/max.html">std::numeric_limits::max</a></div><div class="ttdeci">T max(T... args)</div></div>
 <div class="ttc" id="anamespaceripple_1_1test_html_a36e90e9cdf2adf7993483b3190ee8e21"><div class="ttname"><a href="namespaceripple_1_1test.html#a36e90e9cdf2adf7993483b3190ee8e21">ripple::test::BEAST_DEFINE_TESTSUITE</a></div><div class="ttdeci">BEAST_DEFINE_TESTSUITE(DeliverMin, app, ripple)</div></div>
 <!-- start footer part -->
