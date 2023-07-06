@@ -218,6 +218,37 @@ SetAccount::preclaim(PreclaimContext const& ctx)
         }
     }
 
+    //
+    // Clawback
+    //
+    if (ctx.view.rules().enabled(featureClawback))
+    {
+        if (uSetFlag == asfAllowClawback)
+        {
+            if (uFlagsIn & lsfNoFreeze)
+            {
+                JLOG(ctx.j.trace()) << "Can't set Clawback if NoFreeze is set";
+                return tecNO_PERMISSION;
+            }
+
+            if (!dirIsEmpty(ctx.view, keylet::ownerDir(id)))
+            {
+                JLOG(ctx.j.trace()) << "Owner directory not empty.";
+                return tecOWNERS;
+            }
+        }
+        else if (uSetFlag == asfNoFreeze)
+        {
+            // Cannot set NoFreeze if clawback is enabled
+            if (uFlagsIn & lsfAllowClawback)
+            {
+                JLOG(ctx.j.trace())
+                    << "Can't set NoFreeze if clawback is enabled";
+                return tecNO_PERMISSION;
+            }
+        }
+    }
+
     return tesSUCCESS;
 }
 
@@ -560,6 +591,14 @@ SetAccount::doApply()
             uFlagsOut |= lsfDisallowIncomingTrustline;
         else if (uClearFlag == asfDisallowIncomingTrustline)
             uFlagsOut &= ~lsfDisallowIncomingTrustline;
+    }
+
+    // Set flag for clawback
+    if (ctx_.view().rules().enabled(featureClawback) &&
+        uSetFlag == asfAllowClawback)
+    {
+        JLOG(j_.trace()) << "set allow clawback";
+        uFlagsOut |= lsfAllowClawback;
     }
 
     if (uFlagsIn != uFlagsOut)

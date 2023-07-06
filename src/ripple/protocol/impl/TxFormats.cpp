@@ -328,6 +328,14 @@ TxFormats::TxFormats()
             {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
+
+    add(jss::Clawback,
+        ttCLAWBACK,
+        {
+            {sfAmount, soeREQUIRED},
+            {sfTicketSequence, soeOPTIONAL},
+        },
+        commonFields);
 }
 
 TxFormats const&

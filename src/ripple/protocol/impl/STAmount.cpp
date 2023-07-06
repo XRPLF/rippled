@@ -1266,8 +1266,28 @@ multiply(STAmount const& v1, STAmount const& v2, Issue const& issue)
         v1.negative() != v2.negative());
 }
 
+// This is the legacy version of canonicalizeRound.  It's been in use
+// for years, so it is deeply embedded in the behavior of cross-currency
+// transactions.
+//
+// However in 2022 it was noticed that the rounding characteristics were
+// surprising.  When the code converts from IOU-like to XRP-like there may
+// be a fraction of the IOU-like representation that is too small to be
+// represented in drops.  `canonicalizeRound()` currently does some unusual
+// rounding.
+//
+//  1. If the fractional part is greater than or equal to 0.1, then the
+//     number of drops is rounded up.
+//
+//  2. However, if the fractional part is less than 0.1 (for example,
+//     0.099999), then the number of drops is rounded down.
+//
+// The XRP Ledger has this rounding behavior baked in.  But there are
+// situations where this rounding behavior led to undesirable outcomes.
+// So an alternative rounding approach was introduced.  You'll see that
+// alternative below.
 static void
-canonicalizeRound(bool native, std::uint64_t& value, int& offset)
+canonicalizeRound(bool native, std::uint64_t& value, int& offset, bool)
 {
     if (native)
     {
@@ -1301,8 +1321,100 @@ canonicalizeRound(bool native, std::uint64_t& value, int& offset)
     }
 }
 
-STAmount
-mulRound(
+// The original canonicalizeRound did not allow the rounding direction to
+// be specified.  It also ignored some of the bits that could contribute to
+// rounding decisions.  canonicalizeRoundStrict() tracks all of the bits in
+// the value being rounded.
+static void
+canonicalizeRoundStrict(
+    bool native,
+    std::uint64_t& value,
+    int& offset,
+    bool roundUp)
+{
+    if (native)
+    {
+        if (offset < 0)
+        {
+            bool hadRemainder = false;
+
+            while (offset < -1)
+            {
+                // It would be better to use std::lldiv than to separately
+                // compute the remainder.  But std::lldiv does not support
+                // unsigned arguments.
+                std::uint64_t const newValue = value / 10;
+                hadRemainder |= (value != (newValue * 10));
+                value = newValue;
+                ++offset;
+            }
+            value +=
+                (hadRemainder && roundUp) ? 10 : 9;  // Add before last divide
+            value /= 10;
+            ++offset;
+        }
+    }
+    else if (value > STAmount::cMaxValue)
+    {
+        while (value > (10 * STAmount::cMaxValue))
+        {
+            value /= 10;
+            ++offset;
+        }
+        value += 9;  // add before last divide
+        value /= 10;
+        ++offset;
+    }
+}
+
+namespace {
+
+// saveNumberRoundMode doesn't do quite enough for us.  What we want is a
+// Number::RoundModeGuard that sets the new mode and restores the old mode
+// when it leaves scope.  Since Number doesn't have that facility, we'll
+// build it here.
+class NumberRoundModeGuard
+{
+    saveNumberRoundMode saved_;
+
+public:
+    explicit NumberRoundModeGuard(Number::rounding_mode mode) noexcept
+        : saved_{Number::setround(mode)}
+    {
+    }
+
+    NumberRoundModeGuard(NumberRoundModeGuard const&) = delete;
+
+    NumberRoundModeGuard&
+    operator=(NumberRoundModeGuard const&) = delete;
+};
+
+// We need a class that has an interface similar to NumberRoundModeGuard
+// but does nothing.
+class DontAffectNumberRoundMode
+{
+public:
+    explicit DontAffectNumberRoundMode(Number::rounding_mode mode) noexcept
+    {
+    }
+
+    DontAffectNumberRoundMode(DontAffectNumberRoundMode const&) = delete;
+
+    DontAffectNumberRoundMode&
+    operator=(DontAffectNumberRoundMode const&) = delete;
+};
+
+}  // anonymous namespace
+
+// Pass the canonicalizeRound function pointer as a template parameter.
+//
+// We might need to use NumberRoundModeGuard.  Allow the caller
+// to pass either that or a replacement as a template parameter.
+template <
+    void (*CanonicalizeFunc)(bool, std::uint64_t&, int&, bool),
+    typename MightSaveRound>
+static STAmount
+mulRoundImpl(
     STAmount const& v1,
     STAmount const& v2,
     Issue const& issue,
@@ -1365,8 +1477,15 @@ mulRound(
 
     int offset = offset1 + offset2 + 14;
     if (resultNegative != roundUp)
-        canonicalizeRound(xrp, amount, offset);
-    STAmount result(issue, amount, offset, resultNegative);
+    {
+        CanonicalizeFunc(xrp, amount, offset, roundUp);
+    }
+    STAmount result = [&]() {
+        // If appropriate, tell Number to round down.  This gives the desired
+        // result from STAmount::canonicalize.
+        MightSaveRound const savedRound(Number::towards_zero);
+        return STAmount(issue, amount, offset, resultNegative);
+    }();
 
     if (roundUp && !resultNegative && !result)
     {
@@ -1388,7 +1507,32 @@ mulRound(
 }
 
 STAmount
-divRound(
+mulRound(
+    STAmount const& v1,
+    STAmount const& v2,
+    Issue const& issue,
+    bool roundUp)
+{
+    return mulRoundImpl<canonicalizeRound, DontAffectNumberRoundMode>(
+        v1, v2, issue, roundUp);
+}
+
+STAmount
+mulRoundStrict(
+    STAmount const& v1,
+    STAmount const& v2,
+    Issue const& issue,
+    bool roundUp)
+{
+    return mulRoundImpl<canonicalizeRoundStrict, NumberRoundModeGuard>(
+        v1, v2, issue, roundUp);
+}
+
+// We might need to use NumberRoundModeGuard.  Allow the caller
+// to pass either that or a replacement as a template parameter.
+template <typename MightSaveRound>
+static STAmount
+divRoundImpl(
     STAmount const& num,
     STAmount const& den,
     Issue const& issue,
@@ -1437,9 +1581,18 @@ divRound(
     int offset = numOffset - denOffset - 17;
 
     if (resultNegative != roundUp)
-        canonicalizeRound(isXRP(issue), amount, offset);
+        canonicalizeRound(isXRP(issue), amount, offset, roundUp);
 
-    STAmount result(issue, amount, offset, resultNegative);
+    STAmount result = [&]() {
+        // If appropriate, tell Number the rounding mode we are using.
+        // Note that "roundUp == true" actually means "round away from zero".
+        // Otherwise round toward zero.
+        using enum Number::rounding_mode;
+        MightSaveRound const savedRound(
+            roundUp ^ resultNegative ? upward : downward);
+        return STAmount(issue, amount, offset, resultNegative);
+    }();
+
     if (roundUp && !resultNegative && !result)
     {
         if (isXRP(issue))
@@ -1457,6 +1610,26 @@ divRound(
         return STAmount(issue, amount, offset, resultNegative);
     }
     return result;
+}
+
+STAmount
+divRound(
+    STAmount const& num,
+    STAmount const& den,
+    Issue const& issue,
+    bool roundUp)
+{
+    return divRoundImpl<DontAffectNumberRoundMode>(num, den, issue, roundUp);
+}
+
+STAmount
+divRoundStrict(
+    STAmount const& num,
+    STAmount const& den,
+    Issue const& issue,
+    bool roundUp)
+{
+    return divRoundImpl<NumberRoundModeGuard>(num, den, issue, roundUp);
 }
 
 }  // namespace ripple

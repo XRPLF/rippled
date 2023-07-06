@@ -19,7 +19,6 @@
 
 #include <ripple/app/main/Application.h>
 #include <ripple/app/tx/impl/details/NFTokenUtils.h>
-#include <ripple/json/json_writer.h>
 #include <ripple/ledger/ReadView.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
@@ -66,7 +65,7 @@ doAccountNFTs(RPC::JsonContext& context)
         RPC::inject_error(rpcACT_MALFORMED, result);
         return result;
     }
-    auto const accountID{std::move(id.value())};
+    auto const accountID{id.value()};
 
     if (!ledger->exists(keylet::account(accountID)))
         return rpcError(rpcACT_NOT_FOUND);
@@ -179,7 +178,7 @@ doAccountObjects(RPC::JsonContext& context)
         RPC::inject_error(rpcACT_MALFORMED, result);
         return result;
     }
-    auto const accountID{std::move(id.value())};
+    auto const accountID{id.value()};
 
     if (!ledger->exists(keylet::account(accountID)))
         return rpcError(rpcACT_NOT_FOUND);
