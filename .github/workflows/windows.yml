@@ -22,7 +22,7 @@ jobs:
           # something beefier (i.e. a heavy self-hosted runner) becomes
           # available.
           # - Debug
-    runs-on: windows-2019
+    runs-on: [self-hosted, windows-runner-vc2019]
     env:
       build_dir: .build
     steps:
@@ -38,6 +38,8 @@ jobs:
         run: |
           pip install --upgrade pip
           echo "dir=$(pip cache dir)" | tee ${GITHUB_OUTPUT}
+          # Try the old style
+          echo "::set-output name=dir::$(pip cache dir)"
       - name: restore Python cache directory
         uses: actions/cache@v2
         with:
