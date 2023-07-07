@@ -63,7 +63,8 @@ jobs:
           conan profile update settings.compiler.runtime=MT${{ matrix.configuration == 'Debug' && 'd' || '' }} default
           # Do not quote the URL. An empty string will be accepted (with
           # a non-fatal warning), but a missing argument will not.
-          conan remote add ripple ${{ env.CONAN_URL }} --insert 0
+          conan remote add ripple ${{ env.CONAN_URL }} --insert 0 || \
+            conan remote list
       - name: try to authenticate to ripple Conan remote
         shell: bash
         id: remote
