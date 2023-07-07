@@ -59,7 +59,7 @@ jobs:
         env:
           CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
         run: |
-          conan profile new default --detect
+          conan profile new default --detect || conan profile show default
           conan profile update settings.compiler.runtime=MT${{ matrix.configuration == 'Debug' && 'd' || '' }} default
           # Do not quote the URL. An empty string will be accepted (with
           # a non-fatal warning), but a missing argument will not.
