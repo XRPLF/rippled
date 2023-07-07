@@ -86,7 +86,9 @@ struct Manifest
     PublicKey masterKey;
 
     /// The ephemeral key associated with this manifest.
-    PublicKey signingKey;
+    // A revoked manifest does not have a signingKey
+    PublicKey signingKey; // Keshava: Is this field present in revoked
+                          // manifests too?
 
     /// The sequence number of this manifest.
     std::uint32_t sequence = 0;
@@ -95,14 +97,18 @@ struct Manifest
     std::string domain;
 
     Manifest() = delete;
-    Manifest(
-        Slice s,
-        PublicKey masterKey_,
-        PublicKey signingKey_,
-        std::uint32_t seq_)
-        : masterKey(masterKey_), signingKey(signingKey_), sequence(seq_)
-    {
-        serialized.assign(reinterpret_cast<char const*>(s.data()), s.size());
+
+    Manifest(std::string const& serialized_,
+             PublicKey const& masterKey_,
+             PublicKey const& signingKey_,
+             std::uint32_t seq,
+             std::string const& domain_) :
+        serialized(serialized_),
+        masterKey(masterKey_),
+        signingKey(signingKey_),
+        sequence(seq),
+        domain(domain_) {
+        std::cout << "inside manifest ctor\n";
     }
 
     Manifest(Manifest const& other) = delete;

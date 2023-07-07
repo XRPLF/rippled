@@ -26,14 +26,9 @@
 #include <string>
 #include <vector>
 
-// #include <boost/json.hpp>
-
 /** \brief JSON (JavaScript Object Notation).
  */
 namespace Json {
-
-// boost::json::value a2b(Json::Value const&);
-// Json::Value b2a(boost::json::value const&);
 
 /** \brief Type of the value held by a Value object.
  */

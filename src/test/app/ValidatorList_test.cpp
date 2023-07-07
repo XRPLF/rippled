@@ -221,11 +221,7 @@ private:
         jtx::Env env(
             *this, jtx::envconfig(), nullptr, beast::severities::kDisabled);
         auto& app = env.app();
-
-        unsigned char buf[33];
-        memset(buf, 0, 33);
-        buf[0] = 0xED;
-        PublicKey emptyLocalKey(Slice{buf, sizeof(buf)});
+        PublicKey emptyLocalKey(PublicKey::emptyPubKey);
         std::vector<std::string> const emptyCfgKeys;
         std::vector<std::string> const emptyCfgPublishers;
 
@@ -573,10 +569,7 @@ private:
             1));
 
         std::vector<std::string> cfgKeys1({strHex(publisherPublic)});
-        unsigned char buf[33];
-        memset(buf, 0, 33);
-        buf[0] = 0xED;
-        PublicKey emptyLocalKey(Slice{buf, sizeof(buf)});
+        PublicKey emptyLocalKey(PublicKey::emptyPubKey);
         std::vector<std::string> emptyCfgKeys;
 
         BEAST_EXPECT(trustedKeys->load(emptyLocalKey, emptyCfgKeys, cfgKeys1));
@@ -961,10 +954,7 @@ private:
             1));
 
         std::vector<std::string> cfgKeys1({strHex(publisherPublic)});
-        unsigned char buf[33];
-        memset(buf, 0, 33);
-        buf[0] = 0xED;
-        PublicKey emptyLocalKey(Slice{buf, sizeof(buf)});
+        PublicKey emptyLocalKey(PublicKey::emptyPubKey);
         std::vector<std::string> emptyCfgKeys;
 
         BEAST_EXPECT(trustedKeys->load(emptyLocalKey, emptyCfgKeys, cfgKeys1));
@@ -1076,10 +1066,7 @@ private:
 
         std::string const siteUri = "testUpdateTrusted.test";
 
-        unsigned char buf[33];
-        memset(buf, 0, 33);
-        buf[0] = 0xED;
-        PublicKey emptyLocalKeyOuter(Slice{buf, sizeof(buf)});
+        PublicKey emptyLocalKeyOuter(PublicKey::emptyPubKey);
         ManifestCache manifestsOuter;
         jtx::Env env(*this);
         auto& app = env.app();
@@ -1352,9 +1339,7 @@ private:
                 app.config().legacy("database_path"),
                 env.journal);
 
-            memset(buf, 0, 33);
-            buf[0] = 0xED;
-            PublicKey emptyLocalKey(Slice{buf, sizeof(buf)});
+            PublicKey emptyLocalKey(PublicKey::emptyPubKey);
             std::vector<std::string> emptyCfgKeys;
             auto const publisherKeys = randomKeyPair(KeyType::secp256k1);
             auto const pubSigningKeys = randomKeyPair(KeyType::secp256k1);
@@ -1579,11 +1564,7 @@ private:
 
                 std::vector<std::string> cfgPublishers(
                     {strHex(publisherPublic)});
-
-                unsigned char buf[33];
-                memset(buf, 0, 33);
-                buf[0] = 0xED;
-                PublicKey emptyLocalKey(Slice{buf, sizeof(buf)});
+                PublicKey emptyLocalKey(PublicKey::emptyPubKey);
                 std::vector<std::string> emptyCfgKeys;
 
                 BEAST_EXPECT(trustedKeys->load(
@@ -1659,10 +1640,7 @@ private:
             BEAST_EXPECT(trustedKeys->expires() == std::nullopt);
 
             // Config listed keys have maximum expiry
-            unsigned char buf[33];
-            memset(buf, 0, 33);
-            buf[0] = 0xED;
-            PublicKey emptyLocalKey(Slice{buf, sizeof(buf)});
+            PublicKey emptyLocalKey(PublicKey::emptyPubKey);
             PublicKey localCfgListed = randomNode();
             trustedKeys->load(emptyLocalKey, {toStr(localCfgListed)}, {});
             BEAST_EXPECT(
@@ -1710,11 +1688,7 @@ private:
 
                 std::vector<std::string> cfgPublishers(
                     {strHex(publisherPublic)});
-
-                unsigned char buf[33];
-                memset(buf, 0, 33);
-                buf[0] = 0xED;
-                PublicKey emptyLocalKey(Slice{buf, sizeof(buf)});
+                PublicKey emptyLocalKey(PublicKey::emptyPubKey);
                 std::vector<std::string> emptyCfgKeys;
 
                 BEAST_EXPECT(trustedKeys->load(
@@ -1821,11 +1795,7 @@ private:
     {
         testcase("NegativeUNL");
         jtx::Env env(*this);
-
-        unsigned char buf[33];
-        memset(buf, 0, 33);
-        buf[0] = 0xED;
-        PublicKey emptyLocalKey(Slice{buf, sizeof(buf)});
+        PublicKey emptyLocalKey(PublicKey::emptyPubKey);
         ManifestCache manifests;
 
         auto createValidatorList =
@@ -2446,12 +2416,12 @@ public:
     {
 //        testGenesisQuorum();
 //        testConfigLoad();
-//        testApplyLists();
+        testApplyLists();
 //        testGetAvailable();
 //        testUpdateTrusted();
 //        testExpires();
-        testNegativeUNL();
-        testSha512Hash();
+//        testNegativeUNL();
+//        testSha512Hash();
 //        testBuildMessages();
     }
 };  // namespace test

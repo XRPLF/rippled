@@ -16,7 +16,6 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#ifdef CHENNA
 #include <ripple/app/consensus/RCLValidations.h>
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/misc/NegativeUNLVote.h>
@@ -2004,4 +2003,3 @@ createTx(bool disabling, LedgerIndex seq, PublicKey const& txKey)
 
 }  // namespace test
 }  // namespace ripple
-#endif

@@ -22,6 +22,8 @@
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/base64.h>
+#include <ripple/basics/contract.h>
+#include <ripple/beast/rfc2616.h>
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/protocol/PublicKey.h>
@@ -30,6 +32,7 @@
 #include <boost/algorithm/string/trim.hpp>
 
 #include <numeric>
+#include <shared_mutex>
 #include <stdexcept>
 
 namespace ripple {
@@ -93,21 +96,39 @@ deserializeManifest(Slice s, beast::Journal journal)
         if (!publicKeyType(makeSlice(pk)))
             return std::nullopt;
 
+        std::string serialized;
+        serialized.assign(reinterpret_cast<char const*>(s.data()), s.size());
+//        std::cout << "slice from Manifest:: temp \t" << temp << std::endl;
+        const PublicKey masterKey = PublicKey(makeSlice(pk));
+//        std::cout << "pk from manifest:  xxxxxxxx\t" << masterKey.slice() <<
+//            std::endl;
+        std::uint32_t seq = st.getFieldU32(sfSequence);
+
+        std::string domain;
+
+        std::optional<PublicKey> signingKey;
+//        std::cout << "pk from manifest:  2xxxxxxx\t" << masterKey.slice() <<
+//            std::endl;
+
+
+        if (st.isFieldPresent(sfDomain))
+        {
+            auto const d = st.getFieldVL(sfDomain);
+
+            domain.assign(reinterpret_cast<char const*>(d.data()), d.size());
+
+            if (!isProperlyFormedTomlDomain(domain))
+                return std::nullopt;
+        }
+
+//        std::cout << "pk from manifest:  3xxxxxxx\t" << masterKey.slice() <<
+//            std::endl;
+
+
         bool const hasEphemeralKey = st.isFieldPresent(sfSigningPubKey);
         bool const hasEphemeralSig = st.isFieldPresent(sfSignature);
 
-        PublicKey masterKey = PublicKey(makeSlice(pk));
-        std::uint32_t sequence = st.getFieldU32(sfSequence);
-        std::optional<PublicKey> signingKey;  // an optional to hold the
-                                              // signing key. this is relevant
-                                              // only if the manifest has not
-                                              // been revoked
-
-        // Maximum possible sequence number indicates that the manifest has
-        // been revoked. We cannot use Manifest::revoked() instead of this
-        // if-condition because we cannot
-        // construct a Manifest until the end of this function
-        if (sequence == std::numeric_limits<std::uint32_t>::max())
+        if (seq == std::numeric_limits<std::uint32_t>::max())
         {
             // Revocation manifests should not specify a new signing key
             // or a signing key signature.
@@ -119,6 +140,8 @@ deserializeManifest(Slice s, beast::Journal journal)
         }
         else
         {
+//            std::cout << "pk from manifest:  4xxxxxxx\t" << masterKey.slice() << std::endl;
+
             // Regular manifests should contain a signing key and an
             // associated signature.
             if (!hasEphemeralKey)
@@ -127,30 +150,43 @@ deserializeManifest(Slice s, beast::Journal journal)
             if (!hasEphemeralSig)
                 return std::nullopt;
 
+            // extract the signing key from the STObject
             auto const spk = st.getFieldVL(sfSigningPubKey);
 
             if (!publicKeyType(makeSlice(spk)))
                 return std::nullopt;
 
+
             signingKey = PublicKey(makeSlice(spk));
+//            std::cout << "inside else: signingKey = \t" << *signingKey <<
+//                std::endl;
 
             // The signing and master keys can't be the same
             if (*signingKey == masterKey)
                 return std::nullopt;
         }
 
-        Manifest m(s, masterKey, *signingKey, sequence);
-        if (st.isFieldPresent(sfDomain))
-        {
-            auto const d = st.getFieldVL(sfDomain);
 
-            m.domain.assign(reinterpret_cast<char const*>(d.data()), d.size());
+//        std::cout << "pk from manifest:  5xxxxxxx\t" << masterKey.slice() << std::endl;
+//        std::cout << "pk size:  5xxxxxxx\t" << masterKey.size() << std::endl;
+//        std::cout << " seq == max? \t" << to_string(seq ==
+//            std::numeric_limits<std::uint32_t>::max()) << std::endl;
+//        std::cout << "signingKey size:  5xxxxxxx\t" << signingKey->size() <<
+//            std::endl;
 
-            if (!isProperlyFormedTomlDomain(m.domain))
-                return std::nullopt;
+
+        // Keshava: If the manifest is revoked, what is to be set in the
+        // signing key field? Is that field mNDtorily present in all manifests?
+
+        if(signingKey)
+        return Manifest(serialized, masterKey, *signingKey, seq, domain);
+        else {
+        // Keshava: What is the appropriate signingkey if a manifest has been
+        // revoked?
+        return Manifest(serialized, masterKey, PublicKey::emptyPubKey, seq, domain);
+
         }
 
-        return m;
     }
     catch (std::exception const& ex)
     {
@@ -483,7 +519,7 @@ ManifestCache::applyManifest(Manifest m)
             logMftAct(stream, "AcceptedNew", m.masterKey, m.sequence);
 
         if (!revoked)
-            signingToMasterKeys_.insert({m.signingKey, m.masterKey});
+            signingToMasterKeys_.emplace(m.signingKey, m.masterKey);
 
         auto masterKey = m.masterKey;
         map_.emplace(std::move(masterKey), std::move(m));
@@ -503,7 +539,7 @@ ManifestCache::applyManifest(Manifest m)
     signingToMasterKeys_.erase(iter->second.signingKey);
 
     if (!revoked)
-        signingToMasterKeys_.insert({m.signingKey, m.masterKey});
+        signingToMasterKeys_.emplace(m.signingKey, m.masterKey);
 
     iter->second = std::move(m);
 

@@ -1,4 +1,3 @@
-#ifdef CHENNA
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
@@ -108,7 +107,7 @@ public:
             // No config -> no key but valid
             Config c;
             ValidatorKeys k{c, journal};
-            BEAST_EXPECT(k.publicKey.size() == 0);
+            BEAST_EXPECT(!k.publicKey);
             BEAST_EXPECT(k.manifest.empty());
             BEAST_EXPECT(!k.configInvalid());
         }
@@ -132,7 +131,7 @@ public:
 
             ValidatorKeys k{c, journal};
             BEAST_EXPECT(k.configInvalid());
-            BEAST_EXPECT(k.publicKey.size() == 0);
+            BEAST_EXPECT(!k.publicKey);
             BEAST_EXPECT(k.manifest.empty());
         }
 
@@ -154,7 +153,7 @@ public:
             c.section(SECTION_VALIDATOR_TOKEN).append("badtoken");
             ValidatorKeys k{c, journal};
             BEAST_EXPECT(k.configInvalid());
-            BEAST_EXPECT(k.publicKey.size() == 0);
+            BEAST_EXPECT(!k.publicKey);
             BEAST_EXPECT(k.manifest.empty());
         }
 
@@ -166,7 +165,7 @@ public:
             ValidatorKeys k{c, journal};
 
             BEAST_EXPECT(k.configInvalid());
-            BEAST_EXPECT(k.publicKey.size() == 0);
+            BEAST_EXPECT(!k.publicKey);
             BEAST_EXPECT(k.manifest.empty());
         }
 
@@ -177,7 +176,7 @@ public:
             ValidatorKeys k{c, journal};
 
             BEAST_EXPECT(k.configInvalid());
-            BEAST_EXPECT(k.publicKey.size() == 0);
+            BEAST_EXPECT(!k.publicKey);
             BEAST_EXPECT(k.manifest.empty());
         }
     }
@@ -187,4 +186,3 @@ BEAST_DEFINE_TESTSUITE(ValidatorKeys, app, ripple);
 
 }  // namespace test
 }  // namespace ripple
-#endif

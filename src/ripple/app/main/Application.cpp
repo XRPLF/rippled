@@ -593,6 +593,8 @@ public:
     PublicKey const&
     getValidationPublicKey() const override
     {
+        if(!validatorKeys_.publicKey)
+            return PublicKey::emptyPubKey;
         return *validatorKeys_.publicKey;
     }
 
@@ -1196,7 +1198,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         return false;
     }
 
-    if (validatorKeys_.publicKey->size())
+    if (validatorKeys_.publicKey)
         setMaxDisallowedLedger();
 
     // Configure the amendments the server supports
@@ -1311,9 +1313,18 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
 
             publisherManifests_->load(getWalletDB(), "PublisherManifests");
 
+            // Keshava: Is it correct to initialize localSigningKey to the
+            // default value?
+            // ValidatorList uses PublicKey::emptyPubKey to denote masterKey
+            // for the local-configuration specified validator keys. Does
+            // that necessitate an empty signing key?
+            PublicKey localSigningKey = PublicKey::emptyPubKey;
+            if(validatorKeys_.publicKey)
+                localSigningKey = *validatorKeys_.publicKey;
+
             // Setup trusted validators
             if (!validators_->load(
-                    *validatorKeys_.publicKey,
+                    localSigningKey,
                     config().section(SECTION_VALIDATORS).values(),
                     config().section(SECTION_VALIDATOR_LIST_KEYS).values()))
             {

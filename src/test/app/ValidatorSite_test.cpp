@@ -1,4 +1,3 @@
-#ifdef CHENNA
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
@@ -711,4 +710,3 @@ BEAST_DEFINE_TESTSUITE_PRIO(ValidatorSite, app, ripple, 2);
 
 }  // namespace test
 }  // namespace ripple
-#endif

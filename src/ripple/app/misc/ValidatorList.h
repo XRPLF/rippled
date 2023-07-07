@@ -853,11 +853,10 @@ private:
 
         Calling public member function is expected to lock mutex
     */
-    ListDisposition
+    std::pair<ListDisposition, std::optional<PublicKey>>
     verify(
         lock_guard const&,
         Json::Value& list,
-        PublicKey& pubKey,
         std::string const& manifest,
         std::string const& blob,
         std::string const& signature);

@@ -31,6 +31,7 @@
 #include <ripple/protocol/jss.h>
 #include <ripple/protocol/messages.h>
 #include <boost/regex.hpp>
+#include <ripple/protocol/PublicKey.h>
 
 #include <cmath>
 #include <mutex>
@@ -195,7 +196,8 @@ ValidatorList::load(
     localPubKey_ = validatorManifests_.getMasterKey(localSigningKey);
 
     // Treat local validator key as though it was listed in the config
-    keyListings_.insert({*localPubKey_, 1});
+    if (localPubKey_->size())
+        keyListings_.insert({*localPubKey_, 1});
 
     JLOG(j_.debug()) << "Loading configured validator keys";
 
@@ -230,7 +232,8 @@ ValidatorList::load(
             JLOG(j_.warn()) << "Duplicate node identity: " << match[1];
             continue;
         }
-        auto [it, inserted] = publisherLists_.emplace();
+        auto [it, inserted] = publisherLists_.emplace(std::make_pair
+                                                      (PublicKey::emptyPubKey, PublisherListCollection()));
         // Config listed keys never expire
         auto& current = it->second.current;
         if (inserted)
@@ -882,9 +885,8 @@ ValidatorList::applyListsAndBroadcast(
     if (disposition == ListDisposition::accepted)
     {
         bool good = true;
-        for (auto const& [pubKey, listCollection] : publisherLists_)
+        for (auto const& [_, listCollection] : publisherLists_)
         {
-            (void)pubKey;
             if (listCollection.status != PublisherStatus::available)
             {
                 good = false;
@@ -1069,9 +1071,15 @@ ValidatorList::applyList(
     using namespace std::string_literals;
 
     Json::Value list;
-    PublicKey pubKey;
     auto const& manifest = localManifest ? *localManifest : globalManifest;
-    auto const result = verify(lock, list, pubKey, manifest, blob, signature);
+    auto [result, pubKeyOpt] = verify(lock, list, manifest, blob, signature);
+
+    if(!pubKeyOpt)
+    {
+        return PublisherListStats{result};
+    }
+
+    PublicKey pubKey = *pubKeyOpt;
     if (result > ListDisposition::pending)
     {
         if (publisherLists_.count(pubKey))
@@ -1254,11 +1262,10 @@ ValidatorList::loadLists()
     return sites;
 }
 
-ListDisposition
+std::pair<ListDisposition, std::optional<PublicKey>>
 ValidatorList::verify(
     ValidatorList::lock_guard const& lock,
     Json::Value& list,
-    PublicKey& pubKey,
     std::string const& manifest,
     std::string const& blob,
     std::string const& signature)
@@ -1266,35 +1273,35 @@ ValidatorList::verify(
     auto m = deserializeManifest(base64_decode(manifest));
 
     if (!m || !publisherLists_.count(m->masterKey))
-        return ListDisposition::untrusted;
+        return {ListDisposition::untrusted, {}};
 
-    pubKey = m->masterKey;
+    PublicKey masterPubKey = m->masterKey;
     auto const revoked = m->revoked();
 
     auto const result = publisherManifests_.applyManifest(std::move(*m));
 
     if (revoked && result == ManifestDisposition::accepted)
     {
-        removePublisherList(lock, pubKey, PublisherStatus::revoked);
+        removePublisherList(lock, masterPubKey, PublisherStatus::revoked);
         // If the manifest is revoked, no future list is valid either
-        publisherLists_[pubKey].remaining.clear();
+        publisherLists_[masterPubKey].remaining.clear();
     }
 
     if (revoked || result == ManifestDisposition::invalid)
-        return ListDisposition::untrusted;
+        return {ListDisposition::untrusted, masterPubKey};
 
     auto const sig = strUnHex(signature);
     auto const data = base64_decode(blob);
     if (!sig ||
         !ripple::verify(
-            publisherManifests_.getSigningKey(pubKey),
+            publisherManifests_.getSigningKey(masterPubKey),
             makeSlice(data),
             makeSlice(*sig)))
-        return ListDisposition::invalid;
+        return {ListDisposition::invalid, masterPubKey};
 
     Json::Reader r;
     if (!r.parse(data, list))
-        return ListDisposition::invalid;
+        return {ListDisposition::invalid, masterPubKey};
 
     if (list.isMember(jss::sequence) && list[jss::sequence].isInt() &&
         list.isMember(jss::expiration) && list[jss::expiration].isInt() &&
@@ -1307,15 +1314,15 @@ ValidatorList::verify(
         auto const validUntil = TimeKeeper::time_point{
             TimeKeeper::duration{list[jss::expiration].asUInt()}};
         auto const now = timeKeeper_.now();
-        auto const& listCollection = publisherLists_[pubKey];
+        auto const& listCollection = publisherLists_[masterPubKey];
         if (validUntil <= validFrom)
-            return ListDisposition::invalid;
+            return {ListDisposition::invalid, masterPubKey};
         else if (sequence < listCollection.current.sequence)
-            return ListDisposition::stale;
+            return {ListDisposition::stale, masterPubKey};
         else if (sequence == listCollection.current.sequence)
-            return ListDisposition::same_sequence;
+            return {ListDisposition::same_sequence, masterPubKey};
         else if (validUntil <= now)
-            return ListDisposition::expired;
+            return {ListDisposition::expired, masterPubKey};
         else if (validFrom > now)
             // Not yet valid. Return pending if one of the following is true
             // * There's no maxSequence, indicating this is the first blob seen
@@ -1333,15 +1340,15 @@ ValidatorList::verify(
                      validFrom < listCollection.remaining
                                      .at(*listCollection.maxSequence)
                                      .validFrom)
-                ? ListDisposition::pending
-                : ListDisposition::known_sequence;
+                ? std::make_pair(ListDisposition::pending, masterPubKey)
+                : std::make_pair(ListDisposition::known_sequence, masterPubKey);
     }
     else
     {
-        return ListDisposition::invalid;
+        return {ListDisposition::invalid, masterPubKey};
     }
 
-    return ListDisposition::accepted;
+    return {ListDisposition::accepted, masterPubKey};
 }
 
 bool
@@ -1541,7 +1548,7 @@ ValidatorList::getJson() const
     }
 
     // Local static keys
-    PublicKey local;
+    PublicKey local(PublicKey::emptyPubKey);
     Json::Value& jLocalStaticKeys =
         (res[jss::local_static_keys] = Json::arrayValue);
     if (auto it = publisherLists_.find(local); it != publisherLists_.end())
