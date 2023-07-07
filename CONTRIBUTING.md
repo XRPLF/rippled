@@ -41,7 +41,7 @@ appropriate title to propose your draft standard.
 
 When you submit a pull request, please link the corresponding XLS in the
 description. An XLS still in draft status is considered a
-work-in-progress and open for discussion. Please allow time time for
+work-in-progress and open for discussion. Please allow time for
 questions, suggestions, and changes to the XLS draft. It is the
 responsibility of the XLS author to update the draft to match the final
 implementation when its corresponding pull request is merged, unless the
@@ -81,7 +81,8 @@ In general, pull requests use `develop` as the base branch.
 (Hotfixes are an exception.)
 
 Changes to pull requests must be added as new commits.
-You may **never force push a branch in a pull request** (e.g. after a rebase).
+Once code reviewers have started looking at your code, please avoid
+force-pushing a branch in a pull request.
 This preserves the ability for reviewers to filter changes since their last
 review.
 
