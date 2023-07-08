@@ -315,6 +315,27 @@ class AccountTx_test : public beast::unit_test::suite
                     env.rpc("json", "account_tx", to_string(p)),
                     rpcLGR_IDX_MALFORMED));
             }
+            // test binary and forward for bool/non bool values
+            {
+                Json::Value p{jParms};
+                p[jss::binary] = "asdf";
+                BEAST_EXPECT(isErr(
+                    env.rpc("json", "account_tx", to_string(p)),
+                    rpcINVALID_PARAMS));
+
+                p[jss::binary] = true;
+                Json::Value result{env.rpc("json", "account_tx", to_string(p))};
+                BEAST_EXPECT(result[jss::result][jss::status] == "success");
+
+                p[jss::forward] = "true";
+                BEAST_EXPECT(isErr(
+                    env.rpc("json", "account_tx", to_string(p)),
+                    rpcINVALID_PARAMS));
+
+                p[jss::forward] = false;
+                result = env.rpc("json", "account_tx", to_string(p));
+                BEAST_EXPECT(result[jss::result][jss::status] == "success");
+            }
         }
     }
 
