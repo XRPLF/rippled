@@ -37,7 +37,6 @@
 #include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/STObject.h>
 #include <ripple/protocol/STTx.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
 #include <functional>
 #include <string>
 #include <test/jtx/AbstractClient.h>
@@ -54,6 +53,8 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <ripple/rpc/impl/RPCHelpers.h>
+
 
 namespace ripple {
 namespace test {
