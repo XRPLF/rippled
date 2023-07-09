@@ -55,7 +55,6 @@
 #include <vector>
 #include <ripple/rpc/impl/RPCHelpers.h>
 
-
 namespace ripple {
 namespace test {
 namespace jtx {
