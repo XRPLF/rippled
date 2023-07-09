@@ -517,7 +517,12 @@ AMMWithdraw::withdraw(
 
     // Withdraw amountWithdraw
     auto res = accountSend(
-        view, ammAccount, account_, amountWithdrawActual, ctx_.journal, true);
+        view,
+        ammAccount,
+        account_,
+        amountWithdrawActual,
+        ctx_.journal,
+        WaiveTransferFee::Yes);
     if (res != tesSUCCESS)
     {
         JLOG(ctx_.journal.debug())
@@ -534,7 +539,7 @@ AMMWithdraw::withdraw(
             account_,
             *amount2WithdrawActual,
             ctx_.journal,
-            true);
+            WaiveTransferFee::Yes);
         if (res != tesSUCCESS)
         {
             JLOG(ctx_.journal.debug()) << "AMM Withdraw: failed to withdraw "

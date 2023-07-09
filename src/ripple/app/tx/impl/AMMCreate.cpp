@@ -305,7 +305,12 @@ applyCreate(
 
     auto sendAndTrustSet = [&](STAmount const& amount) -> TER {
         if (auto const res = accountSend(
-                sb, account_, *ammAccount, amount, ctx_.journal, true))
+                sb,
+                account_,
+                *ammAccount,
+                amount,
+                ctx_.journal,
+                WaiveTransferFee::Yes))
             return res;
         // Set AMM flag on AMM trustline
         if (!isXRP(amount))

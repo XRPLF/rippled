@@ -117,7 +117,9 @@ withinRelativeDistance(
     if (calcQuality == reqQuality)
         return true;
     auto const [min, max] = std::minmax(calcQuality, reqQuality);
-    // Rate is inverse of quality
+    // Relative distance is (max - min)/max. Can't use basic operations
+    // on Quality. Have to use Quality::rate() instead, which
+    // is inverse of quality: (1/max.rate - 1/min.rate)/(1/max.rate)
     return ((min.rate() - max.rate()) / min.rate()) < dist;
 }
 

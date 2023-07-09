@@ -714,9 +714,8 @@ flow(
             // limitQuality. But the actual limit quality might be slightly
             // off due to the round off.
             if (limitQuality && q < *limitQuality &&
-                ((adjustedRemOut &&
-                  !withinRelativeDistance(q, *limitQuality, Number(1, -7))) ||
-                 !adjustedRemOut))
+                (!adjustedRemOut ||
+                 !withinRelativeDistance(q, *limitQuality, Number(1, -7))))
             {
                 JLOG(j.trace())
                     << "Path rejected by limitQuality"

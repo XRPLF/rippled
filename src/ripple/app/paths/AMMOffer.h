@@ -21,6 +21,7 @@
 #define RIPPLE_APP_AMMOFFER_H_INCLUDED
 
 #include <ripple/ledger/ApplyView.h>
+#include <ripple/ledger/View.h>
 #include <ripple/protocol/Quality.h>
 #include <ripple/protocol/TER.h>
 
@@ -121,7 +122,7 @@ public:
     static TER
     send(Args&&... args)
     {
-        return accountSend(std::forward<Args>(args)..., true);
+        return accountSend(std::forward<Args>(args)..., WaiveTransferFee::Yes);
     }
 
     bool

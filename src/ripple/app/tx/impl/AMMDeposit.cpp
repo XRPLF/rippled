@@ -491,7 +491,12 @@ AMMDeposit::deposit(
     }
 
     auto res = accountSend(
-        view, account_, ammAccount, amountDepositActual, ctx_.journal, true);
+        view,
+        account_,
+        ammAccount,
+        amountDepositActual,
+        ctx_.journal,
+        WaiveTransferFee::Yes);
     if (res != tesSUCCESS)
     {
         JLOG(ctx_.journal.debug())
@@ -517,7 +522,7 @@ AMMDeposit::deposit(
             ammAccount,
             *amount2DepositActual,
             ctx_.journal,
-            true);
+            WaiveTransferFee::Yes);
         if (res != tesSUCCESS)
         {
             JLOG(ctx_.journal.debug())

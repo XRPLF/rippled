@@ -44,6 +44,8 @@ template <class TIn, class TOut, class TDerived>
 class BookStep : public StepImp<TIn, TOut, BookStep<TIn, TOut, TDerived>>
 {
 protected:
+    enum class OfferType { AMM, CLOB };
+
     uint32_t const maxOffersToConsume_;
     Book book_;
     AccountID strandSrc_;
@@ -245,9 +247,9 @@ private:
     std::optional<std::variant<Quality, AMMOffer<TIn, TOut>>>
     tip(ReadView const& view) const;
     // If seated then it is either AMM or CLOB quality,
-    // whichever is a better quality. The flag is true
+    // whichever is a better quality. OfferType is AMM
     // if AMM quality is better.
-    std::optional<std::pair<Quality, bool>>
+    std::optional<std::pair<Quality, OfferType>>
     tipOfferQuality(ReadView const& view) const;
     // If seated then it is either AMM or CLOB quality function,
     // whichever is a better quality.
@@ -317,7 +319,7 @@ public:
         ReadView const& v,
         Quality const& ofrQ,
         DebtDirection prevStepDir,
-        bool waiveOwnerPaysFee) const
+        WaiveTransferFee waiveFee) const
     {
         // Charge the offer owner, not the sender
         // Charge a fee even if the owner is the same as the issuer
@@ -332,8 +334,10 @@ public:
 
         auto const trIn =
             redeems(prevStepDir) ? rate(this->book_.in.account) : parityRate;
-        // Always charge the transfer fee, even if the owner is the issuer
-        auto const trOut = this->ownerPaysTransferFee_ && !waiveOwnerPaysFee
+        // Always charge the transfer fee, even if the owner is the issuer,
+        // unless the fee is waived
+        auto const trOut =
+            (this->ownerPaysTransferFee_ && waiveFee == WaiveTransferFee::No)
             ? rate(this->book_.out.account)
             : parityRate;
 
@@ -481,7 +485,7 @@ public:
         ReadView const& v,
         Quality const& ofrQ,
         DebtDirection prevStepDir,
-        bool waiveOwnerPaysFee) const
+        WaiveTransferFee waiveFee) const
     {
         // Offer x-ing does not charge a transfer fee when the offer's owner
         // is the same as the strand dst. It is important that
@@ -522,12 +526,16 @@ BookStep<TIn, TOut, TDerived>::qualityUpperBound(
 {
     auto const dir = this->debtDirection(v, StrandDirection::forward);
 
-    std::optional<std::pair<Quality, bool>> const res = tipOfferQuality(v);
+    std::optional<std::pair<Quality, OfferType>> const res = tipOfferQuality(v);
     if (!res)
         return {std::nullopt, dir};
 
+    auto const waiveFee = (std::get<OfferType>(*res) == OfferType::AMM)
+        ? WaiveTransferFee::Yes
+        : WaiveTransferFee::No;
+
     Quality const q = static_cast<TDerived const*>(this)->adjustQualityWithFees(
-        v, std::get<Quality>(*res), prevStepDir, std::get<bool>(*res));
+        v, std::get<Quality>(*res), prevStepDir, waiveFee);
     return {q, dir};
 }
 
@@ -546,10 +554,10 @@ BookStep<TIn, TOut, TDerived>::getQualityFunc(
     // AMM
     if (!res->isConst())
     {
-        auto const qOne = Quality{STAmount::uRateOne};
+        auto static const qOne = Quality{STAmount::uRateOne};
         auto const q =
             static_cast<TDerived const*>(this)->adjustQualityWithFees(
-                v, qOne, prevStepDir, true);
+                v, qOne, prevStepDir, WaiveTransferFee::Yes);
         if (q == qOne)
             return {res, dir};
         QualityFunction qf{q, QualityFunction::CLOBLikeTag{}};
@@ -559,7 +567,7 @@ BookStep<TIn, TOut, TDerived>::getQualityFunc(
 
     // CLOB
     Quality const q = static_cast<TDerived const*>(this)->adjustQualityWithFees(
-        v, *(res->quality()), prevStepDir, false);
+        v, *(res->quality()), prevStepDir, WaiveTransferFee::No);
     return {QualityFunction{q, QualityFunction::CLOBLikeTag{}}, dir};
 }
 
@@ -833,16 +841,17 @@ BookStep<TIn, TOut, TDerived>::tip(ReadView const& view) const
 }
 
 template <class TIn, class TOut, class TDerived>
-std::optional<std::pair<Quality, bool>>
+std::optional<
+    std::pair<Quality, typename BookStep<TIn, TOut, TDerived>::OfferType>>
 BookStep<TIn, TOut, TDerived>::tipOfferQuality(ReadView const& view) const
 {
     if (auto const res = tip(view); !res)
         return std::nullopt;
     else if (auto const q = std::get_if<Quality>(&(*res)))
-        return std::make_pair(*q, false);
+        return std::make_pair(*q, OfferType::CLOB);
     else
         return std::make_pair(
-            std::get<AMMOffer<TIn, TOut>>(*res).quality(), true);
+            std::get<AMMOffer<TIn, TOut>>(*res).quality(), OfferType::AMM);
 }
 
 template <class TIn, class TOut, class TDerived>

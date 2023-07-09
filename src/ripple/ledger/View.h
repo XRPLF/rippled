@@ -42,6 +42,8 @@
 
 namespace ripple {
 
+enum class WaiveTransferFee { Yes, No };
+
 //------------------------------------------------------------------------------
 //
 // Observers
@@ -423,7 +425,7 @@ accountSend(
     AccountID const& to,
     const STAmount& saAmount,
     beast::Journal j,
-    bool waiveFee = false);
+    WaiveTransferFee waiveFee = WaiveTransferFee::No);
 
 [[nodiscard]] TER
 issueIOU(

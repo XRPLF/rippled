@@ -1116,7 +1116,7 @@ rippleSend(
     STAmount const& saAmount,
     STAmount& saActual,
     beast::Journal j,
-    bool waiveFee)
+    WaiveTransferFee waiveFee)
 {
     auto const issuer = saAmount.getIssuer();
 
@@ -1138,8 +1138,9 @@ rippleSend(
 
     // Calculate the amount to transfer accounting
     // for any transfer fees if the fee is not waived:
-    saActual =
-        waiveFee ? saAmount : multiply(saAmount, transferRate(view, issuer));
+    saActual = (waiveFee == WaiveTransferFee::Yes)
+        ? saAmount
+        : multiply(saAmount, transferRate(view, issuer));
 
     JLOG(j.debug()) << "rippleSend> " << to_string(uSenderID) << " - > "
                     << to_string(uReceiverID)
@@ -1161,7 +1162,7 @@ accountSend(
     AccountID const& uReceiverID,
     STAmount const& saAmount,
     beast::Journal j,
-    bool waiveFee)
+    WaiveTransferFee waiveFee)
 {
     assert(saAmount >= beast::zero);
 

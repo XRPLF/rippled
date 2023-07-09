@@ -2252,7 +2252,7 @@ private:
             // alice buys 40EUR with 40XRP
             env(pay(alice, carol, EUR(40)), path(~USD, ~EUR), sendmax(XRP(40)));
 
-            // 40XPR is swapped in for 40USD
+            // 40XRP is swapped in for 40USD
             BEAST_EXPECT(ammBobXRP_USD.expectBalances(
                 XRP(140), USD(100), ammBobXRP_USD.tokens()));
             // 40USD is swapped in for 40EUR
