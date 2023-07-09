@@ -23,7 +23,6 @@
 #include <ripple/beast/unit_test.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/jss.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
 #include <test/jtx.h>
 
 namespace ripple {
@@ -1737,13 +1736,8 @@ public:
         testQueue();
         testLedgerAccountsOption();
 
-        // version specific tests
-        for (auto testVersion = RPC::apiMinimumSupportedVersion;
-             testVersion <= RPC::apiBetaVersion;
-             ++testVersion)
-        {
-            testLedgerEntryInvalidParams(testVersion);
-        }
+        test::jtx::forAllApiVersions(std::bind_front(
+            &LedgerRPC_test::testLedgerEntryInvalidParams, this));
     }
 };
 
