@@ -28,7 +28,22 @@ In [the response to the `account_info` command](https://xrpl.org/account_info.ht
 
 The `network_id` field was added in the `server_info` response in version 1.5.0 (2019), but it was not returned in [reporting mode](https://xrpl.org/rippled-server-modes.html#reporting-mode).
 
+## XRP Ledger version 1.12.0
+
+Version 1.12.0 is in development.
+
+### Additions in 1.12
+
+Additions are intended to be non-breaking (because they are purely additive).
+
+- `server_info`: Added `ports`, an array which advertises the RPC and WebSocket ports. This information is also included in the `/crawl` endpoint (which calls `server_info` internally). `grpc` and `peer` ports are also included. (https://github.com/XRPLF/rippled/pull/4427)
+  - `ports` contains objects, each containing a `port` for the listening port (a number string), and a `protocol` array listing the supported protocols on that port.
+  - This allows crawlers to build a more detailed topology without needing to port-scan nodes.
+  - (For peers and other non-admin clients, the info about admin ports is excluded.)
+
 ## XRP Ledger version 1.11.0
+
+[Version 1.11.0](https://github.com/XRPLF/rippled/releases/tag/1.11.0) was released on Jun 20, 2023.
 
 ### Breaking changes in 1.11
 
