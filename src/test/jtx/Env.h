@@ -37,6 +37,7 @@
 #include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/STObject.h>
 #include <ripple/protocol/STTx.h>
+#include <ripple/rpc/impl/RPCHelpers.h>
 #include <functional>
 #include <string>
 #include <test/jtx/AbstractClient.h>
@@ -701,6 +702,25 @@ Env::rpc(std::string const& cmd, Args&&... args)
         std::unordered_map<std::string, std::string>(),
         cmd,
         std::forward<Args>(args)...);
+}
+
+/**
+ * Executes a set of provided functions (Fs...) over a range of versions from
+ * RPC::apiMinimumSupportedVersion to RPC::apiBetaVersion. Each function in
+ * Fs... is expected to take a version number as its argument. This is useful
+ * for running a series of tests or operations that need to be performed on
+ * multiple versions of an API.
+ */
+template <class... Fs>
+void
+forAllApiVersions(Fs... fs)
+{
+    for (auto testVersion = RPC::apiMinimumSupportedVersion;
+         testVersion <= RPC::apiBetaVersion;
+         ++testVersion)
+    {
+        (..., fs(testVersion));
+    }
 }
 
 }  // namespace jtx
