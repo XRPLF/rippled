@@ -109,9 +109,9 @@ scaleFeeLoad(
 
     auto const result = mulDiv(
         fee, feeFactor, safe_cast<std::uint64_t>(feeTrack.getLoadBase()));
-    if (!result.first)
+    if (!result)
         Throw<std::overflow_error>("scaleFeeLoad");
-    return result.second;
+    return *result;
 }
 
 }  // namespace ripple
