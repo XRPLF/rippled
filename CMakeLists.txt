@@ -115,7 +115,7 @@ if(TARGET nudb::core)
 elif(TARGET NuDB::nudb)
   set(nudb NuDB::nudb)
 else()
-  message(FATAL "unknown nudb target")
+  message(FATAL_ERROR "unknown nudb target")
 endif()
 target_link_libraries(ripple_libs INTERFACE ${nudb})
 
