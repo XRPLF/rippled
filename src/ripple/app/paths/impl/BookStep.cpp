@@ -841,9 +841,9 @@ BookStep<TIn, TOut, TDerived>::tip(ReadView const& view) const
 }
 
 template <class TIn, class TOut, class TDerived>
-std::optional<
-    std::pair<Quality, typename BookStep<TIn, TOut, TDerived>::OfferType>>
+auto
 BookStep<TIn, TOut, TDerived>::tipOfferQuality(ReadView const& view) const
+    -> std::optional<std::pair<Quality, OfferType>>
 {
     if (auto const res = tip(view); !res)
         return std::nullopt;
