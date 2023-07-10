@@ -100,7 +100,7 @@ target_link_libraries(ripple_libs INTERFACE
   ed25519::ed25519
   LibArchive::LibArchive
   lz4::lz4
-  nudb::core
+  NuDB::nudb
   OpenSSL::Crypto
   OpenSSL::SSL
   Ripple::grpc_pbufs
