@@ -15,12 +15,25 @@ override_dh_systemd_start:
 	dh_systemd_start --no-restart-on-upgrade
 
 override_dh_auto_configure:
+	apt install --yes gcc-11 g++-11
+	update-alternatives --install \
+		/usr/bin/gcc gcc /usr/bin/gcc-11 100 \
+		--slave /usr/bin/g++ g++ /usr/bin/g++-11 \
+		--slave /usr/bin/gcc-ar gcc-ar /usr/bin/gcc-ar-11 \
+		--slave /usr/bin/gcc-nm gcc-nm /usr/bin/gcc-nm-11 \
+		--slave /usr/bin/gcc-ranlib gcc-ranlib /usr/bin/gcc-ranlib-11 \
+		--slave /usr/bin/gcov gcov /usr/bin/gcov-11 \
+		--slave /usr/bin/gcov-tool gcov-tool /usr/bin/gcov-dump-11 \
+		--slave /usr/bin/gcov-dump gcov-dump /usr/bin/gcov-tool-11
+	update-alternatives --set gcc /usr/bin/gcc-11
 	env
 	rm -rf bld
-
+	conan profile update settings.compiler.cppstd=20 gcc
+	conan profile update settings.compiler.version=11 gcc
 	conan export external/snappy snappy/1.1.9@
 
 	conan install . \
+		--profile gcc \
 		--install-folder bld/rippled  \
 		--build missing \
 		--build boost \
@@ -38,12 +51,14 @@ override_dh_auto_configure:
 		-B bld/rippled
 
 	conan install . \
+		--profile gcc \
 		--install-folder bld/rippled-reporting \
 		--build missing \
 		--build boost \
 		--build sqlite3 \
 		--build libuv \
 		--settings build_type=Release \
+		--settings compiler.cppstd=17 \
 		--options reporting=True
 
 	cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
@@ -58,7 +73,6 @@ override_dh_auto_configure:
 
 override_dh_auto_build:
 	cmake --build bld/rippled --target rippled --target validator-keys -j${nproc}
-
 	cmake --build bld/rippled-reporting --target rippled -j${nproc}
 
 override_dh_auto_install:

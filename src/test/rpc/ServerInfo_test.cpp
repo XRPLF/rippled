@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/protocol/jss.h>
 #include <test/jtx.h>
@@ -55,6 +56,16 @@ public:
 
 [validators]
 %2%
+
+[port_grpc]
+ip = 0.0.0.0
+port = 50051
+
+[port_admin]
+ip = 0.0.0.0
+port = 50052
+protocol = wss2
+admin = 127.0.0.1
 )rippleConfig");
 
         p->loadFromString(boost::str(
@@ -77,8 +88,30 @@ public:
             BEAST_EXPECT(result[jss::result][jss::status] == "success");
             BEAST_EXPECT(result[jss::result].isMember(jss::info));
         }
+
         {
-            Env env(*this, makeValidatorConfig());
+            Env env(*this);
+
+            // Call NetworkOPs directly and set the admin flag to false.
+            // Expect that the admin ports are not included in the result.
+            auto const result =
+                env.app().getOPs().getServerInfo(true, false, 0);
+            auto const& ports = result[jss::ports];
+            BEAST_EXPECT(ports.isArray() && ports.size() == 0);
+        }
+
+        {
+            auto config = makeValidatorConfig();
+            auto const rpc_port =
+                (*config)["port_rpc"].get<unsigned int>("port");
+            auto const grpc_port =
+                (*config)["port_grpc"].get<unsigned int>("port");
+            auto const ws_port = (*config)["port_ws"].get<unsigned int>("port");
+            BEAST_EXPECT(grpc_port);
+            BEAST_EXPECT(rpc_port);
+            BEAST_EXPECT(ws_port);
+
+            Env env(*this, std::move(config));
             auto const result = env.rpc("server_info");
             BEAST_EXPECT(!result[jss::result].isMember(jss::error));
             BEAST_EXPECT(result[jss::result][jss::status] == "success");
@@ -86,6 +119,32 @@ public:
             BEAST_EXPECT(
                 result[jss::result][jss::info][jss::pubkey_validator] ==
                 validator_data::public_key);
+
+            auto const& ports = result[jss::result][jss::info][jss::ports];
+            BEAST_EXPECT(ports.isArray() && ports.size() == 3);
+            for (auto const& port : ports)
+            {
+                auto const& proto = port[jss::protocol];
+                BEAST_EXPECT(proto.isArray());
+                auto const p = port[jss::port].asUInt();
+                BEAST_EXPECT(p == rpc_port || p == ws_port || p == grpc_port);
+                if (p == grpc_port)
+                {
+                    BEAST_EXPECT(proto.size() == 1);
+                    BEAST_EXPECT(proto[0u].asString() == "grpc");
+                }
+                if (p == rpc_port)
+                {
+                    BEAST_EXPECT(proto.size() == 2);
+                    BEAST_EXPECT(proto[0u].asString() == "http");
+                    BEAST_EXPECT(proto[1u].asString() == "ws2");
+                }
+                if (p == ws_port)
+                {
+                    BEAST_EXPECT(proto.size() == 1);
+                    BEAST_EXPECT(proto[0u].asString() == "ws");
+                }
+            }
         }
     }
 

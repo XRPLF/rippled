@@ -96,6 +96,9 @@ doAccountInfo(RPC::JsonContext& context)
                  {"disallowIncomingPayChan", lsfDisallowIncomingPayChan},
                  {"disallowIncomingTrustline", lsfDisallowIncomingTrustline}}};
 
+    static constexpr std::pair<std::string_view, LedgerSpecificFlags>
+        allowClawbackFlag{"allowClawback", lsfAllowClawback};
+
     auto const sleAccepted = ledger->read(keylet::account(accountID));
     if (sleAccepted)
     {
@@ -123,7 +126,21 @@ doAccountInfo(RPC::JsonContext& context)
             for (auto const& lsf : disallowIncomingFlags)
                 acctFlags[lsf.first.data()] = sleAccepted->isFlag(lsf.second);
         }
+
+        if (ledger->rules().enabled(featureClawback))
+            acctFlags[allowClawbackFlag.first.data()] =
+                sleAccepted->isFlag(allowClawbackFlag.second);
+
         result[jss::account_flags] = std::move(acctFlags);
+
+        // The document states that signer_lists is a bool, however
+        // assigning any string value works. Do not allow this.
+        // This check is for api Version 2 onwards only
+        if (!params[jss::signer_lists].isBool() && context.apiVersion > 1)
+        {
+            RPC::inject_error(rpcINVALID_PARAMS, result);
+            return result;
+        }
 
         // Return SignerList(s) if that is requested.
         if (params.isMember(jss::signer_lists) &&

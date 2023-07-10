@@ -53,7 +53,6 @@ fillJson(Object& json, bool closed, LedgerInfo const& info, bool bFull)
 {
     json[jss::parent_hash] = to_string(info.parentHash);
     json[jss::ledger_index] = to_string(info.seq);
-    json[jss::seqNum] = to_string(info.seq);  // DEPRECATED
 
     if (closed)
     {
@@ -70,10 +69,6 @@ fillJson(Object& json, bool closed, LedgerInfo const& info, bool bFull)
     json[jss::account_hash] = to_string(info.accountHash);
     json[jss::total_coins] = to_string(info.drops);
 
-    // These next three are DEPRECATED.
-    json[jss::hash] = to_string(info.hash);
-    json[jss::totalCoins] = to_string(info.drops);
-    json[jss::accepted] = closed;
     json[jss::close_flags] = info.closeFlags;
 
     // Always show fields that contribute to the ledger hash
