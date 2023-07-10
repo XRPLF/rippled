@@ -112,7 +112,7 @@ target_link_libraries(ripple_libs INTERFACE
 # Work around changes to Conan recipe for now.
 if(TARGET nudb::core)
   set(nudb nudb::core)
-elif(TARGET NuDB::nudb)
+elseif(TARGET NuDB::nudb)
   set(nudb NuDB::nudb)
 else()
   message(FATAL_ERROR "unknown nudb target")
