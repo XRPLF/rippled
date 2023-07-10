@@ -169,12 +169,13 @@ public:
         auto wsc = makeWSClient(env.app().config());
 
         Json::Value qry2;
+        qry2[jss::account] = alice.human();
+        qry2[jss::hotwallet] = "asdf";
+
         for (auto apiVersion = RPC::apiMinimumSupportedVersion;
              apiVersion <= RPC::apiBetaVersion;
              ++apiVersion)
         {
-            qry2[jss::account] = alice.human();
-            qry2[jss::hotwallet] = "asdf";
             qry2[jss::api_version] = apiVersion;
             auto jv = wsc->invoke("gateway_balances", qry2);
             expect(jv[jss::status] == "error");
