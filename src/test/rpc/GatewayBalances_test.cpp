@@ -29,13 +29,12 @@ class GatewayBalances_test : public beast::unit_test::suite
 {
 public:
     void
-    testGWB(FeatureBitset features, unsigned int apiVersion)
+    testGWB(FeatureBitset features)
     {
         using namespace std::chrono_literals;
         using namespace jtx;
         Env env(*this, features);
 
-        if (apiVersion < 2u)
         {
             // Gateway account and assets
             Account const alice{"alice"};
@@ -151,37 +150,39 @@ public:
                 expect(obligations["USD"] == "50");
             }
         }
-        else
+    }
+
+    void
+    testGWBApiVersions(FeatureBitset features)
+    {
+        using namespace std::chrono_literals;
+        using namespace jtx;
+        Env env(*this, features);
+
+        // Gateway account and assets
+        Account const alice{"alice"};
+        env.fund(XRP(10000), alice);
+        Account const hw{"hw"};
+        env.fund(XRP(10000), hw);
+        env.close();
+
+        auto wsc = makeWSClient(env.app().config());
+
+        Json::Value qry2;
+        for (auto apiVersion = RPC::apiMinimumSupportedVersion;
+             apiVersion <= RPC::apiBetaVersion;
+             ++apiVersion)
         {
-            // Gateway account and assets
-            Account const alice{"alice"};
-            env.fund(XRP(10000), alice);
-            Account const hw{"hw"};
-            env.fund(XRP(10000), hw);
-            env.close();
-
-            auto wsc = makeWSClient(env.app().config());
-
-            Json::Value qry2;
+            qry2[jss::account] = alice.human();
+            qry2[jss::hotwallet] = "asdf";
             qry2[jss::api_version] = apiVersion;
-            {
-                qry2[jss::account] = "rNGQLojaFxTYphuQUJ24QUhyGBUMMbqBMx";
-                qry2[jss::hotwallet] = hw.human();
-                auto jv = wsc->invoke("gateway_balances", qry2);
-                expect(jv[jss::status] == "error");
+            auto jv = wsc->invoke("gateway_balances", qry2);
+            expect(jv[jss::status] == "error");
 
-                auto response = jv[jss::result];
-                expect(response[jss::error] == "actNotFound");
-            }
-            {
-                qry2[jss::account] = alice.human();
-                qry2[jss::hotwallet] = "asdf";
-                auto jv = wsc->invoke("gateway_balances", qry2);
-                expect(jv[jss::status] == "error");
-
-                auto response = jv[jss::result];
-                expect(response[jss::error] == "invalidParams");
-            }
+            auto response = jv[jss::result];
+            auto const error =
+                apiVersion < 2u ? "invalidHotWallet" : "invalidParams";
+            BEAST_EXPECT(response[jss::error] == error);
         }
     }
 
@@ -244,12 +245,10 @@ public:
     {
         using namespace jtx;
         auto const sa = supported_amendments();
-        for (auto testVersion = RPC::apiMinimumSupportedVersion;
-             testVersion <= RPC::apiBetaVersion;
-             ++testVersion)
+        for (auto feature : {sa - featureFlowCross, sa})
         {
-            testGWB(sa - featureFlowCross, testVersion);
-            testGWB(sa, testVersion);
+            testGWB(feature);
+            testGWBApiVersions(feature);
         }
 
         testGWBOverflow();

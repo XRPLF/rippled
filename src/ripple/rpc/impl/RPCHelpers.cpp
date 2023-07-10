@@ -849,7 +849,7 @@ std::pair<PublicKey, SecretKey>
 keypairForSignature(
     Json::Value const& params,
     Json::Value& error,
-    std::optional<std::reference_wrapper<JsonContext>> context)
+    uint apiVersion)
 {
     bool const has_key_type = params.isMember(jss::key_type);
 
@@ -903,7 +903,7 @@ keypairForSignature(
 
         if (!keyType)
         {
-            if (context.has_value() && context.value().get().apiVersion > 1u)
+            if (apiVersion > 1u)
             {
                 error = RPC::make_error(rpcBAD_KEY_TYPE);
             }

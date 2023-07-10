@@ -1161,9 +1161,8 @@ struct PayChan_test : public beast::unit_test::suite
     }
 
     void
-    testAccountChannelAuthorize(FeatureBitset features, unsigned int apiVersion)
+    testAccountChannelAuthorize(FeatureBitset features)
     {
-        testcase("PayChan Channel_Auth RPC Api " + std::to_string(apiVersion));
         using namespace jtx;
         using namespace std::literals::chrono_literals;
 
@@ -1179,28 +1178,26 @@ struct PayChan_test : public beast::unit_test::suite
         env(create(alice, bob, channelFunds, settleDelay, pk));
         env.close();
 
-        // test for api_version 2
         Json::Value args{Json::objectValue};
-        args[jss::api_version] = apiVersion;
         args[jss::channel_id] = chan1Str;
         args[jss::key_type] = "ed255191";
         args[jss::seed] = "snHq1rzQoN2qiUkC3XF5RyxBzUtN";
         args[jss::amount] = 51110000;
-        if (apiVersion < 2u)
+
+        // test for all api versions
+        for (auto apiVersion = RPC::apiMinimumSupportedVersion;
+             apiVersion <= RPC::apiBetaVersion;
+             ++apiVersion)
         {
+            testcase(
+                "PayChan Channel_Auth RPC Api " + std::to_string(apiVersion));
+            args[jss::api_version] = apiVersion;
             auto const rs = env.rpc(
                 "json",
                 "channel_authorize",
                 args.toStyledString())[jss::result];
-            BEAST_EXPECT(rs[jss::error] == "invalidParams");
-        }
-        else
-        {
-            auto const rs = env.rpc(
-                "json",
-                "channel_authorize",
-                args.toStyledString())[jss::result];
-            BEAST_EXPECT(rs[jss::error] == "badKeyType");
+            auto const error = apiVersion < 2u ? "invalidParams" : "badKeyType";
+            BEAST_EXPECT(rs[jss::error] == error);
         }
     }
 
@@ -2183,12 +2180,7 @@ struct PayChan_test : public beast::unit_test::suite
         testAccountChannelsRPC(features);
         testAccountChannelsRPCMarkers(features);
         testAccountChannelsRPCSenderOnly(features);
-        for (auto testVersion = RPC::apiMinimumSupportedVersion;
-             testVersion <= RPC::apiBetaVersion;
-             ++testVersion)
-        {
-            testAccountChannelAuthorize(features, testVersion);
-        }
+        testAccountChannelAuthorize(features);
         testAuthVerifyRPC(features);
         testOptionalFields(features);
         testMalformedPK(features);

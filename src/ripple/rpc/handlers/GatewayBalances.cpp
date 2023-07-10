@@ -128,11 +128,11 @@ doGatewayBalances(RPC::JsonContext& context)
             // not have currency issued by the account from the request.
             if (context.apiVersion < 2u)
             {
-                result[jss::error] = "invalidHotWallet";
+                RPC::inject_error(rpcINVALID_HOTWALLET, result);
             }
             else
             {
-                result[jss::error] = "invalidParams";
+                RPC::inject_error(rpcINVALID_PARAMS, result);
             }
             return result;
         }
