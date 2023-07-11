@@ -4,6 +4,9 @@ bin/boostbook_catalog.xml
 bin/config.log
 bin/project-cache.jam
 
+# Ignore build folder
+.build
+
 # Ignore vim swap files.
 *.swp
 
