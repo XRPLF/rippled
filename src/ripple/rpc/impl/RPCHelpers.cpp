@@ -849,7 +849,7 @@ std::pair<PublicKey, SecretKey>
 keypairForSignature(
     Json::Value const& params,
     Json::Value& error,
-    uint apiVersion)
+    unsigned int apiVersion)
 {
     bool const has_key_type = params.isMember(jss::key_type);
 
@@ -904,13 +904,9 @@ keypairForSignature(
         if (!keyType)
         {
             if (apiVersion > 1u)
-            {
                 error = RPC::make_error(rpcBAD_KEY_TYPE);
-            }
             else
-            {
                 error = RPC::invalid_field_error(jss::key_type);
-            }
             return {};
         }
 
