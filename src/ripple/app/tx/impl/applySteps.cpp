@@ -28,6 +28,7 @@
 #include <ripple/app/tx/impl/CancelOffer.h>
 #include <ripple/app/tx/impl/CashCheck.h>
 #include <ripple/app/tx/impl/Change.h>
+#include <ripple/app/tx/impl/Clawback.h>
 #include <ripple/app/tx/impl/CreateCheck.h>
 #include <ripple/app/tx/impl/CreateOffer.h>
 #include <ripple/app/tx/impl/CreateTicket.h>
@@ -152,6 +153,8 @@ invoke_preflight(PreflightContext const& ctx)
             return invoke_preflight_helper<NFTokenCancelOffer>(ctx);
         case ttNFTOKEN_ACCEPT_OFFER:
             return invoke_preflight_helper<NFTokenAcceptOffer>(ctx);
+        case ttCLAWBACK:
+            return invoke_preflight_helper<Clawback>(ctx);
         case ttAMM_CREATE:
             return invoke_preflight_helper<AMMCreate>(ctx);
         case ttAMM_DEPOSIT:
@@ -263,6 +266,8 @@ invoke_preclaim(PreclaimContext const& ctx)
             return invoke_preclaim<NFTokenCancelOffer>(ctx);
         case ttNFTOKEN_ACCEPT_OFFER:
             return invoke_preclaim<NFTokenAcceptOffer>(ctx);
+        case ttCLAWBACK:
+            return invoke_preclaim<Clawback>(ctx);
         case ttAMM_CREATE:
             return invoke_preclaim<AMMCreate>(ctx);
         case ttAMM_DEPOSIT:
@@ -336,6 +341,8 @@ invoke_calculateBaseFee(ReadView const& view, STTx const& tx)
             return NFTokenCancelOffer::calculateBaseFee(view, tx);
         case ttNFTOKEN_ACCEPT_OFFER:
             return NFTokenAcceptOffer::calculateBaseFee(view, tx);
+        case ttCLAWBACK:
+            return Clawback::calculateBaseFee(view, tx);
         case ttAMM_CREATE:
             return AMMCreate::calculateBaseFee(view, tx);
         case ttAMM_DEPOSIT:
@@ -496,6 +503,10 @@ invoke_apply(ApplyContext& ctx)
         }
         case ttNFTOKEN_ACCEPT_OFFER: {
             NFTokenAcceptOffer p(ctx);
+            return p();
+        }
+        case ttCLAWBACK: {
+            Clawback p(ctx);
             return p();
         }
         case ttAMM_CREATE: {

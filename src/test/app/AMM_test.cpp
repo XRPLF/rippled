@@ -3330,7 +3330,7 @@ private:
                 USD(9'900),
                 btc_usd.tokens()));
             BEAST_EXPECT(xrp_eth.expectBalances(
-                XRPAmount(10'082'446'396),
+                XRPAmount(10'082'446'397),
                 STAmount{ETH, UINT64_C(10'017'41072778012), -11},
                 xrp_eth.tokens()));
             BEAST_EXPECT(eth_eur.expectBalances(

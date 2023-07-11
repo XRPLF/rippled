@@ -104,7 +104,11 @@ public:
      * current quality.
      */
     TAmounts<TIn, TOut>
-    limitOut(TAmounts<TIn, TOut> const& offrAmt, TOut const& limit) const;
+    limitOut(
+        TAmounts<TIn, TOut> const& offrAmt,
+        TOut const& limit,
+        bool fixReducedOffers,
+        bool roundUp) const;
 
     /** Limit in of the provided offer. If one-path then swapIn
      * using current balances. If multi-path then ceil_in using

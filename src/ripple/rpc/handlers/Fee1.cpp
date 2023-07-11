@@ -20,7 +20,6 @@
 #include <ripple/app/ledger/OpenLedger.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/TxQ.h>
-#include <ripple/basics/mulDiv.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/rpc/Context.h>

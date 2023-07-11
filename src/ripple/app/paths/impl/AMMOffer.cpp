@@ -87,7 +87,9 @@ template <typename TIn, typename TOut>
 TAmounts<TIn, TOut>
 AMMOffer<TIn, TOut>::limitOut(
     TAmounts<TIn, TOut> const& offrAmt,
-    TOut const& limit) const
+    TOut const& limit,
+    bool fixReducedOffers,
+    bool roundUp) const
 {
     // Change the offer size proportionally to the original offer quality
     // to keep the strands quality order unchanged. The taker pays slightly
@@ -96,7 +98,15 @@ AMMOffer<TIn, TOut>::limitOut(
     // pool is poolPays, poolGets and the offer is assetIn, assetOut then
     // poolPays * poolGets < (poolPays - assetOut) * (poolGets + assetIn)
     if (ammLiquidity_.multiPath())
+    {
+        if (fixReducedOffers)
+            // It turns out that the ceil_out implementation has some slop in
+            // it.  ceil_out_strict removes that slop.  But removing that slop
+            // affects transaction outcomes, so the change must be made using
+            // an amendment.
+            return quality().ceil_out_strict(offrAmt, limit, roundUp);
         return quality().ceil_out(offrAmt, limit);
+    }
     // Change the offer size according to the conservation function. The offer
     // quality is increased in this case, but it doesn't matter since there is
     // only one path.

@@ -137,7 +137,11 @@ public:
     issueOut() const;
 
     TAmounts<TIn, TOut>
-    limitOut(TAmounts<TIn, TOut> const& offrAmt, TOut const& limit) const;
+    limitOut(
+        TAmounts<TIn, TOut> const& offrAmt,
+        TOut const& limit,
+        bool fixReducedOffers,
+        bool roundUp) const;
 
     TAmounts<TIn, TOut>
     limitIn(TAmounts<TIn, TOut> const& offrAmt, TIn const& limit) const;
@@ -205,8 +209,16 @@ template <class TIn, class TOut>
 TAmounts<TIn, TOut>
 TOffer<TIn, TOut>::limitOut(
     TAmounts<TIn, TOut> const& offrAmt,
-    TOut const& limit) const
+    TOut const& limit,
+    bool fixReducedOffers,
+    bool roundUp) const
 {
+    if (fixReducedOffers)
+        // It turns out that the ceil_out implementation has some slop in
+        // it.  ceil_out_strict removes that slop.  But removing that slop
+        // affects transaction outcomes, so the change must be made using
+        // an amendment.
+        return quality().ceil_out_strict(offrAmt, limit, roundUp);
     return m_quality.ceil_out(offrAmt, limit);
 }
 

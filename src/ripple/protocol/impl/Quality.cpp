@@ -81,12 +81,20 @@ Quality::ceil_in(Amounts const& amount, STAmount const& limit) const
     return amount;
 }
 
-Amounts
-Quality::ceil_out(Amounts const& amount, STAmount const& limit) const
+template <STAmount (
+    *MulRoundFunc)(STAmount const&, STAmount const&, Issue const&, bool)>
+static Amounts
+ceil_out_impl(
+    Amounts const& amount,
+    STAmount const& limit,
+    bool roundUp,
+    Quality const& quality)
 {
     if (amount.out > limit)
     {
-        Amounts result(mulRound(limit, rate(), amount.in.issue(), true), limit);
+        Amounts result(
+            MulRoundFunc(limit, quality.rate(), amount.in.issue(), roundUp),
+            limit);
         // Clamp in
         if (result.in > amount.in)
             result.in = amount.in;
@@ -95,6 +103,21 @@ Quality::ceil_out(Amounts const& amount, STAmount const& limit) const
     }
     assert(amount.out <= limit);
     return amount;
+}
+
+Amounts
+Quality::ceil_out(Amounts const& amount, STAmount const& limit) const
+{
+    return ceil_out_impl<mulRound>(amount, limit, /* roundUp */ true, *this);
+}
+
+Amounts
+Quality::ceil_out_strict(
+    Amounts const& amount,
+    STAmount const& limit,
+    bool roundUp) const
+{
+    return ceil_out_impl<mulRoundStrict>(amount, limit, roundUp, *this);
 }
 
 Quality
