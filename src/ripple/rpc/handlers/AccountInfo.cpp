@@ -97,7 +97,8 @@ doAccountInfo(RPC::JsonContext& context)
                  {"disallowIncomingTrustline", lsfDisallowIncomingTrustline}}};
 
     static constexpr std::pair<std::string_view, LedgerSpecificFlags>
-        allowTrustLineClawbackFlag{"allowTrustLineClawback", lsfAllowTrustLineClawback};
+        allowTrustLineClawbackFlag{
+            "allowTrustLineClawback", lsfAllowTrustLineClawback};
 
     auto const sleAccepted = ledger->read(keylet::account(accountID));
     if (sleAccepted)

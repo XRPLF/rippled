@@ -609,25 +609,29 @@ public:
         }
 
         static constexpr std::pair<std::string_view, std::uint32_t>
-            allowTrustLineClawbackFlag{"allowTrustLineClawback", asfAllowTrustLineClawback};
+            allowTrustLineClawbackFlag{
+                "allowTrustLineClawback", asfAllowTrustLineClawback};
 
         if (features[featureClawback])
         {
             // must use bob's account because alice has noFreeze set
-            auto const f1 = getAccountFlag(allowTrustLineClawbackFlag.first, bob);
+            auto const f1 =
+                getAccountFlag(allowTrustLineClawbackFlag.first, bob);
             BEAST_EXPECT(f1.has_value());
             BEAST_EXPECT(!f1.value());
 
             // Set allowTrustLineClawback
             env(fset(bob, allowTrustLineClawbackFlag.second));
             env.close();
-            auto const f2 = getAccountFlag(allowTrustLineClawbackFlag.first, bob);
+            auto const f2 =
+                getAccountFlag(allowTrustLineClawbackFlag.first, bob);
             BEAST_EXPECT(f2.has_value());
             BEAST_EXPECT(f2.value());
         }
         else
         {
-            BEAST_EXPECT(!getAccountFlag(allowTrustLineClawbackFlag.first, bob));
+            BEAST_EXPECT(
+                !getAccountFlag(allowTrustLineClawbackFlag.first, bob));
         }
     }
 

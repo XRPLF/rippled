@@ -95,8 +95,8 @@ public:
                 }
                 if (flag == asfAllowTrustLineClawback)
                 {
-                    // The asfAllowTrustLineClawback flag can't be cleared.  It is tested
-                    // elsewhere.
+                    // The asfAllowTrustLineClawback flag can't be cleared.  It
+                    // is tested elsewhere.
                     continue;
                 }
 

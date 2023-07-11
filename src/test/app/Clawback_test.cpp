@@ -131,7 +131,8 @@ class Clawback_test : public beast::unit_test::suite
             env.require(nflags(alice, asfAllowTrustLineClawback));
         }
 
-        // Test that asfAllowTrustLineClawback is not allowed when owner dir is non-empty
+        // Test that asfAllowTrustLineClawback is not allowed when owner dir is
+        // non-empty
         {
             Env env(*this, features);
 
@@ -185,8 +186,9 @@ class Clawback_test : public beast::unit_test::suite
 
             env.require(nflags(alice, asfAllowTrustLineClawback));
 
-            // alice attempts to set asfAllowTrustLineClawback flag while amendment is
-            // disabled. no error is returned, but the flag remains to be unset.
+            // alice attempts to set asfAllowTrustLineClawback flag while
+            // amendment is disabled. no error is returned, but the flag remains
+            // to be unset.
             env(fset(alice, asfAllowTrustLineClawback));
             env.close();
             env.require(nflags(alice, asfAllowTrustLineClawback));
