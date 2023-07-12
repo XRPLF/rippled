@@ -550,20 +550,7 @@ STAmount::getFullText() const
     std::string ret;
 
     ret.reserve(64);
-    ret = getText() + "/" + to_string(mIssue.currency);
-
-    if (!mIsNative)
-    {
-        ret += "/";
-
-        if (isXRP(*this))
-            ret += "0";
-        else if (mIssue.account == noAccount())
-            ret += "1";
-        else
-            ret += to_string(mIssue.account);
-    }
-
+    ret = getText() + "/" + mIssue.getText();
     return ret;
 }
 
