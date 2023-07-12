@@ -4,8 +4,8 @@
  * file COPYING or http://www.opensource.org/licenses/mit-license.php.*
  **********************************************************************/
 
-#include "include/secp256k1.h"
-#include "include/secp256k1_recovery.h"
+#include "secp256k1.h"
+#include "secp256k1_recovery.h"
 #include "util.h"
 #include "bench.h"
 

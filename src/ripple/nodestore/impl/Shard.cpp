@@ -688,9 +688,6 @@ Shard::finalize(bool writeSQLite, std::optional<uint256> const& referenceHash)
 
         ledger->stateMap().setLedgerSeq(ledgerSeq);
         ledger->txMap().setLedgerSeq(ledgerSeq);
-        assert(
-            ledger->info().seq < XRP_LEDGER_EARLIEST_FEES ||
-            ledger->read(keylet::fees()));
         ledger->setImmutable();
         if (!ledger->stateMap().fetchRoot(
                 SHAMapHash{ledger->info().accountHash}, nullptr))
@@ -712,6 +709,11 @@ Shard::finalize(bool writeSQLite, std::optional<uint256> const& referenceHash)
 
         if (writeSQLite && !storeSQLite(ledger))
             return fail("failed storing to SQLite databases");
+
+        assert(
+            ledger->info().seq == ledgerSeq &&
+            (ledger->info().seq < XRP_LEDGER_EARLIEST_FEES ||
+             ledger->read(keylet::fees())));
 
         hash = ledger->info().parentHash;
         next = std::move(ledger);

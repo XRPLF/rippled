@@ -53,7 +53,7 @@ public:
                 R"("n9MJkEKHDhy5eTLuHUQeAAjo382frHNbFK4C8hcwN4nwM2SrLdBj"})");
             BEAST_EXPECT(
                 lines[jss::result][jss::error_message] ==
-                RPC::make_error(rpcBAD_SEED)[jss::error_message]);
+                RPC::make_error(rpcACT_MALFORMED)[jss::error_message]);
         }
         Account const alice{"alice"};
         {
@@ -239,7 +239,7 @@ public:
                     R"("n9MJkEKHDhy5eTLuHUQeAAjo382frHNbFK4C8hcwN4nwM2SrLdBj"})");
             BEAST_EXPECT(
                 lines[jss::result][jss::error_message] ==
-                RPC::make_error(rpcBAD_SEED)[jss::error_message]);
+                RPC::make_error(rpcACT_MALFORMED)[jss::error_message]);
         }
         {
             // A negative limit should fail.
@@ -815,7 +815,7 @@ public:
                 R"("n9MJkEKHDhy5eTLuHUQeAAjo382frHNbFK4C8hcwN4nwM2SrLdBj"}})");
             BEAST_EXPECT(
                 lines[jss::error][jss::message] ==
-                RPC::make_error(rpcBAD_SEED)[jss::error_message]);
+                RPC::make_error(rpcACT_MALFORMED)[jss::error_message]);
             BEAST_EXPECT(
                 lines.isMember(jss::jsonrpc) && lines[jss::jsonrpc] == "2.0");
             BEAST_EXPECT(
@@ -1122,7 +1122,7 @@ public:
                     R"("n9MJkEKHDhy5eTLuHUQeAAjo382frHNbFK4C8hcwN4nwM2SrLdBj"}})");
             BEAST_EXPECT(
                 lines[jss::error][jss::message] ==
-                RPC::make_error(rpcBAD_SEED)[jss::error_message]);
+                RPC::make_error(rpcACT_MALFORMED)[jss::error_message]);
             BEAST_EXPECT(
                 lines.isMember(jss::jsonrpc) && lines[jss::jsonrpc] == "2.0");
             BEAST_EXPECT(

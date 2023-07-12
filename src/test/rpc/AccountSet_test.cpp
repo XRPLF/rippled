@@ -93,6 +93,12 @@ public:
                     // and are tested elsewhere
                     continue;
                 }
+                if (flag == asfAllowClawback)
+                {
+                    // The asfAllowClawback flag can't be cleared.  It is tested
+                    // elsewhere.
+                    continue;
+                }
 
                 if (std::find(goodFlags.begin(), goodFlags.end(), flag) !=
                     goodFlags.end())
