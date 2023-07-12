@@ -31,7 +31,11 @@ namespace ripple {
 static std::size_t
 extract(uint256 const& key)
 {
-    return *reinterpret_cast<std::size_t const*>(key.data());
+    std::size_t result;
+    // Use memcpy to avoid unaligned UB
+    // (will optimize to equivalent code)
+    std::memcpy(&result, key.data(), sizeof(std::size_t));
+    return result;
 }
 
 static std::size_t

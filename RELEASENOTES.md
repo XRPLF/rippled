@@ -8,6 +8,130 @@ This document contains the release notes for `rippled`, the reference server imp
 Have new ideas? Need help with setting up your node? [Please open an issue here](https://github.com/xrplf/rippled/issues/new/choose).
 
 
+# Introducing XRP Ledger version 1.11.0
+
+Version 1.11.0 of `rippled`, the reference server implementation of the XRP Ledger protocol, is now available.
+
+This release reduces memory usage, introduces the `fixNFTokenRemint` amendment, and adds new features and bug fixes. For example, the new NetworkID field in transactions helps to prevent replay attacks with side-chains.
+
+[Sign Up for Future Release Announcements](https://groups.google.com/g/ripple-server)
+
+<!-- BREAK -->
+
+## Action Required
+
+The `fixNFTokenRemint` amendment is now open for voting according to the XRP Ledger's [amendment process](https://xrpl.org/amendments.html), which enables protocol changes following two weeks of >80% support from trusted validators.
+
+If you operate an XRP Ledger server, upgrade to version 1.11.0 by July 5 to ensure service continuity. The exact time that protocol changes take effect depends on the voting decisions of the decentralized network.
+
+
+## Install / Upgrade
+
+On supported platforms, see the [instructions on installing or updating `rippled`](https://xrpl.org/install-rippled.html).
+
+
+## What's Changed
+
+### New Features and Improvements
+
+* Allow port numbers be be specified using a either a colon or a space by @RichardAH in https://github.com/XRPLF/rippled/pull/4328
+* Eliminate memory allocation from critical path: by @nbougalis in https://github.com/XRPLF/rippled/pull/4353
+* Make it easy for projects to depend on libxrpl by @thejohnfreeman in https://github.com/XRPLF/rippled/pull/4449
+* Add the ability to mark amendments as obsolete by @ximinez in https://github.com/XRPLF/rippled/pull/4291
+* Always create the FeeSettings object in genesis ledger by @ximinez in https://github.com/XRPLF/rippled/pull/4319
+* Log exception messages in several locations by @drlongle in https://github.com/XRPLF/rippled/pull/4400
+* Parse flags in account_info method by @drlongle in https://github.com/XRPLF/rippled/pull/4459
+* Add NFTokenPages to account_objects RPC by @RichardAH in https://github.com/XRPLF/rippled/pull/4352
+* add jss fields used by clio `nft_info` by @ledhed2222 in https://github.com/XRPLF/rippled/pull/4320
+* Introduce a slab-based memory allocator and optimize SHAMapItem by @nbougalis in https://github.com/XRPLF/rippled/pull/4218
+* Add NetworkID field to transactions to help prevent replay attacks on and from side-chains by @RichardAH in https://github.com/XRPLF/rippled/pull/4370
+* If present, set quorum based on command line. by @mtrippled in https://github.com/XRPLF/rippled/pull/4489
+* API does not accept seed or public key for account by @drlongle in https://github.com/XRPLF/rippled/pull/4404
+* Add `nftoken_id`, `nftoken_ids` and `offer_id` meta fields into NFT `Tx` responses by @shawnxie999 in https://github.com/XRPLF/rippled/pull/4447
+
+### Bug Fixes
+
+* fix(gateway_balances): handle overflow exception by @RichardAH in https://github.com/XRPLF/rippled/pull/4355
+* fix(ValidatorSite): handle rare null pointer dereference in timeout by @ximinez in https://github.com/XRPLF/rippled/pull/4420
+* RPC commands understand markers derived from all ledger object types by @ximinez in https://github.com/XRPLF/rippled/pull/4361
+* `fixNFTokenRemint`: prevent NFT re-mint: by @shawnxie999 in https://github.com/XRPLF/rippled/pull/4406
+* Fix a case where ripple::Expected returned a json array, not a value by @scottschurr in https://github.com/XRPLF/rippled/pull/4401
+* fix: Ledger data returns an empty list (instead of null) when all entries are filtered out by @drlongle in https://github.com/XRPLF/rippled/pull/4398
+* Fix unit test ripple.app.LedgerData by @drlongle in https://github.com/XRPLF/rippled/pull/4484
+* Fix the fix for std::result_of by @thejohnfreeman in https://github.com/XRPLF/rippled/pull/4496
+* Fix errors for Clang 16 by @thejohnfreeman in https://github.com/XRPLF/rippled/pull/4501
+* Ensure that switchover vars are initialized before use: by @seelabs in https://github.com/XRPLF/rippled/pull/4527
+* Move faulty assert by @ximinez in https://github.com/XRPLF/rippled/pull/4533
+* Fix unaligned load and stores: (#4528) by @seelabs in https://github.com/XRPLF/rippled/pull/4531
+* fix node size estimation by @dangell7 in https://github.com/XRPLF/rippled/pull/4536
+* fix: remove redundant moves by @ckeshava in https://github.com/XRPLF/rippled/pull/4565
+
+### Code Cleanup and Testing
+
+* Replace compare() with the three-way comparison operator in base_uint, Issue and Book by @drlongle in https://github.com/XRPLF/rippled/pull/4411
+* Rectify the import paths of boost::function_output_iterator by @ckeshava in https://github.com/XRPLF/rippled/pull/4293
+* Expand Linux test matrix by @thejohnfreeman in https://github.com/XRPLF/rippled/pull/4454
+* Add patched recipe for SOCI by @thejohnfreeman in https://github.com/XRPLF/rippled/pull/4510
+* Switch to self-hosted runners for macOS by @thejohnfreeman in https://github.com/XRPLF/rippled/pull/4511
+* [TRIVIAL] Add missing includes by @seelabs in https://github.com/XRPLF/rippled/pull/4555
+
+### Docs
+
+* Refactor build instructions by @thejohnfreeman in https://github.com/XRPLF/rippled/pull/4381
+* Add install instructions for package managers by @thejohnfreeman in https://github.com/XRPLF/rippled/pull/4472
+* Fix typo by @solmsted in https://github.com/XRPLF/rippled/pull/4508
+* Update environment.md by @sappenin in https://github.com/XRPLF/rippled/pull/4498
+* Update BUILD.md by @oeggert in https://github.com/XRPLF/rippled/pull/4514
+* Trivial: add comments for NFToken-related invariants by @scottschurr in https://github.com/XRPLF/rippled/pull/4558
+
+## New Contributors
+* @drlongle made their first contribution in https://github.com/XRPLF/rippled/pull/4411
+* @ckeshava made their first contribution in https://github.com/XRPLF/rippled/pull/4293
+* @solmsted made their first contribution in https://github.com/XRPLF/rippled/pull/4508
+* @sappenin made their first contribution in https://github.com/XRPLF/rippled/pull/4498
+* @oeggert made their first contribution in https://github.com/XRPLF/rippled/pull/4514
+
+**Full Changelog**: https://github.com/XRPLF/rippled/compare/1.10.1...1.11.0
+
+
+### GitHub
+
+The public source code repository for `rippled` is hosted on GitHub at <https://github.com/XRPLF/rippled>.
+
+We welcome all contributions and invite everyone to join the community of XRP Ledger developers to help build the Internet of Value.
+
+### Credits
+
+The following people contributed directly to this release:
+- Alloy Networks <45832257+alloynetworks@users.noreply.github.com>
+- Brandon Wilson <brandon@coil.com>
+- Chenna Keshava B S <21219765+ckeshava@users.noreply.github.com>
+- David Fuelling <sappenin@gmail.com>
+- Denis Angell <dangell@transia.co>
+- Ed Hennis <ed@ripple.com>
+- Elliot Lee <github.public@intelliot.com>
+- John Freeman <jfreeman08@gmail.com>
+- Mark Travis <mtrippled@users.noreply.github.com>
+- Nik Bougalis <nikb@bougalis.net>
+- RichardAH <richard.holland@starstone.co.nz>
+- Scott Determan <scott.determan@yahoo.com>
+- Scott Schurr <scott@ripple.com>
+- Shawn Xie <35279399+shawnxie999@users.noreply.github.com>
+- drlongle <drlongle@gmail.com>
+- ledhed2222 <ledhed2222@users.noreply.github.com>
+- oeggert <117319296+oeggert@users.noreply.github.com>
+- solmsted <steven.olm@gmail.com>
+
+
+Bug Bounties and Responsible Disclosures:
+We welcome reviews of the rippled code and urge researchers to
+responsibly disclose any issues they may find.
+
+To report a bug, please send a detailed report to:
+
+    bugs@xrpl.org
+
+
 # Introducing XRP Ledger version 1.10.1
 
 Version 1.10.1 of `rippled`, the reference server implementation of the XRP Ledger protocol, is now available. This release restores packages for Ubuntu 18.04.

@@ -127,8 +127,8 @@ class NoRippleCheck_test : public beast::unit_test::suite
                 "json",
                 "noripple_check",
                 boost::lexical_cast<std::string>(params))[jss::result];
-            BEAST_EXPECT(result[jss::error] == "badSeed");
-            BEAST_EXPECT(result[jss::error_message] == "Disallowed seed.");
+            BEAST_EXPECT(result[jss::error] == "actMalformed");
+            BEAST_EXPECT(result[jss::error_message] == "Account malformed.");
         }
     }
 
