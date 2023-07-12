@@ -38,6 +38,10 @@ create(jtx::Account const& account, std::string const& asset);
 Json::Value
 destroy(jtx::Account const& account, std::string const& id);
 
+/** Destroy a CFT. */
+Json::Value
+destroy(jtx::Account const& account, std::string const& id);
+
 }  // namespace cft
 
 }  // namespace jtx
