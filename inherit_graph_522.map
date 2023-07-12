@@ -1,3 +1,18 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$structripple_1_1RelationalDatabase_1_1AccountTxPageOptions.html" title=" " alt="" coords="5,5,200,47"/>
+<area shape="rect" id="node1" href="$classBasicApp.html" title=" " alt="" coords="275,71,358,98"/>
+<area shape="rect" id="node2" href="$classripple_1_1ApplicationImp.html" title=" " alt="" coords="485,97,650,123"/>
+<area shape="rect" id="node3" href="$classripple_1_1test_1_1Overlay.html" title="Simulate server&#39;s OverlayImpl." alt="" coords="241,391,392,418"/>
+<area shape="rect" id="node4" href="$classripple_1_1test_1_1OverlaySim.html" title=" " alt="" coords="479,391,655,418"/>
+<area shape="rect" id="node5" href="$classbeast_1_1PropertyStream_1_1Source.html" title="Subclasses can be called to write to a stream and have children." alt="" coords="5,165,173,207"/>
+<area shape="rect" id="node6" href="$classripple_1_1Application.html" title=" " alt="" coords="247,122,387,149"/>
+<area shape="rect" id="node7" href="$classripple_1_1LedgerCleaner.html" title="Check the ledger/transaction databases to make sure they have continuity." alt="" coords="236,223,397,250"/>
+<area shape="rect" id="node9" href="$classripple_1_1Overlay.html" title="Manages the set of connected peers." alt="" coords="257,274,376,301"/>
+<area shape="rect" id="node11" href="$classripple_1_1PeerFinder_1_1Manager.html" title="Maintains a set of IP addresses used for getting into the network." alt="" coords="249,5,384,47"/>
+<area shape="rect" id="node13" href="$classripple_1_1Resource_1_1Manager.html" title="Tracks load and resource consumption." alt="" coords="221,173,412,199"/>
+<area shape="rect" id="node8" href="$classripple_1_1LedgerCleanerImp.html" title=" " alt="" coords="474,223,661,250"/>
+<area shape="rect" id="node10" href="$classripple_1_1OverlayImpl.html" title=" " alt="" coords="494,274,641,301"/>
+<area shape="rect" id="node12" href="$classripple_1_1PeerFinder_1_1ManagerImp.html" title=" " alt="" coords="500,5,635,47"/>
+<area shape="rect" id="node14" href="$classripple_1_1Resource_1_1ManagerImp.html" title=" " alt="" coords="460,173,675,199"/>
+<area shape="rect" id="node15" href="$classripple_1_1reduce__relay_1_1SquelchHandler.html" title="Abstract class." alt="" coords="241,325,392,367"/>
+<area shape="rect" id="node16" href="$structripple_1_1test_1_1reduce__relay__test_1_1Handler.html" title=" " alt="" coords="491,325,644,367"/>
 </map>

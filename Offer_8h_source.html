@@ -131,10 +131,10 @@ $(function() {
 <div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;<span class="keyword">public</span>:</div>
 <div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    <a class="code" href="classripple_1_1TOffer.html#a1571dc42015780b1f496a084363c47d1">TOffer</a>() = <span class="keywordflow">default</span>;</div>
 <div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160; </div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    <a class="code" href="classripple_1_1TOffer.html#a1571dc42015780b1f496a084363c47d1">TOffer</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">SLE::pointer</a> <span class="keyword">const</span>&amp; entry, Quality <a class="code" href="classripple_1_1TOffer.html#a5caa8aa3fdb4ebc153fc074238574bb2">quality</a>);</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    <a class="code" href="classripple_1_1TOffer.html#a1571dc42015780b1f496a084363c47d1">TOffer</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">SLE::pointer</a> <span class="keyword">const</span>&amp; entry, Quality <a class="code" href="classripple_1_1TOffer.html#a48d4566c0cecbfe60e5f11cc822e8431">quality</a>);</div>
 <div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160; </div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    Quality <span class="keyword">const</span></div>
-<div class="line"><a name="l00075"></a><span class="lineno"><a class="line" href="classripple_1_1TOffer.html#a5caa8aa3fdb4ebc153fc074238574bb2">   75</a></span>&#160;    <a class="code" href="classripple_1_1TOffer.html#a5caa8aa3fdb4ebc153fc074238574bb2">quality</a>() const noexcept</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    Quality</div>
+<div class="line"><a name="l00075"></a><span class="lineno"><a class="line" href="classripple_1_1TOffer.html#a48d4566c0cecbfe60e5f11cc822e8431">   75</a></span>&#160;    <a class="code" href="classripple_1_1TOffer.html#a48d4566c0cecbfe60e5f11cc822e8431">quality</a>() const noexcept</div>
 <div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    {</div>
 <div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="classripple_1_1TOffer.html#a2267017988aae280798ac68220040b19">m_quality</a>;</div>
 <div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    }</div>
@@ -181,165 +181,237 @@ $(function() {
 <div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(<a class="code" href="classripple_1_1TOffer.html#a247df9fe04ee37c2c37752b38948a416">m_entry</a>-&gt;key());</div>
 <div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;    }</div>
 <div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160; </div>
-<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">uint256</a></div>
-<div class="line"><a name="l00129"></a><span class="lineno"><a class="line" href="classripple_1_1TOffer.html#a3bb88dbfbe0f7d4eabdeb8bdb861574e">  129</a></span>&#160;    <a class="code" href="classripple_1_1TOffer.html#a3bb88dbfbe0f7d4eabdeb8bdb861574e">key</a>()<span class="keyword"> const</span></div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;uint256&gt;</a></div>
+<div class="line"><a name="l00129"></a><span class="lineno"><a class="line" href="classripple_1_1TOffer.html#a7f1e07b38f5451d7ddf48b9555687d2a">  129</a></span>&#160;    <a class="code" href="classripple_1_1TOffer.html#a7f1e07b38f5451d7ddf48b9555687d2a">key</a>()<span class="keyword"> const</span></div>
 <div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;<span class="keyword">    </span>{</div>
 <div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="classripple_1_1TOffer.html#a247df9fe04ee37c2c37752b38948a416">m_entry</a>-&gt;key();</div>
 <div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;    }</div>
 <div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160; </div>
-<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;    <a class="code" href="classripple_1_1Issue.html">Issue</a></div>
-<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;    <a class="code" href="classripple_1_1TOffer.html#a3ad00732eb1a936345e48cfd82ed81da">issueIn</a>() <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;    <a class="code" href="classripple_1_1Issue.html">Issue</a></div>
-<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;    <a class="code" href="classripple_1_1TOffer.html#ac6d0fca0996b6eacdc248488cbb37258">issueOut</a>() <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;};</div>
-<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160; </div>
-<div class="line"><a name="l00140"></a><span class="lineno"><a class="line" href="namespaceripple.html#a104b942a112488963dab002995f78830">  140</a></span>&#160;<span class="keyword">using</span> <a class="code" href="classripple_1_1TOffer.html">Offer</a> = <a class="code" href="classripple_1_1TOffer.html">TOffer&lt;&gt;</a>;</div>
-<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160; </div>
-<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> TIn, <span class="keyword">class</span> TOut&gt;</div>
-<div class="line"><a name="l00143"></a><span class="lineno"><a class="line" href="classripple_1_1TOffer.html#a1cc470a8cd0f1304685cc019055a99fa">  143</a></span>&#160;<a class="code" href="classripple_1_1TOffer.html#a1571dc42015780b1f496a084363c47d1">TOffer&lt;TIn, TOut&gt;::TOffer</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">SLE::pointer</a> <span class="keyword">const</span>&amp; entry, Quality quality)</div>
-<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;    : m_entry(entry)</div>
-<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;    , m_quality(quality)</div>
-<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;    , m_account(m_entry-&gt;getAccountID(<a class="code" href="namespaceripple.html#a5bab99595719d22579e10d21cf048eb0">sfAccount</a>))</div>
-<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;{</div>
-<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> tp = m_entry-&gt;getFieldAmount(<a class="code" href="namespaceripple.html#a1bd06b8a74779afd739e715cbdbacddd">sfTakerPays</a>);</div>
-<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> tg = m_entry-&gt;getFieldAmount(<a class="code" href="namespaceripple.html#a991c39f1a35b252660a3b33bd880eef5">sfTakerGets</a>);</div>
-<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;    m_amounts.in = toAmount&lt;TIn&gt;(tp);</div>
-<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;    m_amounts.out = toAmount&lt;TOut&gt;(tg);</div>
-<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;    this-&gt;issIn_ = tp.issue();</div>
-<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;    this-&gt;issOut_ = tg.issue();</div>
-<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;}</div>
-<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160; </div>
-<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;<span class="keyword">template</span> &lt;&gt;</div>
-<div class="line"><a name="l00157"></a><span class="lineno"><a class="line" href="classripple_1_1TOffer.html#aae669d2da98d90cb2d42accba22ed69c">  157</a></span>&#160;<span class="keyword">inline</span> <a class="code" href="classripple_1_1TOffer.html">TOffer&lt;STAmount, STAmount&gt;::TOffer</a>(</div>
-<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">SLE::pointer</a> <span class="keyword">const</span>&amp; entry,</div>
-<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;    Quality quality)</div>
-<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;    : m_entry(entry)</div>
-<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;    , m_quality(quality)</div>
-<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;    , m_account(m_entry-&gt;getAccountID(<a class="code" href="namespaceripple.html#a5bab99595719d22579e10d21cf048eb0">sfAccount</a>))</div>
-<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;    , m_amounts(</div>
-<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;          m_entry-&gt;getFieldAmount(<a class="code" href="namespaceripple.html#a1bd06b8a74779afd739e715cbdbacddd">sfTakerPays</a>),</div>
-<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;          m_entry-&gt;getFieldAmount(<a class="code" href="namespaceripple.html#a991c39f1a35b252660a3b33bd880eef5">sfTakerGets</a>))</div>
-<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;{</div>
-<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;}</div>
-<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160; </div>
-<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> TIn, <span class="keyword">class</span> TOut&gt;</div>
-<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l00171"></a><span class="lineno"><a class="line" href="classripple_1_1TOffer.html#adc3651bd7c018d0e4c2b02008e0facea">  171</a></span>&#160;<a class="code" href="classripple_1_1TOffer.html">TOffer&lt;TIn, TOut&gt;::setFieldAmounts</a>()</div>
-<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;{</div>
-<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;<span class="preprocessor">#ifdef _MSC_VER</span></div>
-<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;    assert(0);</div>
-<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;<span class="preprocessor">#else</span></div>
-<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;    static_assert(<span class="keyword">sizeof</span>(TOut) == -1, <span class="stringliteral">&quot;Must be specialized&quot;</span>);</div>
-<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;<span class="preprocessor">#endif</span></div>
-<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;}</div>
-<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160; </div>
-<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;<span class="keyword">template</span> &lt;&gt;</div>
-<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;<span class="keyword">inline</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00182"></a><span class="lineno"><a class="line" href="classripple_1_1TOffer.html#a102c11089a2cb74e5d621f95c8390a36">  182</a></span>&#160;<a class="code" href="classripple_1_1TOffer.html">TOffer&lt;STAmount, STAmount&gt;::setFieldAmounts</a>()</div>
-<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;{</div>
-<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;    m_entry-&gt;setFieldAmount(<a class="code" href="namespaceripple.html#a1bd06b8a74779afd739e715cbdbacddd">sfTakerPays</a>, m_amounts.in);</div>
-<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;    m_entry-&gt;setFieldAmount(<a class="code" href="namespaceripple.html#a991c39f1a35b252660a3b33bd880eef5">sfTakerGets</a>, m_amounts.out);</div>
-<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;}</div>
-<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160; </div>
-<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;<span class="keyword">template</span> &lt;&gt;</div>
-<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;<span class="keyword">inline</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00190"></a><span class="lineno"><a class="line" href="classripple_1_1TOffer.html#a6b9130589fcad1d38213893b4ccabc26">  190</a></span>&#160;<a class="code" href="classripple_1_1TOffer.html">TOffer&lt;IOUAmount, IOUAmount&gt;::setFieldAmounts</a>()</div>
-<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;{</div>
-<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;    m_entry-&gt;setFieldAmount(<a class="code" href="namespaceripple.html#a1bd06b8a74779afd739e715cbdbacddd">sfTakerPays</a>, <a class="code" href="namespaceripple.html#a4ad5ac9da897292a28eea43d041c15a1">toSTAmount</a>(m_amounts.in, issIn_));</div>
-<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;    m_entry-&gt;setFieldAmount(<a class="code" href="namespaceripple.html#a991c39f1a35b252660a3b33bd880eef5">sfTakerGets</a>, <a class="code" href="namespaceripple.html#a4ad5ac9da897292a28eea43d041c15a1">toSTAmount</a>(m_amounts.out, issOut_));</div>
-<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;}</div>
-<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160; </div>
-<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;<span class="keyword">template</span> &lt;&gt;</div>
-<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;<span class="keyword">inline</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00198"></a><span class="lineno"><a class="line" href="classripple_1_1TOffer.html#ad19c5aa8c92505f5451e93e477a380cb">  198</a></span>&#160;<a class="code" href="classripple_1_1TOffer.html">TOffer&lt;IOUAmount, XRPAmount&gt;::setFieldAmounts</a>()</div>
-<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;{</div>
-<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;    m_entry-&gt;setFieldAmount(<a class="code" href="namespaceripple.html#a1bd06b8a74779afd739e715cbdbacddd">sfTakerPays</a>, <a class="code" href="namespaceripple.html#a4ad5ac9da897292a28eea43d041c15a1">toSTAmount</a>(m_amounts.in, issIn_));</div>
-<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;    m_entry-&gt;setFieldAmount(<a class="code" href="namespaceripple.html#a991c39f1a35b252660a3b33bd880eef5">sfTakerGets</a>, <a class="code" href="namespaceripple.html#a4ad5ac9da897292a28eea43d041c15a1">toSTAmount</a>(m_amounts.out));</div>
-<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;}</div>
-<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160; </div>
-<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;<span class="keyword">template</span> &lt;&gt;</div>
-<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;<span class="keyword">inline</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00206"></a><span class="lineno"><a class="line" href="classripple_1_1TOffer.html#a5d6724f175ce86b63e0eb435c553996a">  206</a></span>&#160;<a class="code" href="classripple_1_1TOffer.html">TOffer&lt;XRPAmount, IOUAmount&gt;::setFieldAmounts</a>()</div>
-<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;{</div>
-<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;    m_entry-&gt;setFieldAmount(<a class="code" href="namespaceripple.html#a1bd06b8a74779afd739e715cbdbacddd">sfTakerPays</a>, <a class="code" href="namespaceripple.html#a4ad5ac9da897292a28eea43d041c15a1">toSTAmount</a>(m_amounts.in));</div>
-<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;    m_entry-&gt;setFieldAmount(<a class="code" href="namespaceripple.html#a991c39f1a35b252660a3b33bd880eef5">sfTakerGets</a>, <a class="code" href="namespaceripple.html#a4ad5ac9da897292a28eea43d041c15a1">toSTAmount</a>(m_amounts.out, issOut_));</div>
-<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;}</div>
-<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160; </div>
-<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> TIn, <span class="keyword">class</span> TOut&gt;</div>
-<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;<a class="code" href="classripple_1_1Issue.html">Issue</a></div>
-<div class="line"><a name="l00214"></a><span class="lineno"><a class="line" href="classripple_1_1TOffer.html#a3ad00732eb1a936345e48cfd82ed81da">  214</a></span>&#160;<a class="code" href="classripple_1_1TOffer.html">TOffer&lt;TIn, TOut&gt;::issueIn</a>()<span class="keyword"> const</span></div>
+<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;    <a class="code" href="classripple_1_1Issue.html">Issue</a> <span class="keyword">const</span>&amp;</div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;    <a class="code" href="classripple_1_1TOffer.html#a163c4d4b7334097a470841f8bf418de4">issueIn</a>() <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;    <a class="code" href="classripple_1_1Issue.html">Issue</a> <span class="keyword">const</span>&amp;</div>
+<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;    <a class="code" href="classripple_1_1TOffer.html#a461313ea46563a94888e5b5a2428d8a4">issueOut</a>() <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160; </div>
+<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;    TAmounts&lt;TIn, TOut&gt;</div>
+<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;    <a class="code" href="classripple_1_1TOffer.html#acaac0d34c05f6cf2a71175191a82742d">limitOut</a>(</div>
+<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;        TAmounts&lt;TIn, TOut&gt; <span class="keyword">const</span>&amp; offrAmt,</div>
+<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;        TOut <span class="keyword">const</span>&amp; limit,</div>
+<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;        <span class="keywordtype">bool</span> fixReducedOffers,</div>
+<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;        <span class="keywordtype">bool</span> roundUp) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160; </div>
+<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;    TAmounts&lt;TIn, TOut&gt;</div>
+<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;    <a class="code" href="classripple_1_1TOffer.html#a795092096b300371daa1210d468c3407">limitIn</a>(TAmounts&lt;TIn, TOut&gt; <span class="keyword">const</span>&amp; offrAmt, TIn <span class="keyword">const</span>&amp; limit) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160; </div>
+<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">typename</span>... Args&gt;</div>
+<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;    <span class="keyword">static</span> <a class="code" href="classripple_1_1TERSubset.html">TER</a></div>
+<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;    <a class="code" href="classripple_1_1TOffer.html#ac4817fe90d1bd96d989ec0461c8cc520">send</a>(Args&amp;&amp;... args);</div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160; </div>
+<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;    <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00154"></a><span class="lineno"><a class="line" href="classripple_1_1TOffer.html#a6d7bf035bb6db3e7739d4ed487693e17">  154</a></span>&#160;    <a class="code" href="classripple_1_1TOffer.html#a6d7bf035bb6db3e7739d4ed487693e17">isFunded</a>()<span class="keyword"> const</span></div>
+<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;        <span class="comment">// Offer owner is issuer; they have unlimited funds</span></div>
+<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="classripple_1_1TOffer.html#aeff7cba0a2bcee91bd9309089040ca8f">m_account</a> == <a class="code" href="classripple_1_1TOffer.html#a461313ea46563a94888e5b5a2428d8a4">issueOut</a>().<a class="code" href="classripple_1_1Issue.html#a46e4805870b1bad6a8691bed0b8acec8">account</a>;</div>
+<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;    }</div>
+<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160; </div>
+<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;    <span class="keyword">static</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;std::uint32_t, std::uint32_t&gt;</a></div>
+<div class="line"><a name="l00161"></a><span class="lineno"><a class="line" href="classripple_1_1TOffer.html#acd49a987fe6b675fa7e06ce20e34020f">  161</a></span>&#160;    <a class="code" href="classripple_1_1TOffer.html#acd49a987fe6b675fa7e06ce20e34020f">adjustRates</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ofrInRate, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ofrOutRate)</div>
+<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;    {</div>
+<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;        <span class="comment">// CLOB offer pays the transfer fee</span></div>
+<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;        <span class="keywordflow">return</span> {ofrInRate, ofrOutRate};</div>
+<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;    }</div>
+<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;};</div>
+<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160; </div>
+<div class="line"><a name="l00168"></a><span class="lineno"><a class="line" href="namespaceripple.html#a104b942a112488963dab002995f78830">  168</a></span>&#160;<span class="keyword">using</span> <a class="code" href="classripple_1_1TOffer.html">Offer</a> = <a class="code" href="classripple_1_1TOffer.html">TOffer&lt;&gt;</a>;</div>
+<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160; </div>
+<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> TIn, <span class="keyword">class</span> TOut&gt;</div>
+<div class="line"><a name="l00171"></a><span class="lineno"><a class="line" href="classripple_1_1TOffer.html#a1cc470a8cd0f1304685cc019055a99fa">  171</a></span>&#160;<a class="code" href="classripple_1_1TOffer.html#a1571dc42015780b1f496a084363c47d1">TOffer&lt;TIn, TOut&gt;::TOffer</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">SLE::pointer</a> <span class="keyword">const</span>&amp; entry, Quality quality)</div>
+<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;    : m_entry(entry)</div>
+<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;    , m_quality(quality)</div>
+<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;    , m_account(m_entry-&gt;getAccountID(<a class="code" href="namespaceripple.html#a5bab99595719d22579e10d21cf048eb0">sfAccount</a>))</div>
+<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;{</div>
+<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> tp = m_entry-&gt;getFieldAmount(<a class="code" href="namespaceripple.html#a1bd06b8a74779afd739e715cbdbacddd">sfTakerPays</a>);</div>
+<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> tg = m_entry-&gt;getFieldAmount(<a class="code" href="namespaceripple.html#a991c39f1a35b252660a3b33bd880eef5">sfTakerGets</a>);</div>
+<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;    m_amounts.in = toAmount&lt;TIn&gt;(tp);</div>
+<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;    m_amounts.out = toAmount&lt;TOut&gt;(tg);</div>
+<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;    this-&gt;issIn_ = tp.issue();</div>
+<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;    this-&gt;issOut_ = tg.issue();</div>
+<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;}</div>
+<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160; </div>
+<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;<span class="keyword">template</span> &lt;&gt;</div>
+<div class="line"><a name="l00185"></a><span class="lineno"><a class="line" href="classripple_1_1TOffer.html#aae669d2da98d90cb2d42accba22ed69c">  185</a></span>&#160;<span class="keyword">inline</span> <a class="code" href="classripple_1_1TOffer.html">TOffer&lt;STAmount, STAmount&gt;::TOffer</a>(</div>
+<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">SLE::pointer</a> <span class="keyword">const</span>&amp; entry,</div>
+<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;    Quality quality)</div>
+<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;    : m_entry(entry)</div>
+<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;    , m_quality(quality)</div>
+<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;    , m_account(m_entry-&gt;getAccountID(<a class="code" href="namespaceripple.html#a5bab99595719d22579e10d21cf048eb0">sfAccount</a>))</div>
+<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;    , m_amounts(</div>
+<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;          m_entry-&gt;getFieldAmount(<a class="code" href="namespaceripple.html#a1bd06b8a74779afd739e715cbdbacddd">sfTakerPays</a>),</div>
+<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;          m_entry-&gt;getFieldAmount(<a class="code" href="namespaceripple.html#a991c39f1a35b252660a3b33bd880eef5">sfTakerGets</a>))</div>
+<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;{</div>
+<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;}</div>
+<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160; </div>
+<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> TIn, <span class="keyword">class</span> TOut&gt;</div>
+<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00199"></a><span class="lineno"><a class="line" href="classripple_1_1TOffer.html#adc3651bd7c018d0e4c2b02008e0facea">  199</a></span>&#160;<a class="code" href="classripple_1_1TOffer.html">TOffer&lt;TIn, TOut&gt;::setFieldAmounts</a>()</div>
+<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;{</div>
+<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;<span class="preprocessor">#ifdef _MSC_VER</span></div>
+<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;    assert(0);</div>
+<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;<span class="preprocessor">#else</span></div>
+<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;    static_assert(<span class="keyword">sizeof</span>(TOut) == -1, <span class="stringliteral">&quot;Must be specialized&quot;</span>);</div>
+<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;}</div>
+<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160; </div>
+<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> TIn, <span class="keyword">class</span> TOut&gt;</div>
+<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;TAmounts&lt;TIn, TOut&gt;</div>
+<div class="line"><a name="l00210"></a><span class="lineno"><a class="line" href="classripple_1_1TOffer.html#acaac0d34c05f6cf2a71175191a82742d">  210</a></span>&#160;<a class="code" href="classripple_1_1TOffer.html">TOffer&lt;TIn, TOut&gt;::limitOut</a>(</div>
+<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;    TAmounts&lt;TIn, TOut&gt; <span class="keyword">const</span>&amp; offrAmt,</div>
+<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;    TOut <span class="keyword">const</span>&amp; limit,</div>
+<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;    <span class="keywordtype">bool</span> fixReducedOffers,</div>
+<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;    <span class="keywordtype">bool</span> roundUp)<span class="keyword"> const</span></div>
 <div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;<span class="keyword"></span>{</div>
-<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;    <span class="keywordflow">return</span> this-&gt;issIn_;</div>
-<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;}</div>
-<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160; </div>
-<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;<span class="keyword">template</span> &lt;&gt;</div>
-<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;<span class="keyword">inline</span> <a class="code" href="classripple_1_1Issue.html">Issue</a></div>
-<div class="line"><a name="l00221"></a><span class="lineno"><a class="line" href="classripple_1_1TOffer.html#a50b89e197d9af5d4e9d809f3e5db726d">  221</a></span>&#160;<a class="code" href="classripple_1_1TOffer.html">TOffer&lt;STAmount, STAmount&gt;::issueIn</a>()<span class="keyword"> const</span></div>
-<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;<span class="keyword"></span>{</div>
-<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;    <span class="keywordflow">return</span> m_amounts.in.issue();</div>
-<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;}</div>
-<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160; </div>
-<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> TIn, <span class="keyword">class</span> TOut&gt;</div>
-<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;<a class="code" href="classripple_1_1Issue.html">Issue</a></div>
-<div class="line"><a name="l00228"></a><span class="lineno"><a class="line" href="classripple_1_1TOffer.html#ac6d0fca0996b6eacdc248488cbb37258">  228</a></span>&#160;<a class="code" href="classripple_1_1TOffer.html">TOffer&lt;TIn, TOut&gt;::issueOut</a>()<span class="keyword"> const</span></div>
+<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;    <span class="keywordflow">if</span> (fixReducedOffers)</div>
+<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;        <span class="comment">// It turns out that the ceil_out implementation has some slop in</span></div>
+<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;        <span class="comment">// it.  ceil_out_strict removes that slop.  But removing that slop</span></div>
+<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;        <span class="comment">// affects transaction outcomes, so the change must be made using</span></div>
+<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;        <span class="comment">// an amendment.</span></div>
+<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;        <span class="keywordflow">return</span> quality().ceil_out_strict(offrAmt, limit, roundUp);</div>
+<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;    <span class="keywordflow">return</span> m_quality.ceil_out(offrAmt, limit);</div>
+<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;}</div>
+<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160; </div>
+<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> TIn, <span class="keyword">class</span> TOut&gt;</div>
+<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;TAmounts&lt;TIn, TOut&gt;</div>
+<div class="line"><a name="l00227"></a><span class="lineno"><a class="line" href="classripple_1_1TOffer.html#a795092096b300371daa1210d468c3407">  227</a></span>&#160;<a class="code" href="classripple_1_1TOffer.html">TOffer&lt;TIn, TOut&gt;::limitIn</a>(TAmounts&lt;TIn, TOut&gt; <span class="keyword">const</span>&amp; offrAmt, TIn <span class="keyword">const</span>&amp; limit)<span class="keyword"></span></div>
+<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;<span class="keyword">    const</span></div>
 <div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;<span class="keyword"></span>{</div>
-<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;    <span class="keywordflow">return</span> this-&gt;issOut_;</div>
+<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;    <span class="keywordflow">return</span> m_quality.ceil_in(offrAmt, limit);</div>
 <div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;}</div>
 <div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160; </div>
-<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;<span class="keyword">template</span> &lt;&gt;</div>
-<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;<span class="keyword">inline</span> <a class="code" href="classripple_1_1Issue.html">Issue</a></div>
-<div class="line"><a name="l00235"></a><span class="lineno"><a class="line" href="classripple_1_1TOffer.html#a5ffc92da3844ce8a6a2e0262c8195a18">  235</a></span>&#160;<a class="code" href="classripple_1_1TOffer.html">TOffer&lt;STAmount, STAmount&gt;::issueOut</a>()<span class="keyword"> const</span></div>
-<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;<span class="keyword"></span>{</div>
-<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;    <span class="keywordflow">return</span> m_amounts.out.issue();</div>
-<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;}</div>
-<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160; </div>
-<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> TIn, <span class="keyword">class</span> TOut&gt;</div>
-<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;<span class="keyword">inline</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/basic_ostream.html">std::ostream</a>&amp;</div>
-<div class="line"><a name="l00242"></a><span class="lineno"><a class="line" href="namespaceripple.html#ad2cbc273400d06e5ff80501de15410e3">  242</a></span>&#160;<a class="code" href="namespaceripple.html#ad2cbc273400d06e5ff80501de15410e3">operator&lt;&lt;</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/io/basic_ostream.html">std::ostream</a>&amp; os, <a class="code" href="classripple_1_1TOffer.html">TOffer&lt;TIn, TOut&gt;</a> <span class="keyword">const</span>&amp; offer)</div>
-<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;{</div>
-<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;    <span class="keywordflow">return</span> os &lt;&lt; offer.id();</div>
-<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;}</div>
-<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160; </div>
-<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> TIn, <span class="keyword">class</span> TOut&gt;</div>
+<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span>... Args&gt;</div>
+<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;<a class="code" href="classripple_1_1TERSubset.html">TER</a></div>
+<div class="line"><a name="l00236"></a><span class="lineno"><a class="line" href="classripple_1_1TOffer.html#ac4817fe90d1bd96d989ec0461c8cc520">  236</a></span>&#160;<a class="code" href="classripple_1_1TOffer.html">TOffer&lt;TIn, TOut&gt;::send</a>(Args&amp;&amp;... args)</div>
+<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;{</div>
+<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a31e8d2d9c46559018ad6e096b31fc308">accountSend</a>(std::forward&lt;Args&gt;(args)...);</div>
+<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;}</div>
+<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160; </div>
+<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;<span class="keyword">template</span> &lt;&gt;</div>
+<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;<span class="keyword">inline</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00243"></a><span class="lineno"><a class="line" href="classripple_1_1TOffer.html#a102c11089a2cb74e5d621f95c8390a36">  243</a></span>&#160;<a class="code" href="classripple_1_1TOffer.html">TOffer&lt;STAmount, STAmount&gt;::setFieldAmounts</a>()</div>
+<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;{</div>
+<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;    m_entry-&gt;setFieldAmount(<a class="code" href="namespaceripple.html#a1bd06b8a74779afd739e715cbdbacddd">sfTakerPays</a>, m_amounts.in);</div>
+<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;    m_entry-&gt;setFieldAmount(<a class="code" href="namespaceripple.html#a991c39f1a35b252660a3b33bd880eef5">sfTakerGets</a>, m_amounts.out);</div>
+<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;}</div>
 <div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160; </div>
-<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;<span class="keyword">template</span> &lt;&gt;</div>
+<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;<span class="keyword">inline</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00251"></a><span class="lineno"><a class="line" href="classripple_1_1TOffer.html#a6b9130589fcad1d38213893b4ccabc26">  251</a></span>&#160;<a class="code" href="classripple_1_1TOffer.html">TOffer&lt;IOUAmount, IOUAmount&gt;::setFieldAmounts</a>()</div>
+<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;{</div>
+<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;    m_entry-&gt;setFieldAmount(<a class="code" href="namespaceripple.html#a1bd06b8a74779afd739e715cbdbacddd">sfTakerPays</a>, <a class="code" href="namespaceripple.html#a4ad5ac9da897292a28eea43d041c15a1">toSTAmount</a>(m_amounts.in, issIn_));</div>
+<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;    m_entry-&gt;setFieldAmount(<a class="code" href="namespaceripple.html#a991c39f1a35b252660a3b33bd880eef5">sfTakerGets</a>, <a class="code" href="namespaceripple.html#a4ad5ac9da897292a28eea43d041c15a1">toSTAmount</a>(m_amounts.out, issOut_));</div>
+<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;}</div>
+<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160; </div>
+<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;<span class="keyword">template</span> &lt;&gt;</div>
+<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;<span class="keyword">inline</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00259"></a><span class="lineno"><a class="line" href="classripple_1_1TOffer.html#ad19c5aa8c92505f5451e93e477a380cb">  259</a></span>&#160;<a class="code" href="classripple_1_1TOffer.html">TOffer&lt;IOUAmount, XRPAmount&gt;::setFieldAmounts</a>()</div>
+<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;{</div>
+<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;    m_entry-&gt;setFieldAmount(<a class="code" href="namespaceripple.html#a1bd06b8a74779afd739e715cbdbacddd">sfTakerPays</a>, <a class="code" href="namespaceripple.html#a4ad5ac9da897292a28eea43d041c15a1">toSTAmount</a>(m_amounts.in, issIn_));</div>
+<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;    m_entry-&gt;setFieldAmount(<a class="code" href="namespaceripple.html#a991c39f1a35b252660a3b33bd880eef5">sfTakerGets</a>, <a class="code" href="namespaceripple.html#a4ad5ac9da897292a28eea43d041c15a1">toSTAmount</a>(m_amounts.out));</div>
+<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;}</div>
+<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160; </div>
+<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;<span class="keyword">template</span> &lt;&gt;</div>
+<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;<span class="keyword">inline</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00267"></a><span class="lineno"><a class="line" href="classripple_1_1TOffer.html#a5d6724f175ce86b63e0eb435c553996a">  267</a></span>&#160;<a class="code" href="classripple_1_1TOffer.html">TOffer&lt;XRPAmount, IOUAmount&gt;::setFieldAmounts</a>()</div>
+<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;{</div>
+<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;    m_entry-&gt;setFieldAmount(<a class="code" href="namespaceripple.html#a1bd06b8a74779afd739e715cbdbacddd">sfTakerPays</a>, <a class="code" href="namespaceripple.html#a4ad5ac9da897292a28eea43d041c15a1">toSTAmount</a>(m_amounts.in));</div>
+<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;    m_entry-&gt;setFieldAmount(<a class="code" href="namespaceripple.html#a991c39f1a35b252660a3b33bd880eef5">sfTakerGets</a>, <a class="code" href="namespaceripple.html#a4ad5ac9da897292a28eea43d041c15a1">toSTAmount</a>(m_amounts.out, issOut_));</div>
+<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;}</div>
+<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160; </div>
+<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> TIn, <span class="keyword">class</span> TOut&gt;</div>
+<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;<a class="code" href="classripple_1_1Issue.html">Issue</a> <span class="keyword">const</span>&amp;</div>
+<div class="line"><a name="l00275"></a><span class="lineno"><a class="line" href="classripple_1_1TOffer.html#a163c4d4b7334097a470841f8bf418de4">  275</a></span>&#160;<a class="code" href="classripple_1_1TOffer.html">TOffer&lt;TIn, TOut&gt;::issueIn</a>()<span class="keyword"> const</span></div>
+<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;<span class="keyword"></span>{</div>
+<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;    <span class="keywordflow">return</span> this-&gt;issIn_;</div>
+<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;}</div>
+<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160; </div>
+<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;<span class="keyword">template</span> &lt;&gt;</div>
+<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;<span class="keyword">inline</span> <a class="code" href="classripple_1_1Issue.html">Issue</a> <span class="keyword">const</span>&amp;</div>
+<div class="line"><a name="l00282"></a><span class="lineno"><a class="line" href="classripple_1_1TOffer.html#a859dbdb31420eec34fa09a1a3df50ddd">  282</a></span>&#160;<a class="code" href="classripple_1_1TOffer.html">TOffer&lt;STAmount, STAmount&gt;::issueIn</a>()<span class="keyword"> const</span></div>
+<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;<span class="keyword"></span>{</div>
+<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;    <span class="keywordflow">return</span> m_amounts.in.issue();</div>
+<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;}</div>
+<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160; </div>
+<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> TIn, <span class="keyword">class</span> TOut&gt;</div>
+<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;<a class="code" href="classripple_1_1Issue.html">Issue</a> <span class="keyword">const</span>&amp;</div>
+<div class="line"><a name="l00289"></a><span class="lineno"><a class="line" href="classripple_1_1TOffer.html#a461313ea46563a94888e5b5a2428d8a4">  289</a></span>&#160;<a class="code" href="classripple_1_1TOffer.html">TOffer&lt;TIn, TOut&gt;::issueOut</a>()<span class="keyword"> const</span></div>
+<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;<span class="keyword"></span>{</div>
+<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;    <span class="keywordflow">return</span> this-&gt;issOut_;</div>
+<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;}</div>
+<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160; </div>
+<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;<span class="keyword">template</span> &lt;&gt;</div>
+<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;<span class="keyword">inline</span> <a class="code" href="classripple_1_1Issue.html">Issue</a> <span class="keyword">const</span>&amp;</div>
+<div class="line"><a name="l00296"></a><span class="lineno"><a class="line" href="classripple_1_1TOffer.html#a55d3f96c26ebb4ac68210bcd6f9bb5be">  296</a></span>&#160;<a class="code" href="classripple_1_1TOffer.html">TOffer&lt;STAmount, STAmount&gt;::issueOut</a>()<span class="keyword"> const</span></div>
+<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;<span class="keyword"></span>{</div>
+<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;    <span class="keywordflow">return</span> m_amounts.out.issue();</div>
+<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;}</div>
+<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160; </div>
+<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> TIn, <span class="keyword">class</span> TOut&gt;</div>
+<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;<span class="keyword">inline</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/basic_ostream.html">std::ostream</a>&amp;</div>
+<div class="line"><a name="l00303"></a><span class="lineno"><a class="line" href="namespaceripple.html#ad2cbc273400d06e5ff80501de15410e3">  303</a></span>&#160;<a class="code" href="namespaceripple.html#ad2cbc273400d06e5ff80501de15410e3">operator&lt;&lt;</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/io/basic_ostream.html">std::ostream</a>&amp; os, <a class="code" href="classripple_1_1TOffer.html">TOffer&lt;TIn, TOut&gt;</a> <span class="keyword">const</span>&amp; offer)</div>
+<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;{</div>
+<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;    <span class="keywordflow">return</span> os &lt;&lt; offer.id();</div>
+<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;}</div>
+<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160; </div>
+<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160; </div>
+<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
+<div class="ttc" id="aclassripple_1_1TOffer_html_a48d4566c0cecbfe60e5f11cc822e8431"><div class="ttname"><a href="classripple_1_1TOffer.html#a48d4566c0cecbfe60e5f11cc822e8431">ripple::TOffer::quality</a></div><div class="ttdeci">Quality quality() const noexcept</div><div class="ttdoc">Returns the quality of the offer.</div><div class="ttdef"><b>Definition:</b> <a href="Offer_8h_source.html#l00075">Offer.h:75</a></div></div>
 <div class="ttc" id="aclassripple_1_1TOfferBase_html"><div class="ttname"><a href="classripple_1_1TOfferBase.html">ripple::TOfferBase</a></div><div class="ttdef"><b>Definition:</b> <a href="Offer_8h_source.html#l00034">Offer.h:34</a></div></div>
+<div class="ttc" id="aclassripple_1_1TOffer_html_a461313ea46563a94888e5b5a2428d8a4"><div class="ttname"><a href="classripple_1_1TOffer.html#a461313ea46563a94888e5b5a2428d8a4">ripple::TOffer::issueOut</a></div><div class="ttdeci">Issue const  &amp; issueOut() const</div><div class="ttdef"><b>Definition:</b> <a href="Offer_8h_source.html#l00289">Offer.h:289</a></div></div>
 <div class="ttc" id="aclassripple_1_1TOffer_html_ae7c1f34d2f8a642cbce44b16120a9031"><div class="ttname"><a href="classripple_1_1TOffer.html#ae7c1f34d2f8a642cbce44b16120a9031">ripple::TOffer::m_amounts</a></div><div class="ttdeci">TAmounts&lt; TIn, TOut &gt; m_amounts</div><div class="ttdef"><b>Definition:</b> <a href="Offer_8h_source.html#l00056">Offer.h:56</a></div></div>
-<div class="ttc" id="aclassripple_1_1Issue_html"><div class="ttname"><a href="classripple_1_1Issue.html">ripple::Issue</a></div><div class="ttdoc">A currency issued by an account.</div><div class="ttdef"><b>Definition:</b> <a href="Issue_8h_source.html#l00034">Issue.h:34</a></div></div>
+<div class="ttc" id="aclassripple_1_1Issue_html"><div class="ttname"><a href="classripple_1_1Issue.html">ripple::Issue</a></div><div class="ttdoc">A currency issued by an account.</div><div class="ttdef"><b>Definition:</b> <a href="Issue_8h_source.html#l00035">Issue.h:35</a></div></div>
 <div class="ttc" id="aclassripple_1_1TOffer_html_a2267017988aae280798ac68220040b19"><div class="ttname"><a href="classripple_1_1TOffer.html#a2267017988aae280798ac68220040b19">ripple::TOffer::m_quality</a></div><div class="ttdeci">Quality m_quality</div><div class="ttdef"><b>Definition:</b> <a href="Offer_8h_source.html#l00053">Offer.h:53</a></div></div>
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div><div class="ttdoc">STL class.</div></div>
+<div class="ttc" id="aclassripple_1_1TOffer_html_acaac0d34c05f6cf2a71175191a82742d"><div class="ttname"><a href="classripple_1_1TOffer.html#acaac0d34c05f6cf2a71175191a82742d">ripple::TOffer::limitOut</a></div><div class="ttdeci">TAmounts&lt; TIn, TOut &gt; limitOut(TAmounts&lt; TIn, TOut &gt; const &amp;offrAmt, TOut const &amp;limit, bool fixReducedOffers, bool roundUp) const</div><div class="ttdef"><b>Definition:</b> <a href="Offer_8h_source.html#l00210">Offer.h:210</a></div></div>
 <div class="ttc" id="ashared_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt; STLedgerEntry &gt;</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a31e8d2d9c46559018ad6e096b31fc308"><div class="ttname"><a href="namespaceripple.html#a31e8d2d9c46559018ad6e096b31fc308">ripple::accountSend</a></div><div class="ttdeci">TER accountSend(ApplyView &amp;view, AccountID const &amp;uSenderID, AccountID const &amp;uReceiverID, STAmount const &amp;saAmount, beast::Journal j, WaiveTransferFee waiveFee)</div><div class="ttdef"><b>Definition:</b> <a href="View_8cpp_source.html#l01159">View.cpp:1159</a></div></div>
+<div class="ttc" id="apair_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a></div></div>
 <div class="ttc" id="aclassripple_1_1TOffer_html_a09325d3777b517c753fcc7b876f3fd0a"><div class="ttname"><a href="classripple_1_1TOffer.html#a09325d3777b517c753fcc7b876f3fd0a">ripple::TOffer::fully_consumed</a></div><div class="ttdeci">bool fully_consumed() const</div><div class="ttdoc">Returns true if no more funds can flow through this offer.</div><div class="ttdef"><b>Definition:</b> <a href="Offer_8h_source.html#l00098">Offer.h:98</a></div></div>
 <div class="ttc" id="aclassripple_1_1ApplyView_html_a542437b9b59a623e755979acdc075af5"><div class="ttname"><a href="classripple_1_1ApplyView.html#a542437b9b59a623e755979acdc075af5">ripple::ApplyView::update</a></div><div class="ttdeci">virtual void update(std::shared_ptr&lt; SLE &gt; const &amp;sle)=0</div><div class="ttdoc">Indicate changes to a peeked SLE.</div></div>
-<div class="ttc" id="anamespaceripple_html_ad2cbc273400d06e5ff80501de15410e3"><div class="ttname"><a href="namespaceripple.html#ad2cbc273400d06e5ff80501de15410e3">ripple::operator&lt;&lt;</a></div><div class="ttdeci">std::ostream &amp; operator&lt;&lt;(std::ostream &amp;os, TOffer&lt; TIn, TOut &gt; const &amp;offer)</div><div class="ttdef"><b>Definition:</b> <a href="Offer_8h_source.html#l00242">Offer.h:242</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ad2cbc273400d06e5ff80501de15410e3"><div class="ttname"><a href="namespaceripple.html#ad2cbc273400d06e5ff80501de15410e3">ripple::operator&lt;&lt;</a></div><div class="ttdeci">std::ostream &amp; operator&lt;&lt;(std::ostream &amp;os, TOffer&lt; TIn, TOut &gt; const &amp;offer)</div><div class="ttdef"><b>Definition:</b> <a href="Offer_8h_source.html#l00303">Offer.h:303</a></div></div>
 <div class="ttc" id="aclassripple_1_1TOffer_html_a51bee456caa4e6d6caaf823c481b6f7f"><div class="ttname"><a href="classripple_1_1TOffer.html#a51bee456caa4e6d6caaf823c481b6f7f">ripple::TOffer::id</a></div><div class="ttdeci">std::string id() const</div><div class="ttdef"><b>Definition:</b> <a href="Offer_8h_source.html#l00123">Offer.h:123</a></div></div>
 <div class="ttc" id="aclassripple_1_1ApplyView_html"><div class="ttname"><a href="classripple_1_1ApplyView.html">ripple::ApplyView</a></div><div class="ttdoc">Writeable view to a ledger, for applying a transaction.</div><div class="ttdef"><b>Definition:</b> <a href="ApplyView_8h_source.html#l00134">ApplyView.h:134</a></div></div>
-<div class="ttc" id="aclassripple_1_1TOffer_html_a5caa8aa3fdb4ebc153fc074238574bb2"><div class="ttname"><a href="classripple_1_1TOffer.html#a5caa8aa3fdb4ebc153fc074238574bb2">ripple::TOffer::quality</a></div><div class="ttdeci">const Quality quality() const noexcept</div><div class="ttdoc">Returns the quality of the offer.</div><div class="ttdef"><b>Definition:</b> <a href="Offer_8h_source.html#l00075">Offer.h:75</a></div></div>
 <div class="ttc" id="aclassripple_1_1TOffer_html_a7fdbb2b7d937889073f48e8eb2c5ad77"><div class="ttname"><a href="classripple_1_1TOffer.html#a7fdbb2b7d937889073f48e8eb2c5ad77">ripple::TOffer::amount</a></div><div class="ttdeci">TAmounts&lt; TIn, TOut &gt; const  &amp; amount() const</div><div class="ttdoc">Returns the in and out amounts.</div><div class="ttdef"><b>Definition:</b> <a href="Offer_8h_source.html#l00091">Offer.h:91</a></div></div>
+<div class="ttc" id="aclassripple_1_1TOffer_html_a7f1e07b38f5451d7ddf48b9555687d2a"><div class="ttname"><a href="classripple_1_1TOffer.html#a7f1e07b38f5451d7ddf48b9555687d2a">ripple::TOffer::key</a></div><div class="ttdeci">std::optional&lt; uint256 &gt; key() const</div><div class="ttdef"><b>Definition:</b> <a href="Offer_8h_source.html#l00129">Offer.h:129</a></div></div>
 <div class="ttc" id="astdexcept_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/stdexcept.html">stdexcept</a></div></div>
 <div class="ttc" id="aclassripple_1_1base__uint_html"><div class="ttname"><a href="classripple_1_1base__uint.html">ripple::base_uint&lt; 160, detail::AccountIDTag &gt;</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a1bd06b8a74779afd739e715cbdbacddd"><div class="ttname"><a href="namespaceripple.html#a1bd06b8a74779afd739e715cbdbacddd">ripple::sfTakerPays</a></div><div class="ttdeci">const SF_AMOUNT sfTakerPays</div></div>
 <div class="ttc" id="aclassripple_1_1TOffer_html_aeff7cba0a2bcee91bd9309089040ca8f"><div class="ttname"><a href="classripple_1_1TOffer.html#aeff7cba0a2bcee91bd9309089040ca8f">ripple::TOffer::m_account</a></div><div class="ttdeci">AccountID m_account</div><div class="ttdef"><b>Definition:</b> <a href="Offer_8h_source.html#l00054">Offer.h:54</a></div></div>
 <div class="ttc" id="aclassripple_1_1TOffer_html_a1571dc42015780b1f496a084363c47d1"><div class="ttname"><a href="classripple_1_1TOffer.html#a1571dc42015780b1f496a084363c47d1">ripple::TOffer::TOffer</a></div><div class="ttdeci">TOffer()=default</div></div>
 <div class="ttc" id="aclassripple_1_1TOfferBase_html_a37c20523d49e1b048fd77d5415b7e47f"><div class="ttname"><a href="classripple_1_1TOfferBase.html#a37c20523d49e1b048fd77d5415b7e47f">ripple::TOfferBase::issOut_</a></div><div class="ttdeci">Issue issOut_</div><div class="ttdef"><b>Definition:</b> <a href="Offer_8h_source.html#l00038">Offer.h:38</a></div></div>
+<div class="ttc" id="aclassripple_1_1TOffer_html_a163c4d4b7334097a470841f8bf418de4"><div class="ttname"><a href="classripple_1_1TOffer.html#a163c4d4b7334097a470841f8bf418de4">ripple::TOffer::issueIn</a></div><div class="ttdeci">Issue const  &amp; issueIn() const</div><div class="ttdef"><b>Definition:</b> <a href="Offer_8h_source.html#l00275">Offer.h:275</a></div></div>
 <div class="ttc" id="abasic_ostream_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/io/basic_ostream.html">std::ostream</a></div><div class="ttdoc">STL class.</div></div>
+<div class="ttc" id="aclassripple_1_1TOffer_html_ac4817fe90d1bd96d989ec0461c8cc520"><div class="ttname"><a href="classripple_1_1TOffer.html#ac4817fe90d1bd96d989ec0461c8cc520">ripple::TOffer::send</a></div><div class="ttdeci">static TER send(Args &amp;&amp;... args)</div><div class="ttdef"><b>Definition:</b> <a href="Offer_8h_source.html#l00236">Offer.h:236</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a4ad5ac9da897292a28eea43d041c15a1"><div class="ttname"><a href="namespaceripple.html#a4ad5ac9da897292a28eea43d041c15a1">ripple::toSTAmount</a></div><div class="ttdeci">STAmount toSTAmount(IOUAmount const &amp;iou, Issue const &amp;iss)</div><div class="ttdef"><b>Definition:</b> <a href="AmountConversions_8h_source.html#l00030">AmountConversions.h:30</a></div></div>
+<div class="ttc" id="aclassripple_1_1TERSubset_html"><div class="ttname"><a href="classripple_1_1TERSubset.html">ripple::TERSubset&lt; CanCvtToTER &gt;</a></div></div>
 <div class="ttc" id="aclassripple_1_1TOffer_html_afd346388dfa6d95ec38b22ec6527cb07"><div class="ttname"><a href="classripple_1_1TOffer.html#afd346388dfa6d95ec38b22ec6527cb07">ripple::TOffer::owner</a></div><div class="ttdeci">AccountID const  &amp; owner() const</div><div class="ttdoc">Returns the account id of the offer's owner.</div><div class="ttdef"><b>Definition:</b> <a href="Offer_8h_source.html#l00082">Offer.h:82</a></div></div>
-<div class="ttc" id="aclassripple_1_1TOffer_html_adc3651bd7c018d0e4c2b02008e0facea"><div class="ttname"><a href="classripple_1_1TOffer.html#adc3651bd7c018d0e4c2b02008e0facea">ripple::TOffer::setFieldAmounts</a></div><div class="ttdeci">void setFieldAmounts()</div><div class="ttdef"><b>Definition:</b> <a href="Offer_8h_source.html#l00171">Offer.h:171</a></div></div>
+<div class="ttc" id="aclassripple_1_1TOffer_html_adc3651bd7c018d0e4c2b02008e0facea"><div class="ttname"><a href="classripple_1_1TOffer.html#adc3651bd7c018d0e4c2b02008e0facea">ripple::TOffer::setFieldAmounts</a></div><div class="ttdeci">void setFieldAmounts()</div><div class="ttdef"><b>Definition:</b> <a href="Offer_8h_source.html#l00199">Offer.h:199</a></div></div>
 <div class="ttc" id="aclassripple_1_1STAmount_html"><div class="ttname"><a href="classripple_1_1STAmount.html">ripple::STAmount</a></div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8h_source.html#l00045">STAmount.h:45</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a991c39f1a35b252660a3b33bd880eef5"><div class="ttname"><a href="namespaceripple.html#a991c39f1a35b252660a3b33bd880eef5">ripple::sfTakerGets</a></div><div class="ttdeci">const SF_AMOUNT sfTakerGets</div></div>
+<div class="ttc" id="ainteger_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a></div></div>
 <div class="ttc" id="aclassripple_1_1TOffer_html_a247df9fe04ee37c2c37752b38948a416"><div class="ttname"><a href="classripple_1_1TOffer.html#a247df9fe04ee37c2c37752b38948a416">ripple::TOffer::m_entry</a></div><div class="ttdeci">SLE::pointer m_entry</div><div class="ttdef"><b>Definition:</b> <a href="Offer_8h_source.html#l00052">Offer.h:52</a></div></div>
-<div class="ttc" id="aclassripple_1_1TOffer_html_a3ad00732eb1a936345e48cfd82ed81da"><div class="ttname"><a href="classripple_1_1TOffer.html#a3ad00732eb1a936345e48cfd82ed81da">ripple::TOffer::issueIn</a></div><div class="ttdeci">Issue issueIn() const</div><div class="ttdef"><b>Definition:</b> <a href="Offer_8h_source.html#l00214">Offer.h:214</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="aclassripple_1_1TOffer_html_afaa77673e1d2ea514ceca39c8945eb0b"><div class="ttname"><a href="classripple_1_1TOffer.html#afaa77673e1d2ea514ceca39c8945eb0b">ripple::TOffer::consume</a></div><div class="ttdeci">void consume(ApplyView &amp;view, TAmounts&lt; TIn, TOut &gt; const &amp;consumed)</div><div class="ttdoc">Adjusts the offer to indicate that we consumed some (or all) of it.</div><div class="ttdef"><b>Definition:</b> <a href="Offer_8h_source.html#l00109">Offer.h:109</a></div></div>
+<div class="ttc" id="aoptional_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a></div></div>
 <div class="ttc" id="aclassripple_1_1TOfferBase_html_a3eeadf0fe3786b3fe20a475acf785ab2"><div class="ttname"><a href="classripple_1_1TOfferBase.html#a3eeadf0fe3786b3fe20a475acf785ab2">ripple::TOfferBase::issIn_</a></div><div class="ttdeci">Issue issIn_</div><div class="ttdef"><b>Definition:</b> <a href="Offer_8h_source.html#l00037">Offer.h:37</a></div></div>
 <div class="ttc" id="anamespaceripple_html_af9776f187d3686a7fba4c2d2fbeebdf4"><div class="ttname"><a href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">ripple::to_string</a></div><div class="ttdeci">std::string to_string(Manifest const &amp;m)</div><div class="ttdoc">Format the specified manifest to a string for debugging purposes.</div><div class="ttdef"><b>Definition:</b> <a href="app_2misc_2impl_2Manifest_8cpp_source.html#l00041">app/misc/impl/Manifest.cpp:41</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a5bab99595719d22579e10d21cf048eb0"><div class="ttname"><a href="namespaceripple.html#a5bab99595719d22579e10d21cf048eb0">ripple::sfAccount</a></div><div class="ttdeci">const SF_ACCOUNT sfAccount</div></div>
-<div class="ttc" id="aclassripple_1_1TOffer_html_a3bb88dbfbe0f7d4eabdeb8bdb861574e"><div class="ttname"><a href="classripple_1_1TOffer.html#a3bb88dbfbe0f7d4eabdeb8bdb861574e">ripple::TOffer::key</a></div><div class="ttdeci">uint256 key() const</div><div class="ttdef"><b>Definition:</b> <a href="Offer_8h_source.html#l00129">Offer.h:129</a></div></div>
-<div class="ttc" id="aclassripple_1_1TOffer_html_ac6d0fca0996b6eacdc248488cbb37258"><div class="ttname"><a href="classripple_1_1TOffer.html#ac6d0fca0996b6eacdc248488cbb37258">ripple::TOffer::issueOut</a></div><div class="ttdeci">Issue issueOut() const</div><div class="ttdef"><b>Definition:</b> <a href="Offer_8h_source.html#l00228">Offer.h:228</a></div></div>
+<div class="ttc" id="aclassripple_1_1TOffer_html_a6d7bf035bb6db3e7739d4ed487693e17"><div class="ttname"><a href="classripple_1_1TOffer.html#a6d7bf035bb6db3e7739d4ed487693e17">ripple::TOffer::isFunded</a></div><div class="ttdeci">bool isFunded() const</div><div class="ttdef"><b>Definition:</b> <a href="Offer_8h_source.html#l00154">Offer.h:154</a></div></div>
 <div class="ttc" id="aostream_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/ostream.html">ostream</a></div></div>
+<div class="ttc" id="aclassripple_1_1TOffer_html_a795092096b300371daa1210d468c3407"><div class="ttname"><a href="classripple_1_1TOffer.html#a795092096b300371daa1210d468c3407">ripple::TOffer::limitIn</a></div><div class="ttdeci">TAmounts&lt; TIn, TOut &gt; limitIn(TAmounts&lt; TIn, TOut &gt; const &amp;offrAmt, TIn const &amp;limit) const</div><div class="ttdef"><b>Definition:</b> <a href="Offer_8h_source.html#l00227">Offer.h:227</a></div></div>
+<div class="ttc" id="aclassripple_1_1TOffer_html_acd49a987fe6b675fa7e06ce20e34020f"><div class="ttname"><a href="classripple_1_1TOffer.html#acd49a987fe6b675fa7e06ce20e34020f">ripple::TOffer::adjustRates</a></div><div class="ttdeci">static std::pair&lt; std::uint32_t, std::uint32_t &gt; adjustRates(std::uint32_t ofrInRate, std::uint32_t ofrOutRate)</div><div class="ttdef"><b>Definition:</b> <a href="Offer_8h_source.html#l00161">Offer.h:161</a></div></div>
 <div class="ttc" id="aclassripple_1_1TOffer_html"><div class="ttname"><a href="classripple_1_1TOffer.html">ripple::TOffer</a></div><div class="ttdef"><b>Definition:</b> <a href="Offer_8h_source.html#l00049">Offer.h:49</a></div></div>
+<div class="ttc" id="aclassripple_1_1Issue_html_a46e4805870b1bad6a8691bed0b8acec8"><div class="ttname"><a href="classripple_1_1Issue.html#a46e4805870b1bad6a8691bed0b8acec8">ripple::Issue::account</a></div><div class="ttdeci">AccountID account</div><div class="ttdef"><b>Definition:</b> <a href="Issue_8h_source.html#l00039">Issue.h:39</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

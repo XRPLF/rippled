@@ -352,6 +352,9 @@ $(function() {
 : <a class="el" href="classbeast_1_1detail_1_1aged__ordered__container.html#abc7318a0fff570751d51c6c2c03ac1ae">beast::detail::aged_ordered_container&lt; IsMulti, IsMap, Key, T, Clock, Compare, Allocator &gt;</a>
 , <a class="el" href="classbeast_1_1detail_1_1aged__unordered__container.html#a757f0d5be875f766dd7c38c99d305f27">beast::detail::aged_unordered_container&lt; IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator &gt;</a>
 </li>
+<li>deleteAccount()
+: <a class="el" href="classripple_1_1AMMWithdraw.html#a08ed67b581073ac6f7697a4432a7b4fb">ripple::AMMWithdraw</a>
+</li>
 <li>DeleteAccount()
 : <a class="el" href="classripple_1_1DeleteAccount.html#a18caedf3ef1bf93da8c87aa9ba991064">ripple::DeleteAccount</a>
 </li>
@@ -462,6 +465,10 @@ $(function() {
 <li>demon
 : <a class="el" href="classripple_1_1test_1_1MultiSign__test.html#a72508d259b6521489afdddcf55f686d9">ripple::test::MultiSign_test</a>
 </li>
+<li>deposit()
+: <a class="el" href="classripple_1_1AMMDeposit.html#adcf4670f2b402a00f166d0f342a75714">ripple::AMMDeposit</a>
+, <a class="el" href="classripple_1_1test_1_1jtx_1_1AMM.html#a8f755873bcc0f4ac06f99f27618e0cd5">ripple::test::jtx::AMM</a>
+</li>
 <li>depositAuthArgs()
 : <a class="el" href="classripple_1_1test_1_1DepositAuthorized__test.html#ada85c761546ceef57ac3ccca85748695">ripple::test::DepositAuthorized_test</a>
 </li>
@@ -558,6 +565,7 @@ $(function() {
 , <a class="el" href="classripple_1_1STBase.html#a5e49bd8b743617d1af92ffed7ac6b665">ripple::STBase</a>
 , <a class="el" href="classripple_1_1STBitString.html#a5e49bd8b743617d1af92ffed7ac6b665">ripple::STBitString&lt; Bits &gt;</a>
 , <a class="el" href="classripple_1_1STBlob.html#a5e49bd8b743617d1af92ffed7ac6b665">ripple::STBlob</a>
+, <a class="el" href="classripple_1_1STIssue.html#a5e49bd8b743617d1af92ffed7ac6b665">ripple::STIssue</a>
 , <a class="el" href="classripple_1_1STLedgerEntry.html#a5e49bd8b743617d1af92ffed7ac6b665">ripple::STLedgerEntry</a>
 , <a class="el" href="classripple_1_1STObject.html#a5e49bd8b743617d1af92ffed7ac6b665">ripple::STObject</a>
 , <a class="el" href="classripple_1_1STPathSet.html#a5e49bd8b743617d1af92ffed7ac6b665">ripple::STPathSet</a>
@@ -867,7 +875,12 @@ $(function() {
 : <a class="el" href="classripple_1_1LedgerMaster.html#ad827c7b6502fb006aa8104d5da20bbd8">ripple::LedgerMaster</a>
 </li>
 <li>doApply()
-: <a class="el" href="classripple_1_1CancelCheck.html#aac3ad460901bc9c750d15b28af4f3d6c">ripple::CancelCheck</a>
+: <a class="el" href="classripple_1_1AMMBid.html#a18e8c4e59c240761e1750477be08e3df">ripple::AMMBid</a>
+, <a class="el" href="classripple_1_1AMMCreate.html#a68a6b3ead4b86444308a5378bbad2723">ripple::AMMCreate</a>
+, <a class="el" href="classripple_1_1AMMDeposit.html#ac92c10f978f5a831447bd7cdc5a0d1ef">ripple::AMMDeposit</a>
+, <a class="el" href="classripple_1_1AMMVote.html#a89442659a35b02fea1cad703ff21c84f">ripple::AMMVote</a>
+, <a class="el" href="classripple_1_1AMMWithdraw.html#ad366e7ecc17ab21d3fb406c334df6b0e">ripple::AMMWithdraw</a>
+, <a class="el" href="classripple_1_1CancelCheck.html#aac3ad460901bc9c750d15b28af4f3d6c">ripple::CancelCheck</a>
 , <a class="el" href="classripple_1_1CancelOffer.html#a69c6da84dc5b1f92e5b8a71d80686c98">ripple::CancelOffer</a>
 , <a class="el" href="classripple_1_1CashCheck.html#a77617cbe4011c799e76bea864e96e193">ripple::CashCheck</a>
 , <a class="el" href="classripple_1_1Change.html#af1fdcb02736b88b81c504ac3722efadf">ripple::Change</a>
@@ -1010,7 +1023,7 @@ $(function() {
 : <a class="el" href="classripple_1_1PathRequest.html#aa0723f9d4602f3582f4b258068e580c0">ripple::PathRequest</a>
 </li>
 <li>doValidatedLedger()
-: <a class="el" href="classripple_1_1AmendmentTable.html#ac721ac20262609226483f1436b0df02f">ripple::AmendmentTable</a>
+: <a class="el" href="classripple_1_1AmendmentTable.html#a48f050b47af8f00cafd237e2cddb2929">ripple::AmendmentTable</a>
 , <a class="el" href="classripple_1_1AmendmentTableImpl.html#a5a1de10b5b7e51cc4f20f2636503c2e6">ripple::AmendmentTableImpl</a>
 </li>
 <li>doValidation()
@@ -1020,7 +1033,7 @@ $(function() {
 , <a class="el" href="classripple_1_1FeeVoteImpl.html#a095335a98bfd73cd42e017accbc700fa">ripple::FeeVoteImpl</a>
 </li>
 <li>doVoting()
-: <a class="el" href="classripple_1_1AmendmentTable.html#ab69ef448949faf9d80e80760d6574381">ripple::AmendmentTable</a>
+: <a class="el" href="classripple_1_1AmendmentTable.html#ae4402ab8248766bc7556bdbb93225943">ripple::AmendmentTable</a>
 , <a class="el" href="classripple_1_1AmendmentTableImpl.html#a4eac7bf3be538741f7fa066c18b04fae">ripple::AmendmentTableImpl</a>
 , <a class="el" href="classripple_1_1FeeVote.html#a0891027717d974092b4a708b3cb03acc">ripple::FeeVote</a>
 , <a class="el" href="classripple_1_1FeeVoteImpl.html#ad264dda6949150323ec3360ef094ecc5">ripple::FeeVoteImpl</a>

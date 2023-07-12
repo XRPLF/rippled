@@ -1,3 +1,4 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classripple_1_1RPCParser.html" title=" " alt="" coords="5,5,139,32"/>
+<area shape="rect" id="node1" href="$classripple_1_1RPC_1_1ShardArchiveHandler.html" title="Handles the download and import of one or more shard archives." alt="" coords="5,5,192,47"/>
+<area shape="rect" id="node2" href="$classripple_1_1RPC_1_1RecoveryHandler.html" title=" " alt="" coords="240,13,452,39"/>
 </map>

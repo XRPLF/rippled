@@ -141,6 +141,11 @@ Functions</h2></td></tr>
 <tr class="memitem:a7bdef766607c687f8d05c699c5fb478f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structripple_1_1Keylet.html">Keylet</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1keylet.html#a7bdef766607c687f8d05c699c5fb478f">nft_sells</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const  &amp;id) noexcept</td></tr>
 <tr class="memdesc:a7bdef766607c687f8d05c699c5fb478f"><td class="mdescLeft">&#160;</td><td class="mdescRight">The directory of sell offers for the specified NFT.  <a href="namespaceripple_1_1keylet.html#a7bdef766607c687f8d05c699c5fb478f">More...</a><br /></td></tr>
 <tr class="separator:a7bdef766607c687f8d05c699c5fb478f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abdda705f5bcd7002243740a748496454"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structripple_1_1Keylet.html">Keylet</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1keylet.html#abdda705f5bcd7002243740a748496454">amm</a> (<a class="el" href="classripple_1_1Issue.html">Issue</a> const  &amp;issue1, <a class="el" href="classripple_1_1Issue.html">Issue</a> const  &amp;issue2) noexcept</td></tr>
+<tr class="memdesc:abdda705f5bcd7002243740a748496454"><td class="mdescLeft">&#160;</td><td class="mdescRight">AMM entry.  <a href="namespaceripple_1_1keylet.html#abdda705f5bcd7002243740a748496454">More...</a><br /></td></tr>
+<tr class="separator:abdda705f5bcd7002243740a748496454"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5c288a42504ab9c0a4b477a5314a5232"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structripple_1_1Keylet.html">Keylet</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1keylet.html#a5c288a42504ab9c0a4b477a5314a5232">amm</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;id) noexcept</td></tr>
+<tr class="separator:a5c288a42504ab9c0a4b477a5314a5232"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ada3df754038ddddc5e14d0475d5224eb"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structripple_1_1Keylet.html">Keylet</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1keylet.html#ada3df754038ddddc5e14d0475d5224eb">nftoffer</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;<a class="el" href="namespaceripple_1_1keylet.html#a5d33427228ab1869c37fcf11132865f6">offer</a>)</td></tr>
 <tr class="separator:ada3df754038ddddc5e14d0475d5224eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -185,7 +190,7 @@ Variables</h2></td></tr>
 
 <p>AccountID root. </p>
 
-<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00133">133</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00134">134</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
 
 </div>
 </div>
@@ -215,7 +220,7 @@ Variables</h2></td></tr>
 
 <p>Any item that can be in an owner dir. </p>
 
-<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00139">139</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00140">140</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
 
 </div>
 </div>
@@ -245,7 +250,7 @@ Variables</h2></td></tr>
 <p>The index of the "short" skip list. </p>
 <p>The "short" skip list is a node (at a fixed index) that holds the hashes of ledgers since the last flag ledger. It will contain, at most, 256 hashes. </p>
 
-<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00145">145</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00146">146</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
 
 </div>
 </div>
@@ -277,7 +282,7 @@ Variables</h2></td></tr>
 <p>The "long" skip list is a node that holds the hashes of (up to) 256 flag ledgers.</p>
 <p>It can be used to efficiently skip back to any ledger using only two hops: the first hop gets the "long" skip list for the ledger it wants to retrieve and uses it to get the hash of the flag ledger whose short skip list will contain the hash of the requested ledger. </p>
 
-<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00153">153</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00154">154</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
 
 </div>
 </div>
@@ -306,7 +311,7 @@ Variables</h2></td></tr>
 
 <p>The index of the amendment table. </p>
 
-<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00163">163</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00164">164</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
 
 </div>
 </div>
@@ -335,7 +340,7 @@ Variables</h2></td></tr>
 
 <p>The (fixed) index of the object containing the ledger fees. </p>
 
-<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00171">171</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00172">172</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
 
 </div>
 </div>
@@ -364,7 +369,7 @@ Variables</h2></td></tr>
 
 <p>The (fixed) index of the object containing the ledger negativeUNL. </p>
 
-<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00179">179</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00180">180</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
 
 </div>
 </div>
@@ -411,7 +416,7 @@ Variables</h2></td></tr>
 <p>The index of a trust line for a given currency. </p>
 <p>Note that a trustline is <em>shared</em> between two accounts (commonly referred to as the issuer and the holder); if Alice sets up a trust line to Bob for BTC, and Bob trusts Alice for BTC, here is only a single BTC trust line between them. </p>
 
-<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00193">193</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00194">194</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
 
 </div>
 </div>
@@ -451,7 +456,7 @@ Variables</h2></td></tr>
 
 <p>An offer from an account. </p>
 
-<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00222">222</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00223">223</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
 
 </div>
 </div>
@@ -491,7 +496,7 @@ Variables</h2></td></tr>
 
 <p>The initial directory page for a specific quality. </p>
 
-<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00228">228</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00229">229</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
 
 </div>
 </div>
@@ -529,7 +534,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00268">268</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00269">269</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
 
 </div>
 </div>
@@ -559,7 +564,7 @@ Variables</h2></td></tr>
 
 <p>A SignerList. </p>
 
-<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00275">275</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00276">276</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
 
 </div>
 </div>
@@ -599,7 +604,7 @@ Variables</h2></td></tr>
 
 <p>A Check. </p>
 
-<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00281">281</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00282">282</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
 
 </div>
 </div>
@@ -639,7 +644,7 @@ Variables</h2></td></tr>
 
 <p>A <a class="el" href="classripple_1_1DepositPreauth.html">DepositPreauth</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00287">287</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00288">288</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
 
 </div>
 </div>
@@ -669,7 +674,7 @@ Variables</h2></td></tr>
 
 <p>Any ledger entry. </p>
 
-<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00297">297</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00298">298</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
 
 </div>
 </div>
@@ -699,7 +704,7 @@ Variables</h2></td></tr>
 
 <p>The root page of an account's directory. </p>
 
-<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00303">303</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00304">304</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
 
 </div>
 </div>
@@ -739,7 +744,7 @@ Variables</h2></td></tr>
 
 <p>A page in a directory. </p>
 
-<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00309">309</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00310">310</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
 
 </div>
 </div>
@@ -779,7 +784,7 @@ Variables</h2></td></tr>
 
 <p>An escrow entry. </p>
 
-<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00318">318</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00319">319</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
 
 </div>
 </div>
@@ -825,7 +830,7 @@ Variables</h2></td></tr>
 
 <p>A PaymentChannel. </p>
 
-<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00324">324</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00325">325</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
 
 </div>
 </div>
@@ -848,7 +853,7 @@ Variables</h2></td></tr>
 <p>NFT page keylets. </p>
 <p>Unlike objects whose ledger identifiers are produced by hashing data, NFT page identifiers are composite identifiers, consisting of the owner's 160-bit AccountID, followed by a 96-bit value that determines which NFT tokens are candidates for that page. A keylet for the owner's first possible NFT page. </p>
 
-<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00332">332</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00333">333</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
 
 </div>
 </div>
@@ -870,7 +875,7 @@ Variables</h2></td></tr>
 
 <p>A keylet for the owner's last possible NFT page. </p>
 
-<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00340">340</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00341">341</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
 
 </div>
 </div>
@@ -900,7 +905,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00348">348</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00349">349</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
 
 </div>
 </div>
@@ -932,7 +937,7 @@ Variables</h2></td></tr>
 
 <p>An offer from an account to buy or sell an NFT. </p>
 
-<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00355">355</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00356">356</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
 
 </div>
 </div>
@@ -962,7 +967,7 @@ Variables</h2></td></tr>
 
 <p>The directory of buy offers for the specified NFT. </p>
 
-<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00362">362</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00363">363</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
 
 </div>
 </div>
@@ -992,7 +997,75 @@ Variables</h2></td></tr>
 
 <p>The directory of sell offers for the specified NFT. </p>
 
-<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00368">368</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00369">369</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
+
+</div>
+</div>
+<a id="abdda705f5bcd7002243740a748496454"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abdda705f5bcd7002243740a748496454">&#9670;&nbsp;</a></span>amm() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structripple_1_1Keylet.html">Keylet</a> ripple::keylet::amm </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;&#160;</td>
+          <td class="paramname"><em>issue1</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;&#160;</td>
+          <td class="paramname"><em>issue2</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>AMM entry. </p>
+
+<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00375">375</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a5c288a42504ab9c0a4b477a5314a5232"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5c288a42504ab9c0a4b477a5314a5232">&#9670;&nbsp;</a></span>amm() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structripple_1_1Keylet.html">Keylet</a> ripple::keylet::amm </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;&#160;</td>
+          <td class="paramname"><em>id</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="Indexes_8cpp_source.html#l00387">387</a> of file <a class="el" href="Indexes_8cpp_source.html">Indexes.cpp</a>.</p>
 
 </div>
 </div>

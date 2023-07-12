@@ -1,0 +1,17 @@
+<map id="ripple::AMMLiquidity&lt; TIn, TOut &gt;" name="ripple::AMMLiquidity&lt; TIn, TOut &gt;">
+<area shape="rect" id="node1" title="AMMLiquidity class provides AMM offers to BookStep class." alt="" coords="1136,246,1291,287"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,107,108,133"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="221,199,389,241"/>
+<area shape="rect" id="node3" href="$classripple_1_1Issue.html" title="A currency issued by an account." alt="" coords="859,223,960,249"/>
+<area shape="rect" id="node4" href="$classripple_1_1base__uint.html" title=" " alt="" coords="491,170,689,211"/>
+<area shape="rect" id="node7" href="$classripple_1_1base__uint.html" title=" " alt="" coords="487,247,693,289"/>
+<area shape="rect" id="node8" href="$classripple_1_1base__uint.html" title="Integers of any length that is a multiple of 32&#45;bits." alt="" coords="519,94,661,135"/>
+<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="261,148,349,175"/>
+<area shape="rect" id="node11" href="$classripple_1_1AMMContext.html" title="Maintains AMM info per overall payment engine execution and individual iteration." alt="" coords="835,287,984,313"/>
+<area shape="rect" id="node9" href="$classripple_1_1Number.html" title=" " alt="" coords="850,364,969,391"/>
+<area shape="rect" id="node10" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="543,433,637,460"/>
+<area shape="rect" id="node12" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="539,364,641,391"/>
+<area shape="rect" id="node13" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="543,313,637,340"/>
+<area shape="rect" id="node14" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="854,469,965,496"/>
+<area shape="rect" id="node15" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="517,484,663,511"/>
+</map>
