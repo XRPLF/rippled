@@ -21,15 +21,17 @@
 #define RIPPLE_BASICS_SLABALLOCATOR_H_INCLUDED
 
 #include <ripple/beast/type_name.h>
-#include <algorithm>
-#include <atomic>
-#include <cassert>
-#include <cstdint>
-#include <mutex>
 
 #include <boost/align.hpp>
 #include <boost/container/static_vector.hpp>
 #include <boost/predef.h>
+
+#include <algorithm>
+#include <atomic>
+#include <cassert>
+#include <cstdint>
+#include <cstring>
+#include <mutex>
 
 #if BOOST_OS_LINUX
 #include <sys/mman.h>
@@ -76,7 +78,9 @@ class SlabAllocator
 
             while (data + item <= p_ + size_)
             {
-                *reinterpret_cast<std::uint8_t**>(data) = l_;
+                // Use memcpy to avoid unaligned UB
+                // (will optimize to equivalent code)
+                std::memcpy(data, &l_, sizeof(std::uint8_t*));
                 l_ = data;
                 data += item;
             }
@@ -115,7 +119,11 @@ class SlabAllocator
                 ret = l_;
 
                 if (ret)
-                    l_ = *reinterpret_cast<std::uint8_t**>(ret);
+                {
+                    // Use memcpy to avoid unaligned UB
+                    // (will optimize to equivalent code)
+                    std::memcpy(&l_, ret, sizeof(std::uint8_t*));
+                }
             }
 
             return ret;
@@ -136,7 +144,10 @@ class SlabAllocator
             assert(own(ptr));
 
             std::lock_guard l(m_);
-            *reinterpret_cast<std::uint8_t**>(ptr) = l_;
+
+            // Use memcpy to avoid unaligned UB
+            // (will optimize to equivalent code)
+            std::memcpy(ptr, &l_, sizeof(std::uint8_t*));
             l_ = ptr;
         }
     };

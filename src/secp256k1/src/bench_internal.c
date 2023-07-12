@@ -5,7 +5,7 @@
  **********************************************************************/
 #include <stdio.h>
 
-#include "include/secp256k1.h"
+#include "secp256k1.h"
 
 #include "util.h"
 #include "hash_impl.h"

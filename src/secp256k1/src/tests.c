@@ -14,7 +14,7 @@
 #include <time.h>
 
 #include "secp256k1.c"
-#include "include/secp256k1.h"
+#include "secp256k1.h"
 #include "testrand_impl.h"
 
 #ifdef ENABLE_OPENSSL_TESTS

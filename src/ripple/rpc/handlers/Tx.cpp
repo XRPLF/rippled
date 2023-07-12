@@ -29,6 +29,7 @@
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/DeliveredAmount.h>
 #include <ripple/rpc/GRPCHandlers.h>
+#include <ripple/rpc/NFTSyntheticSerializer.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 #include <charconv>
 #include <regex>
@@ -326,6 +327,8 @@ populateJsonResponse(
                 response[jss::meta] = meta->getJson(JsonOptions::none);
                 insertDeliveredAmount(
                     response[jss::meta], context, result.txn, *meta);
+                insertNFTSyntheticInJson(
+                    response, context, result.txn->getSTransaction(), *meta);
             }
         }
         response[jss::validated] = result.validated;

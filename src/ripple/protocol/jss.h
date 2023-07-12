@@ -53,6 +53,7 @@ JSS(Check);                  // ledger type.
 JSS(CheckCancel);            // transaction type.
 JSS(CheckCash);              // transaction type.
 JSS(CheckCreate);            // transaction type.
+JSS(Clawback);               // transaction type.
 JSS(ClearFlag);              // field.
 JSS(DeliverMin);             // in: TransactionSign
 JSS(DepositPreauth);         // transaction and ledger type.
@@ -417,6 +418,8 @@ JSS(nft_offer_index);            // out nft_buy_offers, nft_sell_offers
 JSS(nft_page);                   // in: LedgerEntry
 JSS(nft_serial);                 // out: account_nfts
 JSS(nft_taxon);                  // out: nft_info (clio)
+JSS(nftoken_id);                 // out: insertNFTokenID
+JSS(nftoken_ids);                // out: insertNFTokenID
 JSS(no_ripple);                  // out: AccountLines
 JSS(no_ripple_peer);             // out: AccountLines
 JSS(node);                       // out: LedgerEntry
@@ -437,6 +440,7 @@ JSS(node_writes_delayed);        // out::GetCounts
 JSS(obligations);                // out: GatewayBalances
 JSS(offer);                      // in: LedgerEntry
 JSS(offers);                     // out: NetworkOPs, AccountOffers, Subscribe
+JSS(offer_id);                   // out: insertNFTokenOfferID
 JSS(offline);                    // in: TransactionSign
 JSS(offset);                     // in/out: AccountTxOld
 JSS(open);                       // out: handlers/Ledger
@@ -463,13 +467,14 @@ JSS(peers);                       // out: InboundLedger, handlers/Peers, Overlay
 JSS(peer_disconnects);            // Severed peer connection counter.
 JSS(peer_disconnects_resources);  // Severed peer connections because of
                                   // excess resource consumption.
-JSS(port);                        // in: Connect
+JSS(port);                        // in: Connect, out: NetworkOPs
+JSS(ports);                       // out: NetworkOPs
 JSS(previous);                    // out: Reservations
 JSS(previous_ledger);             // out: LedgerPropose
 JSS(proof);                       // in: BookOffers
 JSS(propose_seq);                 // out: LedgerPropose
 JSS(proposers);                   // out: NetworkOPs, LedgerConsensus
-JSS(protocol);                    // out: PeerImp
+JSS(protocol);                    // out: NetworkOPs, PeerImp
 JSS(proxied);                     // out: RPC ping
 JSS(pubkey_node);                 // out: NetworkOPs
 JSS(pubkey_publisher);            // out: ValidatorList
@@ -524,7 +529,6 @@ JSS(send_max);                  // in: PathRequest, RipplePathFind
 JSS(seq);                       // in: LedgerEntry;
                                 // out: NetworkOPs, RPCSub, AccountOffers,
                                 //      ValidatorList, ValidatorInfo, Manifest
-JSS(seqNum);                    // out: LedgerToJson
 JSS(sequence);                  // in: UNL
 JSS(sequence_count);            // out: AccountInfo
 JSS(server_domain);             // out: NetworkOPs
@@ -579,7 +583,6 @@ JSS(timeouts);                // out: InboundLedger
 JSS(track);                   // out: PeerImp
 JSS(traffic);                 // out: Overlay
 JSS(total);                   // out: counters
-JSS(totalCoins);              // out: LedgerToJson
 JSS(total_bytes_recv);        // out: Peers
 JSS(total_bytes_sent);        // out: Peers
 JSS(total_coins);             // out: LedgerToJson
