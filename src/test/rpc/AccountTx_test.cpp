@@ -315,6 +315,15 @@ class AccountTx_test : public beast::unit_test::suite
                     env.rpc("json", "account_tx", to_string(p)),
                     rpcLGR_IDX_MALFORMED));
             }
+            // Test account that does not exist on ledger
+            {
+                Json::Value p{jParms};
+                p[jss::account] = "rH9pnDCtgAbFjozbZQuJWvPM8QHweXgZhj";
+
+                BEAST_EXPECT(isErr(
+                    env.rpc("json", "account_tx", to_string(p)),
+                    rpcACT_NOT_FOUND));
+            }
         }
     }
 

@@ -240,6 +240,31 @@ doAccountTxHelp(RPC::Context& context, AccountTxArgs const& args)
 
     result.ledgerRange = std::get<LedgerRange>(lgrRange);
 
+    // if the account does not exist in any of the ledger range,
+    // return an error
+    if (context.apiVersion > 1u)
+    {
+        bool accountFound = false;
+        for (unsigned int idx = result.ledgerRange.min;
+             idx <= result.ledgerRange.max;
+             ++idx)
+        {
+            std::shared_ptr<ReadView const> ledger;
+            auto const status = getLedger(ledger, idx, context);
+            if (ledger->exists(keylet::account(args.account)))
+            {
+                accountFound = true;
+                break;
+            }
+        }
+        // if account not found in all the ledger, throw an error
+        if (accountFound == false)
+        {
+            RPC::Status status{rpcACT_NOT_FOUND, "Account not found in ledger"};
+            return {result, status};
+        }
+    }
+
     result.marker = args.marker;
 
     RelationalDatabase::AccountTxPageOptions options = {
