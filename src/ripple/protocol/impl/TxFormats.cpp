@@ -339,6 +339,13 @@ TxFormats::TxFormats()
             {sfCFTokenMetadata, soeOPTIONAL},
         },
         commonFields);
+
+    add(jss::CFTokenIssuanceDestroy,
+        ttCFTOKEN_ISSUANCE_DESTROY,
+        {
+            {sfCFTokenIssuanceID, soeREQUIRED},
+        },
+        commonFields);
 }
 
 TxFormats const&

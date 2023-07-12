@@ -40,6 +40,16 @@ create(jtx::Account const& account, std::string const& asset)
     return jv;
 }
 
+Json::Value
+destroy(jtx::Account const& account, std::string const& id)
+{
+    Json::Value jv;
+    jv[sfAccount.jsonName] = account.human();
+    jv[sfCFTokenIssuanceID.jsonName] = id;
+    jv[sfTransactionType.jsonName] = jss::CFTokenIssuanceDestroy;
+    return jv;
+}
+
 }  // namespace cft
 
 }  // namespace jtx

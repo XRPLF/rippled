@@ -59,6 +59,50 @@ class CFToken_test : public beast::unit_test::suite
 
             BEAST_EXPECT(env.ownerCount(master) == 1);
         }
+        {
+            // If the CFT amendment is not enabled, you should not be able to
+            // destroy CFTokenIssuances
+            Env env{*this, features - featureCFTokensV1};
+            Account const& master = env.master;
+
+            BEAST_EXPECT(ownerCount(env, master) == 0);
+
+            // TODO why not working with short codes?
+            std::string const assetStr =
+                "0158415500000000C1F76FF6ECB0BAC600000000";
+            ripple::uint160 asset;
+            BEAST_EXPECT(asset.parseHex(assetStr));
+            auto const id = keylet::cft_issuance(master.id(), asset);
+            env(cft::destroy(master, ripple::to_string(id.key)),
+                ter(temDISABLED));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, master) == 0);
+        }
+        {
+            // If the CFT amendment IS enabled, you should be able to destroy
+            // CFTokenIssuances
+            Env env{*this, features | featureCFTokensV1};
+            Account const& master = env.master;
+
+            BEAST_EXPECT(ownerCount(env, master) == 0);
+
+            // TODO why not working with short codes?
+            std::string const assetStr =
+                "0158415500000000C1F76FF6ECB0BAC600000000";
+            ripple::uint160 asset;
+            BEAST_EXPECT(asset.parseHex(assetStr));
+
+            env(cft::create(master, assetStr));
+            env.close();
+            BEAST_EXPECT(ownerCount(env, master) == 1);
+
+            auto const id = keylet::cft_issuance(master.id(), asset);
+
+            env(cft::destroy(master, ripple::to_string(id.key)));
+            env.close();
+            BEAST_EXPECT(ownerCount(env, master) == 0);
+        }
     }
 
 public:
