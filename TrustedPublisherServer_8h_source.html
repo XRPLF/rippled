@@ -645,7 +645,7 @@ $(function() {
 <div class="line"><a name="l00574"></a><span class="lineno">  574</span>&#160;                <span class="keywordflow">if</span> (ec)</div>
 <div class="line"><a name="l00575"></a><span class="lineno">  575</span>&#160;                    <span class="keywordflow">break</span>;</div>
 <div class="line"><a name="l00576"></a><span class="lineno">  576</span>&#160; </div>
-<div class="line"><a name="l00577"></a><span class="lineno">  577</span>&#160;                <span class="keyword">auto</span> path = req.target().to_string();</div>
+<div class="line"><a name="l00577"></a><span class="lineno">  577</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> path = req.target();</div>
 <div class="line"><a name="l00578"></a><span class="lineno">  578</span>&#160;                res.insert(<span class="stringliteral">&quot;Server&quot;</span>, <span class="stringliteral">&quot;TrustedPublisherServer&quot;</span>);</div>
 <div class="line"><a name="l00579"></a><span class="lineno">  579</span>&#160;                res.version(req.version());</div>
 <div class="line"><a name="l00580"></a><span class="lineno">  580</span>&#160;                res.keep_alive(req.keep_alive());</div>
@@ -713,7 +713,7 @@ $(function() {
 <div class="line"><a name="l00642"></a><span class="lineno">  642</span>&#160;                    <span class="keyword">auto</span> <span class="keyword">const</span> sleep_sec =</div>
 <div class="line"><a name="l00643"></a><span class="lineno">  643</span>&#160;                        boost::lexical_cast&lt;unsigned int&gt;(path.substr(7));</div>
 <div class="line"><a name="l00644"></a><span class="lineno">  644</span>&#160;                    <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/sleep_for.html">std::this_thread::sleep_for</a>(</div>
-<div class="line"><a name="l00645"></a><span class="lineno">  645</span>&#160;                        <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a>{sleep_sec});</div>
+<div class="line"><a name="l00645"></a><span class="lineno">  645</span>&#160;                        <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a>(sleep_sec));</div>
 <div class="line"><a name="l00646"></a><span class="lineno">  646</span>&#160;                }</div>
 <div class="line"><a name="l00647"></a><span class="lineno">  647</span>&#160;                <span class="keywordflow">else</span> <span class="keywordflow">if</span> (boost::starts_with(path, <span class="stringliteral">&quot;/redirect&quot;</span>))</div>
 <div class="line"><a name="l00648"></a><span class="lineno">  648</span>&#160;                {</div>

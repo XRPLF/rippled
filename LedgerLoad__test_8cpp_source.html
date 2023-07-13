@@ -225,7 +225,7 @@ $(function() {
 <div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;        copy_file(</div>
 <div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;            sd.<a class="code" href="structripple_1_1LedgerLoad__test_1_1SetupData.html#a573e25fc310f3cc07a04bd8069f0088a">ledgerFile</a>,</div>
 <div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;            ledgerFileCorrupt,</div>
-<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;            copy_option::overwrite_if_exists,</div>
+<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;            copy_options::overwrite_existing,</div>
 <div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;            ec);</div>
 <div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;        <span class="keywordflow">if</span> (!BEAST_EXPECTS(!ec, ec.message()))</div>
 <div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;            <span class="keywordflow">return</span>;</div>
