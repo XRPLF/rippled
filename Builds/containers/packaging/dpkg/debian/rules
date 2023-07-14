@@ -15,6 +15,7 @@ override_dh_systemd_start:
 	dh_systemd_start --no-restart-on-upgrade
 
 override_dh_auto_configure:
+	apt-get update
 	apt install --yes gcc-11 g++-11
 	update-alternatives --install \
 		/usr/bin/gcc gcc /usr/bin/gcc-11 100 \
