@@ -53,6 +53,14 @@ Additions are intended to be non-breaking (because they are purely additive).
 - If and when the `fixNFTokenRemint` amendment activates, there will be a new AccountRoot field, `FirstNFTSequence`. This field is set to the current account sequence when the account issues their first NFT. If an account has not issued any NFTs, then the field is not set. ([#4406](https://github.com/XRPLF/rippled/pull/4406))
   - There is a new account deletion restriction: an account can only be deleted if `FirstNFTSequence` + `MintedNFTokens` + `256` is less than the current ledger sequence.
   - This is potentially a breaking change if clients have logic for determining whether an account can be deleted.
+- NetworkID
+  - For sidechains and networks with a network ID greater than 1024, there is a new [transaction common field](https://xrpl.org/transaction-common-fields.html), `NetworkID`. (https://github.com/XRPLF/rippled/pull/4370)
+    - This field helps to prevent replay attacks and is now required for chains whose network ID is 1025 or higher.
+    - The field must be omitted for Mainnet, so there is no change for Mainnet users.
+  - There are three new local error codes:
+    - `telNETWORK_ID_MAKES_TX_NON_CANONICAL`: a `NetworkID` is present but the chain's network ID is less than 1025. Remove the field from the transaction, and try again.
+    - `telREQUIRES_NETWORK_ID`: a `NetworkID` is required, but is not present. Add the field to the transaction, and try again.
+    - `telWRONG_NETWORK`: a `NetworkID` is specified, but it is for a different network. Submit the transaction to a different server which is connected to the correct network.
 
 ### Additions and bug fixes in 1.11
 
