@@ -2057,7 +2057,7 @@ Enumerations</h2></td></tr>
 <br />
 &#160;&#160;<a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a99c52494bb88dab0264625ebc5c4206e">lsfDisallowIncomingTrustline</a>, 
 <a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5aa92bc301276504f22d869a02806c0a1f">lsfAMM</a> = 0x40000000, 
-<a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5ac08d95c566e316346e73a5b1d3fbf40e">lsfAllowClawback</a>, 
+<a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a4dc02270bf68939f8033c9a985fb2dfb">lsfAllowTrustLineClawback</a>, 
 <a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5af5bb4ed279c86f7c4ddfe0b2ed89af00">lsfPassive</a> = 0x00010000, 
 <br />
 &#160;&#160;<a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5ab4f5e24467c127ce07228288a7b54760">lsfSell</a> = 0x00020000, 
@@ -6048,8 +6048,8 @@ Variables</h2></td></tr>
 <tr class="separator:ac12fbb1864b09bfd3fb4ead410449edd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a72b8ab4faf1078ddedabff623d95b057"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a72b8ab4faf1078ddedabff623d95b057">asfDisallowIncomingTrustline</a> = 15</td></tr>
 <tr class="separator:a72b8ab4faf1078ddedabff623d95b057"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3ac502eaeebe1f069671eeb7b978a1a6"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a3ac502eaeebe1f069671eeb7b978a1a6">asfAllowClawback</a> = 16</td></tr>
-<tr class="separator:a3ac502eaeebe1f069671eeb7b978a1a6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acedcd08c62e1bb941e2f6c9e289c6582"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#acedcd08c62e1bb941e2f6c9e289c6582">asfAllowTrustLineClawback</a> = 16</td></tr>
+<tr class="separator:acedcd08c62e1bb941e2f6c9e289c6582"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a61d9fbb44b335fbb5e82e3211e6639a2"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a61d9fbb44b335fbb5e82e3211e6639a2">tfPassive</a> = 0x00010000</td></tr>
 <tr class="separator:a61d9fbb44b335fbb5e82e3211e6639a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6257d0a91b5b06dd7712c68af628441d"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a6257d0a91b5b06dd7712c68af628441d">tfImmediateOrCancel</a> = 0x00020000</td></tr>
@@ -9104,7 +9104,7 @@ ledger.
 <tr><td class="fieldname"><a id="a4a9c7b33fef9015d6406302ef80b63c5a91c443238e7e5acef466bfb2fe9f1211"></a>lsfDisallowIncomingPayChan&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a4a9c7b33fef9015d6406302ef80b63c5a99c52494bb88dab0264625ebc5c4206e"></a>lsfDisallowIncomingTrustline&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a4a9c7b33fef9015d6406302ef80b63c5aa92bc301276504f22d869a02806c0a1f"></a>lsfAMM&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a4a9c7b33fef9015d6406302ef80b63c5ac08d95c566e316346e73a5b1d3fbf40e"></a>lsfAllowClawback&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a4a9c7b33fef9015d6406302ef80b63c5a4dc02270bf68939f8033c9a985fb2dfb"></a>lsfAllowTrustLineClawback&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a4a9c7b33fef9015d6406302ef80b63c5af5bb4ed279c86f7c4ddfe0b2ed89af00"></a>lsfPassive&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a4a9c7b33fef9015d6406302ef80b63c5ab4f5e24467c127ce07228288a7b54760"></a>lsfSell&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a4a9c7b33fef9015d6406302ef80b63c5ac704b653dce116dabb7ede80b711d953"></a>lsfLowReserve&#160;</td><td class="fielddoc"></td></tr>
@@ -59496,8 +59496,8 @@ template&lt;class Dest , class Src &gt; </div>
 
 </div>
 </div>
-<a id="a3ac502eaeebe1f069671eeb7b978a1a6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3ac502eaeebe1f069671eeb7b978a1a6">&#9670;&nbsp;</a></span>asfAllowClawback</h2>
+<a id="acedcd08c62e1bb941e2f6c9e289c6582"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acedcd08c62e1bb941e2f6c9e289c6582">&#9670;&nbsp;</a></span>asfAllowTrustLineClawback</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -59506,7 +59506,7 @@ template&lt;class Dest , class Src &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ripple::asfAllowClawback = 16</td>
+          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ripple::asfAllowTrustLineClawback = 16</td>
         </tr>
       </table>
   </td>

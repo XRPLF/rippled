@@ -149,7 +149,7 @@ var searchData=
   ['armed_5f_23369',['armed_',['../classripple_1_1LoadManager.html#a69963f56530f2f03699a131faa019feb',1,'ripple::LoadManager']]],
   ['array_23370',['array',['../classripple_1_1STParsedJSONArray.html#a15bd4b112bb54d2906b610523f800eab',1,'ripple::STParsedJSONArray']]],
   ['asfaccounttxnid_23371',['asfAccountTxnID',['../namespaceripple.html#a9236ad224cda331f55af0a09d9bd16ea',1,'ripple']]],
-  ['asfallowclawback_23372',['asfAllowClawback',['../namespaceripple.html#a3ac502eaeebe1f069671eeb7b978a1a6',1,'ripple']]],
+  ['asfallowtrustlineclawback_23372',['asfAllowTrustLineClawback',['../namespaceripple.html#acedcd08c62e1bb941e2f6c9e289c6582',1,'ripple']]],
   ['asfauthorizednftokenminter_23373',['asfAuthorizedNFTokenMinter',['../namespaceripple.html#a4414987963e371e8bdbafd38bc5427fa',1,'ripple']]],
   ['asfdefaultripple_23374',['asfDefaultRipple',['../namespaceripple.html#a92b26c4fb4288c04285666f316d24f9c',1,'ripple']]],
   ['asfdepositauth_23375',['asfDepositAuth',['../namespaceripple.html#a1d8ec9af2fd805d04e032c52f6968211',1,'ripple']]],

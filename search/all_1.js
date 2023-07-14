@@ -532,7 +532,7 @@ var searchData=
   ['asduration_532',['asDuration',['../classripple_1_1test_1_1csf_1_1Submitter.html#ad45e386dba65c8dd05bd07acf639d6b6',1,'ripple::test::csf::Submitter::asDuration(SimDuration d)'],['../classripple_1_1test_1_1csf_1_1Submitter.html#ad9ef169cb59ef92790f04093211998b0',1,'ripple::test::csf::Submitter::asDuration(T t)']]],
   ['asexpected_533',['asExpected',['../classripple_1_1test_1_1LedgerReplayClient.html#a61e8d17eca1027a5143bdf419f64a43f',1,'ripple::test::LedgerReplayClient::asExpected(std::shared_ptr&lt; LedgerReplayTask &gt; const &amp;task, TaskStatus taskExpect, TaskStatus skiplistExpect, std::vector&lt; TaskStatus &gt; const &amp;deltaExpects)'],['../classripple_1_1test_1_1LedgerReplayClient.html#a2da8f3d27e2da922434b87af9ad76abc',1,'ripple::test::LedgerReplayClient::asExpected(uint256 const &amp;hash, int totalReplay, TaskStatus taskExpect, TaskStatus skiplistExpect, std::vector&lt; TaskStatus &gt; const &amp;deltaExpects)']]],
   ['asfaccounttxnid_534',['asfAccountTxnID',['../namespaceripple.html#a9236ad224cda331f55af0a09d9bd16ea',1,'ripple']]],
-  ['asfallowclawback_535',['asfAllowClawback',['../namespaceripple.html#a3ac502eaeebe1f069671eeb7b978a1a6',1,'ripple']]],
+  ['asfallowtrustlineclawback_535',['asfAllowTrustLineClawback',['../namespaceripple.html#acedcd08c62e1bb941e2f6c9e289c6582',1,'ripple']]],
   ['asfauthorizednftokenminter_536',['asfAuthorizedNFTokenMinter',['../namespaceripple.html#a4414987963e371e8bdbafd38bc5427fa',1,'ripple']]],
   ['asfdefaultripple_537',['asfDefaultRipple',['../namespaceripple.html#a92b26c4fb4288c04285666f316d24f9c',1,'ripple']]],
   ['asfdepositauth_538',['asfDepositAuth',['../namespaceripple.html#a1d8ec9af2fd805d04e032c52f6968211',1,'ripple']]],

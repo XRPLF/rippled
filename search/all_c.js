@@ -414,7 +414,7 @@ var searchData=
   ['lround_5501',['lround',['http://en.cppreference.com/w/cpp/numeric/math/round.html',1,'std']]],
   ['lsdebug_5502',['lsDEBUG',['../namespaceripple.html#afc7159a6877417e38472fbbd425f2244a031699c2a2c25288caf7c5c512da58eb',1,'ripple']]],
   ['lserror_5503',['lsERROR',['../namespaceripple.html#afc7159a6877417e38472fbbd425f2244a2aa4cf81dadaf26c72546ae13129feea',1,'ripple']]],
-  ['lsfallowclawback_5504',['lsfAllowClawback',['../namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5ac08d95c566e316346e73a5b1d3fbf40e',1,'ripple']]],
+  ['lsfallowtrustlineclawback_5504',['lsfAllowTrustLineClawback',['../namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a4dc02270bf68939f8033c9a985fb2dfb',1,'ripple']]],
   ['lsfamm_5505',['lsfAMM',['../namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5aa92bc301276504f22d869a02806c0a1f',1,'ripple']]],
   ['lsfammnode_5506',['lsfAMMNode',['../namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a8cd829998dcb0143ec2153b20fc14d33',1,'ripple']]],
   ['lsfatal_5507',['lsFATAL',['../namespaceripple.html#afc7159a6877417e38472fbbd425f2244acb980b97f93585b5b1f20725a2256c23',1,'ripple']]],
