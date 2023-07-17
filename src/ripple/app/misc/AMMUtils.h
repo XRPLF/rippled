@@ -93,6 +93,26 @@ ammAccountHolds(
     AccountID const& ammAccountID,
     Issue const& issue);
 
+/** Delete trustlines to AMM. If all trustlines are deleted then
+ * AMM object and account are deleted. Otherwise tecIMPCOMPLETE is returned.
+ */
+TER
+deleteAMMAccount(
+    Sandbox& view,
+    Issue const& asset,
+    Issue const& asset2,
+    beast::Journal j);
+
+/** Initialize Auction and Voting slots and set the trading/discounted fee.
+ */
+void
+initializeFeeAuctionVote(
+    ApplyView& view,
+    std::shared_ptr<SLE>& ammSle,
+    AccountID const& account,
+    Issue const& lptIssue,
+    std::uint16_t tfee);
+
 }  // namespace ripple
 
 #endif  // RIPPLE_APP_MISC_AMMUTILS_H_INLCUDED

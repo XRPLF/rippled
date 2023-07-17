@@ -20,6 +20,7 @@
 #include <ripple/app/tx/impl/SetTrust.h>
 #include <ripple/basics/Log.h>
 #include <ripple/ledger/View.h>
+#include <ripple/protocol/AMMCore.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/Quality.h>
@@ -128,18 +129,44 @@ SetTrust::preclaim(PreclaimContext const& ctx)
         }
     }
 
+    // This might be nullptr
+    auto const sleDst = ctx.view.read(keylet::account(uDstAccountID));
+
     // If the destination has opted to disallow incoming trustlines
     // then honour that flag
     if (ctx.view.rules().enabled(featureDisallowIncoming))
     {
-        auto const sleDst = ctx.view.read(keylet::account(uDstAccountID));
-
         if (!sleDst)
             return tecNO_DST;
 
-        auto const dstFlags = sleDst->getFlags();
-        if (dstFlags & lsfDisallowIncomingTrustline)
+        if (sleDst->getFlags() & lsfDisallowIncomingTrustline)
             return tecNO_PERMISSION;
+    }
+
+    // If destination is AMM and the trustline doesn't exist then only
+    // allow SetTrust if the asset is AMM LP token and AMM is not
+    // in empty state.
+    if (ammEnabled(ctx.view.rules()))
+    {
+        if (!sleDst)
+            return tecNO_DST;
+
+        if (sleDst->isFieldPresent(sfAMMID) &&
+            !ctx.view.read(keylet::line(id, uDstAccountID, currency)))
+        {
+            if (auto const ammSle =
+                    ctx.view.read({ltAMM, sleDst->getFieldH256(sfAMMID)}))
+            {
+                if (auto const lpTokens =
+                        ammSle->getFieldAmount(sfLPTokenBalance);
+                    lpTokens == beast::zero)
+                    return tecAMM_EMPTY;
+                else if (lpTokens.getCurrency() != saLimitAmount.getCurrency())
+                    return tecNO_PERMISSION;
+            }
+            else
+                return tecINTERNAL;
+        }
     }
 
     return tesSUCCESS;

@@ -25,7 +25,6 @@
 #include <ripple/ledger/Sandbox.h>
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/AMMCore.h>
-#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/STAccount.h>
 #include <ripple/protocol/TxFlags.h>
 
@@ -195,8 +194,10 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
     if (!expected)
         return expected.error();
     auto const [amountBalance, amount2Balance, lptAMMBalance] = *expected;
+    if (lptAMMBalance == beast::zero)
+        return tecAMM_EMPTY;
     if (amountBalance <= beast::zero || amount2Balance <= beast::zero ||
-        lptAMMBalance <= beast::zero)
+        lptAMMBalance < beast::zero)
     {
         JLOG(ctx.j.debug())
             << "AMM Withdraw: reserves or tokens balance is zero.";
@@ -301,6 +302,9 @@ AMMWithdraw::applyGuts(Sandbox& sb)
     if (!ammSle)
         return {tecINTERNAL, false};
     auto const ammAccountID = (*ammSle)[sfAccount];
+    auto const accountSle = sb.read(keylet::account(ammAccountID));
+    if (!accountSle)
+        return {tecINTERNAL, false};
     auto const lpTokens =
         ammLPHolds(ctx_.view(), *ammSle, ctx_.tx[sfAccount], ctx_.journal);
     auto const lpTokensWithdraw =
@@ -372,19 +376,31 @@ AMMWithdraw::applyGuts(Sandbox& sb)
         return std::make_pair(tecINTERNAL, STAmount{});
     }();
 
-    // AMM is deleted if zero tokens balance
-    if (result == tesSUCCESS && newLPTokenBalance != beast::zero)
+    if (result != tesSUCCESS)
+        return {result, false};
+
+    bool updateBalance = true;
+    if (newLPTokenBalance == beast::zero)
+    {
+        if (auto const ter =
+                deleteAMMAccount(sb, ctx_.tx[sfAsset], ctx_.tx[sfAsset2], j_);
+            ter != tesSUCCESS && ter != tecINCOMPLETE)
+            return {ter, false};
+        else
+            updateBalance = (ter == tecINCOMPLETE);
+    }
+
+    if (updateBalance)
     {
         ammSle->setFieldAmount(sfLPTokenBalance, newLPTokenBalance);
         sb.update(ammSle);
-
-        JLOG(ctx_.journal.trace())
-            << "AMM Withdraw: tokens " << to_string(newLPTokenBalance.iou())
-            << " " << to_string(lpTokens.iou()) << " "
-            << to_string(lptAMMBalance.iou());
     }
 
-    return {result, result == tesSUCCESS};
+    JLOG(ctx_.journal.trace())
+        << "AMM Withdraw: tokens " << to_string(newLPTokenBalance.iou()) << " "
+        << to_string(lpTokens.iou()) << " " << to_string(lptAMMBalance.iou());
+
+    return {tesSUCCESS, true};
 }
 
 TER
@@ -399,24 +415,6 @@ AMMWithdraw::doApply()
         sb.apply(ctx_.rawView());
 
     return result.first;
-}
-
-TER
-AMMWithdraw::deleteAccount(Sandbox& sb, AccountID const& ammAccountID)
-{
-    auto sleAMMRoot = sb.peek(keylet::account(ammAccountID));
-    auto ammSle = sb.peek(keylet::amm(ctx_.tx[sfAsset], ctx_.tx[sfAsset2]));
-
-    if (!sleAMMRoot || !ammSle)
-        return tecINTERNAL;
-
-    // Note, the AMM trust lines are deleted since the balance
-    // goes to 0. It also means there are no linked
-    // ledger objects.
-    sb.erase(ammSle);
-    sb.erase(sleAMMRoot);
-
-    return tesSUCCESS;
 }
 
 std::pair<TER, STAmount>
@@ -561,9 +559,6 @@ AMMWithdraw::withdraw(
             << "AMM Withdraw: failed to withdraw LPTokens";
         return {res, STAmount{}};
     }
-
-    if (lpTokensWithdrawActual == lpTokensAMMBalance)
-        return {deleteAccount(view, ammAccount), STAmount{}};
 
     return {tesSUCCESS, lpTokensAMMBalance - lpTokensWithdrawActual};
 }

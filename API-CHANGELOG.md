@@ -47,6 +47,28 @@ Additions are intended to be non-breaking (because they are purely additive).
   - Adds the [Clawback transaction type](https://github.com/XRPLF/XRPL-Standards/blob/master/XLS-39d-clawback/README.md#331-clawback-transaction), containing these fields:
     - `Account`: The issuer of the asset being clawed back. Must also be the sender of the transaction.
     - `Amount`: The amount being clawed back, with the `Amount.issuer` being the token holder's address.
+- Adds [AMM](https://github.com/XRPLF/XRPL-Standards/discussions/78) ([#4294](https://github.com/XRPLF/rippled/pull/4294), [#4626](https://github.com/XRPLF/rippled/pull/4626)) feature:
+    - Adds `amm_info` API to retrieve AMM information for a given tokens pair.
+    - Adds `AMMCreate` transaction type to create `AMM` instance.
+    - Adds `AMMDeposit` transaction type to deposit funds into `AMM` instance.
+    - Adds `AMMWithdraw` transaction type to withdraw funds from `AMM` instance.
+    - Adds `AMMVote` transaction type to vote for the trading fee of `AMM` instance.
+    - Adds `AMMBid` transaction type to bid for the Auction Slot of `AMM` instance.
+    - Adds `AMMDelete` transaction type to delete `AMM` instance.
+    - Adds `sfAMMID` to `AccountRoot` to indicate that the account is `AMM`'s account. `AMMID` is used to fetch `ltAMM`.
+    - Adds `lsfAMMNode` `TrustLine` flag to indicate that one side of the `TrustLine` is `AMM` account.
+    - Adds `tfLPToken`, `tfSingleAsset`, `tfTwoAsset`, `tfOneAssetLPToken`, `tfLimitLPToken`, `tfTwoAssetIfEmpty`,
+      `tfWithdrawAll`, `tfOneAssetWithdrawAll` which allow a trader to specify different fields combination 
+      for `AMMDeposit` and `AMMWithdraw` transactions.
+    - Adds new transaction result codes:
+       - tecUNFUNDED_AMM: insufficient balance to fund AMM. The account does not have funds for liquidity provision.
+       -  tecAMM_BALANCE: AMM has invalid balance. Calculated balances greater than the current pool balances.
+       -  tecAMM_FAILED: AMM transaction failed. Fails due to a processing failure.
+       -  tecAMM_INVALID_TOKENS: AMM invalid LP tokens. Invalid input values, format, or calculated values.
+       -  tecAMM_EMPTY: AMM is in empty state. Transaction expects AMM in non-empty state (LP tokens > 0).
+       -  tecAMM_NOT_EMPTY: AMM is not in empty state. Transaction expects AMM in empty state (LP tokens == 0).
+       -  tecAMM_ACCOUNT: AMM account. Clawback of AMM account.
+       -  tecINCOMPLETE: Some work was completed, but more submissions required to finish. AMMDelete partially deletes the trustlines.
 
 ## XRP Ledger version 1.11.0
 

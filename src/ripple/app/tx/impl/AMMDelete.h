@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2019 Ripple Labs Inc.
+    Copyright (c) 2023 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,52 +17,38 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TEST_JTX_CHECK_H_INCLUDED
-#define RIPPLE_TEST_JTX_CHECK_H_INCLUDED
+#ifndef RIPPLE_TX_AMMDELETE_H_INCLUDED
+#define RIPPLE_TX_AMMDELETE_H_INCLUDED
 
-#include <test/jtx/Account.h>
-#include <test/jtx/Env.h>
-#include <test/jtx/owners.h>
+#include <ripple/app/tx/impl/Transactor.h>
 
 namespace ripple {
-namespace test {
-namespace jtx {
 
-/** Check operations. */
-namespace check {
-
-/** Cash a check requiring that a specific amount be delivered. */
-Json::Value
-cash(jtx::Account const& dest, uint256 const& checkId, STAmount const& amount);
-
-/** Type used to specify DeliverMin for cashing a check. */
-struct DeliverMin
+/** AMMDelete implements AMM delete transactor. This is a mechanism to
+ * delete AMM in an empty state when the number of LP tokens is 0.
+ * AMMDelete deletes the trustlines up to configured maximum. If all
+ * trustlines are deleted then AMM ltAMM and root account are deleted.
+ * Otherwise AMMDelete should be called again.
+ */
+class AMMDelete : public Transactor
 {
-    STAmount value;
-    explicit DeliverMin(STAmount const& deliverMin) : value(deliverMin)
+public:
+    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+
+    explicit AMMDelete(ApplyContext& ctx) : Transactor(ctx)
     {
     }
+
+    static NotTEC
+    preflight(PreflightContext const& ctx);
+
+    static TER
+    preclaim(PreclaimContext const& ctx);
+
+    TER
+    doApply() override;
 };
 
-/** Cash a check requiring that at least a minimum amount be delivered. */
-Json::Value
-cash(
-    jtx::Account const& dest,
-    uint256 const& checkId,
-    DeliverMin const& atLeast);
-
-/** Cancel a check. */
-Json::Value
-cancel(jtx::Account const& dest, uint256 const& checkId);
-
-}  // namespace check
-
-/** Match the number of checks on the account. */
-using checks = owner_count<ltCHECK>;
-
-}  // namespace jtx
-
-}  // namespace test
 }  // namespace ripple
 
-#endif
+#endif  // RIPPLE_TX_AMMDELETE_H_INCLUDED
