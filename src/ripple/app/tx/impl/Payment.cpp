@@ -468,7 +468,7 @@ Payment::doApply()
 
     // AMMs can never receive an XRP payment.
     // Must use AMMDeposit transaction instead.
-    if (sleDst->getFlags() & lsfAMM)
+    if (sleDst->isFieldPresent(sfAMMID))
         return tecNO_PERMISSION;
 
     // The source account does have enough money.  Make sure the

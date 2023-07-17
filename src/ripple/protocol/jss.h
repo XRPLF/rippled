@@ -52,6 +52,7 @@ JSS(AMMBid);               // transaction type
 JSS(AMMID);                // field
 JSS(AMMCreate);            // transaction type
 JSS(AMMDeposit);           // transaction type
+JSS(AMMDelete);            // transaction type
 JSS(AMMVote);              // transaction type
 JSS(AMMWithdraw);          // transaction type
 JSS(Amendments);           // ledger type.
