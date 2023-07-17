@@ -1770,8 +1770,15 @@ private:
 
         // Withdraw all tokens.
         testAMM([&](AMM& ammAlice, Env& env) {
+            env(trust(carol, STAmount{ammAlice.lptIssue(), 10000}));
+            env(trust(
+                carol,
+                STAmount{Issue{EUR.currency, ammAlice.ammAccount()}, 10000}));
+            env.close();
             ammAlice.withdrawAll(alice);
             BEAST_EXPECT(!ammAlice.ammExists());
+
+            BEAST_EXPECT(!env.le(keylet::ownerDir(ammAlice.ammAccount())));
 
             // Can create AMM for the XRP/USD pair
             AMM ammCarol(env, carol, XRP(10'000), USD(10'000));

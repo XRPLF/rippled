@@ -25,7 +25,6 @@
 #include <ripple/ledger/Sandbox.h>
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/AMMCore.h>
-#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/STAccount.h>
 #include <ripple/protocol/TxFlags.h>
 
@@ -410,9 +409,78 @@ AMMWithdraw::deleteAccount(Sandbox& sb, AccountID const& ammAccountID)
     if (!sleAMMRoot || !ammSle)
         return tecINTERNAL;
 
-    // Note, the AMM trust lines are deleted since the balance
-    // goes to 0. It also means there are no linked
-    // ledger objects.
+    // Delete directory entry linking the root account and AMM object
+    Keylet const ownerDirKeylet{keylet::ownerDir(ammAccountID)};
+    if (!sb.dirRemove(
+            ownerDirKeylet, (*ammSle)[sfOwnerNode], ammSle->key(), false))
+    {
+        JLOG(j_.fatal()) << "AMM Withdraw: failed to remove dir link";
+        return tecINTERNAL;
+    }
+
+    // Delete the trustlines
+    std::shared_ptr<SLE> sleDirNode{};
+    unsigned int uDirEntry{0};
+    uint256 dirEntry{beast::zero};
+    if (sb.exists(ownerDirKeylet) &&
+        dirFirst(sb, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry))
+    {
+        do
+        {
+            auto sleItem = sb.peek(keylet::child(dirEntry));
+            if (!sleItem)
+            {
+                // Directory node has an invalid index
+                JLOG(j_.fatal())
+                    << "AMM Withdraw: Directory node in ledger " << sb.seq()
+                    << " has index to object that is missing: "
+                    << to_string(dirEntry);
+                return tefBAD_LEDGER;
+            }
+
+            // Should only have the trustlines
+            if (auto const nodeType = safe_cast<LedgerEntryType>(
+                    sleItem->getFieldU16(sfLedgerEntryType));
+                nodeType != LedgerEntryType::ltRIPPLE_STATE)
+            {
+                JLOG(j_.error())
+                    << "AMM Withdraw: deleting non-trustline " << nodeType;
+                return tecINTERNAL;
+            }
+
+            // Trustlines must have zero balance
+            if (sleItem->getFieldAmount(sfBalance) != beast::zero)
+            {
+                JLOG(j_.error()) << "AMM Withdraw: deleting trustline with "
+                                    "non-zero balance.";
+                return tecINTERNAL;
+            }
+
+            auto const& [lowAccountID, highAccountID] = std::minmax(
+                sleItem->getFieldAmount(sfHighLimit).getIssuer(), ammAccountID);
+            if (auto const ter = trustDelete(
+                    sb, sleItem, lowAccountID, highAccountID, ctx_.journal);
+                ter != tesSUCCESS)
+            {
+                JLOG(j_.error())
+                    << "AMM Withdraw: failed to delete the trustline.";
+                return ter;
+            }
+
+            // Update the iterator
+            assert(uDirEntry == 1);
+            if (uDirEntry != 1)
+            {
+                JLOG(j_.error())
+                    << "AMM Withdraw: iterator re-validation failed.";
+                return tefBAD_LEDGER;
+            }
+            uDirEntry = 0;
+
+        } while (
+            dirNext(sb, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry));
+    }
+
     sb.erase(ammSle);
     sb.erase(sleAMMRoot);
 

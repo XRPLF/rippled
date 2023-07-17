@@ -282,7 +282,6 @@ applyCreate(
         TOTAL_TIME_SLOT_SECS;
     auctionSlot.setFieldU32(sfExpiration, expiration);
     auctionSlot.setFieldAmount(sfPrice, STAmount{lpTokens.issue(), 0});
-    sb.insert(ammSle);
 
     // Add owner directory to link the root account and AMM object.
     if (auto const page = sb.dirInsert(
@@ -294,6 +293,9 @@ applyCreate(
         JLOG(j_.debug()) << "AMM Instance: failed to insert owner dir";
         return {tecDIR_FULL, false};
     }
+    else
+        ammSle->setFieldU64(sfOwnerNode, *page);
+    sb.insert(ammSle);
 
     // Send LPT to LP.
     auto res = accountSend(sb, *ammAccount, account_, lpTokens, ctx_.journal);
