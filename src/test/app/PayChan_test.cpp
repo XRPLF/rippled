@@ -25,7 +25,6 @@
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/protocol/jss.h>
 #include <test/jtx.h>
-#include <test/jtx/TestHelpers.h>
 
 #include <chrono>
 

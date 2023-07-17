@@ -27,7 +27,6 @@
 #include <test/jtx.h>
 #include <test/jtx/AMM.h>
 #include <test/jtx/AMMTest.h>
-#include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/sendmax.h>
 
@@ -2754,6 +2753,12 @@ private:
                     settleDelay,
                     pk,
                     cancelAfter),
+                ter(tecNO_PERMISSION));
+        });
+
+        // Can't pay into AMM with checks.
+        testAMM([&](AMM& ammAlice, Env& env) {
+            env(check::create(env.master.id(), ammAlice.ammAccount(), XRP(100)),
                 ter(tecNO_PERMISSION));
         });
 
