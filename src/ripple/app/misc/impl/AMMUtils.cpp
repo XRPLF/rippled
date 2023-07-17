@@ -188,4 +188,122 @@ ammAccountHolds(
     return STAmount{issue};
 }
 
+static TER
+deleteAMMTrustLines(
+    Sandbox& sb,
+    AccountID const& ammAccountID,
+    std::uint16_t maxTrustlinesToDelete,
+    beast::Journal j)
+{
+    return cleanupOnAccountDelete(
+        sb,
+        keylet::ownerDir(ammAccountID),
+        [&](LedgerEntryType nodeType,
+            uint256 const&,
+            std::shared_ptr<SLE>& sleItem) -> TER {
+            // Should only have the trustlines
+            if (nodeType != LedgerEntryType::ltRIPPLE_STATE)
+            {
+                JLOG(j.error())
+                    << "deleteAMMTrustLines: deleting non-trustline "
+                    << nodeType;
+                return tecINTERNAL;
+            }
+
+            // Trustlines must have zero balance
+            if (sleItem->getFieldAmount(sfBalance) != beast::zero)
+            {
+                JLOG(j.error())
+                    << "deleteAMMTrustLines: deleting trustline with "
+                       "non-zero balance.";
+                return tecINTERNAL;
+            }
+
+            return deleteAMMTrustLine(sb, sleItem, ammAccountID, j);
+        },
+        j,
+        maxTrustlinesToDelete);
+}
+
+TER
+deleteAMMAccount(
+    Sandbox& sb,
+    Issue const& asset,
+    Issue const& asset2,
+    beast::Journal j)
+{
+    auto ammSle = sb.peek(keylet::amm(asset, asset2));
+    if (!ammSle)
+    {
+        JLOG(j.error()) << "deleteAMMAccount: AMM object does not exist "
+                        << asset << " " << asset2;
+        return tecINTERNAL;
+    }
+
+    auto const ammAccountID = (*ammSle)[sfAccount];
+    auto sleAMMRoot = sb.peek(keylet::account(ammAccountID));
+    if (!sleAMMRoot)
+    {
+        JLOG(j.error()) << "deleteAMMAccount: AMM account does not exist "
+                        << to_string(ammAccountID);
+        return tecINTERNAL;
+    }
+
+    if (auto const ter =
+            deleteAMMTrustLines(sb, ammAccountID, maxDeletableAMMTrustLines, j);
+        ter != tesSUCCESS)
+        return ter;
+
+    auto const ownerDirKeylet = keylet::ownerDir(ammAccountID);
+    if (sb.exists(ownerDirKeylet) && !sb.emptyDirDelete(ownerDirKeylet))
+    {
+        JLOG(j.error()) << "deleteAMMAccount: cannot delete root dir node of "
+                        << toBase58(ammAccountID);
+        return tecINTERNAL;
+    }
+
+    sb.erase(ammSle);
+    sb.erase(sleAMMRoot);
+
+    return tesSUCCESS;
+}
+
+void
+initializeFeeAuctionVote(
+    ApplyView& view,
+    std::shared_ptr<SLE>& ammSle,
+    AccountID const& account,
+    Issue const& lptIssue,
+    std::uint16_t tfee)
+{
+    // AMM creator gets the voting slot.
+    STArray voteSlots;
+    STObject voteEntry{sfVoteEntry};
+    if (tfee != 0)
+        voteEntry.setFieldU16(sfTradingFee, tfee);
+    voteEntry.setFieldU32(sfVoteWeight, VOTE_WEIGHT_SCALE_FACTOR);
+    voteEntry.setAccountID(sfAccount, account);
+    voteSlots.push_back(voteEntry);
+    ammSle->setFieldArray(sfVoteSlots, voteSlots);
+    // AMM creator gets the auction slot for free.
+    auto& auctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
+    auctionSlot.setAccountID(sfAccount, account);
+    // current + sec in 24h
+    auto const expiration = std::chrono::duration_cast<std::chrono::seconds>(
+                                view.info().parentCloseTime.time_since_epoch())
+                                .count() +
+        TOTAL_TIME_SLOT_SECS;
+    auctionSlot.setFieldU32(sfExpiration, expiration);
+    auctionSlot.setFieldAmount(sfPrice, STAmount{lptIssue, 0});
+    // Set the fee
+    if (tfee != 0)
+        ammSle->setFieldU16(sfTradingFee, tfee);
+    else if (ammSle->isFieldPresent(sfTradingFee))
+        ammSle->makeFieldAbsent(sfTradingFee);
+    if (auto const dfee = tfee / AUCTION_SLOT_DISCOUNTED_FEE_FRACTION)
+        auctionSlot.setFieldU16(sfDiscountedFee, dfee);
+    else if (auctionSlot.isFieldPresent(sfDiscountedFee))
+        auctionSlot.makeFieldAbsent(sfDiscountedFee);
+}
+
 }  // namespace ripple
