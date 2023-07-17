@@ -16,6 +16,7 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
+
 #include <ripple/beast/unit_test.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/SecretKey.h>
@@ -451,7 +452,11 @@ public:
         memset(buf, 0, 33);
         buf[0] = 0xED;
 
-        PublicKey pk3(Slice{buf, sizeof(buf)});
+        PublicKey pk3 = derivePublicKey(
+            KeyType::secp256k1,
+            generateSecretKey(
+                KeyType::secp256k1, generateSeed("arbitraryPassPhrase")));
+        // Testing the copy assignment operation of PublicKey class
         pk3 = pk2;
         BEAST_EXPECT(pk3 == pk2);
         BEAST_EXPECT(pk1 == pk3);

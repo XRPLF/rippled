@@ -247,10 +247,6 @@ class ValidatorList
     // a seed, the signing key is the same as the master key.
     hash_set<PublicKey> trustedSigningKeys_;
 
-    // Keshava: Ideally, this variable needs to be set in the constructor of
-    // the class. Can we move it from the load() function? The requisite
-    // input values are already available at the time of invocation of the
-    // constructor.
     std::optional<PublicKey> localPubKey_;
 
     // The master public keys of the current negative UNL

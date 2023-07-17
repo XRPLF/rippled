@@ -208,77 +208,77 @@ class NFTokenBurn_test : public beast::unit_test::suite
                     env.close();
 
                     // Create buy offers for other1 and other2.
-//                    env(token::createOffer(other1, nft, drops(1)),
-//                        token::owner(owner));
+                    env(token::createOffer(other1, nft, drops(1)),
+                        token::owner(owner));
                     env(token::createOffer(other2, nft, drops(1)),
                         token::owner(owner));
                     env.close();
-//
-//                    env(token::createOffer(other2, nft, drops(2)),
-//                        token::owner(owner));
-//                    env(token::createOffer(other1, nft, drops(2)),
-//                        token::owner(owner));
+
+                    env(token::createOffer(other2, nft, drops(2)),
+                        token::owner(owner));
+                    env(token::createOffer(other1, nft, drops(2)),
+                        token::owner(owner));
                     env.close();
                 }
             };
         addOffers(alice, becky, minter);
         addOffers(becky, minter, alice);
-//        addOffers(minter, alice, becky);
-//        BEAST_EXPECT(ownerCount(env, alice) == 424);
-//        BEAST_EXPECT(ownerCount(env, becky) == 424);
-//        BEAST_EXPECT(ownerCount(env, minter) == 424);
-//
-//        // Now each of the 270 NFTs has six offers associated with it.
-//        // Randomly select an NFT out of the pile and burn it.  Continue
-//        // the process until all NFTs are burned.
-//        AcctStat* const stats[3] = {&alice, &becky, &minter};
-//        std::uniform_int_distribution<std::size_t> acctDist(0, 2);
-//        std::uniform_int_distribution<std::size_t> mintDist(0, 1);
-//
-//        while (stats[0]->nfts.size() > 0 || stats[1]->nfts.size() > 0 ||
-//               stats[2]->nfts.size() > 0)
-//        {
-//            // Pick an account to burn an nft.  If there are no nfts left
-//            // pick again.
-//            AcctStat& owner = *(stats[acctDist(engine)]);
-//            if (owner.nfts.empty())
-//                continue;
-//
-//            // Pick one of the nfts.
-//            std::uniform_int_distribution<std::size_t> nftDist(
-//                0lu, owner.nfts.size() - 1);
-//            auto nftIter = owner.nfts.begin() + nftDist(engine);
-//            uint256 const nft = *nftIter;
-//            owner.nfts.erase(nftIter);
-//
-//            // Decide which of the accounts should burn the nft.  If the
-//            // owner is becky then any of the three accounts can burn.
-//            // Otherwise either alice or minter can burn.
-//            AcctStat& burner = owner.acct == becky.acct
-//                ? *(stats[acctDist(engine)])
-//                : mintDist(engine) ? alice : minter;
-//
-//            if (owner.acct == burner.acct)
-//                env(token::burn(burner, nft));
-//            else
-//                env(token::burn(burner, nft), token::owner(owner));
-//            env.close();
-//
-//            // Every time we burn an nft, the number of nfts they hold should
-//            // match the number of nfts we think they hold.
-//            BEAST_EXPECT(nftCount(env, alice.acct) == alice.nfts.size());
-//            BEAST_EXPECT(nftCount(env, becky.acct) == becky.nfts.size());
-//            BEAST_EXPECT(nftCount(env, minter.acct) == minter.nfts.size());
-//        }
-//        BEAST_EXPECT(nftCount(env, alice.acct) == 0);
-//        BEAST_EXPECT(nftCount(env, becky.acct) == 0);
-//        BEAST_EXPECT(nftCount(env, minter.acct) == 0);
-//
-//        // When all nfts are burned none of the accounts should have
-//        // an ownerCount.
-//        BEAST_EXPECT(ownerCount(env, alice) == 0);
-//        BEAST_EXPECT(ownerCount(env, becky) == 0);
-//        BEAST_EXPECT(ownerCount(env, minter) == 0);
+        addOffers(minter, alice, becky);
+        BEAST_EXPECT(ownerCount(env, alice) == 424);
+        BEAST_EXPECT(ownerCount(env, becky) == 424);
+        BEAST_EXPECT(ownerCount(env, minter) == 424);
+
+        // Now each of the 270 NFTs has six offers associated with it.
+        // Randomly select an NFT out of the pile and burn it.  Continue
+        // the process until all NFTs are burned.
+        AcctStat* const stats[3] = {&alice, &becky, &minter};
+        std::uniform_int_distribution<std::size_t> acctDist(0, 2);
+        std::uniform_int_distribution<std::size_t> mintDist(0, 1);
+
+        while (stats[0]->nfts.size() > 0 || stats[1]->nfts.size() > 0 ||
+               stats[2]->nfts.size() > 0)
+        {
+            // Pick an account to burn an nft.  If there are no nfts left
+            // pick again.
+            AcctStat& owner = *(stats[acctDist(engine)]);
+            if (owner.nfts.empty())
+                continue;
+
+            // Pick one of the nfts.
+            std::uniform_int_distribution<std::size_t> nftDist(
+                0lu, owner.nfts.size() - 1);
+            auto nftIter = owner.nfts.begin() + nftDist(engine);
+            uint256 const nft = *nftIter;
+            owner.nfts.erase(nftIter);
+
+            // Decide which of the accounts should burn the nft.  If the
+            // owner is becky then any of the three accounts can burn.
+            // Otherwise either alice or minter can burn.
+            AcctStat& burner = owner.acct == becky.acct
+                ? *(stats[acctDist(engine)])
+                : mintDist(engine) ? alice : minter;
+
+            if (owner.acct == burner.acct)
+                env(token::burn(burner, nft));
+            else
+                env(token::burn(burner, nft), token::owner(owner));
+            env.close();
+
+            // Every time we burn an nft, the number of nfts they hold should
+            // match the number of nfts we think they hold.
+            BEAST_EXPECT(nftCount(env, alice.acct) == alice.nfts.size());
+            BEAST_EXPECT(nftCount(env, becky.acct) == becky.nfts.size());
+            BEAST_EXPECT(nftCount(env, minter.acct) == minter.nfts.size());
+        }
+        BEAST_EXPECT(nftCount(env, alice.acct) == 0);
+        BEAST_EXPECT(nftCount(env, becky.acct) == 0);
+        BEAST_EXPECT(nftCount(env, minter.acct) == 0);
+
+        // When all nfts are burned none of the accounts should have
+        // an ownerCount.
+        BEAST_EXPECT(ownerCount(env, alice) == 0);
+        BEAST_EXPECT(ownerCount(env, becky) == 0);
+        BEAST_EXPECT(ownerCount(env, minter) == 0);
     }
 
     void

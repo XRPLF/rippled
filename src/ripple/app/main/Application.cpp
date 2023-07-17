@@ -1313,11 +1313,18 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
 
             publisherManifests_->load(getWalletDB(), "PublisherManifests");
 
-            // Keshava: Is it correct to initialize localSigningKey to the
-            // default value?
+            // On the relevance of using PublicKey::emptyPubKey here:
+            // It is possible to have a valid ValidatorKeys object without
+            // setting the signingKey or masterKey. This occurs if the
+            // configuration file does not have either
+            // SECTION_VALIDATOR_TOKEN or SECTION_VALIDATION_SEED section.
+
             // ValidatorList uses PublicKey::emptyPubKey to denote masterKey
-            // for the local-configuration specified validator keys. Does
-            // that necessitate an empty signing key?
+            // for the local-configuration specified validator keys. In the
+            // previous versions of the code, the default-constructed public
+            // key would be used here, thanks to the default construction of
+            // ValidatorKeys object.
+
             PublicKey localSigningKey = PublicKey::emptyPubKey;
             if(validatorKeys_.publicKey)
                 localSigningKey = *validatorKeys_.publicKey;

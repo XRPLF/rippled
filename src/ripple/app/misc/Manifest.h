@@ -87,8 +87,10 @@ struct Manifest
 
     /// The ephemeral key associated with this manifest.
     // A revoked manifest does not have a signingKey
-    PublicKey signingKey; // Keshava: Is this field present in revoked
-                          // manifests too?
+    // Although this field is specified as "optional" in manifestFormat's
+    // SOTemplate, the masterKey is used as the signingKey as a
+    // default.
+    PublicKey signingKey;
 
     /// The sequence number of this manifest.
     std::uint32_t sequence = 0;
@@ -108,7 +110,19 @@ struct Manifest
         signingKey(signingKey_),
         sequence(seq),
         domain(domain_) {
-        std::cout << "inside manifest ctor\n";
+    }
+
+    // Constructor without explicit specification of the ephemeral or the
+    // signingKey. In such a case, the masterKey is used as the signingKey.
+    Manifest(std::string const& serialized_,
+             PublicKey const& masterKey_,
+             std::uint32_t seq,
+             std::string const& domain_) :
+        serialized(serialized_),
+        masterKey(masterKey_),
+        signingKey(masterKey_),
+        sequence(seq),
+        domain(domain_) {
     }
 
     Manifest(Manifest const& other) = delete;

@@ -58,7 +58,7 @@ namespace ripple {
 */
 class PublicKey
 {
-public:
+private:
     PublicKey() = default;
 
 protected:
@@ -68,15 +68,13 @@ protected:
 public:
     using const_iterator = std::uint8_t const*;
 
-    // This default constructed public key is used only in ValidatorList
+    // This default constructed public key is used only in ValidatorList class.
     // Publisher's master PublicKeys are used to map into their respective UNLs
     // emptyPubKey is used to represent the keys specified in the local config file.
-    // Unlike the other published UNL, this list is not signed with anybody's
-    // public key and hence needs to be mapped with emptyPubKey
-    // KESHAVA TODO: restrict the availability of this variable to the
-    //  ValidatorList class only. Perhaps make the latter a friend of
-    //  PublicKey class?
+    // Unlike the other published UNL, this list is not signed with any
+    // publisher's public key and hence needs to be mapped with the emptyPubKey
     static const PublicKey emptyPubKey;
+
     PublicKey(PublicKey const& other);
     PublicKey&
     operator=(PublicKey const& other);

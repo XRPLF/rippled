@@ -180,7 +180,6 @@ PublicKey::PublicKey(Slice const& slice)
 {
     if (!publicKeyType(slice))
         LogicError("PublicKey::PublicKey invalid type");
-//    std::cout << "PubliccKey ctor: slice info: \t" << slice << std::endl;
     size_ = slice.size();
     std::memcpy(buf_, slice.data(), size_);
 }

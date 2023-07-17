@@ -2414,15 +2414,15 @@ public:
     void
     run() override
     {
-//        testGenesisQuorum();
-//        testConfigLoad();
+        testGenesisQuorum();
+        testConfigLoad();
         testApplyLists();
-//        testGetAvailable();
-//        testUpdateTrusted();
-//        testExpires();
-//        testNegativeUNL();
-//        testSha512Hash();
-//        testBuildMessages();
+        testGetAvailable();
+        testUpdateTrusted();
+        testExpires();
+        testNegativeUNL();
+        testSha512Hash();
+        testBuildMessages();
     }
 };  // namespace test
 

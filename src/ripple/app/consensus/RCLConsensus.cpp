@@ -1034,7 +1034,7 @@ RCLConsensus::Adaptor::laggards(
 bool
 RCLConsensus::Adaptor::validator() const
 {
-    return validatorKeys_.publicKey && !validatorKeys_.publicKey->empty();
+    return validatorKeys_.publicKey.has_value();
 }
 
 void

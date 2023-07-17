@@ -231,8 +231,7 @@ public:
     PublicKey const&
     getNodePublic() const override
     {
-        static PublicKey key{};
-        return key;
+        return PublicKey::emptyPubKey;
     }
     Json::Value
     json() override

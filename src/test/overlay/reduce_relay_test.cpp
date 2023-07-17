@@ -103,8 +103,7 @@ public:
     PublicKey const&
     getNodePublic() const override
     {
-        static PublicKey key{};
-        return key;
+        return PublicKey::emptyPubKey;
     }
     Json::Value
     json() override
@@ -312,9 +311,8 @@ class Validator
     using Links = std::unordered_map<Peer::id_t, LinkSPtr>;
 
 public:
-    Validator()
+    Validator() : pkey_(std::get<0>(randomKeyPair(KeyType::ed25519)))
     {
-        pkey_ = std::get<0>(randomKeyPair(KeyType::ed25519));
         protocol::TMValidation v;
         v.set_validation("validation");
         message_ = std::make_shared<Message>(v, protocol::mtVALIDATION, pkey_);
@@ -439,7 +437,7 @@ public:
 
 private:
     Links links_;
-    PublicKey pkey_{};
+    PublicKey pkey_;
     MessageSPtr message_ = nullptr;
     inline static std::uint16_t sid_ = 0;
     std::uint16_t id_ = 0;
@@ -926,7 +924,7 @@ protected:
         bool isSelected_ = false;
         Peer::id_t peer_;
         std::uint16_t validator_;
-        PublicKey key_;
+        PublicKey key_{PublicKey::emptyPubKey};
         time_point<ManualClock> time_;
         bool handled_ = false;
     };

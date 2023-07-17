@@ -172,7 +172,7 @@ private:
         test::StreamSink sink;
         beast::Journal journal{sink};
 
-        PublicKey emptyLocalKey;
+        PublicKey emptyLocalKey(PublicKey::emptyPubKey);
         std::vector<std::string> emptyCfgKeys;
         struct publisher
         {
