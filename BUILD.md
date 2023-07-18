@@ -256,12 +256,14 @@ and can be helpful for detecting `#include` omissions.
 
 ### Conan
 
-If you have trouble building dependencies after changing Conan settings,
-try removing the Conan cache.
+After any updates or changes to dependencies, you may need to do the following:
 
-```
-rm -rf ~/.conan/data
-```
+1. Remove your build directory.
+2. Remove the Conan cache:
+   ```
+   rm -rf ~/.conan/data
+   ```
+4. Re-run [conan install](#build-and-test).
 
 
 ### no std::result_of
