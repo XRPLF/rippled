@@ -88,7 +88,7 @@ constexpr std::uint32_t asfDisallowIncomingNFTokenOffer    = 12;
 constexpr std::uint32_t asfDisallowIncomingCheck           = 13;
 constexpr std::uint32_t asfDisallowIncomingPayChan         = 14;
 constexpr std::uint32_t asfDisallowIncomingTrustline       = 15;
-constexpr std::uint32_t asfAllowClawback                   = 16;
+constexpr std::uint32_t asfAllowTrustLineClawback          = 16;
 
 // OfferCreate flags:
 constexpr std::uint32_t tfPassive                          = 0x00010000;
@@ -162,6 +162,23 @@ constexpr std::uint32_t const tfNFTokenAcceptOfferMask     = ~tfUniversal;
 
 // Clawback flags:
 constexpr std::uint32_t const tfClawbackMask     = ~tfUniversal;
+
+// AMM Flags:
+constexpr std::uint32_t tfLPToken                      = 0x00010000;
+constexpr std::uint32_t tfWithdrawAll                  = 0x00020000;
+constexpr std::uint32_t tfOneAssetWithdrawAll          = 0x00040000;
+constexpr std::uint32_t tfSingleAsset                  = 0x00080000;
+constexpr std::uint32_t tfTwoAsset                     = 0x00100000;
+constexpr std::uint32_t tfOneAssetLPToken              = 0x00200000;
+constexpr std::uint32_t tfLimitLPToken                 = 0x00400000;
+constexpr std::uint32_t tfWithdrawSubTx =
+    tfLPToken | tfSingleAsset | tfTwoAsset | tfOneAssetLPToken |
+    tfLimitLPToken | tfWithdrawAll | tfOneAssetWithdrawAll;
+constexpr std::uint32_t tfDepositSubTx =
+    tfLPToken | tfSingleAsset | tfTwoAsset | tfOneAssetLPToken |
+    tfLimitLPToken;
+constexpr std::uint32_t tfWithdrawMask = ~(tfUniversal | tfWithdrawSubTx);
+constexpr std::uint32_t tfDepositMask = ~(tfUniversal | tfDepositSubTx);
 
 // clang-format on
 

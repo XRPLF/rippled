@@ -20,6 +20,8 @@
 #ifndef RIPPLE_APP_PATHS_IMPL_STRANDFLOW_H_INCLUDED
 #define RIPPLE_APP_PATHS_IMPL_STRANDFLOW_H_INCLUDED
 
+#include <ripple/app/misc/AMMHelpers.h>
+#include <ripple/app/paths/AMMContext.h>
 #include <ripple/app/paths/Credit.h>
 #include <ripple/app/paths/Flow.h>
 #include <ripple/app/paths/impl/AmountSpec.h>
@@ -350,6 +352,62 @@ qualityUpperBound(ReadView const& v, Strand const& strand)
 /// @endcond
 
 /// @cond INTERNAL
+/** Limit remaining out only if one strand and limitQuality is included.
+ * Targets one path payment with AMM where the average quality is linear
+ * and instant quality is quadratic function of output. Calculating quality
+ * function for the whole strand enables figuring out required output
+ * to produce requested strand's limitQuality. Reducing the output,
+ * increases quality of AMM steps, increasing the strand's composite
+ * quality as the result.
+ */
+template <typename TOutAmt>
+inline TOutAmt
+limitOut(
+    ReadView const& v,
+    Strand const& strand,
+    TOutAmt const& remainingOut,
+    Quality const& limitQuality)
+{
+    std::optional<QualityFunction> stepQualityFunc;
+    std::optional<QualityFunction> qf;
+    DebtDirection dir = DebtDirection::issues;
+    for (auto const& step : strand)
+    {
+        if (std::tie(stepQualityFunc, dir) = step->getQualityFunc(v, dir);
+            stepQualityFunc)
+        {
+            if (!qf)
+                qf = stepQualityFunc;
+            else
+                qf->combine(*stepQualityFunc);
+        }
+        else
+            return remainingOut;
+    }
+
+    // QualityFunction is constant
+    if (!qf || qf->isConst())
+        return remainingOut;
+
+    auto const out = [&]() {
+        if (auto const out = qf->outFromAvgQ(limitQuality); !out)
+            return remainingOut;
+        else if constexpr (std::is_same_v<TOutAmt, XRPAmount>)
+            return XRPAmount{*out};
+        else if constexpr (std::is_same_v<TOutAmt, IOUAmount>)
+            return IOUAmount{*out};
+        else
+            return STAmount{
+                remainingOut.issue(), out->mantissa(), out->exponent()};
+    }();
+    // A tiny difference could be due to the round off
+    if (withinRelativeDistance(out, remainingOut, Number(1, -9)))
+        return remainingOut;
+    return std::min(out, remainingOut);
+};
+/// @endcond
+
+/// @cond INTERNAL
 /* Track the non-dry strands
 
    flow will search the non-dry strands (stored in `cur_`) for the best
@@ -487,6 +545,7 @@ public:
    @param limitQuality If present, the minimum quality for any strand taken
    @param sendMaxST If present, the maximum STAmount to send
    @param j Journal to write journal messages to
+   @param ammContext counts iterations with AMM offers
    @param flowDebugInfo If pointer is non-null, write flow debug info here
    @return Actual amount in and out from the strands, errors, and payment
    sandbox
@@ -502,6 +561,7 @@ flow(
     std::optional<Quality> const& limitQuality,
     std::optional<STAmount> const& sendMaxST,
     beast::Journal j,
+    AMMContext& ammContext,
     path::detail::FlowDebugInfo* flowDebugInfo = nullptr)
 {
     // Used to track the strand that offers the best quality (output/input
@@ -585,6 +645,17 @@ flow(
 
         activeStrands.activateNext(sb, limitQuality);
 
+        ammContext.setMultiPath(activeStrands.size() > 1);
+
+        // Limit only if one strand and limitQuality
+        auto const limitRemainingOut = [&]() {
+            if (activeStrands.size() == 1 && limitQuality)
+                if (auto const strand = activeStrands.get(0))
+                    return limitOut(sb, *strand, remainingOut, *limitQuality);
+            return remainingOut;
+        }();
+        auto const adjustedRemOut = limitRemainingOut != remainingOut;
+
         boost::container::flat_set<uint256> ofrsToRm;
         std::optional<BestStrand> best;
         if (flowDebugInfo)
@@ -604,6 +675,10 @@ flow(
                 // should not happen
                 continue;
             }
+            // Clear AMM liquidity used flag. The flag might still be set if
+            // the previous strand execution failed. It has to be reset
+            // since this strand might not have AMM liquidity.
+            ammContext.clear();
             if (offerCrossing && limitQuality)
             {
                 auto const strandQ = qualityUpperBound(sb, *strand);
@@ -611,7 +686,7 @@ flow(
                     continue;
             }
             auto f = flow<TInAmt, TOutAmt>(
-                sb, *strand, remainingIn, remainingOut, j);
+                sb, *strand, remainingIn, limitRemainingOut, j);
 
             // rm bad offers even if the strand fails
             SetUnion(ofrsToRm, f.ofrsToRm);
@@ -635,7 +710,12 @@ flow(
                 << "New flow iter (iter, in, out): " << curTry - 1 << " "
                 << to_string(f.in) << " " << to_string(f.out);
 
-            if (limitQuality && q < *limitQuality)
+            // limitOut() finds output to generate exact requested
+            // limitQuality. But the actual limit quality might be slightly
+            // off due to the round off.
+            if (limitQuality && q < *limitQuality &&
+                (!adjustedRemOut ||
+                 !withinRelativeDistance(q, *limitQuality, Number(1, -7))))
             {
                 JLOG(j.trace())
                     << "Path rejected by limitQuality"
@@ -708,6 +788,7 @@ flow(
                             << " remainingOut: " << to_string(remainingOut);
 
             best->sb.apply(sb);
+            ammContext.update();
         }
         else
         {

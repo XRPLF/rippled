@@ -25,6 +25,7 @@
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/protocol/jss.h>
 #include <test/jtx.h>
+#include <test/jtx/TestHelpers.h>
 
 #include <chrono>
 
@@ -33,16 +34,6 @@ namespace test {
 struct PayChan_test : public beast::unit_test::suite
 {
     FeatureBitset const disallowIncoming{featureDisallowIncoming};
-
-    static uint256
-    channel(
-        jtx::Account const& account,
-        jtx::Account const& dst,
-        std::uint32_t seqProxyValue)
-    {
-        auto const k = keylet::payChan(account, dst, seqProxyValue);
-        return k.key;
-    }
 
     static std::pair<uint256, std::shared_ptr<SLE const>>
     channelKeyAndSle(
@@ -70,22 +61,6 @@ struct PayChan_test : public beast::unit_test::suite
     }
 
     static STAmount
-    channelBalance(ReadView const& view, uint256 const& chan)
-    {
-        auto const slep = view.read({ltPAYCHAN, chan});
-        if (!slep)
-            return XRPAmount{-1};
-        return (*slep)[sfBalance];
-    }
-
-    static bool
-    channelExists(ReadView const& view, uint256 const& chan)
-    {
-        auto const slep = view.read({ltPAYCHAN, chan});
-        return bool(slep);
-    }
-
-    static STAmount
     channelAmount(ReadView const& view, uint256 const& chan)
     {
         auto const slep = view.read({ltPAYCHAN, chan});
@@ -103,77 +78,6 @@ struct PayChan_test : public beast::unit_test::suite
         if (auto const r = (*slep)[~sfExpiration])
             return r.value();
         return std::nullopt;
-    }
-
-    static Json::Value
-    create(
-        jtx::Account const& account,
-        jtx::Account const& to,
-        STAmount const& amount,
-        NetClock::duration const& settleDelay,
-        PublicKey const& pk,
-        std::optional<NetClock::time_point> const& cancelAfter = std::nullopt,
-        std::optional<std::uint32_t> const& dstTag = std::nullopt)
-    {
-        using namespace jtx;
-        Json::Value jv;
-        jv[jss::TransactionType] = jss::PaymentChannelCreate;
-        jv[jss::Flags] = tfUniversal;
-        jv[jss::Account] = account.human();
-        jv[jss::Destination] = to.human();
-        jv[jss::Amount] = amount.getJson(JsonOptions::none);
-        jv["SettleDelay"] = settleDelay.count();
-        jv["PublicKey"] = strHex(pk.slice());
-        if (cancelAfter)
-            jv["CancelAfter"] = cancelAfter->time_since_epoch().count();
-        if (dstTag)
-            jv["DestinationTag"] = *dstTag;
-        return jv;
-    }
-
-    static Json::Value
-    fund(
-        jtx::Account const& account,
-        uint256 const& channel,
-        STAmount const& amount,
-        std::optional<NetClock::time_point> const& expiration = std::nullopt)
-    {
-        using namespace jtx;
-        Json::Value jv;
-        jv[jss::TransactionType] = jss::PaymentChannelFund;
-        jv[jss::Flags] = tfUniversal;
-        jv[jss::Account] = account.human();
-        jv["Channel"] = to_string(channel);
-        jv[jss::Amount] = amount.getJson(JsonOptions::none);
-        if (expiration)
-            jv["Expiration"] = expiration->time_since_epoch().count();
-        return jv;
-    }
-
-    static Json::Value
-    claim(
-        jtx::Account const& account,
-        uint256 const& channel,
-        std::optional<STAmount> const& balance = std::nullopt,
-        std::optional<STAmount> const& amount = std::nullopt,
-        std::optional<Slice> const& signature = std::nullopt,
-        std::optional<PublicKey> const& pk = std::nullopt)
-    {
-        using namespace jtx;
-        Json::Value jv;
-        jv[jss::TransactionType] = jss::PaymentChannelClaim;
-        jv[jss::Flags] = tfUniversal;
-        jv[jss::Account] = account.human();
-        jv["Channel"] = to_string(channel);
-        if (amount)
-            jv[jss::Amount] = amount->getJson(JsonOptions::none);
-        if (balance)
-            jv["Balance"] = balance->getJson(JsonOptions::none);
-        if (signature)
-            jv["Signature"] = strHex(*signature);
-        if (pk)
-            jv["PublicKey"] = strHex(pk->slice());
-        return jv;
     }
 
     void
