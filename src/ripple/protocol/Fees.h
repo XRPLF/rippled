@@ -17,52 +17,41 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_NFTOKENID_H_INCLUDED
-#define RIPPLE_RPC_NFTOKENID_H_INCLUDED
+#ifndef RIPPLE_PROTOCOL_FEES_H_INCLUDED
+#define RIPPLE_PROTOCOL_FEES_H_INCLUDED
 
-#include <ripple/protocol/Protocol.h>
-
-#include <functional>
-#include <memory>
-
-namespace Json {
-class Value;
-}
+#include <ripple/basics/XRPAmount.h>
 
 namespace ripple {
 
-class TxMeta;
-class STTx;
+/** Reflects the fee settings for a particular ledger.
 
-namespace RPC {
+    The fees are always the same for any transactions applied
+    to a ledger. Changes to fees occur in between ledgers.
+*/
+struct Fees
+{
+    XRPAmount base{0};       // Reference tx cost (drops)
+    XRPAmount reserve{0};    // Reserve base (drops)
+    XRPAmount increment{0};  // Reserve increment (drops)
 
-/**
-   Add a `nftoken_ids` field to the `meta` output parameter.
-   The field is only added to successful NFTokenMint, NFTokenAcceptOffer,
-   and NFTokenCancelOffer transactions.
+    explicit Fees() = default;
+    Fees(Fees const&) = default;
+    Fees&
+    operator=(Fees const&) = default;
 
-   Helper functions are not static because they can be used by Clio.
-   @{
- */
-bool
-canHaveNFTokenID(
-    std::shared_ptr<STTx const> const& serializedTx,
-    TxMeta const& transactionMeta);
+    /** Returns the account reserve given the owner count, in drops.
 
-std::optional<uint256>
-getNFTokenIDFromPage(TxMeta const& transactionMeta);
+        The reserve is calculated as the reserve base plus
+        the reserve increment times the number of increments.
+    */
+    XRPAmount
+    accountReserve(std::size_t ownerCount) const
+    {
+        return reserve + ownerCount * increment;
+    }
+};
 
-std::vector<uint256>
-getNFTokenIDFromDeletedOffer(TxMeta const& transactionMeta);
-
-void
-insertNFTokenID(
-    Json::Value& response,
-    std::shared_ptr<STTx const> const& transaction,
-    TxMeta const& transactionMeta);
-/** @} */
-
-}  // namespace RPC
 }  // namespace ripple
 
 #endif
