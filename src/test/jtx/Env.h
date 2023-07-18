@@ -711,7 +711,10 @@ Env::rpc(std::string const& cmd, Args&&... args)
 template <class T>
 concept SingleVersionedTestCallable = requires(T callable, unsigned int v)
 {
-    {callable(v)} -> std::same_as<void>;
+    {
+        callable(v)
+    }
+    ->std::same_as<void>;
 };
 
 /**
