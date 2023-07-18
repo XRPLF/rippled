@@ -40,6 +40,13 @@ Additions are intended to be non-breaking (because they are purely additive).
   - `ports` contains objects, each containing a `port` for the listening port (a number string), and a `protocol` array listing the supported protocols on that port.
   - This allows crawlers to build a more detailed topology without needing to port-scan nodes.
   - (For peers and other non-admin clients, the info about admin ports is excluded.)
+- Clawback: The following additions are gated by the Clawback amendment (`featureClawback`). (https://github.com/XRPLF/rippled/pull/4553)
+  - Adds an [AccountRoot flag](https://xrpl.org/accountroot.html#accountroot-flags) called `lsfAllowTrustLineClawback` (https://github.com/XRPLF/rippled/pull/4617)
+    - Adds the corresponding `asfAllowTrustLineClawback` [AccountSet Flag](https://xrpl.org/accountset.html#accountset-flags) as well.
+    - Clawback is disabled by default, so if an issuer desires the ability to claw back funds, they must use an `AccountSet` transaction to set the AllowTrustLineClawback flag. They must do this before creating any trust lines, offers, escrows, payment channels, or checks.
+  - Adds the [Clawback transaction type](https://github.com/XRPLF/XRPL-Standards/blob/master/XLS-39d-clawback/README.md#331-clawback-transaction), containing these fields:
+    - `Account`: The issuer of the asset being clawed back. Must also be the sender of the transaction.
+    - `Amount`: The amount being clawed back, with the `Amount.issuer` being the token holder's address.
 
 ## XRP Ledger version 1.11.0
 
