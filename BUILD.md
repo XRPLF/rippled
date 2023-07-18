@@ -117,7 +117,7 @@ can't build earlier Boost versions.
    which allows you to statically link it with GCC, if you want.
 
    ```
-   conan export external/snappy snappy/1.1.9@
+   conan export external/snappy snappy/1.1.10@
    ```
 
 5. Export our [Conan recipe for SOCI](./external/soci).
@@ -180,7 +180,7 @@ can't build earlier Boost versions.
    `$OUTPUT_FOLDER/build/generators/conan_toolchain.cmake`.
 
     Single-config generators:
-    
+
     ```
     cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release ..
     ```
@@ -210,7 +210,7 @@ can't build earlier Boost versions.
    ```
 
    Multi-config generators:
-    
+
    ```
    cmake --build . --config Release
    cmake --build . --config Debug
@@ -256,12 +256,14 @@ and can be helpful for detecting `#include` omissions.
 
 ### Conan
 
-If you have trouble building dependencies after changing Conan settings,
-try removing the Conan cache.
+After any updates or changes to dependencies, you may need to do the following:
 
-```
-rm -rf ~/.conan/data
-```
+1. Remove your build directory.
+2. Remove the Conan cache:
+   ```
+   rm -rf ~/.conan/data
+   ```
+4. Re-run [conan install](#build-and-test).
 
 
 ### no std::result_of
@@ -276,6 +278,18 @@ conan profile update 'env.CFLAGS="-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"' default
 conan profile update 'env.CXXFLAGS="-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"' default
 conan profile update 'conf.tools.build:cflags+=["-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"]' default
 conan profile update 'conf.tools.build:cxxflags+=["-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"]' default
+```
+
+
+### call to 'async_teardown' is ambiguous
+
+If you are compiling with an early version of Clang 16, then you might hit
+a [regression][6] when compiling C++20 that manifests as an [error in a Boost
+header][7]. You can workaround it by adding this preprocessor definition:
+
+```
+conan profile update 'env.CXXFLAGS="-DBOOST_ASIO_DISABLE_CONCEPTS"' default
+conan profile update 'conf.tools.build:cxxflags+=["-DBOOST_ASIO_DISABLE_CONCEPTS"]' default
 ```
 
 
@@ -319,6 +333,8 @@ If you want to experiment with a new package, follow these steps:
 [2]: https://en.cppreference.com/w/cpp/compiler_support/20
 [3]: https://docs.conan.io/en/latest/getting_started.html
 [5]: https://en.wikipedia.org/wiki/Unity_build
+[6]: https://github.com/boostorg/beast/issues/2648
+[7]: https://github.com/boostorg/beast/issues/2661
 [build_type]: https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html
 [runtime]: https://cmake.org/cmake/help/latest/variable/CMAKE_MSVC_RUNTIME_LIBRARY.html
 [toolchain]: https://cmake.org/cmake/help/latest/manual/cmake-toolchains.7.html
