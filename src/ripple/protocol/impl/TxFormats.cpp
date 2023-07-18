@@ -81,6 +81,64 @@ TxFormats::TxFormats()
         },
         commonFields);
 
+    add(jss::AMMCreate,
+        ttAMM_CREATE,
+        {
+            {sfAmount, soeREQUIRED},
+            {sfAmount2, soeREQUIRED},
+            {sfTradingFee, soeREQUIRED},
+            {sfTicketSequence, soeOPTIONAL},
+        },
+        commonFields);
+
+    add(jss::AMMDeposit,
+        ttAMM_DEPOSIT,
+        {
+            {sfAsset, soeREQUIRED},
+            {sfAsset2, soeREQUIRED},
+            {sfAmount, soeOPTIONAL},
+            {sfAmount2, soeOPTIONAL},
+            {sfEPrice, soeOPTIONAL},
+            {sfLPTokenOut, soeOPTIONAL},
+            {sfTicketSequence, soeOPTIONAL},
+        },
+        commonFields);
+
+    add(jss::AMMWithdraw,
+        ttAMM_WITHDRAW,
+        {
+            {sfAsset, soeREQUIRED},
+            {sfAsset2, soeREQUIRED},
+            {sfAmount, soeOPTIONAL},
+            {sfAmount2, soeOPTIONAL},
+            {sfEPrice, soeOPTIONAL},
+            {sfLPTokenIn, soeOPTIONAL},
+            {sfTicketSequence, soeOPTIONAL},
+        },
+        commonFields);
+
+    add(jss::AMMVote,
+        ttAMM_VOTE,
+        {
+            {sfAsset, soeREQUIRED},
+            {sfAsset2, soeREQUIRED},
+            {sfTradingFee, soeREQUIRED},
+            {sfTicketSequence, soeOPTIONAL},
+        },
+        commonFields);
+
+    add(jss::AMMBid,
+        ttAMM_BID,
+        {
+            {sfAsset, soeREQUIRED},
+            {sfAsset2, soeREQUIRED},
+            {sfBidMin, soeOPTIONAL},
+            {sfBidMax, soeOPTIONAL},
+            {sfAuthAccounts, soeOPTIONAL},
+            {sfTicketSequence, soeOPTIONAL},
+        },
+        commonFields);
+
     add(jss::OfferCancel,
         ttOFFER_CANCEL,
         {
