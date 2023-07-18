@@ -125,6 +125,7 @@ enum TEMcodes : TERUnderlyingType {
     temBAD_NFTOKEN_TRANSFER_FEE,
 
     temBAD_AMM_TOKENS,
+    temEMPTY_DID,
 };
 
 //------------------------------------------------------------------------------
@@ -298,7 +299,8 @@ enum TECcodes : TERUnderlyingType {
     tecUNFUNDED_AMM = 162,
     tecAMM_BALANCE = 163,
     tecAMM_FAILED = 164,
-    tecAMM_INVALID_TOKENS = 165
+    tecAMM_INVALID_TOKENS = 165,
+    tecEMPTY_DID = 166
 };
 
 //------------------------------------------------------------------------------

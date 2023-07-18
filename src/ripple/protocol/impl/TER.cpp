@@ -92,6 +92,7 @@ transResults()
         MAKE_ERROR(tecINSUFFICIENT_FUNDS,            "Not enough funds available to complete requested transaction."),
         MAKE_ERROR(tecOBJECT_NOT_FOUND,              "A requested object could not be located."),
         MAKE_ERROR(tecINSUFFICIENT_PAYMENT,          "The payment is not sufficient."),
+        MAKE_ERROR(tecEMPTY_DID,                     "The DID object cannot be made to be empty."),
 
         MAKE_ERROR(tefALREADY,                     "The exact transaction was already in this ledger."),
         MAKE_ERROR(tefBAD_ADD_AUTH,                "Not authorized to add account."),
@@ -158,6 +159,7 @@ transResults()
         MAKE_ERROR(temBAD_WEIGHT,                "Malformed: Weight must be a positive value."),
         MAKE_ERROR(temDST_IS_SRC,                "Destination may not be source."),
         MAKE_ERROR(temDST_NEEDED,                "Destination not specified."),
+        MAKE_ERROR(temEMPTY_DID,                 "Malformed: No DID data provided."),
         MAKE_ERROR(temINVALID,                   "The transaction is ill-formed."),
         MAKE_ERROR(temINVALID_FLAG,              "The transaction has an invalid flag."),
         MAKE_ERROR(temREDUNDANT,                 "The transaction is redundant."),

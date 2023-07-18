@@ -32,6 +32,7 @@
 #include <ripple/app/tx/impl/CreateCheck.h>
 #include <ripple/app/tx/impl/CreateOffer.h>
 #include <ripple/app/tx/impl/CreateTicket.h>
+#include <ripple/app/tx/impl/DID.h>
 #include <ripple/app/tx/impl/DeleteAccount.h>
 #include <ripple/app/tx/impl/DepositPreauth.h>
 #include <ripple/app/tx/impl/Escrow.h>
@@ -165,6 +166,10 @@ invoke_preflight(PreflightContext const& ctx)
             return invoke_preflight_helper<AMMVote>(ctx);
         case ttAMM_BID:
             return invoke_preflight_helper<AMMBid>(ctx);
+        case ttDID_SET:
+            return invoke_preflight_helper<DIDSet>(ctx);
+        case ttDID_DELETE:
+            return invoke_preflight_helper<DIDDelete>(ctx);
         default:
             assert(false);
             return {temUNKNOWN, TxConsequences{temUNKNOWN}};
@@ -278,6 +283,10 @@ invoke_preclaim(PreclaimContext const& ctx)
             return invoke_preclaim<AMMVote>(ctx);
         case ttAMM_BID:
             return invoke_preclaim<AMMBid>(ctx);
+        case ttDID_SET:
+            return invoke_preclaim<DIDSet>(ctx);
+        case ttDID_DELETE:
+            return invoke_preclaim<DIDDelete>(ctx);
         default:
             assert(false);
             return temUNKNOWN;
@@ -353,6 +362,10 @@ invoke_calculateBaseFee(ReadView const& view, STTx const& tx)
             return AMMVote::calculateBaseFee(view, tx);
         case ttAMM_BID:
             return AMMBid::calculateBaseFee(view, tx);
+        case ttDID_SET:
+            return DIDSet::calculateBaseFee(view, tx);
+        case ttDID_DELETE:
+            return DIDDelete::calculateBaseFee(view, tx);
         default:
             assert(false);
             return XRPAmount{0};
@@ -527,6 +540,14 @@ invoke_apply(ApplyContext& ctx)
         }
         case ttAMM_BID: {
             AMMBid p(ctx);
+            return p();
+        }
+        case ttDID_SET: {
+            DIDSet p(ctx);
+            return p();
+        }
+        case ttDID_DELETE: {
+            DIDDelete p(ctx);
             return p();
         }
         default:
