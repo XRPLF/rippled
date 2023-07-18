@@ -466,6 +466,11 @@ Payment::doApply()
         return tecUNFUNDED_PAYMENT;
     }
 
+    // AMMs can never receive an XRP payment.
+    // Must use AMMDeposit transaction instead.
+    if (sleDst->getFlags() & lsfAMM)
+        return tecNO_PERMISSION;
+
     // The source account does have enough money.  Make sure the
     // source account has authority to deposit to the destination.
     if (reqDepositAuth)

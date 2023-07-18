@@ -233,6 +233,9 @@ PayChanCreate::preclaim(PreclaimContext const& ctx)
         if (!ctx.view.rules().enabled(featureDepositAuth) &&
             (flags & lsfDisallowXRP))
             return tecNO_TARGET;
+
+        if (flags & lsfAMM)
+            return tecNO_PERMISSION;
     }
 
     return tesSUCCESS;

@@ -42,6 +42,9 @@ transResults()
             TERUnderlyingType,
             std::pair<char const* const, char const* const>> const results
     {
+        MAKE_ERROR(tecAMM_BALANCE,                   "AMM has invalid balance."),
+        MAKE_ERROR(tecAMM_INVALID_TOKENS,            "AMM invalid LP tokens."),
+        MAKE_ERROR(tecAMM_FAILED,                    "AMM transaction failed."),
         MAKE_ERROR(tecCLAIM,                         "Fee claimed. Sequence used. No action."),
         MAKE_ERROR(tecDIR_FULL,                      "Can not add entry to full directory."),
         MAKE_ERROR(tecFAILED_PROCESSING,             "Failed to correctly process transaction."),
@@ -58,6 +61,7 @@ transResults()
         MAKE_ERROR(tecOVERSIZE,                      "Object exceeded serialization limits."),
         MAKE_ERROR(tecUNFUNDED,                      "Not enough XRP to satisfy the reserve requirement."),
         MAKE_ERROR(tecUNFUNDED_ADD,                  "DEPRECATED."),
+        MAKE_ERROR(tecUNFUNDED_AMM,                  "Insufficient balance to fund AMM."),
         MAKE_ERROR(tecUNFUNDED_OFFER,                "Insufficient balance to fund created offer."),
         MAKE_ERROR(tecUNFUNDED_PAYMENT,              "Insufficient XRP balance to send."),
         MAKE_ERROR(tecOWNERS,                        "Non-zero owner count."),
@@ -129,6 +133,7 @@ transResults()
         MAKE_ERROR(telNETWORK_ID_MAKES_TX_NON_CANONICAL, "Transactions submitted to this node/network must NOT include a NetworkID field."),
 
         MAKE_ERROR(temMALFORMED,                 "Malformed transaction."),
+        MAKE_ERROR(temBAD_AMM_TOKENS,            "Malformed: Invalid LPTokens."),
         MAKE_ERROR(temBAD_AMOUNT,                "Can only send positive amounts."),
         MAKE_ERROR(temBAD_CURRENCY,              "Malformed: Bad currency."),
         MAKE_ERROR(temBAD_EXPIRATION,            "Malformed: Bad expiration."),
@@ -179,6 +184,7 @@ transResults()
         MAKE_ERROR(terOWNERS,                 "Non-zero owner count."),
         MAKE_ERROR(terQUEUED,                 "Held until escalated fee drops."),
         MAKE_ERROR(terPRE_TICKET,             "Ticket is not yet in ledger."),
+        MAKE_ERROR(terNO_AMM,                 "AMM doesn't exist for the asset pair."),
 
         MAKE_ERROR(tesSUCCESS,                "The transaction was applied. Only final in a validated ledger."),
     };

@@ -58,12 +58,8 @@ getFeeLevelPaid(ReadView const& view, STTx const& tx)
         return FeeLevel64(0);
     }
 
-    if (std::pair<bool, FeeLevel64> const feeLevelPaid =
-            mulDiv(effectiveFeePaid, TxQ::baseLevel, baseFee);
-        feeLevelPaid.first)
-        return feeLevelPaid.second;
-
-    return FeeLevel64(std::numeric_limits<std::uint64_t>::max());
+    return mulDiv(effectiveFeePaid, TxQ::baseLevel, baseFee)
+        .value_or(FeeLevel64(std::numeric_limits<std::uint64_t>::max()));
 }
 
 static std::optional<LedgerIndex>
@@ -77,7 +73,8 @@ getLastLedgerSequence(STTx const& tx)
 static FeeLevel64
 increase(FeeLevel64 level, std::uint32_t increasePercent)
 {
-    return mulDiv(level, 100 + increasePercent, 100).second;
+    return mulDiv(level, 100 + increasePercent, 100)
+        .value_or(static_cast<FeeLevel64>(ripple::muldiv_max));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -114,16 +111,19 @@ TxQ::FeeMetrics::update(
         // upperLimit must be >= minimumTxnCount_ or std::clamp can give
         // unexpected results
         auto const upperLimit = std::max<std::uint64_t>(
-            mulDiv(txnsExpected_, cutPct, 100).second, minimumTxnCount_);
+            mulDiv(txnsExpected_, cutPct, 100).value_or(ripple::muldiv_max),
+            minimumTxnCount_);
         txnsExpected_ = std::clamp<std::uint64_t>(
-            mulDiv(size, cutPct, 100).second, minimumTxnCount_, upperLimit);
+            mulDiv(size, cutPct, 100).value_or(ripple::muldiv_max),
+            minimumTxnCount_,
+            upperLimit);
         recentTxnCounts_.clear();
     }
     else if (size > txnsExpected_ || size > targetTxnCount_)
     {
         recentTxnCounts_.push_back(
             mulDiv(size, 100 + setup.normalConsensusIncreasePercent, 100)
-                .second);
+                .value_or(ripple::muldiv_max));
         auto const iter =
             std::max_element(recentTxnCounts_.begin(), recentTxnCounts_.end());
         BOOST_ASSERT(iter != recentTxnCounts_.end());
@@ -181,7 +181,8 @@ TxQ::FeeMetrics::scaleFeeLevel(Snapshot const& snapshot, OpenView const& view)
     {
         // Compute escalated fee level
         // Don't care about the overflow flag
-        return mulDiv(multiplier, current * current, target * target).second;
+        return mulDiv(multiplier, current * current, target * target)
+            .value_or(static_cast<FeeLevel64>(ripple::muldiv_max));
     }
 
     return baseLevel;
@@ -264,7 +265,7 @@ TxQ::FeeMetrics::escalatedSeriesFeeLevel(
     auto const totalFeeLevel = mulDiv(
         multiplier, sumNlast.second - sumNcurrent.second, target * target);
 
-    return totalFeeLevel;
+    return {totalFeeLevel.has_value(), *totalFeeLevel};
 }
 
 LedgerHash TxQ::MaybeTx::parentHashComp{};
@@ -1782,8 +1783,11 @@ TxQ::getTxRequiredFeeAndSeq(
 
     std::uint32_t const accountSeq = sle ? (*sle)[sfSequence] : 0;
     std::uint32_t const availableSeq = nextQueuableSeqImpl(sle, lock).value();
-
-    return {mulDiv(fee, baseFee, baseLevel).second, accountSeq, availableSeq};
+    return {
+        mulDiv(fee, baseFee, baseLevel)
+            .value_or(XRPAmount(std::numeric_limits<std::int64_t>::max())),
+        accountSeq,
+        availableSeq};
 }
 
 std::vector<TxQ::TxDetails>
