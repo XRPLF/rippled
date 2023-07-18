@@ -709,10 +709,9 @@ Env::rpc(std::string const& cmd, Args&&... args)
  * an unsigned integer as its argument and returns void.
  */
 template <class T>
-concept SingleVersionedTestCallable = requires(T callable, unsigned int v) {
-    {
-        callable(v)
-    } -> std::same_as<void>;
+concept SingleVersionedTestCallable = requires(T callable, unsigned int v)
+{
+    {callable(v)} -> std::same_as<void>;
 };
 
 /**
