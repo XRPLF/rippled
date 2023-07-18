@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2023 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,20 +17,29 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PROTOCOL_MESSAGES_H_INCLUDED
-#define RIPPLE_PROTOCOL_MESSAGES_H_INCLUDED
+#ifndef RIPPLE_PROTOCOL_NFTSYNTHETICSERIALIZER_H_INCLUDED
+#define RIPPLE_PROTOCOL_NFTSYNTHETICSERIALIZER_H_INCLUDED
 
-// Some versions of protobuf generate code that will produce errors during
-// compilation. See https://github.com/google/protobuf/issues/549 for more
-// details. We work around this by undefining this macro.
-//
-// TODO: Remove this after the protoc we use is upgraded to not generate
-//       code that conflicts with the TYPE_BOOL macro.
+#include <ripple/json/json_forwards.h>
+#include <ripple/protocol/STTx.h>
+#include <ripple/protocol/TxMeta.h>
 
-#ifdef TYPE_BOOL
-#undef TYPE_BOOL
-#endif
+#include <memory>
 
-#include <ripple/proto/ripple.pb.h>
+namespace ripple {
+
+/**
+   Adds common synthetic fields to transaction-related JSON responses
+
+   @{
+ */
+void
+insertNFTSyntheticInJson(
+    Json::Value&,
+    std::shared_ptr<STTx const> const&,
+    TxMeta const&);
+/** @} */
+
+}  // namespace ripple
 
 #endif

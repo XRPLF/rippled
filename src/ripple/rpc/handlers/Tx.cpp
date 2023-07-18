@@ -24,11 +24,11 @@
 #include <ripple/basics/ToString.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
+#include <ripple/protocol/NFTSyntheticSerializer.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/DeliveredAmount.h>
 #include <ripple/rpc/GRPCHandlers.h>
-#include <ripple/rpc/NFTSyntheticSerializer.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 
 namespace ripple {
@@ -297,7 +297,7 @@ populateJsonResponse(
                 insertDeliveredAmount(
                     response[jss::meta], context, result.txn, *meta);
                 insertNFTSyntheticInJson(
-                    response, context, result.txn->getSTransaction(), *meta);
+                    response, result.txn->getSTransaction(), *meta);
             }
         }
         response[jss::validated] = result.validated;

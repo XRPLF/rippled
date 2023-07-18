@@ -21,6 +21,7 @@
 #define RIPPLE_RPC_RPCHELPERS_H_INCLUDED
 
 #include <ripple/beast/core/SemanticVersion.h>
+#include <ripple/proto/org/xrpl/rpc/v1/xrp_ledger.pb.h>
 #include <ripple/protocol/TxMeta.h>
 
 #include <ripple/app/misc/NetworkOPs.h>
@@ -30,7 +31,6 @@
 #include <ripple/rpc/Status.h>
 #include <ripple/rpc/impl/Tuning.h>
 #include <optional>
-#include <org/xrpl/rpc/v1/xrp_ledger.pb.h>
 #include <variant>
 
 namespace Json {
