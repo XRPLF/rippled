@@ -25,8 +25,8 @@
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/json/Object.h>
 #include <ripple/protocol/STTx.h>
-#include <ripple/protocol/serialize.h>
 #include <ripple/protocol/jss.h>
+#include <ripple/protocol/serialize.h>
 #include <ripple/rpc/Context.h>
 
 namespace ripple {

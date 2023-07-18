@@ -93,7 +93,6 @@ endif()
 
 find_package(nudb REQUIRED)
 find_package(date REQUIRED)
-include(deps/Protobuf)
 include(deps/gRPC)
 
 target_link_libraries(ripple_libs INTERFACE
@@ -103,7 +102,6 @@ target_link_libraries(ripple_libs INTERFACE
   OpenSSL::Crypto
   OpenSSL::SSL
   Ripple::grpc_pbufs
-  Ripple::pbufs
   secp256k1::secp256k1
   soci::soci
   SQLite::SQLite3
@@ -131,6 +129,7 @@ endif()
 ###
 
 include(RippledCore)
+include(deps/Protobuf)
 include(RippledInstall)
 include(RippledCov)
 include(RippledMultiConfig)
