@@ -409,16 +409,8 @@ AMMWithdraw::deleteAccount(Sandbox& sb, AccountID const& ammAccountID)
     if (!sleAMMRoot || !ammSle)
         return tecINTERNAL;
 
-    // Delete directory entry linking the root account and AMM object
-    Keylet const ownerDirKeylet{keylet::ownerDir(ammAccountID)};
-    if (!sb.dirRemove(
-            ownerDirKeylet, (*ammSle)[sfOwnerNode], ammSle->key(), false))
-    {
-        JLOG(j_.fatal()) << "AMM Withdraw: failed to remove dir link";
-        return tecINTERNAL;
-    }
-
     // Delete the trustlines
+    Keylet const ownerDirKeylet{keylet::ownerDir(ammAccountID)};
     std::shared_ptr<SLE> sleDirNode{};
     unsigned int uDirEntry{0};
     uint256 dirEntry{beast::zero};

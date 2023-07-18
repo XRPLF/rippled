@@ -56,6 +56,7 @@ LedgerFormats::LedgerFormats()
             {sfMintedNFTokens,       soeDEFAULT},
             {sfBurnedNFTokens,       soeDEFAULT},
             {sfFirstNFTokenSequence, soeOPTIONAL},
+            {sfAMMID,                soeOPTIONAL},
         },
         commonFields);
 
@@ -278,7 +279,6 @@ LedgerFormats::LedgerFormats()
             {sfLPTokenBalance, soeREQUIRED},
             {sfAsset, soeREQUIRED},
             {sfAsset2, soeREQUIRED},
-            {sfOwnerNode, soeREQUIRED}
         },
         commonFields);
 

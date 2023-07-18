@@ -248,6 +248,8 @@ applyCreate(
     // either an AMMDeposit, TrustSet, crossing an offer, etc.
     sleAMMRoot->setFieldU32(
         sfFlags, lsfAMM | lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth);
+    // Link the root account and AMM object
+    sleAMMRoot->setFieldH256(sfAMMID, ammKeylet.key);
     sb.insert(sleAMMRoot);
 
     // Calculate initial LPT balance.
@@ -282,19 +284,6 @@ applyCreate(
         TOTAL_TIME_SLOT_SECS;
     auctionSlot.setFieldU32(sfExpiration, expiration);
     auctionSlot.setFieldAmount(sfPrice, STAmount{lpTokens.issue(), 0});
-
-    // Add owner directory to link the root account and AMM object.
-    if (auto const page = sb.dirInsert(
-            keylet::ownerDir(*ammAccount),
-            ammSle->key(),
-            describeOwnerDir(*ammAccount));
-        !page)
-    {
-        JLOG(j_.debug()) << "AMM Instance: failed to insert owner dir";
-        return {tecDIR_FULL, false};
-    }
-    else
-        ammSle->setFieldU64(sfOwnerNode, *page);
     sb.insert(ammSle);
 
     // Send LPT to LP.

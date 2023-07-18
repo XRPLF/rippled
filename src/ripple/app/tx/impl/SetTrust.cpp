@@ -128,21 +128,39 @@ SetTrust::preclaim(PreclaimContext const& ctx)
         }
     }
 
+    auto const sleDst = ctx.view.read(keylet::account(uDstAccountID));
+
+    if (!sleDst)
+        return tecNO_DST;
+
+    auto const dstFlags = sleDst->getFlags();
+
     // If the destination has opted to disallow incoming trustlines
     // then honour that flag
     if (ctx.view.rules().enabled(featureDisallowIncoming))
     {
-        auto const sleDst = ctx.view.read(keylet::account(uDstAccountID));
-
-        if (!sleDst)
-            return tecNO_DST;
-
-        auto const dstFlags = sleDst->getFlags();
         if (dstFlags & lsfDisallowIncomingTrustline)
             return tecNO_PERMISSION;
     }
 
-    return tesSUCCESS;
+    // If destination is AMM and the trustline doesn't exist then only
+    // allow SetTrust if the asset is AMM LP token
+    TER ter = tesSUCCESS;
+    if (dstFlags & lsfAMM &&
+        !ctx.view.read(keylet::line(id, uDstAccountID, currency)))
+    {
+        if (auto const ammSle =
+                ctx.view.read({ltAMM, sleDst->getFieldH256(sfAMMID)}))
+        {
+            if (ammSle->getFieldAmount(sfLPTokenBalance).getCurrency() !=
+                saLimitAmount.getCurrency())
+                ter = tecNO_PERMISSION;
+        }
+        else
+            ter = tecINTERNAL;
+    }
+
+    return ter;
 }
 
 TER
