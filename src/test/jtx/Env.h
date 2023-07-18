@@ -705,21 +705,34 @@ Env::rpc(std::string const& cmd, Args&&... args)
 }
 
 /**
- * Executes a set of provided functions (Fs...) over a range of versions from
- * RPC::apiMinimumSupportedVersion to RPC::apiBetaVersion. Each function in
- * Fs... is expected to take a version number as its argument. This is useful
- * for running a series of tests or operations that need to be performed on
- * multiple versions of an API.
+ * The SingleVersionedTestCallable concept checks for a callable that takes
+ * an unsigned integer as its argument and returns void.
  */
-template <class... Fs>
+template <class T>
+concept SingleVersionedTestCallable = requires(T callable, unsigned int v) {
+    {
+        callable(v)
+    } -> std::same_as<void>;
+};
+
+/**
+ * The VersionedTestCallable concept checks if a set of callables all satisfy
+ * the SingleVersionedTestCallable concept. This allows forAllApiVersions to
+ * accept any number of functions. It executes a set of provided functions over
+ * a range of versions from RPC::apiMinimumSupportedVersion to
+ * RPC::apiBetaVersion. This is useful for running a series of tests or
+ * operations that need to be performed on multiple versions of an API.
+ */
+template <class... T>
+concept VersionedTestCallable = (... && SingleVersionedTestCallable<T>);
 void
-forAllApiVersions(Fs... fs)
+forAllApiVersions(VersionedTestCallable auto... testCallable)
 {
     for (auto testVersion = RPC::apiMinimumSupportedVersion;
          testVersion <= RPC::apiBetaVersion;
          ++testVersion)
     {
-        (..., fs(testVersion));
+        (..., testCallable(testVersion));
     }
 }
 
