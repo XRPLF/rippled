@@ -280,6 +280,9 @@ install (
     src/ripple/protocol/UintTypes.h
     src/ripple/protocol/digest.h
     src/ripple/protocol/jss.h
+    src/ripple/protocol/serialize.h
+    src/ripple/protocol/nft.h
+    src/ripple/protocol/nftPageMask.h
     src/ripple/protocol/tokens.h
   DESTINATION include/ripple/protocol)
 install (
