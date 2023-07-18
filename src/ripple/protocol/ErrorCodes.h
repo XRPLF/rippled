@@ -142,8 +142,10 @@ enum error_code_i {
 
     rpcOBJECT_NOT_FOUND = 92,
 
-    rpcLAST =
-        rpcOBJECT_NOT_FOUND  // rpcLAST should always equal the last code.=
+    // AMM
+    rpcISSUE_MALFORMED = 93,
+
+    rpcLAST = rpcISSUE_MALFORMED  // rpcLAST should always equal the last code.=
 };
 
 /** Codes returned in the `warnings` array of certain RPC commands.
