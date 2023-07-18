@@ -667,7 +667,7 @@ public:
     run() override
     {
         test::jtx::forAllApiVersions(
-            [this](auto version) { testParameters(version); });
+            std::bind_front(&AccountTx_test::testParameters, this));
         testContents();
         testAccountDelete();
     }

@@ -1736,8 +1736,8 @@ public:
         testQueue();
         testLedgerAccountsOption();
 
-        test::jtx::forAllApiVersions(
-            [this](auto version) { testLedgerEntryInvalidParams(version); });
+        test::jtx::forAllApiVersions(std::bind_front(
+            &LedgerRPC_test::testLedgerEntryInvalidParams, this));
     }
 };
 
