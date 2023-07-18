@@ -26,7 +26,7 @@
 #include <ripple/protocol/jss.h>
 #include <test/jtx.h>
 #include <test/jtx/TestHelpers.h>
-
+#include <ripple/rpc/impl/RPCHelpers.h>
 #include <chrono>
 #include <test/jtx.h>
 
