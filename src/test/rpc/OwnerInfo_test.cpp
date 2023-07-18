@@ -56,14 +56,16 @@ class OwnerInfo_test : public beast::unit_test::suite
                     result.isMember(jss::accepted) &&
                     result.isMember(jss::current)))
             {
-                BEAST_EXPECT(result[jss::accepted][jss::error] == "badSeed");
+                BEAST_EXPECT(
+                    result[jss::accepted][jss::error] == "actMalformed");
                 BEAST_EXPECT(
                     result[jss::accepted][jss::error_message] ==
-                    "Disallowed seed.");
-                BEAST_EXPECT(result[jss::current][jss::error] == "badSeed");
+                    "Account malformed.");
+                BEAST_EXPECT(
+                    result[jss::current][jss::error] == "actMalformed");
                 BEAST_EXPECT(
                     result[jss::current][jss::error_message] ==
-                    "Disallowed seed.");
+                    "Account malformed.");
             }
         }
 

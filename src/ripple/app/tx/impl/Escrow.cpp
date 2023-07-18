@@ -157,6 +157,18 @@ EscrowCreate::preflight(PreflightContext const& ctx)
 }
 
 TER
+EscrowCreate::preclaim(PreclaimContext const& ctx)
+{
+    auto const sled = ctx.view.read(keylet::account(ctx.tx[sfDestination]));
+    if (!sled)
+        return tecNO_DST;
+    if (((*sled)[sfFlags] & lsfAMM))
+        return tecNO_PERMISSION;
+
+    return tesSUCCESS;
+}
+
+TER
 EscrowCreate::doApply()
 {
     auto const closeTime = ctx_.view().info().parentCloseTime;

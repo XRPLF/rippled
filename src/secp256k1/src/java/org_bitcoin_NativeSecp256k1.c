@@ -2,9 +2,9 @@
 #include <stdint.h>
 #include <string.h>
 #include "org_bitcoin_NativeSecp256k1.h"
-#include "include/secp256k1.h"
-#include "include/secp256k1_ecdh.h"
-#include "include/secp256k1_recovery.h"
+#include "secp256k1.h"
+#include "secp256k1_ecdh.h"
+#include "secp256k1_recovery.h"
 
 
 SECP256K1_API jlong JNICALL Java_org_bitcoin_NativeSecp256k1_secp256k1_1ctx_1clone
