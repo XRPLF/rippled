@@ -58,7 +58,7 @@ parseLedgerArgs(RPC::Context& context, Json::Value const& params)
     Json::Value response;
     // if ledger_index_min or max is specified, then ledger_hash or ledger_index
     // should not be specified. Error out if it is
-    if (context.apiVersion > 1)
+    if (context.apiVersion > 1u)
     {
         if ((params.isMember(jss::ledger_index_min) ||
              params.isMember(jss::ledger_index_max)) &&
@@ -162,7 +162,7 @@ getLedgerRange(
                     // if ledger_index_min or ledger_index_max is out of
                     // valid ledger range, error out. exclude -1 as
                     // it is a valid input
-                    if (context.apiVersion > 1)
+                    if (context.apiVersion > 1u)
                     {
                         if ((ls.max > uValidatedMax && ls.max != -1) ||
                             (ls.min < uValidatedMin && ls.min != 0))
@@ -393,12 +393,12 @@ doAccountTxJson(RPC::JsonContext& context)
     // however, assigning any string value works. Do not allow this.
     // This check is for api Version 2 onwards only
     if (params.isMember(jss::binary) && !params[jss::binary].isBool() &&
-        context.apiVersion > 1)
+        context.apiVersion > 1u)
     {
         return rpcError(rpcINVALID_PARAMS);
     }
     if (params.isMember(jss::forward) && !params[jss::forward].isBool() &&
-        context.apiVersion > 1)
+        context.apiVersion > 1u)
     {
         return rpcError(rpcINVALID_PARAMS);
     }

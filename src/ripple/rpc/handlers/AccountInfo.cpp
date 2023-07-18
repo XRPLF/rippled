@@ -129,7 +129,7 @@ doAccountInfo(RPC::JsonContext& context)
         // assigning any string value works. Do not allow this.
         // This check is for api Version 2 onwards only
         if (params.isMember(jss::signer_lists) &&
-            !params[jss::signer_lists].isBool() && context.apiVersion > 1)
+            !params[jss::signer_lists].isBool() && context.apiVersion > 1u)
         {
             RPC::inject_error(rpcINVALID_PARAMS, result);
             return result;
