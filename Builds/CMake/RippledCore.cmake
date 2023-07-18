@@ -85,6 +85,7 @@ target_sources (xrpl_core PRIVATE
   src/ripple/protocol/impl/STIssue.cpp
   src/ripple/protocol/impl/Keylet.cpp
   src/ripple/protocol/impl/LedgerFormats.cpp
+  src/ripple/protocol/impl/LedgerHeader.cpp
   src/ripple/protocol/impl/PublicKey.cpp
   src/ripple/protocol/impl/Quality.cpp
   src/ripple/protocol/impl/QualityFunction.cpp
@@ -232,6 +233,7 @@ install (
     src/ripple/protocol/BuildInfo.h
     src/ripple/protocol/ErrorCodes.h
     src/ripple/protocol/Feature.h
+    src/ripple/protocol/Fees.h
     src/ripple/protocol/HashPrefix.h
     src/ripple/protocol/Indexes.h
     src/ripple/protocol/InnerObjectFormats.h
@@ -240,6 +242,7 @@ install (
     src/ripple/protocol/Keylet.h
     src/ripple/protocol/KnownFormats.h
     src/ripple/protocol/LedgerFormats.h
+    src/ripple/protocol/LedgerHeader.h
     src/ripple/protocol/Protocol.h
     src/ripple/protocol/PublicKey.h
     src/ripple/protocol/Quality.h
