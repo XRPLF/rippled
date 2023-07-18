@@ -100,7 +100,6 @@ target_link_libraries(ripple_libs INTERFACE
   ed25519::ed25519
   LibArchive::LibArchive
   lz4::lz4
-  nudb::core
   OpenSSL::Crypto
   OpenSSL::SSL
   Ripple::grpc_pbufs
@@ -109,6 +108,16 @@ target_link_libraries(ripple_libs INTERFACE
   soci::soci
   SQLite::SQLite3
 )
+
+# Work around changes to Conan recipe for now.
+if(TARGET nudb::core)
+  set(nudb nudb::core)
+elseif(TARGET NuDB::nudb)
+  set(nudb NuDB::nudb)
+else()
+  message(FATAL_ERROR "unknown nudb target")
+endif()
+target_link_libraries(ripple_libs INTERFACE ${nudb})
 
 if(reporting)
   find_package(cassandra-cpp-driver REQUIRED)
