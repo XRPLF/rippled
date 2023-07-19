@@ -21,8 +21,8 @@
 #define RIPPLE_PROTOCOL_SERIALIZE_H_INCLUDED
 
 #include <ripple/basics/strHex.h>
-#include <ripple/protocol/Serializer.h>
 #include <ripple/protocol/STObject.h>
+#include <ripple/protocol/Serializer.h>
 
 namespace ripple {
 
@@ -43,6 +43,6 @@ serializeHex(STObject const& o)
     return strHex(serializeBlob(o));
 }
 
-}
- 
+}  // namespace ripple
+
 #endif
