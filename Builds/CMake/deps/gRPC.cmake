@@ -45,7 +45,10 @@ foreach(file ${GRPC_DEFINITION_FILES})
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMENT "Running gRPC C++ protocol buffer compiler on ${file}"
     VERBATIM)
-    set_source_files_properties(${src_1} ${src_2} ${hdr_1} ${hdr_2} PROPERTIES GENERATED TRUE)
+    set_source_files_properties(${src_1} ${src_2} ${hdr_1} ${hdr_2} PROPERTIES
+      GENERATED TRUE
+      SKIP_UNITY_BUILD_INCLUSION ON
+    )
     list(APPEND GRPC_PROTO_SRCS ${src_1} ${src_2})
     list(APPEND GRPC_PROTO_HDRS ${hdr_1} ${hdr_2})
 endforeach()
