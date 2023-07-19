@@ -302,6 +302,7 @@ install (
   DESTINATION include/ripple/beast/clock)
 install (
   FILES
+    src/ripple/beast/core/CurrentThreadName.h
     src/ripple/beast/core/LexicalCast.h
     src/ripple/beast/core/List.h
     src/ripple/beast/core/SemanticVersion.h
@@ -315,6 +316,14 @@ install (
 install (
   FILES src/ripple/beast/hash/impl/xxhash.h
   DESTINATION include/ripple/beast/hash/impl)
+install (
+  FILES
+  src/ripple/beast/net/IPAddress.h
+  src/ripple/beast/net/IPAddressConversion.h
+  src/ripple/beast/net/IPAddressV4.h
+  src/ripple/beast/net/IPAddressV6.h
+  src/ripple/beast/net/IPEndpoint.h
+  DESTINATION include/ripple/beast/net)
 install (
   FILES
     src/ripple/beast/rfc2616.h
