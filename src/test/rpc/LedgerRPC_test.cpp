@@ -1226,15 +1226,32 @@ class LedgerRPC_test : public beast::unit_test::suite
         // "features" is not an option supported by ledger_entry.
         Json::Value jvParams;
         jvParams[jss::api_version] = apiVersion;
-        jvParams[jss::features] = ledgerHash;
-        jvParams[jss::ledger_hash] = ledgerHash;
-        Json::Value const jrr =
-            env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
+        {
+            jvParams[jss::features] = ledgerHash;
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
 
-        if (apiVersion < 2u)
-            checkErrorValue(jrr, "unknownOption", "");
-        else
-            checkErrorValue(jrr, "invalidParams", "");
+            if (apiVersion < 2u)
+                checkErrorValue(jrr, "unknownOption", "");
+            else
+                checkErrorValue(jrr, "invalidParams", "");
+        }
+        // invalid check input
+        {
+            Json::Value checkParams;
+            checkParams[jss::owner] = "rhigTLJJyXXSRUyRCQtqi1NoAZZzZnS4KU";
+            checkParams[jss::ledger_index] = "validated";
+            jvParams[jss::check] = checkParams;
+
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+
+            if (apiVersion < 2u)
+                checkErrorValue(jrr, "internal", "Internal error.");
+            else
+                checkErrorValue(jrr, "invalidParams", "");
+        }
     }
 
     /// @brief ledger RPC requests as a way to drive

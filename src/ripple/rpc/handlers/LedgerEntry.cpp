@@ -71,7 +71,12 @@ doLedgerEntry(RPC::JsonContext& context)
     {
         expectedType = ltCHECK;
 
-        if (!uNodeIndex.parseHex(context.params[jss::check].asString()))
+        if (!context.params[jss::check].isString() && context.apiVersion > 1u)
+        {
+            uNodeIndex = beast::zero;
+            jvResult[jss::error] = "invalidParams";
+        }
+        else if (!uNodeIndex.parseHex(context.params[jss::check].asString()))
         {
             uNodeIndex = beast::zero;
             jvResult[jss::error] = "malformedRequest";
