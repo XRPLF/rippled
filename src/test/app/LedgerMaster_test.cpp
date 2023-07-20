@@ -38,7 +38,7 @@ class LedgerMaster_test : public beast::unit_test::suite
     }
 
     void
-    testTxnIDfromIndex(FeatureBitset features)
+    testTxnIdFromIndex(FeatureBitset features)
     {
         testcase("tx_id_from_index");
 
@@ -129,7 +129,7 @@ public:
     void
     testWithFeats(FeatureBitset features)
     {
-        testTxnIDfromIndex(features);
+        testTxnIdFromIndex(features);
     }
 };
 
