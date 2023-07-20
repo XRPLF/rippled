@@ -51,7 +51,15 @@ doLedgerEntry(RPC::JsonContext& context)
 
     if (context.params.isMember(jss::index))
     {
-        if (!uNodeIndex.parseHex(context.params[jss::index].asString()))
+        // Document states "index" field is a string. check for this apiVersion
+        // 2 onwards. invalidParam error is thrown if the above condition is
+        // false
+        if (!context.params[jss::index].isString() && context.apiVersion > 1u)
+        {
+            uNodeIndex = beast::zero;
+            jvResult[jss::error] = "invalidParams";
+        }
+        else if (!uNodeIndex.parseHex(context.params[jss::index].asString()))
         {
             uNodeIndex = beast::zero;
             jvResult[jss::error] = "malformedRequest";
@@ -70,7 +78,9 @@ doLedgerEntry(RPC::JsonContext& context)
     else if (context.params.isMember(jss::check))
     {
         expectedType = ltCHECK;
-
+        // Document states "check" field is a string. Check for this apiVersion
+        // 2 onwards. invalidParam error is thrown if the above condition is
+        // false
         if (!context.params[jss::check].isString() && context.apiVersion > 1u)
         {
             uNodeIndex = beast::zero;
@@ -130,7 +140,17 @@ doLedgerEntry(RPC::JsonContext& context)
         }
         else if (!context.params[jss::directory].isObject())
         {
-            if (!uNodeIndex.parseHex(context.params[jss::directory].asString()))
+            // Document states "directory" field is a string. check for this
+            // apiVersion 2 onwards. invalidParam error is thrown if the above
+            // condition is false
+            if (!context.params[jss::directory].isString() &&
+                context.apiVersion > 1u)
+            {
+                uNodeIndex = beast::zero;
+                jvResult[jss::error] = "invalidParams";
+            }
+            else if (!uNodeIndex.parseHex(
+                         context.params[jss::directory].asString()))
             {
                 uNodeIndex = beast::zero;
                 jvResult[jss::error] = "malformedRequest";
@@ -338,6 +358,15 @@ doLedgerEntry(RPC::JsonContext& context)
 
         if (context.params[jss::nft_page].isString())
         {
+            // Document states "nft_page" field is a string. check for this
+            // apiVersion 2 onwards. invalidParam error is thrown if the above
+            // condition is false
+            if (!context.params[jss::nft_page].isString() &&
+                context.apiVersion > 1u)
+            {
+                uNodeIndex = beast::zero;
+                jvResult[jss::error] = "invalidParams";
+            }
             if (!uNodeIndex.parseHex(context.params[jss::nft_page].asString()))
             {
                 uNodeIndex = beast::zero;
