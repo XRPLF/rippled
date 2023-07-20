@@ -72,33 +72,33 @@ class LedgerMaster_test : public beast::unit_test::suite
             std::uint32_t ledgerSeq = -1;
             std::uint32_t txnIndex = 0;
             auto result =
-                env.app().getLedgerMaster().txnIDfromIndex(ledgerSeq, txnIndex);
+                env.app().getLedgerMaster().txnIdFromIndex(ledgerSeq, txnIndex);
             BEAST_EXPECT(!result);
         }
         // test not in ledger
         {
             uint32_t txnIndex = metas[0]->getFieldU32(sfTransactionIndex);
             auto result =
-                env.app().getLedgerMaster().txnIDfromIndex(0, txnIndex);
+                env.app().getLedgerMaster().txnIdFromIndex(0, txnIndex);
             BEAST_EXPECT(!result);
         }
         // test empty ledger
         {
             auto result =
-                env.app().getLedgerMaster().txnIDfromIndex(endLegSeq, 0);
+                env.app().getLedgerMaster().txnIdFromIndex(endLegSeq, 0);
             BEAST_EXPECT(!result);
         }
         // ended without result
         {
             uint32_t txnIndex = metas[0]->getFieldU32(sfTransactionIndex);
-            auto result = env.app().getLedgerMaster().txnIDfromIndex(
+            auto result = env.app().getLedgerMaster().txnIdFromIndex(
                 endLegSeq + 1, txnIndex);
             BEAST_EXPECT(!result);
         }
         // success (first tx)
         {
             uint32_t txnIndex = metas[0]->getFieldU32(sfTransactionIndex);
-            auto result = env.app().getLedgerMaster().txnIDfromIndex(
+            auto result = env.app().getLedgerMaster().txnIdFromIndex(
                 startLegSeq, txnIndex);
             BEAST_EXPECT(
                 *result ==
@@ -108,7 +108,7 @@ class LedgerMaster_test : public beast::unit_test::suite
         // success (second tx)
         {
             uint32_t txnIndex = metas[1]->getFieldU32(sfTransactionIndex);
-            auto result = env.app().getLedgerMaster().txnIDfromIndex(
+            auto result = env.app().getLedgerMaster().txnIdFromIndex(
                 startLegSeq + 1, txnIndex);
             BEAST_EXPECT(
                 *result ==

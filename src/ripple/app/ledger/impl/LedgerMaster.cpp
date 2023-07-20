@@ -2370,7 +2370,7 @@ LedgerMaster::minSqlSeq()
 }
 
 std::optional<uint256>
-LedgerMaster::txnIDfromIndex(uint32_t ledgerSeq, uint32_t txnIndex)
+LedgerMaster::txnIdFromIndex(uint32_t ledgerSeq, uint32_t txnIndex)
 {
     uint32_t first = 0, last = 0;
 
