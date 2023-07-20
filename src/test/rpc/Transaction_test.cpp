@@ -367,7 +367,7 @@ class Transaction_test : public beast::unit_test::suite
             if (deltaEndSeq)
                 BEAST_EXPECT(!result[jss::result][jss::searched_all].asBool());
             else
-                BEAST_EXPECT(result[jss::result][jss::searched_all].asBool());
+                BEAST_EXPECT(!result[jss::result][jss::searched_all].asBool());
         }
 
         // Find transactions outside of provided range.
@@ -435,7 +435,7 @@ class Transaction_test : public beast::unit_test::suite
                 result[jss::result][jss::status] == jss::error &&
                 result[jss::result][jss::error] == NOT_FOUND);
 
-            BEAST_EXPECT(result[jss::result][jss::searched_all].asBool());
+            BEAST_EXPECT(!result[jss::result][jss::searched_all].asBool());
         }
 
         // Provide range without providing the `binary`
