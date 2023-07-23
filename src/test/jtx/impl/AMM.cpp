@@ -382,6 +382,7 @@ AMM::deposit(
         flags,
         std::nullopt,
         std::nullopt,
+        std::nullopt,
         ter);
 }
 
@@ -404,6 +405,7 @@ AMM::deposit(
         flags,
         std::nullopt,
         std::nullopt,
+        std::nullopt,
         ter);
 }
 
@@ -417,6 +419,7 @@ AMM::deposit(
     std::optional<std::uint32_t> const& flags,
     std::optional<std::pair<Issue, Issue>> const& assets,
     std::optional<jtx::seq> const& seq,
+    std::optional<std::uint16_t> const& tfee,
     std::optional<ter> const& ter)
 {
     Json::Value jv;
@@ -428,6 +431,8 @@ AMM::deposit(
         asset2In->setJson(jv[jss::Amount2]);
     if (maxEP)
         maxEP->setJson(jv[jss::EPrice]);
+    if (tfee)
+        jv[jss::TradingFee] = *tfee;
     std::uint32_t jvflags = 0;
     if (flags)
         jvflags = *flags;
@@ -695,6 +700,18 @@ AMM::expectAuctionSlot(auto&& cb) const
         }
     }
     return false;
+}
+
+void
+AMM::ammDelete(AccountID const& deleter, std::optional<ter> const& ter)
+{
+    Json::Value jv;
+    jv[jss::Account] = to_string(deleter);
+    setTokens(jv);
+    jv[jss::TransactionType] = jss::AMMDelete;
+    if (fee_ != 0)
+        jv[jss::Fee] = std::to_string(fee_);
+    submit(jv, std::nullopt, ter);
 }
 
 namespace amm {

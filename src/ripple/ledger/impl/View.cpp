@@ -1544,4 +1544,119 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account)
     return tesSUCCESS;
 }
 
+std::pair<TER, AllNodesDeleted>
+cleanupOnAccountDelete(
+    ApplyView& view,
+    Keylet const& ownerDirKeylet,
+    std::function<TER(LedgerEntryType, uint256 const&, std::shared_ptr<SLE>&)>
+        deleter,
+    beast::Journal j,
+    std::optional<uint16_t> maxNodesToDelete)
+{
+    // Delete all the entries in the account directory.
+    std::shared_ptr<SLE> sleDirNode{};
+    unsigned int uDirEntry{0};
+    uint256 dirEntry{beast::zero};
+    std::uint16_t deleted = 0;
+
+    if (view.exists(ownerDirKeylet) &&
+        dirFirst(view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry))
+    {
+        do
+        {
+            if (maxNodesToDelete && ++deleted > *maxNodesToDelete)
+                return {tesSUCCESS, AllNodesDeleted::No};
+
+            // Choose the right way to delete each directory node.
+            auto sleItem = view.peek(keylet::child(dirEntry));
+            if (!sleItem)
+            {
+                // Directory node has an invalid index.  Bail out.
+                JLOG(j.fatal())
+                    << "DeleteAccount: Directory node in ledger " << view.seq()
+                    << " has index to object that is missing: "
+                    << to_string(dirEntry);
+                return {tefBAD_LEDGER, AllNodesDeleted::No};
+            }
+
+            LedgerEntryType const nodeType{safe_cast<LedgerEntryType>(
+                sleItem->getFieldU16(sfLedgerEntryType))};
+
+            // Deleter handles the details of specific account deletion
+            if (auto const ter = deleter(nodeType, dirEntry, sleItem);
+                ter != tesSUCCESS)
+                return {ter, AllNodesDeleted::No};
+
+            // dirFirst() and dirNext() are like iterators with exposed
+            // internal state.  We'll take advantage of that exposed state
+            // to solve a common C++ problem: iterator invalidation while
+            // deleting elements from a container.
+            //
+            // We have just deleted one directory entry, which means our
+            // "iterator state" is invalid.
+            //
+            //  1. During the process of getting an entry from the
+            //     directory uDirEntry was incremented from 0 to 1.
+            //
+            //  2. We then deleted the entry at index 0, which means the
+            //     entry that was at 1 has now moved to 0.
+            //
+            //  3. So we verify that uDirEntry is indeed 1.  Then we jam it
+            //     back to zero to "un-invalidate" the iterator.
+            assert(uDirEntry == 1);
+            if (uDirEntry != 1)
+            {
+                JLOG(j.error())
+                    << "DeleteAccount iterator re-validation failed.";
+                return {tefBAD_LEDGER, AllNodesDeleted::No};
+            }
+            uDirEntry = 0;
+
+        } while (
+            dirNext(view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry));
+    }
+
+    return {tesSUCCESS, AllNodesDeleted::Yes};
+}
+
+TER
+deleteAMMTrustLine(
+    ApplyView& view,
+    std::shared_ptr<SLE> sleState,
+    std::optional<AccountID> const& ammAccountID,
+    beast::Journal j)
+{
+    if (!sleState)
+        return tecINTERNAL;
+
+    auto const& [low, high] = std::minmax(
+        sleState->getFieldAmount(sfLowLimit).getIssuer(),
+        sleState->getFieldAmount(sfHighLimit).getIssuer());
+    auto sleLow = view.peek(keylet::account(low));
+    auto sleHigh = view.peek(keylet::account(high));
+    if (!sleLow || !sleHigh)
+        return tecINTERNAL;
+    bool const ammLow = sleLow->getFlags() & lsfAMM;
+    bool const ammHigh = sleHigh->getFlags() & lsfAMM;
+
+    // One side must be AMM
+    if (!(ammLow ^ ammHigh) ||
+        (ammAccountID &&
+         ((ammLow && low != ammAccountID) ||
+          (ammHigh && high != ammAccountID))))
+        return terNO_AMM;
+
+    if (auto const ter = trustDelete(view, sleState, low, high, j);
+        ter != tesSUCCESS)
+    {
+        JLOG(j.error())
+            << "deleteAMMTrustLine: failed to delete the trustline.";
+        return ter;
+    }
+
+    adjustOwnerCount(view, !ammLow ? sleLow : sleHigh, -1, j);
+
+    return tesSUCCESS;
+}
+
 }  // namespace ripple

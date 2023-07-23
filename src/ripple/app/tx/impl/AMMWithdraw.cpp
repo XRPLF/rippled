@@ -194,8 +194,10 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
     if (!expected)
         return expected.error();
     auto const [amountBalance, amount2Balance, lptAMMBalance] = *expected;
+    if (lptAMMBalance == beast::zero)
+        return tecAMM_EMPTY;
     if (amountBalance <= beast::zero || amount2Balance <= beast::zero ||
-        lptAMMBalance <= beast::zero)
+        lptAMMBalance < beast::zero)
     {
         JLOG(ctx.j.debug())
             << "AMM Withdraw: reserves or tokens balance is zero.";
@@ -371,19 +373,31 @@ AMMWithdraw::applyGuts(Sandbox& sb)
         return std::make_pair(tecINTERNAL, STAmount{});
     }();
 
-    // AMM is deleted if zero tokens balance
-    if (result == tesSUCCESS && newLPTokenBalance != beast::zero)
+    if (result != tesSUCCESS)
+        return {result, false};
+
+    bool updateBalance = true;
+    if (newLPTokenBalance == beast::zero)
+    {
+        if (auto const ter =
+                deleteAMMAccount(sb, ctx_.tx[sfAsset], ctx_.tx[sfAsset2], j_);
+            ter != tesSUCCESS && ter != tecINCOMPLETE)
+            return {ter, false};
+        else
+            updateBalance = (ter == tecINCOMPLETE);
+    }
+
+    if (updateBalance)
     {
         ammSle->setFieldAmount(sfLPTokenBalance, newLPTokenBalance);
         sb.update(ammSle);
-
-        JLOG(ctx_.journal.trace())
-            << "AMM Withdraw: tokens " << to_string(newLPTokenBalance.iou())
-            << " " << to_string(lpTokens.iou()) << " "
-            << to_string(lptAMMBalance.iou());
     }
 
-    return {result, result == tesSUCCESS};
+    JLOG(ctx_.journal.trace())
+        << "AMM Withdraw: tokens " << to_string(newLPTokenBalance.iou()) << " "
+        << to_string(lpTokens.iou()) << " " << to_string(lptAMMBalance.iou());
+
+    return {tesSUCCESS, true};
 }
 
 TER
@@ -398,85 +412,6 @@ AMMWithdraw::doApply()
         sb.apply(ctx_.rawView());
 
     return result.first;
-}
-
-TER
-AMMWithdraw::deleteAccount(Sandbox& sb, AccountID const& ammAccountID)
-{
-    auto sleAMMRoot = sb.peek(keylet::account(ammAccountID));
-    auto ammSle = sb.peek(keylet::amm(ctx_.tx[sfAsset], ctx_.tx[sfAsset2]));
-
-    if (!sleAMMRoot || !ammSle)
-        return tecINTERNAL;
-
-    // Delete the trustlines
-    Keylet const ownerDirKeylet{keylet::ownerDir(ammAccountID)};
-    std::shared_ptr<SLE> sleDirNode{};
-    unsigned int uDirEntry{0};
-    uint256 dirEntry{beast::zero};
-    if (sb.exists(ownerDirKeylet) &&
-        dirFirst(sb, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry))
-    {
-        do
-        {
-            auto sleItem = sb.peek(keylet::child(dirEntry));
-            if (!sleItem)
-            {
-                // Directory node has an invalid index
-                JLOG(j_.fatal())
-                    << "AMM Withdraw: Directory node in ledger " << sb.seq()
-                    << " has index to object that is missing: "
-                    << to_string(dirEntry);
-                return tefBAD_LEDGER;
-            }
-
-            // Should only have the trustlines
-            if (auto const nodeType = safe_cast<LedgerEntryType>(
-                    sleItem->getFieldU16(sfLedgerEntryType));
-                nodeType != LedgerEntryType::ltRIPPLE_STATE)
-            {
-                JLOG(j_.error())
-                    << "AMM Withdraw: deleting non-trustline " << nodeType;
-                return tecINTERNAL;
-            }
-
-            // Trustlines must have zero balance
-            if (sleItem->getFieldAmount(sfBalance) != beast::zero)
-            {
-                JLOG(j_.error()) << "AMM Withdraw: deleting trustline with "
-                                    "non-zero balance.";
-                return tecINTERNAL;
-            }
-
-            auto const& [lowAccountID, highAccountID] = std::minmax(
-                sleItem->getFieldAmount(sfHighLimit).getIssuer(), ammAccountID);
-            if (auto const ter = trustDelete(
-                    sb, sleItem, lowAccountID, highAccountID, ctx_.journal);
-                ter != tesSUCCESS)
-            {
-                JLOG(j_.error())
-                    << "AMM Withdraw: failed to delete the trustline.";
-                return ter;
-            }
-
-            // Update the iterator
-            assert(uDirEntry == 1);
-            if (uDirEntry != 1)
-            {
-                JLOG(j_.error())
-                    << "AMM Withdraw: iterator re-validation failed.";
-                return tefBAD_LEDGER;
-            }
-            uDirEntry = 0;
-
-        } while (
-            dirNext(sb, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry));
-    }
-
-    sb.erase(ammSle);
-    sb.erase(sleAMMRoot);
-
-    return tesSUCCESS;
 }
 
 std::pair<TER, STAmount>
@@ -621,9 +556,6 @@ AMMWithdraw::withdraw(
             << "AMM Withdraw: failed to withdraw LPTokens";
         return {res, STAmount{}};
     }
-
-    if (lpTokensWithdrawActual == lpTokensAMMBalance)
-        return {deleteAccount(view, ammAccount), STAmount{}};
 
     return {tesSUCCESS, lpTokensAMMBalance - lpTokensWithdrawActual};
 }

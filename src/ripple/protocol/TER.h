@@ -298,7 +298,9 @@ enum TECcodes : TERUnderlyingType {
     tecUNFUNDED_AMM = 162,
     tecAMM_BALANCE = 163,
     tecAMM_FAILED = 164,
-    tecAMM_INVALID_TOKENS = 165
+    tecAMM_INVALID_TOKENS = 165,
+    tecAMM_EMPTY = 166,
+    tecINCOMPLETE = 167
 };
 
 //------------------------------------------------------------------------------

@@ -188,4 +188,110 @@ ammAccountHolds(
     return STAmount{issue};
 }
 
+static std::pair<TER, AllNodesDeleted>
+deleteAMMTrustLines(
+    ApplyView& view,
+    AccountID const& ammAccountID,
+    std::uint16_t maxTrustlinesToDelete,
+    beast::Journal j)
+{
+    return cleanupOnAccountDelete(
+        view,
+        keylet::ownerDir(ammAccountID),
+        [&](LedgerEntryType nodeType,
+            uint256 const&,
+            std::shared_ptr<SLE>& sleItem) -> TER {
+            // Should only have the trustlines
+            if (nodeType != LedgerEntryType::ltRIPPLE_STATE)
+            {
+                JLOG(j.error())
+                    << "deleteAMMTrustLines: deleting non-trustline "
+                    << nodeType;
+                return tecINTERNAL;
+            }
+
+            // Trustlines must have zero balance
+            if (sleItem->getFieldAmount(sfBalance) != beast::zero)
+            {
+                JLOG(j.error())
+                    << "deleteAMMTrustLines: deleting trustline with "
+                       "non-zero balance.";
+                return tecINTERNAL;
+            }
+
+            return deleteAMMTrustLine(view, sleItem, ammAccountID, j);
+        },
+        j,
+        maxTrustlinesToDelete);
+}
+
+TER
+deleteAMMAccount(
+    ApplyView& view,
+    Issue const& asset,
+    Issue const& asset2,
+    beast::Journal j)
+{
+    auto ammSle = view.peek(keylet::amm(asset, asset2));
+    if (!ammSle)
+        return tecINTERNAL;
+
+    auto const ammAccountID = (*ammSle)[sfAccount];
+    auto sleAMMRoot = view.peek(keylet::account(ammAccountID));
+    if (!sleAMMRoot)
+        return tecINTERNAL;
+
+    if (auto const res = deleteAMMTrustLines(
+            view, ammAccountID, maxDeletableAMMTrustLines, j);
+        std::get<TER>(res) != tesSUCCESS)
+        return std::get<TER>(res);
+    // All trustlines are deleted, can delete ltAMM and the account
+    else if (res.second == AllNodesDeleted::Yes)
+    {
+        view.erase(ammSle);
+        view.erase(sleAMMRoot);
+        return tesSUCCESS;
+    }
+
+    return tecINCOMPLETE;
+}
+
+void
+initializeFeeAuctionVote(
+    ApplyView& view,
+    std::shared_ptr<SLE>& ammSle,
+    AccountID const& account,
+    Issue const& lptIssue,
+    std::uint16_t tfee)
+{
+    // AMM creator gets the voting slot.
+    STArray voteSlots;
+    STObject voteEntry{sfVoteEntry};
+    if (tfee != 0)
+        voteEntry.setFieldU16(sfTradingFee, tfee);
+    voteEntry.setFieldU32(sfVoteWeight, 100000);
+    voteEntry.setAccountID(sfAccount, account);
+    voteSlots.push_back(voteEntry);
+    ammSle->setFieldArray(sfVoteSlots, voteSlots);
+    // AMM creator gets the auction slot for free.
+    auto& auctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
+    auctionSlot.setAccountID(sfAccount, account);
+    // current + sec in 24h
+    auto const expiration = std::chrono::duration_cast<std::chrono::seconds>(
+                                view.info().parentCloseTime.time_since_epoch())
+                                .count() +
+        TOTAL_TIME_SLOT_SECS;
+    auctionSlot.setFieldU32(sfExpiration, expiration);
+    auctionSlot.setFieldAmount(sfPrice, STAmount{lptIssue, 0});
+    // Set the fee
+    if (tfee != 0)
+        ammSle->setFieldU16(sfTradingFee, tfee);
+    else if (ammSle->isFieldPresent(sfTradingFee))
+        ammSle->makeFieldAbsent(sfTradingFee);
+    if (auto const dfee = tfee / AUCTION_SLOT_DISCOUNTED_FEE_FRACTION)
+        auctionSlot.setFieldU16(sfDiscountedFee, dfee);
+    else if (auctionSlot.isFieldPresent(sfDiscountedFee))
+        auctionSlot.makeFieldAbsent(sfDiscountedFee);
+}
+
 }  // namespace ripple

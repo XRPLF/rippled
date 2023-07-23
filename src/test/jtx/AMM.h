@@ -180,6 +180,7 @@ public:
         std::optional<std::uint32_t> const& flags,
         std::optional<std::pair<Issue, Issue>> const& assets,
         std::optional<jtx::seq> const& seq,
+        std::optional<std::uint16_t> const& tfee = std::nullopt,
         std::optional<ter> const& ter = std::nullopt);
 
     IOUAmount
@@ -285,6 +286,11 @@ public:
     {
         return ammRpcInfo(lp);
     }
+
+    void
+    ammDelete(
+        AccountID const& deleter,
+        std::optional<ter> const& ter = std::nullopt);
 
 private:
     void

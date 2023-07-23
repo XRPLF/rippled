@@ -144,7 +144,8 @@ SetTrust::preclaim(PreclaimContext const& ctx)
     }
 
     // If destination is AMM and the trustline doesn't exist then only
-    // allow SetTrust if the asset is AMM LP token
+    // allow SetTrust if the asset is AMM LP token and AMM is not
+    // in empty state.
     TER ter = tesSUCCESS;
     if (dstFlags & lsfAMM &&
         !ctx.view.read(keylet::line(id, uDstAccountID, currency)))
@@ -152,8 +153,10 @@ SetTrust::preclaim(PreclaimContext const& ctx)
         if (auto const ammSle =
                 ctx.view.read({ltAMM, sleDst->getFieldH256(sfAMMID)}))
         {
-            if (ammSle->getFieldAmount(sfLPTokenBalance).getCurrency() !=
-                saLimitAmount.getCurrency())
+            if (auto const lpTokens = ammSle->getFieldAmount(sfLPTokenBalance);
+                lpTokens == beast::zero)
+                ter = tecAMM_EMPTY;
+            else if (lpTokens.getCurrency() != saLimitAmount.getCurrency())
                 ter = tecNO_PERMISSION;
         }
         else
