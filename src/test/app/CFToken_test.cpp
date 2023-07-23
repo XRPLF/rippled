@@ -51,7 +51,7 @@ class CFToken_test : public beast::unit_test::suite
             BEAST_EXPECT(ownerCount(env, master) == 0);
 
             // TODO why not working with short codes?
-            env(cft::issue(master, "0158415500000000C1F76FF6ECB0BAC600000000"),
+            env(cft::create(master, "0158415500000000C1F76FF6ECB0BAC600000000"),
                 ter(temDISABLED));
             env.close();
 
@@ -66,7 +66,8 @@ class CFToken_test : public beast::unit_test::suite
             BEAST_EXPECT(ownerCount(env, master) == 0);
 
             // TODO why not working with short codes?
-            env(cft::issue(master, "0158415500000000C1F76FF6ECB0BAC600000000"));
+            env(cft::create(
+                master, "0158415500000000C1F76FF6ECB0BAC600000000"));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, master) == 1);

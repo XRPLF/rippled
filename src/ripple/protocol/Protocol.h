@@ -86,9 +86,6 @@ std::size_t constexpr maxTokenURILength = 256;
 /** The maximum length of a domain */
 std::size_t constexpr maxDomainLength = 256;
 
-/** The maximum length of an AssetCode inside a CFT */
-std::size_t constexpr maxAssetCodeLength = 20;
-
 /** The maximum length of CFTokenMetadata */
 std::size_t constexpr maxCFTokenMetadataLength = 1024;
 

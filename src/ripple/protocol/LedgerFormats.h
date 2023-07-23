@@ -164,7 +164,7 @@ enum LedgerEntryType : std::uint16_t
     /** A ledger object representing an individual CFToken asset type, but not
      * any balances of that asset itself.
 
-        TODO: \sa
+        \sa keylet::cftIssuance
      */
     ltCFTOKEN_ISSUANCE = 0x007e,
 

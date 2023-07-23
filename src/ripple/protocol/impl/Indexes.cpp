@@ -372,7 +372,7 @@ nft_sells(uint256 const& id) noexcept
 }
 
 Keylet
-cft_issuance(AccountID const& issuer, uint160 const& asset) noexcept
+cftIssuance(AccountID const& issuer, uint160 const& asset) noexcept
 {
     return {
         ltCFTOKEN_ISSUANCE,

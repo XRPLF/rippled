@@ -718,4 +718,62 @@ NFTokenCountTracking::finalize(
     return true;
 }
 
+//------------------------------------------------------------------------------
+
+void
+ValidCFTIssuance::visitEntry(
+    bool isDelete,
+    std::shared_ptr<SLE const> const& _before,
+    std::shared_ptr<SLE const> const& after)
+{
+    if (after && after->getType() == ltCFTOKEN_ISSUANCE)
+    {
+        if (isDelete)
+            deltaCFTs_--;
+        else
+            deltaCFTs_++;
+    }
+}
+
+bool
+ValidCFTIssuance::finalize(
+    STTx const& tx,
+    TER const result,
+    XRPAmount const _fee,
+    ReadView const& _view,
+    beast::Journal const& j)
+{
+    if (tx.getTxnType() == ttCFTOKEN_ISSUANCE_CREATE && result == tesSUCCESS)
+    {
+        if (deltaCFTs_ == 0)
+        {
+            JLOG(j.fatal()) << "Invariant failed: CFT issuance creation "
+                               "succeeded without creating a CFT issuance";
+        }
+        else if (deltaCFTs_ < 0)
+        {
+            JLOG(j.fatal()) << "Invariant failed: CFT issuance creation "
+                               "succeeded while removing CFT issuances";
+        }
+        else if (deltaCFTs_ > 1)
+        {
+            JLOG(j.fatal()) << "Invariant failed: CFT issuance creation "
+                               "succeeded but created multiple issuances";
+        }
+
+        return deltaCFTs_ == 1;
+    }
+
+    if (deltaCFTs_ > 0)
+    {
+        JLOG(j.fatal()) << "Invariant failed: a CFT issuance was created";
+    }
+    else if (deltaCFTs_ < 0)
+    {
+        JLOG(j.fatal()) << "Invariant failed: a CFT issuance was deleted";
+    }
+
+    return deltaCFTs_ == 0;
+}
+
 }  // namespace ripple

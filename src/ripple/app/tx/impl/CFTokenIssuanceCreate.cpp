@@ -70,8 +70,8 @@ CFTokenIssuanceCreate::preclaim(PreclaimContext const& ctx)
 
     // if already a CFT with this asset code - error
     // TODO - need to check this again before insert too?
-    if (ctx.view.read(
-            keylet::cft_issuance(ctx.tx[sfAccount], ctx.tx[sfAssetCode])))
+    if (ctx.view.exists(
+            keylet::cftIssuance(ctx.tx[sfAccount], ctx.tx[sfAssetCode])))
         return tecDUPLICATE;
 
     return tesSUCCESS;
@@ -80,15 +80,14 @@ CFTokenIssuanceCreate::preclaim(PreclaimContext const& ctx)
 TER
 CFTokenIssuanceCreate::doApply()
 {
-    if (auto const acct = view().read(keylet::account(ctx_.tx[sfAccount]));
+    if (auto const acct = view().read(keylet::account(account_));
         mPriorBalance < view().fees().accountReserve((*acct)[sfOwnerCount] + 1))
         return tecINSUFFICIENT_RESERVE;
 
-    auto const cftID = keylet::cft_issuance(account_, ctx_.tx[sfAssetCode]);
+    auto const cftID = keylet::cftIssuance(account_, ctx_.tx[sfAssetCode]);
 
     // create the CFT
     {
-        // TODO are always added to the owner's owner directory:
         auto const ownerNode = view().dirInsert(
             keylet::ownerDir(account_), cftID, describeOwnerDir(account_));
 
