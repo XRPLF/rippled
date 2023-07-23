@@ -72,7 +72,7 @@ class CFToken_test : public beast::unit_test::suite
                 "0158415500000000C1F76FF6ECB0BAC600000000";
             ripple::uint160 asset;
             BEAST_EXPECT(asset.parseHex(assetStr));
-            auto const id = keylet::cft_issuance(master.id(), asset);
+            auto const id = keylet::cftIssuance(master.id(), asset);
             env(cft::destroy(master, ripple::to_string(id.key)),
                 ter(temDISABLED));
             env.close();
@@ -97,7 +97,7 @@ class CFToken_test : public beast::unit_test::suite
             env.close();
             BEAST_EXPECT(ownerCount(env, master) == 1);
 
-            auto const id = keylet::cft_issuance(master.id(), asset);
+            auto const id = keylet::cftIssuance(master.id(), asset);
 
             env(cft::destroy(master, ripple::to_string(id.key)));
             env.close();

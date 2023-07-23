@@ -764,6 +764,27 @@ ValidCFTIssuance::finalize(
         return cftsCreated_ == 1 && cftsDeleted_ == 0;
     }
 
+    if (tx.getTxnType() == ttCFTOKEN_ISSUANCE_DESTROY && result == tesSUCCESS)
+    {
+        if (cftsDeleted_ == 0)
+        {
+            JLOG(j.fatal()) << "Invariant failed: CFT issuance deletion "
+                               "succeeded without removing a CFT issuance";
+        }
+        else if (cftsCreated_ > 0)
+        {
+            JLOG(j.fatal()) << "Invariant failed: CFT issuance deletion "
+                               "succeeded while creating CFT issuances";
+        }
+        else if (cftsDeleted_ > 1)
+        {
+            JLOG(j.fatal()) << "Invariant failed: CFT issuance deletion "
+                               "succeeded but deleted multiple issuances";
+        }
+
+        return cftsCreated_ == 0 && cftsDeleted_ == 1;
+    }
+
     if (cftsCreated_ != 0)
     {
         JLOG(j.fatal()) << "Invariant failed: a CFT issuance was created";

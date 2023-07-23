@@ -41,7 +41,7 @@ CFTokenIssuanceDestroy::preclaim(PreclaimContext const& ctx)
 {
     // ensure that issuance exists
     auto const sleCFT =
-        ctx.view.read(keylet::cft_issuance(ctx.tx[sfCFTokenIssuanceID]));
+        ctx.view.read(keylet::cftIssuance(ctx.tx[sfCFTokenIssuanceID]));
     if (!sleCFT)
         return tecOBJECT_NOT_FOUND;
 
@@ -60,7 +60,7 @@ TER
 CFTokenIssuanceDestroy::doApply()
 {
     auto const cft =
-        view().peek(keylet::cft_issuance(ctx_.tx[sfCFTokenIssuanceID]));
+        view().peek(keylet::cftIssuance(ctx_.tx[sfCFTokenIssuanceID]));
     auto const issuer = (*cft)[sfIssuer];
 
     if (!view().dirRemove(
