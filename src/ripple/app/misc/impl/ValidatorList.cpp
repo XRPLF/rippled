@@ -26,12 +26,12 @@
 #include <ripple/basics/base64.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/overlay/Overlay.h>
+#include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/STValidation.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/protocol/messages.h>
 #include <boost/regex.hpp>
-#include <ripple/protocol/PublicKey.h>
 
 #include <cmath>
 #include <mutex>
@@ -163,6 +163,8 @@ ValidatorList::load(
 
         auto const ret = strUnHex(key);
 
+        // The check for publicKeyType(...) ensures that default-constructed
+        // public keys are not passed here.
         if (!ret || !publicKeyType(makeSlice(*ret)))
         {
             JLOG(j_.error()) << "Invalid validator list publisher key: " << key;
@@ -232,14 +234,10 @@ ValidatorList::load(
             JLOG(j_.warn()) << "Duplicate node identity: " << match[1];
             continue;
         }
-        auto [it, inserted] = publisherLists_.emplace(std::make_pair
-                                                      (PublicKey::emptyPubKey, PublisherListCollection()));
         // Config listed keys never expire
-        auto& current = it->second.current;
-        if (inserted)
-            current.validUntil = TimeKeeper::time_point::max();
+        auto& current = localPublisherList;
+        current.validUntil = TimeKeeper::time_point::max();
         current.list.emplace_back(*id);
-        it->second.status = PublisherStatus::available;
         ++count;
     }
 
@@ -336,6 +334,14 @@ ValidatorList::cacheValidatorFile(
 {
     if (dataPath_.empty())
         return;
+
+    if (pubKey == PublicKey::emptyPubKey)
+    {
+        JLOG(j_.fatal()) << "ValidatorList::cacheValidatorFile invoked for the"
+                            " local-configuration-file specified Validator "
+                            " Keys. This function must be executed only on "
+                            "external publisher lists";
+    }
 
     boost::filesystem::path const filename = getCacheFileName(lock, pubKey);
 
@@ -885,6 +891,9 @@ ValidatorList::applyListsAndBroadcast(
     if (disposition == ListDisposition::accepted)
     {
         bool good = true;
+
+        // localPublisherList is always available. No need to perform the
+        // below check
         for (auto const& [_, listCollection] : publisherLists_)
         {
             if (listCollection.status != PublisherStatus::available)
@@ -900,12 +909,17 @@ ValidatorList::applyListsAndBroadcast(
     }
     bool broadcast = disposition <= ListDisposition::known_sequence;
 
+    // localPublisherList is not braodcast
     if (broadcast)
     {
         auto const& pubCollection = publisherLists_[*result.publisherKey];
         assert(
             result.status <= PublisherStatus::expired && result.publisherKey &&
             pubCollection.maxSequence);
+
+        // The below function call is executed for non-default-constructed
+        // PublicKeys only. The assert statement above filters out
+        // PublicKey::emptyPubKey
         broadcastBlobs(
             *result.publisherKey,
             pubCollection,
@@ -1074,8 +1088,10 @@ ValidatorList::applyList(
     auto const& manifest = localManifest ? *localManifest : globalManifest;
     auto [result, pubKeyOpt] = verify(lock, list, manifest, blob, signature);
 
-    if(!pubKeyOpt)
+    if (!pubKeyOpt || !publicKeyType(*pubKeyOpt))
     {
+        JLOG(j_.fatal()) << "ValidatorList::applyList unable to retrieve the "
+                            "master public key from the verify function\n";
         return PublisherListStats{result};
     }
 
@@ -1262,6 +1278,8 @@ ValidatorList::loadLists()
     return sites;
 }
 
+// The returned PublicKey value is read from the manifest. Manifests do not
+// contain the default-constructed public keys
 std::pair<ListDisposition, std::optional<PublicKey>>
 ValidatorList::verify(
     ValidatorList::lock_guard const& lock,
@@ -1427,6 +1445,10 @@ ValidatorList::removePublisherList(
     PublicKey const& publisherKey,
     PublisherStatus reason)
 {
+    // This function must not be invoked with respect to the ValidatorList
+    // published in the local configuration file. Because such a list has
+    // indefinite validity.
+    assert(publisherKey != PublicKey::emptyPubKey);
     assert(
         reason != PublisherStatus::available &&
         reason != PublisherStatus::unavailable);
@@ -1458,7 +1480,7 @@ ValidatorList::removePublisherList(
 std::size_t
 ValidatorList::count(ValidatorList::shared_lock const&) const
 {
-    return publisherLists_.size();
+    return publisherLists_.size() + (localPublisherList.list.size() > 0);
 }
 
 std::size_t
@@ -1472,13 +1494,14 @@ std::optional<TimeKeeper::time_point>
 ValidatorList::expires(ValidatorList::shared_lock const&) const
 {
     std::optional<TimeKeeper::time_point> res{};
-    for (auto const& [pubKey, collection] : publisherLists_)
+    for (auto const& [_, collection] : publisherLists_)
     {
-        (void)pubKey;
         // Unfetched
         auto const& current = collection.current;
         if (current.validUntil == TimeKeeper::time_point{})
+        {
             return std::nullopt;
+        }
 
         // Find the latest validUntil in a chain where the next validFrom
         // overlaps with the previous validUntil. applyLists has already cleaned
@@ -1492,6 +1515,20 @@ ValidatorList::expires(ValidatorList::shared_lock const&) const
             else
                 break;
         }
+
+        // Earliest
+        if (!res || chainedExpiration < *res)
+        {
+            res = chainedExpiration;
+        }
+    }
+
+    if (localPublisherList.list.size() > 0)
+    {
+        PublisherList collection = localPublisherList;
+        // Unfetched
+        auto const& current = collection;
+        auto chainedExpiration = current.validUntil;
 
         // Earliest
         if (!res || chainedExpiration < *res)
@@ -1547,23 +1584,18 @@ ValidatorList::getJson() const
         }
     }
 
-    // Local static keys
-    PublicKey local(PublicKey::emptyPubKey);
+    // Validator keys listed in the local config file
     Json::Value& jLocalStaticKeys =
         (res[jss::local_static_keys] = Json::arrayValue);
-    if (auto it = publisherLists_.find(local); it != publisherLists_.end())
-    {
-        for (auto const& key : it->second.current.list)
-            jLocalStaticKeys.append(toBase58(TokenType::NodePublic, key));
-    }
+
+    for (auto const& key : localPublisherList.list)
+        jLocalStaticKeys.append(toBase58(TokenType::NodePublic, key));
 
     // Publisher lists
     Json::Value& jPublisherLists =
         (res[jss::publisher_lists] = Json::arrayValue);
     for (auto const& [publicKey, pubCollection] : publisherLists_)
     {
-        if (local == publicKey)
-            continue;
         Json::Value& curr = jPublisherLists.append(Json::objectValue);
         curr[jss::pubkey_publisher] = strHex(publicKey);
         curr[jss::available] =
@@ -1667,7 +1699,11 @@ ValidatorList::for_each_available(
 
     for (auto const& [key, plCollection] : publisherLists_)
     {
-        if (plCollection.status != PublisherStatus::available || key.empty())
+        // publisherLists_ must not contain default constructed public keys.
+        // Such a validator list is stored in the localPublisherList variable.
+        assert(!key.empty());
+
+        if (plCollection.status != PublisherStatus::available)
             continue;
         assert(plCollection.maxSequence);
         func(
@@ -1697,6 +1733,14 @@ ValidatorList::getAvailable(
     }
 
     auto id = PublicKey(makeSlice(*keyBlob));
+
+    // search the PubCollection as specified in the local config file
+    if (id == PublicKey::emptyPubKey)
+    {
+        JLOG(j_.fatal()) << "ValidatorList::getAvailable invoked for default "
+                            "constructed emptyPubKey\n";
+        return {};
+    }
 
     auto const iter = publisherLists_.find(id);
 
@@ -1787,6 +1831,9 @@ ValidatorList::updateTrusted(
 
     // Rotate pending and remove expired published lists
     bool good = true;
+    // localPublisherList is not processed here. This is because the
+    // Validators specified in the local config file do not expire nor do
+    // they have a "remaining" section of PublisherList.
     for (auto& [pubKey, collection] : publisherLists_)
     {
         {
@@ -1842,6 +1889,8 @@ ValidatorList::updateTrusted(
             }
         }
         // Remove if expired
+        // ValidatorLists specified in the local config file never expire.
+        // Hence, the below steps are not relevant for localPublisherList
         if (collection.status == PublisherStatus::available &&
             collection.current.validUntil <= closeTime)
         {
@@ -1926,7 +1975,8 @@ ValidatorList::updateTrusted(
                         << unlSize << ")";
     }
 
-    if (publisherLists_.size() && unlSize == 0)
+    if ((publisherLists_.size() || localPublisherList.list.size()) &&
+        unlSize == 0)
     {
         // No validators. Lock down.
         ops.setUNLBlocked();

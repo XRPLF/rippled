@@ -249,6 +249,17 @@ class ValidatorList
 
     std::optional<PublicKey> localPubKey_;
 
+    // The below variable contains the Publisher list specified in the local
+    // config file. This list is not associated with the masterKey of any
+    // Publisher. In the current codebase, this PublisherListCollection is
+    // mapped along with the PublicKey::emptyPubKey in publisherLists_.
+
+    // Appropos PublisherListCollection fields, localPublisherList does not
+    // have any "remaining" manifests. It is assumed to be perennially
+    // "available". The "validUntil" field is set to the highest possible
+    // value of the field, hence this list is always valid.
+    PublisherList localPublisherList;
+
     // The master public keys of the current negative UNL
     hash_set<PublicKey> negativeUNL_;
 
@@ -766,6 +777,8 @@ private:
         std::optional<uint256> const& hash,
         lock_guard const&);
 
+    // This function updates the keyListings_ counts for all the trusted
+    // master keys
     void
     updatePublisherList(
         PublicKey const& pubKey,
