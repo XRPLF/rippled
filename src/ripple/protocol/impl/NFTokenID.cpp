@@ -17,9 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/rpc/NFTokenID.h>
+#include <ripple/protocol/NFTokenID.h>
 
-#include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/OpenLedger.h>
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/ledger/View.h>
@@ -31,7 +30,6 @@
 #include <boost/algorithm/string/case_conv.hpp>
 
 namespace ripple {
-namespace RPC {
 
 bool
 canHaveNFTokenID(
@@ -198,5 +196,4 @@ insertNFTokenID(
     }
 }
 
-}  // namespace RPC
 }  // namespace ripple

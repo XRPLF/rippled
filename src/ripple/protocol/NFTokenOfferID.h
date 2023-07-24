@@ -17,34 +17,45 @@
 */
 //==============================================================================
 
-#include <ripple/rpc/NFTSyntheticSerializer.h>
+#ifndef RIPPLE_RPC_NFTOKENOFFERID_H_INCLUDED
+#define RIPPLE_RPC_NFTOKENOFFERID_H_INCLUDED
 
-#include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/app/ledger/OpenLedger.h>
-#include <ripple/app/misc/Transaction.h>
-#include <ripple/ledger/View.h>
-#include <ripple/net/RPCErr.h>
-#include <ripple/protocol/AccountID.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/rpc/Context.h>
-#include <ripple/rpc/NFTokenID.h>
-#include <ripple/rpc/NFTokenOfferID.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
-#include <boost/algorithm/string/case_conv.hpp>
+#include <ripple/protocol/Protocol.h>
 
-namespace ripple {
-namespace RPC {
+#include <functional>
+#include <memory>
 
-void
-insertNFTSyntheticInJson(
-    Json::Value& response,
-    RPC::JsonContext const& context,
-    std::shared_ptr<STTx const> const& transaction,
-    TxMeta const& transactionMeta)
-{
-    insertNFTokenID(response[jss::meta], transaction, transactionMeta);
-    insertNFTokenOfferID(response[jss::meta], transaction, transactionMeta);
+namespace Json {
+class Value;
 }
 
-}  // namespace RPC
+namespace ripple {
+
+class TxMeta;
+class STTx;
+
+/**
+   Add an `offer_id` field to the `meta` output parameter.
+   The field is only added to successful NFTokenCreateOffer transactions.
+
+   Helper functions are not static because they can be used by Clio.
+   @{
+ */
+bool
+canHaveNFTokenOfferID(
+    std::shared_ptr<STTx const> const& serializedTx,
+    TxMeta const& transactionMeta);
+
+std::optional<uint256>
+getOfferIDFromCreatedOffer(TxMeta const& transactionMeta);
+
+void
+insertNFTokenOfferID(
+    Json::Value& response,
+    std::shared_ptr<STTx const> const& transaction,
+    TxMeta const& transactionMeta);
+/** @} */
+
 }  // namespace ripple
+
+#endif

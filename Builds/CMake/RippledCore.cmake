@@ -117,6 +117,9 @@ target_sources (xrpl_core PRIVATE
   src/ripple/protocol/impl/UintTypes.cpp
   src/ripple/protocol/impl/digest.cpp
   src/ripple/protocol/impl/tokens.cpp
+  src/ripple/protocol/impl/NFTSyntheticSerializer.cpp
+  src/ripple/protocol/impl/NFTokenID.cpp
+  src/ripple/protocol/impl/NFTokenOfferID.cpp
   #[===============================[
     main sources:
       subdir: crypto
@@ -284,6 +287,7 @@ install (
     src/ripple/protocol/nft.h
     src/ripple/protocol/nftPageMask.h
     src/ripple/protocol/tokens.h
+    src/ripple/protocol/NFTSyntheticSerializer.h
   DESTINATION include/ripple/protocol)
 install (
   FILES
@@ -728,9 +732,6 @@ target_sources (rippled PRIVATE
   src/ripple/rpc/impl/ShardVerificationScheduler.cpp
   src/ripple/rpc/impl/Status.cpp
   src/ripple/rpc/impl/TransactionSign.cpp
-  src/ripple/rpc/impl/NFTokenID.cpp
-  src/ripple/rpc/impl/NFTokenOfferID.cpp
-  src/ripple/rpc/impl/NFTSyntheticSerializer.cpp
   #[===============================[
      main sources:
        subdir: perflog

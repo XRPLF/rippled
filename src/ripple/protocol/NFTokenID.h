@@ -34,8 +34,6 @@ namespace ripple {
 class TxMeta;
 class STTx;
 
-namespace RPC {
-
 /**
    Add a `nftoken_ids` field to the `meta` output parameter.
    The field is only added to successful NFTokenMint, NFTokenAcceptOffer,
@@ -62,7 +60,6 @@ insertNFTokenID(
     TxMeta const& transactionMeta);
 /** @} */
 
-}  // namespace RPC
 }  // namespace ripple
 
 #endif

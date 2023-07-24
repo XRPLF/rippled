@@ -17,10 +17,11 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_NFTOKENOFFERID_H_INCLUDED
-#define RIPPLE_RPC_NFTOKENOFFERID_H_INCLUDED
+#ifndef RIPPLE_RPC_NFTSYNTHETICSERIALIZER_H_INCLUDED
+#define RIPPLE_RPC_NFTSYNTHETICSERIALIZER_H_INCLUDED
 
 #include <ripple/protocol/Protocol.h>
+#include <ripple/protocol/STBase.h>
 
 #include <functional>
 #include <memory>
@@ -34,31 +35,18 @@ namespace ripple {
 class TxMeta;
 class STTx;
 
-namespace RPC {
-
 /**
-   Add an `offer_id` field to the `meta` output parameter.
-   The field is only added to successful NFTokenCreateOffer transactions.
+   Adds common synthetic fields to transaction-related JSON responses
 
-   Helper functions are not static because they can be used by Clio.
    @{
  */
-bool
-canHaveNFTokenOfferID(
-    std::shared_ptr<STTx const> const& serializedTx,
-    TxMeta const& transactionMeta);
-
-std::optional<uint256>
-getOfferIDFromCreatedOffer(TxMeta const& transactionMeta);
-
 void
-insertNFTokenOfferID(
-    Json::Value& response,
-    std::shared_ptr<STTx const> const& transaction,
-    TxMeta const& transactionMeta);
+insertNFTSyntheticInJson(
+    Json::Value&,
+    std::shared_ptr<STTx const> const&,
+    TxMeta const&);
 /** @} */
 
-}  // namespace RPC
 }  // namespace ripple
 
 #endif

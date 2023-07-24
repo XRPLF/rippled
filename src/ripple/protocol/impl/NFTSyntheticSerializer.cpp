@@ -17,42 +17,29 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_NFTSYNTHETICSERIALIZER_H_INCLUDED
-#define RIPPLE_RPC_NFTSYNTHETICSERIALIZER_H_INCLUDED
-
-#include <ripple/protocol/Protocol.h>
-#include <ripple/protocol/STBase.h>
-
-#include <functional>
-#include <memory>
-
-namespace Json {
-class Value;
-}
+#include <ripple/app/ledger/OpenLedger.h>
+#include <ripple/app/misc/Transaction.h>
+#include <ripple/ledger/View.h>
+#include <ripple/net/RPCErr.h>
+#include <ripple/protocol/AccountID.h>
+#include <ripple/protocol/Feature.h>
+#include <ripple/protocol/NFTSyntheticSerializer.h>
+#include <ripple/protocol/NFTokenID.h>
+#include <ripple/protocol/NFTokenOfferID.h>
+#include <ripple/rpc/Context.h>
+#include <ripple/rpc/impl/RPCHelpers.h>
+#include <boost/algorithm/string/case_conv.hpp>
 
 namespace ripple {
 
-class TxMeta;
-class STTx;
-
-namespace RPC {
-
-struct JsonContext;
-
-/**
-   Adds common synthetic fields to transaction-related JSON responses
-
-   @{
- */
 void
 insertNFTSyntheticInJson(
-    Json::Value&,
-    RPC::JsonContext const&,
-    std::shared_ptr<STTx const> const&,
-    TxMeta const&);
-/** @} */
+    Json::Value& response,
+    std::shared_ptr<STTx const> const& transaction,
+    TxMeta const& transactionMeta)
+{
+    insertNFTokenID(response[jss::meta], transaction, transactionMeta);
+    insertNFTokenOfferID(response[jss::meta], transaction, transactionMeta);
+}
 
-}  // namespace RPC
 }  // namespace ripple
-
-#endif
