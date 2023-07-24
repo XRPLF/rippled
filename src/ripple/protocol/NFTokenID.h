@@ -17,22 +17,19 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_NFTOKENID_H_INCLUDED
-#define RIPPLE_RPC_NFTOKENID_H_INCLUDED
+#ifndef RIPPLE_PROTOCOL_NFTOKENID_H_INCLUDED
+#define RIPPLE_PROTOCOL_NFTOKENID_H_INCLUDED
 
-#include <ripple/protocol/Protocol.h>
+#include <ripple/basics/base_uint.h>
+#include <ripple/json/json_forwards.h>
+#include <ripple/protocol/STTx.h>
+#include <ripple/protocol/TxMeta.h>
 
-#include <functional>
 #include <memory>
-
-namespace Json {
-class Value;
-}
+#include <optional>
+#include <vector>
 
 namespace ripple {
-
-class TxMeta;
-class STTx;
 
 /**
    Add a `nftoken_ids` field to the `meta` output parameter.

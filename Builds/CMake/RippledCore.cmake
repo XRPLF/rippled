@@ -246,6 +246,9 @@ install (
     src/ripple/protocol/KnownFormats.h
     src/ripple/protocol/LedgerFormats.h
     src/ripple/protocol/LedgerHeader.h
+    src/ripple/protocol/NFTSyntheticSerializer.h
+    src/ripple/protocol/NFTokenID.h
+    src/ripple/protocol/NFTokenOfferID.h
     src/ripple/protocol/Protocol.h
     src/ripple/protocol/PublicKey.h
     src/ripple/protocol/Quality.h
@@ -287,7 +290,6 @@ install (
     src/ripple/protocol/nft.h
     src/ripple/protocol/nftPageMask.h
     src/ripple/protocol/tokens.h
-    src/ripple/protocol/NFTSyntheticSerializer.h
   DESTINATION include/ripple/protocol)
 install (
   FILES
