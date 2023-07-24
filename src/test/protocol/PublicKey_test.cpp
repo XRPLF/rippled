@@ -448,10 +448,6 @@ public:
         BEAST_EXPECT(pk1 == pk2);
         BEAST_EXPECT(pk2 == pk1);
 
-        unsigned char buf[33];
-        memset(buf, 0, 33);
-        buf[0] = 0xED;
-
         PublicKey pk3 = derivePublicKey(
             KeyType::secp256k1,
             generateSecretKey(
@@ -460,6 +456,9 @@ public:
         pk3 = pk2;
         BEAST_EXPECT(pk3 == pk2);
         BEAST_EXPECT(pk1 == pk3);
+
+        BEAST_EXPECT(!PublicKey::emptyPubKey.empty());
+        BEAST_EXPECT(PublicKey::emptyPubKey.size() == 33);
     }
 
     void
