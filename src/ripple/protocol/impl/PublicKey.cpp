@@ -24,11 +24,10 @@
 #include <ripple/protocol/impl/secp256k1.h>
 #include <boost/multiprecision/cpp_int.hpp>
 #include <ed25519.h>
-#include <type_traits>
 
 namespace ripple {
 
-const PublicKey PublicKey::emptyPubKey{};
+const PublicKey PublicKey::emptyPubKey = PublicKey::getEmptyPubKey();
 
 std::ostream&
 operator<<(std::ostream& os, PublicKey const& pk)

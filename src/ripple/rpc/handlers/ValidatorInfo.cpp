@@ -30,7 +30,7 @@ Json::Value
 doValidatorInfo(RPC::JsonContext& context)
 {
     // return error if not configured as validator
-    if (context.app.getValidationPublicKey().empty())
+    if (context.app.getValidationPublicKey() == PublicKey::emptyPubKey)
         return RPC::not_validator_error();
 
     Json::Value ret;

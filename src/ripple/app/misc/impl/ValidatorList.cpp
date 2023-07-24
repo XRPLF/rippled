@@ -198,7 +198,7 @@ ValidatorList::load(
     localPubKey_ = validatorManifests_.getMasterKey(localSigningKey);
 
     // Treat local validator key as though it was listed in the config
-    if (localPubKey_->size())
+    if (localPubKey_ && *localPubKey_ != PublicKey::emptyPubKey)
         keyListings_.insert({*localPubKey_, 1});
 
     JLOG(j_.debug()) << "Loading configured validator keys";
@@ -1088,10 +1088,16 @@ ValidatorList::applyList(
     auto const& manifest = localManifest ? *localManifest : globalManifest;
     auto [result, pubKeyOpt] = verify(lock, list, manifest, blob, signature);
 
-    if (!pubKeyOpt || !publicKeyType(*pubKeyOpt))
+    if (!pubKeyOpt)
     {
-        JLOG(j_.fatal()) << "ValidatorList::applyList unable to retrieve the "
+        JLOG(j_.info()) << "ValidatorList::applyList unable to retrieve the "
                             "master public key from the verify function\n";
+        return PublisherListStats{result};
+    }
+
+    if(!publicKeyType(*pubKeyOpt)) {
+        JLOG(j_.info()) << "ValidatorList::applyList Invalid Public Key type"
+                            " retrieved from the verify function\n ";
         return PublisherListStats{result};
     }
 

@@ -75,6 +75,21 @@ public:
     // publisher's public key and hence needs to be mapped with the emptyPubKey
     static const PublicKey emptyPubKey;
 
+    static PublicKey getEmptyPubKey()
+    {
+        std::array<unsigned char, 33> buf;
+
+        // set the values to zero to simulate a default-constructed Public Key
+        for(unsigned int i = 0; i < 33; i++)
+            buf[i] = 0;
+
+        // the first byte of a PublicKey can only be set to one of two
+        // alternatives, as noted in the publicKeyType function.
+        buf[0] = 0xED;
+
+        return PublicKey(makeSlice(buf));
+    }
+
     PublicKey(PublicKey const& other);
     PublicKey&
     operator=(PublicKey const& other);
