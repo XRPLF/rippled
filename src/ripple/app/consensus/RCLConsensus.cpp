@@ -960,8 +960,8 @@ RCLConsensus::Adaptor::preStartRound(
 {
     // We have a key, we do not want out of sync validations after a restart
     // and are not amendment blocked.
-    validating_ = validatorKeys_.publicKey && validatorKeys_.publicKey->size()
-            != 0 &&
+    validating_ = validatorKeys_.publicKey &&
+        validatorKeys_.publicKey->size() != 0 &&
         prevLgr.seq() >= app_.getMaxDisallowedLedger() &&
         !app_.getOPs().isBlocked();
 

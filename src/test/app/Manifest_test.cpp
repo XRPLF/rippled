@@ -238,7 +238,8 @@ public:
     Manifest
     clone(Manifest const& m)
     {
-        Manifest m2(m.serialized, m.masterKey, m.signingKey, m.sequence, m.domain);
+        Manifest m2(
+            m.serialized, m.masterKey, m.signingKey, m.sequence, m.domain);
         return m2;
     }
 
@@ -852,7 +853,8 @@ public:
                         // revoked, it is not referring to the
                         // PublicKey::epmtyPubKey. Instead, it refers to the
                         // manifest's masterKey
-                        BEAST_EXPECT(manifest->signingKey == manifest->masterKey);
+                        BEAST_EXPECT(
+                            manifest->signingKey == manifest->masterKey);
                         BEAST_EXPECT(manifest->revoked());
                         BEAST_EXPECT(manifest->domain.empty());
                         BEAST_EXPECT(manifest->serialized == m);

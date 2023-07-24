@@ -70,8 +70,8 @@ public:
 
     // This default constructed public key is used only in ValidatorList class.
     // Publisher's master PublicKeys are used to map into their respective UNLs
-    // emptyPubKey is used to represent the keys specified in the local config file.
-    // Unlike the other published UNL, this list is not signed with any
+    // emptyPubKey is used to represent the keys specified in the local config
+    // file. Unlike the other published UNL, this list is not signed with any
     // publisher's public key and hence needs to be mapped with the emptyPubKey
     static const PublicKey emptyPubKey;
 

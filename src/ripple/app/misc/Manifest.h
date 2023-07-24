@@ -100,29 +100,33 @@ struct Manifest
 
     Manifest() = delete;
 
-    Manifest(std::string const& serialized_,
-             PublicKey const& masterKey_,
-             PublicKey const& signingKey_,
-             std::uint32_t seq,
-             std::string const& domain_) :
-        serialized(serialized_),
-        masterKey(masterKey_),
-        signingKey(signingKey_),
-        sequence(seq),
-        domain(domain_) {
+    Manifest(
+        std::string const& serialized_,
+        PublicKey const& masterKey_,
+        PublicKey const& signingKey_,
+        std::uint32_t seq,
+        std::string const& domain_)
+        : serialized(serialized_)
+        , masterKey(masterKey_)
+        , signingKey(signingKey_)
+        , sequence(seq)
+        , domain(domain_)
+    {
     }
 
     // Constructor without explicit specification of the ephemeral or the
     // signingKey. In such a case, the masterKey is used as the signingKey.
-    Manifest(std::string const& serialized_,
-             PublicKey const& masterKey_,
-             std::uint32_t seq,
-             std::string const& domain_) :
-        serialized(serialized_),
-        masterKey(masterKey_),
-        signingKey(masterKey_),
-        sequence(seq),
-        domain(domain_) {
+    Manifest(
+        std::string const& serialized_,
+        PublicKey const& masterKey_,
+        std::uint32_t seq,
+        std::string const& domain_)
+        : serialized(serialized_)
+        , masterKey(masterKey_)
+        , signingKey(masterKey_)
+        , sequence(seq)
+        , domain(domain_)
+    {
     }
 
     Manifest(Manifest const& other) = delete;
