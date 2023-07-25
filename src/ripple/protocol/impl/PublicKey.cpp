@@ -179,11 +179,11 @@ PublicKey::PublicKey(Slice const& slice)
 {
     if (!publicKeyType(slice))
         LogicError("PublicKey::PublicKey invalid type");
-    size_ = slice.size();
+//    size_ = slice.size();
     std::memcpy(buf_, slice.data(), size_);
 }
 
-PublicKey::PublicKey(PublicKey const& other) : size_(other.size_)
+PublicKey::PublicKey(PublicKey const& other)
 {
     if (size_)
         std::memcpy(buf_, other.buf_, size_);
@@ -194,7 +194,6 @@ PublicKey::operator=(PublicKey const& other)
 {
     if (this != &other)
     {
-        size_ = other.size_;
         if (size_)
             std::memcpy(buf_, other.buf_, size_);
     }

@@ -62,7 +62,9 @@ private:
     PublicKey() = default;
 
 protected:
-    std::size_t size_ = 0;
+    // All the constructed public keys are valid, non-empty and contain 33
+    // bytes of data.
+    const static std::size_t size_ = 33;
     std::uint8_t buf_[33];  // should be large enough
 
 public:
