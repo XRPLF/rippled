@@ -13,7 +13,9 @@ This version will be supported by `rippled` version 1.12.
 
 #### V2 account_info response
 
-`signer_lists` is returned in the root of the response, instead of being nested under `account_data` (as it was in API version 1). ([#3770](https://github.com/XRPLF/rippled/pull/3770))
+- `signer_lists` is returned in the root of the response, instead of being nested under `account_data` (as it was in API version 1). (https://github.com/XRPLF/rippled/pull/3770)
+- When using an invalid `signer_lists` value, the API now returns an "invalidParams" error. (https://github.com/XRPLF/rippled/pull/4585)
+  - (`signer_lists` must be a boolean. In API version 1, strings are accepted and may return a normal response - as if `signer_lists` were `true`.)
 
 ## API Version 1
 This version is supported by `rippled` version 1.11.
