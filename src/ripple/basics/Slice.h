@@ -66,11 +66,8 @@ public:
     }
 
     template <class T, class Alloc>
-    Slice(
-        std::vector<T, Alloc> const& v,
-        std::enable_if_t<
-            std::is_same<T, char>::value ||
-            std::is_same<T, unsigned char>::value>* = 0) noexcept
+    requires(std::is_same_v<T, unsigned char>)
+        Slice(std::vector<T, Alloc> const& v) noexcept
         : data_(v.data()), size_(v.size())
     {
     }
