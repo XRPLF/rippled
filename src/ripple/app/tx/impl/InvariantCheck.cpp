@@ -729,9 +729,9 @@ ValidCFTIssuance::visitEntry(
     if (after && after->getType() == ltCFTOKEN_ISSUANCE)
     {
         if (isDelete)
-            deltaCFTs_--;
+            cftsDeleted_++;
         else
-            deltaCFTs_++;
+            cftsCreated_++;
     }
 }
 
@@ -745,35 +745,35 @@ ValidCFTIssuance::finalize(
 {
     if (tx.getTxnType() == ttCFTOKEN_ISSUANCE_CREATE && result == tesSUCCESS)
     {
-        if (deltaCFTs_ == 0)
+        if (cftsCreated_ == 0)
         {
             JLOG(j.fatal()) << "Invariant failed: CFT issuance creation "
                                "succeeded without creating a CFT issuance";
         }
-        else if (deltaCFTs_ < 0)
+        else if (cftsDeleted_ != 0)
         {
             JLOG(j.fatal()) << "Invariant failed: CFT issuance creation "
                                "succeeded while removing CFT issuances";
         }
-        else if (deltaCFTs_ > 1)
+        else if (cftsCreated_ > 1)
         {
             JLOG(j.fatal()) << "Invariant failed: CFT issuance creation "
                                "succeeded but created multiple issuances";
         }
 
-        return deltaCFTs_ == 1;
+        return cftsCreated_ == 1 && cftsDeleted_ == 0;
     }
 
-    if (deltaCFTs_ > 0)
+    if (cftsCreated_ != 0)
     {
         JLOG(j.fatal()) << "Invariant failed: a CFT issuance was created";
     }
-    else if (deltaCFTs_ < 0)
+    else if (cftsDeleted_ != 0)
     {
         JLOG(j.fatal()) << "Invariant failed: a CFT issuance was deleted";
     }
 
-    return deltaCFTs_ == 0;
+    return cftsCreated_ == 0 && cftsDeleted_ == 0;
 }
 
 }  // namespace ripple

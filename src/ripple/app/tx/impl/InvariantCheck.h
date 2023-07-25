@@ -367,7 +367,8 @@ public:
 
 class ValidCFTIssuance
 {
-    std::int32_t deltaCFTs_ = 0;
+    std::uint32_t cftsCreated_ = 0;
+    std::uint32_t cftsDeleted_ = 0;
 
 public:
     void
