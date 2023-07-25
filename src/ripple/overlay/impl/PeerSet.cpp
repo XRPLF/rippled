@@ -25,7 +25,7 @@ namespace ripple {
 class PeerSetImpl : public PeerSet
 {
 public:
-    PeerSetImpl(beast::Journal const& journal, Overlay const& overlay);
+    PeerSetImpl(Overlay const& overlay);
 
     void
     addPeers(
@@ -44,15 +44,13 @@ public:
     getPeerIds() const override;
 
 private:
-    beast::Journal journal_;
     Overlay const& overlay_;
 
     /** The identifiers of the peers we are tracking. */
     std::set<Peer::id_t> peers_;
 };
 
-PeerSetImpl::PeerSetImpl(beast::Journal const& journal, Overlay const& overlay)
-    : journal_(journal), overlay_(overlay)
+PeerSetImpl::PeerSetImpl(Overlay const& overlay) : overlay_(overlay)
 {
 }
 
@@ -127,8 +125,7 @@ public:
     virtual std::unique_ptr<PeerSet>
     build() override
     {
-        return std::make_unique<PeerSetImpl>(
-            app_.journal("PeerSet"), app_.overlay());
+        return std::make_unique<PeerSetImpl>(app_.overlay());
     }
 
 private:
