@@ -58,9 +58,6 @@ namespace ripple {
 */
 class PublicKey
 {
-private:
-    PublicKey() = default;
-
 protected:
     // All the constructed public keys are valid, non-empty and contain 33
     // bytes of data.
@@ -91,6 +88,8 @@ public:
 
         return PublicKey(makeSlice(buf));
     }
+
+    PublicKey() = delete;
 
     PublicKey(PublicKey const& other);
     PublicKey&
