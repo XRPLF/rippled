@@ -22,6 +22,7 @@
 #include <ripple/protocol/jss.h>
 #include <test/jtx.h>
 #include <test/jtx/PathSet.h>
+#include <test/jtx/TestHelpers.h>
 #include <test/jtx/WSClient.h>
 
 namespace ripple {
@@ -39,42 +40,6 @@ class Offer_test : public beast::unit_test::suite
     lastClose(jtx::Env& env)
     {
         return env.current()->info().parentCloseTime.time_since_epoch().count();
-    }
-
-    static auto
-    xrpMinusFee(jtx::Env const& env, std::int64_t xrpAmount)
-        -> jtx::PrettyAmount
-    {
-        using namespace jtx;
-        auto feeDrops = env.current()->fees().base;
-        return drops(dropsPerXRP * xrpAmount - feeDrops);
-    }
-
-    static auto
-    ledgerEntryState(
-        jtx::Env& env,
-        jtx::Account const& acct_a,
-        jtx::Account const& acct_b,
-        std::string const& currency)
-    {
-        Json::Value jvParams;
-        jvParams[jss::ledger_index] = "current";
-        jvParams[jss::ripple_state][jss::currency] = currency;
-        jvParams[jss::ripple_state][jss::accounts] = Json::arrayValue;
-        jvParams[jss::ripple_state][jss::accounts].append(acct_a.human());
-        jvParams[jss::ripple_state][jss::accounts].append(acct_b.human());
-        return env.rpc(
-            "json", "ledger_entry", to_string(jvParams))[jss::result];
-    }
-
-    static auto
-    ledgerEntryRoot(jtx::Env& env, jtx::Account const& acct)
-    {
-        Json::Value jvParams;
-        jvParams[jss::ledger_index] = "current";
-        jvParams[jss::account_root] = acct.human();
-        return env.rpc(
-            "json", "ledger_entry", to_string(jvParams))[jss::result];
     }
 
     static auto
@@ -2126,18 +2091,17 @@ public:
             BEAST_EXPECT(
                 jrr[jss::node][sfBalance.fieldName][jss::value] ==
                 "49.96666666666667");
+
             jrr = ledgerEntryState(env, bob, gw, "USD");
-            if (NumberSwitchOver)
+            Json::Value const bobsUSD =
+                jrr[jss::node][sfBalance.fieldName][jss::value];
+            if (!NumberSwitchOver)
             {
-                BEAST_EXPECT(
-                    jrr[jss::node][sfBalance.fieldName][jss::value] ==
-                    "-0.9665000000333333");
+                BEAST_EXPECT(bobsUSD == "-0.966500000033334");
             }
             else
             {
-                BEAST_EXPECT(
-                    jrr[jss::node][sfBalance.fieldName][jss::value] ==
-                    "-0.966500000033334");
+                BEAST_EXPECT(bobsUSD == "-0.9665000000333333");
             }
         }
     }
@@ -2719,7 +2683,7 @@ public:
         env.close();
 
         // The scenario:
-        //   o alice has USD but wants XPR.
+        //   o alice has USD but wants XRP.
         //   o bob has XRP but wants EUR.
         //   o carol has EUR but wants USD.
         // Note that carol's offer must come last.  If carol's offer is placed
@@ -3318,7 +3282,7 @@ public:
             env.fund(XRP(2) + reserve(env, 3) + (fee * 3), ova, pat, qae);
             env.close();
 
-            //   o ova has USD but wants XPR.
+            //   o ova has USD but wants XRP.
             //   o pat has XRP but wants EUR.
             //   o qae has EUR but wants USD.
             env(trust(ova, USD(200)));

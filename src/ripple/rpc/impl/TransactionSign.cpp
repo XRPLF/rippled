@@ -738,9 +738,9 @@ checkFee(
     auto const limit = [&]() {
         // Scale fee units to drops:
         auto const result = mulDiv(feeDefault, mult, div);
-        if (!result.first)
+        if (!result)
             Throw<std::overflow_error>("mulDiv");
-        return result.second;
+        return *result;
     }();
 
     if (fee > limit)
