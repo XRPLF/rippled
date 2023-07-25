@@ -41,9 +41,10 @@ protected:
     {
     }
 
-    virtual ~Coroutine()
-    {
-    }
+    Coroutine(Coroutine const&) = delete;
+    Coroutine&
+    operator=(Coroutine const&) = delete;
+    virtual ~Coroutine() = default;
 
     virtual void
     start_() = 0;
@@ -98,9 +99,10 @@ template <typename Coroutine, typename... Args>
 static auto
 start(Args&&... args)
 {
-    auto coroutine = new Coroutine(std::forward<Args>(args)...);
+    auto coroutine = std::make_unique<Coroutine>(std::forward<Args>(args)...);
     auto future = coroutine->start();
-    future->subscribe([coroutine](auto const&) { delete coroutine; });
+    future->subscribe([c = coroutine.get()](auto const&) { delete c; });
+    coroutine.release();
     return future;
 }
 

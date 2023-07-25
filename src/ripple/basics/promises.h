@@ -44,12 +44,15 @@ namespace detail {
 
 struct construct_callbacks
 {
+    explicit construct_callbacks() = default;
 };
 struct construct_value
 {
+    explicit construct_value() = default;
 };
 struct construct_error
 {
+    explicit construct_error() = default;
 };
 
 template <typename T>
@@ -196,11 +199,15 @@ class Scheduler
 {
 public:
     using job_type = std::function<void()>;
+
     virtual void
     schedule(job_type&& job) = 0;
-    virtual ~Scheduler()
-    {
-    }
+
+    Scheduler() = default;
+    Scheduler(Scheduler const&) = delete;
+    Scheduler&
+    operator=(Scheduler const&) = delete;
+    virtual ~Scheduler() = default;
 
     template <typename V>
     auto
@@ -224,13 +231,6 @@ public:
     {
         return std::make_shared<AsyncPromise<V>>(
             *this, detail::construct_error{}, std::make_exception_ptr(error));
-    }
-
-    template <typename V>
-    auto
-    cast(std::shared_ptr<void> p)
-    {
-        return std::static_pointer_cast<AsyncPromise<V>>(p);
     }
 
     template <typename F, typename... Args>
@@ -885,8 +885,7 @@ private:
             assert(previous == CANCELLED);
             return false;
         }
-        decltype(self->storage_.callbacks_) callbacks;
-        std::swap(callbacks, self->storage_.callbacks_);
+        auto callbacks = std::move(self->storage_.callbacks_);
         std::destroy_at(&self->storage_.callbacks_);
         (self->storage_.*method)(std::forward<Args>(args)...);
         self->status_.store(status, std::memory_order_release);
