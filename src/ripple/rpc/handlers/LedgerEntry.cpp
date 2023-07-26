@@ -51,7 +51,7 @@ doLedgerEntry(RPC::JsonContext& context)
 
     if (context.params.isMember(jss::index))
     {
-        // Document states "index" field is a string. check for this apiVersion
+        // XRPL Doc states "index" field is a string. check for this apiVersion
         // 2 onwards. invalidParam error is thrown if the above condition is
         // false
         if (!context.params[jss::index].isString() && context.apiVersion > 1u)
@@ -78,7 +78,7 @@ doLedgerEntry(RPC::JsonContext& context)
     else if (context.params.isMember(jss::check))
     {
         expectedType = ltCHECK;
-        // Document states "check" field is a string. Check for this apiVersion
+        // XRPL Doc states "check" field is a string. Check for this apiVersion
         // 2 onwards. invalidParam error is thrown if the above condition is
         // false
         if (!context.params[jss::check].isString() && context.apiVersion > 1u)
@@ -140,7 +140,7 @@ doLedgerEntry(RPC::JsonContext& context)
         }
         else if (!context.params[jss::directory].isObject())
         {
-            // Document states "directory" field is a string. check for this
+            // XRPL Doc states "directory" field is a string. check for this
             // apiVersion 2 onwards. invalidParam error is thrown if the above
             // condition is false
             if (!context.params[jss::directory].isString() &&
@@ -358,7 +358,7 @@ doLedgerEntry(RPC::JsonContext& context)
 
         if (context.params[jss::nft_page].isString())
         {
-            // Document states "nft_page" field is a string. check for this
+            // XRPL Doc states "nft_page" field is a string. check for this
             // apiVersion 2 onwards. invalidParam error is thrown if the above
             // condition is false
             if (!context.params[jss::nft_page].isString() &&
