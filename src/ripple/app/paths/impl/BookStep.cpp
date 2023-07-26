@@ -17,7 +17,9 @@
 */
 //==============================================================================
 
-#include <ripple/app/paths/Credit.h>
+#include <ripple/app/misc/AMMUtils.h>
+#include <ripple/app/paths/AMMLiquidity.h>
+#include <ripple/app/paths/AMMOffer.h>
 #include <ripple/app/paths/impl/FlatSets.h>
 #include <ripple/app/paths/impl/Steps.h>
 #include <ripple/app/tx/impl/OfferStream.h>
@@ -42,6 +44,8 @@ template <class TIn, class TOut, class TDerived>
 class BookStep : public StepImp<TIn, TOut, BookStep<TIn, TOut, TDerived>>
 {
 protected:
+    enum class OfferType { AMM, CLOB };
+
     uint32_t const maxOffersToConsume_;
     Book book_;
     AccountID strandSrc_;
@@ -59,6 +63,10 @@ protected:
         be partially consumed multiple times during a payment.
     */
     std::uint32_t offersUsed_ = 0;
+    // If set, AMM liquidity might be available
+    // if AMM offer quality is better than CLOB offer
+    // quality or there is no CLOB offer.
+    std::optional<AMMLiquidity<TIn, TOut>> ammLiquidity_;
     beast::Journal const j_;
 
     struct Cache
@@ -91,6 +99,15 @@ public:
         , ownerPaysTransferFee_(ctx.ownerPaysTransferFee)
         , j_(ctx.j)
     {
+        if (auto const ammSle = ctx.view.read(keylet::amm(in, out)))
+            ammLiquidity_.emplace(
+                ctx.view,
+                (*ammSle)[sfAccount],
+                getTradingFee(ctx.view, *ammSle, ctx.ammContext.account()),
+                in,
+                out,
+                ctx.ammContext,
+                ctx.j);
     }
 
     Book const&
@@ -131,6 +148,9 @@ public:
     std::pair<std::optional<Quality>, DebtDirection>
     qualityUpperBound(ReadView const& v, DebtDirection prevStepDir)
         const override;
+
+    std::pair<std::optional<QualityFunction>, DebtDirection>
+    getQualityFunc(ReadView const& v, DebtDirection prevStepDir) const override;
 
     std::uint32_t
     offersUsed() const override;
@@ -205,13 +225,36 @@ private:
         DebtDirection prevStepDebtDir,
         Callback& callback) const;
 
+    // Offer is either TOffer or AMMOffer
+    template <template <typename, typename> typename Offer>
     void
     consumeOffer(
         PaymentSandbox& sb,
-        TOffer<TIn, TOut>& offer,
+        Offer<TIn, TOut>& offer,
         TAmounts<TIn, TOut> const& ofrAmt,
         TAmounts<TIn, TOut> const& stepAmt,
         TOut const& ownerGives) const;
+
+    // If clobQuality is available and has a better quality then return nullopt,
+    // otherwise if amm liquidity is available return AMM offer adjusted based
+    // on clobQuality.
+    std::optional<AMMOffer<TIn, TOut>>
+    getAMMOffer(ReadView const& view, std::optional<Quality> const& clobQuality)
+        const;
+
+    // If seated then it is either order book tip quality or AMMOffer,
+    // whichever is a better quality.
+    std::optional<std::variant<Quality, AMMOffer<TIn, TOut>>>
+    tip(ReadView const& view) const;
+    // If seated then it is either AMM or CLOB quality,
+    // whichever is a better quality. OfferType is AMM
+    // if AMM quality is better.
+    std::optional<std::pair<Quality, OfferType>>
+    tipOfferQuality(ReadView const& view) const;
+    // If seated then it is either AMM or CLOB quality function,
+    // whichever is a better quality.
+    std::optional<QualityFunction>
+    tipOfferQualityF(ReadView const& view) const;
 };
 
 //------------------------------------------------------------------------------
@@ -233,11 +276,12 @@ public:
     using BookStep<TIn, TOut, BookPaymentStep<TIn, TOut>>::qualityUpperBound;
 
     // Never limit self cross quality on a payment.
+    template <template <typename, typename> typename Offer>
     bool
     limitSelfCrossQuality(
         AccountID const&,
         AccountID const&,
-        TOffer<TIn, TOut> const& offer,
+        Offer<TIn, TOut> const& offer,
         std::optional<Quality>&,
         FlowOfferStream<TIn, TOut>&,
         bool) const
@@ -247,15 +291,14 @@ public:
 
     // A payment can look at offers of any quality
     bool
-    checkQualityThreshold(TOffer<TIn, TOut> const& offer) const
+    checkQualityThreshold(Quality const& quality) const
     {
         return true;
     }
 
     // For a payment ofrInRate is always the same as trIn.
     std::uint32_t
-    getOfrInRate(Step const*, TOffer<TIn, TOut> const&, std::uint32_t trIn)
-        const
+    getOfrInRate(Step const*, AccountID const&, std::uint32_t trIn) const
     {
         return trIn;
     }
@@ -264,7 +307,7 @@ public:
     std::uint32_t
     getOfrOutRate(
         Step const*,
-        TOffer<TIn, TOut> const&,
+        AccountID const&,
         AccountID const&,
         std::uint32_t trOut) const
     {
@@ -275,7 +318,8 @@ public:
     adjustQualityWithFees(
         ReadView const& v,
         Quality const& ofrQ,
-        DebtDirection prevStepDir) const
+        DebtDirection prevStepDir,
+        WaiveTransferFee waiveFee) const
     {
         // Charge the offer owner, not the sender
         // Charge a fee even if the owner is the same as the issuer
@@ -290,8 +334,10 @@ public:
 
         auto const trIn =
             redeems(prevStepDir) ? rate(this->book_.in.account) : parityRate;
-        // Always charge the transfer fee, even if the owner is the issuer
-        auto const trOut = this->ownerPaysTransferFee_
+        // Always charge the transfer fee, even if the owner is the issuer,
+        // unless the fee is waived
+        auto const trOut =
+            (this->ownerPaysTransferFee_ && waiveFee == WaiveTransferFee::No)
             ? rate(this->book_.out.account)
             : parityRate;
 
@@ -338,11 +384,12 @@ public:
     {
     }
 
+    template <template <typename, typename> typename Offer>
     bool
     limitSelfCrossQuality(
         AccountID const& strandSrc,
         AccountID const& strandDst,
-        TOffer<TIn, TOut> const& offer,
+        Offer<TIn, TOut> const& offer,
         std::optional<Quality>& ofrQ,
         FlowOfferStream<TIn, TOut>& offers,
         bool const offerAttempted) const
@@ -380,7 +427,8 @@ public:
             strandSrc == offer.owner() && strandDst == offer.owner())
         {
             // Remove this offer even if no crossing occurs.
-            offers.permRmOffer(offer.key());
+            if (auto const key = offer.key())
+                offers.permRmOffer(*key);
 
             // If no offers have been attempted yet then it's okay to move to
             // a different quality.
@@ -396,9 +444,9 @@ public:
     // Offer crossing can prune the offers it needs to look at with a
     // quality threshold.
     bool
-    checkQualityThreshold(TOffer<TIn, TOut> const& offer) const
+    checkQualityThreshold(Quality const& quality) const
     {
-        return !defaultPath_ || offer.quality() >= qualityThreshold_;
+        return !defaultPath_ || quality >= qualityThreshold_;
     }
 
     // For offer crossing don't pay the transfer fee if alice is paying alice.
@@ -406,30 +454,28 @@ public:
     std::uint32_t
     getOfrInRate(
         Step const* prevStep,
-        TOffer<TIn, TOut> const& offer,
+        AccountID const& owner,
         std::uint32_t trIn) const
     {
         auto const srcAcct =
             prevStep ? prevStep->directStepSrcAcct() : std::nullopt;
 
-        return                             // If offer crossing
-            srcAcct &&                     // && prevStep is DirectI
-                offer.owner() == *srcAcct  // && src is offer owner
-            ? QUALITY_ONE
-            : trIn;  // then rate = QUALITY_ONE
+        return owner == srcAcct  // If offer crossing && prevStep is DirectI
+            ? QUALITY_ONE        // && src is offer owner
+            : trIn;              // then rate = QUALITY_ONE
     }
 
     // See comment on getOfrInRate().
     std::uint32_t
     getOfrOutRate(
         Step const* prevStep,
-        TOffer<TIn, TOut> const& offer,
+        AccountID const& owner,
         AccountID const& strandDst,
         std::uint32_t trOut) const
     {
         return                                       // If offer crossing
             prevStep && prevStep->bookStepBook() &&  // && prevStep is BookStep
-                offer.owner() == strandDst           // && dest is offer owner
+                owner == strandDst                   // && dest is offer owner
             ? QUALITY_ONE
             : trOut;  // then rate = QUALITY_ONE
     }
@@ -438,7 +484,8 @@ public:
     adjustQualityWithFees(
         ReadView const& v,
         Quality const& ofrQ,
-        DebtDirection prevStepDir) const
+        DebtDirection prevStepDir,
+        WaiveTransferFee waiveFee) const
     {
         // Offer x-ing does not charge a transfer fee when the offer's owner
         // is the same as the strand dst. It is important that
@@ -479,15 +526,49 @@ BookStep<TIn, TOut, TDerived>::qualityUpperBound(
 {
     auto const dir = this->debtDirection(v, StrandDirection::forward);
 
-    // This can be simplified (and sped up) if directories are never empty.
-    Sandbox sb(&v, tapNONE);
-    BookTip bt(sb, book_);
-    if (!bt.step(j_))
+    std::optional<std::pair<Quality, OfferType>> const res = tipOfferQuality(v);
+    if (!res)
         return {std::nullopt, dir};
 
+    auto const waiveFee = (std::get<OfferType>(*res) == OfferType::AMM)
+        ? WaiveTransferFee::Yes
+        : WaiveTransferFee::No;
+
     Quality const q = static_cast<TDerived const*>(this)->adjustQualityWithFees(
-        v, bt.quality(), prevStepDir);
+        v, std::get<Quality>(*res), prevStepDir, waiveFee);
     return {q, dir};
+}
+
+template <class TIn, class TOut, class TDerived>
+std::pair<std::optional<QualityFunction>, DebtDirection>
+BookStep<TIn, TOut, TDerived>::getQualityFunc(
+    ReadView const& v,
+    DebtDirection prevStepDir) const
+{
+    auto const dir = this->debtDirection(v, StrandDirection::forward);
+
+    std::optional<QualityFunction> const res = tipOfferQualityF(v);
+    if (!res)
+        return {std::nullopt, dir};
+
+    // AMM
+    if (!res->isConst())
+    {
+        auto static const qOne = Quality{STAmount::uRateOne};
+        auto const q =
+            static_cast<TDerived const*>(this)->adjustQualityWithFees(
+                v, qOne, prevStepDir, WaiveTransferFee::Yes);
+        if (q == qOne)
+            return {res, dir};
+        QualityFunction qf{q, QualityFunction::CLOBLikeTag{}};
+        qf.combine(*res);
+        return {qf, dir};
+    }
+
+    // CLOB
+    Quality const q = static_cast<TDerived const*>(this)->adjustQualityWithFees(
+        v, *(res->quality()), prevStepDir, WaiveTransferFee::No);
+    return {QualityFunction{q, QualityFunction::CLOBLikeTag{}}, dir};
 }
 
 template <class TIn, class TOut, class TDerived>
@@ -498,10 +579,10 @@ BookStep<TIn, TOut, TDerived>::offersUsed() const
 }
 
 // Adjust the offer amount and step amount subject to the given input limit
-template <class TIn, class TOut>
+template <class TIn, class TOut, class Offer>
 static void
 limitStepIn(
-    Quality const& ofrQ,
+    Offer const& offer,
     TAmounts<TIn, TOut>& ofrAmt,
     TAmounts<TIn, TOut>& stpAmt,
     TOut& ownerGives,
@@ -514,7 +595,7 @@ limitStepIn(
         stpAmt.in = limit;
         auto const inLmt =
             mulRatio(stpAmt.in, QUALITY_ONE, transferRateIn, /*roundUp*/ false);
-        ofrAmt = ofrQ.ceil_in(ofrAmt, inLmt);
+        ofrAmt = offer.limitIn(ofrAmt, inLmt);
         stpAmt.out = ofrAmt.out;
         ownerGives = mulRatio(
             ofrAmt.out, transferRateOut, QUALITY_ONE, /*roundUp*/ false);
@@ -522,10 +603,10 @@ limitStepIn(
 }
 
 // Adjust the offer amount and step amount subject to the given output limit
-template <class TIn, class TOut>
+template <class TIn, class TOut, class Offer>
 static void
 limitStepOut(
-    Quality const& ofrQ,
+    Offer const& offer,
     TAmounts<TIn, TOut>& ofrAmt,
     TAmounts<TIn, TOut>& stpAmt,
     TOut& ownerGives,
@@ -539,14 +620,11 @@ limitStepOut(
         stpAmt.out = limit;
         ownerGives = mulRatio(
             stpAmt.out, transferRateOut, QUALITY_ONE, /*roundUp*/ false);
-        if (rules.enabled(fixReducedOffersV1))
-            // It turns out that the ceil_out implementation has some slop in
-            // it.  ceil_out_strict removes that slop.  But removing that slop
-            // affects transaction outcomes, so the change must be made using
-            // an amendment.
-            ofrAmt = ofrQ.ceil_out_strict(ofrAmt, stpAmt.out, /*roundUp*/ true);
-        else
-            ofrAmt = ofrQ.ceil_out(ofrAmt, stpAmt.out);
+        ofrAmt = offer.limitOut(
+            ofrAmt,
+            stpAmt.out,
+            rules.enabled(fixReducedOffersV1),
+            /*roundUp*/ true);
         stpAmt.in =
             mulRatio(ofrAmt.in, transferRateIn, QUALITY_ONE, /*roundUp*/ true);
     }
@@ -588,20 +666,17 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
     bool const fixReduced = afView.rules().enabled(fixReducedOffersV1);
     bool offerAttempted = false;
     std::optional<Quality> ofrQ;
-    while (offers.step())
-    {
-        auto& offer = offers.tip();
-
+    auto execOffer = [&](auto& offer) {
         // Note that offer.quality() returns a (non-optional) Quality.  So
-        // ofrQ is always safe to use below this point in the loop.
+        // ofrQ is always safe to use below this point in the lambda.
         if (!ofrQ)
             ofrQ = offer.quality();
         else if (*ofrQ != offer.quality())
-            break;
+            return false;
 
         if (static_cast<TDerived const*>(this)->limitSelfCrossQuality(
                 strandSrc_, strandDst_, offer, ofrQ, offers, offerAttempted))
-            continue;
+            return true;
 
         // Make sure offer owner has authorization to own IOUs from issuer.
         // An account can always own XRP or their own IOUs.
@@ -624,25 +699,26 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
                 {
                     // Offer owner not authorized to hold IOU from issuer.
                     // Remove this offer even if no crossing occurs.
-                    offers.permRmOffer(offer.key());
+                    if (auto const key = offer.key())
+                        offers.permRmOffer(*key);
                     if (!offerAttempted)
                         // Change quality only if no previous offers were tried.
                         ofrQ = std::nullopt;
-                    // This continue causes offers.step() to delete the offer.
-                    continue;
+                    // Returning true causes offers.step() to delete the offer.
+                    return true;
                 }
             }
         }
 
-        if (!static_cast<TDerived const*>(this)->checkQualityThreshold(offer))
-            break;
+        if (!static_cast<TDerived const*>(this)->checkQualityThreshold(
+                offer.quality()))
+            return false;
 
-        auto const ofrInRate = static_cast<TDerived const*>(this)->getOfrInRate(
-            prevStep_, offer, trIn);
-
-        auto const ofrOutRate =
+        auto const [ofrInRate, ofrOutRate] = offer.adjustRates(
+            static_cast<TDerived const*>(this)->getOfrInRate(
+                prevStep_, offer.owner(), trIn),
             static_cast<TDerived const*>(this)->getOfrOutRate(
-                prevStep_, offer, strandDst_, trOut);
+                prevStep_, offer.owner(), strandDst_, trOut));
 
         auto ofrAmt = offer.amount();
         TAmounts stpAmt{
@@ -653,10 +729,11 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
         auto ownerGives =
             mulRatio(ofrAmt.out, ofrOutRate, QUALITY_ONE, /*roundUp*/ false);
 
-        auto const funds = (offer.owner() == offer.issueOut().account)
+        auto const funds = offer.isFunded()
             ? ownerGives  // Offer owner is issuer; they have unlimited funds
             : offers.ownerFunds();
 
+        // Only if CLOB offer
         if (funds < ownerGives)
         {
             // We already know offer.owner()!=offer.issueOut().account
@@ -667,29 +744,50 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
             // It turns out we can prevent order book blocking by (strictly)
             // rounding down the ceil_out() result.  This adjustment changes
             // transaction outcomes, so it must be made under an amendment.
-            if (fixReduced)
-                ofrAmt = ofrQ->ceil_out_strict(
-                    ofrAmt, stpAmt.out, /* roundUp */ false);
-            else
-                ofrAmt = ofrQ->ceil_out(ofrAmt, stpAmt.out);
+            ofrAmt = offer.limitOut(
+                ofrAmt, stpAmt.out, fixReduced, /*roundUp*/ false);
 
             stpAmt.in =
                 mulRatio(ofrAmt.in, ofrInRate, QUALITY_ONE, /*roundUp*/ true);
         }
 
         offerAttempted = true;
-        if (!callback(offer, ofrAmt, stpAmt, ownerGives, ofrInRate, ofrOutRate))
-            break;
+        return callback(
+            offer, ofrAmt, stpAmt, ownerGives, ofrInRate, ofrOutRate);
+    };
+
+    // At any payment engine iteration, AMM offer can only be consumed once.
+    auto tryAMM = [&](std::optional<Quality> const& quality) -> bool {
+        auto ammOffer = getAMMOffer(sb, quality);
+        return !ammOffer || execOffer(*ammOffer);
+    };
+
+    if (offers.step())
+    {
+        if (tryAMM(offers.tip().quality()))
+        {
+            do
+            {
+                if (!execOffer(offers.tip()))
+                    break;
+            } while (offers.step());
+        }
+    }
+    else
+    {
+        // Might have AMM offer if there is no CLOB offers.
+        tryAMM(std::nullopt);
     }
 
     return {offers.permToRemove(), counter.count()};
 }
 
 template <class TIn, class TOut, class TDerived>
+template <template <typename, typename> typename Offer>
 void
 BookStep<TIn, TOut, TDerived>::consumeOffer(
     PaymentSandbox& sb,
-    TOffer<TIn, TOut>& offer,
+    Offer<TIn, TOut>& offer,
     TAmounts<TIn, TOut> const& ofrAmt,
     TAmounts<TIn, TOut> const& stepAmt,
     TOut const& ownerGives) const
@@ -697,7 +795,7 @@ BookStep<TIn, TOut, TDerived>::consumeOffer(
     // The offer owner gets the ofrAmt. The difference between ofrAmt and
     // stepAmt is a transfer fee that goes to book_.in.account
     {
-        auto const dr = accountSend(
+        auto const dr = offer.send(
             sb,
             book_.in.account,
             offer.owner(),
@@ -710,7 +808,7 @@ BookStep<TIn, TOut, TDerived>::consumeOffer(
     // The offer owner pays `ownerGives`. The difference between ownerGives and
     // stepAmt is a transfer fee that goes to book_.out.account
     {
-        auto const cr = accountSend(
+        auto const cr = offer.send(
             sb,
             offer.owner(),
             book_.out.account,
@@ -721,6 +819,63 @@ BookStep<TIn, TOut, TDerived>::consumeOffer(
     }
 
     offer.consume(sb, ofrAmt);
+}
+
+template <class TIn, class TOut, class TDerived>
+std::optional<AMMOffer<TIn, TOut>>
+BookStep<TIn, TOut, TDerived>::getAMMOffer(
+    ReadView const& view,
+    std::optional<Quality> const& clobQuality) const
+{
+    if (ammLiquidity_)
+        return ammLiquidity_->getOffer(view, clobQuality);
+    return std::nullopt;
+}
+
+template <class TIn, class TOut, class TDerived>
+std::optional<std::variant<Quality, AMMOffer<TIn, TOut>>>
+BookStep<TIn, TOut, TDerived>::tip(ReadView const& view) const
+{
+    // This can be simplified (and sped up) if directories are never empty.
+    Sandbox sb(&view, tapNONE);
+    BookTip bt(sb, book_);
+    auto const clobQuality =
+        bt.step(j_) ? std::optional<Quality>(bt.quality()) : std::nullopt;
+    // Don't pass in clobQuality. For one-path it returns the offer as
+    // the pool balances and the resulting quality is Spot Price Quality.
+    // For multi-path it returns the actual offer.
+    // AMM quality is better or no CLOB offer
+    if (auto const ammOffer = getAMMOffer(view, std::nullopt); ammOffer &&
+        ((clobQuality && ammOffer->quality() > clobQuality) || !clobQuality))
+        return ammOffer;
+    // CLOB quality is better or nullopt
+    return clobQuality;
+}
+
+template <class TIn, class TOut, class TDerived>
+auto
+BookStep<TIn, TOut, TDerived>::tipOfferQuality(ReadView const& view) const
+    -> std::optional<std::pair<Quality, OfferType>>
+{
+    if (auto const res = tip(view); !res)
+        return std::nullopt;
+    else if (auto const q = std::get_if<Quality>(&(*res)))
+        return std::make_pair(*q, OfferType::CLOB);
+    else
+        return std::make_pair(
+            std::get<AMMOffer<TIn, TOut>>(*res).quality(), OfferType::AMM);
+}
+
+template <class TIn, class TOut, class TDerived>
+std::optional<QualityFunction>
+BookStep<TIn, TOut, TDerived>::tipOfferQualityF(ReadView const& view) const
+{
+    if (auto const res = tip(view); !res)
+        return std::nullopt;
+    else if (auto const q = std::get_if<Quality>(&(*res)))
+        return QualityFunction{*q, QualityFunction::CLOBLikeTag{}};
+    else
+        return std::get<AMMOffer<TIn, TOut>>(*res).getQualityFunc();
 }
 
 template <class TCollection>
@@ -756,7 +911,7 @@ BookStep<TIn, TOut, TDerived>::revImp(
       amounts - tho always <=)
       Return true to continue to receive offers, false to stop receiving offers.
     */
-    auto eachOffer = [&](TOffer<TIn, TOut>& offer,
+    auto eachOffer = [&](auto& offer,
                          TAmounts<TIn, TOut> const& ofrAmt,
                          TAmounts<TIn, TOut> const& stpAmt,
                          TOut const& ownerGives,
@@ -782,7 +937,7 @@ BookStep<TIn, TOut, TDerived>::revImp(
             auto stpAdjAmt = stpAmt;
             auto ownerGivesAdj = ownerGives;
             limitStepOut(
-                offer.quality(),
+                offer,
                 ofrAdjAmt,
                 stpAdjAmt,
                 ownerGivesAdj,
@@ -876,7 +1031,7 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
 
     // amt fed will be adjusted by owner funds (and may differ from the offer's
     // amounts - tho always <=)
-    auto eachOffer = [&](TOffer<TIn, TOut>& offer,
+    auto eachOffer = [&](auto& offer,
                          TAmounts<TIn, TOut> const& ofrAmt,
                          TAmounts<TIn, TOut> const& stpAmt,
                          TOut const& ownerGives,
@@ -904,7 +1059,7 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
         else
         {
             limitStepIn(
-                offer.quality(),
+                offer,
                 ofrAdjAmt,
                 stpAdjAmt,
                 ownerGivesAdj,
@@ -935,7 +1090,7 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
             auto stpAdjAmtRev = stpAmt;
             auto ownerGivesAdjRev = ownerGives;
             limitStepOut(
-                offer.quality(),
+                offer,
                 ofrAdjAmtRev,
                 stpAdjAmtRev,
                 ownerGivesAdjRev,
