@@ -28,6 +28,7 @@
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/Protocol.h>
+#include <ripple/protocol/SystemParameters.h>
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/protocol/st.h>
 
@@ -210,8 +211,7 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     //
     // We look at the account's Sequence rather than the transaction's
     // Sequence in preparation for Tickets.
-    constexpr std::uint32_t seqDelta{255};
-    if ((*sleAccount)[sfSequence] + seqDelta > ctx.view.seq())
+    if ((*sleAccount)[sfSequence] + accountDeleteSeqDelta > ctx.view.seq())
         return tecTOO_SOON;
 
     // When fixNFTokenRemint is enabled, we don't allow an account to be
@@ -227,7 +227,8 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     // authorized minter minted in a previous ledger.
     if (ctx.view.rules().enabled(fixNFTokenRemint) &&
         ((*sleAccount)[~sfFirstNFTokenSequence].value_or(0) +
-             (*sleAccount)[~sfMintedNFTokens].value_or(0) + seqDelta >
+             (*sleAccount)[~sfMintedNFTokens].value_or(0) +
+             accountDeleteSeqDelta >
          ctx.view.seq()))
         return tecTOO_SOON;
 

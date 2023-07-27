@@ -29,6 +29,7 @@
 #include <ripple/ledger/ReadView.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
+#include <ripple/protocol/SystemParameters.h>
 #include <ripple/protocol/UintTypes.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/resource/Fees.h>
@@ -245,12 +246,17 @@ doAccountTxHelp(RPC::Context& context, AccountTxArgs const& args)
     if (context.apiVersion > 1u)
     {
         bool accountFound = false;
-        for (unsigned int idx = result.ledgerRange.min;
-             idx <= result.ledgerRange.max;
-             ++idx)
+        unsigned int const rangeEnd =
+            result.ledgerRange.max + AccountDeleteSeqDelta;
+        for (unsigned int idx = result.ledgerRange.min; idx < rangeEnd;
+             idx += AccountDeleteSeqDelta)
         {
+            if (idx > result.ledgerRange.max)
+                idx = result.ledgerRange.max;
             std::shared_ptr<ReadView const> ledger;
             auto const status = getLedger(ledger, idx, context);
+            if (status.codeString() == "ledgerNotFound")
+                continue;
             if (ledger->exists(keylet::account(args.account)))
             {
                 accountFound = true;

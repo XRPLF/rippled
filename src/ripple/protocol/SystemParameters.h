@@ -87,6 +87,8 @@ constexpr std::ratio<80, 100> postFixAmendmentMajorityCalcThreshold;
 /** The minimum amount of time an amendment must hold a majority */
 constexpr std::chrono::seconds const defaultAmendmentMajorityTime = weeks{2};
 
+static constexpr std::uint32_t accountDeleteSeqDelta{255u};
+
 }  // namespace ripple
 
 /** Default peer port (IANA registered) */
