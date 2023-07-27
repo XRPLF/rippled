@@ -204,11 +204,6 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
         if (cp)
             return tecHAS_OBLIGATIONS;
     }
-
-    // We don't allow an account to be deleted if its sequence number
-    // is within 256 of the current ledger.  This prevents replay of old
-    // transactions if this account is resurrected after it is deleted.
-    //
     // We look at the account's Sequence rather than the transaction's
     // Sequence in preparation for Tickets.
     if ((*sleAccount)[sfSequence] + accountDeleteSeqDelta > ctx.view.seq())
