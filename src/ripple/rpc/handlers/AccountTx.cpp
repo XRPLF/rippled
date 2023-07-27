@@ -247,9 +247,9 @@ doAccountTxHelp(RPC::Context& context, AccountTxArgs const& args)
     {
         bool accountFound = false;
         unsigned int const rangeEnd =
-            result.ledgerRange.max + AccountDeleteSeqDelta;
+            result.ledgerRange.max + accountDeleteSeqDelta;
         for (unsigned int idx = result.ledgerRange.min; idx < rangeEnd;
-             idx += AccountDeleteSeqDelta)
+             idx += accountDeleteSeqDelta)
         {
             if (idx > result.ledgerRange.max)
                 idx = result.ledgerRange.max;
