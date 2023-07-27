@@ -25,7 +25,8 @@
 namespace ripple {
 
 // Blog post explaining the rationale behind reduction of flooding gossip
-// protocol: https://xrpl.org/blog/2021/message-routing-optimizations-pt-1-proposal-validation-relaying.html
+// protocol:
+// https://xrpl.org/blog/2021/message-routing-optimizations-pt-1-proposal-validation-relaying.html
 
 namespace reduce_relay {
 
