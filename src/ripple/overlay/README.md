@@ -344,7 +344,7 @@ messages for the local and remote endpoints, and combine them to generate a uniq
 endpoints.
 
 That fingerprint, which is never shared over the wire (since each endpoint will
-calculate it independently), is then signed by each server using its public
+calculate it independently), is then signed by each server using its private
 **`secp256k1`** node identity and the signature is transferred over the SSL/TLS
 encrypted link during the protocol handshake phase.
 
