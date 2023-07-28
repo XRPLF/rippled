@@ -302,6 +302,9 @@ AMMWithdraw::applyGuts(Sandbox& sb)
     if (!ammSle)
         return {tecINTERNAL, false};
     auto const ammAccountID = (*ammSle)[sfAccount];
+    auto const accountSle = sb.read(keylet::account(ammAccountID));
+    if (!accountSle)
+        return {tecINTERNAL, false};
     auto const lpTokens =
         ammLPHolds(ctx_.view(), *ammSle, ctx_.tx[sfAccount], ctx_.journal);
     auto const lpTokensWithdraw =
@@ -377,7 +380,9 @@ AMMWithdraw::applyGuts(Sandbox& sb)
         return {result, false};
 
     bool updateBalance = true;
-    if (newLPTokenBalance == beast::zero)
+    // Delete only if number of trustlines is less or equal than max
+    if (newLPTokenBalance == beast::zero &&
+        accountSle->getFieldU32(sfOwnerCount) <= maxDeletableAMMTrustLines)
     {
         if (auto const ter =
                 deleteAMMAccount(sb, ctx_.tx[sfAsset], ctx_.tx[sfAsset2], j_);

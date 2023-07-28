@@ -763,16 +763,18 @@ removeDeletedTrustLines(
     std::vector<uint256> const& trustLines,
     beast::Journal viewJ)
 {
-    std::size_t removed = 0;
+    if (trustLines.size() > maxDeletableAMMTrustLines)
+    {
+        JLOG(viewJ.error())
+            << "removeDeletedTrustLines: deleted trustlines exceed max "
+            << trustLines.size();
+        return;
+    }
 
     for (auto const& index : trustLines)
     {
         if (auto const sleState = view.peek({ltRIPPLE_STATE, index}))
-        {
             deleteAMMTrustLine(view, sleState, std::nullopt, viewJ);
-            if (++removed == maxDeletableAMMTrustLines)
-                return;
-        }
     }
 }
 

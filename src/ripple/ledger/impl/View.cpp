@@ -1544,7 +1544,7 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account)
     return tesSUCCESS;
 }
 
-std::pair<TER, AllNodesDeleted>
+std::pair<TER, bool>
 cleanupOnAccountDelete(
     ApplyView& view,
     Keylet const& ownerDirKeylet,
@@ -1565,7 +1565,7 @@ cleanupOnAccountDelete(
         do
         {
             if (maxNodesToDelete && ++deleted > *maxNodesToDelete)
-                return {tesSUCCESS, AllNodesDeleted::No};
+                return {tesSUCCESS, false};
 
             // Choose the right way to delete each directory node.
             auto sleItem = view.peek(keylet::child(dirEntry));
@@ -1576,7 +1576,7 @@ cleanupOnAccountDelete(
                     << "DeleteAccount: Directory node in ledger " << view.seq()
                     << " has index to object that is missing: "
                     << to_string(dirEntry);
-                return {tefBAD_LEDGER, AllNodesDeleted::No};
+                return {tefBAD_LEDGER, false};
             }
 
             LedgerEntryType const nodeType{safe_cast<LedgerEntryType>(
@@ -1585,7 +1585,7 @@ cleanupOnAccountDelete(
             // Deleter handles the details of specific account deletion
             if (auto const ter = deleter(nodeType, dirEntry, sleItem);
                 ter != tesSUCCESS)
-                return {ter, AllNodesDeleted::No};
+                return {ter, false};
 
             // dirFirst() and dirNext() are like iterators with exposed
             // internal state.  We'll take advantage of that exposed state
@@ -1608,7 +1608,7 @@ cleanupOnAccountDelete(
             {
                 JLOG(j.error())
                     << "DeleteAccount iterator re-validation failed.";
-                return {tefBAD_LEDGER, AllNodesDeleted::No};
+                return {tefBAD_LEDGER, false};
             }
             uDirEntry = 0;
 
@@ -1616,7 +1616,7 @@ cleanupOnAccountDelete(
             dirNext(view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry));
     }
 
-    return {tesSUCCESS, AllNodesDeleted::Yes};
+    return {tesSUCCESS, true};
 }
 
 TER
@@ -1639,11 +1639,16 @@ deleteAMMTrustLine(
     bool const ammLow = sleLow->getFlags() & lsfAMM;
     bool const ammHigh = sleHigh->getFlags() & lsfAMM;
 
-    // One side must be AMM
-    if (!(ammLow ^ ammHigh) ||
-        (ammAccountID &&
-         ((ammLow && low != ammAccountID) ||
-          (ammHigh && high != ammAccountID))))
+    // can't both be AMM
+    if (ammLow && ammHigh)
+        return tecINTERNAL;
+
+    // at least one must be
+    if (!ammLow && !ammHigh)
+        return terNO_AMM;
+
+    // one must be the target amm
+    if (ammAccountID && (low != *ammAccountID && high != *ammAccountID))
         return terNO_AMM;
 
     if (auto const ter = trustDelete(view, sleState, low, high, j);
@@ -1655,6 +1660,7 @@ deleteAMMTrustLine(
     }
 
     adjustOwnerCount(view, !ammLow ? sleLow : sleHigh, -1, j);
+    adjustOwnerCount(view, ammLow ? sleLow : sleHigh, -1, j);
 
     return tesSUCCESS;
 }

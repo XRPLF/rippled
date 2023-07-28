@@ -43,7 +43,6 @@
 namespace ripple {
 
 enum class WaiveTransferFee { Yes, No };
-enum class AllNodesDeleted { Yes, No };
 
 //------------------------------------------------------------------------------
 //
@@ -463,10 +462,10 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account);
  * Used for a regular and AMM accounts deletion. The caller
  * has to provide the deleter function, which handles details of
  * specific account deletion.
- * @return {tesSUCCESS, AllNodesDeleted::No} indicates maxNodesToDelete
+ * @return {tesSUCCESS, false} indicates maxNodesToDelete
  * are deleted and there remains more nodes to delete.
  */
-[[nodiscard]] std::pair<TER, AllNodesDeleted>
+[[nodiscard]] std::pair<TER, bool>
 cleanupOnAccountDelete(
     ApplyView& view,
     Keylet const& ownerDirKeylet,

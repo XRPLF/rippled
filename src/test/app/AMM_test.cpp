@@ -782,7 +782,7 @@ private:
                 USD(100),
                 std::nullopt,
                 tfTwoAssetIfEmpty,
-                ter(tecAMM_EMPTY));
+                ter(tecAMM_NOT_EMPTY));
         });
 
         // Invalid AMM
@@ -4284,17 +4284,19 @@ private:
                 all);
             fund(env, gw, {alice}, XRP(20'000), {USD(10'000)});
             AMM amm(env, gw, XRP(10'000), USD(10'000));
-            for (auto i = 0; i < 1'600; ++i)
+            for (auto i = 0; i < maxDeletableAMMTrustLines + 10; ++i)
             {
                 Account const a{std::to_string(i)};
                 env.fund(XRP(1'000), a);
                 env(trust(a, STAmount{amm.lptIssue(), 10'000}));
                 env.close();
             }
-            // The auto-delete deleted 1,500 trustlines and AMM is
-            // in empty state.
+            // The trustlines are not deleted, AMM is set to an empty state.
             amm.withdrawAll(gw);
             BEAST_EXPECT(amm.ammExists());
+
+            // Have not deleted all trustlines
+            amm.ammDelete(alice, ter(tecINCOMPLETE));
 
             // Bid,Vote,Deposit,Withdraw,SetTrust failing with
             // tecAMM_EMPTY. Deposit succeeds with tfTwoAssetIfEmpty option.
@@ -4343,7 +4345,7 @@ private:
             BEAST_EXPECT(amm.expectAuctionSlot(100, 0, IOUAmount{0}));
 
             // Withdrawing all tokens deletes AMM since the number
-            // of remaining trustlines is less than 1,500.
+            // of remaining trustlines is less than max
             amm.withdrawAll(alice);
             BEAST_EXPECT(!amm.ammExists());
             BEAST_EXPECT(!env.le(keylet::ownerDir(amm.ammAccount())));
@@ -4359,19 +4361,21 @@ private:
                 all);
             fund(env, gw, {alice}, XRP(20'000), {USD(10'000)});
             AMM amm(env, gw, XRP(10'000), USD(10'000));
-            for (auto i = 0; i < 3'100; ++i)
+            for (auto i = 0; i < maxDeletableAMMTrustLines * 2 + 10; ++i)
             {
                 Account const a{std::to_string(i)};
                 env.fund(XRP(1'000), a);
                 env(trust(a, STAmount{amm.lptIssue(), 10'000}));
                 env.close();
             }
-            // Deletes 1,500 trustlines
+            // Doesn't delete the trustlines
             amm.withdrawAll(gw);
             BEAST_EXPECT(amm.ammExists());
 
-            // AMMDelete has to be called twice to delete AMM.
-            // Deletes 1,500 trustlines.
+            // AMMDelete has to be called tree times to delete AMM.
+            // Deletes max trustlines.
+            amm.ammDelete(alice, ter(tecINCOMPLETE));
+            BEAST_EXPECT(amm.ammExists());
             amm.ammDelete(alice, ter(tecINCOMPLETE));
             BEAST_EXPECT(amm.ammExists());
             // Deletes remaining trustlines and deletes AMM.

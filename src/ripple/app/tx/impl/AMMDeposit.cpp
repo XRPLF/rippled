@@ -191,7 +191,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
     if (ctx.tx.getFlags() & tfTwoAssetIfEmpty)
     {
         if (lptAMMBalance != beast::zero)
-            return tecAMM_EMPTY;
+            return tecAMM_NOT_EMPTY;
         if (amountBalance != beast::zero || amount2Balance != beast::zero)
         {
             JLOG(ctx.j.debug()) << "AMM Deposit: tokens balance is not zero.";

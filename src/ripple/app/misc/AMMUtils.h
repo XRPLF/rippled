@@ -98,7 +98,7 @@ ammAccountHolds(
  */
 TER
 deleteAMMAccount(
-    ApplyView& view,
+    Sandbox& view,
     Issue const& asset,
     Issue const& asset2,
     beast::Journal j);

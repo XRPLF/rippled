@@ -44,12 +44,6 @@ AMMDelete::preflight(PreflightContext const& ctx)
         return temINVALID_FLAG;
     }
 
-    if (auto const res = invalidAMMAssetPair(ctx.tx[sfAsset], ctx.tx[sfAsset2]))
-    {
-        JLOG(ctx.j.debug()) << "AMM Delete: Invalid asset pair.";
-        return res;
-    }
-
     return preflight2(ctx);
 }
 
@@ -66,7 +60,7 @@ AMMDelete::preclaim(PreclaimContext const& ctx)
 
     auto const lpTokensBalance = (*ammSle)[sfLPTokenBalance];
     if (lpTokensBalance != beast::zero)
-        return tecAMM_EMPTY;
+        return tecAMM_NOT_EMPTY;
 
     return tesSUCCESS;
 }

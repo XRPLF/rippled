@@ -95,7 +95,7 @@ using LedgerIndex = std::uint32_t;
 */
 using TxID = uint256;
 
-std::size_t constexpr maxDeletableAMMTrustLines = 1500;
+std::size_t constexpr maxDeletableAMMTrustLines = 512;
 
 }  // namespace ripple
 

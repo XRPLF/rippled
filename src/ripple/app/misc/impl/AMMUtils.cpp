@@ -188,15 +188,15 @@ ammAccountHolds(
     return STAmount{issue};
 }
 
-static std::pair<TER, AllNodesDeleted>
+static std::pair<TER, bool>
 deleteAMMTrustLines(
-    ApplyView& view,
+    Sandbox& sb,
     AccountID const& ammAccountID,
     std::uint16_t maxTrustlinesToDelete,
     beast::Journal j)
 {
     return cleanupOnAccountDelete(
-        view,
+        sb,
         keylet::ownerDir(ammAccountID),
         [&](LedgerEntryType nodeType,
             uint256 const&,
@@ -219,7 +219,7 @@ deleteAMMTrustLines(
                 return tecINTERNAL;
             }
 
-            return deleteAMMTrustLine(view, sleItem, ammAccountID, j);
+            return deleteAMMTrustLine(sb, sleItem, ammAccountID, j);
         },
         j,
         maxTrustlinesToDelete);
@@ -227,33 +227,37 @@ deleteAMMTrustLines(
 
 TER
 deleteAMMAccount(
-    ApplyView& view,
+    Sandbox& sb,
     Issue const& asset,
     Issue const& asset2,
     beast::Journal j)
 {
-    auto ammSle = view.peek(keylet::amm(asset, asset2));
+    auto ammSle = sb.peek(keylet::amm(asset, asset2));
     if (!ammSle)
         return tecINTERNAL;
 
     auto const ammAccountID = (*ammSle)[sfAccount];
-    auto sleAMMRoot = view.peek(keylet::account(ammAccountID));
+    auto sleAMMRoot = sb.peek(keylet::account(ammAccountID));
     if (!sleAMMRoot)
-        return tecINTERNAL;
-
-    if (auto const res = deleteAMMTrustLines(
-            view, ammAccountID, maxDeletableAMMTrustLines, j);
-        std::get<TER>(res) != tesSUCCESS)
-        return std::get<TER>(res);
-    // All trustlines are deleted, can delete ltAMM and the account
-    else if (res.second == AllNodesDeleted::Yes)
     {
-        view.erase(ammSle);
-        view.erase(sleAMMRoot);
-        return tesSUCCESS;
+        JLOG(j.error()) << "deleteAMMAccount: AMM account does not exist "
+                        << to_string(ammAccountID);
     }
 
-    return tecINCOMPLETE;
+    auto const [ter, done] =
+        deleteAMMTrustLines(sb, ammAccountID, maxDeletableAMMTrustLines, j);
+
+    if (ter != tesSUCCESS)
+        return ter;
+
+    if (!done)
+        return tecINCOMPLETE;
+
+    sb.erase(ammSle);
+    if (sleAMMRoot)
+        sb.erase(sleAMMRoot);
+
+    return tesSUCCESS;
 }
 
 void

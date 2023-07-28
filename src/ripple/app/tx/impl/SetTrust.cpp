@@ -541,6 +541,10 @@ SetTrust::doApply()
             uQualityIn,
             uQualityOut,
             viewJ);
+
+        // Maintain number of AMM trustlines in AMM root account
+        if (terResult == tesSUCCESS && (sleDst->getFlags() & lsfAMM))
+            adjustOwnerCount(view(), sleDst, 1, j_);
     }
 
     return terResult;
