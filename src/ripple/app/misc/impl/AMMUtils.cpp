@@ -253,6 +253,14 @@ deleteAMMAccount(
     if (!done)
         return tecINCOMPLETE;
 
+    auto const ownerDirKeylet = keylet::ownerDir(ammAccountID);
+    if (sb.exists(ownerDirKeylet) && !sb.emptyDirDelete(ownerDirKeylet))
+    {
+        JLOG(j.error()) << "deleteAMMAccount: cannot delete root dir node of "
+                        << toBase58(ammAccountID);
+        return tecINTERNAL;
+    }
+
     sb.erase(ammSle);
     if (sleAMMRoot)
         sb.erase(sleAMMRoot);

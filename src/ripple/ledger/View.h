@@ -42,7 +42,7 @@
 
 namespace ripple {
 
-enum class WaiveTransferFee { Yes, No };
+enum class WaiveTransferFee : bool { No = false, Yes };
 
 //------------------------------------------------------------------------------
 //

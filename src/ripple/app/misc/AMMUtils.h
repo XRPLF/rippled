@@ -103,7 +103,7 @@ deleteAMMAccount(
     Issue const& asset2,
     beast::Journal j);
 
-/** Initialize Auction and Voting slots and set the trading/disconted fee.
+/** Initialize Auction and Voting slots and set the trading/discounted fee.
  */
 void
 initializeFeeAuctionVote(
