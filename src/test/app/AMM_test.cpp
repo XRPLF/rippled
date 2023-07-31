@@ -4386,6 +4386,27 @@ private:
     }
 
     void
+    testClawback()
+    {
+        testcase("Clawback");
+        using namespace jtx;
+        FeatureBitset const all{supported_amendments()};
+
+        for (auto const& features : {all, all - featureClawback})
+        {
+            Env env(*this, features);
+            env.fund(XRP(2'000), gw);
+            env.fund(XRP(2'000), alice);
+            env(fset(gw, asfAllowTrustLineClawback));
+            AMM amm(env, gw, XRP(1'000), USD(1'000));
+            auto const terr = features[featureClawback] ? ter(tecAMM_ACCOUNT)
+                                                        : ter(temDISABLED);
+            env(claw(gw, STAmount{Issue(USD.currency, amm.ammAccount()), 200}),
+                terr);
+        }
+    }
+
+    void
     testCore()
     {
         testInvalidInstance();
@@ -4408,6 +4429,7 @@ private:
         testTradingFee();
         testAdjustedTokens();
         testAutoDelete();
+        testClawback();
     }
 
     void

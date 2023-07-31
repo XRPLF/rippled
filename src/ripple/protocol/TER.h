@@ -301,7 +301,8 @@ enum TECcodes : TERUnderlyingType {
     tecAMM_INVALID_TOKENS = 165,
     tecAMM_EMPTY = 166,
     tecAMM_NOT_EMPTY = 167,
-    tecINCOMPLETE = 168
+    tecAMM_ACCOUNT = 168,
+    tecINCOMPLETE = 169
 };
 
 //------------------------------------------------------------------------------
