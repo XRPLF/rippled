@@ -1544,7 +1544,7 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account)
     return tesSUCCESS;
 }
 
-std::pair<TER, bool>
+TER
 cleanupOnAccountDelete(
     ApplyView& view,
     Keylet const& ownerDirKeylet,
@@ -1565,7 +1565,7 @@ cleanupOnAccountDelete(
         do
         {
             if (maxNodesToDelete && ++deleted > *maxNodesToDelete)
-                return {tesSUCCESS, false};
+                return tecINCOMPLETE;
 
             // Choose the right way to delete each directory node.
             auto sleItem = view.peek(keylet::child(dirEntry));
@@ -1576,16 +1576,17 @@ cleanupOnAccountDelete(
                     << "DeleteAccount: Directory node in ledger " << view.seq()
                     << " has index to object that is missing: "
                     << to_string(dirEntry);
-                return {tefBAD_LEDGER, false};
+                return tefBAD_LEDGER;
             }
 
             LedgerEntryType const nodeType{safe_cast<LedgerEntryType>(
                 sleItem->getFieldU16(sfLedgerEntryType))};
 
-            // Deleter handles the details of specific account deletion
+            // Deleter handles the details of specific account-owned object
+            // deletion
             if (auto const ter = deleter(nodeType, dirEntry, sleItem);
                 ter != tesSUCCESS)
-                return {ter, false};
+                return ter;
 
             // dirFirst() and dirNext() are like iterators with exposed
             // internal state.  We'll take advantage of that exposed state
@@ -1608,7 +1609,7 @@ cleanupOnAccountDelete(
             {
                 JLOG(j.error())
                     << "DeleteAccount iterator re-validation failed.";
-                return {tefBAD_LEDGER, false};
+                return tefBAD_LEDGER;
             }
             uDirEntry = 0;
 
@@ -1616,7 +1617,7 @@ cleanupOnAccountDelete(
             dirNext(view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry));
     }
 
-    return {tesSUCCESS, true};
+    return tesSUCCESS;
 }
 
 TER
@@ -1626,7 +1627,7 @@ deleteAMMTrustLine(
     std::optional<AccountID> const& ammAccountID,
     beast::Journal j)
 {
-    if (!sleState)
+    if (!sleState || sleState->getType() != ltRIPPLE_STATE)
         return tecINTERNAL;
 
     auto const& [low, high] = std::minmax(
@@ -1659,8 +1660,11 @@ deleteAMMTrustLine(
         return ter;
     }
 
+    auto const uFlags = !ammLow ? lsfLowReserve : lsfHighReserve;
+    if (!(sleState->getFlags() & uFlags))
+        return tecINTERNAL;
+
     adjustOwnerCount(view, !ammLow ? sleLow : sleHigh, -1, j);
-    adjustOwnerCount(view, ammLow ? sleLow : sleHigh, -1, j);
 
     return tesSUCCESS;
 }

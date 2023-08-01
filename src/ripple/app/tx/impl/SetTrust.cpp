@@ -20,6 +20,7 @@
 #include <ripple/app/tx/impl/SetTrust.h>
 #include <ripple/basics/Log.h>
 #include <ripple/ledger/View.h>
+#include <ripple/protocol/AMMCore.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/Quality.h>
@@ -128,42 +129,47 @@ SetTrust::preclaim(PreclaimContext const& ctx)
         }
     }
 
+    // This might be nullptr
     auto const sleDst = ctx.view.read(keylet::account(uDstAccountID));
-
-    if (!sleDst)
-        return tecNO_DST;
-
-    auto const dstFlags = sleDst->getFlags();
 
     // If the destination has opted to disallow incoming trustlines
     // then honour that flag
     if (ctx.view.rules().enabled(featureDisallowIncoming))
     {
-        if (dstFlags & lsfDisallowIncomingTrustline)
+        if (!sleDst)
+            return tecNO_DST;
+
+        if (sleDst->getFlags() & lsfDisallowIncomingTrustline)
             return tecNO_PERMISSION;
     }
 
     // If destination is AMM and the trustline doesn't exist then only
     // allow SetTrust if the asset is AMM LP token and AMM is not
     // in empty state.
-    TER ter = tesSUCCESS;
-    if (dstFlags & lsfAMM &&
-        !ctx.view.read(keylet::line(id, uDstAccountID, currency)))
+    if (ammEnabled(ctx.view.rules()))
     {
-        if (auto const ammSle =
-                ctx.view.read({ltAMM, sleDst->getFieldH256(sfAMMID)}))
+        if (!sleDst)
+            return tecNO_DST;
+
+        if (sleDst->getFlags() & lsfAMM &&
+            !ctx.view.read(keylet::line(id, uDstAccountID, currency)))
         {
-            if (auto const lpTokens = ammSle->getFieldAmount(sfLPTokenBalance);
-                lpTokens == beast::zero)
-                ter = tecAMM_EMPTY;
-            else if (lpTokens.getCurrency() != saLimitAmount.getCurrency())
-                ter = tecNO_PERMISSION;
+            if (auto const ammSle =
+                    ctx.view.read({ltAMM, sleDst->getFieldH256(sfAMMID)}))
+            {
+                if (auto const lpTokens =
+                        ammSle->getFieldAmount(sfLPTokenBalance);
+                    lpTokens == beast::zero)
+                    return tecAMM_EMPTY;
+                else if (lpTokens.getCurrency() != saLimitAmount.getCurrency())
+                    return tecNO_PERMISSION;
+            }
+            else
+                return tecINTERNAL;
         }
-        else
-            ter = tecINTERNAL;
     }
 
-    return ter;
+    return tesSUCCESS;
 }
 
 TER

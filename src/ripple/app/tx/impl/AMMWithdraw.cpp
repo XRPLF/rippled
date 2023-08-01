@@ -380,9 +380,7 @@ AMMWithdraw::applyGuts(Sandbox& sb)
         return {result, false};
 
     bool updateBalance = true;
-    // Delete only if number of trustlines is less or equal than max
-    if (newLPTokenBalance == beast::zero &&
-        accountSle->getFieldU32(sfOwnerCount) <= maxDeletableAMMTrustLines)
+    if (newLPTokenBalance == beast::zero)
     {
         if (auto const ter =
                 deleteAMMAccount(sb, ctx_.tx[sfAsset], ctx_.tx[sfAsset2], j_);

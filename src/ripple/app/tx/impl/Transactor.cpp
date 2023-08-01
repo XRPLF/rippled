@@ -773,8 +773,13 @@ removeDeletedTrustLines(
 
     for (auto const& index : trustLines)
     {
-        if (auto const sleState = view.peek({ltRIPPLE_STATE, index}))
-            deleteAMMTrustLine(view, sleState, std::nullopt, viewJ);
+        if (auto const sleState = view.peek({ltRIPPLE_STATE, index});
+            deleteAMMTrustLine(view, sleState, std::nullopt, viewJ) !=
+            tesSUCCESS)
+        {
+            JLOG(viewJ.error())
+                << "removeDeletedTrustLines: failed to delete AMM trustline";
+        }
     }
 }
 

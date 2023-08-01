@@ -188,7 +188,7 @@ ammAccountHolds(
     return STAmount{issue};
 }
 
-static std::pair<TER, bool>
+static TER
 deleteAMMTrustLines(
     Sandbox& sb,
     AccountID const& ammAccountID,
@@ -234,7 +234,11 @@ deleteAMMAccount(
 {
     auto ammSle = sb.peek(keylet::amm(asset, asset2));
     if (!ammSle)
+    {
+        JLOG(j.error()) << "deleteAMMAccount: AMM object does not exist "
+                        << asset << " " << asset2;
         return tecINTERNAL;
+    }
 
     auto const ammAccountID = (*ammSle)[sfAccount];
     auto sleAMMRoot = sb.peek(keylet::account(ammAccountID));
@@ -242,16 +246,13 @@ deleteAMMAccount(
     {
         JLOG(j.error()) << "deleteAMMAccount: AMM account does not exist "
                         << to_string(ammAccountID);
+        return tecINTERNAL;
     }
 
-    auto const [ter, done] =
-        deleteAMMTrustLines(sb, ammAccountID, maxDeletableAMMTrustLines, j);
-
-    if (ter != tesSUCCESS)
+    if (auto const ter =
+            deleteAMMTrustLines(sb, ammAccountID, maxDeletableAMMTrustLines, j);
+        ter != tesSUCCESS || ter == tecINCOMPLETE)
         return ter;
-
-    if (!done)
-        return tecINCOMPLETE;
 
     auto const ownerDirKeylet = keylet::ownerDir(ammAccountID);
     if (sb.exists(ownerDirKeylet) && !sb.emptyDirDelete(ownerDirKeylet))
@@ -262,8 +263,7 @@ deleteAMMAccount(
     }
 
     sb.erase(ammSle);
-    if (sleAMMRoot)
-        sb.erase(sleAMMRoot);
+    sb.erase(sleAMMRoot);
 
     return tesSUCCESS;
 }

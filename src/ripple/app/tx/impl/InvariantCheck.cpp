@@ -326,9 +326,7 @@ AccountRootsNotDeleted::finalize(
     // Not every AMM withdraw deletes the AMM account, accountsDeleted_
     // is set if it is deleted.
     if ((tx.getTxnType() == ttACCOUNT_DELETE ||
-         ((tx.getTxnType() == ttAMM_WITHDRAW ||
-           tx.getTxnType() == ttAMM_DELETE) &&
-          accountsDeleted_ == 1)) &&
+         tx.getTxnType() == ttAMM_DELETE) &&
         result == tesSUCCESS)
     {
         if (accountsDeleted_ == 1)
@@ -342,6 +340,13 @@ AccountRootsNotDeleted::finalize(
                                "succeeded but deleted multiple accounts!";
         return false;
     }
+
+    // A successful AMMWithdraw MAY delete one account root
+    // when the total AMM LP Tokens balance goes to 0. Not every AMM withdraw
+    // deletes the AMM account, accountsDeleted_ is set if it is deleted.
+    if (tx.getTxnType() == ttAMM_WITHDRAW && result == tesSUCCESS &&
+        accountsDeleted_ == 1)
+        return true;
 
     if (accountsDeleted_ == 0)
         return true;

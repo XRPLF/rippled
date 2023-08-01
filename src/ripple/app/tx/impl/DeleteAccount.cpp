@@ -293,7 +293,7 @@ DeleteAccount::doApply()
         return tefBAD_LEDGER;
 
     Keylet const ownerDirKeylet{keylet::ownerDir(account_)};
-    auto const res = cleanupOnAccountDelete(
+    auto const ter = cleanupOnAccountDelete(
         view(),
         ownerDirKeylet,
         [&](LedgerEntryType nodeType,
@@ -313,8 +313,8 @@ DeleteAccount::doApply()
             return tecHAS_OBLIGATIONS;
         },
         ctx_.journal);
-    if (std::get<TER>(res) != tesSUCCESS)
-        return std::get<TER>(res);
+    if (ter != tesSUCCESS)
+        return ter;
 
     // Transfer any XRP remaining after the fee is paid to the destination:
     (*dst)[sfBalance] = (*dst)[sfBalance] + mSourceBalance;

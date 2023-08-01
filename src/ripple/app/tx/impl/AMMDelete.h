@@ -26,7 +26,7 @@ namespace ripple {
 
 /** AMMDelete implements AMM delete transactor. This is a mechanism to
  * delete AMM in an empty state when the number of LP tokens is 0.
- * AMMDelete deletes the truslines up to configured maximum. If all
+ * AMMDelete deletes the trustlines up to configured maximum. If all
  * trustlines are deleted then AMM ltAMM and root account are deleted.
  * Otherwise AMMDelete should be called again.
  */

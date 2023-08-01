@@ -400,6 +400,21 @@ private:
             AMM ammAlice1(
                 env, alice, USD(10'000), USD1(10'000), ter(terNO_RIPPLE));
         }
+
+        // Issuer has clawback enabled
+        {
+            Env env(*this);
+            env.fund(XRP(1'000), gw);
+            env(fset(gw, asfAllowTrustLineClawback));
+            fund(env, gw, {alice}, XRP(1'000), {USD(1'000)}, Fund::Acct);
+            env.close();
+            AMM amm(env, gw, XRP(100), USD(100), ter(tecNO_PERMISSION));
+            AMM amm1(env, alice, USD(100), XRP(100), ter(tecNO_PERMISSION));
+            env(fclear(gw, asfAllowTrustLineClawback));
+            env.close();
+            // Can't be cleared
+            AMM amm2(env, gw, XRP(100), USD(100), ter(tecNO_PERMISSION));
+        }
     }
 
     void
@@ -4291,12 +4306,10 @@ private:
                 env(trust(a, STAmount{amm.lptIssue(), 10'000}));
                 env.close();
             }
-            // The trustlines are not deleted, AMM is set to an empty state.
+            // The trustlines are partially deleted,
+            // AMM is set to an empty state.
             amm.withdrawAll(gw);
             BEAST_EXPECT(amm.ammExists());
-
-            // Have not deleted all trustlines
-            amm.ammDelete(alice, ter(tecINCOMPLETE));
 
             // Bid,Vote,Deposit,Withdraw,SetTrust failing with
             // tecAMM_EMPTY. Deposit succeeds with tfTwoAssetIfEmpty option.
@@ -4368,14 +4381,11 @@ private:
                 env(trust(a, STAmount{amm.lptIssue(), 10'000}));
                 env.close();
             }
-            // Doesn't delete the trustlines
+            // The trustlines are partially deleted.
             amm.withdrawAll(gw);
             BEAST_EXPECT(amm.ammExists());
 
-            // AMMDelete has to be called tree times to delete AMM.
-            // Deletes max trustlines.
-            amm.ammDelete(alice, ter(tecINCOMPLETE));
-            BEAST_EXPECT(amm.ammExists());
+            // AMMDelete has to be called twice to delete AMM.
             amm.ammDelete(alice, ter(tecINCOMPLETE));
             BEAST_EXPECT(amm.ammExists());
             // Deletes remaining trustlines and deletes AMM.
@@ -4390,20 +4400,11 @@ private:
     {
         testcase("Clawback");
         using namespace jtx;
-        FeatureBitset const all{supported_amendments()};
-
-        for (auto const& features : {all, all - featureClawback})
-        {
-            Env env(*this, features);
-            env.fund(XRP(2'000), gw);
-            env.fund(XRP(2'000), alice);
-            env(fset(gw, asfAllowTrustLineClawback));
-            AMM amm(env, gw, XRP(1'000), USD(1'000));
-            auto const terr = features[featureClawback] ? ter(tecAMM_ACCOUNT)
-                                                        : ter(temDISABLED);
-            env(claw(gw, STAmount{Issue(USD.currency, amm.ammAccount()), 200}),
-                terr);
-        }
+        Env env(*this);
+        env.fund(XRP(2'000), gw);
+        env.fund(XRP(2'000), alice);
+        AMM amm(env, gw, XRP(1'000), USD(1'000));
+        env(fset(gw, asfAllowTrustLineClawback), ter(tecOWNERS));
     }
 
     void

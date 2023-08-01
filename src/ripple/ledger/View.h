@@ -461,11 +461,11 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account);
 /** Cleanup owner directory entries on account delete.
  * Used for a regular and AMM accounts deletion. The caller
  * has to provide the deleter function, which handles details of
- * specific account deletion.
- * @return {tesSUCCESS, false} indicates maxNodesToDelete
+ * specific account-owned object deletion.
+ * @return tesINCOMPLETE indicates maxNodesToDelete
  * are deleted and there remains more nodes to delete.
  */
-[[nodiscard]] std::pair<TER, bool>
+[[nodiscard]] TER
 cleanupOnAccountDelete(
     ApplyView& view,
     Keylet const& ownerDirKeylet,
@@ -478,8 +478,7 @@ cleanupOnAccountDelete(
  * call to view.peek(). Fail if neither side of the trustline is AMM or
  * if ammAccountID is seated and is not one of the trustline's side.
  */
-// [[nodiscard]] // nodiscard commented out so Transactor compiles.
-TER
+[[nodiscard]] TER
 deleteAMMTrustLine(
     ApplyView& view,
     std::shared_ptr<SLE> sleState,
