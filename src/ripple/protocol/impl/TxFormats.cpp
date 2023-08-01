@@ -24,43 +24,41 @@ namespace ripple {
 
 TxFormats::TxFormats()
 {
-    // Fields shared by all txFormats:
+#pragma push_macro("PSEUDO_TXN_COMMON_FIELDS")
+
+    // clang-format off
+
+    #define PSEUDO_TXN_COMMON_FIELDS                        \
+        {sfTransactionType, soeREQUIRED},                   \
+        {sfFlags, soeOPTIONAL},                             \
+        {sfSourceTag, soeOPTIONAL},                         \
+        {sfAccount, soeREQUIRED},                           \
+        {sfSequence, soeREQUIRED},                          \
+        {sfPreviousTxnID, soeOPTIONAL}, /* emulate027 */    \
+        {sfLastLedgerSequence, soeOPTIONAL},                \
+        {sfAccountTxnID, soeOPTIONAL},                      \
+        {sfFee, soeREQUIRED},                               \
+        {sfOperationLimit, soeOPTIONAL},                    \
+        {sfMemos, soeOPTIONAL},                             \
+        {sfSigningPubKey, soeREQUIRED},                     \
+        {sfTxnSignature, soeOPTIONAL},                      \
+        {sfSigners, soeOPTIONAL}, /* submit_multisigned */  \
+        {sfNetworkID, soeOPTIONAL}
+
+    // clang-format on
+
+    // Fields shared by all pseudo-transaction txFormats:
     static const std::initializer_list<SOElement> pseudoCommonFields{
-        {sfTransactionType, soeREQUIRED},
-        {sfFlags, soeOPTIONAL},
-        {sfSourceTag, soeOPTIONAL},
-        {sfAccount, soeREQUIRED},
-        {sfSequence, soeREQUIRED},
-        {sfPreviousTxnID, soeOPTIONAL},  // emulate027
-        {sfLastLedgerSequence, soeOPTIONAL},
-        {sfAccountTxnID, soeOPTIONAL},
-        {sfFee, soeREQUIRED},
-        {sfOperationLimit, soeOPTIONAL},
-        {sfMemos, soeOPTIONAL},
-        {sfSigningPubKey, soeREQUIRED},
-        {sfTxnSignature, soeOPTIONAL},
-        {sfSigners, soeOPTIONAL},  // submit_multisigned
-        {sfNetworkID, soeOPTIONAL},
+        PSEUDO_TXN_COMMON_FIELDS,
     };
 
+    // Fields shared by all normal transaction txFormats:
     static const std::initializer_list<SOElement> commonFields{
-        {sfTransactionType, soeREQUIRED},
-        {sfFlags, soeOPTIONAL},
-        {sfSourceTag, soeOPTIONAL},
-        {sfAccount, soeREQUIRED},
-        {sfSequence, soeREQUIRED},
-        {sfPreviousTxnID, soeOPTIONAL},  // emulate027
-        {sfLastLedgerSequence, soeOPTIONAL},
-        {sfAccountTxnID, soeOPTIONAL},
-        {sfFee, soeREQUIRED},
-        {sfOperationLimit, soeOPTIONAL},
-        {sfMemos, soeOPTIONAL},
-        {sfSigningPubKey, soeREQUIRED},
-        {sfTxnSignature, soeOPTIONAL},
-        {sfSigners, soeOPTIONAL},  // submit_multisigned
-        {sfNetworkID, soeOPTIONAL},
+        PSEUDO_TXN_COMMON_FIELDS,
         {sfTicketSequence, soeOPTIONAL},
     };
+
+#pragma pop_macro("PSEUDO_TXN_COMMON_FIELDS")
 
     add(jss::AccountSet,
         ttACCOUNT_SET,
