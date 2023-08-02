@@ -375,7 +375,7 @@ xrpLiquid(
         view.ownerCountHook(id, sle->getFieldU32(sfOwnerCount)), ownerCountAdj);
 
     // AMMs have no reserve requirement
-    auto const reserve = (sle->getFlags() & lsfAMM)
+    auto const reserve = sle->isFieldPresent(sfAMMID)
         ? XRPAmount{0}
         : view.fees().accountReserve(ownerCount);
 
@@ -1637,8 +1637,8 @@ deleteAMMTrustLine(
     auto sleHigh = view.peek(keylet::account(high));
     if (!sleLow || !sleHigh)
         return tecINTERNAL;
-    bool const ammLow = sleLow->getFlags() & lsfAMM;
-    bool const ammHigh = sleHigh->getFlags() & lsfAMM;
+    bool const ammLow = sleLow->isFieldPresent(sfAMMID);
+    bool const ammHigh = sleHigh->isFieldPresent(sfAMMID);
 
     // can't both be AMM
     if (ammLow && ammHigh)

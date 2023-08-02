@@ -3713,8 +3713,7 @@ private:
                 info[jss::result][jss::account_data][jss::Flags].asUInt();
             BEAST_EXPECT(
                 flags ==
-                (lsfAMM | lsfDisableMaster | lsfDefaultRipple |
-                 lsfDepositAuth));
+                (lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth));
         });
     }
 
@@ -4408,6 +4407,58 @@ private:
     }
 
     void
+    testAMMID()
+    {
+        using namespace jtx;
+        testAMM([&](AMM& amm, Env& env) {
+            amm.setClose(false);
+            auto const info = env.rpc(
+                "json",
+                "account_info",
+                std::string(
+                    "{\"account\": \"" + to_string(amm.ammAccount()) + "\"}"));
+            try
+            {
+                BEAST_EXPECT(
+                    info[jss::result][jss::account_data][jss::AMMID]
+                        .asString() == to_string(amm.ammID()));
+            }
+            catch (...)
+            {
+                fail();
+            }
+            amm.deposit(carol, 1'000);
+            auto affected = env.meta()->getJson(
+                JsonOptions::none)[sfAffectedNodes.fieldName];
+            try
+            {
+                bool found = false;
+                for (auto const& node : affected)
+                {
+                    if (node.isMember(sfModifiedNode.fieldName) &&
+                        node[sfModifiedNode.fieldName]
+                            [sfLedgerEntryType.fieldName]
+                                .asString() == "AccountRoot" &&
+                        node[sfModifiedNode.fieldName][sfFinalFields.fieldName]
+                            [jss::Account]
+                                .asString() == to_string(amm.ammAccount()))
+                    {
+                        found = node[sfModifiedNode.fieldName]
+                                    [sfFinalFields.fieldName][jss::AMMID]
+                                        .asString() == to_string(amm.ammID());
+                        break;
+                    }
+                }
+                BEAST_EXPECT(found);
+            }
+            catch (...)
+            {
+                fail();
+            }
+        });
+    }
+
+    void
     testCore()
     {
         testInvalidInstance();
@@ -4431,6 +4482,7 @@ private:
         testAdjustedTokens();
         testAutoDelete();
         testClawback();
+        testAMMID();
     }
 
     void

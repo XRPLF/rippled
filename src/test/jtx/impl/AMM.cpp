@@ -64,6 +64,7 @@ AMM::AMM(
     , asset2_(asset2)
     , initialLPTokens_(initialTokens(asset1, asset2))
     , log_(log)
+    , doClose_(true)
     , lastPurchasePrice_(0)
     , bidMin_()
     , bidMax_()
@@ -676,7 +677,8 @@ AMM::submit(
         env_(jv, *ter);
     else
         env_(jv);
-    env_.close();
+    if (doClose_)
+        env_.close();
 }
 
 bool

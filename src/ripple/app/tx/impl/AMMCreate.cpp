@@ -173,7 +173,7 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
     auto isLPToken = [&](STAmount const& amount) -> bool {
         if (auto const sle =
                 ctx.view.read(keylet::account(amount.issue().account)))
-            return (sle->getFlags() & lsfAMM);
+            return sle->isFieldPresent(sfAMMID);
         return false;
     };
 
@@ -186,14 +186,13 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
 
     // Disallow AMM if the issuer has clawback enabled
     auto clawbackDisabled = [&](Issue const& issue) -> TER {
-        if (!isXRP(issue))
-        {
-            if (auto const sle = ctx.view.read(keylet::account(issue.account));
-                !sle)
-                return tecINTERNAL;
-            else if (sle->getFlags() & lsfAllowTrustLineClawback)
-                return tecNO_PERMISSION;
-        }
+        if (isXRP(issue))
+            return tesSUCCESS;
+        if (auto const sle = ctx.view.read(keylet::account(issue.account));
+            !sle)
+            return tecINTERNAL;
+        else if (sle->getFlags() & lsfAllowTrustLineClawback)
+            return tecNO_PERMISSION;
         return tesSUCCESS;
     };
 
@@ -262,7 +261,7 @@ applyCreate(
     // A user can only receive LPTokens through affirmative action -
     // either an AMMDeposit, TrustSet, crossing an offer, etc.
     sleAMMRoot->setFieldU32(
-        sfFlags, lsfAMM | lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth);
+        sfFlags, lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth);
     // Link the root account and AMM object
     sleAMMRoot->setFieldH256(sfAMMID, ammKeylet.key);
     sb.insert(sleAMMRoot);

@@ -151,7 +151,7 @@ SetTrust::preclaim(PreclaimContext const& ctx)
         if (!sleDst)
             return tecNO_DST;
 
-        if (sleDst->getFlags() & lsfAMM &&
+        if (sleDst->isFieldPresent(sfAMMID) &&
             !ctx.view.read(keylet::line(id, uDstAccountID, currency)))
         {
             if (auto const ammSle =
@@ -547,10 +547,6 @@ SetTrust::doApply()
             uQualityIn,
             uQualityOut,
             viewJ);
-
-        // Maintain number of AMM trustlines in AMM root account
-        if (terResult == tesSUCCESS && (sleDst->getFlags() & lsfAMM))
-            adjustOwnerCount(view(), sleDst, 1, j_);
     }
 
     return terResult;

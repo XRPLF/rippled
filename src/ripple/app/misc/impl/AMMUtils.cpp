@@ -251,7 +251,7 @@ deleteAMMAccount(
 
     if (auto const ter =
             deleteAMMTrustLines(sb, ammAccountID, maxDeletableAMMTrustLines, j);
-        ter != tesSUCCESS || ter == tecINCOMPLETE)
+        ter != tesSUCCESS)
         return ter;
 
     auto const ownerDirKeylet = keylet::ownerDir(ammAccountID);

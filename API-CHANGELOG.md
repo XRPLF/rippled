@@ -55,7 +55,7 @@ Additions are intended to be non-breaking (because they are purely additive).
     - Adds `AMMVote` transaction type to vote for the trading fee of `AMM` instance.
     - Adds `AMMBid` transaction type to bid for the Auction Slot of `AMM` instance.
     - Adds `AMMDelete` transaction type to delete `AMM` instance.
-    - Adds `lsfAMM` `AccountRoot` flag to indicate that the account is `AMM`'s account.
+    - Adds `sfAMMID` to `AccountRoot` to indicate that the account is `AMM`'s account. `AMMID` is used to fetch `ltAMM`.
     - Adds `lsfAMMNode` `TrustLine` flag to indicate that one side of the `TrustLine` is `AMM` account.
     - Adds `tfLPToken`, `tfSingleAsset`, `tfTwoAsset`, `tfOneAssetLPToken`, `tfLimitLPToken`, `tfTwoAssetIfEmpty`,
       `tfWithdrawAll`, `tfOneAssetWithdrawAll` which allow a trader to specify different fields combination 

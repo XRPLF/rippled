@@ -67,6 +67,7 @@ class AMM
     STAmount const asset2_;
     IOUAmount const initialLPTokens_;
     bool log_;
+    bool doClose_;
     // Predict next purchase price
     IOUAmount lastPurchasePrice_;
     std::optional<IOUAmount> bidMin_;
@@ -291,6 +292,18 @@ public:
     ammDelete(
         AccountID const& deleter,
         std::optional<ter> const& ter = std::nullopt);
+
+    void
+    setClose(bool close)
+    {
+        doClose_ = close;
+    }
+
+    uint256
+    ammID() const
+    {
+        return keylet::amm(asset1_.issue(), asset2_.issue()).key;
+    }
 
 private:
     void

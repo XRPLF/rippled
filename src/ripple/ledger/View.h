@@ -462,7 +462,7 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account);
  * Used for a regular and AMM accounts deletion. The caller
  * has to provide the deleter function, which handles details of
  * specific account-owned object deletion.
- * @return tesINCOMPLETE indicates maxNodesToDelete
+ * @return tecINCOMPLETE indicates maxNodesToDelete
  * are deleted and there remains more nodes to delete.
  */
 [[nodiscard]] TER
