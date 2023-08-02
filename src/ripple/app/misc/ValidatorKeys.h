@@ -36,9 +36,30 @@ class Config;
 class ValidatorKeys
 {
 public:
-    std::optional<PublicKey> masterPublicKey;
-    std::optional<PublicKey> publicKey;
-    std::optional<SecretKey> secretKey;
+    // Group all keys in a struct. Either all keys are valid or none are.
+    struct Keys
+    {
+        PublicKey masterPublicKey;
+        PublicKey publicKey;
+        SecretKey secretKey;
+
+        Keys() = delete;
+        Keys(
+            SecretKey const& secret_,
+            PublicKey const& public_,
+            PublicKey const& masterPublic_
+            )
+            : masterPublicKey(masterPublic_)
+            , publicKey(public_)
+            , secretKey(secret_)
+        { }
+    };
+
+    // Note: The existence of keys cannot be used as a proxy for checking the
+    // validity of a configuration. It is possible to have a valid
+    // configuration while not setting the keys, as per the constructor of
+    // the ValidatorKeys class.
+    std::optional<Keys> keys;
     NodeID nodeID;
     std::string manifest;
     std::uint32_t sequence = 0;
@@ -50,6 +71,33 @@ public:
     configInvalid() const
     {
         return configInvalid_;
+    }
+
+    // Note: prefer the use of getter functions. If a const& is required for
+    // the publicKey, then the data member is accessed directly. An example
+    // is used in ApplicationImp::getValidationPublicKey()
+    std::optional<PublicKey const> getPublicKey() const
+    {
+        if (keys)
+            return keys->publicKey;
+
+        return {};
+    }
+
+    std::optional<PublicKey const> getMasterPublicKey() const
+    {
+        if (keys)
+            return keys->masterPublicKey;
+
+        return {};
+    }
+
+    std::optional<SecretKey const> getSecretKey() const
+    {
+        if (keys)
+            return keys->secretKey;
+
+        return {};
     }
 
 private:

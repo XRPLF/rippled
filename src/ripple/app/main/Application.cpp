@@ -593,9 +593,12 @@ public:
     PublicKey const&
     getValidationPublicKey() const override
     {
-        if (!validatorKeys_.publicKey)
+        if (!validatorKeys_.getPublicKey())
             return PublicKey::emptyPubKey;
-        return *validatorKeys_.publicKey;
+
+        // do not use the getter function from ValidatorKeys class because
+        // const& is returned from this function
+        return validatorKeys_.keys->publicKey;
     }
 
     NetworkOPs&
@@ -1198,7 +1201,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         return false;
     }
 
-    if (validatorKeys_.publicKey)
+    if (validatorKeys_.getPublicKey().has_value())
         setMaxDisallowedLedger();
 
     // Configure the amendments the server supports
@@ -1326,8 +1329,8 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
             // ValidatorKeys object.
 
             PublicKey localSigningKey = PublicKey::emptyPubKey;
-            if (validatorKeys_.publicKey)
-                localSigningKey = *validatorKeys_.publicKey;
+            if (validatorKeys_.getPublicKey())
+                localSigningKey = *validatorKeys_.getPublicKey();
 
             // Setup trusted validators
             if (!validators_->load(
