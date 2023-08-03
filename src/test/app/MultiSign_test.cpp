@@ -1156,7 +1156,7 @@ public:
                 "fails local checks: Cannot both single- and multi-sign.");
         }
         {
-            // Multisign but invalidate one of the signatures.
+            // Multisign but invalidate an secp signature.
             JTx tx = env.jt(noop(alice), fee(2 * baseFee), msig(bogie));
             STTx local = *(tx.stx);
             // Flip some bits in the signature.
@@ -1168,7 +1168,24 @@ public:
             auto const info = submitSTTx(local);
             BEAST_EXPECT(
                 info[jss::result][jss::error_exception].asString().find(
-                    "Invalid signature on account r") != std::string::npos);
+                    "Invalid signature on account "
+                    "rXZVaSDvesEDh9bstf6Vw36XKGi7B35kw") != std::string::npos);
+        }
+        {
+            // Multisign but invalidate an Edwards signature.
+            JTx tx = env.jt(noop(alice), fee(2 * baseFee), msig(demon));
+            STTx local = *(tx.stx);
+            // Flip some bits in the signature.
+            auto& signer = local.peekFieldArray(sfSigners).back();
+            auto badSig = signer.getFieldVL(sfTxnSignature);
+            badSig[20] ^= 0xAA;
+            signer.setFieldVL(sfTxnSignature, badSig);
+            // Signature should fail.
+            auto const info = submitSTTx(local);
+            BEAST_EXPECT(
+                info[jss::result][jss::error_exception].asString().find(
+                    "Invalid signature on account "
+                    "rLEo9qLmgdy2kKw94zoeKk2mXjSxFiG4gD") != std::string::npos);
         }
         {
             // Multisign with an empty signers array should fail.
@@ -1662,6 +1679,113 @@ public:
     }
 
     void
+    test_batchCorruptSig(FeatureBitset features)
+    {
+        testcase("Batch Corrupt Signature");
+
+        // Multisign with mixed ed25519 and secp256k1 signatures.  Make one
+        // entry at a time corrupt.  Make sure the correct signature is
+        // identified.
+        using namespace jtx;
+
+        Env env{*this, features};
+
+        // lambda that submits an STTx and returns the resulting JSON.
+        auto submitSTTx = [&env](STTx const& stx) {
+            Json::Value jvResult;
+            jvResult[jss::tx_blob] = strHex(stx.getSerializer().slice());
+            return env.rpc("json", "submit", to_string(jvResult));
+        };
+
+        Account const alice{"alice"};
+        env.fund(XRP(1000), alice);
+        env(signers(
+                alice,
+                8,
+                {{bogie, 1},
+                 {demon, 1},
+                 {ghost, 1},
+                 {haunt, 1},
+                 {jinni, 1},
+                 {phase, 1},
+                 {shade, 1},
+                 {spook, 1}}),
+            sig(alice));
+
+        auto const baseFee = env.current()->fees().base;
+
+        JTx tx = env.jt(
+            noop(alice),
+            fee(9 * baseFee),
+            msig(bogie, demon, ghost, haunt, jinni, phase, shade, spook));
+        STTx local = *(tx.stx);
+
+        for (std::size_t i = 0; i < 8; ++i)
+        {
+            STObject& signer = local.peekFieldArray(sfSigners)[i];
+            {
+                // Turn the public key into an unrecognized type.
+                Blob const goodPubKey = signer.getFieldVL(sfSigningPubKey);
+                Blob unknownPubKey = goodPubKey;
+                unknownPubKey[0] = 0xAA;
+                signer.setFieldVL(sfSigningPubKey, unknownPubKey);
+
+                // Signature should fail.
+                Json::Value const info = submitSTTx(local);
+                BEAST_EXPECT(
+                    info[jss::result][jss::error_exception].asString().find(
+                        std::string("fails local checks: "
+                                    "Internal signature check failure.")) !=
+                    std::string::npos);
+
+                // Repair the public key before continuing.
+                signer.setFieldVL(sfSigningPubKey, goodPubKey);
+            }
+            {
+                // Flip some bits inside the public key.
+                Blob const goodPubKey = signer.getFieldVL(sfSigningPubKey);
+                Blob unknownPubKey = goodPubKey;
+                unknownPubKey[5] ^= 0x55;
+                signer.setFieldVL(sfSigningPubKey, unknownPubKey);
+
+                // Signature should fail.
+                Json::Value const info = submitSTTx(local);
+                BEAST_EXPECT(
+                    info[jss::result][jss::error_exception].asString().find(
+                        std::string("fails local checks: "
+                                    "Invalid signature on account ") +
+                        toBase58(signer.getAccountID(sfAccount))) !=
+                    std::string::npos);
+
+                // Repair the public key before continuing.
+                signer.setFieldVL(sfSigningPubKey, goodPubKey);
+            }
+            {
+                // Flip some bits in the signature.
+                Blob const goodSig = signer.getFieldVL(sfTxnSignature);
+                Blob flippedBitsSig = goodSig;
+                flippedBitsSig[20] ^= 0xAA;
+                signer.setFieldVL(sfTxnSignature, flippedBitsSig);
+
+                // Signature should fail.
+                Json::Value const info = submitSTTx(local);
+                BEAST_EXPECT(
+                    info[jss::result][jss::error_exception].asString().find(
+                        std::string("Invalid signature on account ") +
+                        toBase58(signer.getAccountID(sfAccount))) !=
+                    std::string::npos);
+
+                // Repair the signature before continuing.
+                signer.setFieldVL(sfTxnSignature, goodSig);
+            }
+        }
+        // If there are no corrupt signatures the transaction should succeed.
+        auto const info = submitSTTx(local);
+        BEAST_EXPECT(
+            info[jss::engine_result].asString().find(transToken(tesSUCCESS)));
+    }
+
+    void
     testAll(FeatureBitset features)
     {
         test_noReserve(features);
@@ -1682,6 +1806,7 @@ public:
         test_signForHash(features);
         test_signersWithTickets(features);
         test_signersWithTags(features);
+        test_batchCorruptSig(features);
     }
 
     void

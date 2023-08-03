@@ -177,7 +177,7 @@ ed25519Canonical(Slice const& sig)
 PublicKey::PublicKey(Slice const& slice)
 {
     if (!publicKeyType(slice))
-        LogicError("PublicKey::PublicKey invalid type");
+        Throw<std::runtime_error>("unknown PublicKey type");
     size_ = slice.size();
     std::memcpy(buf_, slice.data(), size_);
 }
@@ -297,6 +297,111 @@ verify(
         }
     }
     return false;
+}
+
+std::vector<VerifyResult>
+verifyBatch(std::vector<VerifyBatchData> const& data, bool mustBeFullyCanonical)
+{
+    using enum VerifyResult;
+    // Initialize our results to all unexamined.
+    std::vector<VerifyResult> result(data.size(), sigUnexamined);
+
+    // Make places to save the data about ed25519 signatures so they can be
+    // batch verified.  Batch verification of ed25519 signatures has this
+    // interface:
+    //
+    // int ed25519_sign_open_batch(
+    //    const unsigned char **m,
+    //    size_t *mlen,
+    //    const unsigned char **pk,
+    //    const unsigned char **RS,
+    //    size_t num,
+    //    int *valid)
+    //
+    // So we need to fill in several vectors of pointers.
+    std::vector<unsigned char const*> messagesEd;
+    std::vector<size_t> messagesSizesEd;
+    std::vector<unsigned char const*> publicKeysEd;
+    std::vector<unsigned char const*> signaturesEd;
+    std::vector<VerifyResult*> verifyResultEd;
+
+    messagesEd.reserve(data.size());
+    messagesSizesEd.reserve(data.size());
+    publicKeysEd.reserve(data.size());
+    signaturesEd.reserve(data.size());
+    verifyResultEd.reserve(data.size());
+
+    // Walk the passed in data.
+    for (std::size_t i = 0; i < data.size(); ++i)
+    {
+        std::optional<KeyType> const type = publicKeyType(data[i].pubKey);
+        if (!type)
+        {
+            // If it's not a signature type we recognize then it's invalid.
+            result[i] = sigInvalid;
+            return result;
+        }
+        else if (*type == KeyType::secp256k1)
+        {
+            // If the type is secp256k1, directly call verify.
+            bool const valid = verify(
+                data[i].pubKey,
+                data[i].message.slice(),
+                makeSlice(data[i].signature),
+                mustBeFullyCanonical);
+
+            result[i] = valid ? sigValid : sigInvalid;
+            if (!valid)
+                return result;
+        }
+        else if (*type == KeyType::ed25519)
+        {
+            // If the type is ed25519, then include it in the vectors
+            // that will be sent to the batch function later.
+            messagesEd.push_back(data[i].message.peekData().data());
+            messagesSizesEd.push_back(data[i].message.size());
+            // The +1 on the data pointer skips the leading 0xED.
+            publicKeysEd.push_back(data[i].pubKey.data() + 1);
+            signaturesEd.push_back(data[i].signature.data());
+            verifyResultEd.push_back(&result[i]);
+        }
+        else
+        {
+            // If it is neither secp256k1 nor ed25519 then it's invalid.
+            result[i] = sigInvalid;
+            return result;
+        }
+    }
+    // If there are no ed25519 signatures, then we're done.
+    if (verifyResultEd.empty())
+        return result;
+
+    // Batch verify the ed25519 signatures since it can save us some time.
+    std::vector<int> validSigsEd(messagesEd.size(), 0);
+    try
+    {
+        ed25519_sign_open_batch(
+            messagesEd.data(),
+            messagesSizesEd.data(),
+            publicKeysEd.data(),
+            signaturesEd.data(),
+            messagesEd.size(),
+            validSigsEd.data());
+    }
+    catch (std::exception const&)
+    {
+        // We don't expect any exceptions, so this code should never execute.
+        // We don't know which signature is bad.  Mark the first ED as invalid.
+        *verifyResultEd[0] = sigInvalid;
+        return result;
+    }
+
+    // Return the ed25519 results;
+    for (std::size_t i = 0; i < validSigsEd.size(); ++i)
+    {
+        *verifyResultEd[i] = validSigsEd[i] == 0 ? sigInvalid : sigValid;
+    }
+    return result;
 }
 
 NodeID

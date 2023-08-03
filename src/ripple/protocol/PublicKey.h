@@ -259,6 +259,33 @@ verify(
     Slice const& sig,
     bool mustBeFullyCanonical = true) noexcept;
 
+/** Data passed to verifyBatch */
+struct VerifyBatchData
+{
+    PublicKey pubKey;
+    Serializer message;
+    Blob signature;
+
+    explicit VerifyBatchData(PublicKey const& publicKey) : pubKey(publicKey)
+    {
+    }
+};
+
+/** Result returned from verifyBatch */
+enum class VerifyResult { sigUnexamined = 0, sigValid, sigInvalid };
+
+/** Verify a batch of signatures.
+    There are substantial speedups from doing batch verification of
+    Ed25519 signatures.  There is no speedup with secp256k1 signatures,
+    but also no penalty.
+
+    The returned vector has the same size() as the passed in data.
+*/
+[[nodiscard]] std::vector<VerifyResult>
+verifyBatch(
+    std::vector<VerifyBatchData> const& data,
+    bool mustBeFullyCanonical = true);
+
 /** Calculate the 160-bit node ID from a node public key. */
 NodeID
 calcNodeID(PublicKey const&);
