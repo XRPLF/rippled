@@ -60,6 +60,15 @@ Additions are intended to be non-breaking (because they are purely additive).
     - Adds `tfLPToken`, `tfSingleAsset`, `tfTwoAsset`, `tfOneAssetLPToken`, `tfLimitLPToken`, `tfTwoAssetIfEmpty`,
       `tfWithdrawAll`, `tfOneAssetWithdrawAll` which allow a trader to specify different fields combination 
       for `AMMDeposit` and `AMMWithdraw` transactions.
+    - Adds new transaction result codes:
+       - tecUNFUNDED_AMM: insufficient balance to fund AMM. The account does not have funds for liquidity provision.
+       -  tecAMM_BALANCE: AMM has invalid balance. Calculated balances greater than the current pool balances.
+       -  tecAMM_FAILED: AMM transaction failed. Fails due to a processing failure.
+       -  tecAMM_INVALID_TOKENS: AMM invalid LP tokens. Invalid input values, format, or calculated values.
+       -  tecAMM_EMPTY: AMM is in empty state. Transaction expects AMM in non-empty state (LP tokens > 0).
+       -  tecAMM_NOT_EMPTY: AMM is not in empty state. Transaction expects AMM in empty state (LP tokens == 0).
+       -  tecAMM_ACCOUNT: AMM account. Clawback of AMM account.
+       -  tecINCOMPLETE: Some work was completed, but more submissions required to finish. AMMDelete partially deletes the trustlines.
 
 ## XRP Ledger version 1.11.0
 

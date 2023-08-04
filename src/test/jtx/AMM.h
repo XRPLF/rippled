@@ -65,6 +65,7 @@ class AMM
     Account const creatorAccount_;
     STAmount const asset1_;
     STAmount const asset2_;
+    uint256 const ammID_;
     IOUAmount const initialLPTokens_;
     bool log_;
     bool doClose_;
@@ -302,7 +303,7 @@ public:
     uint256
     ammID() const
     {
-        return keylet::amm(asset1_.issue(), asset2_.issue()).key;
+        return ammID_;
     }
 
 private:

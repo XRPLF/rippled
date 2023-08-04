@@ -62,6 +62,7 @@ AMM::AMM(
     , creatorAccount_(account)
     , asset1_(asset1)
     , asset2_(asset2)
+    , ammID_(keylet::amm(asset1_.issue(), asset2_.issue()).key)
     , initialLPTokens_(initialTokens(asset1, asset2))
     , log_(log)
     , doClose_(true)

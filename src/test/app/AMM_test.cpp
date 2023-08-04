@@ -4409,6 +4409,7 @@ private:
     void
     testAMMID()
     {
+        testcase("AMMID");
         using namespace jtx;
         testAMM([&](AMM& amm, Env& env) {
             amm.setClose(false);
