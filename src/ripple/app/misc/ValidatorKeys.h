@@ -73,33 +73,6 @@ public:
         return configInvalid_;
     }
 
-    // Note: prefer the use of getter functions. If a const& is required for
-    // the publicKey, then the data member is accessed directly. An example
-    // is used in ApplicationImp::getValidationPublicKey()
-    std::optional<PublicKey const> getPublicKey() const
-    {
-        if (keys)
-            return keys->publicKey;
-
-        return {};
-    }
-
-    std::optional<PublicKey const> getMasterPublicKey() const
-    {
-        if (keys)
-            return keys->masterPublicKey;
-
-        return {};
-    }
-
-    std::optional<SecretKey const> getSecretKey() const
-    {
-        if (keys)
-            return keys->secretKey;
-
-        return {};
-    }
-
 private:
     bool configInvalid_ = false;  //< Set to true if config was invalid
 };
