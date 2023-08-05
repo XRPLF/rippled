@@ -560,7 +560,6 @@ transactionConstructImpl(
 
     // Turn the passed in STTx into a Transaction.
     auto tpTrans = std::make_shared<Transaction>(stpTrans);
-    assert(tpTrans);
 
     try
     {
