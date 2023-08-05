@@ -117,7 +117,6 @@ doSubmit(RPC::JsonContext& context)
     }
 
     auto tpTrans = std::make_shared<Transaction>(stpTrans);
-    assert(tpTrans);
 
     try
     {
