@@ -22,6 +22,8 @@
 
 #include <ripple/shamap/SHAMapTreeNode.h>
 
+#include <array>
+#include <bit>
 #include <cstdint>
 #include <optional>
 
@@ -222,7 +224,7 @@ popcnt16(std::uint16_t a)
 {
 #if __cpp_lib_bitops
     return std::popcount(a);
-#else if defined(__clang__) || defined(__GNUC__)
+#elif defined(__clang__) || defined(__GNUC__)
     return __builtin_popcount(a);
 #else
     // fallback to table lookup
