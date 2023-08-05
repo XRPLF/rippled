@@ -74,6 +74,7 @@ target_sources (xrpl_core PRIVATE
       subdir: protocol
   #]===============================]
   src/ripple/protocol/impl/AccountID.cpp
+  src/ripple/protocol/impl/AMMCore.cpp
   src/ripple/protocol/impl/Book.cpp
   src/ripple/protocol/impl/BuildInfo.cpp
   src/ripple/protocol/impl/ErrorCodes.cpp
@@ -81,10 +82,12 @@ target_sources (xrpl_core PRIVATE
   src/ripple/protocol/impl/Indexes.cpp
   src/ripple/protocol/impl/InnerObjectFormats.cpp
   src/ripple/protocol/impl/Issue.cpp
+  src/ripple/protocol/impl/STIssue.cpp
   src/ripple/protocol/impl/Keylet.cpp
   src/ripple/protocol/impl/LedgerFormats.cpp
   src/ripple/protocol/impl/PublicKey.cpp
   src/ripple/protocol/impl/Quality.cpp
+  src/ripple/protocol/impl/QualityFunction.cpp
   src/ripple/protocol/impl/Rate2.cpp
   src/ripple/protocol/impl/Rules.cpp
   src/ripple/protocol/impl/SField.cpp
@@ -223,6 +226,7 @@ install (
 install (
   FILES
     src/ripple/protocol/AccountID.h
+    src/ripple/protocol/AMMCore.h
     src/ripple/protocol/AmountConversions.h
     src/ripple/protocol/Book.h
     src/ripple/protocol/BuildInfo.h
@@ -239,12 +243,14 @@ install (
     src/ripple/protocol/Protocol.h
     src/ripple/protocol/PublicKey.h
     src/ripple/protocol/Quality.h
+    src/ripple/protocol/QualityFunction.h
     src/ripple/protocol/Rate.h
     src/ripple/protocol/Rules.h
     src/ripple/protocol/SField.h
     src/ripple/protocol/SOTemplate.h
     src/ripple/protocol/STAccount.h
     src/ripple/protocol/STAmount.h
+    src/ripple/protocol/STIssue.h
     src/ripple/protocol/STArray.h
     src/ripple/protocol/STBase.h
     src/ripple/protocol/STBitString.h
@@ -423,6 +429,8 @@ target_sources (rippled PRIVATE
   src/ripple/app/reporting/ReportingETL.cpp
   src/ripple/app/reporting/ETLSource.cpp
   src/ripple/app/reporting/P2pProxy.cpp
+  src/ripple/app/misc/impl/AMMHelpers.cpp
+  src/ripple/app/misc/impl/AMMUtils.cpp
   src/ripple/app/misc/CanonicalTXSet.cpp
   src/ripple/app/misc/FeeVoteImpl.cpp
   src/ripple/app/misc/HashRouter.cpp
@@ -448,6 +456,8 @@ target_sources (rippled PRIVATE
   src/ripple/app/paths/RippleCalc.cpp
   src/ripple/app/paths/RippleLineCache.cpp
   src/ripple/app/paths/TrustLine.cpp
+  src/ripple/app/paths/impl/AMMLiquidity.cpp
+  src/ripple/app/paths/impl/AMMOffer.cpp
   src/ripple/app/paths/impl/BookStep.cpp
   src/ripple/app/paths/impl/DirectStep.cpp
   src/ripple/app/paths/impl/PaySteps.cpp
@@ -464,6 +474,11 @@ target_sources (rippled PRIVATE
   src/ripple/app/rdb/impl/UnitaryShard.cpp
   src/ripple/app/rdb/impl/Vacuum.cpp
   src/ripple/app/rdb/impl/Wallet.cpp
+  src/ripple/app/tx/impl/AMMBid.cpp
+  src/ripple/app/tx/impl/AMMCreate.cpp
+  src/ripple/app/tx/impl/AMMDeposit.cpp
+  src/ripple/app/tx/impl/AMMVote.cpp
+  src/ripple/app/tx/impl/AMMWithdraw.cpp
   src/ripple/app/tx/impl/ApplyContext.cpp
   src/ripple/app/tx/impl/BookTip.cpp
   src/ripple/app/tx/impl/CancelCheck.cpp
@@ -629,6 +644,7 @@ target_sources (rippled PRIVATE
   src/ripple/rpc/handlers/AccountObjects.cpp
   src/ripple/rpc/handlers/AccountOffers.cpp
   src/ripple/rpc/handlers/AccountTx.cpp
+  src/ripple/rpc/handlers/AMMInfo.cpp
   src/ripple/rpc/handlers/BlackList.cpp
   src/ripple/rpc/handlers/BookOffers.cpp
   src/ripple/rpc/handlers/CanDelete.cpp
@@ -735,6 +751,9 @@ if (tests)
     src/test/app/AccountDelete_test.cpp
     src/test/app/AccountTxPaging_test.cpp
     src/test/app/AmendmentTable_test.cpp
+    src/test/app/AMM_test.cpp
+    src/test/app/AMMCalc_test.cpp
+    src/test/app/AMMExtended_test.cpp
     src/test/app/Check_test.cpp
     src/test/app/Clawback_test.cpp
     src/test/app/CrossingLimits_test.cpp
@@ -877,9 +896,12 @@ if (tests)
     src/test/jtx/Env_test.cpp
     src/test/jtx/WSClient_test.cpp
     src/test/jtx/impl/Account.cpp
+    src/test/jtx/impl/AMM.cpp
+    src/test/jtx/impl/AMMTest.cpp
     src/test/jtx/impl/Env.cpp
     src/test/jtx/impl/JSONRPCClient.cpp
     src/test/jtx/impl/ManualTimeKeeper.cpp
+    src/test/jtx/impl/TestHelpers.cpp
     src/test/jtx/impl/WSClient.cpp
     src/test/jtx/impl/acctdelete.cpp
     src/test/jtx/impl/account_txn_id.cpp
@@ -995,6 +1017,7 @@ if (tests)
     src/test/rpc/AccountSet_test.cpp
     src/test/rpc/AccountTx_test.cpp
     src/test/rpc/AmendmentBlocked_test.cpp
+    src/test/rpc/AMMInfo_test.cpp
     src/test/rpc/Book_test.cpp
     src/test/rpc/DepositAuthorized_test.cpp
     src/test/rpc/DeliveredAmount_test.cpp

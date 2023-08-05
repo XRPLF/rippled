@@ -710,6 +710,12 @@ STObject::setFieldAmount(SField const& field, STAmount const& v)
 }
 
 void
+STObject::setFieldIssue(SField const& field, STIssue const& v)
+{
+    setFieldUsingAssignment(field, v);
+}
+
+void
 STObject::setFieldPathSet(SField const& field, STPathSet const& v)
 {
     setFieldUsingAssignment(field, v);

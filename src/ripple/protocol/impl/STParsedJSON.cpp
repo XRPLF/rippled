@@ -29,6 +29,7 @@
 #include <ripple/protocol/STBitString.h>
 #include <ripple/protocol/STBlob.h>
 #include <ripple/protocol/STInteger.h>
+#include <ripple/protocol/STIssue.h>
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/protocol/STPathSet.h>
 #include <ripple/protocol/STVector256.h>
@@ -730,6 +731,17 @@ parseLeaf(
         }
         break;
 
+        case STI_ISSUE:
+            try
+            {
+                ret = detail::make_stvar<STIssue>(issueFromJson(field, value));
+            }
+            catch (std::exception const&)
+            {
+                error = invalid_data(json_name, fieldName);
+                return ret;
+            }
+            break;
         default:
             error = bad_type(json_name, fieldName);
             return ret;

@@ -344,6 +344,39 @@ doLedgerEntry(RPC::JsonContext& context)
             jvResult[jss::error] = "malformedRequest";
         }
     }
+    else if (context.params.isMember(jss::amm))
+    {
+        expectedType = ltAMM;
+        if (!context.params[jss::amm].isObject())
+        {
+            if (!uNodeIndex.parseHex(context.params[jss::amm].asString()))
+            {
+                uNodeIndex = beast::zero;
+                jvResult[jss::error] = "malformedRequest";
+            }
+        }
+        else if (
+            !context.params[jss::amm].isMember(jss::asset) ||
+            !context.params[jss::amm].isMember(jss::asset2))
+        {
+            jvResult[jss::error] = "malformedRequest";
+        }
+        else
+        {
+            try
+            {
+                auto const issue =
+                    issueFromJson(context.params[jss::amm][jss::asset]);
+                auto const issue2 =
+                    issueFromJson(context.params[jss::amm][jss::asset2]);
+                uNodeIndex = keylet::amm(issue, issue2).key;
+            }
+            catch (std::runtime_error const&)
+            {
+                jvResult[jss::error] = "malformedRequest";
+            }
+        }
+    }
     else
     {
         if (context.params.isMember("params") &&

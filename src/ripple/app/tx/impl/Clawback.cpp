@@ -65,8 +65,10 @@ Clawback::preclaim(PreclaimContext const& ctx)
 
     std::uint32_t const issuerFlagsIn = sleIssuer->getFieldU32(sfFlags);
 
-    // If AllowClawback is not set or NoFreeze is set, return no permission
-    if (!(issuerFlagsIn & lsfAllowClawback) || (issuerFlagsIn & lsfNoFreeze))
+    // If AllowTrustLineClawback is not set or NoFreeze is set, return no
+    // permission
+    if (!(issuerFlagsIn & lsfAllowTrustLineClawback) ||
+        (issuerFlagsIn & lsfNoFreeze))
         return tecNO_PERMISSION;
 
     auto const sleRippleState =
