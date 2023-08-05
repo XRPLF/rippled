@@ -147,7 +147,7 @@ public:
      * @return Whether transaction is being applied within a batch.
      */
     bool
-    getApplying()
+    getApplying() const
     {
         return applying_;
     }
