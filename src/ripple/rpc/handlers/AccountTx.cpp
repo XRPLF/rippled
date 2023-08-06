@@ -335,7 +335,7 @@ populateJsonResponse(
                         insertDeliveredAmount(
                             jvObj[jss::meta], context, txn, *txnMeta);
                         insertNFTSyntheticInJson(
-                            jvObj, context, txn->getSTransaction(), *txnMeta);
+                            jvObj, context, txn->getSerializedTx(), *txnMeta);
                     }
                 }
             }
