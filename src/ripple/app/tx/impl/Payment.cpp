@@ -373,7 +373,7 @@ Payment::doApply()
                     return tecNO_PERMISSION;
             }
         }
-        
+
         path::RippleCalc::Input rcInput;
         rcInput.partialPaymentAllowed = partialPaymentAllowed;
         rcInput.defaultPathsAllowed = defaultPathsAllowed;
