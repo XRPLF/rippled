@@ -281,7 +281,7 @@ initializeFeeAuctionVote(
     STObject voteEntry{sfVoteEntry};
     if (tfee != 0)
         voteEntry.setFieldU16(sfTradingFee, tfee);
-    voteEntry.setFieldU32(sfVoteWeight, 100000);
+    voteEntry.setFieldU32(sfVoteWeight, VOTE_WEIGHT_SCALE_FACTOR);
     voteEntry.setAccountID(sfAccount, account);
     voteSlots.push_back(voteEntry);
     ammSle->setFieldArray(sfVoteSlots, voteSlots);

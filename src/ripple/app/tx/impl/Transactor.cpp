@@ -950,7 +950,7 @@ Transactor::operator()()
 
         if (result == tecINCOMPLETE)
             removeDeletedTrustLines(
-                view(), removedTrustLines, ctx_.app.journal("view"));
+                view(), removedTrustLines, ctx_.app.journal("View"));
 
         applied = isTecClaim(result);
     }

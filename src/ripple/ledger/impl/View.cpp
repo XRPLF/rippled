@@ -1557,7 +1557,7 @@ cleanupOnAccountDelete(
     std::shared_ptr<SLE> sleDirNode{};
     unsigned int uDirEntry{0};
     uint256 dirEntry{beast::zero};
-    std::uint16_t deleted = 0;
+    std::uint32_t deleted = 0;
 
     if (view.exists(ownerDirKeylet) &&
         dirFirst(view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry))
