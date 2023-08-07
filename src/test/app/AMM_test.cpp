@@ -4133,6 +4133,341 @@ private:
     }
 
     void
+    testSelection()
+    {
+        testcase("Offer/Strand Selection");
+        using namespace jtx;
+        Account const ed("ed");
+        Account const gw1("gw1");
+        auto const ETH = gw1["ETH"];
+        auto const CAN = gw1["CAN"];
+
+        auto prep = [&](Env& env, auto gwRate, auto gw1Rate) {
+            fund(env, gw, {alice, carol, bob, ed}, XRP(2'000), {USD(2'000)});
+            env.fund(XRP(2'000), gw1);
+            fund(
+                env,
+                gw1,
+                {alice, carol, bob, ed},
+                {ETH(2'000), CAN(2'000)},
+                Fund::IOUOnly);
+            env(rate(gw, gwRate));
+            env(rate(gw1, gw1Rate));
+            env.close();
+        };
+
+        for (auto const& rates :
+             {std::make_pair(1.5, 1.9), std::make_pair(1.9, 1.5)})
+        {
+            // Offer Selection
+
+            // Cross-currency payment: AMM has the same spot price quality
+            // as CLOB's offer and can't generate a better quality offer.
+            // The transfer fee in this case doesn't change the CLOB quality
+            // because trIn is ignored on adjustment and trOut on payment is
+            // also ignored because ownerPaysTransferFee is false in this case.
+            // Run test for 0) offer, 1) AMM, 2) offer and AMM
+            // to verify that the quality is better in the first case,
+            // and CLOB is selected in the second case.
+            {
+                std::array<Quality, 3> q;
+                for (auto i = 0; i < 3; ++i)
+                {
+                    Env env(*this);
+                    prep(env, rates.first, rates.second);
+                    std::shared_ptr<AMM> amm;
+                    if (i == 0 || i == 2)
+                    {
+                        env(offer(ed, ETH(400), USD(400)), txflags(tfPassive));
+                        env.close();
+                    }
+                    if (i > 0)
+                        amm = std::make_shared<AMM>(
+                            env, ed, USD(1'000), ETH(1'000));
+                    env(pay(carol, bob, USD(100)),
+                        path(~USD),
+                        sendmax(ETH(500)),
+                        txflags(tfPartialPayment));
+                    env.close();
+                    // CLOB and AMM, AMM is not selected
+                    if (i == 2)
+                    {
+                        BEAST_EXPECT(amm->expectBalances(
+                            USD(1'000), ETH(1'000), amm->tokens()));
+                    }
+                    BEAST_EXPECT(expectLine(env, bob, USD(2'100)));
+                    q[i] = Quality(Amounts{
+                        ETH(2'000) - env.balance(carol, ETH),
+                        env.balance(bob, USD) - USD(2'000)});
+                }
+                // CLOB is better quality than AMM
+                BEAST_EXPECT(q[0] > q[1]);
+                // AMM is not selected with CLOB
+                BEAST_EXPECT(q[0] == q[2]);
+            }
+            // Offer crossing: AMM has the same spot price quality
+            // as CLOB's offer and can't generate a better quality offer.
+            // The transfer fee in this case doesn't change the CLOB quality
+            // because the quality adjustment is ignored for the offer crossing.
+            for (auto i = 0; i < 3; ++i)
+            {
+                Env env(*this);
+                prep(env, rates.first, rates.second);
+                std::shared_ptr<AMM> amm;
+                if (i == 0 || i == 2)
+                {
+                    env(offer(ed, ETH(400), USD(400)), txflags(tfPassive));
+                    env.close();
+                }
+                if (i > 0)
+                    amm =
+                        std::make_shared<AMM>(env, ed, USD(1'000), ETH(1'000));
+                env(offer(alice, USD(400), ETH(400)));
+                env.close();
+                // AMM is not selected
+                if (i > 0)
+                {
+                    BEAST_EXPECT(amm->expectBalances(
+                        USD(1'000), ETH(1'000), amm->tokens()));
+                }
+                if (i == 0 || i == 2)
+                {
+                    // Fully crosses
+                    BEAST_EXPECT(expectOffers(env, ed, 0));
+                    BEAST_EXPECT(expectOffers(env, alice, 0));
+                }
+                // Fails to cross because AMM is not selected
+                else
+                {
+                    BEAST_EXPECT(expectOffers(
+                        env, alice, 1, {Amounts{USD(400), ETH(400)}}));
+                    BEAST_EXPECT(expectOffers(env, ed, 0));
+                }
+            }
+
+            // Show that the CLOB quality reduction
+            // results in AMM offer selection.
+
+            // Same as the payment but reduced offer quality
+            {
+                std::array<Quality, 3> q;
+                for (auto i = 0; i < 3; ++i)
+                {
+                    Env env(*this);
+                    prep(env, rates.first, rates.second);
+                    std::shared_ptr<AMM> amm;
+                    if (i == 0 || i == 2)
+                    {
+                        env(offer(ed, ETH(400), USD(300)), txflags(tfPassive));
+                        env.close();
+                    }
+                    if (i > 0)
+                        amm = std::make_shared<AMM>(
+                            env, ed, USD(1'000), ETH(1'000));
+                    env(pay(carol, bob, USD(100)),
+                        path(~USD),
+                        sendmax(ETH(500)),
+                        txflags(tfPartialPayment));
+                    env.close();
+                    // AMM and CLOB are selected
+                    if (i > 0)
+                    {
+                        BEAST_EXPECT(!amm->expectBalances(
+                            USD(1'000), ETH(1'000), amm->tokens()));
+                    }
+                    if (i == 2)
+                    {
+                        if (rates.first == 1.5)
+                        {
+                            BEAST_EXPECT(expectOffers(
+                                env,
+                                ed,
+                                1,
+                                {{Amounts{
+                                    STAmount{
+                                        ETH, UINT64_C(378'6327949540823), -13},
+                                    STAmount{
+                                        USD,
+                                        UINT64_C(283'9745962155617),
+                                        -13}}}}));
+                        }
+                        else
+                        {
+                            BEAST_EXPECT(expectOffers(
+                                env,
+                                ed,
+                                1,
+                                {{Amounts{
+                                    STAmount{
+                                        ETH, UINT64_C(325'299461620749), -12},
+                                    STAmount{
+                                        USD,
+                                        UINT64_C(243'9745962155617),
+                                        -13}}}}));
+                        }
+                    }
+                    BEAST_EXPECT(expectLine(env, bob, USD(2'100)));
+                    q[i] = Quality(Amounts{
+                        ETH(2'000) - env.balance(carol, ETH),
+                        env.balance(bob, USD) - USD(2'000)});
+                }
+                // AMM is better quality
+                BEAST_EXPECT(q[1] > q[0]);
+                // AMM and CLOB produce better quality
+                BEAST_EXPECT(q[2] > q[1]);
+            }
+
+            // Same as the offer-crossing but reduced offer quality
+            for (auto i = 0; i < 3; ++i)
+            {
+                Env env(*this);
+                prep(env, rates.first, rates.second);
+                std::shared_ptr<AMM> amm;
+                if (i == 0 || i == 2)
+                {
+                    env(offer(ed, ETH(400), USD(250)), txflags(tfPassive));
+                    env.close();
+                }
+                if (i > 0)
+                    amm =
+                        std::make_shared<AMM>(env, ed, USD(1'000), ETH(1'000));
+                env(offer(alice, USD(250), ETH(400)));
+                env.close();
+                // AMM is selected in both cases
+                if (i > 0)
+                {
+                    BEAST_EXPECT(!amm->expectBalances(
+                        USD(1'000), ETH(1'000), amm->tokens()));
+                }
+                // Partially crosses, AMM is selected, CLOB fails limitQuality
+                if (i == 2)
+                {
+                    if (rates.first == 1.5)
+                    {
+                        BEAST_EXPECT(expectOffers(
+                            env, ed, 1, {{Amounts{ETH(400), USD(250)}}}));
+                        BEAST_EXPECT(expectOffers(
+                            env,
+                            alice,
+                            1,
+                            {{Amounts{
+                                STAmount{USD, UINT64_C(40'5694150420947), -13},
+                                STAmount{ETH, UINT64_C(64'91106406735152), -14},
+                            }}}));
+                    }
+                    else
+                    {
+                        // Ed offer is partially crossed.
+                        BEAST_EXPECT(expectOffers(
+                            env,
+                            ed,
+                            1,
+                            {{Amounts{
+                                STAmount{ETH, UINT64_C(335'0889359326485), -13},
+                                STAmount{USD, UINT64_C(209'4305849579053), -13},
+                            }}}));
+                        BEAST_EXPECT(expectOffers(env, alice, 0));
+                    }
+                }
+            }
+
+            // Strand selection
+
+            // Two book steps strand quality is 1.
+            // AMM strand's best quality is equal to AMM's spot price
+            // quality, which is 1. Both strands (steps) are adjusted
+            // for the transfer fee in qualityUpperBound. In case
+            // of two strands, AMM offers have better quality and are consumed
+            // first, remaining liquidity is generated by CLOB offers.
+            // Liquidity from two strands is better in this case than in case
+            // of one strand with two book steps. Liquidity from one strand
+            // with AMM has better quality than either one strand with two book
+            // steps or two strands. It may appear unintuitive, but one strand
+            // with AMM is optimized and generates one AMM offer, while in case
+            // of two strands, multiple AMM offers are generated, which results
+            // in slightly worse overall quality.
+            {
+                std::array<Quality, 3> q;
+                for (auto i = 0; i < 3; ++i)
+                {
+                    Env env(*this);
+                    prep(env, rates.first, rates.second);
+                    std::shared_ptr<AMM> amm;
+
+                    if (i == 0 || i == 2)
+                    {
+                        env(offer(ed, ETH(400), CAN(400)), txflags(tfPassive));
+                        env(offer(ed, CAN(400), USD(400))), txflags(tfPassive);
+                        env.close();
+                    }
+
+                    if (i > 0)
+                        amm = std::make_shared<AMM>(
+                            env, ed, ETH(1'000), USD(1'000));
+
+                    env(pay(carol, bob, USD(100)),
+                        path(~USD),
+                        path(~CAN, ~USD),
+                        sendmax(ETH(600)),
+                        txflags(tfPartialPayment));
+                    env.close();
+
+                    BEAST_EXPECT(expectLine(env, bob, USD(2'100)));
+
+                    if (i == 2)
+                    {
+                        // Liquidity is consumed from AMM strand only
+                        if (rates.first == 1.5)
+                        {
+                            BEAST_EXPECT(amm->expectBalances(
+                                STAmount{ETH, UINT64_C(1'176'66038955758), -11},
+                                USD(850),
+                                amm->tokens()));
+                        }
+                        else
+                        {
+                            BEAST_EXPECT(amm->expectBalances(
+                                STAmount{
+                                    ETH, UINT64_C(1'179'540094339627), -12},
+                                STAmount{USD, UINT64_C(847'7880529867501), -13},
+                                amm->tokens()));
+                            BEAST_EXPECT(expectOffers(
+                                env,
+                                ed,
+                                2,
+                                {{Amounts{
+                                      STAmount{
+                                          ETH,
+                                          UINT64_C(343'3179205198749),
+                                          -13},
+                                      STAmount{
+                                          CAN,
+                                          UINT64_C(343'3179205198749),
+                                          -13},
+                                  },
+                                  Amounts{
+                                      STAmount{
+                                          CAN,
+                                          UINT64_C(362'2119470132499),
+                                          -13},
+                                      STAmount{
+                                          USD,
+                                          UINT64_C(362'2119470132499),
+                                          -13},
+                                  }}}));
+                        }
+                    }
+                    q[i] = Quality(Amounts{
+                        ETH(2'000) - env.balance(carol, ETH),
+                        env.balance(bob, USD) - USD(2'000)});
+                }
+                BEAST_EXPECT(q[1] > q[0]);
+                BEAST_EXPECT(q[2] > q[0] && q[2] < q[1]);
+            }
+        }
+    }
+
+    void
     testCore()
     {
         testInvalidInstance();
@@ -4154,6 +4489,7 @@ private:
         testAMMAndCLOB();
         testTradingFee();
         testAdjustedTokens();
+        testSelection();
     }
 
     void
