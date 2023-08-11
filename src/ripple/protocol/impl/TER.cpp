@@ -47,7 +47,7 @@ transResults()
         MAKE_ERROR(tecAMM_FAILED,                    "AMM transaction failed."),
         MAKE_ERROR(tecAMM_EMPTY,                     "AMM is in empty state."),
         MAKE_ERROR(tecAMM_NOT_EMPTY,                 "AMM is not in empty state."),
-        MAKE_ERROR(tecAMM_ACCOUNT,                   "AMM Account."),
+        MAKE_ERROR(tecAMM_ACCOUNT,                   "This operation is not allowed on an AMM Account."),
         MAKE_ERROR(tecCLAIM,                         "Fee claimed. Sequence used. No action."),
         MAKE_ERROR(tecDIR_FULL,                      "Can not add entry to full directory."),
         MAKE_ERROR(tecFAILED_PROCESSING,             "Failed to correctly process transaction."),
