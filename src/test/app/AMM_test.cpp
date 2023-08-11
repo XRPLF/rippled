@@ -4502,19 +4502,17 @@ private:
                 {
                     Env env(*this);
                     prep(env, rates.first, rates.second);
-                    std::shared_ptr<AMM> amm;
+                    std::optional<AMM> amm;
                     if (i == 0 || i == 2)
                     {
                         env(offer(ed, ETH(400), USD(400)), txflags(tfPassive));
                         env.close();
                     }
                     if (i > 0)
-                        amm = std::make_shared<AMM>(
-                            env, ed, USD(1'000), ETH(1'000));
+                        amm.emplace(env, ed, USD(1'000), ETH(1'000));
                     env(pay(carol, bob, USD(100)),
                         path(~USD),
-                        sendmax(ETH(500)),
-                        txflags(tfPartialPayment));
+                        sendmax(ETH(500)));
                     env.close();
                     // CLOB and AMM, AMM is not selected
                     if (i == 2)
@@ -4540,15 +4538,14 @@ private:
             {
                 Env env(*this);
                 prep(env, rates.first, rates.second);
-                std::shared_ptr<AMM> amm;
+                std::optional<AMM> amm;
                 if (i == 0 || i == 2)
                 {
                     env(offer(ed, ETH(400), USD(400)), txflags(tfPassive));
                     env.close();
                 }
                 if (i > 0)
-                    amm =
-                        std::make_shared<AMM>(env, ed, USD(1'000), ETH(1'000));
+                    amm.emplace(env, ed, USD(1'000), ETH(1'000));
                 env(offer(alice, USD(400), ETH(400)));
                 env.close();
                 // AMM is not selected
@@ -4560,7 +4557,6 @@ private:
                 if (i == 0 || i == 2)
                 {
                     // Fully crosses
-                    BEAST_EXPECT(expectOffers(env, ed, 0));
                     BEAST_EXPECT(expectOffers(env, alice, 0));
                 }
                 // Fails to cross because AMM is not selected
@@ -4568,8 +4564,8 @@ private:
                 {
                     BEAST_EXPECT(expectOffers(
                         env, alice, 1, {Amounts{USD(400), ETH(400)}}));
-                    BEAST_EXPECT(expectOffers(env, ed, 0));
                 }
+                BEAST_EXPECT(expectOffers(env, ed, 0));
             }
 
             // Show that the CLOB quality reduction
@@ -4582,19 +4578,17 @@ private:
                 {
                     Env env(*this);
                     prep(env, rates.first, rates.second);
-                    std::shared_ptr<AMM> amm;
+                    std::optional<AMM> amm;
                     if (i == 0 || i == 2)
                     {
                         env(offer(ed, ETH(400), USD(300)), txflags(tfPassive));
                         env.close();
                     }
                     if (i > 0)
-                        amm = std::make_shared<AMM>(
-                            env, ed, USD(1'000), ETH(1'000));
+                        amm.emplace(env, ed, USD(1'000), ETH(1'000));
                     env(pay(carol, bob, USD(100)),
                         path(~USD),
-                        sendmax(ETH(500)),
-                        txflags(tfPartialPayment));
+                        sendmax(ETH(500)));
                     env.close();
                     // AMM and CLOB are selected
                     if (i > 0)
@@ -4649,15 +4643,14 @@ private:
             {
                 Env env(*this);
                 prep(env, rates.first, rates.second);
-                std::shared_ptr<AMM> amm;
+                std::optional<AMM> amm;
                 if (i == 0 || i == 2)
                 {
                     env(offer(ed, ETH(400), USD(250)), txflags(tfPassive));
                     env.close();
                 }
                 if (i > 0)
-                    amm =
-                        std::make_shared<AMM>(env, ed, USD(1'000), ETH(1'000));
+                    amm.emplace(env, ed, USD(1'000), ETH(1'000));
                 env(offer(alice, USD(250), ETH(400)));
                 env.close();
                 // AMM is selected in both cases
@@ -4719,7 +4712,7 @@ private:
                 {
                     Env env(*this);
                     prep(env, rates.first, rates.second);
-                    std::shared_ptr<AMM> amm;
+                    std::optional<AMM> amm;
 
                     if (i == 0 || i == 2)
                     {
@@ -4729,23 +4722,21 @@ private:
                     }
 
                     if (i > 0)
-                        amm = std::make_shared<AMM>(
-                            env, ed, ETH(1'000), USD(1'000));
+                        amm.emplace(env, ed, ETH(1'000), USD(1'000));
 
                     env(pay(carol, bob, USD(100)),
                         path(~USD),
                         path(~CAN, ~USD),
-                        sendmax(ETH(600)),
-                        txflags(tfPartialPayment));
+                        sendmax(ETH(600)));
                     env.close();
 
                     BEAST_EXPECT(expectLine(env, bob, USD(2'100)));
 
                     if (i == 2)
                     {
-                        // Liquidity is consumed from AMM strand only
                         if (rates.first == 1.5)
                         {
+                            // Liquidity is consumed from AMM strand only
                             BEAST_EXPECT(amm->expectBalances(
                                 STAmount{ETH, UINT64_C(1'176'66038955758), -11},
                                 USD(850),
