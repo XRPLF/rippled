@@ -87,7 +87,8 @@ RCLValidatedLedger::operator[](Seq const& s) const -> ID
 
     JLOG(j_.warn()) << "Unable to determine hash of ancestor seq=" << s
                     << " from ledger hash=" << ledgerID_
-                    << " seq=" << ledgerSeq_;
+                    << " seq=" << ledgerSeq_ << " (available: " << minSeq()
+                    << "-" << seq() << ")";
     // Default ID that is less than all others
     return ID{0};
 }
@@ -134,7 +135,7 @@ RCLValidationsAdaptor::acquire(LedgerHash const& hash)
         Application* pApp = &app_;
 
         app_.getJobQueue().addJob(
-            jtADVANCE, "getConsensusLedger", [pApp, hash](Job&) {
+            jtADVANCE, "getConsensusLedger", [pApp, hash]() {
                 pApp->getInboundLedgers().acquire(
                     hash, 0, InboundLedger::Reason::CONSENSUS);
             });
@@ -189,8 +190,8 @@ handleNewValidation(
     // so that our peers will also observe them and take independent notice of
     // such validators, informing their operators.
     if (auto const ls = val->isTrusted()
-            ? validations.adaptor().journal().fatal()
-            : validations.adaptor().journal().warn();
+            ? validations.adaptor().journal().error()
+            : validations.adaptor().journal().info();
         ls.active())
     {
         auto const id = [&masterKey, &signingKey]() {

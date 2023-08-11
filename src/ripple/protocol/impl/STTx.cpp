@@ -56,14 +56,14 @@ getTxFormat(TxType type)
     return format;
 }
 
-STTx::STTx(STObject&& object) noexcept(false) : STObject(std::move(object))
+STTx::STTx(STObject&& object) : STObject(std::move(object))
 {
     tx_type_ = safe_cast<TxType>(getFieldU16(sfTransactionType));
     applyTemplate(getTxFormat(tx_type_)->getSOTemplate());  //  may throw
     tid_ = getHash(HashPrefix::transactionID);
 }
 
-STTx::STTx(SerialIter& sit) noexcept(false) : STObject(sfTransaction)
+STTx::STTx(SerialIter& sit) : STObject(sfTransaction)
 {
     int length = sit.getBytesLeft();
 
@@ -95,6 +95,25 @@ STTx::STTx(TxType type, std::function<void(STObject&)> assembler)
         LogicError("Transaction type was mutated during assembly");
 
     tid_ = getHash(HashPrefix::transactionID);
+}
+
+STBase*
+STTx::copy(std::size_t n, void* buf) const
+{
+    return emplace(n, buf, *this);
+}
+
+STBase*
+STTx::move(std::size_t n, void* buf)
+{
+    return emplace(n, buf, std::move(*this));
+}
+
+// STObject functions.
+SerializedTypeID
+STTx::getSType() const
+{
+    return STI_TRANSACTION;
 }
 
 std::string
@@ -187,7 +206,9 @@ STTx::sign(PublicKey const& publicKey, SecretKey const& secretKey)
 }
 
 Expected<void, std::string>
-STTx::checkSign(RequireFullyCanonicalSig requireCanonicalSig) const
+STTx::checkSign(
+    RequireFullyCanonicalSig requireCanonicalSig,
+    Rules const& rules) const
 {
     try
     {
@@ -195,8 +216,9 @@ STTx::checkSign(RequireFullyCanonicalSig requireCanonicalSig) const
         // at the SigningPubKey.  If it's empty we must be
         // multi-signing.  Otherwise we're single-signing.
         Blob const& signingPubKey = getFieldVL(sfSigningPubKey);
-        return signingPubKey.empty() ? checkMultiSign(requireCanonicalSig)
-                                     : checkSingleSign(requireCanonicalSig);
+        return signingPubKey.empty()
+            ? checkMultiSign(requireCanonicalSig, rules)
+            : checkSingleSign(requireCanonicalSig);
     }
     catch (std::exception const&)
     {
@@ -308,7 +330,9 @@ STTx::checkSingleSign(RequireFullyCanonicalSig requireCanonicalSig) const
 }
 
 Expected<void, std::string>
-STTx::checkMultiSign(RequireFullyCanonicalSig requireCanonicalSig) const
+STTx::checkMultiSign(
+    RequireFullyCanonicalSig requireCanonicalSig,
+    Rules const& rules) const
 {
     // Make sure the MultiSigners are present.  Otherwise they are not
     // attempting multi-signing and we just have a bad SigningPubKey.
@@ -323,7 +347,8 @@ STTx::checkMultiSign(RequireFullyCanonicalSig requireCanonicalSig) const
     STArray const& signers{getFieldArray(sfSigners)};
 
     // There are well known bounds that the number of signers must be within.
-    if (signers.size() < minMultiSigners || signers.size() > maxMultiSigners)
+    if (signers.size() < minMultiSigners ||
+        signers.size() > maxMultiSigners(&rules))
         return Unexpected("Invalid Signers array size.");
 
     // We can ease the computational load inside the loop a bit by
@@ -456,11 +481,10 @@ isMemoOkay(STObject const& st, std::string& reason)
             // The only allowed characters for MemoType and MemoFormat are the
             // characters allowed in URLs per RFC 3986: alphanumerics and the
             // following symbols: -._~:/?#[]@!$&'()*+,;=%
-            static std::array<char, 256> const allowedSymbols = [] {
-                std::array<char, 256> a;
-                a.fill(0);
+            static constexpr std::array<char, 256> const allowedSymbols = []() {
+                std::array<char, 256> a{};
 
-                std::string symbols(
+                std::string_view symbols(
                     "0123456789"
                     "-._~:/?#[]@!$&'()*+,;=%"
                     "ABCDEFGHIJKLMNOPQRSTUVWXYZ"

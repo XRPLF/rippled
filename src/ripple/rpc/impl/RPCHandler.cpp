@@ -17,7 +17,9 @@
 */
 //==============================================================================
 
+#include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/LedgerMaster.h>
+#include <ripple/app/ledger/LedgerToJson.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/reporting/P2pProxy.h>
@@ -30,14 +32,17 @@
 #include <ripple/json/to_string.h>
 #include <ripple/net/InfoSub.h>
 #include <ripple/net/RPCErr.h>
+#include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/resource/Fees.h>
+#include <ripple/rpc/Context.h>
 #include <ripple/rpc/RPCHandler.h>
 #include <ripple/rpc/Role.h>
 #include <ripple/rpc/impl/Handler.h>
 #include <ripple/rpc/impl/Tuning.h>
 #include <atomic>
 #include <chrono>
+#include <variant>
 
 namespace ripple {
 namespace RPC {
@@ -129,12 +134,11 @@ fillHandler(JsonContext& context, Handler const*& result)
 {
     if (!isUnlimited(context.role))
     {
-        // VFALCO NOTE Should we also add up the jtRPC jobs?
-        //
-        int jc = context.app.getJobQueue().getJobCountGE(jtCLIENT);
-        if (jc > Tuning::maxJobQueueClients)
+        // Count all jobs at jtCLIENT priority or higher.
+        int const jobCount = context.app.getJobQueue().getJobCountGE(jtCLIENT);
+        if (jobCount > Tuning::maxJobQueueClients)
         {
-            JLOG(context.j.debug()) << "Too busy for command: " << jc;
+            JLOG(context.j.debug()) << "Too busy for command: " << jobCount;
             return rpcTOO_BUSY;
         }
     }

@@ -112,7 +112,7 @@ TxMeta::setAffectedNode(
 }
 
 boost::container::flat_set<AccountID>
-TxMeta::getAffectedAccounts(beast::Journal j) const
+TxMeta::getAffectedAccounts() const
 {
     boost::container::flat_set<AccountID> list;
     list.reserve(10);
@@ -126,8 +126,7 @@ TxMeta::getAffectedAccounts(beast::Journal j) const
 
         if (index != -1)
         {
-            const STObject* inner =
-                dynamic_cast<const STObject*>(&it.peekAtIndex(index));
+            auto inner = dynamic_cast<STObject const*>(&it.peekAtIndex(index));
             assert(inner);
             if (inner)
             {
@@ -145,8 +144,8 @@ TxMeta::getAffectedAccounts(beast::Journal j) const
                         (field.getFName() == sfTakerPays) ||
                         (field.getFName() == sfTakerGets))
                     {
-                        const STAmount* lim =
-                            dynamic_cast<const STAmount*>(&field);
+                        auto lim = dynamic_cast<STAmount const*>(&field);
+                        assert(lim);
 
                         if (lim != nullptr)
                         {
@@ -154,11 +153,6 @@ TxMeta::getAffectedAccounts(beast::Journal j) const
 
                             if (issuer.isNonZero())
                                 list.insert(issuer);
-                        }
-                        else
-                        {
-                            JLOG(j.fatal()) << "limit is not amount "
-                                            << field.getJson(JsonOptions::none);
                         }
                     }
                 }

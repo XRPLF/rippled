@@ -154,7 +154,7 @@ public:
         rmDataDir_ = !exists(dataDir_);
         config_.setup(
             file_.string(),
-            /*bQuiet*/ true,
+            /* bQuiet */ true,
             /* bSilent */ false,
             /* bStandalone */ false);
     }
@@ -190,9 +190,6 @@ public:
             using namespace boost::filesystem;
             if (rmDataDir_)
                 rmDir(dataDir_);
-            else
-                test_.log << "Skipping rm dir: " << dataDir_.string()
-                          << std::endl;
         }
         catch (std::exception& e)
         {
@@ -412,6 +409,71 @@ port_wss_admin
             }
             BEAST_EXPECT(error == expectedError);
         }
+    }
+
+    void
+    testNetworkID()
+    {
+        testcase("network id");
+        std::string error;
+        Config c;
+        try
+        {
+            c.loadFromString(R"rippleConfig(
+[network_id]
+main
+)rippleConfig");
+        }
+        catch (std::runtime_error& e)
+        {
+            error = e.what();
+        }
+
+        BEAST_EXPECT(error == "");
+        BEAST_EXPECT(c.NETWORK_ID == 0);
+
+        try
+        {
+            c.loadFromString(R"rippleConfig(
+)rippleConfig");
+        }
+        catch (std::runtime_error& e)
+        {
+            error = e.what();
+        }
+
+        BEAST_EXPECT(error == "");
+        BEAST_EXPECT(c.NETWORK_ID == 0);
+
+        try
+        {
+            c.loadFromString(R"rippleConfig(
+[network_id]
+255
+)rippleConfig");
+        }
+        catch (std::runtime_error& e)
+        {
+            error = e.what();
+        }
+
+        BEAST_EXPECT(error == "");
+        BEAST_EXPECT(c.NETWORK_ID == 255);
+
+        try
+        {
+            c.loadFromString(R"rippleConfig(
+[network_id]
+10000
+)rippleConfig");
+        }
+        catch (std::runtime_error& e)
+        {
+            error = e.what();
+        }
+
+        BEAST_EXPECT(error == "");
+        BEAST_EXPECT(c.NETWORK_ID == 10000);
     }
 
     void
@@ -810,11 +872,11 @@ trustthesevalidators.gov
         ParsedPort rpc;
         if (!unexcept([&]() { parse_Port(rpc, conf["port_rpc"], log); }))
             return;
-        BEAST_EXPECT(rpc.admin_ip && (rpc.admin_ip.value().size() == 2));
+        BEAST_EXPECT(rpc.admin_nets_v4.size() + rpc.admin_nets_v6.size() == 2);
         ParsedPort wss;
         if (!unexcept([&]() { parse_Port(wss, conf["port_wss_admin"], log); }))
             return;
-        BEAST_EXPECT(wss.admin_ip && (wss.admin_ip.value().size() == 1));
+        BEAST_EXPECT(wss.admin_nets_v4.size() + wss.admin_nets_v6.size() == 1);
     }
 
     void
@@ -857,6 +919,84 @@ r.ripple.com 51235
             cfg.exists(SECTION_IPS_FIXED) &&
             cfg.section(SECTION_IPS_FIXED).lines().size() == 2 &&
             cfg.section(SECTION_IPS_FIXED).values().size() == 2);
+    }
+
+    void
+    testColons()
+    {
+        Config cfg;
+        /* NOTE: this string includes some explicit
+         * space chars in order to verify proper trimming */
+        std::string toLoad(R"(
+[port_rpc])"
+                           "\x20"
+                           R"(
+# comment
+    # indented comment
+)"
+                           "\x20\x20"
+                           R"(
+[ips])"
+                           "\x20"
+                           R"(
+r.ripple.com:51235
+
+  [ips_fixed])"
+                           "\x20\x20"
+                           R"(
+    # COMMENT
+    s1.ripple.com:51235
+    s2.ripple.com 51235
+    anotherserversansport
+    anotherserverwithport:12
+    1.1.1.1:1
+    1.1.1.1 1
+    12.34.12.123:12345
+    12.34.12.123 12345
+    ::
+    2001:db8::
+    ::1
+    ::1:12345
+    [::1]:12345
+    2001:db8:3333:4444:5555:6666:7777:8888:12345
+    [2001:db8:3333:4444:5555:6666:7777:8888]:1
+
+
+)");
+        cfg.loadFromString(toLoad);
+        BEAST_EXPECT(
+            cfg.exists("port_rpc") && cfg.section("port_rpc").lines().empty() &&
+            cfg.section("port_rpc").values().empty());
+        BEAST_EXPECT(
+            cfg.exists(SECTION_IPS) &&
+            cfg.section(SECTION_IPS).lines().size() == 1 &&
+            cfg.section(SECTION_IPS).values().size() == 1);
+        BEAST_EXPECT(
+            cfg.exists(SECTION_IPS_FIXED) &&
+            cfg.section(SECTION_IPS_FIXED).lines().size() == 15 &&
+            cfg.section(SECTION_IPS_FIXED).values().size() == 15);
+        BEAST_EXPECT(cfg.IPS[0] == "r.ripple.com 51235");
+
+        BEAST_EXPECT(cfg.IPS_FIXED[0] == "s1.ripple.com 51235");
+        BEAST_EXPECT(cfg.IPS_FIXED[1] == "s2.ripple.com 51235");
+        BEAST_EXPECT(cfg.IPS_FIXED[2] == "anotherserversansport");
+        BEAST_EXPECT(cfg.IPS_FIXED[3] == "anotherserverwithport 12");
+        BEAST_EXPECT(cfg.IPS_FIXED[4] == "1.1.1.1 1");
+        BEAST_EXPECT(cfg.IPS_FIXED[5] == "1.1.1.1 1");
+        BEAST_EXPECT(cfg.IPS_FIXED[6] == "12.34.12.123 12345");
+        BEAST_EXPECT(cfg.IPS_FIXED[7] == "12.34.12.123 12345");
+
+        // all ipv6 should be ignored by colon replacer, howsoever formated
+        BEAST_EXPECT(cfg.IPS_FIXED[8] == "::");
+        BEAST_EXPECT(cfg.IPS_FIXED[9] == "2001:db8::");
+        BEAST_EXPECT(cfg.IPS_FIXED[10] == "::1");
+        BEAST_EXPECT(cfg.IPS_FIXED[11] == "::1:12345");
+        BEAST_EXPECT(cfg.IPS_FIXED[12] == "[::1]:12345");
+        BEAST_EXPECT(
+            cfg.IPS_FIXED[13] ==
+            "2001:db8:3333:4444:5555:6666:7777:8888:12345");
+        BEAST_EXPECT(
+            cfg.IPS_FIXED[14] == "[2001:db8:3333:4444:5555:6666:7777:8888]:1");
     }
 
     void
@@ -1150,10 +1290,12 @@ r.ripple.com 51235
         testSetup(true);
         testPort();
         testWhitespace();
+        testColons();
         testComments();
         testGetters();
         testAmendment();
         testOverlay();
+        testNetworkID();
     }
 };
 

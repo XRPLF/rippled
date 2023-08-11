@@ -27,8 +27,10 @@
 #include <ripple/beast/container/aged_unordered_map.h>
 #include <ripple/consensus/LedgerTrie.h>
 #include <ripple/protocol/PublicKey.h>
+
 #include <mutex>
 #include <optional>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -294,7 +296,7 @@ class Validations
     using NodeKey = typename Validation::NodeKey;
 
     using WrappedValidationType = std::decay_t<
-        std::result_of_t<decltype (&Validation::unwrap)(Validation)>>;
+        std::invoke_result_t<decltype(&Validation::unwrap), Validation>>;
 
     // Manages concurrent access to members
     mutable Mutex mutex_;
@@ -722,46 +724,59 @@ public:
         validationSET_EXPIRES ago and were not asked to keep.
     */
     void
-    expire()
+    expire(beast::Journal& j)
     {
-        std::lock_guard lock{mutex_};
-        if (toKeep_)
+        auto const start = std::chrono::steady_clock::now();
         {
-            // We only need to refresh the keep range when it's just about to
-            // expire. Track the next time we need to refresh.
-            static std::chrono::steady_clock::time_point refreshTime;
-            if (auto const now = byLedger_.clock().now(); refreshTime <= now)
+            std::lock_guard lock{mutex_};
+            if (toKeep_)
             {
-                // The next refresh time is shortly before the expiration
-                // time from now.
-                refreshTime = now + parms_.validationSET_EXPIRES -
-                    parms_.validationFRESHNESS;
-
-                for (auto i = byLedger_.begin(); i != byLedger_.end(); ++i)
+                // We only need to refresh the keep range when it's just about
+                // to expire. Track the next time we need to refresh.
+                static std::chrono::steady_clock::time_point refreshTime;
+                if (auto const now = byLedger_.clock().now();
+                    refreshTime <= now)
                 {
-                    auto const& validationMap = i->second;
-                    if (!validationMap.empty())
+                    // The next refresh time is shortly before the expiration
+                    // time from now.
+                    refreshTime = now + parms_.validationSET_EXPIRES -
+                        parms_.validationFRESHNESS;
+
+                    for (auto i = byLedger_.begin(); i != byLedger_.end(); ++i)
                     {
-                        auto const seq = validationMap.begin()->second.seq();
-                        if (toKeep_->low_ <= seq && seq < toKeep_->high_)
+                        auto const& validationMap = i->second;
+                        if (!validationMap.empty())
                         {
-                            byLedger_.touch(i);
+                            auto const seq =
+                                validationMap.begin()->second.seq();
+                            if (toKeep_->low_ <= seq && seq < toKeep_->high_)
+                            {
+                                byLedger_.touch(i);
+                            }
+                        }
+                    }
+
+                    for (auto i = bySequence_.begin(); i != bySequence_.end();
+                         ++i)
+                    {
+                        if (toKeep_->low_ <= i->first &&
+                            i->first < toKeep_->high_)
+                        {
+                            bySequence_.touch(i);
                         }
                     }
                 }
-
-                for (auto i = bySequence_.begin(); i != bySequence_.end(); ++i)
-                {
-                    if (toKeep_->low_ <= i->first && i->first < toKeep_->high_)
-                    {
-                        bySequence_.touch(i);
-                    }
-                }
             }
-        }
 
-        beast::expire(byLedger_, parms_.validationSET_EXPIRES);
-        beast::expire(bySequence_, parms_.validationSET_EXPIRES);
+            beast::expire(byLedger_, parms_.validationSET_EXPIRES);
+            beast::expire(bySequence_, parms_.validationSET_EXPIRES);
+        }
+        JLOG(j.debug())
+            << "Validations sets sweep lock duration "
+            << std::chrono::duration_cast<std::chrono::milliseconds>(
+                   std::chrono::steady_clock::now() - start)
+                   .count()
+            << "ms";
     }
 
     /** Update trust status of validations
@@ -1034,10 +1049,11 @@ public:
     /**  Get trusted full validations for a specific ledger
 
          @param ledgerID The identifier of ledger of interest
+         @param seq The sequence number of ledger of interest
          @return Trusted validations associated with ledger
     */
     std::vector<WrappedValidationType>
-    getTrustedForLedger(ID const& ledgerID)
+    getTrustedForLedger(ID const& ledgerID, Seq const& seq)
     {
         std::vector<WrappedValidationType> res;
         std::lock_guard lock{mutex_};
@@ -1046,7 +1062,7 @@ public:
             ledgerID,
             [&](std::size_t numValidations) { res.reserve(numValidations); },
             [&](NodeID const&, Validation const& v) {
-                if (v.trusted() && v.full())
+                if (v.trusted() && v.full() && v.seq() == seq)
                     res.emplace_back(v.unwrap());
             });
 

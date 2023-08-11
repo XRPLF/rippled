@@ -149,6 +149,24 @@ enum LedgerEntryType : std::uint16_t
      */
     ltNEGATIVE_UNL = 0x004e,
 
+    /** A ledger object which contains a list of NFTs
+
+        \sa keylet::nftpage_min, keylet::nftpage_max, keylet::nftpage
+     */
+    ltNFTOKEN_PAGE = 0x0050,
+
+    /** A ledger object which identifies an offer to buy or sell an NFT.
+
+        \sa keylet::nftoffer
+     */
+    ltNFTOKEN_OFFER = 0x0037,
+
+    /** The ledger object which tracks the AMM.
+
+       \sa keylet::amm
+    */
+    ltAMM = 0x0079,
+
     //---------------------------------------------------------------------------
     /** A special type, matching any ledger entry type.
 
@@ -220,6 +238,20 @@ enum LedgerSpecificFlags {
     lsfDefaultRipple =
         0x00800000,               // True, trust lines allow rippling by default
     lsfDepositAuth = 0x01000000,  // True, all deposits require authorization
+/*  // reserved for Hooks amendment
+    lsfTshCollect = 0x02000000,     // True, allow TSH collect-calls to acc hooks
+*/
+    lsfDisallowIncomingNFTokenOffer =
+        0x04000000,               // True, reject new incoming NFT offers
+    lsfDisallowIncomingCheck =
+        0x08000000,               // True, reject new checks
+    lsfDisallowIncomingPayChan =
+        0x10000000,               // True, reject new paychans
+    lsfDisallowIncomingTrustline =
+        0x20000000,               // True, reject new trustlines (only if no issued assets)
+    lsfAMM [[maybe_unused]] = 0x40000000, // True, AMM account
+    lsfAllowTrustLineClawback =
+        0x80000000,               // True, enable clawback
 
     // ltOFFER
     lsfPassive = 0x00010000,
@@ -234,9 +266,18 @@ enum LedgerSpecificFlags {
     lsfHighNoRipple = 0x00200000,
     lsfLowFreeze = 0x00400000,   // True, low side has set freeze flag
     lsfHighFreeze = 0x00800000,  // True, high side has set freeze flag
+    lsfAMMNode = 0x01000000,     // True, trust line to AMM. Used by client
+                                 // apps to identify payments via AMM.
 
     // ltSIGNER_LIST
     lsfOneOwnerCount = 0x00010000,  // True, uses only one OwnerCount
+
+    // ltDIR_NODE
+    lsfNFTokenBuyOffers = 0x00000001,
+    lsfNFTokenSellOffers = 0x00000002,
+
+    // ltNFTOKEN_OFFER
+    lsfSellNFToken = 0x00000001,
 };
 
 //------------------------------------------------------------------------------

@@ -20,6 +20,7 @@
 #ifndef RIPPLE_PROTOCOL_BOOK_H_INCLUDED
 #define RIPPLE_PROTOCOL_BOOK_H_INCLUDED
 
+#include <ripple/basics/CountedObject.h>
 #include <ripple/protocol/Issue.h>
 #include <boost/utility/base_from_member.hpp>
 
@@ -29,7 +30,7 @@ namespace ripple {
     The order book is a pair of Issues called in and out.
     @see Issue.
 */
-class Book
+class Book final : public CountedObject<Book>
 {
 public:
     Issue in;
@@ -64,28 +65,24 @@ hash_append(Hasher& h, Book const& b)
 Book
 reversed(Book const& book);
 
-/** Ordered comparison. */
-int
-compare(Book const& lhs, Book const& rhs);
-
 /** Equality comparison. */
 /** @{ */
-bool
-operator==(Book const& lhs, Book const& rhs);
-bool
-operator!=(Book const& lhs, Book const& rhs);
+[[nodiscard]] inline constexpr bool
+operator==(Book const& lhs, Book const& rhs)
+{
+    return (lhs.in == rhs.in) && (lhs.out == rhs.out);
+}
 /** @} */
 
 /** Strict weak ordering. */
 /** @{ */
-bool
-operator<(Book const& lhs, Book const& rhs);
-bool
-operator>(Book const& lhs, Book const& rhs);
-bool
-operator>=(Book const& lhs, Book const& rhs);
-bool
-operator<=(Book const& lhs, Book const& rhs);
+[[nodiscard]] inline constexpr std::weak_ordering
+operator<=>(Book const& lhs, Book const& rhs)
+{
+    if (auto const c{lhs.in <=> rhs.in}; c != 0)
+        return c;
+    return lhs.out <=> rhs.out;
+}
 /** @} */
 
 }  // namespace ripple

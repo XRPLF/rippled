@@ -84,6 +84,10 @@ std::unique_ptr<Config> no_admin(std::unique_ptr<Config>);
 
 std::unique_ptr<Config> secure_gateway(std::unique_ptr<Config>);
 
+std::unique_ptr<Config> admin_localnet(std::unique_ptr<Config>);
+
+std::unique_ptr<Config> secure_gateway_localnet(std::unique_ptr<Config>);
+
 /// @brief adjust configuration with params needed to be a validator
 ///
 /// this is intended for use with envconfig, as in

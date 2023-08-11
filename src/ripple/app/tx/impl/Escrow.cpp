@@ -102,8 +102,7 @@ EscrowCreate::preflight(PreflightContext const& ctx)
     if (ctx.rules.enabled(fix1543) && ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;
 
-    auto const ret = preflight1(ctx);
-    if (!isTesSuccess(ret))
+    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
     if (!isXRP(ctx.tx[sfAmount]))
@@ -155,6 +154,18 @@ EscrowCreate::preflight(PreflightContext const& ctx)
     }
 
     return preflight2(ctx);
+}
+
+TER
+EscrowCreate::preclaim(PreclaimContext const& ctx)
+{
+    auto const sled = ctx.view.read(keylet::account(ctx.tx[sfDestination]));
+    if (!sled)
+        return tecNO_DST;
+    if (((*sled)[sfFlags] & lsfAMM))
+        return tecNO_PERMISSION;
+
+    return tesSUCCESS;
 }
 
 TER
@@ -298,11 +309,8 @@ EscrowFinish::preflight(PreflightContext const& ctx)
     if (ctx.rules.enabled(fix1543) && ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;
 
-    {
-        auto const ret = preflight1(ctx);
-        if (!isTesSuccess(ret))
-            return ret;
-    }
+    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
+        return ret;
 
     auto const cb = ctx.tx[~sfCondition];
     auto const fb = ctx.tx[~sfFulfillment];
@@ -342,15 +350,14 @@ EscrowFinish::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-FeeUnit64
+XRPAmount
 EscrowFinish::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
-    FeeUnit64 extraFee{0};
+    XRPAmount extraFee{0};
 
     if (auto const fb = tx[~sfFulfillment])
     {
-        extraFee +=
-            safe_cast<FeeUnit64>(view.fees().units) * (32 + (fb->size() / 16));
+        extraFee += view.fees().base * (32 + (fb->size() / 16));
     }
 
     return Transactor::calculateBaseFee(view, tx) + extraFee;
@@ -511,8 +518,7 @@ EscrowCancel::preflight(PreflightContext const& ctx)
     if (ctx.rules.enabled(fix1543) && ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;
 
-    auto const ret = preflight1(ctx);
-    if (!isTesSuccess(ret))
+    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
     return preflight2(ctx);

@@ -42,8 +42,7 @@ CreateOffer::makeTxConsequences(PreflightContext const& ctx)
 NotTEC
 CreateOffer::preflight(PreflightContext const& ctx)
 {
-    auto const ret = preflight1(ctx);
-    if (!isTesSuccess(ret))
+    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
     auto& tx = ctx.tx;
@@ -173,14 +172,7 @@ CreateOffer::preclaim(PreclaimContext const& ctx)
         return temBAD_SEQUENCE;
     }
 
-    using d = NetClock::duration;
-    using tp = NetClock::time_point;
-    auto const expiration = ctx.tx[~sfExpiration];
-
-    // Expiration is defined in terms of the close time of the parent ledger,
-    // because we definitively know the time that it closed but we do not
-    // know the closing time of the ledger that is under construction.
-    if (expiration && (ctx.view.parentCloseTime() >= tp{d{*expiration}}))
+    if (hasExpired(ctx.view, ctx.tx[~sfExpiration]))
     {
         // Note that this will get checked again in applyGuts, but it saves
         // us a call to checkAcceptAsset and possible false negative.
@@ -637,7 +629,7 @@ CreateOffer::takerCross(
     Sandbox& sbCancel,
     Amounts const& takerAmount)
 {
-    NetClock::time_point const when = ctx_.view().parentCloseTime();
+    NetClock::time_point const when = sb.parentCloseTime();
 
     beast::WrappedSink takerSink(j_, "Taker ");
 
@@ -736,7 +728,7 @@ CreateOffer::flowCross(
         // additional path with XRP as the intermediate between two books.
         // This second path we have to build ourselves.
         STPathSet paths;
-        if (!takerAmount.in.native() & !takerAmount.out.native())
+        if (!takerAmount.in.native() && !takerAmount.out.native())
         {
             STPath path;
             path.emplace_back(std::nullopt, xrpCurrency(), std::nullopt);
@@ -832,8 +824,22 @@ CreateOffer::flowCross(
                         // what is a good threshold to check?
                         afterCross.in.clear();
 
-                    afterCross.out = divRound(
-                        afterCross.in, rate, takerAmount.out.issue(), true);
+                    afterCross.out = [&]() {
+                        // Careful analysis showed that rounding up this
+                        // divRound result could lead to placing a reduced
+                        // offer in the ledger that blocks order books.  So
+                        // the fixReducedOffersV1 amendment changes the
+                        // behavior to round down instead.
+                        if (psb.rules().enabled(fixReducedOffersV1))
+                            return divRoundStrict(
+                                afterCross.in,
+                                rate,
+                                takerAmount.out.issue(),
+                                false);
+
+                        return divRound(
+                            afterCross.in, rate, takerAmount.out.issue(), true);
+                    }();
                 }
                 else
                 {
@@ -951,13 +957,8 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     }
 
     auto const expiration = ctx_.tx[~sfExpiration];
-    using d = NetClock::duration;
-    using tp = NetClock::time_point;
 
-    // Expiration is defined in terms of the close time of the parent ledger,
-    // because we definitively know the time that it closed but we do not
-    // know the closing time of the ledger that is under construction.
-    if (expiration && (ctx_.view().parentCloseTime() >= tp{d{*expiration}}))
+    if (hasExpired(sb, expiration))
     {
         // If the offer has expired, the transaction has successfully
         // done nothing, so short circuit from here.
@@ -965,13 +966,12 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         // The return code change is attached to featureDepositPreauth as a
         // convenience.  The change is not big enough to deserve a fix code.
         TER const ter{
-            ctx_.view().rules().enabled(featureDepositPreauth)
-                ? TER{tecEXPIRED}
-                : TER{tesSUCCESS}};
+            sb.rules().enabled(featureDepositPreauth) ? TER{tecEXPIRED}
+                                                      : TER{tesSUCCESS}};
         return {ter, true};
     }
 
-    bool const bOpenLedger = ctx_.view().open();
+    bool const bOpenLedger = sb.open();
     bool crossed = false;
 
     if (result == tesSUCCESS)
@@ -1121,6 +1121,12 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     if (bImmediateOrCancel)
     {
         JLOG(j_.trace()) << "Immediate or cancel: offer canceled";
+        if (!crossed && sb.rules().enabled(featureImmediateOfferKilled))
+            // If the ImmediateOfferKilled amendment is enabled, any
+            // ImmediateOrCancel offer that transfers absolutely no funds
+            // returns tecKILLED rather than tesSUCCESS.  Motivation for the
+            // change is here: https://github.com/ripple/rippled/issues/4115
+            return {tecKILLED, false};
         return {tesSUCCESS, true};
     }
 
@@ -1129,8 +1135,8 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         return {tefINTERNAL, false};
 
     {
-        XRPAmount reserve = ctx_.view().fees().accountReserve(
-            sleCreator->getFieldU32(sfOwnerCount) + 1);
+        XRPAmount reserve =
+            sb.fees().accountReserve(sleCreator->getFieldU32(sfOwnerCount) + 1);
 
         if (mPriorBalance < reserve)
         {

@@ -134,6 +134,30 @@ doUnsubscribe(RPC::JsonContext& context)
         context.netOps.unsubAccount(ispSub, ids, false);
     }
 
+    if (context.params.isMember(jss::account_history_tx_stream))
+    {
+        auto const& req = context.params[jss::account_history_tx_stream];
+        if (!req.isMember(jss::account) || !req[jss::account].isString())
+            return rpcError(rpcINVALID_PARAMS);
+
+        auto const id = parseBase58<AccountID>(req[jss::account].asString());
+        if (!id)
+            return rpcError(rpcINVALID_PARAMS);
+
+        bool stopHistoryOnly = false;
+        if (req.isMember(jss::stop_history_tx_only))
+        {
+            if (!req[jss::stop_history_tx_only].isBool())
+                return rpcError(rpcINVALID_PARAMS);
+            stopHistoryOnly = req[jss::stop_history_tx_only].asBool();
+        }
+        context.netOps.unsubAccountHistory(ispSub, *id, stopHistoryOnly);
+
+        JLOG(context.j.debug())
+            << "doUnsubscribe: account_history_tx_stream: " << toBase58(*id)
+            << " stopHistoryOnly=" << (stopHistoryOnly ? "true" : "false");
+    }
+
     if (context.params.isMember(jss::books))
     {
         if (!context.params[jss::books].isArray())

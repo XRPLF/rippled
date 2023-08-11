@@ -220,8 +220,6 @@ public:
     getFullValidatedRange(std::uint32_t& minVal, std::uint32_t& maxVal);
 
     void
-    tune(int size, std::chrono::seconds age);
-    void
     sweep();
     float
     getCacheHitRate();
@@ -301,7 +299,7 @@ private:
     setPubLedger(std::shared_ptr<Ledger const> const& l);
 
     void
-    tryFill(Job& job, std::shared_ptr<Ledger const> ledger);
+    tryFill(std::shared_ptr<Ledger const> ledger);
 
     void
     getFetchPack(LedgerIndex missing, InboundLedger::Reason reason);
@@ -326,7 +324,7 @@ private:
     findNewLedgersToPublish(std::unique_lock<std::recursive_mutex>&);
 
     void
-    updatePaths(Job& job);
+    updatePaths();
 
     // Returns true if work started.  Always called with m_mutex locked.
     // The passed lock is a reminder to callers.

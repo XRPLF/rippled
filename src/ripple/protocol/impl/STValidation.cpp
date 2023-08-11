@@ -25,6 +25,18 @@
 
 namespace ripple {
 
+STBase*
+STValidation::copy(std::size_t n, void* buf) const
+{
+    return emplace(n, buf, *this);
+}
+
+STBase*
+STValidation::move(std::size_t n, void* buf)
+{
+    return emplace(n, buf, std::move(*this));
+}
+
 SOTemplate const&
 STValidation::validationFormat()
 {
@@ -46,9 +58,14 @@ STValidation::validationFormat()
         {sfSigningPubKey,       soeREQUIRED},
         {sfSignature,           soeREQUIRED},
         {sfConsensusHash,       soeOPTIONAL},
+        // featureHardenedValidations
         {sfCookie,              soeDEFAULT},
         {sfValidatedHash,       soeOPTIONAL},
         {sfServerVersion,       soeOPTIONAL},
+        // featureXRPFees
+        {sfBaseFeeDrops,          soeOPTIONAL},
+        {sfReserveBaseDrops,      soeOPTIONAL},
+        {sfReserveIncrementDrops, soeOPTIONAL},
     };
     // clang-format on
 

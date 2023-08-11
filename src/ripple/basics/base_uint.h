@@ -26,12 +26,14 @@
 #define RIPPLE_BASICS_BASE_UINT_H_INCLUDED
 
 #include <ripple/basics/Expected.h>
+#include <ripple/basics/Slice.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/hardened_hash.h>
 #include <ripple/basics/strHex.h>
 #include <ripple/beast/utility/Zero.h>
 #include <boost/endian/conversion.hpp>
 #include <boost/functional/hash.hpp>
+#include <algorithm>
 #include <array>
 #include <cstring>
 #include <functional>
@@ -53,6 +55,11 @@ struct is_contiguous_container<
         decltype(std::declval<Container const>().size()),
         decltype(std::declval<Container const>().data()),
         typename Container::value_type>> : std::true_type
+{
+};
+
+template <>
+struct is_contiguous_container<Slice> : std::true_type
 {
 };
 
@@ -332,7 +339,7 @@ public:
         return *this == beast::zero;
     }
 
-    const base_uint
+    constexpr base_uint
     operator~() const
     {
         base_uint ret;
@@ -437,6 +444,20 @@ public:
         return ret;
     }
 
+    base_uint
+    next() const
+    {
+        auto ret = *this;
+        return ++ret;
+    }
+
+    base_uint
+    prev() const
+    {
+        auto ret = *this;
+        return --ret;
+    }
+
     base_uint&
     operator+=(const base_uint& b)
     {
@@ -529,103 +550,66 @@ using uint160 = base_uint<160>;
 using uint256 = base_uint<256>;
 
 template <std::size_t Bits, class Tag>
-inline int
-compare(base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
+[[nodiscard]] inline constexpr std::strong_ordering
+operator<=>(base_uint<Bits, Tag> const& lhs, base_uint<Bits, Tag> const& rhs)
 {
-    auto ret = std::mismatch(a.cbegin(), a.cend(), b.cbegin());
+    // This comparison might seem wrong on a casual inspection because it
+    // compares data internally stored as std::uint32_t byte-by-byte. But
+    // note that the underlying data is stored in big endian, even if the
+    // plaform is little endian. This makes the comparison correct.
+    //
+    // FIXME: use std::lexicographical_compare_three_way once support is
+    //        added to MacOS.
 
-    if (ret.first == a.cend())
-        return 0;
+    auto const ret = std::mismatch(lhs.cbegin(), lhs.cend(), rhs.cbegin());
 
-    // a > b
-    if (*ret.first > *ret.second)
-        return 1;
+    // a == b
+    if (ret.first == lhs.cend())
+        return std::strong_ordering::equivalent;
 
-    // a < b
-    return -1;
+    return (*ret.first > *ret.second) ? std::strong_ordering::greater
+                                      : std::strong_ordering::less;
 }
 
-template <std::size_t Bits, class Tag>
-inline bool
-operator<(base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
+template <std::size_t Bits, typename Tag>
+[[nodiscard]] inline constexpr bool
+operator==(base_uint<Bits, Tag> const& lhs, base_uint<Bits, Tag> const& rhs)
 {
-    return compare(a, b) < 0;
-}
-
-template <std::size_t Bits, class Tag>
-inline bool
-operator<=(base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
-{
-    return compare(a, b) <= 0;
-}
-
-template <std::size_t Bits, class Tag>
-inline bool
-operator>(base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
-{
-    return compare(a, b) > 0;
-}
-
-template <std::size_t Bits, class Tag>
-inline bool
-operator>=(base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
-{
-    return compare(a, b) >= 0;
-}
-
-template <std::size_t Bits, class Tag>
-inline bool
-operator==(base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
-{
-    return compare(a, b) == 0;
-}
-
-template <std::size_t Bits, class Tag>
-inline bool
-operator!=(base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
-{
-    return compare(a, b) != 0;
+    return (lhs <=> rhs) == 0;
 }
 
 //------------------------------------------------------------------------------
 template <std::size_t Bits, class Tag>
-inline bool
+inline constexpr bool
 operator==(base_uint<Bits, Tag> const& a, std::uint64_t b)
 {
     return a == base_uint<Bits, Tag>(b);
 }
 
-template <std::size_t Bits, class Tag>
-inline bool
-operator!=(base_uint<Bits, Tag> const& a, std::uint64_t b)
-{
-    return !(a == b);
-}
-
 //------------------------------------------------------------------------------
 template <std::size_t Bits, class Tag>
-inline const base_uint<Bits, Tag>
+inline constexpr base_uint<Bits, Tag>
 operator^(base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
 {
     return base_uint<Bits, Tag>(a) ^= b;
 }
 
 template <std::size_t Bits, class Tag>
-inline const base_uint<Bits, Tag>
+inline constexpr base_uint<Bits, Tag>
 operator&(base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
 {
     return base_uint<Bits, Tag>(a) &= b;
 }
 
 template <std::size_t Bits, class Tag>
-inline const base_uint<Bits, Tag>
+inline constexpr base_uint<Bits, Tag>
 operator|(base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
 {
     return base_uint<Bits, Tag>(a) |= b;
 }
 
 template <std::size_t Bits, class Tag>
-inline const base_uint<Bits, Tag>
+inline constexpr base_uint<Bits, Tag>
 operator+(base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
 {
     return base_uint<Bits, Tag>(a) += b;

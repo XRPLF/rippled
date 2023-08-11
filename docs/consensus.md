@@ -469,7 +469,7 @@ struct Ledger
   // Whether the ledger's close time was a non-trivial consensus result
   bool closeAgree() const;
 
-  // The close time resolution used in determing the close time
+  // The close time resolution used in determining the close time
   NetClock::duration closeTimeResolution() const;
 
   // The (effective) close time, based on the closeTimeResolution

@@ -22,6 +22,7 @@
 #include <ripple/app/tx/apply.h>
 #include <ripple/app/tx/impl/SignerEntries.h>
 #include <ripple/app/tx/impl/Transactor.h>
+#include <ripple/app/tx/impl/details/NFTokenUtils.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/contract.h>
 #include <ripple/core/Config.h>
@@ -39,6 +40,27 @@ namespace ripple {
 NotTEC
 preflight0(PreflightContext const& ctx)
 {
+    uint32_t const nodeNID = ctx.app.config().NETWORK_ID;
+    std::optional<uint32_t> const txNID = ctx.tx[~sfNetworkID];
+
+    if (nodeNID <= 1024)
+    {
+        // legacy networks have IDs 1024 and below. These networks cannot
+        // specify NetworkID in txn
+        if (txNID)
+            return telNETWORK_ID_MAKES_TX_NON_CANONICAL;
+    }
+    else
+    {
+        // new networks both require the field to be present and require it to
+        // match
+        if (!txNID)
+            return telREQUIRES_NETWORK_ID;
+
+        if (*txNID != nodeNID)
+            return telWRONG_NETWORK;
+    }
+
     auto const txID = ctx.tx.getTransactionID();
 
     if (txID == beast::zero)
@@ -136,7 +158,7 @@ Transactor::Transactor(ApplyContext& ctx)
 {
 }
 
-FeeUnit64
+XRPAmount
 Transactor::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
     // Returns the fee in fee units.
@@ -144,7 +166,7 @@ Transactor::calculateBaseFee(ReadView const& view, STTx const& tx)
     // The computation has two parts:
     //  * The base fee, which is the same for most transactions.
     //  * The additional cost of each multisignature on the transaction.
-    FeeUnit64 const baseFee = safe_cast<FeeUnit64>(view.fees().units);
+    XRPAmount const baseFee = view.fees().base;
 
     // Each signer adds one more baseFee to the minimum required fee
     // for the transaction.
@@ -157,7 +179,7 @@ Transactor::calculateBaseFee(ReadView const& view, STTx const& tx)
 XRPAmount
 Transactor::minimumFee(
     Application& app,
-    FeeUnit64 baseFee,
+    XRPAmount baseFee,
     Fees const& fees,
     ApplyFlags flags)
 {
@@ -165,7 +187,7 @@ Transactor::minimumFee(
 }
 
 TER
-Transactor::checkFee(PreclaimContext const& ctx, FeeUnit64 baseFee)
+Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
 {
     if (!ctx.tx[sfFee].native())
         return temBAD_FEE;
@@ -174,15 +196,19 @@ Transactor::checkFee(PreclaimContext const& ctx, FeeUnit64 baseFee)
     if (!isLegalAmount(feePaid) || feePaid < beast::zero)
         return temBAD_FEE;
 
-    auto const feeDue =
-        minimumFee(ctx.app, baseFee, ctx.view.fees(), ctx.flags);
-
     // Only check fee is sufficient when the ledger is open.
-    if (ctx.view.open() && feePaid < feeDue)
+    if (ctx.view.open())
     {
-        JLOG(ctx.j.trace()) << "Insufficient fee paid: " << to_string(feePaid)
-                            << "/" << to_string(feeDue);
-        return telINSUF_FEE_P;
+        auto const feeDue =
+            minimumFee(ctx.app, baseFee, ctx.view.fees(), ctx.flags);
+
+        if (feePaid < feeDue)
+        {
+            JLOG(ctx.j.trace())
+                << "Insufficient fee paid: " << to_string(feePaid) << "/"
+                << to_string(feeDue);
+            return telINSUF_FEE_P;
+        }
     }
 
     if (feePaid == beast::zero)
@@ -712,6 +738,25 @@ removeUnfundedOffers(
     }
 }
 
+static void
+removeExpiredNFTokenOffers(
+    ApplyView& view,
+    std::vector<uint256> const& offers,
+    beast::Journal viewJ)
+{
+    std::size_t removed = 0;
+
+    for (auto const& index : offers)
+    {
+        if (auto const offer = view.peek(keylet::nftoffer(index)))
+        {
+            nft::deleteTokenOffer(view, offer);
+            if (++removed == expiredOfferRemoveLimit)
+                return;
+        }
+    }
+}
+
 /** Reset the context, discarding any changes made and adjust the fee */
 std::pair<TER, XRPAmount>
 Transactor::reset(XRPAmount fee)
@@ -758,6 +803,7 @@ Transactor::operator()()
     JLOG(j_.trace()) << "apply: " << ctx_.tx.getTransactionID();
 
     STAmountSO stAmountSO{view().rules().enabled(fixSTAmountCanonicalize)};
+    NumberSO stNumberSO{view().rules().enabled(fixUniversalNumber)};
 
 #ifdef DEBUG
     {
@@ -803,10 +849,14 @@ Transactor::operator()()
     }
     else if (
         (result == tecOVERSIZE) || (result == tecKILLED) ||
-        (isTecClaimHardFail(result, view().flags())))
+        (result == tecEXPIRED) || (isTecClaimHardFail(result, view().flags())))
     {
         JLOG(j_.trace()) << "reapplying because of " << transToken(result);
 
+        // FIXME: This mechanism for doing work while returning a `tec` is
+        //        awkward and very limiting. A more general purpose approach
+        //        should be used, making it possible to do more useful work
+        //        when transactions fail with a `tec` code.
         std::vector<uint256> removedOffers;
 
         if ((result == tecOVERSIZE) || (result == tecKILLED))
@@ -830,6 +880,25 @@ Transactor::operator()()
             });
         }
 
+        std::vector<uint256> expiredNFTokenOffers;
+
+        if (result == tecEXPIRED)
+        {
+            ctx_.visit([&expiredNFTokenOffers](
+                           uint256 const& index,
+                           bool isDelete,
+                           std::shared_ptr<SLE const> const& before,
+                           std::shared_ptr<SLE const> const& after) {
+                if (isDelete)
+                {
+                    assert(before && after);
+                    if (before && after &&
+                        (before->getType() == ltNFTOKEN_OFFER))
+                        expiredNFTokenOffers.push_back(index);
+                }
+            });
+        }
+
         // Reset the context, potentially adjusting the fee.
         {
             auto const resetResult = reset(fee);
@@ -843,6 +912,10 @@ Transactor::operator()()
         if ((result == tecOVERSIZE) || (result == tecKILLED))
             removeUnfundedOffers(
                 view(), removedOffers, ctx_.app.journal("View"));
+
+        if (result == tecEXPIRED)
+            removeExpiredNFTokenOffers(
+                view(), expiredNFTokenOffers, ctx_.app.journal("View"));
 
         applied = isTecClaim(result);
     }

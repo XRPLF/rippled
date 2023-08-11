@@ -622,13 +622,14 @@ private:
 
     void
     checkPropose(
-        Job& job,
+        bool isTrusted,
         std::shared_ptr<protocol::TMProposeSet> const& packet,
         RCLCxPeerPos peerPos);
 
     void
     checkValidation(
         std::shared_ptr<STValidation> const& val,
+        uint256 const& key,
         std::shared_ptr<protocol::TMValidation> const& packet);
 
     void

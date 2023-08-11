@@ -888,10 +888,14 @@ public:
     testExceptionalShutdown()
     {
         except([this] {
-            jtx::Env env{*this, jtx::envconfig([](std::unique_ptr<Config> cfg) {
-                             (*cfg).deprecatedClearSection("port_rpc");
-                             return cfg;
-                         })};
+            jtx::Env env{
+                *this,
+                jtx::envconfig([](std::unique_ptr<Config> cfg) {
+                    (*cfg).deprecatedClearSection("port_rpc");
+                    return cfg;
+                }),
+                nullptr,
+                beast::severities::kDisabled};
         });
         pass();
     }

@@ -24,7 +24,9 @@
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/SecretKey.h>
+
 #include <optional>
+#include <shared_mutex>
 #include <string>
 
 namespace ripple {
@@ -136,12 +138,14 @@ to_string(Manifest const& m);
 */
 /** @{ */
 std::optional<Manifest>
-deserializeManifest(Slice s);
+deserializeManifest(Slice s, beast::Journal journal);
 
 inline std::optional<Manifest>
-deserializeManifest(std::string const& s)
+deserializeManifest(
+    std::string const& s,
+    beast::Journal journal = beast::Journal(beast::Journal::getNullSink()))
 {
-    return deserializeManifest(makeSlice(s));
+    return deserializeManifest(makeSlice(s), journal);
 }
 
 template <
@@ -149,9 +153,11 @@ template <
     class = std::enable_if_t<
         std::is_same<T, char>::value || std::is_same<T, unsigned char>::value>>
 std::optional<Manifest>
-deserializeManifest(std::vector<T> const& v)
+deserializeManifest(
+    std::vector<T> const& v,
+    beast::Journal journal = beast::Journal(beast::Journal::getNullSink()))
 {
-    return deserializeManifest(makeSlice(v));
+    return deserializeManifest(makeSlice(v), journal);
 }
 /** @} */
 
@@ -178,7 +184,9 @@ struct ValidatorToken
 };
 
 std::optional<ValidatorToken>
-loadValidatorToken(std::vector<std::string> const& blob);
+loadValidatorToken(
+    std::vector<std::string> const& blob,
+    beast::Journal journal = beast::Journal(beast::Journal::getNullSink()));
 
 enum class ManifestDisposition {
     /// Manifest is valid
@@ -223,9 +231,8 @@ class DatabaseCon;
 class ManifestCache
 {
 private:
-    beast::Journal mutable j_;
-    std::mutex apply_mutex_;
-    std::mutex mutable read_mutex_;
+    beast::Journal j_;
+    std::shared_mutex mutable mutex_;
 
     /** Active manifests stored by master public key. */
     hash_map<PublicKey, Manifest> map_;
@@ -378,8 +385,10 @@ public:
 
     /** Invokes the callback once for every populated manifest.
 
-        @note Undefined behavior results when calling ManifestCache members from
-        within the callback
+        @note Do not call ManifestCache member functions from within the
+        callback. This can re-lock the mutex from the same thread, which is UB.
+        @note Do not write ManifestCache member variables from within the
+        callback. This can lead to data races.
 
         @param f Function called for each manifest
 
@@ -391,7 +400,7 @@ public:
     void
     for_each_manifest(Function&& f) const
     {
-        std::lock_guard lock{read_mutex_};
+        std::shared_lock lock{mutex_};
         for (auto const& [_, manifest] : map_)
         {
             (void)_;
@@ -401,8 +410,10 @@ public:
 
     /** Invokes the callback once for every populated manifest.
 
-        @note Undefined behavior results when calling ManifestCache members from
-        within the callback
+        @note Do not call ManifestCache member functions from within the
+        callback. This can re-lock the mutex from the same thread, which is UB.
+        @note Do not write ManifestCache member variables from
+        within the callback. This can lead to data races.
 
         @param pf Pre-function called with the maximum number of times f will be
             called (useful for memory allocations)
@@ -417,7 +428,7 @@ public:
     void
     for_each_manifest(PreFun&& pf, EachFun&& f) const
     {
-        std::lock_guard lock{read_mutex_};
+        std::shared_lock lock{mutex_};
         pf(map_.size());
         for (auto const& [_, manifest] : map_)
         {

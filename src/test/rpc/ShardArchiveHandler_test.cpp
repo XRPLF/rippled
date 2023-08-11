@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/app/rdb/RelationalDBInterface_shards.h>
+#include <ripple/app/rdb/ShardArchive.h>
 #include <ripple/beast/utility/temp_dir.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/nodestore/DummyScheduler.h>
@@ -173,7 +173,8 @@ public:
         }
         c->setupControl(true, true, true);
 
-        jtx::Env env(*this, std::move(c));
+        jtx::Env env(
+            *this, std::move(c), nullptr, beast::severities::kDisabled);
 
         std::uint8_t const numberOfDownloads = 10;
 
@@ -276,7 +277,8 @@ public:
             }
             c->setupControl(true, true, true);
 
-            jtx::Env env(*this, std::move(c));
+            jtx::Env env(
+                *this, std::move(c), nullptr, beast::severities::kDisabled);
 
             std::uint8_t const numberOfDownloads = 10;
 
@@ -380,7 +382,8 @@ public:
         }
         c->setupControl(true, true, true);
 
-        jtx::Env env(*this, std::move(c));
+        jtx::Env env(
+            *this, std::move(c), nullptr, beast::severities::kDisabled);
         std::uint8_t const numberOfDownloads = 10;
 
         // Create some ledgers so that the ShardArchiveHandler

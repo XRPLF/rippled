@@ -29,6 +29,7 @@
 #include <ripple/ledger/detail/ReadViewFwdRange.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/Protocol.h>
+#include <ripple/protocol/Rules.h>
 #include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/STLedgerEntry.h>
 #include <ripple/protocol/STTx.h>
@@ -48,7 +49,6 @@ namespace ripple {
 struct Fees
 {
     XRPAmount base{0};       // Reference tx cost (drops)
-    FeeUnit32 units{0};      // Reference fee units
     XRPAmount reserve{0};    // Reserve base (drops)
     XRPAmount increment{0};  // Reserve increment (drops)
 
@@ -66,15 +66,6 @@ struct Fees
     accountReserve(std::size_t ownerCount) const
     {
         return reserve + ownerCount * increment;
-    }
-
-    XRPAmount
-    toDrops(FeeUnit64 const& fee) const
-    {
-        if (auto const resultPair = mulDiv(base, fee, units); resultPair.first)
-            return resultPair.second;
-
-        return XRPAmount(STAmount::cMaxNativeN);
     }
 };
 
@@ -121,64 +112,6 @@ struct LedgerInfo
     // will close if there's no transactions.
     //
     NetClock::time_point closeTime = {};
-};
-
-//------------------------------------------------------------------------------
-
-class DigestAwareReadView;
-
-/** Rules controlling protocol behavior. */
-class Rules
-{
-private:
-    class Impl;
-
-    std::shared_ptr<Impl const> impl_;
-
-public:
-    Rules(Rules const&) = default;
-    Rules&
-    operator=(Rules const&) = default;
-
-    Rules() = delete;
-
-    /** Construct an empty rule set.
-
-        These are the rules reflected by
-        the genesis ledger.
-    */
-    explicit Rules(std::unordered_set<uint256, beast::uhash<>> const& presets);
-
-    /** Construct rules from a ledger.
-
-        The ledger contents are analyzed for rules
-        and amendments and extracted to the object.
-    */
-    explicit Rules(
-        DigestAwareReadView const& ledger,
-        std::unordered_set<uint256, beast::uhash<>> const& presets);
-
-    /** Returns `true` if a feature is enabled. */
-    bool
-    enabled(uint256 const& id) const;
-
-    /** Returns `true` if these rules don't match the ledger. */
-    bool
-    changed(DigestAwareReadView const& ledger) const;
-
-    /** Returns `true` if two rule sets are identical.
-
-        @note This is for diagnostics. To determine if new
-        rules should be constructed, call changed() first instead.
-    */
-    bool
-    operator==(Rules const&) const;
-
-    bool
-    operator!=(Rules const& other) const
-    {
-        return !(*this == other);
-    }
 };
 
 //------------------------------------------------------------------------------
@@ -422,6 +355,14 @@ getCloseAgree(LedgerInfo const& info)
 
 void
 addRaw(LedgerInfo const&, Serializer&, bool includeHash = false);
+
+Rules
+makeRulesGivenLedger(DigestAwareReadView const& ledger, Rules const& current);
+
+Rules
+makeRulesGivenLedger(
+    DigestAwareReadView const& ledger,
+    std::unordered_set<uint256, beast::uhash<>> const& presets);
 
 }  // namespace ripple
 

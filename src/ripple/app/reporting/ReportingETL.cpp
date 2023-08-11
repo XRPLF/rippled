@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/app/rdb/backend/RelationalDBInterfacePostgres.h>
+#include <ripple/app/rdb/backend/PostgresDatabase.h>
 #include <ripple/app/reporting/ReportingETL.h>
 
 #include <ripple/beast/core/CurrentThreadName.h>
@@ -155,7 +155,7 @@ ReportingETL::loadInitialLedger(uint32_t startingSequence)
     // Once the below call returns, all data has been pushed into the queue
     loadBalancer_.loadInitialLedger(startingSequence, writeQueue);
 
-    // null is used to respresent the end of the queue
+    // null is used to represent the end of the queue
     std::shared_ptr<SLE> null;
     writeQueue.push(null);
     // wait for the writer to finish
@@ -167,8 +167,7 @@ ReportingETL::loadInitialLedger(uint32_t startingSequence)
         if (app_.config().reporting())
         {
 #ifdef RIPPLED_REPORTING
-            dynamic_cast<RelationalDBInterfacePostgres*>(
-                &app_.getRelationalDBInterface())
+            dynamic_cast<PostgresDatabase*>(&app_.getRelationalDatabase())
                 ->writeLedgerAndTransactions(ledger->info(), accountTxData);
 #endif
         }
@@ -190,7 +189,10 @@ ReportingETL::flushLedger(std::shared_ptr<Ledger>& ledger)
     auto& txHash = ledger->info().txHash;
     auto& ledgerHash = ledger->info().hash;
 
-    ledger->setImmutable(app_.config(), false);
+    assert(
+        ledger->info().seq < XRP_LEDGER_EARLIEST_FEES ||
+        ledger->read(keylet::fees()));
+    ledger->setImmutable(false);
     auto start = std::chrono::system_clock::now();
 
     auto numFlushed = ledger->stateMap().flushDirty(hotACCOUNT_NODE);
@@ -524,14 +526,6 @@ ReportingETL::runETLPipeline(uint32_t startSequence)
             auto start = std::chrono::system_clock::now();
             std::optional<org::xrpl::rpc::v1::GetLedgerResponse> fetchResponse{
                 fetchLedgerDataAndDiff(currentSequence)};
-            auto end = std::chrono::system_clock::now();
-
-            auto time = ((end - start).count()) / 1000000000.0;
-            auto tps =
-                fetchResponse->transactions_list().transactions_size() / time;
-
-            JLOG(journal_.debug()) << "Extract phase time = " << time
-                                   << " . Extract phase tps = " << tps;
             // if the fetch is unsuccessful, stop. fetchLedger only returns
             // false if the server is shutting down, or if the ledger was
             // found in the database (which means another process already
@@ -543,6 +537,14 @@ ReportingETL::runETLPipeline(uint32_t startSequence)
             {
                 break;
             }
+            auto end = std::chrono::system_clock::now();
+
+            auto time = ((end - start).count()) / 1000000000.0;
+            auto tps =
+                fetchResponse->transactions_list().transactions_size() / time;
+
+            JLOG(journal_.debug()) << "Extract phase time = " << time
+                                   << " . Extract phase tps = " << tps;
 
             transformQueue.push(std::move(fetchResponse));
             ++currentSequence;
@@ -595,69 +597,69 @@ ReportingETL::runETLPipeline(uint32_t startSequence)
         loadQueue.push({});
     }};
 
-    std::thread loader{
-        [this, &lastPublishedSequence, &loadQueue, &writeConflict]() {
-            beast::setCurrentThreadName("rippled: ReportingETL load");
-            size_t totalTransactions = 0;
-            double totalTime = 0;
-            while (!writeConflict)
-            {
-                std::optional<std::pair<
-                    std::shared_ptr<Ledger>,
-                    std::vector<AccountTransactionsData>>>
-                    result{loadQueue.pop()};
-                // if result is an empty optional, the transformer thread has
-                // stopped and the loader should stop as well
-                if (!result)
-                    break;
-                if (isStopping())
-                    continue;
+    std::thread loader{[this,
+                        &lastPublishedSequence,
+                        &loadQueue,
+                        &writeConflict]() {
+        beast::setCurrentThreadName("rippled: ReportingETL load");
+        size_t totalTransactions = 0;
+        double totalTime = 0;
+        while (!writeConflict)
+        {
+            std::optional<std::pair<
+                std::shared_ptr<Ledger>,
+                std::vector<AccountTransactionsData>>>
+                result{loadQueue.pop()};
+            // if result is an empty optional, the transformer thread has
+            // stopped and the loader should stop as well
+            if (!result)
+                break;
+            if (isStopping())
+                continue;
 
-                auto& ledger = result->first;
-                auto& accountTxData = result->second;
+            auto& ledger = result->first;
+            auto& accountTxData = result->second;
 
-                auto start = std::chrono::system_clock::now();
-                // write to the key-value store
-                flushLedger(ledger);
+            auto start = std::chrono::system_clock::now();
+            // write to the key-value store
+            flushLedger(ledger);
 
-                auto mid = std::chrono::system_clock::now();
+            auto mid = std::chrono::system_clock::now();
             // write to RDBMS
             // if there is a write conflict, some other process has already
             // written this ledger and has taken over as the ETL writer
 #ifdef RIPPLED_REPORTING
-                if (!dynamic_cast<RelationalDBInterfacePostgres*>(
-                         &app_.getRelationalDBInterface())
-                         ->writeLedgerAndTransactions(
-                             ledger->info(), accountTxData))
-                    writeConflict = true;
+            if (!dynamic_cast<PostgresDatabase*>(&app_.getRelationalDatabase())
+                     ->writeLedgerAndTransactions(
+                         ledger->info(), accountTxData))
+                writeConflict = true;
 #endif
-                auto end = std::chrono::system_clock::now();
+            auto end = std::chrono::system_clock::now();
 
-                if (!writeConflict)
-                {
-                    publishLedger(ledger);
-                    lastPublishedSequence = ledger->info().seq;
-                }
-                // print some performance numbers
-                auto kvTime = ((mid - start).count()) / 1000000000.0;
-                auto relationalTime = ((end - mid).count()) / 1000000000.0;
-
-                size_t numTxns = accountTxData.size();
-                totalTime += kvTime;
-                totalTransactions += numTxns;
-                JLOG(journal_.info())
-                    << "Load phase of etl : "
-                    << "Successfully published ledger! Ledger info: "
-                    << detail::toString(ledger->info())
-                    << ". txn count = " << numTxns
-                    << ". key-value write time = " << kvTime
-                    << ". relational write time = " << relationalTime
-                    << ". key-value tps = " << numTxns / kvTime
-                    << ". relational tps = " << numTxns / relationalTime
-                    << ". total key-value tps = "
-                    << totalTransactions / totalTime;
+            if (!writeConflict)
+            {
+                publishLedger(ledger);
+                lastPublishedSequence = ledger->info().seq;
             }
-        }};
+            // print some performance numbers
+            auto kvTime = ((mid - start).count()) / 1000000000.0;
+            auto relationalTime = ((end - mid).count()) / 1000000000.0;
+
+            size_t numTxns = accountTxData.size();
+            totalTime += kvTime;
+            totalTransactions += numTxns;
+            JLOG(journal_.info())
+                << "Load phase of etl : "
+                << "Successfully published ledger! Ledger info: "
+                << detail::toString(ledger->info())
+                << ". txn count = " << numTxns
+                << ". key-value write time = " << kvTime
+                << ". relational write time = " << relationalTime
+                << ". key-value tps = " << numTxns / kvTime
+                << ". relational tps = " << numTxns / relationalTime
+                << ". total key-value tps = " << totalTransactions / totalTime;
+        }
+    }};
 
     // wait for all of the threads to stop
     loader.join();
@@ -929,10 +931,14 @@ ReportingETL::ReportingETL(Application& app)
         {
             auto const optStartSeq = section.get("start_sequence");
             if (optStartSeq)
+            {
+                // set a value so we can dereference
+                startSequence_ = 0;
                 asciiToIntThrows(
                     *startSequence_,
                     *optStartSeq,
                     "Expected integral start_sequence config entry. Got: ");
+            }
         }
 
         auto const optFlushInterval = section.get("flush_interval");

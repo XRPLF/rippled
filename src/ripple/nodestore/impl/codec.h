@@ -42,22 +42,30 @@ template <class BufferFactory>
 std::pair<void const*, std::size_t>
 lz4_decompress(void const* in, std::size_t in_size, BufferFactory&& bf)
 {
-    using std::runtime_error;
-    using namespace nudb::detail;
-    std::pair<void const*, std::size_t> result;
-    std::uint8_t const* p = reinterpret_cast<std::uint8_t const*>(in);
-    auto const n = read_varint(p, in_size, result.second);
-    if (n == 0)
-        Throw<std::runtime_error>("lz4 decompress: n == 0");
-    void* const out = bf(result.second);
-    result.first = out;
+    if (static_cast<int>(in_size) < 0)
+        Throw<std::runtime_error>("lz4_decompress: integer overflow (input)");
+
+    std::size_t outSize = 0;
+
+    auto const n = read_varint(
+        reinterpret_cast<std::uint8_t const*>(in), in_size, outSize);
+
+    if (n == 0 || n >= in_size)
+        Throw<std::runtime_error>("lz4_decompress: invalid blob");
+
+    if (static_cast<int>(outSize) <= 0)
+        Throw<std::runtime_error>("lz4_decompress: integer overflow (output)");
+
+    void* const out = bf(outSize);
+
     if (LZ4_decompress_safe(
             reinterpret_cast<char const*>(in) + n,
             reinterpret_cast<char*>(out),
-            in_size - n,
-            result.second) != result.second)
-        Throw<std::runtime_error>("lz4 decompress: LZ4_decompress_safe");
-    return result;
+            static_cast<int>(in_size - n),
+            static_cast<int>(outSize)) != static_cast<int>(outSize))
+        Throw<std::runtime_error>("lz4_decompress: LZ4_decompress_safe");
+
+    return {out, outSize};
 }
 
 template <class BufferFactory>

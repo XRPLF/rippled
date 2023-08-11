@@ -18,17 +18,28 @@
 //==============================================================================
 
 #include <ripple/app/tx/applySteps.h>
+#include <ripple/app/tx/impl/AMMBid.h>
+#include <ripple/app/tx/impl/AMMCreate.h>
+#include <ripple/app/tx/impl/AMMDeposit.h>
+#include <ripple/app/tx/impl/AMMVote.h>
+#include <ripple/app/tx/impl/AMMWithdraw.h>
 #include <ripple/app/tx/impl/ApplyContext.h>
 #include <ripple/app/tx/impl/CancelCheck.h>
 #include <ripple/app/tx/impl/CancelOffer.h>
 #include <ripple/app/tx/impl/CashCheck.h>
 #include <ripple/app/tx/impl/Change.h>
+#include <ripple/app/tx/impl/Clawback.h>
 #include <ripple/app/tx/impl/CreateCheck.h>
 #include <ripple/app/tx/impl/CreateOffer.h>
 #include <ripple/app/tx/impl/CreateTicket.h>
 #include <ripple/app/tx/impl/DeleteAccount.h>
 #include <ripple/app/tx/impl/DepositPreauth.h>
 #include <ripple/app/tx/impl/Escrow.h>
+#include <ripple/app/tx/impl/NFTokenAcceptOffer.h>
+#include <ripple/app/tx/impl/NFTokenBurn.h>
+#include <ripple/app/tx/impl/NFTokenCancelOffer.h>
+#include <ripple/app/tx/impl/NFTokenCreateOffer.h>
+#include <ripple/app/tx/impl/NFTokenMint.h>
 #include <ripple/app/tx/impl/PayChan.h>
 #include <ripple/app/tx/impl/Payment.h>
 #include <ripple/app/tx/impl/SetAccount.h>
@@ -132,6 +143,28 @@ invoke_preflight(PreflightContext const& ctx)
         case ttFEE:
         case ttUNL_MODIFY:
             return invoke_preflight_helper<Change>(ctx);
+        case ttNFTOKEN_MINT:
+            return invoke_preflight_helper<NFTokenMint>(ctx);
+        case ttNFTOKEN_BURN:
+            return invoke_preflight_helper<NFTokenBurn>(ctx);
+        case ttNFTOKEN_CREATE_OFFER:
+            return invoke_preflight_helper<NFTokenCreateOffer>(ctx);
+        case ttNFTOKEN_CANCEL_OFFER:
+            return invoke_preflight_helper<NFTokenCancelOffer>(ctx);
+        case ttNFTOKEN_ACCEPT_OFFER:
+            return invoke_preflight_helper<NFTokenAcceptOffer>(ctx);
+        case ttCLAWBACK:
+            return invoke_preflight_helper<Clawback>(ctx);
+        case ttAMM_CREATE:
+            return invoke_preflight_helper<AMMCreate>(ctx);
+        case ttAMM_DEPOSIT:
+            return invoke_preflight_helper<AMMDeposit>(ctx);
+        case ttAMM_WITHDRAW:
+            return invoke_preflight_helper<AMMWithdraw>(ctx);
+        case ttAMM_VOTE:
+            return invoke_preflight_helper<AMMVote>(ctx);
+        case ttAMM_BID:
+            return invoke_preflight_helper<AMMBid>(ctx);
         default:
             assert(false);
             return {temUNKNOWN, TxConsequences{temUNKNOWN}};
@@ -223,13 +256,35 @@ invoke_preclaim(PreclaimContext const& ctx)
         case ttFEE:
         case ttUNL_MODIFY:
             return invoke_preclaim<Change>(ctx);
+        case ttNFTOKEN_MINT:
+            return invoke_preclaim<NFTokenMint>(ctx);
+        case ttNFTOKEN_BURN:
+            return invoke_preclaim<NFTokenBurn>(ctx);
+        case ttNFTOKEN_CREATE_OFFER:
+            return invoke_preclaim<NFTokenCreateOffer>(ctx);
+        case ttNFTOKEN_CANCEL_OFFER:
+            return invoke_preclaim<NFTokenCancelOffer>(ctx);
+        case ttNFTOKEN_ACCEPT_OFFER:
+            return invoke_preclaim<NFTokenAcceptOffer>(ctx);
+        case ttCLAWBACK:
+            return invoke_preclaim<Clawback>(ctx);
+        case ttAMM_CREATE:
+            return invoke_preclaim<AMMCreate>(ctx);
+        case ttAMM_DEPOSIT:
+            return invoke_preclaim<AMMDeposit>(ctx);
+        case ttAMM_WITHDRAW:
+            return invoke_preclaim<AMMWithdraw>(ctx);
+        case ttAMM_VOTE:
+            return invoke_preclaim<AMMVote>(ctx);
+        case ttAMM_BID:
+            return invoke_preclaim<AMMBid>(ctx);
         default:
             assert(false);
             return temUNKNOWN;
     }
 }
 
-static FeeUnit64
+static XRPAmount
 invoke_calculateBaseFee(ReadView const& view, STTx const& tx)
 {
     switch (tx.getTxnType())
@@ -276,9 +331,31 @@ invoke_calculateBaseFee(ReadView const& view, STTx const& tx)
         case ttFEE:
         case ttUNL_MODIFY:
             return Change::calculateBaseFee(view, tx);
+        case ttNFTOKEN_MINT:
+            return NFTokenMint::calculateBaseFee(view, tx);
+        case ttNFTOKEN_BURN:
+            return NFTokenBurn::calculateBaseFee(view, tx);
+        case ttNFTOKEN_CREATE_OFFER:
+            return NFTokenCreateOffer::calculateBaseFee(view, tx);
+        case ttNFTOKEN_CANCEL_OFFER:
+            return NFTokenCancelOffer::calculateBaseFee(view, tx);
+        case ttNFTOKEN_ACCEPT_OFFER:
+            return NFTokenAcceptOffer::calculateBaseFee(view, tx);
+        case ttCLAWBACK:
+            return Clawback::calculateBaseFee(view, tx);
+        case ttAMM_CREATE:
+            return AMMCreate::calculateBaseFee(view, tx);
+        case ttAMM_DEPOSIT:
+            return AMMDeposit::calculateBaseFee(view, tx);
+        case ttAMM_WITHDRAW:
+            return AMMWithdraw::calculateBaseFee(view, tx);
+        case ttAMM_VOTE:
+            return AMMVote::calculateBaseFee(view, tx);
+        case ttAMM_BID:
+            return AMMBid::calculateBaseFee(view, tx);
         default:
             assert(false);
-            return FeeUnit64{0};
+            return XRPAmount{0};
     }
 }
 
@@ -408,6 +485,50 @@ invoke_apply(ApplyContext& ctx)
             Change p(ctx);
             return p();
         }
+        case ttNFTOKEN_MINT: {
+            NFTokenMint p(ctx);
+            return p();
+        }
+        case ttNFTOKEN_BURN: {
+            NFTokenBurn p(ctx);
+            return p();
+        }
+        case ttNFTOKEN_CREATE_OFFER: {
+            NFTokenCreateOffer p(ctx);
+            return p();
+        }
+        case ttNFTOKEN_CANCEL_OFFER: {
+            NFTokenCancelOffer p(ctx);
+            return p();
+        }
+        case ttNFTOKEN_ACCEPT_OFFER: {
+            NFTokenAcceptOffer p(ctx);
+            return p();
+        }
+        case ttCLAWBACK: {
+            Clawback p(ctx);
+            return p();
+        }
+        case ttAMM_CREATE: {
+            AMMCreate p(ctx);
+            return p();
+        }
+        case ttAMM_DEPOSIT: {
+            AMMDeposit p(ctx);
+            return p();
+        }
+        case ttAMM_WITHDRAW: {
+            AMMWithdraw p(ctx);
+            return p();
+        }
+        case ttAMM_VOTE: {
+            AMMVote p(ctx);
+            return p();
+        }
+        case ttAMM_BID: {
+            AMMBid p(ctx);
+            return p();
+        }
         default:
             assert(false);
             return {temUNKNOWN, false};
@@ -480,7 +601,7 @@ preclaim(
     }
 }
 
-FeeUnit64
+XRPAmount
 calculateBaseFee(ReadView const& view, STTx const& tx)
 {
     return invoke_calculateBaseFee(view, tx);
@@ -489,7 +610,7 @@ calculateBaseFee(ReadView const& view, STTx const& tx)
 XRPAmount
 calculateDefaultBaseFee(ReadView const& view, STTx const& tx)
 {
-    return view.fees().toDrops(Transactor::calculateBaseFee(view, tx));
+    return Transactor::calculateBaseFee(view, tx);
 }
 
 std::pair<TER, bool>

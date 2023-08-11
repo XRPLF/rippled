@@ -43,10 +43,10 @@ class PathRequests;
 // Return values from parseJson <0 = invalid, >0 = valid
 #define PFR_PJ_INVALID -1
 #define PFR_PJ_NOCHANGE 0
-#define PFR_PJ_CHANGE 1
 
-class PathRequest : public std::enable_shared_from_this<PathRequest>,
-                    public CountedObject<PathRequest>
+class PathRequest final : public InfoSubRequest,
+                          public std::enable_shared_from_this<PathRequest>,
+                          public CountedObject<PathRequest>
 {
 public:
     using wptr = std::weak_ptr<PathRequest>;
@@ -55,8 +55,6 @@ public:
     using wref = const wptr&;
 
 public:
-    // VFALCO TODO Break the cyclic dependency on InfoSub
-
     // path_find semantics
     // Subscriber is updated
     PathRequest(
@@ -91,15 +89,20 @@ public:
     doCreate(std::shared_ptr<RippleLineCache> const&, Json::Value const&);
 
     Json::Value
-    doClose(Json::Value const&);
+    doClose() override;
     Json::Value
-    doStatus(Json::Value const&);
+    doStatus(Json::Value const&) override;
+    void
+    doAborting() const;
 
     // update jvStatus
     Json::Value
-    doUpdate(std::shared_ptr<RippleLineCache> const&, bool fast);
+    doUpdate(
+        std::shared_ptr<RippleLineCache> const&,
+        bool fast,
+        std::function<bool(void)> const& continueCallback = {});
     InfoSub::pointer
-    getSubscriber();
+    getSubscriber() const;
     bool
     hasCompletion();
 
@@ -113,13 +116,18 @@ private:
         hash_map<Currency, std::unique_ptr<Pathfinder>>&,
         Currency const&,
         STAmount const&,
-        int const);
+        int const,
+        std::function<bool(void)> const&);
 
     /** Finds and sets a PathSet in the JSON argument.
         Returns false if the source currencies are inavlid.
     */
     bool
-    findPaths(std::shared_ptr<RippleLineCache> const&, int const, Json::Value&);
+    findPaths(
+        std::shared_ptr<RippleLineCache> const&,
+        int const,
+        Json::Value&,
+        std::function<bool(void)> const&);
 
     int
     parseJson(Json::Value const&);
@@ -156,7 +164,7 @@ private:
     int iLevel;
     bool bLastSuccess;
 
-    int iIdentifier;
+    int const iIdentifier;
 
     std::chrono::steady_clock::time_point const created_;
     std::chrono::steady_clock::time_point quick_reply_;

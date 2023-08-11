@@ -18,19 +18,22 @@
 //==============================================================================
 
 #include <ripple/app/ledger/LedgerMaster.h>
+#include <ripple/app/ledger/LedgerToJson.h>
 #include <ripple/app/ledger/OpenLedger.h>
 #include <ripple/app/misc/Transaction.h>
-#include <ripple/app/rdb/RelationalDBInterface.h>
+#include <ripple/app/paths/TrustLine.h>
+#include <ripple/app/rdb/RelationalDatabase.h>
+#include <ripple/app/tx/impl/details/NFTokenUtils.h>
 #include <ripple/ledger/View.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/AccountID.h>
 #include <ripple/protocol/Feature.h>
+#include <ripple/protocol/nftPageMask.h>
+#include <ripple/resource/Fees.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/DeliveredAmount.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 #include <boost/algorithm/string/case_conv.hpp>
-
-#include <ripple/rpc/impl/GRPCHelpers.h>
 
 namespace ripple {
 namespace RPC {
@@ -89,16 +92,149 @@ accountFromString(AccountID& result, std::string const& strIdent, bool bStrict)
         return Json::objectValue;
 }
 
+std::uint64_t
+getStartHint(std::shared_ptr<SLE const> const& sle, AccountID const& accountID)
+{
+    if (sle->getType() == ltRIPPLE_STATE)
+    {
+        if (sle->getFieldAmount(sfLowLimit).getIssuer() == accountID)
+            return sle->getFieldU64(sfLowNode);
+        else if (sle->getFieldAmount(sfHighLimit).getIssuer() == accountID)
+            return sle->getFieldU64(sfHighNode);
+    }
+
+    if (!sle->isFieldPresent(sfOwnerNode))
+        return 0;
+
+    return sle->getFieldU64(sfOwnerNode);
+}
+
+bool
+isRelatedToAccount(
+    ReadView const& ledger,
+    std::shared_ptr<SLE const> const& sle,
+    AccountID const& accountID)
+{
+    if (sle->getType() == ltRIPPLE_STATE)
+    {
+        return (sle->getFieldAmount(sfLowLimit).getIssuer() == accountID) ||
+            (sle->getFieldAmount(sfHighLimit).getIssuer() == accountID);
+    }
+    else if (sle->isFieldPresent(sfAccount))
+    {
+        // If there's an sfAccount present, also test the sfDestination, if
+        // present. This will match objects such as Escrows (ltESCROW), Payment
+        // Channels (ltPAYCHAN), and Checks (ltCHECK) because those are added to
+        // the Destination account's directory. It intentionally EXCLUDES
+        // NFToken Offers (ltNFTOKEN_OFFER). NFToken Offers are NOT added to the
+        // Destination account's directory.
+        return sle->getAccountID(sfAccount) == accountID ||
+            (sle->isFieldPresent(sfDestination) &&
+             sle->getAccountID(sfDestination) == accountID);
+    }
+    else if (sle->getType() == ltSIGNER_LIST)
+    {
+        Keylet const accountSignerList = keylet::signers(accountID);
+        return sle->key() == accountSignerList.key;
+    }
+    else if (sle->getType() == ltNFTOKEN_OFFER)
+    {
+        // Do not check the sfDestination field. NFToken Offers are NOT added to
+        // the Destination account's directory.
+        return sle->getAccountID(sfOwner) == accountID;
+    }
+
+    return false;
+}
+
 bool
 getAccountObjects(
     ReadView const& ledger,
     AccountID const& account,
     std::optional<std::vector<LedgerEntryType>> const& typeFilter,
     uint256 dirIndex,
-    uint256 const& entryIndex,
+    uint256 entryIndex,
     std::uint32_t const limit,
     Json::Value& jvResult)
 {
+    auto typeMatchesFilter = [](std::vector<LedgerEntryType> const& typeFilter,
+                                LedgerEntryType ledgerType) {
+        auto it = std::find(typeFilter.begin(), typeFilter.end(), ledgerType);
+        return it != typeFilter.end();
+    };
+
+    // if dirIndex != 0, then all NFTs have already been returned.  only
+    // iterate NFT pages if the filter says so AND dirIndex == 0
+    bool iterateNFTPages =
+        (!typeFilter.has_value() ||
+         typeMatchesFilter(typeFilter.value(), ltNFTOKEN_PAGE)) &&
+        dirIndex == beast::zero;
+
+    Keylet const firstNFTPage = keylet::nftpage_min(account);
+
+    // we need to check the marker to see if it is an NFTTokenPage index.
+    if (iterateNFTPages && entryIndex != beast::zero)
+    {
+        // if it is we will try to iterate the pages up to the limit
+        // and then change over to the owner directory
+
+        if (firstNFTPage.key != (entryIndex & ~nft::pageMask))
+            iterateNFTPages = false;
+    }
+
+    auto& jvObjects = (jvResult[jss::account_objects] = Json::arrayValue);
+
+    // this is a mutable version of limit, used to seemlessly switch
+    // to iterating directory entries when nftokenpages are exhausted
+    uint32_t mlimit = limit;
+
+    // iterate NFTokenPages preferentially
+    if (iterateNFTPages)
+    {
+        Keylet const first = entryIndex == beast::zero
+            ? firstNFTPage
+            : Keylet{ltNFTOKEN_PAGE, entryIndex};
+
+        Keylet const last = keylet::nftpage_max(account);
+
+        // current key
+        uint256 ck = ledger.succ(first.key, last.key.next()).value_or(last.key);
+
+        // current page
+        auto cp = ledger.read(Keylet{ltNFTOKEN_PAGE, ck});
+
+        while (cp)
+        {
+            jvObjects.append(cp->getJson(JsonOptions::none));
+            auto const npm = (*cp)[~sfNextPageMin];
+            if (npm)
+                cp = ledger.read(Keylet(ltNFTOKEN_PAGE, *npm));
+            else
+                cp = nullptr;
+
+            if (--mlimit == 0)
+            {
+                if (cp)
+                {
+                    jvResult[jss::limit] = limit;
+                    jvResult[jss::marker] = std::string("0,") + to_string(ck);
+                    return true;
+                }
+            }
+
+            if (!npm)
+                break;
+
+            ck = *npm;
+        }
+
+        // if execution reaches here then we're about to transition
+        // to iterating the root directory (and the conventional
+        // behaviour of this RPC function.) Therefore we should
+        // zero entryIndex so as not to terribly confuse things.
+        entryIndex = beast::zero;
+    }
+
     auto const root = keylet::ownerDir(account);
     auto found = false;
 
@@ -110,10 +246,13 @@ getAccountObjects(
 
     auto dir = ledger.read({ltDIR_NODE, dirIndex});
     if (!dir)
-        return false;
+    {
+        // it's possible the user had nftoken pages but no
+        // directory entries
+        return mlimit < limit;
+    }
 
     std::uint32_t i = 0;
-    auto& jvObjects = (jvResult[jss::account_objects] = Json::arrayValue);
     for (;;)
     {
         auto const& entries = dir->getFieldV256(sfIndexes);
@@ -128,35 +267,37 @@ getAccountObjects(
             found = true;
         }
 
+        // it's possible that the returned NFTPages exactly filled the
+        // response.  Check for that condition.
+        if (i == mlimit && mlimit < limit)
+        {
+            jvResult[jss::limit] = limit;
+            jvResult[jss::marker] =
+                to_string(dirIndex) + ',' + to_string(*iter);
+            return true;
+        }
+
         for (; iter != entries.end(); ++iter)
         {
             auto const sleNode = ledger.read(keylet::child(*iter));
-
-            auto typeMatchesFilter =
-                [](std::vector<LedgerEntryType> const& typeFilter,
-                   LedgerEntryType ledgerType) {
-                    auto it = std::find(
-                        typeFilter.begin(), typeFilter.end(), ledgerType);
-                    return it != typeFilter.end();
-                };
 
             if (!typeFilter.has_value() ||
                 typeMatchesFilter(typeFilter.value(), sleNode->getType()))
             {
                 jvObjects.append(sleNode->getJson(JsonOptions::none));
+            }
 
-                if (++i == limit)
+            if (++i == mlimit)
+            {
+                if (++iter != entries.end())
                 {
-                    if (++iter != entries.end())
-                    {
-                        jvResult[jss::limit] = limit;
-                        jvResult[jss::marker] =
-                            to_string(dirIndex) + ',' + to_string(*iter);
-                        return true;
-                    }
-
-                    break;
+                    jvResult[jss::limit] = limit;
+                    jvResult[jss::marker] =
+                        to_string(dirIndex) + ',' + to_string(*iter);
+                    return true;
                 }
+
+                break;
             }
         }
 
@@ -169,7 +310,7 @@ getAccountObjects(
         if (!dir)
             return true;
 
-        if (i == limit)
+        if (i == mlimit)
         {
             auto const& e = dir->getFieldV256(sfIndexes);
             if (!e.empty())
@@ -255,12 +396,6 @@ ledgerFromRequest(T& ledger, GRPCContext<R>& context)
     R& request = context.params;
     return ledgerFromSpecifier(ledger, request.ledger(), context);
 }
-
-// explicit instantiation of above function
-template Status
-ledgerFromRequest<>(
-    std::shared_ptr<ReadView const>&,
-    GRPCContext<org::xrpl::rpc::v1::GetAccountInfoRequest>&);
 
 // explicit instantiation of above function
 template Status
@@ -495,7 +630,7 @@ isValidated(
             {
                 assert(hash->isNonZero());
                 uint256 valHash =
-                    app.getRelationalDBInterface().getHashByIndex(seq);
+                    app.getRelationalDatabase().getHashByIndex(seq);
                 if (valHash == ledger.info().hash)
                 {
                     // SQL database doesn't match ledger chain
@@ -654,19 +789,31 @@ parseRippleLibSeed(Json::Value const& value)
 std::optional<Seed>
 getSeedFromRPC(Json::Value const& params, Json::Value& error)
 {
-    // The array should be constexpr, but that makes Visual Studio unhappy.
-    static char const* const seedTypes[]{
-        jss::passphrase.c_str(), jss::seed.c_str(), jss::seed_hex.c_str()};
+    using string_to_seed_t =
+        std::function<std::optional<Seed>(std::string const&)>;
+    using seed_match_t = std::pair<char const*, string_to_seed_t>;
+
+    static seed_match_t const seedTypes[]{
+        {jss::passphrase.c_str(),
+         [](std::string const& s) { return parseGenericSeed(s); }},
+        {jss::seed.c_str(),
+         [](std::string const& s) { return parseBase58<Seed>(s); }},
+        {jss::seed_hex.c_str(), [](std::string const& s) {
+             uint128 i;
+             if (i.parseHex(s))
+                 return std::optional<Seed>(Slice(i.data(), i.size()));
+             return std::optional<Seed>{};
+         }}};
 
     // Identify which seed type is in use.
-    char const* seedType = nullptr;
+    seed_match_t const* seedType = nullptr;
     int count = 0;
-    for (auto t : seedTypes)
+    for (auto const& t : seedTypes)
     {
-        if (params.isMember(t))
+        if (params.isMember(t.first))
         {
             ++count;
-            seedType = t;
+            seedType = &t;
         }
     }
 
@@ -680,28 +827,17 @@ getSeedFromRPC(Json::Value const& params, Json::Value& error)
     }
 
     // Make sure a string is present
-    if (!params[seedType].isString())
+    auto const& param = params[seedType->first];
+    if (!param.isString())
     {
-        error = RPC::expected_field_error(seedType, "string");
+        error = RPC::expected_field_error(seedType->first, "string");
         return std::nullopt;
     }
 
-    auto const fieldContents = params[seedType].asString();
+    auto const fieldContents = param.asString();
 
     // Convert string to seed.
-    std::optional<Seed> seed;
-
-    if (seedType == jss::seed.c_str())
-        seed = parseBase58<Seed>(fieldContents);
-    else if (seedType == jss::passphrase.c_str())
-        seed = parseGenericSeed(fieldContents);
-    else if (seedType == jss::seed_hex.c_str())
-    {
-        uint128 s;
-
-        if (s.parseHex(fieldContents))
-            seed.emplace(Slice(s.data(), s.size()));
-    }
+    std::optional<Seed> seed = seedType->second(fieldContents);
 
     if (!seed)
         error = rpcError(rpcBAD_SEED);
@@ -715,7 +851,6 @@ keypairForSignature(Json::Value const& params, Json::Value& error)
     bool const has_key_type = params.isMember(jss::key_type);
 
     // All of the secret types we allow, but only one at a time.
-    // The array should be constexpr, but that makes Visual Studio unhappy.
     static char const* const secretTypes[]{
         jss::passphrase.c_str(),
         jss::secret.c_str(),
@@ -769,7 +904,9 @@ keypairForSignature(Json::Value const& params, Json::Value& error)
             return {};
         }
 
-        if (secretType == jss::secret.c_str())
+        // using strcmp as pointers may not match (see
+        // https://developercommunity.visualstudio.com/t/assigning-constexpr-char--to-static-cha/10021357?entry=problem)
+        if (strcmp(secretType, jss::secret.c_str()) == 0)
         {
             error = RPC::make_param_error(
                 "The secret field is not allowed if " +
@@ -781,7 +918,9 @@ keypairForSignature(Json::Value const& params, Json::Value& error)
     // ripple-lib encodes seed used to generate an Ed25519 wallet in a
     // non-standard way. While we never encode seeds that way, we try
     // to detect such keys to avoid user confusion.
-    if (secretType != jss::seed_hex.c_str())
+    // using strcmp as pointers may not match (see
+    // https://developercommunity.visualstudio.com/t/assigning-constexpr-char--to-static-cha/10021357?entry=problem)
+    if (strcmp(secretType, jss::seed_hex.c_str()) != 0)
     {
         seed = RPC::parseRippleLibSeed(params[secretType]);
 
@@ -842,7 +981,7 @@ chooseLedgerEntryType(Json::Value const& params)
     std::pair<RPC::Status, LedgerEntryType> result{RPC::Status::OK, ltANY};
     if (params.isMember(jss::type))
     {
-        static constexpr std::array<std::pair<char const*, LedgerEntryType>, 13>
+        static constexpr std::array<std::pair<char const*, LedgerEntryType>, 16>
             types{
                 {{jss::account, ltACCOUNT_ROOT},
                  {jss::amendments, ltAMENDMENTS},
@@ -856,7 +995,10 @@ chooseLedgerEntryType(Json::Value const& params)
                  {jss::payment_channel, ltPAYCHAN},
                  {jss::signer_list, ltSIGNER_LIST},
                  {jss::state, ltRIPPLE_STATE},
-                 {jss::ticket, ltTICKET}}};
+                 {jss::ticket, ltTICKET},
+                 {jss::nft_offer, ltNFTOKEN_OFFER},
+                 {jss::nft_page, ltNFTOKEN_PAGE},
+                 {jss::amm, ltAMM}}};
 
         auto const& p = params[jss::type];
         if (!p.isString())
@@ -909,5 +1051,119 @@ getAPIVersionNumber(Json::Value const& jv, bool betaEnabled)
     return requestedVersion.asUInt();
 }
 
+std::variant<std::shared_ptr<Ledger const>, Json::Value>
+getLedgerByContext(RPC::JsonContext& context)
+{
+    if (context.app.config().reporting())
+        return rpcError(rpcREPORTING_UNSUPPORTED);
+
+    auto const hasHash = context.params.isMember(jss::ledger_hash);
+    auto const hasIndex = context.params.isMember(jss::ledger_index);
+    std::uint32_t ledgerIndex = 0;
+
+    auto& ledgerMaster = context.app.getLedgerMaster();
+    LedgerHash ledgerHash;
+
+    if ((hasHash && hasIndex) || !(hasHash || hasIndex))
+    {
+        return RPC::make_param_error(
+            "Exactly one of ledger_hash and ledger_index can be set.");
+    }
+
+    context.loadType = Resource::feeHighBurdenRPC;
+
+    if (hasHash)
+    {
+        auto const& jsonHash = context.params[jss::ledger_hash];
+        if (!jsonHash.isString() || !ledgerHash.parseHex(jsonHash.asString()))
+            return RPC::invalid_field_error(jss::ledger_hash);
+    }
+    else
+    {
+        auto const& jsonIndex = context.params[jss::ledger_index];
+        if (!jsonIndex.isInt())
+            return RPC::invalid_field_error(jss::ledger_index);
+
+        // We need a validated ledger to get the hash from the sequence
+        if (ledgerMaster.getValidatedLedgerAge() >
+            RPC::Tuning::maxValidatedLedgerAge)
+        {
+            if (context.apiVersion == 1)
+                return rpcError(rpcNO_CURRENT);
+            return rpcError(rpcNOT_SYNCED);
+        }
+
+        ledgerIndex = jsonIndex.asInt();
+        auto ledger = ledgerMaster.getValidatedLedger();
+
+        if (ledgerIndex >= ledger->info().seq)
+            return RPC::make_param_error("Ledger index too large");
+        if (ledgerIndex <= 0)
+            return RPC::make_param_error("Ledger index too small");
+
+        auto const j = context.app.journal("RPCHandler");
+        // Try to get the hash of the desired ledger from the validated ledger
+        auto neededHash = hashOfSeq(*ledger, ledgerIndex, j);
+        if (!neededHash)
+        {
+            // Find a ledger more likely to have the hash of the desired ledger
+            auto const refIndex = getCandidateLedger(ledgerIndex);
+            auto refHash = hashOfSeq(*ledger, refIndex, j);
+            assert(refHash);
+
+            ledger = ledgerMaster.getLedgerByHash(*refHash);
+            if (!ledger)
+            {
+                // We don't have the ledger we need to figure out which ledger
+                // they want. Try to get it.
+
+                if (auto il = context.app.getInboundLedgers().acquire(
+                        *refHash, refIndex, InboundLedger::Reason::GENERIC))
+                {
+                    Json::Value jvResult = RPC::make_error(
+                        rpcLGR_NOT_FOUND,
+                        "acquiring ledger containing requested index");
+                    jvResult[jss::acquiring] =
+                        getJson(LedgerFill(*il, &context));
+                    return jvResult;
+                }
+
+                if (auto il = context.app.getInboundLedgers().find(*refHash))
+                {
+                    Json::Value jvResult = RPC::make_error(
+                        rpcLGR_NOT_FOUND,
+                        "acquiring ledger containing requested index");
+                    jvResult[jss::acquiring] = il->getJson(0);
+                    return jvResult;
+                }
+
+                // Likely the app is shutting down
+                return Json::Value();
+            }
+
+            neededHash = hashOfSeq(*ledger, ledgerIndex, j);
+        }
+        assert(neededHash);
+        ledgerHash = neededHash ? *neededHash : beast::zero;  // kludge
+    }
+
+    // Try to get the desired ledger
+    // Verify all nodes even if we think we have it
+    auto ledger = context.app.getInboundLedgers().acquire(
+        ledgerHash, ledgerIndex, InboundLedger::Reason::GENERIC);
+
+    // In standalone mode, accept the ledger from the ledger cache
+    if (!ledger && context.app.config().standalone())
+        ledger = ledgerMaster.getLedgerByHash(ledgerHash);
+
+    if (ledger)
+        return ledger;
+
+    if (auto il = context.app.getInboundLedgers().find(ledgerHash))
+        return il->getJson(0);
+
+    return RPC::make_error(
+        rpcNOT_READY, "findCreate failed to return an inbound ledger");
+}
 }  // namespace RPC
 }  // namespace ripple

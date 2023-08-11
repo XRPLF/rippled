@@ -135,6 +135,12 @@ public:
     Json::Value
     getDatabaseImportStatus() const override;
 
+    Json::Value
+    startNodeToShard() override;
+
+    Json::Value
+    stopNodeToShard() override;
+
     std::optional<std::uint32_t>
     getDatabaseImportSequence() const override;
 
@@ -285,6 +291,9 @@ private:
     // Thread for running node store import
     std::thread databaseImporter_;
 
+    // Indicates whether the import should stop
+    std::atomic_bool haltDatabaseImport_{false};
+
     // Initialize settings from the configuration file
     // Lock must be held
     bool
@@ -294,7 +303,8 @@ private:
     fetchNodeObject(
         uint256 const& hash,
         std::uint32_t ledgerSeq,
-        FetchReport& fetchReport) override;
+        FetchReport& fetchReport,
+        bool duplicate) override;
 
     void
     for_each(std::function<void(std::shared_ptr<NodeObject>)> f) override
@@ -407,6 +417,10 @@ private:
     // Update peers with the status of every complete and incomplete shard
     void
     updatePeers(std::lock_guard<std::mutex> const& lock) const;
+
+    // Start the node store import process
+    void
+    startDatabaseImportThread(std::lock_guard<std::mutex> const&);
 };
 
 }  // namespace NodeStore

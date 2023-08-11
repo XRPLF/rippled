@@ -19,7 +19,7 @@
 
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/LoadFeeTrack.h>
-#include <ripple/app/paths/RippleState.h>
+#include <ripple/app/paths/TrustLine.h>
 #include <ripple/ledger/ReadView.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
@@ -40,17 +40,17 @@ fillTransaction(
     ReadView const& ledger)
 {
     txArray["Sequence"] = Json::UInt(sequence++);
-    txArray["Account"] = context.app.accountIDCache().toBase58(accountID);
+    txArray["Account"] = toBase58(accountID);
     auto& fees = ledger.fees();
     // Convert the reference transaction cost in fee units to drops
     // scaled to represent the current fee load.
     txArray["Fee"] =
-        scaleFeeLoad(fees.units, context.app.getFeeTrack(), fees, false)
+        scaleFeeLoad(fees.base, context.app.getFeeTrack(), fees, false)
             .jsonClipped();
 }
 
 // {
-//   account: <account>|<account_public_key>
+//   account: <account>
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>
 //   limit: integer                 // optional, number of problems
@@ -92,17 +92,13 @@ doNoRippleCheck(RPC::JsonContext& context)
     Json::Value& jvTransactions =
         transactions ? (result[jss::transactions] = Json::arrayValue) : dummy;
 
-    std::string strIdent(params[jss::account].asString());
-    AccountID accountID;
-
-    if (auto jv = RPC::accountFromString(accountID, strIdent))
+    auto id = parseBase58<AccountID>(params[jss::account].asString());
+    if (!id)
     {
-        for (auto it(jv.begin()); it != jv.end(); ++it)
-            result[it.memberName()] = *it;
-
+        RPC::inject_error(rpcACT_MALFORMED, result);
         return result;
     }
-
+    auto const accountID{std::move(id.value())};
     auto const sle = ledger->read(keylet::account(accountID));
     if (!sle)
         return rpcError(rpcACT_NOT_FOUND);

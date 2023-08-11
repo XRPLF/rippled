@@ -22,7 +22,7 @@
 #include <ripple/beast/core/CurrentThreadName.h>
 #include <ripple/resource/Fees.h>
 
-#include <beast/net/IPAddressConversion.h>
+#include <ripple/beast/net/IPAddressConversion.h>
 
 namespace ripple {
 
@@ -144,11 +144,11 @@ GRPCServerImpl::CallData<Request, Response>::process(
     {
         auto usage = getUsage();
         bool isUnlimited = clientIsUnlimited();
-        if (!isUnlimited && usage.disconnect())
+        if (!isUnlimited && usage.disconnect(app_.journal("gRPCServer")))
         {
             grpc::Status status{
                 grpc::StatusCode::RESOURCE_EXHAUSTED,
-                "usage balance exceeds threshhold"};
+                "usage balance exceeds threshold"};
             responder_.FinishWithError(status, this);
         }
         else
@@ -429,7 +429,7 @@ GRPCServerImpl::GRPCServerImpl(Application& app)
     // if present, get endpoint from config
     if (app_.config().exists("port_grpc"))
     {
-        Section section = app_.config().section("port_grpc");
+        const auto& section = app_.config().section("port_grpc");
 
         auto const optIp = section.get("ip");
         if (!optIp)
@@ -589,94 +589,6 @@ GRPCServerImpl::setupListeners()
     auto addToRequests = [&requests](auto callData) {
         requests.push_back(std::move(callData));
     };
-
-    {
-        using cd = CallData<
-            org::xrpl::rpc::v1::GetFeeRequest,
-            org::xrpl::rpc::v1::GetFeeResponse>;
-
-        addToRequests(std::make_shared<cd>(
-            service_,
-            *cq_,
-            app_,
-            &org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService::
-                RequestGetFee,
-            doFeeGrpc,
-            &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetFee,
-            RPC::NEEDS_CURRENT_LEDGER,
-            Resource::feeReferenceRPC,
-            secureGatewayIPs_));
-    }
-    {
-        using cd = CallData<
-            org::xrpl::rpc::v1::GetAccountInfoRequest,
-            org::xrpl::rpc::v1::GetAccountInfoResponse>;
-
-        addToRequests(std::make_shared<cd>(
-            service_,
-            *cq_,
-            app_,
-            &org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService::
-                RequestGetAccountInfo,
-            doAccountInfoGrpc,
-            &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetAccountInfo,
-            RPC::NO_CONDITION,
-            Resource::feeReferenceRPC,
-            secureGatewayIPs_));
-    }
-    {
-        using cd = CallData<
-            org::xrpl::rpc::v1::GetTransactionRequest,
-            org::xrpl::rpc::v1::GetTransactionResponse>;
-
-        addToRequests(std::make_shared<cd>(
-            service_,
-            *cq_,
-            app_,
-            &org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService::
-                RequestGetTransaction,
-            doTxGrpc,
-            &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetTransaction,
-            RPC::NEEDS_NETWORK_CONNECTION,
-            Resource::feeReferenceRPC,
-            secureGatewayIPs_));
-    }
-    {
-        using cd = CallData<
-            org::xrpl::rpc::v1::SubmitTransactionRequest,
-            org::xrpl::rpc::v1::SubmitTransactionResponse>;
-
-        addToRequests(std::make_shared<cd>(
-            service_,
-            *cq_,
-            app_,
-            &org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService::
-                RequestSubmitTransaction,
-            doSubmitGrpc,
-            &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::SubmitTransaction,
-            RPC::NEEDS_CURRENT_LEDGER,
-            Resource::feeMediumBurdenRPC,
-            secureGatewayIPs_));
-    }
-
-    {
-        using cd = CallData<
-            org::xrpl::rpc::v1::GetAccountTransactionHistoryRequest,
-            org::xrpl::rpc::v1::GetAccountTransactionHistoryResponse>;
-
-        addToRequests(std::make_shared<cd>(
-            service_,
-            *cq_,
-            app_,
-            &org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService::
-                RequestGetAccountTransactionHistory,
-            doAccountTxGrpc,
-            &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::
-                GetAccountTransactionHistory,
-            RPC::NO_CONDITION,
-            Resource::feeMediumBurdenRPC,
-            secureGatewayIPs_));
-    }
 
     {
         using cd = CallData<

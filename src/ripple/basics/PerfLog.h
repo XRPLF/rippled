@@ -35,6 +35,7 @@ class Journal;
 }
 
 namespace ripple {
+class Application;
 namespace perf {
 
 /**
@@ -174,6 +175,7 @@ setup_PerfLog(Section const& section, boost::filesystem::path const& configDir);
 std::unique_ptr<PerfLog>
 make_PerfLog(
     PerfLog::Setup const& setup,
+    Application& app,
     beast::Journal journal,
     std::function<void()>&& signalStop);
 

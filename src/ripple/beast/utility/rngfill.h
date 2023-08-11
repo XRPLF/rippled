@@ -21,6 +21,7 @@
 #define BEAST_RANDOM_RNGFILL_H_INCLUDED
 
 #include <array>
+#include <cassert>
 #include <cstdint>
 #include <cstring>
 #include <type_traits>
@@ -32,6 +33,7 @@ void
 rngfill(void* buffer, std::size_t bytes, Generator& g)
 {
     using result_type = typename Generator::result_type;
+
     while (bytes >= sizeof(result_type))
     {
         auto const v = g();
@@ -39,15 +41,22 @@ rngfill(void* buffer, std::size_t bytes, Generator& g)
         buffer = reinterpret_cast<std::uint8_t*>(buffer) + sizeof(v);
         bytes -= sizeof(v);
     }
+
+    assert(bytes < sizeof(result_type));
+
 #ifdef __GNUC__
     // gcc 11.1 (falsely) warns about an array-bounds overflow in release mode.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Warray-bounds"
+#endif
+
     if (bytes > 0)
     {
         auto const v = g();
         std::memcpy(buffer, &v, bytes);
     }
+
+#ifdef __GNUC__
 #pragma GCC diagnostic pop
 #endif
 }

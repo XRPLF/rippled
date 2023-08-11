@@ -20,6 +20,7 @@
 #ifndef RIPPLE_APP_LEDGER_LEDGERHOLDER_H_INCLUDED
 #define RIPPLE_APP_LEDGER_LEDGERHOLDER_H_INCLUDED
 
+#include <ripple/basics/CountedObject.h>
 #include <ripple/basics/contract.h>
 #include <mutex>
 
@@ -35,7 +36,7 @@ namespace ripple {
                 way the object always holds a value. We can use the
                 genesis ledger in all cases.
 */
-class LedgerHolder
+class LedgerHolder : public CountedObject<LedgerHolder>
 {
 public:
     // Update the held ledger

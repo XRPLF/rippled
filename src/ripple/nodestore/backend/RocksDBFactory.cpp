@@ -23,6 +23,7 @@
 
 #include <ripple/basics/ByteUtilities.h>
 #include <ripple/basics/contract.h>
+#include <ripple/basics/safe_cast.h>
 #include <ripple/beast/core/CurrentThreadName.h>
 #include <ripple/core/Config.h>  // VFALCO Bad dependency
 #include <ripple/nodestore/Factory.h>
@@ -30,6 +31,7 @@
 #include <ripple/nodestore/impl/BatchWriter.h>
 #include <ripple/nodestore/impl/DecodedBlob.h>
 #include <ripple/nodestore/impl/EncodedBlob.h>
+
 #include <atomic>
 #include <memory>
 
@@ -111,9 +113,18 @@ public:
         rocksdb::BlockBasedTableOptions table_options;
         m_options.env = env;
 
+        bool hard_set =
+            keyValues.exists("hard_set") && get<bool>(keyValues, "hard_set");
+
         if (keyValues.exists("cache_mb"))
-            table_options.block_cache = rocksdb::NewLRUCache(
-                get<int>(keyValues, "cache_mb") * megabytes(1));
+        {
+            auto size = get<int>(keyValues, "cache_mb");
+
+            if (!hard_set && size == 256)
+                size = 1024;
+
+            table_options.block_cache = rocksdb::NewLRUCache(megabytes(size));
+        }
 
         if (auto const v = get<int>(keyValues, "filter_bits"))
         {
@@ -124,12 +135,21 @@ public:
         }
 
         if (get_if_exists(keyValues, "open_files", m_options.max_open_files))
-            fdRequired_ = m_options.max_open_files;
+        {
+            if (!hard_set && m_options.max_open_files == 2000)
+                m_options.max_open_files = 8000;
+
+            fdRequired_ = m_options.max_open_files + 128;
+        }
 
         if (keyValues.exists("file_size_mb"))
         {
-            m_options.target_file_size_base =
-                megabytes(1) * get<int>(keyValues, "file_size_mb");
+            auto file_size_mb = get<int>(keyValues, "file_size_mb");
+
+            if (!hard_set && file_size_mb == 8)
+                file_size_mb = 256;
+
+            m_options.target_file_size_base = megabytes(file_size_mb);
             m_options.max_bytes_for_level_base =
                 5 * m_options.target_file_size_base;
             m_options.write_buffer_size = 2 * m_options.target_file_size_base;
@@ -292,7 +312,8 @@ public:
             }
             else
             {
-                status = Status(customCode + getStatus.code());
+                status =
+                    Status(customCode + unsafe_cast<int>(getStatus.code()));
 
                 JLOG(m_journal.error()) << getStatus.ToString();
             }
@@ -331,11 +352,9 @@ public:
         assert(m_db);
         rocksdb::WriteBatch wb;
 
-        EncodedBlob encoded;
-
         for (auto const& e : batch)
         {
-            encoded.prepare(e);
+            EncodedBlob encoded(e);
 
             wb.Put(
                 rocksdb::Slice(

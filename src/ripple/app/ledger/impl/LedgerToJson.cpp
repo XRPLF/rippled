@@ -53,7 +53,6 @@ fillJson(Object& json, bool closed, LedgerInfo const& info, bool bFull)
 {
     json[jss::parent_hash] = to_string(info.parentHash);
     json[jss::ledger_index] = to_string(info.seq);
-    json[jss::seqNum] = to_string(info.seq);  // DEPRECATED
 
     if (closed)
     {
@@ -70,10 +69,6 @@ fillJson(Object& json, bool closed, LedgerInfo const& info, bool bFull)
     json[jss::account_hash] = to_string(info.accountHash);
     json[jss::total_coins] = to_string(info.drops);
 
-    // These next three are DEPRECATED.
-    json[jss::hash] = to_string(info.hash);
-    json[jss::totalCoins] = to_string(info.drops);
-    json[jss::accepted] = closed;
     json[jss::close_flags] = info.closeFlags;
 
     // Always show fields that contribute to the ledger hash
@@ -131,14 +126,14 @@ fillJsonTx(
         if (stMeta)
         {
             txJson[jss::metaData] = stMeta->getJson(JsonOptions::none);
+
+            // If applicable, insert delivered amount
             if (txnType == ttPAYMENT || txnType == ttCHECK_CASH)
-            {
-                // Insert delivered amount
-                auto txMeta = std::make_shared<TxMeta>(
-                    txn->getTransactionID(), fill.ledger.seq(), *stMeta);
                 RPC::insertDeliveredAmount(
-                    txJson[jss::metaData], fill.ledger, txn, *txMeta);
-            }
+                    txJson[jss::metaData],
+                    fill.ledger,
+                    txn,
+                    {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
         }
     }
 
@@ -192,9 +187,14 @@ fillJsonTx(Object& json, LedgerFill const& fill)
             appendAll(fill.ledger.txs);
         }
     }
-    catch (std::exception const&)
+    catch (std::exception const& ex)
     {
         // Nothing the user can do about this.
+        if (fill.context)
+        {
+            JLOG(fill.context->j.error())
+                << "Exception in " << __func__ << ": " << ex.what();
+        }
     }
 }
 

@@ -18,17 +18,14 @@
 //==============================================================================
 
 #include <ripple/basics/Log.h>
-#include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/contract.h>
-#include <ripple/ledger/BookDirs.h>
 #include <ripple/ledger/ReadView.h>
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/Quality.h>
 #include <ripple/protocol/st.h>
-#include <boost/algorithm/string.hpp>
 #include <cassert>
 #include <optional>
 
@@ -101,7 +98,8 @@ internalDirFirst(
     else
         page = view.peek(keylet::page(root));
 
-    assert(page);
+    if (!page)
+        return false;
 
     index = 0;
 
@@ -178,12 +176,41 @@ addRaw(LedgerInfo const& info, Serializer& s, bool includeHash)
 }
 
 bool
+hasExpired(ReadView const& view, std::optional<std::uint32_t> const& exp)
+{
+    using d = NetClock::duration;
+    using tp = NetClock::time_point;
+
+    return exp && (view.parentCloseTime() >= tp{d{*exp}});
+}
+
+bool
 isGlobalFrozen(ReadView const& view, AccountID const& issuer)
 {
     if (isXRP(issuer))
         return false;
     if (auto const sle = view.read(keylet::account(issuer)))
         return sle->isFlag(lsfGlobalFreeze);
+    return false;
+}
+
+bool
+isIndividualFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Currency const& currency,
+    AccountID const& issuer)
+{
+    if (isXRP(currency))
+        return false;
+    if (issuer != account)
+    {
+        // Check if the issuer froze the line
+        auto const sle = view.read(keylet::line(account, issuer, currency));
+        if (sle &&
+            sle->isFlag((issuer > account) ? lsfHighFreeze : lsfLowFreeze))
+            return true;
+    }
     return false;
 }
 
@@ -257,6 +284,18 @@ accountHolds(
 }
 
 STAmount
+accountHolds(
+    ReadView const& view,
+    AccountID const& account,
+    Issue const& issue,
+    FreezeHandling zeroIfFrozen,
+    beast::Journal j)
+{
+    return accountHolds(
+        view, account, issue.currency, issue.account, zeroIfFrozen, j);
+}
+
+STAmount
 accountFunds(
     ReadView const& view,
     AccountID const& id,
@@ -264,31 +303,16 @@ accountFunds(
     FreezeHandling freezeHandling,
     beast::Journal j)
 {
-    STAmount saFunds;
-
     if (!saDefault.native() && saDefault.getIssuer() == id)
-    {
-        saFunds = saDefault;
-        JLOG(j.trace()) << "accountFunds:"
-                        << " account=" << to_string(id)
-                        << " saDefault=" << saDefault.getFullText()
-                        << " SELF-FUNDED";
-    }
-    else
-    {
-        saFunds = accountHolds(
-            view,
-            id,
-            saDefault.getCurrency(),
-            saDefault.getIssuer(),
-            freezeHandling,
-            j);
-        JLOG(j.trace()) << "accountFunds:"
-                        << " account=" << to_string(id)
-                        << " saDefault=" << saDefault.getFullText()
-                        << " saFunds=" << saFunds.getFullText();
-    }
-    return saFunds;
+        return saDefault;
+
+    return accountHolds(
+        view,
+        id,
+        saDefault.getCurrency(),
+        saDefault.getIssuer(),
+        freezeHandling,
+        j);
 }
 
 // Prevent ownerCount from wrapping under error conditions.
@@ -350,15 +374,17 @@ xrpLiquid(
     std::uint32_t const ownerCount = confineOwnerCount(
         view.ownerCountHook(id, sle->getFieldU32(sfOwnerCount)), ownerCountAdj);
 
-    auto const reserve = view.fees().accountReserve(ownerCount);
+    // AMMs have no reserve requirement
+    auto const reserve = (sle->getFlags() & lsfAMM)
+        ? XRPAmount{0}
+        : view.fees().accountReserve(ownerCount);
 
     auto const fullBalance = sle->getFieldAmount(sfBalance);
 
     auto const balance = view.balanceHook(id, xrpAccount(), fullBalance);
 
-    STAmount amount = balance - reserve;
-    if (balance < reserve)
-        amount.clear();
+    STAmount const amount =
+        (balance < reserve) ? STAmount{0} : balance - reserve;
 
     JLOG(j.trace()) << "accountHolds:"
                     << " account=" << to_string(id)
@@ -374,17 +400,21 @@ xrpLiquid(
 void
 forEachItem(
     ReadView const& view,
-    AccountID const& id,
-    std::function<void(std::shared_ptr<SLE const> const&)> f)
+    Keylet const& root,
+    std::function<void(std::shared_ptr<SLE const> const&)> const& f)
 {
-    auto const root = keylet::ownerDir(id);
+    assert(root.type == ltDIR_NODE);
+
+    if (root.type != ltDIR_NODE)
+        return;
+
     auto pos = root;
-    for (;;)
+
+    while (true)
     {
         auto sle = view.read(pos);
         if (!sle)
             return;
-        // VFALCO NOTE We aren't checking field exists?
         for (auto const& key : sle->getFieldV256(sfIndexes))
             f(view.read(keylet::child(key)));
         auto const next = sle->getFieldU64(sfIndexNext);
@@ -397,21 +427,25 @@ forEachItem(
 bool
 forEachItemAfter(
     ReadView const& view,
-    AccountID const& id,
+    Keylet const& root,
     uint256 const& after,
     std::uint64_t const hint,
     unsigned int limit,
-    std::function<bool(std::shared_ptr<SLE const> const&)> f)
+    std::function<bool(std::shared_ptr<SLE const> const&)> const& f)
 {
-    auto const rootIndex = keylet::ownerDir(id);
-    auto currentIndex = rootIndex;
+    assert(root.type == ltDIR_NODE);
+
+    if (root.type != ltDIR_NODE)
+        return false;
+
+    auto currentIndex = root;
 
     // If startAfter is not zero try jumping to that page using the hint
     if (after.isNonZero())
     {
-        auto const hintIndex = keylet::page(rootIndex, hint);
-        auto hintDir = view.read(hintIndex);
-        if (hintDir)
+        auto const hintIndex = keylet::page(root, hint);
+
+        if (auto hintDir = view.read(hintIndex))
         {
             for (auto const& key : hintDir->getFieldV256(sfIndexes))
             {
@@ -446,7 +480,7 @@ forEachItemAfter(
             auto const uNodeNext = ownerDir->getFieldU64(sfIndexNext);
             if (uNodeNext == 0)
                 return found;
-            currentIndex = keylet::page(rootIndex, uNodeNext);
+            currentIndex = keylet::page(root, uNodeNext);
         }
     }
     else
@@ -462,7 +496,7 @@ forEachItemAfter(
             auto const uNodeNext = ownerDir->getFieldU64(sfIndexNext);
             if (uNodeNext == 0)
                 return true;
-            currentIndex = keylet::page(rootIndex, uNodeNext);
+            currentIndex = keylet::page(root, uNodeNext);
         }
     }
 }
@@ -1081,7 +1115,8 @@ rippleSend(
     AccountID const& uReceiverID,
     STAmount const& saAmount,
     STAmount& saActual,
-    beast::Journal j)
+    beast::Journal j,
+    WaiveTransferFee waiveFee)
 {
     auto const issuer = saAmount.getIssuer();
 
@@ -1102,8 +1137,10 @@ rippleSend(
     // Sending 3rd party IOUs: transit.
 
     // Calculate the amount to transfer accounting
-    // for any transfer fees:
-    saActual = multiply(saAmount, transferRate(view, issuer));
+    // for any transfer fees if the fee is not waived:
+    saActual = (waiveFee == WaiveTransferFee::Yes)
+        ? saAmount
+        : multiply(saAmount, transferRate(view, issuer));
 
     JLOG(j.debug()) << "rippleSend> " << to_string(uSenderID) << " - > "
                     << to_string(uReceiverID)
@@ -1124,7 +1161,8 @@ accountSend(
     AccountID const& uSenderID,
     AccountID const& uReceiverID,
     STAmount const& saAmount,
-    beast::Journal j)
+    beast::Journal j,
+    WaiveTransferFee waiveFee)
 {
     assert(saAmount >= beast::zero);
 
@@ -1142,7 +1180,8 @@ accountSend(
                         << to_string(uReceiverID) << " : "
                         << saAmount.getFullText();
 
-        return rippleSend(view, uSenderID, uReceiverID, saAmount, saActual, j);
+        return rippleSend(
+            view, uSenderID, uReceiverID, saAmount, saActual, j, waiveFee);
     }
 
     /* XRP send which does not check reserve and can do pure adjustment.
@@ -1481,6 +1520,26 @@ transferXRP(
     receiver->setFieldAmount(
         sfBalance, receiver->getFieldAmount(sfBalance) + amount);
     view.update(receiver);
+
+    return tesSUCCESS;
+}
+
+TER
+requireAuth(ReadView const& view, Issue const& issue, AccountID const& account)
+{
+    if (isXRP(issue) || issue.account == account)
+        return tesSUCCESS;
+    if (auto const issuerAccount = view.read(keylet::account(issue.account));
+        issuerAccount && (*issuerAccount)[sfFlags] & lsfRequireAuth)
+    {
+        if (auto const trustLine =
+                view.read(keylet::line(account, issue.account, issue.currency)))
+            return ((*trustLine)[sfFlags] &
+                    ((account > issue.account) ? lsfLowAuth : lsfHighAuth))
+                ? tesSUCCESS
+                : TER{tecNO_AUTH};
+        return TER{tecNO_LINE};
+    }
 
     return tesSUCCESS;
 }

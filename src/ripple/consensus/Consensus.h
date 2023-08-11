@@ -30,6 +30,9 @@
 #include <ripple/consensus/LedgerTiming.h>
 #include <ripple/json/json_writer.h>
 #include <boost/logic/tribool.hpp>
+
+#include <chrono>
+#include <deque>
 #include <optional>
 #include <sstream>
 
@@ -295,7 +298,7 @@ class Consensus
 
     using Result = ConsensusResult<Adaptor>;
 
-    // Helper class to ensure adaptor is notified whenver the ConsensusMode
+    // Helper class to ensure adaptor is notified whenever the ConsensusMode
     // changes
     class MonitoredMode
     {
@@ -666,6 +669,7 @@ Consensus<Adaptor>::startRoundInternal(
     ConsensusMode mode)
 {
     phase_ = ConsensusPhase::open;
+    JLOG(j_.debug()) << "transitioned to ConsensusPhase::open";
     mode_.set(mode, adaptor_);
     now_ = now;
     prevLedgerID_ = prevLedgerID;
@@ -1290,6 +1294,7 @@ Consensus<Adaptor>::phaseEstablish()
     prevProposers_ = currPeerPositions_.size();
     prevRoundTime_ = result_->roundTime.read();
     phase_ = ConsensusPhase::accepted;
+    JLOG(j_.debug()) << "transitioned to ConsensusPhase::accepted";
     adaptor_.onAccept(
         *result_,
         previousLedger_,
@@ -1307,6 +1312,7 @@ Consensus<Adaptor>::closeLedger()
     assert(!result_);
 
     phase_ = ConsensusPhase::establish;
+    JLOG(j_.debug()) << "transitioned to ConsensusPhase::establish";
     rawCloseTimes_.self = now_;
 
     result_.emplace(adaptor_.onClose(previousLedger_, now_, mode_.get()));
@@ -1640,7 +1646,7 @@ Consensus<Adaptor>::createDisputes(TxSet_t const& o)
             (inThisSet && result_->txns.find(txId) && !o.find(txId)) ||
             (!inThisSet && !result_->txns.find(txId) && o.find(txId)));
 
-        Tx_t tx = inThisSet ? *result_->txns.find(txId) : *o.find(txId);
+        Tx_t tx = inThisSet ? result_->txns.find(txId) : o.find(txId);
         auto txID = tx.id();
 
         if (result_->disputes.find(txID) != result_->disputes.end())

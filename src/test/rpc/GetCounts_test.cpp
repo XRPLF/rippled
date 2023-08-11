@@ -35,6 +35,9 @@ class GetCounts_test : public beast::unit_test::suite
 
         Json::Value result;
         {
+            using namespace std::chrono_literals;
+            // Add a little delay so the App's "uptime" will have a value.
+            std::this_thread::sleep_for(1s);
             // check counts with no transactions posted
             result = env.rpc("get_counts")[jss::result];
             BEAST_EXPECT(result[jss::status] == "success");

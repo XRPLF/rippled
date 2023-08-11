@@ -73,6 +73,10 @@ public:
 
     /** @} */
 
+    enum AcctStringType { base58Seed, other };
+    /** Create an account from a base58 seed string.  Throws on invalid seed. */
+    Account(AcctStringType stringType, std::string base58SeedStr);
+
     /** Return the name */
     std::string const&
     name() const
@@ -132,7 +136,7 @@ private:
 
     // Return the account from the cache & add it to the cache if needed
     static Account
-    fromCache(std::string name, KeyType type);
+    fromCache(AcctStringType stringType, std::string name, KeyType type);
 
     std::string name_;
     PublicKey pk_;

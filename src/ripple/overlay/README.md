@@ -296,8 +296,8 @@ For more on the Peer Crawler, please visit https://xrpl.org/peer-crawler.html.
 If present, identifies the hash of the last ledger that the sending server
 considers to be closed.
 
-The value is presently encoded using **Base64** encoding, but implementations
-should support both **Base64** and **HEX** encoding for this value.
+The value is encoded as **HEX**, but implementations should support both
+**Base64** and **HEX** encoding for this value for legacy purposes.
     
 | Field Name          	|  Request          	| Response          	|
 |---------------------	|:-----------------:	|:-----------------:	|

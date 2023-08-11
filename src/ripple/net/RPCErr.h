@@ -28,7 +28,7 @@ namespace ripple {
 bool
 isRpcError(Json::Value jvResult);
 Json::Value
-rpcError(int iError, Json::Value jvResult = Json::Value(Json::objectValue));
+rpcError(int iError);
 
 }  // namespace ripple
 

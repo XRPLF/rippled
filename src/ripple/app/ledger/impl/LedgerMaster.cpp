@@ -34,8 +34,7 @@
 #include <ripple/app/misc/TxQ.h>
 #include <ripple/app/misc/ValidatorList.h>
 #include <ripple/app/paths/PathRequests.h>
-#include <ripple/app/rdb/RelationalDBInterface_postgres.h>
-#include <ripple/app/rdb/backend/RelationalDBInterfacePostgres.h>
+#include <ripple/app/rdb/backend/PostgresDatabase.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/MathUtilities.h>
@@ -261,8 +260,13 @@ LedgerMaster::getPublishedLedgerAge()
     std::chrono::seconds ret = app_.timeKeeper().closeTime().time_since_epoch();
     ret -= pubClose;
     ret = (ret > 0s) ? ret : 0s;
+    static std::chrono::seconds lastRet = -1s;
 
-    JLOG(m_journal.trace()) << "Published ledger age is " << ret.count();
+    if (ret != lastRet)
+    {
+        JLOG(m_journal.trace()) << "Published ledger age is " << ret.count();
+        lastRet = ret;
+    }
     return ret;
 }
 
@@ -273,10 +277,10 @@ LedgerMaster::getValidatedLedgerAge()
 
 #ifdef RIPPLED_REPORTING
     if (app_.config().reporting())
-        return static_cast<RelationalDBInterfacePostgres*>(
-                   &app_.getRelationalDBInterface())
+        return static_cast<PostgresDatabase*>(&app_.getRelationalDatabase())
             ->getValidatedLedgerAge();
 #endif
+
     std::chrono::seconds valClose{mValidLedgerSign.load()};
     if (valClose == 0s)
     {
@@ -287,8 +291,13 @@ LedgerMaster::getValidatedLedgerAge()
     std::chrono::seconds ret = app_.timeKeeper().closeTime().time_since_epoch();
     ret -= valClose;
     ret = (ret > 0s) ? ret : 0s;
+    static std::chrono::seconds lastRet = -1s;
 
-    JLOG(m_journal.trace()) << "Validated ledger age is " << ret.count();
+    if (ret != lastRet)
+    {
+        JLOG(m_journal.trace()) << "Validated ledger age is " << ret.count();
+        lastRet = ret;
+    }
     return ret;
 }
 
@@ -299,8 +308,7 @@ LedgerMaster::isCaughtUp(std::string& reason)
 
 #ifdef RIPPLED_REPORTING
     if (app_.config().reporting())
-        return static_cast<RelationalDBInterfacePostgres*>(
-                   &app_.getRelationalDBInterface())
+        return static_cast<PostgresDatabase*>(&app_.getRelationalDatabase())
             ->isCaughtUp(reason);
 #endif
 
@@ -333,7 +341,8 @@ LedgerMaster::setValidLedger(std::shared_ptr<Ledger const> const& l)
     if (!standalone_)
     {
         auto validations = app_.validators().negativeUNLFilter(
-            app_.getValidations().getTrustedForLedger(l->info().hash));
+            app_.getValidations().getTrustedForLedger(
+                l->info().hash, l->info().seq));
         times.reserve(validations.size());
         for (auto const& val : validations)
             times.push_back(val->getSignTime());
@@ -699,7 +708,7 @@ LedgerMaster::getEarliestFetch()
 }
 
 void
-LedgerMaster::tryFill(Job& job, std::shared_ptr<Ledger const> ledger)
+LedgerMaster::tryFill(std::shared_ptr<Ledger const> ledger)
 {
     std::uint32_t seq = ledger->info().seq;
     uint256 prevHash = ledger->info().parentHash;
@@ -710,7 +719,7 @@ LedgerMaster::tryFill(Job& job, std::shared_ptr<Ledger const> ledger)
     std::uint32_t maxHas = seq;
 
     NodeStore::Database& nodeStore{app_.getNodeStore()};
-    while (!job.shouldCancel() && seq > 0)
+    while (!app_.getJobQueue().isStopping() && seq > 0)
     {
         {
             std::lock_guard ml(m_mutex);
@@ -733,7 +742,7 @@ LedgerMaster::tryFill(Job& job, std::shared_ptr<Ledger const> ledger)
                 mCompleteLedgers.insert(range(minHas, maxHas));
             }
             maxHas = minHas;
-            ledgerHashes = app_.getRelationalDBInterface().getHashesByIndex(
+            ledgerHashes = app_.getRelationalDatabase().getHashesByIndex(
                 (seq < 500) ? 0 : (seq - 499), seq);
             it = ledgerHashes.find(seq);
 
@@ -857,10 +866,11 @@ LedgerMaster::fixMismatch(ReadView const& ledger)
             {
                 hash = hashOfSeq(ledger, lSeq, m_journal);
             }
-            catch (std::exception const&)
+            catch (std::exception const& ex)
             {
                 JLOG(m_journal.warn())
-                    << "fixMismatch encounters partial ledger";
+                    << "fixMismatch encounters partial ledger. Exception: "
+                    << ex.what();
                 clearLedger(lSeq);
                 return;
             }
@@ -917,8 +927,8 @@ LedgerMaster::setFullLedger(
     {
         // Check the SQL database's entry for the sequence before this
         // ledger, if it's not this ledger's parent, invalidate it
-        uint256 prevHash = app_.getRelationalDBInterface().getHashByIndex(
-            ledger->info().seq - 1);
+        uint256 prevHash =
+            app_.getRelationalDatabase().getHashByIndex(ledger->info().seq - 1);
         if (prevHash.isNonZero() && prevHash != ledger->info().parentHash)
             clearLedger(ledger->info().seq - 1);
     }
@@ -979,7 +989,7 @@ LedgerMaster::checkAccept(uint256 const& hash, std::uint32_t seq)
             return;
 
         auto validations = app_.validators().negativeUNLFilter(
-            app_.getValidations().getTrustedForLedger(hash));
+            app_.getValidations().getTrustedForLedger(hash, seq));
         valCount = validations.size();
         if (valCount >= app_.validators().quorum())
         {
@@ -1045,7 +1055,8 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
 
     auto const minVal = getNeededValidations();
     auto validations = app_.validators().negativeUNLFilter(
-        app_.getValidations().getTrustedForLedger(ledger->info().hash));
+        app_.getValidations().getTrustedForLedger(
+            ledger->info().hash, ledger->info().seq));
     auto const tvc = validations.size();
     if (tvc < minVal)  // nothing we can do
     {
@@ -1080,6 +1091,16 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
     if (!fees.empty())
     {
         std::sort(fees.begin(), fees.end());
+        if (auto stream = m_journal.debug())
+        {
+            std::stringstream s;
+            s << "Received fees from validations: (" << fees.size() << ") ";
+            for (auto const fee1 : fees)
+            {
+                s << " " << fee1;
+            }
+            stream << s.str();
+        }
         fee = fees[fees.size() / 2];  // median
     }
     else
@@ -1110,7 +1131,7 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
         {
             // Have not printed the warning before, check if need to print.
             auto const vals = app_.getValidations().getTrustedForLedger(
-                ledger->info().parentHash);
+                ledger->info().parentHash, ledger->info().seq - 1);
             std::size_t higherVersionCount = 0;
             std::size_t rippledCount = 0;
             for (auto const& v : vals)
@@ -1387,10 +1408,11 @@ LedgerMaster::findNewLedgersToPublish(
         JLOG(m_journal.trace())
             << "ready to publish " << ret.size() << " ledgers.";
     }
-    catch (std::exception const&)
+    catch (std::exception const& ex)
     {
         JLOG(m_journal.error())
-            << "Exception while trying to find ledgers to publish.";
+            << "Exception while trying to find ledgers to publish: "
+            << ex.what();
     }
 
     if (app_.config().LEDGER_REPLAY)
@@ -1443,7 +1465,7 @@ LedgerMaster::tryAdvance()
     if (!mAdvanceThread && !mValidLedger.empty())
     {
         mAdvanceThread = true;
-        app_.getJobQueue().addJob(jtADVANCE, "advanceLedger", [this](Job&) {
+        app_.getJobQueue().addJob(jtADVANCE, "advanceLedger", [this]() {
             std::unique_lock sl(m_mutex);
 
             assert(!mValidLedger.empty() && mAdvanceThread);
@@ -1466,19 +1488,21 @@ LedgerMaster::tryAdvance()
 }
 
 void
-LedgerMaster::updatePaths(Job& job)
+LedgerMaster::updatePaths()
 {
     {
         std::lock_guard ml(m_mutex);
         if (app_.getOPs().isNeedNetworkLedger())
         {
             --mPathFindThread;
+            JLOG(m_journal.debug()) << "Need network ledger for updating paths";
             return;
         }
     }
 
-    while (!job.shouldCancel())
+    while (!app_.getJobQueue().isStopping())
     {
+        JLOG(m_journal.debug()) << "updatePaths running";
         std::shared_ptr<ReadView const> lastLedger;
         {
             std::lock_guard ml(m_mutex);
@@ -1496,6 +1520,7 @@ LedgerMaster::updatePaths(Job& job)
             else
             {  // Nothing to do
                 --mPathFindThread;
+                JLOG(m_journal.debug()) << "Nothing to do for updating paths";
                 return;
             }
         }
@@ -1517,8 +1542,31 @@ LedgerMaster::updatePaths(Job& job)
 
         try
         {
-            app_.getPathRequests().updateAll(
-                lastLedger, job.getCancelCallback());
+            auto& pathRequests = app_.getPathRequests();
+            {
+                std::lock_guard ml(m_mutex);
+                if (!pathRequests.requestsPending())
+                {
+                    --mPathFindThread;
+                    JLOG(m_journal.debug())
+                        << "No path requests found. Nothing to do for updating "
+                           "paths. "
+                        << mPathFindThread << " jobs remaining";
+                    return;
+                }
+            }
+            JLOG(m_journal.debug()) << "Updating paths";
+            pathRequests.updateAll(lastLedger);
+
+            std::lock_guard ml(m_mutex);
+            if (!pathRequests.requestsPending())
+            {
+                JLOG(m_journal.debug())
+                    << "No path requests left. No need for further updating "
+                       "paths";
+                --mPathFindThread;
+                return;
+            }
         }
         catch (SHAMapMissingNode const& mn)
         {
@@ -1578,10 +1626,14 @@ LedgerMaster::newPFWork(
     const char* name,
     std::unique_lock<std::recursive_mutex>&)
 {
-    if (mPathFindThread < 2)
+    if (!app_.isStopping() && mPathFindThread < 2 &&
+        app_.getPathRequests().requestsPending())
     {
+        JLOG(m_journal.debug())
+            << "newPFWork: Creating job. path find threads: "
+            << mPathFindThread;
         if (app_.getJobQueue().addJob(
-                jtUPDATE_PF, name, [this](Job& j) { updatePaths(j); }))
+                jtUPDATE_PF, name, [this]() { updatePaths(); }))
         {
             ++mPathFindThread;
         }
@@ -1614,7 +1666,7 @@ LedgerMaster::getValidatedLedger()
 #ifdef RIPPLED_REPORTING
     if (app_.config().reporting())
     {
-        auto seq = app_.getRelationalDBInterface().getMaxLedgerSeq();
+        auto seq = app_.getRelationalDatabase().getMaxLedgerSeq();
         if (!seq)
             return {};
         return getLedgerBySeq(*seq);
@@ -1650,8 +1702,7 @@ LedgerMaster::getCompleteLedgers()
 {
 #ifdef RIPPLED_REPORTING
     if (app_.config().reporting())
-        return static_cast<RelationalDBInterfacePostgres*>(
-                   &app_.getRelationalDBInterface())
+        return static_cast<PostgresDatabase*>(&app_.getRelationalDatabase())
             ->getCompleteLedgers();
 #endif
     std::lock_guard sl(mCompleteLock);
@@ -1696,7 +1747,7 @@ LedgerMaster::getHashBySeq(std::uint32_t index)
     if (hash.isNonZero())
         return hash;
 
-    return app_.getRelationalDBInterface().getHashByIndex(index);
+    return app_.getRelationalDatabase().getHashByIndex(index);
 }
 
 std::optional<LedgerHash>
@@ -1820,12 +1871,6 @@ LedgerMaster::setLedgerRangePresent(std::uint32_t minV, std::uint32_t maxV)
 }
 
 void
-LedgerMaster::tune(int size, std::chrono::seconds age)
-{
-    mLedgerHistory.tune(size, age);
-}
-
-void
 LedgerMaster::sweep()
 {
     mLedgerHistory.sweep();
@@ -1923,7 +1968,7 @@ LedgerMaster::fetchForHistory(
                     fillInProgress = mFillInProgress;
                 }
                 if (fillInProgress == 0 &&
-                    app_.getRelationalDBInterface().getHashByIndex(seq - 1) ==
+                    app_.getRelationalDatabase().getHashByIndex(seq - 1) ==
                         ledger->info().parentHash)
                 {
                     {
@@ -1932,8 +1977,8 @@ LedgerMaster::fetchForHistory(
                         mFillInProgress = seq;
                     }
                     app_.getJobQueue().addJob(
-                        jtADVANCE, "tryFill", [this, ledger](Job& j) {
-                            tryFill(j, ledger);
+                        jtADVANCE, "tryFill", [this, ledger]() {
+                            tryFill(ledger);
                         });
                 }
             }
@@ -1966,9 +2011,10 @@ LedgerMaster::fetchForHistory(
                     }
                 }
             }
-            catch (std::exception const&)
+            catch (std::exception const& ex)
             {
-                JLOG(m_journal.warn()) << "Threw while prefetching";
+                JLOG(m_journal.warn())
+                    << "Threw while prefetching: " << ex.what();
             }
         }
     }
@@ -2065,7 +2111,7 @@ LedgerMaster::doAdvance(std::unique_lock<std::recursive_mutex>& sl)
         {
             JLOG(m_journal.trace()) << "tryAdvance found " << pubLedgers.size()
                                     << " ledgers to publish";
-            for (auto ledger : pubLedgers)
+            for (auto const& ledger : pubLedgers)
             {
                 {
                     ScopedUnlock sul{sl};
@@ -2114,7 +2160,7 @@ LedgerMaster::gotFetchPack(bool progress, std::uint32_t seq)
 {
     if (!mGotFetchPackThread.test_and_set(std::memory_order_acquire))
     {
-        app_.getJobQueue().addJob(jtLEDGER_DATA, "gotFetchPack", [&](Job&) {
+        app_.getJobQueue().addJob(jtLEDGER_DATA, "gotFetchPack", [&]() {
             app_.getInboundLedgers().gotFetchPack();
             mGotFetchPackThread.clear(std::memory_order_release);
         });
@@ -2303,9 +2349,10 @@ LedgerMaster::makeFetchPack(
 
         peer->send(msg);
     }
-    catch (std::exception const&)
+    catch (std::exception const& ex)
     {
-        JLOG(m_journal.warn()) << "Exception building fetch pach";
+        JLOG(m_journal.warn())
+            << "Exception building fetch pach. Exception: " << ex.what();
     }
 }
 
@@ -2319,7 +2366,7 @@ LedgerMaster::getFetchPackCacheSize() const
 std::optional<LedgerIndex>
 LedgerMaster::minSqlSeq()
 {
-    return app_.getRelationalDBInterface().getMinLedgerSeq();
+    return app_.getRelationalDatabase().getMinLedgerSeq();
 }
 
 }  // namespace ripple

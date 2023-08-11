@@ -27,10 +27,38 @@ STBlob::STBlob(SerialIter& st, SField const& name)
 {
 }
 
+STBase*
+STBlob::copy(std::size_t n, void* buf) const
+{
+    return emplace(n, buf, *this);
+}
+
+STBase*
+STBlob::move(std::size_t n, void* buf)
+{
+    return emplace(n, buf, std::move(*this));
+}
+
+SerializedTypeID
+STBlob::getSType() const
+{
+    return STI_VL;
+}
+
 std::string
 STBlob::getText() const
 {
     return strHex(value_);
+}
+
+void
+STBlob::add(Serializer& s) const
+{
+    assert(getFName().isBinary());
+    assert(
+        (getFName().fieldType == STI_VL) ||
+        (getFName().fieldType == STI_ACCOUNT));
+    s.addVL(value_.data(), value_.size());
 }
 
 bool
@@ -38,6 +66,12 @@ STBlob::isEquivalent(const STBase& t) const
 {
     const STBlob* v = dynamic_cast<const STBlob*>(&t);
     return v && (value_ == v->value_);
+}
+
+bool
+STBlob::isDefault() const
+{
+    return value_.empty();
 }
 
 }  // namespace ripple

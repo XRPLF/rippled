@@ -19,7 +19,7 @@
 
 #include <ripple/app/main/Application.h>
 #include <ripple/app/main/DBInit.h>
-#include <ripple/app/rdb/RelationalDBInterface_global.h>
+#include <ripple/app/rdb/Vacuum.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/contract.h>
@@ -34,8 +34,10 @@
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/RPCHandler.h>
 
-#include <beast/unit_test/match.hpp>
+#ifdef ENABLE_TESTS
+#include <ripple/beast/unit_test/match.hpp>
 #include <test/unit_test/multi_runner.h>
+#endif  // ENABLE_TESTS
 
 #include <google/protobuf/stubs/common.h>
 
@@ -123,16 +125,16 @@ printHelp(const po::options_description& desc)
         << systemName() << "d [options] <command> <params>\n"
         << desc << std::endl
         << "Commands: \n"
-           "     account_currencies <account> [<ledger>] [strict]\n"
-           "     account_info <account>|<seed>|<pass_phrase>|<key> [<ledger>] "
-           "[strict]\n"
+           "     account_currencies <account> [<ledger>]\n"
+           "     account_info <account>|<key> [<ledger>]\n"
            "     account_lines <account> <account>|\"\" [<ledger>]\n"
            "     account_channels <account> <account>|\"\" [<ledger>]\n"
-           "     account_objects <account> [<ledger>] [strict]\n"
-           "     account_offers <account>|<account_public_key> [<ledger>] "
-           "[strict]\n"
-           "     account_tx accountID [ledger_min [ledger_max [limit "
-           "[offset]]]] [binary] [count] [descending]\n"
+           "     account_objects <account> [<ledger>]\n"
+           "     account_offers <account>|<account_public_key> [<ledger>]\n"
+           "     account_tx accountID [ledger_index_min [ledger_index_max "
+           "[limit "
+           "]]] [binary]\n"
+           "     book_changes [<ledger hash|id>]\n"
            "     book_offers <taker_pays> <taker_gets> [<taker [<ledger> "
            "[<limit> [<proof> [<marker>]]]]]\n"
            "     can_delete [<ledgerid>|<ledgerhash>|now|always|never]\n"
@@ -157,7 +159,8 @@ printHelp(const po::options_description& desc)
            "     ledger_request <ledger>\n"
            "     log_level [[<partition>] <severity>]\n"
            "     logrotate\n"
-           "     nodetoshard_status\n"
+           "     manifest <public_key>\n"
+           "     node_to_shard [status|start|stop]\n"
            "     peers\n"
            "     ping\n"
            "     random\n"
@@ -176,6 +179,7 @@ printHelp(const po::options_description& desc)
            "     submit_multisigned <tx_json>\n"
            "     tx <id>\n"
            "     validation_create [<seed>|<pass_phrase>|<key>]\n"
+           "     validator_info\n"
            "     validators\n"
            "     validator_list_sites\n"
            "     version\n"
@@ -184,6 +188,7 @@ printHelp(const po::options_description& desc)
 
 //------------------------------------------------------------------------------
 
+#ifdef ENABLE_TESTS
 /* simple unit test selector that allows a comma separated list
  * of selectors
  */
@@ -335,6 +340,7 @@ runUnitTests(
     }
 }
 
+#endif  // ENABLE_TESTS
 //------------------------------------------------------------------------------
 
 int
@@ -364,6 +370,10 @@ run(int argc, char** argv)
         "conf", po::value<std::string>(), "Specify the configuration file.")(
         "debug", "Enable normally suppressed debug logging")(
         "help,h", "Display this message.")(
+        "newnodeid", "Generate a new node identity for this server.")(
+        "nodeid",
+        po::value<std::string>(),
+        "Specify the node identity for this server.")(
         "quorum",
         po::value<std::size_t>(),
         "Override the minimum validation quorum.")(
@@ -405,6 +415,7 @@ run(int argc, char** argv)
         "DEPRECATED: include with rpc_ip instead. "
         "Specify the port number for RPC command.");
 
+#ifdef ENABLE_TESTS
     po::options_description test("Unit Test Options");
     test.add_options()(
         "quiet,q",
@@ -433,6 +444,7 @@ run(int argc, char** argv)
         "unittest-jobs",
         po::value<std::size_t>(),
         "Number of unittest jobs to run in parallel (child processes).");
+#endif  // ENABLE_TESTS
 
     // These are hidden options, not intended to be shown in the usage/help
     // message
@@ -443,20 +455,37 @@ run(int argc, char** argv)
         "Specify rpc command and parameters. This option must be repeated "
         "for each command/param. Positional parameters also serve this "
         "purpose, "
-        "so this option is not needed for users")(
-        "unittest-child",
-        "For internal use only when spawning child unit test processes.")(
-        "fg", "Deprecated: server always in foreground mode.");
+        "so this option is not needed for users")
+#ifdef ENABLE_TESTS
+        ("unittest-child",
+         "For internal use only when spawning child unit test processes.")
+#else
+        ("unittest", "Disabled in this build.")(
+            "unittest-child", "Disabled in this build.")
+#endif  // ENABLE_TESTS
+            ("fg", "Deprecated: server always in foreground mode.");
 
     // Interpret positional arguments as --parameters.
     po::positional_options_description p;
     p.add("parameters", -1);
 
     po::options_description all;
-    all.add(gen).add(rpc).add(data).add(test).add(hidden);
+    all.add(gen)
+        .add(rpc)
+        .add(data)
+#ifdef ENABLE_TESTS
+        .add(test)
+#endif  // ENABLE_TESTS
+        .add(hidden);
 
     po::options_description desc;
-    desc.add(gen).add(rpc).add(data).add(test);
+    desc.add(gen)
+        .add(rpc)
+        .add(data)
+#ifdef ENABLE_TESTS
+        .add(test)
+#endif  // ENABLE_TESTS
+        ;
 
     // Parse options, if no error.
     try
@@ -489,6 +518,14 @@ run(int argc, char** argv)
         return 0;
     }
 
+#ifndef ENABLE_TESTS
+    if (vm.count("unittest") || vm.count("unittest-child"))
+    {
+        std::cerr << "rippled: Tests disabled in this build." << std::endl;
+        std::cerr << "Try 'rippled --help' for a list of options." << std::endl;
+        return 1;
+    }
+#else
     // Run the unit tests if requested.
     // The unit tests will exit the application with an appropriate return code.
     //
@@ -528,6 +565,7 @@ run(int argc, char** argv)
             return 1;
         }
     }
+#endif  // ENABLE_TESTS
 
     auto config = std::make_unique<Config>();
 
@@ -600,17 +638,12 @@ run(int argc, char** argv)
         config->START_LEDGER = vm["ledgerfile"].as<std::string>();
         config->START_UP = Config::LOAD_FILE;
     }
-    else if (vm.count("load"))
+    else if (vm.count("load") || config->FAST_LOAD)
     {
         config->START_UP = Config::LOAD;
     }
 
-    if (vm.count("valid"))
-    {
-        config->START_VALID = true;
-    }
-
-    if (vm.count("net"))
+    if (vm.count("net") && !config->FAST_LOAD)
     {
         if ((config->START_UP == Config::LOAD) ||
             (config->START_UP == Config::REPLAY))
@@ -621,6 +654,11 @@ run(int argc, char** argv)
         }
 
         config->START_UP = Config::NETWORK;
+    }
+
+    if (vm.count("valid"))
+    {
+        config->START_VALID = true;
     }
 
     // Override the RPC destination IP address. This must
@@ -720,7 +758,7 @@ run(int argc, char** argv)
         auto app = make_Application(
             std::move(config), std::move(logs), std::move(timeKeeper));
 
-        if (!app->setup())
+        if (!app->setup(vm))
             return -1;
 
         // With our configuration parsed, ensure we have

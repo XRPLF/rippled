@@ -32,8 +32,8 @@ namespace jtx {
 Json::Value
 offer(
     Account const& account,
-    STAmount const& in,
-    STAmount const& out,
+    STAmount const& takerPays,
+    STAmount const& takerGets,
     std::uint32_t flags = 0);
 
 /** Cancel an offer. */

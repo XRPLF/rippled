@@ -18,23 +18,14 @@
 //==============================================================================
 
 #include <ripple/peerfinder/PeerfinderManager.h>
+#include <ripple/peerfinder/impl/Tuning.h>
 
 namespace ripple {
 namespace PeerFinder {
 
-Endpoint::Endpoint() : hops(0)
+Endpoint::Endpoint(beast::IP::Endpoint const& ep, std::uint32_t hops_)
+    : hops(std::min(hops_, Tuning::maxHops + 1)), address(ep)
 {
-}
-
-Endpoint::Endpoint(beast::IP::Endpoint const& ep, int hops_)
-    : hops(hops_), address(ep)
-{
-}
-
-bool
-operator<(Endpoint const& lhs, Endpoint const& rhs)
-{
-    return lhs.address < rhs.address;
 }
 
 }  // namespace PeerFinder

@@ -28,6 +28,7 @@
 #include <ripple/shamap/FullBelowCache.h>
 #include <ripple/shamap/TreeNodeCache.h>
 #include <boost/asio.hpp>
+#include <boost/program_options.hpp>
 #include <memory>
 #include <mutex>
 
@@ -52,7 +53,19 @@ class ShardArchiveHandler;
 
 // VFALCO TODO Fix forward declares required for header dependency loops
 class AmendmentTable;
-class CachedSLEs;
+
+template <
+    class Key,
+    class T,
+    bool IsKeyCache,
+    class Hash,
+    class KeyEqual,
+    class Mutex>
+class TaggedCache;
+class STLedgerEntry;
+using SLE = STLedgerEntry;
+using CachedSLEs = TaggedCache<uint256, SLE const>;
+
 class CollectorManager;
 class Family;
 class HashRouter;
@@ -76,8 +89,8 @@ class Overlay;
 class PathRequests;
 class PendingSaves;
 class PublicKey;
+class ServerHandler;
 class SecretKey;
-class AccountIDCache;
 class STLedgerEntry;
 class TimeKeeper;
 class TransactionMaster;
@@ -87,7 +100,7 @@ class ValidatorList;
 class ValidatorSite;
 class Cluster;
 
-class RelationalDBInterface;
+class RelationalDatabase;
 class DatabaseCon;
 class SHAMapStore;
 
@@ -124,13 +137,14 @@ public:
     virtual ~Application() = default;
 
     virtual bool
-    setup() = 0;
+    setup(boost::program_options::variables_map const& options) = 0;
+
     virtual void
     start(bool withTimers) = 0;
     virtual void
     run() = 0;
     virtual void
-    signalStop() = 0;
+    signalStop(std::string msg = "") = 0;
     virtual bool
     checkSigs() const = 0;
     virtual void
@@ -141,6 +155,10 @@ public:
     //
     // ---
     //
+
+    /** Returns a 64-bit instance identifier, generated at startup */
+    virtual std::uint64_t
+    instanceID() const = 0;
 
     virtual Logs&
     logs() = 0;
@@ -214,6 +232,8 @@ public:
     getOPs() = 0;
     virtual OrderBookDB&
     getOrderBookDB() = 0;
+    virtual ServerHandler&
+    getServerHandler() = 0;
     virtual TransactionMaster&
     getMasterTransaction() = 0;
     virtual perf::PerfLog&
@@ -233,14 +253,12 @@ public:
     getSHAMapStore() = 0;
     virtual PendingSaves&
     pendingSaves() = 0;
-    virtual AccountIDCache const&
-    accountIDCache() const = 0;
     virtual OpenLedger&
     openLedger() = 0;
     virtual OpenLedger const&
     openLedger() const = 0;
-    virtual RelationalDBInterface&
-    getRelationalDBInterface() = 0;
+    virtual RelationalDatabase&
+    getRelationalDatabase() = 0;
 
     virtual std::chrono::milliseconds
     getIOLatency() = 0;

@@ -33,7 +33,8 @@ enum NodeObjectType : std::uint32_t {
     hotUNKNOWN = 0,
     hotLEDGER = 1,
     hotACCOUNT_NODE = 3,
-    hotTRANSACTION_NODE = 4
+    hotTRANSACTION_NODE = 4,
+    hotDUMMY = 512  // an invalid or missing object
 };
 
 /** A simple object that the Ledger uses to store entries.

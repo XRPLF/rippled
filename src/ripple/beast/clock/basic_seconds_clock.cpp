@@ -19,6 +19,7 @@
 
 #include <ripple/beast/clock/basic_seconds_clock.h>
 
+#include <atomic>
 #include <cassert>
 #include <chrono>
 #include <condition_variable>
@@ -38,7 +39,7 @@ class seconds_clock_thread
     std::mutex mut_;
     std::condition_variable cv_;
     std::thread thread_;
-    Clock::time_point tp_;
+    std::atomic<Clock::time_point::rep> tp_;
 
 public:
     ~seconds_clock_thread();
@@ -52,6 +53,8 @@ private:
     run();
 };
 
+static_assert(std::atomic<std::chrono::steady_clock::rep>::is_always_lock_free);
+
 seconds_clock_thread::~seconds_clock_thread()
 {
     assert(thread_.joinable());
@@ -63,7 +66,8 @@ seconds_clock_thread::~seconds_clock_thread()
     thread_.join();
 }
 
-seconds_clock_thread::seconds_clock_thread() : stop_{false}, tp_{Clock::now()}
+seconds_clock_thread::seconds_clock_thread()
+    : stop_{false}, tp_{Clock::now().time_since_epoch().count()}
 {
     thread_ = std::thread(&seconds_clock_thread::run, this);
 }
@@ -71,8 +75,7 @@ seconds_clock_thread::seconds_clock_thread() : stop_{false}, tp_{Clock::now()}
 seconds_clock_thread::Clock::time_point
 seconds_clock_thread::now()
 {
-    std::lock_guard lock(mut_);
-    return tp_;
+    return Clock::time_point{Clock::duration{tp_.load()}};
 }
 
 void
@@ -83,8 +86,9 @@ seconds_clock_thread::run()
     {
         using namespace std::chrono;
 
-        tp_ = Clock::now();
-        auto const when = floor<seconds>(tp_) + 1s;
+        auto now = Clock::now();
+        tp_ = now.time_since_epoch().count();
+        auto const when = floor<seconds>(now) + 1s;
         if (cv_.wait_until(lock, when, [this] { return stop_; }))
             return;
     }

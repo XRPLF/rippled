@@ -20,7 +20,7 @@
 #include <ripple/beast/core/LexicalCast.h>
 #include <ripple/beast/rfc2616.h>
 #include <ripple/overlay/impl/ProtocolVersion.h>
-#include <boost/function_output_iterator.hpp>
+#include <boost/iterator/function_output_iterator.hpp>
 #include <boost/regex.hpp>
 #include <algorithm>
 #include <functional>
@@ -36,7 +36,6 @@ namespace ripple {
 // clang-format off
 constexpr ProtocolVersion const supportedProtocolList[]
 {
-    {2, 0},
     {2, 1},
     {2, 2},
     {2, 3}

@@ -45,11 +45,12 @@ public:
         if (ipAllowed(
                 beast::IPAddressConversion::from_asio(ws->remote_endpoint())
                     .address(),
-                ws->port().secure_gateway_ip))
+                ws->port().secure_gateway_nets_v4,
+                ws->port().secure_gateway_nets_v6))
         {
             auto it = h.find("X-User");
             if (it != h.end())
-                user_ = it->value().to_string();
+                user_ = it->value();
             fwdfor_ = std::string(forwardedFor(h));
         }
     }

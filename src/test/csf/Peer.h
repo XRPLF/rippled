@@ -538,7 +538,7 @@ struct Peer
         ConsensusMode const& mode,
         Json::Value&& consensusJson)
     {
-        schedule(delays.ledgerAccept, [=]() {
+        schedule(delays.ledgerAccept, [=, this]() {
             const bool proposing = mode == ConsensusMode::proposing;
             const bool consensusFail = result.state == ConsensusState::MovedOn;
 
@@ -919,7 +919,7 @@ struct Peer
     start()
     {
         // TODO: Expire validations less frequently?
-        validations.expire();
+        validations.expire(j);
         scheduler.in(parms().ledgerGRANULARITY, [&]() { timerEntry(); });
         startRound();
     }

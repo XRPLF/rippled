@@ -33,7 +33,8 @@ paths::operator()(Env& env, JTx& jt) const
     auto const to = env.lookup(jv[jss::Destination].asString());
     auto const amount = amountFromJson(sfAmount, jv[jss::Amount]);
     Pathfinder pf(
-        std::make_shared<RippleLineCache>(env.current()),
+        std::make_shared<RippleLineCache>(
+            env.current(), env.app().journal("RippleLineCache")),
         from,
         to,
         in_.currency,
@@ -65,8 +66,14 @@ path::create()
 void
 path::append_one(Account const& account)
 {
+    append_one(account.id());
+}
+
+void
+path::append_one(AccountID const& account)
+{
     auto& jv = create();
-    jv["account"] = toBase58(account.id());
+    jv["account"] = toBase58(account);
 }
 
 void

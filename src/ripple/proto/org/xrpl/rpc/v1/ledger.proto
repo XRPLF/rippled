@@ -25,16 +25,6 @@ message LedgerSpecifier
     }
 }
 
-// Next field: 3
-message LedgerRange
-{
-    uint32 ledger_index_min = 1;
-
-    // Note, if ledger_index_min is non-zero and ledger_index_max is 0, the
-    // software will use the max validated ledger in place of ledger_index_max
-    uint32 ledger_index_max = 2;
-};
-
 
 // Next field: 3
 message RawLedgerObject
@@ -54,11 +44,32 @@ message RawLedgerObject
         DELETED = 3;
     }
 
+    // Whether the object was created, modified or deleted
     ModificationType mod_type = 3;
+
+    // Key of the object preceding this object in the desired ledger
+    bytes predecessor = 4;
+
+    // Key of the object succeeding this object in the desired ledger
+    bytes successor = 5;
 }
 
 message RawLedgerObjects
 {
     repeated RawLedgerObject objects = 1;
 }
+
+// Successor information for book directories. The book base is (usually) not
+// an actual object, yet we need to be able to ask for the successor to the
+// book base.
+message BookSuccessor {
+
+    // Base of the book in question
+    bytes book_base = 1;
+
+    // First book directory in the book. An empty value here means the entire
+    // book is deleted
+    bytes first_book = 2;
+
+};
 

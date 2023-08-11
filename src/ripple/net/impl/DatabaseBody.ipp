@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/app/rdb/RelationalDBInterface_global.h>
+#include <ripple/app/rdb/Download.h>
 
 namespace ripple {
 

@@ -174,8 +174,7 @@ PayChanCreate::preflight(PreflightContext const& ctx)
     if (ctx.rules.enabled(fix1543) && ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;
 
-    auto const ret = preflight1(ctx);
-    if (!isTesSuccess(ret))
+    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
     if (!isXRP(ctx.tx[sfAmount]) || (ctx.tx[sfAmount] <= beast::zero))
@@ -218,15 +217,25 @@ PayChanCreate::preclaim(PreclaimContext const& ctx)
         auto const sled = ctx.view.read(keylet::account(dst));
         if (!sled)
             return tecNO_DST;
-        if (((*sled)[sfFlags] & lsfRequireDestTag) &&
-            !ctx.tx[~sfDestinationTag])
+
+        auto const flags = sled->getFlags();
+
+        // Check if they have disallowed incoming payment channels
+        if (ctx.view.rules().enabled(featureDisallowIncoming) &&
+            (flags & lsfDisallowIncomingPayChan))
+            return tecNO_PERMISSION;
+
+        if ((flags & lsfRequireDestTag) && !ctx.tx[~sfDestinationTag])
             return tecDST_TAG_NEEDED;
 
         // Obeying the lsfDisallowXRP flag was a bug.  Piggyback on
         // featureDepositAuth to remove the bug.
         if (!ctx.view.rules().enabled(featureDepositAuth) &&
-            ((*sled)[sfFlags] & lsfDisallowXRP))
+            (flags & lsfDisallowXRP))
             return tecNO_TARGET;
+
+        if (flags & lsfAMM)
+            return tecNO_PERMISSION;
     }
 
     return tesSUCCESS;
@@ -307,8 +316,7 @@ PayChanFund::preflight(PreflightContext const& ctx)
     if (ctx.rules.enabled(fix1543) && ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;
 
-    auto const ret = preflight1(ctx);
-    if (!isTesSuccess(ret))
+    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
     if (!isXRP(ctx.tx[sfAmount]) || (ctx.tx[sfAmount] <= beast::zero))
@@ -395,8 +403,7 @@ PayChanFund::doApply()
 NotTEC
 PayChanClaim::preflight(PreflightContext const& ctx)
 {
-    auto const ret = preflight1(ctx);
-    if (!isTesSuccess(ret))
+    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
     auto const bal = ctx.tx[~sfBalance];

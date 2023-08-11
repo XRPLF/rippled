@@ -240,7 +240,7 @@ LedgerDeltaAcquire::onLedgerBuilt(
     app_.getJobQueue().addJob(
         jtREPLAY_TASK,
         "onLedgerBuilt",
-        [=, ledger = this->fullLedger_, &app = this->app_](Job&) {
+        [=, ledger = this->fullLedger_, &app = this->app_]() {
             for (auto reason : reasons)
             {
                 switch (reason)

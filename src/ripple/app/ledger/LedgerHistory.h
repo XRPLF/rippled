@@ -44,7 +44,7 @@ public:
         @return `true` if the ledger was already tracked
     */
     bool
-    insert(std::shared_ptr<Ledger const> ledger, bool validated);
+    insert(std::shared_ptr<Ledger const> const& ledger, bool validated);
 
     /** Get the ledgers_by_hash cache hit rate
         @return the hit rate
@@ -69,13 +69,6 @@ public:
     */
     LedgerHash
     getLedgerHash(LedgerIndex ledgerIndex);
-
-    /** Set the history cache's parameters
-        @param size The target size of the cache
-        @param age The target age of the cache, in seconds
-    */
-    void
-    tune(int size, std::chrono::seconds age);
 
     /** Remove stale cache entries
      */

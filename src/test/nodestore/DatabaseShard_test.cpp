@@ -19,8 +19,9 @@
 
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/LedgerToJson.h>
+#include <ripple/app/misc/LoadFeeTrack.h>
 #include <ripple/app/misc/SHAMapStore.h>
-#include <ripple/app/rdb/backend/RelationalDBInterfaceSqlite.h>
+#include <ripple/app/rdb/backend/SQLiteDatabase.h>
 #include <ripple/basics/Slice.h>
 #include <ripple/basics/random.h>
 #include <ripple/beast/hash/hash_append.h>
@@ -262,6 +263,10 @@ class DatabaseShard_test : public TestBase
         makeLedgerData(test::jtx::Env& env_, std::uint32_t seq)
         {
             using namespace test::jtx;
+
+            // The local fee may go up, especially in the online delete tests
+            while (env_.app().getFeeTrack().lowerLocalFee())
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
             if (isNewAccounts(seq))
                 env_.fund(XRP(iniAmount), accounts_[nAccounts_[seq] - 1]);
@@ -1249,14 +1254,22 @@ class DatabaseShard_test : public TestBase
             Database& ndb = env.app().getNodeStore();
             BEAST_EXPECT(db);
 
+            auto& store = env.app().getSHAMapStore();
+
+            // Allow online delete to delete the startup ledgers
+            // so that it will take some time for the import to
+            // catch up to the point of the next rotation
+            store.setCanDelete(10);
+
             // Create some ledgers for the shard store to import
             auto const shardCount = 5;
             TestData data(seedValue, 4, shardCount);
             if (!BEAST_EXPECT(data.makeLedgers(env)))
                 return;
 
-            auto& store = env.app().getSHAMapStore();
-            auto lastRotated = store.getLastRotated();
+            store.rendezvous();
+            auto const lastRotated = store.getLastRotated();
+            BEAST_EXPECT(lastRotated >= 553 && lastRotated < 1103);
 
             // Start the import
             db->importDatabase(ndb);
@@ -1267,37 +1280,45 @@ class DatabaseShard_test : public TestBase
                 std::this_thread::sleep_for(std::chrono::milliseconds(1));
             }
 
-            // Enable online deletion now that the import has started
+            // Enable unimpeded online deletion now that the import has started
             store.setCanDelete(std::numeric_limits<std::uint32_t>::max());
 
             auto pauseVerifier = std::thread([lastRotated, &store, db, this] {
-                while (true)
+                // The import should still be running when this thread starts
+                BEAST_EXPECT(db->getDatabaseImportSequence());
+                auto rotationProgress = lastRotated;
+                while (auto const ledgerSeq = db->getDatabaseImportSequence())
                 {
                     // Make sure database rotations dont interfere
                     // with the import
 
-                    if (store.getLastRotated() != lastRotated)
+                    auto const last = store.getLastRotated();
+                    if (last != rotationProgress)
                     {
                         // A rotation occurred during shard import. Not
                         // necessarily an error
 
-                        auto const ledgerSeq = db->getDatabaseImportSequence();
-                        BEAST_EXPECT(!ledgerSeq || ledgerSeq >= lastRotated);
-
-                        break;
+                        BEAST_EXPECT(
+                            !ledgerSeq || ledgerSeq >= rotationProgress);
+                        rotationProgress = last;
                     }
                 }
             });
+
+            auto join = [&pauseVerifier]() {
+                if (pauseVerifier.joinable())
+                    pauseVerifier.join();
+            };
 
             // Create more ledgers to trigger online deletion
             data = TestData(seedValue * 2);
             if (!BEAST_EXPECT(data.makeLedgers(env, shardCount)))
             {
-                pauseVerifier.join();
+                join();
                 return;
             }
 
-            pauseVerifier.join();
+            join();
             BEAST_EXPECT(store.getLastRotated() != lastRotated);
         }
 
@@ -1741,9 +1762,9 @@ class DatabaseShard_test : public TestBase
     }
 
     void
-    testRelationalDBInterfaceSqlite(std::uint64_t const seedValue)
+    testSQLiteDatabase(std::uint64_t const seedValue)
     {
-        testcase("Relational DB Interface SQLite");
+        testcase("SQLite Database");
 
         using namespace test::jtx;
 
@@ -1761,8 +1782,8 @@ class DatabaseShard_test : public TestBase
         BEAST_EXPECT(shardStore->getShardInfo()->finalized().empty());
         BEAST_EXPECT(shardStore->getShardInfo()->incompleteToString().empty());
 
-        auto rdb = dynamic_cast<RelationalDBInterfaceSqlite*>(
-            &env.app().getRelationalDBInterface());
+        auto rdb =
+            dynamic_cast<SQLiteDatabase*>(&env.app().getRelationalDatabase());
 
         BEAST_EXPECT(rdb);
 
@@ -1775,7 +1796,7 @@ class DatabaseShard_test : public TestBase
                 return;
         }
 
-        // Close these databases to force the RelationalDBInterfaceSqlite
+        // Close these databases to force the SQLiteDatabase
         // to use the shard databases and lookup tables.
         rdb->closeLedgerDB();
         rdb->closeTransactionDB();
@@ -1793,7 +1814,7 @@ class DatabaseShard_test : public TestBase
         for (auto const& ledger : data.ledgers_)
         {
             // Compare each test ledger to the data retrieved
-            // from the RelationalDBInterfaceSqlite class
+            // from the SQLiteDatabase class
 
             if (shardStore->seqToShardIndex(ledger->seq()) <
                     shardStore->earliestShardIndex() ||
@@ -1808,8 +1829,7 @@ class DatabaseShard_test : public TestBase
             for (auto const& transaction : ledger->txs)
             {
                 // Compare each test transaction to the data
-                // retrieved from the RelationalDBInterfaceSqlite
-                // class
+                // retrieved from the SQLiteDatabase class
 
                 error_code_i error{rpcSUCCESS};
 
@@ -1864,7 +1884,7 @@ public:
         testPrepareWithHistoricalPaths(seedValue());
         testOpenShardManagement(seedValue());
         testShardInfo(seedValue());
-        testRelationalDBInterfaceSqlite(seedValue());
+        testSQLiteDatabase(seedValue());
     }
 };
 

@@ -146,7 +146,7 @@ public:
                 if (c.charge(fee) == drop)
                 {
                     // Disconnect abusive Consumer
-                    BEAST_EXPECT(c.disconnect() == limited);
+                    BEAST_EXPECT(c.disconnect(j) == limited);
                     break;
                 }
                 ++logic.clock();

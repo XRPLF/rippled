@@ -114,10 +114,15 @@ Consumer::warn()
 }
 
 bool
-Consumer::disconnect()
+Consumer::disconnect(beast::Journal const& j)
 {
     assert(m_entry != nullptr);
-    return m_logic->disconnect(*m_entry);
+    bool const d = m_logic->disconnect(*m_entry);
+    if (d)
+    {
+        JLOG(j.debug()) << "disconnecting " << m_entry->to_string();
+    }
+    return d;
 }
 
 int

@@ -89,6 +89,18 @@ STArray::STArray(SerialIter& sit, SField const& f, int depth) : STBase(f)
     }
 }
 
+STBase*
+STArray::copy(std::size_t n, void* buf) const
+{
+    return emplace(n, buf, *this);
+}
+
+STBase*
+STArray::move(std::size_t n, void* buf)
+{
+    return emplace(n, buf, std::move(*this));
+}
+
 std::string
 STArray::getFullText() const
 {
@@ -153,11 +165,23 @@ STArray::add(Serializer& s) const
     }
 }
 
+SerializedTypeID
+STArray::getSType() const
+{
+    return STI_ARRAY;
+}
+
 bool
 STArray::isEquivalent(const STBase& t) const
 {
     auto v = dynamic_cast<const STArray*>(&t);
     return v != nullptr && v_ == v->v_;
+}
+
+bool
+STArray::isDefault() const
+{
+    return v_.empty();
 }
 
 void

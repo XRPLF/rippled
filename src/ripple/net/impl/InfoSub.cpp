@@ -60,6 +60,9 @@ InfoSub::~InfoSub()
 
     if (!normalSubscriptions_.empty())
         m_source.unsubAccountInternal(mSeq, normalSubscriptions_, false);
+
+    for (auto const& account : accountHistorySubscriptions_)
+        m_source.unsubAccountHistoryInternal(mSeq, account, false);
 }
 
 Resource::Consumer&
@@ -101,22 +104,36 @@ InfoSub::deleteSubAccountInfo(AccountID const& account, bool rt)
         normalSubscriptions_.erase(account);
 }
 
-void
-InfoSub::clearPathRequest()
+bool
+InfoSub::insertSubAccountHistory(AccountID const& account)
 {
-    mPathRequest.reset();
+    std::lock_guard sl(mLock);
+    return accountHistorySubscriptions_.insert(account).second;
 }
 
 void
-InfoSub::setPathRequest(const std::shared_ptr<PathRequest>& req)
+InfoSub::deleteSubAccountHistory(AccountID const& account)
 {
-    mPathRequest = req;
+    std::lock_guard sl(mLock);
+    accountHistorySubscriptions_.erase(account);
 }
 
-const std::shared_ptr<PathRequest>&
-InfoSub::getPathRequest()
+void
+InfoSub::clearRequest()
 {
-    return mPathRequest;
+    request_.reset();
+}
+
+void
+InfoSub::setRequest(const std::shared_ptr<InfoSubRequest>& req)
+{
+    request_ = req;
+}
+
+const std::shared_ptr<InfoSubRequest>&
+InfoSub::getRequest()
+{
+    return request_;
 }
 
 }  // namespace ripple

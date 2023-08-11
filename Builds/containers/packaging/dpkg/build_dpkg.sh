@@ -4,7 +4,7 @@ set -ex
 # make sure pkg source files are up to date with repo
 cd /opt/rippled_bld/pkg
 cp -fpru rippled/Builds/containers/packaging/dpkg/debian/. debian/
-cp -fpu rippled/Builds/containers/shared/rippled.service debian/
+cp -fpu rippled/Builds/containers/shared/rippled*.service debian/
 cp -fpu rippled/Builds/containers/shared/update_sources.sh .
 source update_sources.sh
 
@@ -15,7 +15,7 @@ RIPPLED_DPKG_VERSION=$(echo "${RIPPLED_VERSION}" | sed 's!-!~!g')
 # TODO - decide how to handle the trailing/release
 # version here (hardcoded to 1). Does it ever need to change?
 RIPPLED_DPKG_FULL_VERSION="${RIPPLED_DPKG_VERSION}-1"
-
+git config --global --add safe.directory /opt/rippled_bld/pkg/rippled
 cd /opt/rippled_bld/pkg/rippled
 if [[ -n $(git status --porcelain) ]]; then
     git status
@@ -45,21 +45,19 @@ CHANGELOG
 # PATH must be preserved for our more modern cmake in /opt/local
 # TODO : consider allowing lintian to run in future ?
 export DH_BUILD_DDEBS=1
-export CC=gcc-8
-export CXX=g++-8
 debuild --no-lintian --preserve-envvar PATH --preserve-env -us -uc
 rc=$?; if [[ $rc != 0 ]]; then
     error "error building dpkg"
 fi
 cd ..
-ls -latr
 
 # copy artifacts
-cp rippled-dev_${RIPPLED_DPKG_FULL_VERSION}_amd64.deb ${PKG_OUTDIR}
+cp rippled-reporting_${RIPPLED_DPKG_FULL_VERSION}_amd64.deb ${PKG_OUTDIR}
 cp rippled_${RIPPLED_DPKG_FULL_VERSION}_amd64.deb ${PKG_OUTDIR}
 cp rippled_${RIPPLED_DPKG_FULL_VERSION}.dsc ${PKG_OUTDIR}
 # dbgsym suffix is ddeb under newer debuild, but just deb under earlier
 cp rippled-dbgsym_${RIPPLED_DPKG_FULL_VERSION}_amd64.* ${PKG_OUTDIR}
+cp rippled-reporting-dbgsym_${RIPPLED_DPKG_FULL_VERSION}_amd64.* ${PKG_OUTDIR}
 cp rippled_${RIPPLED_DPKG_FULL_VERSION}_amd64.changes ${PKG_OUTDIR}
 cp rippled_${RIPPLED_DPKG_FULL_VERSION}_amd64.build ${PKG_OUTDIR}
 cp rippled_${RIPPLED_DPKG_VERSION}.orig.tar.gz ${PKG_OUTDIR}
@@ -68,6 +66,10 @@ cp rippled_${RIPPLED_DPKG_FULL_VERSION}.debian.tar.xz ${PKG_OUTDIR}
 if [ -e rippled_${RIPPLED_DPKG_FULL_VERSION}_amd64.buildinfo ] ; then
     cp rippled_${RIPPLED_DPKG_FULL_VERSION}_amd64.buildinfo ${PKG_OUTDIR}
 fi
+
+pushd ${PKG_OUTDIR}
+for f in *.ddeb; do mv -- "$f" "${f%.ddeb}.deb"; done
+popd
 
 cat rippled_${RIPPLED_DPKG_FULL_VERSION}_amd64.changes
 # extract the text in the .changes file that appears between
@@ -81,15 +83,17 @@ DEB_SHA256=$(cat shasums | \
     grep "rippled_${RIPPLED_DPKG_VERSION}-1_amd64.deb" | cut -d " " -f 1)
 DBG_SHA256=$(cat shasums | \
     grep "rippled-dbgsym_${RIPPLED_DPKG_VERSION}-1_amd64.*" | cut -d " " -f 1)
-DEV_SHA256=$(cat shasums | \
-    grep "rippled-dev_${RIPPLED_DPKG_VERSION}-1_amd64.deb" | cut -d " " -f 1)
+REPORTING_DBG_SHA256=$(cat shasums | \
+    grep "rippled-reporting-dbgsym_${RIPPLED_DPKG_VERSION}-1_amd64.*" | cut -d " " -f 1)
+REPORTING_SHA256=$(cat shasums | \
+    grep "rippled-reporting_${RIPPLED_DPKG_VERSION}-1_amd64.deb" | cut -d " " -f 1)
 SRC_SHA256=$(cat shasums | \
     grep "rippled_${RIPPLED_DPKG_VERSION}.orig.tar.gz" | cut -d " " -f 1)
 echo "deb_sha256=${DEB_SHA256}" >> ${PKG_OUTDIR}/build_vars
 echo "dbg_sha256=${DBG_SHA256}" >> ${PKG_OUTDIR}/build_vars
-echo "dev_sha256=${DEV_SHA256}" >> ${PKG_OUTDIR}/build_vars
+echo "reporting_sha256=${REPORTING_SHA256}" >> ${PKG_OUTDIR}/build_vars
+echo "reporting_dbg_sha256=${REPORTING_DBG_SHA256}" >> ${PKG_OUTDIR}/build_vars
 echo "src_sha256=${SRC_SHA256}" >> ${PKG_OUTDIR}/build_vars
 echo "rippled_version=${RIPPLED_VERSION}" >> ${PKG_OUTDIR}/build_vars
 echo "dpkg_version=${RIPPLED_DPKG_VERSION}" >> ${PKG_OUTDIR}/build_vars
 echo "dpkg_full_version=${RIPPLED_DPKG_FULL_VERSION}" >> ${PKG_OUTDIR}/build_vars
-

@@ -29,8 +29,9 @@
 #include <ripple/protocol/digest.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/protocol/messages.h>
-#include <boost/beast/core/multi_buffer.hpp>
 #include <test/jtx.h>
+
+#include <boost/beast/core/multi_buffer.hpp>
 
 namespace ripple {
 namespace test {
@@ -217,7 +218,8 @@ private:
     {
         testcase("Config Load");
 
-        jtx::Env env(*this);
+        jtx::Env env(
+            *this, jtx::envconfig(), nullptr, beast::severities::kDisabled);
         auto& app = env.app();
         PublicKey emptyLocalKey;
         std::vector<std::string> const emptyCfgKeys;
@@ -1316,7 +1318,7 @@ private:
             BEAST_EXPECT(changes.added == expectedTrusted);
             BEAST_EXPECT(trustedKeys->quorum() == minQuorum);
 
-            // Use normal quorum when seen validators >= quorum
+            // Use configured quorum even when seen validators >= quorum
             activeValidators.emplace(toBeSeen);
             changes = trustedKeys->updateTrusted(
                 activeValidators,
@@ -1326,7 +1328,7 @@ private:
                 env.app().getHashRouter());
             BEAST_EXPECT(changes.removed.empty());
             BEAST_EXPECT(changes.added.empty());
-            BEAST_EXPECT(trustedKeys->quorum() == std::ceil(n * 0.8f));
+            BEAST_EXPECT(trustedKeys->quorum() == minQuorum);
         }
         {
             // Remove expired published list
@@ -1826,7 +1828,8 @@ private:
                     env.app().getOPs(),
                     env.app().overlay(),
                     env.app().getHashRouter());
-                if (trustedKeys->quorum() == std::ceil(cfgKeys.size() * 0.8f))
+                if (minimumQuorum == trustedKeys->quorum() ||
+                    trustedKeys->quorum() == std::ceil(cfgKeys.size() * 0.8f))
                     return trustedKeys;
             }
             return nullptr;
@@ -1978,7 +1981,7 @@ private:
                     env.app().getOPs(),
                     env.app().overlay(),
                     env.app().getHashRouter());
-                BEAST_EXPECT(validators->quorum() == 48);
+                BEAST_EXPECT(validators->quorum() == 30);
                 hash_set<PublicKey> nUnl;
                 it = unl.begin();
                 for (std::uint32_t i = 0; i < 20; ++i)

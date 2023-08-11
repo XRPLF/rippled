@@ -57,7 +57,28 @@ enum class SizedItem : std::size_t {
     lgrDBCache,
     openFinalLimit,
     burstSize,
-    ramSizeGB
+    ramSizeGB,
+    accountIdCacheSize,
+};
+
+/** Fee schedule for startup / standalone, and to vote for.
+During voting ledgers, the FeeVote logic will try to move towards
+these values when injecting fee-setting transactions.
+A default-constructed Setup contains recommended values.
+*/
+struct FeeSetup
+{
+    /** The cost of a reference transaction in drops. */
+    XRPAmount reference_fee{10};
+
+    /** The account reserve requirement in drops. */
+    XRPAmount account_reserve{10 * DROPS_PER_XRP};
+
+    /** The per-owned item reserve requirement in drops. */
+    XRPAmount owner_reserve{2 * DROPS_PER_XRP};
+
+    /* (Remember to update the example cfg files when changing any of these
+     * values.) */
 };
 
 //  This entire derived class is deprecated.
@@ -137,17 +158,21 @@ public:
     std::string START_LEDGER;
 
     // Network parameters
+    uint32_t NETWORK_ID = 0;
 
-    // The number of fee units a reference transaction costs
-    static constexpr FeeUnit32 TRANSACTION_FEE_BASE{10};
+    // DEPRECATED - Fee units for a reference transction.
+    // Only provided for backwards compatibility in a couple of places
+    static constexpr std::uint32_t FEE_UNITS_DEPRECATED = 10;
 
     // Note: The following parameters do not relate to the UNL or trust at all
     // Minimum number of nodes to consider the network present
     std::size_t NETWORK_QUORUM = 1;
 
     // Peer networking parameters
-    bool RELAY_UNTRUSTED_VALIDATIONS = true;
-    bool RELAY_UNTRUSTED_PROPOSALS = false;
+    // 1 = relay, 0 = do not relay (but process), -1 = drop completely (do NOT
+    // process)
+    int RELAY_UNTRUSTED_VALIDATIONS = 1;
+    int RELAY_UNTRUSTED_PROPOSALS = 0;
 
     // True to ask peers not to relay current IP.
     bool PEER_PRIVATE = false;
@@ -160,19 +185,28 @@ public:
     std::size_t PEERS_OUT_MAX = 0;
     std::size_t PEERS_IN_MAX = 0;
 
-    // Path searching
-    int PATH_SEARCH_OLD = 7;
-    int PATH_SEARCH = 7;
+    // Path searching: these were reasonable default values at some point but
+    //                 further research is needed to decide if they still are
+    //                 and whether all of them are needed.
+    //
+    //                 The performance and resource consumption of a server can
+    //                 be dramatically impacted by changing these configuration
+    //                 options; higher values result in exponentially higher
+    //                 resource usage.
+    //
+    //                 Servers operating as validators disable path finding by
+    //                 default by setting the `PATH_SEARCH_MAX` option to 0
+    //                 unless it is explicitly set in the configuration file.
+    int PATH_SEARCH_OLD = 2;
+    int PATH_SEARCH = 2;
     int PATH_SEARCH_FAST = 2;
-    int PATH_SEARCH_MAX = 10;
+    int PATH_SEARCH_MAX = 3;
 
     // Validation
     std::optional<std::size_t>
         VALIDATION_QUORUM;  // validations to consider ledger authoritative
 
-    XRPAmount FEE_DEFAULT{10};
-    XRPAmount FEE_ACCOUNT_RESERVE{200 * DROPS_PER_XRP};
-    XRPAmount FEE_OWNER_RESERVE{50 * DROPS_PER_XRP};
+    FeeSetup FEES;
 
     // Node storage configuration
     std::uint32_t LEDGER_HISTORY = 256;
@@ -201,8 +235,17 @@ public:
     // Amendment majority time
     std::chrono::seconds AMENDMENT_MAJORITY_TIME = defaultAmendmentMajorityTime;
 
-    // Thread pool configuration
-    std::size_t WORKERS = 0;
+    // Thread pool configuration (0 = choose for me)
+    int WORKERS = 0;           // jobqueue thread count. default: upto 6
+    int IO_WORKERS = 0;        // io svc thread count. default: 2
+    int PREFETCH_WORKERS = 0;  // prefetch thread count. default: 4
+
+    // Can only be set in code, specifically unit tests
+    bool FORCE_MULTI_THREAD = false;
+
+    // Normally the sweep timer is automatically deduced based on the node
+    // size, but we allow admins to explicitly set it in the config.
+    std::optional<int> SWEEP_INTERVAL;
 
     // Reduce-relay - these parameters are experimental.
     // Enable reduce-relay features
@@ -248,6 +291,9 @@ public:
 
     // Enable the beta API version
     bool BETA_RPC_API = false;
+
+    // First, attempt to load the latest ledger directly from disk.
+    bool FAST_LOAD = false;
 
 public:
     Config();
@@ -338,6 +384,9 @@ public:
     getValueFor(SizedItem item, std::optional<std::size_t> node = std::nullopt)
         const;
 };
+
+FeeSetup
+setup_FeeVote(Section const& section);
 
 }  // namespace ripple
 

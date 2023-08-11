@@ -19,28 +19,21 @@
 
 #include <ripple/shamap/SHAMapInnerNode.h>
 
-#include <ripple/basics/ByteUtilities.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/Slice.h>
 #include <ripple/basics/contract.h>
-#include <ripple/basics/safe_cast.h>
+#include <ripple/basics/spinlock.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/shamap/SHAMapTreeNode.h>
 #include <ripple/shamap/impl/TaggedPointer.ipp>
 
-#include <openssl/sha.h>
-
 #include <algorithm>
-#include <array>
 #include <iterator>
-#include <mutex>
 #include <utility>
 
 namespace ripple {
-
-std::mutex SHAMapInnerNode::childLock;
 
 SHAMapInnerNode::SHAMapInnerNode(
     std::uint32_t cowid,
@@ -108,7 +101,10 @@ SHAMapInnerNode::clone(std::uint32_t cowid) const
             cloneHashes[branchNum] = thisHashes[indexNum];
         });
     }
-    std::lock_guard lock(childLock);
+
+    spinlock sl(lock_);
+    std::lock_guard lock(sl);
+
     if (thisIsSparse)
     {
         int cloneChildIndex = 0;
@@ -132,19 +128,21 @@ SHAMapInnerNode::makeFullInner(
     SHAMapHash const& hash,
     bool hashValid)
 {
-    if (data.size() != 512)
+    // A full inner node is serialized as 16 256-bit hashes, back to back:
+    if (data.size() != branchFactor * uint256::bytes)
         Throw<std::runtime_error>("Invalid FI node");
 
     auto ret = std::make_shared<SHAMapInnerNode>(0, branchFactor);
 
-    Serializer s(data.data(), data.size());
+    SerialIter si(data);
 
-    auto retHashes = ret->hashesAndChildren_.getHashes();
+    auto hashes = ret->hashesAndChildren_.getHashes();
+
     for (int i = 0; i < branchFactor; ++i)
     {
-        s.getBitString(retHashes[i].as_uint256(), i * 32);
+        hashes[i].as_uint256() = si.getBitString<256>();
 
-        if (retHashes[i].isNonZero())
+        if (hashes[i].isNonZero())
             ret->isBranch_ |= (1 << i);
     }
 
@@ -154,39 +152,43 @@ SHAMapInnerNode::makeFullInner(
         ret->hash_ = hash;
     else
         ret->updateHash();
+
     return ret;
 }
 
 std::shared_ptr<SHAMapTreeNode>
 SHAMapInnerNode::makeCompressedInner(Slice data)
 {
-    Serializer s(data.data(), data.size());
+    // A compressed inner node is serialized as a series of 33 byte chunks,
+    // representing a one byte "position" and a 256-bit hash:
+    constexpr std::size_t chunkSize = uint256::bytes + 1;
 
-    int len = s.getLength();
+    if (auto const s = data.size();
+        (s % chunkSize != 0) || (s > chunkSize * branchFactor))
+        Throw<std::runtime_error>("Invalid CI node");
+
+    SerialIter si(data);
 
     auto ret = std::make_shared<SHAMapInnerNode>(0, branchFactor);
 
-    auto retHashes = ret->hashesAndChildren_.getHashes();
-    for (int i = 0; i < (len / 33); ++i)
+    auto hashes = ret->hashesAndChildren_.getHashes();
+
+    while (!si.empty())
     {
-        int pos;
+        auto const hash = si.getBitString<256>();
+        auto const pos = si.get8();
 
-        if (!s.get8(pos, 32 + (i * 33)))
-            Throw<std::runtime_error>("short CI node");
-
-        if ((pos < 0) || (pos >= branchFactor))
+        if (pos >= branchFactor)
             Throw<std::runtime_error>("invalid CI node");
 
-        s.getBitString(retHashes[pos].as_uint256(), i * 33);
+        hashes[pos].as_uint256() = hash;
 
-        if (retHashes[pos].isNonZero())
+        if (hashes[pos].isNonZero())
             ret->isBranch_ |= (1 << pos);
     }
 
     ret->resizeChildArrays(ret->getBranchCount());
-
     ret->updateHash();
-
     return ret;
 }
 
@@ -282,7 +284,7 @@ SHAMapInnerNode::getString(const SHAMapNodeID& id) const
 
 // We are modifying an inner node
 void
-SHAMapInnerNode::setChild(int m, std::shared_ptr<SHAMapTreeNode> const& child)
+SHAMapInnerNode::setChild(int m, std::shared_ptr<SHAMapTreeNode> child)
 {
     assert((m >= 0) && (m < branchFactor));
     assert(cowid_ != 0);
@@ -308,7 +310,7 @@ SHAMapInnerNode::setChild(int m, std::shared_ptr<SHAMapTreeNode> const& child)
         auto const childIndex = *getChildIndex(m);
         auto [_, hashes, children] = hashesAndChildren_.getHashesAndChildren();
         hashes[childIndex].zero();
-        children[childIndex] = child;
+        children[childIndex] = std::move(child);
     }
 
     hash_.zero();
@@ -335,8 +337,11 @@ SHAMapInnerNode::getChildPointer(int branch)
     assert(branch >= 0 && branch < branchFactor);
     assert(!isEmptyBranch(branch));
 
-    std::lock_guard lock(childLock);
-    return hashesAndChildren_.getChildren()[*getChildIndex(branch)].get();
+    auto const index = *getChildIndex(branch);
+
+    packed_spinlock sl(lock_, index);
+    std::lock_guard lock(sl);
+    return hashesAndChildren_.getChildren()[index].get();
 }
 
 std::shared_ptr<SHAMapTreeNode>
@@ -345,8 +350,11 @@ SHAMapInnerNode::getChild(int branch)
     assert(branch >= 0 && branch < branchFactor);
     assert(!isEmptyBranch(branch));
 
-    std::lock_guard lock(childLock);
-    return hashesAndChildren_.getChildren()[*getChildIndex(branch)];
+    auto const index = *getChildIndex(branch);
+
+    packed_spinlock sl(lock_, index);
+    std::lock_guard lock(sl);
+    return hashesAndChildren_.getChildren()[index];
 }
 
 SHAMapHash const&
@@ -371,7 +379,9 @@ SHAMapInnerNode::canonicalizeChild(
     auto [_, hashes, children] = hashesAndChildren_.getHashesAndChildren();
     assert(node->getHash() == hashes[childIndex]);
 
-    std::lock_guard lock(childLock);
+    packed_spinlock sl(lock_, childIndex);
+    std::lock_guard lock(sl);
+
     if (children[childIndex])
     {
         // There is already a node hooked up, return it
@@ -388,7 +398,7 @@ SHAMapInnerNode::canonicalizeChild(
 void
 SHAMapInnerNode::invariants(bool is_root) const
 {
-    unsigned count = 0;
+    [[maybe_unused]] unsigned count = 0;
     auto [numAllocated, hashes, children] =
         hashesAndChildren_.getHashesAndChildren();
 

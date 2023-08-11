@@ -83,7 +83,7 @@ TimeoutCounter::queueJob(ScopedLockType& sl)
     app_.getJobQueue().addJob(
         queueJobParameter_.jobType,
         queueJobParameter_.jobName,
-        [wptr = pmDowncast()](Job&) {
+        [wptr = pmDowncast()]() {
             if (auto sptr = wptr.lock(); sptr)
                 sptr->invokeOnTimer();
         });

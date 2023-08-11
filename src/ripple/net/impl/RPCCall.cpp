@@ -482,17 +482,31 @@ private:
         return jvRequest;
     }
 
-    // connect <ip> [port]
+    // connect <ip[:port]> [port]
     Json::Value
     parseConnect(Json::Value const& jvParams)
     {
         Json::Value jvRequest(Json::objectValue);
-
-        jvRequest[jss::ip] = jvParams[0u].asString();
-
+        std::string ip = jvParams[0u].asString();
         if (jvParams.size() == 2)
+        {
+            jvRequest[jss::ip] = ip;
             jvRequest[jss::port] = jvParams[1u].asUInt();
+            return jvRequest;
+        }
 
+        // handle case where there is one argument of the form ip:port
+        if (std::count(ip.begin(), ip.end(), ':') == 1)
+        {
+            std::size_t colon = ip.find_last_of(":");
+            jvRequest[jss::ip] = std::string{ip, 0, colon};
+            jvRequest[jss::port] =
+                Json::Value{std::string{ip, colon + 1}}.asUInt();
+            return jvRequest;
+        }
+
+        // default case, no port
+        jvRequest[jss::ip] = ip;
         return jvRequest;
     }
 
@@ -761,11 +775,9 @@ private:
         return jvRequest;
     }
 
-    // owner_info <account>|<account_public_key> [strict]
-    // owner_info <seed>|<pass_phrase>|<key> [<ledger>] [strict]
-    // account_info <account>|<account_public_key> [strict]
-    // account_info <seed>|<pass_phrase>|<key> [<ledger>] [strict]
-    // account_offers <account>|<account_public_key> [<ledger>] [strict]
+    // owner_info <account>
+    // account_info <account> [<ledger>]
+    // account_offers <account> [<ledger>]
     Json::Value
     parseAccountItems(Json::Value const& jvParams)
     {
@@ -881,10 +893,7 @@ private:
             // Parameters 0 and 1 are accounts
             if (i < 2)
             {
-                if (parseBase58<PublicKey>(
-                        TokenType::AccountPublic, strParam) ||
-                    parseBase58<AccountID>(strParam) ||
-                    parseGenericSeed(strParam))
+                if (parseBase58<AccountID>(strParam))
                 {
                     jvRequest[accFields[i]] = std::move(strParam);
                 }
@@ -910,16 +919,8 @@ private:
     {
         std::string strIdent = jvParams[0u].asString();
         unsigned int iCursor = jvParams.size();
-        bool bStrict = false;
 
-        if (iCursor >= 2 && jvParams[iCursor - 1] == jss::strict)
-        {
-            bStrict = true;
-            --iCursor;
-        }
-
-        if (!parseBase58<PublicKey>(TokenType::AccountPublic, strIdent) &&
-            !parseBase58<AccountID>(strIdent) && !parseGenericSeed(strIdent))
+        if (!parseBase58<AccountID>(strIdent))
             return rpcError(rpcACT_MALFORMED);
 
         // Get info on account.
@@ -927,11 +928,17 @@ private:
 
         jvRequest[jss::account] = strIdent;
 
-        if (bStrict)
-            jvRequest[jss::strict] = 1;
-
         if (iCursor == 2 && !jvParseLedger(jvRequest, jvParams[1u].asString()))
             return rpcError(rpcLGR_IDX_MALFORMED);
+
+        return jvRequest;
+    }
+
+    Json::Value
+    parseNodeToShard(Json::Value const& jvParams)
+    {
+        Json::Value jvRequest;
+        jvRequest[jss::action] = jvParams[0u].asString();
 
         return jvRequest;
     }
@@ -1218,10 +1225,7 @@ public:
             int maxParams;
         };
 
-        // FIXME: replace this with a function-static std::map and the lookup
-        // code with std::map::find when the problem with magic statics on
-        // Visual Studio is fixed.
-        static Command const commands[] = {
+        static constexpr Command commands[] = {
             // Request-response methods
             // - Returns an error, or the request.
             // - To modify the method, provide a new method in the request.
@@ -1229,9 +1233,12 @@ public:
             {"account_info", &RPCParser::parseAccountItems, 1, 3},
             {"account_lines", &RPCParser::parseAccountLines, 1, 5},
             {"account_channels", &RPCParser::parseAccountChannels, 1, 3},
+            {"account_nfts", &RPCParser::parseAccountItems, 1, 5},
             {"account_objects", &RPCParser::parseAccountItems, 1, 5},
             {"account_offers", &RPCParser::parseAccountItems, 1, 4},
             {"account_tx", &RPCParser::parseAccountTransactions, 1, 8},
+            {"amm_info", &RPCParser::parseAsIs, 1, 2},
+            {"book_changes", &RPCParser::parseLedgerId, 1, 1},
             {"book_offers", &RPCParser::parseBookOffers, 2, 7},
             {"can_delete", &RPCParser::parseCanDelete, 0, 1},
             {"channel_authorize", &RPCParser::parseChannelAuthorize, 3, 4},
@@ -1257,7 +1264,7 @@ public:
             {"log_level", &RPCParser::parseLogLevel, 0, 2},
             {"logrotate", &RPCParser::parseAsIs, 0, 0},
             {"manifest", &RPCParser::parseManifest, 1, 1},
-            {"nodetoshard_status", &RPCParser::parseAsIs, 0, 0},
+            {"node_to_shard", &RPCParser::parseNodeToShard, 1, 1},
             {"owner_info", &RPCParser::parseAccountItems, 1, 3},
             {"peers", &RPCParser::parseAsIs, 0, 0},
             {"ping", &RPCParser::parseAsIs, 0, 0},
@@ -1388,16 +1395,7 @@ struct RPCCallImp
             // callbackFuncP.
 
             // Receive reply
-            if (iStatus == 401)
-                Throw<std::runtime_error>(
-                    "incorrect rpcuser or rpcpassword (authorization failed)");
-            else if (
-                (iStatus >= 400) && (iStatus != 400) && (iStatus != 404) &&
-                (iStatus != 500))  // ?
-                Throw<std::runtime_error>(
-                    std::string("server returned HTTP error ") +
-                    std::to_string(iStatus));
-            else if (strData.empty())
+            if (strData.empty())
                 Throw<std::runtime_error>("no response from server");
 
             // Parse reply

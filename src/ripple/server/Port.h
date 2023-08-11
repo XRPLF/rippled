@@ -23,6 +23,8 @@
 #include <ripple/basics/BasicConfig.h>
 #include <ripple/beast/net/IPEndpoint.h>
 #include <boost/asio/ip/address.hpp>
+#include <boost/asio/ip/network_v4.hpp>
+#include <boost/asio/ip/network_v6.hpp>
 #include <boost/beast/core/string.hpp>
 #include <boost/beast/websocket/option.hpp>
 #include <cstdint>
@@ -30,6 +32,7 @@
 #include <optional>
 #include <set>
 #include <string>
+#include <variant>
 
 namespace boost {
 namespace asio {
@@ -50,8 +53,10 @@ struct Port
     boost::asio::ip::address ip;
     std::uint16_t port = 0;
     std::set<std::string, boost::beast::iless> protocol;
-    std::vector<beast::IP::Address> admin_ip;
-    std::vector<beast::IP::Address> secure_gateway_ip;
+    std::vector<boost::asio::ip::network_v4> admin_nets_v4;
+    std::vector<boost::asio::ip::network_v6> admin_nets_v6;
+    std::vector<boost::asio::ip::network_v4> secure_gateway_nets_v4;
+    std::vector<boost::asio::ip::network_v6> secure_gateway_nets_v6;
     std::string user;
     std::string password;
     std::string admin_user;
@@ -108,8 +113,10 @@ struct ParsedPort
 
     std::optional<boost::asio::ip::address> ip;
     std::optional<std::uint16_t> port;
-    std::optional<std::vector<beast::IP::Address>> admin_ip;
-    std::optional<std::vector<beast::IP::Address>> secure_gateway_ip;
+    std::vector<boost::asio::ip::network_v4> admin_nets_v4;
+    std::vector<boost::asio::ip::network_v6> admin_nets_v6;
+    std::vector<boost::asio::ip::network_v4> secure_gateway_nets_v4;
+    std::vector<boost::asio::ip::network_v6> secure_gateway_nets_v6;
 };
 
 void

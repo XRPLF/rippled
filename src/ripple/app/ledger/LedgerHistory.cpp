@@ -26,14 +26,6 @@
 
 namespace ripple {
 
-// VFALCO TODO replace macros
-
-#ifndef CACHED_LEDGER_NUM
-#define CACHED_LEDGER_NUM 96
-#endif
-
-std::chrono::seconds constexpr CachedLedgerAge = std::chrono::minutes{2};
-
 // FIXME: Need to clean up ledgers by index at some point
 
 LedgerHistory::LedgerHistory(
@@ -44,8 +36,8 @@ LedgerHistory::LedgerHistory(
     , mismatch_counter_(collector->make_counter("ledger.history", "mismatch"))
     , m_ledgers_by_hash(
           "LedgerCache",
-          CACHED_LEDGER_NUM,
-          CachedLedgerAge,
+          app_.config().getValueFor(SizedItem::ledgerSize),
+          std::chrono::seconds{app_.config().getValueFor(SizedItem::ledgerAge)},
           stopwatch(),
           app_.journal("TaggedCache"))
     , m_consensus_validated(
@@ -59,7 +51,9 @@ LedgerHistory::LedgerHistory(
 }
 
 bool
-LedgerHistory::insert(std::shared_ptr<Ledger const> ledger, bool validated)
+LedgerHistory::insert(
+    std::shared_ptr<Ledger const> const& ledger,
+    bool validated)
 {
     if (!ledger->isImmutable())
         LogicError("mutable Ledger in insert");
@@ -80,12 +74,9 @@ LedgerHash
 LedgerHistory::getLedgerHash(LedgerIndex index)
 {
     std::unique_lock sl(m_ledgers_by_hash.peekMutex());
-    auto it = mLedgersByIndex.find(index);
-
-    if (it != mLedgersByIndex.end())
+    if (auto it = mLedgersByIndex.find(index); it != mLedgersByIndex.end())
         return it->second;
-
-    return uint256();
+    return {};
 }
 
 std::shared_ptr<Ledger const>
@@ -175,19 +166,19 @@ log_metadata_difference(
     uint256 const& tx,
     beast::Journal j)
 {
-    auto getMeta = [](ReadView const& ledger,
-                      uint256 const& txID) -> std::shared_ptr<TxMeta> {
-        auto meta = ledger.txRead(txID).second;
-        if (!meta)
-            return {};
-        return std::make_shared<TxMeta>(txID, ledger.seq(), *meta);
+    auto getMeta = [](ReadView const& ledger, uint256 const& txID) {
+        std::optional<TxMeta> ret;
+        if (auto meta = ledger.txRead(txID).second)
+            ret.emplace(txID, ledger.seq(), *meta);
+        return ret;
     };
 
     auto validMetaData = getMeta(validLedger, tx);
     auto builtMetaData = getMeta(builtLedger, tx);
-    assert(validMetaData != nullptr || builtMetaData != nullptr);
 
-    if (validMetaData != nullptr && builtMetaData != nullptr)
+    assert(validMetaData || builtMetaData);
+
+    if (validMetaData && builtMetaData)
     {
         auto const& validNodes = validMetaData->getNodes();
         auto const& builtNodes = builtMetaData->getNodes();
@@ -288,17 +279,21 @@ log_metadata_difference(
                                 << validNodes.getJson(JsonOptions::none);
             }
         }
+
+        return;
     }
-    else if (validMetaData != nullptr)
+
+    if (validMetaData)
     {
         JLOG(j.error()) << "MISMATCH on TX " << tx
-                        << ": Metadata Difference (built has none)\n"
+                        << ": Metadata Difference. Valid=\n"
                         << validMetaData->getJson(JsonOptions::none);
     }
-    else  // builtMetaData != nullptr
+
+    if (builtMetaData)
     {
         JLOG(j.error()) << "MISMATCH on TX " << tx
-                        << ": Metadata Difference (valid has none)\n"
+                        << ": Metadata Difference. Built=\n"
                         << builtMetaData->getJson(JsonOptions::none);
     }
 }
@@ -521,13 +516,6 @@ LedgerHistory::fixIndex(LedgerIndex ledgerIndex, LedgerHash const& ledgerHash)
         return false;
     }
     return true;
-}
-
-void
-LedgerHistory::tune(int size, std::chrono::seconds age)
-{
-    m_ledgers_by_hash.setTargetSize(size);
-    m_ledgers_by_hash.setTargetAge(age);
 }
 
 void

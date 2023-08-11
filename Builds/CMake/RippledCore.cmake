@@ -13,6 +13,10 @@ if (unity)
   set_target_properties(xrpl_core PROPERTIES UNITY_BUILD ON)
 endif ()
 
+add_library(libxrpl INTERFACE)
+target_link_libraries(libxrpl INTERFACE xrpl_core)
+add_library(xrpl::libxrpl ALIAS libxrpl)
+
 
 #[===============================[
     beast/legacy FILES:
@@ -50,7 +54,7 @@ target_sources (xrpl_core PRIVATE
   src/ripple/basics/impl/FileUtilities.cpp
   src/ripple/basics/impl/IOUAmount.cpp
   src/ripple/basics/impl/Log.cpp
-  src/ripple/basics/impl/strHex.cpp
+  src/ripple/basics/impl/Number.cpp
   src/ripple/basics/impl/StringUtilities.cpp
   #[===============================[
     main sources:
@@ -70,6 +74,7 @@ target_sources (xrpl_core PRIVATE
       subdir: protocol
   #]===============================]
   src/ripple/protocol/impl/AccountID.cpp
+  src/ripple/protocol/impl/AMMCore.cpp
   src/ripple/protocol/impl/Book.cpp
   src/ripple/protocol/impl/BuildInfo.cpp
   src/ripple/protocol/impl/ErrorCodes.cpp
@@ -77,11 +82,14 @@ target_sources (xrpl_core PRIVATE
   src/ripple/protocol/impl/Indexes.cpp
   src/ripple/protocol/impl/InnerObjectFormats.cpp
   src/ripple/protocol/impl/Issue.cpp
+  src/ripple/protocol/impl/STIssue.cpp
   src/ripple/protocol/impl/Keylet.cpp
   src/ripple/protocol/impl/LedgerFormats.cpp
   src/ripple/protocol/impl/PublicKey.cpp
   src/ripple/protocol/impl/Quality.cpp
+  src/ripple/protocol/impl/QualityFunction.cpp
   src/ripple/protocol/impl/Rate2.cpp
+  src/ripple/protocol/impl/Rules.cpp
   src/ripple/protocol/impl/SField.cpp
   src/ripple/protocol/impl/SOTemplate.cpp
   src/ripple/protocol/impl/STAccount.cpp
@@ -120,11 +128,7 @@ add_library (Ripple::xrpl_core ALIAS xrpl_core)
 target_include_directories (xrpl_core
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/ripple>
-    # this one is for beast/legacy files:
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/beast/extras>
     $<INSTALL_INTERFACE:include>)
-
 
 target_compile_definitions(xrpl_core
   PUBLIC
@@ -139,8 +143,8 @@ target_link_libraries (xrpl_core
     OpenSSL::Crypto
     Ripple::boost
     Ripple::syslibs
-    NIH::secp256k1
-    NIH::ed25519-donna
+    secp256k1::secp256k1
+    ed25519::ed25519
     date::date
     Ripple::opts)
 #[=================================[
@@ -148,28 +152,54 @@ target_link_libraries (xrpl_core
 #]=================================]
 install (
   FILES
+    src/ripple/basics/algorithm.h
+    src/ripple/basics/Archive.h
     src/ripple/basics/base64.h
+    src/ripple/basics/base_uint.h
+    src/ripple/basics/BasicConfig.h
     src/ripple/basics/Blob.h
     src/ripple/basics/Buffer.h
+    src/ripple/basics/ByteUtilities.h
+    src/ripple/basics/chrono.h
+    src/ripple/basics/comparators.h
+    src/ripple/basics/CompressionAlgorithms.h
+    src/ripple/basics/contract.h
     src/ripple/basics/CountedObject.h
+    src/ripple/basics/DecayingSample.h
+    src/ripple/basics/Expected.h
+    src/ripple/basics/FeeUnits.h
     src/ripple/basics/FileUtilities.h
+    src/ripple/basics/hardened_hash.h
     src/ripple/basics/IOUAmount.h
+    src/ripple/basics/join.h
+    src/ripple/basics/KeyCache.h
     src/ripple/basics/LocalValue.h
     src/ripple/basics/Log.h
+    src/ripple/basics/make_SSLContext.h
     src/ripple/basics/MathUtilities.h
+    src/ripple/basics/mulDiv.h
+    src/ripple/basics/Number.h
+    src/ripple/basics/partitioned_unordered_map.h
+    src/ripple/basics/PerfLog.h
+    src/ripple/basics/random.h
+    src/ripple/basics/RangeSet.h
+    src/ripple/basics/README.md
+    src/ripple/basics/ResolverAsio.h
+    src/ripple/basics/Resolver.h
     src/ripple/basics/safe_cast.h
+    src/ripple/basics/scope.h
+    src/ripple/basics/SHAMapHash.h
     src/ripple/basics/Slice.h
+    src/ripple/basics/spinlock.h
+    src/ripple/basics/strHex.h
     src/ripple/basics/StringUtilities.h
+    src/ripple/basics/TaggedCache.h
+    src/ripple/basics/tagged_integer.h
+    src/ripple/basics/ThreadSafetyAnalysis.h
     src/ripple/basics/ToString.h
     src/ripple/basics/UnorderedContainers.h
+    src/ripple/basics/UptimeClock.h
     src/ripple/basics/XRPAmount.h
-    src/ripple/basics/algorithm.h
-    src/ripple/basics/base_uint.h
-    src/ripple/basics/chrono.h
-    src/ripple/basics/contract.h
-    src/ripple/basics/FeeUnits.h
-    src/ripple/basics/hardened_hash.h
-    src/ripple/basics/strHex.h
   DESTINATION include/ripple/basics)
 install (
   FILES
@@ -196,6 +226,7 @@ install (
 install (
   FILES
     src/ripple/protocol/AccountID.h
+    src/ripple/protocol/AMMCore.h
     src/ripple/protocol/AmountConversions.h
     src/ripple/protocol/Book.h
     src/ripple/protocol/BuildInfo.h
@@ -212,11 +243,14 @@ install (
     src/ripple/protocol/Protocol.h
     src/ripple/protocol/PublicKey.h
     src/ripple/protocol/Quality.h
+    src/ripple/protocol/QualityFunction.h
     src/ripple/protocol/Rate.h
+    src/ripple/protocol/Rules.h
     src/ripple/protocol/SField.h
     src/ripple/protocol/SOTemplate.h
     src/ripple/protocol/STAccount.h
     src/ripple/protocol/STAmount.h
+    src/ripple/protocol/STIssue.h
     src/ripple/protocol/STArray.h
     src/ripple/protocol/STBase.h
     src/ripple/protocol/STBitString.h
@@ -284,6 +318,26 @@ install (
   DESTINATION include/ripple/beast)
 install (
   FILES
+    src/ripple/beast/unit_test/amount.hpp
+    src/ripple/beast/unit_test/dstream.hpp
+    src/ripple/beast/unit_test/global_suites.hpp
+    src/ripple/beast/unit_test/main.cpp
+    src/ripple/beast/unit_test/match.hpp
+    src/ripple/beast/unit_test/recorder.hpp
+    src/ripple/beast/unit_test/reporter.hpp
+    src/ripple/beast/unit_test/results.hpp
+    src/ripple/beast/unit_test/runner.hpp
+    src/ripple/beast/unit_test/suite.hpp
+    src/ripple/beast/unit_test/suite_info.hpp
+    src/ripple/beast/unit_test/suite_list.hpp
+    src/ripple/beast/unit_test/thread.hpp
+  DESTINATION include/ripple/beast/unit_test)
+install (
+  FILES
+    src/ripple/beast/unit_test/detail/const_container.hpp
+  DESTINATION include/ripple/beast/unit_test/detail)
+install (
+  FILES
     src/ripple/beast/utility/Journal.h
     src/ripple/beast/utility/PropertyStream.h
     src/ripple/beast/utility/Zero.h
@@ -292,26 +346,27 @@ install (
 # WARNING!! -- horrible levelization ahead
 # (these files should be isolated or moved...but
 #  unfortunately unit_test.h above creates this dependency)
-install (
-  FILES
-    src/beast/extras/beast/unit_test/amount.hpp
-    src/beast/extras/beast/unit_test/dstream.hpp
-    src/beast/extras/beast/unit_test/global_suites.hpp
-    src/beast/extras/beast/unit_test/match.hpp
-    src/beast/extras/beast/unit_test/recorder.hpp
-    src/beast/extras/beast/unit_test/reporter.hpp
-    src/beast/extras/beast/unit_test/results.hpp
-    src/beast/extras/beast/unit_test/runner.hpp
-    src/beast/extras/beast/unit_test/suite.hpp
-    src/beast/extras/beast/unit_test/suite_info.hpp
-    src/beast/extras/beast/unit_test/suite_list.hpp
-    src/beast/extras/beast/unit_test/thread.hpp
-  DESTINATION include/beast/unit_test)
-install (
-  FILES
-    src/beast/extras/beast/unit_test/detail/const_container.hpp
-  DESTINATION include/beast/unit_test/detail)
-
+if (tests)
+  install (
+    FILES
+      src/ripple/beast/unit_test/amount.hpp
+      src/ripple/beast/unit_test/dstream.hpp
+      src/ripple/beast/unit_test/global_suites.hpp
+      src/ripple/beast/unit_test/match.hpp
+      src/ripple/beast/unit_test/recorder.hpp
+      src/ripple/beast/unit_test/reporter.hpp
+      src/ripple/beast/unit_test/results.hpp
+      src/ripple/beast/unit_test/runner.hpp
+      src/ripple/beast/unit_test/suite.hpp
+      src/ripple/beast/unit_test/suite_info.hpp
+      src/ripple/beast/unit_test/suite_list.hpp
+      src/ripple/beast/unit_test/thread.hpp
+    DESTINATION include/ripple/beast/extras/unit_test)
+  install (
+    FILES
+      src/ripple/beast/unit_test/detail/const_container.hpp
+    DESTINATION include/ripple/beast/unit_test/detail)
+endif () #tests
 #[===================================================================[
    rippled executable
 #]===================================================================]
@@ -325,6 +380,9 @@ add_executable (rippled src/ripple/app/main/Application.h)
 if (unity)
   set_target_properties(rippled PROPERTIES UNITY_BUILD ON)
 endif ()
+if (tests)
+    target_compile_definitions(rippled PUBLIC ENABLE_TESTS)
+endif()
 target_sources (rippled PRIVATE
   #[===============================[
      main sources:
@@ -371,6 +429,8 @@ target_sources (rippled PRIVATE
   src/ripple/app/reporting/ReportingETL.cpp
   src/ripple/app/reporting/ETLSource.cpp
   src/ripple/app/reporting/P2pProxy.cpp
+  src/ripple/app/misc/impl/AMMHelpers.cpp
+  src/ripple/app/misc/impl/AMMUtils.cpp
   src/ripple/app/misc/CanonicalTXSet.cpp
   src/ripple/app/misc/FeeVoteImpl.cpp
   src/ripple/app/misc/HashRouter.cpp
@@ -395,24 +455,37 @@ target_sources (rippled PRIVATE
   src/ripple/app/paths/Pathfinder.cpp
   src/ripple/app/paths/RippleCalc.cpp
   src/ripple/app/paths/RippleLineCache.cpp
-  src/ripple/app/paths/RippleState.cpp
+  src/ripple/app/paths/TrustLine.cpp
+  src/ripple/app/paths/impl/AMMLiquidity.cpp
+  src/ripple/app/paths/impl/AMMOffer.cpp
   src/ripple/app/paths/impl/BookStep.cpp
   src/ripple/app/paths/impl/DirectStep.cpp
   src/ripple/app/paths/impl/PaySteps.cpp
   src/ripple/app/paths/impl/XRPEndpointStep.cpp
-  src/ripple/app/rdb/backend/RelationalDBInterfacePostgres.cpp
-  src/ripple/app/rdb/backend/RelationalDBInterfaceSqlite.cpp
-  src/ripple/app/rdb/impl/RelationalDBInterface.cpp
-  src/ripple/app/rdb/impl/RelationalDBInterface_global.cpp
-  src/ripple/app/rdb/impl/RelationalDBInterface_nodes.cpp
-  src/ripple/app/rdb/impl/RelationalDBInterface_postgres.cpp
-  src/ripple/app/rdb/impl/RelationalDBInterface_shards.cpp
+  src/ripple/app/rdb/backend/detail/impl/Node.cpp
+  src/ripple/app/rdb/backend/detail/impl/Shard.cpp
+  src/ripple/app/rdb/backend/impl/PostgresDatabase.cpp
+  src/ripple/app/rdb/backend/impl/SQLiteDatabase.cpp
+  src/ripple/app/rdb/impl/Download.cpp
+  src/ripple/app/rdb/impl/PeerFinder.cpp
+  src/ripple/app/rdb/impl/RelationalDatabase.cpp
+  src/ripple/app/rdb/impl/ShardArchive.cpp
+  src/ripple/app/rdb/impl/State.cpp
+  src/ripple/app/rdb/impl/UnitaryShard.cpp
+  src/ripple/app/rdb/impl/Vacuum.cpp
+  src/ripple/app/rdb/impl/Wallet.cpp
+  src/ripple/app/tx/impl/AMMBid.cpp
+  src/ripple/app/tx/impl/AMMCreate.cpp
+  src/ripple/app/tx/impl/AMMDeposit.cpp
+  src/ripple/app/tx/impl/AMMVote.cpp
+  src/ripple/app/tx/impl/AMMWithdraw.cpp
   src/ripple/app/tx/impl/ApplyContext.cpp
   src/ripple/app/tx/impl/BookTip.cpp
   src/ripple/app/tx/impl/CancelCheck.cpp
   src/ripple/app/tx/impl/CancelOffer.cpp
   src/ripple/app/tx/impl/CashCheck.cpp
   src/ripple/app/tx/impl/Change.cpp
+  src/ripple/app/tx/impl/Clawback.cpp
   src/ripple/app/tx/impl/CreateCheck.cpp
   src/ripple/app/tx/impl/CreateOffer.cpp
   src/ripple/app/tx/impl/CreateTicket.cpp
@@ -420,6 +493,11 @@ target_sources (rippled PRIVATE
   src/ripple/app/tx/impl/DepositPreauth.cpp
   src/ripple/app/tx/impl/Escrow.cpp
   src/ripple/app/tx/impl/InvariantCheck.cpp
+  src/ripple/app/tx/impl/NFTokenAcceptOffer.cpp
+  src/ripple/app/tx/impl/NFTokenBurn.cpp
+  src/ripple/app/tx/impl/NFTokenCancelOffer.cpp
+  src/ripple/app/tx/impl/NFTokenCreateOffer.cpp
+  src/ripple/app/tx/impl/NFTokenMint.cpp
   src/ripple/app/tx/impl/OfferStream.cpp
   src/ripple/app/tx/impl/PayChan.cpp
   src/ripple/app/tx/impl/Payment.cpp
@@ -432,17 +510,18 @@ target_sources (rippled PRIVATE
   src/ripple/app/tx/impl/Transactor.cpp
   src/ripple/app/tx/impl/apply.cpp
   src/ripple/app/tx/impl/applySteps.cpp
+  src/ripple/app/tx/impl/details/NFTokenUtils.cpp
   #[===============================[
      main sources:
        subdir: basics (partial)
   #]===============================]
   src/ripple/basics/impl/Archive.cpp
   src/ripple/basics/impl/BasicConfig.cpp
-  src/ripple/basics/impl/PerfLogImp.cpp
   src/ripple/basics/impl/ResolverAsio.cpp
   src/ripple/basics/impl/UptimeClock.cpp
   src/ripple/basics/impl/make_SSLContext.cpp
   src/ripple/basics/impl/mulDiv.cpp
+  src/ripple/basics/impl/partitioned_unordered_map.cpp
   #[===============================[
      main sources:
        subdir: conditions
@@ -479,7 +558,6 @@ target_sources (rippled PRIVATE
   src/ripple/ledger/impl/ApplyViewBase.cpp
   src/ripple/ledger/impl/ApplyViewImpl.cpp
   src/ripple/ledger/impl/BookDirs.cpp
-  src/ripple/ledger/impl/CachedSLEs.cpp
   src/ripple/ledger/impl/CachedView.cpp
   src/ripple/ledger/impl/Directory.cpp
   src/ripple/ledger/impl/OpenView.cpp
@@ -517,7 +595,6 @@ target_sources (rippled PRIVATE
   src/ripple/nodestore/impl/DeterministicShard.cpp
   src/ripple/nodestore/impl/DecodedBlob.cpp
   src/ripple/nodestore/impl/DummyScheduler.cpp
-  src/ripple/nodestore/impl/EncodedBlob.cpp
   src/ripple/nodestore/impl/ManagerImp.cpp
   src/ripple/nodestore/impl/NodeObject.cpp
   src/ripple/nodestore/impl/Shard.cpp
@@ -568,7 +645,7 @@ target_sources (rippled PRIVATE
   src/ripple/rpc/handlers/AccountObjects.cpp
   src/ripple/rpc/handlers/AccountOffers.cpp
   src/ripple/rpc/handlers/AccountTx.cpp
-  src/ripple/rpc/handlers/AccountTxOld.cpp
+  src/ripple/rpc/handlers/AMMInfo.cpp
   src/ripple/rpc/handlers/BlackList.cpp
   src/ripple/rpc/handlers/BookOffers.cpp
   src/ripple/rpc/handlers/CanDelete.cpp
@@ -595,7 +672,8 @@ target_sources (rippled PRIVATE
   src/ripple/rpc/handlers/LogLevel.cpp
   src/ripple/rpc/handlers/LogRotate.cpp
   src/ripple/rpc/handlers/Manifest.cpp
-  src/ripple/rpc/handlers/NodeToShardStatus.cpp
+  src/ripple/rpc/handlers/NFTOffers.cpp
+  src/ripple/rpc/handlers/NodeToShard.cpp
   src/ripple/rpc/handlers/NoRippleCheck.cpp
   src/ripple/rpc/handlers/OwnerInfo.cpp
   src/ripple/rpc/handlers/PathFind.cpp
@@ -627,16 +705,23 @@ target_sources (rippled PRIVATE
   src/ripple/rpc/handlers/WalletPropose.cpp
   src/ripple/rpc/impl/DeliveredAmount.cpp
   src/ripple/rpc/impl/Handler.cpp
-  src/ripple/rpc/impl/GRPCHelpers.cpp
   src/ripple/rpc/impl/LegacyPathFind.cpp
   src/ripple/rpc/impl/RPCHandler.cpp
   src/ripple/rpc/impl/RPCHelpers.cpp
   src/ripple/rpc/impl/Role.cpp
-  src/ripple/rpc/impl/ServerHandlerImp.cpp
+  src/ripple/rpc/impl/ServerHandler.cpp
   src/ripple/rpc/impl/ShardArchiveHandler.cpp
   src/ripple/rpc/impl/ShardVerificationScheduler.cpp
   src/ripple/rpc/impl/Status.cpp
   src/ripple/rpc/impl/TransactionSign.cpp
+  src/ripple/rpc/impl/NFTokenID.cpp
+  src/ripple/rpc/impl/NFTokenOfferID.cpp
+  src/ripple/rpc/impl/NFTSyntheticSerializer.cpp
+  #[===============================[
+     main sources:
+       subdir: perflog
+  #]===============================]
+  src/ripple/perflog/impl/PerfLogImp.cpp
 
   #[===============================[
      main sources:
@@ -656,317 +741,337 @@ target_sources (rippled PRIVATE
   src/ripple/shamap/impl/SHAMapNodeID.cpp
   src/ripple/shamap/impl/SHAMapSync.cpp
   src/ripple/shamap/impl/SHAMapTreeNode.cpp
-  src/ripple/shamap/impl/ShardFamily.cpp
+  src/ripple/shamap/impl/ShardFamily.cpp)
+
   #[===============================[
      test sources:
        subdir: app
   #]===============================]
-  src/test/app/AccountDelete_test.cpp
-  src/test/app/AccountTxPaging_test.cpp
-  src/test/app/AmendmentTable_test.cpp
-  src/test/app/Check_test.cpp
-  src/test/app/CrossingLimits_test.cpp
-  src/test/app/DeliverMin_test.cpp
-  src/test/app/DepositAuth_test.cpp
-  src/test/app/Discrepancy_test.cpp
-  src/test/app/DNS_test.cpp
-  src/test/app/Escrow_test.cpp
-  src/test/app/FeeVote_test.cpp
-  src/test/app/Flow_test.cpp
-  src/test/app/Freeze_test.cpp
-  src/test/app/HashRouter_test.cpp
-  src/test/app/LedgerHistory_test.cpp
-  src/test/app/LedgerLoad_test.cpp
-  src/test/app/LedgerReplay_test.cpp
-  src/test/app/LoadFeeTrack_test.cpp
-  src/test/app/Manifest_test.cpp
-  src/test/app/MultiSign_test.cpp
-  src/test/app/OfferStream_test.cpp
-  src/test/app/Offer_test.cpp
-  src/test/app/OversizeMeta_test.cpp
-  src/test/app/Path_test.cpp
-  src/test/app/PayChan_test.cpp
-  src/test/app/PayStrand_test.cpp
-  src/test/app/PseudoTx_test.cpp
-  src/test/app/RCLCensorshipDetector_test.cpp
-  src/test/app/RCLValidations_test.cpp
-  src/test/app/Regression_test.cpp
-  src/test/app/SHAMapStore_test.cpp
-  src/test/app/SetAuth_test.cpp
-  src/test/app/SetRegularKey_test.cpp
-  src/test/app/SetTrust_test.cpp
-  src/test/app/Taker_test.cpp
-  src/test/app/TheoreticalQuality_test.cpp
-  src/test/app/Ticket_test.cpp
-  src/test/app/Transaction_ordering_test.cpp
-  src/test/app/TrustAndBalance_test.cpp
-  src/test/app/TxQ_test.cpp
-  src/test/app/ValidatorKeys_test.cpp
-  src/test/app/ValidatorList_test.cpp
-  src/test/app/ValidatorSite_test.cpp
-  src/test/app/tx/apply_test.cpp
-  #[===============================[
-     test sources:
-       subdir: basics
-  #]===============================]
-  src/test/basics/Buffer_test.cpp
-  src/test/basics/DetectCrash_test.cpp
-  src/test/basics/Expected_test.cpp
-  src/test/basics/FileUtilities_test.cpp
-  src/test/basics/IOUAmount_test.cpp
-  src/test/basics/KeyCache_test.cpp
-  src/test/basics/PerfLog_test.cpp
-  src/test/basics/RangeSet_test.cpp
-  src/test/basics/scope_test.cpp
-  src/test/basics/Slice_test.cpp
-  src/test/basics/StringUtilities_test.cpp
-  src/test/basics/TaggedCache_test.cpp
-  src/test/basics/XRPAmount_test.cpp
-  src/test/basics/base64_test.cpp
-  src/test/basics/base_uint_test.cpp
-  src/test/basics/contract_test.cpp
-  src/test/basics/FeeUnits_test.cpp
-  src/test/basics/hardened_hash_test.cpp
-  src/test/basics/mulDiv_test.cpp
-  src/test/basics/tagged_integer_test.cpp
-  #[===============================[
-     test sources:
-       subdir: beast
-  #]===============================]
-  src/test/beast/IPEndpoint_test.cpp
-  src/test/beast/LexicalCast_test.cpp
-  src/test/beast/SemanticVersion_test.cpp
-  src/test/beast/aged_associative_container_test.cpp
-  src/test/beast/beast_CurrentThreadName_test.cpp
-  src/test/beast/beast_Journal_test.cpp
-  src/test/beast/beast_PropertyStream_test.cpp
-  src/test/beast/beast_Zero_test.cpp
-  src/test/beast/beast_abstract_clock_test.cpp
-  src/test/beast/beast_basic_seconds_clock_test.cpp
-  src/test/beast/beast_io_latency_probe_test.cpp
-  src/test/beast/define_print.cpp
-  #[===============================[
-     test sources:
-       subdir: conditions
-  #]===============================]
-  src/test/conditions/PreimageSha256_test.cpp
-  #[===============================[
-     test sources:
-       subdir: consensus
-  #]===============================]
-  src/test/consensus/ByzantineFailureSim_test.cpp
-  src/test/consensus/Consensus_test.cpp
-  src/test/consensus/DistributedValidatorsSim_test.cpp
-  src/test/consensus/LedgerTiming_test.cpp
-  src/test/consensus/LedgerTrie_test.cpp
-  src/test/consensus/NegativeUNL_test.cpp
-  src/test/consensus/ScaleFreeSim_test.cpp
-  src/test/consensus/Validations_test.cpp
-  #[===============================[
-     test sources:
-       subdir: core
-  #]===============================]
-  src/test/core/ClosureCounter_test.cpp
-  src/test/core/Config_test.cpp
-  src/test/core/Coroutine_test.cpp
-  src/test/core/CryptoPRNG_test.cpp
-  src/test/core/JobQueue_test.cpp
-  src/test/core/SociDB_test.cpp
-  src/test/core/Workers_test.cpp
-  #[===============================[
-     test sources:
-       subdir: csf
-  #]===============================]
-  src/test/csf/BasicNetwork_test.cpp
-  src/test/csf/Digraph_test.cpp
-  src/test/csf/Histogram_test.cpp
-  src/test/csf/Scheduler_test.cpp
-  src/test/csf/impl/Sim.cpp
-  src/test/csf/impl/ledgers.cpp
-  #[===============================[
-     test sources:
-       subdir: json
-  #]===============================]
-  src/test/json/Object_test.cpp
-  src/test/json/Output_test.cpp
-  src/test/json/Writer_test.cpp
-  src/test/json/json_value_test.cpp
-  #[===============================[
-     test sources:
-       subdir: jtx
-  #]===============================]
-  src/test/jtx/Env_test.cpp
-  src/test/jtx/WSClient_test.cpp
-  src/test/jtx/impl/Account.cpp
-  src/test/jtx/impl/Env.cpp
-  src/test/jtx/impl/JSONRPCClient.cpp
-  src/test/jtx/impl/ManualTimeKeeper.cpp
-  src/test/jtx/impl/WSClient.cpp
-  src/test/jtx/impl/acctdelete.cpp
-  src/test/jtx/impl/account_txn_id.cpp
-  src/test/jtx/impl/amount.cpp
-  src/test/jtx/impl/balance.cpp
-  src/test/jtx/impl/check.cpp
-  src/test/jtx/impl/delivermin.cpp
-  src/test/jtx/impl/deposit.cpp
-  src/test/jtx/impl/envconfig.cpp
-  src/test/jtx/impl/fee.cpp
-  src/test/jtx/impl/flags.cpp
-  src/test/jtx/impl/invoice_id.cpp
-  src/test/jtx/impl/jtx_json.cpp
-  src/test/jtx/impl/last_ledger_sequence.cpp
-  src/test/jtx/impl/memo.cpp
-  src/test/jtx/impl/multisign.cpp
-  src/test/jtx/impl/offer.cpp
-  src/test/jtx/impl/owners.cpp
-  src/test/jtx/impl/paths.cpp
-  src/test/jtx/impl/pay.cpp
-  src/test/jtx/impl/quality2.cpp
-  src/test/jtx/impl/rate.cpp
-  src/test/jtx/impl/regkey.cpp
-  src/test/jtx/impl/sendmax.cpp
-  src/test/jtx/impl/seq.cpp
-  src/test/jtx/impl/sig.cpp
-  src/test/jtx/impl/tag.cpp
-  src/test/jtx/impl/ticket.cpp
-  src/test/jtx/impl/trust.cpp
-  src/test/jtx/impl/txflags.cpp
-  src/test/jtx/impl/utility.cpp
+if (tests)
+  target_sources (rippled PRIVATE
+    src/test/app/AccountDelete_test.cpp
+    src/test/app/AccountTxPaging_test.cpp
+    src/test/app/AmendmentTable_test.cpp
+    src/test/app/AMM_test.cpp
+    src/test/app/AMMCalc_test.cpp
+    src/test/app/AMMExtended_test.cpp
+    src/test/app/Check_test.cpp
+    src/test/app/Clawback_test.cpp
+    src/test/app/CrossingLimits_test.cpp
+    src/test/app/DeliverMin_test.cpp
+    src/test/app/DepositAuth_test.cpp
+    src/test/app/Discrepancy_test.cpp
+    src/test/app/DNS_test.cpp
+    src/test/app/Escrow_test.cpp
+    src/test/app/FeeVote_test.cpp
+    src/test/app/Flow_test.cpp
+    src/test/app/Freeze_test.cpp
+    src/test/app/HashRouter_test.cpp
+    src/test/app/LedgerHistory_test.cpp
+    src/test/app/LedgerLoad_test.cpp
+    src/test/app/LedgerReplay_test.cpp
+    src/test/app/LoadFeeTrack_test.cpp
+    src/test/app/Manifest_test.cpp
+    src/test/app/MultiSign_test.cpp
+    src/test/app/NetworkID_test.cpp
+    src/test/app/NFToken_test.cpp
+    src/test/app/NFTokenBurn_test.cpp
+    src/test/app/NFTokenDir_test.cpp
+    src/test/app/OfferStream_test.cpp
+    src/test/app/Offer_test.cpp
+    src/test/app/OversizeMeta_test.cpp
+    src/test/app/Path_test.cpp
+    src/test/app/PayChan_test.cpp
+    src/test/app/PayStrand_test.cpp
+    src/test/app/PseudoTx_test.cpp
+    src/test/app/RCLCensorshipDetector_test.cpp
+    src/test/app/RCLValidations_test.cpp
+    src/test/app/ReducedOffer_test.cpp
+    src/test/app/Regression_test.cpp
+    src/test/app/SHAMapStore_test.cpp
+    src/test/app/SetAuth_test.cpp
+    src/test/app/SetRegularKey_test.cpp
+    src/test/app/SetTrust_test.cpp
+    src/test/app/Taker_test.cpp
+    src/test/app/TheoreticalQuality_test.cpp
+    src/test/app/Ticket_test.cpp
+    src/test/app/Transaction_ordering_test.cpp
+    src/test/app/TrustAndBalance_test.cpp
+    src/test/app/TxQ_test.cpp
+    src/test/app/ValidatorKeys_test.cpp
+    src/test/app/ValidatorList_test.cpp
+    src/test/app/ValidatorSite_test.cpp
+    src/test/app/tx/apply_test.cpp
+    #[===============================[
+       test sources:
+         subdir: basics
+    #]===============================]
+    src/test/basics/Buffer_test.cpp
+    src/test/basics/DetectCrash_test.cpp
+    src/test/basics/Expected_test.cpp
+    src/test/basics/FileUtilities_test.cpp
+    src/test/basics/IOUAmount_test.cpp
+    src/test/basics/KeyCache_test.cpp
+    src/test/basics/Number_test.cpp
+    src/test/basics/PerfLog_test.cpp
+    src/test/basics/RangeSet_test.cpp
+    src/test/basics/scope_test.cpp
+    src/test/basics/Slice_test.cpp
+    src/test/basics/StringUtilities_test.cpp
+    src/test/basics/TaggedCache_test.cpp
+    src/test/basics/XRPAmount_test.cpp
+    src/test/basics/base64_test.cpp
+    src/test/basics/base_uint_test.cpp
+    src/test/basics/contract_test.cpp
+    src/test/basics/FeeUnits_test.cpp
+    src/test/basics/hardened_hash_test.cpp
+    src/test/basics/join_test.cpp
+    src/test/basics/mulDiv_test.cpp
+    src/test/basics/tagged_integer_test.cpp
+    #[===============================[
+       test sources:
+         subdir: beast
+    #]===============================]
+    src/test/beast/IPEndpoint_test.cpp
+    src/test/beast/LexicalCast_test.cpp
+    src/test/beast/SemanticVersion_test.cpp
+    src/test/beast/aged_associative_container_test.cpp
+    src/test/beast/beast_CurrentThreadName_test.cpp
+    src/test/beast/beast_Journal_test.cpp
+    src/test/beast/beast_PropertyStream_test.cpp
+    src/test/beast/beast_Zero_test.cpp
+    src/test/beast/beast_abstract_clock_test.cpp
+    src/test/beast/beast_basic_seconds_clock_test.cpp
+    src/test/beast/beast_io_latency_probe_test.cpp
+    src/test/beast/define_print.cpp
+    #[===============================[
+       test sources:
+         subdir: conditions
+    #]===============================]
+    src/test/conditions/PreimageSha256_test.cpp
+    #[===============================[
+       test sources:
+         subdir: consensus
+    #]===============================]
+    src/test/consensus/ByzantineFailureSim_test.cpp
+    src/test/consensus/Consensus_test.cpp
+    src/test/consensus/DistributedValidatorsSim_test.cpp
+    src/test/consensus/LedgerTiming_test.cpp
+    src/test/consensus/LedgerTrie_test.cpp
+    src/test/consensus/NegativeUNL_test.cpp
+    src/test/consensus/ScaleFreeSim_test.cpp
+    src/test/consensus/Validations_test.cpp
+    #[===============================[
+       test sources:
+         subdir: core
+    #]===============================]
+    src/test/core/ClosureCounter_test.cpp
+    src/test/core/Config_test.cpp
+    src/test/core/Coroutine_test.cpp
+    src/test/core/CryptoPRNG_test.cpp
+    src/test/core/JobQueue_test.cpp
+    src/test/core/SociDB_test.cpp
+    src/test/core/Workers_test.cpp
+    #[===============================[
+       test sources:
+         subdir: csf
+    #]===============================]
+    src/test/csf/BasicNetwork_test.cpp
+    src/test/csf/Digraph_test.cpp
+    src/test/csf/Histogram_test.cpp
+    src/test/csf/Scheduler_test.cpp
+    src/test/csf/impl/Sim.cpp
+    src/test/csf/impl/ledgers.cpp
+    #[===============================[
+       test sources:
+         subdir: json
+    #]===============================]
+    src/test/json/Object_test.cpp
+    src/test/json/Output_test.cpp
+    src/test/json/Writer_test.cpp
+    src/test/json/json_value_test.cpp
+    #[===============================[
+       test sources:
+         subdir: jtx
+    #]===============================]
+    src/test/jtx/Env_test.cpp
+    src/test/jtx/WSClient_test.cpp
+    src/test/jtx/impl/Account.cpp
+    src/test/jtx/impl/AMM.cpp
+    src/test/jtx/impl/AMMTest.cpp
+    src/test/jtx/impl/Env.cpp
+    src/test/jtx/impl/JSONRPCClient.cpp
+    src/test/jtx/impl/ManualTimeKeeper.cpp
+    src/test/jtx/impl/TestHelpers.cpp
+    src/test/jtx/impl/WSClient.cpp
+    src/test/jtx/impl/acctdelete.cpp
+    src/test/jtx/impl/account_txn_id.cpp
+    src/test/jtx/impl/amount.cpp
+    src/test/jtx/impl/balance.cpp
+    src/test/jtx/impl/check.cpp
+    src/test/jtx/impl/delivermin.cpp
+    src/test/jtx/impl/deposit.cpp
+    src/test/jtx/impl/envconfig.cpp
+    src/test/jtx/impl/fee.cpp
+    src/test/jtx/impl/flags.cpp
+    src/test/jtx/impl/invoice_id.cpp
+    src/test/jtx/impl/jtx_json.cpp
+    src/test/jtx/impl/last_ledger_sequence.cpp
+    src/test/jtx/impl/memo.cpp
+    src/test/jtx/impl/multisign.cpp
+    src/test/jtx/impl/offer.cpp
+    src/test/jtx/impl/owners.cpp
+    src/test/jtx/impl/paths.cpp
+    src/test/jtx/impl/pay.cpp
+    src/test/jtx/impl/quality2.cpp
+    src/test/jtx/impl/rate.cpp
+    src/test/jtx/impl/regkey.cpp
+    src/test/jtx/impl/sendmax.cpp
+    src/test/jtx/impl/seq.cpp
+    src/test/jtx/impl/sig.cpp
+    src/test/jtx/impl/tag.cpp
+    src/test/jtx/impl/ticket.cpp
+    src/test/jtx/impl/token.cpp
+    src/test/jtx/impl/trust.cpp
+    src/test/jtx/impl/txflags.cpp
+    src/test/jtx/impl/utility.cpp
 
-  #[===============================[
-     test sources:
-       subdir: ledger
-  #]===============================]
-  src/test/ledger/BookDirs_test.cpp
-  src/test/ledger/Directory_test.cpp
-  src/test/ledger/Invariants_test.cpp
-  src/test/ledger/PaymentSandbox_test.cpp
-  src/test/ledger/PendingSaves_test.cpp
-  src/test/ledger/SkipList_test.cpp
-  src/test/ledger/View_test.cpp
-  #[===============================[
-     test sources:
-       subdir: net
-  #]===============================]
-  src/test/net/DatabaseDownloader_test.cpp
-  #[===============================[
-     test sources:
-       subdir: nodestore
-  #]===============================]
-  src/test/nodestore/Backend_test.cpp
-  src/test/nodestore/Basics_test.cpp
-  src/test/nodestore/DatabaseShard_test.cpp
-  src/test/nodestore/Database_test.cpp
-  src/test/nodestore/Timing_test.cpp
-  src/test/nodestore/import_test.cpp
-  src/test/nodestore/varint_test.cpp
-  #[===============================[
-     test sources:
-       subdir: overlay
-  #]===============================]
-  src/test/overlay/ProtocolVersion_test.cpp
-  src/test/overlay/cluster_test.cpp
-  src/test/overlay/short_read_test.cpp
-  src/test/overlay/compression_test.cpp
-  src/test/overlay/reduce_relay_test.cpp
-  src/test/overlay/handshake_test.cpp
-  src/test/overlay/tx_reduce_relay_test.cpp
-  #[===============================[
-     test sources:
-       subdir: peerfinder
-  #]===============================]
-  src/test/peerfinder/Livecache_test.cpp
-  src/test/peerfinder/PeerFinder_test.cpp
-  #[===============================[
-     test sources:
-       subdir: protocol
-  #]===============================]
-  src/test/protocol/BuildInfo_test.cpp
-  src/test/protocol/InnerObjectFormats_test.cpp
-  src/test/protocol/Issue_test.cpp
-  src/test/protocol/KnownFormatToGRPC_test.cpp
-  src/test/protocol/PublicKey_test.cpp
-  src/test/protocol/Quality_test.cpp
-  src/test/protocol/STAccount_test.cpp
-  src/test/protocol/STAmount_test.cpp
-  src/test/protocol/STObject_test.cpp
-  src/test/protocol/STTx_test.cpp
-  src/test/protocol/STValidation_test.cpp
-  src/test/protocol/SecretKey_test.cpp
-  src/test/protocol/Seed_test.cpp
-  src/test/protocol/SeqProxy_test.cpp
-  src/test/protocol/TER_test.cpp
-  src/test/protocol/types_test.cpp
-  #[===============================[
-     test sources:
-       subdir: resource
-  #]===============================]
-  src/test/resource/Logic_test.cpp
-  #[===============================[
-     test sources:
-       subdir: rpc
-  #]===============================]
-  src/test/rpc/AccountCurrencies_test.cpp
-  src/test/rpc/AccountInfo_test.cpp
-  src/test/rpc/AccountLinesRPC_test.cpp
-  src/test/rpc/AccountObjects_test.cpp
-  src/test/rpc/AccountOffers_test.cpp
-  src/test/rpc/AccountSet_test.cpp
-  src/test/rpc/AccountTx_test.cpp
-  src/test/rpc/AmendmentBlocked_test.cpp
-  src/test/rpc/Book_test.cpp
-  src/test/rpc/DepositAuthorized_test.cpp
-  src/test/rpc/DeliveredAmount_test.cpp
-  src/test/rpc/Feature_test.cpp
-  src/test/rpc/Fee_test.cpp
-  src/test/rpc/GatewayBalances_test.cpp
-  src/test/rpc/GetCounts_test.cpp
-  src/test/rpc/JSONRPC_test.cpp
-  src/test/rpc/KeyGeneration_test.cpp
-  src/test/rpc/LedgerClosed_test.cpp
-  src/test/rpc/LedgerData_test.cpp
-  src/test/rpc/LedgerRPC_test.cpp
-  src/test/rpc/LedgerRequestRPC_test.cpp
-  src/test/rpc/ManifestRPC_test.cpp
-  src/test/rpc/NoRippleCheck_test.cpp
-  src/test/rpc/NoRipple_test.cpp
-  src/test/rpc/OwnerInfo_test.cpp
-  src/test/rpc/Peers_test.cpp
-  src/test/rpc/ReportingETL_test.cpp
-  src/test/rpc/Roles_test.cpp
-  src/test/rpc/RPCCall_test.cpp
-  src/test/rpc/RPCOverload_test.cpp
-  src/test/rpc/RobustTransaction_test.cpp
-  src/test/rpc/ServerInfo_test.cpp
-  src/test/rpc/ShardArchiveHandler_test.cpp
-  src/test/rpc/Status_test.cpp
-  src/test/rpc/Submit_test.cpp
-  src/test/rpc/Subscribe_test.cpp
-  src/test/rpc/Transaction_test.cpp
-  src/test/rpc/TransactionEntry_test.cpp
-  src/test/rpc/TransactionHistory_test.cpp
-  src/test/rpc/Tx_test.cpp
-  src/test/rpc/ValidatorInfo_test.cpp
-  src/test/rpc/ValidatorRPC_test.cpp
-  src/test/rpc/Version_test.cpp
-  #[===============================[
-     test sources:
-       subdir: server
-  #]===============================]
-  src/test/server/ServerStatus_test.cpp
-  src/test/server/Server_test.cpp
-  #[===============================[
-     test sources:
-       subdir: shamap
-  #]===============================]
-  src/test/shamap/FetchPack_test.cpp
-  src/test/shamap/SHAMapSync_test.cpp
-  src/test/shamap/SHAMap_test.cpp
-  #[===============================[
-     test sources:
-       subdir: unit_test
-  #]===============================]
-  src/test/unit_test/multi_runner.cpp)
+    #[===============================[
+       test sources:
+         subdir: ledger
+    #]===============================]
+    src/test/ledger/BookDirs_test.cpp
+    src/test/ledger/Directory_test.cpp
+    src/test/ledger/Invariants_test.cpp
+    src/test/ledger/PaymentSandbox_test.cpp
+    src/test/ledger/PendingSaves_test.cpp
+    src/test/ledger/SkipList_test.cpp
+    src/test/ledger/View_test.cpp
+    #[===============================[
+       test sources:
+         subdir: net
+    #]===============================]
+    src/test/net/DatabaseDownloader_test.cpp
+    #[===============================[
+       test sources:
+         subdir: nodestore
+    #]===============================]
+    src/test/nodestore/Backend_test.cpp
+    src/test/nodestore/Basics_test.cpp
+    src/test/nodestore/DatabaseShard_test.cpp
+    src/test/nodestore/Database_test.cpp
+    src/test/nodestore/Timing_test.cpp
+    src/test/nodestore/import_test.cpp
+    src/test/nodestore/varint_test.cpp
+    #[===============================[
+       test sources:
+         subdir: overlay
+    #]===============================]
+    src/test/overlay/ProtocolVersion_test.cpp
+    src/test/overlay/cluster_test.cpp
+    src/test/overlay/short_read_test.cpp
+    src/test/overlay/compression_test.cpp
+    src/test/overlay/reduce_relay_test.cpp
+    src/test/overlay/handshake_test.cpp
+    src/test/overlay/tx_reduce_relay_test.cpp
+    #[===============================[
+       test sources:
+         subdir: peerfinder
+    #]===============================]
+    src/test/peerfinder/Livecache_test.cpp
+    src/test/peerfinder/PeerFinder_test.cpp
+    #[===============================[
+       test sources:
+         subdir: protocol
+    #]===============================]
+    src/test/protocol/BuildInfo_test.cpp
+    src/test/protocol/InnerObjectFormats_test.cpp
+    src/test/protocol/Issue_test.cpp
+    src/test/protocol/Hooks_test.cpp
+    src/test/protocol/Memo_test.cpp
+    src/test/protocol/PublicKey_test.cpp
+    src/test/protocol/Quality_test.cpp
+    src/test/protocol/STAccount_test.cpp
+    src/test/protocol/STAmount_test.cpp
+    src/test/protocol/STObject_test.cpp
+    src/test/protocol/STTx_test.cpp
+    src/test/protocol/STValidation_test.cpp
+    src/test/protocol/SecretKey_test.cpp
+    src/test/protocol/Seed_test.cpp
+    src/test/protocol/SeqProxy_test.cpp
+    src/test/protocol/TER_test.cpp
+    src/test/protocol/types_test.cpp
+    #[===============================[
+       test sources:
+         subdir: resource
+    #]===============================]
+    src/test/resource/Logic_test.cpp
+    #[===============================[
+       test sources:
+         subdir: rpc
+    #]===============================]
+    src/test/rpc/AccountCurrencies_test.cpp
+    src/test/rpc/AccountInfo_test.cpp
+    src/test/rpc/AccountLinesRPC_test.cpp
+    src/test/rpc/AccountObjects_test.cpp
+    src/test/rpc/AccountOffers_test.cpp
+    src/test/rpc/AccountSet_test.cpp
+    src/test/rpc/AccountTx_test.cpp
+    src/test/rpc/AmendmentBlocked_test.cpp
+    src/test/rpc/AMMInfo_test.cpp
+    src/test/rpc/Book_test.cpp
+    src/test/rpc/DepositAuthorized_test.cpp
+    src/test/rpc/DeliveredAmount_test.cpp
+    src/test/rpc/Feature_test.cpp
+    src/test/rpc/GatewayBalances_test.cpp
+    src/test/rpc/GetCounts_test.cpp
+    src/test/rpc/JSONRPC_test.cpp
+    src/test/rpc/KeyGeneration_test.cpp
+    src/test/rpc/LedgerClosed_test.cpp
+    src/test/rpc/LedgerData_test.cpp
+    src/test/rpc/LedgerRPC_test.cpp
+    src/test/rpc/LedgerRequestRPC_test.cpp
+    src/test/rpc/ManifestRPC_test.cpp
+    src/test/rpc/NodeToShardRPC_test.cpp
+    src/test/rpc/NoRippleCheck_test.cpp
+    src/test/rpc/NoRipple_test.cpp
+    src/test/rpc/OwnerInfo_test.cpp
+    src/test/rpc/Peers_test.cpp
+    src/test/rpc/ReportingETL_test.cpp
+    src/test/rpc/Roles_test.cpp
+    src/test/rpc/RPCCall_test.cpp
+    src/test/rpc/RPCOverload_test.cpp
+    src/test/rpc/RobustTransaction_test.cpp
+    src/test/rpc/ServerInfo_test.cpp
+    src/test/rpc/ShardArchiveHandler_test.cpp
+    src/test/rpc/Status_test.cpp
+    src/test/rpc/Subscribe_test.cpp
+    src/test/rpc/Transaction_test.cpp
+    src/test/rpc/TransactionEntry_test.cpp
+    src/test/rpc/TransactionHistory_test.cpp
+    src/test/rpc/ValidatorInfo_test.cpp
+    src/test/rpc/ValidatorRPC_test.cpp
+    src/test/rpc/Version_test.cpp
+    #[===============================[
+       test sources:
+         subdir: server
+    #]===============================]
+    src/test/server/ServerStatus_test.cpp
+    src/test/server/Server_test.cpp
+    #[===============================[
+       test sources:
+         subdir: shamap
+    #]===============================]
+    src/test/shamap/FetchPack_test.cpp
+    src/test/shamap/SHAMapSync_test.cpp
+    src/test/shamap/SHAMap_test.cpp
+    #[===============================[
+       test sources:
+         subdir: unit_test
+    #]===============================]
+    src/test/unit_test/multi_runner.cpp)
+endif () #tests
+
 target_link_libraries (rippled
   Ripple::boost
   Ripple::opts
@@ -980,15 +1085,18 @@ if (is_ci)
   target_compile_definitions(rippled PRIVATE RIPPLED_RUNNING_IN_CI)
 endif ()
 
-if (reporting)
-    target_compile_definitions(rippled PRIVATE RIPPLED_REPORTING)
-endif ()
+if(reporting)
+set_target_properties(rippled PROPERTIES OUTPUT_NAME rippled-reporting)
+get_target_property(BIN_NAME rippled OUTPUT_NAME)
+message(STATUS "Reporting mode build: rippled renamed ${BIN_NAME}")
+  target_compile_definitions(rippled PRIVATE RIPPLED_REPORTING)
+endif()
 
-if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.16)
-  # any files that don't play well with unity should be added here
+# any files that don't play well with unity should be added here
+if (tests)
   set_source_files_properties(
     # these two seem to produce conflicts in beast teardown template methods
     src/test/rpc/ValidatorRPC_test.cpp
     src/test/rpc/ShardArchiveHandler_test.cpp
     PROPERTIES SKIP_UNITY_BUILD_INCLUSION TRUE)
-endif ()
+endif () #tests

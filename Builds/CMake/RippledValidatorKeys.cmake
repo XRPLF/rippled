@@ -1,6 +1,6 @@
 option (validator_keys "Enables building of validator-keys-tool as a separate target (imported via FetchContent)" OFF)
 
-if (validator_keys AND CMAKE_VERSION VERSION_GREATER_EQUAL 3.11)
+if (validator_keys)
   git_branch (current_branch)
   # default to tracking VK develop branch unless we are on master/release
   if (NOT (current_branch STREQUAL "master" OR current_branch STREQUAL "release"))
@@ -20,5 +20,3 @@ if (validator_keys AND CMAKE_VERSION VERSION_GREATER_EQUAL 3.11)
   endif ()
   add_subdirectory (${validator_keys_src_SOURCE_DIR} ${CMAKE_BINARY_DIR}/validator-keys)
 endif ()
-
-

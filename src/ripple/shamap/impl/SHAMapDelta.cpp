@@ -20,6 +20,10 @@
 #include <ripple/basics/contract.h>
 #include <ripple/shamap/SHAMap.h>
 
+#include <array>
+#include <stack>
+#include <vector>
+
 namespace ripple {
 
 // This code is used to compare another node's transaction tree
@@ -33,7 +37,7 @@ namespace ripple {
 bool
 SHAMap::walkBranch(
     SHAMapTreeNode* node,
-    std::shared_ptr<SHAMapItem const> const& otherMapItem,
+    boost::intrusive_ptr<SHAMapItem const> const& otherMapItem,
     bool isFirstMap,
     Delta& differences,
     int& maxCount) const
@@ -67,13 +71,11 @@ SHAMap::walkBranch(
             {
                 // unmatched
                 if (isFirstMap)
-                    differences.insert(std::make_pair(
-                        item->key(),
-                        DeltaRef(item, std::shared_ptr<SHAMapItem const>())));
+                    differences.insert(
+                        std::make_pair(item->key(), DeltaRef(item, nullptr)));
                 else
-                    differences.insert(std::make_pair(
-                        item->key(),
-                        DeltaRef(std::shared_ptr<SHAMapItem const>(), item)));
+                    differences.insert(
+                        std::make_pair(item->key(), DeltaRef(nullptr, item)));
 
                 if (--maxCount <= 0)
                     return false;
@@ -106,12 +108,10 @@ SHAMap::walkBranch(
         // otherMapItem was unmatched, must add
         if (isFirstMap)  // this is first map, so other item is from second
             differences.insert(std::make_pair(
-                otherMapItem->key(),
-                DeltaRef(std::shared_ptr<SHAMapItem const>(), otherMapItem)));
+                otherMapItem->key(), DeltaRef(nullptr, otherMapItem)));
         else
             differences.insert(std::make_pair(
-                otherMapItem->key(),
-                DeltaRef(otherMapItem, std::shared_ptr<SHAMapItem const>())));
+                otherMapItem->key(), DeltaRef(otherMapItem, nullptr)));
 
         if (--maxCount <= 0)
             return false;
@@ -169,17 +169,13 @@ SHAMap::compare(SHAMap const& otherMap, Delta& differences, int maxCount) const
             {
                 differences.insert(std::make_pair(
                     ours->peekItem()->key(),
-                    DeltaRef(
-                        ours->peekItem(),
-                        std::shared_ptr<SHAMapItem const>())));
+                    DeltaRef(ours->peekItem(), nullptr)));
                 if (--maxCount <= 0)
                     return false;
 
                 differences.insert(std::make_pair(
                     other->peekItem()->key(),
-                    DeltaRef(
-                        std::shared_ptr<SHAMapItem const>(),
-                        other->peekItem())));
+                    DeltaRef(nullptr, other->peekItem())));
                 if (--maxCount <= 0)
                     return false;
             }
@@ -212,11 +208,7 @@ SHAMap::compare(SHAMap const& otherMap, Delta& differences, int maxCount) const
                         // We have a branch, the other tree does not
                         SHAMapTreeNode* iNode = descendThrow(ours, i);
                         if (!walkBranch(
-                                iNode,
-                                std::shared_ptr<SHAMapItem const>(),
-                                true,
-                                differences,
-                                maxCount))
+                                iNode, nullptr, true, differences, maxCount))
                             return false;
                     }
                     else if (ours->isEmptyBranch(i))
@@ -224,11 +216,7 @@ SHAMap::compare(SHAMap const& otherMap, Delta& differences, int maxCount) const
                         // The other tree has a branch, we do not
                         SHAMapTreeNode* iNode = otherMap.descendThrow(other, i);
                         if (!otherMap.walkBranch(
-                                iNode,
-                                std::shared_ptr<SHAMapItem const>(),
-                                false,
-                                differences,
-                                maxCount))
+                                iNode, nullptr, false, differences, maxCount))
                             return false;
                     }
                     else  // The two trees have different non-empty branches
@@ -284,6 +272,105 @@ SHAMap::walkMap(std::vector<SHAMapMissingNode>& missingNodes, int maxMissing)
             }
         }
     }
+}
+
+bool
+SHAMap::walkMapParallel(
+    std::vector<SHAMapMissingNode>& missingNodes,
+    int maxMissing) const
+{
+    if (!root_->isInner())  // root_ is only node, and we have it
+        return false;
+
+    using StackEntry = std::shared_ptr<SHAMapInnerNode>;
+    std::array<std::shared_ptr<SHAMapTreeNode>, 16> topChildren;
+    {
+        auto const& innerRoot =
+            std::static_pointer_cast<SHAMapInnerNode>(root_);
+        for (int i = 0; i < 16; ++i)
+        {
+            if (!innerRoot->isEmptyBranch(i))
+                topChildren[i] = descendNoStore(innerRoot, i);
+        }
+    }
+    std::vector<std::thread> workers;
+    workers.reserve(16);
+    std::vector<SHAMapMissingNode> exceptions;
+    exceptions.reserve(16);
+
+    std::array<std::stack<StackEntry, std::vector<StackEntry>>, 16> nodeStacks;
+
+    // This mutex is used inside the worker threads to protect `missingNodes`
+    // and `maxMissing` from race conditions
+    std::mutex m;
+
+    for (int rootChildIndex = 0; rootChildIndex < 16; ++rootChildIndex)
+    {
+        auto const& child = topChildren[rootChildIndex];
+        if (!child || !child->isInner())
+            continue;
+
+        nodeStacks[rootChildIndex].push(
+            std::static_pointer_cast<SHAMapInnerNode>(child));
+
+        JLOG(journal_.debug()) << "starting worker " << rootChildIndex;
+        workers.push_back(std::thread(
+            [&m, &missingNodes, &maxMissing, &exceptions, this](
+                std::stack<StackEntry, std::vector<StackEntry>> nodeStack) {
+                try
+                {
+                    while (!nodeStack.empty())
+                    {
+                        std::shared_ptr<SHAMapInnerNode> node =
+                            std::move(nodeStack.top());
+                        assert(node);
+                        nodeStack.pop();
+
+                        for (int i = 0; i < 16; ++i)
+                        {
+                            if (node->isEmptyBranch(i))
+                                continue;
+                            std::shared_ptr<SHAMapTreeNode> nextNode =
+                                descendNoStore(node, i);
+
+                            if (nextNode)
+                            {
+                                if (nextNode->isInner())
+                                    nodeStack.push(std::static_pointer_cast<
+                                                   SHAMapInnerNode>(nextNode));
+                            }
+                            else
+                            {
+                                std::lock_guard l{m};
+                                missingNodes.emplace_back(
+                                    type_, node->getChildHash(i));
+                                if (--maxMissing <= 0)
+                                    return;
+                            }
+                        }
+                    }
+                }
+                catch (SHAMapMissingNode const& e)
+                {
+                    std::lock_guard l(m);
+                    exceptions.push_back(e);
+                }
+            },
+            std::move(nodeStacks[rootChildIndex])));
+    }
+
+    for (std::thread& worker : workers)
+        worker.join();
+
+    std::lock_guard l(m);
+    if (exceptions.empty())
+        return true;
+    std::stringstream ss;
+    ss << "Exception(s) in ledger load: ";
+    for (auto const& e : exceptions)
+        ss << e.what() << ", ";
+    JLOG(journal_.error()) << ss.str();
+    return false;
 }
 
 }  // namespace ripple

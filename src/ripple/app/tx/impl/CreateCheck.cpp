@@ -90,8 +90,14 @@ CreateCheck::preclaim(PreclaimContext const& ctx)
         return tecNO_DST;
     }
 
-    if ((sleDst->getFlags() & lsfRequireDestTag) &&
-        !ctx.tx.isFieldPresent(sfDestinationTag))
+    auto const flags = sleDst->getFlags();
+
+    // Check if the destination has disallowed incoming checks
+    if (ctx.view.rules().enabled(featureDisallowIncoming) &&
+        (flags & lsfDisallowIncomingCheck))
+        return tecNO_PERMISSION;
+
+    if ((flags & lsfRequireDestTag) && !ctx.tx.isFieldPresent(sfDestinationTag))
     {
         // The tag is basically account-specific information we don't
         // understand, but we can require someone to fill it in.
@@ -146,21 +152,10 @@ CreateCheck::preclaim(PreclaimContext const& ctx)
             }
         }
     }
+    if (hasExpired(ctx.view, ctx.tx[~sfExpiration]))
     {
-        using duration = NetClock::duration;
-        using timepoint = NetClock::time_point;
-        auto const optExpiry = ctx.tx[~sfExpiration];
-
-        // Expiration is defined in terms of the close time of the parent
-        // ledger, because we definitively know the time that it closed but
-        // we do not know the closing time of the ledger that is under
-        // construction.
-        if (optExpiry &&
-            (ctx.view.parentCloseTime() >= timepoint{duration{*optExpiry}}))
-        {
-            JLOG(ctx.j.warn()) << "Creating a check that has already expired.";
-            return tecEXPIRED;
-        }
+        JLOG(ctx.j.warn()) << "Creating a check that has already expired.";
+        return tecEXPIRED;
     }
     return tesSUCCESS;
 }

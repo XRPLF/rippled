@@ -62,14 +62,15 @@ ConsensusTransSetSF::gotNode(
             auto stx = std::make_shared<STTx const>(std::ref(sit));
             assert(stx->getTransactionID() == nodeHash.as_uint256());
             auto const pap = &app_;
-            app_.getJobQueue().addJob(
-                jtTRANSACTION, "TXS->TXN", [pap, stx](Job&) {
-                    pap->getOPs().submitTransaction(stx);
-                });
+            app_.getJobQueue().addJob(jtTRANSACTION, "TXS->TXN", [pap, stx]() {
+                pap->getOPs().submitTransaction(stx);
+            });
         }
-        catch (std::exception const&)
+        catch (std::exception const& ex)
         {
-            JLOG(j_.warn()) << "Fetched invalid transaction in proposed set";
+            JLOG(j_.warn())
+                << "Fetched invalid transaction in proposed set. Exception: "
+                << ex.what();
         }
     }
 }

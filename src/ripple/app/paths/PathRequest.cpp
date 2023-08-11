@@ -441,7 +441,7 @@ PathRequest::parseJson(Json::Value const& jvParams)
 }
 
 Json::Value
-PathRequest::doClose(Json::Value const&)
+PathRequest::doClose()
 {
     JLOG(m_journal.debug()) << iIdentifier << " closed";
     std::lock_guard sl(mLock);
@@ -457,13 +457,20 @@ PathRequest::doStatus(Json::Value const&)
     return jvStatus;
 }
 
+void
+PathRequest::doAborting() const
+{
+    JLOG(m_journal.info()) << iIdentifier << " aborting early";
+}
+
 std::unique_ptr<Pathfinder> const&
 PathRequest::getPathFinder(
     std::shared_ptr<RippleLineCache> const& cache,
     hash_map<Currency, std::unique_ptr<Pathfinder>>& currency_map,
     Currency const& currency,
     STAmount const& dst_amount,
-    int const level)
+    int const level,
+    std::function<bool(void)> const& continueCallback)
 {
     auto i = currency_map.find(currency);
     if (i != currency_map.end())
@@ -477,8 +484,8 @@ PathRequest::getPathFinder(
         dst_amount,
         saSendMax,
         app_);
-    if (pathfinder->findPaths(level))
-        pathfinder->computePathRanks(max_paths_);
+    if (pathfinder->findPaths(level, continueCallback))
+        pathfinder->computePathRanks(max_paths_, continueCallback);
     else
         pathfinder.reset();  // It's a bad request - clear it.
     return currency_map[currency] = std::move(pathfinder);
@@ -488,7 +495,8 @@ bool
 PathRequest::findPaths(
     std::shared_ptr<RippleLineCache> const& cache,
     int const level,
-    Json::Value& jvArray)
+    Json::Value& jvArray,
+    std::function<bool(void)> const& continueCallback)
 {
     auto sourceCurrencies = sciSourceCurrencies;
     if (sourceCurrencies.empty() && saSendMax)
@@ -515,27 +523,45 @@ PathRequest::findPaths(
     hash_map<Currency, std::unique_ptr<Pathfinder>> currency_map;
     for (auto const& issue : sourceCurrencies)
     {
+        if (continueCallback && !continueCallback())
+            break;
         JLOG(m_journal.debug())
             << iIdentifier
             << " Trying to find paths: " << STAmount(issue, 1).getFullText();
 
         auto& pathfinder = getPathFinder(
-            cache, currency_map, issue.currency, dst_amount, level);
+            cache,
+            currency_map,
+            issue.currency,
+            dst_amount,
+            level,
+            continueCallback);
         if (!pathfinder)
         {
-            assert(false);
+            assert(continueCallback && !continueCallback());
             JLOG(m_journal.debug()) << iIdentifier << " No paths found";
             continue;
         }
 
         STPath fullLiquidityPath;
         auto ps = pathfinder->getBestPaths(
-            max_paths_, fullLiquidityPath, mContext[issue], issue.account);
+            max_paths_,
+            fullLiquidityPath,
+            mContext[issue],
+            issue.account,
+            continueCallback);
         mContext[issue] = ps;
 
-        auto& sourceAccount = !isXRP(issue.account)
-            ? issue.account
-            : isXRP(issue.currency) ? xrpAccount() : *raSrcAccount;
+        auto const& sourceAccount = [&] {
+            if (!isXRP(issue.account))
+                return issue.account;
+
+            if (isXRP(issue.currency))
+                return xrpAccount();
+
+            return *raSrcAccount;
+        }();
+
         STAmount saMaxAmount = saSendMax.value_or(
             STAmount({issue.currency, sourceAccount}, 1u, 0, true));
 
@@ -628,7 +654,10 @@ PathRequest::findPaths(
 }
 
 Json::Value
-PathRequest::doUpdate(std::shared_ptr<RippleLineCache> const& cache, bool fast)
+PathRequest::doUpdate(
+    std::shared_ptr<RippleLineCache> const& cache,
+    bool fast,
+    std::function<bool(void)> const& continueCallback)
 {
     using namespace std::chrono;
     JLOG(m_journal.debug())
@@ -653,10 +682,8 @@ PathRequest::doUpdate(std::shared_ptr<RippleLineCache> const& cache, bool fast)
             destCurrencies.append(to_string(c));
     }
 
-    newStatus[jss::source_account] =
-        app_.accountIDCache().toBase58(*raSrcAccount);
-    newStatus[jss::destination_account] =
-        app_.accountIDCache().toBase58(*raDstAccount);
+    newStatus[jss::source_account] = toBase58(*raSrcAccount);
+    newStatus[jss::destination_account] = toBase58(*raDstAccount);
     newStatus[jss::destination_amount] = saDstAmount.getJson(JsonOptions::none);
     newStatus[jss::full_reply] = !fast;
 
@@ -699,7 +726,7 @@ PathRequest::doUpdate(std::shared_ptr<RippleLineCache> const& cache, bool fast)
     JLOG(m_journal.debug()) << iIdentifier << " processing at level " << iLevel;
 
     Json::Value jvArray = Json::arrayValue;
-    if (findPaths(cache, iLevel, jvArray))
+    if (findPaths(cache, iLevel, jvArray, continueCallback))
     {
         bLastSuccess = jvArray.size() != 0;
         newStatus[jss::alternatives] = std::move(jvArray);
@@ -726,11 +753,13 @@ PathRequest::doUpdate(std::shared_ptr<RippleLineCache> const& cache, bool fast)
         jvStatus = newStatus;
     }
 
+    JLOG(m_journal.debug())
+        << iIdentifier << " update finished " << (fast ? "fast" : "normal");
     return newStatus;
 }
 
 InfoSub::pointer
-PathRequest::getSubscriber()
+PathRequest::getSubscriber() const
 {
     return wpSubscriber.lock();
 }

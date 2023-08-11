@@ -465,7 +465,7 @@ struct LedgerServer
         assert(param.initLedgers > 0);
         createAccounts(param.initAccounts);
         createLedgerHistory();
-        app.logs().threshold(beast::severities::Severity::kWarning);
+        app.logs().threshold(beast::severities::kWarning);
     }
 
     /**
@@ -567,7 +567,10 @@ public:
         PeerSetBehavior behavior = PeerSetBehavior::Good,
         InboundLedgersBehavior inboundBhvr = InboundLedgersBehavior::Good,
         PeerFeature peerFeature = PeerFeature::LedgerReplayEnabled)
-        : env(suite, jtx::envconfig(jtx::port_increment, 3))
+        : env(suite,
+              jtx::envconfig(jtx::port_increment, 3),
+              nullptr,
+              beast::severities::kDisabled)
         , app(env.app())
         , ledgerMaster(env.app().getLedgerMaster())
         , inboundLedgers(
@@ -1289,8 +1292,8 @@ struct LedgerReplayer_test : public beast::unit_test::suite
 
         std::uint8_t payload[55] = {
             0x6A, 0x09, 0xE6, 0x67, 0xF3, 0xBC, 0xC9, 0x08, 0xB2};
-        auto item = std::make_shared<SHAMapItem>(
-            uint256(12345), Slice(payload, sizeof(payload)));
+        auto item =
+            make_shamapitem(uint256(12345), Slice(payload, sizeof(payload)));
         skipList->processData(l->seq(), item);
 
         std::vector<TaskStatus> deltaStatuses;

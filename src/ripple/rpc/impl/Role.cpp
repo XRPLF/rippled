@@ -23,13 +23,14 @@
 #include <boost/beast/http/rfc7230.hpp>
 #include <boost/utility/string_view.hpp>
 #include <algorithm>
+#include <tuple>
 
 namespace ripple {
 
 bool
 passwordUnrequiredOrSentCorrect(Port const& port, Json::Value const& params)
 {
-    assert(!port.admin_ip.empty());
+    assert(!(port.admin_nets_v4.empty() && port.admin_nets_v6.empty()));
     bool const passwordRequired =
         (!port.admin_user.empty() || !port.admin_password.empty());
 
@@ -43,14 +44,40 @@ passwordUnrequiredOrSentCorrect(Port const& port, Json::Value const& params)
 bool
 ipAllowed(
     beast::IP::Address const& remoteIp,
-    std::vector<beast::IP::Address> const& adminIp)
+    std::vector<boost::asio::ip::network_v4> const& nets4,
+    std::vector<boost::asio::ip::network_v6> const& nets6)
 {
-    return std::find_if(
-               adminIp.begin(),
-               adminIp.end(),
-               [&remoteIp](beast::IP::Address const& ip) {
-                   return ip.is_unspecified() || ip == remoteIp;
-               }) != adminIp.end();
+    // To test whether the remoteIP is part of one of the configured
+    // subnets, first convert it to a subnet definition. For ipv4,
+    // this means appending /32. For ipv6, /128. Then based on protocol
+    // check for whether the resulting network is either a subnet of or
+    // equal to each configured subnet, based on boost::asio's reasoning.
+    // For example, 10.1.2.3 is a subnet of 10.1.2.0/24, but 10.1.2.0 is
+    // not. However, 10.1.2.0 is equal to the network portion of 10.1.2.0/24.
+
+    std::string addrString = remoteIp.to_string();
+    if (remoteIp.is_v4())
+    {
+        addrString += "/32";
+        auto ipNet = boost::asio::ip::make_network_v4(addrString);
+        for (auto const& net : nets4)
+        {
+            if (ipNet.is_subnet_of(net) || ipNet == net)
+                return true;
+        }
+    }
+    else
+    {
+        addrString += "/128";
+        auto ipNet = boost::asio::ip::make_network_v6(addrString);
+        for (auto const& net : nets6)
+        {
+            if (ipNet.is_subnet_of(net) || ipNet == net)
+                return true;
+        }
+    }
+
+    return false;
 }
 
 bool
@@ -59,7 +86,7 @@ isAdmin(
     Json::Value const& params,
     beast::IP::Address const& remoteIp)
 {
-    return ipAllowed(remoteIp, port.admin_ip) &&
+    return ipAllowed(remoteIp, port.admin_nets_v4, port.admin_nets_v6) &&
         passwordUnrequiredOrSentCorrect(port, params);
 }
 
@@ -77,7 +104,10 @@ requestRole(
     if (required == Role::ADMIN)
         return Role::FORBID;
 
-    if (ipAllowed(remoteIp.address(), port.secure_gateway_ip))
+    if (ipAllowed(
+            remoteIp.address(),
+            port.secure_gateway_nets_v4,
+            port.secure_gateway_nets_v6))
     {
         if (user.size())
             return Role::IDENTIFIED;
@@ -122,18 +152,125 @@ requestInboundEndpoint(
         remoteAddress, role == Role::PROXY, forwardedFor);
 }
 
+static boost::string_view
+extractIpAddrFromField(boost::string_view field)
+{
+    // Lambda to trim leading and trailing spaces on the field.
+    auto trim = [](boost::string_view str) -> boost::string_view {
+        boost::string_view ret = str;
+
+        // Only do the work if there's at least one leading space.
+        if (!ret.empty() && ret.front() == ' ')
+        {
+            std::size_t const firstNonSpace = ret.find_first_not_of(' ');
+            if (firstNonSpace == boost::string_view::npos)
+                // We know there's at least one leading space.  So if we got
+                // npos, then it must be all spaces.  Return empty string_view.
+                return {};
+
+            ret = ret.substr(firstNonSpace);
+        }
+        // Trim trailing spaces.
+        if (!ret.empty())
+        {
+            // Only do the work if there's at least one trailing space.
+            if (unsigned char const c = ret.back();
+                c == ' ' || c == '\r' || c == '\n')
+            {
+                std::size_t const lastNonSpace = ret.find_last_not_of(" \r\n");
+                if (lastNonSpace == boost::string_view::npos)
+                    // We know there's at least one leading space.  So if we
+                    // got npos, then it must be all spaces.
+                    return {};
+
+                ret = ret.substr(0, lastNonSpace + 1);
+            }
+        }
+        return ret;
+    };
+
+    boost::string_view ret = trim(field);
+    if (ret.empty())
+        return {};
+
+    // If there are surrounding quotes, strip them.
+    if (ret.front() == '"')
+    {
+        ret.remove_prefix(1);
+        if (ret.empty() || ret.back() != '"')
+            return {};  // Unbalanced double quotes.
+
+        ret.remove_suffix(1);
+
+        // Strip leading and trailing spaces that were inside the quotes.
+        ret = trim(ret);
+    }
+    if (ret.empty())
+        return {};
+
+    // If we have an IPv6 or IPv6 (dual) address wrapped in square brackets,
+    // then we need to remove the square brackets.
+    if (ret.front() == '[')
+    {
+        // Remove leading '['.
+        ret.remove_prefix(1);
+
+        // We may have an IPv6 address in square brackets.  Scan up to the
+        // closing square bracket.
+        auto const closeBracket =
+            std::find_if_not(ret.begin(), ret.end(), [](unsigned char c) {
+                return std::isxdigit(c) || c == ':' || c == '.' || c == ' ';
+            });
+
+        // If the string does not close with a ']', then it's not valid IPv6
+        // or IPv6 (dual).
+        if (closeBracket == ret.end() || (*closeBracket) != ']')
+            return {};
+
+        // Remove trailing ']'
+        ret = ret.substr(0, closeBracket - ret.begin());
+        ret = trim(ret);
+    }
+    if (ret.empty())
+        return {};
+
+    // If this is an IPv6 address (after unwrapping from square brackets),
+    // then there cannot be an appended port.  In that case we're done.
+    {
+        // Skip any leading hex digits.
+        auto const colon =
+            std::find_if_not(ret.begin(), ret.end(), [](unsigned char c) {
+                return std::isxdigit(c) || c == ' ';
+            });
+
+        // If the string starts with optional hex digits followed by a colon
+        // it's an IVv6 address.  We're done.
+        if (colon == ret.end() || (*colon) == ':')
+            return ret;
+    }
+
+    // If there's a port appended to the IP address, strip that by
+    // terminating at the colon.
+    if (std::size_t colon = ret.find(':'); colon != boost::string_view::npos)
+        ret = ret.substr(0, colon);
+
+    return ret;
+}
+
 boost::string_view
 forwardedFor(http_request_type const& request)
 {
-    auto it = request.find(boost::beast::http::field::forwarded);
-    if (it != request.end())
+    // Look for the Forwarded field in the request.
+    if (auto it = request.find(boost::beast::http::field::forwarded);
+        it != request.end())
     {
         auto ascii_tolower = [](char c) -> char {
             return ((static_cast<unsigned>(c) - 65U) < 26) ? c + 'a' - 'A' : c;
         };
 
+        // Look for the first (case insensitive) "for="
         static std::string const forStr{"for="};
-        auto found = std::search(
+        char const* found = std::search(
             it->value().begin(),
             it->value().end(),
             forStr.begin(),
@@ -146,22 +283,29 @@ forwardedFor(http_request_type const& request)
             return {};
 
         found += forStr.size();
-        std::size_t const pos([&]() {
-            std::size_t const pos{
-                boost::string_view(found, it->value().end() - found).find(';')};
-            if (pos == boost::string_view::npos)
-                return it->value().size() - forStr.size();
-            return pos;
-        }());
 
-        return *boost::beast::http::token_list(boost::string_view(found, pos))
-                    .begin();
+        // We found a "for=".  Scan for the end of the IP address.
+        std::size_t const pos = [&found, &it]() {
+            std::size_t pos =
+                boost::string_view(found, it->value().end() - found)
+                    .find_first_of(",;");
+            if (pos != boost::string_view::npos)
+                return pos;
+
+            return it->value().size() - forStr.size();
+        }();
+
+        return extractIpAddrFromField({found, pos});
     }
 
-    it = request.find("X-Forwarded-For");
-    if (it != request.end())
+    // Look for the X-Forwarded-For field in the request.
+    if (auto it = request.find("X-Forwarded-For"); it != request.end())
     {
-        return *boost::beast::http::token_list(it->value()).begin();
+        // The first X-Forwarded-For entry may be terminated by a comma.
+        std::size_t found = it->value().find(',');
+        if (found == boost::string_view::npos)
+            found = it->value().length();
+        return extractIpAddrFromField(it->value().substr(0, found));
     }
 
     return {};

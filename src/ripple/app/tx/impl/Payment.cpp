@@ -46,8 +46,7 @@ Payment::makeTxConsequences(PreflightContext const& ctx)
 NotTEC
 Payment::preflight(PreflightContext const& ctx)
 {
-    auto const ret = preflight1(ctx);
-    if (!isTesSuccess(ret))
+    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
     auto& tx = ctx.tx;
@@ -466,6 +465,11 @@ Payment::doApply()
 
         return tecUNFUNDED_PAYMENT;
     }
+
+    // AMMs can never receive an XRP payment.
+    // Must use AMMDeposit transaction instead.
+    if (sleDst->getFlags() & lsfAMM)
+        return tecNO_PERMISSION;
 
     // The source account does have enough money.  Make sure the
     // source account has authority to deposit to the destination.

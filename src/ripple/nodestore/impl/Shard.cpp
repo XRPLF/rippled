@@ -19,17 +19,13 @@
 
 #include <ripple/app/ledger/InboundLedger.h>
 #include <ripple/app/main/DBInit.h>
-#include <ripple/app/rdb/RelationalDBInterface_global.h>
-#include <ripple/app/rdb/RelationalDBInterface_shards.h>
+#include <ripple/app/rdb/backend/detail/Shard.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/nodestore/Manager.h>
 #include <ripple/nodestore/impl/DeterministicShard.h>
 #include <ripple/nodestore/impl/Shard.h>
 #include <ripple/protocol/digest.h>
-
-#include <boost/algorithm/string.hpp>
-#include <boost/range/adaptor/transformed.hpp>
 
 namespace ripple {
 namespace NodeStore {
@@ -227,6 +223,7 @@ Shard::storeNodeObject(std::shared_ptr<NodeObject> const& nodeObject)
 
     try
     {
+        std::lock_guard lock(mutex_);
         backend_->store(nodeObject);
     }
     catch (std::exception const& e)
@@ -253,6 +250,7 @@ Shard::fetchNodeObject(uint256 const& hash, FetchReport& fetchReport)
     Status status;
     try
     {
+        std::lock_guard lock(mutex_);
         status = backend_->fetch(hash.data(), &nodeObject);
     }
     catch (std::exception const& e)
@@ -335,6 +333,7 @@ Shard::storeLedger(
 
         try
         {
+            std::lock_guard lock(mutex_);
             backend_->storeBatch(batch);
         }
         catch (std::exception const& e)
@@ -542,6 +541,7 @@ Shard::getWriteLoad()
     auto const scopedCount{makeBackendCount()};
     if (!scopedCount)
         return 0;
+    std::lock_guard lock(mutex_);
     return backend_->getWriteLoad();
 }
 
@@ -576,6 +576,8 @@ Shard::finalize(bool writeSQLite, std::optional<uint256> const& referenceHash)
 
     try
     {
+        std::lock_guard lock(mutex_);
+
         state_ = ShardState::finalizing;
         progress_ = 0;
 
@@ -686,7 +688,7 @@ Shard::finalize(bool writeSQLite, std::optional<uint256> const& referenceHash)
 
         ledger->stateMap().setLedgerSeq(ledgerSeq);
         ledger->txMap().setLedgerSeq(ledgerSeq);
-        ledger->setImmutable(config);
+        ledger->setImmutable();
         if (!ledger->stateMap().fetchRoot(
                 SHAMapHash{ledger->info().accountHash}, nullptr))
         {
@@ -707,6 +709,11 @@ Shard::finalize(bool writeSQLite, std::optional<uint256> const& referenceHash)
 
         if (writeSQLite && !storeSQLite(ledger))
             return fail("failed storing to SQLite databases");
+
+        assert(
+            ledger->info().seq == ledgerSeq &&
+            (ledger->info().seq < XRP_LEDGER_EARLIEST_FEES ||
+             ledger->read(keylet::fees())));
 
         hash = ledger->info().parentHash;
         next = std::move(ledger);
@@ -763,8 +770,11 @@ Shard::finalize(bool writeSQLite, std::optional<uint256> const& referenceHash)
 
     try
     {
-        // Store final key's value, may already be stored
-        backend_->store(nodeObject);
+        {
+            // Store final key's value, may already be stored
+            std::lock_guard lock(mutex_);
+            backend_->store(nodeObject);
+        }
 
         // Do not allow all other threads work with the shard
         busy_ = true;
@@ -823,7 +833,7 @@ Shard::open(std::lock_guard<std::mutex> const& lock)
     using namespace boost::filesystem;
     Config const& config{app_.config()};
     auto preexist{false};
-    auto fail = [this, &preexist](std::string const& msg) {
+    auto fail = [this, &preexist](std::string const& msg) REQUIRES(mutex_) {
         backend_->close();
         lgrSQLiteDB_.reset();
         txSQLiteDB_.reset();
@@ -841,7 +851,7 @@ Shard::open(std::lock_guard<std::mutex> const& lock)
         }
         return false;
     };
-    auto createAcquireInfo = [this, &config]() {
+    auto createAcquireInfo = [this, &config]() REQUIRES(mutex_) {
         DatabaseCon::Setup setup;
         setup.startUp = config.standalone() ? config.LOAD : config.START_UP;
         setup.standAlone = config.standalone();
@@ -1028,6 +1038,8 @@ Shard::storeSQLite(std::shared_ptr<Ledger const> const& ledger)
 
     try
     {
+        std::lock_guard lock(mutex_);
+
         auto res = updateLedgerDBs(
             *txSQLiteDB_->checkoutDb(),
             *lgrSQLiteDB_->checkoutDb(),
@@ -1190,6 +1202,7 @@ Shard::verifyFetch(uint256 const& hash) const
 
     try
     {
+        std::lock_guard lock(mutex_);
         switch (backend_->fetch(hash.data(), &nodeObject))
         {
             case ok:

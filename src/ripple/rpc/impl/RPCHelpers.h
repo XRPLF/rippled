@@ -31,6 +31,7 @@
 #include <ripple/rpc/impl/Tuning.h>
 #include <optional>
 #include <org/xrpl/rpc/v1/xrp_ledger.pb.h>
+#include <variant>
 
 namespace Json {
 class Value;
@@ -71,6 +72,25 @@ accountFromStringWithCode(
     std::string const& strIdent,
     bool bStrict = false);
 
+/** Gets the start hint for traversing account objects
+ * @param sle - Ledger entry defined by the marker passed into the RPC.
+ * @param accountID - The ID of the account whose objects you are traversing.
+ */
+std::uint64_t
+getStartHint(std::shared_ptr<SLE const> const& sle, AccountID const& accountID);
+
+/**
+ * Tests if a SLE is owned by accountID.
+ * @param ledger - The ledger used to search for the sle.
+ * @param sle - The SLE to test for ownership.
+ * @param account - The account being tested for SLE ownership.
+ */
+bool
+isRelatedToAccount(
+    ReadView const& ledger,
+    std::shared_ptr<SLE const> const& sle,
+    AccountID const& accountID);
+
 /** Gathers all objects for an account in a ledger.
     @param ledger Ledger to search account objects.
     @param account AccountID to find objects for.
@@ -86,7 +106,7 @@ getAccountObjects(
     AccountID const& account,
     std::optional<std::vector<LedgerEntryType>> const& typeFilter,
     uint256 dirIndex,
-    uint256 const& entryIndex,
+    uint256 entryIndex,
     std::uint32_t const limit,
     Json::Value& jvResult);
 
@@ -267,6 +287,11 @@ chooseLedgerEntryType(Json::Value const& params);
  */
 unsigned int
 getAPIVersionNumber(const Json::Value& value, bool betaEnabled);
+
+/** Return a ledger based on ledger_hash or ledger_index,
+    or an RPC error */
+std::variant<std::shared_ptr<Ledger const>, Json::Value>
+getLedgerByContext(RPC::JsonContext& context);
 
 }  // namespace RPC
 }  // namespace ripple

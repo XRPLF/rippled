@@ -20,8 +20,10 @@
 #ifndef RIPPLE_PROTOCOL_STAMOUNT_H_INCLUDED
 #define RIPPLE_PROTOCOL_STAMOUNT_H_INCLUDED
 
+#include <ripple/basics/CountedObject.h>
 #include <ripple/basics/IOUAmount.h>
 #include <ripple/basics/LocalValue.h>
+#include <ripple/basics/Number.h>
 #include <ripple/basics/XRPAmount.h>
 #include <ripple/protocol/Issue.h>
 #include <ripple/protocol/SField.h>
@@ -40,7 +42,7 @@ namespace ripple {
 // Wire form:
 // High 8 bits are (offset+142), legal range is, 80 to 22 inclusive
 // Low 56 bits are value, legal range is 10^15 to (10^16 - 1) inclusive
-class STAmount : public STBase
+class STAmount final : public STBase, public CountedObject<STAmount>
 {
 public:
     using mantissa_type = std::uint64_t;
@@ -143,31 +145,8 @@ public:
     // Legacy support for new-style amounts
     STAmount(IOUAmount const& amount, Issue const& issue);
     STAmount(XRPAmount const& amount);
+    operator Number() const;
 
-    STBase*
-    copy(std::size_t n, void* buf) const override
-    {
-        return emplace(n, buf, *this);
-    }
-
-    STBase*
-    move(std::size_t n, void* buf) override
-    {
-        return emplace(n, buf, std::move(*this));
-    }
-
-    //--------------------------------------------------------------------------
-
-private:
-    static std::unique_ptr<STAmount>
-    construct(SerialIter&, SField const& name);
-
-    void
-    set(std::int64_t v);
-    void
-    canonicalize();
-
-public:
     //--------------------------------------------------------------------------
     //
     // Observers
@@ -175,64 +154,39 @@ public:
     //--------------------------------------------------------------------------
 
     int
-    exponent() const noexcept
-    {
-        return mOffset;
-    }
+    exponent() const noexcept;
+
     bool
-    native() const noexcept
-    {
-        return mIsNative;
-    }
+    native() const noexcept;
+
     bool
-    negative() const noexcept
-    {
-        return mIsNegative;
-    }
+    negative() const noexcept;
+
     std::uint64_t
-    mantissa() const noexcept
-    {
-        return mValue;
-    }
+    mantissa() const noexcept;
+
     Issue const&
-    issue() const
-    {
-        return mIssue;
-    }
+    issue() const;
 
     // These three are deprecated
     Currency const&
-    getCurrency() const
-    {
-        return mIssue.currency;
-    }
+    getCurrency() const;
+
     AccountID const&
-    getIssuer() const
-    {
-        return mIssue.account;
-    }
+    getIssuer() const;
 
     int
-    signum() const noexcept
-    {
-        return mValue ? (mIsNegative ? -1 : 1) : 0;
-    }
+    signum() const noexcept;
 
     /** Returns a zero value with the same issuer and currency. */
     STAmount
-    zeroed() const
-    {
-        return STAmount(mIssue);
-    }
+    zeroed() const;
 
     void
     setJson(Json::Value&) const;
 
     STAmount const&
-    value() const noexcept
-    {
-        return *this;
-    }
+    value() const noexcept;
 
     //--------------------------------------------------------------------------
     //
@@ -240,28 +194,17 @@ public:
     //
     //--------------------------------------------------------------------------
 
-    explicit operator bool() const noexcept
-    {
-        return *this != beast::zero;
-    }
+    explicit operator bool() const noexcept;
 
     STAmount&
     operator+=(STAmount const&);
     STAmount&
     operator-=(STAmount const&);
 
-    STAmount& operator=(beast::Zero)
-    {
-        clear();
-        return *this;
-    }
+    STAmount& operator=(beast::Zero);
 
     STAmount&
-    operator=(XRPAmount const& amount)
-    {
-        *this = STAmount(amount);
-        return *this;
-    }
+    operator=(XRPAmount const& amount);
 
     //--------------------------------------------------------------------------
     //
@@ -270,42 +213,20 @@ public:
     //--------------------------------------------------------------------------
 
     void
-    negate()
-    {
-        if (*this != beast::zero)
-            mIsNegative = !mIsNegative;
-    }
+    negate();
 
     void
-    clear()
-    {
-        // The -100 is used to allow 0 to sort less than a small positive values
-        // which have a negative exponent.
-        mOffset = mIsNative ? 0 : -100;
-        mValue = 0;
-        mIsNegative = false;
-    }
+    clear();
 
     // Zero while copying currency and issuer.
     void
-    clear(STAmount const& saTmpl)
-    {
-        clear(saTmpl.mIssue);
-    }
+    clear(STAmount const& saTmpl);
 
     void
-    clear(Issue const& issue)
-    {
-        setIssue(issue);
-        clear();
-    }
+    clear(Issue const& issue);
 
     void
-    setIssuer(AccountID const& uIssuer)
-    {
-        mIssue.account = uIssuer;
-        setIssue(mIssue);
-    }
+    setIssuer(AccountID const& uIssuer);
 
     /** Set the Issue for this amount and update mIsNative. */
     void
@@ -318,10 +239,7 @@ public:
     //--------------------------------------------------------------------------
 
     SerializedTypeID
-    getSType() const override
-    {
-        return STI_AMOUNT;
-    }
+    getSType() const override;
 
     std::string
     getFullText() const override;
@@ -338,15 +256,34 @@ public:
     isEquivalent(const STBase& t) const override;
 
     bool
-    isDefault() const override
-    {
-        return (mValue == 0) && mIsNative;
-    }
+    isDefault() const override;
 
     XRPAmount
     xrp() const;
     IOUAmount
     iou() const;
+
+private:
+    static std::unique_ptr<STAmount>
+    construct(SerialIter&, SField const& name);
+
+    void
+    set(std::int64_t v);
+    void
+    canonicalize();
+
+    STBase*
+    copy(std::size_t n, void* buf) const override;
+    STBase*
+    move(std::size_t n, void* buf) override;
+
+    STAmount&
+    operator=(IOUAmount const& iou);
+
+    friend class detail::STVar;
+
+    friend STAmount
+    operator+(STAmount const& v1, STAmount const& v2);
 };
 
 //------------------------------------------------------------------------------
@@ -381,6 +318,129 @@ toSTAmount(STAmount const& a)
 // Observers
 //
 //------------------------------------------------------------------------------
+
+inline int
+STAmount::exponent() const noexcept
+{
+    return mOffset;
+}
+
+inline bool
+STAmount::native() const noexcept
+{
+    return mIsNative;
+}
+
+inline bool
+STAmount::negative() const noexcept
+{
+    return mIsNegative;
+}
+
+inline std::uint64_t
+STAmount::mantissa() const noexcept
+{
+    return mValue;
+}
+
+inline Issue const&
+STAmount::issue() const
+{
+    return mIssue;
+}
+
+inline Currency const&
+STAmount::getCurrency() const
+{
+    return mIssue.currency;
+}
+
+inline AccountID const&
+STAmount::getIssuer() const
+{
+    return mIssue.account;
+}
+
+inline int
+STAmount::signum() const noexcept
+{
+    return mValue ? (mIsNegative ? -1 : 1) : 0;
+}
+
+inline STAmount
+STAmount::zeroed() const
+{
+    return STAmount(mIssue);
+}
+
+inline STAmount::operator bool() const noexcept
+{
+    return *this != beast::zero;
+}
+
+inline STAmount::operator Number() const
+{
+    if (mIsNative)
+        return xrp();
+    return iou();
+}
+
+inline STAmount& STAmount::operator=(beast::Zero)
+{
+    clear();
+    return *this;
+}
+
+inline STAmount&
+STAmount::operator=(XRPAmount const& amount)
+{
+    *this = STAmount(amount);
+    return *this;
+}
+
+inline void
+STAmount::negate()
+{
+    if (*this != beast::zero)
+        mIsNegative = !mIsNegative;
+}
+
+inline void
+STAmount::clear()
+{
+    // The -100 is used to allow 0 to sort less than a small positive values
+    // which have a negative exponent.
+    mOffset = mIsNative ? 0 : -100;
+    mValue = 0;
+    mIsNegative = false;
+}
+
+// Zero while copying currency and issuer.
+inline void
+STAmount::clear(STAmount const& saTmpl)
+{
+    clear(saTmpl.mIssue);
+}
+
+inline void
+STAmount::clear(Issue const& issue)
+{
+    setIssue(issue);
+    clear();
+}
+
+inline void
+STAmount::setIssuer(AccountID const& uIssuer)
+{
+    mIssue.account = uIssuer;
+    setIssue(mIssue);
+}
+
+inline STAmount const&
+STAmount::value() const noexcept
+{
+    return *this;
+}
 
 inline bool
 isLegalNet(STAmount const& value)
@@ -443,7 +503,7 @@ divide(STAmount const& v1, STAmount const& v2, Issue const& issue);
 STAmount
 multiply(STAmount const& v1, STAmount const& v2, Issue const& issue);
 
-// multiply, or divide rounding result in specified direction
+// multiply rounding result in specified direction
 STAmount
 mulRound(
     STAmount const& v1,
@@ -451,8 +511,25 @@ mulRound(
     Issue const& issue,
     bool roundUp);
 
+// multiply following the rounding directions more precisely.
+STAmount
+mulRoundStrict(
+    STAmount const& v1,
+    STAmount const& v2,
+    Issue const& issue,
+    bool roundUp);
+
+// divide rounding result in specified direction
 STAmount
 divRound(
+    STAmount const& v1,
+    STAmount const& v2,
+    Issue const& issue,
+    bool roundUp);
+
+// divide following the rounding directions more precisely.
+STAmount
+divRoundStrict(
     STAmount const& v1,
     STAmount const& v2,
     Issue const& issue,
@@ -476,7 +553,12 @@ isXRP(STAmount const& amount)
 // the low-level routine stAmountCanonicalize on an amendment switch. Only
 // transactions need to use this switchover. Outside of a transaction it's safe
 // to unconditionally use the new behavior.
-extern LocalValue<bool> stAmountCanonicalizeSwitchover;
+
+bool
+getSTAmountCanonicalizeSwitchover();
+
+void
+setSTAmountCanonicalizeSwitchover(bool v);
 
 /** RAII class to set and restore the STAmount canonicalize switchover.
  */
@@ -484,14 +566,14 @@ extern LocalValue<bool> stAmountCanonicalizeSwitchover;
 class STAmountSO
 {
 public:
-    explicit STAmountSO(bool v) : saved_(*stAmountCanonicalizeSwitchover)
+    explicit STAmountSO(bool v) : saved_(getSTAmountCanonicalizeSwitchover())
     {
-        *stAmountCanonicalizeSwitchover = v;
+        setSTAmountCanonicalizeSwitchover(v);
     }
 
     ~STAmountSO()
     {
-        *stAmountCanonicalizeSwitchover = saved_;
+        setSTAmountCanonicalizeSwitchover(saved_);
     }
 
 private:

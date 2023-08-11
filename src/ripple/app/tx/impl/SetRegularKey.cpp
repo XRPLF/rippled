@@ -24,7 +24,7 @@
 
 namespace ripple {
 
-FeeUnit64
+XRPAmount
 SetRegularKey::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
     auto const id = tx.getAccountID(sfAccount);
@@ -39,7 +39,7 @@ SetRegularKey::calculateBaseFee(ReadView const& view, STTx const& tx)
             if (sle && (!(sle->getFlags() & lsfPasswordSpent)))
             {
                 // flag is armed and they signed with the right account
-                return FeeUnit64{0};
+                return XRPAmount{0};
             }
         }
     }
@@ -50,8 +50,7 @@ SetRegularKey::calculateBaseFee(ReadView const& view, STTx const& tx)
 NotTEC
 SetRegularKey::preflight(PreflightContext const& ctx)
 {
-    auto const ret = preflight1(ctx);
-    if (!isTesSuccess(ret))
+    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
     std::uint32_t const uTxFlags = ctx.tx.getFlags();

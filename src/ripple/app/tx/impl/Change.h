@@ -46,16 +46,19 @@ public:
     void
     preCompute() override;
 
-    static FeeUnit64
+    static XRPAmount
     calculateBaseFee(ReadView const& view, STTx const& tx)
     {
-        return FeeUnit64{0};
+        return XRPAmount{0};
     }
 
     static TER
     preclaim(PreclaimContext const& ctx);
 
 private:
+    void
+    activateTrustLinesToSelfFix();
+
     TER
     applyAmendment();
 

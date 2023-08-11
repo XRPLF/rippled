@@ -36,12 +36,13 @@ listed later.
 | 07           | ripple/shamap ripple/overlay
 | 08           | ripple/app
 | 09           | ripple/rpc
-| 10           | test/jtx test/beast test/csf
-| 11           | test/unit_test
-| 12           | test/crypto test/conditions test/json test/resource test/shamap test/peerfinder test/basics test/overlay
-| 13           | test
-| 14           | test/net test/protocol test/ledger test/consensus test/core test/server test/nodestore
-| 15           | test/rpc test/app
+| 10           | ripple/perflog
+| 11           | test/jtx test/beast test/csf
+| 12           | test/unit_test
+| 13           | test/crypto test/conditions test/json test/resource test/shamap test/peerfinder test/basics test/overlay
+| 14           | test
+| 15           | test/net test/protocol test/ledger test/consensus test/core test/server test/nodestore
+| 16           | test/rpc test/app
 
 (Note that `test` levelization is *much* less important and *much* less
 strictly enforced than `ripple` levelization, other than the requirement

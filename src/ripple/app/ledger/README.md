@@ -162,7 +162,7 @@ There are also indirect peer queries.  If there have been timeouts while
 acquiring ledger data then a server may issue indirect queries.  In that
 case the server receiving the indirect query passes the query along to any
 of its peers that may have the requested data.  This is important if the
-network has a byzantine failure.  If also helps protect the validation
+network has a byzantine failure.  It also helps protect the validation
 network.  A validator may need to get a peer set from one of the other
 validators, and indirect queries improve the likelihood of success with
 that.
@@ -487,4 +487,3 @@ ledger(s) for missing nodes in the back end node store
 ---
 
 # References #
-

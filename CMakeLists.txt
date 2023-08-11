@@ -1,21 +1,41 @@
-cmake_minimum_required (VERSION 3.9.0)
+cmake_minimum_required(VERSION 3.16)
 
-if (POLICY CMP0074)
+if(POLICY CMP0074)
   cmake_policy(SET CMP0074 NEW)
-endif ()
+endif()
+if(POLICY CMP0077)
+  cmake_policy(SET CMP0077 NEW)
+endif()
 
-project (rippled)
-
+# Fix "unrecognized escape" issues when passing CMAKE_MODULE_PATH on Windows.
+file(TO_CMAKE_PATH "${CMAKE_MODULE_PATH}" CMAKE_MODULE_PATH)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Builds/CMake")
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Builds/CMake/deps")
+
+project(rippled)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# make GIT_COMMIT_HASH define available to all sources
+find_package(Git)
+if(Git_FOUND)
+    execute_process(COMMAND ${GIT_EXECUTABLE} describe --always --abbrev=40
+        OUTPUT_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE gch)
+    if(gch)
+        set(GIT_COMMIT_HASH "${gch}")
+        message(STATUS gch: ${GIT_COMMIT_HASH})
+        add_definitions(-DGIT_COMMIT_HASH="${GIT_COMMIT_HASH}")
+    endif()
+endif() #git
+
+if(thread_safety_analysis)
+  add_compile_options(-Wthread-safety -D_LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS -DRIPPLE_ENABLE_THREAD_SAFETY_ANNOTATIONS)
+  add_compile_options("-stdlib=libc++")
+  add_link_options("-stdlib=libc++")
+endif()
 
 include (CheckCXXCompilerFlag)
-if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.11)
-  include (FetchContent)
-endif ()
-if (MSVC AND CMAKE_VERSION VERSION_LESS 3.12)
-  message (FATAL_ERROR "MSVC requires cmake 3.12 or greater for proper boost support")
-endif ()
+include (FetchContent)
 include (ExternalProject)
 include (CMakeFuncs) # must come *after* ExternalProject b/c it overrides one function in EP
 include (ProcessorCount)
@@ -26,7 +46,6 @@ endif ()
 include(RippledSanity)
 include(RippledVersion)
 include(RippledSettings)
-include(RippledNIH)
 include(RippledRelease)
 # this check has to remain in the top-level cmake
 # because of the early return statement
@@ -39,24 +58,75 @@ endif ()
 include(RippledCompiler)
 include(RippledInterface)
 
+option(only_docs "Include only the docs target?" FALSE)
+include(RippledDocs)
+if(only_docs)
+  return()
+endif()
+
 ###
 
 include(deps/Boost)
-include(deps/OpenSSL)
-include(deps/Secp256k1)
-include(deps/Ed25519-donna)
-include(deps/Lz4)
-include(deps/Libarchive)
-include(deps/Sqlite)
-include(deps/Soci)
-include(deps/Snappy)
-include(deps/Rocksdb)
-include(deps/Nudb)
-include(deps/date)
+find_package(OpenSSL 1.1.1 REQUIRED)
+set_target_properties(OpenSSL::SSL PROPERTIES
+  INTERFACE_COMPILE_DEFINITIONS OPENSSL_NO_SSL2
+)
+add_subdirectory(src/secp256k1)
+add_subdirectory(src/ed25519-donna)
+find_package(lz4 REQUIRED)
+# Target names with :: are not allowed in a generator expression.
+# We need to pull the include directories and imported location properties
+# from separate targets.
+find_package(LibArchive REQUIRED)
+find_package(SOCI REQUIRED)
+find_package(SQLite3 REQUIRED)
+find_package(Snappy REQUIRED)
+
+option(rocksdb "Enable RocksDB" ON)
+if(rocksdb)
+  find_package(RocksDB REQUIRED)
+  set_target_properties(RocksDB::rocksdb PROPERTIES
+    INTERFACE_COMPILE_DEFINITIONS RIPPLE_ROCKSDB_AVAILABLE=1
+  )
+  target_link_libraries(ripple_libs INTERFACE RocksDB::rocksdb)
+endif()
+
+find_package(nudb REQUIRED)
+find_package(date REQUIRED)
 include(deps/Protobuf)
 include(deps/gRPC)
-include(deps/cassandra)
-include(deps/Postgres)
+
+target_link_libraries(ripple_libs INTERFACE
+  ed25519::ed25519
+  LibArchive::LibArchive
+  lz4::lz4
+  OpenSSL::Crypto
+  OpenSSL::SSL
+  Ripple::grpc_pbufs
+  Ripple::pbufs
+  secp256k1::secp256k1
+  soci::soci
+  SQLite::SQLite3
+)
+
+# Work around changes to Conan recipe for now.
+if(TARGET nudb::core)
+  set(nudb nudb::core)
+elseif(TARGET NuDB::nudb)
+  set(nudb NuDB::nudb)
+else()
+  message(FATAL_ERROR "unknown nudb target")
+endif()
+target_link_libraries(ripple_libs INTERFACE ${nudb})
+
+if(reporting)
+  find_package(cassandra-cpp-driver REQUIRED)
+  find_package(PostgreSQL REQUIRED)
+  target_link_libraries(ripple_libs INTERFACE
+    cassandra-cpp-driver::cassandra-cpp-driver
+    PostgreSQL::PostgreSQL
+  )
+endif()
 
 ###
 
@@ -64,5 +134,4 @@ include(RippledCore)
 include(RippledInstall)
 include(RippledCov)
 include(RippledMultiConfig)
-include(RippledDocs)
 include(RippledValidatorKeys)

@@ -21,8 +21,8 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/Transaction.h>
-#include <ripple/app/rdb/backend/RelationalDBInterfacePostgres.h>
-#include <ripple/app/rdb/backend/RelationalDBInterfaceSqlite.h>
+#include <ripple/app/rdb/backend/PostgresDatabase.h>
+#include <ripple/app/rdb/backend/SQLiteDatabase.h>
 #include <ripple/core/Pg.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/json/json_value.h>
@@ -34,91 +34,42 @@
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/DeliveredAmount.h>
+#include <ripple/rpc/NFTSyntheticSerializer.h>
 #include <ripple/rpc/Role.h>
-#include <ripple/rpc/impl/GRPCHelpers.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 
 #include <grpcpp/grpcpp.h>
 
 namespace ripple {
 
-using TxnsData = RelationalDBInterface::AccountTxs;
-using TxnsDataBinary = RelationalDBInterface::MetaTxsList;
-using TxnDataBinary = RelationalDBInterface::txnMetaLedgerType;
-using AccountTxArgs = RelationalDBInterface::AccountTxArgs;
-using AccountTxResult = RelationalDBInterface::AccountTxResult;
+using TxnsData = RelationalDatabase::AccountTxs;
+using TxnsDataBinary = RelationalDatabase::MetaTxsList;
+using TxnDataBinary = RelationalDatabase::txnMetaLedgerType;
+using AccountTxArgs = RelationalDatabase::AccountTxArgs;
+using AccountTxResult = RelationalDatabase::AccountTxResult;
 
-using LedgerShortcut = RelationalDBInterface::LedgerShortcut;
-using LedgerSpecifier = RelationalDBInterface::LedgerSpecifier;
-
-// parses args into a ledger specifier, or returns a grpc status object on error
-std::variant<std::optional<LedgerSpecifier>, grpc::Status>
-parseLedgerArgs(
-    org::xrpl::rpc::v1::GetAccountTransactionHistoryRequest const& params)
-{
-    grpc::Status status;
-    if (params.has_ledger_range())
-    {
-        uint32_t min = params.ledger_range().ledger_index_min();
-        uint32_t max = params.ledger_range().ledger_index_max();
-
-        // if min is set but not max, need to set max
-        if (min != 0 && max == 0)
-        {
-            max = UINT32_MAX;
-        }
-
-        return LedgerRange{min, max};
-    }
-    else if (params.has_ledger_specifier())
-    {
-        LedgerSpecifier ledger;
-
-        auto& specifier = params.ledger_specifier();
-        using LedgerCase = org::xrpl::rpc::v1::LedgerSpecifier::LedgerCase;
-        LedgerCase ledgerCase = specifier.ledger_case();
-
-        if (ledgerCase == LedgerCase::kShortcut)
-        {
-            using LedgerSpecifier = org::xrpl::rpc::v1::LedgerSpecifier;
-
-            if (specifier.shortcut() == LedgerSpecifier::SHORTCUT_VALIDATED)
-                ledger = LedgerShortcut::VALIDATED;
-            else if (specifier.shortcut() == LedgerSpecifier::SHORTCUT_CLOSED)
-                ledger = LedgerShortcut::CLOSED;
-            else if (specifier.shortcut() == LedgerSpecifier::SHORTCUT_CURRENT)
-                ledger = LedgerShortcut::CURRENT;
-            else
-                return {};
-        }
-        else if (ledgerCase == LedgerCase::kSequence)
-        {
-            ledger = specifier.sequence();
-        }
-        else if (ledgerCase == LedgerCase::kHash)
-        {
-            if (auto hash = uint256::fromVoidChecked(specifier.hash()))
-            {
-                ledger = *hash;
-            }
-            else
-            {
-                grpc::Status errorStatus{
-                    grpc::StatusCode::INVALID_ARGUMENT,
-                    "ledger hash malformed"};
-                return errorStatus;
-            }
-        }
-        return ledger;
-    }
-    return std::optional<LedgerSpecifier>{};
-}
+using LedgerShortcut = RelationalDatabase::LedgerShortcut;
+using LedgerSpecifier = RelationalDatabase::LedgerSpecifier;
 
 // parses args into a ledger specifier, or returns a Json object on error
 std::variant<std::optional<LedgerSpecifier>, Json::Value>
-parseLedgerArgs(Json::Value const& params)
+parseLedgerArgs(RPC::Context& context, Json::Value const& params)
 {
     Json::Value response;
+    // if ledger_index_min or max is specified, then ledger_hash or ledger_index
+    // should not be specified. Error out if it is
+    if (context.apiVersion > 1)
+    {
+        if ((params.isMember(jss::ledger_index_min) ||
+             params.isMember(jss::ledger_index_max)) &&
+            (params.isMember(jss::ledger_hash) ||
+             params.isMember(jss::ledger_index)))
+        {
+            RPC::Status status{rpcINVALID_PARAMS, "invalidParams"};
+            status.inject(response);
+            return response;
+        }
+    }
     if (params.isMember(jss::ledger_index_min) ||
         params.isMember(jss::ledger_index_max))
     {
@@ -208,6 +159,17 @@ getLedgerRange(
                 using T = std::decay_t<decltype(ls)>;
                 if constexpr (std::is_same_v<T, LedgerRange>)
                 {
+                    // if ledger_index_min or ledger_index_max is out of
+                    // valid ledger range, error out. exclude -1 as
+                    // it is a valid input
+                    if (context.apiVersion > 1)
+                    {
+                        if ((ls.max > uValidatedMax && ls.max != -1) ||
+                            (ls.min < uValidatedMin && ls.min != 0))
+                        {
+                            return rpcLGR_IDX_MALFORMED;
+                        }
+                    }
                     if (ls.min > uValidatedMin)
                     {
                         uLedgerMin = ls.min;
@@ -257,9 +219,15 @@ doAccountTxHelp(RPC::Context& context, AccountTxArgs const& args)
 {
     context.loadType = Resource::feeMediumBurdenRPC;
     if (context.app.config().reporting())
-        return dynamic_cast<RelationalDBInterfacePostgres*>(
-                   &context.app.getRelationalDBInterface())
-            ->getAccountTx(args);
+    {
+        auto const db = dynamic_cast<PostgresDatabase*>(
+            &context.app.getRelationalDatabase());
+
+        if (!db)
+            Throw<std::runtime_error>("Failed to get relational database");
+
+        return db->getAccountTx(args);
+    }
 
     AccountTxResult result;
 
@@ -274,7 +242,7 @@ doAccountTxHelp(RPC::Context& context, AccountTxArgs const& args)
 
     result.marker = args.marker;
 
-    RelationalDBInterface::AccountTxPageOptions options = {
+    RelationalDatabase::AccountTxPageOptions options = {
         args.account,
         result.ledgerRange.min,
         result.ledgerRange.max,
@@ -282,21 +250,23 @@ doAccountTxHelp(RPC::Context& context, AccountTxArgs const& args)
         args.limit,
         isUnlimited(context.role)};
 
+    auto const db =
+        dynamic_cast<SQLiteDatabase*>(&context.app.getRelationalDatabase());
+
+    if (!db)
+        Throw<std::runtime_error>("Failed to get relational database");
+
     if (args.binary)
     {
         if (args.forward)
         {
-            auto [tx, marker] = dynamic_cast<RelationalDBInterfaceSqlite*>(
-                                    &context.app.getRelationalDBInterface())
-                                    ->oldestAccountTxPageB(options);
+            auto [tx, marker] = db->oldestAccountTxPageB(options);
             result.transactions = tx;
             result.marker = marker;
         }
         else
         {
-            auto [tx, marker] = dynamic_cast<RelationalDBInterfaceSqlite*>(
-                                    &context.app.getRelationalDBInterface())
-                                    ->newestAccountTxPageB(options);
+            auto [tx, marker] = db->newestAccountTxPageB(options);
             result.transactions = tx;
             result.marker = marker;
         }
@@ -305,17 +275,13 @@ doAccountTxHelp(RPC::Context& context, AccountTxArgs const& args)
     {
         if (args.forward)
         {
-            auto [tx, marker] = dynamic_cast<RelationalDBInterfaceSqlite*>(
-                                    &context.app.getRelationalDBInterface())
-                                    ->oldestAccountTxPage(options);
+            auto [tx, marker] = db->oldestAccountTxPage(options);
             result.transactions = tx;
             result.marker = marker;
         }
         else
         {
-            auto [tx, marker] = dynamic_cast<RelationalDBInterfaceSqlite*>(
-                                    &context.app.getRelationalDBInterface())
-                                    ->newestAccountTxPage(options);
+            auto [tx, marker] = db->newestAccountTxPage(options);
             result.transactions = tx;
             result.marker = marker;
         }
@@ -325,131 +291,6 @@ doAccountTxHelp(RPC::Context& context, AccountTxArgs const& args)
     JLOG(context.j.debug()) << __func__ << " : finished";
 
     return {result, rpcSUCCESS};
-}
-
-std::pair<
-    org::xrpl::rpc::v1::GetAccountTransactionHistoryResponse,
-    grpc::Status>
-populateProtoResponse(
-    std::pair<AccountTxResult, RPC::Status> const& res,
-    AccountTxArgs const& args,
-    RPC::GRPCContext<
-        org::xrpl::rpc::v1::GetAccountTransactionHistoryRequest> const& context)
-{
-    org::xrpl::rpc::v1::GetAccountTransactionHistoryResponse response;
-    grpc::Status status = grpc::Status::OK;
-
-    RPC::Status const& error = res.second;
-    if (error.toErrorCode() != rpcSUCCESS)
-    {
-        if (error.toErrorCode() == rpcLGR_NOT_FOUND)
-        {
-            status = {grpc::StatusCode::NOT_FOUND, error.message()};
-        }
-        else if (error.toErrorCode() == rpcNOT_SYNCED)
-        {
-            status = {grpc::StatusCode::FAILED_PRECONDITION, error.message()};
-        }
-        else
-        {
-            status = {grpc::StatusCode::INVALID_ARGUMENT, error.message()};
-        }
-    }
-    else
-    {
-        AccountTxResult const& result = res.first;
-
-        // account_tx always returns validated data
-        response.set_validated(true);
-        response.set_limit(result.limit);
-        response.mutable_account()->set_address(
-            context.params.account().address());
-        response.set_ledger_index_min(result.ledgerRange.min);
-        response.set_ledger_index_max(result.ledgerRange.max);
-
-        if (auto txnsData = std::get_if<TxnsData>(&result.transactions))
-        {
-            assert(!args.binary);
-            for (auto const& [txn, txnMeta] : *txnsData)
-            {
-                if (txn)
-                {
-                    auto txnProto = response.add_transactions();
-
-                    RPC::convert(
-                        *txnProto->mutable_transaction(),
-                        txn->getSTransaction());
-
-                    // account_tx always returns validated data
-                    txnProto->set_validated(true);
-                    txnProto->set_ledger_index(txn->getLedger());
-                    auto& hash = txn->getID();
-                    txnProto->set_hash(hash.data(), hash.size());
-                    auto closeTime =
-                        context.app.getLedgerMaster().getCloseTimeBySeq(
-                            txn->getLedger());
-                    if (closeTime)
-                        txnProto->mutable_date()->set_value(
-                            closeTime->time_since_epoch().count());
-                    if (txnMeta)
-                    {
-                        RPC::convert(*txnProto->mutable_meta(), txnMeta);
-                        if (!txnProto->meta().has_delivered_amount())
-                        {
-                            if (auto amt = getDeliveredAmount(
-                                    context,
-                                    txn->getSTransaction(),
-                                    *txnMeta,
-                                    txn->getLedger()))
-                            {
-                                RPC::convert(
-                                    *txnProto->mutable_meta()
-                                         ->mutable_delivered_amount(),
-                                    *amt);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        else
-        {
-            assert(args.binary);
-
-            for (auto const& binaryData :
-                 std::get<TxnsDataBinary>(result.transactions))
-            {
-                auto txnProto = response.add_transactions();
-                Blob const& txnBlob = std::get<0>(binaryData);
-                txnProto->set_transaction_binary(
-                    txnBlob.data(), txnBlob.size());
-
-                Blob const& metaBlob = std::get<1>(binaryData);
-                txnProto->set_meta_binary(metaBlob.data(), metaBlob.size());
-
-                txnProto->set_ledger_index(std::get<2>(binaryData));
-
-                // account_tx always returns validated data
-                txnProto->set_validated(true);
-
-                auto closeTime =
-                    context.app.getLedgerMaster().getCloseTimeBySeq(
-                        std::get<2>(binaryData));
-                if (closeTime)
-                    txnProto->mutable_date()->set_value(
-                        closeTime->time_since_epoch().count());
-            }
-        }
-
-        if (result.marker)
-        {
-            response.mutable_marker()->set_ledger_index(
-                result.marker->ledgerSeq);
-            response.mutable_marker()->set_account_sequence(
-                result.marker->txnSeq);
-        }
-    }
-    return {response, status};
 }
 
 Json::Value
@@ -492,6 +333,8 @@ populateJsonResponse(
                         jvObj[jss::validated] = true;
                         insertDeliveredAmount(
                             jvObj[jss::meta], context, txn, *txnMeta);
+                        insertNFTSyntheticInJson(
+                            jvObj, context, txn->getSTransaction(), *txnMeta);
                     }
                 }
             }
@@ -561,7 +404,7 @@ doAccountTxJson(RPC::JsonContext& context)
 
     args.account = *account;
 
-    auto parseRes = parseLedgerArgs(params);
+    auto parseRes = parseLedgerArgs(context, params);
     if (auto jv = std::get_if<Json::Value>(&parseRes))
     {
         return *jv;
@@ -591,61 +434,6 @@ doAccountTxJson(RPC::JsonContext& context)
     auto res = doAccountTxHelp(context, args);
     JLOG(context.j.debug()) << __func__ << " populating response";
     return populateJsonResponse(res, args, context);
-}
-
-std::pair<
-    org::xrpl::rpc::v1::GetAccountTransactionHistoryResponse,
-    grpc::Status>
-doAccountTxGrpc(
-    RPC::GRPCContext<org::xrpl::rpc::v1::GetAccountTransactionHistoryRequest>&
-        context)
-{
-    if (!context.app.config().useTxTables())
-    {
-        return {
-            {},
-            {grpc::StatusCode::UNIMPLEMENTED, "Not enabled in configuration."}};
-    }
-
-    // return values
-    org::xrpl::rpc::v1::GetAccountTransactionHistoryResponse response;
-    grpc::Status status = grpc::Status::OK;
-    AccountTxArgs args;
-
-    auto& request = context.params;
-
-    auto const account = parseBase58<AccountID>(request.account().address());
-    if (!account)
-    {
-        return {
-            {},
-            {grpc::StatusCode::INVALID_ARGUMENT, "Could not decode account"}};
-    }
-
-    args.account = *account;
-    args.limit = request.limit();
-    args.binary = request.binary();
-    args.forward = request.forward();
-
-    if (request.has_marker())
-    {
-        args.marker = {
-            request.marker().ledger_index(),
-            request.marker().account_sequence()};
-    }
-
-    auto parseRes = parseLedgerArgs(request);
-    if (auto stat = std::get_if<grpc::Status>(&parseRes))
-    {
-        return {response, *stat};
-    }
-    else
-    {
-        args.ledger = std::get<std::optional<LedgerSpecifier>>(parseRes);
-    }
-
-    auto res = doAccountTxHelp(context, args);
-    return populateProtoResponse(res, args, context);
 }
 
 }  // namespace ripple

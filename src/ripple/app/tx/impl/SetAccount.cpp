@@ -58,8 +58,7 @@ SetAccount::makeTxConsequences(PreflightContext const& ctx)
 NotTEC
 SetAccount::preflight(PreflightContext const& ctx)
 {
-    auto const ret = preflight1(ctx);
-    if (!isTesSuccess(ret))
+    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
     auto& tx = ctx.tx;
@@ -100,7 +99,7 @@ SetAccount::preflight(PreflightContext const& ctx)
     // RequireDestTag
     //
     bool bSetRequireDest =
-        (uTxFlags & TxFlag::requireDestTag) || (uSetFlag == asfRequireDest);
+        (uTxFlags & tfRequireDestTag) || (uSetFlag == asfRequireDest);
     bool bClearRequireDest =
         (uTxFlags & tfOptionalDestTag) || (uClearFlag == asfRequireDest);
 
@@ -166,11 +165,23 @@ SetAccount::preflight(PreflightContext const& ctx)
         }
     }
 
-    auto const domain = tx[~sfDomain];
-    if (domain && domain->size() > DOMAIN_BYTES_MAX)
+    if (auto const domain = tx[~sfDomain];
+        domain && domain->size() > maxDomainLength)
     {
         JLOG(j.trace()) << "domain too long";
         return telBAD_DOMAIN;
+    }
+
+    if (ctx.rules.enabled(featureNonFungibleTokensV1))
+    {
+        // Configure authorized minting account:
+        if (uSetFlag == asfAuthorizedNFTokenMinter &&
+            !tx.isFieldPresent(sfNFTokenMinter))
+            return temMALFORMED;
+
+        if (uClearFlag == asfAuthorizedNFTokenMinter &&
+            tx.isFieldPresent(sfNFTokenMinter))
+            return temMALFORMED;
     }
 
     return preflight2(ctx);
@@ -207,6 +218,37 @@ SetAccount::preclaim(PreclaimContext const& ctx)
         }
     }
 
+    //
+    // Clawback
+    //
+    if (ctx.view.rules().enabled(featureClawback))
+    {
+        if (uSetFlag == asfAllowTrustLineClawback)
+        {
+            if (uFlagsIn & lsfNoFreeze)
+            {
+                JLOG(ctx.j.trace()) << "Can't set Clawback if NoFreeze is set";
+                return tecNO_PERMISSION;
+            }
+
+            if (!dirIsEmpty(ctx.view, keylet::ownerDir(id)))
+            {
+                JLOG(ctx.j.trace()) << "Owner directory not empty.";
+                return tecOWNERS;
+            }
+        }
+        else if (uSetFlag == asfNoFreeze)
+        {
+            // Cannot set NoFreeze if clawback is enabled
+            if (uFlagsIn & lsfAllowTrustLineClawback)
+            {
+                JLOG(ctx.j.trace())
+                    << "Can't set NoFreeze if clawback is enabled";
+                return tecNO_PERMISSION;
+            }
+        }
+    }
+
     return tesSUCCESS;
 }
 
@@ -227,7 +269,7 @@ SetAccount::doApply()
     // legacy AccountSet flags
     std::uint32_t const uTxFlags{tx.getFlags()};
     bool const bSetRequireDest{
-        (uTxFlags & TxFlag::requireDestTag) || (uSetFlag == asfRequireDest)};
+        (uTxFlags & tfRequireDestTag) || (uSetFlag == asfRequireDest)};
     bool const bClearRequireDest{
         (uTxFlags & tfOptionalDestTag) || (uClearFlag == asfRequireDest)};
     bool const bSetRequireAuth{
@@ -514,6 +556,49 @@ SetAccount::doApply()
             JLOG(j_.trace()) << "set tick size";
             sle->setFieldU8(sfTickSize, uTickSize);
         }
+    }
+
+    // Configure authorized minting account:
+    if (ctx_.view().rules().enabled(featureNonFungibleTokensV1))
+    {
+        if (uSetFlag == asfAuthorizedNFTokenMinter)
+            sle->setAccountID(sfNFTokenMinter, ctx_.tx[sfNFTokenMinter]);
+
+        if (uClearFlag == asfAuthorizedNFTokenMinter &&
+            sle->isFieldPresent(sfNFTokenMinter))
+            sle->makeFieldAbsent(sfNFTokenMinter);
+    }
+
+    // Set or clear flags for disallowing various incoming instruments
+    if (ctx_.view().rules().enabled(featureDisallowIncoming))
+    {
+        if (uSetFlag == asfDisallowIncomingNFTokenOffer)
+            uFlagsOut |= lsfDisallowIncomingNFTokenOffer;
+        else if (uClearFlag == asfDisallowIncomingNFTokenOffer)
+            uFlagsOut &= ~lsfDisallowIncomingNFTokenOffer;
+
+        if (uSetFlag == asfDisallowIncomingCheck)
+            uFlagsOut |= lsfDisallowIncomingCheck;
+        else if (uClearFlag == asfDisallowIncomingCheck)
+            uFlagsOut &= ~lsfDisallowIncomingCheck;
+
+        if (uSetFlag == asfDisallowIncomingPayChan)
+            uFlagsOut |= lsfDisallowIncomingPayChan;
+        else if (uClearFlag == asfDisallowIncomingPayChan)
+            uFlagsOut &= ~lsfDisallowIncomingPayChan;
+
+        if (uSetFlag == asfDisallowIncomingTrustline)
+            uFlagsOut |= lsfDisallowIncomingTrustline;
+        else if (uClearFlag == asfDisallowIncomingTrustline)
+            uFlagsOut &= ~lsfDisallowIncomingTrustline;
+    }
+
+    // Set flag for clawback
+    if (ctx_.view().rules().enabled(featureClawback) &&
+        uSetFlag == asfAllowTrustLineClawback)
+    {
+        JLOG(j_.trace()) << "set allow clawback";
+        uFlagsOut |= lsfAllowTrustLineClawback;
     }
 
     if (uFlagsIn != uFlagsOut)

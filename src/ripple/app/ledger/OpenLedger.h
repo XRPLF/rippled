@@ -185,7 +185,6 @@ private:
         FwdRange const& txs,
         OrderedTxs& retries,
         ApplyFlags flags,
-        std::map<uint256, bool>& shouldRecover,
         beast::Journal j);
 
     enum Result { success, failure, retry };
@@ -200,7 +199,6 @@ private:
         std::shared_ptr<STTx const> const& tx,
         bool retry,
         ApplyFlags flags,
-        bool shouldRecover,
         beast::Journal j);
 };
 
@@ -215,7 +213,6 @@ OpenLedger::apply(
     FwdRange const& txs,
     OrderedTxs& retries,
     ApplyFlags flags,
-    std::map<uint256, bool>& shouldRecover,
     beast::Journal j)
 {
     for (auto iter = txs.begin(); iter != txs.end(); ++iter)
@@ -227,8 +224,7 @@ OpenLedger::apply(
             auto const txId = tx->getTransactionID();
             if (check.txExists(txId))
                 continue;
-            auto const result =
-                apply_one(app, view, tx, true, flags, shouldRecover[txId], j);
+            auto const result = apply_one(app, view, tx, true, flags, j);
             if (result == Result::retry)
                 retries.insert(tx);
         }
@@ -245,14 +241,7 @@ OpenLedger::apply(
         auto iter = retries.begin();
         while (iter != retries.end())
         {
-            switch (apply_one(
-                app,
-                view,
-                iter->second,
-                retry,
-                flags,
-                shouldRecover[iter->second->getTransactionID()],
-                j))
+            switch (apply_one(app, view, iter->second, retry, flags, j))
             {
                 case Result::success:
                     ++changes;

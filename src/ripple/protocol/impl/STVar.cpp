@@ -25,6 +25,7 @@
 #include <ripple/protocol/STBitString.h>
 #include <ripple/protocol/STBlob.h>
 #include <ripple/protocol/STInteger.h>
+#include <ripple/protocol/STIssue.h>
 #include <ripple/protocol/STObject.h>
 #include <ripple/protocol/STPathSet.h>
 #include <ripple/protocol/STVector256.h>
@@ -130,14 +131,14 @@ STVar::STVar(SerialIter& sit, SField const& name, int depth)
         case STI_AMOUNT:
             construct<STAmount>(sit, name);
             return;
-        case STI_HASH128:
-            construct<STHash128>(sit, name);
+        case STI_UINT128:
+            construct<STUInt128>(sit, name);
             return;
-        case STI_HASH160:
-            construct<STHash160>(sit, name);
+        case STI_UINT160:
+            construct<STUInt160>(sit, name);
             return;
-        case STI_HASH256:
-            construct<STHash256>(sit, name);
+        case STI_UINT256:
+            construct<STUInt256>(sit, name);
             return;
         case STI_VECTOR256:
             construct<STVector256>(sit, name);
@@ -156,6 +157,9 @@ STVar::STVar(SerialIter& sit, SField const& name, int depth)
             return;
         case STI_ARRAY:
             construct<STArray>(sit, name, depth);
+            return;
+        case STI_ISSUE:
+            construct<STIssue>(sit, name);
             return;
         default:
             Throw<std::runtime_error>("Unknown object type");
@@ -185,14 +189,14 @@ STVar::STVar(SerializedTypeID id, SField const& name)
         case STI_AMOUNT:
             construct<STAmount>(name);
             return;
-        case STI_HASH128:
-            construct<STHash128>(name);
+        case STI_UINT128:
+            construct<STUInt128>(name);
             return;
-        case STI_HASH160:
-            construct<STHash160>(name);
+        case STI_UINT160:
+            construct<STUInt160>(name);
             return;
-        case STI_HASH256:
-            construct<STHash256>(name);
+        case STI_UINT256:
+            construct<STUInt256>(name);
             return;
         case STI_VECTOR256:
             construct<STVector256>(name);
@@ -211,6 +215,9 @@ STVar::STVar(SerializedTypeID id, SField const& name)
             return;
         case STI_ARRAY:
             construct<STArray>(name);
+            return;
+        case STI_ISSUE:
+            construct<STIssue>(name);
             return;
         default:
             Throw<std::runtime_error>("Unknown object type");

@@ -124,6 +124,39 @@ enum TxType : std::uint16_t
     /** This transaction type installs a hook. */
     ttHOOK_SET [[maybe_unused]] = 22,
 
+    /** This transaction mints a new NFT. */
+    ttNFTOKEN_MINT = 25,
+
+    /** This transaction burns (i.e. destroys) an existing NFT. */
+    ttNFTOKEN_BURN = 26,
+
+    /** This transaction creates a new offer to buy or sell an NFT. */
+    ttNFTOKEN_CREATE_OFFER = 27,
+
+    /** This transaction cancels an existing offer to buy or sell an existing NFT. */
+    ttNFTOKEN_CANCEL_OFFER = 28,
+
+    /** This transaction accepts an existing offer to buy or sell an existing  NFT. */
+    ttNFTOKEN_ACCEPT_OFFER = 29,
+
+    /** This transaction claws back issued tokens. */
+    ttCLAWBACK = 30,
+
+    /** This transaction type creates an AMM instance */
+    ttAMM_CREATE = 35,
+
+    /** This transaction type deposits into an AMM instance */
+    ttAMM_DEPOSIT = 36,
+
+    /** This transaction type withdraws from an AMM instance */
+    ttAMM_WITHDRAW = 37,
+
+    /** This transaction type votes for the trading fee */
+    ttAMM_VOTE = 38,
+
+    /** This transaction type bids for the auction slot */
+    ttAMM_BID = 39,
+
     /** This system-generated transaction type is used to update the status of the various amendments.
 
         For details, see: https://xrpl.org/amendments.html

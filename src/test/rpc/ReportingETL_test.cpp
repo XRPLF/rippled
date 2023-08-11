@@ -18,7 +18,6 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/reporting/P2pProxy.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/rpc/impl/Tuning.h>
@@ -70,20 +69,22 @@ class ReportingETL_test : public beast::unit_test::suite
                               auto sequence,
                               bool transactions,
                               bool expand,
-                              bool get_objects) {
+                              bool get_objects,
+                              bool get_object_neighbors) {
             GrpcLedgerClient grpcClient{grpcPort};
 
             grpcClient.request.mutable_ledger()->set_sequence(sequence);
             grpcClient.request.set_transactions(transactions);
             grpcClient.request.set_expand(expand);
             grpcClient.request.set_get_objects(get_objects);
+            grpcClient.request.set_get_object_neighbors(get_object_neighbors);
 
             grpcClient.GetLedger();
             return std::make_pair(grpcClient.status, grpcClient.reply);
         };
 
         {
-            auto [status, reply] = grpcLedger(3, false, false, false);
+            auto [status, reply] = grpcLedger(3, false, false, false, false);
 
             BEAST_EXPECT(status.ok());
             BEAST_EXPECT(reply.validated());
@@ -119,7 +120,7 @@ class ReportingETL_test : public beast::unit_test::suite
         addRaw(ledger->info(), s, true);
 
         {
-            auto [status, reply] = grpcLedger(4, true, false, false);
+            auto [status, reply] = grpcLedger(4, true, false, false, false);
             BEAST_EXPECT(status.ok());
             BEAST_EXPECT(reply.validated());
             BEAST_EXPECT(reply.has_hashes_list());
@@ -145,7 +146,7 @@ class ReportingETL_test : public beast::unit_test::suite
         }
 
         {
-            auto [status, reply] = grpcLedger(4, true, true, false);
+            auto [status, reply] = grpcLedger(4, true, true, false, false);
 
             BEAST_EXPECT(status.ok());
             BEAST_EXPECT(reply.validated());
@@ -209,7 +210,7 @@ class ReportingETL_test : public beast::unit_test::suite
         }
 
         {
-            auto [status, reply] = grpcLedger(4, true, true, true);
+            auto [status, reply] = grpcLedger(4, true, true, true, false);
 
             BEAST_EXPECT(status.ok());
             BEAST_EXPECT(reply.validated());
@@ -295,6 +296,112 @@ class ReportingETL_test : public beast::unit_test::suite
                 ++idx;
             }
         }
+        {
+            auto [status, reply] = grpcLedger(4, true, true, true, true);
+
+            BEAST_EXPECT(status.ok());
+            BEAST_EXPECT(reply.validated());
+            BEAST_EXPECT(!reply.has_hashes_list());
+            BEAST_EXPECT(reply.object_neighbors_included());
+
+            BEAST_EXPECT(reply.has_transactions_list());
+            BEAST_EXPECT(reply.transactions_list().transactions_size() == 4);
+
+            BEAST_EXPECT(
+                makeSlice(reply.transactions_list()
+                              .transactions(0)
+                              .transaction_blob()) ==
+                transactions[0]->getSerializer().slice());
+
+            BEAST_EXPECT(
+                makeSlice(reply.transactions_list()
+                              .transactions(0)
+                              .metadata_blob()) ==
+                metas[0]->getSerializer().slice());
+
+            BEAST_EXPECT(
+                makeSlice(reply.transactions_list()
+                              .transactions(1)
+                              .transaction_blob()) ==
+                transactions[1]->getSerializer().slice());
+
+            BEAST_EXPECT(
+                makeSlice(reply.transactions_list()
+                              .transactions(1)
+                              .metadata_blob()) ==
+                metas[1]->getSerializer().slice());
+
+            BEAST_EXPECT(
+                makeSlice(reply.transactions_list()
+                              .transactions(2)
+                              .transaction_blob()) ==
+                transactions[2]->getSerializer().slice());
+
+            BEAST_EXPECT(
+                makeSlice(reply.transactions_list()
+                              .transactions(2)
+                              .metadata_blob()) ==
+                metas[2]->getSerializer().slice());
+
+            BEAST_EXPECT(
+                makeSlice(reply.transactions_list()
+                              .transactions(3)
+                              .transaction_blob()) ==
+                transactions[3]->getSerializer().slice());
+
+            BEAST_EXPECT(
+                makeSlice(reply.transactions_list()
+                              .transactions(3)
+                              .metadata_blob()) ==
+                metas[3]->getSerializer().slice());
+            BEAST_EXPECT(reply.skiplist_included());
+
+            BEAST_EXPECT(s.slice() == makeSlice(reply.ledger_header()));
+
+            auto parent = env.app().getLedgerMaster().getLedgerBySeq(3);
+
+            SHAMap::Delta differences;
+
+            int maxDifferences = std::numeric_limits<int>::max();
+
+            bool res = parent->stateMap().compare(
+                ledger->stateMap(), differences, maxDifferences);
+            BEAST_EXPECT(res);
+
+            size_t idx = 0;
+
+            for (auto& [k, v] : differences)
+            {
+                auto obj = reply.ledger_objects().objects(idx);
+                BEAST_EXPECT(k == uint256::fromVoid(obj.key().data()));
+                if (v.second)
+                {
+                    BEAST_EXPECT(v.second->slice() == makeSlice(obj.data()));
+                }
+                else
+                    BEAST_EXPECT(obj.data().size() == 0);
+
+                if (!(v.first && v.second))
+                {
+                    auto succ = ledger->stateMap().upper_bound(k);
+                    auto pred = ledger->stateMap().lower_bound(k);
+
+                    if (succ != ledger->stateMap().end())
+                        BEAST_EXPECT(
+                            succ->key() ==
+                            uint256::fromVoid(obj.successor().data()));
+                    else
+                        BEAST_EXPECT(obj.successor().size() == 0);
+                    if (pred != ledger->stateMap().end())
+                        BEAST_EXPECT(
+                            pred->key() ==
+                            uint256::fromVoid(obj.predecessor().data()));
+                    else
+                        BEAST_EXPECT(obj.predecessor().size() == 0);
+                }
+                ++idx;
+            }
+        }
 
         // Delete an account
 
@@ -312,7 +419,7 @@ class ReportingETL_test : public beast::unit_test::suite
 
         {
             auto [status, reply] =
-                grpcLedger(env.closed()->seq(), true, true, true);
+                grpcLedger(env.closed()->seq(), true, true, true, true);
 
             BEAST_EXPECT(status.ok());
             BEAST_EXPECT(reply.validated());
@@ -333,15 +440,33 @@ class ReportingETL_test : public beast::unit_test::suite
             size_t idx = 0;
             for (auto& [k, v] : differences)
             {
-                BEAST_EXPECT(
-                    k ==
-                    uint256::fromVoid(
-                        reply.ledger_objects().objects(idx).key().data()));
+                auto obj = reply.ledger_objects().objects(idx);
+                BEAST_EXPECT(k == uint256::fromVoid(obj.key().data()));
                 if (v.second)
                 {
                     BEAST_EXPECT(
                         v.second->slice() ==
                         makeSlice(reply.ledger_objects().objects(idx).data()));
+                }
+                else
+                    BEAST_EXPECT(obj.data().size() == 0);
+                if (!(v.first && v.second))
+                {
+                    auto succ = base->stateMap().upper_bound(k);
+                    auto pred = base->stateMap().lower_bound(k);
+
+                    if (succ != base->stateMap().end())
+                        BEAST_EXPECT(
+                            succ->key() ==
+                            uint256::fromVoid(obj.successor().data()));
+                    else
+                        BEAST_EXPECT(obj.successor().size() == 0);
+                    if (pred != base->stateMap().end())
+                        BEAST_EXPECT(
+                            pred->key() ==
+                            uint256::fromVoid(obj.predecessor().data()));
+                    else
+                        BEAST_EXPECT(obj.predecessor().size() == 0);
                 }
 
                 ++idx;
@@ -406,7 +531,7 @@ class ReportingETL_test : public beast::unit_test::suite
             BEAST_EXPECT(status.ok());
 
             BEAST_EXPECT(
-                reply.ledger_objects().objects_size() == num_accounts + 3);
+                reply.ledger_objects().objects_size() == num_accounts + 4);
             BEAST_EXPECT(reply.marker().size() == 0);
             auto ledger = env.closed();
             size_t idx = 0;
@@ -647,25 +772,6 @@ class ReportingETL_test : public beast::unit_test::suite
     testNeedCurrentOrClosed()
     {
         testcase("NeedCurrentOrClosed");
-        {
-            org::xrpl::rpc::v1::GetAccountInfoRequest request;
-            request.mutable_ledger()->set_sequence(1);
-            BEAST_EXPECT(!needCurrentOrClosed(request));
-            request.mutable_ledger()->set_hash("");
-            BEAST_EXPECT(!needCurrentOrClosed(request));
-            request.mutable_ledger()->set_shortcut(
-                org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_VALIDATED);
-            BEAST_EXPECT(!needCurrentOrClosed(request));
-            request.mutable_ledger()->set_shortcut(
-                org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_UNSPECIFIED);
-            BEAST_EXPECT(!needCurrentOrClosed(request));
-            request.mutable_ledger()->set_shortcut(
-                org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_CURRENT);
-            BEAST_EXPECT(needCurrentOrClosed(request));
-            request.mutable_ledger()->set_shortcut(
-                org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_CLOSED);
-            BEAST_EXPECT(needCurrentOrClosed(request));
-        }
 
         {
             org::xrpl::rpc::v1::GetLedgerRequest request;
@@ -777,18 +883,6 @@ class ReportingETL_test : public beast::unit_test::suite
             request.mutable_base_ledger()->set_shortcut(
                 org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_CURRENT);
             BEAST_EXPECT(needCurrentOrClosed(request));
-        }
-
-        {
-            org::xrpl::rpc::v1::GetFeeRequest feeRequest;
-            BEAST_EXPECT(!needCurrentOrClosed(feeRequest));
-
-            org::xrpl::rpc::v1::GetAccountTransactionHistoryRequest
-                accountTxRequest;
-            BEAST_EXPECT(!needCurrentOrClosed(accountTxRequest));
-
-            org::xrpl::rpc::v1::GetTransactionRequest txRequest;
-            BEAST_EXPECT(!needCurrentOrClosed(txRequest));
         }
     }
 

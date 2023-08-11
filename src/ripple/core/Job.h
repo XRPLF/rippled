@@ -20,6 +20,7 @@
 #ifndef RIPPLE_CORE_JOB_H_INCLUDED
 #define RIPPLE_CORE_JOB_H_INCLUDED
 
+#include <ripple/basics/CountedObject.h>
 #include <ripple/core/ClosureCounter.h>
 #include <ripple/core/LoadMonitor.h>
 #include <functional>
@@ -39,34 +40,42 @@ enum JobType {
     // earlier jobs having lower priority than later jobs. If you wish to
     // insert a job at a specific priority, simply add it at the right location.
 
-    jtPACK,           // Make a fetch pack for a peer
-    jtPUBOLDLEDGER,   // An old ledger has been accepted
-    jtVALIDATION_ut,  // A validation from an untrusted source
-    jtTRANSACTION_l,  // A local transaction
-    jtREPLAY_REQ,     // Peer request a ledger delta or a skip list
-    jtLEDGER_REQ,     // Peer request ledger/txnset data
-    jtPROPOSAL_ut,    // A proposal from an untrusted source
-    jtREPLAY_TASK,    // A Ledger replay task/subtask
-    jtLEDGER_DATA,    // Received data for a ledger we're acquiring
-    jtCLIENT,         // A websocket command from the client
-    jtRPC,            // A websocket command from the client
-    jtUPDATE_PF,      // Update pathfinding requests
-    jtTRANSACTION,    // A transaction received from the network
-    jtMISSING_TXN,    // Request missing transactions
-    jtREQUESTED_TXN,  // Reply with requested transactions
-    jtBATCH,          // Apply batched transactions
-    jtADVANCE,        // Advance validated/acquired ledgers
-    jtPUBLEDGER,      // Publish a fully-accepted ledger
-    jtTXN_DATA,       // Fetch a proposed set
-    jtWAL,            // Write-ahead logging
-    jtVALIDATION_t,   // A validation from a trusted source
-    jtWRITE,          // Write out hashed objects
-    jtACCEPT,         // Accept a consensus ledger
-    jtPROPOSAL_t,     // A proposal from a trusted source
-    jtSWEEP,          // Sweep for stale structures
-    jtNETOP_CLUSTER,  // NetworkOPs cluster peer report
-    jtNETOP_TIMER,    // NetworkOPs net timer processing
-    jtADMIN,          // An administrative operation
+    jtPACK,               // Make a fetch pack for a peer
+    jtPUBOLDLEDGER,       // An old ledger has been accepted
+    jtCLIENT,             // A placeholder for the priority of all jtCLIENT jobs
+    jtCLIENT_SUBSCRIBE,   // A websocket subscription by a client
+    jtCLIENT_FEE_CHANGE,  // Subscription for fee change by a client
+    jtCLIENT_CONSENSUS,   // Subscription for consensus state change by a client
+    jtCLIENT_ACCT_HIST,   // Subscription for account history by a client
+    jtCLIENT_SHARD,       // Client request for shard archiving
+    jtCLIENT_RPC,         // Client RPC request
+    jtCLIENT_WEBSOCKET,   // Client websocket request
+    jtRPC,                // A websocket command from the client
+    jtSWEEP,              // Sweep for stale structures
+    jtVALIDATION_ut,      // A validation from an untrusted source
+    jtMANIFEST,           // A validator's manifest
+    jtUPDATE_PF,          // Update pathfinding requests
+    jtTRANSACTION_l,      // A local transaction
+    jtREPLAY_REQ,         // Peer request a ledger delta or a skip list
+    jtLEDGER_REQ,         // Peer request ledger/txnset data
+    jtPROPOSAL_ut,        // A proposal from an untrusted source
+    jtREPLAY_TASK,        // A Ledger replay task/subtask
+    jtTRANSACTION,        // A transaction received from the network
+    jtMISSING_TXN,        // Request missing transactions
+    jtREQUESTED_TXN,      // Reply with requested transactions
+    jtBATCH,              // Apply batched transactions
+    jtLEDGER_DATA,        // Received data for a ledger we're acquiring
+    jtADVANCE,            // Advance validated/acquired ledgers
+    jtPUBLEDGER,          // Publish a fully-accepted ledger
+    jtTXN_DATA,           // Fetch a proposed set
+    jtWAL,                // Write-ahead logging
+    jtVALIDATION_t,       // A validation from a trusted source
+    jtWRITE,              // Write out hashed objects
+    jtACCEPT,             // Accept a consensus ledger
+    jtPROPOSAL_t,         // A proposal from a trusted source
+    jtNETOP_CLUSTER,      // NetworkOPs cluster peer report
+    jtNETOP_TIMER,        // NetworkOPs net timer processing
+    jtADMIN,              // An administrative operation
 
     // Special job types which are not dispatched by the job pool
     jtPEER,
@@ -84,7 +93,7 @@ enum JobType {
     jtNS_WRITE,
 };
 
-class Job
+class Job : public CountedObject<Job>
 {
 public:
     using clock_type = std::chrono::steady_clock;
@@ -102,42 +111,24 @@ public:
     //
     Job();
 
-    // Job (Job const& other);
-
     Job(JobType type, std::uint64_t index);
-
-    /** A callback used to check for canceling a job. */
-    using CancelCallback = std::function<bool(void)>;
 
     // VFALCO TODO try to remove the dependency on LoadMonitor.
     Job(JobType type,
         std::string const& name,
         std::uint64_t index,
         LoadMonitor& lm,
-        std::function<void(Job&)> const& job,
-        CancelCallback cancelCallback);
-
-    // Job& operator= (Job const& other);
+        std::function<void()> const& job);
 
     JobType
     getType() const;
-
-    CancelCallback
-    getCancelCallback() const;
 
     /** Returns the time when the job was queued. */
     clock_type::time_point const&
     queue_time() const;
 
-    /** Returns `true` if the running job should make a best-effort cancel. */
-    bool
-    shouldCancel() const;
-
     void
     doJob();
-
-    void
-    rename(std::string const& n);
 
     // These comparison operators make the jobs sort in priority order
     // in the job set
@@ -151,16 +142,15 @@ public:
     operator>=(const Job& j) const;
 
 private:
-    CancelCallback m_cancelCallback;
     JobType mType;
     std::uint64_t mJobIndex;
-    std::function<void(Job&)> mJob;
+    std::function<void()> mJob;
     std::shared_ptr<LoadEvent> m_loadEvent;
     std::string mName;
     clock_type::time_point m_queue_time;
 };
 
-using JobCounter = ClosureCounter<void, Job&>;
+using JobCounter = ClosureCounter<void>;
 
 }  // namespace ripple
 

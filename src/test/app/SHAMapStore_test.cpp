@@ -19,7 +19,7 @@
 
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/SHAMapStore.h>
-#include <ripple/app/rdb/backend/RelationalDBInterfaceSqlite.h>
+#include <ripple/app/rdb/backend/SQLiteDatabase.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/protocol/jss.h>
 #include <test/jtx.h>
@@ -65,7 +65,7 @@ class SHAMapStore_test : public beast::unit_test::suite
         auto const seq = json[jss::result][jss::ledger_index].asUInt();
 
         std::optional<LedgerInfo> oinfo =
-            env.app().getRelationalDBInterface().getLedgerInfoByIndex(seq);
+            env.app().getRelationalDatabase().getLedgerInfoByIndex(seq);
         if (!oinfo)
             return false;
         const LedgerInfo& info = oinfo.value();
@@ -85,7 +85,8 @@ class SHAMapStore_test : public beast::unit_test::suite
         const std::string outTxHash = to_string(info.txHash);
 
         auto const& ledger = json[jss::result][jss::ledger];
-        return outHash == ledger[jss::hash].asString() && outSeq == seq &&
+        return outHash == ledger[jss::ledger_hash].asString() &&
+            outSeq == seq &&
             outParentHash == ledger[jss::parent_hash].asString() &&
             outDrops == ledger[jss::total_coins].asString() &&
             outCloseTime == ledger[jss::close_time].asUInt() &&
@@ -111,17 +112,16 @@ class SHAMapStore_test : public beast::unit_test::suite
         BEAST_EXPECT(
             json.isMember(jss::result) &&
             json[jss::result].isMember(jss::ledger) &&
-            json[jss::result][jss::ledger].isMember(jss::hash) &&
-            json[jss::result][jss::ledger][jss::hash].isString());
-        return json[jss::result][jss::ledger][jss::hash].asString();
+            json[jss::result][jss::ledger].isMember(jss::ledger_hash) &&
+            json[jss::result][jss::ledger][jss::ledger_hash].isString());
+        return json[jss::result][jss::ledger][jss::ledger_hash].asString();
     }
 
     void
     ledgerCheck(jtx::Env& env, int const rows, int const first)
     {
         const auto [actualRows, actualFirst, actualLast] =
-            dynamic_cast<RelationalDBInterfaceSqlite*>(
-                &env.app().getRelationalDBInterface())
+            dynamic_cast<SQLiteDatabase*>(&env.app().getRelationalDatabase())
                 ->getLedgerCountMinMax();
 
         BEAST_EXPECT(actualRows == rows);
@@ -133,8 +133,7 @@ class SHAMapStore_test : public beast::unit_test::suite
     transactionCheck(jtx::Env& env, int const rows)
     {
         BEAST_EXPECT(
-            dynamic_cast<RelationalDBInterfaceSqlite*>(
-                &env.app().getRelationalDBInterface())
+            dynamic_cast<SQLiteDatabase*>(&env.app().getRelationalDatabase())
                 ->getTransactionCount() == rows);
     }
 
@@ -142,8 +141,7 @@ class SHAMapStore_test : public beast::unit_test::suite
     accountTransactionCheck(jtx::Env& env, int const rows)
     {
         BEAST_EXPECT(
-            dynamic_cast<RelationalDBInterfaceSqlite*>(
-                &env.app().getRelationalDBInterface())
+            dynamic_cast<SQLiteDatabase*>(&env.app().getRelationalDatabase())
                 ->getAccountTransactionCount() == rows);
     }
 

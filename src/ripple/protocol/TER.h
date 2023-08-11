@@ -61,6 +61,9 @@ enum TELcodes : TERUnderlyingType {
     telCAN_NOT_QUEUE_BLOCKED,
     telCAN_NOT_QUEUE_FEE,
     telCAN_NOT_QUEUE_FULL,
+    telWRONG_NETWORK,
+    telREQUIRES_NETWORK_ID,
+    telNETWORK_ID_MAKES_TX_NON_CANONICAL
 };
 
 //------------------------------------------------------------------------------
@@ -119,6 +122,9 @@ enum TEMcodes : TERUnderlyingType {
     temUNKNOWN,    // An internal intermediate result; should never be returned.
 
     temSEQ_AND_TICKET,
+    temBAD_NFTOKEN_TRANSFER_FEE,
+
+    temBAD_AMM_TOKENS,
 };
 
 //------------------------------------------------------------------------------
@@ -161,6 +167,7 @@ enum TEFcodes : TERUnderlyingType {
     tefINVARIANT_FAILED,
     tefTOO_BIG,
     tefNO_TICKET,
+    tefNFTOKEN_IS_NOT_TRANSFERABLE,
 };
 
 //------------------------------------------------------------------------------
@@ -200,6 +207,7 @@ enum TERcodes : TERUnderlyingType {
     terNO_RIPPLE,    // Rippling not allowed
     terQUEUED,       // Transaction is being held in TxQ until fee drops
     terPRE_TICKET,   // Ticket is not yet in ledger but might be on its way
+    terNO_AMM,       // AMM doesn't exist for the asset pair
 };
 
 //------------------------------------------------------------------------------
@@ -223,7 +231,7 @@ enum TECcodes : TERUnderlyingType {
     // Note: Exact numbers must stay stable.  These codes are stored by
     // value in metadata for historic transactions.
 
-    // 100 .. 159 C
+    // 100 .. 255 C
     //   Claim fee only (ripple transaction with no good paths, pay to
     //   non-existent account, no path)
     //
@@ -278,7 +286,19 @@ enum TECcodes : TERUnderlyingType {
     tecKILLED = 150,
     tecHAS_OBLIGATIONS = 151,
     tecTOO_SOON = 152,
-    tecHOOK_ERROR [[maybe_unused]] = 153
+    tecHOOK_ERROR [[maybe_unused]] = 153,
+    tecMAX_SEQUENCE_REACHED = 154,
+    tecNO_SUITABLE_NFTOKEN_PAGE = 155,
+    tecNFTOKEN_BUY_SELL_MISMATCH = 156,
+    tecNFTOKEN_OFFER_TYPE_MISMATCH = 157,
+    tecCANT_ACCEPT_OWN_NFTOKEN_OFFER = 158,
+    tecINSUFFICIENT_FUNDS = 159,
+    tecOBJECT_NOT_FOUND = 160,
+    tecINSUFFICIENT_PAYMENT = 161,
+    tecUNFUNDED_AMM = 162,
+    tecAMM_BALANCE = 163,
+    tecAMM_FAILED = 164,
+    tecAMM_INVALID_TOKENS = 165
 };
 
 //------------------------------------------------------------------------------

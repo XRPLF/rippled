@@ -28,6 +28,7 @@ InnerObjectFormats::InnerObjectFormats()
         {
             {sfAccount, soeREQUIRED},
             {sfSignerWeight, soeREQUIRED},
+            {sfWalletLocator, soeOPTIONAL},
         });
 
     add(sfSigner.jsonName.c_str(),
@@ -50,6 +51,31 @@ InnerObjectFormats::InnerObjectFormats()
         {
             {sfPublicKey, soeREQUIRED},
             {sfFirstLedgerSequence, soeREQUIRED},
+        });
+
+    add(sfNFToken.jsonName.c_str(),
+        sfNFToken.getCode(),
+        {
+            {sfNFTokenID, soeREQUIRED},
+            {sfURI, soeOPTIONAL},
+        });
+
+    add(sfVoteEntry.jsonName.c_str(),
+        sfVoteEntry.getCode(),
+        {
+            {sfAccount, soeREQUIRED},
+            {sfTradingFee, soeDEFAULT},
+            {sfVoteWeight, soeREQUIRED},
+        });
+
+    add(sfAuctionSlot.jsonName.c_str(),
+        sfAuctionSlot.getCode(),
+        {
+            {sfAccount, soeREQUIRED},
+            {sfExpiration, soeREQUIRED},
+            {sfDiscountedFee, soeDEFAULT},
+            {sfPrice, soeREQUIRED},
+            {sfAuthAccounts, soeOPTIONAL},
         });
 }
 

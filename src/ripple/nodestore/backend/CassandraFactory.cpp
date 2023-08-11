@@ -249,17 +249,21 @@ public:
                 cluster, username.c_str(), get(config_, "password").c_str());
         }
 
-        unsigned int const workers = std::thread::hardware_concurrency();
-        rc = cass_cluster_set_num_threads_io(cluster, workers);
+        unsigned int const ioThreads = get<int>(config_, "io_threads", 4);
+        maxRequestsOutstanding =
+            get<int>(config_, "max_requests_outstanding", 10000000);
+        JLOG(j_.info()) << "Configuring Cassandra driver to use " << ioThreads
+                        << " IO threads. Capping maximum pending requests at "
+                        << maxRequestsOutstanding;
+        rc = cass_cluster_set_num_threads_io(cluster, ioThreads);
         if (rc != CASS_OK)
         {
             std::stringstream ss;
-            ss << "nodestore: Error setting Cassandra io threads to " << workers
-               << ", result: " << rc << ", " << cass_error_desc(rc);
+            ss << "nodestore: Error setting Cassandra io threads to "
+               << ioThreads << ", result: " << rc << ", "
+               << cass_error_desc(rc);
             Throw<std::runtime_error>(ss.str());
         }
-
-        cass_cluster_set_request_timeout(cluster, 2000);
 
         rc = cass_cluster_set_queue_size_io(
             cluster,
@@ -275,6 +279,7 @@ public:
             return;
             ;
         }
+        cass_cluster_set_request_timeout(cluster, 2000);
 
         std::string certfile = get(config_, "certfile");
         if (certfile.size())
@@ -466,12 +471,6 @@ public:
         work_.emplace(ioContext_);
         ioThread_ = std::thread{[this]() { ioContext_.run(); }};
         open_ = true;
-
-        if (config_.exists("max_requests_outstanding"))
-        {
-            maxRequestsOutstanding =
-                get<int>(config_, "max_requests_outstanding");
-        }
     }
 
     // Close the connection to the database
@@ -671,7 +670,7 @@ public:
         // confirmed persisted. Otherwise, it can become deleted
         // prematurely if other copies are removed from caches.
         std::shared_ptr<NodeObject> no;
-        NodeStore::EncodedBlob e;
+        std::optional<NodeStore::EncodedBlob> e;
         std::pair<void const*, std::size_t> compressed;
         std::chrono::steady_clock::time_point begin;
         // The data is stored in this buffer. The void* in the above member
@@ -687,10 +686,10 @@ public:
             std::atomic<std::uint64_t>& retries)
             : backend(f), no(nobj), totalWriteRetries(retries)
         {
-            e.prepare(no);
+            e.emplace(no);
 
             compressed =
-                NodeStore::nodeobject_compress(e.getData(), e.getSize(), bf);
+                NodeStore::nodeobject_compress(e->getData(), e->getSize(), bf);
         }
     };
 
@@ -723,7 +722,7 @@ public:
         CassError rc = cass_statement_bind_bytes(
             statement,
             0,
-            static_cast<cass_byte_t const*>(data.e.getKey()),
+            static_cast<cass_byte_t const*>(data.e->getKey()),
             keyBytes_);
         if (rc != CASS_OK)
         {

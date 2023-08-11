@@ -39,9 +39,6 @@ class InboundLedger final : public TimeoutCounter,
 public:
     using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
 
-    using PeerDataPairType =
-        std::pair<std::weak_ptr<Peer>, std::shared_ptr<protocol::TMLedgerData>>;
-
     // These are the reasons we might acquire a ledger
     enum class Reason {
         HISTORY,   // Acquiring past ledger
@@ -193,7 +190,9 @@ private:
 
     // Data we have received from peers
     std::mutex mReceivedDataLock;
-    std::vector<PeerDataPairType> mReceivedData;
+    std::vector<
+        std::pair<std::weak_ptr<Peer>, std::shared_ptr<protocol::TMLedgerData>>>
+        mReceivedData;
     bool mReceiveDispatched;
     std::unique_ptr<PeerSet> mPeerSet;
 };

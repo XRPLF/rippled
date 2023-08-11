@@ -20,6 +20,7 @@
 #ifndef RIPPLE_APP_LEDGER_LEDGERREPLAY_H_INCLUDED
 #define RIPPLE_APP_LEDGER_LEDGERREPLAY_H_INCLUDED
 
+#include <ripple/basics/CountedObject.h>
 #include <cstdint>
 #include <map>
 #include <memory>
@@ -29,7 +30,7 @@ namespace ripple {
 class Ledger;
 class STTx;
 
-class LedgerReplay
+class LedgerReplay : public CountedObject<LedgerReplay>
 {
     std::shared_ptr<Ledger const> parent_;
     std::shared_ptr<Ledger const> replay_;

@@ -19,28 +19,39 @@
 
 #include <ripple/app/main/Application.h>
 #include <ripple/app/main/NodeIdentity.h>
-#include <ripple/app/rdb/RelationalDBInterface_global.h>
-#include <ripple/basics/Log.h>
+#include <ripple/app/rdb/Wallet.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/ConfigSections.h>
-#include <boost/format.hpp>
 #include <boost/optional.hpp>
 
 namespace ripple {
 
 std::pair<PublicKey, SecretKey>
-getNodeIdentity(Application& app)
+getNodeIdentity(
+    Application& app,
+    boost::program_options::variables_map const& cmdline)
 {
-    // If a seed is specified in the configuration file use that directly.
-    if (app.config().exists(SECTION_NODE_SEED))
+    std::optional<Seed> seed;
+
+    if (cmdline.count("nodeid"))
     {
-        auto const seed = parseBase58<Seed>(
+        seed = parseGenericSeed(cmdline["nodeid"].as<std::string>(), false);
+
+        if (!seed)
+            Throw<std::runtime_error>("Invalid 'nodeid' in command line");
+    }
+    else if (app.config().exists(SECTION_NODE_SEED))
+    {
+        seed = parseBase58<Seed>(
             app.config().section(SECTION_NODE_SEED).lines().front());
 
         if (!seed)
-            Throw<std::runtime_error>("NodeIdentity: Bad [" SECTION_NODE_SEED
-                                      "] specified");
+            Throw<std::runtime_error>("Invalid [" SECTION_NODE_SEED
+                                      "] in configuration file");
+    }
 
+    if (seed)
+    {
         auto secretKey = generateSecretKey(KeyType::secp256k1, *seed);
         auto publicKey = derivePublicKey(KeyType::secp256k1, secretKey);
 
@@ -48,6 +59,10 @@ getNodeIdentity(Application& app)
     }
 
     auto db = app.getWalletDB().checkoutDb();
+
+    if (cmdline.count("newnodeid") != 0)
+        clearNodeIdentity(*db);
+
     return getNodeIdentity(*db);
 }
 

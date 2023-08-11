@@ -18,11 +18,16 @@
 //==============================================================================
 
 #include <ripple/app/tx/impl/InvariantCheck.h>
+
+#include <ripple/app/tx/impl/details/NFTokenUtils.h>
 #include <ripple/basics/FeeUnits.h>
 #include <ripple/basics/Log.h>
 #include <ripple/ledger/ReadView.h>
+#include <ripple/ledger/View.h>
 #include <ripple/protocol/Feature.h>
+#include <ripple/protocol/STArray.h>
 #include <ripple/protocol/SystemParameters.h>
+#include <ripple/protocol/nftPageMask.h>
 
 namespace ripple {
 
@@ -131,7 +136,7 @@ XRPNotCreated::visitEntry(
 
 bool
 XRPNotCreated::finalize(
-    STTx const&,
+    STTx const& tx,
     TER const,
     XRPAmount const fee,
     ReadView const&,
@@ -316,7 +321,13 @@ AccountRootsNotDeleted::finalize(
     ReadView const&,
     beast::Journal const& j)
 {
-    if (tx.getTxnType() == ttACCOUNT_DELETE && result == tesSUCCESS)
+    // AMM account root can be deleted as the result of AMM withdraw
+    // transaction when the total AMM LP Tokens balance goes to 0.
+    // Not every AMM withdraw deletes the AMM account, accountsDeleted_
+    // is set if it is deleted.
+    if ((tx.getTxnType() == ttACCOUNT_DELETE ||
+         (tx.getTxnType() == ttAMM_WITHDRAW && accountsDeleted_ == 1)) &&
+        result == tesSUCCESS)
     {
         if (accountsDeleted_ == 1)
             return true;
@@ -366,6 +377,9 @@ LedgerEntryTypesMatch::visitEntry(
             case ltCHECK:
             case ltDEPOSIT_PREAUTH:
             case ltNEGATIVE_UNL:
+            case ltNFTOKEN_PAGE:
+            case ltNFTOKEN_OFFER:
+            case ltAMM:
                 break;
             default:
                 invalidTypeAdded_ = true;
@@ -466,7 +480,8 @@ ValidNewAccountRoot::finalize(
     }
 
     // From this point on we know exactly one account was created.
-    if (tx.getTxnType() == ttPAYMENT && result == tesSUCCESS)
+    if ((tx.getTxnType() == ttPAYMENT || tx.getTxnType() == ttAMM_CREATE) &&
+        result == tesSUCCESS)
     {
         std::uint32_t const startingSeq{
             view.rules().enabled(featureDeletableAccounts) ? view.seq() : 1};
@@ -481,8 +496,293 @@ ValidNewAccountRoot::finalize(
     }
 
     JLOG(j.fatal()) << "Invariant failed: account root created "
-                       "by a non-Payment or by an unsuccessful transaction";
+                       "by a non-Payment, by an unsuccessful transaction, "
+                       "or by AMM";
     return false;
+}
+
+//------------------------------------------------------------------------------
+
+void
+ValidNFTokenPage::visitEntry(
+    bool isDelete,
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
+{
+    static constexpr uint256 const& pageBits = nft::pageMask;
+    static constexpr uint256 const accountBits = ~pageBits;
+
+    auto check = [this, isDelete](std::shared_ptr<SLE const> const& sle) {
+        uint256 const account = sle->key() & accountBits;
+        uint256 const hiLimit = sle->key() & pageBits;
+        std::optional<uint256> const prev = (*sle)[~sfPreviousPageMin];
+
+        // Make sure that any page links...
+        //  1. Are properly associated with the owning account and
+        //  2. The page is correctly ordered between links.
+        if (prev)
+        {
+            if (account != (*prev & accountBits))
+                badLink_ = true;
+
+            if (hiLimit <= (*prev & pageBits))
+                badLink_ = true;
+        }
+
+        if (auto const next = (*sle)[~sfNextPageMin])
+        {
+            if (account != (*next & accountBits))
+                badLink_ = true;
+
+            if (hiLimit >= (*next & pageBits))
+                badLink_ = true;
+        }
+
+        {
+            auto const& nftokens = sle->getFieldArray(sfNFTokens);
+
+            // An NFTokenPage should never contain too many tokens or be empty.
+            if (std::size_t const nftokenCount = nftokens.size();
+                (!isDelete && nftokenCount == 0) ||
+                nftokenCount > dirMaxTokensPerPage)
+                invalidSize_ = true;
+
+            // If prev is valid, use it to establish a lower bound for
+            // page entries.  If prev is not valid the lower bound is zero.
+            uint256 const loLimit =
+                prev ? *prev & pageBits : uint256(beast::zero);
+
+            // Also verify that all NFTokenIDs in the page are sorted.
+            uint256 loCmp = loLimit;
+            for (auto const& obj : nftokens)
+            {
+                uint256 const tokenID = obj[sfNFTokenID];
+                if (!nft::compareTokens(loCmp, tokenID))
+                    badSort_ = true;
+                loCmp = tokenID;
+
+                // None of the NFTs on this page should belong on lower or
+                // higher pages.
+                if (uint256 const tokenPageBits = tokenID & pageBits;
+                    tokenPageBits < loLimit || tokenPageBits >= hiLimit)
+                    badEntry_ = true;
+
+                if (auto uri = obj[~sfURI]; uri && uri->empty())
+                    badURI_ = true;
+            }
+        }
+    };
+
+    if (before && before->getType() == ltNFTOKEN_PAGE)
+        check(before);
+
+    if (after && after->getType() == ltNFTOKEN_PAGE)
+        check(after);
+}
+
+bool
+ValidNFTokenPage::finalize(
+    STTx const& tx,
+    TER const result,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    if (badLink_)
+    {
+        JLOG(j.fatal()) << "Invariant failed: NFT page is improperly linked.";
+        return false;
+    }
+
+    if (badEntry_)
+    {
+        JLOG(j.fatal()) << "Invariant failed: NFT found in incorrect page.";
+        return false;
+    }
+
+    if (badSort_)
+    {
+        JLOG(j.fatal()) << "Invariant failed: NFTs on page are not sorted.";
+        return false;
+    }
+
+    if (badURI_)
+    {
+        JLOG(j.fatal()) << "Invariant failed: NFT contains empty URI.";
+        return false;
+    }
+
+    if (invalidSize_)
+    {
+        JLOG(j.fatal()) << "Invariant failed: NFT page has invalid size.";
+        return false;
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------------
+void
+NFTokenCountTracking::visitEntry(
+    bool,
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
+{
+    if (before && before->getType() == ltACCOUNT_ROOT)
+    {
+        beforeMintedTotal += (*before)[~sfMintedNFTokens].value_or(0);
+        beforeBurnedTotal += (*before)[~sfBurnedNFTokens].value_or(0);
+    }
+
+    if (after && after->getType() == ltACCOUNT_ROOT)
+    {
+        afterMintedTotal += (*after)[~sfMintedNFTokens].value_or(0);
+        afterBurnedTotal += (*after)[~sfBurnedNFTokens].value_or(0);
+    }
+}
+
+bool
+NFTokenCountTracking::finalize(
+    STTx const& tx,
+    TER const result,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    if (TxType const txType = tx.getTxnType();
+        txType != ttNFTOKEN_MINT && txType != ttNFTOKEN_BURN)
+    {
+        if (beforeMintedTotal != afterMintedTotal)
+        {
+            JLOG(j.fatal()) << "Invariant failed: the number of minted tokens "
+                               "changed without a mint transaction!";
+            return false;
+        }
+
+        if (beforeBurnedTotal != afterBurnedTotal)
+        {
+            JLOG(j.fatal()) << "Invariant failed: the number of burned tokens "
+                               "changed without a burn transaction!";
+            return false;
+        }
+
+        return true;
+    }
+
+    if (tx.getTxnType() == ttNFTOKEN_MINT)
+    {
+        if (result == tesSUCCESS && beforeMintedTotal >= afterMintedTotal)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: successful minting didn't increase "
+                   "the number of minted tokens.";
+            return false;
+        }
+
+        if (result != tesSUCCESS && beforeMintedTotal != afterMintedTotal)
+        {
+            JLOG(j.fatal()) << "Invariant failed: failed minting changed the "
+                               "number of minted tokens.";
+            return false;
+        }
+
+        if (beforeBurnedTotal != afterBurnedTotal)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: minting changed the number of "
+                   "burned tokens.";
+            return false;
+        }
+    }
+
+    if (tx.getTxnType() == ttNFTOKEN_BURN)
+    {
+        if (result == tesSUCCESS)
+        {
+            if (beforeBurnedTotal >= afterBurnedTotal)
+            {
+                JLOG(j.fatal())
+                    << "Invariant failed: successful burning didn't increase "
+                       "the number of burned tokens.";
+                return false;
+            }
+        }
+
+        if (result != tesSUCCESS && beforeBurnedTotal != afterBurnedTotal)
+        {
+            JLOG(j.fatal()) << "Invariant failed: failed burning changed the "
+                               "number of burned tokens.";
+            return false;
+        }
+
+        if (beforeMintedTotal != afterMintedTotal)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: burning changed the number of "
+                   "minted tokens.";
+            return false;
+        }
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------------
+
+void
+ValidClawback::visitEntry(
+    bool,
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const&)
+{
+    if (before && before->getType() == ltRIPPLE_STATE)
+        trustlinesChanged++;
+}
+
+bool
+ValidClawback::finalize(
+    STTx const& tx,
+    TER const result,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    if (tx.getTxnType() != ttCLAWBACK)
+        return true;
+
+    if (result == tesSUCCESS)
+    {
+        if (trustlinesChanged > 1)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: more than one trustline changed.";
+            return false;
+        }
+
+        AccountID const issuer = tx.getAccountID(sfAccount);
+        STAmount const amount = tx.getFieldAmount(sfAmount);
+        AccountID const& holder = amount.getIssuer();
+        STAmount const holderBalance = accountHolds(
+            view, holder, amount.getCurrency(), issuer, fhIGNORE_FREEZE, j);
+
+        if (holderBalance.signum() < 0)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: trustline balance is negative";
+            return false;
+        }
+    }
+    else
+    {
+        if (trustlinesChanged != 0)
+        {
+            JLOG(j.fatal()) << "Invariant failed: some trustlines were changed "
+                               "despite failure of the transaction.";
+            return false;
+        }
+    }
+
+    return true;
 }
 
 }  // namespace ripple

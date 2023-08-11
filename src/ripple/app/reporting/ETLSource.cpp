@@ -760,13 +760,24 @@ ETLLoadBalancer::forwardToP2p(RPC::JsonContext& context) const
     srand((unsigned)time(0));
     auto sourceIdx = rand() % sources_.size();
     auto numAttempts = 0;
+
+    auto mostRecent = etl_.getNetworkValidatedLedgers().tryGetMostRecent();
     while (numAttempts < sources_.size())
     {
-        res = sources_[sourceIdx]->forwardToP2p(context);
-        if (!res.isMember("forwarded") || res["forwarded"] != true)
-        {
+        auto increment = [&]() {
             sourceIdx = (sourceIdx + 1) % sources_.size();
             ++numAttempts;
+        };
+        auto& src = sources_[sourceIdx];
+        if (mostRecent && !src->hasLedger(*mostRecent))
+        {
+            increment();
+            continue;
+        }
+        res = src->forwardToP2p(context);
+        if (!res.isMember("forwarded") || res["forwarded"] != true)
+        {
+            increment();
             continue;
         }
         return res;
@@ -941,7 +952,7 @@ ETLLoadBalancer::execute(Func f, uint32_t ledgerSequence)
                     << "Error executing function. "
                     << " Tried all sources, but ledger was found in db."
                     << " Sequence = " << ledgerSequence;
-                break;
+                return false;
             }
             JLOG(journal_.error())
                 << __func__ << " : "

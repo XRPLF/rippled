@@ -106,43 +106,30 @@ static std::chrono::seconds const bootcacheCooldownTime(60);
 //
 //------------------------------------------------------------------------------
 
-enum {
-    // Drop incoming messages with hops greater than this number
-    maxHops = 6
+// Drop incoming messages with hops greater than this number
+std::uint32_t constexpr maxHops = 6;
 
-    // How many Endpoint to send in each mtENDPOINTS
-    ,
-    numberOfEndpoints = 2 * maxHops
+// How many Endpoint to send in each mtENDPOINTS
+std::uint32_t constexpr numberOfEndpoints = 2 * maxHops;
 
-    // The most Endpoint we will accept in mtENDPOINTS
-    ,
-    numberOfEndpointsMax = 20
+// The most Endpoint we will accept in mtENDPOINTS
+std::uint32_t constexpr numberOfEndpointsMax =
+    std::max<decltype(numberOfEndpoints)>(numberOfEndpoints * 2, 64);
 
-    // The number of peers that we want by default, unless an
-    // explicit value is set in the config file.
-    ,
-    defaultMaxPeerCount = 21
-
-    /** Number of addresses we provide when redirecting. */
-    ,
-    redirectEndpointCount = 10
-};
+// Number of addresses we provide when redirecting.
+std::uint32_t constexpr redirectEndpointCount = 10;
 
 // How often we send or accept mtENDPOINTS messages per peer
 // (we use a prime number of purpose)
-static std::chrono::seconds const secondsPerMessage(61);
+std::chrono::seconds constexpr secondsPerMessage(151);
 
 // How long an Endpoint will stay in the cache
 // This should be a small multiple of the broadcast frequency
-static std::chrono::seconds const liveCacheSecondsToLive(30);
-
-//
-//
-//
+std::chrono::seconds constexpr liveCacheSecondsToLive(30);
 
 // How much time to wait before trying an outgoing address again.
 // Note that we ignore the port for purposes of comparison.
-static std::chrono::seconds const recentAttemptDuration(60);
+std::chrono::seconds constexpr recentAttemptDuration(60);
 
 }  // namespace Tuning
 /** @} */
