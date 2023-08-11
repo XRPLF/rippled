@@ -4142,6 +4142,10 @@ private:
         auto const ETH = gw1["ETH"];
         auto const CAN = gw1["CAN"];
 
+        // These tests are expected to fail if the OwnerPaysFee feature
+        // is ever supported. Updates will need to be made to AMM handling
+        // in the payment engine, and these tests will need to be updated.
+
         auto prep = [&](Env& env, auto gwRate, auto gw1Rate) {
             fund(env, gw, {alice, carol, bob, ed}, XRP(2'000), {USD(2'000)});
             env.fund(XRP(2'000), gw1);
