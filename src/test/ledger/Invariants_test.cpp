@@ -24,12 +24,22 @@
 #include <ripple/protocol/STLedgerEntry.h>
 #include <boost/algorithm/string/predicate.hpp>
 #include <test/jtx.h>
+#include <test/jtx/AMM.h>
 #include <test/jtx/Env.h>
 
 namespace ripple {
 
 class Invariants_test : public beast::unit_test::suite
 {
+    // The optional Preclose function is used to process additional transactions
+    // on the ledger after creating two accounts, but before closing it, and
+    // before the Precheck function. These should only be valid functions, and
+    // not direct manipulations. Preclose is not commonly used.
+    using Preclose = std::function<bool(
+        test::jtx::Account const& a,
+        test::jtx::Account const& b,
+        test::jtx::Env& env)>;
+
     // this is common setup/method for running a failing invariant check. The
     // precheck function is used to manipulate the ApplyContext with view
     // changes that will cause the check to fail.
@@ -44,9 +54,9 @@ class Invariants_test : public beast::unit_test::suite
         Precheck const& precheck,
         XRPAmount fee = XRPAmount{},
         STTx tx = STTx{ttACCOUNT_SET, [](STObject&) {}},
-        std::initializer_list<TER> ters = {
-            tecINVARIANT_FAILED,
-            tefINVARIANT_FAILED})
+        std::initializer_list<TER> ters =
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+        Preclose const& preclose = {})
     {
         using namespace test::jtx;
         Env env{*this};
@@ -54,6 +64,8 @@ class Invariants_test : public beast::unit_test::suite
         Account A1{"A1"};
         Account A2{"A2"};
         env.fund(XRP(1000), A1, A2);
+        if (preclose)
+            BEAST_EXPECT(preclose(A1, A2, env));
         env.close();
 
         OpenView ov{*env.current()};
@@ -160,6 +172,167 @@ class Invariants_test : public beast::unit_test::suite
             },
             XRPAmount{},
             STTx{ttACCOUNT_DELETE, [](STObject& tx) {}});
+    }
+
+    void
+    testAccountRootsDeletedClean()
+    {
+        using namespace test::jtx;
+        testcase << "account root deletion left artifact";
+
+        // This list should include all of the keylet functions that take a
+        // single AccountID parameter
+        using fType = std::function<Keylet(AccountID const& id)>;
+        static std::map<std::string, fType> const keyletfuncs{
+            // Skip the account root, since that's what's being deleted.
+            //{"AccountRoot", &keylet::account},
+            {"DirectoryNode", &keylet::ownerDir},
+            {"SignerList", &keylet::signers},
+            // It's normally impossible to create an item at nftpage_min, but
+            // test it anyway, since the invariant checks for it.
+            {"NFTokenPage", &keylet::nftpage_min},
+            {"NFTokenPage", &keylet::nftpage_max}};
+
+        for (auto const& item : keyletfuncs)
+        {
+            auto const& type = item.first;
+            fType const& keyletfunc = item.second;
+            doInvariantCheck(
+                {{"account deletion left behind a " + type + " object"}},
+                [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                    // Add an object to the ledger for account A1, then delete
+                    // A1
+                    auto const a1 = A1.id();
+                    auto const sleA1 = ac.view().peek(keylet::account(a1));
+                    if (!sleA1)
+                        return false;
+
+                    auto const key = std::invoke(keyletfunc, a1);
+                    auto const newSLE = std::make_shared<SLE>(key);
+                    ac.view().insert(newSLE);
+                    ac.view().erase(sleA1);
+
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttACCOUNT_DELETE, [](STObject& tx) {}});
+        };
+
+        // NFT special case
+        doInvariantCheck(
+            {{"account deletion left behind a NFTokenPage object"}},
+            [&](Account const& A1, Account const&, ApplyContext& ac) {
+                // remove an account from the view
+                auto const sle = ac.view().peek(keylet::account(A1.id()));
+                if (!sle)
+                    return false;
+                ac.view().erase(sle);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttACCOUNT_DELETE, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            [&](Account const& A1, Account const&, Env& env) {
+                // Preclose callback to mint the NFT which will be deleted in
+                // the Precheck callback above.
+                env(token::mint(A1));
+
+                return true;
+            });
+
+        // AMM special cases
+        AccountID ammAcctID;
+        uint256 ammKey;
+        Issue ammIssue;
+        doInvariantCheck(
+            {{"account deletion left behind a DirectoryNode object"}},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                // Delete the AMM account without cleaning up the directory or
+                // deleting the AMM object
+                auto const sle = ac.view().peek(keylet::account(ammAcctID));
+                if (!sle)
+                    return false;
+
+                BEAST_EXPECT(sle->at(~sfAMMID));
+                BEAST_EXPECT(sle->at(~sfAMMID) == ammKey);
+
+                ac.view().erase(sle);
+
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttAMM_WITHDRAW, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            [&](Account const& A1, Account const& A2, Env& env) {
+                // Preclose callback to create the AMM which will be deleted in
+                // the Precheck callback above.
+                AMM amm(env, A1, XRP(100), A1["USD"](50));
+                ammAcctID = amm.ammAccount();
+                ammKey = amm.ammID();
+                ammIssue = amm.lptIssue();
+                return true;
+            });
+        doInvariantCheck(
+            {{"account deletion left behind a AMM object"}},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                // Delete the AMM account, cleaning up the directory, but
+                // without deleting the AMM object
+                auto const sle = ac.view().peek(keylet::account(ammAcctID));
+                if (!sle)
+                    return false;
+
+                BEAST_EXPECT(sle->at(~sfAMMID));
+                BEAST_EXPECT(sle->at(~sfAMMID) == ammKey);
+
+                for (auto const trustKeylet :
+                     {keylet::line(ammAcctID, A1["USD"]),
+                      keylet::line(A1, ammIssue)})
+                {
+                    if (auto const line = ac.view().peek(trustKeylet); !line)
+                    {
+                        return false;
+                    }
+                    else
+                    {
+                        STAmount lowLimit = line->at(sfLowLimit);
+                        STAmount highLimit = line->at(sfHighLimit);
+                        BEAST_EXPECT(
+                            trustDelete(
+                                ac.view(),
+                                line,
+                                lowLimit.getIssuer(),
+                                highLimit.getIssuer(),
+                                ac.journal) == tesSUCCESS);
+                    }
+                }
+
+                auto const ammSle = ac.view().peek(keylet::amm(ammKey));
+                if (!BEAST_EXPECT(ammSle))
+                    return false;
+                auto const ownerDirKeylet = keylet::ownerDir(ammAcctID);
+
+                BEAST_EXPECT(ac.view().dirRemove(
+                    ownerDirKeylet, ammSle->at(sfOwnerNode), ammKey, false));
+                BEAST_EXPECT(
+                    !ac.view().exists(ownerDirKeylet) ||
+                    ac.view().emptyDirDelete(ownerDirKeylet));
+
+                ac.view().erase(sle);
+
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttAMM_WITHDRAW, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            [&](Account const& A1, Account const& A2, Env& env) {
+                // Delete the AMM account, cleaning up the directory, but
+                // without deleting the AMM object
+                AMM amm(env, A1, XRP(100), A1["USD"](50));
+                ammAcctID = amm.ammAccount();
+                ammKey = amm.ammID();
+                ammIssue = amm.lptIssue();
+                return true;
+            });
     }
 
     void
@@ -467,6 +640,7 @@ public:
     {
         testXRPNotCreated();
         testAccountRootsNotRemoved();
+        testAccountRootsDeletedClean();
         testTypesMatch();
         testNoXRPTrustLine();
         testXRPBalanceCheck();
