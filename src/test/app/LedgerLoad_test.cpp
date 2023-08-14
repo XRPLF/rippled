@@ -154,7 +154,7 @@ class LedgerLoad_test : public beast::unit_test::suite
         copy_file(
             sd.ledgerFile,
             ledgerFileCorrupt,
-            copy_option::overwrite_if_exists,
+            copy_options::overwrite_existing,
             ec);
         if (!BEAST_EXPECTS(!ec, ec.message()))
             return;

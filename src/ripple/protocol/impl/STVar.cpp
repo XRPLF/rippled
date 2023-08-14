@@ -25,6 +25,7 @@
 #include <ripple/protocol/STBitString.h>
 #include <ripple/protocol/STBlob.h>
 #include <ripple/protocol/STInteger.h>
+#include <ripple/protocol/STIssue.h>
 #include <ripple/protocol/STObject.h>
 #include <ripple/protocol/STPathSet.h>
 #include <ripple/protocol/STVector256.h>
@@ -157,6 +158,9 @@ STVar::STVar(SerialIter& sit, SField const& name, int depth)
         case STI_ARRAY:
             construct<STArray>(sit, name, depth);
             return;
+        case STI_ISSUE:
+            construct<STIssue>(sit, name);
+            return;
         default:
             Throw<std::runtime_error>("Unknown object type");
     }
@@ -211,6 +215,9 @@ STVar::STVar(SerializedTypeID id, SField const& name)
             return;
         case STI_ARRAY:
             construct<STArray>(name);
+            return;
+        case STI_ISSUE:
+            construct<STIssue>(name);
             return;
         default:
             Throw<std::runtime_error>("Unknown object type");

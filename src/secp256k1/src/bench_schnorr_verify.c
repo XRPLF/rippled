@@ -7,8 +7,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "include/secp256k1.h"
-#include "include/secp256k1_schnorr.h"
+#include "secp256k1.h"
+#include "secp256k1_schnorr.h"
 #include "util.h"
 #include "bench.h"
 
