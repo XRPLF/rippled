@@ -21,35 +21,56 @@
 #define RIPPLE_BASICS_BUFFER_H_INCLUDED
 
 #include <ripple/basics/Slice.h>
+#include <algorithm>
+#include <array>
 #include <cassert>
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
-#include <memory>
 #include <utility>
 
 namespace ripple {
 
-/** Like std::vector<char> but better.
+/** A dynamically sized block of memory.
+
     Meets the requirements of BufferFactory.
 */
 class Buffer
 {
 private:
-    std::unique_ptr<std::uint8_t[]> p_;
-    std::size_t size_ = 0;
+    // Small buffer optimization
+    alignas(std::max_align_t) std::array<std::uint8_t, 112> buff_;
+    std::size_t size_;
+    std::uint8_t* data_;
 
 public:
-    using const_iterator = std::uint8_t const*;
+    using const_iterator = decltype(buff_)::const_iterator;
+    using iterator = decltype(buff_)::iterator;
 
-    Buffer() = default;
+    ~Buffer()
+    {
+        assert(data_ != nullptr);
 
-    /** Create an uninitialized buffer with the given size. */
+        if (data_ != buff_.data())
+            delete[] data_;
+    }
+
+    /** Create a buffer with the given size.
+
+        @note The contents of the buffer are unspecified.
+     */
     explicit Buffer(std::size_t size)
-        : p_(size ? new std::uint8_t[size] : nullptr), size_(size)
+        : size_(size)
+        , data_(size <= buff_.size() ? buff_.data() : new std::uint8_t[size])
+    {
+        assert(data_ != nullptr);
+    }
+
+    Buffer() : Buffer(0)
     {
     }
 
-    /** Create a buffer as a copy of existing memory.
+    /** Create a buffer and copy existing data into it.
 
         @param data a pointer to the existing memory. If
                     size is non-zero, it must not be null.
@@ -57,12 +78,13 @@ public:
     */
     Buffer(void const* data, std::size_t size) : Buffer(size)
     {
-        if (size)
-            std::memcpy(p_.get(), data, size);
+        assert(size == 0 || data != nullptr);
+
+        std::copy_n(reinterpret_cast<std::uint8_t const*>(data), size, data_);
     }
 
     /** Copy-construct */
-    Buffer(Buffer const& other) : Buffer(other.p_.get(), other.size_)
+    Buffer(Buffer const& other) : Buffer(other.data_, other.size_)
     {
     }
 
@@ -70,21 +92,18 @@ public:
     Buffer&
     operator=(Buffer const& other)
     {
-        if (this != &other)
-        {
-            if (auto p = alloc(other.size_))
-                std::memcpy(p, other.p_.get(), size_);
-        }
+        if (this != &other) [[likely]]
+            std::copy_n(other.data_, other.size_, alloc(other.size_));
+
         return *this;
     }
 
     /** Move-construct.
         The other buffer is reset.
     */
-    Buffer(Buffer&& other) noexcept
-        : p_(std::move(other.p_)), size_(other.size_)
+    Buffer(Buffer&& other) noexcept : Buffer(0)
     {
-        other.size_ = 0;
+        *this = std::move(other);
     }
 
     /** Move-assign.
@@ -93,12 +112,33 @@ public:
     Buffer&
     operator=(Buffer&& other) noexcept
     {
-        if (this != &other)
+        if (this != &other) [[likely]]
         {
-            p_ = std::move(other.p_);
-            size_ = other.size_;
-            other.size_ = 0;
+            if (other.size_ > other.buff_.size())
+            {  // We take the memory from the other buffer:
+                if (data_ != buff_.data())
+                    delete[] data_;
+
+                data_ = other.data_;
+                size_ = other.size_;
+
+                // Can't use clear here: it would release the memory block
+                // we just saved.
+                other.data_ = other.buff_.data();
+                other.size_ = 0;
+            }
+            else
+            {
+                // Notice that in this codepath, we "allocate" data from
+                // the internal buffer, so no exception can be raised.
+                assert(other.size_ <= buff_.size());
+
+                std::copy_n(other.data_, other.size_, alloc(other.size_));
+
+                other.size_ = 0;
+            }
         }
+
         return *this;
     }
 
@@ -113,22 +153,22 @@ public:
     {
         // Ensure the slice isn't a subset of the buffer.
         assert(
-            s.size() == 0 || size_ == 0 || s.data() < p_.get() ||
-            s.data() >= p_.get() + size_);
+            s.size() == 0 || size_ == 0 || s.data() < data_ ||
+            s.data() >= data_ + size_);
 
-        if (auto p = alloc(s.size()))
-            std::memcpy(p, s.data(), s.size());
+        std::copy_n(s.data(), s.size(), alloc(s.size()));
+
         return *this;
     }
 
     /** Returns the number of bytes in the buffer. */
-    std::size_t
+    [[nodiscard]] std::size_t
     size() const noexcept
     {
         return size_;
     }
 
-    bool
+    [[nodiscard]] bool
     empty() const noexcept
     {
         return 0 == size_;
@@ -136,95 +176,127 @@ public:
 
     operator Slice() const noexcept
     {
-        if (!size_)
-            return Slice{};
-        return Slice{p_.get(), size_};
+        return Slice{data_, size_};
     }
 
-    /** Return a pointer to beginning of the storage.
+    /** Return a pointer to the storage.
         @note The return type is guaranteed to be a pointer
               to a single byte, to facilitate pointer arithmetic.
     */
     /** @{ */
-    std::uint8_t const*
+    [[nodiscard]] std::uint8_t const*
     data() const noexcept
     {
-        return p_.get();
+        return data_;
     }
 
-    std::uint8_t*
+    [[nodiscard]] std::uint8_t*
     data() noexcept
     {
-        return p_.get();
+        return data_;
     }
     /** @} */
 
-    /** Reset the buffer.
-        All memory is deallocated. The resulting size is 0.
-    */
+    /** Resizes the container to the requested number of elements. */
+    void
+    resize(std::size_t size)
+    {
+        if (size_ <= buff_.size() && size <= buff_.size())
+        {  // Just update the size if we can still use our internal buffer
+            size_ = size;
+            return;
+        }
+
+        if (size_ != size)
+        {
+            auto d2 =
+                (size <= buff_.size()) ? buff_.data() : new std::uint8_t[size];
+            assert(d2 != data_);
+
+            std::copy_n(data_, std::min(size, size_), d2);
+
+            if (data_ != buff_.data())
+                delete[] data_;
+
+            data_ = d2;
+            size_ = size;
+        }
+    }
+
+    /** Mark the buffer as empty and release allocated memory. */
     void
     clear() noexcept
     {
-        p_.reset();
+        if (size_ != 0 && data_ != buff_.data())
+            delete[] data_;
+
+        data_ = buff_.data();
         size_ = 0;
     }
 
     /** Reallocate the storage.
         Existing data, if any, is discarded.
     */
-    std::uint8_t*
-    alloc(std::size_t n)
+    [[nodiscard]] std::uint8_t*
+    alloc(std::size_t size)
     {
-        if (n != size_)
+        if (size_ != size)
         {
-            p_.reset(n ? new std::uint8_t[n] : nullptr);
-            size_ = n;
+            if (data_ != buff_.data())
+                delete[] data_;
+
+            size_ = size;
+
+            if (size_ <= buff_.size())
+                data_ = buff_.data();
+            else
+                data_ = new std::uint8_t[size_];
         }
-        return p_.get();
+
+        return data_;
     }
 
-    // Meet the requirements of BufferFactory
-    void*
-    operator()(std::size_t n)
+    [[nodiscard]] iterator
+    begin() noexcept
     {
-        return alloc(n);
+        return data_;
     }
 
-    const_iterator
+    [[nodiscard]] iterator
+    end() noexcept
+    {
+        return data_ + size_;
+    }
+
+    [[nodiscard]] const_iterator
     begin() const noexcept
     {
-        return p_.get();
+        return data_;
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     cbegin() const noexcept
     {
-        return p_.get();
+        return data_;
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     end() const noexcept
     {
-        return p_.get() + size_;
+        return data_ + size_;
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     cend() const noexcept
     {
-        return p_.get() + size_;
+        return data_ + size_;
     }
 };
 
 inline bool
 operator==(Buffer const& lhs, Buffer const& rhs) noexcept
 {
-    if (lhs.size() != rhs.size())
-        return false;
-
-    if (lhs.size() == 0)
-        return true;
-
-    return std::memcmp(lhs.data(), rhs.data(), lhs.size()) == 0;
+    return std::equal(lhs.cbegin(), lhs.cend(), rhs.cbegin(), rhs.cend());
 }
 
 inline bool

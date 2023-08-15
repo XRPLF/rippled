@@ -25,6 +25,7 @@
 #include <ripple/protocol/Serializer.h>
 #include <cstddef>
 #include <cstdint>
+#include <type_traits>
 #include <typeinfo>
 #include <utility>
 
@@ -44,15 +45,21 @@ struct nonPresentObject_t
 extern defaultObject_t defaultObject;
 extern nonPresentObject_t nonPresentObject;
 
-// "variant" that can hold any type of serialized object
-// and includes a small-object allocation optimization.
+/** A "variant" that can hold any serialized object
+
+    The class contains a small data buffer that can be used to
+    construct "small objects" without allocating extra memory.
+ */
 class STVar
 {
 private:
-    // The largest "small object" we can accomodate
-    static std::size_t constexpr max_size = 72;
+    // The buffer into which we construct "small objects". It is
+    // important for the buffer to be properly aligned and to be
+    // the first member of this class, located at offset 0.
+    alignas(std::max_align_t) std::uint8_t d_[160];
 
-    std::aligned_storage<max_size>::type d_;
+    // A pointer to the object that we contain. The pointer may point
+    // to our internal buffer, or to dynamically allocated memory.
     STBase* p_ = nullptr;
 
 public:
@@ -66,12 +73,12 @@ public:
 
     STVar(STBase&& t)
     {
-        p_ = t.move(max_size, &d_);
+        p_ = t.move(sizeof(d_), &d_);
     }
 
     STVar(STBase const& t)
     {
-        p_ = t.copy(max_size, &d_);
+        p_ = t.copy(sizeof(d_), &d_);
     }
 
     STVar(defaultObject_t, SField const& name);
@@ -125,7 +132,7 @@ private:
     void
     construct(Args&&... args)
     {
-        if (sizeof(T) > max_size)
+        if (sizeof(T) > sizeof(d_))
             p_ = new T(std::forward<Args>(args)...);
         else
             p_ = new (&d_) T(std::forward<Args>(args)...);
@@ -138,10 +145,18 @@ private:
     }
 };
 
+static_assert(
+    std::is_standard_layout_v<STVar>,
+    "To support small-object optimization, STVar must have a standard layout.");
+
 template <class T, class... Args>
 inline STVar
 make_stvar(Args&&... args)
 {
+    static_assert(
+        alignof(STVar) >= alignof(T) && alignof(STVar) % alignof(T) == 0,
+        "STVar's internal buffer is incorrectly aligned for the given type.");
+
     STVar st;
     st.construct<T>(std::forward<Args>(args)...);
     return st;

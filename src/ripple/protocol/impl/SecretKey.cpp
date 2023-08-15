@@ -263,14 +263,15 @@ sign(PublicKey const& pk, SecretKey const& sk, Slice const& m)
                     nullptr) != 1)
                 LogicError("sign: secp256k1_ecdsa_sign failed");
 
-            unsigned char sig[72];
-            size_t len = sizeof(sig);
+            Buffer b(72);
+            size_t len = b.size();
             if (secp256k1_ecdsa_signature_serialize_der(
-                    secp256k1Context(), sig, &len, &sig_imp) != 1)
+                    secp256k1Context(), b.data(), &len, &sig_imp) != 1)
                 LogicError(
                     "sign: secp256k1_ecdsa_signature_serialize_der failed");
-
-            return Buffer{sig, len};
+            assert(len <= b.size());
+            b.resize(len);
+            return b;
         }
         default:
             LogicError("sign: invalid type");

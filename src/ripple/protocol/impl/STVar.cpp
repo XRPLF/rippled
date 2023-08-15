@@ -47,7 +47,7 @@ STVar::~STVar()
 STVar::STVar(STVar const& other)
 {
     if (other.p_ != nullptr)
-        p_ = other.p_->copy(max_size, &d_);
+        p_ = other.p_->copy(sizeof(d_), &d_);
 }
 
 STVar::STVar(STVar&& other)
@@ -59,7 +59,7 @@ STVar::STVar(STVar&& other)
     }
     else
     {
-        p_ = other.p_->move(max_size, &d_);
+        p_ = other.p_->move(sizeof(d_), &d_);
     }
 }
 
@@ -70,7 +70,7 @@ STVar::operator=(STVar const& rhs)
     {
         destroy();
         if (rhs.p_)
-            p_ = rhs.p_->copy(max_size, &d_);
+            p_ = rhs.p_->copy(sizeof(d_), &d_);
         else
             p_ = nullptr;
     }
@@ -91,7 +91,7 @@ STVar::operator=(STVar&& rhs)
         }
         else
         {
-            p_ = rhs.p_->move(max_size, &d_);
+            p_ = rhs.p_->move(sizeof(d_), &d_);
         }
     }
 

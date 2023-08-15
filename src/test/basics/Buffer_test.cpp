@@ -18,7 +18,9 @@
 //==============================================================================
 
 #include <ripple/basics/Buffer.h>
+#include <ripple/basics/random.h>
 #include <ripple/beast/unit_test.h>
+#include <ripple/beast/xor_shift_engine.h>
 #include <cstdint>
 #include <type_traits>
 
@@ -27,15 +29,6 @@ namespace test {
 
 struct Buffer_test : beast::unit_test::suite
 {
-    bool
-    sane(Buffer const& b) const
-    {
-        if (b.size() == 0)
-            return b.data() == nullptr;
-
-        return b.data() != nullptr;
-    }
-
     void
     run() override
     {
@@ -45,25 +38,20 @@ struct Buffer_test : beast::unit_test::suite
             0xf0, 0x2c, 0x15, 0xd1, 0xf9, 0x9b, 0x66, 0xd2, 0x30, 0xd3};
 
         Buffer b0;
-        BEAST_EXPECT(sane(b0));
         BEAST_EXPECT(b0.empty());
 
         Buffer b1{0};
-        BEAST_EXPECT(sane(b1));
         BEAST_EXPECT(b1.empty());
         std::memcpy(b1.alloc(16), data, 16);
-        BEAST_EXPECT(sane(b1));
         BEAST_EXPECT(!b1.empty());
         BEAST_EXPECT(b1.size() == 16);
 
         Buffer b2{b1.size()};
-        BEAST_EXPECT(sane(b2));
         BEAST_EXPECT(!b2.empty());
         BEAST_EXPECT(b2.size() == b1.size());
         std::memcpy(b2.data(), data + 16, 16);
 
         Buffer b3{data, sizeof(data)};
-        BEAST_EXPECT(sane(b3));
         BEAST_EXPECT(!b3.empty());
         BEAST_EXPECT(b3.size() == sizeof(data));
         BEAST_EXPECT(std::memcmp(b3.data(), data, b3.size()) == 0);
@@ -81,22 +69,16 @@ struct Buffer_test : beast::unit_test::suite
 
             Buffer x{b0};
             BEAST_EXPECT(x == b0);
-            BEAST_EXPECT(sane(x));
             Buffer y{b1};
             BEAST_EXPECT(y == b1);
-            BEAST_EXPECT(sane(y));
             x = b2;
             BEAST_EXPECT(x == b2);
-            BEAST_EXPECT(sane(x));
             x = y;
             BEAST_EXPECT(x == y);
-            BEAST_EXPECT(sane(x));
             y = b3;
             BEAST_EXPECT(y == b3);
-            BEAST_EXPECT(sane(y));
             x = b0;
             BEAST_EXPECT(x == b0);
-            BEAST_EXPECT(sane(x));
 #if defined(__clang__) && (!defined(__APPLE__) && (__clang_major__ >= 7)) || \
     (defined(__APPLE__) && (__apple_build_version__ >= 10010043))
 #pragma clang diagnostic push
@@ -105,10 +87,8 @@ struct Buffer_test : beast::unit_test::suite
 
             x = x;
             BEAST_EXPECT(x == b0);
-            BEAST_EXPECT(sane(x));
             y = y;
             BEAST_EXPECT(y == b3);
-            BEAST_EXPECT(sane(y));
 
 #if defined(__clang__) && (!defined(__APPLE__) && (__clang_major__ >= 7)) || \
     (defined(__APPLE__) && (__apple_build_version__ >= 10010043))
@@ -127,9 +107,7 @@ struct Buffer_test : beast::unit_test::suite
             {  // Move-construct from empty buf
                 Buffer x;
                 Buffer y{std::move(x)};
-                BEAST_EXPECT(sane(x));
                 BEAST_EXPECT(x.empty());
-                BEAST_EXPECT(sane(y));
                 BEAST_EXPECT(y.empty());
                 BEAST_EXPECT(x == y);
             }
@@ -137,9 +115,7 @@ struct Buffer_test : beast::unit_test::suite
             {  // Move-construct from non-empty buf
                 Buffer x{b1};
                 Buffer y{std::move(x)};
-                BEAST_EXPECT(sane(x));
                 BEAST_EXPECT(x.empty());
-                BEAST_EXPECT(sane(y));
                 BEAST_EXPECT(y == b1);
             }
 
@@ -148,9 +124,7 @@ struct Buffer_test : beast::unit_test::suite
                 Buffer y;
 
                 x = std::move(y);
-                BEAST_EXPECT(sane(x));
                 BEAST_EXPECT(x.empty());
-                BEAST_EXPECT(sane(y));
                 BEAST_EXPECT(y.empty());
             }
 
@@ -159,9 +133,7 @@ struct Buffer_test : beast::unit_test::suite
                 Buffer y{b1};
 
                 x = std::move(y);
-                BEAST_EXPECT(sane(x));
                 BEAST_EXPECT(x == b1);
-                BEAST_EXPECT(sane(y));
                 BEAST_EXPECT(y.empty());
             }
 
@@ -170,9 +142,7 @@ struct Buffer_test : beast::unit_test::suite
                 Buffer y;
 
                 x = std::move(y);
-                BEAST_EXPECT(sane(x));
                 BEAST_EXPECT(x.empty());
-                BEAST_EXPECT(sane(y));
                 BEAST_EXPECT(y.empty());
             }
 
@@ -182,16 +152,78 @@ struct Buffer_test : beast::unit_test::suite
                 Buffer z{b3};
 
                 x = std::move(y);
-                BEAST_EXPECT(sane(x));
                 BEAST_EXPECT(!x.empty());
-                BEAST_EXPECT(sane(y));
                 BEAST_EXPECT(y.empty());
 
                 x = std::move(z);
-                BEAST_EXPECT(sane(x));
                 BEAST_EXPECT(!x.empty());
-                BEAST_EXPECT(sane(z));
                 BEAST_EXPECT(z.empty());
+            }
+
+            { // Copy and move self-assignment
+                Buffer x{b1};
+                Buffer y{b2};
+
+                BEAST_EXPECT(x == b1);
+                BEAST_EXPECT(y == b2);
+
+                x = x;
+                BEAST_EXPECT(x == b1);
+
+                y = std::move(y);
+                BEAST_EXPECT(y == b2);
+            }
+
+            {
+                auto const testdata = []() {
+                    std::array<std::uint8_t, 1024> ret{};
+
+                    for (std::size_t i = 0; i != ret.size(); ++i)
+                        ret[i] = rand_byte<std::uint8_t>();
+
+                    return ret;
+                }();
+
+                auto makeBuffer = [&testdata](std::size_t n) {
+                    assert(n < 512);
+
+                    return Slice{testdata.data() + n, n};
+                };
+
+                auto testCopy = [this, &makeBuffer](
+                                    std::size_t n1, std::size_t n2) {
+                    Buffer const x{makeBuffer(n1)};
+                    Buffer const y{x};
+                    Buffer z{makeBuffer(n2)};
+                    BEAST_EXPECT(x == y && x.size() == n1);
+                    BEAST_EXPECT(z.size() == n2);
+                    z = y;
+                    BEAST_EXPECT(z == x);
+                    BEAST_EXPECT(z == y);
+                };
+
+                auto testMove = [this, &makeBuffer](
+                                    std::size_t n1, std::size_t n2) {
+                    Buffer const x{makeBuffer(n1)};
+                    Buffer y{x};
+                    Buffer z{makeBuffer(n2)};
+                    BEAST_EXPECT(x == y && x.size() == n1);
+                    BEAST_EXPECT(z.size() == n2);
+                    z = std::move(y);
+                    BEAST_EXPECT(z == x);
+                    BEAST_EXPECT(y.size() == 0);
+                };
+
+                for (std::size_t n1 = 0; n1 != 7; ++n1)
+                {
+                    for (std::size_t n2 = 0; n2 != 7; ++n2)
+                    {
+                        testCopy(n1 * 61, n2 * 43);
+                        testCopy(n1 * 41, n2 * 71);
+                        testMove(n1 * 53, n2 * 67);
+                        testMove(n1 * 83, n2 * 59);
+                    }
+                }
             }
         }
 
@@ -199,44 +231,35 @@ struct Buffer_test : beast::unit_test::suite
             testcase("Slice Conversion / Construction / Assignment");
 
             Buffer w{static_cast<Slice>(b0)};
-            BEAST_EXPECT(sane(w));
             BEAST_EXPECT(w == b0);
 
             Buffer x{static_cast<Slice>(b1)};
-            BEAST_EXPECT(sane(x));
             BEAST_EXPECT(x == b1);
 
             Buffer y{static_cast<Slice>(b2)};
-            BEAST_EXPECT(sane(y));
             BEAST_EXPECT(y == b2);
 
             Buffer z{static_cast<Slice>(b3)};
-            BEAST_EXPECT(sane(z));
             BEAST_EXPECT(z == b3);
 
             // Assign empty slice to empty buffer
             w = static_cast<Slice>(b0);
-            BEAST_EXPECT(sane(w));
             BEAST_EXPECT(w == b0);
 
             // Assign non-empty slice to empty buffer
             w = static_cast<Slice>(b1);
-            BEAST_EXPECT(sane(w));
             BEAST_EXPECT(w == b1);
 
             // Assign non-empty slice to non-empty buffer
             x = static_cast<Slice>(b2);
-            BEAST_EXPECT(sane(x));
             BEAST_EXPECT(x == b2);
 
             // Assign non-empty slice to non-empty buffer
             y = static_cast<Slice>(z);
-            BEAST_EXPECT(sane(y));
             BEAST_EXPECT(y == z);
 
             // Assign empty slice to non-empty buffer:
             z = static_cast<Slice>(b0);
-            BEAST_EXPECT(sane(z));
             BEAST_EXPECT(z == b0);
         }
 
@@ -246,33 +269,31 @@ struct Buffer_test : beast::unit_test::suite
             auto test = [this](Buffer const& b, std::size_t i) {
                 Buffer x{b};
 
+                // Try to allocate the same number of bytes:
+                BEAST_EXPECT(x.alloc(b.size()));
+                BEAST_EXPECT(x.size() == b.size());
+
                 // Try to allocate some number of bytes, possibly
                 // zero (which means clear) and sanity check
-                x(i);
-                BEAST_EXPECT(sane(x));
+                BEAST_EXPECT(x.alloc(i));
                 BEAST_EXPECT(x.size() == i);
-                BEAST_EXPECT((x.data() == nullptr) == (i == 0));
+                BEAST_EXPECT((i == 0 && x.empty()) || (i != 0 && !x.empty()));
 
                 // Try to allocate some more data (always non-zero)
-                x(i + 1);
-                BEAST_EXPECT(sane(x));
+                BEAST_EXPECT(x.alloc(i + 1));
                 BEAST_EXPECT(x.size() == i + 1);
-                BEAST_EXPECT(x.data() != nullptr);
+                BEAST_EXPECT(!x.empty());
 
                 // Try to clear:
                 x.clear();
-                BEAST_EXPECT(sane(x));
-                BEAST_EXPECT(x.size() == 0);
-                BEAST_EXPECT(x.data() == nullptr);
+                BEAST_EXPECT(x.empty() && (x.size() == 0));
 
                 // Try to clear again:
                 x.clear();
-                BEAST_EXPECT(sane(x));
-                BEAST_EXPECT(x.size() == 0);
-                BEAST_EXPECT(x.data() == nullptr);
+                BEAST_EXPECT(x.empty() && (x.size() == 0));
             };
 
-            for (std::size_t i = 0; i < 16; ++i)
+            for (std::size_t i = 0; i < 256; ++i)
             {
                 test(b0, i);
                 test(b1, i);
