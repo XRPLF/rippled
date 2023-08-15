@@ -1205,7 +1205,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetPeerShardInfoV2> const& m)
     // The peer chain should not contain this node's public key
     // nor the public key of the sending peer
     std::set<PublicKey> pubKeyChain;
-    pubKeyChain.insert(app_.nodeIdentity()->first);
+    pubKeyChain.insert(app_.nodeIdentity().first);
     pubKeyChain.insert(publicKey_);
 
     auto const peerChainSz{m->peerchain_size()};
@@ -1389,7 +1389,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMPeerShardInfoV2> const& m)
 
     // Verify peer public key isn't this nodes's public key
     PublicKey const publicKey(slice);
-    if (publicKey == app_.nodeIdentity()->first)
+    if (publicKey == app_.nodeIdentity().first)
         return badData("Invalid public key");
 
     // Verify signature
@@ -1407,7 +1407,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMPeerShardInfoV2> const& m)
         // The peer chain should not contain this node's public key
         // nor the public key of the sending peer
         std::set<PublicKey> pubKeyChain;
-        pubKeyChain.insert(app_.nodeIdentity()->first);
+        pubKeyChain.insert(app_.nodeIdentity().first);
         pubKeyChain.insert(publicKey_);
 
         for (int i = 0; i < peerChainSz; ++i)

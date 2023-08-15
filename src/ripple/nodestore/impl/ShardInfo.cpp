@@ -120,12 +120,12 @@ ShardInfo::makeMessage(Application& app)
     }
 
     // Set the public key
-    auto const& publicKey{(app.nodeIdentity())->first};
+    auto const& publicKey{(app.nodeIdentity()).first};
     message.set_publickey(publicKey.data(), publicKey.size());
 
     // Create a digital signature using the node private key
     auto const signature{
-        sign(publicKey, app.nodeIdentity()->second, s.slice())};
+        sign(publicKey, app.nodeIdentity().second, s.slice())};
 
     // Set the digital signature
     message.set_signature(signature.data(), signature.size());

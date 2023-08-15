@@ -213,7 +213,7 @@ RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
 
     if(!validatorKeys_.keys)
     {
-        JLOG(j_.fatal()) << "RCLConsensus::Adaptor::propose: ValidatorKeys "
+        JLOG(j_.warn()) << "RCLConsensus::Adaptor::propose: ValidatorKeys "
                             "not set: \n";
         return;
     }
@@ -810,7 +810,7 @@ RCLConsensus::Adaptor::validate(
 
     if(!validatorKeys_.keys)
     {
-        JLOG(j_.fatal()) << "RCLConsensus::Adaptor::validate: ValidatorKeys "
+        JLOG(j_.warn()) << "RCLConsensus::Adaptor::validate: ValidatorKeys "
                             "not set\n";
         return;
     }

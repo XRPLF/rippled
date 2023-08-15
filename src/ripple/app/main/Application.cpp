@@ -584,10 +584,14 @@ public:
         return *m_jobQueue;
     }
 
-    std::optional<std::pair<PublicKey, SecretKey>> const&
+    std::pair<PublicKey, SecretKey> const&
     nodeIdentity() override
     {
-        return nodeIdentity_;
+        if (nodeIdentity_)
+            return *nodeIdentity_;
+
+        LogicError(
+            "Accessing Application::nodeIdentity() before it is initialized.");
     }
 
     PublicKey const&
@@ -596,8 +600,6 @@ public:
         if (!validatorKeys_.keys)
             return PublicKey::emptyPubKey;
 
-        // do not use the getter function from ValidatorKeys class because
-        // const& is returned from this function
         return validatorKeys_.keys->publicKey;
     }
 

@@ -695,7 +695,7 @@ OverlayImpl::crawlShards(bool includePublicKey, std::uint32_t relays)
     {
         if (includePublicKey)
             jv[jss::public_key] =
-                toBase58(TokenType::NodePublic, app_.nodeIdentity()->first);
+                toBase58(TokenType::NodePublic, app_.nodeIdentity().first);
 
         auto const shardInfo{shardStore->getShardInfo()};
         if (!shardInfo->finalized().empty())
