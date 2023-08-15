@@ -54,7 +54,7 @@ doLedgerEntry(RPC::JsonContext& context)
         // XRPL Doc states "index" field is a string. check for this apiVersion
         // 2 onwards. invalidParam error is thrown if the above condition is
         // false
-        if (!context.params[jss::index].isString() && context.apiVersion > 1u)
+        if (context.apiVersion > 1u && !context.params[jss::index].isString())
         {
             uNodeIndex = beast::zero;
             jvResult[jss::error] = "invalidParams";
@@ -81,7 +81,7 @@ doLedgerEntry(RPC::JsonContext& context)
         // XRPL Doc states "check" field is a string. Check for this apiVersion
         // 2 onwards. invalidParam error is thrown if the above condition is
         // false
-        if (!context.params[jss::check].isString() && context.apiVersion > 1u)
+        if (context.apiVersion > 1u && !context.params[jss::check].isString())
         {
             uNodeIndex = beast::zero;
             jvResult[jss::error] = "invalidParams";
@@ -143,8 +143,8 @@ doLedgerEntry(RPC::JsonContext& context)
             // XRPL Doc states "directory" field is a string. check for this
             // apiVersion 2 onwards. invalidParam error is thrown if the above
             // condition is false
-            if (!context.params[jss::directory].isString() &&
-                context.apiVersion > 1u)
+            if (context.apiVersion > 1u &&
+                !context.params[jss::directory].isString())
             {
                 uNodeIndex = beast::zero;
                 jvResult[jss::error] = "invalidParams";
@@ -361,8 +361,8 @@ doLedgerEntry(RPC::JsonContext& context)
             // XRPL Doc states "nft_page" field is a string. check for this
             // apiVersion 2 onwards. invalidParam error is thrown if the above
             // condition is false
-            if (!context.params[jss::nft_page].isString() &&
-                context.apiVersion > 1u)
+            if (context.apiVersion > 1u &&
+                !context.params[jss::nft_page].isString())
             {
                 uNodeIndex = beast::zero;
                 jvResult[jss::error] = "invalidParams";
