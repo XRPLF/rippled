@@ -1213,6 +1213,56 @@ class LedgerRPC_test : public beast::unit_test::suite
     }
 
     void
+    testLedgerEntryDID()
+    {
+        testcase("ledger_entry Request DID");
+        using namespace test::jtx;
+        using namespace std::literals::chrono_literals;
+        Env env{*this};
+        Account const alice{"alice"};
+
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        // Lambda to create a DID.
+        auto didCreate = [](test::jtx::Account const& account) {
+            Json::Value jv;
+            jv[jss::TransactionType] = jss::DIDSet;
+            jv[jss::Account] = account.human();
+            jv[sfData.jsonName] = strHex(std::string{"data"});
+            jv[sfURI.jsonName] = strHex(std::string{"uri"});
+            return jv;
+        };
+
+        env(didCreate(alice));
+        env.close();
+
+        std::string const ledgerHash{to_string(env.closed()->info().hash)};
+
+        {
+            // Request the payment channel using its index.
+            Json::Value jvParams;
+            jvParams[jss::did] = alice.human();
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(
+                jrr[jss::node][sfData.jsonName] == strHex(std::string{"data"}));
+            BEAST_EXPECT(
+                jrr[jss::node][sfURI.jsonName] == strHex(std::string{"uri"}));
+        }
+        {
+            // Request an index that is not a payment channel.
+            Json::Value jvParams;
+            jvParams[jss::did] = env.master.human();
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "entryNotFound", "");
+        }
+    }
+
+    void
     testLedgerEntryInvalidParams(unsigned int apiVersion)
     {
         testcase(
@@ -1736,6 +1786,7 @@ public:
         testNoQueue();
         testQueue();
         testLedgerAccountsOption();
+        testLedgerEntryDID();
 
         // version specific tests
         for (auto testVersion = RPC::apiMinimumSupportedVersion;
