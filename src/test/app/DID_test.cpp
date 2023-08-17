@@ -225,6 +225,17 @@ struct DID_test : public beast::unit_test::suite
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == 0);
 
+        // uri is too long
+        const std::string longString(257, 'a');
+        env(did::set(alice), did::uri(longString), ter(temMALFORMED));
+        env.close();
+        BEAST_EXPECT(ownerCount(env, alice) == 0);
+
+        // data is too long
+        env(did::set(alice), did::data(longString), ter(temMALFORMED));
+        env.close();
+        BEAST_EXPECT(ownerCount(env, alice) == 0);
+
         // Modifying a DID to become empty is checked in testSetModify
     }
 

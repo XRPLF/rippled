@@ -57,6 +57,18 @@ DIDSet::preflight(PreflightContext const& ctx)
         ctx.tx.isFieldPresent(sfData) && ctx.tx[sfData].empty())
         return temEMPTY_DID;
 
+    if (auto uri = ctx.tx[~sfURI])
+    {
+        if (uri->length() > maxDIDURILength)
+            return temMALFORMED;
+    }
+
+    if (auto data = ctx.tx[~sfData])
+    {
+        if (data->length() > maxDIDDataLength)
+            return temMALFORMED;
+    }
+
     return preflight2(ctx);
 }
 
@@ -142,10 +154,7 @@ DIDSet::doApply()
     if (auto const data = ctx_.tx[~sfData]; data.has_value() && !data->empty())
         (*sleDID)[sfData] = data.value();
 
-    if (auto const ret = addSLE(ctx_, sleDID, account_); !isTesSuccess(ret))
-        return ret;
-
-    return tesSUCCESS;
+    return addSLE(ctx_, sleDID, account_);
 }
 
 NotTEC
@@ -181,13 +190,11 @@ DIDDelete::deleteSLE(
     beast::Journal j)
 {
     // Remove object from owner directory
+    if (!view.dirRemove(
+            keylet::ownerDir(owner), (*sle)[sfOwnerNode], sle->key(), true))
     {
-        auto const page = (*sle)[sfOwnerNode];
-        if (!view.dirRemove(keylet::ownerDir(owner), page, sle->key(), true))
-        {
-            JLOG(j.fatal()) << "Unable to delete DID Token from owner.";
-            return tefBAD_LEDGER;
-        }
+        JLOG(j.fatal()) << "Unable to delete DID Token from owner.";
+        return tefBAD_LEDGER;
     }
 
     auto const sleOwner = view.peek(keylet::account(owner));
@@ -205,11 +212,7 @@ DIDDelete::doApply()
     AccountID const account = ctx_.tx[sfAccount];
     auto const didKeylet = keylet::did(account);
 
-    if (auto const ret = deleteSLE(ctx_, didKeylet, account_);
-        !isTesSuccess(ret))
-        return ret;
-
-    return tesSUCCESS;
+    return deleteSLE(ctx_, didKeylet, account_);
 }
 
 }  // namespace ripple
