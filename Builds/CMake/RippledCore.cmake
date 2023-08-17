@@ -912,6 +912,7 @@ if (tests)
     src/test/jtx/impl/check.cpp
     src/test/jtx/impl/delivermin.cpp
     src/test/jtx/impl/deposit.cpp
+    src/test/jtx/impl/DID.cpp
     src/test/jtx/impl/envconfig.cpp
     src/test/jtx/impl/fee.cpp
     src/test/jtx/impl/flags.cpp
