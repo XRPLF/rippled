@@ -63,7 +63,7 @@ Database::Database(
             [this](int i) {
                 runningThreads_++;
 
-                this_thread::set_name("db prefetch #" + std::to_string(i));
+                this_thread::set_name("prefetch " + std::to_string(i));
 
                 decltype(read_) read;
 

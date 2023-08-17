@@ -32,18 +32,11 @@ private:
         std::atomic<bool>* stop,
         std::atomic<int>* state)
     {
-        // Verify that upon creation a thread has no name.
-        auto const initialThreadName = this_thread::get_name();
-
         // Set the new name.
         this_thread::set_name(myName);
 
         // Indicate to caller that the name is set.
         *state = 1;
-
-        // If there is an initial thread name then we failed.
-        if (!initialThreadName.empty())
-            return;
 
         // Wait until all threads have their names.
         while (!*stop)

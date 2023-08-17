@@ -41,7 +41,7 @@ std::string
 get_name();
 
 void
-set_name(std::string const& s);
+set_name(std::string s);
 
 }  // namespace this_thread
 

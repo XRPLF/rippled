@@ -348,7 +348,7 @@ run(int argc, char** argv)
 {
     using namespace std;
 
-    this_thread::set_name("rippled: main " + BuildInfo::getVersionString());
+    this_thread::set_name("main " + BuildInfo::getVersionString());
 
     po::variables_map vm;
 

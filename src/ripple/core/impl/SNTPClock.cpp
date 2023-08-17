@@ -193,7 +193,7 @@ public:
     void
     doRun()
     {
-        this_thread::set_name("rippled: SNTPClock");
+        this_thread::set_name("SNTPClock");
         io_service_.run();
     }
 

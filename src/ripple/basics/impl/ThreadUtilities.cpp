@@ -44,8 +44,9 @@ get_name()
 }
 
 void
-set_name(std::string const& s)
+set_name(std::string s)
 {
+    s.resize(15);
     if (pthread_setname_np(s.data()) != 0)
         throw std::runtime_error("this_thread::set_name failed\n");
 }
@@ -76,8 +77,9 @@ get_name()
 }
 
 void
-set_name(std::string const& s)
+set_name(std::string s)
 {
+    s.resize(15);
     if (pthread_setname_np(pthread_self(), s.data()) != 0)
         throw std::runtime_error("this_thread::set_name failed\n");
 }
@@ -119,8 +121,9 @@ get_name()
 }
 
 void
-set_name(std::string const& s)
+set_name(std::string s)
 {
+    s.resize(15);
     std::wstring ws;
     for (auto c : s)
         ws += c;

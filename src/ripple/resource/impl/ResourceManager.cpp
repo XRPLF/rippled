@@ -149,7 +149,7 @@ private:
     void
     run()
     {
-        this_thread::set_name("Resource::Manager");
+        this_thread::set_name("Resrc::Manager");
         for (;;)
         {
             logic_.periodicActivity();
