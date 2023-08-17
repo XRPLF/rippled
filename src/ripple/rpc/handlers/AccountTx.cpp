@@ -389,16 +389,17 @@ doAccountTxJson(RPC::JsonContext& context)
     AccountTxArgs args;
     Json::Value response;
 
-    // The document states that binary and forward params is a boolean value,
-    // however, assigning any string value works. Do not allow this.
-    // This check is for api Version 2 onwards only
-    if (params.isMember(jss::binary) && !params[jss::binary].isBool() &&
-        context.apiVersion > 1u)
+    // The document[https://xrpl.org/account_tx.html#account_tx] states that
+    // binary and forward params are both boolean values, however, assigning any
+    // string value works. Do not allow this. This check is for api Version 2
+    // onwards only
+    if (context.apiVersion > 1u && params.isMember(jss::binary) &&
+        !params[jss::binary].isBool())
     {
         return rpcError(rpcINVALID_PARAMS);
     }
-    if (params.isMember(jss::forward) && !params[jss::forward].isBool() &&
-        context.apiVersion > 1u)
+    if (context.apiVersion > 1u && params.isMember(jss::forward) &&
+        !params[jss::forward].isBool())
     {
         return rpcError(rpcINVALID_PARAMS);
     }

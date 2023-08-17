@@ -229,46 +229,38 @@ public:
         Json::Value params;
         params[jss::api_version] = apiVersion;
 
-        if (params[jss::api_version] < 2)
         {
-            {
-                params[jss::account] = gw.human();
-                params[jss::peer] = alice.human();
+            params[jss::account] = gw.human();
+            params[jss::peer] = alice.human();
 
-                auto lines =
-                    env.rpc("json", "account_lines", to_string(params));
-                auto const& line0 = lines[jss::result][jss::lines][0u];
-                BEAST_EXPECT(line0[jss::no_ripple_peer].asBool() == true);
-            }
-            {
-                params[jss::account] = alice.human();
-                params[jss::peer] = gw.human();
-
-                auto lines =
-                    env.rpc("json", "account_lines", to_string(params));
-                auto const& line0 = lines[jss::result][jss::lines][0u];
-                BEAST_EXPECT(line0[jss::no_ripple].asBool() == true);
-            }
-            {
-                params[jss::account] = gw.human();
-                params[jss::peer] = bob.human();
-
-                auto lines =
-                    env.rpc("json", "account_lines", to_string(params));
-                auto const& line0 = lines[jss::result][jss::lines][0u];
-                BEAST_EXPECT(line0[jss::no_ripple].asBool() == false);
-            }
-            {
-                params[jss::account] = bob.human();
-                params[jss::peer] = gw.human();
-
-                auto lines =
-                    env.rpc("json", "account_lines", to_string(params));
-                auto const& line0 = lines[jss::result][jss::lines][0u];
-                BEAST_EXPECT(line0[jss::no_ripple_peer].asBool() == false);
-            }
+            auto lines = env.rpc("json", "account_lines", to_string(params));
+            auto const& line0 = lines[jss::result][jss::lines][0u];
+            BEAST_EXPECT(line0[jss::no_ripple_peer].asBool() == true);
         }
-        else
+        {
+            params[jss::account] = alice.human();
+            params[jss::peer] = gw.human();
+
+            auto lines = env.rpc("json", "account_lines", to_string(params));
+            auto const& line0 = lines[jss::result][jss::lines][0u];
+            BEAST_EXPECT(line0[jss::no_ripple].asBool() == true);
+        }
+        {
+            params[jss::account] = gw.human();
+            params[jss::peer] = bob.human();
+
+            auto lines = env.rpc("json", "account_lines", to_string(params));
+            auto const& line0 = lines[jss::result][jss::lines][0u];
+            BEAST_EXPECT(line0[jss::no_ripple].asBool() == false);
+        }
+        {
+            params[jss::account] = bob.human();
+            params[jss::peer] = gw.human();
+
+            auto lines = env.rpc("json", "account_lines", to_string(params));
+            auto const& line0 = lines[jss::result][jss::lines][0u];
+            BEAST_EXPECT(line0[jss::no_ripple_peer].asBool() == false);
+        }
         {
             // test for transactions
             {
@@ -278,7 +270,11 @@ public:
 
                 auto lines =
                     env.rpc("json", "noripple_check", to_string(params));
-                BEAST_EXPECT(lines[jss::result][jss::error] == "invalidParams");
+                if (apiVersion < 2u)
+                    BEAST_EXPECT(lines[jss::result][jss::status] == "success");
+                else
+                    BEAST_EXPECT(
+                        lines[jss::result][jss::error] == "invalidParams");
             }
         }
     }
