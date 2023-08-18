@@ -96,18 +96,28 @@ Collaboration diagram for ripple::Transaction_test:</div>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a3b5240c3100c62e2f33cfcd10f784c09"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transaction__test.html#a3b5240c3100c62e2f33cfcd10f784c09">run</a> () override</td></tr>
 <tr class="separator:a3b5240c3100c62e2f33cfcd10f784c09"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af1bc3b8bcd7bac4e7ef5860053745530"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transaction__test.html#af1bc3b8bcd7bac4e7ef5860053745530">testWithFeats</a> (<a class="el" href="classripple_1_1FeatureBitset.html">FeatureBitset</a> features)</td></tr>
+<tr class="separator:af1bc3b8bcd7bac4e7ef5860053745530"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
-<tr class="memitem:a2d2b3512977503e700b900bd0b427611"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transaction__test.html#a2d2b3512977503e700b900bd0b427611">testRangeRequest</a> ()</td></tr>
-<tr class="separator:a2d2b3512977503e700b900bd0b427611"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aad64df6ce1454d508d039c7165926d49"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1Config.html">Config</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transaction__test.html#aad64df6ce1454d508d039c7165926d49">makeNetworkConfig</a> (uint32_t networkID)</td></tr>
+<tr class="separator:aad64df6ce1454d508d039c7165926d49"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4ca3f5882f8182921c20bb60b0148948"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transaction__test.html#a4ca3f5882f8182921c20bb60b0148948">testRangeRequest</a> (<a class="el" href="classripple_1_1FeatureBitset.html">FeatureBitset</a> features)</td></tr>
+<tr class="separator:a4ca3f5882f8182921c20bb60b0148948"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acb5fe557ee746033ec0df90affaa3c15"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transaction__test.html#acb5fe557ee746033ec0df90affaa3c15">testRangeCTIDRequest</a> (<a class="el" href="classripple_1_1FeatureBitset.html">FeatureBitset</a> features)</td></tr>
+<tr class="separator:acb5fe557ee746033ec0df90affaa3c15"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a019a07d51690ff4c04235834dfe44124"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transaction__test.html#a019a07d51690ff4c04235834dfe44124">testCTIDValidation</a> (<a class="el" href="classripple_1_1FeatureBitset.html">FeatureBitset</a> features)</td></tr>
+<tr class="separator:a019a07d51690ff4c04235834dfe44124"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a94299528ca13db3dd01a26c658743786"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transaction__test.html#a94299528ca13db3dd01a26c658743786">testCTIDRPC</a> (<a class="el" href="classripple_1_1FeatureBitset.html">FeatureBitset</a> features)</td></tr>
+<tr class="separator:a94299528ca13db3dd01a26c658743786"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="Transaction__test_8cpp_source.html#l00029">29</a> of file <a class="el" href="Transaction__test_8cpp_source.html">Transaction_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction__test_8cpp_source.html#l00032">32</a> of file <a class="el" href="Transaction__test_8cpp_source.html">Transaction_test.cpp</a>.</p>
 </div><h2 class="groupheader">Member Function Documentation</h2>
-<a id="a2d2b3512977503e700b900bd0b427611"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2d2b3512977503e700b900bd0b427611">&#9670;&nbsp;</a></span>testRangeRequest()</h2>
+<a id="aad64df6ce1454d508d039c7165926d49"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aad64df6ce1454d508d039c7165926d49">&#9670;&nbsp;</a></span>makeNetworkConfig()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -116,9 +126,10 @@ Private Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void ripple::Transaction_test::testRangeRequest </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt;<a class="el" href="classripple_1_1Config.html">Config</a>&gt; ripple::Transaction_test::makeNetworkConfig </td>
           <td>(</td>
-          <td class="paramname"></td><td>)</td>
+          <td class="paramtype">uint32_t&#160;</td>
+          <td class="paramname"><em>networkID</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -129,7 +140,119 @@ Private Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction__test_8cpp_source.html#l00032">32</a> of file <a class="el" href="Transaction__test_8cpp_source.html">Transaction_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction__test_8cpp_source.html#l00035">35</a> of file <a class="el" href="Transaction__test_8cpp_source.html">Transaction_test.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a4ca3f5882f8182921c20bb60b0148948"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4ca3f5882f8182921c20bb60b0148948">&#9670;&nbsp;</a></span>testRangeRequest()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::Transaction_test::testRangeRequest </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1FeatureBitset.html">FeatureBitset</a>&#160;</td>
+          <td class="paramname"><em>features</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="Transaction__test_8cpp_source.html#l00045">45</a> of file <a class="el" href="Transaction__test_8cpp_source.html">Transaction_test.cpp</a>.</p>
+
+</div>
+</div>
+<a id="acb5fe557ee746033ec0df90affaa3c15"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acb5fe557ee746033ec0df90affaa3c15">&#9670;&nbsp;</a></span>testRangeCTIDRequest()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::Transaction_test::testRangeCTIDRequest </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1FeatureBitset.html">FeatureBitset</a>&#160;</td>
+          <td class="paramname"><em>features</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="Transaction__test_8cpp_source.html#l00295">295</a> of file <a class="el" href="Transaction__test_8cpp_source.html">Transaction_test.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a019a07d51690ff4c04235834dfe44124"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a019a07d51690ff4c04235834dfe44124">&#9670;&nbsp;</a></span>testCTIDValidation()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::Transaction_test::testCTIDValidation </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1FeatureBitset.html">FeatureBitset</a>&#160;</td>
+          <td class="paramname"><em>features</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="Transaction__test_8cpp_source.html#l00543">543</a> of file <a class="el" href="Transaction__test_8cpp_source.html">Transaction_test.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a94299528ca13db3dd01a26c658743786"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a94299528ca13db3dd01a26c658743786">&#9670;&nbsp;</a></span>testCTIDRPC()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::Transaction_test::testCTIDRPC </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1FeatureBitset.html">FeatureBitset</a>&#160;</td>
+          <td class="paramname"><em>features</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="Transaction__test_8cpp_source.html#l00642">642</a> of file <a class="el" href="Transaction__test_8cpp_source.html">Transaction_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -156,7 +279,27 @@ Private Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction__test_8cpp_source.html#l00283">283</a> of file <a class="el" href="Transaction__test_8cpp_source.html">Transaction_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction__test_8cpp_source.html#l00697">697</a> of file <a class="el" href="Transaction__test_8cpp_source.html">Transaction_test.cpp</a>.</p>
+
+</div>
+</div>
+<a id="af1bc3b8bcd7bac4e7ef5860053745530"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af1bc3b8bcd7bac4e7ef5860053745530">&#9670;&nbsp;</a></span>testWithFeats()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::Transaction_test::testWithFeats </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1FeatureBitset.html">FeatureBitset</a>&#160;</td>
+          <td class="paramname"><em>features</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="Transaction__test_8cpp_source.html#l00705">705</a> of file <a class="el" href="Transaction__test_8cpp_source.html">Transaction_test.cpp</a>.</p>
 
 </div>
 </div>
