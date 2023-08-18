@@ -445,6 +445,18 @@ public:
         return jt;
     }
 
+    /** Create a JTx from parameters. */
+    template <class JsonValue, class... FN>
+    JTx
+    jtnofill(JsonValue&& jv, FN const&... fN)
+    {
+        JTx jt(std::forward<JsonValue>(jv));
+        invoke(jt, fN...);
+        autofill_sig(jt);
+        jt.stx = st(jt);
+        return jt;
+    }
+
     /** Create JSON from parameters.
         This will apply funclets and autofill.
     */
