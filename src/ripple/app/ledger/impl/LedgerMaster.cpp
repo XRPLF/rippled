@@ -2369,4 +2369,25 @@ LedgerMaster::minSqlSeq()
     return app_.getRelationalDatabase().getMinLedgerSeq();
 }
 
+std::optional<uint256>
+LedgerMaster::txnIdFromIndex(uint32_t ledgerSeq, uint32_t txnIndex)
+{
+    uint32_t first = 0, last = 0;
+
+    if (!getValidatedRange(first, last) || last < ledgerSeq)
+        return {};
+
+    auto const lgr = getLedgerBySeq(ledgerSeq);
+    if (!lgr || lgr->txs.empty())
+        return {};
+
+    for (auto it = lgr->txs.begin(); it != lgr->txs.end(); ++it)
+        if (it->first && it->second &&
+            it->second->isFieldPresent(sfTransactionIndex) &&
+            it->second->getFieldU32(sfTransactionIndex) == txnIndex)
+            return it->first->getTransactionID();
+
+    return {};
+}
+
 }  // namespace ripple
