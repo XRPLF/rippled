@@ -292,6 +292,10 @@ public:
     std::optional<LedgerIndex>
     minSqlSeq();
 
+    // Iff a txn exists at the specified ledger and offset then return its txnid
+    std::optional<uint256>
+    txnIdFromIndex(uint32_t ledgerSeq, uint32_t txnIndex);
+
 private:
     void
     setValidLedger(std::shared_ptr<Ledger const> const& l);
