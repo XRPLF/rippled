@@ -47,6 +47,7 @@ Additions are intended to be non-breaking (because they are purely additive).
   - Adds the [Clawback transaction type](https://github.com/XRPLF/XRPL-Standards/blob/master/XLS-39d-clawback/README.md#331-clawback-transaction), containing these fields:
     - `Account`: The issuer of the asset being clawed back. Must also be the sender of the transaction.
     - `Amount`: The amount being clawed back, with the `Amount.issuer` being the token holder's address.
+
 - Adds [AMM](https://github.com/XRPLF/XRPL-Standards/discussions/78) ([#4294](https://github.com/XRPLF/rippled/pull/4294), [#4626](https://github.com/XRPLF/rippled/pull/4626)) feature:
     - Adds `amm_info` API to retrieve AMM information for a given tokens pair.
     - Adds `AMMCreate` transaction type to create `AMM` instance.
@@ -69,6 +70,7 @@ Additions are intended to be non-breaking (because they are purely additive).
        -  tecAMM_NOT_EMPTY: AMM is not in empty state. Transaction expects AMM in empty state (LP tokens == 0).
        -  tecAMM_ACCOUNT: AMM account. Clawback of AMM account.
        -  tecINCOMPLETE: Some work was completed, but more submissions required to finish. AMMDelete partially deletes the trustlines.
+
 
 ## XRP Ledger version 1.11.0
 

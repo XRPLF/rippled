@@ -34,6 +34,7 @@
 #include <ripple/rpc/DeliveredAmount.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 #include <boost/algorithm/string/case_conv.hpp>
+#include <regex>
 
 namespace ripple {
 namespace RPC {
