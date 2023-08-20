@@ -103,7 +103,7 @@ public:
     boost::container::flat_set<AccountID>
     getMentionedAccounts() const;
 
-    uint256
+    uint256 const&
     getTransactionID() const;
 
     Json::Value
@@ -187,7 +187,7 @@ STTx::getSigningPubKey() const
     return getFieldVL(sfSigningPubKey);
 }
 
-inline uint256
+inline uint256 const&
 STTx::getTransactionID() const
 {
     return tid_;

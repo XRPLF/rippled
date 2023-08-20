@@ -91,7 +91,7 @@ ConsensusTransSetSF::getNode(SHAMapHash const& nodeHash) const
         JLOG(j_.trace()) << "Node in our acquiring TX set is TXN we have";
         Serializer s;
         s.add32(HashPrefix::transactionID);
-        txn->getSTransaction()->add(s);
+        txn->getSerializedTx()->add(s);
         assert(sha512Half(s.slice()) == nodeHash.as_uint256());
         nodeData = s.peekData();
         return nodeData;

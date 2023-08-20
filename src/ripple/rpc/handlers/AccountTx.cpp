@@ -325,7 +325,8 @@ populateJsonResponse(
                 {
                     Json::Value& jvObj = jvTxns.append(Json::objectValue);
 
-                    jvObj[jss::tx] = txn->getJson(JsonOptions::include_date);
+                    jvObj[jss::tx] =
+                        txn->getJson(context.app, JsonOptions::include_date);
                     if (txnMeta)
                     {
                         jvObj[jss::meta] =
@@ -334,7 +335,7 @@ populateJsonResponse(
                         insertDeliveredAmount(
                             jvObj[jss::meta], context, txn, *txnMeta);
                         insertNFTSyntheticInJson(
-                            jvObj, context, txn->getSTransaction(), *txnMeta);
+                            jvObj, context, txn->getSerializedTx(), *txnMeta);
                     }
                 }
             }

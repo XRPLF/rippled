@@ -63,7 +63,7 @@ doTxHistory(RPC::JsonContext& context)
         obj["used_postgres"] = true;
 
     for (auto const& t : trans)
-        txs.append(t->getJson(JsonOptions::none));
+        txs.append(t->getJson(context.app, JsonOptions::none));
 
     return obj;
 }

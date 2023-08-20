@@ -1840,7 +1840,7 @@ class DatabaseShard_test : public TestBase
                 if (!BEAST_EXPECT(reference.index() == 0))
                     continue;
 
-                auto txn = std::get<0>(reference).first->getSTransaction();
+                auto txn = std::get<0>(reference).first->getSerializedTx();
 
                 BEAST_EXPECT(
                     transaction.first->getFullText() == txn->getFullText());

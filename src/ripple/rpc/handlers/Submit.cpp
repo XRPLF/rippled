@@ -116,15 +116,7 @@ doSubmit(RPC::JsonContext& context)
         }
     }
 
-    std::string reason;
-    auto tpTrans = std::make_shared<Transaction>(stpTrans, reason, context.app);
-    if (tpTrans->getStatus() != NEW)
-    {
-        jvResult[jss::error] = "invalidTransaction";
-        jvResult[jss::error_exception] = "fails local checks: " + reason;
-
-        return jvResult;
-    }
+    auto tpTrans = std::make_shared<Transaction>(stpTrans);
 
     try
     {
@@ -143,9 +135,10 @@ doSubmit(RPC::JsonContext& context)
 
     try
     {
-        jvResult[jss::tx_json] = tpTrans->getJson(JsonOptions::none);
+        jvResult[jss::tx_json] =
+            tpTrans->getJson(context.app, JsonOptions::none);
         jvResult[jss::tx_blob] =
-            strHex(tpTrans->getSTransaction()->getSerializer().peekData());
+            strHex(tpTrans->getSerializedTx()->getSerializer().peekData());
 
         if (temUNCERTAIN != tpTrans->getResult())
         {
