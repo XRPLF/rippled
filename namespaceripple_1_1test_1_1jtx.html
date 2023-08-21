@@ -337,6 +337,8 @@ Functions</h2></td></tr>
 <tr class="separator:a878af2c3339d93c7ad690135ce33e67a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af5441d84d5977d52246c5226313560d4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1FeatureBitset.html">FeatureBitset</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#af5441d84d5977d52246c5226313560d4">supported_amendments</a> ()</td></tr>
 <tr class="separator:af5441d84d5977d52246c5226313560d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac337719c5a60c4146c27812ab541dc7c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#ac337719c5a60c4146c27812ab541dc7c">forAllApiVersions</a> (<a class="el" href="namespaceripple_1_1test_1_1jtx.html#a00674424c6f13ce8e1858fbe686aec9a">VersionedTestCallable</a> auto... testCallable)</td></tr>
+<tr class="separator:ac337719c5a60c4146c27812ab541dc7c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a287cf5b6a71db097fe1678c88926efb4"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1Config.html">Config</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#a287cf5b6a71db097fe1678c88926efb4">envconfig</a> ()</td></tr>
 <tr class="memdesc:a287cf5b6a71db097fe1678c88926efb4"><td class="mdescLeft">&#160;</td><td class="mdescRight">creates and initializes a default configuration for <a class="el" href="classripple_1_1test_1_1jtx_1_1Env.html" title="A transaction testing environment.">jtx::Env</a>  <a href="namespaceripple_1_1test_1_1jtx.html#a287cf5b6a71db097fe1678c88926efb4">More...</a><br /></td></tr>
 <tr class="separator:a287cf5b6a71db097fe1678c88926efb4"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -536,6 +538,14 @@ Variables</h2></td></tr>
 <tr class="memitem:ace8e30c6c5c36cb3fc56cad247538a43"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="structripple_1_1test_1_1jtx_1_1any__t.html">any_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#ace8e30c6c5c36cb3fc56cad247538a43">any</a> {}</td></tr>
 <tr class="memdesc:ace8e30c6c5c36cb3fc56cad247538a43"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns an amount representing "any issuer".  <a href="namespaceripple_1_1test_1_1jtx.html#ace8e30c6c5c36cb3fc56cad247538a43">More...</a><br /></td></tr>
 <tr class="separator:ace8e30c6c5c36cb3fc56cad247538a43"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adafdf2925937576afbcfe4fd61dc0134"><td class="memTemplParams" colspan="2">template&lt;class T &gt; </td></tr>
+<tr class="memitem:adafdf2925937576afbcfe4fd61dc0134"><td class="memTemplItemLeft" align="right" valign="top">concept&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#adafdf2925937576afbcfe4fd61dc0134">SingleVersionedTestCallable</a></td></tr>
+<tr class="memdesc:adafdf2925937576afbcfe4fd61dc0134"><td class="mdescLeft">&#160;</td><td class="mdescRight">The SingleVersionedTestCallable concept checks for a callable that takes an unsigned integer as its argument and returns void.  <a href="namespaceripple_1_1test_1_1jtx.html#adafdf2925937576afbcfe4fd61dc0134">More...</a><br /></td></tr>
+<tr class="separator:adafdf2925937576afbcfe4fd61dc0134"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a00674424c6f13ce8e1858fbe686aec9a"><td class="memTemplParams" colspan="2">template&lt;class... T&gt; </td></tr>
+<tr class="memitem:a00674424c6f13ce8e1858fbe686aec9a"><td class="memTemplItemLeft" align="right" valign="top">concept&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#a00674424c6f13ce8e1858fbe686aec9a">VersionedTestCallable</a> = (... &amp;&amp; <a class="el" href="namespaceripple_1_1test_1_1jtx.html#adafdf2925937576afbcfe4fd61dc0134">SingleVersionedTestCallable</a>&lt;T&gt;)</td></tr>
+<tr class="memdesc:a00674424c6f13ce8e1858fbe686aec9a"><td class="mdescLeft">&#160;</td><td class="mdescRight">The VersionedTestCallable concept checks if a set of callables all satisfy the SingleVersionedTestCallable concept.  <a href="namespaceripple_1_1test_1_1jtx.html#a00674424c6f13ce8e1858fbe686aec9a">More...</a><br /></td></tr>
+<tr class="separator:a00674424c6f13ce8e1858fbe686aec9a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8eece881aa0451f2c76b319e6ef41cc9"><td class="memItemLeft" align="right" valign="top">constexpr auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#a8eece881aa0451f2c76b319e6ef41cc9">defaultseed</a> = &quot;shUwVw52ofnCUX5m7kPTKzJdr4HEH&quot;</td></tr>
 <tr class="separator:a8eece881aa0451f2c76b319e6ef41cc9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0acca6e3bae07a1895e30e660bede070"><td class="memItemLeft" align="right" valign="top">static const <a class="el" href="structripple_1_1test_1_1jtx_1_1none__t.html">none_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#a0acca6e3bae07a1895e30e660bede070">none</a></td></tr>
@@ -564,7 +574,7 @@ Variables</h2></td></tr>
 
 <p>Match the number of checks on the account. </p>
 
-<p class="definition">Definition at line <a class="el" href="check_8h_source.html#l00068">68</a> of file <a class="el" href="check_8h_source.html">check.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="check_8h_source.html#l00061">61</a> of file <a class="el" href="check_8h_source.html">check.h</a>.</p>
 
 </div>
 </div>
@@ -1201,7 +1211,7 @@ template&lt;class... Args&gt; </div>
 
 <p>Designate accounts as no-ripple in <a class="el" href="classripple_1_1test_1_1jtx_1_1Env.html#ae2349266cb09d1f1c3de06606ebdf9e2">Env::fund</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00064">64</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00065">65</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
 
 </div>
 </div>
@@ -1220,7 +1230,27 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00070">70</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00071">71</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
+
+</div>
+</div>
+<a id="ac337719c5a60c4146c27812ab541dc7c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac337719c5a60c4146c27812ab541dc7c">&#9670;&nbsp;</a></span>forAllApiVersions()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::test::jtx::forAllApiVersions </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#a00674424c6f13ce8e1858fbe686aec9a">VersionedTestCallable</a> auto...&#160;</td>
+          <td class="paramname"><em>testCallable</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00743">743</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
 
 </div>
 </div>
@@ -3354,7 +3384,7 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TestHelpers_8h_source.html#l00038">38</a> of file <a class="el" href="TestHelpers_8h_source.html">TestHelpers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TestHelpers_8h_source.html#l00039">39</a> of file <a class="el" href="TestHelpers_8h_source.html">TestHelpers.h</a>.</p>
 
 </div>
 </div>
@@ -3384,7 +3414,7 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TestHelpers_8h_source.html#l00047">47</a> of file <a class="el" href="TestHelpers_8h_source.html">TestHelpers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TestHelpers_8h_source.html#l00048">48</a> of file <a class="el" href="TestHelpers_8h_source.html">TestHelpers.h</a>.</p>
 
 </div>
 </div>
@@ -3422,7 +3452,7 @@ template&lt;typename... IOU&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TestHelpers_8h_source.html#l00054">54</a> of file <a class="el" href="TestHelpers_8h_source.html">TestHelpers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TestHelpers_8h_source.html#l00055">55</a> of file <a class="el" href="TestHelpers_8h_source.html">TestHelpers.h</a>.</p>
 
 </div>
 </div>
@@ -3454,7 +3484,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TestHelpers_8h_source.html#l00088">88</a> of file <a class="el" href="TestHelpers_8h_source.html">TestHelpers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TestHelpers_8h_source.html#l00089">89</a> of file <a class="el" href="TestHelpers_8h_source.html">TestHelpers.h</a>.</p>
 
 </div>
 </div>
@@ -3492,7 +3522,7 @@ template&lt;class T , class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TestHelpers_8h_source.html#l00098">98</a> of file <a class="el" href="TestHelpers_8h_source.html">TestHelpers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TestHelpers_8h_source.html#l00099">99</a> of file <a class="el" href="TestHelpers_8h_source.html">TestHelpers.h</a>.</p>
 
 </div>
 </div>
@@ -3530,7 +3560,7 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TestHelpers_8h_source.html#l00107">107</a> of file <a class="el" href="TestHelpers_8h_source.html">TestHelpers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TestHelpers_8h_source.html#l00108">108</a> of file <a class="el" href="TestHelpers_8h_source.html">TestHelpers.h</a>.</p>
 
 </div>
 </div>
@@ -3552,7 +3582,7 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TestHelpers_8h_source.html#l00123">123</a> of file <a class="el" href="TestHelpers_8h_source.html">TestHelpers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TestHelpers_8h_source.html#l00124">124</a> of file <a class="el" href="TestHelpers_8h_source.html">TestHelpers.h</a>.</p>
 
 </div>
 </div>
@@ -3584,7 +3614,7 @@ template&lt;class... Args&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TestHelpers_8h_source.html#l00132">132</a> of file <a class="el" href="TestHelpers_8h_source.html">TestHelpers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TestHelpers_8h_source.html#l00133">133</a> of file <a class="el" href="TestHelpers_8h_source.html">TestHelpers.h</a>.</p>
 
 </div>
 </div>
@@ -3628,7 +3658,7 @@ template&lt;typename... Amts&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TestHelpers_8h_source.html#l00164">164</a> of file <a class="el" href="TestHelpers_8h_source.html">TestHelpers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TestHelpers_8h_source.html#l00165">165</a> of file <a class="el" href="TestHelpers_8h_source.html">TestHelpers.h</a>.</p>
 
 </div>
 </div>
@@ -3664,7 +3694,7 @@ template&lt;typename... Amts&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TestHelpers_8h_source.html#l00210">210</a> of file <a class="el" href="TestHelpers_8h_source.html">TestHelpers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TestHelpers_8h_source.html#l00211">211</a> of file <a class="el" href="TestHelpers_8h_source.html">TestHelpers.h</a>.</p>
 
 </div>
 </div>
@@ -3700,7 +3730,7 @@ template&lt;typename... Amts&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TestHelpers_8h_source.html#l00219">219</a> of file <a class="el" href="TestHelpers_8h_source.html">TestHelpers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TestHelpers_8h_source.html#l00220">220</a> of file <a class="el" href="TestHelpers_8h_source.html">TestHelpers.h</a>.</p>
 
 </div>
 </div>
@@ -3736,7 +3766,7 @@ template&lt;typename... Amts&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TestHelpers_8h_source.html#l00228">228</a> of file <a class="el" href="TestHelpers_8h_source.html">TestHelpers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TestHelpers_8h_source.html#l00229">229</a> of file <a class="el" href="TestHelpers_8h_source.html">TestHelpers.h</a>.</p>
 
 </div>
 </div>
@@ -3796,7 +3826,7 @@ template&lt;typename... Amts&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TestHelpers_8h_source.html#l00338">338</a> of file <a class="el" href="TestHelpers_8h_source.html">TestHelpers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TestHelpers_8h_source.html#l00339">339</a> of file <a class="el" href="TestHelpers_8h_source.html">TestHelpers.h</a>.</p>
 
 </div>
 </div>
@@ -3832,7 +3862,7 @@ template&lt;typename... Amts&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TestHelpers_8h_source.html#l00374">374</a> of file <a class="el" href="TestHelpers_8h_source.html">TestHelpers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TestHelpers_8h_source.html#l00375">375</a> of file <a class="el" href="TestHelpers_8h_source.html">TestHelpers.h</a>.</p>
 
 </div>
 </div>
@@ -3920,6 +3950,54 @@ template&lt;typename... Amts&gt; </div>
 <dl class="section note"><dt>Note</dt><dd>With respect to what the recipient will accept </dd></dl>
 
 <p class="definition">Definition at line <a class="el" href="amount_8cpp_source.html#l00126">126</a> of file <a class="el" href="amount_8cpp_source.html">amount.cpp</a>.</p>
+
+</div>
+</div>
+<a id="adafdf2925937576afbcfe4fd61dc0134"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adafdf2925937576afbcfe4fd61dc0134">&#9670;&nbsp;</a></span>SingleVersionedTestCallable</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">concept ripple::test::jtx::SingleVersionedTestCallable</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<b>Initial value:</b><div class="fragment"><div class="line">= requires(T callable, <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> version)</div>
+<div class="line">{</div>
+<div class="line">    {</div>
+<div class="line">        callable(version)</div>
+<div class="line">    }</div>
+<div class="line">    -&gt;std::same_as&lt;<span class="keywordtype">void</span>&gt;;</div>
+<div class="line">}</div>
+</div><!-- fragment -->
+<p>The SingleVersionedTestCallable concept checks for a callable that takes an unsigned integer as its argument and returns void. </p>
+
+<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00724">724</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
+
+</div>
+</div>
+<a id="a00674424c6f13ce8e1858fbe686aec9a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a00674424c6f13ce8e1858fbe686aec9a">&#9670;&nbsp;</a></span>VersionedTestCallable</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class... T&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">concept ripple::test::jtx::VersionedTestCallable = (... &amp;&amp; <a class="el" href="namespaceripple_1_1test_1_1jtx.html#adafdf2925937576afbcfe4fd61dc0134">SingleVersionedTestCallable</a>&lt;T&gt;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>The VersionedTestCallable concept checks if a set of callables all satisfy the SingleVersionedTestCallable concept. </p>
+<p>This allows forAllApiVersions to accept any number of functions. It executes a set of provided functions over a range of versions from <a class="el" href="namespaceripple_1_1RPC.html#a86a3780c8662fae3e2a81382afe4d51b">RPC::apiMinimumSupportedVersion</a> to <a class="el" href="namespaceripple_1_1RPC.html#a1359badd82538ee3d5a05bfd744f2d80">RPC::apiBetaVersion</a>. This is useful for running a series of tests or operations that need to be performed on multiple versions of an API. </p>
+
+<p class="definition">Definition at line <a class="el" href="Env_8h_source.html#l00741">741</a> of file <a class="el" href="Env_8h_source.html">Env.h</a>.</p>
 
 </div>
 </div>
@@ -4044,7 +4122,7 @@ template&lt;typename... Amts&gt; </div>
 <div class="line">     0x27, 0xAE, 0x41, 0xE4, 0x64, 0x9B, 0x93, 0x4C, 0xA4, 0x95,</div>
 <div class="line">     0x99, 0x1B, 0x78, 0x52, 0xB8, 0x55, 0x81, 0x01, 0x00}}</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="TestHelpers_8h_source.html#l00233">233</a> of file <a class="el" href="TestHelpers_8h_source.html">TestHelpers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TestHelpers_8h_source.html#l00234">234</a> of file <a class="el" href="TestHelpers_8h_source.html">TestHelpers.h</a>.</p>
 
 </div>
 </div>
@@ -4060,7 +4138,7 @@ template&lt;typename... Amts&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TestHelpers_8h_source.html#l00240">240</a> of file <a class="el" href="TestHelpers_8h_source.html">TestHelpers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TestHelpers_8h_source.html#l00241">241</a> of file <a class="el" href="TestHelpers_8h_source.html">TestHelpers.h</a>.</p>
 
 </div>
 </div>

@@ -61,7 +61,7 @@ $(function() {
 
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><a class="el" href="dir_df9c78dcf3f59a33b12284f95992a64b.html">ripple</a></li><li class="navelem"><a class="el" href="dir_f4afb74df24474efa0cc7e8ea3ddd5ce.html">rpc</a></li>  </ul>
+<li class="navelem"><a class="el" href="dir_df9c78dcf3f59a33b12284f95992a64b.html">ripple</a></li><li class="navelem"><a class="el" href="dir_1e765e6a8d5970800a535eb2615ec474.html">protocol</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div class="header">
@@ -88,52 +88,43 @@ $(function() {
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="comment">*/</span></div>
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="comment">//==============================================================================</span></div>
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160; </div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#ifndef RIPPLE_RPC_NFTOKENOFFERID_H_INCLUDED</span></div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#define RIPPLE_RPC_NFTOKENOFFERID_H_INCLUDED</span></div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#ifndef RIPPLE_PROTOCOL_NFTOKENOFFERID_H_INCLUDED</span></div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#define RIPPLE_PROTOCOL_NFTOKENOFFERID_H_INCLUDED</span></div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/Protocol.h&gt;</span></div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160; </div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/functional.html">functional</a>&gt;</span></div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/memory.html">memory</a>&gt;</span></div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/base_uint.h&gt;</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;ripple/json/json_forwards.h&gt;</span></div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/STTx.h&gt;</span></div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/TxMeta.h&gt;</span></div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceJson.html">Json</a> {</div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="keyword">class </span>Value;</div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;}</div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160; </div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160; </div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;<span class="keyword">class </span>TxMeta;</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;<span class="keyword">class </span>STTx;</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160; </div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;<span class="keyword">namespace </span>RPC {</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160; </div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;<span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;<a class="code" href="namespaceripple_1_1RPC.html#a4bfeb3707c4009fe04bebc7e84225993">canHaveNFTokenOfferID</a>(</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;STTx const&gt;</a> <span class="keyword">const</span>&amp; serializedTx,</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    TxMeta <span class="keyword">const</span>&amp; transactionMeta);</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160; </div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;uint256&gt;</a></div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;<a class="code" href="namespaceripple_1_1RPC.html#a9549cb07bd5109d9ec39906377991597">getOfferIDFromCreatedOffer</a>(TxMeta <span class="keyword">const</span>&amp; transactionMeta);</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160; </div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;<a class="code" href="namespaceripple_1_1RPC.html#a83d30528f574c3f0811e063bcedbe082">insertNFTokenOfferID</a>(</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a>&amp; response,</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;STTx const&gt;</a> <span class="keyword">const</span>&amp; transaction,</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    TxMeta <span class="keyword">const</span>&amp; transactionMeta);</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;}  <span class="comment">// namespace RPC</span></div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;}  <span class="comment">// namespace ripple</span></div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160; </div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/memory.html">memory</a>&gt;</span></div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/optional.html">optional</a>&gt;</span></div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160; </div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160; </div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;<span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;<a class="code" href="namespaceripple.html#ab614e075570e1b6c182c7ca378f78261">canHaveNFTokenOfferID</a>(</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;STTx const&gt;</a> <span class="keyword">const</span>&amp; serializedTx,</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    TxMeta <span class="keyword">const</span>&amp; transactionMeta);</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160; </div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;uint256&gt;</a></div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;<a class="code" href="namespaceripple.html#a3f2b6c339d7a055fc42b03203fded223">getOfferIDFromCreatedOffer</a>(TxMeta <span class="keyword">const</span>&amp; transactionMeta);</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160; </div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;<a class="code" href="namespaceripple.html#abe13b230c8e49e3dc65f75709923abdb">insertNFTokenOfferID</a>(</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a>&amp; response,</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;STTx const&gt;</a> <span class="keyword">const</span>&amp; transaction,</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    TxMeta <span class="keyword">const</span>&amp; transactionMeta);</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160; </div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="ashared_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a></div><div class="ttdoc">STL class.</div></div>
-<div class="ttc" id="anamespaceripple_1_1RPC_html_a4bfeb3707c4009fe04bebc7e84225993"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a4bfeb3707c4009fe04bebc7e84225993">ripple::RPC::canHaveNFTokenOfferID</a></div><div class="ttdeci">bool canHaveNFTokenOfferID(std::shared_ptr&lt; STTx const &gt; const &amp;serializedTx, TxMeta const &amp;transactionMeta)</div><div class="ttdoc">Add an offer_id field to the meta output parameter.</div><div class="ttdef"><b>Definition:</b> <a href="NFTokenOfferID_8cpp_source.html#l00037">NFTokenOfferID.cpp:37</a></div></div>
-<div class="ttc" id="afunctional_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/functional.html">functional</a></div></div>
-<div class="ttc" id="anamespaceJson_html"><div class="ttname"><a href="namespaceJson.html">Json</a></div><div class="ttdoc">JSON (JavaScript Object Notation).</div><div class="ttdef"><b>Definition:</b> <a href="json__reader_8cpp_source.html#l00029">json_reader.cpp:29</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a3f2b6c339d7a055fc42b03203fded223"><div class="ttname"><a href="namespaceripple.html#a3f2b6c339d7a055fc42b03203fded223">ripple::getOfferIDFromCreatedOffer</a></div><div class="ttdeci">std::optional&lt; uint256 &gt; getOfferIDFromCreatedOffer(TxMeta const &amp;transactionMeta)</div><div class="ttdef"><b>Definition:</b> <a href="NFTokenOfferID_8cpp_source.html#l00045">NFTokenOfferID.cpp:45</a></div></div>
 <div class="ttc" id="amemory_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/memory.html">memory</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1RPC_html_a9549cb07bd5109d9ec39906377991597"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a9549cb07bd5109d9ec39906377991597">ripple::RPC::getOfferIDFromCreatedOffer</a></div><div class="ttdeci">std::optional&lt; uint256 &gt; getOfferIDFromCreatedOffer(TxMeta const &amp;transactionMeta)</div><div class="ttdef"><b>Definition:</b> <a href="NFTokenOfferID_8cpp_source.html#l00056">NFTokenOfferID.cpp:56</a></div></div>
-<div class="ttc" id="aoptional_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1RPC_html_a83d30528f574c3f0811e063bcedbe082"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a83d30528f574c3f0811e063bcedbe082">ripple::RPC::insertNFTokenOfferID</a></div><div class="ttdeci">void insertNFTokenOfferID(Json::Value &amp;response, std::shared_ptr&lt; STTx const &gt; const &amp;transaction, TxMeta const &amp;transactionMeta)</div><div class="ttdef"><b>Definition:</b> <a href="NFTokenOfferID_8cpp_source.html#l00070">NFTokenOfferID.cpp:70</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ab614e075570e1b6c182c7ca378f78261"><div class="ttname"><a href="namespaceripple.html#ab614e075570e1b6c182c7ca378f78261">ripple::canHaveNFTokenOfferID</a></div><div class="ttdeci">bool canHaveNFTokenOfferID(std::shared_ptr&lt; STTx const &gt; const &amp;serializedTx, TxMeta const &amp;transactionMeta)</div><div class="ttdoc">Add an offer_id field to the meta output parameter.</div><div class="ttdef"><b>Definition:</b> <a href="NFTokenOfferID_8cpp_source.html#l00026">NFTokenOfferID.cpp:26</a></div></div>
+<div class="ttc" id="aoptional_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/optional.html">optional</a></div></div>
+<div class="ttc" id="anamespaceripple_html_abe13b230c8e49e3dc65f75709923abdb"><div class="ttname"><a href="namespaceripple.html#abe13b230c8e49e3dc65f75709923abdb">ripple::insertNFTokenOfferID</a></div><div class="ttdeci">void insertNFTokenOfferID(Json::Value &amp;response, std::shared_ptr&lt; STTx const &gt; const &amp;transaction, TxMeta const &amp;transactionMeta)</div><div class="ttdef"><b>Definition:</b> <a href="NFTokenOfferID_8cpp_source.html#l00059">NFTokenOfferID.cpp:59</a></div></div>
 <div class="ttc" id="aclassJson_1_1Value_html"><div class="ttname"><a href="classJson_1_1Value.html">Json::Value</a></div><div class="ttdoc">Represents a JSON value.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00145">json_value.h:145</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

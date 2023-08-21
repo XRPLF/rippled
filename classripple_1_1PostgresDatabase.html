@@ -126,7 +126,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:acbad8709817f45cb6879fd6bbb8168d9"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PostgresDatabase.html#acbad8709817f45cb6879fd6bbb8168d9">getValidatedLedgerAge</a> ()=0</td></tr>
 <tr class="memdesc:acbad8709817f45cb6879fd6bbb8168d9"><td class="mdescLeft">&#160;</td><td class="mdescRight">getValidatedLedgerAge Returns the age of the last validated ledger.  <a href="classripple_1_1PostgresDatabase.html#acbad8709817f45cb6879fd6bbb8168d9">More...</a><br /></td></tr>
 <tr class="separator:acbad8709817f45cb6879fd6bbb8168d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a80ccf4e291a450fb7dda321479677e32"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PostgresDatabase.html#a80ccf4e291a450fb7dda321479677e32">writeLedgerAndTransactions</a> (<a class="el" href="structripple_1_1LedgerInfo.html">LedgerInfo</a> const &amp;info, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="structripple_1_1RelationalDatabase_1_1AccountTransactionsData.html">AccountTransactionsData</a> &gt; const &amp;accountTxData)=0</td></tr>
+<tr class="memitem:a80ccf4e291a450fb7dda321479677e32"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PostgresDatabase.html#a80ccf4e291a450fb7dda321479677e32">writeLedgerAndTransactions</a> (<a class="el" href="namespaceripple.html#aaf521cde20561da32d6a54a105363555">LedgerInfo</a> const &amp;info, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="structripple_1_1RelationalDatabase_1_1AccountTransactionsData.html">AccountTransactionsData</a> &gt; const &amp;accountTxData)=0</td></tr>
 <tr class="memdesc:a80ccf4e291a450fb7dda321479677e32"><td class="mdescLeft">&#160;</td><td class="mdescRight">writeLedgerAndTransactions Writes new ledger and transaction data into the database.  <a href="classripple_1_1PostgresDatabase.html#a80ccf4e291a450fb7dda321479677e32">More...</a><br /></td></tr>
 <tr class="separator:a80ccf4e291a450fb7dda321479677e32"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a784583e95d607018791e7073784bd04d"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PostgresDatabase.html#a784583e95d607018791e7073784bd04d">getTxHashes</a> (<a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> seq)=0</td></tr>
@@ -147,13 +147,13 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:aa4e757a2656cd3c537e997e8a67ee78a"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RelationalDatabase.html#aa4e757a2656cd3c537e997e8a67ee78a">getMaxLedgerSeq</a> ()=0</td></tr>
 <tr class="memdesc:aa4e757a2656cd3c537e997e8a67ee78a"><td class="mdescLeft">&#160;</td><td class="mdescRight">getMaxLedgerSeq Returns the maximum ledger sequence in the Ledgers table.  <a href="classripple_1_1RelationalDatabase.html#aa4e757a2656cd3c537e997e8a67ee78a">More...</a><br /></td></tr>
 <tr class="separator:aa4e757a2656cd3c537e997e8a67ee78a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4b67ba7e09ea642386597210efefe07d"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="structripple_1_1LedgerInfo.html">LedgerInfo</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RelationalDatabase.html#a4b67ba7e09ea642386597210efefe07d">getLedgerInfoByIndex</a> (<a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> ledgerSeq)=0</td></tr>
+<tr class="memitem:a4b67ba7e09ea642386597210efefe07d"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#aaf521cde20561da32d6a54a105363555">LedgerInfo</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RelationalDatabase.html#a4b67ba7e09ea642386597210efefe07d">getLedgerInfoByIndex</a> (<a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> ledgerSeq)=0</td></tr>
 <tr class="memdesc:a4b67ba7e09ea642386597210efefe07d"><td class="mdescLeft">&#160;</td><td class="mdescRight">getLedgerInfoByIndex Returns a ledger by its sequence.  <a href="classripple_1_1RelationalDatabase.html#a4b67ba7e09ea642386597210efefe07d">More...</a><br /></td></tr>
 <tr class="separator:a4b67ba7e09ea642386597210efefe07d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acbc9c19a6c01c6004df183ed8858f88b"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="structripple_1_1LedgerInfo.html">LedgerInfo</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RelationalDatabase.html#acbc9c19a6c01c6004df183ed8858f88b">getNewestLedgerInfo</a> ()=0</td></tr>
+<tr class="memitem:acbc9c19a6c01c6004df183ed8858f88b"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#aaf521cde20561da32d6a54a105363555">LedgerInfo</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RelationalDatabase.html#acbc9c19a6c01c6004df183ed8858f88b">getNewestLedgerInfo</a> ()=0</td></tr>
 <tr class="memdesc:acbc9c19a6c01c6004df183ed8858f88b"><td class="mdescLeft">&#160;</td><td class="mdescRight">getNewestLedgerInfo Returns the info of the newest saved ledger.  <a href="classripple_1_1RelationalDatabase.html#acbc9c19a6c01c6004df183ed8858f88b">More...</a><br /></td></tr>
 <tr class="separator:acbc9c19a6c01c6004df183ed8858f88b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2df06f73b03baa40ff0cc92066d9fd3b"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="structripple_1_1LedgerInfo.html">LedgerInfo</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RelationalDatabase.html#a2df06f73b03baa40ff0cc92066d9fd3b">getLedgerInfoByHash</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;ledgerHash)=0</td></tr>
+<tr class="memitem:a2df06f73b03baa40ff0cc92066d9fd3b"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#aaf521cde20561da32d6a54a105363555">LedgerInfo</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RelationalDatabase.html#a2df06f73b03baa40ff0cc92066d9fd3b">getLedgerInfoByHash</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;ledgerHash)=0</td></tr>
 <tr class="memdesc:a2df06f73b03baa40ff0cc92066d9fd3b"><td class="mdescLeft">&#160;</td><td class="mdescRight">getLedgerInfoByHash Returns the info of the ledger with given hash.  <a href="classripple_1_1RelationalDatabase.html#a2df06f73b03baa40ff0cc92066d9fd3b">More...</a><br /></td></tr>
 <tr class="separator:a2df06f73b03baa40ff0cc92066d9fd3b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae73b0356cc96e29c9c66e52f64aeac0d"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RelationalDatabase.html#ae73b0356cc96e29c9c66e52f64aeac0d">getHashByIndex</a> (<a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> ledgerIndex)=0</td></tr>
@@ -506,7 +506,7 @@ Static Public Member Functions</h2></td></tr>
         <tr>
           <td class="memname">virtual bool ripple::PostgresDatabase::writeLedgerAndTransactions </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="structripple_1_1LedgerInfo.html">LedgerInfo</a> const &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aaf521cde20561da32d6a54a105363555">LedgerInfo</a> const &amp;&#160;</td>
           <td class="paramname"><em>info</em>, </td>
         </tr>
         <tr>
@@ -815,7 +815,7 @@ Static Public Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="el" href="structripple_1_1LedgerInfo.html">LedgerInfo</a>&gt; ripple::RelationalDatabase::getLedgerInfoByIndex </td>
+          <td class="memname">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="el" href="namespaceripple.html#aaf521cde20561da32d6a54a105363555">LedgerInfo</a>&gt; ripple::RelationalDatabase::getLedgerInfoByIndex </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a>&#160;</td>
           <td class="paramname"><em>ledgerSeq</em></td><td>)</td>
@@ -852,7 +852,7 @@ Static Public Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="el" href="structripple_1_1LedgerInfo.html">LedgerInfo</a>&gt; ripple::RelationalDatabase::getNewestLedgerInfo </td>
+          <td class="memname">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="el" href="namespaceripple.html#aaf521cde20561da32d6a54a105363555">LedgerInfo</a>&gt; ripple::RelationalDatabase::getNewestLedgerInfo </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -882,7 +882,7 @@ Static Public Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="el" href="structripple_1_1LedgerInfo.html">LedgerInfo</a>&gt; ripple::RelationalDatabase::getLedgerInfoByHash </td>
+          <td class="memname">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="el" href="namespaceripple.html#aaf521cde20561da32d6a54a105363555">LedgerInfo</a>&gt; ripple::RelationalDatabase::getLedgerInfoByHash </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;&#160;</td>
           <td class="paramname"><em>ledgerHash</em></td><td>)</td>

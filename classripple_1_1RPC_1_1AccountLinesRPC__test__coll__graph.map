@@ -1,8 +1,8 @@
 <map id="ripple::RPC::AccountLinesRPC_test" name="ripple::RPC::AccountLinesRPC_test">
-<area shape="rect" id="node1" title=" " alt="" coords="1199,142,1385,183"/>
-<area shape="rect" id="node2" title=" " alt="" coords="949,99,1004,125"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="904,149,1049,176"/>
-<area shape="rect" id="node4" href="$structripple_1_1LedgerInfo.html" title="Information about the notional ledger backing the view." alt="" coords="909,224,1045,251"/>
+<area shape="rect" id="node1" title=" " alt="" coords="1212,142,1399,183"/>
+<area shape="rect" id="node2" title=" " alt="" coords="956,99,1011,125"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="911,149,1056,176"/>
+<area shape="rect" id="node4" href="$structripple_1_1LedgerHeader.html" title="Information about the notional ledger backing the view." alt="" coords="904,224,1063,251"/>
 <area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,73,108,100"/>
 <area shape="rect" id="node14" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="250,95,418,137"/>
 <area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="552,217,708,258"/>

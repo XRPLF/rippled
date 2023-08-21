@@ -92,88 +92,87 @@ $(function() {
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#define RIPPLE_APP_REPORTING_P2PPROXY_H_INCLUDED</span></div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/app/main/Application.h&gt;</span></div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;ripple/rpc/Context.h&gt;</span></div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;ripple/rpc/impl/Handler.h&gt;</span></div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160; </div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#include &lt;boost/beast/websocket.hpp&gt;</span></div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160; </div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="preprocessor">#include &quot;org/xrpl/rpc/v1/xrp_ledger.grpc.pb.h&quot;</span></div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="preprocessor">#include &lt;grpcpp/grpcpp.h&gt;</span></div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160; </div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;<a class="code" href="classJson_1_1Value.html">Json::Value</a></div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;<a class="code" href="namespaceripple.html#ab318d7cb709ae818391ccdd8fbc25b00">forwardToP2p</a>(RPC::JsonContext&amp; context);</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160; </div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;<span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;<a class="code" href="namespaceripple.html#ac6784b087f12de955d9ae5df6b2ee72d">shouldForwardToP2p</a>(RPC::JsonContext&amp; context);</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160; </div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Request&gt;</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;<span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00047"></a><span class="lineno"><a class="line" href="namespaceripple.html#a0ce94cd526530802ecf41a0223e9360c">   47</a></span>&#160;<a class="code" href="namespaceripple.html#a0ce94cd526530802ecf41a0223e9360c">needCurrentOrClosed</a>(Request&amp; request)</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;{</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    <span class="comment">// These are the only gRPC requests that specify a ledger</span></div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    <span class="keywordflow">if</span> constexpr (</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/is_same.html">std::is_same&lt;Request, org::xrpl::rpc::v1::GetLedgerRequest&gt;::value</a> ||</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/is_same.html">std::is_same&lt;Request, org::xrpl::rpc::v1::GetLedgerDataRequest&gt;</a>::</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;            value ||</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/is_same.html">std::is_same&lt;Request, org::xrpl::rpc::v1::GetLedgerEntryRequest&gt;::value</a>)</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    {</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;        <span class="keywordflow">if</span> (request.ledger().ledger_case() ==</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;            org::xrpl::rpc::v1::LedgerSpecifier::LedgerCase::kShortcut)</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;        {</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;            <span class="keywordflow">if</span> (request.ledger().shortcut() !=</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;                    org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_VALIDATED &amp;&amp;</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;                request.ledger().shortcut() !=</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;                    org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_UNSPECIFIED)</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;                <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        }</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    }</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    <span class="comment">// GetLedgerDiff specifies two ledgers</span></div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    <span class="keywordflow">else</span> <span class="keywordflow">if</span> constexpr (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/is_same.html">std::is_same</a>&lt;</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;                           Request,</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;                           org::xrpl::rpc::v1::GetLedgerDiffRequest&gt;::value)</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    {</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;        <span class="keyword">auto</span> help = [](<span class="keyword">auto</span> specifier) {</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;            <span class="keywordflow">if</span> (specifier.ledger_case() ==</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;                org::xrpl::rpc::v1::LedgerSpecifier::LedgerCase::kShortcut)</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;            {</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;                <span class="keywordflow">if</span> (specifier.shortcut() !=</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;                        org::xrpl::rpc::v1::LedgerSpecifier::</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;                            SHORTCUT_VALIDATED &amp;&amp;</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;                    specifier.shortcut() !=</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;                        org::xrpl::rpc::v1::LedgerSpecifier::</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;                            SHORTCUT_UNSPECIFIED)</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;                    <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;            }</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;        };</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;        <span class="keywordflow">return</span> help(request.base_ledger()) || help(request.desired_ledger());</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;    }</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;}</div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160; </div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Request&gt;</div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;<span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00096"></a><span class="lineno"><a class="line" href="namespaceripple.html#a582941b84c801eb13b2b78f32727901c">   96</a></span>&#160;<a class="code" href="namespaceripple.html#ac6784b087f12de955d9ae5df6b2ee72d">shouldForwardToP2p</a>(<a class="code" href="structripple_1_1RPC_1_1GRPCContext.html">RPC::GRPCContext&lt;Request&gt;</a>&amp; context, <a class="code" href="namespaceripple_1_1RPC.html#a1ea15d2823ab0dfcdedc8fbc31c6a782">RPC::Condition</a> condition)</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;{</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;    <span class="keywordflow">if</span> (!context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a7878751d68ed7fd43c385913c5e6ff04">app</a>.<a class="code" href="classripple_1_1Application.html#aca56b7c63030174e59720ab51d739422">config</a>().<a class="code" href="classripple_1_1Config.html#a8fdf3fd3b2112759b3a0a7fa4d8afa05">reporting</a>())</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;    <span class="keywordflow">if</span> (condition == <a class="code" href="namespaceripple_1_1RPC.html#a1ea15d2823ab0dfcdedc8fbc31c6a782a846308226fc9899c593d4634172bbd08">RPC::NEEDS_CURRENT_LEDGER</a> ||</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;        condition == <a class="code" href="namespaceripple_1_1RPC.html#a1ea15d2823ab0dfcdedc8fbc31c6a782acc08746617bab8b8e4a52c4b1ceab5a0">RPC::NEEDS_CLOSED_LEDGER</a>)</div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160; </div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a0ce94cd526530802ecf41a0223e9360c">needCurrentOrClosed</a>(context.<a class="code" href="structripple_1_1RPC_1_1GRPCContext.html#af072cfd1412032444cefd2f4dcf29555">params</a>);</div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;}</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160; </div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;org::xrpl::rpc::v1::XRPLedgerAPIService::Stub&gt;</a></div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;<a class="code" href="namespaceripple.html#a3cdb42706b673600d3abe99394d68d5b">getP2pForwardingStub</a>(RPC::Context&amp; context);</div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160; </div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;}  <span class="comment">// namespace ripple</span></div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;ripple/proto/org/xrpl/rpc/v1/xrp_ledger.grpc.pb.h&gt;</span></div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;ripple/rpc/Context.h&gt;</span></div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;ripple/rpc/impl/Handler.h&gt;</span></div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="preprocessor">#include &lt;boost/beast/websocket.hpp&gt;</span></div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="preprocessor">#include &lt;grpcpp/grpcpp.h&gt;</span></div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160; </div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;<a class="code" href="classJson_1_1Value.html">Json::Value</a></div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;<a class="code" href="namespaceripple.html#ab318d7cb709ae818391ccdd8fbc25b00">forwardToP2p</a>(RPC::JsonContext&amp; context);</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160; </div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;<span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;<a class="code" href="namespaceripple.html#ac6784b087f12de955d9ae5df6b2ee72d">shouldForwardToP2p</a>(RPC::JsonContext&amp; context);</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160; </div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Request&gt;</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;<span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00046"></a><span class="lineno"><a class="line" href="namespaceripple.html#a0ce94cd526530802ecf41a0223e9360c">   46</a></span>&#160;<a class="code" href="namespaceripple.html#a0ce94cd526530802ecf41a0223e9360c">needCurrentOrClosed</a>(Request&amp; request)</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;{</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    <span class="comment">// These are the only gRPC requests that specify a ledger</span></div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    <span class="keywordflow">if</span> constexpr (</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/is_same.html">std::is_same&lt;Request, org::xrpl::rpc::v1::GetLedgerRequest&gt;::value</a> ||</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/is_same.html">std::is_same&lt;Request, org::xrpl::rpc::v1::GetLedgerDataRequest&gt;</a>::</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;            value ||</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/is_same.html">std::is_same&lt;Request, org::xrpl::rpc::v1::GetLedgerEntryRequest&gt;::value</a>)</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    {</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;        <span class="keywordflow">if</span> (request.ledger().ledger_case() ==</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;            org::xrpl::rpc::v1::LedgerSpecifier::LedgerCase::kShortcut)</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;        {</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;            <span class="keywordflow">if</span> (request.ledger().shortcut() !=</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;                    org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_VALIDATED &amp;&amp;</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;                request.ledger().shortcut() !=</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;                    org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_UNSPECIFIED)</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;                <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;        }</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    }</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    <span class="comment">// GetLedgerDiff specifies two ledgers</span></div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    <span class="keywordflow">else</span> <span class="keywordflow">if</span> constexpr (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/is_same.html">std::is_same</a>&lt;</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;                           Request,</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;                           org::xrpl::rpc::v1::GetLedgerDiffRequest&gt;::value)</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    {</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;        <span class="keyword">auto</span> help = [](<span class="keyword">auto</span> specifier) {</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;            <span class="keywordflow">if</span> (specifier.ledger_case() ==</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;                org::xrpl::rpc::v1::LedgerSpecifier::LedgerCase::kShortcut)</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;            {</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;                <span class="keywordflow">if</span> (specifier.shortcut() !=</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;                        org::xrpl::rpc::v1::LedgerSpecifier::</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;                            SHORTCUT_VALIDATED &amp;&amp;</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;                    specifier.shortcut() !=</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;                        org::xrpl::rpc::v1::LedgerSpecifier::</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;                            SHORTCUT_UNSPECIFIED)</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;                    <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;            }</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;        };</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;        <span class="keywordflow">return</span> help(request.base_ledger()) || help(request.desired_ledger());</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    }</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;}</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160; </div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Request&gt;</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;<span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00095"></a><span class="lineno"><a class="line" href="namespaceripple.html#a582941b84c801eb13b2b78f32727901c">   95</a></span>&#160;<a class="code" href="namespaceripple.html#ac6784b087f12de955d9ae5df6b2ee72d">shouldForwardToP2p</a>(<a class="code" href="structripple_1_1RPC_1_1GRPCContext.html">RPC::GRPCContext&lt;Request&gt;</a>&amp; context, <a class="code" href="namespaceripple_1_1RPC.html#a1ea15d2823ab0dfcdedc8fbc31c6a782">RPC::Condition</a> condition)</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;{</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;    <span class="keywordflow">if</span> (!context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a7878751d68ed7fd43c385913c5e6ff04">app</a>.<a class="code" href="classripple_1_1Application.html#aca56b7c63030174e59720ab51d739422">config</a>().<a class="code" href="classripple_1_1Config.html#a8fdf3fd3b2112759b3a0a7fa4d8afa05">reporting</a>())</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;    <span class="keywordflow">if</span> (condition == <a class="code" href="namespaceripple_1_1RPC.html#a1ea15d2823ab0dfcdedc8fbc31c6a782a846308226fc9899c593d4634172bbd08">RPC::NEEDS_CURRENT_LEDGER</a> ||</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;        condition == <a class="code" href="namespaceripple_1_1RPC.html#a1ea15d2823ab0dfcdedc8fbc31c6a782acc08746617bab8b8e4a52c4b1ceab5a0">RPC::NEEDS_CLOSED_LEDGER</a>)</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160; </div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a0ce94cd526530802ecf41a0223e9360c">needCurrentOrClosed</a>(context.<a class="code" href="structripple_1_1RPC_1_1GRPCContext.html#af072cfd1412032444cefd2f4dcf29555">params</a>);</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;}</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160; </div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;org::xrpl::rpc::v1::XRPLedgerAPIService::Stub&gt;</a></div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;<a class="code" href="namespaceripple.html#a3cdb42706b673600d3abe99394d68d5b">getP2pForwardingStub</a>(RPC::Context&amp; context);</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160; </div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="ais_same_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/is_same.html">std::is_same</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a0ce94cd526530802ecf41a0223e9360c"><div class="ttname"><a href="namespaceripple.html#a0ce94cd526530802ecf41a0223e9360c">ripple::needCurrentOrClosed</a></div><div class="ttdeci">bool needCurrentOrClosed(Request &amp;request)</div><div class="ttdef"><b>Definition:</b> <a href="P2pProxy_8h_source.html#l00047">P2pProxy.h:47</a></div></div>
-<div class="ttc" id="aclassripple_1_1Config_html_a8fdf3fd3b2112759b3a0a7fa4d8afa05"><div class="ttname"><a href="classripple_1_1Config.html#a8fdf3fd3b2112759b3a0a7fa4d8afa05">ripple::Config::reporting</a></div><div class="ttdeci">bool reporting() const</div><div class="ttdef"><b>Definition:</b> <a href="Config_8h_source.html#l00337">Config.h:337</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a0ce94cd526530802ecf41a0223e9360c"><div class="ttname"><a href="namespaceripple.html#a0ce94cd526530802ecf41a0223e9360c">ripple::needCurrentOrClosed</a></div><div class="ttdeci">bool needCurrentOrClosed(Request &amp;request)</div><div class="ttdef"><b>Definition:</b> <a href="P2pProxy_8h_source.html#l00046">P2pProxy.h:46</a></div></div>
+<div class="ttc" id="aclassripple_1_1Config_html_a8fdf3fd3b2112759b3a0a7fa4d8afa05"><div class="ttname"><a href="classripple_1_1Config.html#a8fdf3fd3b2112759b3a0a7fa4d8afa05">ripple::Config::reporting</a></div><div class="ttdeci">bool reporting() const</div><div class="ttdef"><b>Definition:</b> <a href="Config_8h_source.html#l00338">Config.h:338</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1RPC_html_a1ea15d2823ab0dfcdedc8fbc31c6a782a846308226fc9899c593d4634172bbd08"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a1ea15d2823ab0dfcdedc8fbc31c6a782a846308226fc9899c593d4634172bbd08">ripple::RPC::NEEDS_CURRENT_LEDGER</a></div><div class="ttdeci">@ NEEDS_CURRENT_LEDGER</div><div class="ttdef"><b>Definition:</b> <a href="Handler_8h_source.html#l00042">Handler.h:42</a></div></div>
 <div class="ttc" id="aclassripple_1_1Application_html_aca56b7c63030174e59720ab51d739422"><div class="ttname"><a href="classripple_1_1Application.html#aca56b7c63030174e59720ab51d739422">ripple::Application::config</a></div><div class="ttdeci">virtual Config &amp; config()=0</div></div>
 <div class="ttc" id="astructripple_1_1RPC_1_1GRPCContext_html"><div class="ttname"><a href="structripple_1_1RPC_1_1GRPCContext.html">ripple::RPC::GRPCContext</a></div><div class="ttdef"><b>Definition:</b> <a href="Context_8h_source.html#l00070">Context.h:70</a></div></div>

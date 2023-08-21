@@ -124,7 +124,7 @@ Collaboration diagram for ripple::AMMDeposit:</div>
 <area shape="rect" href="classripple_1_1detail_1_1RawStateTable.html" title=" " alt="" coords="947,958,1121,999"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html" title=" " alt="" coords="552,987,755,1043"/>
 <area shape="rect" href="classripple_1_1XRPAmount.html" title=" " alt="" coords="582,841,725,868"/>
-<area shape="rect" href="structripple_1_1LedgerInfo.html" title="Information about the notional ledger backing the view." alt="" coords="966,712,1102,739"/>
+<area shape="rect" href="structripple_1_1LedgerHeader.html" title="Information about the notional ledger backing the view." alt="" coords="955,712,1113,739"/>
 <area shape="rect" title=" " alt="" coords="251,735,417,777"/>
 <area shape="rect" title=" " alt="" coords="221,801,447,828"/>
 <area shape="rect" title=" " alt="" coords="229,853,439,894"/>
@@ -133,11 +133,11 @@ Collaboration diagram for ripple::AMMDeposit:</div>
 <area shape="rect" href="classripple_1_1Rules.html" title="Rules controlling protocol behavior." alt="" coords="983,623,1085,649"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="568,553,739,594"/>
 <area shape="rect" href="classripple_1_1Rules_1_1Impl.html" title=" " alt="" coords="265,633,403,660"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="953,893,1115,934"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="5,663,108,689"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/container/array.html" title=" " alt="" coords="250,333,418,374"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/chrono/duration.html" title=" " alt="" coords="575,735,731,777"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/chrono/time_point.html" title=" " alt="" coords="567,618,739,659"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="953,893,1115,934"/>
 <area shape="rect" href="classripple_1_1STObject.html" title=" " alt="" coords="591,483,716,509"/>
 <area shape="rect" href="classripple_1_1STBase.html" title="A type which can be exported to a well known binary format." alt="" coords="277,516,391,543"/>
 <area shape="rect" href="classripple_1_1CountedObject.html" title=" " alt="" coords="253,567,415,609"/>
@@ -244,6 +244,9 @@ Private Member Functions</h2></td></tr>
 <tr class="memitem:a5775a9ff666de25c0c0ad243b79b9d0e"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>, <a class="el" href="classripple_1_1STAmount.html">STAmount</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AMMDeposit.html#a5775a9ff666de25c0c0ad243b79b9d0e">singleDepositEPrice</a> (<a class="el" href="classripple_1_1Sandbox.html">Sandbox</a> &amp;<a class="el" href="classripple_1_1Transactor.html#a1ac5d16d7b21e8af9cc94d7af39a85d5">view</a>, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;ammAccount, <a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;amountBalance, <a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;amount, <a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;lptAMMBalance, <a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;ePrice, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint16_t</a> tfee)</td></tr>
 <tr class="memdesc:a5775a9ff666de25c0c0ad243b79b9d0e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Single asset deposit (Asset1In, EPrice) with two constraints.  <a href="classripple_1_1AMMDeposit.html#a5775a9ff666de25c0c0ad243b79b9d0e">More...</a><br /></td></tr>
 <tr class="separator:a5775a9ff666de25c0c0ad243b79b9d0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac9c59cc740132fad1337d18c074a477a"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>, <a class="el" href="classripple_1_1STAmount.html">STAmount</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AMMDeposit.html#ac9c59cc740132fad1337d18c074a477a">equalDepositInEmptyState</a> (<a class="el" href="classripple_1_1Sandbox.html">Sandbox</a> &amp;<a class="el" href="classripple_1_1Transactor.html#a1ac5d16d7b21e8af9cc94d7af39a85d5">view</a>, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;ammAccount, <a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;amount, <a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;amount2, <a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;lptIssue, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint16_t</a> tfee)</td></tr>
+<tr class="memdesc:ac9c59cc740132fad1337d18c074a477a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Equal deposit in empty AMM state (LP tokens balance is 0)  <a href="classripple_1_1AMMDeposit.html#ac9c59cc740132fad1337d18c074a477a">More...</a><br /></td></tr>
+<tr class="separator:ac9c59cc740132fad1337d18c074a477a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af81f796422a3f66771e31a6ecbbbf57b"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>, <a class="el" href="classripple_1_1XRPAmount.html">XRPAmount</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transactor.html#af81f796422a3f66771e31a6ecbbbf57b">reset</a> (<a class="el" href="classripple_1_1XRPAmount.html">XRPAmount</a> fee)</td></tr>
 <tr class="memdesc:af81f796422a3f66771e31a6ecbbbf57b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reset the context, discarding any changes made and adjust the fee.  <a href="classripple_1_1Transactor.html#af81f796422a3f66771e31a6ecbbbf57b">More...</a><br /></td></tr>
 <tr class="separator:af81f796422a3f66771e31a6ecbbbf57b"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -376,7 +379,7 @@ Static Private Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AMMDeposit_8cpp_source.html#l00155">155</a> of file <a class="el" href="AMMDeposit_8cpp_source.html">AMMDeposit.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AMMDeposit_8cpp_source.html#l00169">169</a> of file <a class="el" href="AMMDeposit_8cpp_source.html">AMMDeposit.cpp</a>.</p>
 
 </div>
 </div>
@@ -405,7 +408,7 @@ Static Private Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Transactor.html#af0192505cdcebc1bb31be32dfb62aa72">ripple::Transactor</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="AMMDeposit_8cpp_source.html#l00401">401</a> of file <a class="el" href="AMMDeposit_8cpp_source.html">AMMDeposit.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AMMDeposit_8cpp_source.html#l00445">445</a> of file <a class="el" href="AMMDeposit_8cpp_source.html">AMMDeposit.cpp</a>.</p>
 
 </div>
 </div>
@@ -433,7 +436,7 @@ Static Private Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AMMDeposit_8cpp_source.html#l00305">305</a> of file <a class="el" href="AMMDeposit_8cpp_source.html">AMMDeposit.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AMMDeposit_8cpp_source.html#l00334">334</a> of file <a class="el" href="AMMDeposit_8cpp_source.html">AMMDeposit.cpp</a>.</p>
 
 </div>
 </div>
@@ -544,7 +547,7 @@ Static Private Member Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd></dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="AMMDeposit_8cpp_source.html#l00415">415</a> of file <a class="el" href="AMMDeposit_8cpp_source.html">AMMDeposit.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AMMDeposit_8cpp_source.html#l00459">459</a> of file <a class="el" href="AMMDeposit_8cpp_source.html">AMMDeposit.cpp</a>.</p>
 
 </div>
 </div>
@@ -642,7 +645,7 @@ Static Private Member Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd></dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="AMMDeposit_8cpp_source.html#l00550">550</a> of file <a class="el" href="AMMDeposit_8cpp_source.html">AMMDeposit.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AMMDeposit_8cpp_source.html#l00594">594</a> of file <a class="el" href="AMMDeposit_8cpp_source.html">AMMDeposit.cpp</a>.</p>
 
 </div>
 </div>
@@ -741,7 +744,7 @@ Static Private Member Functions</h2></td></tr>
 <dl class="section return"><dt>Returns</dt><dd></dd></dl>
 <p>a = (t/T) * A (1) b = (t/T) * B (2) where A,B: current pool composition T: current balance of outstanding LPTokens a: balance of asset A being added b: balance of asset B being added t: balance of LPTokens issued to LP after a successful transaction Use equation 1 to compute the amount of t, given the amount in Asset1In. Let this be Z Use equation 2 to compute the amount of asset2, given t~Z. Let the computed amount of asset2 be X. If X &lt;= amount in Asset2In: The amount of asset1 to be deposited is the one specified in Asset1In The amount of asset2 to be deposited is X The amount of LPTokens to be issued is Z If X &gt; amount in Asset2In: Use equation 2 to compute , given the amount in Asset2In. Let this be W Use equation 1 to compute the amount of asset1, given t~W from above. Let the computed amount of asset1 be Y If Y &lt;= amount in Asset1In: The amount of asset1 to be deposited is Y The amount of asset2 to be deposited is the one specified in Asset2In The amount of LPTokens to be issued is W else, failed transaction </p>
 
-<p class="definition">Definition at line <a class="el" href="AMMDeposit_8cpp_source.html#l00615">615</a> of file <a class="el" href="AMMDeposit_8cpp_source.html">AMMDeposit.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AMMDeposit_8cpp_source.html#l00659">659</a> of file <a class="el" href="AMMDeposit_8cpp_source.html">AMMDeposit.cpp</a>.</p>
 
 </div>
 </div>
@@ -826,7 +829,7 @@ Static Private Member Functions</h2></td></tr>
 <dl class="section return"><dt>Returns</dt><dd></dd></dl>
 <p>t = T * (b / B - x) / (1 + x) (3) where f1 = (1 - 0.5 * tfee) / (1 - tfee) x = sqrt(f1**2 + b / (B * (1 - tfee)) - f1 Use equation 3 </p><dl class="section see"><dt>See also</dt><dd><a class="el" href="classripple_1_1AMMDeposit.html#a7242a93c72c9cb498849fb149ded3501" title="Single asset deposit (Asset1In) by the amount.">singleDeposit</a> to compute amount of LPTokens to be issued, given the amount in Asset1In. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="AMMDeposit_8cpp_source.html#l00674">674</a> of file <a class="el" href="AMMDeposit_8cpp_source.html">AMMDeposit.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AMMDeposit_8cpp_source.html#l00718">718</a> of file <a class="el" href="AMMDeposit_8cpp_source.html">AMMDeposit.cpp</a>.</p>
 
 </div>
 </div>
@@ -911,7 +914,7 @@ Static Private Member Functions</h2></td></tr>
 <dl class="section return"><dt>Returns</dt><dd></dd></dl>
 <p>Use equation 4 to compute the amount of asset1 to be deposited, given t represented by amount of LPTokens. Equation 4 solves equation 3 </p><dl class="section see"><dt>See also</dt><dd><a class="el" href="classripple_1_1AMMDeposit.html#a7242a93c72c9cb498849fb149ded3501" title="Single asset deposit (Asset1In) by the amount.">singleDeposit</a> for b. Fail if b exceeds specified Max amount to <a class="el" href="classripple_1_1AMMDeposit.html#adcf4670f2b402a00f166d0f342a75714" title="Deposit requested assets and token amount into LP account.">deposit</a>. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="AMMDeposit_8cpp_source.html#l00708">708</a> of file <a class="el" href="AMMDeposit_8cpp_source.html">AMMDeposit.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AMMDeposit_8cpp_source.html#l00752">752</a> of file <a class="el" href="AMMDeposit_8cpp_source.html">AMMDeposit.cpp</a>.</p>
 
 </div>
 </div>
@@ -998,7 +1001,82 @@ Static Private Member Functions</h2></td></tr>
 <dd>
 <a class="el" href="classripple_1_1AMMDeposit.html#a7242a93c72c9cb498849fb149ded3501" title="Single asset deposit (Asset1In) by the amount.">singleDeposit</a> &amp; III and the given EPrice to compute the following two variables: The amount of asset1 in. Let this be Q The amount of LPTokens out. Let this be W The amount of asset1 to be deposited is Q The amount of LPTokens to be issued is W </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="AMMDeposit_8cpp_source.html#l00761">761</a> of file <a class="el" href="AMMDeposit_8cpp_source.html">AMMDeposit.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AMMDeposit_8cpp_source.html#l00805">805</a> of file <a class="el" href="AMMDeposit_8cpp_source.html">AMMDeposit.cpp</a>.</p>
+
+</div>
+</div>
+<a id="ac9c59cc740132fad1337d18c074a477a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac9c59cc740132fad1337d18c074a477a">&#9670;&nbsp;</a></span>equalDepositInEmptyState()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>, <a class="el" href="classripple_1_1STAmount.html">STAmount</a> &gt; ripple::AMMDeposit::equalDepositInEmptyState </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Sandbox.html">Sandbox</a> &amp;&#160;</td>
+          <td class="paramname"><em>view</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;&#160;</td>
+          <td class="paramname"><em>ammAccount</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;&#160;</td>
+          <td class="paramname"><em>amount</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;&#160;</td>
+          <td class="paramname"><em>amount2</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;&#160;</td>
+          <td class="paramname"><em>lptIssue</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint16_t</a>&#160;</td>
+          <td class="paramname"><em>tfee</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Equal deposit in empty AMM state (LP tokens balance is 0) </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">view</td><td></td></tr>
+    <tr><td class="paramname">ammAccount</td><td></td></tr>
+    <tr><td class="paramname">amount</td><td>requested asset1 deposit amount </td></tr>
+    <tr><td class="paramname">amount2</td><td>requested asset2 deposit amount </td></tr>
+    <tr><td class="paramname">tfee</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd></dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="AMMDeposit_8cpp_source.html#l00882">882</a> of file <a class="el" href="AMMDeposit_8cpp_source.html">AMMDeposit.cpp</a>.</p>
 
 </div>
 </div>
@@ -1027,7 +1105,7 @@ Static Private Member Functions</h2></td></tr>
 
 <p>Process the transaction. </p>
 
-<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00801">801</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00827">827</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
 
 </div>
 </div>
@@ -1460,7 +1538,7 @@ Static Private Member Functions</h2></td></tr>
 
 <p>Reset the context, discarding any changes made and adjust the fee. </p>
 
-<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00762">762</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00788">788</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
 
 </div>
 </div>

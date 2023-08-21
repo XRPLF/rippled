@@ -118,7 +118,7 @@ Collaboration diagram for ripple::LedgerDeltaAcquire:</div>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="5,700,108,727"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/container/map.html" title=" " alt="" coords="1589,571,1761,627"/>
 <area shape="rect" href="classripple_1_1SHAMap.html" title="A SHAMap is both a radix tree with a fan&#45;out of 16 and a Merkle tree." alt="" coords="934,1235,1055,1261"/>
-<area shape="rect" href="structripple_1_1LedgerInfo.html" title="Information about the notional ledger backing the view." alt="" coords="927,871,1063,897"/>
+<area shape="rect" href="structripple_1_1LedgerHeader.html" title="Information about the notional ledger backing the view." alt="" coords="915,871,1074,897"/>
 <area shape="rect" href="classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="552,1169,663,1196"/>
 <area shape="rect" href="classripple_1_1Ledger.html" title="Holds a ledger." alt="" coords="1258,871,1369,897"/>
 <area shape="rect" href="classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="232,1169,379,1196"/>
@@ -168,7 +168,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:aa0cb457dac46b0135606af37f05b8e79"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerDeltaAcquire.html#aa0cb457dac46b0135606af37f05b8e79">init</a> (int numPeers)</td></tr>
 <tr class="memdesc:aa0cb457dac46b0135606af37f05b8e79"><td class="mdescLeft">&#160;</td><td class="mdescRight">Start the <a class="el" href="classripple_1_1LedgerDeltaAcquire.html" title="Manage the retrieval of a ledger delta (header and transactions) from the network.">LedgerDeltaAcquire</a> task.  <a href="classripple_1_1LedgerDeltaAcquire.html#aa0cb457dac46b0135606af37f05b8e79">More...</a><br /></td></tr>
 <tr class="separator:aa0cb457dac46b0135606af37f05b8e79"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af74d2edea033488979054171ab01a6fa"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerDeltaAcquire.html#af74d2edea033488979054171ab01a6fa">processData</a> (<a class="el" href="structripple_1_1LedgerInfo.html">LedgerInfo</a> const &amp;info, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/map.html">std::map</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1STTx.html">STTx</a> const &gt;&gt; &amp;&amp;orderedTxns)</td></tr>
+<tr class="memitem:af74d2edea033488979054171ab01a6fa"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerDeltaAcquire.html#af74d2edea033488979054171ab01a6fa">processData</a> (<a class="el" href="namespaceripple.html#aaf521cde20561da32d6a54a105363555">LedgerInfo</a> const &amp;info, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/map.html">std::map</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1STTx.html">STTx</a> const &gt;&gt; &amp;&amp;orderedTxns)</td></tr>
 <tr class="memdesc:af74d2edea033488979054171ab01a6fa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Process the data extracted from a peer's reply.  <a href="classripple_1_1LedgerDeltaAcquire.html#af74d2edea033488979054171ab01a6fa">More...</a><br /></td></tr>
 <tr class="separator:af74d2edea033488979054171ab01a6fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a506c055b3ba74b6e36de8f64f6bdd586"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Ledger.html">Ledger</a> const  &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerDeltaAcquire.html#a506c055b3ba74b6e36de8f64f6bdd586">tryBuild</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Ledger.html">Ledger</a> const &gt; const &amp;parent)</td></tr>
@@ -466,7 +466,7 @@ Friends</h2></td></tr>
         <tr>
           <td class="memname">void ripple::LedgerDeltaAcquire::processData </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="structripple_1_1LedgerInfo.html">LedgerInfo</a> const &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aaf521cde20561da32d6a54a105363555">LedgerInfo</a> const &amp;&#160;</td>
           <td class="paramname"><em>info</em>, </td>
         </tr>
         <tr>

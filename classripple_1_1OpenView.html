@@ -97,18 +97,18 @@ Collaboration diagram for ripple::OpenView:</div>
 <div class="dyncontent">
 <div class="center"><img src="classripple_1_1OpenView__coll__graph.png" border="0" usemap="#ripple_1_1OpenView_coll__map" alt="Collaboration graph"/></div>
 <map name="ripple_1_1OpenView_coll__map" id="ripple_1_1OpenView_coll__map">
-<area shape="rect" title="Writable ledger view that accumulates state and tx changes." alt="" coords="2036,276,2169,303"/>
-<area shape="rect" href="classripple_1_1ReadView.html" title="A view into a ledger." alt="" coords="1765,504,1895,531"/>
-<area shape="rect" href="classripple_1_1detail_1_1ReadViewFwdRange.html" title=" " alt="" coords="2015,528,2191,584"/>
-<area shape="rect" href="classripple_1_1detail_1_1ReadViewFwdRange.html" title=" " alt="" coords="2015,671,2191,713"/>
-<area shape="rect" href="structripple_1_1ReadView_1_1sles__type.html" title=" " alt="" coords="2240,495,2440,521"/>
-<area shape="rect" href="structripple_1_1ReadView_1_1txs__type.html" title=" " alt="" coords="2243,625,2437,652"/>
+<area shape="rect" title="Writable ledger view that accumulates state and tx changes." alt="" coords="2036,261,2169,288"/>
+<area shape="rect" href="classripple_1_1ReadView.html" title="A view into a ledger." alt="" coords="1765,489,1895,516"/>
+<area shape="rect" href="classripple_1_1detail_1_1ReadViewFwdRange.html" title=" " alt="" coords="2015,513,2191,569"/>
+<area shape="rect" href="classripple_1_1detail_1_1ReadViewFwdRange.html" title=" " alt="" coords="2015,657,2191,698"/>
+<area shape="rect" href="structripple_1_1ReadView_1_1sles__type.html" title=" " alt="" coords="2240,480,2440,507"/>
+<area shape="rect" href="structripple_1_1ReadView_1_1txs__type.html" title=" " alt="" coords="2243,611,2437,637"/>
 <area shape="rect" href="classripple_1_1TxsRawView.html" title="Interface for changing ledger entries with transactions." alt="" coords="1755,117,1905,144"/>
 <area shape="rect" href="classripple_1_1RawView.html" title="Interface for ledger entry changes." alt="" coords="1386,117,1513,144"/>
-<area shape="rect" href="classripple_1_1detail_1_1RawStateTable.html" title=" " alt="" coords="1743,246,1917,287"/>
+<area shape="rect" href="classripple_1_1detail_1_1RawStateTable.html" title=" " alt="" coords="1743,231,1917,273"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html" title=" " alt="" coords="1348,168,1551,224"/>
-<area shape="rect" href="classripple_1_1XRPAmount.html" title=" " alt="" coords="1378,381,1521,408"/>
-<area shape="rect" href="structripple_1_1LedgerInfo.html" title="Information about the notional ledger backing the view." alt="" coords="1762,320,1898,347"/>
+<area shape="rect" href="classripple_1_1XRPAmount.html" title=" " alt="" coords="1378,384,1521,411"/>
+<area shape="rect" href="structripple_1_1LedgerHeader.html" title="Information about the notional ledger backing the view." alt="" coords="1751,369,1909,396"/>
 <area shape="rect" title=" " alt="" coords="1057,310,1222,351"/>
 <area shape="rect" title=" " alt="" coords="1027,376,1252,403"/>
 <area shape="rect" title=" " alt="" coords="1035,427,1244,469"/>
@@ -125,9 +125,9 @@ Collaboration diagram for ripple::OpenView:</div>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="5,588,108,615"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/types/size_t.html" title=" " alt="" coords="261,235,349,261"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/utility/optional.html" title=" " alt="" coords="738,166,893,207"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/chrono/duration.html" title=" " alt="" coords="1371,315,1527,357"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/chrono/time_point.html" title=" " alt="" coords="1363,433,1535,474"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="1749,371,1911,413"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="1749,297,1911,338"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/chrono/duration.html" title=" " alt="" coords="1371,318,1527,359"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/chrono/time_point.html" title=" " alt="" coords="1363,435,1535,477"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -172,7 +172,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:af71912c53fb5ef2862967f49aa1b3710"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1OpenView.html#af71912c53fb5ef2862967f49aa1b3710">apply</a> (<a class="el" href="classripple_1_1TxsRawView.html">TxsRawView</a> &amp;to) const</td></tr>
 <tr class="memdesc:af71912c53fb5ef2862967f49aa1b3710"><td class="mdescLeft">&#160;</td><td class="mdescRight">Apply changes.  <a href="classripple_1_1OpenView.html#af71912c53fb5ef2862967f49aa1b3710">More...</a><br /></td></tr>
 <tr class="separator:af71912c53fb5ef2862967f49aa1b3710"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3cfed3b0da284339dcdd02b50dcafa6f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structripple_1_1LedgerInfo.html">LedgerInfo</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1OpenView.html#a3cfed3b0da284339dcdd02b50dcafa6f">info</a> () const override</td></tr>
+<tr class="memitem:a3cfed3b0da284339dcdd02b50dcafa6f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#aaf521cde20561da32d6a54a105363555">LedgerInfo</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1OpenView.html#a3cfed3b0da284339dcdd02b50dcafa6f">info</a> () const override</td></tr>
 <tr class="memdesc:a3cfed3b0da284339dcdd02b50dcafa6f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns information about the ledger.  <a href="classripple_1_1OpenView.html#a3cfed3b0da284339dcdd02b50dcafa6f">More...</a><br /></td></tr>
 <tr class="separator:a3cfed3b0da284339dcdd02b50dcafa6f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af5f70f90ab27cd12ed017a4e1d2494b1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structripple_1_1Fees.html">Fees</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1OpenView.html#af5f70f90ab27cd12ed017a4e1d2494b1">fees</a> () const override</td></tr>
@@ -259,7 +259,7 @@ Private Attributes</h2></td></tr>
 <tr class="separator:adf32abeccc0ca8255ad89872ca85ff25"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7acff4b564ca5b36eb38322e0c6f8609"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Rules.html">Rules</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1OpenView.html#a7acff4b564ca5b36eb38322e0c6f8609">rules_</a></td></tr>
 <tr class="separator:a7acff4b564ca5b36eb38322e0c6f8609"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a83cd3f615ed22414ea48dee22ed925ae"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structripple_1_1LedgerInfo.html">LedgerInfo</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1OpenView.html#a83cd3f615ed22414ea48dee22ed925ae">info_</a></td></tr>
+<tr class="memitem:a83cd3f615ed22414ea48dee22ed925ae"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#aaf521cde20561da32d6a54a105363555">LedgerInfo</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1OpenView.html#a83cd3f615ed22414ea48dee22ed925ae">info_</a></td></tr>
 <tr class="separator:a83cd3f615ed22414ea48dee22ed925ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a313ac645b10e79426ae6c7fe706c6141"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1ReadView.html">ReadView</a> const  *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1OpenView.html#a313ac645b10e79426ae6c7fe706c6141">base_</a></td></tr>
 <tr class="separator:a313ac645b10e79426ae6c7fe706c6141"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -325,7 +325,7 @@ Static Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReadView_8h_source.html#l00129">129</a> of file <a class="el" href="ReadView_8h_source.html">ReadView.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReadView_8h_source.html#l00058">58</a> of file <a class="el" href="ReadView_8h_source.html">ReadView.h</a>.</p>
 
 </div>
 </div>
@@ -349,7 +349,7 @@ Static Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReadView_8h_source.html#l00131">131</a> of file <a class="el" href="ReadView_8h_source.html">ReadView.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReadView_8h_source.html#l00060">60</a> of file <a class="el" href="ReadView_8h_source.html">ReadView.h</a>.</p>
 
 </div>
 </div>
@@ -373,7 +373,7 @@ Static Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReadView_8h_source.html#l00133">133</a> of file <a class="el" href="ReadView_8h_source.html">ReadView.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReadView_8h_source.html#l00062">62</a> of file <a class="el" href="ReadView_8h_source.html">ReadView.h</a>.</p>
 
 </div>
 </div>
@@ -721,7 +721,7 @@ The rules are inherited from the base.
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="structripple_1_1LedgerInfo.html">LedgerInfo</a> const  &amp; ripple::OpenView::info </td>
+          <td class="memname"><a class="el" href="namespaceripple.html#aaf521cde20561da32d6a54a105363555">LedgerInfo</a> const  &amp; ripple::OpenView::info </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -1340,7 +1340,7 @@ The rules are inherited from the base.
 
 <p>Returns the close time of the previous ledger. </p>
 
-<p class="definition">Definition at line <a class="el" href="ReadView_8h_source.html#l00186">186</a> of file <a class="el" href="ReadView_8h_source.html">ReadView.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReadView_8h_source.html#l00115">115</a> of file <a class="el" href="ReadView_8h_source.html">ReadView.h</a>.</p>
 
 </div>
 </div>
@@ -1369,7 +1369,7 @@ The rules are inherited from the base.
 
 <p>Returns the sequence number of the base ledger. </p>
 
-<p class="definition">Definition at line <a class="el" href="ReadView_8h_source.html#l00193">193</a> of file <a class="el" href="ReadView_8h_source.html">ReadView.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReadView_8h_source.html#l00122">122</a> of file <a class="el" href="ReadView_8h_source.html">ReadView.h</a>.</p>
 
 </div>
 </div>
@@ -1415,7 +1415,7 @@ The rules are inherited from the base.
 
 <p>Reimplemented in <a class="el" href="classripple_1_1PaymentSandbox.html#a96457b37722d895c585bcd260dd08a0f">ripple::PaymentSandbox</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="ReadView_8h_source.html#l00253">253</a> of file <a class="el" href="ReadView_8h_source.html">ReadView.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReadView_8h_source.html#l00182">182</a> of file <a class="el" href="ReadView_8h_source.html">ReadView.h</a>.</p>
 
 </div>
 </div>
@@ -1455,7 +1455,7 @@ The rules are inherited from the base.
 
 <p>Reimplemented in <a class="el" href="classripple_1_1PaymentSandbox.html#a0e77b6bdc540075e1c8e5a6f447c4b13">ripple::PaymentSandbox</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="ReadView_8h_source.html#l00267">267</a> of file <a class="el" href="ReadView_8h_source.html">ReadView.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReadView_8h_source.html#l00196">196</a> of file <a class="el" href="ReadView_8h_source.html">ReadView.h</a>.</p>
 
 </div>
 </div>
@@ -1566,7 +1566,7 @@ The rules are inherited from the base.
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="structripple_1_1LedgerInfo.html">LedgerInfo</a> ripple::OpenView::info_</td>
+          <td class="memname"><a class="el" href="namespaceripple.html#aaf521cde20561da32d6a54a105363555">LedgerInfo</a> ripple::OpenView::info_</td>
         </tr>
       </table>
   </td>
@@ -1699,7 +1699,7 @@ The rules are inherited from the base.
 <p>Iterable range of ledger state items. </p>
 <dl class="section note"><dt>Note</dt><dd>Visiting each state entry in the ledger can become quite expensive as the ledger grows. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="ReadView_8h_source.html#l00320">320</a> of file <a class="el" href="ReadView_8h_source.html">ReadView.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReadView_8h_source.html#l00249">249</a> of file <a class="el" href="ReadView_8h_source.html">ReadView.h</a>.</p>
 
 </div>
 </div>
@@ -1723,7 +1723,7 @@ The rules are inherited from the base.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReadView_8h_source.html#l00323">323</a> of file <a class="el" href="ReadView_8h_source.html">ReadView.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReadView_8h_source.html#l00252">252</a> of file <a class="el" href="ReadView_8h_source.html">ReadView.h</a>.</p>
 
 </div>
 </div>

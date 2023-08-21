@@ -19,7 +19,7 @@
 <area shape="rect" id="node16" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="237,506,405,547"/>
 <area shape="rect" id="node17" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,551,108,577"/>
 <area shape="rect" id="node31" href="$classripple_1_1SHAMap.html" title="A SHAMap is both a radix tree with a fan&#45;out of 16 and a Merkle tree." alt="" coords="966,980,1087,1007"/>
-<area shape="rect" id="node37" href="$structripple_1_1LedgerInfo.html" title="Information about the notional ledger backing the view." alt="" coords="959,576,1095,603"/>
+<area shape="rect" id="node37" href="$structripple_1_1LedgerHeader.html" title="Information about the notional ledger backing the view." alt="" coords="947,576,1106,603"/>
 <area shape="rect" id="node18" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="584,852,695,879"/>
 <area shape="rect" id="node23" href="$classripple_1_1Ledger.html" title="Holds a ledger." alt="" coords="1383,852,1493,879"/>
 <area shape="rect" id="node19" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="248,852,395,879"/>

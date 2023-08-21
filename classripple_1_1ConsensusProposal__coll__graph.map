@@ -1,6 +1,9 @@
-<map id="ripple::ConsensusProposal&lt; NodeID_t, LedgerID_t, Position_t &gt;" name="ripple::ConsensusProposal&lt; NodeID_t, LedgerID_t, Position_t &gt;">
-<area shape="rect" id="node1" title="Represents a proposed position taken during a round of consensus." alt="" coords="317,59,511,115"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="40,15,143,41"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="14,66,169,107"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/time_point.html" title=" " alt="" coords="5,131,177,173"/>
+<map id="ripple::ConsensusProposal&lt; NodeID_t, LedgerID_t, Position_t, Seq &gt;" name="ripple::ConsensusProposal&lt; NodeID_t, LedgerID_t, Position_t, Seq &gt;">
+<area shape="rect" id="node1" title="Represents a proposed position taken during a round of consensus." alt="" coords="585,104,779,160"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="307,9,409,36"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="279,60,437,87"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="281,111,435,153"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/time_point.html" title=" " alt="" coords="272,177,444,218"/>
+<area shape="rect" id="node6" href="$classripple_1_1ConsensusTimer.html" title="Measures the duration of phases of consensus." alt="" coords="271,243,445,269"/>
+<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="5,243,189,269"/>
 </map>

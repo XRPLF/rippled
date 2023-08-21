@@ -124,7 +124,7 @@ Collaboration diagram for ripple::AMMWithdraw:</div>
 <area shape="rect" href="classripple_1_1detail_1_1RawStateTable.html" title=" " alt="" coords="947,958,1121,999"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html" title=" " alt="" coords="552,987,755,1043"/>
 <area shape="rect" href="classripple_1_1XRPAmount.html" title=" " alt="" coords="582,841,725,868"/>
-<area shape="rect" href="structripple_1_1LedgerInfo.html" title="Information about the notional ledger backing the view." alt="" coords="966,712,1102,739"/>
+<area shape="rect" href="structripple_1_1LedgerHeader.html" title="Information about the notional ledger backing the view." alt="" coords="955,712,1113,739"/>
 <area shape="rect" title=" " alt="" coords="251,735,417,777"/>
 <area shape="rect" title=" " alt="" coords="221,801,447,828"/>
 <area shape="rect" title=" " alt="" coords="229,853,439,894"/>
@@ -133,11 +133,11 @@ Collaboration diagram for ripple::AMMWithdraw:</div>
 <area shape="rect" href="classripple_1_1Rules.html" title="Rules controlling protocol behavior." alt="" coords="983,623,1085,649"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="568,553,739,594"/>
 <area shape="rect" href="classripple_1_1Rules_1_1Impl.html" title=" " alt="" coords="265,633,403,660"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="953,893,1115,934"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="5,663,108,689"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/container/array.html" title=" " alt="" coords="250,333,418,374"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/chrono/duration.html" title=" " alt="" coords="575,735,731,777"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/chrono/time_point.html" title=" " alt="" coords="567,618,739,659"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="953,893,1115,934"/>
 <area shape="rect" href="classripple_1_1STObject.html" title=" " alt="" coords="591,483,716,509"/>
 <area shape="rect" href="classripple_1_1STBase.html" title="A type which can be exported to a well known binary format." alt="" coords="277,516,391,543"/>
 <area shape="rect" href="classripple_1_1CountedObject.html" title=" " alt="" coords="253,567,415,609"/>
@@ -244,9 +244,6 @@ Private Member Functions</h2></td></tr>
 <tr class="memitem:ae118560969025af2963d994ea4247d7b"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>, <a class="el" href="classripple_1_1STAmount.html">STAmount</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AMMWithdraw.html#ae118560969025af2963d994ea4247d7b">singleWithdrawEPrice</a> (<a class="el" href="classripple_1_1Sandbox.html">Sandbox</a> &amp;<a class="el" href="classripple_1_1Transactor.html#a1ac5d16d7b21e8af9cc94d7af39a85d5">view</a>, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;ammAccount, <a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;amountBalance, <a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;lptAMMBalance, <a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;amount, <a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;ePrice, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint16_t</a> tfee)</td></tr>
 <tr class="memdesc:ae118560969025af2963d994ea4247d7b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Withdraw single asset (Asset1Out, EPrice) with two constraints.  <a href="classripple_1_1AMMWithdraw.html#ae118560969025af2963d994ea4247d7b">More...</a><br /></td></tr>
 <tr class="separator:ae118560969025af2963d994ea4247d7b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a08ed67b581073ac6f7697a4432a7b4fb"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AMMWithdraw.html#a08ed67b581073ac6f7697a4432a7b4fb">deleteAccount</a> (<a class="el" href="classripple_1_1Sandbox.html">Sandbox</a> &amp;<a class="el" href="classripple_1_1Transactor.html#a1ac5d16d7b21e8af9cc94d7af39a85d5">view</a>, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;<a class="el" href="namespaceripple.html#a768092086ea18d2dbeb64efb9fa12ba5">ammAccountID</a>)</td></tr>
-<tr class="memdesc:a08ed67b581073ac6f7697a4432a7b4fb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Delete AMM account.  <a href="classripple_1_1AMMWithdraw.html#a08ed67b581073ac6f7697a4432a7b4fb">More...</a><br /></td></tr>
-<tr class="separator:a08ed67b581073ac6f7697a4432a7b4fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af81f796422a3f66771e31a6ecbbbf57b"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>, <a class="el" href="classripple_1_1XRPAmount.html">XRPAmount</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transactor.html#af81f796422a3f66771e31a6ecbbbf57b">reset</a> (<a class="el" href="classripple_1_1XRPAmount.html">XRPAmount</a> fee)</td></tr>
 <tr class="memdesc:af81f796422a3f66771e31a6ecbbbf57b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reset the context, discarding any changes made and adjust the fee.  <a href="classripple_1_1Transactor.html#af81f796422a3f66771e31a6ecbbbf57b">More...</a><br /></td></tr>
 <tr class="separator:af81f796422a3f66771e31a6ecbbbf57b"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -351,7 +348,7 @@ Static Private Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AMMWithdraw_8cpp_source.html#l00037">37</a> of file <a class="el" href="AMMWithdraw_8cpp_source.html">AMMWithdraw.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AMMWithdraw_8cpp_source.html#l00036">36</a> of file <a class="el" href="AMMWithdraw_8cpp_source.html">AMMWithdraw.cpp</a>.</p>
 
 </div>
 </div>
@@ -379,7 +376,7 @@ Static Private Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AMMWithdraw_8cpp_source.html#l00173">173</a> of file <a class="el" href="AMMWithdraw_8cpp_source.html">AMMWithdraw.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AMMWithdraw_8cpp_source.html#l00172">172</a> of file <a class="el" href="AMMWithdraw_8cpp_source.html">AMMWithdraw.cpp</a>.</p>
 
 </div>
 </div>
@@ -408,7 +405,7 @@ Static Private Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Transactor.html#af0192505cdcebc1bb31be32dfb62aa72">ripple::Transactor</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="AMMWithdraw_8cpp_source.html#l00391">391</a> of file <a class="el" href="AMMWithdraw_8cpp_source.html">AMMWithdraw.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AMMWithdraw_8cpp_source.html#l00407">407</a> of file <a class="el" href="AMMWithdraw_8cpp_source.html">AMMWithdraw.cpp</a>.</p>
 
 </div>
 </div>
@@ -436,7 +433,7 @@ Static Private Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AMMWithdraw_8cpp_source.html#l00295">295</a> of file <a class="el" href="AMMWithdraw_8cpp_source.html">AMMWithdraw.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AMMWithdraw_8cpp_source.html#l00296">296</a> of file <a class="el" href="AMMWithdraw_8cpp_source.html">AMMWithdraw.cpp</a>.</p>
 
 </div>
 </div>
@@ -526,7 +523,7 @@ Static Private Member Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd></dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="AMMWithdraw_8cpp_source.html#l00423">423</a> of file <a class="el" href="AMMWithdraw_8cpp_source.html">AMMWithdraw.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AMMWithdraw_8cpp_source.html#l00421">421</a> of file <a class="el" href="AMMWithdraw_8cpp_source.html">AMMWithdraw.cpp</a>.</p>
 
 </div>
 </div>
@@ -617,7 +614,7 @@ Static Private Member Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd></dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="AMMWithdraw_8cpp_source.html#l00574">574</a> of file <a class="el" href="AMMWithdraw_8cpp_source.html">AMMWithdraw.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AMMWithdraw_8cpp_source.html#l00569">569</a> of file <a class="el" href="AMMWithdraw_8cpp_source.html">AMMWithdraw.cpp</a>.</p>
 
 </div>
 </div>
@@ -709,7 +706,7 @@ Static Private Member Functions</h2></td></tr>
 <dl class="section return"><dt>Returns</dt><dd></dd></dl>
 <p>a = (t/T) * A (5) b = (t/T) * B (6) where A,B: current pool composition T: current balance of outstanding LPTokens a: balance of asset A being withdrawn b: balance of asset B being withdrawn t: balance of LPTokens issued to LP after a successful transaction Use equation 5 to compute t, given the amount in Asset1Out. Let this be Z Use equation 6 to compute the amount of asset2, given Z. Let the computed amount of asset2 be X If X &lt;= amount in Asset2Out: The amount of asset1 to be withdrawn is the one specified in Asset1Out The amount of asset2 to be withdrawn is X The amount of LPTokens redeemed is Z If X&gt; amount in Asset2Out: Use equation 5 to compute t, given the amount in Asset2Out. Let this be Q Use equation 6 to compute the amount of asset1, given Q. Let the computed amount of asset1 be W The amount of asset2 to be withdrawn is the one specified in Asset2Out The amount of asset1 to be withdrawn is W The amount of LPTokens redeemed is Q </p>
 
-<p class="definition">Definition at line <a class="el" href="AMMWithdraw_8cpp_source.html#l00654">654</a> of file <a class="el" href="AMMWithdraw_8cpp_source.html">AMMWithdraw.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AMMWithdraw_8cpp_source.html#l00649">649</a> of file <a class="el" href="AMMWithdraw_8cpp_source.html">AMMWithdraw.cpp</a>.</p>
 
 </div>
 </div>
@@ -787,7 +784,7 @@ Static Private Member Functions</h2></td></tr>
 <dl class="section return"><dt>Returns</dt><dd></dd></dl>
 <p>t = T * (c - sqrt(c**2 - 4*R))/2 where R = b/B, c = R*fee + 2 - fee Use equation 7 to compute the t, given the amount in Asset1Out. </p>
 
-<p class="definition">Definition at line <a class="el" href="AMMWithdraw_8cpp_source.html#l00696">696</a> of file <a class="el" href="AMMWithdraw_8cpp_source.html">AMMWithdraw.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AMMWithdraw_8cpp_source.html#l00691">691</a> of file <a class="el" href="AMMWithdraw_8cpp_source.html">AMMWithdraw.cpp</a>.</p>
 
 </div>
 </div>
@@ -872,7 +869,7 @@ Static Private Member Functions</h2></td></tr>
 <dl class="section return"><dt>Returns</dt><dd></dd></dl>
 <p>Use equation 8 to compute the amount of asset1, given the redeemed t represented by LPTokens. Let this be Y. If (amount exists for Asset1Out &amp; Y &gt;= amount in Asset1Out) || (amount field does not exist for Asset1Out): The amount of asset out is Y The amount of LPTokens redeemed is LPTokens Equation 8 solves equation 7 </p><dl class="section see"><dt>See also</dt><dd><a class="el" href="classripple_1_1AMMWithdraw.html#a41ba8cc3d6402d3babee02819a78fca4" title="Single asset withdrawal (Asset1Out) equivalent to the amount specified in Asset1Out.">singleWithdraw</a> for b. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="AMMWithdraw_8cpp_source.html#l00729">729</a> of file <a class="el" href="AMMWithdraw_8cpp_source.html">AMMWithdraw.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AMMWithdraw_8cpp_source.html#l00724">724</a> of file <a class="el" href="AMMWithdraw_8cpp_source.html">AMMWithdraw.cpp</a>.</p>
 
 </div>
 </div>
@@ -957,55 +954,7 @@ Static Private Member Functions</h2></td></tr>
 <dl class="section return"><dt>Returns</dt><dd></dd></dl>
 <p>a. amount of asset1 if specified (not 0) in Asset1Out specifies the minimum amount of asset1 that the trader is willing to withdraw. b. The effective price of asset traded out does not exceed the amount specified in EPrice The effective price (EP) of a trade is defined as the ratio of the tokens the trader sold or swapped in (Token B) and the token they got in return or swapped out (Token A). EP(B/A) = b/a (III) b = B * (t1**2 + t1*(f - 2))/(t1*f - 1) (8) where t1 = t/T Use equations 8 &amp; III and amount in EPrice to compute the two variables: asset in as LPTokens. Let this be X asset out as that in Asset1Out. Let this be Y If (amount exists for Asset1Out &amp; Y &gt;= amount in Asset1Out) || (amount field does not exist for Asset1Out): The amount of assetOut is given by Y The amount of LPTokens is given by X </p>
 
-<p class="definition">Definition at line <a class="el" href="AMMWithdraw_8cpp_source.html#l00773">773</a> of file <a class="el" href="AMMWithdraw_8cpp_source.html">AMMWithdraw.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a08ed67b581073ac6f7697a4432a7b4fb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a08ed67b581073ac6f7697a4432a7b4fb">&#9670;&nbsp;</a></span>deleteAccount()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a> ripple::AMMWithdraw::deleteAccount </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1Sandbox.html">Sandbox</a> &amp;&#160;</td>
-          <td class="paramname"><em>view</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;&#160;</td>
-          <td class="paramname"><em>ammAccountID</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Delete AMM account. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">view</td><td></td></tr>
-    <tr><td class="paramname">ammAccountID</td><td></td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd></dd></dl>
-
-<p class="definition">Definition at line <a class="el" href="AMMWithdraw_8cpp_source.html#l00405">405</a> of file <a class="el" href="AMMWithdraw_8cpp_source.html">AMMWithdraw.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AMMWithdraw_8cpp_source.html#l00768">768</a> of file <a class="el" href="AMMWithdraw_8cpp_source.html">AMMWithdraw.cpp</a>.</p>
 
 </div>
 </div>
@@ -1034,7 +983,7 @@ Static Private Member Functions</h2></td></tr>
 
 <p>Process the transaction. </p>
 
-<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00801">801</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00827">827</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
 
 </div>
 </div>
@@ -1467,7 +1416,7 @@ Static Private Member Functions</h2></td></tr>
 
 <p>Reset the context, discarding any changes made and adjust the fee. </p>
 
-<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00762">762</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00788">788</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
 
 </div>
 </div>

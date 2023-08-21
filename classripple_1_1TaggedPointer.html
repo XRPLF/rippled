@@ -174,7 +174,7 @@ Static Private Attributes</h2></td></tr>
 <p>The "pointer" part points to to the equivalent to an array of <code><a class="el" href="classripple_1_1SHAMapHash.html">SHAMapHash</a></code> followed immediately by an array of <code>shared_ptr&lt;<a class="el" href="classripple_1_1SHAMapTreeNode.html">SHAMapTreeNode</a>&gt;</code>. The sizes of these arrays are determined by the tag. The tag is an index into an array (<code>boundaries</code>, defined in the cpp file) that specifies the size. Both arrays are the same size. Note that the sizes may be smaller than the full 16 elements needed to explicitly store all the children. In this case, the arrays only store the non-empty children. The non-empty children are stored in index order. For example, if only children <code>2</code> and <code>14</code> are non-empty, a two-element array would store child <code>2</code> in array index 0 and child <code>14</code> in array index 1. There are functions to convert between a child's tree index and the child's index in a sparse array.</p>
 <p>The motivation for this class is saving RAM. A large percentage of inner nodes only store a small number of children. Memory can be saved by storing the inner node's children in sparse arrays. Measurements show that on average a typical <a class="el" href="classripple_1_1SHAMap.html" title="A SHAMap is both a radix tree with a fan-out of 16 and a Merkle tree.">SHAMap</a>'s inner nodes can be stored using only 25% of the original space. </p>
 
-<p class="definition">Definition at line <a class="el" href="TaggedPointer_8h_source.html#l00057">57</a> of file <a class="el" href="TaggedPointer_8h_source.html">TaggedPointer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TaggedPointer_8h_source.html#l00059">59</a> of file <a class="el" href="TaggedPointer_8h_source.html">TaggedPointer.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="ab8fa030a8360a2d5085bad936e8170d3"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ab8fa030a8360a2d5085bad936e8170d3">&#9670;&nbsp;</a></span>TaggedPointer() <span class="overload">[1/7]</span></h2>
@@ -747,7 +747,7 @@ template&lt;class F &gt; </div>
 
 <p>Upper bits are the pointer, lowest two bits are the tag A moved-from object will have a tp_ of zero. </p>
 
-<p class="definition">Definition at line <a class="el" href="TaggedPointer_8h_source.html#l00065">65</a> of file <a class="el" href="TaggedPointer_8h_source.html">TaggedPointer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TaggedPointer_8h_source.html#l00067">67</a> of file <a class="el" href="TaggedPointer_8h_source.html">TaggedPointer.h</a>.</p>
 
 </div>
 </div>
@@ -773,7 +773,7 @@ template&lt;class F &gt; </div>
 
 <p>bit-and with this mask to get the tag bits (lowest two bits) </p>
 
-<p class="definition">Definition at line <a class="el" href="TaggedPointer_8h_source.html#l00067">67</a> of file <a class="el" href="TaggedPointer_8h_source.html">TaggedPointer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TaggedPointer_8h_source.html#l00069">69</a> of file <a class="el" href="TaggedPointer_8h_source.html">TaggedPointer.h</a>.</p>
 
 </div>
 </div>
@@ -799,7 +799,7 @@ template&lt;class F &gt; </div>
 
 <p>bit-and with this mask to get the pointer bits (mask out the tag) </p>
 
-<p class="definition">Definition at line <a class="el" href="TaggedPointer_8h_source.html#l00069">69</a> of file <a class="el" href="TaggedPointer_8h_source.html">TaggedPointer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TaggedPointer_8h_source.html#l00071">71</a> of file <a class="el" href="TaggedPointer_8h_source.html">TaggedPointer.h</a>.</p>
 
 </div>
 </div>

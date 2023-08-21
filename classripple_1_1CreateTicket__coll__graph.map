@@ -11,7 +11,7 @@
 <area shape="rect" id="node9" href="$classbeast_1_1List.html" title=" " alt="" coords="561,14,746,55"/>
 <area shape="rect" id="node10" href="$classbeast_1_1detail_1_1ListNode.html" title=" " alt="" coords="243,7,425,63"/>
 <area shape="rect" id="node11" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="290,208,378,235"/>
-<area shape="rect" id="node36" href="$classripple_1_1base__uint.html" title=" " alt="" coords="583,419,724,461"/>
+<area shape="rect" id="node37" href="$classripple_1_1base__uint.html" title=" " alt="" coords="583,419,724,461"/>
 <area shape="rect" id="node40" href="$classripple_1_1STTx.html" title=" " alt="" coords="985,408,1083,435"/>
 <area shape="rect" id="node50" href="$classripple_1_1base__uint.html" title="Integers of any length that is a multiple of 32&#45;bits." alt="" coords="583,354,724,395"/>
 <area shape="rect" id="node13" title=" " alt="" coords="961,212,1107,239"/>
@@ -26,7 +26,7 @@
 <area shape="rect" id="node22" href="$classripple_1_1detail_1_1RawStateTable.html" title=" " alt="" coords="947,917,1121,958"/>
 <area shape="rect" id="node23" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="552,1037,755,1093"/>
 <area shape="rect" id="node24" href="$classripple_1_1XRPAmount.html" title=" " alt="" coords="582,771,725,797"/>
-<area shape="rect" id="node33" href="$structripple_1_1LedgerInfo.html" title="Information about the notional ledger backing the view." alt="" coords="966,865,1102,892"/>
+<area shape="rect" id="node34" href="$structripple_1_1LedgerHeader.html" title="Information about the notional ledger backing the view." alt="" coords="955,865,1113,892"/>
 <area shape="rect" id="node25" title=" " alt="" coords="251,901,417,942"/>
 <area shape="rect" id="node26" title=" " alt="" coords="221,667,447,693"/>
 <area shape="rect" id="node27" title=" " alt="" coords="229,718,439,759"/>
@@ -35,11 +35,11 @@
 <area shape="rect" id="node30" href="$classripple_1_1Rules.html" title="Rules controlling protocol behavior." alt="" coords="983,612,1085,639"/>
 <area shape="rect" id="node31" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="568,610,739,651"/>
 <area shape="rect" id="node32" href="$classripple_1_1Rules_1_1Impl.html" title=" " alt="" coords="265,616,403,643"/>
-<area shape="rect" id="node34" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,967,108,993"/>
-<area shape="rect" id="node37" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="250,382,418,423"/>
-<area shape="rect" id="node35" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="575,971,731,1013"/>
-<area shape="rect" id="node38" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/time_point.html" title=" " alt="" coords="567,854,739,895"/>
-<area shape="rect" id="node39" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="953,799,1115,841"/>
+<area shape="rect" id="node33" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="953,799,1115,841"/>
+<area shape="rect" id="node35" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,967,108,993"/>
+<area shape="rect" id="node38" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="250,382,418,423"/>
+<area shape="rect" id="node36" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="575,971,731,1013"/>
+<area shape="rect" id="node39" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/time_point.html" title=" " alt="" coords="567,854,739,895"/>
 <area shape="rect" id="node41" href="$classripple_1_1STObject.html" title=" " alt="" coords="591,507,716,533"/>
 <area shape="rect" id="node42" href="$classripple_1_1STBase.html" title="A type which can be exported to a well known binary format." alt="" coords="277,448,391,475"/>
 <area shape="rect" id="node43" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="253,499,415,541"/>
