@@ -162,7 +162,7 @@ EscrowCreate::preclaim(PreclaimContext const& ctx)
     auto const sled = ctx.view.read(keylet::account(ctx.tx[sfDestination]));
     if (!sled)
         return tecNO_DST;
-    if (((*sled)[sfFlags] & lsfAMM))
+    if (sled->isFieldPresent(sfAMMID))
         return tecNO_PERMISSION;
 
     return tesSUCCESS;

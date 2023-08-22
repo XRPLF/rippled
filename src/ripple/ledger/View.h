@@ -42,7 +42,7 @@
 
 namespace ripple {
 
-enum class WaiveTransferFee { Yes, No };
+enum class WaiveTransferFee : bool { No = false, Yes };
 
 //------------------------------------------------------------------------------
 //
@@ -457,6 +457,33 @@ transferXRP(
  */
 [[nodiscard]] TER
 requireAuth(ReadView const& view, Issue const& issue, AccountID const& account);
+
+/** Cleanup owner directory entries on account delete.
+ * Used for a regular and AMM accounts deletion. The caller
+ * has to provide the deleter function, which handles details of
+ * specific account-owned object deletion.
+ * @return tecINCOMPLETE indicates maxNodesToDelete
+ * are deleted and there remains more nodes to delete.
+ */
+[[nodiscard]] TER
+cleanupOnAccountDelete(
+    ApplyView& view,
+    Keylet const& ownerDirKeylet,
+    std::function<TER(LedgerEntryType, uint256 const&, std::shared_ptr<SLE>&)>
+        deleter,
+    beast::Journal j,
+    std::optional<std::uint16_t> maxNodesToDelete = std::nullopt);
+
+/** Delete trustline to AMM. The passed `sle` must be obtained from a prior
+ * call to view.peek(). Fail if neither side of the trustline is AMM or
+ * if ammAccountID is seated and is not one of the trustline's side.
+ */
+[[nodiscard]] TER
+deleteAMMTrustLine(
+    ApplyView& view,
+    std::shared_ptr<SLE> sleState,
+    std::optional<AccountID> const& ammAccountID,
+    beast::Journal j);
 
 }  // namespace ripple
 

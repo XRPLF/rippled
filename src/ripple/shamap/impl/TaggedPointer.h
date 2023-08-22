@@ -22,6 +22,8 @@
 
 #include <ripple/shamap/SHAMapTreeNode.h>
 
+#include <array>
+#include <bit>
 #include <cstdint>
 #include <optional>
 
@@ -216,6 +218,31 @@ public:
     std::optional<int>
     getChildIndex(std::uint16_t isBranch, int i) const;
 };
+
+[[nodiscard]] inline int
+popcnt16(std::uint16_t a)
+{
+#if __cpp_lib_bitops
+    return std::popcount(a);
+#elif defined(__clang__) || defined(__GNUC__)
+    return __builtin_popcount(a);
+#else
+    // fallback to table lookup
+    static auto constexpr const tbl = []() {
+        std::array<std::uint8_t, 256> ret{};
+        for (int i = 0; i != 256; ++i)
+        {
+            for (int j = 0; j != 8; ++j)
+            {
+                if (i & (1 << j))
+                    ret[i]++;
+            }
+        }
+        return ret;
+    }();
+    return tbl[a & 0xff] + tbl[a >> 8];
+#endif
+}
 
 }  // namespace ripple
 
