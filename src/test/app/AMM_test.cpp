@@ -27,7 +27,6 @@
 #include <test/jtx.h>
 #include <test/jtx/AMM.h>
 #include <test/jtx/AMMTest.h>
-#include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/sendmax.h>
 
@@ -109,6 +108,15 @@ private:
             env.close();
             AMM ammAlice(env, alice, XRP(10'000), USD(10'000));
         }
+
+        // Trading fee
+        testAMM(
+            [&](AMM& amm, Env&) {
+                BEAST_EXPECT(amm.expectTradingFee(1'000));
+                BEAST_EXPECT(amm.expectAuctionSlot(100, 0, IOUAmount{0}));
+            },
+            std::nullopt,
+            1'000);
     }
 
     void
@@ -392,6 +400,21 @@ private:
             AMM ammAlice1(
                 env, alice, USD(10'000), USD1(10'000), ter(terNO_RIPPLE));
         }
+
+        // Issuer has clawback enabled
+        {
+            Env env(*this);
+            env.fund(XRP(1'000), gw);
+            env(fset(gw, asfAllowTrustLineClawback));
+            fund(env, gw, {alice}, XRP(1'000), {USD(1'000)}, Fund::Acct);
+            env.close();
+            AMM amm(env, gw, XRP(100), USD(100), ter(tecNO_PERMISSION));
+            AMM amm1(env, alice, USD(100), XRP(100), ter(tecNO_PERMISSION));
+            env(fclear(gw, asfAllowTrustLineClawback));
+            env.close();
+            // Can't be cleared
+            AMM amm2(env, gw, XRP(100), USD(100), ter(tecNO_PERMISSION));
+        }
     }
 
     void
@@ -416,96 +439,167 @@ private:
                 std::optional<std::uint32_t>,
                 std::optional<STAmount>,
                 std::optional<STAmount>,
-                std::optional<STAmount>>>
+                std::optional<STAmount>,
+                std::optional<std::uint16_t>>>
                 invalidOptions = {
-                    // flags, tokens, asset1In, asset2in, EPrice
-                    {tfLPToken, 1'000, std::nullopt, USD(100), std::nullopt},
-                    {tfLPToken, 1'000, XRP(100), std::nullopt, std::nullopt},
+                    // flags, tokens, asset1In, asset2in, EPrice, tfee
                     {tfLPToken,
                      1'000,
                      std::nullopt,
-                     std::nullopt,
-                     STAmount{USD, 1, -1}},
-                    {tfLPToken,
-                     std::nullopt,
                      USD(100),
                      std::nullopt,
-                     STAmount{USD, 1, -1}},
+                     std::nullopt},
                     {tfLPToken,
                      1'000,
                      XRP(100),
                      std::nullopt,
-                     STAmount{USD, 1, -1}},
+                     std::nullopt,
+                     std::nullopt},
+                    {tfLPToken,
+                     1'000,
+                     std::nullopt,
+                     std::nullopt,
+                     STAmount{USD, 1, -1},
+                     std::nullopt},
+                    {tfLPToken,
+                     std::nullopt,
+                     USD(100),
+                     std::nullopt,
+                     STAmount{USD, 1, -1},
+                     std::nullopt},
+                    {tfLPToken,
+                     1'000,
+                     XRP(100),
+                     std::nullopt,
+                     STAmount{USD, 1, -1},
+                     std::nullopt},
+                    {tfLPToken,
+                     1'000,
+                     std::nullopt,
+                     std::nullopt,
+                     std::nullopt,
+                     1'000},
                     {tfSingleAsset,
                      1'000,
                      std::nullopt,
                      std::nullopt,
+                     std::nullopt,
                      std::nullopt},
                     {tfSingleAsset,
                      std::nullopt,
                      std::nullopt,
                      USD(100),
+                     std::nullopt,
                      std::nullopt},
                     {tfSingleAsset,
                      std::nullopt,
                      std::nullopt,
                      std::nullopt,
-                     STAmount{USD, 1, -1}},
+                     STAmount{USD, 1, -1},
+                     std::nullopt},
+                    {tfSingleAsset,
+                     std::nullopt,
+                     USD(100),
+                     std::nullopt,
+                     std::nullopt,
+                     1'000},
                     {tfTwoAsset,
                      1'000,
                      std::nullopt,
                      std::nullopt,
+                     std::nullopt,
                      std::nullopt},
                     {tfTwoAsset,
                      std::nullopt,
                      XRP(100),
                      USD(100),
-                     STAmount{USD, 1, -1}},
+                     STAmount{USD, 1, -1},
+                     std::nullopt},
                     {tfTwoAsset,
                      std::nullopt,
                      XRP(100),
                      std::nullopt,
+                     std::nullopt,
                      std::nullopt},
+                    {tfTwoAsset,
+                     std::nullopt,
+                     XRP(100),
+                     USD(100),
+                     std::nullopt,
+                     1'000},
                     {tfTwoAsset,
                      std::nullopt,
                      std::nullopt,
                      USD(100),
-                     STAmount{USD, 1, -1}},
+                     STAmount{USD, 1, -1},
+                     std::nullopt},
                     {tfOneAssetLPToken,
                      1'000,
                      std::nullopt,
                      std::nullopt,
+                     std::nullopt,
                      std::nullopt},
                     {tfOneAssetLPToken,
                      std::nullopt,
                      XRP(100),
                      USD(100),
+                     std::nullopt,
                      std::nullopt},
                     {tfOneAssetLPToken,
                      std::nullopt,
                      XRP(100),
                      std::nullopt,
-                     STAmount{USD, 1, -1}},
+                     STAmount{USD, 1, -1},
+                     std::nullopt},
+                    {tfOneAssetLPToken,
+                     1'000,
+                     XRP(100),
+                     std::nullopt,
+                     std::nullopt,
+                     1'000},
                     {tfLimitLPToken,
                      1'000,
+                     std::nullopt,
                      std::nullopt,
                      std::nullopt,
                      std::nullopt},
                     {tfLimitLPToken,
                      1'000,
                      USD(100),
+                     std::nullopt,
                      std::nullopt,
                      std::nullopt},
                     {tfLimitLPToken,
                      std::nullopt,
                      USD(100),
                      XRP(100),
+                     std::nullopt,
                      std::nullopt},
                     {tfLimitLPToken,
                      std::nullopt,
+                     XRP(100),
+                     std::nullopt,
+                     STAmount{USD, 1, -1},
+                     1'000},
+                    {tfTwoAssetIfEmpty,
                      std::nullopt,
                      std::nullopt,
-                     STAmount{USD, 1, -1}}};
+                     std::nullopt,
+                     std::nullopt,
+                     1'000},
+                    {tfTwoAssetIfEmpty,
+                     1'000,
+                     std::nullopt,
+                     std::nullopt,
+                     std::nullopt,
+                     std::nullopt},
+                    {tfTwoAssetIfEmpty,
+                     std::nullopt,
+                     XRP(100),
+                     USD(100),
+                     STAmount{USD, 1, -1},
+                     std::nullopt},
+                };
             for (auto const& it : invalidOptions)
             {
                 ammAlice.deposit(
@@ -517,6 +611,7 @@ private:
                     std::get<0>(it),
                     std::nullopt,
                     std::nullopt,
+                    std::get<5>(it),
                     ter(temMALFORMED));
             }
 
@@ -542,6 +637,7 @@ private:
                     std::nullopt,
                     std::nullopt,
                     {{iss1, iss2}},
+                    std::nullopt,
                     std::nullopt,
                     ter(terNO_AMM));
             }
@@ -617,6 +713,7 @@ private:
                 std::nullopt,
                 std::nullopt,
                 seq(1),
+                std::nullopt,
                 ter(terNO_ACCOUNT));
 
             // Invalid AMM
@@ -628,6 +725,7 @@ private:
                 std::nullopt,
                 std::nullopt,
                 {{USD, GBP}},
+                std::nullopt,
                 std::nullopt,
                 ter(terNO_AMM));
 
@@ -642,6 +740,7 @@ private:
                 std::nullopt,
                 std::nullopt,
                 std::nullopt,
+                std::nullopt,
                 ter(tecAMM_FAILED));
 
             // Single deposit: 100000 tokens worth of XRP
@@ -650,6 +749,7 @@ private:
                 carol,
                 100'000,
                 XRP(200),
+                std::nullopt,
                 std::nullopt,
                 std::nullopt,
                 std::nullopt,
@@ -689,6 +789,15 @@ private:
                 std::nullopt,
                 std::nullopt,
                 ter(tecAMM_INVALID_TOKENS));
+
+            // Deposit non-empty AMM
+            ammAlice.deposit(
+                carol,
+                XRP(100),
+                USD(100),
+                std::nullopt,
+                tfTwoAssetIfEmpty,
+                ter(tecAMM_NOT_EMPTY));
         });
 
         // Invalid AMM
@@ -790,6 +899,7 @@ private:
                 std::nullopt,
                 std::nullopt,
                 std::nullopt,
+                std::nullopt,
                 ter(tecUNFUNDED_AMM));
         });
 
@@ -803,6 +913,7 @@ private:
             ammAlice.deposit(
                 bob,
                 10'000'000,
+                std::nullopt,
                 std::nullopt,
                 std::nullopt,
                 std::nullopt,
@@ -884,6 +995,7 @@ private:
                 tfTwoAsset,
                 std::nullopt,
                 std::nullopt,
+                std::nullopt,
                 ter(temBAD_AMM_TOKENS));
             // min amounts can't be <= zero
             ammAlice.deposit(
@@ -895,6 +1007,7 @@ private:
                 tfTwoAsset,
                 std::nullopt,
                 std::nullopt,
+                std::nullopt,
                 ter(temBAD_AMOUNT));
             ammAlice.deposit(
                 carol,
@@ -903,6 +1016,7 @@ private:
                 USD(-1),
                 std::nullopt,
                 tfTwoAsset,
+                std::nullopt,
                 std::nullopt,
                 std::nullopt,
                 ter(temBAD_AMOUNT));
@@ -916,6 +1030,7 @@ private:
                 tfTwoAsset,
                 std::nullopt,
                 std::nullopt,
+                std::nullopt,
                 ter(temBAD_CURRENCY));
             // min amount bad token pair
             ammAlice.deposit(
@@ -927,6 +1042,7 @@ private:
                 tfTwoAsset,
                 std::nullopt,
                 std::nullopt,
+                std::nullopt,
                 ter(temBAD_AMM_TOKENS));
             ammAlice.deposit(
                 carol,
@@ -935,6 +1051,7 @@ private:
                 GBP(100),
                 std::nullopt,
                 tfTwoAsset,
+                std::nullopt,
                 std::nullopt,
                 std::nullopt,
                 ter(temBAD_AMM_TOKENS));
@@ -952,6 +1069,7 @@ private:
                 tfLPToken,
                 std::nullopt,
                 std::nullopt,
+                std::nullopt,
                 ter(tecAMM_FAILED));
             ammAlice.deposit(
                 carol,
@@ -960,6 +1078,7 @@ private:
                 USD(1'000),
                 std::nullopt,
                 tfLPToken,
+                std::nullopt,
                 std::nullopt,
                 std::nullopt,
                 ter(tecAMM_FAILED));
@@ -973,6 +1092,7 @@ private:
                 tfTwoAsset,
                 std::nullopt,
                 std::nullopt,
+                std::nullopt,
                 ter(tecAMM_FAILED));
             // Single deposit by asset
             ammAlice.deposit(
@@ -982,6 +1102,7 @@ private:
                 std::nullopt,
                 std::nullopt,
                 tfSingleAsset,
+                std::nullopt,
                 std::nullopt,
                 std::nullopt,
                 ter(tecAMM_FAILED));
@@ -1247,6 +1368,16 @@ private:
                 std::nullopt,
                 std::nullopt,
                 tfBurnable,
+                std::nullopt,
+                std::nullopt,
+                ter(temINVALID_FLAG));
+            ammAlice.withdraw(
+                alice,
+                1'000'000,
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                tfTwoAssetIfEmpty,
                 std::nullopt,
                 std::nullopt,
                 ter(temINVALID_FLAG));
@@ -1770,8 +1901,18 @@ private:
 
         // Withdraw all tokens.
         testAMM([&](AMM& ammAlice, Env& env) {
+            env(trust(carol, STAmount{ammAlice.lptIssue(), 10'000}));
+            // Can SetTrust only for AMM LP tokens
+            env(trust(
+                    carol,
+                    STAmount{
+                        Issue{EUR.currency, ammAlice.ammAccount()}, 10'000}),
+                ter(tecNO_PERMISSION));
+            env.close();
             ammAlice.withdrawAll(alice);
             BEAST_EXPECT(!ammAlice.ammExists());
+
+            BEAST_EXPECT(!env.le(keylet::ownerDir(ammAlice.ammAccount())));
 
             // Can create AMM for the XRP/USD pair
             AMM ammCarol(env, carol, XRP(10'000), USD(10'000));
@@ -2750,6 +2891,12 @@ private:
                 ter(tecNO_PERMISSION));
         });
 
+        // Can't pay into AMM with checks.
+        testAMM([&](AMM& ammAlice, Env& env) {
+            env(check::create(env.master.id(), ammAlice.ammAccount(), XRP(100)),
+                ter(tecNO_PERMISSION));
+        });
+
         // Pay amounts close to one side of the pool
         testAMM(
             [&](AMM& ammAlice, Env& env) {
@@ -3566,8 +3713,7 @@ private:
                 info[jss::result][jss::account_data][jss::Flags].asUInt();
             BEAST_EXPECT(
                 flags ==
-                (lsfAMM | lsfDisableMaster | lsfDefaultRipple |
-                 lsfDepositAuth));
+                (lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth));
         });
     }
 
@@ -3608,9 +3754,11 @@ private:
             AMM amm(env, C, TSTA(5'000), TSTB(5'000));
             auto const ammIss = Issue(TSTA.currency, amm.ammAccount());
 
-            env.trust(STAmount{ammIss, 10'000}, D);
+            // Can SetTrust only for AMM LP tokens
+            env(trust(D, STAmount{ammIss, 10'000}), ter(tecNO_PERMISSION));
             env.close();
 
+            // The payment would fail because of above, but check just in case
             env(pay(C, D, STAmount{ammIss, 10}),
                 sendmax(TSTA(100)),
                 path(amm.ammAccount()),
@@ -4133,6 +4281,515 @@ private:
     }
 
     void
+    testAutoDelete()
+    {
+        testcase("Auto Delete");
+
+        using namespace jtx;
+        FeatureBitset const all{supported_amendments()};
+
+        {
+            Env env(
+                *this,
+                envconfig([](std::unique_ptr<Config> cfg) {
+                    cfg->FEES.reference_fee = XRPAmount(1);
+                    return cfg;
+                }),
+                all);
+            fund(env, gw, {alice}, XRP(20'000), {USD(10'000)});
+            AMM amm(env, gw, XRP(10'000), USD(10'000));
+            for (auto i = 0; i < maxDeletableAMMTrustLines + 10; ++i)
+            {
+                Account const a{std::to_string(i)};
+                env.fund(XRP(1'000), a);
+                env(trust(a, STAmount{amm.lptIssue(), 10'000}));
+                env.close();
+            }
+            // The trustlines are partially deleted,
+            // AMM is set to an empty state.
+            amm.withdrawAll(gw);
+            BEAST_EXPECT(amm.ammExists());
+
+            // Bid,Vote,Deposit,Withdraw,SetTrust failing with
+            // tecAMM_EMPTY. Deposit succeeds with tfTwoAssetIfEmpty option.
+            amm.bid(
+                alice,
+                1000,
+                std::nullopt,
+                {},
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                ter(tecAMM_EMPTY));
+            amm.vote(
+                std::nullopt,
+                100,
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                ter(tecAMM_EMPTY));
+            amm.withdraw(
+                alice, 100, std::nullopt, std::nullopt, ter(tecAMM_EMPTY));
+            amm.deposit(
+                alice,
+                USD(100),
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                ter(tecAMM_EMPTY));
+            env(trust(alice, STAmount{amm.lptIssue(), 10'000}),
+                ter(tecAMM_EMPTY));
+
+            // Can deposit with tfTwoAssetIfEmpty option
+            amm.deposit(
+                alice,
+                std::nullopt,
+                XRP(10'000),
+                USD(10'000),
+                std::nullopt,
+                tfTwoAssetIfEmpty,
+                std::nullopt,
+                std::nullopt,
+                1'000);
+            BEAST_EXPECT(
+                amm.expectBalances(XRP(10'000), USD(10'000), amm.tokens()));
+            BEAST_EXPECT(amm.expectTradingFee(1'000));
+            BEAST_EXPECT(amm.expectAuctionSlot(100, 0, IOUAmount{0}));
+
+            // Withdrawing all tokens deletes AMM since the number
+            // of remaining trustlines is less than max
+            amm.withdrawAll(alice);
+            BEAST_EXPECT(!amm.ammExists());
+            BEAST_EXPECT(!env.le(keylet::ownerDir(amm.ammAccount())));
+        }
+
+        {
+            Env env(
+                *this,
+                envconfig([](std::unique_ptr<Config> cfg) {
+                    cfg->FEES.reference_fee = XRPAmount(1);
+                    return cfg;
+                }),
+                all);
+            fund(env, gw, {alice}, XRP(20'000), {USD(10'000)});
+            AMM amm(env, gw, XRP(10'000), USD(10'000));
+            for (auto i = 0; i < maxDeletableAMMTrustLines * 2 + 10; ++i)
+            {
+                Account const a{std::to_string(i)};
+                env.fund(XRP(1'000), a);
+                env(trust(a, STAmount{amm.lptIssue(), 10'000}));
+                env.close();
+            }
+            // The trustlines are partially deleted.
+            amm.withdrawAll(gw);
+            BEAST_EXPECT(amm.ammExists());
+
+            // AMMDelete has to be called twice to delete AMM.
+            amm.ammDelete(alice, ter(tecINCOMPLETE));
+            BEAST_EXPECT(amm.ammExists());
+            // Deletes remaining trustlines and deletes AMM.
+            amm.ammDelete(alice);
+            BEAST_EXPECT(!amm.ammExists());
+            BEAST_EXPECT(!env.le(keylet::ownerDir(amm.ammAccount())));
+        }
+    }
+
+    void
+    testClawback()
+    {
+        testcase("Clawback");
+        using namespace jtx;
+        Env env(*this);
+        env.fund(XRP(2'000), gw);
+        env.fund(XRP(2'000), alice);
+        AMM amm(env, gw, XRP(1'000), USD(1'000));
+        env(fset(gw, asfAllowTrustLineClawback), ter(tecOWNERS));
+    }
+
+    void
+    testAMMID()
+    {
+        testcase("AMMID");
+        using namespace jtx;
+        testAMM([&](AMM& amm, Env& env) {
+            amm.setClose(false);
+            auto const info = env.rpc(
+                "json",
+                "account_info",
+                std::string(
+                    "{\"account\": \"" + to_string(amm.ammAccount()) + "\"}"));
+            try
+            {
+                BEAST_EXPECT(
+                    info[jss::result][jss::account_data][jss::AMMID]
+                        .asString() == to_string(amm.ammID()));
+            }
+            catch (...)
+            {
+                fail();
+            }
+            amm.deposit(carol, 1'000);
+            auto affected = env.meta()->getJson(
+                JsonOptions::none)[sfAffectedNodes.fieldName];
+            try
+            {
+                bool found = false;
+                for (auto const& node : affected)
+                {
+                    if (node.isMember(sfModifiedNode.fieldName) &&
+                        node[sfModifiedNode.fieldName]
+                            [sfLedgerEntryType.fieldName]
+                                .asString() == "AccountRoot" &&
+                        node[sfModifiedNode.fieldName][sfFinalFields.fieldName]
+                            [jss::Account]
+                                .asString() == to_string(amm.ammAccount()))
+                    {
+                        found = node[sfModifiedNode.fieldName]
+                                    [sfFinalFields.fieldName][jss::AMMID]
+                                        .asString() == to_string(amm.ammID());
+                        break;
+                    }
+                }
+                BEAST_EXPECT(found);
+            }
+            catch (...)
+            {
+                fail();
+            }
+        });
+    }
+
+    void
+    testSelection()
+    {
+        testcase("Offer/Strand Selection");
+        using namespace jtx;
+        Account const ed("ed");
+        Account const gw1("gw1");
+        auto const ETH = gw1["ETH"];
+        auto const CAN = gw1["CAN"];
+
+        // These tests are expected to fail if the OwnerPaysFee feature
+        // is ever supported. Updates will need to be made to AMM handling
+        // in the payment engine, and these tests will need to be updated.
+
+        auto prep = [&](Env& env, auto gwRate, auto gw1Rate) {
+            fund(env, gw, {alice, carol, bob, ed}, XRP(2'000), {USD(2'000)});
+            env.fund(XRP(2'000), gw1);
+            fund(
+                env,
+                gw1,
+                {alice, carol, bob, ed},
+                {ETH(2'000), CAN(2'000)},
+                Fund::IOUOnly);
+            env(rate(gw, gwRate));
+            env(rate(gw1, gw1Rate));
+            env.close();
+        };
+
+        for (auto const& rates :
+             {std::make_pair(1.5, 1.9), std::make_pair(1.9, 1.5)})
+        {
+            // Offer Selection
+
+            // Cross-currency payment: AMM has the same spot price quality
+            // as CLOB's offer and can't generate a better quality offer.
+            // The transfer fee in this case doesn't change the CLOB quality
+            // because trIn is ignored on adjustment and trOut on payment is
+            // also ignored because ownerPaysTransferFee is false in this case.
+            // Run test for 0) offer, 1) AMM, 2) offer and AMM
+            // to verify that the quality is better in the first case,
+            // and CLOB is selected in the second case.
+            {
+                std::array<Quality, 3> q;
+                for (auto i = 0; i < 3; ++i)
+                {
+                    Env env(*this);
+                    prep(env, rates.first, rates.second);
+                    std::optional<AMM> amm;
+                    if (i == 0 || i == 2)
+                    {
+                        env(offer(ed, ETH(400), USD(400)), txflags(tfPassive));
+                        env.close();
+                    }
+                    if (i > 0)
+                        amm.emplace(env, ed, USD(1'000), ETH(1'000));
+                    env(pay(carol, bob, USD(100)),
+                        path(~USD),
+                        sendmax(ETH(500)));
+                    env.close();
+                    // CLOB and AMM, AMM is not selected
+                    if (i == 2)
+                    {
+                        BEAST_EXPECT(amm->expectBalances(
+                            USD(1'000), ETH(1'000), amm->tokens()));
+                    }
+                    BEAST_EXPECT(expectLine(env, bob, USD(2'100)));
+                    q[i] = Quality(Amounts{
+                        ETH(2'000) - env.balance(carol, ETH),
+                        env.balance(bob, USD) - USD(2'000)});
+                }
+                // CLOB is better quality than AMM
+                BEAST_EXPECT(q[0] > q[1]);
+                // AMM is not selected with CLOB
+                BEAST_EXPECT(q[0] == q[2]);
+            }
+            // Offer crossing: AMM has the same spot price quality
+            // as CLOB's offer and can't generate a better quality offer.
+            // The transfer fee in this case doesn't change the CLOB quality
+            // because the quality adjustment is ignored for the offer crossing.
+            for (auto i = 0; i < 3; ++i)
+            {
+                Env env(*this);
+                prep(env, rates.first, rates.second);
+                std::optional<AMM> amm;
+                if (i == 0 || i == 2)
+                {
+                    env(offer(ed, ETH(400), USD(400)), txflags(tfPassive));
+                    env.close();
+                }
+                if (i > 0)
+                    amm.emplace(env, ed, USD(1'000), ETH(1'000));
+                env(offer(alice, USD(400), ETH(400)));
+                env.close();
+                // AMM is not selected
+                if (i > 0)
+                {
+                    BEAST_EXPECT(amm->expectBalances(
+                        USD(1'000), ETH(1'000), amm->tokens()));
+                }
+                if (i == 0 || i == 2)
+                {
+                    // Fully crosses
+                    BEAST_EXPECT(expectOffers(env, alice, 0));
+                }
+                // Fails to cross because AMM is not selected
+                else
+                {
+                    BEAST_EXPECT(expectOffers(
+                        env, alice, 1, {Amounts{USD(400), ETH(400)}}));
+                }
+                BEAST_EXPECT(expectOffers(env, ed, 0));
+            }
+
+            // Show that the CLOB quality reduction
+            // results in AMM offer selection.
+
+            // Same as the payment but reduced offer quality
+            {
+                std::array<Quality, 3> q;
+                for (auto i = 0; i < 3; ++i)
+                {
+                    Env env(*this);
+                    prep(env, rates.first, rates.second);
+                    std::optional<AMM> amm;
+                    if (i == 0 || i == 2)
+                    {
+                        env(offer(ed, ETH(400), USD(300)), txflags(tfPassive));
+                        env.close();
+                    }
+                    if (i > 0)
+                        amm.emplace(env, ed, USD(1'000), ETH(1'000));
+                    env(pay(carol, bob, USD(100)),
+                        path(~USD),
+                        sendmax(ETH(500)));
+                    env.close();
+                    // AMM and CLOB are selected
+                    if (i > 0)
+                    {
+                        BEAST_EXPECT(!amm->expectBalances(
+                            USD(1'000), ETH(1'000), amm->tokens()));
+                    }
+                    if (i == 2)
+                    {
+                        if (rates.first == 1.5)
+                        {
+                            BEAST_EXPECT(expectOffers(
+                                env,
+                                ed,
+                                1,
+                                {{Amounts{
+                                    STAmount{
+                                        ETH, UINT64_C(378'6327949540823), -13},
+                                    STAmount{
+                                        USD,
+                                        UINT64_C(283'9745962155617),
+                                        -13}}}}));
+                        }
+                        else
+                        {
+                            BEAST_EXPECT(expectOffers(
+                                env,
+                                ed,
+                                1,
+                                {{Amounts{
+                                    STAmount{
+                                        ETH, UINT64_C(325'299461620749), -12},
+                                    STAmount{
+                                        USD,
+                                        UINT64_C(243'9745962155617),
+                                        -13}}}}));
+                        }
+                    }
+                    BEAST_EXPECT(expectLine(env, bob, USD(2'100)));
+                    q[i] = Quality(Amounts{
+                        ETH(2'000) - env.balance(carol, ETH),
+                        env.balance(bob, USD) - USD(2'000)});
+                }
+                // AMM is better quality
+                BEAST_EXPECT(q[1] > q[0]);
+                // AMM and CLOB produce better quality
+                BEAST_EXPECT(q[2] > q[1]);
+            }
+
+            // Same as the offer-crossing but reduced offer quality
+            for (auto i = 0; i < 3; ++i)
+            {
+                Env env(*this);
+                prep(env, rates.first, rates.second);
+                std::optional<AMM> amm;
+                if (i == 0 || i == 2)
+                {
+                    env(offer(ed, ETH(400), USD(250)), txflags(tfPassive));
+                    env.close();
+                }
+                if (i > 0)
+                    amm.emplace(env, ed, USD(1'000), ETH(1'000));
+                env(offer(alice, USD(250), ETH(400)));
+                env.close();
+                // AMM is selected in both cases
+                if (i > 0)
+                {
+                    BEAST_EXPECT(!amm->expectBalances(
+                        USD(1'000), ETH(1'000), amm->tokens()));
+                }
+                // Partially crosses, AMM is selected, CLOB fails limitQuality
+                if (i == 2)
+                {
+                    if (rates.first == 1.5)
+                    {
+                        BEAST_EXPECT(expectOffers(
+                            env, ed, 1, {{Amounts{ETH(400), USD(250)}}}));
+                        BEAST_EXPECT(expectOffers(
+                            env,
+                            alice,
+                            1,
+                            {{Amounts{
+                                STAmount{USD, UINT64_C(40'5694150420947), -13},
+                                STAmount{ETH, UINT64_C(64'91106406735152), -14},
+                            }}}));
+                    }
+                    else
+                    {
+                        // Ed offer is partially crossed.
+                        BEAST_EXPECT(expectOffers(
+                            env,
+                            ed,
+                            1,
+                            {{Amounts{
+                                STAmount{ETH, UINT64_C(335'0889359326485), -13},
+                                STAmount{USD, UINT64_C(209'4305849579053), -13},
+                            }}}));
+                        BEAST_EXPECT(expectOffers(env, alice, 0));
+                    }
+                }
+            }
+
+            // Strand selection
+
+            // Two book steps strand quality is 1.
+            // AMM strand's best quality is equal to AMM's spot price
+            // quality, which is 1. Both strands (steps) are adjusted
+            // for the transfer fee in qualityUpperBound. In case
+            // of two strands, AMM offers have better quality and are consumed
+            // first, remaining liquidity is generated by CLOB offers.
+            // Liquidity from two strands is better in this case than in case
+            // of one strand with two book steps. Liquidity from one strand
+            // with AMM has better quality than either one strand with two book
+            // steps or two strands. It may appear unintuitive, but one strand
+            // with AMM is optimized and generates one AMM offer, while in case
+            // of two strands, multiple AMM offers are generated, which results
+            // in slightly worse overall quality.
+            {
+                std::array<Quality, 3> q;
+                for (auto i = 0; i < 3; ++i)
+                {
+                    Env env(*this);
+                    prep(env, rates.first, rates.second);
+                    std::optional<AMM> amm;
+
+                    if (i == 0 || i == 2)
+                    {
+                        env(offer(ed, ETH(400), CAN(400)), txflags(tfPassive));
+                        env(offer(ed, CAN(400), USD(400))), txflags(tfPassive);
+                        env.close();
+                    }
+
+                    if (i > 0)
+                        amm.emplace(env, ed, ETH(1'000), USD(1'000));
+
+                    env(pay(carol, bob, USD(100)),
+                        path(~USD),
+                        path(~CAN, ~USD),
+                        sendmax(ETH(600)));
+                    env.close();
+
+                    BEAST_EXPECT(expectLine(env, bob, USD(2'100)));
+
+                    if (i == 2)
+                    {
+                        if (rates.first == 1.5)
+                        {
+                            // Liquidity is consumed from AMM strand only
+                            BEAST_EXPECT(amm->expectBalances(
+                                STAmount{ETH, UINT64_C(1'176'66038955758), -11},
+                                USD(850),
+                                amm->tokens()));
+                        }
+                        else
+                        {
+                            BEAST_EXPECT(amm->expectBalances(
+                                STAmount{
+                                    ETH, UINT64_C(1'179'540094339627), -12},
+                                STAmount{USD, UINT64_C(847'7880529867501), -13},
+                                amm->tokens()));
+                            BEAST_EXPECT(expectOffers(
+                                env,
+                                ed,
+                                2,
+                                {{Amounts{
+                                      STAmount{
+                                          ETH,
+                                          UINT64_C(343'3179205198749),
+                                          -13},
+                                      STAmount{
+                                          CAN,
+                                          UINT64_C(343'3179205198749),
+                                          -13},
+                                  },
+                                  Amounts{
+                                      STAmount{
+                                          CAN,
+                                          UINT64_C(362'2119470132499),
+                                          -13},
+                                      STAmount{
+                                          USD,
+                                          UINT64_C(362'2119470132499),
+                                          -13},
+                                  }}}));
+                        }
+                    }
+                    q[i] = Quality(Amounts{
+                        ETH(2'000) - env.balance(carol, ETH),
+                        env.balance(bob, USD) - USD(2'000)});
+                }
+                BEAST_EXPECT(q[1] > q[0]);
+                BEAST_EXPECT(q[2] > q[0] && q[2] < q[1]);
+            }
+        }
+    }
+
+    void
     testCore()
     {
         testInvalidInstance();
@@ -4154,6 +4811,10 @@ private:
         testAMMAndCLOB();
         testTradingFee();
         testAdjustedTokens();
+        testAutoDelete();
+        testClawback();
+        testAMMID();
+        testSelection();
     }
 
     void

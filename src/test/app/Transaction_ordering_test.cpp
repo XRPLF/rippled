@@ -15,6 +15,7 @@
 */
 //==============================================================================
 
+#include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/core/JobQueue.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <test/jtx.h>
@@ -91,6 +92,7 @@ struct Transaction_ordering_test : public beast::unit_test::suite
         env(tx2, ter(terPRE_SEQ));
         BEAST_EXPECT(env.seq(alice) == aliceSequence);
         env(tx1);
+        BEAST_EXPECT(env.app().getOPs().transactionBatch(false));
         env.app().getJobQueue().rendezvous();
         BEAST_EXPECT(env.seq(alice) == aliceSequence + 2);
 
@@ -143,6 +145,8 @@ struct Transaction_ordering_test : public beast::unit_test::suite
         }
 
         env(tx[0]);
+        // Apply until no more deferred/held transactions.
+        BEAST_EXPECT(env.app().getOPs().transactionBatch(true));
         env.app().getJobQueue().rendezvous();
         BEAST_EXPECT(env.seq(alice) == aliceSequence + 5);
 

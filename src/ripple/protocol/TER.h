@@ -208,6 +208,7 @@ enum TERcodes : TERUnderlyingType {
     terQUEUED,       // Transaction is being held in TxQ until fee drops
     terPRE_TICKET,   // Ticket is not yet in ledger but might be on its way
     terNO_AMM,       // AMM doesn't exist for the asset pair
+    terSUBMITTED     // Has been submitted async.
 };
 
 //------------------------------------------------------------------------------
@@ -298,7 +299,11 @@ enum TECcodes : TERUnderlyingType {
     tecUNFUNDED_AMM = 162,
     tecAMM_BALANCE = 163,
     tecAMM_FAILED = 164,
-    tecAMM_INVALID_TOKENS = 165
+    tecAMM_INVALID_TOKENS = 165,
+    tecAMM_EMPTY = 166,
+    tecAMM_NOT_EMPTY = 167,
+    tecAMM_ACCOUNT = 168,
+    tecINCOMPLETE = 169
 };
 
 //------------------------------------------------------------------------------
