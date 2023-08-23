@@ -78,7 +78,7 @@ doGatewayBalances(RPC::JsonContext& context)
 
     result[jss::account] = toBase58(accountID);
 
-    if (!ledger->exists(keylet::account(accountID)) && context.apiVersion > 1u)
+    if (context.apiVersion > 1u && !ledger->exists(keylet::account(accountID)))
     {
         RPC::inject_error(rpcACT_NOT_FOUND, result);
         return result;
