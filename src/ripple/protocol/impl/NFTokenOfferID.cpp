@@ -17,21 +17,10 @@
 */
 //==============================================================================
 
-#include <ripple/rpc/NFTokenOfferID.h>
-
-#include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/app/ledger/OpenLedger.h>
-#include <ripple/app/misc/Transaction.h>
-#include <ripple/ledger/View.h>
-#include <ripple/net/RPCErr.h>
-#include <ripple/protocol/AccountID.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/rpc/Context.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
-#include <boost/algorithm/string/case_conv.hpp>
+#include <ripple/protocol/NFTokenOfferID.h>
+#include <ripple/protocol/jss.h>
 
 namespace ripple {
-namespace RPC {
 
 bool
 canHaveNFTokenOfferID(
@@ -81,5 +70,4 @@ insertNFTokenOfferID(
         response[jss::offer_id] = to_string(result.value());
 }
 
-}  // namespace RPC
 }  // namespace ripple

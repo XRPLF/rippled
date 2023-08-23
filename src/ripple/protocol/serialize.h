@@ -17,52 +17,32 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_NFTOKENID_H_INCLUDED
-#define RIPPLE_RPC_NFTOKENID_H_INCLUDED
+#ifndef RIPPLE_PROTOCOL_SERIALIZE_H_INCLUDED
+#define RIPPLE_PROTOCOL_SERIALIZE_H_INCLUDED
 
-#include <ripple/protocol/Protocol.h>
-
-#include <functional>
-#include <memory>
-
-namespace Json {
-class Value;
-}
+#include <ripple/basics/strHex.h>
+#include <ripple/protocol/STObject.h>
+#include <ripple/protocol/Serializer.h>
 
 namespace ripple {
 
-class TxMeta;
-class STTx;
+/** Serialize an object to a blob. */
+template <class Object>
+Blob
+serializeBlob(Object const& o)
+{
+    Serializer s;
+    o.add(s);
+    return s.peekData();
+}
 
-namespace RPC {
+/** Serialize an object to a hex string. */
+inline std::string
+serializeHex(STObject const& o)
+{
+    return strHex(serializeBlob(o));
+}
 
-/**
-   Add a `nftoken_ids` field to the `meta` output parameter.
-   The field is only added to successful NFTokenMint, NFTokenAcceptOffer,
-   and NFTokenCancelOffer transactions.
-
-   Helper functions are not static because they can be used by Clio.
-   @{
- */
-bool
-canHaveNFTokenID(
-    std::shared_ptr<STTx const> const& serializedTx,
-    TxMeta const& transactionMeta);
-
-std::optional<uint256>
-getNFTokenIDFromPage(TxMeta const& transactionMeta);
-
-std::vector<uint256>
-getNFTokenIDFromDeletedOffer(TxMeta const& transactionMeta);
-
-void
-insertNFTokenID(
-    Json::Value& response,
-    std::shared_ptr<STTx const> const& transaction,
-    TxMeta const& transactionMeta);
-/** @} */
-
-}  // namespace RPC
 }  // namespace ripple
 
 #endif

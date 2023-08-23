@@ -29,7 +29,6 @@
 #include "ripple/app/paths/AMMContext.h"
 #include <test/jtx.h>
 #include <test/jtx/PathSet.h>
-#include <test/jtx/TestHelpers.h>
 
 namespace ripple {
 namespace test {

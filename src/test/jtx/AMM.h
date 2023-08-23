@@ -65,8 +65,10 @@ class AMM
     Account const creatorAccount_;
     STAmount const asset1_;
     STAmount const asset2_;
+    uint256 const ammID_;
     IOUAmount const initialLPTokens_;
     bool log_;
+    bool doClose_;
     // Predict next purchase price
     IOUAmount lastPurchasePrice_;
     std::optional<IOUAmount> bidMin_;
@@ -180,6 +182,7 @@ public:
         std::optional<std::uint32_t> const& flags,
         std::optional<std::pair<Issue, Issue>> const& assets,
         std::optional<jtx::seq> const& seq,
+        std::optional<std::uint16_t> const& tfee = std::nullopt,
         std::optional<ter> const& ter = std::nullopt);
 
     IOUAmount
@@ -284,6 +287,23 @@ public:
     operator()(AccountID const& lp)
     {
         return ammRpcInfo(lp);
+    }
+
+    void
+    ammDelete(
+        AccountID const& deleter,
+        std::optional<ter> const& ter = std::nullopt);
+
+    void
+    setClose(bool close)
+    {
+        doClose_ = close;
+    }
+
+    uint256
+    ammID() const
+    {
+        return ammID_;
     }
 
 private:

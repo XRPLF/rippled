@@ -49,7 +49,7 @@ if (is_root_project)
       docker run
         -v ${CMAKE_CURRENT_SOURCE_DIR}:/opt/rippled_bld/pkg/rippled
         -v ${CMAKE_CURRENT_BINARY_DIR}/packages:/opt/rippled_bld/pkg/out
-        -t rippleci/rippled-rpm-builder:${container_label}
+        -t rippled-rpm-builder:${container_label}
         /bin/bash -c "cp -fpu rippled/Builds/containers/packaging/rpm/build_rpm.sh . && ./build_rpm.sh"
       VERBATIM
       USES_TERMINAL

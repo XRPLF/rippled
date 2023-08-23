@@ -158,23 +158,6 @@ cdirNext(
 //
 //------------------------------------------------------------------------------
 
-void
-addRaw(LedgerInfo const& info, Serializer& s, bool includeHash)
-{
-    s.add32(info.seq);
-    s.add64(info.drops.drops());
-    s.addBitString(info.parentHash);
-    s.addBitString(info.txHash);
-    s.addBitString(info.accountHash);
-    s.add32(info.parentCloseTime.time_since_epoch().count());
-    s.add32(info.closeTime.time_since_epoch().count());
-    s.add8(info.closeTimeResolution.count());
-    s.add8(info.closeFlags);
-
-    if (includeHash)
-        s.addBitString(info.hash);
-}
-
 bool
 hasExpired(ReadView const& view, std::optional<std::uint32_t> const& exp)
 {
@@ -375,7 +358,7 @@ xrpLiquid(
         view.ownerCountHook(id, sle->getFieldU32(sfOwnerCount)), ownerCountAdj);
 
     // AMMs have no reserve requirement
-    auto const reserve = (sle->getFlags() & lsfAMM)
+    auto const reserve = sle->isFieldPresent(sfAMMID)
         ? XRPAmount{0}
         : view.fees().accountReserve(ownerCount);
 
@@ -1540,6 +1523,131 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account)
                 : TER{tecNO_AUTH};
         return TER{tecNO_LINE};
     }
+
+    return tesSUCCESS;
+}
+
+TER
+cleanupOnAccountDelete(
+    ApplyView& view,
+    Keylet const& ownerDirKeylet,
+    std::function<TER(LedgerEntryType, uint256 const&, std::shared_ptr<SLE>&)>
+        deleter,
+    beast::Journal j,
+    std::optional<uint16_t> maxNodesToDelete)
+{
+    // Delete all the entries in the account directory.
+    std::shared_ptr<SLE> sleDirNode{};
+    unsigned int uDirEntry{0};
+    uint256 dirEntry{beast::zero};
+    std::uint32_t deleted = 0;
+
+    if (view.exists(ownerDirKeylet) &&
+        dirFirst(view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry))
+    {
+        do
+        {
+            if (maxNodesToDelete && ++deleted > *maxNodesToDelete)
+                return tecINCOMPLETE;
+
+            // Choose the right way to delete each directory node.
+            auto sleItem = view.peek(keylet::child(dirEntry));
+            if (!sleItem)
+            {
+                // Directory node has an invalid index.  Bail out.
+                JLOG(j.fatal())
+                    << "DeleteAccount: Directory node in ledger " << view.seq()
+                    << " has index to object that is missing: "
+                    << to_string(dirEntry);
+                return tefBAD_LEDGER;
+            }
+
+            LedgerEntryType const nodeType{safe_cast<LedgerEntryType>(
+                sleItem->getFieldU16(sfLedgerEntryType))};
+
+            // Deleter handles the details of specific account-owned object
+            // deletion
+            if (auto const ter = deleter(nodeType, dirEntry, sleItem);
+                ter != tesSUCCESS)
+                return ter;
+
+            // dirFirst() and dirNext() are like iterators with exposed
+            // internal state.  We'll take advantage of that exposed state
+            // to solve a common C++ problem: iterator invalidation while
+            // deleting elements from a container.
+            //
+            // We have just deleted one directory entry, which means our
+            // "iterator state" is invalid.
+            //
+            //  1. During the process of getting an entry from the
+            //     directory uDirEntry was incremented from 0 to 1.
+            //
+            //  2. We then deleted the entry at index 0, which means the
+            //     entry that was at 1 has now moved to 0.
+            //
+            //  3. So we verify that uDirEntry is indeed 1.  Then we jam it
+            //     back to zero to "un-invalidate" the iterator.
+            assert(uDirEntry == 1);
+            if (uDirEntry != 1)
+            {
+                JLOG(j.error())
+                    << "DeleteAccount iterator re-validation failed.";
+                return tefBAD_LEDGER;
+            }
+            uDirEntry = 0;
+
+        } while (
+            dirNext(view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry));
+    }
+
+    return tesSUCCESS;
+}
+
+TER
+deleteAMMTrustLine(
+    ApplyView& view,
+    std::shared_ptr<SLE> sleState,
+    std::optional<AccountID> const& ammAccountID,
+    beast::Journal j)
+{
+    if (!sleState || sleState->getType() != ltRIPPLE_STATE)
+        return tecINTERNAL;
+
+    auto const& [low, high] = std::minmax(
+        sleState->getFieldAmount(sfLowLimit).getIssuer(),
+        sleState->getFieldAmount(sfHighLimit).getIssuer());
+    auto sleLow = view.peek(keylet::account(low));
+    auto sleHigh = view.peek(keylet::account(high));
+    if (!sleLow || !sleHigh)
+        return tecINTERNAL;
+    bool const ammLow = sleLow->isFieldPresent(sfAMMID);
+    bool const ammHigh = sleHigh->isFieldPresent(sfAMMID);
+
+    // can't both be AMM
+    if (ammLow && ammHigh)
+        return tecINTERNAL;
+
+    // at least one must be
+    if (!ammLow && !ammHigh)
+        return terNO_AMM;
+
+    // one must be the target amm
+    if (ammAccountID && (low != *ammAccountID && high != *ammAccountID))
+        return terNO_AMM;
+
+    if (auto const ter = trustDelete(view, sleState, low, high, j);
+        ter != tesSUCCESS)
+    {
+        JLOG(j.error())
+            << "deleteAMMTrustLine: failed to delete the trustline.";
+        return ter;
+    }
+
+    auto const uFlags = !ammLow ? lsfLowReserve : lsfHighReserve;
+    if (!(sleState->getFlags() & uFlags))
+        return tecINTERNAL;
+
+    adjustOwnerCount(view, !ammLow ? sleLow : sleHigh, -1, j);
 
     return tesSUCCESS;
 }

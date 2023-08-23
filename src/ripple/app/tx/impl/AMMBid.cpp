@@ -94,6 +94,10 @@ AMMBid::preclaim(PreclaimContext const& ctx)
         return terNO_AMM;
     }
 
+    auto const lpTokensBalance = (*ammSle)[sfLPTokenBalance];
+    if (lpTokensBalance == beast::zero)
+        return tecAMM_EMPTY;
+
     if (ctx.tx.isFieldPresent(sfAuthAccounts))
     {
         for (auto const& account : ctx.tx.getFieldArray(sfAuthAccounts))
@@ -114,7 +118,6 @@ AMMBid::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.debug()) << "AMM Bid: account is not LP.";
         return tecAMM_INVALID_TOKENS;
     }
-    auto const lpTokensBalance = (*ammSle)[sfLPTokenBalance];
 
     auto const bidMin = ctx.tx[~sfBidMin];
 
@@ -204,10 +207,10 @@ applyBid(
                           Number const& burn) -> TER {
         auctionSlot.setAccountID(sfAccount, account_);
         auctionSlot.setFieldU32(sfExpiration, current + TOTAL_TIME_SLOT_SECS);
-        if (fee == 0)
-            auctionSlot.makeFieldAbsent(sfDiscountedFee);
-        else
+        if (fee != 0)
             auctionSlot.setFieldU16(sfDiscountedFee, fee);
+        else if (auctionSlot.isFieldPresent(sfDiscountedFee))
+            auctionSlot.makeFieldAbsent(sfDiscountedFee);
         auctionSlot.setFieldAmount(
             sfPrice, toSTAmount(lpTokens.issue(), minPrice));
         if (ctx_.tx.isFieldPresent(sfAuthAccounts))
