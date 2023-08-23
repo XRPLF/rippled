@@ -27,7 +27,6 @@
 #include <ripple/rpc/impl/RPCHelpers.h>
 #include <chrono>
 #include <test/jtx.h>
-#include <test/jtx/TestHelpers.h>
 
 namespace ripple {
 namespace test {

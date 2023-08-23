@@ -128,7 +128,7 @@ public:
     }
 
     /** Instances with the same unit, and a type that is
-        "safe" to covert to this one can be converted
+        "safe" to convert to this one can be converted
         implicitly */
     template <
         class Other,
