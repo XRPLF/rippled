@@ -43,7 +43,7 @@ class SHAMapItem : public CountedObject<SHAMapItem>
     intrusive_ptr_release(SHAMapItem const* x);
 
     // This is the interface for creating new instances of this class.
-    friend boost::intrusive_ptr<SHAMapItem>
+    friend boost::intrusive_ptr<SHAMapItem const>
     make_shamapitem(uint256 const& tag, Slice data);
 
 private:
@@ -115,13 +115,13 @@ namespace detail {
 // based on the number of objects of each size we expect to need at any point
 // in time and with an eye to minimize the number of slack bytes in a block.
 inline SlabAllocatorSet<SHAMapItem> slabber({
-    {  128, megabytes(std::size_t(60)) },
-    {  192, megabytes(std::size_t(46)) },
-    {  272, megabytes(std::size_t(60)) },
-    {  384, megabytes(std::size_t(56)) },
-    {  564, megabytes(std::size_t(40)) },
-    {  772, megabytes(std::size_t(46)) },
-    { 1052, megabytes(std::size_t(60)) },
+    {  128, megabytes(std::size_t(168)) },
+    {  296, megabytes(std::size_t(296)) },
+    {  392, megabytes(std::size_t(54)) },
+    {  520, megabytes(std::size_t(70)) },
+    {  760, megabytes(std::size_t(50)) },
+    {  856, megabytes(std::size_t(56)) },
+    { 1048, megabytes(std::size_t(32)) }
 });
 // clang-format on
 
@@ -149,36 +149,42 @@ intrusive_ptr_release(SHAMapItem const* x)
         if constexpr (!std::is_trivially_destructible_v<SHAMapItem>)
             std::destroy_at(x);
 
-        // If the slabber doens't claim this pointer, it was allocated
+        // If the slabber doesn't claim this pointer, it was allocated
         // manually, so we free it manually.
         if (!detail::slabber.deallocate(const_cast<std::uint8_t*>(p)))
             delete[] p;
     }
 }
 
-inline boost::intrusive_ptr<SHAMapItem>
+inline boost::intrusive_ptr<SHAMapItem const>
 make_shamapitem(uint256 const& tag, Slice data)
 {
     assert(data.size() <= megabytes<std::size_t>(16));
 
     std::uint8_t* raw = detail::slabber.allocate(data.size());
 
-    // If we can't grab memory from the slab allocators, we fall back to
-    // the standard library and try to grab a precisely-sized memory block:
+    // If we can't grab memory from the slab allocators, we use new to
+    // get a precisely-sized and properly aligned memory block:
     if (raw == nullptr)
-        raw = new std::uint8_t[sizeof(SHAMapItem) + data.size()];
+        raw = new (std::align_val_t(alignof(SHAMapItem)))
+            std::uint8_t[sizeof(SHAMapItem) + data.size()];
+
+    assert(reinterpret_cast<std::uintptr_t>(raw) % alignof(SHAMapItem) == 0);
 
     // We do not increment the reference count here on purpose: the
     // constructor of SHAMapItem explicitly sets it to 1. We use the fact
     // that the refcount can never be zero before incrementing as an
     // invariant.
-    return {new (raw) SHAMapItem{tag, data}, false};
+    return {
+        new (std::assume_aligned<alignof(SHAMapItem)>(raw))
+            SHAMapItem{tag, data},
+        false};
 }
 
 static_assert(alignof(SHAMapItem) != 40);
 static_assert(alignof(SHAMapItem) == 8 || alignof(SHAMapItem) == 4);
 
-inline boost::intrusive_ptr<SHAMapItem>
+inline boost::intrusive_ptr<SHAMapItem const>
 make_shamapitem(SHAMapItem const& other)
 {
     return make_shamapitem(other.key(), other.slice());

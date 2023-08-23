@@ -34,7 +34,7 @@ class SHAMapSync_test : public beast::unit_test::suite
 public:
     beast::xor_shift_engine eng_;
 
-    boost::intrusive_ptr<SHAMapItem>
+    boost::intrusive_ptr<SHAMapItem const>
     makeRandomAS()
     {
         Serializer s;
