@@ -8,16 +8,8 @@ The API version controls the API behavior you see. This includes what properties
 
 For a log of breaking changes, see the **API Version [number]** headings. Breaking changes are associated with a particular API Version number. For non-breaking changes, scroll to the **XRP Ledger version [x.y.z]** headings. Non-breaking changes are associated with a particular XRP Ledger (`rippled`) release.
 
-## API Version 2
-This version will be supported by `rippled` version 1.12.
-
-#### V2 account_info response
-
-- `signer_lists` is returned in the root of the response, instead of being nested under `account_data` (as it was in API version 1). (https://github.com/XRPLF/rippled/pull/3770)
-- When using an invalid `signer_lists` value, the API now returns an "invalidParams" error. (https://github.com/XRPLF/rippled/pull/4585)
-  - (`signer_lists` must be a boolean. In API version 1, strings are accepted and may return a normal response - as if `signer_lists` were `true`.)
-
 ## API Version 1
+
 This version is supported by `rippled` version 1.11.
 
 ### Idiosyncrasies
@@ -79,3 +71,17 @@ Additions are intended to be non-breaking (because they are purely additive).
 - Added an `account_flags` object to the `account_info` method response. (https://github.com/XRPLF/rippled/pull/4459)
 - Added `NFTokenPages` to the `account_objects` RPC. (https://github.com/XRPLF/rippled/pull/4352)
 - Fixed: `marker` returned from the `account_lines` command would not work on subsequent commands. (https://github.com/XRPLF/rippled/pull/4361)
+
+# In development
+
+Changes below this point are in development.
+
+## API Version 2
+
+At the time of writing, this version is expected to be introduced in `rippled` version 1.13.
+
+#### V2 account_info response
+
+- `signer_lists` is returned in the root of the response, instead of being nested under `account_data` (as it was in API version 1). (https://github.com/XRPLF/rippled/pull/3770)
+- When using an invalid `signer_lists` value, the API now returns an "invalidParams" error. (https://github.com/XRPLF/rippled/pull/4585)
+  - (`signer_lists` must be a boolean. In API version 1, strings are accepted and may return a normal response - as if `signer_lists` were `true`.)
