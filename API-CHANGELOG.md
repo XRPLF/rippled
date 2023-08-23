@@ -1,6 +1,6 @@
 # API Changelog
 
-This changelog is intended to list all updates to the API.
+This changelog is intended to list all updates to the [public API methods](https://xrpl.org/public-api-methods.html).
 
 For info about how API versioning works, view the [XLS-22d spec](https://github.com/XRPLF/XRPL-Standards/discussions/54). For details about the implementation of API versioning, view the [implementation PR](https://github.com/XRPLF/rippled/pull/3155).
 
