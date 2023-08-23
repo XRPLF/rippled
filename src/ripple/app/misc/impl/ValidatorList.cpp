@@ -163,8 +163,6 @@ ValidatorList::load(
 
         auto const ret = strUnHex(key);
 
-        // The check for publicKeyType(...) ensures that default-constructed
-        // public keys are not passed here.
         if (!ret || !publicKeyType(makeSlice(*ret)))
         {
             JLOG(j_.error()) << "Invalid validator list publisher key: " << key;
@@ -196,6 +194,10 @@ ValidatorList::load(
     JLOG(j_.debug()) << "Loaded " << count << " keys";
 
     localPubKey_ = validatorManifests_.getMasterKey(localSigningKey);
+
+    // localPubKey_ should never be set to PublicKey::emptyPubKey
+    //    if(localPubKey_)
+    //        assert(*localPubKey_ != PublicKey::emptyPubKey);
 
     // Treat local validator key as though it was listed in the config
     if (localPubKey_ && *localPubKey_ != PublicKey::emptyPubKey)
@@ -235,9 +237,12 @@ ValidatorList::load(
             continue;
         }
         // Config listed keys never expire
-        auto& current = localPublisherList;
-        current.validUntil = TimeKeeper::time_point::max();
-        current.list.emplace_back(*id);
+
+        // set the expiration time for the newly created publisher list
+        // exactly once
+        if (count == 0)
+            localPublisherList.validUntil = TimeKeeper::time_point::max();
+        localPublisherList.list.emplace_back(*id);
         ++count;
     }
 

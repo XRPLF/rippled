@@ -141,24 +141,17 @@ deserializeManifest(Slice s, beast::Journal journal)
             if (!publicKeyType(makeSlice(spk)))
                 return std::nullopt;
 
-            signingKey = PublicKey(makeSlice(spk));
+            signingKey.emplace(makeSlice(spk));
 
             // The signing and master keys can't be the same
             if (*signingKey == masterKey)
                 return std::nullopt;
         }
 
-        // Keshava: If the manifest is revoked, then the masterKey is being
-        // used as the signingKey. Is that the correct behavior?
-        if (signingKey)
-            return Manifest(serialized, masterKey, *signingKey, seq, domain);
-        else
-        {
-            // If the signingKey has not been specified, then the constructor
-            // of the Manifest class uses the masterKey as a fail-safe
-            // signingKey.
-            return Manifest(serialized, masterKey, seq, domain);
-        }
+        // If the signingKey has not been specified, then the constructor
+        // of the Manifest class uses the masterKey as a fail-safe
+        // signingKey.
+        return Manifest(serialized, masterKey, signingKey, seq, domain);
     }
     catch (std::exception const& ex)
     {

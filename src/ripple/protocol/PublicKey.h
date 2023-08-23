@@ -61,19 +61,20 @@ class PublicKey
 protected:
     // All the constructed public keys are valid, non-empty and contain 33
     // bytes of data.
-    const static std::size_t size_ = 33;
-    std::uint8_t buf_[33];  // should be large enough
+    static constexpr std::size_t size_ = 33;
+    std::uint8_t buf_[size_];  // should be large enough
 
 public:
     using const_iterator = std::uint8_t const*;
 
     // This default constructed public key is used only in ValidatorList class.
-    // Publisher's master PublicKeys are used to map into their respective UNLs
+    // Publishers' master PublicKeys are used to map into their respective UNLs
     // emptyPubKey is used to represent the keys specified in the local config
     // file. Unlike the other published UNL, this list is not signed with any
     // publisher's public key and hence needs to be mapped with the emptyPubKey
     static const PublicKey emptyPubKey;
 
+private:
     static PublicKey getEmptyPubKey()
     {
         std::array<unsigned char, 33> buf;
@@ -89,6 +90,7 @@ public:
         return PublicKey(makeSlice(buf));
     }
 
+public:
     PublicKey() = delete;
 
     PublicKey(PublicKey const& other);

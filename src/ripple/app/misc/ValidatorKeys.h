@@ -45,10 +45,9 @@ public:
 
         Keys() = delete;
         Keys(
-            SecretKey const& secret_,
+            PublicKey const& masterPublic_,
             PublicKey const& public_,
-            PublicKey const& masterPublic_
-            )
+            SecretKey const& secret_)
             : masterPublicKey(masterPublic_)
             , publicKey(public_)
             , secretKey(secret_)
