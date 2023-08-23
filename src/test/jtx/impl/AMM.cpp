@@ -62,8 +62,10 @@ AMM::AMM(
     , creatorAccount_(account)
     , asset1_(asset1)
     , asset2_(asset2)
+    , ammID_(keylet::amm(asset1_.issue(), asset2_.issue()).key)
     , initialLPTokens_(initialTokens(asset1, asset2))
     , log_(log)
+    , doClose_(true)
     , lastPurchasePrice_(0)
     , bidMin_()
     , bidMax_()
@@ -382,6 +384,7 @@ AMM::deposit(
         flags,
         std::nullopt,
         std::nullopt,
+        std::nullopt,
         ter);
 }
 
@@ -404,6 +407,7 @@ AMM::deposit(
         flags,
         std::nullopt,
         std::nullopt,
+        std::nullopt,
         ter);
 }
 
@@ -417,6 +421,7 @@ AMM::deposit(
     std::optional<std::uint32_t> const& flags,
     std::optional<std::pair<Issue, Issue>> const& assets,
     std::optional<jtx::seq> const& seq,
+    std::optional<std::uint16_t> const& tfee,
     std::optional<ter> const& ter)
 {
     Json::Value jv;
@@ -428,6 +433,8 @@ AMM::deposit(
         asset2In->setJson(jv[jss::Amount2]);
     if (maxEP)
         maxEP->setJson(jv[jss::EPrice]);
+    if (tfee)
+        jv[jss::TradingFee] = *tfee;
     std::uint32_t jvflags = 0;
     if (flags)
         jvflags = *flags;
@@ -671,7 +678,8 @@ AMM::submit(
         env_(jv, *ter);
     else
         env_(jv);
-    env_.close();
+    if (doClose_)
+        env_.close();
 }
 
 bool
@@ -695,6 +703,18 @@ AMM::expectAuctionSlot(auto&& cb) const
         }
     }
     return false;
+}
+
+void
+AMM::ammDelete(AccountID const& deleter, std::optional<ter> const& ter)
+{
+    Json::Value jv;
+    jv[jss::Account] = to_string(deleter);
+    setTokens(jv);
+    jv[jss::TransactionType] = jss::AMMDelete;
+    if (fee_ != 0)
+        jv[jss::Fee] = std::to_string(fee_);
+    submit(jv, std::nullopt, ter);
 }
 
 namespace amm {

@@ -21,6 +21,7 @@
 #include <ripple/app/ledger/LedgerReplayer.h>
 #include <ripple/app/ledger/impl/LedgerReplayMsgHandler.h>
 #include <ripple/app/main/Application.h>
+#include <ripple/protocol/LedgerHeader.h>
 
 #include <memory>
 

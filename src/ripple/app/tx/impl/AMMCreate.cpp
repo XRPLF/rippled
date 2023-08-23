@@ -173,7 +173,7 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
     auto isLPToken = [&](STAmount const& amount) -> bool {
         if (auto const sle =
                 ctx.view.read(keylet::account(amount.issue().account)))
-            return (sle->getFlags() & lsfAMM);
+            return sle->isFieldPresent(sfAMMID);
         return false;
     };
 
@@ -184,7 +184,21 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
         return tecAMM_INVALID_TOKENS;
     }
 
-    return tesSUCCESS;
+    // Disallow AMM if the issuer has clawback enabled
+    auto clawbackDisabled = [&](Issue const& issue) -> TER {
+        if (isXRP(issue))
+            return tesSUCCESS;
+        if (auto const sle = ctx.view.read(keylet::account(issue.account));
+            !sle)
+            return tecINTERNAL;
+        else if (sle->getFlags() & lsfAllowTrustLineClawback)
+            return tecNO_PERMISSION;
+        return tesSUCCESS;
+    };
+
+    if (auto const ter = clawbackDisabled(amount.issue()); ter != tesSUCCESS)
+        return ter;
+    return clawbackDisabled(amount2.issue());
 }
 
 static std::pair<TER, bool>
@@ -247,7 +261,9 @@ applyCreate(
     // A user can only receive LPTokens through affirmative action -
     // either an AMMDeposit, TrustSet, crossing an offer, etc.
     sleAMMRoot->setFieldU32(
-        sfFlags, lsfAMM | lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth);
+        sfFlags, lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth);
+    // Link the root account and AMM object
+    sleAMMRoot->setFieldH256(sfAMMID, ammKeylet.key);
     sb.insert(sleAMMRoot);
 
     // Calculate initial LPT balance.
@@ -255,45 +271,15 @@ applyCreate(
 
     // Create ltAMM
     auto ammSle = std::make_shared<SLE>(ammKeylet);
-    if (ctx_.tx[sfTradingFee] != 0)
-        ammSle->setFieldU16(sfTradingFee, ctx_.tx[sfTradingFee]);
     ammSle->setAccountID(sfAccount, *ammAccount);
     ammSle->setFieldAmount(sfLPTokenBalance, lpTokens);
     auto const& [issue1, issue2] = std::minmax(amount.issue(), amount2.issue());
     ammSle->setFieldIssue(sfAsset, STIssue{sfAsset, issue1});
     ammSle->setFieldIssue(sfAsset2, STIssue{sfAsset2, issue2});
-    // AMM creator gets the voting slot.
-    STArray voteSlots;
-    STObject voteEntry{sfVoteEntry};
-    if (ctx_.tx[sfTradingFee] != 0)
-        voteEntry.setFieldU16(sfTradingFee, ctx_.tx[sfTradingFee]);
-    voteEntry.setFieldU32(sfVoteWeight, 100000);
-    voteEntry.setAccountID(sfAccount, account_);
-    voteSlots.push_back(voteEntry);
-    ammSle->setFieldArray(sfVoteSlots, voteSlots);
-    // AMM creator gets the auction slot for free.
-    auto& auctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
-    auctionSlot.setAccountID(sfAccount, account_);
-    // current + sec in 24h
-    auto const expiration =
-        std::chrono::duration_cast<std::chrono::seconds>(
-            ctx_.view().info().parentCloseTime.time_since_epoch())
-            .count() +
-        TOTAL_TIME_SLOT_SECS;
-    auctionSlot.setFieldU32(sfExpiration, expiration);
-    auctionSlot.setFieldAmount(sfPrice, STAmount{lpTokens.issue(), 0});
+    // AMM creator gets the auction slot and the voting slot.
+    initializeFeeAuctionVote(
+        ctx_.view(), ammSle, account_, lptIss, ctx_.tx[sfTradingFee]);
     sb.insert(ammSle);
-
-    // Add owner directory to link the root account and AMM object.
-    if (auto const page = sb.dirInsert(
-            keylet::ownerDir(*ammAccount),
-            ammSle->key(),
-            describeOwnerDir(*ammAccount));
-        !page)
-    {
-        JLOG(j_.debug()) << "AMM Instance: failed to insert owner dir";
-        return {tecDIR_FULL, false};
-    }
 
     // Send LPT to LP.
     auto res = accountSend(sb, *ammAccount, account_, lpTokens, ctx_.journal);

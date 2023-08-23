@@ -17,34 +17,38 @@
 */
 //==============================================================================
 
-#include <ripple/rpc/NFTSyntheticSerializer.h>
+#ifndef RIPPLE_TX_AMMDELETE_H_INCLUDED
+#define RIPPLE_TX_AMMDELETE_H_INCLUDED
 
-#include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/app/ledger/OpenLedger.h>
-#include <ripple/app/misc/Transaction.h>
-#include <ripple/ledger/View.h>
-#include <ripple/net/RPCErr.h>
-#include <ripple/protocol/AccountID.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/rpc/Context.h>
-#include <ripple/rpc/NFTokenID.h>
-#include <ripple/rpc/NFTokenOfferID.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
-#include <boost/algorithm/string/case_conv.hpp>
+#include <ripple/app/tx/impl/Transactor.h>
 
 namespace ripple {
-namespace RPC {
 
-void
-insertNFTSyntheticInJson(
-    Json::Value& response,
-    RPC::JsonContext const& context,
-    std::shared_ptr<STTx const> const& transaction,
-    TxMeta const& transactionMeta)
+/** AMMDelete implements AMM delete transactor. This is a mechanism to
+ * delete AMM in an empty state when the number of LP tokens is 0.
+ * AMMDelete deletes the trustlines up to configured maximum. If all
+ * trustlines are deleted then AMM ltAMM and root account are deleted.
+ * Otherwise AMMDelete should be called again.
+ */
+class AMMDelete : public Transactor
 {
-    insertNFTokenID(response[jss::meta], transaction, transactionMeta);
-    insertNFTokenOfferID(response[jss::meta], transaction, transactionMeta);
-}
+public:
+    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
-}  // namespace RPC
+    explicit AMMDelete(ApplyContext& ctx) : Transactor(ctx)
+    {
+    }
+
+    static NotTEC
+    preflight(PreflightContext const& ctx);
+
+    static TER
+    preclaim(PreclaimContext const& ctx);
+
+    TER
+    doApply() override;
+};
+
 }  // namespace ripple
+
+#endif  // RIPPLE_TX_AMMDELETE_H_INCLUDED
