@@ -248,11 +248,11 @@ build_map(boost::beast::http::fields const& h)
     std::map<std::string, std::string> c;
     for (auto const& e : h)
     {
-        auto key(e.name_string().to_string());
+        std::string key(e.name_string());
         std::transform(key.begin(), key.end(), key.begin(), [](auto kc) {
             return std::tolower(static_cast<unsigned char>(kc));
         });
-        c[key] = e.value().to_string();
+        c[key] = e.value();
     }
     return c;
 }

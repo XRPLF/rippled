@@ -20,6 +20,7 @@
 #include <ripple/basics/contract.h>
 #include <ripple/nodestore/Factory.h>
 #include <ripple/nodestore/Manager.h>
+#include <ripple/nodestore/impl/BatchWriter.h>
 #include <ripple/nodestore/impl/DecodedBlob.h>
 #include <ripple/nodestore/impl/EncodedBlob.h>
 #include <ripple/nodestore/impl/codec.h>
@@ -35,7 +36,7 @@
 namespace ripple {
 namespace NodeStore {
 
-class NuDBBackend : public Backend
+class NuDBBackend : public Backend, public BatchWriter::Callback
 {
 public:
     static constexpr std::uint64_t currentType = 1;
@@ -46,6 +47,7 @@ public:
 
     beast::Journal const j_;
     size_t const keyBytes_;
+    BatchWriter batch_;
     std::size_t const burstSize_;
     std::string const name_;
     nudb::store db_;
@@ -60,6 +62,7 @@ public:
         beast::Journal journal)
         : j_(journal)
         , keyBytes_(keyBytes)
+        , batch_(*this, scheduler)
         , burstSize_(burstSize)
         , name_(get(keyValues, "path"))
         , deletePath_(false)
@@ -79,6 +82,7 @@ public:
         beast::Journal journal)
         : j_(journal)
         , keyBytes_(keyBytes)
+        , batch_(*this, scheduler)
         , burstSize_(burstSize)
         , name_(get(keyValues, "path"))
         , db_(context)
@@ -262,13 +266,7 @@ public:
     void
     store(std::shared_ptr<NodeObject> const& no) override
     {
-        BatchWriteReport report;
-        report.writeCount = 1;
-        auto const start = std::chrono::steady_clock::now();
-        do_insert(no);
-        report.elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::steady_clock::now() - start);
-        scheduler_.onBatchWrite(report);
+        batch_.store(no);
     }
 
     void
@@ -329,7 +327,7 @@ public:
     int
     getWriteLoad() override
     {
-        return 0;
+        return batch_.getWriteLoad();
     }
 
     void
@@ -355,6 +353,12 @@ public:
         db_.open(dp, kp, lp, ec);
         if (ec)
             Throw<nudb::system_error>(ec);
+    }
+
+    void
+    writeBatch(Batch const& batch) override
+    {
+        storeBatch(batch);
     }
 
     int

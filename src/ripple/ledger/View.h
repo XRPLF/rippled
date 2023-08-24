@@ -42,6 +42,8 @@
 
 namespace ripple {
 
+enum class WaiveTransferFee : bool { No = false, Yes };
+
 //------------------------------------------------------------------------------
 //
 // Observers
@@ -79,11 +81,33 @@ enum FreezeHandling { fhIGNORE_FREEZE, fhZERO_IF_FROZEN };
 isGlobalFrozen(ReadView const& view, AccountID const& issuer);
 
 [[nodiscard]] bool
+isIndividualFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Currency const& currency,
+    AccountID const& issuer);
+
+[[nodiscard]] inline bool
+isIndividualFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Issue const& issue)
+{
+    return isIndividualFrozen(view, account, issue.currency, issue.account);
+}
+
+[[nodiscard]] bool
 isFrozen(
     ReadView const& view,
     AccountID const& account,
     Currency const& currency,
     AccountID const& issuer);
+
+[[nodiscard]] inline bool
+isFrozen(ReadView const& view, AccountID const& account, Issue const& issue)
+{
+    return isFrozen(view, account, issue.currency, issue.account);
+}
 
 // Returns the amount an account can spend without going into debt.
 //
@@ -97,8 +121,16 @@ accountHolds(
     FreezeHandling zeroIfFrozen,
     beast::Journal j);
 
+[[nodiscard]] STAmount
+accountHolds(
+    ReadView const& view,
+    AccountID const& account,
+    Issue const& issue,
+    FreezeHandling zeroIfFrozen,
+    beast::Journal j);
+
 // Returns the amount an account can spend of the currency type saDefault, or
-// returns saDefault if this account is the issuer of the the currency in
+// returns saDefault if this account is the issuer of the currency in
 // question. Should be used in favor of accountHolds when questioning how much
 // an account can spend while also allowing currency issuers to spend
 // unlimited amounts of their own currency (since they can always issue more).
@@ -111,7 +143,7 @@ accountFunds(
     beast::Journal j);
 
 // Return the account's liquid (not reserved) XRP.  Generally prefer
-// calling accountHolds() over this interface.  However this interface
+// calling accountHolds() over this interface.  However, this interface
 // allows the caller to temporarily adjust the owner count should that be
 // necessary.
 //
@@ -392,7 +424,8 @@ accountSend(
     AccountID const& from,
     AccountID const& to,
     const STAmount& saAmount,
-    beast::Journal j);
+    beast::Journal j,
+    WaiveTransferFee waiveFee = WaiveTransferFee::No);
 
 [[nodiscard]] TER
 issueIOU(
@@ -416,6 +449,40 @@ transferXRP(
     AccountID const& from,
     AccountID const& to,
     STAmount const& amount,
+    beast::Journal j);
+
+/** Check if the account requires authorization.
+ *   Return tecNO_AUTH or tecNO_LINE if it does
+ *   and tesSUCCESS otherwise.
+ */
+[[nodiscard]] TER
+requireAuth(ReadView const& view, Issue const& issue, AccountID const& account);
+
+/** Cleanup owner directory entries on account delete.
+ * Used for a regular and AMM accounts deletion. The caller
+ * has to provide the deleter function, which handles details of
+ * specific account-owned object deletion.
+ * @return tecINCOMPLETE indicates maxNodesToDelete
+ * are deleted and there remains more nodes to delete.
+ */
+[[nodiscard]] TER
+cleanupOnAccountDelete(
+    ApplyView& view,
+    Keylet const& ownerDirKeylet,
+    std::function<TER(LedgerEntryType, uint256 const&, std::shared_ptr<SLE>&)>
+        deleter,
+    beast::Journal j,
+    std::optional<std::uint16_t> maxNodesToDelete = std::nullopt);
+
+/** Delete trustline to AMM. The passed `sle` must be obtained from a prior
+ * call to view.peek(). Fail if neither side of the trustline is AMM or
+ * if ammAccountID is seated and is not one of the trustline's side.
+ */
+[[nodiscard]] TER
+deleteAMMTrustLine(
+    ApplyView& view,
+    std::shared_ptr<SLE> sleState,
+    std::optional<AccountID> const& ammAccountID,
     beast::Journal j);
 
 }  // namespace ripple

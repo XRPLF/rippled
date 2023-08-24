@@ -158,23 +158,6 @@ cdirNext(
 //
 //------------------------------------------------------------------------------
 
-void
-addRaw(LedgerInfo const& info, Serializer& s, bool includeHash)
-{
-    s.add32(info.seq);
-    s.add64(info.drops.drops());
-    s.addBitString(info.parentHash);
-    s.addBitString(info.txHash);
-    s.addBitString(info.accountHash);
-    s.add32(info.parentCloseTime.time_since_epoch().count());
-    s.add32(info.closeTime.time_since_epoch().count());
-    s.add8(info.closeTimeResolution.count());
-    s.add8(info.closeFlags);
-
-    if (includeHash)
-        s.addBitString(info.hash);
-}
-
 bool
 hasExpired(ReadView const& view, std::optional<std::uint32_t> const& exp)
 {
@@ -191,6 +174,26 @@ isGlobalFrozen(ReadView const& view, AccountID const& issuer)
         return false;
     if (auto const sle = view.read(keylet::account(issuer)))
         return sle->isFlag(lsfGlobalFreeze);
+    return false;
+}
+
+bool
+isIndividualFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Currency const& currency,
+    AccountID const& issuer)
+{
+    if (isXRP(currency))
+        return false;
+    if (issuer != account)
+    {
+        // Check if the issuer froze the line
+        auto const sle = view.read(keylet::line(account, issuer, currency));
+        if (sle &&
+            sle->isFlag((issuer > account) ? lsfHighFreeze : lsfLowFreeze))
+            return true;
+    }
     return false;
 }
 
@@ -261,6 +264,18 @@ accountHolds(
                     << " amount=" << amount.getFullText();
 
     return view.balanceHook(account, issuer, amount);
+}
+
+STAmount
+accountHolds(
+    ReadView const& view,
+    AccountID const& account,
+    Issue const& issue,
+    FreezeHandling zeroIfFrozen,
+    beast::Journal j)
+{
+    return accountHolds(
+        view, account, issue.currency, issue.account, zeroIfFrozen, j);
 }
 
 STAmount
@@ -342,15 +357,17 @@ xrpLiquid(
     std::uint32_t const ownerCount = confineOwnerCount(
         view.ownerCountHook(id, sle->getFieldU32(sfOwnerCount)), ownerCountAdj);
 
-    auto const reserve = view.fees().accountReserve(ownerCount);
+    // AMMs have no reserve requirement
+    auto const reserve = sle->isFieldPresent(sfAMMID)
+        ? XRPAmount{0}
+        : view.fees().accountReserve(ownerCount);
 
     auto const fullBalance = sle->getFieldAmount(sfBalance);
 
     auto const balance = view.balanceHook(id, xrpAccount(), fullBalance);
 
-    STAmount amount = balance - reserve;
-    if (balance < reserve)
-        amount.clear();
+    STAmount const amount =
+        (balance < reserve) ? STAmount{0} : balance - reserve;
 
     JLOG(j.trace()) << "accountHolds:"
                     << " account=" << to_string(id)
@@ -1081,7 +1098,8 @@ rippleSend(
     AccountID const& uReceiverID,
     STAmount const& saAmount,
     STAmount& saActual,
-    beast::Journal j)
+    beast::Journal j,
+    WaiveTransferFee waiveFee)
 {
     auto const issuer = saAmount.getIssuer();
 
@@ -1102,8 +1120,10 @@ rippleSend(
     // Sending 3rd party IOUs: transit.
 
     // Calculate the amount to transfer accounting
-    // for any transfer fees:
-    saActual = multiply(saAmount, transferRate(view, issuer));
+    // for any transfer fees if the fee is not waived:
+    saActual = (waiveFee == WaiveTransferFee::Yes)
+        ? saAmount
+        : multiply(saAmount, transferRate(view, issuer));
 
     JLOG(j.debug()) << "rippleSend> " << to_string(uSenderID) << " - > "
                     << to_string(uReceiverID)
@@ -1124,7 +1144,8 @@ accountSend(
     AccountID const& uSenderID,
     AccountID const& uReceiverID,
     STAmount const& saAmount,
-    beast::Journal j)
+    beast::Journal j,
+    WaiveTransferFee waiveFee)
 {
     assert(saAmount >= beast::zero);
 
@@ -1142,7 +1163,8 @@ accountSend(
                         << to_string(uReceiverID) << " : "
                         << saAmount.getFullText();
 
-        return rippleSend(view, uSenderID, uReceiverID, saAmount, saActual, j);
+        return rippleSend(
+            view, uSenderID, uReceiverID, saAmount, saActual, j, waiveFee);
     }
 
     /* XRP send which does not check reserve and can do pure adjustment.
@@ -1481,6 +1503,151 @@ transferXRP(
     receiver->setFieldAmount(
         sfBalance, receiver->getFieldAmount(sfBalance) + amount);
     view.update(receiver);
+
+    return tesSUCCESS;
+}
+
+TER
+requireAuth(ReadView const& view, Issue const& issue, AccountID const& account)
+{
+    if (isXRP(issue) || issue.account == account)
+        return tesSUCCESS;
+    if (auto const issuerAccount = view.read(keylet::account(issue.account));
+        issuerAccount && (*issuerAccount)[sfFlags] & lsfRequireAuth)
+    {
+        if (auto const trustLine =
+                view.read(keylet::line(account, issue.account, issue.currency)))
+            return ((*trustLine)[sfFlags] &
+                    ((account > issue.account) ? lsfLowAuth : lsfHighAuth))
+                ? tesSUCCESS
+                : TER{tecNO_AUTH};
+        return TER{tecNO_LINE};
+    }
+
+    return tesSUCCESS;
+}
+
+TER
+cleanupOnAccountDelete(
+    ApplyView& view,
+    Keylet const& ownerDirKeylet,
+    std::function<TER(LedgerEntryType, uint256 const&, std::shared_ptr<SLE>&)>
+        deleter,
+    beast::Journal j,
+    std::optional<uint16_t> maxNodesToDelete)
+{
+    // Delete all the entries in the account directory.
+    std::shared_ptr<SLE> sleDirNode{};
+    unsigned int uDirEntry{0};
+    uint256 dirEntry{beast::zero};
+    std::uint32_t deleted = 0;
+
+    if (view.exists(ownerDirKeylet) &&
+        dirFirst(view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry))
+    {
+        do
+        {
+            if (maxNodesToDelete && ++deleted > *maxNodesToDelete)
+                return tecINCOMPLETE;
+
+            // Choose the right way to delete each directory node.
+            auto sleItem = view.peek(keylet::child(dirEntry));
+            if (!sleItem)
+            {
+                // Directory node has an invalid index.  Bail out.
+                JLOG(j.fatal())
+                    << "DeleteAccount: Directory node in ledger " << view.seq()
+                    << " has index to object that is missing: "
+                    << to_string(dirEntry);
+                return tefBAD_LEDGER;
+            }
+
+            LedgerEntryType const nodeType{safe_cast<LedgerEntryType>(
+                sleItem->getFieldU16(sfLedgerEntryType))};
+
+            // Deleter handles the details of specific account-owned object
+            // deletion
+            if (auto const ter = deleter(nodeType, dirEntry, sleItem);
+                ter != tesSUCCESS)
+                return ter;
+
+            // dirFirst() and dirNext() are like iterators with exposed
+            // internal state.  We'll take advantage of that exposed state
+            // to solve a common C++ problem: iterator invalidation while
+            // deleting elements from a container.
+            //
+            // We have just deleted one directory entry, which means our
+            // "iterator state" is invalid.
+            //
+            //  1. During the process of getting an entry from the
+            //     directory uDirEntry was incremented from 0 to 1.
+            //
+            //  2. We then deleted the entry at index 0, which means the
+            //     entry that was at 1 has now moved to 0.
+            //
+            //  3. So we verify that uDirEntry is indeed 1.  Then we jam it
+            //     back to zero to "un-invalidate" the iterator.
+            assert(uDirEntry == 1);
+            if (uDirEntry != 1)
+            {
+                JLOG(j.error())
+                    << "DeleteAccount iterator re-validation failed.";
+                return tefBAD_LEDGER;
+            }
+            uDirEntry = 0;
+
+        } while (
+            dirNext(view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry));
+    }
+
+    return tesSUCCESS;
+}
+
+TER
+deleteAMMTrustLine(
+    ApplyView& view,
+    std::shared_ptr<SLE> sleState,
+    std::optional<AccountID> const& ammAccountID,
+    beast::Journal j)
+{
+    if (!sleState || sleState->getType() != ltRIPPLE_STATE)
+        return tecINTERNAL;
+
+    auto const& [low, high] = std::minmax(
+        sleState->getFieldAmount(sfLowLimit).getIssuer(),
+        sleState->getFieldAmount(sfHighLimit).getIssuer());
+    auto sleLow = view.peek(keylet::account(low));
+    auto sleHigh = view.peek(keylet::account(high));
+    if (!sleLow || !sleHigh)
+        return tecINTERNAL;
+    bool const ammLow = sleLow->isFieldPresent(sfAMMID);
+    bool const ammHigh = sleHigh->isFieldPresent(sfAMMID);
+
+    // can't both be AMM
+    if (ammLow && ammHigh)
+        return tecINTERNAL;
+
+    // at least one must be
+    if (!ammLow && !ammHigh)
+        return terNO_AMM;
+
+    // one must be the target amm
+    if (ammAccountID && (low != *ammAccountID && high != *ammAccountID))
+        return terNO_AMM;
+
+    if (auto const ter = trustDelete(view, sleState, low, high, j);
+        ter != tesSUCCESS)
+    {
+        JLOG(j.error())
+            << "deleteAMMTrustLine: failed to delete the trustline.";
+        return ter;
+    }
+
+    auto const uFlags = !ammLow ? lsfLowReserve : lsfHighReserve;
+    if (!(sleState->getFlags() & uFlags))
+        return tecINTERNAL;
+
+    adjustOwnerCount(view, !ammLow ? sleLow : sleHigh, -1, j);
 
     return tesSUCCESS;
 }

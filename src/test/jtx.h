@@ -27,6 +27,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/Env_ss.h>
 #include <test/jtx/JTx.h>
+#include <test/jtx/TestHelpers.h>
 #include <test/jtx/account_txn_id.h>
 #include <test/jtx/acctdelete.h>
 #include <test/jtx/amount.h>

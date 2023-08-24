@@ -33,6 +33,10 @@ jobs:
           conan --version
           cmake --version
           env | sort
+      - name: configure Conan
+        run : |
+          conan profile get env.CXXFLAGS default || true
+          conan profile update 'conf.tools.build:cxxflags+=["-DBOOST_ASIO_DISABLE_CONCEPTS"]' default
       - name: build
         uses: ./.github/actions/build
         with:

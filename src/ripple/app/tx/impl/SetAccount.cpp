@@ -223,7 +223,7 @@ SetAccount::preclaim(PreclaimContext const& ctx)
     //
     if (ctx.view.rules().enabled(featureClawback))
     {
-        if (uSetFlag == asfAllowClawback)
+        if (uSetFlag == asfAllowTrustLineClawback)
         {
             if (uFlagsIn & lsfNoFreeze)
             {
@@ -240,7 +240,7 @@ SetAccount::preclaim(PreclaimContext const& ctx)
         else if (uSetFlag == asfNoFreeze)
         {
             // Cannot set NoFreeze if clawback is enabled
-            if (uFlagsIn & lsfAllowClawback)
+            if (uFlagsIn & lsfAllowTrustLineClawback)
             {
                 JLOG(ctx.j.trace())
                     << "Can't set NoFreeze if clawback is enabled";
@@ -595,14 +595,16 @@ SetAccount::doApply()
 
     // Set flag for clawback
     if (ctx_.view().rules().enabled(featureClawback) &&
-        uSetFlag == asfAllowClawback)
+        uSetFlag == asfAllowTrustLineClawback)
     {
         JLOG(j_.trace()) << "set allow clawback";
-        uFlagsOut |= lsfAllowClawback;
+        uFlagsOut |= lsfAllowTrustLineClawback;
     }
 
     if (uFlagsIn != uFlagsOut)
         sle->setFieldU32(sfFlags, uFlagsOut);
+
+    ctx_.view().update(sle);
 
     return tesSUCCESS;
 }
