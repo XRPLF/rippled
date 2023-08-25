@@ -1971,9 +1971,9 @@ NetworkOPsImp::pubManifest(Manifest const& mo)
 
         jvObj[jss::type] = "manifestReceived";
         jvObj[jss::master_key] = toBase58(TokenType::NodePublic, mo.masterKey);
-        if (!mo.signingKey.empty())
+        if (mo.signingKey)
             jvObj[jss::signing_key] =
-                toBase58(TokenType::NodePublic, mo.signingKey);
+                toBase58(TokenType::NodePublic, *mo.signingKey);
         jvObj[jss::seq] = Json::UInt(mo.sequence);
         if (auto sig = mo.getSignature())
             jvObj[jss::signature] = strHex(*sig);

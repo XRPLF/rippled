@@ -75,12 +75,13 @@ public:
     static const PublicKey emptyPubKey;
 
 private:
-    static PublicKey getEmptyPubKey()
+    static PublicKey
+    getEmptyPubKey()
     {
         std::array<unsigned char, 33> buf;
 
         // set the values to zero to simulate a default-constructed Public Key
-        for(unsigned int i = 0; i < 33; i++)
+        for (unsigned int i = 0; i < 33; i++)
             buf[i] = 0;
 
         // the first byte of a PublicKey can only be set to one of two

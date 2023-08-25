@@ -136,7 +136,7 @@ ValidatorList::ValidatorList(
 
 bool
 ValidatorList::load(
-    PublicKey const& localSigningKey,
+    std::optional<PublicKey const> localSigningKey,
     std::vector<std::string> const& configKeys,
     std::vector<std::string> const& publisherKeys)
 {
@@ -194,11 +194,11 @@ ValidatorList::load(
 
     JLOG(j_.debug()) << "Loaded " << count << " keys";
 
-    localPubKey_ = validatorManifests_.getMasterKey(localSigningKey);
+    if (localSigningKey)
+        localPubKey_ = validatorManifests_.getMasterKey(*localSigningKey);
 
     // localPubKey_ should never be set to PublicKey::emptyPubKey
-    //    if(localPubKey_)
-    //        assert(*localPubKey_ != PublicKey::emptyPubKey);
+    assert(!localPubKey_ || *localPubKey_ != PublicKey::emptyPubKey);
 
     // Treat local validator key as though it was listed in the config
     if (localPubKey_ && *localPubKey_ != PublicKey::emptyPubKey)
@@ -237,15 +237,15 @@ ValidatorList::load(
             JLOG(j_.warn()) << "Duplicate node identity: " << match[1];
             continue;
         }
-        // Config listed keys never expire
-
-        // set the expiration time for the newly created publisher list
-        // exactly once
-        if (count == 0)
-            localPublisherList.validUntil = TimeKeeper::time_point::max();
         localPublisherList.list.emplace_back(*id);
         ++count;
     }
+
+    // Config listed keys never expire
+    // set the expiration time for the newly created publisher list
+    // exactly once
+    if (count > 0)
+        localPublisherList.validUntil = TimeKeeper::time_point::max();
 
     JLOG(j_.debug()) << "Loaded " << count << " entries";
 
@@ -1097,13 +1097,14 @@ ValidatorList::applyList(
     if (!pubKeyOpt)
     {
         JLOG(j_.info()) << "ValidatorList::applyList unable to retrieve the "
-                            "master public key from the verify function\n";
+                           "master public key from the verify function\n";
         return PublisherListStats{result};
     }
 
-    if(!publicKeyType(*pubKeyOpt)) {
+    if (!publicKeyType(*pubKeyOpt))
+    {
         JLOG(j_.info()) << "ValidatorList::applyList Invalid Public Key type"
-                            " retrieved from the verify function\n ";
+                           " retrieved from the verify function\n ";
         return PublisherListStats{result};
     }
 
@@ -1317,6 +1318,8 @@ ValidatorList::verify(
         publisherLists_[masterPubKey].remaining.clear();
     }
 
+    assert(revoked || publisherManifests_.getSigningKey(masterPubKey));
+
     if (revoked || result == ManifestDisposition::invalid)
         return {ListDisposition::untrusted, masterPubKey};
 
@@ -1324,7 +1327,7 @@ ValidatorList::verify(
     auto const data = base64_decode(blob);
     if (!sig ||
         !ripple::verify(
-            publisherManifests_.getSigningKey(masterPubKey),
+            *publisherManifests_.getSigningKey(masterPubKey),
             makeSlice(data),
             makeSlice(*sig)))
         return {ListDisposition::invalid, masterPubKey};
@@ -1669,8 +1672,9 @@ ValidatorList::getJson() const
         auto it = keyListings_.find(manifest.masterKey);
         if (it != keyListings_.end())
         {
+            assert(manifest.revoked() || manifest.signingKey);
             jSigningKeys[toBase58(TokenType::NodePublic, manifest.masterKey)] =
-                toBase58(TokenType::NodePublic, manifest.signingKey);
+                toBase58(TokenType::NodePublic, *manifest.signingKey);
         }
     });
 
@@ -1946,8 +1950,10 @@ ValidatorList::updateTrusted(
     {
         trustedSigningKeys_.clear();
 
+        // trustedMasterKeys_ contain non-revoked manifests only. Hence the
+        // manifests must contain a valid signingKey
         for (auto const& k : trustedMasterKeys_)
-            trustedSigningKeys_.insert(validatorManifests_.getSigningKey(k));
+            trustedSigningKeys_.insert(*validatorManifests_.getSigningKey(k));
     }
 
     JLOG(j_.debug())

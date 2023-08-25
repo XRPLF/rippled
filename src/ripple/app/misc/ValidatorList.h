@@ -343,7 +343,7 @@ public:
     */
     bool
     load(
-        PublicKey const& localSigningKey,
+        std::optional<PublicKey const> localSigningKey,
         std::vector<std::string> const& configKeys,
         std::vector<std::string> const& publisherKeys);
 

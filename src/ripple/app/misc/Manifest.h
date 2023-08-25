@@ -87,10 +87,9 @@ struct Manifest
 
     /// The ephemeral key associated with this manifest.
     // A revoked manifest does not have a signingKey
-    // Although this field is specified as "optional" in manifestFormat's
-    // SOTemplate, the masterKey is used as the signingKey as a
-    // default.
-    PublicKey signingKey;
+    // This field is specified as "optional" in manifestFormat's
+    // SOTemplate
+    std::optional<PublicKey> signingKey;
 
     /// The sequence number of this manifest.
     std::uint32_t sequence = 0;
@@ -99,35 +98,6 @@ struct Manifest
     std::string domain;
 
     Manifest() = delete;
-
-    //    Manifest(
-    //        std::string const& serialized_,
-    //        PublicKey const& masterKey_,
-    //        PublicKey const& signingKey_,
-    //        std::uint32_t seq,
-    //        std::string const& domain_)
-    //        : serialized(serialized_)
-    //        , masterKey(masterKey_)
-    //        , signingKey(signingKey_)
-    //        , sequence(seq)
-    //        , domain(domain_)
-    //    {
-    //    }
-    //
-    //    // Constructor without explicit specification of the ephemeral or the
-    //    // signingKey. In such a case, the masterKey is used as the
-    //    signingKey. Manifest(
-    //        std::string const& serialized_,
-    //        PublicKey const& masterKey_,
-    //        std::uint32_t seq,
-    //        std::string const& domain_)
-    //        : serialized(serialized_)
-    //        , masterKey(masterKey_)
-    //        , signingKey(masterKey_)
-    //        , sequence(seq)
-    //        , domain(domain_)
-    //    {
-    //    }
 
     // If ehpemeral/signing key is not specified, then the masterKey is used
     // as the signingKey
@@ -139,7 +109,7 @@ struct Manifest
         std::string const& domain_)
         : serialized(serialized_)
         , masterKey(masterKey_)
-        , signingKey(signingKey_ ? *signingKey_ : masterKey_)
+        , signingKey(signingKey_)
         , sequence(seq)
         , domain(domain_)
     {
@@ -316,7 +286,7 @@ public:
 
         May be called concurrently
     */
-    PublicKey
+    std::optional<PublicKey>
     getSigningKey(PublicKey const& pk) const;
 
     /** Returns ephemeral signing key's master public key.

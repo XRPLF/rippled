@@ -51,7 +51,8 @@ public:
             : masterPublicKey(masterPublic_)
             , publicKey(public_)
             , secretKey(secret_)
-        { }
+        {
+        }
     };
 
     // Note: The existence of keys cannot be used as a proxy for checking the

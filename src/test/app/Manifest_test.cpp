@@ -849,12 +849,9 @@ public:
                         BEAST_EXPECT(manifest);
                         BEAST_EXPECT(manifest->masterKey == pk);
 
-                        // Although this manifest's ephemeral key is
-                        // revoked, it is not referring to the
-                        // PublicKey::epmtyPubKey. Instead, it refers to the
-                        // manifest's masterKey
-                        BEAST_EXPECT(
-                            manifest->signingKey == manifest->masterKey);
+                        // Since this manifest is revoked, it should not have
+                        // a signingKey
+                        BEAST_EXPECT(!manifest->signingKey);
                         BEAST_EXPECT(manifest->revoked());
                         BEAST_EXPECT(manifest->domain.empty());
                         BEAST_EXPECT(manifest->serialized == m);

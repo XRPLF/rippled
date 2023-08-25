@@ -39,11 +39,12 @@ to_string(Manifest const& m)
 {
     auto const mk = toBase58(TokenType::NodePublic, m.masterKey);
 
+    assert(m.signingKey || m.revoked());
     if (m.revoked())
         return "Revocation Manifest " + mk;
 
     return "Manifest " + mk + " (" + std::to_string(m.sequence) + ": " +
-        toBase58(TokenType::NodePublic, m.signingKey) + ")";
+        toBase58(TokenType::NodePublic, *m.signingKey) + ")";
 }
 
 std::optional<Manifest>
@@ -197,9 +198,10 @@ Manifest::verify() const
     SerialIter sit(serialized.data(), serialized.size());
     st.set(sit);
 
+    assert(signingKey || revoked());
     // Signing key and signature are not required for
     // master key revocations
-    if (!revoked() && !ripple::verify(st, HashPrefix::manifest, signingKey))
+    if (!revoked() && !ripple::verify(st, HashPrefix::manifest, *signingKey))
         return false;
 
     return ripple::verify(
@@ -292,7 +294,7 @@ loadValidatorToken(std::vector<std::string> const& blob, beast::Journal journal)
     }
 }
 
-PublicKey
+std::optional<PublicKey>
 ManifestCache::getSigningKey(PublicKey const& pk) const
 {
     std::shared_lock lock{mutex_};
@@ -426,11 +428,12 @@ ManifestCache::applyManifest(Manifest m)
             return ManifestDisposition::badMasterKey;
         }
 
+        assert(m.signingKey || m.revoked());
         if (!revoked)
         {
             // Sanity check: the ephemeral key of this manifest should not be
             // used as the master or ephemeral key of another manifest:
-            if (auto const x = signingToMasterKeys_.find(m.signingKey);
+            if (auto const x = signingToMasterKeys_.find(*m.signingKey);
                 x != signingToMasterKeys_.end())
             {
                 JLOG(j_.warn())
@@ -441,7 +444,7 @@ ManifestCache::applyManifest(Manifest m)
                 return ManifestDisposition::badEphemeralKey;
             }
 
-            if (auto const x = map_.find(m.signingKey); x != map_.end())
+            if (auto const x = map_.find(*m.signingKey); x != map_.end())
             {
                 JLOG(j_.warn())
                     << to_string(m) << ": Ephemeral key used as master key for "
@@ -475,6 +478,7 @@ ManifestCache::applyManifest(Manifest m)
     if (auto d = prewriteCheck(iter, /*checkSig*/ false, sl))
         return *d;
 
+    assert(m.signingKey || m.revoked());
     bool const revoked = m.revoked();
     // This is the first manifest we are seeing for a master key. This should
     // only ever happen once per validator run.
@@ -484,7 +488,7 @@ ManifestCache::applyManifest(Manifest m)
             logMftAct(stream, "AcceptedNew", m.masterKey, m.sequence);
 
         if (!revoked)
-            signingToMasterKeys_.emplace(m.signingKey, m.masterKey);
+            signingToMasterKeys_.emplace(*m.signingKey, m.masterKey);
 
         auto masterKey = m.masterKey;
         map_.emplace(std::move(masterKey), std::move(m));
@@ -501,10 +505,11 @@ ManifestCache::applyManifest(Manifest m)
             m.sequence,
             iter->second.sequence);
 
-    signingToMasterKeys_.erase(iter->second.signingKey);
+    assert(iter->second.signingKey || iter->second.revoked());
+    signingToMasterKeys_.erase(*iter->second.signingKey);
 
     if (!revoked)
-        signingToMasterKeys_.emplace(m.signingKey, m.masterKey);
+        signingToMasterKeys_.emplace(*m.signingKey, m.masterKey);
 
     iter->second = std::move(m);
 

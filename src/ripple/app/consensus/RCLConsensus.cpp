@@ -107,11 +107,13 @@ RCLConsensus::Adaptor::Adaptor(
                                TokenType::NodePublic,
                                validatorKeys_.keys->masterPublicKey);
 
-        if (validatorKeys_.keys->masterPublicKey != validatorKeys_.keys->publicKey)
+        if (validatorKeys_.keys->masterPublicKey !=
+            validatorKeys_.keys->publicKey)
         {
             JLOG(j_.debug())
                 << "Validator ephemeral signing key: "
-                << toBase58(TokenType::NodePublic, validatorKeys_.keys->publicKey)
+                << toBase58(
+                       TokenType::NodePublic, validatorKeys_.keys->publicKey)
                 << " (seq: " << std::to_string(validatorKeys_.sequence) << ")";
         }
     }
@@ -214,22 +216,21 @@ RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
     prop.set_proposeseq(proposal.proposeSeq());
     prop.set_closetime(proposal.closeTime().time_since_epoch().count());
 
-    if(!validatorKeys_.keys)
+    if (!validatorKeys_.keys)
     {
         JLOG(j_.warn()) << "RCLConsensus::Adaptor::propose: ValidatorKeys "
-                            "not set: \n";
+                           "not set: \n";
         return;
     }
 
+    auto const& keys = *validatorKeys_.keys;
+
     prop.set_nodepubkey(
-        validatorKeys_.keys->publicKey.data(), validatorKeys_
-                                                   .keys->publicKey.size());
+        keys.publicKey.data(), validatorKeys_.keys->publicKey.size());
     prop.set_ledgerseq(*proposal.ledgerSeq());
 
-    auto sig = signDigest(
-        validatorKeys_.keys->publicKey,
-        validatorKeys_.keys->secretKey,
-        proposal.signingHash());
+    auto sig =
+        signDigest(keys.publicKey, keys.secretKey, proposal.signingHash());
 
     prop.set_signature(sig.data(), sig.size());
 
@@ -238,7 +239,7 @@ RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
         proposal.prevLedger(),
         proposal.proposeSeq(),
         proposal.closeTime(),
-        validatorKeys_.keys->publicKey,
+        keys.publicKey,
         sig);
 
     app_.getHashRouter().addSuppression(suppression);
@@ -821,17 +822,19 @@ RCLConsensus::Adaptor::validate(
         validationTime = lastValidationTime_ + 1s;
     lastValidationTime_ = validationTime;
 
-    if(!validatorKeys_.keys)
+    if (!validatorKeys_.keys)
     {
         JLOG(j_.warn()) << "RCLConsensus::Adaptor::validate: ValidatorKeys "
-                            "not set\n";
+                           "not set\n";
         return;
     }
 
+    auto const& keys = *validatorKeys_.keys;
+
     auto v = std::make_shared<STValidation>(
         lastValidationTime_,
-        validatorKeys_.keys->publicKey,
-        validatorKeys_.keys->secretKey,
+        keys.publicKey,
+        keys.secretKey,
         validatorKeys_.nodeID,
         [&](STValidation& v) {
             v.setFieldH256(sfLedgerHash, ledger.id());
@@ -1005,10 +1008,12 @@ RCLConsensus::Adaptor::preStartRound(
     RCLCxLedger const& prevLgr,
     hash_set<NodeID> const& nowTrusted)
 {
+    assert(
+        !validatorKeys_.keys ||
+        validatorKeys_.keys->publicKey != PublicKey::emptyPubKey);
     // We have a key, we do not want out of sync validations after a restart
     // and are not amendment blocked.
-    validating_ = validatorKeys_.keys.has_value() &&
-        validatorKeys_.keys->publicKey != PublicKey::emptyPubKey &&
+    validating_ = validatorKeys_.keys &&
         prevLgr.seq() >= app_.getMaxDisallowedLedger() &&
         !app_.getOPs().isBlocked();
 

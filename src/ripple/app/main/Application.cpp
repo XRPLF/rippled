@@ -1318,7 +1318,6 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
 
             publisherManifests_->load(getWalletDB(), "PublisherManifests");
 
-            // On the relevance of using PublicKey::emptyPubKey here:
             // It is possible to have a valid ValidatorKeys object without
             // setting the signingKey or masterKey. This occurs if the
             // configuration file does not have either
@@ -1327,10 +1326,11 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
             // ValidatorList uses PublicKey::emptyPubKey to denote masterKey
             // for the local-configuration specified validator keys. In the
             // previous versions of the code, the default-constructed public
-            // key would be used here, thanks to the default construction of
-            // ValidatorKeys object.
+            // key would be used here, owing to the default construction of
+            // ValidatorKeys object. At present, an unseated optional denotes
+            // the default construction of ValidatorKeys object.
 
-            PublicKey localSigningKey = PublicKey::emptyPubKey;
+            std::optional<PublicKey> localSigningKey;
             if (validatorKeys_.keys)
                 localSigningKey = validatorKeys_.keys->publicKey;
 

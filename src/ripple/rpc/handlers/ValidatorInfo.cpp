@@ -47,7 +47,12 @@ doValidatorInfo(RPC::JsonContext& context)
 
     // lookup ephemeral key
     auto const ek = context.app.validatorManifests().getSigningKey(mk);
-    ret[jss::ephemeral_key] = toBase58(TokenType::NodePublic, ek);
+
+    // the manifest must be revoked because it does not have a signingKey
+    if (!ek)
+        return ret;
+
+    ret[jss::ephemeral_key] = toBase58(TokenType::NodePublic, *ek);
 
     if (auto const manifest = context.app.validatorManifests().getManifest(mk))
         ret[jss::manifest] = base64_encode(*manifest);
