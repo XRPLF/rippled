@@ -52,35 +52,25 @@ class SigningForParams
 {
 private:
     AccountID const* const multiSigningAcctID_;
-    PublicKey* const multiSignPublicKey_;
-    Buffer* const multiSignature_;
+    std::optional<PublicKey> multiSignPublicKey_;
+    Buffer multiSignature_;
 
 public:
-    explicit SigningForParams()
-        : multiSigningAcctID_(nullptr)
-        , multiSignPublicKey_(nullptr)
-        , multiSignature_(nullptr)
+    explicit SigningForParams() : multiSigningAcctID_(nullptr)
     {
     }
 
     SigningForParams(SigningForParams const& rhs) = delete;
 
-    SigningForParams(
-        AccountID const& multiSigningAcctID,
-        PublicKey& multiSignPublicKey,
-        Buffer& multiSignature)
+    SigningForParams(AccountID const& multiSigningAcctID)
         : multiSigningAcctID_(&multiSigningAcctID)
-        , multiSignPublicKey_(&multiSignPublicKey)
-        , multiSignature_(&multiSignature)
     {
     }
 
     bool
     isMultiSigning() const
     {
-        return (
-            (multiSigningAcctID_ != nullptr) &&
-            (multiSignPublicKey_ != nullptr) && (multiSignature_ != nullptr));
+        return multiSigningAcctID_ != nullptr;
     }
 
     bool
@@ -96,23 +86,46 @@ public:
         return !isMultiSigning();
     }
 
+    bool
+    validMultiSign() const
+    {
+        return isMultiSigning() && multiSignPublicKey_ &&
+            multiSignature_.size();
+    }
+
     // Don't call this method unless isMultiSigning() returns true.
     AccountID const&
-    getSigner()
+    getSigner() const
     {
+        if (!multiSigningAcctID_)
+            LogicError("Accessing unknown SigningForParams::getSigner()");
         return *multiSigningAcctID_;
+    }
+
+    PublicKey const&
+    getPublicKey() const
+    {
+        if (!multiSignPublicKey_)
+            LogicError("Accessing unknown SigningForParams::getPublicKey()");
+        return *multiSignPublicKey_;
+    }
+
+    Buffer const&
+    getSignature() const
+    {
+        return multiSignature_;
     }
 
     void
     setPublicKey(PublicKey const& multiSignPublicKey)
     {
-        *multiSignPublicKey_ = multiSignPublicKey;
+        multiSignPublicKey_ = multiSignPublicKey;
     }
 
     void
     moveMultiSignature(Buffer&& multiSignature)
     {
-        *multiSignature_ = std::move(multiSignature);
+        multiSignature_ = std::move(multiSignature);
     }
 };
 
@@ -981,12 +994,7 @@ transactionSignFor(
     }
 
     // Add and amend fields based on the transaction type.
-    Buffer multiSignature;
-    PublicKey multiSignPubKey = derivePublicKey(
-        KeyType::secp256k1,
-        generateSecretKey(KeyType::secp256k1, generateSeed("dummyPassPhrase")));
-    SigningForParams signForParams(
-        *signerAccountID, multiSignPubKey, multiSignature);
+    SigningForParams signForParams(*signerAccountID);
 
     transactionPreProcessResult preprocResult = transactionPreProcessImpl(
         jvRequest, role, signForParams, validatedLedgerAge, app);
@@ -994,12 +1002,14 @@ transactionSignFor(
     if (!preprocResult.second)
         return preprocResult.first;
 
+    assert(signForParams.validMultiSign());
+
     {
         std::shared_ptr<SLE const> account_state =
             ledger->read(keylet::account(*signerAccountID));
         // Make sure the account and secret belong together.
-        auto const err =
-            acctMatchesPubKey(account_state, *signerAccountID, multiSignPubKey);
+        auto const err = acctMatchesPubKey(
+            account_state, *signerAccountID, signForParams.getPublicKey());
 
         if (err != rpcSUCCESS)
             return rpcError(err);
@@ -1011,8 +1021,9 @@ transactionSignFor(
         // Make the signer object that we'll inject.
         STObject signer(sfSigner);
         signer[sfAccount] = *signerAccountID;
-        signer.setFieldVL(sfTxnSignature, multiSignature);
-        signer.setFieldVL(sfSigningPubKey, multiSignPubKey.slice());
+        signer.setFieldVL(sfTxnSignature, signForParams.getSignature());
+        signer.setFieldVL(
+            sfSigningPubKey, signForParams.getPublicKey().slice());
 
         // If there is not yet a Signers array, make one.
         if (!sttx->isFieldPresent(sfSigners))
