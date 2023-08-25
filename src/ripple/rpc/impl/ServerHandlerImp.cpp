@@ -1150,7 +1150,7 @@ parse_Ports(Config const& config, std::ostream& log)
 
         // grpc ports are parsed by GRPCServer class. Do not validate
         // grpc port information in this file.
-        if (name == PORT_GRPC)
+        if (name == SECTION_PORT_GRPC)
             continue;
 
         ParsedPort parsed = common;
