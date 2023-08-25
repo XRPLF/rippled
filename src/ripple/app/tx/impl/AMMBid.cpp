@@ -225,8 +225,8 @@ applyBid(
         {
             // This error case should never occur.
             JLOG(ctx_.journal.warn())
-                << "AMM Bid: LP Token burn exceeds AMM balance " << burn
-                << " " << lptAMMBalance;
+                << "AMM Bid: LP Token burn exceeds AMM balance " << burn << " "
+                << lptAMMBalance;
             return tecINTERNAL;
         }
         auto res =
@@ -319,8 +319,8 @@ applyBid(
         if (refund > *payPrice)
         {
             // This error case should never occur.
-            JLOG(ctx_.journal.warn())
-                << "AMM Bid: refund exceeds payPrice " << refund << " " << *payPrice;
+            JLOG(ctx_.journal.warn()) << "AMM Bid: refund exceeds payPrice "
+                                      << refund << " " << *payPrice;
             return {tecINTERNAL, false};
         }
         res = accountSend(
