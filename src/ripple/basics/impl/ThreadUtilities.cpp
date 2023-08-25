@@ -123,6 +123,7 @@ get_name()
 void
 set_name(std::string s)
 {
+    assert(s.size() <= 15);
     s.resize(15);
     std::wstring ws;
     for (auto c : s)
