@@ -22,7 +22,6 @@
 #include <ripple/protocol/SField.h>
 #include <ripple/protocol/jss.h>
 #include <test/jtx.h>
-#include <test/jtx/TestHelpers.h>
 #include <test/jtx/WSClient.h>
 
 namespace ripple {

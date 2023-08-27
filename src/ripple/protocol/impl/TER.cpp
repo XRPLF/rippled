@@ -45,6 +45,9 @@ transResults()
         MAKE_ERROR(tecAMM_BALANCE,                   "AMM has invalid balance."),
         MAKE_ERROR(tecAMM_INVALID_TOKENS,            "AMM invalid LP tokens."),
         MAKE_ERROR(tecAMM_FAILED,                    "AMM transaction failed."),
+        MAKE_ERROR(tecAMM_EMPTY,                     "AMM is in empty state."),
+        MAKE_ERROR(tecAMM_NOT_EMPTY,                 "AMM is not in empty state."),
+        MAKE_ERROR(tecAMM_ACCOUNT,                   "This operation is not allowed on an AMM Account."),
         MAKE_ERROR(tecCLAIM,                         "Fee claimed. Sequence used. No action."),
         MAKE_ERROR(tecDIR_FULL,                      "Can not add entry to full directory."),
         MAKE_ERROR(tecFAILED_PROCESSING,             "Failed to correctly process transaction."),
@@ -92,6 +95,7 @@ transResults()
         MAKE_ERROR(tecINSUFFICIENT_FUNDS,            "Not enough funds available to complete requested transaction."),
         MAKE_ERROR(tecOBJECT_NOT_FOUND,              "A requested object could not be located."),
         MAKE_ERROR(tecINSUFFICIENT_PAYMENT,          "The payment is not sufficient."),
+        MAKE_ERROR(tecINCOMPLETE,                    "Some work was completed, but more submissions required to finish."),
 
         MAKE_ERROR(tefALREADY,                     "The exact transaction was already in this ledger."),
         MAKE_ERROR(tefBAD_ADD_AUTH,                "Not authorized to add account."),
@@ -185,6 +189,7 @@ transResults()
         MAKE_ERROR(terQUEUED,                 "Held until escalated fee drops."),
         MAKE_ERROR(terPRE_TICKET,             "Ticket is not yet in ledger."),
         MAKE_ERROR(terNO_AMM,                 "AMM doesn't exist for the asset pair."),
+        MAKE_ERROR(terSUBMITTED,              "Transaction has been submitted."),
 
         MAKE_ERROR(tesSUCCESS,                "The transaction was applied. Only final in a validated ledger."),
     };

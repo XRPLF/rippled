@@ -96,6 +96,8 @@ SetRegularKey::doApply()
         sle->makeFieldAbsent(sfRegularKey);
     }
 
+    ctx_.view().update(sle);
+
     return tesSUCCESS;
 }
 

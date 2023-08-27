@@ -63,6 +63,9 @@ Clawback::preclaim(PreclaimContext const& ctx)
     if (!sleIssuer || !sleHolder)
         return terNO_ACCOUNT;
 
+    if (sleHolder->isFieldPresent(sfAMMID))
+        return tecAMM_ACCOUNT;
+
     std::uint32_t const issuerFlagsIn = sleIssuer->getFieldU32(sfFlags);
 
     // If AllowTrustLineClawback is not set or NoFreeze is set, return no

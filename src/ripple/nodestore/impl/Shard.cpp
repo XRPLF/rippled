@@ -25,6 +25,7 @@
 #include <ripple/nodestore/Manager.h>
 #include <ripple/nodestore/impl/DeterministicShard.h>
 #include <ripple/nodestore/impl/Shard.h>
+#include <ripple/protocol/LedgerHeader.h>
 #include <ripple/protocol/digest.h>
 
 namespace ripple {

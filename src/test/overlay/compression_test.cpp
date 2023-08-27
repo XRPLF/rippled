@@ -34,12 +34,12 @@
 #include <ripple/protocol/Sign.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/protocol/jss.h>
+#include <ripple/protocol/messages.h>
 #include <ripple/shamap/SHAMapNodeID.h>
 #include <boost/asio/ip/address_v4.hpp>
 #include <boost/beast/core/multi_buffer.hpp>
 #include <boost/endian/conversion.hpp>
 #include <algorithm>
-#include <ripple.pb.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/WSClient.h>
