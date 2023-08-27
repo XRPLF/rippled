@@ -210,8 +210,7 @@ insertPeerReservation(
                "VALUES (:nodeId, :desc) "
                "ON CONFLICT (PublicKey) DO UPDATE SET "
                "Description=excluded.Description",
-        soci::use(sNodeId),
-        soci::use(description);
+        soci::use(sNodeId), soci::use(description);
 }
 
 void
