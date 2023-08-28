@@ -236,6 +236,40 @@ getAccountObjects(
         entryIndex = beast::zero;
     }
 
+    // AMM root account requires special handling to fetch AMM object and
+    // trustlines
+    bool const filterAMM =
+        typeFilter.has_value() && typeMatchesFilter(typeFilter.value(), ltAMM);
+    // skip amm if marker (dirIndex) is provided
+    if (dirIndex == uint256{} && (!typeFilter.has_value() || filterAMM))
+    {
+        if (auto const sle = ledger.read(keylet::account(account)); !sle)
+            return false;
+        else if (bool const isAMM = sle->isFieldPresent(sfAMMID);
+                 filterAMM && !isAMM)
+            return false;
+        else if (isAMM)
+        {
+            auto const sleAMM =
+                ledger.read(keylet::amm(sle->getFieldH256(sfAMMID)));
+            if (!sleAMM)
+                return false;
+
+            jvObjects.append(sleAMM->getJson(JsonOptions::none));
+
+            if (filterAMM)
+                return true;
+            if (limit == 1)
+            {
+                jvResult[jss::limit] = limit;
+                jvResult[jss::marker] = "AMM";
+                return true;
+            }
+            if (limit > 1)
+                --mlimit;
+        }
+    }
+
     auto const root = keylet::ownerDir(account);
     auto found = false;
 

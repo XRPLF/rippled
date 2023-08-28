@@ -22,6 +22,7 @@
 #include <ripple/json/to_string.h>
 #include <ripple/protocol/jss.h>
 #include <test/jtx.h>
+#include <test/jtx/AMM.h>
 
 #include <boost/utility/string_ref.hpp>
 
@@ -552,10 +553,19 @@ public:
         Env env(*this);
 
         // Make a lambda we can use to get "account_objects" easily.
-        auto acct_objs = [&env](Account const& acct, char const* type) {
+        auto acct_objs = [&env](
+                             AccountID const& acct,
+                             std::optional<Json::StaticString> const& type,
+                             std::optional<std::uint16_t> limit = std::nullopt,
+                             std::optional<std::string> marker = std::nullopt) {
             Json::Value params;
-            params[jss::account] = acct.human();
-            params[jss::type] = type;
+            params[jss::account] = to_string(acct);
+            if (type)
+                params[jss::type] = *type;
+            if (limit)
+                params[jss::limit] = *limit;
+            if (marker)
+                params[jss::marker] = *marker;
             params[jss::ledger_index] = "validated";
             return env.rpc("json", "account_objects", to_string(params));
         };
@@ -585,6 +595,7 @@ public:
         BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::signer_list), 0));
         BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::state), 0));
         BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::ticket), 0));
+        BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::amm), 0));
 
         // gw mints an NFT so we can find it.
         uint256 const nftID{token::getNextID(env, gw, 0u, tfTransferable)};
@@ -781,6 +792,58 @@ public:
                 auto const& aobjs = resp[jss::result][jss::account_objects];
                 BEAST_EXPECT(aobjs[0u]["LedgerEntryType"] == jss::Escrow);
             }
+        }
+        {
+            // Make a lambda we can use to check the number of fetched
+            // account objects and their ledger type
+            auto expectObjects =
+                [&](Json::Value const& resp,
+                    std::vector<Json::StaticString> const& types) -> bool {
+                if (!acct_objs_is_size(resp, types.size()))
+                    return false;
+                auto const objs = resp[jss::result][jss::account_objects];
+                for (std::uint32_t i = 0; i < types.size(); ++i)
+                    if (objs[i][sfLedgerEntryType.fieldName].asString() !=
+                        types[i])
+                        return false;
+                return true;
+            };
+            // Find AMM objects
+            AMM amm(env, gw, XRP(1'000), USD(1'000));
+            amm.deposit(alice, USD(1));
+            // AMM account has 4 objects: AMM object and 3 trustlines
+            auto const lines = getAccountLines(env, amm.ammAccount());
+            BEAST_EXPECT(lines[jss::lines].size() == 3);
+            // request AMM only, doesn't depend on the limit
+            BEAST_EXPECT(
+                acct_objs_is_size(acct_objs(amm.ammAccount(), jss::amm), 1));
+            BEAST_EXPECT(
+                acct_objs_is_size(acct_objs(amm.ammAccount(), jss::amm, 1), 1));
+            BEAST_EXPECT(
+                acct_objs_is_size(acct_objs(amm.ammAccount(), jss::amm, 2), 1));
+            // no filter and limit 1 returns AMM only
+            auto resp = acct_objs(amm.ammAccount(), std::nullopt, 1);
+            BEAST_EXPECT(expectObjects(resp, {jss::AMM}));
+            // request first two: first two objects are AMM and trustline
+            resp = acct_objs(amm.ammAccount(), std::nullopt, 2);
+            BEAST_EXPECT(expectObjects(resp, {jss::AMM, jss::RippleState}));
+            // request next: next two objects are trustlines
+            resp = acct_objs(
+                amm.ammAccount(),
+                std::nullopt,
+                10,
+                resp[jss::result][jss::marker].asString());
+            BEAST_EXPECT(
+                expectObjects(resp, {jss::RippleState, jss::RippleState}));
+            // filter by state: there are three trustlines
+            resp = acct_objs(amm.ammAccount(), jss::state, 10);
+            BEAST_EXPECT(expectObjects(
+                resp, {jss::RippleState, jss::RippleState, jss::RippleState}));
+            // AMM account doesn't own offers
+            BEAST_EXPECT(
+                acct_objs_is_size(acct_objs(amm.ammAccount(), jss::offer), 0));
+            // gw account doesn't own AMM object
+            BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::amm), 0));
         }
 
         // Run up the number of directory entries so gw has two
