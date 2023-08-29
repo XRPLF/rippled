@@ -947,24 +947,9 @@ NetworkOPsImp::setTimer(
 void
 NetworkOPsImp::setHeartbeatTimer()
 {
-    // timerDelay is to optimize the timer interval such as for phase establish.
-    // Setting a max of ledgerGRANULARITY allows currently in-flight proposals
-    // to be accounted for at the very beginning of the phase.
-    std::chrono::milliseconds timerDelay;
-    auto td = mConsensus.getTimerDelay();
-    if (td)
-    {
-        timerDelay = std::min(*td, mConsensus.parms().ledgerGRANULARITY);
-        mConsensus.setTimerDelay();
-    }
-    else
-    {
-        timerDelay = mConsensus.parms().ledgerGRANULARITY;
-    }
-
     setTimer(
         heartbeatTimer_,
-        timerDelay,
+        mConsensus.parms().ledgerGRANULARITY,
         [this]() {
             m_job_queue.addJob(jtNETOP_TIMER, "NetOPs.heartbeat", [this]() {
                 processHeartbeatTimer();
