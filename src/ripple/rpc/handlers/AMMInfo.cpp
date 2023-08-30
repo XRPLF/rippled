@@ -78,32 +78,54 @@ doAMMInfo(RPC::JsonContext& context)
 
     Issue issue1;
     Issue issue2;
+    uint256 ammID;
+    bool const isAssets =
+        params.isMember(jss::asset) && params.isMember(jss::asset2);
+    bool const isAMMAccount = params.isMember(jss::amm_account);
 
-    if (!params.isMember(jss::asset) || !params.isMember(jss::asset2))
+    if ((isAssets && isAMMAccount) || (!isAssets && !isAMMAccount))
     {
         RPC::inject_error(rpcINVALID_PARAMS, result);
         return result;
     }
 
-    if (auto const i = getIssue(params[jss::asset], context.j); !i)
-    {
-        RPC::inject_error(i.error(), result);
-        return result;
-    }
-    else
-        issue1 = *i;
-    if (auto const i = getIssue(params[jss::asset2], context.j); !i)
-    {
-        RPC::inject_error(i.error(), result);
-        return result;
-    }
-    else
-        issue2 = *i;
-
     std::shared_ptr<ReadView const> ledger;
     result = RPC::lookupLedger(ledger, context);
     if (!ledger)
         return result;
+
+    if (isAssets)
+    {
+        if (auto const i = getIssue(params[jss::asset], context.j); !i)
+        {
+            RPC::inject_error(i.error(), result);
+            return result;
+        }
+        else
+            issue1 = *i;
+        if (auto const i = getIssue(params[jss::asset2], context.j); !i)
+        {
+            RPC::inject_error(i.error(), result);
+            return result;
+        }
+        else
+            issue2 = *i;
+    }
+    else
+    {
+        if (auto const id = getAccount(params[jss::amm_account], result); !id)
+        {
+            RPC::inject_error(rpcACT_MALFORMED, result);
+            return result;
+        }
+        else if (auto const sle = ledger->read(keylet::account(*id)); !sle)
+        {
+            RPC::inject_error(rpcACT_MALFORMED, result);
+            return result;
+        }
+        else
+            ammID = sle->getFieldH256(sfAMMID);
+    }
 
     if (params.isMember(jss::account))
     {
@@ -115,10 +137,19 @@ doAMMInfo(RPC::JsonContext& context)
         }
     }
 
-    auto const ammKeylet = keylet::amm(issue1, issue2);
+    auto const ammKeylet = [&]() {
+        if (isAssets)
+            return keylet::amm(issue1, issue2);
+        return keylet::amm(ammID);
+    }();
     auto const amm = ledger->read(ammKeylet);
     if (!amm)
         return rpcError(rpcACT_NOT_FOUND);
+    if (isAMMAccount)
+    {
+        issue1 = (*amm)[sfAsset];
+        issue2 = (*amm)[sfAsset2];
+    }
 
     auto const ammAccountID = amm->getAccountID(sfAccount);
 

@@ -105,7 +105,8 @@ public:
     ammRpcInfo(
         std::optional<AccountID> const& account = std::nullopt,
         std::optional<std::string> const& ledgerIndex = std::nullopt,
-        std::optional<std::pair<Issue, Issue>> tokens = std::nullopt) const;
+        std::optional<std::pair<Issue, Issue>> tokens = std::nullopt,
+        std::optional<AccountID> const& ammAccount = std::nullopt) const;
 
     /** Verify the AMM balances.
      */
@@ -150,7 +151,8 @@ public:
         STAmount const& asset2,
         IOUAmount const& balance,
         std::optional<AccountID> const& account = std::nullopt,
-        std::optional<std::string> const& ledger_index = std::nullopt) const;
+        std::optional<std::string> const& ledger_index = std::nullopt,
+        std::optional<AccountID> const& ammAccount = std::nullopt) const;
 
     [[nodiscard]] bool
     ammExists() const;

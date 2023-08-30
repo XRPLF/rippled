@@ -201,6 +201,9 @@ deleteAMMTrustLines(
         [&](LedgerEntryType nodeType,
             uint256 const&,
             std::shared_ptr<SLE>& sleItem) -> TER {
+            // Skip AMM
+            if (nodeType == LedgerEntryType::ltAMM)
+                return tecOBJECT_NOT_FOUND;
             // Should only have the trustlines
             if (nodeType != LedgerEntryType::ltRIPPLE_STATE)
             {
@@ -255,6 +258,12 @@ deleteAMMAccount(
         return ter;
 
     auto const ownerDirKeylet = keylet::ownerDir(ammAccountID);
+    if (!sb.dirRemove(
+            ownerDirKeylet, (*ammSle)[sfOwnerNode], ammSle->key(), false))
+    {
+        JLOG(j.error()) << "deleteAMMAccount: failed to remove dir link";
+        return tecINTERNAL;
+    }
     if (sb.exists(ownerDirKeylet) && !sb.emptyDirDelete(ownerDirKeylet))
     {
         JLOG(j.error()) << "deleteAMMAccount: cannot delete root dir node of "

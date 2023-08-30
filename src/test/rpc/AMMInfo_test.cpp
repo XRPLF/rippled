@@ -52,6 +52,24 @@ public:
             auto const jv = ammAlice.ammRpcInfo(bogie.id());
             BEAST_EXPECT(jv[jss::error_message] == "Account malformed.");
         });
+
+        // Invalid parameters
+        testAMM([&](AMM& ammAlice, Env&) {
+            auto const jv = ammAlice.ammRpcInfo(
+                std::nullopt,
+                std::nullopt,
+                {{xrpIssue(), USD.issue()}},
+                ammAlice.ammAccount());
+            BEAST_EXPECT(jv[jss::error_message] == "Invalid parameters.");
+        });
+
+        // Invalid AMM account id
+        testAMM([&](AMM& ammAlice, Env&) {
+            Account bogie("bogie");
+            auto const jv = ammAlice.ammRpcInfo(
+                std::nullopt, std::nullopt, std::nullopt, bogie.id());
+            BEAST_EXPECT(jv[jss::error_message] == "Account malformed.");
+        });
     }
 
     void
@@ -63,6 +81,13 @@ public:
         testAMM([&](AMM& ammAlice, Env&) {
             BEAST_EXPECT(ammAlice.expectAmmRpcInfo(
                 XRP(10000), USD(10000), IOUAmount{10000000, 0}));
+            BEAST_EXPECT(ammAlice.expectAmmRpcInfo(
+                XRP(10000),
+                USD(10000),
+                IOUAmount{10000000, 0},
+                std::nullopt,
+                std::nullopt,
+                ammAlice.ammAccount()));
         });
     }
 
@@ -91,53 +116,70 @@ public:
             env.fund(XRP(1000), bob, ed, bill);
             ammAlice.bid(alice, 100, std::nullopt, {carol, bob, ed, bill});
             BEAST_EXPECT(ammAlice.expectAmmRpcInfo(
-                XRP(80000), USD(80000), IOUAmount{79994400}));
-            std::unordered_set<std::string> authAccounts = {
-                carol.human(), bob.human(), ed.human(), bill.human()};
-            auto const ammInfo = ammAlice.ammRpcInfo();
-            auto const& amm = ammInfo[jss::amm];
-            try
+                XRP(80000),
+                USD(80000),
+                IOUAmount{79994400},
+                std::nullopt,
+                std::nullopt,
+                ammAlice.ammAccount()));
+            for (auto i = 0; i < 2; ++i)
             {
-                // votes
-                auto const voteSlots = amm[jss::vote_slots];
-                for (std::uint8_t i = 0; i < 8; ++i)
+                std::unordered_set<std::string> authAccounts = {
+                    carol.human(), bob.human(), ed.human(), bill.human()};
+                auto const ammInfo = i ? ammAlice.ammRpcInfo()
+                                       : ammAlice.ammRpcInfo(
+                                             std::nullopt,
+                                             std::nullopt,
+                                             std::nullopt,
+                                             ammAlice.ammAccount());
+                auto const& amm = ammInfo[jss::amm];
+                try
                 {
-                    if (!BEAST_EXPECT(
-                            votes[voteSlots[i][jss::account].asString()] ==
-                                voteSlots[i][jss::trading_fee].asUInt() &&
-                            voteSlots[i][jss::vote_weight].asUInt() == 12500))
+                    // votes
+                    auto const voteSlots = amm[jss::vote_slots];
+                    auto votesCopy = votes;
+                    for (std::uint8_t i = 0; i < 8; ++i)
+                    {
+                        if (!BEAST_EXPECT(
+                                votes[voteSlots[i][jss::account].asString()] ==
+                                    voteSlots[i][jss::trading_fee].asUInt() &&
+                                voteSlots[i][jss::vote_weight].asUInt() ==
+                                    12500))
+                            return;
+                        votes.erase(voteSlots[i][jss::account].asString());
+                    }
+                    if (!BEAST_EXPECT(votes.empty()))
                         return;
-                    votes.erase(voteSlots[i][jss::account].asString());
-                }
-                if (!BEAST_EXPECT(votes.empty()))
-                    return;
+                    votes = votesCopy;
 
-                // bid
-                auto const auctionSlot = amm[jss::auction_slot];
-                for (std::uint8_t i = 0; i < 4; ++i)
-                {
-                    if (!BEAST_EXPECT(authAccounts.contains(
+                    // bid
+                    auto const auctionSlot = amm[jss::auction_slot];
+                    for (std::uint8_t i = 0; i < 4; ++i)
+                    {
+                        if (!BEAST_EXPECT(authAccounts.contains(
+                                auctionSlot[jss::auth_accounts][i][jss::account]
+                                    .asString())))
+                            return;
+                        authAccounts.erase(
                             auctionSlot[jss::auth_accounts][i][jss::account]
-                                .asString())))
+                                .asString());
+                    }
+                    if (!BEAST_EXPECT(authAccounts.empty()))
                         return;
-                    authAccounts.erase(
-                        auctionSlot[jss::auth_accounts][i][jss::account]
-                            .asString());
+                    BEAST_EXPECT(
+                        auctionSlot[jss::account].asString() == alice.human() &&
+                        auctionSlot[jss::discounted_fee].asUInt() == 17 &&
+                        auctionSlot[jss::price][jss::value].asString() ==
+                            "5600" &&
+                        auctionSlot[jss::price][jss::currency].asString() ==
+                            to_string(ammAlice.lptIssue().currency) &&
+                        auctionSlot[jss::price][jss::issuer].asString() ==
+                            to_string(ammAlice.lptIssue().account));
                 }
-                if (!BEAST_EXPECT(authAccounts.empty()))
-                    return;
-                BEAST_EXPECT(
-                    auctionSlot[jss::account].asString() == alice.human() &&
-                    auctionSlot[jss::discounted_fee].asUInt() == 17 &&
-                    auctionSlot[jss::price][jss::value].asString() == "5600" &&
-                    auctionSlot[jss::price][jss::currency].asString() ==
-                        to_string(ammAlice.lptIssue().currency) &&
-                    auctionSlot[jss::price][jss::issuer].asString() ==
-                        to_string(ammAlice.lptIssue().account));
-            }
-            catch (std::exception const& e)
-            {
-                fail(e.what(), __FILE__, __LINE__);
+                catch (std::exception const& e)
+                {
+                    fail(e.what(), __FILE__, __LINE__);
+                }
             }
         });
     }
