@@ -20,7 +20,9 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/app/main/DBInit.h>
 #include <ripple/app/rdb/Vacuum.h>
+#include <ripple/basics/ByteUtilities.h>
 #include <ripple/basics/Log.h>
+#include <ripple/basics/SlabAllocator.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/ThreadUtilities.h>
 #include <ripple/basics/contract.h>
@@ -28,6 +30,7 @@
 #include <ripple/core/Config.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/core/TimeKeeper.h>
+#include <ripple/json/json_value.h>
 #include <ripple/json/to_string.h>
 #include <ripple/net/RPCCall.h>
 #include <ripple/protocol/BuildInfo.h>
@@ -343,6 +346,56 @@ runUnitTests(
 #endif  // ENABLE_TESTS
 //------------------------------------------------------------------------------
 
+class SlabbedValueAllocator : public Json::ValueAllocator
+{
+    struct Buffer
+    {
+        alignas(8) char buffer_[32];
+    };
+
+    SlabAllocatorSet<Buffer> slabber_;
+
+public:
+    SlabbedValueAllocator()
+        : slabber_({
+              // clang-format off
+              { 0, 2 * 1024 * 1024 },
+              {16, 6 * 1024 * 1024 },
+              {40, 9 * 1024 * 1024 }
+              // clang-format on
+          })
+    {
+    }
+
+    virtual ~SlabbedValueAllocator() = default;
+
+    char*
+    duplicateStringValue(const char* value, std::size_t length = 0) override
+    {
+        if (length == 0 && value != nullptr)
+            length = std::strlen(value);
+
+        if (auto ret = reinterpret_cast<char*>(slabber_.allocate(length + 1)))
+        {
+            std::copy_n(value, length, ret);
+            ret[length] = 0;
+            return ret;
+        }
+
+        // Fall back to the default if we can't grab memory from the slab
+        // allocators.
+        return ValueAllocator::duplicateStringValue(value, length);
+    }
+
+    void
+    releaseStringValue(char* value) override
+    {
+        if (!slabber_.deallocate(reinterpret_cast<std::uint8_t*>(value)))
+            ValueAllocator::releaseStringValue(value);
+    }
+};
+
+//------------------------------------------------------------------------------
 int
 run(int argc, char** argv)
 {
@@ -516,6 +569,9 @@ run(int argc, char** argv)
                   << std::endl;
         return 0;
     }
+
+    // Do this early enough so that it's useful for unit tests too:
+    Json::setAllocator(new SlabbedValueAllocator());
 
 #ifndef ENABLE_TESTS
     if (vm.count("unittest") || vm.count("unittest-child"))

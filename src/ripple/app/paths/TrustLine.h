@@ -27,7 +27,8 @@
 #include <ripple/protocol/STLedgerEntry.h>
 
 #include <cstdint>
-#include <optional>
+#include <memory>
+#include <type_traits>
 
 namespace ripple {
 

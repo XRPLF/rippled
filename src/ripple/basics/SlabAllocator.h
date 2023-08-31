@@ -20,6 +20,7 @@
 #ifndef RIPPLE_BASICS_SLABALLOCATOR_H_INCLUDED
 #define RIPPLE_BASICS_SLABALLOCATOR_H_INCLUDED
 
+#include <ripple/basics/ByteUtilities.h>
 #include <ripple/beast/type_name.h>
 
 #include <boost/align.hpp>

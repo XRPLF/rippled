@@ -23,6 +23,12 @@
 #include <ripple/json/json_writer.h>
 #include <ripple/json/to_string.h>
 
+#include <atomic>
+#include <iostream>
+
+#include <ripple/basics/ByteUtilities.h>
+#include <ripple/basics/SlabAllocator.h>
+
 namespace Json {
 
 const Value Value::null;
@@ -30,64 +36,45 @@ const Int Value::minInt = Int(~(UInt(-1) / 2));
 const Int Value::maxInt = Int(UInt(-1) / 2);
 const UInt Value::maxUInt = UInt(-1);
 
-class DefaultValueAllocator : public ValueAllocator
+
+char*
+ValueAllocator::duplicateStringValue(const char* value, std::size_t length)
 {
-public:
-    virtual ~DefaultValueAllocator() = default;
+    //@todo investigate this old optimization
+    // if ( !value  ||  value[0] == 0 )
+    //   return 0;
 
-    char*
-    makeMemberName(const char* memberName) override
-    {
-        return duplicateStringValue(memberName);
-    }
+    if (length == 0 && value != nullptr)
+        length = strlen(value);
 
-    void
-    releaseMemberName(char* memberName) override
-    {
-        releaseStringValue(memberName);
-    }
+    auto ret = new char[length + 1];
 
-    char*
-    duplicateStringValue(const char* value, unsigned int length = unknown)
-        override
-    {
-        //@todo investigate this old optimization
-        // if ( !value  ||  value[0] == 0 )
-        //   return 0;
+    if (value != nullptr && length != 0)
+        memcpy(ret, value, length);
 
-        if (length == unknown)
-            length = value ? (unsigned int)strlen(value) : 0;
-
-        char* newString = static_cast<char*>(malloc(length + 1));
-        if (value)
-            memcpy(newString, value, length);
-        newString[length] = 0;
-        return newString;
-    }
-
-    void
-    releaseStringValue(char* value) override
-    {
-        if (value)
-            free(value);
-    }
-};
-
-static ValueAllocator*&
-valueAllocator()
-{
-    static ValueAllocator* valueAllocator = new DefaultValueAllocator;
-    return valueAllocator;
+    ret[length] = 0;
+    return ret;
 }
 
-static struct DummyValueAllocatorInitializer
+void
+ValueAllocator::releaseStringValue(char* value)
 {
-    DummyValueAllocatorInitializer()
-    {
-        valueAllocator();  // ensure valueAllocator() statics are initialized
-                           // before main().
-    }
-} dummyValueAllocatorInitializer;
+    delete[] value;
+}
+
+/** The default allocator to use, if no custom allocator is specified. */
+static ValueAllocator defaultValueAllocator;
+
+/** A pointer to the allocator to use. */
+static constinit ValueAllocator* valueAllocator = &defaultValueAllocator;
+
+void setAllocator(ValueAllocator *allocator)
+{
+    assert(allocator != nullptr && valueAllocator == &defaultValueAllocator);
+
+    if (valueAllocator == &defaultValueAllocator)
+        valueAllocator = allocator;
+}
 
 // //////////////////////////////////////////////////////////////////
 // //////////////////////////////////////////////////////////////////
@@ -106,7 +93,7 @@ Value::CZString::CZString(int index) : cstr_(0), index_(index)
 
 Value::CZString::CZString(const char* cstr, DuplicationPolicy allocate)
     : cstr_(
-          allocate == duplicate ? valueAllocator()->makeMemberName(cstr) : cstr)
+          allocate == duplicate ? valueAllocator->makeMemberName(cstr) : cstr)
     , index_(allocate)
 {
 }
@@ -114,7 +101,7 @@ Value::CZString::CZString(const char* cstr, DuplicationPolicy allocate)
 Value::CZString::CZString(const CZString& other)
     : cstr_(
           other.index_ != noDuplication && other.cstr_ != 0
-              ? valueAllocator()->makeMemberName(other.cstr_)
+              ? valueAllocator->makeMemberName(other.cstr_)
               : other.cstr_)
     , index_(
           other.cstr_
@@ -126,7 +113,7 @@ Value::CZString::CZString(const CZString& other)
 Value::CZString::~CZString()
 {
     if (cstr_ && index_ == duplicate)
-        valueAllocator()->releaseMemberName(const_cast<char*>(cstr_));
+        valueAllocator->releaseMemberName(const_cast<char*>(cstr_));
 }
 
 bool
@@ -228,13 +215,13 @@ Value::Value(double value) : type_(realValue)
 
 Value::Value(const char* value) : type_(stringValue), allocated_(true)
 {
-    value_.string_ = valueAllocator()->duplicateStringValue(value);
+    value_.string_ = valueAllocator->duplicateStringValue(value);
 }
 
 Value::Value(std::string const& value) : type_(stringValue), allocated_(true)
 {
-    value_.string_ = valueAllocator()->duplicateStringValue(
-        value.c_str(), (unsigned int)value.length());
+    value_.string_ = valueAllocator->duplicateStringValue(
+        value.c_str(), value.length());
 }
 
 Value::Value(const StaticString& value) : type_(stringValue), allocated_(false)
@@ -262,7 +249,7 @@ Value::Value(const Value& other) : type_(other.type_)
         case stringValue:
             if (other.value_.string_)
             {
-                value_.string_ = valueAllocator()->duplicateStringValue(
+                value_.string_ = valueAllocator->duplicateStringValue(
                     other.value_.string_);
                 allocated_ = true;
             }
@@ -294,7 +281,7 @@ Value::~Value()
 
         case stringValue:
             if (allocated_)
-                valueAllocator()->releaseStringValue(value_.string_);
+                valueAllocator->releaseStringValue(value_.string_);
 
             break;
 

@@ -474,19 +474,32 @@ operator>=(const Value& x, const Value& y)
 class ValueAllocator
 {
 public:
-    enum { unknown = (unsigned)-1 };
-
     virtual ~ValueAllocator() = default;
 
     virtual char*
-    makeMemberName(const char* memberName) = 0;
+    makeMemberName(const char* memberName)
+    {
+        return duplicateStringValue(memberName);
+    }
+
     virtual void
-    releaseMemberName(char* memberName) = 0;
+    releaseMemberName(char* memberName)
+    {
+        releaseStringValue(memberName);
+    }
+
     virtual char*
-    duplicateStringValue(const char* value, unsigned int length = unknown) = 0;
+    duplicateStringValue(const char* value, std::size_t length = 0);
+
     virtual void
-    releaseStringValue(char* value) = 0;
+    releaseStringValue(char* value);
 };
+
+/** Assigns an allocator to use for string-related JSON memory requests.
+
+    @note This can only be called once, and should be called early.
+ */
+void setAllocator(ValueAllocator *allocator);
 
 /** \brief base class for Value iterators.
  *
