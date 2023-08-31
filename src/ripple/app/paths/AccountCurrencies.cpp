@@ -24,7 +24,7 @@ namespace ripple {
 hash_set<Currency>
 accountSourceCurrencies(
     AccountID const& account,
-    std::shared_ptr<RippleLineCache> const& lrCache,
+    std::shared_ptr<TrustLineCache> const& lrCache,
     bool includeXRP)
 {
     hash_set<Currency> currencies;
@@ -34,21 +34,16 @@ accountSourceCurrencies(
         currencies.insert(xrpCurrency());
 
     if (auto const lines =
-            lrCache->getRippleLines(account, LineDirection::outgoing))
+            lrCache->getTrustLines(account, LineDirection::outgoing))
     {
         for (auto const& rspEntry : *lines)
         {
-            auto& saBalance = rspEntry.getBalance();
-
-            // Filter out non
-            if (saBalance > beast::zero
-                // Have IOUs to send.
-                ||
-                (rspEntry.getLimitPeer()
-                 // Peer extends credit.
-                 && ((-saBalance) < rspEntry.getLimitPeer())))  // Credit left.
+            if (auto const balance = rspEntry.getBalance();
+                balance > beast::zero ||               // Have IOUs to send.
+                (rspEntry.getLimitPeer() &&            // Peer extends credit.
+                 -balance < rspEntry.getLimitPeer()))  // Credit left.
             {
-                currencies.insert(saBalance.getCurrency());
+                currencies.insert(balance.getCurrency());
             }
         }
     }
@@ -60,7 +55,7 @@ accountSourceCurrencies(
 hash_set<Currency>
 accountDestCurrencies(
     AccountID const& account,
-    std::shared_ptr<RippleLineCache> const& lrCache,
+    std::shared_ptr<TrustLineCache> const& lrCache,
     bool includeXRP)
 {
     hash_set<Currency> currencies;
@@ -70,14 +65,13 @@ accountDestCurrencies(
     // Even if account doesn't exist
 
     if (auto const lines =
-            lrCache->getRippleLines(account, LineDirection::outgoing))
+            lrCache->getTrustLines(account, LineDirection::outgoing))
     {
         for (auto const& rspEntry : *lines)
         {
-            auto& saBalance = rspEntry.getBalance();
-
-            if (saBalance < rspEntry.getLimit())  // Can take more
-                currencies.insert(saBalance.getCurrency());
+            if (auto const balance = rspEntry.getBalance();
+                balance < rspEntry.getLimit())  // Can take more
+                currencies.insert(balance.getCurrency());
         }
     }
 

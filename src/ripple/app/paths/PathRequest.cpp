@@ -169,7 +169,7 @@ PathRequest::updateComplete()
 }
 
 bool
-PathRequest::isValid(std::shared_ptr<RippleLineCache> const& crCache)
+PathRequest::isValid(std::shared_ptr<TrustLineCache> const& crCache)
 {
     if (!raSrcAccount || !raDstAccount)
         return false;
@@ -242,7 +242,7 @@ PathRequest::isValid(std::shared_ptr<RippleLineCache> const& crCache)
 */
 std::pair<bool, Json::Value>
 PathRequest::doCreate(
-    std::shared_ptr<RippleLineCache> const& cache,
+    std::shared_ptr<TrustLineCache> const& cache,
     Json::Value const& value)
 {
     bool valid = false;
@@ -465,7 +465,7 @@ PathRequest::doAborting() const
 
 std::unique_ptr<Pathfinder> const&
 PathRequest::getPathFinder(
-    std::shared_ptr<RippleLineCache> const& cache,
+    std::shared_ptr<TrustLineCache> const& cache,
     hash_map<Currency, std::unique_ptr<Pathfinder>>& currency_map,
     Currency const& currency,
     STAmount const& dst_amount,
@@ -493,7 +493,7 @@ PathRequest::getPathFinder(
 
 bool
 PathRequest::findPaths(
-    std::shared_ptr<RippleLineCache> const& cache,
+    std::shared_ptr<TrustLineCache> const& cache,
     int const level,
     Json::Value& jvArray,
     std::function<bool(void)> const& continueCallback)
@@ -655,7 +655,7 @@ PathRequest::findPaths(
 
 Json::Value
 PathRequest::doUpdate(
-    std::shared_ptr<RippleLineCache> const& cache,
+    std::shared_ptr<TrustLineCache> const& cache,
     bool fast,
     std::function<bool(void)> const& continueCallback)
 {

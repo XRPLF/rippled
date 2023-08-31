@@ -30,38 +30,37 @@
 
 namespace ripple {
 
-void
-addLine(Json::Value& jsonLines, RPCTrustLine const& line)
+static Json::Value
+addLine(RPCTrustLine const& tl)
 {
-    STAmount const& saBalance(line.getBalance());
-    STAmount const& saLimit(line.getLimit());
-    STAmount const& saLimitPeer(line.getLimitPeer());
-    Json::Value& jPeer(jsonLines.append(Json::objectValue));
+    Json::Value ret(Json::objectValue);
 
-    jPeer[jss::account] = to_string(line.getAccountIDPeer());
+    ret[jss::account] = to_string(tl.peerAccount());
     // Amount reported is positive if current account holds other
     // account's IOUs.
     //
     // Amount reported is negative if other account holds current
     // account's IOUs.
-    jPeer[jss::balance] = saBalance.getText();
-    jPeer[jss::currency] = to_string(saBalance.issue().currency);
-    jPeer[jss::limit] = saLimit.getText();
-    jPeer[jss::limit_peer] = saLimitPeer.getText();
-    jPeer[jss::quality_in] = line.getQualityIn().value;
-    jPeer[jss::quality_out] = line.getQualityOut().value;
-    if (line.getAuth())
-        jPeer[jss::authorized] = true;
-    if (line.getAuthPeer())
-        jPeer[jss::peer_authorized] = true;
-    if (line.getNoRipple())
-        jPeer[jss::no_ripple] = true;
-    if (line.getNoRipplePeer())
-        jPeer[jss::no_ripple_peer] = true;
-    if (line.getFreeze())
-        jPeer[jss::freeze] = true;
-    if (line.getFreezePeer())
-        jPeer[jss::freeze_peer] = true;
+    ret[jss::balance] = tl.getBalance().getText();
+    ret[jss::currency] = to_string(tl.currency());
+    ret[jss::limit] = tl.getLimit().getText();
+    ret[jss::limit_peer] = tl.getLimitPeer().getText();
+    ret[jss::quality_in] = tl.getQualityIn().value;
+    ret[jss::quality_out] = tl.getQualityOut().value;
+    if (tl.getAuth())
+        ret[jss::authorized] = true;
+    if (tl.getAuthPeer())
+        ret[jss::peer_authorized] = true;
+    if (tl.getNoRipple())
+        ret[jss::no_ripple] = true;
+    if (tl.getNoRipplePeer())
+        ret[jss::no_ripple_peer] = true;
+    if (tl.getFreeze())
+        ret[jss::freeze] = true;
+    if (tl.getFreezePeer())
+        ret[jss::freeze_peer] = true;
+
+    return ret;
 }
 
 // {
@@ -100,10 +99,10 @@ doAccountLines(RPC::JsonContext& context)
     if (params.isMember(jss::peer))
         strPeer = params[jss::peer].asString();
 
-    auto const raPeerAccount = [&]() -> std::optional<AccountID> {
+    auto const peerAcct = [&]() -> std::optional<AccountID> {
         return strPeer.empty() ? std::nullopt : parseBase58<AccountID>(strPeer);
     }();
-    if (!strPeer.empty() && !raPeerAccount)
+    if (!strPeer.empty() && !peerAcct)
     {
         RPC::inject_error(rpcACT_MALFORMED, result);
         return result;
@@ -116,23 +115,12 @@ doAccountLines(RPC::JsonContext& context)
     if (limit == 0)
         return rpcError(rpcINVALID_PARAMS);
 
-    // this flag allows the requester to ask incoming trustlines in default
-    // state be omitted
-    bool ignoreDefault = params.isMember(jss::ignore_default) &&
-        params[jss::ignore_default].asBool();
-
-    Json::Value& jsonLines(result[jss::lines] = Json::arrayValue);
-    struct VisitData
-    {
-        std::vector<RPCTrustLine> items;
-        AccountID const& accountID;
-        std::optional<AccountID> const& raPeerAccount;
-        bool ignoreDefault;
-        uint32_t foundCount;
-    };
-    VisitData visitData = {{}, accountID, raPeerAccount, ignoreDefault, 0};
     uint256 startAfter = beast::zero;
     std::uint64_t startHint = 0;
+
+    // Avoid reallocations when possible.
+    std::vector<RPCTrustLine> items;
+    items.reserve(limit + 1);
 
     if (params.isMember(jss::marker))
     {
@@ -172,65 +160,52 @@ doAccountLines(RPC::JsonContext& context)
             return rpcError(rpcINVALID_PARAMS);
     }
 
-    auto count = 0;
+    unsigned int count = 0;
     std::optional<uint256> marker = {};
     std::uint64_t nextHint = 0;
+    Json::Value lines(Json::arrayValue);
+
+    if (!forEachItemAfter(
+            *ledger,
+            accountID,
+            startAfter,
+            startHint,
+            limit + 1,
+            [ignoreDefault = params.isMember(jss::ignore_default) &&
+                 params[jss::ignore_default].asBool(),
+             &accountID,
+             &peerAcct,
+             &lines,
+             &count,
+             &marker,
+             &limit,
+             &nextHint](std::shared_ptr<SLE const> const& sle) {
+                assert(sle);
+
+                if (!sle)
+                    return false;
+
+                if (++count == limit)
+                {
+                    marker = sle->key();
+                    nextHint = RPC::getStartHint(sle, accountID);
+                }
+
+                if (count <= limit && (sle->getType() == ltRIPPLE_STATE))
+                {
+                    RPCTrustLine const tl(sle, accountID);
+
+                    if ((!ignoreDefault || tl.paidReserve()) &&
+                        (!peerAcct || peerAcct.value() == tl.peerAccount()))
+                    {
+                        lines.append(addLine(tl));
+                    }
+                }
+
+                return true;
+            }))
     {
-        if (!forEachItemAfter(
-                *ledger,
-                accountID,
-                startAfter,
-                startHint,
-                limit + 1,
-                [&visitData, &count, &marker, &limit, &nextHint](
-                    std::shared_ptr<SLE const> const& sleCur) {
-                    if (!sleCur)
-                    {
-                        assert(false);
-                        return false;
-                    }
-
-                    if (++count == limit)
-                    {
-                        marker = sleCur->key();
-                        nextHint =
-                            RPC::getStartHint(sleCur, visitData.accountID);
-                    }
-
-                    if (sleCur->getType() != ltRIPPLE_STATE)
-                        return true;
-
-                    bool ignore = false;
-                    if (visitData.ignoreDefault)
-                    {
-                        if (sleCur->getFieldAmount(sfLowLimit).getIssuer() ==
-                            visitData.accountID)
-                            ignore =
-                                !(sleCur->getFieldU32(sfFlags) & lsfLowReserve);
-                        else
-                            ignore = !(
-                                sleCur->getFieldU32(sfFlags) & lsfHighReserve);
-                    }
-
-                    if (!ignore && count <= limit)
-                    {
-                        auto const line =
-                            RPCTrustLine::makeItem(visitData.accountID, sleCur);
-
-                        if (line &&
-                            (!visitData.raPeerAccount ||
-                             *visitData.raPeerAccount ==
-                                 line->getAccountIDPeer()))
-                        {
-                            visitData.items.emplace_back(*line);
-                        }
-                    }
-
-                    return true;
-                }))
-        {
-            return rpcError(rpcINVALID_PARAMS);
-        }
+        return rpcError(rpcINVALID_PARAMS);
     }
 
     // Both conditions need to be checked because marker is set on the limit-th
@@ -243,10 +218,8 @@ doAccountLines(RPC::JsonContext& context)
             to_string(*marker) + "," + std::to_string(nextHint);
     }
 
+    result[jss::lines] = std::move(lines);
     result[jss::account] = toBase58(accountID);
-
-    for (auto const& item : visitData.items)
-        addLine(jsonLines, item);
 
     context.loadType = Resource::feeMediumBurdenRPC;
     return result;

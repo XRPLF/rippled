@@ -21,7 +21,7 @@
 #define RIPPLE_APP_PATHS_PATHFINDER_H_INCLUDED
 
 #include <ripple/app/ledger/Ledger.h>
-#include <ripple/app/paths/RippleLineCache.h>
+#include <ripple/app/paths/TrustLineCache.h>
 #include <ripple/basics/CountedObject.h>
 #include <ripple/core/LoadEvent.h>
 #include <ripple/protocol/STAmount.h>
@@ -40,7 +40,7 @@ class Pathfinder : public CountedObject<Pathfinder>
 public:
     /** Construct a pathfinder without an issuer.*/
     Pathfinder(
-        std::shared_ptr<RippleLineCache> const& cache,
+        std::shared_ptr<TrustLineCache> const& cache,
         AccountID const& srcAccount,
         AccountID const& dstAccount,
         Currency const& uSrcCurrency,
@@ -207,7 +207,7 @@ private:
 
     std::shared_ptr<ReadView const> mLedger;
     std::unique_ptr<LoadEvent> m_loadEvent;
-    std::shared_ptr<RippleLineCache> mRLCache;
+    std::shared_ptr<TrustLineCache> mRLCache;
 
     STPathElement mSource;
     STPathSet mCompletePaths;

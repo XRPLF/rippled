@@ -223,8 +223,8 @@ checkPayment(
             if (auto ledger = app.openLedger().current())
             {
                 Pathfinder pf(
-                    std::make_shared<RippleLineCache>(
-                        ledger, app.journal("RippleLineCache")),
+                    std::make_shared<TrustLineCache>(
+                        ledger, app.journal("TrustLineCache")),
                     srcAddressID,
                     *dstAccountID,
                     sendMax.issue().currency,
@@ -234,7 +234,7 @@ checkPayment(
                     app);
                 if (pf.findPaths(app.config().PATH_SEARCH_OLD))
                 {
-                    // 4 is the maxium paths
+                    // 4 is the maximum paths
                     pf.computePathRanks(4);
                     STPath fullLiquidityPath;
                     STPathSet paths;

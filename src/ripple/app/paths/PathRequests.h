@@ -22,7 +22,7 @@
 
 #include <ripple/app/main/Application.h>
 #include <ripple/app/paths/PathRequest.h>
-#include <ripple/app/paths/RippleLineCache.h>
+#include <ripple/app/paths/TrustLineCache.h>
 #include <ripple/core/Job.h>
 #include <atomic>
 #include <mutex>
@@ -54,7 +54,7 @@ public:
     bool
     requestsPending() const;
 
-    std::shared_ptr<RippleLineCache>
+    std::shared_ptr<TrustLineCache>
     getLineCache(
         std::shared_ptr<ReadView const> const& ledger,
         bool authoritative);
@@ -111,8 +111,8 @@ private:
     // Track all requests
     std::vector<PathRequest::wptr> requests_;
 
-    // Use a RippleLineCache
-    std::weak_ptr<RippleLineCache> lineCache_;
+    // Use a TrustLineCache
+    std::weak_ptr<TrustLineCache> lineCache_;
 
     std::atomic<int> mLastIdentifier;
 

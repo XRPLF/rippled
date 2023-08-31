@@ -22,7 +22,7 @@
 
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/paths/Pathfinder.h>
-#include <ripple/app/paths/RippleLineCache.h>
+#include <ripple/app/paths/TrustLineCache.h>
 #include <ripple/json/json_value.h>
 #include <ripple/net/InfoSub.h>
 #include <ripple/protocol/UintTypes.h>
@@ -37,7 +37,7 @@ namespace ripple {
 // A pathfinding request submitted by a client
 // The request issuer must maintain a strong pointer
 
-class RippleLineCache;
+class TrustLineCache;
 class PathRequests;
 
 // Return values from parseJson <0 = invalid, >0 = valid
@@ -86,7 +86,7 @@ public:
     updateComplete();
 
     std::pair<bool, Json::Value>
-    doCreate(std::shared_ptr<RippleLineCache> const&, Json::Value const&);
+    doCreate(std::shared_ptr<TrustLineCache> const&, Json::Value const&);
 
     Json::Value
     doClose() override;
@@ -98,7 +98,7 @@ public:
     // update jvStatus
     Json::Value
     doUpdate(
-        std::shared_ptr<RippleLineCache> const&,
+        std::shared_ptr<TrustLineCache> const&,
         bool fast,
         std::function<bool(void)> const& continueCallback = {});
     InfoSub::pointer
@@ -108,11 +108,11 @@ public:
 
 private:
     bool
-    isValid(std::shared_ptr<RippleLineCache> const& crCache);
+    isValid(std::shared_ptr<TrustLineCache> const& crCache);
 
     std::unique_ptr<Pathfinder> const&
     getPathFinder(
-        std::shared_ptr<RippleLineCache> const&,
+        std::shared_ptr<TrustLineCache> const&,
         hash_map<Currency, std::unique_ptr<Pathfinder>>&,
         Currency const&,
         STAmount const&,
@@ -124,7 +124,7 @@ private:
     */
     bool
     findPaths(
-        std::shared_ptr<RippleLineCache> const&,
+        std::shared_ptr<TrustLineCache> const&,
         int const,
         Json::Value&,
         std::function<bool(void)> const&);

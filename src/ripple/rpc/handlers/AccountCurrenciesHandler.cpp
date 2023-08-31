@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/paths/TrustLine.h>
 #include <ripple/ledger/ReadView.h>
@@ -25,6 +26,11 @@
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
+
+#include <boost/container/flat_set.hpp>
+#include <boost/container/small_vector.hpp>
+
+#include <functional>
 
 namespace ripple {
 
@@ -42,32 +48,40 @@ doAccountCurrencies(RPC::JsonContext& context)
     if (!(params.isMember(jss::account) || params.isMember(jss::ident)))
         return RPC::missing_field_error(jss::account);
 
-    std::string const strIdent(
+    // Get info on account.
+    auto id = parseBase58<AccountID>(
         params.isMember(jss::account) ? params[jss::account].asString()
                                       : params[jss::ident].asString());
-
-    // Get info on account.
-    auto id = parseBase58<AccountID>(strIdent);
     if (!id)
     {
         RPC::inject_error(rpcACT_MALFORMED, result);
         return result;
     }
-    auto const accountID{std::move(id.value())};
+
+    auto const accountID = id.value();
 
     if (!ledger->exists(keylet::account(accountID)))
         return rpcError(rpcACT_NOT_FOUND);
 
-    std::set<Currency> send, receive;
-    for (auto const& rspEntry : RPCTrustLine::getItems(accountID, *ledger))
-    {
-        STAmount const& saBalance = rspEntry.getBalance();
+    boost::container::small_flat_set_of<Currency, 128>::type send, receive;
 
-        if (saBalance < rspEntry.getLimit())
-            receive.insert(saBalance.getCurrency());
-        if ((-saBalance) < rspEntry.getLimitPeer())
-            send.insert(saBalance.getCurrency());
-    }
+    forEachItem(
+        *ledger,
+        keylet::ownerDir(accountID),
+        [&send, &receive, &accountID](std::shared_ptr<SLE const> const& sle) {
+            if (sle && sle->getType() == ltRIPPLE_STATE)
+            {
+                PathFindTrustLine const tl(sle, accountID);
+
+                auto const& balance = tl.getBalance();
+
+                if (balance < tl.getLimit())
+                    receive.insert(balance.getCurrency());
+
+                if (-balance < tl.getLimitPeer())
+                    send.insert(balance.getCurrency());
+            }
+        });
 
     send.erase(badCurrency());
     receive.erase(badCurrency());

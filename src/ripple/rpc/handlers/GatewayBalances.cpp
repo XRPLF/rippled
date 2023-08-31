@@ -127,69 +127,67 @@ doGatewayBalances(RPC::JsonContext& context)
     std::map<AccountID, std::vector<STAmount>> frozenBalances;
 
     // Traverse the cold wallet's trust lines
-    {
-        forEachItem(
-            *ledger, accountID, [&](std::shared_ptr<SLE const> const& sle) {
-                auto rs = PathFindTrustLine::makeItem(accountID, sle);
+    forEachItem(*ledger, accountID, [&](std::shared_ptr<SLE const> const& sle) {
+        assert(sle);
 
-                if (!rs)
-                    return;
+        if (!sle || sle->getType() != ltRIPPLE_STATE)
+            return;
 
-                int balSign = rs->getBalance().signum();
-                if (balSign == 0)
-                    return;
+        PathFindTrustLine const tl(sle, accountID);
 
-                auto const& peer = rs->getAccountIDPeer();
+        if (int balSign = tl.getBalance().signum(); balSign != 0)
+        {
+            auto const& peer = tl.peerAccount();
 
-                // Here, a negative balance means the cold wallet owes (normal)
-                // A positive balance means the cold wallet has an asset
-                // (unusual)
+            // Here, a negative balance means the cold wallet owes (normal)
+            // A positive balance means the cold wallet has an asset
+            // (unusual)
 
-                if (hotWallets.count(peer) > 0)
+            if (hotWallets.count(peer) > 0)
+            {
+                // This is a specified hot wallet
+                hotBalances[peer].push_back(-tl.getBalance());
+            }
+            else if (balSign > 0)
+            {
+                // This is a gateway asset
+                assets[peer].push_back(tl.getBalance());
+            }
+            else if (tl.getFreeze())
+            {
+                // An obligation the gateway has frozen
+                frozenBalances[peer].push_back(-tl.getBalance());
+            }
+            else
+            {
+                // normal negative balance, obligation to customer
+                auto& bal = sums[tl.getBalance().getCurrency()];
+                if (bal == beast::zero)
                 {
-                    // This is a specified hot wallet
-                    hotBalances[peer].push_back(-rs->getBalance());
-                }
-                else if (balSign > 0)
-                {
-                    // This is a gateway asset
-                    assets[peer].push_back(rs->getBalance());
-                }
-                else if (rs->getFreeze())
-                {
-                    // An obligation the gateway has frozen
-                    frozenBalances[peer].push_back(-rs->getBalance());
+                    // This is needed to set the currency code correctly
+                    bal = -tl.getBalance();
                 }
                 else
                 {
-                    // normal negative balance, obligation to customer
-                    auto& bal = sums[rs->getBalance().getCurrency()];
-                    if (bal == beast::zero)
+                    try
                     {
-                        // This is needed to set the currency code correctly
-                        bal = -rs->getBalance();
+                        bal -= tl.getBalance();
                     }
-                    else
+                    catch (std::runtime_error const&)
                     {
-                        try
-                        {
-                            bal -= rs->getBalance();
-                        }
-                        catch (std::runtime_error const&)
-                        {
-                            // Presumably the exception was caused by overflow.
-                            // On overflow return the largest valid STAmount.
-                            // Very large sums of STAmount are approximations
-                            // anyway.
-                            bal = STAmount(
-                                bal.issue(),
-                                STAmount::cMaxValue,
-                                STAmount::cMaxOffset);
-                        }
+                        // Presumably the exception was caused by overflow.
+                        // On overflow return the largest valid STAmount.
+                        // Very large sums of STAmount are approximations
+                        // anyway.
+                        bal = STAmount(
+                            bal.issue(),
+                            STAmount::cMaxValue,
+                            STAmount::cMaxOffset);
                     }
                 }
-            });
-    }
+            }
+        }
+    });
 
     if (!sums.empty())
     {

@@ -17,15 +17,14 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_PATHS_RIPPLELINECACHE_H_INCLUDED
-#define RIPPLE_APP_PATHS_RIPPLELINECACHE_H_INCLUDED
+#ifndef RIPPLE_APP_PATHS_TRUSTLINECACHE_H_INCLUDED
+#define RIPPLE_APP_PATHS_TRUSTLINECACHE_H_INCLUDED
 
-#include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/paths/TrustLine.h>
 #include <ripple/basics/CountedObject.h>
 #include <ripple/basics/hardened_hash.h>
+#include <ripple/ledger/ReadView.h>
 
-#include <cstddef>
 #include <memory>
 #include <mutex>
 #include <vector>
@@ -33,13 +32,13 @@
 namespace ripple {
 
 // Used by Pathfinder
-class RippleLineCache final : public CountedObject<RippleLineCache>
+class TrustLineCache final : public CountedObject<TrustLineCache>
 {
 public:
-    explicit RippleLineCache(
+    explicit TrustLineCache(
         std::shared_ptr<ReadView const> const& l,
         beast::Journal j);
-    ~RippleLineCache();
+    ~TrustLineCache();
 
     std::shared_ptr<ReadView const> const&
     getLedger() const
@@ -49,18 +48,20 @@ public:
 
     /** Find the trust lines associated with an account.
 
-       @param accountID The account
-       @param direction Whether the account is an "outgoing" link on the path.
-       "Outgoing" is defined as the source account, or an account found via a
-       trustline that has rippling enabled on the @accountID's side. If an
-       account is "outgoing", all trust lines will be returned. If an account is
-       not "outgoing", then any trust lines that don't have rippling enabled are
-       not usable, so only return trust lines that have rippling enabled on
-       @accountID's side.
+       @param account The account
+       @param direction Whether the account is an "outgoing" link on the path
+                        where "outgoing" is defined as the source account, or
+                        an account found via a trust line that has rippling
+                        enabled on the @accountID's side. If an account is
+                        "outgoing", all trust lines will be returned. If an
+                        account is not "outgoing", then any trust lines that
+                        don't have rippling enabled are not usable, so only
+                        return trust lines that have rippling enabled on
+                        @account's side.
        @return Returns a vector of the usable trust lines.
     */
     std::shared_ptr<std::vector<PathFindTrustLine>>
-    getRippleLines(AccountID const& accountID, LineDirection direction);
+    getTrustLines(AccountID const& account, LineDirection direction);
 
 private:
     std::mutex mLock;

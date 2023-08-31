@@ -21,7 +21,7 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/app/paths/Pathfinder.h>
 #include <ripple/app/paths/RippleCalc.h>
-#include <ripple/app/paths/RippleLineCache.h>
+#include <ripple/app/paths/TrustLineCache.h>
 #include <ripple/app/paths/impl/PathfinderUtils.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/join.h>
@@ -159,7 +159,7 @@ smallestUsefulAmount(STAmount const& amount, int maxPaths)
 }  // namespace
 
 Pathfinder::Pathfinder(
-    std::shared_ptr<RippleLineCache> const& cache,
+    std::shared_ptr<TrustLineCache> const& cache,
     AccountID const& uSrcAccount,
     AccountID const& uDstAccount,
     Currency const& uSrcCurrency,
@@ -736,7 +736,7 @@ Pathfinder::getPathsOut(
     {
         count = app_.getOrderBookDB().getBookSize(issue);
 
-        if (auto const lines = mRLCache->getRippleLines(account, direction))
+        if (auto const lines = mRLCache->getTrustLines(account, direction))
         {
             for (auto const& rspEntry : *lines)
             {
@@ -751,7 +751,7 @@ Pathfinder::getPathsOut(
                 {
                 }
                 else if (
-                    isDstCurrency && dstAccount == rspEntry.getAccountIDPeer())
+                    isDstCurrency && dstAccount == rspEntry.peerAccount())
                 {
                     count += 10000;  // count a path to the destination extra
                 }
@@ -981,7 +981,7 @@ Pathfinder::addLink(
                 bool const bIsNoRippleOut(isNoRippleOut(currentPath));
                 bool const bDestOnly(addFlags & afAC_LAST);
 
-                if (auto const lines = mRLCache->getRippleLines(
+                if (auto const lines = mRLCache->getTrustLines(
                         uEndAccount,
                         bIsNoRippleOut ? LineDirection::incoming
                                        : LineDirection::outgoing))
@@ -995,7 +995,7 @@ Pathfinder::addLink(
                     {
                         if (continueCallback && !continueCallback())
                             return;
-                        auto const& acct = rs.getAccountIDPeer();
+                        auto const& acct = rs.peerAccount();
                         LineDirection const direction = rs.getDirectionPeer();
 
                         if (hasEffectiveDestination && (acct == mDstAccount))

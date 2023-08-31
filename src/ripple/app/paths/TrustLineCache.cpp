@@ -17,13 +17,13 @@
 */
 //==============================================================================
 
-#include <ripple/app/paths/RippleLineCache.h>
 #include <ripple/app/paths/TrustLine.h>
-#include <ripple/ledger/OpenView.h>
+#include <ripple/app/paths/TrustLineCache.h>
+#include <ripple/basics/Log.h>
 
 namespace ripple {
 
-RippleLineCache::RippleLineCache(
+TrustLineCache::TrustLineCache(
     std::shared_ptr<ReadView const> const& ledger,
     beast::Journal j)
     : ledger_(ledger), journal_(j)
@@ -31,7 +31,7 @@ RippleLineCache::RippleLineCache(
     JLOG(journal_.debug()) << "created for ledger " << ledger_->info().seq;
 }
 
-RippleLineCache::~RippleLineCache()
+TrustLineCache::~TrustLineCache()
 {
     JLOG(journal_.debug()) << "destroyed for ledger " << ledger_->info().seq
                            << " with " << lines_.size() << " accounts and "
@@ -39,14 +39,12 @@ RippleLineCache::~RippleLineCache()
 }
 
 std::shared_ptr<std::vector<PathFindTrustLine>>
-RippleLineCache::getRippleLines(
-    AccountID const& accountID,
-    LineDirection direction)
+TrustLineCache::getTrustLines(AccountID const& account, LineDirection direction)
 {
-    auto const hash = hasher_(accountID);
-    AccountKey key(accountID, direction, hash);
+    auto const hash = hasher_(account);
+    AccountKey key(account, direction, hash);
     AccountKey otherkey(
-        accountID,
+        account,
         direction == LineDirection::outgoing ? LineDirection::incoming
                                              : LineDirection::outgoing,
         hash);
@@ -64,7 +62,7 @@ RippleLineCache::getRippleLines(
                 << "Request for "
                 << (direction == LineDirection::outgoing ? "outgoing"
                                                          : "incoming")
-                << " trust lines for account " << accountID << " found " << size
+                << " trust lines for account " << account << " found " << size
                 << (direction == LineDirection::outgoing ? " incoming"
                                                          : " outgoing")
                 << " trust lines. "
@@ -100,10 +98,15 @@ RippleLineCache::getRippleLines(
     if (inserted)
     {
         assert(it->second == nullptr);
-        auto lines =
-            PathFindTrustLine::getItems(accountID, *ledger_, direction);
-        if (lines.size())
+
+        if (auto lines = ripple::getTrustLines<PathFindTrustLine>(
+                account, *ledger_, direction);
+            !lines.empty())
         {
+            // Shrinking imposes an overhead, so avoid it unless it saves a lot:
+            if (lines.size() < (60 * lines.capacity() / 100))
+                lines.shrink_to_fit();
+
             it->second = std::make_shared<std::vector<PathFindTrustLine>>(
                 std::move(lines));
             totalLineCount_ += it->second->size();
@@ -118,9 +121,9 @@ RippleLineCache::getRippleLines(
                                    ? " outgoing"
                                    : " incoming")
                            << " lines for " << (inserted ? "new " : "existing ")
-                           << accountID << " out of a total of "
-                           << lines_.size() << " accounts and "
-                           << totalLineCount_ << " trust lines";
+                           << account << " out of a total of " << lines_.size()
+                           << " accounts and " << totalLineCount_
+                           << " trust lines";
 
     return it->second;
 }

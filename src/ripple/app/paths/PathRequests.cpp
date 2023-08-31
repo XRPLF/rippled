@@ -30,10 +30,10 @@
 
 namespace ripple {
 
-/** Get the current RippleLineCache, updating it if necessary.
+/** Get the current TrustLineCache, updating it if necessary.
     Get the correct ledger to use.
 */
-std::shared_ptr<RippleLineCache>
+std::shared_ptr<TrustLineCache>
 PathRequests::getLineCache(
     std::shared_ptr<ReadView const> const& ledger,
     bool authoritative)
@@ -58,8 +58,8 @@ PathRequests::getLineCache(
         // Assign to the local before the member, because the member is a
         // weak_ptr, and will immediately discard it if there are no other
         // references.
-        lineCache_ = lineCache = std::make_shared<RippleLineCache>(
-            ledger, app_.journal("RippleLineCache"));
+        lineCache_ = lineCache = std::make_shared<TrustLineCache>(
+            ledger, app_.journal("TrustLineCache"));
     }
     return lineCache;
 }
@@ -71,7 +71,7 @@ PathRequests::updateAll(std::shared_ptr<ReadView const> const& inLedger)
         app_.getJobQueue().makeLoadEvent(jtPATH_FIND, "PathRequest::updateAll");
 
     std::vector<PathRequest::wptr> requests;
-    std::shared_ptr<RippleLineCache> cache;
+    std::shared_ptr<TrustLineCache> cache;
 
     // Get the ledger and cache we should be using
     {
@@ -302,8 +302,8 @@ PathRequests::doLegacyPathRequest(
     std::shared_ptr<ReadView const> const& inLedger,
     Json::Value const& request)
 {
-    auto cache = std::make_shared<RippleLineCache>(
-        inLedger, app_.journal("RippleLineCache"));
+    auto cache = std::make_shared<TrustLineCache>(
+        inLedger, app_.journal("TrustLineCache"));
 
     auto req = std::make_shared<PathRequest>(
         app_, [] {}, consumer, ++mLastIdentifier, *this, mJournal);
