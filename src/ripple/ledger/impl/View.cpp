@@ -1531,8 +1531,7 @@ TER
 cleanupOnAccountDelete(
     ApplyView& view,
     Keylet const& ownerDirKeylet,
-    std::function<TER(LedgerEntryType, uint256 const&, std::shared_ptr<SLE>&)>
-        deleter,
+    EntryDeleter deleter,
     beast::Journal j,
     std::optional<uint16_t> maxNodesToDelete)
 {
@@ -1567,8 +1566,8 @@ cleanupOnAccountDelete(
 
             // Deleter handles the details of specific account-owned object
             // deletion
-            auto const ter = deleter(nodeType, dirEntry, sleItem);
-            if (ter != tesSUCCESS && ter != tecOBJECT_NOT_FOUND)
+            auto const [ter, skipEntry] = deleter(nodeType, dirEntry, sleItem);
+            if (ter != tesSUCCESS)
                 return ter;
 
             // dirFirst() and dirNext() are like iterators with exposed
@@ -1594,7 +1593,7 @@ cleanupOnAccountDelete(
                     << "DeleteAccount iterator re-validation failed.";
                 return tefBAD_LEDGER;
             }
-            if (ter == tesSUCCESS)
+            if (skipEntry == SkipEntry::No)
                 uDirEntry--;
 
         } while (

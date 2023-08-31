@@ -284,14 +284,15 @@ applyCreate(
     if (auto const page = sb.dirInsert(
             keylet::ownerDir(*ammAccount),
             ammSle->key(),
-            describeOwnerDir(*ammAccount));
-        !page)
+            describeOwnerDir(*ammAccount)))
+    {
+        ammSle->setFieldU64(sfOwnerNode, *page);
+    }
+    else
     {
         JLOG(j_.debug()) << "AMM Instance: failed to insert owner dir";
         return {tecDIR_FULL, false};
     }
-    else
-        ammSle->setFieldU64(sfOwnerNode, *page);
     sb.insert(ammSle);
 
     // Send LPT to LP.
