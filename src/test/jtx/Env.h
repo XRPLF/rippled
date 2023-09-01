@@ -721,13 +721,12 @@ Env::rpc(std::string const& cmd, Args&&... args)
  * an unsigned integer as its argument and returns void.
  */
 template <class T>
-concept SingleVersionedTestCallable = requires(T callable, unsigned int version)
-{
-    {
-        callable(version)
-    }
-    ->std::same_as<void>;
-};
+concept SingleVersionedTestCallable =
+    requires(T callable, unsigned int version) {
+        {
+            callable(version)
+        } -> std::same_as<void>;
+    };
 
 /**
  * The VersionedTestCallable concept checks if a set of callables all satisfy

@@ -7,11 +7,11 @@
 #define USE_BASIC_CONFIG 1
 
 #include "basic-config.h"
-#include "secp256k1.h"
-#include "field_impl.h"
-#include "scalar_impl.h"
-#include "group_impl.h"
 #include "ecmult_gen_impl.h"
+#include "field_impl.h"
+#include "group_impl.h"
+#include "scalar_impl.h"
+#include "secp256k1.h"
 
 static void default_error_callback_fn(const char* str, void* data) {
     (void)data;

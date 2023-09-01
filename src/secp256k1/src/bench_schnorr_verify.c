@@ -7,10 +7,10 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "bench.h"
 #include "secp256k1.h"
 #include "secp256k1_schnorr.h"
 #include "util.h"
-#include "bench.h"
 
 typedef struct {
     unsigned char key[32];

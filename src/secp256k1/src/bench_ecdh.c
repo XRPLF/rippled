@@ -6,10 +6,10 @@
 
 #include <string.h>
 
+#include "bench.h"
 #include "secp256k1.h"
 #include "secp256k1_ecdh.h"
 #include "util.h"
-#include "bench.h"
 
 typedef struct {
     secp256k1_context *ctx;

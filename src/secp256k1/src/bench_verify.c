@@ -7,9 +7,9 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "bench.h"
 #include "secp256k1.h"
 #include "util.h"
-#include "bench.h"
 
 #ifdef ENABLE_OPENSSL_TESTS
 #include <openssl/bn.h>
