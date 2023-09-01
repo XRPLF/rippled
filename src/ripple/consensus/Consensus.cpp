@@ -32,18 +32,17 @@ shouldCloseLedger(
     std::chrono::milliseconds
         timeSincePrevClose,              // Time since last ledger's close time
     std::chrono::milliseconds openTime,  // Time waiting to close this ledger
-    std::optional<std::chrono::milliseconds> validationDelay,
     std::chrono::milliseconds idleInterval,
     ConsensusParms const& parms,
     beast::Journal j)
 {
     using namespace std::chrono_literals;
-
     if ((prevRoundTime < -1s) || (prevRoundTime > 10min) ||
         (timeSincePrevClose > 10min))
     {
         // These are unexpected cases, we just close the ledger
-        JLOG(j.warn()) << "Trans=" << (anyTransactions ? "yes" : "no")
+        JLOG(j.warn()) << "shouldCloseLedger Trans="
+                       << (anyTransactions ? "yes" : "no")
                        << " Prop: " << prevProposers << "/" << proposersClosed
                        << " Secs: " << timeSincePrevClose.count()
                        << " (last: " << prevRoundTime.count() << ")";
@@ -56,12 +55,6 @@ shouldCloseLedger(
         JLOG(j.trace()) << "Others have closed";
         return true;
     }
-
-    // The openTime is the time spent so far waiting to close the ledger.
-    // Any time spent retrying ledger validation in the previous round is
-    // also counted.
-    if (validationDelay)
-        openTime += *validationDelay;
 
     if (!anyTransactions)
     {
@@ -129,6 +122,9 @@ checkConsensus(
                     << " time=" << currentAgreeTime.count() << "/"
                     << previousAgreeTime.count();
 
+    if (currentAgreeTime <= parms.ledgerMIN_CONSENSUS)
+        return ConsensusState::No;
+
     if (currentProposers < (prevProposers * 3 / 4))
     {
         // Less than 3/4 of the last ledger's proposers are present; don't
@@ -159,7 +155,7 @@ checkConsensus(
     }
 
     // no consensus yet
-    JLOG(j.trace()) << "checkConsensus no consensus";
+    JLOG(j.trace()) << "no consensus";
     return ConsensusState::No;
 }
 
