@@ -136,26 +136,36 @@ Json::Value
 AMM::ammRpcInfo(
     std::optional<AccountID> const& account,
     std::optional<std::string> const& ledgerIndex,
-    std::optional<std::pair<Issue, Issue>> tokens) const
+    std::optional<Issue> issue1,
+    std::optional<Issue> issue2,
+    std::optional<AccountID> const& ammAccount,
+    bool ignoreParams) const
 {
     Json::Value jv;
     if (account)
         jv[jss::account] = to_string(*account);
     if (ledgerIndex)
         jv[jss::ledger_index] = *ledgerIndex;
-    if (tokens)
+    if (!ignoreParams)
     {
-        jv[jss::asset] =
-            STIssue(sfAsset, tokens->first).getJson(JsonOptions::none);
-        jv[jss::asset2] =
-            STIssue(sfAsset2, tokens->second).getJson(JsonOptions::none);
-    }
-    else
-    {
-        jv[jss::asset] =
-            STIssue(sfAsset, asset1_.issue()).getJson(JsonOptions::none);
-        jv[jss::asset2] =
-            STIssue(sfAsset2, asset2_.issue()).getJson(JsonOptions::none);
+        if (issue1 || issue2)
+        {
+            if (issue1)
+                jv[jss::asset] =
+                    STIssue(sfAsset, *issue1).getJson(JsonOptions::none);
+            if (issue2)
+                jv[jss::asset2] =
+                    STIssue(sfAsset2, *issue2).getJson(JsonOptions::none);
+        }
+        else if (!ammAccount)
+        {
+            jv[jss::asset] =
+                STIssue(sfAsset, asset1_.issue()).getJson(JsonOptions::none);
+            jv[jss::asset2] =
+                STIssue(sfAsset2, asset2_.issue()).getJson(JsonOptions::none);
+        }
+        if (ammAccount)
+            jv[jss::amm_account] = to_string(*ammAccount);
     }
     auto jr = env_.rpc("json", "amm_info", to_string(jv));
     if (jr.isObject() && jr.isMember(jss::result) &&
@@ -292,9 +302,11 @@ AMM::expectAmmRpcInfo(
     STAmount const& asset2,
     IOUAmount const& balance,
     std::optional<AccountID> const& account,
-    std::optional<std::string> const& ledger_index) const
+    std::optional<std::string> const& ledger_index,
+    std::optional<AccountID> const& ammAccount) const
 {
-    auto const jv = ammRpcInfo(account, ledger_index);
+    auto const jv = ammRpcInfo(
+        account, ledger_index, std::nullopt, std::nullopt, ammAccount);
     return expectAmmInfo(asset1, asset2, balance, jv);
 }
 
