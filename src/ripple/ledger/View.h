@@ -478,7 +478,7 @@ using EntryDeleter = std::function<std::pair<TER, SkipEntry>(
 cleanupOnAccountDelete(
     ApplyView& view,
     Keylet const& ownerDirKeylet,
-    EntryDeleter deleter,
+    EntryDeleter const& deleter,
     beast::Journal j,
     std::optional<std::uint16_t> maxNodesToDelete = std::nullopt);
 

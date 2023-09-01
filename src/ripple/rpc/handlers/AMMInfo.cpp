@@ -95,13 +95,16 @@ doAMMInfo(RPC::JsonContext& context)
         std::optional<Issue> issue2;
         std::optional<uint256> ammID;
 
-        if (params.isMember(jss::asset) && params.isMember(jss::asset2))
+        if (params.isMember(jss::asset))
         {
             if (auto const i = getIssue(params[jss::asset], context.j))
                 issue1 = *i;
             else
                 return Unexpected(i.error());
+        }
 
+        if (params.isMember(jss::asset2))
+        {
             if (auto const i = getIssue(params[jss::asset2], context.j))
                 issue2 = *i;
             else
@@ -119,7 +122,8 @@ doAMMInfo(RPC::JsonContext& context)
             ammID = sle->getFieldH256(sfAMMID);
         }
 
-        if (issue1.has_value() == ammID.has_value())
+        if ((issue1.has_value() ^ issue2.has_value()) ||
+            (issue1.has_value() == ammID.has_value()))
             return Unexpected(rpcINVALID_PARAMS);
 
         if (params.isMember(jss::account))

@@ -1531,7 +1531,7 @@ TER
 cleanupOnAccountDelete(
     ApplyView& view,
     Keylet const& ownerDirKeylet,
-    EntryDeleter deleter,
+    EntryDeleter const& deleter,
     beast::Journal j,
     std::optional<uint16_t> maxNodesToDelete)
 {
