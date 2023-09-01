@@ -17,34 +17,41 @@
 */
 //==============================================================================
 
-#include <ripple/rpc/NFTSyntheticSerializer.h>
+#ifndef RIPPLE_PROTOCOL_FEES_H_INCLUDED
+#define RIPPLE_PROTOCOL_FEES_H_INCLUDED
 
-#include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/app/ledger/OpenLedger.h>
-#include <ripple/app/misc/Transaction.h>
-#include <ripple/ledger/View.h>
-#include <ripple/net/RPCErr.h>
-#include <ripple/protocol/AccountID.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/rpc/Context.h>
-#include <ripple/rpc/NFTokenID.h>
-#include <ripple/rpc/NFTokenOfferID.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
-#include <boost/algorithm/string/case_conv.hpp>
+#include <ripple/basics/XRPAmount.h>
 
 namespace ripple {
-namespace RPC {
 
-void
-insertNFTSyntheticInJson(
-    Json::Value& response,
-    RPC::JsonContext const& context,
-    std::shared_ptr<STTx const> const& transaction,
-    TxMeta const& transactionMeta)
+/** Reflects the fee settings for a particular ledger.
+
+    The fees are always the same for any transactions applied
+    to a ledger. Changes to fees occur in between ledgers.
+*/
+struct Fees
 {
-    insertNFTokenID(response[jss::meta], transaction, transactionMeta);
-    insertNFTokenOfferID(response[jss::meta], transaction, transactionMeta);
-}
+    XRPAmount base{0};       // Reference tx cost (drops)
+    XRPAmount reserve{0};    // Reserve base (drops)
+    XRPAmount increment{0};  // Reserve increment (drops)
 
-}  // namespace RPC
+    explicit Fees() = default;
+    Fees(Fees const&) = default;
+    Fees&
+    operator=(Fees const&) = default;
+
+    /** Returns the account reserve given the owner count, in drops.
+
+        The reserve is calculated as the reserve base plus
+        the reserve increment times the number of increments.
+    */
+    XRPAmount
+    accountReserve(std::size_t ownerCount) const
+    {
+        return reserve + ownerCount * increment;
+    }
+};
+
 }  // namespace ripple
+
+#endif

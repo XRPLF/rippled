@@ -52,10 +52,12 @@ AMMDeposit::preflight(PreflightContext const& ctx)
     auto const amount2 = ctx.tx[~sfAmount2];
     auto const ePrice = ctx.tx[~sfEPrice];
     auto const lpTokens = ctx.tx[~sfLPTokenOut];
+    auto const tradingFee = ctx.tx[~sfTradingFee];
     // Valid options for the flags are:
     //   tfLPTokens: LPTokenOut, [Amount, Amount2]
     //   tfSingleAsset: Amount, [LPTokenOut]
     //   tfTwoAsset: Amount, Amount2, [LPTokenOut]
+    //   tfTwoAssetIfEmpty: Amount, Amount2, [sfTradingFee]
     //   tfOnAssetLPToken: Amount and LPTokenOut
     //   tfLimitLPToken: Amount and EPrice
     if (std::popcount(flags & tfDepositSubTx) != 1)
@@ -66,29 +68,35 @@ AMMDeposit::preflight(PreflightContext const& ctx)
     if (flags & tfLPToken)
     {
         // if included then both amount and amount2 are deposit min
-        if (!lpTokens || ePrice || (amount && !amount2) || (!amount && amount2))
+        if (!lpTokens || ePrice || (amount && !amount2) ||
+            (!amount && amount2) || tradingFee)
             return temMALFORMED;
     }
     else if (flags & tfSingleAsset)
     {
         // if included then lpTokens is deposit min
-        if (!amount || amount2 || ePrice)
+        if (!amount || amount2 || ePrice || tradingFee)
             return temMALFORMED;
     }
     else if (flags & tfTwoAsset)
     {
         // if included then lpTokens is deposit min
-        if (!amount || !amount2 || ePrice)
+        if (!amount || !amount2 || ePrice || tradingFee)
             return temMALFORMED;
     }
     else if (flags & tfOneAssetLPToken)
     {
-        if (!amount || !lpTokens || amount2 || ePrice)
+        if (!amount || !lpTokens || amount2 || ePrice || tradingFee)
             return temMALFORMED;
     }
     else if (flags & tfLimitLPToken)
     {
-        if (!amount || !ePrice || lpTokens || amount2)
+        if (!amount || !ePrice || lpTokens || amount2 || tradingFee)
+            return temMALFORMED;
+    }
+    else if (flags & tfTwoAssetIfEmpty)
+    {
+        if (!amount || !amount2 || ePrice || lpTokens)
             return temMALFORMED;
     }
 
@@ -148,6 +156,12 @@ AMMDeposit::preflight(PreflightContext const& ctx)
         }
     }
 
+    if (tradingFee > TRADING_FEE_THRESHOLD)
+    {
+        JLOG(ctx.j.debug()) << "AMM Deposit: invalid trading fee.";
+        return temBAD_FEE;
+    }
+
     return preflight2(ctx);
 }
 
@@ -174,12 +188,27 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
     if (!expected)
         return expected.error();
     auto const [amountBalance, amount2Balance, lptAMMBalance] = *expected;
-    if (amountBalance <= beast::zero || amount2Balance <= beast::zero ||
-        lptAMMBalance <= beast::zero)
+    if (ctx.tx.getFlags() & tfTwoAssetIfEmpty)
     {
-        JLOG(ctx.j.debug())
-            << "AMM Deposit: reserves or tokens balance is zero.";
-        return tecINTERNAL;
+        if (lptAMMBalance != beast::zero)
+            return tecAMM_NOT_EMPTY;
+        if (amountBalance != beast::zero || amount2Balance != beast::zero)
+        {
+            JLOG(ctx.j.debug()) << "AMM Deposit: tokens balance is not zero.";
+            return tecINTERNAL;
+        }
+    }
+    else
+    {
+        if (lptAMMBalance == beast::zero)
+            return tecAMM_EMPTY;
+        if (amountBalance <= beast::zero || amount2Balance <= beast::zero ||
+            lptAMMBalance < beast::zero)
+        {
+            JLOG(ctx.j.debug())
+                << "AMM Deposit: reserves or tokens balance is zero.";
+            return tecINTERNAL;
+        }
     }
 
     // Check account has sufficient funds.
@@ -313,8 +342,6 @@ AMMDeposit::applyGuts(Sandbox& sb)
         return {tecINTERNAL, false};
     auto const ammAccountID = (*ammSle)[sfAccount];
 
-    auto const tfee = getTradingFee(ctx_.view(), *ammSle, account_);
-
     auto const expected = ammHolds(
         sb,
         *ammSle,
@@ -325,6 +352,9 @@ AMMDeposit::applyGuts(Sandbox& sb)
     if (!expected)
         return {expected.error(), false};
     auto const [amountBalance, amount2Balance, lptAMMBalance] = *expected;
+    auto const tfee = (lptAMMBalance == beast::zero)
+        ? ctx_.tx[~sfTradingFee].value_or(0)
+        : getTradingFee(ctx_.view(), *ammSle, account_);
 
     auto const subTxType = ctx_.tx.getFlags() & tfDepositSubTx;
 
@@ -382,6 +412,14 @@ AMMDeposit::applyGuts(Sandbox& sb)
                 amount,
                 amount2,
                 tfee);
+        if (subTxType & tfTwoAssetIfEmpty)
+            return equalDepositInEmptyState(
+                sb,
+                ammAccountID,
+                *amount,
+                *amount2,
+                lptAMMBalance.issue(),
+                tfee);
         // should not happen.
         JLOG(j_.error()) << "AMM Deposit: invalid options.";
         return std::make_pair(tecINTERNAL, STAmount{});
@@ -391,6 +429,12 @@ AMMDeposit::applyGuts(Sandbox& sb)
     {
         assert(newLPTokenBalance > beast::zero);
         ammSle->setFieldAmount(sfLPTokenBalance, newLPTokenBalance);
+        // LP depositing into AMM empty state gets the auction slot
+        // and the voting
+        if (lptAMMBalance == beast::zero)
+            initializeFeeAuctionVote(
+                sb, ammSle, account_, lptAMMBalance.issue(), tfee);
+
         sb.update(ammSle);
     }
 
@@ -828,6 +872,29 @@ AMMDeposit::singleDepositEPrice(
         std::nullopt,
         lptAMMBalance,
         tokens,
+        std::nullopt,
+        std::nullopt,
+        std::nullopt,
+        tfee);
+}
+
+std::pair<TER, STAmount>
+AMMDeposit::equalDepositInEmptyState(
+    Sandbox& view,
+    AccountID const& ammAccount,
+    STAmount const& amount,
+    STAmount const& amount2,
+    Issue const& lptIssue,
+    std::uint16_t tfee)
+{
+    return deposit(
+        view,
+        ammAccount,
+        amount,
+        amount,
+        amount2,
+        STAmount{lptIssue, 0},
+        ammLPTokens(amount, amount2, lptIssue),
         std::nullopt,
         std::nullopt,
         std::nullopt,

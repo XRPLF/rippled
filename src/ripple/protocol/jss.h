@@ -52,6 +52,7 @@ JSS(AMMBid);               // transaction type
 JSS(AMMID);                // field
 JSS(AMMCreate);            // transaction type
 JSS(AMMDeposit);           // transaction type
+JSS(AMMDelete);            // transaction type
 JSS(AMMVote);              // transaction type
 JSS(AMMWithdraw);          // transaction type
 JSS(Amendments);           // ledger type.
@@ -226,6 +227,7 @@ JSS(converge_time_s);        // out: NetworkOPs
 JSS(cookie);                 // out: NetworkOPs
 JSS(count);                  // in: AccountTx*, ValidatorList
 JSS(counters);               // in/out: retrieve counters
+JSS(ctid);                   // in/out: Tx RPC
 JSS(currency_a);             // out: BookChanges
 JSS(currency_b);             // out: BookChanges
 JSS(currentShard);           // out: NodeToShardStatus
