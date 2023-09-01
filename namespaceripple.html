@@ -1452,6 +1452,9 @@ Typedefs</h2></td></tr>
 <tr class="separator:aa2ccf44248af5be8a81db7091ad4d019"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9722ac6213471ba4b92259afc6edc2b1"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a9722ac6213471ba4b92259afc6edc2b1">majorityAmendments_t</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/container/map.html">std::map</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>, <a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> &gt;</td></tr>
 <tr class="separator:a9722ac6213471ba4b92259afc6edc2b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a40d4978b34a7cdb77b860efda3f16a7a"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a40d4978b34a7cdb77b860efda3f16a7a">EntryDeleter</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>, <a class="el" href="namespaceripple.html#a5c353aea81a72e698c287a3e5289619a">SkipEntry</a> &gt;(<a class="el" href="namespaceripple.html#ac151bf19e1f4daae2b04c65c65117139">LedgerEntryType</a>, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const  &amp;, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> &gt; &amp;)&gt;</td></tr>
+<tr class="memdesc:a40d4978b34a7cdb77b860efda3f16a7a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Deleter function prototype.  <a href="namespaceripple.html#a40d4978b34a7cdb77b860efda3f16a7a">More...</a><br /></td></tr>
+<tr class="separator:a40d4978b34a7cdb77b860efda3f16a7a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acf6e0f2509512b9dac2b0daccafd75b9"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#acf6e0f2509512b9dac2b0daccafd75b9">socket_type</a> = boost::beast::tcp_stream</td></tr>
 <tr class="separator:acf6e0f2509512b9dac2b0daccafd75b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0356489dd518b8dc89a1153048cb4aee"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a0356489dd518b8dc89a1153048cb4aee">stream_type</a> = boost::beast::ssl_stream&lt; <a class="el" href="namespaceripple.html#acf6e0f2509512b9dac2b0daccafd75b9">socket_type</a> &gt;</td></tr>
@@ -1825,6 +1828,10 @@ Enumerations</h2></td></tr>
 <a class="el" href="namespaceripple.html#a9d22f4d38ac33f4258a0205f8e11d27ea93cba07454f06a4a960172bbd6e2a435">WaiveTransferFee::Yes</a>
  }</td></tr>
 <tr class="separator:a9d22f4d38ac33f4258a0205f8e11d27e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5c353aea81a72e698c287a3e5289619a"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a5c353aea81a72e698c287a3e5289619a">SkipEntry</a> : bool { <a class="el" href="namespaceripple.html#a5c353aea81a72e698c287a3e5289619aabafd7322c6e97d25b6299b5d6fe8920b">SkipEntry::No</a> = false, 
+<a class="el" href="namespaceripple.html#a5c353aea81a72e698c287a3e5289619aa93cba07454f06a4a960172bbd6e2a435">SkipEntry::Yes</a>
+ }</td></tr>
+<tr class="separator:a5c353aea81a72e698c287a3e5289619a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a17a9a9b903b66e49f5413d82ce79f085"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a17a9a9b903b66e49f5413d82ce79f085">FreezeHandling</a> { <a class="el" href="namespaceripple.html#a17a9a9b903b66e49f5413d82ce79f085a91e3c4f8089025c7ecf66dd62b822d90">fhIGNORE_FREEZE</a>, 
 <a class="el" href="namespaceripple.html#a17a9a9b903b66e49f5413d82ce79f085a852cabbbe21a9b4d63aff777eceab2fd">fhZERO_IF_FROZEN</a>
  }</td></tr>
@@ -3517,8 +3524,8 @@ Functions</h2></td></tr>
 <tr class="memitem:a3e046f4b7ab06562107485513edb7098"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a3e046f4b7ab06562107485513edb7098">requireAuth</a> (<a class="el" href="classripple_1_1ReadView.html">ReadView</a> const  &amp;view, <a class="el" href="classripple_1_1Issue.html">Issue</a> const  &amp;issue, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const  &amp;account)</td></tr>
 <tr class="memdesc:a3e046f4b7ab06562107485513edb7098"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if the account requires authorization.  <a href="namespaceripple.html#a3e046f4b7ab06562107485513edb7098">More...</a><br /></td></tr>
 <tr class="separator:a3e046f4b7ab06562107485513edb7098"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1853d68963f99c793be414cf0d1bc8d5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a1853d68963f99c793be414cf0d1bc8d5">cleanupOnAccountDelete</a> (<a class="el" href="classripple_1_1ApplyView.html">ApplyView</a> &amp;view, <a class="el" href="structripple_1_1Keylet.html">Keylet</a> const &amp;ownerDirKeylet, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; <a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>(<a class="el" href="namespaceripple.html#ac151bf19e1f4daae2b04c65c65117139">LedgerEntryType</a>, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> &gt; &amp;)&gt; deleter, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; uint16_t &gt; maxNodesToDelete)</td></tr>
-<tr class="separator:a1853d68963f99c793be414cf0d1bc8d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac63838a9be23c18086f1f05c78867399"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ac63838a9be23c18086f1f05c78867399">cleanupOnAccountDelete</a> (<a class="el" href="classripple_1_1ApplyView.html">ApplyView</a> &amp;view, <a class="el" href="structripple_1_1Keylet.html">Keylet</a> const &amp;ownerDirKeylet, <a class="el" href="namespaceripple.html#a40d4978b34a7cdb77b860efda3f16a7a">EntryDeleter</a> const &amp;deleter, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; uint16_t &gt; maxNodesToDelete)</td></tr>
+<tr class="separator:ac63838a9be23c18086f1f05c78867399"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2da08ee715495ec871618786c8afec80"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a2da08ee715495ec871618786c8afec80">deleteAMMTrustLine</a> (<a class="el" href="classripple_1_1ApplyView.html">ApplyView</a> &amp;view, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> &gt; sleState, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> &gt; const  &amp;<a class="el" href="namespaceripple.html#a768092086ea18d2dbeb64efb9fa12ba5">ammAccountID</a>, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
 <tr class="memdesc:a2da08ee715495ec871618786c8afec80"><td class="mdescLeft">&#160;</td><td class="mdescRight">Delete trustline to AMM.  <a href="namespaceripple.html#a2da08ee715495ec871618786c8afec80">More...</a><br /></td></tr>
 <tr class="separator:a2da08ee715495ec871618786c8afec80"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -3535,9 +3542,9 @@ Functions</h2></td></tr>
 <tr class="memitem:a276b9076d790b69ea4d9e13720a12ec8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a276b9076d790b69ea4d9e13720a12ec8">getCandidateLedger</a> (<a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> requested)</td></tr>
 <tr class="memdesc:a276b9076d790b69ea4d9e13720a12ec8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Find a ledger index from which we could easily get the requested ledger.  <a href="namespaceripple.html#a276b9076d790b69ea4d9e13720a12ec8">More...</a><br /></td></tr>
 <tr class="separator:a276b9076d790b69ea4d9e13720a12ec8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab55f0467b9c88a1312800d9c872808ae"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ab55f0467b9c88a1312800d9c872808ae">cleanupOnAccountDelete</a> (<a class="el" href="classripple_1_1ApplyView.html">ApplyView</a> &amp;view, <a class="el" href="structripple_1_1Keylet.html">Keylet</a> const &amp;ownerDirKeylet, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; <a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>(<a class="el" href="namespaceripple.html#ac151bf19e1f4daae2b04c65c65117139">LedgerEntryType</a>, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> &gt; &amp;)&gt; deleter, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint16_t</a> &gt; maxNodesToDelete=std::nullopt)</td></tr>
-<tr class="memdesc:ab55f0467b9c88a1312800d9c872808ae"><td class="mdescLeft">&#160;</td><td class="mdescRight">Cleanup owner directory entries on account delete.  <a href="namespaceripple.html#ab55f0467b9c88a1312800d9c872808ae">More...</a><br /></td></tr>
-<tr class="separator:ab55f0467b9c88a1312800d9c872808ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6afbbc2fe9c45f1a268aeda92e6108ba"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a6afbbc2fe9c45f1a268aeda92e6108ba">cleanupOnAccountDelete</a> (<a class="el" href="classripple_1_1ApplyView.html">ApplyView</a> &amp;view, <a class="el" href="structripple_1_1Keylet.html">Keylet</a> const &amp;ownerDirKeylet, <a class="el" href="namespaceripple.html#a40d4978b34a7cdb77b860efda3f16a7a">EntryDeleter</a> const &amp;deleter, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint16_t</a> &gt; maxNodesToDelete=std::nullopt)</td></tr>
+<tr class="memdesc:a6afbbc2fe9c45f1a268aeda92e6108ba"><td class="mdescLeft">&#160;</td><td class="mdescRight">Cleanup owner directory entries on account delete.  <a href="namespaceripple.html#a6afbbc2fe9c45f1a268aeda92e6108ba">More...</a><br /></td></tr>
+<tr class="separator:a6afbbc2fe9c45f1a268aeda92e6108ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a44bdb65cae71a71fa5c4acf5a795afd0"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1DatabaseDownloader.html">DatabaseDownloader</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a44bdb65cae71a71fa5c4acf5a795afd0">make_DatabaseDownloader</a> (boost::asio::io_service &amp;io_service, <a class="el" href="classripple_1_1Config.html">Config</a> const &amp;config, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
 <tr class="separator:a44bdb65cae71a71fa5c4acf5a795afd0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3d2402219c73a313f9073212b2aefe16"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a3d2402219c73a313f9073212b2aefe16">registerSSLCerts</a> (boost::asio::ssl::context &amp;, boost::system::error_code &amp;, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
@@ -6893,7 +6900,26 @@ template&lt;class Value , class Hash  = hardened_hash&lt;strong_hash&gt;, class 
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00222">222</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00223">223</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
+
+</div>
+</div>
+<a id="a40d4978b34a7cdb77b860efda3f16a7a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a40d4978b34a7cdb77b860efda3f16a7a">&#9670;&nbsp;</a></span>EntryDeleter</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="namespaceripple.html#a40d4978b34a7cdb77b860efda3f16a7a">ripple::EntryDeleter</a> = typedef <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt;<a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>, <a class="el" href="namespaceripple.html#a5c353aea81a72e698c287a3e5289619a">SkipEntry</a>&gt;( <a class="el" href="namespaceripple.html#ac151bf19e1f4daae2b04c65c65117139">LedgerEntryType</a>, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const&amp;, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt;<a class="el" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a>&gt;&amp;)&gt;</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Deleter function prototype. </p>
+<p>Returns the status of the entry deletion (if should not be skipped) and if the entry should be skipped. The status is always tesSUCCESS if the entry should be skipped. </p>
+
+<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00469">469</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
 
 </div>
 </div>
@@ -8620,6 +8646,34 @@ template&lt;class Value , class Hash  = hardened_hash&lt;strong_hash&gt;, class 
 
 </div>
 </div>
+<a id="a5c353aea81a72e698c287a3e5289619a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5c353aea81a72e698c287a3e5289619a">&#9670;&nbsp;</a></span>SkipEntry</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="namespaceripple.html#a5c353aea81a72e698c287a3e5289619a">ripple::SkipEntry</a> : bool</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">strong</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a5c353aea81a72e698c287a3e5289619aabafd7322c6e97d25b6299b5d6fe8920b"></a>No&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a5c353aea81a72e698c287a3e5289619aa93cba07454f06a4a960172bbd6e2a435"></a>Yes&#160;</td><td class="fielddoc"></td></tr>
+</table>
+
+<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00046">46</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
+
+</div>
+</div>
 <a id="a17a9a9b903b66e49f5413d82ce79f085"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a17a9a9b903b66e49f5413d82ce79f085">&#9670;&nbsp;</a></span>FreezeHandling</h2>
 
@@ -8638,7 +8692,7 @@ template&lt;class Value , class Hash  = hardened_hash&lt;strong_hash&gt;, class 
 <tr><td class="fieldname"><a id="a17a9a9b903b66e49f5413d82ce79f085a852cabbbe21a9b4d63aff777eceab2fd"></a>fhZERO_IF_FROZEN&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00078">78</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00079">79</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
 
 </div>
 </div>
@@ -11807,7 +11861,7 @@ template&lt;class ApplyTxs &gt; </div>
 <p>Delete trustlines to AMM. </p>
 <p>If all trustlines are deleted then AMM object and account are deleted. Otherwise tecIMPCOMPLETE is returned. </p>
 
-<p class="definition">Definition at line <a class="el" href="AMMUtils_8cpp_source.html#l00229">229</a> of file <a class="el" href="AMMUtils_8cpp_source.html">AMMUtils.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AMMUtils_8cpp_source.html#l00234">234</a> of file <a class="el" href="AMMUtils_8cpp_source.html">AMMUtils.cpp</a>.</p>
 
 </div>
 </div>
@@ -11857,7 +11911,7 @@ template&lt;class ApplyTxs &gt; </div>
 
 <p>Initialize Auction and Voting slots and set the trading/discounted fee. </p>
 
-<p class="definition">Definition at line <a class="el" href="AMMUtils_8cpp_source.html#l00272">272</a> of file <a class="el" href="AMMUtils_8cpp_source.html">AMMUtils.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AMMUtils_8cpp_source.html#l00283">283</a> of file <a class="el" href="AMMUtils_8cpp_source.html">AMMUtils.cpp</a>.</p>
 
 </div>
 </div>
@@ -26276,8 +26330,8 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 
 </div>
 </div>
-<a id="a1853d68963f99c793be414cf0d1bc8d5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1853d68963f99c793be414cf0d1bc8d5">&#9670;&nbsp;</a></span>cleanupOnAccountDelete() <span class="overload">[1/2]</span></h2>
+<a id="ac63838a9be23c18086f1f05c78867399"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac63838a9be23c18086f1f05c78867399">&#9670;&nbsp;</a></span>cleanupOnAccountDelete() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -26297,7 +26351,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; <a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>(<a class="el" href="namespaceripple.html#ac151bf19e1f4daae2b04c65c65117139">LedgerEntryType</a>, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> &gt; &amp;)&gt;&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a40d4978b34a7cdb77b860efda3f16a7a">EntryDeleter</a> const &amp;&#160;</td>
           <td class="paramname"><em>deleter</em>, </td>
         </tr>
         <tr>
@@ -26401,7 +26455,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00091">91</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00092">92</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
 
 </div>
 </div>
@@ -26437,7 +26491,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00107">107</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00108">108</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
 
 </div>
 </div>
@@ -26475,7 +26529,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 
 <p>Iterate all items in an account's owner directory. </p>
 
-<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00182">182</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00183">183</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
 
 </div>
 </div>
@@ -26540,7 +26594,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd><code>false</code> if the iteration failed </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00197">197</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00198">198</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
 
 </div>
 </div>
@@ -26564,12 +26618,12 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 <p>The index that we return should meet two requirements: 1) It must be the index of a ledger that has the hash of the ledger we are looking for. This means that its sequence must be equal to greater than the sequence that we want but not more than 256 greater since each ledger contains the hashes of the 256 previous ledgers.</p>
 <p>2) Its hash must be easy for us to find. This means it must be 0 mod 256 because every such ledger is permanently enshrined in a LedgerHashes page which we can easily retrieve via the skip list. </p>
 
-<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00251">251</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00252">252</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
 
 </div>
 </div>
-<a id="ab55f0467b9c88a1312800d9c872808ae"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab55f0467b9c88a1312800d9c872808ae">&#9670;&nbsp;</a></span>cleanupOnAccountDelete() <span class="overload">[2/2]</span></h2>
+<a id="a6afbbc2fe9c45f1a268aeda92e6108ba"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6afbbc2fe9c45f1a268aeda92e6108ba">&#9670;&nbsp;</a></span>cleanupOnAccountDelete() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -26589,7 +26643,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; <a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>(<a class="el" href="namespaceripple.html#ac151bf19e1f4daae2b04c65c65117139">LedgerEntryType</a>, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> &gt; &amp;)&gt;&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a40d4978b34a7cdb77b860efda3f16a7a">EntryDeleter</a> const &amp;&#160;</td>
           <td class="paramname"><em>deleter</em>, </td>
         </tr>
         <tr>
