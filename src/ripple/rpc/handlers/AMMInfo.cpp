@@ -122,7 +122,7 @@ doAMMInfo(RPC::JsonContext& context)
             ammID = sle->getFieldH256(sfAMMID);
         }
 
-        if ((issue1.has_value() ^ issue2.has_value()) ||
+        if ((issue1.has_value() != issue2.has_value()) ||
             (issue1.has_value() == ammID.has_value()))
             return Unexpected(rpcINVALID_PARAMS);
 
