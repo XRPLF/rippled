@@ -52,20 +52,11 @@ DeleteAccount::preflight(PreflightContext const& ctx)
     return preflight2(ctx);
 }
 
-FeeUnit64
+XRPAmount
 DeleteAccount::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
-    // The fee required for AccountDelete is one owner reserve.  But the
-    // owner reserve is stored in drops.  We need to convert it to fee units.
-    Fees const& fees{view.fees()};
-    std::pair<bool, FeeUnit64> const mulDivResult{
-        mulDiv(fees.increment, safe_cast<FeeUnit64>(fees.units), fees.base)};
-    if (mulDivResult.first)
-        return mulDivResult.second;
-
-    // If mulDiv returns false then overflow happened.  Punt by using the
-    // standard calculation.
-    return Transactor::calculateBaseFee(view, tx);
+    // The fee required for AccountDelete is one owner reserve.
+    return view.fees().increment;
 }
 
 namespace {
@@ -223,6 +214,23 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     if ((*sleAccount)[sfSequence] + seqDelta > ctx.view.seq())
         return tecTOO_SOON;
 
+    // When fixNFTokenRemint is enabled, we don't allow an account to be
+    // deleted if <FirstNFTokenSequence + MintedNFTokens> is within 256 of the
+    // current ledger. This is to prevent having duplicate NFTokenIDs after
+    // account re-creation.
+    //
+    // Without this restriction, duplicate NFTokenIDs can be reproduced when
+    // authorized minting is involved. Because when the minter mints a NFToken,
+    // the issuer's sequence does not change. So when the issuer re-creates
+    // their account and mints a NFToken, it is possible that the
+    // NFTokenSequence of this NFToken is the same as the one that the
+    // authorized minter minted in a previous ledger.
+    if (ctx.view.rules().enabled(fixNFTokenRemint) &&
+        ((*sleAccount)[~sfFirstNFTokenSequence].value_or(0) +
+             (*sleAccount)[~sfMintedNFTokens].value_or(0) + seqDelta >
+         ctx.view.seq()))
+        return tecTOO_SOON;
+
     // Verify that the account does not own any objects that would prevent
     // the account from being deleted.
     Keylet const ownerDirKeylet{keylet::ownerDir(account)};
@@ -284,76 +292,29 @@ DeleteAccount::doApply()
     if (!src || !dst)
         return tefBAD_LEDGER;
 
-    // Delete all of the entries in the account directory.
     Keylet const ownerDirKeylet{keylet::ownerDir(account_)};
-    std::shared_ptr<SLE> sleDirNode{};
-    unsigned int uDirEntry{0};
-    uint256 dirEntry{beast::zero};
-
-    if (view().exists(ownerDirKeylet) &&
-        dirFirst(view(), ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry))
-    {
-        do
-        {
-            // Choose the right way to delete each directory node.
-            auto sleItem = view().peek(keylet::child(dirEntry));
-            if (!sleItem)
-            {
-                // Directory node has an invalid index.  Bail out.
-                JLOG(j_.fatal())
-                    << "DeleteAccount: Directory node in ledger "
-                    << view().seq() << " has index to object that is missing: "
-                    << to_string(dirEntry);
-                return tefBAD_LEDGER;
-            }
-
-            LedgerEntryType const nodeType{safe_cast<LedgerEntryType>(
-                sleItem->getFieldU16(sfLedgerEntryType))};
-
+    auto const ter = cleanupOnAccountDelete(
+        view(),
+        ownerDirKeylet,
+        [&](LedgerEntryType nodeType,
+            uint256 const& dirEntry,
+            std::shared_ptr<SLE>& sleItem) -> std::pair<TER, SkipEntry> {
             if (auto deleter = nonObligationDeleter(nodeType))
             {
                 TER const result{
                     deleter(ctx_.app, view(), account_, dirEntry, sleItem, j_)};
 
-                if (!isTesSuccess(result))
-                    return result;
-            }
-            else
-            {
-                assert(!"Undeletable entry should be found in preclaim.");
-                JLOG(j_.error())
-                    << "DeleteAccount undeletable item not found in preclaim.";
-                return tecHAS_OBLIGATIONS;
+                return {result, SkipEntry::No};
             }
 
-            // dirFirst() and dirNext() are like iterators with exposed
-            // internal state.  We'll take advantage of that exposed state
-            // to solve a common C++ problem: iterator invalidation while
-            // deleting elements from a container.
-            //
-            // We have just deleted one directory entry, which means our
-            // "iterator state" is invalid.
-            //
-            //  1. During the process of getting an entry from the
-            //     directory uDirEntry was incremented from 0 to 1.
-            //
-            //  2. We then deleted the entry at index 0, which means the
-            //     entry that was at 1 has now moved to 0.
-            //
-            //  3. So we verify that uDirEntry is indeed 1.  Then we jam it
-            //     back to zero to "un-invalidate" the iterator.
-            assert(uDirEntry == 1);
-            if (uDirEntry != 1)
-            {
-                JLOG(j_.error())
-                    << "DeleteAccount iterator re-validation failed.";
-                return tefBAD_LEDGER;
-            }
-            uDirEntry = 0;
-
-        } while (dirNext(
-            view(), ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry));
-    }
+            assert(!"Undeletable entry should be found in preclaim.");
+            JLOG(j_.error()) << "DeleteAccount undeletable item not "
+                                "found in preclaim.";
+            return {tecHAS_OBLIGATIONS, SkipEntry::No};
+        },
+        ctx_.journal);
+    if (ter != tesSUCCESS)
+        return ter;
 
     // Transfer any XRP remaining after the fee is paid to the destination:
     (*dst)[sfBalance] = (*dst)[sfBalance] + mSourceBalance;

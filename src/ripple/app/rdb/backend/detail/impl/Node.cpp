@@ -518,7 +518,7 @@ getHashByIndex(soci::session& session, LedgerIndex ledgerIndex)
 
     std::string sql =
         "SELECT LedgerHash FROM Ledgers INDEXED BY SeqLedger WHERE LedgerSeq='";
-    sql.append(beast::lexicalCastThrow<std::string>(ledgerIndex));
+    sql.append(std::to_string(ledgerIndex));
     sql.append("';");
 
     std::string hash;
@@ -581,9 +581,9 @@ getHashesByIndex(
 {
     std::string sql =
         "SELECT LedgerSeq,LedgerHash,PrevHash FROM Ledgers WHERE LedgerSeq >= ";
-    sql.append(beast::lexicalCastThrow<std::string>(minSeq));
+    sql.append(std::to_string(minSeq));
     sql.append(" AND LedgerSeq <= ");
-    sql.append(beast::lexicalCastThrow<std::string>(maxSeq));
+    sql.append(std::to_string(maxSeq));
     sql.append(";");
 
     std::uint64_t ls;
@@ -761,8 +761,7 @@ transactionsSQL(
             boost::format("SELECT %s FROM AccountTransactions "
                           "WHERE Account = '%s' %s %s LIMIT %u, %u;") %
             selection % toBase58(options.account) % maxClause % minClause %
-            beast::lexicalCastThrow<std::string>(options.offset) %
-            beast::lexicalCastThrow<std::string>(numberOfResults));
+            options.offset % numberOfResults);
     else
         sql = boost::str(
             boost::format(
@@ -775,9 +774,7 @@ transactionsSQL(
                 "LIMIT %u, %u;") %
             selection % toBase58(options.account) % maxClause % minClause %
             (descending ? "DESC" : "ASC") % (descending ? "DESC" : "ASC") %
-            (descending ? "DESC" : "ASC") %
-            beast::lexicalCastThrow<std::string>(options.offset) %
-            beast::lexicalCastThrow<std::string>(numberOfResults));
+            (descending ? "DESC" : "ASC") % options.offset % numberOfResults);
     JLOG(j.trace()) << "txSQL query: " << sql;
     return sql;
 }

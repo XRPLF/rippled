@@ -32,26 +32,6 @@ namespace ripple {
 class FeeVote
 {
 public:
-    /** Fee schedule to vote for.
-        During voting ledgers, the FeeVote logic will try to move towards
-        these values when injecting fee-setting transactions.
-        A default-constructed Setup contains recommended values.
-    */
-    struct Setup
-    {
-        /** The cost of a reference transaction in drops. */
-        XRPAmount reference_fee{10};
-
-        /** The cost of a reference transaction in fee units. */
-        static constexpr FeeUnit32 reference_fee_units{10};
-
-        /** The account reserve requirement in drops. */
-        XRPAmount account_reserve{20 * DROPS_PER_XRP};
-
-        /** The per-owned item reserve requirement in drops. */
-        XRPAmount owner_reserve{5 * DROPS_PER_XRP};
-    };
-
     virtual ~FeeVote() = default;
 
     /** Add local fee preference to validation.
@@ -60,7 +40,10 @@ public:
         @param baseValidation
     */
     virtual void
-    doValidation(Fees const& lastFees, STValidation& val) = 0;
+    doValidation(
+        Fees const& lastFees,
+        Rules const& rules,
+        STValidation& val) = 0;
 
     /** Cast our local vote on the fee.
 
@@ -74,16 +57,13 @@ public:
         std::shared_ptr<SHAMap> const& initialPosition) = 0;
 };
 
-/** Build FeeVote::Setup from a config section. */
-FeeVote::Setup
-setup_FeeVote(Section const& section);
-
+struct FeeSetup;
 /** Create an instance of the FeeVote logic.
     @param setup The fee schedule to vote for.
     @param journal Where to log.
 */
 std::unique_ptr<FeeVote>
-make_FeeVote(FeeVote::Setup const& setup, beast::Journal journal);
+make_FeeVote(FeeSetup const& setup, beast::Journal journal);
 
 }  // namespace ripple
 

@@ -45,6 +45,12 @@ public:
         set_.insert(amendments.begin(), amendments.end());
     }
 
+    std::unordered_set<uint256, beast::uhash<>> const&
+    presets() const
+    {
+        return presets_;
+    }
+
     bool
     enabled(uint256 const& feature) const
     {
@@ -60,6 +66,7 @@ public:
             return true;
         if (!digest_ || !other.digest_)
             return false;
+        assert(presets_ == other.presets_);
         return *digest_ == *other.digest_;
     }
 };
@@ -75,6 +82,12 @@ Rules::Rules(
     STVector256 const& amendments)
     : impl_(std::make_shared<Impl>(presets, digest, amendments))
 {
+}
+
+std::unordered_set<uint256, beast::uhash<>> const&
+Rules::presets() const
+{
+    return impl_->presets();
 }
 
 bool

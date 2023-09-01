@@ -127,10 +127,8 @@ public:
             BEAST_EXPECT(resp[jss::result][jss::alternatives].size() == 1);
 
             auto getAccountLines = [&env](Account const& acct) {
-                Json::Value jv;
-                jv[jss::account] = acct.human();
-                auto const r = env.rpc("json", "account_lines", to_string(jv));
-                return r[jss::result][jss::lines];
+                auto const r = jtx::getAccountLines(env, acct);
+                return r[jss::lines];
             };
             {
                 auto const aliceLines = getAccountLines(alice);

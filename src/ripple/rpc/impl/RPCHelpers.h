@@ -21,6 +21,7 @@
 #define RIPPLE_RPC_RPCHELPERS_H_INCLUDED
 
 #include <ripple/beast/core/SemanticVersion.h>
+#include <ripple/proto/org/xrpl/rpc/v1/xrp_ledger.pb.h>
 #include <ripple/protocol/TxMeta.h>
 
 #include <ripple/app/misc/NetworkOPs.h>
@@ -30,7 +31,6 @@
 #include <ripple/rpc/Status.h>
 #include <ripple/rpc/impl/Tuning.h>
 #include <optional>
-#include <org/xrpl/rpc/v1/xrp_ledger.pb.h>
 #include <variant>
 
 namespace Json {
@@ -86,7 +86,7 @@ getStartHint(std::shared_ptr<SLE const> const& sle, AccountID const& accountID);
  * @param account - The account being tested for SLE ownership.
  */
 bool
-isOwnedByAccount(
+isRelatedToAccount(
     ReadView const& ledger,
     std::shared_ptr<SLE const> const& sle,
     AccountID const& accountID);
@@ -106,7 +106,7 @@ getAccountObjects(
     AccountID const& account,
     std::optional<std::vector<LedgerEntryType>> const& typeFilter,
     uint256 dirIndex,
-    uint256 const& entryIndex,
+    uint256 entryIndex,
     std::uint32_t const limit,
     Json::Value& jvResult);
 

@@ -27,7 +27,9 @@
 #include <ripple/beast/hash/uhash.h>
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/ledger/detail/ReadViewFwdRange.h>
+#include <ripple/protocol/Fees.h>
 #include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/LedgerHeader.h>
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/Rules.h>
 #include <ripple/protocol/STAmount.h>
@@ -40,89 +42,6 @@
 #include <unordered_set>
 
 namespace ripple {
-
-/** Reflects the fee settings for a particular ledger.
-
-    The fees are always the same for any transactions applied
-    to a ledger. Changes to fees occur in between ledgers.
-*/
-struct Fees
-{
-    XRPAmount base{0};       // Reference tx cost (drops)
-    FeeUnit32 units{0};      // Reference fee units
-    XRPAmount reserve{0};    // Reserve base (drops)
-    XRPAmount increment{0};  // Reserve increment (drops)
-
-    explicit Fees() = default;
-    Fees(Fees const&) = default;
-    Fees&
-    operator=(Fees const&) = default;
-
-    /** Returns the account reserve given the owner count, in drops.
-
-        The reserve is calculated as the reserve base plus
-        the reserve increment times the number of increments.
-    */
-    XRPAmount
-    accountReserve(std::size_t ownerCount) const
-    {
-        return reserve + ownerCount * increment;
-    }
-
-    XRPAmount
-    toDrops(FeeUnit64 const& fee) const
-    {
-        if (auto const resultPair = mulDiv(base, fee, units); resultPair.first)
-            return resultPair.second;
-
-        return XRPAmount(STAmount::cMaxNativeN);
-    }
-};
-
-//------------------------------------------------------------------------------
-
-/** Information about the notional ledger backing the view. */
-struct LedgerInfo
-{
-    explicit LedgerInfo() = default;
-
-    //
-    // For all ledgers
-    //
-
-    LedgerIndex seq = 0;
-    NetClock::time_point parentCloseTime = {};
-
-    //
-    // For closed ledgers
-    //
-
-    // Closed means "tx set already determined"
-    uint256 hash = beast::zero;
-    uint256 txHash = beast::zero;
-    uint256 accountHash = beast::zero;
-    uint256 parentHash = beast::zero;
-
-    XRPAmount drops = beast::zero;
-
-    // If validated is false, it means "not yet validated."
-    // Once validated is true, it will never be set false at a later time.
-    // VFALCO TODO Make this not mutable
-    bool mutable validated = false;
-    bool accepted = false;
-
-    // flags indicating how this ledger close took place
-    int closeFlags = 0;
-
-    // the resolution for this ledger close time (2-120 seconds)
-    NetClock::duration closeTimeResolution = {};
-
-    // For closed ledgers, the time the ledger
-    // closed. For open ledgers, the time the ledger
-    // will close if there's no transactions.
-    //
-    NetClock::time_point closeTime = {};
-};
 
 //------------------------------------------------------------------------------
 
@@ -354,17 +273,8 @@ public:
 
 //------------------------------------------------------------------------------
 
-// ledger close flags
-static std::uint32_t const sLCF_NoConsensusTime = 0x01;
-
-inline bool
-getCloseAgree(LedgerInfo const& info)
-{
-    return (info.closeFlags & sLCF_NoConsensusTime) == 0;
-}
-
-void
-addRaw(LedgerInfo const&, Serializer&, bool includeHash = false);
+Rules
+makeRulesGivenLedger(DigestAwareReadView const& ledger, Rules const& current);
 
 Rules
 makeRulesGivenLedger(

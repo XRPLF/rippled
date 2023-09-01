@@ -13,6 +13,10 @@ if (unity)
   set_target_properties(xrpl_core PROPERTIES UNITY_BUILD ON)
 endif ()
 
+add_library(libxrpl INTERFACE)
+target_link_libraries(libxrpl INTERFACE xrpl_core)
+add_library(xrpl::libxrpl ALIAS libxrpl)
+
 
 #[===============================[
     beast/legacy FILES:
@@ -50,6 +54,7 @@ target_sources (xrpl_core PRIVATE
   src/ripple/basics/impl/FileUtilities.cpp
   src/ripple/basics/impl/IOUAmount.cpp
   src/ripple/basics/impl/Log.cpp
+  src/ripple/basics/impl/Number.cpp
   src/ripple/basics/impl/StringUtilities.cpp
   #[===============================[
     main sources:
@@ -69,6 +74,7 @@ target_sources (xrpl_core PRIVATE
       subdir: protocol
   #]===============================]
   src/ripple/protocol/impl/AccountID.cpp
+  src/ripple/protocol/impl/AMMCore.cpp
   src/ripple/protocol/impl/Book.cpp
   src/ripple/protocol/impl/BuildInfo.cpp
   src/ripple/protocol/impl/ErrorCodes.cpp
@@ -76,10 +82,13 @@ target_sources (xrpl_core PRIVATE
   src/ripple/protocol/impl/Indexes.cpp
   src/ripple/protocol/impl/InnerObjectFormats.cpp
   src/ripple/protocol/impl/Issue.cpp
+  src/ripple/protocol/impl/STIssue.cpp
   src/ripple/protocol/impl/Keylet.cpp
   src/ripple/protocol/impl/LedgerFormats.cpp
+  src/ripple/protocol/impl/LedgerHeader.cpp
   src/ripple/protocol/impl/PublicKey.cpp
   src/ripple/protocol/impl/Quality.cpp
+  src/ripple/protocol/impl/QualityFunction.cpp
   src/ripple/protocol/impl/Rate2.cpp
   src/ripple/protocol/impl/Rules.cpp
   src/ripple/protocol/impl/SField.cpp
@@ -108,6 +117,9 @@ target_sources (xrpl_core PRIVATE
   src/ripple/protocol/impl/UintTypes.cpp
   src/ripple/protocol/impl/digest.cpp
   src/ripple/protocol/impl/tokens.cpp
+  src/ripple/protocol/impl/NFTSyntheticSerializer.cpp
+  src/ripple/protocol/impl/NFTokenID.cpp
+  src/ripple/protocol/impl/NFTokenOfferID.cpp
   #[===============================[
     main sources:
       subdir: crypto
@@ -135,8 +147,8 @@ target_link_libraries (xrpl_core
     OpenSSL::Crypto
     Ripple::boost
     Ripple::syslibs
-    NIH::secp256k1
-    NIH::ed25519-donna
+    secp256k1::secp256k1
+    ed25519::ed25519
     date::date
     Ripple::opts)
 #[=================================[
@@ -144,30 +156,54 @@ target_link_libraries (xrpl_core
 #]=================================]
 install (
   FILES
+    src/ripple/basics/algorithm.h
+    src/ripple/basics/Archive.h
     src/ripple/basics/base64.h
+    src/ripple/basics/base_uint.h
+    src/ripple/basics/BasicConfig.h
     src/ripple/basics/Blob.h
     src/ripple/basics/Buffer.h
+    src/ripple/basics/ByteUtilities.h
+    src/ripple/basics/chrono.h
+    src/ripple/basics/comparators.h
+    src/ripple/basics/CompressionAlgorithms.h
+    src/ripple/basics/contract.h
     src/ripple/basics/CountedObject.h
+    src/ripple/basics/DecayingSample.h
+    src/ripple/basics/Expected.h
+    src/ripple/basics/FeeUnits.h
     src/ripple/basics/FileUtilities.h
+    src/ripple/basics/hardened_hash.h
     src/ripple/basics/IOUAmount.h
+    src/ripple/basics/join.h
+    src/ripple/basics/KeyCache.h
     src/ripple/basics/LocalValue.h
     src/ripple/basics/Log.h
+    src/ripple/basics/make_SSLContext.h
     src/ripple/basics/MathUtilities.h
+    src/ripple/basics/mulDiv.h
+    src/ripple/basics/Number.h
+    src/ripple/basics/partitioned_unordered_map.h
+    src/ripple/basics/PerfLog.h
+    src/ripple/basics/random.h
+    src/ripple/basics/RangeSet.h
+    src/ripple/basics/README.md
+    src/ripple/basics/ResolverAsio.h
+    src/ripple/basics/Resolver.h
     src/ripple/basics/safe_cast.h
+    src/ripple/basics/scope.h
+    src/ripple/basics/SHAMapHash.h
     src/ripple/basics/Slice.h
     src/ripple/basics/spinlock.h
+    src/ripple/basics/strHex.h
     src/ripple/basics/StringUtilities.h
+    src/ripple/basics/TaggedCache.h
+    src/ripple/basics/tagged_integer.h
     src/ripple/basics/ThreadSafetyAnalysis.h
     src/ripple/basics/ToString.h
     src/ripple/basics/UnorderedContainers.h
+    src/ripple/basics/UptimeClock.h
     src/ripple/basics/XRPAmount.h
-    src/ripple/basics/algorithm.h
-    src/ripple/basics/base_uint.h
-    src/ripple/basics/chrono.h
-    src/ripple/basics/contract.h
-    src/ripple/basics/FeeUnits.h
-    src/ripple/basics/hardened_hash.h
-    src/ripple/basics/strHex.h
   DESTINATION include/ripple/basics)
 install (
   FILES
@@ -194,11 +230,13 @@ install (
 install (
   FILES
     src/ripple/protocol/AccountID.h
+    src/ripple/protocol/AMMCore.h
     src/ripple/protocol/AmountConversions.h
     src/ripple/protocol/Book.h
     src/ripple/protocol/BuildInfo.h
     src/ripple/protocol/ErrorCodes.h
     src/ripple/protocol/Feature.h
+    src/ripple/protocol/Fees.h
     src/ripple/protocol/HashPrefix.h
     src/ripple/protocol/Indexes.h
     src/ripple/protocol/InnerObjectFormats.h
@@ -207,15 +245,21 @@ install (
     src/ripple/protocol/Keylet.h
     src/ripple/protocol/KnownFormats.h
     src/ripple/protocol/LedgerFormats.h
+    src/ripple/protocol/LedgerHeader.h
+    src/ripple/protocol/NFTSyntheticSerializer.h
+    src/ripple/protocol/NFTokenID.h
+    src/ripple/protocol/NFTokenOfferID.h
     src/ripple/protocol/Protocol.h
     src/ripple/protocol/PublicKey.h
     src/ripple/protocol/Quality.h
+    src/ripple/protocol/QualityFunction.h
     src/ripple/protocol/Rate.h
     src/ripple/protocol/Rules.h
     src/ripple/protocol/SField.h
     src/ripple/protocol/SOTemplate.h
     src/ripple/protocol/STAccount.h
     src/ripple/protocol/STAmount.h
+    src/ripple/protocol/STIssue.h
     src/ripple/protocol/STArray.h
     src/ripple/protocol/STBase.h
     src/ripple/protocol/STBitString.h
@@ -242,6 +286,9 @@ install (
     src/ripple/protocol/UintTypes.h
     src/ripple/protocol/digest.h
     src/ripple/protocol/jss.h
+    src/ripple/protocol/serialize.h
+    src/ripple/protocol/nft.h
+    src/ripple/protocol/nftPageMask.h
     src/ripple/protocol/tokens.h
   DESTINATION include/ripple/protocol)
 install (
@@ -261,6 +308,7 @@ install (
   DESTINATION include/ripple/beast/clock)
 install (
   FILES
+    src/ripple/beast/core/CurrentThreadName.h
     src/ripple/beast/core/LexicalCast.h
     src/ripple/beast/core/List.h
     src/ripple/beast/core/SemanticVersion.h
@@ -276,11 +324,39 @@ install (
   DESTINATION include/ripple/beast/hash/impl)
 install (
   FILES
+  src/ripple/beast/net/IPAddress.h
+  src/ripple/beast/net/IPAddressConversion.h
+  src/ripple/beast/net/IPAddressV4.h
+  src/ripple/beast/net/IPAddressV6.h
+  src/ripple/beast/net/IPEndpoint.h
+  DESTINATION include/ripple/beast/net)
+install (
+  FILES
     src/ripple/beast/rfc2616.h
     src/ripple/beast/type_name.h
     src/ripple/beast/unit_test.h
     src/ripple/beast/xor_shift_engine.h
   DESTINATION include/ripple/beast)
+install (
+  FILES
+    src/ripple/beast/unit_test/amount.hpp
+    src/ripple/beast/unit_test/dstream.hpp
+    src/ripple/beast/unit_test/global_suites.hpp
+    src/ripple/beast/unit_test/main.cpp
+    src/ripple/beast/unit_test/match.hpp
+    src/ripple/beast/unit_test/recorder.hpp
+    src/ripple/beast/unit_test/reporter.hpp
+    src/ripple/beast/unit_test/results.hpp
+    src/ripple/beast/unit_test/runner.hpp
+    src/ripple/beast/unit_test/suite.hpp
+    src/ripple/beast/unit_test/suite_info.hpp
+    src/ripple/beast/unit_test/suite_list.hpp
+    src/ripple/beast/unit_test/thread.hpp
+  DESTINATION include/ripple/beast/unit_test)
+install (
+  FILES
+    src/ripple/beast/unit_test/detail/const_container.hpp
+  DESTINATION include/ripple/beast/unit_test/detail)
 install (
   FILES
     src/ripple/beast/utility/Journal.h
@@ -374,6 +450,8 @@ target_sources (rippled PRIVATE
   src/ripple/app/reporting/ReportingETL.cpp
   src/ripple/app/reporting/ETLSource.cpp
   src/ripple/app/reporting/P2pProxy.cpp
+  src/ripple/app/misc/impl/AMMHelpers.cpp
+  src/ripple/app/misc/impl/AMMUtils.cpp
   src/ripple/app/misc/CanonicalTXSet.cpp
   src/ripple/app/misc/FeeVoteImpl.cpp
   src/ripple/app/misc/HashRouter.cpp
@@ -399,6 +477,8 @@ target_sources (rippled PRIVATE
   src/ripple/app/paths/RippleCalc.cpp
   src/ripple/app/paths/RippleLineCache.cpp
   src/ripple/app/paths/TrustLine.cpp
+  src/ripple/app/paths/impl/AMMLiquidity.cpp
+  src/ripple/app/paths/impl/AMMOffer.cpp
   src/ripple/app/paths/impl/BookStep.cpp
   src/ripple/app/paths/impl/DirectStep.cpp
   src/ripple/app/paths/impl/PaySteps.cpp
@@ -415,12 +495,19 @@ target_sources (rippled PRIVATE
   src/ripple/app/rdb/impl/UnitaryShard.cpp
   src/ripple/app/rdb/impl/Vacuum.cpp
   src/ripple/app/rdb/impl/Wallet.cpp
+  src/ripple/app/tx/impl/AMMBid.cpp
+  src/ripple/app/tx/impl/AMMCreate.cpp
+  src/ripple/app/tx/impl/AMMDelete.cpp
+  src/ripple/app/tx/impl/AMMDeposit.cpp
+  src/ripple/app/tx/impl/AMMVote.cpp
+  src/ripple/app/tx/impl/AMMWithdraw.cpp
   src/ripple/app/tx/impl/ApplyContext.cpp
   src/ripple/app/tx/impl/BookTip.cpp
   src/ripple/app/tx/impl/CancelCheck.cpp
   src/ripple/app/tx/impl/CancelOffer.cpp
   src/ripple/app/tx/impl/CashCheck.cpp
   src/ripple/app/tx/impl/Change.cpp
+  src/ripple/app/tx/impl/Clawback.cpp
   src/ripple/app/tx/impl/CreateCheck.cpp
   src/ripple/app/tx/impl/CreateOffer.cpp
   src/ripple/app/tx/impl/CreateTicket.cpp
@@ -530,7 +617,6 @@ target_sources (rippled PRIVATE
   src/ripple/nodestore/impl/DeterministicShard.cpp
   src/ripple/nodestore/impl/DecodedBlob.cpp
   src/ripple/nodestore/impl/DummyScheduler.cpp
-  src/ripple/nodestore/impl/EncodedBlob.cpp
   src/ripple/nodestore/impl/ManagerImp.cpp
   src/ripple/nodestore/impl/NodeObject.cpp
   src/ripple/nodestore/impl/Shard.cpp
@@ -580,6 +666,7 @@ target_sources (rippled PRIVATE
   src/ripple/rpc/handlers/AccountObjects.cpp
   src/ripple/rpc/handlers/AccountOffers.cpp
   src/ripple/rpc/handlers/AccountTx.cpp
+  src/ripple/rpc/handlers/AMMInfo.cpp
   src/ripple/rpc/handlers/BlackList.cpp
   src/ripple/rpc/handlers/BookOffers.cpp
   src/ripple/rpc/handlers/CanDelete.cpp
@@ -643,7 +730,7 @@ target_sources (rippled PRIVATE
   src/ripple/rpc/impl/RPCHandler.cpp
   src/ripple/rpc/impl/RPCHelpers.cpp
   src/ripple/rpc/impl/Role.cpp
-  src/ripple/rpc/impl/ServerHandlerImp.cpp
+  src/ripple/rpc/impl/ServerHandler.cpp
   src/ripple/rpc/impl/ShardArchiveHandler.cpp
   src/ripple/rpc/impl/ShardVerificationScheduler.cpp
   src/ripple/rpc/impl/Status.cpp
@@ -683,7 +770,11 @@ if (tests)
     src/test/app/AccountDelete_test.cpp
     src/test/app/AccountTxPaging_test.cpp
     src/test/app/AmendmentTable_test.cpp
+    src/test/app/AMM_test.cpp
+    src/test/app/AMMCalc_test.cpp
+    src/test/app/AMMExtended_test.cpp
     src/test/app/Check_test.cpp
+    src/test/app/Clawback_test.cpp
     src/test/app/CrossingLimits_test.cpp
     src/test/app/DeliverMin_test.cpp
     src/test/app/DepositAuth_test.cpp
@@ -696,10 +787,12 @@ if (tests)
     src/test/app/HashRouter_test.cpp
     src/test/app/LedgerHistory_test.cpp
     src/test/app/LedgerLoad_test.cpp
+    src/test/app/LedgerMaster_test.cpp
     src/test/app/LedgerReplay_test.cpp
     src/test/app/LoadFeeTrack_test.cpp
     src/test/app/Manifest_test.cpp
     src/test/app/MultiSign_test.cpp
+    src/test/app/NetworkID_test.cpp
     src/test/app/NFToken_test.cpp
     src/test/app/NFTokenBurn_test.cpp
     src/test/app/NFTokenDir_test.cpp
@@ -712,6 +805,7 @@ if (tests)
     src/test/app/PseudoTx_test.cpp
     src/test/app/RCLCensorshipDetector_test.cpp
     src/test/app/RCLValidations_test.cpp
+    src/test/app/ReducedOffer_test.cpp
     src/test/app/Regression_test.cpp
     src/test/app/SHAMapStore_test.cpp
     src/test/app/SetAuth_test.cpp
@@ -737,6 +831,7 @@ if (tests)
     src/test/basics/FileUtilities_test.cpp
     src/test/basics/IOUAmount_test.cpp
     src/test/basics/KeyCache_test.cpp
+    src/test/basics/Number_test.cpp
     src/test/basics/PerfLog_test.cpp
     src/test/basics/RangeSet_test.cpp
     src/test/basics/scope_test.cpp
@@ -821,9 +916,12 @@ if (tests)
     src/test/jtx/Env_test.cpp
     src/test/jtx/WSClient_test.cpp
     src/test/jtx/impl/Account.cpp
+    src/test/jtx/impl/AMM.cpp
+    src/test/jtx/impl/AMMTest.cpp
     src/test/jtx/impl/Env.cpp
     src/test/jtx/impl/JSONRPCClient.cpp
     src/test/jtx/impl/ManualTimeKeeper.cpp
+    src/test/jtx/impl/TestHelpers.cpp
     src/test/jtx/impl/WSClient.cpp
     src/test/jtx/impl/acctdelete.cpp
     src/test/jtx/impl/account_txn_id.cpp
@@ -909,6 +1007,7 @@ if (tests)
     src/test/protocol/InnerObjectFormats_test.cpp
     src/test/protocol/Issue_test.cpp
     src/test/protocol/Hooks_test.cpp
+    src/test/protocol/Memo_test.cpp
     src/test/protocol/PublicKey_test.cpp
     src/test/protocol/Quality_test.cpp
     src/test/protocol/STAccount_test.cpp
@@ -938,6 +1037,7 @@ if (tests)
     src/test/rpc/AccountSet_test.cpp
     src/test/rpc/AccountTx_test.cpp
     src/test/rpc/AmendmentBlocked_test.cpp
+    src/test/rpc/AMMInfo_test.cpp
     src/test/rpc/Book_test.cpp
     src/test/rpc/DepositAuthorized_test.cpp
     src/test/rpc/DeliveredAmount_test.cpp

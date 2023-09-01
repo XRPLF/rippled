@@ -13,7 +13,6 @@ link_libraries (Ripple::common)
 set_target_properties (common
   PROPERTIES INTERFACE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-target_compile_features (common INTERFACE cxx_std_17)
 target_compile_definitions (common
   INTERFACE
     $<$<CONFIG:Debug>:DEBUG _DEBUG>
@@ -108,6 +107,7 @@ else ()
       -Wno-char-subscripts
       -Wno-format
       -Wno-unused-local-typedefs
+      -fstack-protector
       $<$<BOOL:${is_gcc}>:
         -Wno-unused-but-set-variable
         -Wno-deprecated
@@ -120,11 +120,15 @@ else ()
   target_link_libraries (common
     INTERFACE
       -rdynamic
+      $<$<BOOL:${is_linux}>:-Wl,-z,relro,-z,now>
       # link to static libc/c++ iff:
       #   * static option set and
       #   * NOT APPLE (AppleClang does not support static libc/c++) and
       #   * NOT san (sanitizers typically don't work with static libc/c++)
-      $<$<AND:$<BOOL:${static}>,$<NOT:$<BOOL:${APPLE}>>,$<NOT:$<BOOL:${san}>>>:-static-libstdc++>)
+      $<$<AND:$<BOOL:${static}>,$<NOT:$<BOOL:${APPLE}>>,$<NOT:$<BOOL:${san}>>>:
+      -static-libstdc++
+      -static-libgcc
+      >)
 endif ()
 
 if (use_gold AND is_gcc)

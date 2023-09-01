@@ -163,7 +163,10 @@ Env::lookup(AccountID const& id) const
 {
     auto const iter = map_.find(id);
     if (iter == map_.end())
+    {
+        std::cout << "Unknown account: " << id << "\n";
         Throw<std::runtime_error>("Env::lookup:: unknown account ID");
+    }
     return iter->second;
 }
 
@@ -412,6 +415,11 @@ Env::autofill(JTx& jt)
         jtx::fill_fee(jv, *current());
     if (jt.fill_seq)
         jtx::fill_seq(jv, *current());
+
+    uint32_t networkID = app().config().NETWORK_ID;
+    if (!jv.isMember(jss::NetworkID) && networkID > 1024)
+        jv[jss::NetworkID] = std::to_string(networkID);
+
     // Must come last
     try
     {
@@ -464,6 +472,14 @@ Env::enableFeature(uint256 const feature)
     // Env::close() must be called for feature
     // enable to take place.
     app().config().features.insert(feature);
+}
+
+void
+Env::disableFeature(uint256 const feature)
+{
+    // Env::close() must be called for feature
+    // enable to take place.
+    app().config().features.erase(feature);
 }
 
 }  // namespace jtx

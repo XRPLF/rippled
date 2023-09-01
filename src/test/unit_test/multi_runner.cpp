@@ -389,11 +389,6 @@ multi_runner_base<IsParent>::add_failures(std::size_t failures)
     any_failed(failures != 0);
 }
 
-template <bool IsParent>
-constexpr const char* multi_runner_base<IsParent>::shared_mem_name_;
-template <bool IsParent>
-constexpr const char* multi_runner_base<IsParent>::message_queue_name_;
-
 }  // namespace detail
 
 //------------------------------------------------------------------------------

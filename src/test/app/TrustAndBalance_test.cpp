@@ -28,23 +28,6 @@ namespace ripple {
 
 class TrustAndBalance_test : public beast::unit_test::suite
 {
-    static auto
-    ledgerEntryState(
-        test::jtx::Env& env,
-        test::jtx::Account const& acct_a,
-        test::jtx::Account const& acct_b,
-        std::string const& currency)
-    {
-        Json::Value jvParams;
-        jvParams[jss::ledger_index] = "current";
-        jvParams[jss::ripple_state][jss::currency] = currency;
-        jvParams[jss::ripple_state][jss::accounts] = Json::arrayValue;
-        jvParams[jss::ripple_state][jss::accounts].append(acct_a.human());
-        jvParams[jss::ripple_state][jss::accounts].append(acct_b.human());
-        return env.rpc(
-            "json", "ledger_entry", to_string(jvParams))[jss::result];
-    }
-
     void
     testPayNonexistent(FeatureBitset features)
     {
@@ -411,13 +394,11 @@ class TrustAndBalance_test : public beast::unit_test::suite
 
         if (with_rate)
         {
-            // 65.00000000000001 is correct.
-            // This is result of limited precision.
             env.require(balance(
                 alice,
                 STAmount(
                     carol["USD"].issue(),
-                    6500000000000001ull,
+                    6500000000000000ull,
                     -14,
                     false,
                     true,

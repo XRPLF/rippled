@@ -21,6 +21,7 @@
 #include <ripple/app/ledger/LedgerReplayer.h>
 #include <ripple/app/ledger/impl/LedgerReplayMsgHandler.h>
 #include <ripple/app/main/Application.h>
+#include <ripple/protocol/LedgerHeader.h>
 
 #include <memory>
 
@@ -163,15 +164,15 @@ LedgerReplayMsgHandler::processProofPathResponse(
         JLOG(journal_.debug()) << "Bad message: Cannot deserialize";
         return false;
     }
-    auto item = static_cast<SHAMapLeafNode*>(node.get())->peekItem();
-    if (!item)
+
+    if (auto item = static_cast<SHAMapLeafNode*>(node.get())->peekItem())
     {
-        JLOG(journal_.debug()) << "Bad message: Cannot get ShaMapItem";
-        return false;
+        replayer_.gotSkipList(info, item);
+        return true;
     }
 
-    replayer_.gotSkipList(info, item);
-    return true;
+    JLOG(journal_.debug()) << "Bad message: Cannot get ShaMapItem";
+    return false;
 }
 
 protocol::TMReplayDeltaResponse
@@ -206,9 +207,10 @@ LedgerReplayMsgHandler::processReplayDeltaRequest(
     reply.set_ledgerheader(nData.getDataPtr(), nData.getLength());
     // pack transactions
     auto const& txMap = ledger->txMap();
-    txMap.visitLeaves([&](std::shared_ptr<SHAMapItem const> const& txNode) {
-        reply.add_transaction(txNode->data(), txNode->size());
-    });
+    txMap.visitLeaves(
+        [&](boost::intrusive_ptr<SHAMapItem const> const& txNode) {
+            reply.add_transaction(txNode->data(), txNode->size());
+        });
 
     JLOG(journal_.debug()) << "getReplayDelta for ledger " << ledgerHash
                            << " txMap hash " << txMap.getHash().as_uint256();
@@ -264,10 +266,9 @@ LedgerReplayMsgHandler::processReplayDeltaResponse(
             STObject meta(metaSit, sfMetadata);
             orderedTxns.emplace(meta[sfTransactionIndex], std::move(tx));
 
-            auto item =
-                std::make_shared<SHAMapItem const>(tid, shaMapItemData.slice());
-            if (!item ||
-                !txMap.addGiveItem(SHAMapNodeType::tnTRANSACTION_MD, item))
+            if (!txMap.addGiveItem(
+                    SHAMapNodeType::tnTRANSACTION_MD,
+                    make_shamapitem(tid, shaMapItemData.slice())))
             {
                 JLOG(journal_.debug()) << "Bad message: Cannot deserialize";
                 return false;

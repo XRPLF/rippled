@@ -128,7 +128,7 @@ public:
     }
 
     /** Instances with the same unit, and a type that is
-        "safe" to covert to this one can be converted
+        "safe" to convert to this one can be converted
         implicitly */
     template <
         class Other,
@@ -409,7 +409,7 @@ template <
     class Source2,
     class Dest,
     class = enable_muldiv_t<Source1, Source2, Dest>>
-std::pair<bool, Dest>
+std::optional<Dest>
 mulDivU(Source1 value, Dest mul, Source2 div)
 {
     // Fees can never be negative in any context.
@@ -420,7 +420,7 @@ mulDivU(Source1 value, Dest mul, Source2 div)
         assert(value.value() >= 0);
         assert(mul.value() >= 0);
         assert(div.value() >= 0);
-        return {false, Dest{0}};
+        return std::nullopt;
     }
 
     using desttype = typename Dest::value_type;
@@ -428,12 +428,12 @@ mulDivU(Source1 value, Dest mul, Source2 div)
 
     // Shortcuts, since these happen a lot in the real world
     if (value == div)
-        return {true, mul};
+        return mul;
     if (mul.value() == div.value())
     {
         if (value.value() > max)
-            return {false, Dest{max}};
-        return {true, Dest{static_cast<desttype>(value.value())}};
+            return std::nullopt;
+        return Dest{static_cast<desttype>(value.value())};
     }
 
     using namespace boost::multiprecision;
@@ -447,17 +447,12 @@ mulDivU(Source1 value, Dest mul, Source2 div)
     auto quotient = product / div.value();
 
     if (quotient > max)
-        return {false, Dest{max}};
+        return std::nullopt;
 
-    return {true, Dest{static_cast<desttype>(quotient)}};
+    return Dest{static_cast<desttype>(quotient)};
 }
 
 }  // namespace feeunit
-
-template <class T>
-using FeeUnit = feeunit::TaggedFee<feeunit::feeunitTag, T>;
-using FeeUnit32 = FeeUnit<std::uint32_t>;
-using FeeUnit64 = FeeUnit<std::uint64_t>;
 
 template <class T>
 using FeeLevel = feeunit::TaggedFee<feeunit::feelevelTag, T>;
@@ -469,7 +464,7 @@ template <
     class Source2,
     class Dest,
     class = feeunit::enable_muldiv_t<Source1, Source2, Dest>>
-std::pair<bool, Dest>
+std::optional<Dest>
 mulDiv(Source1 value, Dest mul, Source2 div)
 {
     return feeunit::mulDivU(value, mul, div);
@@ -480,7 +475,7 @@ template <
     class Source2,
     class Dest,
     class = feeunit::enable_muldiv_commute_t<Source1, Source2, Dest>>
-std::pair<bool, Dest>
+std::optional<Dest>
 mulDiv(Dest value, Source1 mul, Source2 div)
 {
     // Multiplication is commutative
@@ -488,7 +483,7 @@ mulDiv(Dest value, Source1 mul, Source2 div)
 }
 
 template <class Dest, class = feeunit::enable_muldiv_dest_t<Dest>>
-std::pair<bool, Dest>
+std::optional<Dest>
 mulDiv(std::uint64_t value, Dest mul, std::uint64_t div)
 {
     // Give the scalars a non-tag so the
@@ -497,7 +492,7 @@ mulDiv(std::uint64_t value, Dest mul, std::uint64_t div)
 }
 
 template <class Dest, class = feeunit::enable_muldiv_dest_t<Dest>>
-std::pair<bool, Dest>
+std::optional<Dest>
 mulDiv(Dest value, std::uint64_t mul, std::uint64_t div)
 {
     // Multiplication is commutative
@@ -508,20 +503,24 @@ template <
     class Source1,
     class Source2,
     class = feeunit::enable_muldiv_sources_t<Source1, Source2>>
-std::pair<bool, std::uint64_t>
+std::optional<std::uint64_t>
 mulDiv(Source1 value, std::uint64_t mul, Source2 div)
 {
     // Give the scalars a dimensionless unit so the
     // unit-handling version gets called.
     auto unitresult = feeunit::mulDivU(value, feeunit::scalar(mul), div);
-    return {unitresult.first, unitresult.second.value()};
+
+    if (!unitresult)
+        return std::nullopt;
+
+    return unitresult->value();
 }
 
 template <
     class Source1,
     class Source2,
     class = feeunit::enable_muldiv_sources_t<Source1, Source2>>
-std::pair<bool, std::uint64_t>
+std::optional<std::uint64_t>
 mulDiv(std::uint64_t value, Source1 mul, Source2 div)
 {
     // Multiplication is commutative

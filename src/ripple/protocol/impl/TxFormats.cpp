@@ -40,6 +40,7 @@ TxFormats::TxFormats()
         {sfSigningPubKey, soeREQUIRED},
         {sfTxnSignature, soeOPTIONAL},
         {sfSigners, soeOPTIONAL},  // submit_multisigned
+        {sfNetworkID, soeOPTIONAL},
     };
 
     add(jss::AccountSet,
@@ -76,6 +77,74 @@ TxFormats::TxFormats()
             {sfTakerGets, soeREQUIRED},
             {sfExpiration, soeOPTIONAL},
             {sfOfferSequence, soeOPTIONAL},
+            {sfTicketSequence, soeOPTIONAL},
+        },
+        commonFields);
+
+    add(jss::AMMCreate,
+        ttAMM_CREATE,
+        {
+            {sfAmount, soeREQUIRED},
+            {sfAmount2, soeREQUIRED},
+            {sfTradingFee, soeREQUIRED},
+            {sfTicketSequence, soeOPTIONAL},
+        },
+        commonFields);
+
+    add(jss::AMMDeposit,
+        ttAMM_DEPOSIT,
+        {
+            {sfAsset, soeREQUIRED},
+            {sfAsset2, soeREQUIRED},
+            {sfAmount, soeOPTIONAL},
+            {sfAmount2, soeOPTIONAL},
+            {sfEPrice, soeOPTIONAL},
+            {sfLPTokenOut, soeOPTIONAL},
+            {sfTicketSequence, soeOPTIONAL},
+            {sfTradingFee, soeOPTIONAL},
+        },
+        commonFields);
+
+    add(jss::AMMWithdraw,
+        ttAMM_WITHDRAW,
+        {
+            {sfAsset, soeREQUIRED},
+            {sfAsset2, soeREQUIRED},
+            {sfAmount, soeOPTIONAL},
+            {sfAmount2, soeOPTIONAL},
+            {sfEPrice, soeOPTIONAL},
+            {sfLPTokenIn, soeOPTIONAL},
+            {sfTicketSequence, soeOPTIONAL},
+        },
+        commonFields);
+
+    add(jss::AMMVote,
+        ttAMM_VOTE,
+        {
+            {sfAsset, soeREQUIRED},
+            {sfAsset2, soeREQUIRED},
+            {sfTradingFee, soeREQUIRED},
+            {sfTicketSequence, soeOPTIONAL},
+        },
+        commonFields);
+
+    add(jss::AMMBid,
+        ttAMM_BID,
+        {
+            {sfAsset, soeREQUIRED},
+            {sfAsset2, soeREQUIRED},
+            {sfBidMin, soeOPTIONAL},
+            {sfBidMax, soeOPTIONAL},
+            {sfAuthAccounts, soeOPTIONAL},
+            {sfTicketSequence, soeOPTIONAL},
+        },
+        commonFields);
+
+    add(jss::AMMDelete,
+        ttAMM_DELETE,
+        {
+            {sfAsset, soeREQUIRED},
+            {sfAsset2, soeREQUIRED},
             {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
@@ -155,10 +224,15 @@ TxFormats::TxFormats()
         ttFEE,
         {
             {sfLedgerSequence, soeOPTIONAL},
-            {sfBaseFee, soeREQUIRED},
-            {sfReferenceFeeUnits, soeREQUIRED},
-            {sfReserveBase, soeREQUIRED},
-            {sfReserveIncrement, soeREQUIRED},
+            // Old version uses raw numbers
+            {sfBaseFee, soeOPTIONAL},
+            {sfReferenceFeeUnits, soeOPTIONAL},
+            {sfReserveBase, soeOPTIONAL},
+            {sfReserveIncrement, soeOPTIONAL},
+            // New version uses Amounts
+            {sfBaseFeeDrops, soeOPTIONAL},
+            {sfReserveBaseDrops, soeOPTIONAL},
+            {sfReserveIncrementDrops, soeOPTIONAL},
         },
         commonFields);
 
@@ -319,6 +393,14 @@ TxFormats::TxFormats()
             {sfNFTokenBuyOffer, soeOPTIONAL},
             {sfNFTokenSellOffer, soeOPTIONAL},
             {sfNFTokenBrokerFee, soeOPTIONAL},
+            {sfTicketSequence, soeOPTIONAL},
+        },
+        commonFields);
+
+    add(jss::Clawback,
+        ttCLAWBACK,
+        {
+            {sfAmount, soeREQUIRED},
             {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);

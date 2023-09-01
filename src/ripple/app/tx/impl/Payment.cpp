@@ -270,27 +270,17 @@ Payment::preclaim(PreclaimContext const& ctx)
         return tecDST_TAG_NEEDED;
     }
 
-    if (paths || sendMax || !saDstAmount.native())
+    // Payment with at least one intermediate step and uses transitive balances.
+    if ((paths || sendMax || !saDstAmount.native()) && ctx.view.open())
     {
-        // Ripple payment with at least one intermediate step and uses
-        // transitive balances.
+        STPathSet const& paths = ctx.tx.getFieldPathSet(sfPaths);
 
-        // Copy paths into an editable class.
-        STPathSet const spsPaths = ctx.tx.getFieldPathSet(sfPaths);
-
-        auto pathTooBig = spsPaths.size() > MaxPathSize;
-
-        if (!pathTooBig)
-            for (auto const& path : spsPaths)
-                if (path.size() > MaxPathLength)
-                {
-                    pathTooBig = true;
-                    break;
-                }
-
-        if (ctx.view.open() && pathTooBig)
+        if (paths.size() > MaxPathSize ||
+            std::any_of(paths.begin(), paths.end(), [](STPath const& path) {
+                return path.size() > MaxPathLength;
+            }))
         {
-            return telBAD_PATH_COUNT;  // Too many paths for proposed ledger.
+            return telBAD_PATH_COUNT;
         }
     }
 
@@ -384,9 +374,6 @@ Payment::doApply()
             }
         }
 
-        // Copy paths into an editable class.
-        STPathSet spsPaths = ctx_.tx.getFieldPathSet(sfPaths);
-
         path::RippleCalc::Input rcInput;
         rcInput.partialPaymentAllowed = partialPaymentAllowed;
         rcInput.defaultPathsAllowed = defaultPathsAllowed;
@@ -404,7 +391,7 @@ Payment::doApply()
                 saDstAmount,
                 uDstAccountID,
                 account_,
-                spsPaths,
+                ctx_.tx.getFieldPathSet(sfPaths),
                 ctx_.app.logs(),
                 &rcInput);
             // VFALCO NOTE We might not need to apply, depending
@@ -465,6 +452,11 @@ Payment::doApply()
 
         return tecUNFUNDED_PAYMENT;
     }
+
+    // AMMs can never receive an XRP payment.
+    // Must use AMMDeposit transaction instead.
+    if (sleDst->isFieldPresent(sfAMMID))
+        return tecNO_PERMISSION;
 
     // The source account does have enough money.  Make sure the
     // source account has authority to deposit to the destination.

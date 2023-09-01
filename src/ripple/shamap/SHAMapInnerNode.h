@@ -28,6 +28,7 @@
 #include <ripple/shamap/impl/TaggedPointer.h>
 
 #include <atomic>
+#include <bit>
 #include <bitset>
 #include <cstdint>
 #include <limits>
@@ -147,7 +148,7 @@ public:
     getChildHash(int m) const;
 
     void
-    setChild(int m, std::shared_ptr<SHAMapTreeNode> const& child);
+    setChild(int m, std::shared_ptr<SHAMapTreeNode> child);
 
     void
     shareChild(int m, std::shared_ptr<SHAMapTreeNode> const& child);
@@ -195,9 +196,21 @@ public:
 };
 
 inline bool
+SHAMapInnerNode::isEmpty() const
+{
+    return isBranch_ == 0;
+}
+
+inline bool
 SHAMapInnerNode::isEmptyBranch(int m) const
 {
     return (isBranch_ & (1 << m)) == 0;
+}
+
+inline int
+SHAMapInnerNode::getBranchCount() const
+{
+    return popcnt16(isBranch_);
 }
 
 inline bool

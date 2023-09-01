@@ -61,6 +61,26 @@ enum class SizedItem : std::size_t {
     accountIdCacheSize,
 };
 
+/** Fee schedule for startup / standalone, and to vote for.
+During voting ledgers, the FeeVote logic will try to move towards
+these values when injecting fee-setting transactions.
+A default-constructed Setup contains recommended values.
+*/
+struct FeeSetup
+{
+    /** The cost of a reference transaction in drops. */
+    XRPAmount reference_fee{10};
+
+    /** The account reserve requirement in drops. */
+    XRPAmount account_reserve{10 * DROPS_PER_XRP};
+
+    /** The per-owned item reserve requirement in drops. */
+    XRPAmount owner_reserve{2 * DROPS_PER_XRP};
+
+    /* (Remember to update the example cfg files when changing any of these
+     * values.) */
+};
+
 //  This entire derived class is deprecated.
 //  For new config information use the style implied
 //  in the base class. For existing config information
@@ -138,9 +158,11 @@ public:
     std::string START_LEDGER;
 
     // Network parameters
+    uint32_t NETWORK_ID = 0;
 
-    // The number of fee units a reference transaction costs
-    static constexpr FeeUnit32 TRANSACTION_FEE_BASE{10};
+    // DEPRECATED - Fee units for a reference transction.
+    // Only provided for backwards compatibility in a couple of places
+    static constexpr std::uint32_t FEE_UNITS_DEPRECATED = 10;
 
     // Note: The following parameters do not relate to the UNL or trust at all
     // Minimum number of nodes to consider the network present
@@ -184,9 +206,7 @@ public:
     std::optional<std::size_t>
         VALIDATION_QUORUM;  // validations to consider ledger authoritative
 
-    XRPAmount FEE_DEFAULT{10};
-    XRPAmount FEE_ACCOUNT_RESERVE{200 * DROPS_PER_XRP};
-    XRPAmount FEE_OWNER_RESERVE{50 * DROPS_PER_XRP};
+    FeeSetup FEES;
 
     // Node storage configuration
     std::uint32_t LEDGER_HISTORY = 256;
@@ -364,6 +384,9 @@ public:
     getValueFor(SizedItem item, std::optional<std::size_t> node = std::nullopt)
         const;
 };
+
+FeeSetup
+setup_FeeVote(Section const& section);
 
 }  // namespace ripple
 

@@ -42,42 +42,6 @@ class Offer_test : public beast::unit_test::suite
     }
 
     static auto
-    xrpMinusFee(jtx::Env const& env, std::int64_t xrpAmount)
-        -> jtx::PrettyAmount
-    {
-        using namespace jtx;
-        auto feeDrops = env.current()->fees().base;
-        return drops(dropsPerXRP * xrpAmount - feeDrops);
-    }
-
-    static auto
-    ledgerEntryState(
-        jtx::Env& env,
-        jtx::Account const& acct_a,
-        jtx::Account const& acct_b,
-        std::string const& currency)
-    {
-        Json::Value jvParams;
-        jvParams[jss::ledger_index] = "current";
-        jvParams[jss::ripple_state][jss::currency] = currency;
-        jvParams[jss::ripple_state][jss::accounts] = Json::arrayValue;
-        jvParams[jss::ripple_state][jss::accounts].append(acct_a.human());
-        jvParams[jss::ripple_state][jss::accounts].append(acct_b.human());
-        return env.rpc(
-            "json", "ledger_entry", to_string(jvParams))[jss::result];
-    }
-
-    static auto
-    ledgerEntryRoot(jtx::Env& env, jtx::Account const& acct)
-    {
-        Json::Value jvParams;
-        jvParams[jss::ledger_index] = "current";
-        jvParams[jss::account_root] = acct.human();
-        return env.rpc(
-            "json", "ledger_entry", to_string(jvParams))[jss::result];
-    }
-
-    static auto
     ledgerEntryOffer(
         jtx::Env& env,
         jtx::Account const& acct,
@@ -2079,7 +2043,8 @@ public:
         BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "100");
         jrr = ledgerEntryRoot(env, alice);
         BEAST_EXPECT(
-            jrr[jss::node][sfBalance.fieldName] == XRP(350).value().getText());
+            jrr[jss::node][sfBalance.fieldName] ==
+            STAmount(env.current()->fees().accountReserve(3)).getText());
 
         jrr = ledgerEntryState(env, bob, gw1, "USD");
         BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "-400");
@@ -2092,37 +2057,52 @@ public:
 
         using namespace jtx;
 
-        Env env{*this, features};
+        for (auto NumberSwitchOver : {false, true})
+        {
+            Env env{*this, features};
+            if (NumberSwitchOver)
+                env.enableFeature(fixUniversalNumber);
+            else
+                env.disableFeature(fixUniversalNumber);
 
-        auto const gw = Account{"gateway"};
-        auto const alice = Account{"alice"};
-        auto const bob = Account{"bob"};
-        auto const USD = gw["USD"];
+            auto const gw = Account{"gateway"};
+            auto const alice = Account{"alice"};
+            auto const bob = Account{"bob"};
+            auto const USD = gw["USD"];
 
-        env.fund(XRP(10000), gw, alice, bob);
+            env.fund(XRP(10000), gw, alice, bob);
 
-        env(rate(gw, 1.005));
+            env(rate(gw, 1.005));
 
-        env(trust(alice, USD(1000)));
-        env(trust(bob, USD(1000)));
-        env(trust(gw, alice["USD"](50)));
+            env(trust(alice, USD(1000)));
+            env(trust(bob, USD(1000)));
+            env(trust(gw, alice["USD"](50)));
 
-        env(pay(gw, bob, bob["USD"](1)));
-        env(pay(alice, gw, USD(50)));
+            env(pay(gw, bob, bob["USD"](1)));
+            env(pay(alice, gw, USD(50)));
 
-        env(trust(gw, alice["USD"](0)));
+            env(trust(gw, alice["USD"](0)));
 
-        env(offer(alice, USD(50), XRP(150000)));
-        env(offer(bob, XRP(100), USD(0.1)));
+            env(offer(alice, USD(50), XRP(150000)));
+            env(offer(bob, XRP(100), USD(0.1)));
 
-        auto jrr = ledgerEntryState(env, alice, gw, "USD");
-        BEAST_EXPECT(
-            jrr[jss::node][sfBalance.fieldName][jss::value] ==
-            "49.96666666666667");
-        jrr = ledgerEntryState(env, bob, gw, "USD");
-        BEAST_EXPECT(
-            jrr[jss::node][sfBalance.fieldName][jss::value] ==
-            "-0.966500000033334");
+            auto jrr = ledgerEntryState(env, alice, gw, "USD");
+            BEAST_EXPECT(
+                jrr[jss::node][sfBalance.fieldName][jss::value] ==
+                "49.96666666666667");
+
+            jrr = ledgerEntryState(env, bob, gw, "USD");
+            Json::Value const bobsUSD =
+                jrr[jss::node][sfBalance.fieldName][jss::value];
+            if (!NumberSwitchOver)
+            {
+                BEAST_EXPECT(bobsUSD == "-0.966500000033334");
+            }
+            else
+            {
+                BEAST_EXPECT(bobsUSD == "-0.9665000000333333");
+            }
+        }
     }
 
     void
@@ -2160,7 +2140,8 @@ public:
         BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "-100");
         jrr = ledgerEntryRoot(env, alice);
         BEAST_EXPECT(
-            jrr[jss::node][sfBalance.fieldName] == XRP(250).value().getText());
+            jrr[jss::node][sfBalance.fieldName] ==
+            STAmount(env.current()->fees().accountReserve(1)).getText());
 
         jrr = ledgerEntryState(env, bob, gw, "USD");
         BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "-400");
@@ -2203,7 +2184,8 @@ public:
         BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "-200");
         jrr = ledgerEntryRoot(env, alice);
         BEAST_EXPECT(
-            jrr[jss::node][sfBalance.fieldName] == XRP(250).value().getText());
+            jrr[jss::node][sfBalance.fieldName] ==
+            STAmount(env.current()->fees().accountReserve(1)).getText());
 
         jrr = ledgerEntryState(env, bob, gw, "USD");
         BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "-300");
@@ -2700,7 +2682,7 @@ public:
         env.close();
 
         // The scenario:
-        //   o alice has USD but wants XPR.
+        //   o alice has USD but wants XRP.
         //   o bob has XRP but wants EUR.
         //   o carol has EUR but wants USD.
         // Note that carol's offer must come last.  If carol's offer is placed
@@ -3299,7 +3281,7 @@ public:
             env.fund(XRP(2) + reserve(env, 3) + (fee * 3), ova, pat, qae);
             env.close();
 
-            //   o ova has USD but wants XPR.
+            //   o ova has USD but wants XRP.
             //   o pat has XRP but wants EUR.
             //   o qae has EUR but wants USD.
             env(trust(ova, USD(200)));

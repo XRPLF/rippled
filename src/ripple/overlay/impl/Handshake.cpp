@@ -25,7 +25,9 @@
 #include <ripple/beast/rfc2616.h>
 #include <ripple/overlay/impl/Handshake.h>
 #include <ripple/protocol/digest.h>
+
 #include <boost/regex.hpp>
+
 #include <algorithm>
 #include <chrono>
 
@@ -44,7 +46,7 @@ getFeatureValue(
         return {};
     boost::smatch match;
     boost::regex rx(feature + "=([^;\\s]+)");
-    auto const value = header->value().to_string();
+    std::string const value = header->value();
     if (boost::regex_search(value, match, rx))
         return {match[1]};
     return {};
@@ -233,7 +235,7 @@ verifyHandshake(
 {
     if (auto const iter = headers.find("Server-Domain"); iter != headers.end())
     {
-        if (!isProperlyFormedTomlDomain(iter->value().to_string()))
+        if (!isProperlyFormedTomlDomain(iter->value()))
             throw std::runtime_error("Invalid server domain");
     }
 
@@ -241,7 +243,7 @@ verifyHandshake(
     {
         std::uint32_t nid;
 
-        if (!beast::lexicalCastChecked(nid, iter->value().to_string()))
+        if (!beast::lexicalCastChecked(nid, std::string(iter->value())))
             throw std::runtime_error("Invalid peer network identifier");
 
         if (networkID && nid != *networkID)
@@ -251,7 +253,7 @@ verifyHandshake(
     if (auto const iter = headers.find("Network-Time"); iter != headers.end())
     {
         auto const netTime =
-            [str = iter->value().to_string()]() -> TimeKeeper::time_point {
+            [str = std::string(iter->value())]() -> TimeKeeper::time_point {
             TimeKeeper::duration::rep val;
 
             if (beast::lexicalCastChecked(val, str))
@@ -286,8 +288,8 @@ verifyHandshake(
     PublicKey const publicKey = [&headers] {
         if (auto const iter = headers.find("Public-Key"); iter != headers.end())
         {
-            auto pk = parseBase58<PublicKey>(
-                TokenType::NodePublic, iter->value().to_string());
+            auto pk =
+                parseBase58<PublicKey>(TokenType::NodePublic, iter->value());
 
             if (pk)
             {
@@ -301,36 +303,6 @@ verifyHandshake(
         throw std::runtime_error("Bad node public key");
     }();
 
-    if (publicKey == app.nodeIdentity().first)
-    {
-        auto const peerInstanceID = [&headers]() {
-            std::uint64_t iid = 0;
-
-            if (auto const iter = headers.find("Instance-Cookie");
-                iter != headers.end())
-            {
-                if (!beast::lexicalCastChecked(iid, iter->value().to_string()))
-                    throw std::runtime_error("Invalid instance cookie");
-
-                if (iid == 0)
-                    throw std::runtime_error("Invalid instance cookie");
-            }
-
-            return iid;
-        }();
-
-        // Attempt to differentiate self-connections as opposed to accidental
-        // node identity reuse caused by accidental misconfiguration. When we
-        // detect this, we stop the process and log an error message.
-        if (peerInstanceID != app.instanceID())
-        {
-            app.signalStop("Remote server is using our node identity");
-            throw std::runtime_error("Node identity reuse detected");
-        }
-
-        throw std::runtime_error("Self connection");
-    }
-
     // This check gets two birds with one stone:
     //
     // 1) it verifies that the node we are talking to has access to the
@@ -343,17 +315,20 @@ verifyHandshake(
         if (iter == headers.end())
             throw std::runtime_error("No session signature specified");
 
-        auto sig = base64_decode(iter->value().to_string());
+        auto sig = base64_decode(iter->value());
 
         if (!verifyDigest(publicKey, sharedValue, makeSlice(sig), false))
             throw std::runtime_error("Failed to verify session");
     }
 
+    if (publicKey == app.nodeIdentity().first)
+        throw std::runtime_error("Self connection");
+
     if (auto const iter = headers.find("Local-IP"); iter != headers.end())
     {
         boost::system::error_code ec;
-        auto const local_ip = boost::asio::ip::address::from_string(
-            iter->value().to_string(), ec);
+        auto const local_ip =
+            boost::asio::ip::address::from_string(iter->value(), ec);
 
         if (ec)
             throw std::runtime_error("Invalid Local-IP");
@@ -367,8 +342,8 @@ verifyHandshake(
     if (auto const iter = headers.find("Remote-IP"); iter != headers.end())
     {
         boost::system::error_code ec;
-        auto const remote_ip = boost::asio::ip::address::from_string(
-            iter->value().to_string(), ec);
+        auto const remote_ip =
+            boost::asio::ip::address::from_string(iter->value(), ec);
 
         if (ec)
             throw std::runtime_error("Invalid Remote-IP");

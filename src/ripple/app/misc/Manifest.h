@@ -138,12 +138,14 @@ to_string(Manifest const& m);
 */
 /** @{ */
 std::optional<Manifest>
-deserializeManifest(Slice s);
+deserializeManifest(Slice s, beast::Journal journal);
 
 inline std::optional<Manifest>
-deserializeManifest(std::string const& s)
+deserializeManifest(
+    std::string const& s,
+    beast::Journal journal = beast::Journal(beast::Journal::getNullSink()))
 {
-    return deserializeManifest(makeSlice(s));
+    return deserializeManifest(makeSlice(s), journal);
 }
 
 template <
@@ -151,9 +153,11 @@ template <
     class = std::enable_if_t<
         std::is_same<T, char>::value || std::is_same<T, unsigned char>::value>>
 std::optional<Manifest>
-deserializeManifest(std::vector<T> const& v)
+deserializeManifest(
+    std::vector<T> const& v,
+    beast::Journal journal = beast::Journal(beast::Journal::getNullSink()))
 {
-    return deserializeManifest(makeSlice(v));
+    return deserializeManifest(makeSlice(v), journal);
 }
 /** @} */
 
@@ -180,7 +184,9 @@ struct ValidatorToken
 };
 
 std::optional<ValidatorToken>
-loadValidatorToken(std::vector<std::string> const& blob);
+loadValidatorToken(
+    std::vector<std::string> const& blob,
+    beast::Journal journal = beast::Journal(beast::Journal::getNullSink()));
 
 enum class ManifestDisposition {
     /// Manifest is valid

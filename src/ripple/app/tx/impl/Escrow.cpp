@@ -157,6 +157,18 @@ EscrowCreate::preflight(PreflightContext const& ctx)
 }
 
 TER
+EscrowCreate::preclaim(PreclaimContext const& ctx)
+{
+    auto const sled = ctx.view.read(keylet::account(ctx.tx[sfDestination]));
+    if (!sled)
+        return tecNO_DST;
+    if (sled->isFieldPresent(sfAMMID))
+        return tecNO_PERMISSION;
+
+    return tesSUCCESS;
+}
+
+TER
 EscrowCreate::doApply()
 {
     auto const closeTime = ctx_.view().info().parentCloseTime;
@@ -338,15 +350,14 @@ EscrowFinish::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-FeeUnit64
+XRPAmount
 EscrowFinish::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
-    FeeUnit64 extraFee{0};
+    XRPAmount extraFee{0};
 
     if (auto const fb = tx[~sfFulfillment])
     {
-        extraFee +=
-            safe_cast<FeeUnit64>(view.fees().units) * (32 + (fb->size() / 16));
+        extraFee += view.fees().base * (32 + (fb->size() / 16));
     }
 
     return Transactor::calculateBaseFee(view, tx) + extraFee;

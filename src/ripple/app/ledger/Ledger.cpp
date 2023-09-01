@@ -119,9 +119,8 @@ public:
     sles_type::value_type
     dereference() const override
     {
-        auto const item = *iter_;
-        SerialIter sit(item.slice());
-        return std::make_shared<SLE const>(sit, item.key());
+        SerialIter sit(iter_->slice());
+        return std::make_shared<SLE const>(sit, iter_->key());
     }
 };
 
@@ -168,7 +167,7 @@ public:
     txs_type::value_type
     dereference() const override
     {
-        auto const item = *iter_;
+        auto const& item = *iter_;
         if (metadata_)
             return deserializeTxPlusMeta(item);
         return {deserializeTx(item), nullptr};
@@ -183,9 +182,10 @@ Ledger::Ledger(
     std::vector<uint256> const& amendments,
     Family& family)
     : mImmutable(false)
-    , txMap_(std::make_shared<SHAMap>(SHAMapType::TRANSACTION, family))
-    , stateMap_(std::make_shared<SHAMap>(SHAMapType::STATE, family))
+    , txMap_(SHAMapType::TRANSACTION, family)
+    , stateMap_(SHAMapType::STATE, family)
     , rules_{config.features}
+    , j_(beast::Journal(beast::Journal::getNullSink()))
 {
     info_.seq = 1;
     info_.drops = INITIAL_XRP;
@@ -209,8 +209,34 @@ Ledger::Ledger(
         rawInsert(sle);
     }
 
-    stateMap_->flushDirty(hotACCOUNT_NODE);
-    setImmutable(config);
+    {
+        auto sle = std::make_shared<SLE>(keylet::fees());
+        // Whether featureXRPFees is supported will depend on startup options.
+        if (std::find(amendments.begin(), amendments.end(), featureXRPFees) !=
+            amendments.end())
+        {
+            sle->at(sfBaseFeeDrops) = config.FEES.reference_fee;
+            sle->at(sfReserveBaseDrops) = config.FEES.account_reserve;
+            sle->at(sfReserveIncrementDrops) = config.FEES.owner_reserve;
+        }
+        else
+        {
+            if (auto const f =
+                    config.FEES.reference_fee.dropsAs<std::uint64_t>())
+                sle->at(sfBaseFee) = *f;
+            if (auto const f =
+                    config.FEES.account_reserve.dropsAs<std::uint32_t>())
+                sle->at(sfReserveBase) = *f;
+            if (auto const f =
+                    config.FEES.owner_reserve.dropsAs<std::uint32_t>())
+                sle->at(sfReserveIncrement) = *f;
+            sle->at(sfReferenceFeeUnits) = Config::FEE_UNITS_DEPRECATED;
+        }
+        rawInsert(sle);
+    }
+
+    stateMap_.flushDirty(hotACCOUNT_NODE);
+    setImmutable();
 }
 
 Ledger::Ledger(
@@ -221,19 +247,16 @@ Ledger::Ledger(
     Family& family,
     beast::Journal j)
     : mImmutable(true)
-    , txMap_(std::make_shared<SHAMap>(
-          SHAMapType::TRANSACTION,
-          info.txHash,
-          family))
-    , stateMap_(
-          std::make_shared<SHAMap>(SHAMapType::STATE, info.accountHash, family))
+    , txMap_(SHAMapType::TRANSACTION, info.txHash, family)
+    , stateMap_(SHAMapType::STATE, info.accountHash, family)
     , rules_(config.features)
     , info_(info)
+    , j_(j)
 {
     loaded = true;
 
     if (info_.txHash.isNonZero() &&
-        !txMap_->fetchRoot(SHAMapHash{info_.txHash}, nullptr))
+        !txMap_.fetchRoot(SHAMapHash{info_.txHash}, nullptr))
     {
         if (config.reporting())
         {
@@ -245,7 +268,7 @@ Ledger::Ledger(
     }
 
     if (info_.accountHash.isNonZero() &&
-        !stateMap_->fetchRoot(SHAMapHash{info_.accountHash}, nullptr))
+        !stateMap_.fetchRoot(SHAMapHash{info_.accountHash}, nullptr))
     {
         if (config.reporting())
         {
@@ -256,29 +279,29 @@ Ledger::Ledger(
         JLOG(j.warn()) << "Don't have state data root for ledger" << info_.seq;
     }
 
-    txMap_->setImmutable();
-    stateMap_->setImmutable();
+    txMap_.setImmutable();
+    stateMap_.setImmutable();
 
-    if (!setup(config))
+    defaultFees(config);
+    if (!setup())
         loaded = false;
 
     if (!loaded)
     {
         info_.hash = calculateLedgerHash(info_);
         if (acquire && !config.reporting())
-            family.missingNode(info_.hash, info_.seq);
+            family.missingNodeAcquireByHash(info_.hash, info_.seq);
     }
 }
 
 // Create a new ledger that follows this one
 Ledger::Ledger(Ledger const& prevLedger, NetClock::time_point closeTime)
     : mImmutable(false)
-    , txMap_(std::make_shared<SHAMap>(
-          SHAMapType::TRANSACTION,
-          prevLedger.stateMap_->family()))
-    , stateMap_(prevLedger.stateMap_->snapShot(true))
+    , txMap_(SHAMapType::TRANSACTION, prevLedger.txMap_.family())
+    , stateMap_(prevLedger.stateMap_, true)
     , fees_(prevLedger.fees_)
     , rules_(prevLedger.rules_)
+    , j_(beast::Journal(beast::Journal::getNullSink()))
 {
     info_.seq = prevLedger.info_.seq + 1;
     info_.parentCloseTime = prevLedger.info_.closeTime;
@@ -304,14 +327,11 @@ Ledger::Ledger(Ledger const& prevLedger, NetClock::time_point closeTime)
 
 Ledger::Ledger(LedgerInfo const& info, Config const& config, Family& family)
     : mImmutable(true)
-    , txMap_(std::make_shared<SHAMap>(
-          SHAMapType::TRANSACTION,
-          info.txHash,
-          family))
-    , stateMap_(
-          std::make_shared<SHAMap>(SHAMapType::STATE, info.accountHash, family))
+    , txMap_(SHAMapType::TRANSACTION, info.txHash, family)
+    , stateMap_(SHAMapType::STATE, info.accountHash, family)
     , rules_{config.features}
     , info_(info)
+    , j_(beast::Journal(beast::Journal::getNullSink()))
 {
     info_.hash = calculateLedgerHash(info_);
 }
@@ -322,42 +342,43 @@ Ledger::Ledger(
     Config const& config,
     Family& family)
     : mImmutable(false)
-    , txMap_(std::make_shared<SHAMap>(SHAMapType::TRANSACTION, family))
-    , stateMap_(std::make_shared<SHAMap>(SHAMapType::STATE, family))
+    , txMap_(SHAMapType::TRANSACTION, family)
+    , stateMap_(SHAMapType::STATE, family)
     , rules_{config.features}
+    , j_(beast::Journal(beast::Journal::getNullSink()))
 {
     info_.seq = ledgerSeq;
     info_.closeTime = closeTime;
     info_.closeTimeResolution = ledgerDefaultTimeResolution;
-    setup(config);
+    defaultFees(config);
+    setup();
 }
 
 void
-Ledger::setImmutable(Config const& config, bool rehash)
+Ledger::setImmutable(bool rehash)
 {
     // Force update, since this is the only
     // place the hash transitions to valid
     if (!mImmutable && rehash)
     {
-        info_.txHash = txMap_->getHash().as_uint256();
-        info_.accountHash = stateMap_->getHash().as_uint256();
+        info_.txHash = txMap_.getHash().as_uint256();
+        info_.accountHash = stateMap_.getHash().as_uint256();
     }
 
     if (rehash)
         info_.hash = calculateLedgerHash(info_);
 
     mImmutable = true;
-    txMap_->setImmutable();
-    stateMap_->setImmutable();
-    setup(config);
+    txMap_.setImmutable();
+    stateMap_.setImmutable();
+    setup();
 }
 
 void
 Ledger::setAccepted(
     NetClock::time_point closeTime,
     NetClock::duration closeResolution,
-    bool correctCloseTime,
-    Config const& config)
+    bool correctCloseTime)
 {
     // Used when we witnessed the consensus.
     assert(!open());
@@ -365,15 +386,15 @@ Ledger::setAccepted(
     info_.closeTime = closeTime;
     info_.closeTimeResolution = closeResolution;
     info_.closeFlags = correctCloseTime ? 0 : sLCF_NoConsensusTime;
-    setImmutable(config);
+    setImmutable();
 }
 
 bool
 Ledger::addSLE(SLE const& sle)
 {
     auto const s = sle.getSerializer();
-    SHAMapItem item(sle.key(), s.slice());
-    return stateMap_->addItem(SHAMapNodeType::tnACCOUNT_STATE, std::move(item));
+    return stateMap_.addItem(
+        SHAMapNodeType::tnACCOUNT_STATE, make_shamapitem(sle.key(), s.slice()));
 }
 
 //------------------------------------------------------------------------------
@@ -408,20 +429,20 @@ bool
 Ledger::exists(Keylet const& k) const
 {
     // VFALCO NOTE Perhaps check the type for debug builds?
-    return stateMap_->hasItem(k.key);
+    return stateMap_.hasItem(k.key);
 }
 
 bool
 Ledger::exists(uint256 const& key) const
 {
-    return stateMap_->hasItem(key);
+    return stateMap_.hasItem(key);
 }
 
 std::optional<uint256>
 Ledger::succ(uint256 const& key, std::optional<uint256> const& last) const
 {
-    auto item = stateMap_->upper_bound(key);
-    if (item == stateMap_->end())
+    auto item = stateMap_.upper_bound(key);
+    if (item == stateMap_.end())
         return std::nullopt;
     if (last && item->key() >= last)
         return std::nullopt;
@@ -436,7 +457,7 @@ Ledger::read(Keylet const& k) const
         assert(false);
         return nullptr;
     }
-    auto const& item = stateMap_->peekItem(k.key);
+    auto const& item = stateMap_.peekItem(k.key);
     if (!item)
         return nullptr;
     auto sle = std::make_shared<SLE>(SerialIter{item->slice()}, item->key());
@@ -450,45 +471,44 @@ Ledger::read(Keylet const& k) const
 auto
 Ledger::slesBegin() const -> std::unique_ptr<sles_type::iter_base>
 {
-    return std::make_unique<sles_iter_impl>(stateMap_->begin());
+    return std::make_unique<sles_iter_impl>(stateMap_.begin());
 }
 
 auto
 Ledger::slesEnd() const -> std::unique_ptr<sles_type::iter_base>
 {
-    return std::make_unique<sles_iter_impl>(stateMap_->end());
+    return std::make_unique<sles_iter_impl>(stateMap_.end());
 }
 
 auto
 Ledger::slesUpperBound(uint256 const& key) const
     -> std::unique_ptr<sles_type::iter_base>
 {
-    return std::make_unique<sles_iter_impl>(stateMap_->upper_bound(key));
+    return std::make_unique<sles_iter_impl>(stateMap_.upper_bound(key));
 }
 
 auto
 Ledger::txsBegin() const -> std::unique_ptr<txs_type::iter_base>
 {
-    return std::make_unique<txs_iter_impl>(!open(), txMap_->begin());
+    return std::make_unique<txs_iter_impl>(!open(), txMap_.begin());
 }
 
 auto
 Ledger::txsEnd() const -> std::unique_ptr<txs_type::iter_base>
 {
-    return std::make_unique<txs_iter_impl>(!open(), txMap_->end());
+    return std::make_unique<txs_iter_impl>(!open(), txMap_.end());
 }
 
 bool
 Ledger::txExists(uint256 const& key) const
 {
-    return txMap_->hasItem(key);
+    return txMap_.hasItem(key);
 }
 
 auto
 Ledger::txRead(key_type const& key) const -> tx_type
 {
-    assert(txMap_);
-    auto const& item = txMap_->peekItem(key);
+    auto const& item = txMap_.peekItem(key);
     if (!item)
         return {};
     if (!open())
@@ -505,7 +525,7 @@ Ledger::digest(key_type const& key) const -> std::optional<digest_type>
     SHAMapHash digest;
     // VFALCO Unfortunately this loads the item
     //        from the NodeStore needlessly.
-    if (!stateMap_->peekItem(key, digest))
+    if (!stateMap_.peekItem(key, digest))
         return std::nullopt;
     return digest.as_uint256();
 }
@@ -515,14 +535,14 @@ Ledger::digest(key_type const& key) const -> std::optional<digest_type>
 void
 Ledger::rawErase(std::shared_ptr<SLE> const& sle)
 {
-    if (!stateMap_->delItem(sle->key()))
+    if (!stateMap_.delItem(sle->key()))
         LogicError("Ledger::rawErase: key not found");
 }
 
 void
 Ledger::rawErase(uint256 const& key)
 {
-    if (!stateMap_->delItem(key))
+    if (!stateMap_.delItem(key))
         LogicError("Ledger::rawErase: key not found");
 }
 
@@ -531,9 +551,9 @@ Ledger::rawInsert(std::shared_ptr<SLE> const& sle)
 {
     Serializer ss;
     sle->add(ss);
-    if (!stateMap_->addGiveItem(
+    if (!stateMap_.addGiveItem(
             SHAMapNodeType::tnACCOUNT_STATE,
-            std::make_shared<SHAMapItem const>(sle->key(), ss.slice())))
+            make_shamapitem(sle->key(), ss.slice())))
         LogicError("Ledger::rawInsert: key already exists");
 }
 
@@ -542,9 +562,9 @@ Ledger::rawReplace(std::shared_ptr<SLE> const& sle)
 {
     Serializer ss;
     sle->add(ss);
-    if (!stateMap_->updateGiveItem(
+    if (!stateMap_.updateGiveItem(
             SHAMapNodeType::tnACCOUNT_STATE,
-            std::make_shared<SHAMapItem const>(sle->key(), ss.slice())))
+            make_shamapitem(sle->key(), ss.slice())))
         LogicError("Ledger::rawReplace: key not found");
 }
 
@@ -560,9 +580,8 @@ Ledger::rawTxInsert(
     Serializer s(txn->getDataLength() + metaData->getDataLength() + 16);
     s.addVL(txn->peekData());
     s.addVL(metaData->peekData());
-    if (!txMap().addGiveItem(
-            SHAMapNodeType::tnTRANSACTION_MD,
-            std::make_shared<SHAMapItem const>(key, s.slice())))
+    if (!txMap_.addGiveItem(
+            SHAMapNodeType::tnTRANSACTION_MD, make_shamapitem(key, s.slice())))
         LogicError("duplicate_tx: " + to_string(key));
 }
 
@@ -578,72 +597,109 @@ Ledger::rawTxInsertWithHash(
     Serializer s(txn->getDataLength() + metaData->getDataLength() + 16);
     s.addVL(txn->peekData());
     s.addVL(metaData->peekData());
-    auto item = std::make_shared<SHAMapItem const>(key, s.slice());
+    auto item = make_shamapitem(key, s.slice());
     auto hash = sha512Half(HashPrefix::txNode, item->slice(), item->key());
-    if (!txMap().addGiveItem(SHAMapNodeType::tnTRANSACTION_MD, std::move(item)))
+    if (!txMap_.addGiveItem(SHAMapNodeType::tnTRANSACTION_MD, std::move(item)))
         LogicError("duplicate_tx: " + to_string(key));
 
     return hash;
 }
 
 bool
-Ledger::setup(Config const& config)
+Ledger::setup()
 {
     bool ret = true;
 
-    fees_.base = config.FEE_DEFAULT;
-    fees_.units = config.TRANSACTION_FEE_BASE;
-    fees_.reserve = config.FEE_ACCOUNT_RESERVE;
-    fees_.increment = config.FEE_OWNER_RESERVE;
+    try
+    {
+        rules_ = makeRulesGivenLedger(*this, rules_);
+    }
+    catch (SHAMapMissingNode const&)
+    {
+        ret = false;
+    }
+    catch (std::exception const& ex)
+    {
+        JLOG(j_.error()) << "Exception in " << __func__ << ": " << ex.what();
+        Rethrow();
+    }
 
     try
     {
         if (auto const sle = read(keylet::fees()))
         {
-            // VFALCO NOTE Why getFieldIndex and not isFieldPresent?
-
-            if (sle->getFieldIndex(sfBaseFee) != -1)
-                fees_.base = sle->getFieldU64(sfBaseFee);
-
-            if (sle->getFieldIndex(sfReferenceFeeUnits) != -1)
-                fees_.units = sle->getFieldU32(sfReferenceFeeUnits);
-
-            if (sle->getFieldIndex(sfReserveBase) != -1)
-                fees_.reserve = sle->getFieldU32(sfReserveBase);
-
-            if (sle->getFieldIndex(sfReserveIncrement) != -1)
-                fees_.increment = sle->getFieldU32(sfReserveIncrement);
+            bool oldFees = false;
+            bool newFees = false;
+            {
+                auto const baseFee = sle->at(~sfBaseFee);
+                auto const reserveBase = sle->at(~sfReserveBase);
+                auto const reserveIncrement = sle->at(~sfReserveIncrement);
+                if (baseFee)
+                    fees_.base = *baseFee;
+                if (reserveBase)
+                    fees_.reserve = *reserveBase;
+                if (reserveIncrement)
+                    fees_.increment = *reserveIncrement;
+                oldFees = baseFee || reserveBase || reserveIncrement;
+            }
+            {
+                auto const baseFeeXRP = sle->at(~sfBaseFeeDrops);
+                auto const reserveBaseXRP = sle->at(~sfReserveBaseDrops);
+                auto const reserveIncrementXRP =
+                    sle->at(~sfReserveIncrementDrops);
+                auto assign = [&ret](
+                                  XRPAmount& dest,
+                                  std::optional<STAmount> const& src) {
+                    if (src)
+                    {
+                        if (src->native())
+                            dest = src->xrp();
+                        else
+                            ret = false;
+                    }
+                };
+                assign(fees_.base, baseFeeXRP);
+                assign(fees_.reserve, reserveBaseXRP);
+                assign(fees_.increment, reserveIncrementXRP);
+                newFees = baseFeeXRP || reserveBaseXRP || reserveIncrementXRP;
+            }
+            if (oldFees && newFees)
+                // Should be all of one or the other, but not both
+                ret = false;
+            if (!rules_.enabled(featureXRPFees) && newFees)
+                // Can't populate the new fees before the amendment is enabled
+                ret = false;
         }
     }
     catch (SHAMapMissingNode const&)
     {
         ret = false;
     }
-    catch (std::exception const&)
+    catch (std::exception const& ex)
     {
-        Rethrow();
-    }
-
-    try
-    {
-        rules_ = makeRulesGivenLedger(*this, config.features);
-    }
-    catch (SHAMapMissingNode const&)
-    {
-        ret = false;
-    }
-    catch (std::exception const&)
-    {
+        JLOG(j_.error()) << "Exception in " << __func__ << ": " << ex.what();
         Rethrow();
     }
 
     return ret;
 }
 
+void
+Ledger::defaultFees(Config const& config)
+{
+    assert(fees_.base == 0 && fees_.reserve == 0 && fees_.increment == 0);
+    if (fees_.base == 0)
+        fees_.base = config.FEES.reference_fee;
+    if (fees_.reserve == 0)
+        fees_.reserve = config.FEES.account_reserve;
+    if (fees_.increment == 0)
+        fees_.increment = config.FEES.owner_reserve;
+}
+
 std::shared_ptr<SLE>
 Ledger::peek(Keylet const& k) const
 {
-    auto const& value = stateMap_->peekItem(k.key);
+    auto const& value = stateMap_.peekItem(k.key);
     if (!value)
         return nullptr;
     auto sle = std::make_shared<SLE>(SerialIter{value->slice()}, value->key());
@@ -765,8 +821,8 @@ Ledger::walkLedger(beast::Journal j, bool parallel) const
     std::vector<SHAMapMissingNode> missingNodes1;
     std::vector<SHAMapMissingNode> missingNodes2;
 
-    if (stateMap_->getHash().isZero() && !info_.accountHash.isZero() &&
-        !stateMap_->fetchRoot(SHAMapHash{info_.accountHash}, nullptr))
+    if (stateMap_.getHash().isZero() && !info_.accountHash.isZero() &&
+        !stateMap_.fetchRoot(SHAMapHash{info_.accountHash}, nullptr))
     {
         missingNodes1.emplace_back(
             SHAMapType::STATE, SHAMapHash{info_.accountHash});
@@ -774,9 +830,9 @@ Ledger::walkLedger(beast::Journal j, bool parallel) const
     else
     {
         if (parallel)
-            return stateMap_->walkMapParallel(missingNodes1, 32);
+            return stateMap_.walkMapParallel(missingNodes1, 32);
         else
-            stateMap_->walkMap(missingNodes1, 32);
+            stateMap_.walkMap(missingNodes1, 32);
     }
 
     if (!missingNodes1.empty())
@@ -788,15 +844,15 @@ Ledger::walkLedger(beast::Journal j, bool parallel) const
         }
     }
 
-    if (txMap_->getHash().isZero() && info_.txHash.isNonZero() &&
-        !txMap_->fetchRoot(SHAMapHash{info_.txHash}, nullptr))
+    if (txMap_.getHash().isZero() && info_.txHash.isNonZero() &&
+        !txMap_.fetchRoot(SHAMapHash{info_.txHash}, nullptr))
     {
         missingNodes2.emplace_back(
             SHAMapType::TRANSACTION, SHAMapHash{info_.txHash});
     }
     else
     {
-        txMap_->walkMap(missingNodes2, 32);
+        txMap_.walkMap(missingNodes2, 32);
     }
 
     if (!missingNodes2.empty())
@@ -813,9 +869,9 @@ Ledger::walkLedger(beast::Journal j, bool parallel) const
 bool
 Ledger::assertSensible(beast::Journal ledgerJ) const
 {
-    if (info_.hash.isNonZero() && info_.accountHash.isNonZero() && stateMap_ &&
-        txMap_ && (info_.accountHash == stateMap_->getHash().as_uint256()) &&
-        (info_.txHash == txMap_->getHash().as_uint256()))
+    if (info_.hash.isNonZero() && info_.accountHash.isNonZero() &&
+        (info_.accountHash == stateMap_.getHash().as_uint256()) &&
+        (info_.txHash == txMap_.getHash().as_uint256()))
     {
         return true;
     }
@@ -977,15 +1033,14 @@ pendSaveValidated(
         return true;
     }
 
-    JobType const jobType{isCurrent ? jtPUBLEDGER : jtPUBOLDLEDGER};
-    char const* const jobName{
-        isCurrent ? "Ledger::pendSave" : "Ledger::pendOldSave"};
-
     // See if we can use the JobQueue.
     if (!isSynchronous &&
-        app.getJobQueue().addJob(jobType, jobName, [&app, ledger, isCurrent]() {
-            saveValidatedLedger(app, ledger, isCurrent);
-        }))
+        app.getJobQueue().addJob(
+            isCurrent ? jtPUBLEDGER : jtPUBOLDLEDGER,
+            std::to_string(ledger->seq()),
+            [&app, ledger, isCurrent]() {
+                saveValidatedLedger(app, ledger, isCurrent);
+            }))
     {
         return true;
     }
@@ -997,15 +1052,15 @@ pendSaveValidated(
 void
 Ledger::unshare() const
 {
-    stateMap_->unshare();
-    txMap_->unshare();
+    stateMap_.unshare();
+    txMap_.unshare();
 }
 
 void
 Ledger::invariants() const
 {
-    stateMap_->invariants();
-    txMap_->invariants();
+    stateMap_.invariants();
+    txMap_.invariants();
 }
 //------------------------------------------------------------------------------
 
@@ -1044,7 +1099,10 @@ finishLoadByIndexOrHash(
     if (!ledger)
         return;
 
-    ledger->setImmutable(config);
+    assert(
+        ledger->info().seq < XRP_LEDGER_EARLIEST_FEES ||
+        ledger->read(keylet::fees()));
+    ledger->setImmutable();
 
     JLOG(j.trace()) << "Loaded ledger: " << to_string(ledger->info().hash);
 

@@ -1710,6 +1710,15 @@ ValidatorList::calculateQuorum(
     std::size_t effectiveUnlSize,
     std::size_t seenSize)
 {
+    // Use quorum if specified via command line.
+    if (minimumQuorum_ > 0)
+    {
+        JLOG(j_.warn()) << "Using potentially unsafe quorum of "
+                        << *minimumQuorum_
+                        << " as specified on the command line";
+        return *minimumQuorum_;
+    }
+
     // Do not use achievable quorum until lists from all configured
     // publishers are available
     for (auto const& list : publisherLists_)
@@ -1752,21 +1761,8 @@ ValidatorList::calculateQuorum(
     // Note that the negative UNL protocol introduced the
     // AbsoluteMinimumQuorum which is 60% of the original UNL size. The
     // effective quorum should not be lower than it.
-    auto quorum = static_cast<std::size_t>(std::max(
+    return static_cast<std::size_t>(std::max(
         std::ceil(effectiveUnlSize * 0.8f), std::ceil(unlSize * 0.6f)));
-
-    // Use lower quorum specified via command line if the normal quorum
-    // appears unreachable based on the number of recently received
-    // validations.
-    if (minimumQuorum_ && *minimumQuorum_ < quorum && seenSize < quorum)
-    {
-        quorum = *minimumQuorum_;
-
-        JLOG(j_.warn()) << "Using unsafe quorum of " << quorum
-                        << " as specified in the command line";
-    }
-
-    return quorum;
 }
 
 TrustChanges
