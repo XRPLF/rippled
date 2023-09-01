@@ -42,7 +42,7 @@ public:
             Account const gw("gw");
             auto const USD = gw["USD"];
             auto const jv =
-                ammAlice.ammRpcInfo({}, {}, {{USD.issue(), USD.issue()}});
+                ammAlice.ammRpcInfo({}, {}, USD.issue(), USD.issue());
             BEAST_EXPECT(jv[jss::error_message] == "Account not found.");
         });
 
@@ -55,19 +55,35 @@ public:
 
         // Invalid parameters
         testAMM([&](AMM& ammAlice, Env&) {
-            auto const jv = ammAlice.ammRpcInfo(
-                std::nullopt,
-                std::nullopt,
-                {{xrpIssue(), USD.issue()}},
-                ammAlice.ammAccount());
-            BEAST_EXPECT(jv[jss::error_message] == "Invalid parameters.");
+            std::vector<std::tuple<
+                std::optional<Issue>,
+                std::optional<Issue>,
+                std::optional<AccountID>,
+                bool>>
+                vals = {
+                    {xrpIssue(), std::nullopt, std::nullopt, false},
+                    {std::nullopt, USD.issue(), std::nullopt, false},
+                    {xrpIssue(), std::nullopt, ammAlice.ammAccount(), false},
+                    {std::nullopt, USD.issue(), ammAlice.ammAccount(), false},
+                    {xrpIssue(), USD.issue(), ammAlice.ammAccount(), false},
+                    {std::nullopt, std::nullopt, std::nullopt, true}};
+            for (auto const& [iss1, iss2, acct, ignoreParams] : vals)
+            {
+                auto const jv = ammAlice.ammRpcInfo(
+                    std::nullopt, std::nullopt, iss1, iss2, acct, ignoreParams);
+                BEAST_EXPECT(jv[jss::error_message] == "Invalid parameters.");
+            }
         });
 
         // Invalid AMM account id
         testAMM([&](AMM& ammAlice, Env&) {
             Account bogie("bogie");
             auto const jv = ammAlice.ammRpcInfo(
-                std::nullopt, std::nullopt, std::nullopt, bogie.id());
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                bogie.id());
             BEAST_EXPECT(jv[jss::error_message] == "Account malformed.");
         });
     }
@@ -128,6 +144,7 @@ public:
                     carol.human(), bob.human(), ed.human(), bill.human()};
                 auto const ammInfo = i ? ammAlice.ammRpcInfo()
                                        : ammAlice.ammRpcInfo(
+                                             std::nullopt,
                                              std::nullopt,
                                              std::nullopt,
                                              std::nullopt,

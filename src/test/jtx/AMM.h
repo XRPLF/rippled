@@ -105,8 +105,10 @@ public:
     ammRpcInfo(
         std::optional<AccountID> const& account = std::nullopt,
         std::optional<std::string> const& ledgerIndex = std::nullopt,
-        std::optional<std::pair<Issue, Issue>> tokens = std::nullopt,
-        std::optional<AccountID> const& ammAccount = std::nullopt) const;
+        std::optional<Issue> issue1 = std::nullopt,
+        std::optional<Issue> issue2 = std::nullopt,
+        std::optional<AccountID> const& ammAccount = std::nullopt,
+        bool ignoreParams = false) const;
 
     /** Verify the AMM balances.
      */
