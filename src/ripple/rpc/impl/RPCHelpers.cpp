@@ -1166,26 +1166,5 @@ getLedgerByContext(RPC::JsonContext& context)
     return RPC::make_error(
         rpcNOT_READY, "findCreate failed to return an inbound ledger");
 }
-
-ripple::Expected<RPC::SubmitSync, Json::Value>
-getSubmitSyncMode(Json::Value const& params)
-{
-    using enum RPC::SubmitSync;
-    if (params.isMember(jss::sync_mode))
-    {
-        std::string const syncMode = params[jss::sync_mode].asString();
-        if (syncMode == "async")
-            return async;
-        else if (syncMode == "wait")
-            return wait;
-        else if (syncMode != "sync")
-            return Unexpected(RPC::make_error(
-                rpcINVALID_PARAMS,
-                "sync_mode parameter must be one of \"sync\", \"async\", or "
-                "\"wait\"."));
-    }
-    return sync;
-}
-
 }  // namespace RPC
 }  // namespace ripple

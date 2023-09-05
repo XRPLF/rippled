@@ -29,7 +29,6 @@
 
 #include <boost/lexical_cast.hpp>
 #include <optional>
-#include <thread>
 #include <utility>
 
 namespace ripple {
@@ -902,95 +901,6 @@ public:
     }
 
     void
-    testSyncSubmit()
-    {
-        using namespace jtx;
-        Env env(*this);
-
-        auto const alice = Account{"alice"};
-        auto const n = XRP(10000);
-        env.fund(n, alice);
-        BEAST_EXPECT(env.balance(alice) == n);
-
-        // submit only
-        auto applyBlobTxn = [&env](char const* syncMode, auto&&... txnArgs) {
-            auto jt = env.jt(txnArgs...);
-            Serializer s;
-            jt.stx->add(s);
-
-            Json::Value args{Json::objectValue};
-
-            args[jss::tx_blob] = strHex(s.slice());
-            args[jss::fail_hard] = true;
-            args[jss::sync_mode] = syncMode;
-
-            return env.rpc("json", "submit", args.toStyledString());
-        };
-
-        auto jr = applyBlobTxn("sync", noop(alice));
-        BEAST_EXPECT(jr[jss::result][jss::engine_result] == "tesSUCCESS");
-
-        jr = applyBlobTxn("async", noop(alice));
-        BEAST_EXPECT(jr[jss::result][jss::engine_result] == "terSUBMITTED");
-        // Make sure it gets processed before submitting and waiting.
-        env.app().getOPs().transactionBatch(true);
-
-        auto applier = [&env]() {
-            while (!env.app().getOPs().transactionBatch(false))
-                std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        };
-        auto t = std::thread(applier);
-
-        jr = applyBlobTxn("wait", noop(alice));
-        BEAST_EXPECT(jr[jss::result][jss::engine_result] == "tesSUCCESS");
-        t.join();
-
-        jr = applyBlobTxn("scott", noop(alice));
-        BEAST_EXPECT(jr[jss::result][jss::error] == "invalidParams");
-
-        // sign and submit
-        auto applyJsonTxn = [&env](
-                                char const* syncMode,
-                                std::string const secret,
-                                Json::Value const& val) {
-            Json::Value args{Json::objectValue};
-            args[jss::secret] = secret;
-            args[jss::tx_json] = val;
-            args[jss::fail_hard] = true;
-            args[jss::sync_mode] = syncMode;
-
-            return env.rpc("json", "submit", args.toStyledString());
-        };
-
-        Json::Value payment;
-        auto secret = toBase58(generateSeed("alice"));
-        payment = noop("alice");
-        payment[sfSequence.fieldName] = env.seq("alice");
-        payment[sfSetFlag.fieldName] = 0;
-        jr = applyJsonTxn("sync", secret, payment);
-        BEAST_EXPECT(jr[jss::result][jss::engine_result] == "tesSUCCESS");
-
-        payment[sfSequence.fieldName] = env.seq("alice");
-        jr = applyJsonTxn("async", secret, payment);
-        BEAST_EXPECT(jr[jss::result][jss::engine_result] == "terSUBMITTED");
-
-        env.app().getOPs().transactionBatch(true);
-        payment[sfSequence.fieldName] = env.seq("alice");
-
-        auto aSeq = env.seq("alice");
-        t = std::thread(applier);
-        jr = applyJsonTxn("wait", secret, payment);
-        BEAST_EXPECT(jr[jss::result][jss::engine_result] == "tesSUCCESS");
-        t.join();
-        // Ensure the last transaction was processed.
-        BEAST_EXPECT(env.seq("alice") == aSeq + 1);
-
-        payment[sfSequence.fieldName] = env.seq("alice");
-        jr = applyJsonTxn("scott", secret, payment);
-        BEAST_EXPECT(jr[jss::result][jss::error] == "invalidParams");
-    }
-
-    void
     run() override
     {
         testAccount();
@@ -1015,7 +925,6 @@ public:
         testSignAndSubmit();
         testFeatures();
         testExceptionalShutdown();
-        testSyncSubmit();
     }
 };
 

@@ -298,19 +298,19 @@ DeleteAccount::doApply()
         ownerDirKeylet,
         [&](LedgerEntryType nodeType,
             uint256 const& dirEntry,
-            std::shared_ptr<SLE>& sleItem) -> TER {
+            std::shared_ptr<SLE>& sleItem) -> std::pair<TER, SkipEntry> {
             if (auto deleter = nonObligationDeleter(nodeType))
             {
                 TER const result{
                     deleter(ctx_.app, view(), account_, dirEntry, sleItem, j_)};
 
-                return result;
+                return {result, SkipEntry::No};
             }
 
             assert(!"Undeletable entry should be found in preclaim.");
             JLOG(j_.error()) << "DeleteAccount undeletable item not "
                                 "found in preclaim.";
-            return tecHAS_OBLIGATIONS;
+            return {tecHAS_OBLIGATIONS, SkipEntry::No};
         },
         ctx_.journal);
     if (ter != tesSUCCESS)
