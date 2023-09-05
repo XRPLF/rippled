@@ -1321,16 +1321,12 @@ ValidatorList::verify(
     auto const signingKey = publisherManifests_.getSigningKey(masterPubKey);
     assert(revoked || signingKey);
 
-    if (revoked|| !signingKey || result == ManifestDisposition::invalid)
+    if (revoked || !signingKey || result == ManifestDisposition::invalid)
         return {ListDisposition::untrusted, masterPubKey};
 
     auto const sig = strUnHex(signature);
     auto const data = base64_decode(blob);
-    if (!sig ||
-        !ripple::verify(
-            *signingKey,
-            makeSlice(data),
-            makeSlice(*sig)))
+    if (!sig || !ripple::verify(*signingKey, makeSlice(data), makeSlice(*sig)))
         return {ListDisposition::invalid, masterPubKey};
 
     Json::Reader r;

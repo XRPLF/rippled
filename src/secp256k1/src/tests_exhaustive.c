@@ -21,14 +21,14 @@
 #define EXHAUSTIVE_TEST_LAMBDA 9   /* cube root of 1 mod 13 */
 #endif
 
-#include "secp256k1.h"
 #include "group.h"
 #include "secp256k1.c"
+#include "secp256k1.h"
 #include "testrand_impl.h"
 
 #ifdef ENABLE_MODULE_RECOVERY
-#include "src/modules/recovery/main_impl.h"
 #include "secp256k1_recovery.h"
+#include "src/modules/recovery/main_impl.h"
 #endif
 
 /** stolen from tests.c */

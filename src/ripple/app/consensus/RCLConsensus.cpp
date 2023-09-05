@@ -225,8 +225,7 @@ RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
 
     auto const& keys = *validatorKeys_.keys;
 
-    prop.set_nodepubkey(
-        keys.publicKey.data(), keys.publicKey.size());
+    prop.set_nodepubkey(keys.publicKey.data(), keys.publicKey.size());
     prop.set_ledgerseq(*proposal.ledgerSeq());
 
     auto sig =
