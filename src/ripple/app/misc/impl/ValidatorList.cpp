@@ -136,7 +136,7 @@ ValidatorList::ValidatorList(
 
 bool
 ValidatorList::load(
-    std::optional<PublicKey const> localSigningKey,
+    std::optional<PublicKey> const& localSigningKey,
     std::vector<std::string> const& configKeys,
     std::vector<std::string> const& publisherKeys)
 {
@@ -1318,16 +1318,17 @@ ValidatorList::verify(
         publisherLists_[masterPubKey].remaining.clear();
     }
 
-    assert(revoked || publisherManifests_.getSigningKey(masterPubKey));
+    auto const signingKey = publisherManifests_.getSigningKey(masterPubKey);
+    assert(revoked || signingKey);
 
-    if (revoked || result == ManifestDisposition::invalid)
+    if (revoked|| !signingKey || result == ManifestDisposition::invalid)
         return {ListDisposition::untrusted, masterPubKey};
 
     auto const sig = strUnHex(signature);
     auto const data = base64_decode(blob);
     if (!sig ||
         !ripple::verify(
-            *publisherManifests_.getSigningKey(masterPubKey),
+            *signingKey,
             makeSlice(data),
             makeSlice(*sig)))
         return {ListDisposition::invalid, masterPubKey};
@@ -1670,9 +1671,8 @@ ValidatorList::getJson() const
     validatorManifests_.for_each_manifest([&jSigningKeys,
                                            this](Manifest const& manifest) {
         auto it = keyListings_.find(manifest.masterKey);
-        if (it != keyListings_.end())
+        if (it != keyListings_.end() && manifest.signingKey)
         {
-            assert(manifest.revoked() || manifest.signingKey);
             jSigningKeys[toBase58(TokenType::NodePublic, manifest.masterKey)] =
                 toBase58(TokenType::NodePublic, *manifest.signingKey);
         }
