@@ -279,6 +279,7 @@ LedgerFormats::LedgerFormats()
             {sfLPTokenBalance, soeREQUIRED},
             {sfAsset, soeREQUIRED},
             {sfAsset2, soeREQUIRED},
+            {sfOwnerNode, soeREQUIRED},
         },
         commonFields);
 
