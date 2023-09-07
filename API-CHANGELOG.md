@@ -24,7 +24,7 @@ The `network_id` field was added in the `server_info` response in version 1.5.0 
 
 ## XRP Ledger version 1.12.0
 
-Version 1.12.0 is in development.
+[Version 1.12.0](https://github.com/XRPLF/rippled/releases/tag/1.12.0) was released on Sep 6, 2023.
 
 ### Additions in 1.12
 
