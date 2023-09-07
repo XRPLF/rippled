@@ -20,7 +20,6 @@
 #include <ripple/beast/unit_test.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/jss.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
 #include <test/jtx.h>
 
 #include <boost/container/flat_set.hpp>
@@ -667,12 +666,8 @@ public:
     void
     run() override
     {
-        for (auto testVersion = RPC::apiMinimumSupportedVersion;
-             testVersion <= RPC::apiBetaVersion;
-             ++testVersion)
-        {
-            testParameters(testVersion);
-        }
+        test::jtx::forAllApiVersions(
+            std::bind_front(&AccountTx_test::testParameters, this));
         testContents();
         testAccountDelete();
     }
