@@ -2431,7 +2431,7 @@ public:
             NetworkOPs::FailHard failType,
             Role role,
             std::chrono::seconds validatedLedgerAge,
-            Application & app,
+            Application& app,
             ProcessTransactionFn const& processTransaction);
 
         using TestStuff =
