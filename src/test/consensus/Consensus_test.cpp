@@ -44,35 +44,34 @@ public:
         // Use default parameters
         ConsensusParms const p{};
 
-        std::optional<std::chrono::milliseconds> delay;
         // Bizarre times forcibly close
         BEAST_EXPECT(shouldCloseLedger(
-            true, 10, 10, 10, -10s, 10s, 1s, delay, 1s, p, journal_));
+            true, 10, 10, 10, -10s, 10s, 1s, 1s, p, journal_));
         BEAST_EXPECT(shouldCloseLedger(
-            true, 10, 10, 10, 100h, 10s, 1s, delay, 1s, p, journal_));
+            true, 10, 10, 10, 100h, 10s, 1s, 1s, p, journal_));
         BEAST_EXPECT(shouldCloseLedger(
-            true, 10, 10, 10, 10s, 100h, 1s, delay, 1s, p, journal_));
+            true, 10, 10, 10, 10s, 100h, 1s, 1s, p, journal_));
 
         // Rest of network has closed
-        BEAST_EXPECT(shouldCloseLedger(
-            true, 10, 3, 5, 10s, 10s, 10s, delay, 10s, p, journal_));
+        BEAST_EXPECT(
+            shouldCloseLedger(true, 10, 3, 5, 10s, 10s, 10s, 10s, p, journal_));
 
         // No transactions means wait until end of internval
-        BEAST_EXPECT(!shouldCloseLedger(
-            false, 10, 0, 0, 1s, 1s, 1s, delay, 10s, p, journal_));
-        BEAST_EXPECT(shouldCloseLedger(
-            false, 10, 0, 0, 1s, 10s, 1s, delay, 10s, p, journal_));
+        BEAST_EXPECT(
+            !shouldCloseLedger(false, 10, 0, 0, 1s, 1s, 1s, 10s, p, journal_));
+        BEAST_EXPECT(
+            shouldCloseLedger(false, 10, 0, 0, 1s, 10s, 1s, 10s, p, journal_));
 
         // Enforce minimum ledger open time
-        BEAST_EXPECT(!shouldCloseLedger(
-            true, 10, 0, 0, 10s, 10s, 1s, delay, 10s, p, journal_));
+        BEAST_EXPECT(
+            !shouldCloseLedger(true, 10, 0, 0, 10s, 10s, 1s, 10s, p, journal_));
 
         // Don't go too much faster than last time
-        BEAST_EXPECT(!shouldCloseLedger(
-            true, 10, 0, 0, 10s, 10s, 3s, delay, 10s, p, journal_));
+        BEAST_EXPECT(
+            !shouldCloseLedger(true, 10, 0, 0, 10s, 10s, 3s, 10s, p, journal_));
 
-        BEAST_EXPECT(shouldCloseLedger(
-            true, 10, 0, 0, 10s, 10s, 10s, delay, 10s, p, journal_));
+        BEAST_EXPECT(
+            shouldCloseLedger(true, 10, 0, 0, 10s, 10s, 10s, 10s, p, journal_));
     }
 
     void

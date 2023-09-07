@@ -160,6 +160,7 @@ JSS(alternatives);           // out: PathRequest, RipplePathFind
 JSS(amendment_blocked);      // out: NetworkOPs
 JSS(amendments);             // in: AccountObjects, out: NetworkOPs
 JSS(amm);                    // out: amm_info
+JSS(amm_account);            // in: amm_info
 JSS(amount);                 // out: AccountChannels, amm_info
 JSS(amount2);                // out: amm_info
 JSS(api_version);            // in: many, out: Version
@@ -599,7 +600,6 @@ JSS(sub_index);             // in: LedgerEntry
 JSS(subcommand);            // in: PathFind
 JSS(success);               // rpc
 JSS(supported);             // out: AmendmentTableImpl
-JSS(sync_mode);             // in: Submit
 JSS(system_time_offset);    // out: NetworkOPs
 JSS(tag);                   // out: Peers
 JSS(taker);                 // in: Subscribe, BookOffers
