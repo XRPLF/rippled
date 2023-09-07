@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2023 Ripple Labs Inc.
+    Copyright (c) 2022 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,25 +17,34 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_BASICS_SUBMITSYNC_H_INCLUDED
-#define RIPPLE_BASICS_SUBMITSYNC_H_INCLUDED
+#ifndef RIPPLE_BASICS_THREADUTILITIES_H_INCLUDED
+#define RIPPLE_BASICS_THREADUTILITIES_H_INCLUDED
+
+#include <string>
+#include <thread>
 
 namespace ripple {
-namespace RPC {
 
-/**
- * Possible values for defining synchronous behavior of the transaction
- * submission API.
- *   1) sync (default): Process transactions in a batch immediately,
- *       and return only once the transaction has been processed.
- *   2) async: Put transaction into the batch for the next processing
- *       interval and return immediately.
- *   3) wait: Put transaction into the batch for the next processing
- *       interval and return only after it is processed.
- */
-enum class SubmitSync { sync, async, wait };
+std::string
+get_name(std::thread::native_handle_type t);
 
-}  // namespace RPC
+template <class Thread>
+inline auto
+get_name(Thread& t) -> decltype(t.native_handle(), t.join(), std::string{})
+{
+    return get_name(t.native_handle());
+}
+
+namespace this_thread {
+
+std::string
+get_name();
+
+void
+set_name(std::string s);
+
+}  // namespace this_thread
+
 }  // namespace ripple
 
 #endif
