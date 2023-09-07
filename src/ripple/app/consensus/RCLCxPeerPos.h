@@ -26,7 +26,6 @@
 #include <ripple/consensus/ConsensusProposal.h>
 #include <ripple/json/json_value.h>
 #include <ripple/protocol/HashPrefix.h>
-#include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/SecretKey.h>
 #include <boost/container/static_vector.hpp>
@@ -45,7 +44,7 @@ class RCLCxPeerPos
 {
 public:
     //< The type of the proposed position
-    using Proposal = ConsensusProposal<NodeID, uint256, uint256, LedgerIndex>;
+    using Proposal = ConsensusProposal<NodeID, uint256, uint256>;
 
     /** Constructor
 

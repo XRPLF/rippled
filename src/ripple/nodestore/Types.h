@@ -36,9 +36,8 @@ enum {
     // This sets a limit on the maximum number of writes
     // in a batch. Actual usage can be twice this since
     // we have a new batch growing as we write the old.
-    // The main goal is to avoid delays while persisting the ledger.
     //
-    batchWriteLimitSize = 262144
+    batchWriteLimitSize = 65536
 };
 
 /** Return codes from Backend operations. */
