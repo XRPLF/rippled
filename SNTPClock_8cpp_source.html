@@ -89,8 +89,8 @@ $(function() {
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="comment">//==============================================================================</span></div>
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160; </div>
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/Log.h&gt;</span></div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/random.h&gt;</span></div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &lt;ripple/beast/core/CurrentThreadName.h&gt;</span></div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/ThreadUtilities.h&gt;</span></div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/random.h&gt;</span></div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/core/impl/SNTPClock.h&gt;</span></div>
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;boost/asio.hpp&gt;</span></div>
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/cmath.html">cmath</a>&gt;</span></div>
@@ -264,7 +264,7 @@ $(function() {
 <div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;    <span class="keywordtype">void</span></div>
 <div class="line"><a name="l00194"></a><span class="lineno"><a class="line" href="classripple_1_1SNTPClientImp.html#a7c54adf2b650713a70c77ce75107555d">  194</a></span>&#160;    <a class="code" href="classripple_1_1SNTPClientImp.html#a7c54adf2b650713a70c77ce75107555d">doRun</a>()</div>
 <div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;    {</div>
-<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;        <a class="code" href="namespacebeast.html#ab3bd70e6eb43bbd99b5fe518efce8c7e">beast::setCurrentThreadName</a>(<span class="stringliteral">&quot;rippled: SNTPClock&quot;</span>);</div>
+<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;        <a class="code" href="namespaceripple_1_1this__thread.html#a4c9f9146e19723bc85e79f7e669299e7">this_thread::set_name</a>(<span class="stringliteral">&quot;SNTPClock&quot;</span>);</div>
 <div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;        io_service_.run();</div>
 <div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;    }</div>
 <div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160; </div>
@@ -576,6 +576,7 @@ $(function() {
 <div class="ttc" id="afind_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/map/find.html">std::map::find</a></div><div class="ttdeci">T find(T... args)</div></div>
 <div class="ttc" id="asize_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/size.html">std::vector::size</a></div><div class="ttdeci">T size(T... args)</div></div>
 <div class="ttc" id="astructripple_1_1SNTPClientImp_1_1Query_html"><div class="ttname"><a href="structripple_1_1SNTPClientImp_1_1Query.html">ripple::SNTPClientImp::Query</a></div><div class="ttdef"><b>Definition:</b> <a href="SNTPClock_8cpp_source.html#l00077">SNTPClock.cpp:77</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1this__thread_html_a4c9f9146e19723bc85e79f7e669299e7"><div class="ttname"><a href="namespaceripple_1_1this__thread.html#a4c9f9146e19723bc85e79f7e669299e7">ripple::this_thread::set_name</a></div><div class="ttdeci">void set_name(std::string s)</div></div>
 <div class="ttc" id="aduration_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a></div></div>
 <div class="ttc" id="aclassbeast_1_1Journal_html_ad8fefe3e8ad583e1ed1bf02094ac3d8f"><div class="ttname"><a href="classbeast_1_1Journal.html#ad8fefe3e8ad583e1ed1bf02094ac3d8f">beast::Journal::warn</a></div><div class="ttdeci">Stream warn() const</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00327">Journal.h:327</a></div></div>
 <div class="ttc" id="alock_guard_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a></div><div class="ttdoc">STL class.</div></div>
@@ -617,7 +618,6 @@ $(function() {
 <div class="ttc" id="amemory_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/memory.html">memory</a></div></div>
 <div class="ttc" id="aclassripple_1_1SNTPClientImp_html_a670ff19e5f8838646ea40767e0888b4e"><div class="ttname"><a href="classripple_1_1SNTPClientImp.html#a670ff19e5f8838646ea40767e0888b4e">ripple::SNTPClientImp::io_service_</a></div><div class="ttdeci">boost::asio::io_service io_service_</div><div class="ttdef"><b>Definition:</b> <a href="SNTPClock_8cpp_source.html#l00092">SNTPClock.cpp:92</a></div></div>
 <div class="ttc" id="aclassripple_1_1SNTPClientImp_html_a9b0fb742ef97afb0a652122a5155519f"><div class="ttname"><a href="classripple_1_1SNTPClientImp.html#a9b0fb742ef97afb0a652122a5155519f">ripple::SNTPClientImp::queryAll</a></div><div class="ttdeci">void queryAll()</div><div class="ttdef"><b>Definition:</b> <a href="SNTPClock_8cpp_source.html#l00294">SNTPClock.cpp:294</a></div></div>
-<div class="ttc" id="anamespacebeast_html_ab3bd70e6eb43bbd99b5fe518efce8c7e"><div class="ttname"><a href="namespacebeast.html#ab3bd70e6eb43bbd99b5fe518efce8c7e">beast::setCurrentThreadName</a></div><div class="ttdeci">void setCurrentThreadName(std::string_view name)</div><div class="ttdoc">Changes the name of the caller thread.</div><div class="ttdef"><b>Definition:</b> <a href="CurrentThreadName_8cpp_source.html#l00119">CurrentThreadName.cpp:119</a></div></div>
 <div class="ttc" id="aemplace_back_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/emplace_back.html">std::vector::emplace_back</a></div><div class="ttdeci">T emplace_back(T... args)</div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="anamespaceripple_html_abc9d4275055c64612390b7f6af828811"><div class="ttname"><a href="namespaceripple.html#abc9d4275055c64612390b7f6af828811">ripple::SNTPQueryData</a></div><div class="ttdeci">static uint8_t SNTPQueryData[48]</div><div class="ttdef"><b>Definition:</b> <a href="SNTPClock_8cpp_source.html#l00035">SNTPClock.cpp:35</a></div></div>

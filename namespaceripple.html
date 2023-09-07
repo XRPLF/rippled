@@ -136,6 +136,8 @@ Namespaces</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:namespaceripple_1_1tests"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1tests.html">tests</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:namespaceripple_1_1this__thread"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1this__thread.html">this_thread</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:namespaceripple_1_1Tuning"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1Tuning.html">Tuning</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:namespaceripple_1_1unl"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1unl.html">unl</a></td></tr>
@@ -3337,6 +3339,11 @@ Functions</h2></td></tr>
 <tr class="memitem:aab94edddae84fcd70e7261ecc19173b7"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aab94edddae84fcd70e7261ecc19173b7">isProperlyFormedTomlDomain</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;domain)</td></tr>
 <tr class="memdesc:aab94edddae84fcd70e7261ecc19173b7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Determines if the given string looks like a TOML-file hosting domain.  <a href="namespaceripple.html#aab94edddae84fcd70e7261ecc19173b7">More...</a><br /></td></tr>
 <tr class="separator:aab94edddae84fcd70e7261ecc19173b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab7ae1bdbcdb2c8120420be8190b67c7b"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ab7ae1bdbcdb2c8120420be8190b67c7b">get_name</a> (std::thread::native_handle_type t)</td></tr>
+<tr class="separator:ab7ae1bdbcdb2c8120420be8190b67c7b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3836fee3616e6064c4219276cd2c53b2"><td class="memTemplParams" colspan="2">template&lt;class Thread &gt; </td></tr>
+<tr class="memitem:a3836fee3616e6064c4219276cd2c53b2"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a3836fee3616e6064c4219276cd2c53b2">get_name</a> (Thread &amp;t) -&gt; decltype(t.native_handle(), t.join(), <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></td></tr>
+<tr class="separator:a3836fee3616e6064c4219276cd2c53b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad6488df36aff40a7e8d36bba04633245"><td class="memTemplParams" colspan="2">template&lt;class T &gt; </td></tr>
 <tr class="memitem:ad6488df36aff40a7e8d36bba04633245"><td class="memTemplItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/enable_if.html">std::enable_if</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/is_arithmetic.html">std::is_arithmetic</a>&lt; T &gt;::value, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt;::type&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ad6488df36aff40a7e8d36bba04633245">to_string</a> (T t)</td></tr>
 <tr class="memdesc:ad6488df36aff40a7e8d36bba04633245"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4" title="Format the specified manifest to a string for debugging purposes.">to_string()</a> generalizes <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a> to handle bools, chars, and strings.  <a href="namespaceripple.html#ad6488df36aff40a7e8d36bba04633245">More...</a><br /></td></tr>
@@ -23075,6 +23082,46 @@ template&lt;class Iterator &gt; </div>
 
 <p>Determines if the given string looks like a TOML-file hosting domain. </p>
 <p>Do not use this function to determine if a particular string is a valid domain, as this function may reject domains that are otherwise valid and doesn't check whether the TLD is valid. </p>
+
+</div>
+</div>
+<a id="ab7ae1bdbcdb2c8120420be8190b67c7b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab7ae1bdbcdb2c8120420be8190b67c7b">&#9670;&nbsp;</a></span>get_name() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> ripple::get_name </td>
+          <td>(</td>
+          <td class="paramtype">std::thread::native_handle_type&#160;</td>
+          <td class="paramname"><em>t</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a3836fee3616e6064c4219276cd2c53b2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3836fee3616e6064c4219276cd2c53b2">&#9670;&nbsp;</a></span>get_name() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class Thread &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">auto ripple::get_name </td>
+          <td>(</td>
+          <td class="paramtype">Thread &amp;&#160;</td>
+          <td class="paramname"><em>t</em></td><td>)</td>
+          <td> -&gt; decltype(t.native_handle(), t.join(), <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="ThreadUtilities_8h_source.html#l00033">33</a> of file <a class="el" href="ThreadUtilities_8h_source.html">ThreadUtilities.h</a>.</p>
 
 </div>
 </div>

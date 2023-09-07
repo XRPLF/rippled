@@ -213,7 +213,6 @@ var searchData=
   ['cur_13665',['Cur',['../structripple_1_1PerfLog__test_1_1Cur.html',1,'ripple::PerfLog_test']]],
   ['currencytag_13666',['CurrencyTag',['../classripple_1_1detail_1_1CurrencyTag.html',1,'ripple::detail']]],
   ['currentledgerstate_13667',['CurrentLedgerState',['../structripple_1_1Transaction_1_1CurrentLedgerState.html',1,'ripple::Transaction']]],
-  ['currentthreadname_5ftest_13668',['CurrentThreadName_test',['../classripple_1_1test_1_1CurrentThreadName__test.html',1,'ripple::test']]],
-  ['cv_5fentry_13669',['cv_entry',['../structripple_1_1LedgerHistory_1_1cv__entry.html',1,'ripple::LedgerHistory']]],
-  ['czstring_13670',['CZString',['../classJson_1_1Value_1_1CZString.html',1,'Json::Value']]]
+  ['cv_5fentry_13668',['cv_entry',['../structripple_1_1LedgerHistory_1_1cv__entry.html',1,'ripple::LedgerHistory']]],
+  ['czstring_13669',['CZString',['../classJson_1_1Value_1_1CZString.html',1,'Json::Value']]]
 ];
