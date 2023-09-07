@@ -279,6 +279,20 @@ applyCreate(
     // AMM creator gets the auction slot and the voting slot.
     initializeFeeAuctionVote(
         ctx_.view(), ammSle, account_, lptIss, ctx_.tx[sfTradingFee]);
+
+    // Add owner directory to link the root account and AMM object.
+    if (auto const page = sb.dirInsert(
+            keylet::ownerDir(*ammAccount),
+            ammSle->key(),
+            describeOwnerDir(*ammAccount)))
+    {
+        ammSle->setFieldU64(sfOwnerNode, *page);
+    }
+    else
+    {
+        JLOG(j_.debug()) << "AMM Instance: failed to insert owner dir";
+        return {tecDIR_FULL, false};
+    }
     sb.insert(ammSle);
 
     // Send LPT to LP.
