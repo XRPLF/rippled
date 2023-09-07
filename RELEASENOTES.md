@@ -38,7 +38,7 @@ On supported platforms, see the [instructions on installing or updating `rippled
 
 - **`AMM`**: Introduces an automated market maker (AMM) protocol to the XRP Ledger's decentralized exchange, enabling you to trade assets without a counterparty. For more information about AMMs, see: [Automated Market Maker](https://opensource.ripple.com/docs/xls-30d-amm/amm-uc/). [#4294](https://github.com/XRPLF/rippled/pull/4294)
 
-- **`Clawback`**: Allows issuers to add the `lsfAllowTrustLineClawback` flag to an issuing account. This enables the account to recover, or _claw back_, issued tokens after they're distributed to accounts. For additional documentation on this feature, see: [#4553](https://github.com/XRPLF/rippled/pull/4553).
+- **`Clawback`**: Adds a setting, *Allow Clawback*, which lets an issuer recover, or _claw back_, tokens that they previously issued. Issuers cannot enable this setting if they have issued tokens already. For additional documentation on this feature, see: [#4553](https://github.com/XRPLF/rippled/pull/4553).
 
 - **`fixReducedOffersV1`**: Reduces the occurrence of order books that are blocked by reduced offers. [#4512](https://github.com/XRPLF/rippled/pull/4512)
 
@@ -46,21 +46,11 @@ On supported platforms, see the [instructions on installing or updating `rippled
 
 - Removed the deprecated `accepted`, `seqNum`, `hash`, and `totalCoins` fields from the `ledger` method. [#4244](https://github.com/XRPLF/rippled/pull/4244)
 
-- Conan dependency management
-  - Fixed package definitions for Conan. [#4485](https://github.com/XRPLF/rippled/pull/4485)
-  - Updated build dependencies to the most recent versions in Conan Center. [#4595](https://github.com/XRPLF/rippled/pull/4595)
-  - Updated Conan recipe for NuDB. [#4615](https://github.com/XRPLF/rippled/pull/4615)
 
 ### Bug Fixes and Performance Improvements
-(These are behind-the-scenes improvements, such as internal changes to the code and build system, which are not expected to impact end users.)
-
-- Added binary hardening and linker flags to enhance security during the build process. [#4603](https://github.com/XRPLF/rippled/pull/4603)
+(These are behind-the-scenes improvements, such as internal changes to the code, which are not expected to impact end users.)
 
 - Added a pre-commit hook that runs the clang-format linter locally before committing changes. To install this feature, see: [CONTRIBUTING](https://github.com/XRPLF/xrpl-dev-portal/blob/master/CONTRIBUTING.md). [#4599](https://github.com/XRPLF/rippled/pull/4599)
-
-- Added quality-of-life improvements to workflows, using new [concurrency control](https://docs.github.com/en/actions/using-jobs/using-concurrency) features. [#4597](https://github.com/XRPLF/rippled/pull/4597)
-
-- Added an Artifactory to the `nix` workflow to improve build times. [#4556](https://github.com/XRPLF/rippled/pull/4556)
 
 - In order to make it more straightforward to catch and handle overflows: changed the output type of the `mulDiv()` function from `std::pair<bool, uint64_t>` to `std::optional`. [#4243](https://github.com/XRPLF/rippled/pull/4243)
 
@@ -71,6 +61,7 @@ On supported platforms, see the [instructions on installing or updating `rippled
 - Replaced hand-rolled code with `std::from_chars` for better maintainability. [#4473](https://github.com/XRPLF/rippled/pull/4473)
 
 - Removed an unused `TypedField` move constructor. [#4567](https://github.com/XRPLF/rippled/pull/4567)
+
 
 ### Docs and Build System
 
@@ -83,6 +74,17 @@ On supported platforms, see the [instructions on installing or updating `rippled
 - Updated contributing doc to clarify that beta releases should also be pushed to the `release` branch. [#4589](https://github.com/XRPLF/rippled/pull/4589)
 
 - Enabled the `BETA_RPC_API` flag in the default unit tests config, making the API v2 (beta) available to unit tests. [#4573](https://github.com/XRPLF/rippled/pull/4573)
+
+- Conan dependency management.
+  - Fixed package definitions for Conan. [#4485](https://github.com/XRPLF/rippled/pull/4485)
+  - Updated build dependencies to the most recent versions in Conan Center. [#4595](https://github.com/XRPLF/rippled/pull/4595)
+  - Updated Conan recipe for NuDB. [#4615](https://github.com/XRPLF/rippled/pull/4615)
+
+- Added binary hardening and linker flags to enhance security during the build process. [#4603](https://github.com/XRPLF/rippled/pull/4603)
+
+- Added an Artifactory to the `nix` workflow to improve build times. [#4556](https://github.com/XRPLF/rippled/pull/4556)
+
+- Added quality-of-life improvements to workflows, using new [concurrency control](https://docs.github.com/en/actions/using-jobs/using-concurrency) features. [#4597](https://github.com/XRPLF/rippled/pull/4597)
 
 
 [Full Commit Log](https://github.com/XRPLF/rippled/compare/1.11.0...1.12.0)
