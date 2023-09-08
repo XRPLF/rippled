@@ -21,7 +21,6 @@
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 #include <test/jtx.h>
-#include <test/jtx/TestHelpers.h>
 
 namespace ripple {
 

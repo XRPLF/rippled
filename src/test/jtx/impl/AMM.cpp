@@ -62,8 +62,10 @@ AMM::AMM(
     , creatorAccount_(account)
     , asset1_(asset1)
     , asset2_(asset2)
+    , ammID_(keylet::amm(asset1_.issue(), asset2_.issue()).key)
     , initialLPTokens_(initialTokens(asset1, asset2))
     , log_(log)
+    , doClose_(true)
     , lastPurchasePrice_(0)
     , bidMin_()
     , bidMax_()
@@ -134,26 +136,36 @@ Json::Value
 AMM::ammRpcInfo(
     std::optional<AccountID> const& account,
     std::optional<std::string> const& ledgerIndex,
-    std::optional<std::pair<Issue, Issue>> tokens) const
+    std::optional<Issue> issue1,
+    std::optional<Issue> issue2,
+    std::optional<AccountID> const& ammAccount,
+    bool ignoreParams) const
 {
     Json::Value jv;
     if (account)
         jv[jss::account] = to_string(*account);
     if (ledgerIndex)
         jv[jss::ledger_index] = *ledgerIndex;
-    if (tokens)
+    if (!ignoreParams)
     {
-        jv[jss::asset] =
-            STIssue(sfAsset, tokens->first).getJson(JsonOptions::none);
-        jv[jss::asset2] =
-            STIssue(sfAsset2, tokens->second).getJson(JsonOptions::none);
-    }
-    else
-    {
-        jv[jss::asset] =
-            STIssue(sfAsset, asset1_.issue()).getJson(JsonOptions::none);
-        jv[jss::asset2] =
-            STIssue(sfAsset2, asset2_.issue()).getJson(JsonOptions::none);
+        if (issue1 || issue2)
+        {
+            if (issue1)
+                jv[jss::asset] =
+                    STIssue(sfAsset, *issue1).getJson(JsonOptions::none);
+            if (issue2)
+                jv[jss::asset2] =
+                    STIssue(sfAsset2, *issue2).getJson(JsonOptions::none);
+        }
+        else if (!ammAccount)
+        {
+            jv[jss::asset] =
+                STIssue(sfAsset, asset1_.issue()).getJson(JsonOptions::none);
+            jv[jss::asset2] =
+                STIssue(sfAsset2, asset2_.issue()).getJson(JsonOptions::none);
+        }
+        if (ammAccount)
+            jv[jss::amm_account] = to_string(*ammAccount);
     }
     auto jr = env_.rpc("json", "amm_info", to_string(jv));
     if (jr.isObject() && jr.isMember(jss::result) &&
@@ -290,9 +302,11 @@ AMM::expectAmmRpcInfo(
     STAmount const& asset2,
     IOUAmount const& balance,
     std::optional<AccountID> const& account,
-    std::optional<std::string> const& ledger_index) const
+    std::optional<std::string> const& ledger_index,
+    std::optional<AccountID> const& ammAccount) const
 {
-    auto const jv = ammRpcInfo(account, ledger_index);
+    auto const jv = ammRpcInfo(
+        account, ledger_index, std::nullopt, std::nullopt, ammAccount);
     return expectAmmInfo(asset1, asset2, balance, jv);
 }
 
@@ -382,6 +396,7 @@ AMM::deposit(
         flags,
         std::nullopt,
         std::nullopt,
+        std::nullopt,
         ter);
 }
 
@@ -404,6 +419,7 @@ AMM::deposit(
         flags,
         std::nullopt,
         std::nullopt,
+        std::nullopt,
         ter);
 }
 
@@ -417,6 +433,7 @@ AMM::deposit(
     std::optional<std::uint32_t> const& flags,
     std::optional<std::pair<Issue, Issue>> const& assets,
     std::optional<jtx::seq> const& seq,
+    std::optional<std::uint16_t> const& tfee,
     std::optional<ter> const& ter)
 {
     Json::Value jv;
@@ -428,6 +445,8 @@ AMM::deposit(
         asset2In->setJson(jv[jss::Amount2]);
     if (maxEP)
         maxEP->setJson(jv[jss::EPrice]);
+    if (tfee)
+        jv[jss::TradingFee] = *tfee;
     std::uint32_t jvflags = 0;
     if (flags)
         jvflags = *flags;
@@ -671,7 +690,8 @@ AMM::submit(
         env_(jv, *ter);
     else
         env_(jv);
-    env_.close();
+    if (doClose_)
+        env_.close();
 }
 
 bool
@@ -695,6 +715,18 @@ AMM::expectAuctionSlot(auto&& cb) const
         }
     }
     return false;
+}
+
+void
+AMM::ammDelete(AccountID const& deleter, std::optional<ter> const& ter)
+{
+    Json::Value jv;
+    jv[jss::Account] = to_string(deleter);
+    setTokens(jv);
+    jv[jss::TransactionType] = jss::AMMDelete;
+    if (fee_ != 0)
+        jv[jss::Fee] = std::to_string(fee_);
+    submit(jv, std::nullopt, ter);
 }
 
 namespace amm {

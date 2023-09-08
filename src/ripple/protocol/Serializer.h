@@ -26,6 +26,7 @@
 #include <ripple/basics/base_uint.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/safe_cast.h>
+#include <ripple/basics/strHex.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/SField.h>
 #include <cassert>

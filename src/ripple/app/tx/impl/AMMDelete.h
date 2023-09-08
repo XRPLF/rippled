@@ -17,52 +17,38 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_NFTOKENID_H_INCLUDED
-#define RIPPLE_RPC_NFTOKENID_H_INCLUDED
+#ifndef RIPPLE_TX_AMMDELETE_H_INCLUDED
+#define RIPPLE_TX_AMMDELETE_H_INCLUDED
 
-#include <ripple/protocol/Protocol.h>
-
-#include <functional>
-#include <memory>
-
-namespace Json {
-class Value;
-}
+#include <ripple/app/tx/impl/Transactor.h>
 
 namespace ripple {
 
-class TxMeta;
-class STTx;
-
-namespace RPC {
-
-/**
-   Add a `nftoken_ids` field to the `meta` output parameter.
-   The field is only added to successful NFTokenMint, NFTokenAcceptOffer,
-   and NFTokenCancelOffer transactions.
-
-   Helper functions are not static because they can be used by Clio.
-   @{
+/** AMMDelete implements AMM delete transactor. This is a mechanism to
+ * delete AMM in an empty state when the number of LP tokens is 0.
+ * AMMDelete deletes the trustlines up to configured maximum. If all
+ * trustlines are deleted then AMM ltAMM and root account are deleted.
+ * Otherwise AMMDelete should be called again.
  */
-bool
-canHaveNFTokenID(
-    std::shared_ptr<STTx const> const& serializedTx,
-    TxMeta const& transactionMeta);
+class AMMDelete : public Transactor
+{
+public:
+    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
-std::optional<uint256>
-getNFTokenIDFromPage(TxMeta const& transactionMeta);
+    explicit AMMDelete(ApplyContext& ctx) : Transactor(ctx)
+    {
+    }
 
-std::vector<uint256>
-getNFTokenIDFromDeletedOffer(TxMeta const& transactionMeta);
+    static NotTEC
+    preflight(PreflightContext const& ctx);
 
-void
-insertNFTokenID(
-    Json::Value& response,
-    std::shared_ptr<STTx const> const& transaction,
-    TxMeta const& transactionMeta);
-/** @} */
+    static TER
+    preclaim(PreclaimContext const& ctx);
 
-}  // namespace RPC
+    TER
+    doApply() override;
+};
+
 }  // namespace ripple
 
-#endif
+#endif  // RIPPLE_TX_AMMDELETE_H_INCLUDED

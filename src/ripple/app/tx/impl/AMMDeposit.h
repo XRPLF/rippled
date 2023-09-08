@@ -223,6 +223,23 @@ private:
         STAmount const& lptAMMBalance,
         STAmount const& ePrice,
         std::uint16_t tfee);
+
+    /** Equal deposit in empty AMM state (LP tokens balance is 0)
+     * @param view
+     * @param ammAccount
+     * @param amount requested asset1 deposit amount
+     * @param amount2 requested asset2 deposit amount
+     * @param tfee
+     * @return
+     */
+    std::pair<TER, STAmount>
+    equalDepositInEmptyState(
+        Sandbox& view,
+        AccountID const& ammAccount,
+        STAmount const& amount,
+        STAmount const& amount2,
+        Issue const& lptIssue,
+        std::uint16_t tfee);
 };
 
 }  // namespace ripple
