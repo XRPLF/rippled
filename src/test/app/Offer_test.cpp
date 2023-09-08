@@ -5082,6 +5082,157 @@ public:
     }
 
     void
+    testFillOrKill(FeatureBitset features)
+    {
+        testcase("fixFillOrKillOnFlowCross");
+        using namespace jtx;
+        Env env(*this, features);
+        Account const issuer("issuer");
+        Account const maker("maker");
+        Account const taker("taker");
+        auto const USD = issuer["USD"];
+        auto const EUR = issuer["EUR"];
+
+        env.fund(XRP(1'000), issuer);
+        env.fund(XRP(1'000), maker, taker);
+
+        env.trust(USD(1'000), maker, taker);
+        env.trust(EUR(1'000), maker, taker);
+
+        env(pay(issuer, maker, USD(1'000)));
+        env(pay(issuer, taker, USD(1'000)));
+        env(pay(issuer, maker, EUR(1'000)));
+
+        auto makerUSDBalance = env.balance(maker, USD).value();
+        auto takerUSDBalance = env.balance(taker, USD).value();
+        auto makerEURBalance = env.balance(maker, EUR).value();
+        auto takerEURBalance = env.balance(taker, EUR).value();
+        auto makerXRPBalance = env.balance(maker, XRP).value();
+        auto takerXRPBalance = env.balance(taker, XRP).value();
+
+        TER const err =
+            features[fixFillOrKillOnFlowCross] || !features[featureFlowCross]
+            ? TER(tesSUCCESS)
+            : tecKILLED;
+
+        // tfFillOrKill, TakerPays must be filled
+        {
+            env(offer(maker, XRP(100), USD(100)));
+            env(offer(taker, USD(100), XRP(101)),
+                txflags(tfFillOrKill),
+                ter(err));
+            makerXRPBalance -= txfee(env, 1);
+            takerXRPBalance -= txfee(env, 1);
+            if (tesSUCCESS == err)
+            {
+                makerUSDBalance -= USD(100);
+                takerUSDBalance += USD(100);
+                makerXRPBalance += XRP(100).value();
+                takerXRPBalance -= XRP(100).value();
+            }
+            BEAST_EXPECT(expectOffers(env, taker, 0));
+
+            env(offer(maker, USD(100), XRP(100)));
+            env(offer(taker, XRP(100), USD(101)),
+                txflags(tfFillOrKill),
+                ter(err));
+            makerXRPBalance -= txfee(env, 1);
+            takerXRPBalance -= txfee(env, 1);
+            if (tesSUCCESS == err)
+            {
+                makerUSDBalance += USD(100);
+                takerUSDBalance -= USD(100);
+                makerXRPBalance -= XRP(100).value();
+                takerXRPBalance += XRP(100).value();
+            }
+            BEAST_EXPECT(expectOffers(env, taker, 0));
+
+            env(offer(maker, USD(100), EUR(100)));
+            env(offer(taker, EUR(100), USD(101)),
+                txflags(tfFillOrKill),
+                ter(err));
+            makerXRPBalance -= txfee(env, 1);
+            takerXRPBalance -= txfee(env, 1);
+            if (tesSUCCESS == err)
+            {
+                makerUSDBalance += USD(100);
+                takerUSDBalance -= USD(100);
+                makerEURBalance -= EUR(100);
+                takerEURBalance += EUR(100);
+            }
+            BEAST_EXPECT(expectOffers(env, taker, 0));
+        }
+
+        // tfFillOrKill + tfSell, TakerGets must be filled
+        {
+            env(offer(maker, XRP(101), USD(101)));
+            env(offer(taker, USD(100), XRP(101)),
+                txflags(tfFillOrKill | tfSell));
+            makerUSDBalance -= USD(101);
+            takerUSDBalance += USD(101);
+            makerXRPBalance += XRP(101).value() - txfee(env, 1);
+            takerXRPBalance -= XRP(101).value() + txfee(env, 1);
+            BEAST_EXPECT(expectOffers(env, taker, 0));
+
+            env(offer(maker, USD(101), XRP(101)));
+            env(offer(taker, XRP(100), USD(101)),
+                txflags(tfFillOrKill | tfSell));
+            makerUSDBalance += USD(101);
+            takerUSDBalance -= USD(101);
+            makerXRPBalance -= XRP(101).value() + txfee(env, 1);
+            takerXRPBalance += XRP(101).value() - txfee(env, 1);
+            BEAST_EXPECT(expectOffers(env, taker, 0));
+
+            env(offer(maker, USD(101), EUR(101)));
+            env(offer(taker, EUR(100), USD(101)),
+                txflags(tfFillOrKill | tfSell));
+            makerUSDBalance += USD(101);
+            takerUSDBalance -= USD(101);
+            makerEURBalance -= EUR(101);
+            takerEURBalance += EUR(101);
+            makerXRPBalance -= txfee(env, 1);
+            takerXRPBalance -= txfee(env, 1);
+            BEAST_EXPECT(expectOffers(env, taker, 0));
+        }
+
+        // Fail regardless of fixFillOrKillOnFlowCross amendment
+        for (auto const flags : {tfFillOrKill, tfFillOrKill + tfSell})
+        {
+            env(offer(maker, XRP(100), USD(100)));
+            env(offer(taker, USD(100), XRP(99)),
+                txflags(flags),
+                ter(tecKILLED));
+            makerXRPBalance -= txfee(env, 1);
+            takerXRPBalance -= txfee(env, 1);
+            BEAST_EXPECT(expectOffers(env, taker, 0));
+
+            env(offer(maker, USD(100), XRP(100)));
+            env(offer(taker, XRP(100), USD(99)),
+                txflags(flags),
+                ter(tecKILLED));
+            makerXRPBalance -= txfee(env, 1);
+            takerXRPBalance -= txfee(env, 1);
+            BEAST_EXPECT(expectOffers(env, taker, 0));
+
+            env(offer(maker, USD(100), EUR(100)));
+            env(offer(taker, EUR(100), USD(99)),
+                txflags(flags),
+                ter(tecKILLED));
+            makerXRPBalance -= txfee(env, 1);
+            takerXRPBalance -= txfee(env, 1);
+            BEAST_EXPECT(expectOffers(env, taker, 0));
+        }
+
+        BEAST_EXPECT(
+            env.balance(maker, USD) == makerUSDBalance &&
+            env.balance(taker, USD) == takerUSDBalance &&
+            env.balance(maker, EUR) == makerEURBalance &&
+            env.balance(taker, EUR) == takerEURBalance &&
+            env.balance(maker, XRP) == makerXRPBalance &&
+            env.balance(taker, XRP) == takerXRPBalance);
+    }
+
+    void
     testAll(FeatureBitset features)
     {
         testCanceledOffer(features);
@@ -5142,6 +5293,7 @@ public:
         testTicketCancelOffer(features);
         testRmSmallIncreasedQOffersXRP(features);
         testRmSmallIncreasedQOffersIOU(features);
+        testFillOrKill(features);
     }
 
     void
@@ -5153,12 +5305,17 @@ public:
         FeatureBitset const takerDryOffer{fixTakerDryOfferRemoval};
         FeatureBitset const rmSmallIncreasedQOffers{fixRmSmallIncreasedQOffers};
         FeatureBitset const immediateOfferKilled{featureImmediateOfferKilled};
+        FeatureBitset const fixFillOrKill{fixFillOrKillOnFlowCross};
 
-        testAll(all - takerDryOffer - immediateOfferKilled);
-        testAll(all - flowCross - takerDryOffer - immediateOfferKilled);
-        testAll(all - flowCross - immediateOfferKilled);
-        testAll(all - rmSmallIncreasedQOffers - immediateOfferKilled);
-        testAll(all);
+        for (auto const& features : {all - fixFillOrKill, all})
+        {
+            testAll(features - takerDryOffer - immediateOfferKilled);
+            testAll(
+                features - flowCross - takerDryOffer - immediateOfferKilled);
+            testAll(features - flowCross - immediateOfferKilled);
+            testAll(features - rmSmallIncreasedQOffers - immediateOfferKilled);
+            testAll(features);
+        }
         testFalseAssert();
     }
 };
