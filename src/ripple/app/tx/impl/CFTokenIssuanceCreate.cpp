@@ -44,7 +44,7 @@ CFTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 
         // If a non-zero TransferFee is set then the tfTransferable flag
         // must also be set.
-        if (fee > 0u && !ctx.tx.isFlag(tfTransferable))
+        if (fee > 0u && !ctx.tx.isFlag(tfCFTCanTransfer))
             return temMALFORMED;
     }
 
