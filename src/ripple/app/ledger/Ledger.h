@@ -28,7 +28,6 @@
 #include <ripple/protocol/Book.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/STLedgerEntry.h>
-#include <ripple/protocol/Serializer.h>
 #include <ripple/protocol/TxMeta.h>
 #include <ripple/shamap/SHAMap.h>
 #include <mutex>
@@ -240,10 +239,7 @@ public:
     //
 
     void
-    rawTxInsert(
-        uint256 const& key,
-        std::shared_ptr<Serializer const> const& txn,
-        std::shared_ptr<Serializer const> const& metaData) override;
+    rawTxInsert(uint256 const& key, Slice txn, Slice metaData) override;
 
     // Insert the transaction, and return the hash of the SHAMap leaf node
     // holding the transaction. The hash can be used to fetch the transaction
@@ -253,10 +249,7 @@ public:
     // @param metaData transaction metadata
     // @return hash of SHAMap leaf node that holds the transaction
     uint256
-    rawTxInsertWithHash(
-        uint256 const& key,
-        std::shared_ptr<Serializer const> const& txn,
-        std::shared_ptr<Serializer const> const& metaData);
+    rawTxInsertWithHash(uint256 const& key, Slice txn, Slice metaData);
 
     //--------------------------------------------------------------------------
 

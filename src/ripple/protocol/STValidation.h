@@ -73,10 +73,7 @@ public:
         @note Throws if the object is not valid
     */
     template <class LookupNodeID>
-    STValidation(
-        SerialIter& sit,
-        LookupNodeID&& lookupNodeID,
-        bool checkSignature);
+    STValidation(Slice data, LookupNodeID&& lookupNodeID, bool checkSignature);
 
     /** Construct, sign and trust a new STValidation issued by this node.
 
@@ -136,9 +133,6 @@ public:
     setSeen(NetClock::time_point s);
 
     Blob
-    getSerialized() const;
-
-    Blob
     getSignature() const;
 
 private:
@@ -155,10 +149,10 @@ private:
 
 template <class LookupNodeID>
 STValidation::STValidation(
-    SerialIter& sit,
+    Slice data,
     LookupNodeID&& lookupNodeID,
     bool checkSignature)
-    : STObject(validationFormat(), sit, sfValidation)
+    : STObject(validationFormat(), data, sfValidation)
     , signingPubKey_([this]() {
         auto const spk = getFieldVL(sfSigningPubKey);
 

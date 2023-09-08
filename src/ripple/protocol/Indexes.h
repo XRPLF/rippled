@@ -26,7 +26,6 @@
 #include <ripple/protocol/LedgerFormats.h>
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/PublicKey.h>
-#include <ripple/protocol/Serializer.h>
 #include <ripple/protocol/UintTypes.h>
 #include <cstdint>
 

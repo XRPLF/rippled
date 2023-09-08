@@ -72,7 +72,7 @@ public:
     }
 
     void
-    serializeForWire(Serializer& s) const final override
+    serializeForWire(SerializerBase& s) const final override
     {
         s.addRaw(item_->slice());
         s.addBitString(item_->key());
@@ -80,7 +80,7 @@ public:
     }
 
     void
-    serializeWithPrefix(Serializer& s) const final override
+    serializeWithPrefix(SerializerBase& s) const final override
     {
         s.add32(HashPrefix::leafNode);
         s.addRaw(item_->slice());

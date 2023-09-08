@@ -22,6 +22,7 @@
 #include <ripple/basics/contract.h>
 #include <ripple/basics/safe_cast.h>
 #include <ripple/beast/core/LexicalCast.h>
+#include <ripple/protocol/Deserializer.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/shamap/SHAMapAccountStateLeafNode.h>
@@ -57,21 +58,23 @@ SHAMapTreeNode::makeTransactionWithMeta(
     SHAMapHash const& hash,
     bool hashValid)
 {
-    Serializer s(data.data(), data.size());
+    auto const tag = [&data]() {
+        try
+        {
+            SerialIter s{data.substr(data.size() - uint256::size())};
+            data.remove_suffix(uint256::size());
+            return s.get256();
+        }
+        catch (std::exception const& e)
+        {
+            return uint256(beast::zero);
+        }
+    }();
 
-    uint256 tag;
+    if (tag.isZero() || data.empty())
+        Throw<std::runtime_error>("Invalid TXN+MD node");
 
-    if (s.size() < tag.bytes)
-        Throw<std::runtime_error>("Short TXN+MD node");
-
-    // FIXME: improve this interface so that the above check isn't needed
-    if (!s.getBitString(tag, s.size() - tag.bytes))
-        Throw<std::out_of_range>(
-            "Short TXN+MD node (" + std::to_string(s.size()) + ")");
-
-    s.chop(tag.bytes);
-
-    auto item = make_shamapitem(tag, s.slice());
+    auto item = make_shamapitem(tag, data);
 
     if (hashValid)
         return std::make_shared<SHAMapTxPlusMetaLeafNode>(
@@ -86,24 +89,23 @@ SHAMapTreeNode::makeAccountState(
     SHAMapHash const& hash,
     bool hashValid)
 {
-    Serializer s(data.data(), data.size());
+    auto const tag = [&data]() {
+        try
+        {
+            SerialIter s{data.substr(data.size() - uint256::size())};
+            data.remove_suffix(uint256::size());
+            return s.get256();
+        }
+        catch (std::exception const& e)
+        {
+            return uint256(beast::zero);
+        }
+    }();
 
-    uint256 tag;
-
-    if (s.size() < tag.bytes)
-        Throw<std::runtime_error>("short AS node");
-
-    // FIXME: improve this interface so that the above check isn't needed
-    if (!s.getBitString(tag, s.size() - tag.bytes))
-        Throw<std::out_of_range>(
-            "Short AS node (" + std::to_string(s.size()) + ")");
-
-    s.chop(tag.bytes);
-
-    if (tag.isZero())
+    if (tag.isZero() || data.empty())
         Throw<std::runtime_error>("Invalid AS node");
 
-    auto item = make_shamapitem(tag, s.slice());
+    auto item = make_shamapitem(tag, data);
 
     if (hashValid)
         return std::make_shared<SHAMapAccountStateLeafNode>(
@@ -150,29 +152,24 @@ SHAMapTreeNode::makeFromPrefix(Slice rawNode, SHAMapHash const& hash)
     if (rawNode.size() < 4)
         Throw<std::runtime_error>("prefix: short node");
 
-    // FIXME: Use SerialIter::get32?
-    // Extract the prefix
-    auto const type = safe_cast<HashPrefix>(
-        (safe_cast<std::uint32_t>(rawNode[0]) << 24) +
-        (safe_cast<std::uint32_t>(rawNode[1]) << 16) +
-        (safe_cast<std::uint32_t>(rawNode[2]) << 8) +
-        (safe_cast<std::uint32_t>(rawNode[3])));
+    SerialIter d(rawNode);
 
-    rawNode.remove_prefix(4);
+    // Extract the prefix
+    auto const type = safe_cast<HashPrefix>(d.get32());
 
     bool const hashValid = true;
 
     if (type == HashPrefix::transactionID)
-        return makeTransaction(rawNode, hash, hashValid);
+        return makeTransaction(d.slice(), hash, hashValid);
 
     if (type == HashPrefix::leafNode)
-        return makeAccountState(rawNode, hash, hashValid);
+        return makeAccountState(d.slice(), hash, hashValid);
 
     if (type == HashPrefix::innerNode)
-        return SHAMapInnerNode::makeFullInner(rawNode, hash, hashValid);
+        return SHAMapInnerNode::makeFullInner(d.slice(), hash, hashValid);
 
     if (type == HashPrefix::txNode)
-        return makeTransactionWithMeta(rawNode, hash, hashValid);
+        return makeTransactionWithMeta(d.slice(), hash, hashValid);
 
     Throw<std::runtime_error>(
         "prefix: unknown type (" +

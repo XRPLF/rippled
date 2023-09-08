@@ -42,11 +42,13 @@
 #include <ripple/core/SociDB.h>
 #include <ripple/json/to_string.h>
 #include <ripple/nodestore/Database.h>
+#include <ripple/protocol/Deserializer.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/SecretKey.h>
+#include <ripple/protocol/Serializer.h>
 #include <ripple/protocol/UintTypes.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/protocol/jss.h>
@@ -119,8 +121,7 @@ public:
     sles_type::value_type
     dereference() const override
     {
-        SerialIter sit(iter_->slice());
-        return std::make_shared<SLE const>(sit, iter_->key());
+        return std::make_shared<SLE const>(iter_->slice(), iter_->key());
     }
 };
 
@@ -392,7 +393,8 @@ Ledger::setAccepted(
 bool
 Ledger::addSLE(SLE const& sle)
 {
-    auto const s = sle.getSerializer();
+    Serializer s;
+    sle.add(s);
     return stateMap_.addItem(
         SHAMapNodeType::tnACCOUNT_STATE, make_shamapitem(sle.key(), s.slice()));
 }
@@ -402,8 +404,7 @@ Ledger::addSLE(SLE const& sle)
 std::shared_ptr<STTx const>
 deserializeTx(SHAMapItem const& item)
 {
-    SerialIter sit(item.slice());
-    return std::make_shared<STTx const>(sit);
+    return std::make_shared<STTx const>(item.slice());
 }
 
 std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>>
@@ -412,14 +413,8 @@ deserializeTxPlusMeta(SHAMapItem const& item)
     std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>>
         result;
     SerialIter sit(item.slice());
-    {
-        SerialIter s(sit.getSlice(sit.getVLDataLength()));
-        result.first = std::make_shared<STTx const>(s);
-    }
-    {
-        SerialIter s(sit.getSlice(sit.getVLDataLength()));
-        result.second = std::make_shared<STObject const>(s, sfMetadata);
-    }
+    result.first = std::make_shared<STTx const>(sit.getVL());
+    result.second = std::make_shared<STObject const>(sit.getVL(), sfMetadata);
     return result;
 }
 
@@ -460,7 +455,7 @@ Ledger::read(Keylet const& k) const
     auto const& item = stateMap_.peekItem(k.key);
     if (!item)
         return nullptr;
-    auto sle = std::make_shared<SLE>(SerialIter{item->slice()}, item->key());
+    auto sle = std::make_shared<SLE>(item->slice(), item->key());
     if (!k.check(*sle))
         return nullptr;
     return sle;
@@ -569,40 +564,32 @@ Ledger::rawReplace(std::shared_ptr<SLE> const& sle)
 }
 
 void
-Ledger::rawTxInsert(
-    uint256 const& key,
-    std::shared_ptr<Serializer const> const& txn,
-    std::shared_ptr<Serializer const> const& metaData)
+Ledger::rawTxInsert(uint256 const& key, Slice txn, Slice metaData)
 {
-    assert(metaData);
+    assert(!metaData.empty());
 
     // low-level - just add to table
-    Serializer s(txn->getDataLength() + metaData->getDataLength() + 16);
-    s.addVL(txn->peekData());
-    s.addVL(metaData->peekData());
+    Serializer s;
+    s.addVL(txn);
+    s.addVL(metaData);
     if (!txMap_.addGiveItem(
             SHAMapNodeType::tnTRANSACTION_MD, make_shamapitem(key, s.slice())))
         LogicError("duplicate_tx: " + to_string(key));
 }
 
 uint256
-Ledger::rawTxInsertWithHash(
-    uint256 const& key,
-    std::shared_ptr<Serializer const> const& txn,
-    std::shared_ptr<Serializer const> const& metaData)
+Ledger::rawTxInsertWithHash(uint256 const& key, Slice txn, Slice metaData)
 {
-    assert(metaData);
+    assert(!metaData.empty());
 
     // low-level - just add to table
-    Serializer s(txn->getDataLength() + metaData->getDataLength() + 16);
-    s.addVL(txn->peekData());
-    s.addVL(metaData->peekData());
-    auto item = make_shamapitem(key, s.slice());
-    auto hash = sha512Half(HashPrefix::txNode, item->slice(), item->key());
-    if (!txMap_.addGiveItem(SHAMapNodeType::tnTRANSACTION_MD, std::move(item)))
+    Serializer s;  // FIXME(txn.size() + metaData.size() + 16);
+    s.addVL(txn);
+    s.addVL(metaData);
+    if (!txMap_.addGiveItem(
+            SHAMapNodeType::tnTRANSACTION_MD, make_shamapitem(key, s.slice())))
         LogicError("duplicate_tx: " + to_string(key));
-
-    return hash;
+    return sha512Half(HashPrefix::txNode, s.slice(), key);
 }
 
 bool
@@ -702,7 +689,7 @@ Ledger::peek(Keylet const& k) const
     auto const& value = stateMap_.peekItem(k.key);
     if (!value)
         return nullptr;
-    auto sle = std::make_shared<SLE>(SerialIter{value->slice()}, value->key());
+    auto sle = std::make_shared<SLE>(value->slice(), value->key());
     if (!k.check(*sle))
         return nullptr;
     return sle;

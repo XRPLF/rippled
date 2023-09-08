@@ -23,7 +23,7 @@
 namespace ripple {
 
 STBlob::STBlob(SerialIter& st, SField const& name)
-    : STBase(name), value_(st.getVLBuffer())
+    : STBase(name), value_(st.getVL())
 {
 }
 
@@ -52,7 +52,7 @@ STBlob::getText() const
 }
 
 void
-STBlob::add(Serializer& s) const
+STBlob::add(SerializerBase& s) const
 {
     assert(getFName().isBinary());
     assert(

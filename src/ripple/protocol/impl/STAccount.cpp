@@ -32,7 +32,7 @@ STAccount::STAccount(SField const& n)
 {
 }
 
-STAccount::STAccount(SField const& n, Buffer&& v) : STAccount(n)
+STAccount::STAccount(SField const& n, Slice v) : STAccount(n)
 {
     if (v.empty())
         return;  // Zero is a valid size for a defaulted STAccount.
@@ -46,11 +46,11 @@ STAccount::STAccount(SField const& n, Buffer&& v) : STAccount(n)
         Throw<std::runtime_error>("Invalid STAccount size");
 
     default_ = false;
-    memcpy(value_.begin(), v.data(), uint160::bytes);
+    std::memcpy(value_.begin(), v.data(), uint160::bytes);
 }
 
 STAccount::STAccount(SerialIter& sit, SField const& name)
-    : STAccount(name, sit.getVLBuffer())
+    : STAccount(name, sit.getVL())
 {
 }
 
@@ -78,7 +78,7 @@ STAccount::getSType() const
 }
 
 void
-STAccount::add(Serializer& s) const
+STAccount::add(SerializerBase& s) const
 {
     assert(getFName().isBinary());
     assert(getFName().fieldType == STI_ACCOUNT);

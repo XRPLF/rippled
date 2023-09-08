@@ -22,7 +22,6 @@
 
 #include <algorithm>
 #include <cctype>
-#include <cstdint>
 #include <istream>
 #include <string>
 
@@ -920,12 +919,9 @@ Reader::getLocationLineAndColumn(Location location, int& line, int& column)
 std::string
 Reader::getLocationLineAndColumn(Location location) const
 {
-    int line, column;
-    getLocationLineAndColumn(location, line, column);
-    constexpr std::size_t n = 18 + 16 + 16 + 1;
-    char buffer[n];
-    snprintf(buffer, n, "Line %d, Column %d", line, column);
-    return buffer;
+    int l, c;
+    getLocationLineAndColumn(location, l, c);
+    return "Line " + std::to_string(l) + ", Column " + std::to_string(c);
 }
 
 std::string

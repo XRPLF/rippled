@@ -182,22 +182,15 @@ class Invariants_test : public beast::unit_test::suite
 
         doInvariantCheck(
             {{"invalid ledger entry type added"}},
-            [](Account const& A1, Account const&, ApplyContext& ac) {
-                // add an entry in the table with an SLE of an invalid type
-                auto const sle = ac.view().peek(keylet::account(A1.id()));
-                if (!sle)
-                    return false;
+            [this](Account const& A1, Account const&, ApplyContext& ac) {
+                // Make a dummy ledger entry with an invalid type (specifically
+                // with ltNICKNAME, which is marked deprecated, so we hard-code
+                // 'n' instead of the name) to exercise the invariant checker.
+                Keylet const k{
+                    static_cast<LedgerEntryType>('n'),
+                    keylet::account(A1.id()).key};
 
-                // make a dummy escrow ledger entry, then change the type to an
-                // unsupported value so that the valid type invariant check
-                // will fail.
-                auto sleNew = std::make_shared<SLE>(
-                    keylet::escrow(A1, (*sle)[sfSequence] + 2));
-
-                // We don't use ltNICKNAME directly since it's marked deprecated
-                // to prevent accidental use elsewhere.
-                sleNew->type_ = static_cast<LedgerEntryType>('n');
-                ac.view().insert(sleNew);
+                ac.view().insert(std::make_shared<SLE>(*this, k));
                 return true;
             });
     }

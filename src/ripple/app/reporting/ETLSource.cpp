@@ -518,10 +518,7 @@ public:
 
             auto& data = obj.data();
 
-            SerialIter it{data.data(), data.size()};
-            std::shared_ptr<SLE> sle = std::make_shared<SLE>(it, *key);
-
-            queue.push(sle);
+            queue.push(std::make_shared<SLE>(makeSlice(data), *key));
         }
 
         return more ? CallStatus::MORE : CallStatus::DONE;

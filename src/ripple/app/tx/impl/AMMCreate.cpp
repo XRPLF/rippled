@@ -315,7 +315,7 @@ applyCreate(
         // Set AMM flag on AMM trustline
         if (!isXRP(amount))
         {
-            if (SLE::pointer sleRippleState =
+            if (auto sleRippleState =
                     sb.peek(keylet::line(*ammAccount, amount.issue()));
                 !sleRippleState)
                 return tecINTERNAL;

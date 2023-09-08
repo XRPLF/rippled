@@ -206,14 +206,12 @@ handleNewValidation(
         if (outcome == ValStatus::conflicting)
             ls << "Byzantine Behavior Detector: "
                << (val->isTrusted() ? "trusted " : "untrusted ") << id
-               << ": Conflicting validation for " << seq << "!\n["
-               << val->getSerializer().slice() << "]";
+               << ": Conflicting validation for " << seq << "!";
 
         if (outcome == ValStatus::multiple)
             ls << "Byzantine Behavior Detector: "
                << (val->isTrusted() ? "trusted " : "untrusted ") << id
-               << ": Multiple validations for " << seq << "/" << hash << "!\n["
-               << val->getSerializer().slice() << "]";
+               << ": Multiple validations for " << seq << "/" << hash << "!";
     }
 }
 

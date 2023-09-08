@@ -62,17 +62,35 @@ private:
 
     class txs_iter_impl;
 
-    struct txData
+    class TxData
     {
-        std::shared_ptr<Serializer const> txn;
-        std::shared_ptr<Serializer const> meta;
+        // The underlying memory
+        std::unique_ptr<std::uint8_t[]> data;
 
-        // Constructor needed for emplacement in std::map
-        txData(
-            std::shared_ptr<Serializer const> const& txn_,
-            std::shared_ptr<Serializer const> const& meta_)
-            : txn(txn_), meta(meta_)
+    public:
+        Slice txn;
+        Slice meta;
+
+        // Needed to allow emplacement into the map
+        TxData(Slice t, Slice m)
+            : data(std::make_unique<std::uint8_t[]>(t.size() + m.size()))
+            , txn(std::memcpy(data.get(), t.data(), t.size()), t.size())
         {
+            if (!m.empty())
+                meta = Slice{
+                    std::memcpy(data.get() + t.size(), m.data(), m.size()),
+                    m.size()};
+        }
+
+        TxData(TxData const& other) : TxData(other.txn, other.meta)
+        {
+        }
+
+        TxData(TxData&& other)
+            : data(std::move(other.data)), txn(other.txn), meta(other.meta)
+        {
+            other.txn = {};
+            other.meta = {};
         }
     };
 
@@ -81,10 +99,10 @@ private:
     // functions b/c clang does not support pmr yet (as-of 9/2020)
     using txs_map = std::map<
         key_type,
-        txData,
+        TxData,
         std::less<key_type>,
         boost::container::pmr::polymorphic_allocator<
-            std::pair<key_type const, txData>>>;
+            std::pair<key_type const, TxData>>>;
 
     // monotonic_resource_ must outlive `items_`. Make a pointer so it may be
     // easily moved.
@@ -249,10 +267,7 @@ public:
     // TxsRawView
 
     void
-    rawTxInsert(
-        key_type const& key,
-        std::shared_ptr<Serializer const> const& txn,
-        std::shared_ptr<Serializer const> const& metaData) override;
+    rawTxInsert(key_type const& key, Slice txn, Slice metaData) override;
 };
 
 }  // namespace ripple

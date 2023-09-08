@@ -35,9 +35,8 @@ AcceptedLedgerTx::AcceptedLedgerTx(
 {
     assert(!ledger->open());
 
-    Serializer s;
+    SerializerInto s(mRawMeta);
     met->add(s);
-    mRawMeta = std::move(s.modData());
 
     mJson = Json::objectValue;
     mJson[jss::transaction] = mTxn->getJson(JsonOptions::none);
@@ -77,7 +76,7 @@ std::string
 AcceptedLedgerTx::getEscMeta() const
 {
     assert(!mRawMeta.empty());
-    return sqlBlobLiteral(mRawMeta);
+    return sqlBlobLiteral(makeSlice(mRawMeta));
 }
 
 }  // namespace ripple

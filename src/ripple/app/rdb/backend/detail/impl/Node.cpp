@@ -216,13 +216,17 @@ saveValidatedLedger(
     assert(ledger->info().txHash == ledger->txMap().getHash().as_uint256());
 
     // Save the ledger header in the hashed object store
-    {
-        Serializer s(128);
-        s.add32(HashPrefix::ledgerMaster);
-        addRaw(ledger->info(), s);
-        app.getNodeStore().store(
-            hotLEDGER, std::move(s.modData()), ledger->info().hash, seq);
-    }
+    app.getNodeStore().store(
+        hotLEDGER,
+        [&ledger]() {
+            Blob b;
+            b.reserve(1024);
+            serializeLedgerHeaderInto(
+                HashPrefix::ledgerMaster, ledger->info(), b);
+            return b;
+        }(),
+        ledger->info().hash,
+        seq);
 
     std::shared_ptr<AcceptedLedger> aLedger;
     try

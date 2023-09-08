@@ -271,8 +271,6 @@ public:
     digest(key_type const& key) const = 0;
 };
 
-//------------------------------------------------------------------------------
-
 Rules
 makeRulesGivenLedger(DigestAwareReadView const& ledger, Rules const& current);
 

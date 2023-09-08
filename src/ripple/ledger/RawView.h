@@ -22,7 +22,6 @@
 
 #include <ripple/ledger/ReadView.h>
 #include <ripple/protocol/STLedgerEntry.h>
-#include <ripple/protocol/Serializer.h>
 #include <cstdint>
 #include <memory>
 #include <utility>
@@ -103,10 +102,7 @@ public:
         while open ledgers omit metadata.
     */
     virtual void
-    rawTxInsert(
-        ReadView::key_type const& key,
-        std::shared_ptr<Serializer const> const& txn,
-        std::shared_ptr<Serializer const> const& metaData) = 0;
+    rawTxInsert(ReadView::key_type const& key, Slice txn, Slice metaData) = 0;
 };
 
 }  // namespace ripple

@@ -320,14 +320,16 @@ Database::storeLedger(
     };
 
     // Store ledger header
-    {
-        Serializer s(sizeof(std::uint32_t) + sizeof(LedgerInfo));
-        s.add32(HashPrefix::ledgerMaster);
-        addRaw(srcLedger.info(), s);
-        auto nObj = NodeObject::createObject(
-            hotLEDGER, std::move(s.modData()), srcLedger.info().hash);
-        batch.emplace_back(std::move(nObj));
-    }
+    batch.emplace_back(NodeObject::createObject(
+        hotLEDGER,
+        [&srcLedger]() {
+            Blob b;
+            b.reserve(1024);
+            serializeLedgerHeaderInto(
+                HashPrefix::ledgerMaster, srcLedger.info(), b);
+            return b;
+        }(),
+        srcLedger.info().hash));
 
     bool error = false;
     auto visit = [&](SHAMapTreeNode& node) {

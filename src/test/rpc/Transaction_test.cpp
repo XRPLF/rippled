@@ -41,6 +41,15 @@ class Transaction_test : public beast::unit_test::suite
         });
     }
 
+    std::string
+    serialize(STObject const& object)
+    {
+        std::vector<std::uint8_t> v;
+        SerializerInto s(v);
+        object.add(s);
+        return strHex(makeSlice(v));
+    };
+
     void
     testRangeRequest(FeatureBitset features)
     {
@@ -87,12 +96,8 @@ class Transaction_test : public beast::unit_test::suite
                 to_string(endLegSeq));
 
             BEAST_EXPECT(result[jss::result][jss::status] == jss::success);
-            BEAST_EXPECT(
-                result[jss::result][jss::tx] ==
-                strHex(tx->getSerializer().getData()));
-            BEAST_EXPECT(
-                result[jss::result][jss::meta] ==
-                strHex(meta->getSerializer().getData()));
+            BEAST_EXPECT(result[jss::result][jss::tx] == serialize(*tx));
+            BEAST_EXPECT(result[jss::result][jss::meta] == serialize(*meta));
         }
 
         auto const tx = env.jt(noop(alice), seq(env.seq(alice))).stx;
@@ -340,12 +345,8 @@ class Transaction_test : public beast::unit_test::suite
                 to_string(endLegSeq));
 
             BEAST_EXPECT(result[jss::result][jss::status] == jss::success);
-            BEAST_EXPECT(
-                result[jss::result][jss::tx] ==
-                strHex(tx->getSerializer().getData()));
-            BEAST_EXPECT(
-                result[jss::result][jss::meta] ==
-                strHex(meta->getSerializer().getData()));
+            BEAST_EXPECT(result[jss::result][jss::tx] == serialize(*tx));
+            BEAST_EXPECT(result[jss::result][jss::meta] == serialize(*meta));
         }
 
         auto const tx = env.jt(noop(alice), seq(env.seq(alice))).stx;

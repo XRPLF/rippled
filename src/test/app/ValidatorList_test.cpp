@@ -86,7 +86,7 @@ private:
         Serializer s;
         st.add(s);
 
-        return std::string(static_cast<char const*>(s.data()), s.size());
+        return std::string(reinterpret_cast<char const*>(s.data()), s.size());
     }
 
     static std::string
@@ -106,7 +106,7 @@ private:
         Serializer s;
         st.add(s);
 
-        return std::string(static_cast<char const*>(s.data()), s.size());
+        return std::string(reinterpret_cast<char const*>(s.data()), s.size());
     }
 
     static Validator

@@ -101,9 +101,9 @@ msig::operator()(Env& env, JTx& jt) const
             jo[jss::Account] = e.acct.human();
             jo[jss::SigningPubKey] = strHex(e.sig.pk().slice());
 
-            Serializer ss{buildMultiSigningData(*st, e.acct.id())};
+            auto v = buildMultiSigningData(*st, e.acct.id());
             auto const sig = ripple::sign(
-                *publicKeyType(e.sig.pk().slice()), e.sig.sk(), ss.slice());
+                *publicKeyType(e.sig.pk().slice()), e.sig.sk(), makeSlice(v));
             jo[sfTxnSignature.getJsonName()] =
                 strHex(Slice{sig.data(), sig.size()});
         }

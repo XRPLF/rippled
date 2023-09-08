@@ -49,7 +49,9 @@
 #include <ripple/overlay/Overlay.h>
 #include <ripple/overlay/Peer.h>
 #include <ripple/protocol/BuildInfo.h>
+#include <ripple/protocol/Deserializer.h>
 #include <ripple/protocol/HashPrefix.h>
+#include <ripple/protocol/Serializer.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/resource/Fees.h>
 #include <algorithm>
@@ -2203,7 +2205,7 @@ populateFetchPack(
 {
     assert(cnt != 0);
 
-    Serializer s(1024);
+    Serializer s;
 
     want.visitDifferences(
         have,
@@ -2211,7 +2213,7 @@ populateFetchPack(
             if (!withLeaves && n.isLeaf())
                 return true;
 
-            s.erase();
+            s.clear();
             n.serializeWithPrefix(s);
 
             auto const& hash = n.getHash().as_uint256();
@@ -2219,7 +2221,7 @@ populateFetchPack(
             protocol::TMIndexedObject* obj = into->add_objects();
             obj->set_ledgerseq(seq);
             obj->set_hash(hash.data(), hash.size());
-            obj->set_data(s.getDataPtr(), s.getLength());
+            obj->set_data(s.data(), s.size());
 
             return --cnt != 0;
         });
@@ -2288,8 +2290,6 @@ LedgerMaster::makeFetchPack(
 
     try
     {
-        Serializer hdr(128);
-
         protocol::TMGetObjectByHash reply;
         reply.set_query(false);
 
@@ -2312,18 +2312,15 @@ LedgerMaster::makeFetchPack(
             std::uint32_t lSeq = want->info().seq;
 
             {
-                // Serialize the ledger header:
-                hdr.erase();
-
-                hdr.add32(HashPrefix::ledgerMaster);
-                addRaw(want->info(), hdr);
-
                 // Add the data
                 protocol::TMIndexedObject* obj = reply.add_objects();
                 obj->set_hash(
                     want->info().hash.data(), want->info().hash.size());
-                obj->set_data(hdr.getDataPtr(), hdr.getLength());
                 obj->set_ledgerseq(lSeq);
+                serializeLedgerHeaderInto(
+                    HashPrefix::ledgerMaster,
+                    want->info(),
+                    *obj->mutable_data());
             }
 
             populateFetchPack(

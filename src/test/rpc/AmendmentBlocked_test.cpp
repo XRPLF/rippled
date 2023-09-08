@@ -159,7 +159,7 @@ class AmendmentBlocked_test : public beast::unit_test::suite
 
         // submit
         jt = env.jt(noop(alice));
-        s.erase();
+        s.clear();
         jt.stx->add(s);
         jr = env.rpc("submit", strHex(s.slice()))[jss::result];
         BEAST_EXPECT(

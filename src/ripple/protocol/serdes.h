@@ -17,26 +17,29 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PROTOCOL_PAYCHAN_H_INCLUDED
-#define RIPPLE_PROTOCOL_PAYCHAN_H_INCLUDED
+#ifndef RIPPLE_PROTOCOL_SERDES_H_INCLUDED
+#define RIPPLE_PROTOCOL_SERDES_H_INCLUDED
 
-#include <ripple/basics/XRPAmount.h>
-#include <ripple/basics/base_uint.h>
-#include <ripple/protocol/HashPrefix.h>
-#include <ripple/protocol/Serializer.h>
+#include <boost/endian/conversion.hpp>
+#include <cstdint>
 
 namespace ripple {
 
-inline void
-serializePayChanAuthorization(
-    SerializerBase& msg,
-    uint256 const& key,
-    XRPAmount const& amt)
-{
-    msg.add32(HashPrefix::paymentChannelClaim);
-    msg.addBitString(key);
-    msg.add64(amt.drops());
-}
+namespace serdes {
+
+/**   The largest size that can be encoded with a 1-byte header length. */
+constexpr std::size_t const maxSize1 = 193;
+
+/** The largest size that can be encoded with a 2-byte header length. */
+constexpr std::size_t const maxSize2 = 12481;
+
+/** The largest size that can be encoded with a 3-byte header length. */
+constexpr std::size_t const maxSize3 = 918745;
+
+constexpr unsigned char const offset2 = 193;
+constexpr unsigned char const offset3 = 241;
+
+}  // namespace serdes
 
 }  // namespace ripple
 

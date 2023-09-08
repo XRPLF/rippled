@@ -27,6 +27,15 @@ namespace ripple {
 template <typename Integer>
 class STInteger : public STBase
 {
+    // The semantics of this class are well-defined only for unsigned integers
+    // of specific lengths.
+    static_assert(
+        std::is_same_v<Integer, unsigned char> ||
+        std::is_same_v<Integer, std::uint8_t> ||
+        std::is_same_v<Integer, std::uint16_t> ||
+        std::is_same_v<Integer, std::uint32_t> ||
+        std::is_same_v<Integer, std::uint64_t>);
+
 public:
     using value_type = Integer;
 
@@ -47,7 +56,7 @@ public:
     getText() const override;
 
     void
-    add(Serializer& s) const override;
+    add(SerializerBase& s) const override;
 
     bool
     isDefault() const override;
@@ -107,11 +116,38 @@ STInteger<Integer>::move(std::size_t n, void* buf)
 
 template <typename Integer>
 inline void
-STInteger<Integer>::add(Serializer& s) const
+STInteger<Integer>::add(SerializerBase& s) const
 {
     assert(getFName().isBinary());
     assert(getFName().fieldType == getSType());
-    s.addInteger(value_);
+
+    if constexpr (
+        std::is_same_v<Integer, std::uint8_t> ||
+        std::is_same_v<Integer, unsigned char>)
+    {
+        s.add8(value_);
+        return;
+    }
+
+    if constexpr (std::is_same_v<Integer, std::uint16_t>)
+    {
+        s.add16(value_);
+        return;
+    }
+
+    if constexpr (std::is_same_v<Integer, std::uint32_t>)
+    {
+        s.add32(value_);
+        return;
+    }
+
+    if constexpr (std::is_same_v<Integer, std::uint64_t>)
+    {
+        s.add64(value_);
+        return;
+    }
+
+    assert(false);
 }
 
 template <typename Integer>

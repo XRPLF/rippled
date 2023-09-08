@@ -91,7 +91,7 @@ public:
         Serializer s;
         for (int d = 0; d < 3; ++d)
             s.add32(ripple::rand_int<std::uint32_t>(r));
-        return make_shamapitem(s.getSHA512Half(), s.slice());
+        return make_shamapitem(sha512Half(s.slice()), s.slice());
     }
 
     void

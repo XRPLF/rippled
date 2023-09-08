@@ -21,6 +21,7 @@
 #define RIPPLE_PROTOCOL_STBASE_H_INCLUDED
 
 #include <ripple/basics/contract.h>
+#include <ripple/protocol/Deserializer.h>
 #include <ripple/protocol/SField.h>
 #include <ripple/protocol/Serializer.h>
 #include <memory>
@@ -101,7 +102,7 @@ public:
     virtual Json::Value getJson(JsonOptions /*options*/) const;
 
     virtual void
-    add(Serializer& s) const;
+    add(SerializerBase& s) const;
 
     virtual bool
     isEquivalent(STBase const& t) const;
@@ -119,7 +120,7 @@ public:
     getFName() const;
 
     void
-    addFieldID(Serializer& s) const;
+    addFieldID(SerializerBase& s) const;
 
 protected:
     template <class T>

@@ -27,6 +27,38 @@
 namespace ripple {
 namespace detail {
 
+// Insert this transaction to the SLE's threading list
+void
+threadItem(TxMeta& meta, std::shared_ptr<SLE> const& sle)
+{
+    auto const prevTxID = sle->getFieldH256(sfPreviousTxnID);
+    auto const prevLedgerSeq = sle->getFieldU32(sfPreviousTxnLgrSeq);
+
+    if (prevTxID == meta.getTxID())
+    {
+        assert(prevLedgerSeq == meta.getLgrSeq());
+        return;
+    }
+
+    sle->setFieldH256(sfPreviousTxnID, meta.getTxID());
+    sle->setFieldU32(sfPreviousTxnLgrSeq, meta.getLgrSeq());
+
+    if (!prevTxID.isZero())
+    {
+        auto& node = meta.getAffectedNode(sle, sfModifiedNode);
+
+        if (node.getFieldIndex(sfPreviousTxnID) == -1)
+        {
+            assert(node.getFieldIndex(sfPreviousTxnLgrSeq) == -1);
+            node.setFieldH256(sfPreviousTxnID, prevTxID);
+            node.setFieldU32(sfPreviousTxnLgrSeq, prevLedgerSeq);
+        }
+
+        assert(node.getFieldH256(sfPreviousTxnID) == prevTxID);
+        assert(node.getFieldU32(sfPreviousTxnLgrSeq) == prevLedgerSeq);
+    }
+}
+
 void
 ApplyStateTable::apply(RawView& to) const
 {
@@ -117,15 +149,14 @@ ApplyStateTable::apply(
     std::optional<STAmount> const& deliver,
     beast::Journal j)
 {
-    // Build metadata and insert
-    auto const sTx = std::make_shared<Serializer>();
-    tx.add(*sTx);
-    std::shared_ptr<Serializer> sMeta;
+    Serializer sTx;
+    tx.add(sTx);
+
+    Serializer sMeta;
+
     if (!to.open())
     {
-        TxMeta meta(tx.getTransactionID(), to.seq());
-        if (deliver)
-            meta.setDeliveredAmount(*deliver);
+        TxMeta meta(tx.getTransactionID(), to.seq(), deliver);
         Mods newMod;
         for (auto& item : items_)
         {
@@ -251,14 +282,11 @@ ApplyStateTable::apply(
         for (auto& mod : newMod)
             to.rawReplace(mod.second);
 
-        sMeta = std::make_shared<Serializer>();
-        meta.addRaw(*sMeta, ter, to.txCount());
-
-        // VFALCO For diagnostics do we want to show
-        //        metadata even when the base view is open?
-        JLOG(j.trace()) << "metadata " << meta.getJson(JsonOptions::none);
+        // Build metadata and insert
+        meta.addRaw(sMeta, ter, to.txCount());
     }
-    to.rawTxInsert(tx.getTransactionID(), sTx, sMeta);
+
+    to.rawTxInsert(tx.getTransactionID(), sTx.slice(), sMeta.slice());
     apply(to);
 }
 
@@ -518,81 +546,6 @@ ApplyStateTable::destroyXRP(XRPAmount const& fee)
 
 //------------------------------------------------------------------------------
 
-// Insert this transaction to the SLE's threading list
-void
-ApplyStateTable::threadItem(TxMeta& meta, std::shared_ptr<SLE> const& sle)
-{
-    key_type prevTxID;
-    LedgerIndex prevLgrID;
-
-    if (!sle->thread(meta.getTxID(), meta.getLgrSeq(), prevTxID, prevLgrID))
-        return;
-
-    if (!prevTxID.isZero())
-    {
-        auto& node = meta.getAffectedNode(sle, sfModifiedNode);
-
-        if (node.getFieldIndex(sfPreviousTxnID) == -1)
-        {
-            assert(node.getFieldIndex(sfPreviousTxnLgrSeq) == -1);
-            node.setFieldH256(sfPreviousTxnID, prevTxID);
-            node.setFieldU32(sfPreviousTxnLgrSeq, prevLgrID);
-        }
-
-        assert(node.getFieldH256(sfPreviousTxnID) == prevTxID);
-        assert(node.getFieldU32(sfPreviousTxnLgrSeq) == prevLgrID);
-    }
-}
-
-std::shared_ptr<SLE>
-ApplyStateTable::getForMod(
-    ReadView const& base,
-    key_type const& key,
-    Mods& mods,
-    beast::Journal j)
-{
-    {
-        auto miter = mods.find(key);
-        if (miter != mods.end())
-        {
-            assert(miter->second);
-            return miter->second;
-        }
-    }
-    {
-        auto iter = items_.find(key);
-        if (iter != items_.end())
-        {
-            auto const& item = iter->second;
-            if (item.first == Action::erase)
-            {
-                // The Destination of an Escrow or a PayChannel may have been
-                // deleted.  In that case the account we're threading to will
-                // not be found and it is appropriate to return a nullptr.
-                JLOG(j.warn()) << "Trying to thread to deleted node";
-                return nullptr;
-            }
-            if (item.first != Action::cache)
-                return item.second;
-
-            // If it's only cached, then the node is being modified only by
-            // metadata; fall through and track it in the mods table.
-        }
-    }
-    auto c = base.read(keylet::unchecked(key));
-    if (!c)
-    {
-        // The Destination of an Escrow or a PayChannel may have been
-        // deleted.  In that case the account we're threading to will
-        // not be found and it is appropriate to return a nullptr.
-        JLOG(j.warn()) << "ApplyStateTable::getForMod: key not found";
-        return nullptr;
-    }
-    auto sle = std::make_shared<SLE>(*c);
-    mods.emplace(key, sle);
-    return sle;
-}
-
 void
 ApplyStateTable::threadTx(
     ReadView const& base,
@@ -601,16 +554,53 @@ ApplyStateTable::threadTx(
     Mods& mods,
     beast::Journal j)
 {
-    auto const sle = getForMod(base, keylet::account(to).key, mods, j);
-    if (!sle)
+    // Note that the result may be an unseated SLE pointer: when, for example,
+    // the account is the destination of an escrow or a payment channel which
+    // may have been deleted.
+    auto sle = [this,
+                &base,
+                &mods,
+                key = keylet::account(to).key]() -> std::shared_ptr<SLE> {
+        if (auto miter = mods.find(key); miter != mods.end())
+        {
+            assert(miter->second);
+            return miter->second;
+        }
+
+        if (auto iter = items_.find(key); iter != items_.end())
+        {
+            auto const& item = iter->second;
+
+            if (item.first == Action::erase)
+                return nullptr;
+
+            if (item.first != Action::cache)
+                return item.second;
+
+            // If it's only cached, then the node is being modified only by
+            // metadata; fall through and track it in the mods table.
+        }
+
+        if (auto c = base.read(keylet::unchecked(key)))
+        {
+            auto sle = std::make_shared<SLE>(*c);
+            mods.emplace(key, sle);
+            return sle;
+        }
+
+        return nullptr;
+    }();
+
+    if (sle)
     {
-        // The Destination of an Escrow or PayChannel may have been deleted.
-        // In that case the account we are threading to will not be found.
-        // So this logging is just a warning.
-        JLOG(j.warn()) << "Threading to non-existent account: " << toBase58(to);
+        threadItem(meta, sle);
         return;
     }
-    threadItem(meta, sle);
+
+    // The Destination of an Escrow or PayChannel may have been deleted.
+    // In that case the account we are threading to will not be found.
+    // So this logging is just a warning.
+    JLOG(j.warn()) << "Threading to non-existent account: " << toBase58(to);
 }
 
 void
@@ -621,8 +611,7 @@ ApplyStateTable::threadOwners(
     Mods& mods,
     beast::Journal j)
 {
-    LedgerEntryType const ledgerType{sle->getType()};
-    switch (ledgerType)
+    switch (auto const ledgerType = sle->getType(); ledgerType)
     {
         case ltACCOUNT_ROOT: {
             // Nothing to do
@@ -635,18 +624,18 @@ ApplyStateTable::threadOwners(
         }
         default: {
             // If sfAccount is present, thread to that account
-            if (auto const optSleAcct{(*sle)[~sfAccount]})
-                threadTx(base, meta, *optSleAcct, mods, j);
+            if (auto const acct = (*sle)[~sfAccount])
+                threadTx(base, meta, *acct, mods, j);
 
-            // Don't thread a check's sfDestination unless the amendment is
-            // enabled
+            // Only thread a check's sfDestination if the relevant amendment
+            // is enabled:
             if (ledgerType == ltCHECK &&
-                !base.rules().enabled(fixCheckThreading))
+                base.rules().enabled(fixCheckThreading))
                 break;
 
             // If sfDestination is present, thread to that account
-            if (auto const optSleDest{(*sle)[~sfDestination]})
-                threadTx(base, meta, *optSleDest, mods, j);
+            if (auto const dest = (*sle)[~sfDestination])
+                threadTx(base, meta, *dest, mods, j);
         }
     }
 }

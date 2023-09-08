@@ -874,7 +874,6 @@ parseObject(
     }
     catch (STObject::FieldErr const& e)
     {
-        std::cerr << "template_mismatch: " << e.what() << "\n";
         error = template_mismatch(inName);
     }
     catch (std::exception const&)

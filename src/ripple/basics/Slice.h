@@ -236,7 +236,16 @@ operator<<(Stream& s, Slice const& v)
 
 template <class T, std::size_t N>
 std::enable_if_t<
-    std::is_same<T, char>::value || std::is_same<T, unsigned char>::value,
+    std::is_same_v<T, char> || std::is_same_v<T, unsigned char>,
+    Slice>
+makeSlice(T const (&data)[N])
+{
+    return Slice(data, N);
+}
+
+template <class T, std::size_t N>
+std::enable_if_t<
+    std::is_same_v<T, char> || std::is_same_v<T, unsigned char>,
     Slice>
 makeSlice(std::array<T, N> const& a)
 {
@@ -245,7 +254,7 @@ makeSlice(std::array<T, N> const& a)
 
 template <class T, class Alloc>
 std::enable_if_t<
-    std::is_same<T, char>::value || std::is_same<T, unsigned char>::value,
+    std::is_same_v<T, char> || std::is_same_v<T, unsigned char>,
     Slice>
 makeSlice(std::vector<T, Alloc> const& v)
 {

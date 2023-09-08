@@ -744,7 +744,7 @@ adjustOwnerCount(
     view.update(sle);
 }
 
-std::function<void(SLE::ref)>
+std::function<void(std::shared_ptr<SLE> const&)>
 describeOwnerDir(AccountID const& account)
 {
     return [&account](std::shared_ptr<SLE> const& sle) {
@@ -758,15 +758,15 @@ trustCreate(
     const bool bSrcHigh,
     AccountID const& uSrcAccountID,
     AccountID const& uDstAccountID,
-    uint256 const& uIndex,      // --> ripple state entry
-    SLE::ref sleAccount,        // --> the account being set.
-    const bool bAuth,           // --> authorize account.
-    const bool bNoRipple,       // --> others cannot ripple through
-    const bool bFreeze,         // --> funds cannot leave
-    STAmount const& saBalance,  // --> balance of account being set.
-                                // Issuer should be noAccount()
-    STAmount const& saLimit,    // --> limit for account being set.
-                                // Issuer should be the account being set.
+    uint256 const& uIndex,                   // ripple state entry
+    std::shared_ptr<SLE> const& sleAccount,  // the account being set.
+    const bool bAuth,                        // authorize account.
+    const bool bNoRipple,                    // others cannot ripple through
+    const bool bFreeze,                      // funds cannot leave
+    STAmount const& saBalance,               // balance of account being set.
+                                             // Issuer should be noAccount()
+    STAmount const& saLimit,                 // limit for account being set.
+                              // Issuer should be the account being set.
     std::uint32_t uQualityIn,
     std::uint32_t uQualityOut,
     beast::Journal j)
@@ -1167,19 +1167,18 @@ accountSend(
             view, uSenderID, uReceiverID, saAmount, saActual, j, waiveFee);
     }
 
-    /* XRP send which does not check reserve and can do pure adjustment.
-     * Note that sender or receiver may be null and this not a mistake; this
-     * setup is used during pathfinding and it is carefully controlled to
-     * ensure that transfers are balanced.
-     */
-    TER terResult(tesSUCCESS);
+    // XRP send which does not check reserve and can do pure adjustment. Note
+    // that sender or receiver may be null and this not a mistake; this setup
+    // is used during pathfinding, where it is carefully controlled to ensure
+    // that transfers are balanced.
+    std::shared_ptr<SLE> sender;
+    std::shared_ptr<SLE> receiver;
 
-    SLE::pointer sender = uSenderID != beast::zero
-        ? view.peek(keylet::account(uSenderID))
-        : SLE::pointer();
-    SLE::pointer receiver = uReceiverID != beast::zero
-        ? view.peek(keylet::account(uReceiverID))
-        : SLE::pointer();
+    if (uSenderID != beast::zero)
+        sender = view.peek(keylet::account(uSenderID));
+
+    if (uReceiverID != beast::zero)
+        receiver = view.peek(keylet::account(uReceiverID));
 
     if (auto stream = j.trace())
     {
@@ -1197,11 +1196,13 @@ accountSend(
                << ") : " << saAmount.getFullText();
     }
 
+    TER terResult(tesSUCCESS);
+
     if (sender)
     {
         if (sender->getFieldAmount(sfBalance) < saAmount)
         {
-            // VFALCO Its laborious to have to mutate the
+            // VFALCO It's laborious to have to mutate the
             //        TER based on params everywhere
             terResult = view.open() ? TER{telFAILED_PROCESSING}
                                     : TER{tecFAILED_PROCESSING};
@@ -1249,7 +1250,7 @@ accountSend(
 static bool
 updateTrustLine(
     ApplyView& view,
-    SLE::pointer state,
+    std::shared_ptr<SLE> state,
     bool bSenderHigh,
     AccountID const& sender,
     STAmount const& before,
@@ -1478,8 +1479,8 @@ transferXRP(
     assert(from != to);
     assert(amount.native());
 
-    SLE::pointer const sender = view.peek(keylet::account(from));
-    SLE::pointer const receiver = view.peek(keylet::account(to));
+    auto const sender = view.peek(keylet::account(from));
+    auto const receiver = view.peek(keylet::account(to));
     if (!sender || !receiver)
         return tefINTERNAL;
 

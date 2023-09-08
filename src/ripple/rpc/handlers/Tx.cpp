@@ -129,9 +129,9 @@ doTxPostgres(RPC::Context& context, TxArgs const& args)
             if (args.binary)
             {
                 SerialIter it(item->slice());
-                it.skip(it.getVLDataLength());  // skip transaction
-                Blob blob = it.getVL();
-                res.meta = std::move(blob);
+                (void)it.getVL();  // skip the transaction
+                Slice s = it.getVL();
+                res.meta = Blob{s.begin(), s.end()};
             }
             else
             {
@@ -260,7 +260,9 @@ doTxHelp(RPC::Context& context, TxArgs args)
     {
         if (args.binary)
         {
-            result.meta = meta->getAsObject().getSerializer().getData();
+            Blob b;
+            serializeInto(b, meta->getAsObject());
+            result.meta = std::move(b);
         }
         else
         {

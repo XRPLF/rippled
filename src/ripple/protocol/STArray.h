@@ -125,7 +125,7 @@ public:
     getJson(JsonOptions index) const override;
 
     void
-    add(Serializer& s) const override;
+    add(SerializerBase& s) const override;
 
     void
     sort(bool (*compare)(const STObject& o1, const STObject& o2));

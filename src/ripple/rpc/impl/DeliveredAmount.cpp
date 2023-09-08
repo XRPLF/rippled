@@ -54,10 +54,8 @@ getDeliveredAmount(
     if (!serializedTx)
         return {};
 
-    if (transactionMeta.hasDeliveredAmount())
-    {
-        return transactionMeta.getDeliveredAmount();
-    }
+    if (auto da = transactionMeta.getDeliveredAmount())
+        return *da;
 
     if (serializedTx->isFieldPresent(sfAmount))
     {

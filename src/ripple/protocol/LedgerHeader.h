@@ -88,7 +88,7 @@ getCloseAgree(LedgerHeader const& info)
 }
 
 void
-addRaw(LedgerHeader const&, Serializer&, bool includeHash = false);
+addRaw(LedgerHeader const&, Serializer&, bool includeHash = false) = delete;
 
 /** Deserialize a ledger header from a byte array. */
 LedgerHeader
@@ -97,6 +97,54 @@ deserializeHeader(Slice data, bool hasHash = false);
 /** Deserialize a ledger header (prefixed with 4 bytes) from a byte array. */
 LedgerHeader
 deserializePrefixedHeader(Slice data, bool hasHash = false);
+
+/** Serialize a ledger header.
+
+    @note For legacy reasons, the ledger header does not use "ST encoding"
+          and is just directly serialized. While unfortunate and confusing
+          the format is now set in stone and any change would break things
+          that cannot be easily unbroken.
+ */
+/** @{ */
+void
+serializeLedgerHeader(
+    LedgerHeader const& header,
+    SerializerBase& s,
+    bool includeHash = false);
+
+template <class Buffer>
+void
+serializeLedgerHeaderInto(
+    LedgerHeader const& header,
+    Buffer& into,
+    bool includeHash = false)
+{
+    SerializerInto s(into);
+    serializeLedgerHeader(header, s, includeHash);
+}
+
+inline void
+serializeLedgerHeader(
+    HashPrefix prefix,
+    LedgerHeader const& header,
+    SerializerBase& s,
+    bool includeHash = false)
+{
+    s.add32(prefix);
+    serializeLedgerHeader(header, s, includeHash);
+}
+
+template <class Buffer>
+void
+serializeLedgerHeaderInto(
+    HashPrefix prefix,
+    LedgerHeader const& header,
+    Buffer& into,
+    bool includeHash = false)
+{
+    SerializerInto s(into);
+    serializeLedgerHeader(prefix, header, s, includeHash);
+}
 
 }  // namespace ripple
 

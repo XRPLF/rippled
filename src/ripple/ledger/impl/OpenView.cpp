@@ -60,14 +60,12 @@ public:
     dereference() const override
     {
         value_type result;
-        {
-            SerialIter sit(iter_->second.txn->slice());
-            result.first = std::make_shared<STTx const>(sit);
-        }
+        result.first = std::make_shared<STTx const>(iter_->second.txn);
         if (metadata_)
         {
-            SerialIter sit(iter_->second.meta->slice());
-            result.second = std::make_shared<STObject const>(sit, sfMetadata);
+            assert(!iter_->second.meta.empty());
+            result.second = std::make_shared<STObject const>(
+                iter_->second.meta, sfMetadata);
         }
         return result;
     }
@@ -130,6 +128,7 @@ void
 OpenView::apply(TxsRawView& to) const
 {
     items_.apply(to);
+
     for (auto const& item : txs_)
         to.rawTxInsert(item.first, item.second.txn, item.second.meta);
 }
@@ -213,18 +212,20 @@ OpenView::txExists(key_type const& key) const
 auto
 OpenView::txRead(key_type const& key) const -> tx_type
 {
-    auto const iter = txs_.find(key);
-    if (iter == txs_.end())
-        return base_->txRead(key);
-    auto const& item = iter->second;
-    auto stx = std::make_shared<STTx const>(SerialIter{item.txn->slice()});
-    decltype(tx_type::second) sto;
-    if (item.meta)
-        sto = std::make_shared<STObject const>(
-            SerialIter{item.meta->slice()}, sfMetadata);
-    else
-        sto = nullptr;
-    return {std::move(stx), std::move(sto)};
+    if (auto const iter = txs_.find(key); iter != txs_.end())
+        return {
+            std::make_shared<decltype(tx_type::first)::element_type>(
+                iter->second.txn),
+            [&iter]() -> decltype(tx_type::second) {
+                if (iter->second.meta.empty())
+                    return {};
+
+                return std::make_shared<decltype(
+                    tx_type::second)::element_type>(
+                    iter->second.meta, sfMetadata);
+            }()};
+
+    return base_->txRead(key);
 }
 
 //---
@@ -258,10 +259,7 @@ OpenView::rawDestroyXRP(XRPAmount const& fee)
 //---
 
 void
-OpenView::rawTxInsert(
-    key_type const& key,
-    std::shared_ptr<Serializer const> const& txn,
-    std::shared_ptr<Serializer const> const& metaData)
+OpenView::rawTxInsert(key_type const& key, Slice txn, Slice metaData)
 {
     auto const result = txs_.emplace(
         std::piecewise_construct,

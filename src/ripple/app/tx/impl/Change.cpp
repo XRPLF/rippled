@@ -249,7 +249,7 @@ Change::applyAmendment()
 
     auto const k = keylet::amendments();
 
-    SLE::pointer amendmentObject = view().peek(k);
+    auto amendmentObject = view().peek(k);
 
     if (!amendmentObject)
     {
@@ -346,16 +346,16 @@ Change::applyFee()
 {
     auto const k = keylet::fees();
 
-    SLE::pointer feeObject = view().peek(k);
+    auto feeObject = view().peek(k);
 
     if (!feeObject)
     {
         feeObject = std::make_shared<SLE>(k);
         view().insert(feeObject);
     }
-    auto set = [](SLE::pointer& feeObject, STTx const& tx, auto const& field) {
-        feeObject->at(field) = tx[field];
-    };
+    auto set = [](std::shared_ptr<SLE>& feeObject,
+                  STTx const& tx,
+                  auto const& field) { feeObject->at(field) = tx[field]; };
     if (view().rules().enabled(featureXRPFees))
     {
         set(feeObject, ctx_.tx, sfBaseFeeDrops);
@@ -421,7 +421,7 @@ Change::applyUNLModify()
                     << " validator data:" << strHex(validator);
 
     auto const k = keylet::negativeUNL();
-    SLE::pointer negUnlObject = view().peek(k);
+    auto negUnlObject = view().peek(k);
     if (!negUnlObject)
     {
         negUnlObject = std::make_shared<SLE>(k);

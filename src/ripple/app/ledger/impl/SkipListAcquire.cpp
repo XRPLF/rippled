@@ -147,9 +147,7 @@ SkipListAcquire::processData(
     JLOG(journal_.trace()) << "got data for " << hash_;
     try
     {
-        if (auto sle =
-                std::make_shared<SLE>(SerialIter{item->slice()}, item->key());
-            sle)
+        if (auto sle = std::make_shared<SLE>(item->slice(), item->key()))
         {
             if (auto const& skipList = sle->getFieldV256(sfHashes).value();
                 !skipList.empty())

@@ -247,7 +247,7 @@ SetTrust::doApply()
             viewJ);
     }
 
-    SLE::pointer sleDst = view().peek(keylet::account(uDstAccountID));
+    auto sleDst = view().peek(keylet::account(uDstAccountID));
 
     if (!sleDst)
     {
@@ -259,7 +259,7 @@ SetTrust::doApply()
     STAmount saLimitAllow = saLimitAmount;
     saLimitAllow.setIssuer(account_);
 
-    SLE::pointer sleRippleState =
+    auto sleRippleState =
         view().peek(keylet::line(account_, uDstAccountID, currency));
 
     if (sleRippleState)
@@ -274,8 +274,8 @@ SetTrust::doApply()
         std::uint32_t uHighQualityOut;
         auto const& uLowAccountID = !bHigh ? account_ : uDstAccountID;
         auto const& uHighAccountID = bHigh ? account_ : uDstAccountID;
-        SLE::ref sleLowAccount = !bHigh ? sle : sleDst;
-        SLE::ref sleHighAccount = bHigh ? sle : sleDst;
+        auto const& sleLowAccount = !bHigh ? sle : sleDst;
+        auto const& sleHighAccount = bHigh ? sle : sleDst;
 
         //
         // Balances

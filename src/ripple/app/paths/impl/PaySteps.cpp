@@ -23,6 +23,7 @@
 #include <ripple/basics/contract.h>
 #include <ripple/json/json_writer.h>
 #include <ripple/ledger/ReadView.h>
+#include <ripple/protocol/Book.h>
 #include <ripple/protocol/Feature.h>
 
 #include <algorithm>

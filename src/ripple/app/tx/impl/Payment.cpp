@@ -319,7 +319,7 @@ Payment::doApply()
 
     // Open a ledger for editing.
     auto const k = keylet::account(uDstAccountID);
-    SLE::pointer sleDst = view().peek(k);
+    auto sleDst = view().peek(k);
 
     if (!sleDst)
     {

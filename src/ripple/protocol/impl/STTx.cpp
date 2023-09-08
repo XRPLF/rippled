@@ -44,16 +44,12 @@ namespace ripple {
 static auto
 getTxFormat(TxType type)
 {
-    auto format = TxFormats::getInstance().findByType(type);
+    if (auto format = TxFormats::getInstance().findByType(type))
+        return format;
 
-    if (format == nullptr)
-    {
-        Throw<std::runtime_error>(
-            "Invalid transaction type " +
-            std::to_string(safe_cast<std::underlying_type_t<TxType>>(type)));
-    }
-
-    return format;
+    Throw<std::runtime_error>(
+        "STTx (" + std::to_string(static_cast<std::uint16_t>(type)) +
+        "): Unknown Tx Format");
 }
 
 STTx::STTx(STObject&& object) : STObject(std::move(object))
@@ -63,14 +59,12 @@ STTx::STTx(STObject&& object) : STObject(std::move(object))
     tid_ = getHash(HashPrefix::transactionID);
 }
 
-STTx::STTx(SerialIter& sit) : STObject(sfTransaction)
+STTx::STTx(Slice data) : STObject(sfTransaction)
 {
-    int length = sit.getBytesLeft();
-
-    if ((length < txMinSizeBytes) || (length > txMaxSizeBytes))
+    if ((data.size() < txMinSizeBytes) || (data.size() > txMaxSizeBytes))
         Throw<std::runtime_error>("Transaction length invalid");
 
-    if (set(sit))
+    if (SerialIter sit(data); set(sit))
         Throw<std::runtime_error>("Transaction contains an object terminator");
 
     tx_type_ = safe_cast<TxType>(getFieldU16(sfTransactionType));
@@ -80,12 +74,18 @@ STTx::STTx(SerialIter& sit) : STObject(sfTransaction)
 }
 
 STTx::STTx(TxType type, std::function<void(STObject&)> assembler)
-    : STObject(sfTransaction)
-{
-    auto format = getTxFormat(type);
+    : STObject(
+          [type]() -> SOTemplate const& {
+              if (auto f = TxFormats::getInstance().findByType(type))
+                  return f->getSOTemplate();
 
-    set(format->getSOTemplate());
-    setFieldU16(sfTransactionType, format->getType());
+              Throw<std::runtime_error>(
+                  "STTx (" + std::to_string(static_cast<std::uint16_t>(type)) +
+                  "): Unknown format");
+          }(),
+          sfTransaction)
+{
+    setFieldU16(sfTransactionType, type);
 
     assembler(*this);
 
@@ -151,13 +151,11 @@ STTx::getMentionedAccounts() const
     return list;
 }
 
-static Blob
-getSigningData(STTx const& that)
+static void
+getSigningData(STTx const& tx, SerializerBase& s)
 {
-    Serializer s;
     s.add32(HashPrefix::txSign);
-    that.addWithoutSigningFields(s);
-    return s.getData();
+    tx.addWithoutSigningFields(s);
 }
 
 uint256
@@ -197,11 +195,9 @@ STTx::getSeqProxy() const
 void
 STTx::sign(PublicKey const& publicKey, SecretKey const& secretKey)
 {
-    auto const data = getSigningData(*this);
-
-    auto const sig = ripple::sign(publicKey, secretKey, makeSlice(data));
-
-    setFieldVL(sfTxnSignature, sig);
+    Serializer ser;
+    getSigningData(*this, ser);
+    setFieldVL(sfTxnSignature, ripple::sign(publicKey, secretKey, ser.slice()));
     tid_ = getHash(HashPrefix::transactionID);
 }
 
@@ -236,15 +232,15 @@ Json::Value STTx::getJson(JsonOptions) const
 Json::Value
 STTx::getJson(JsonOptions options, bool binary) const
 {
-    if (binary)
-    {
-        Json::Value ret;
-        Serializer s = STObject::getSerializer();
-        ret[jss::tx] = strHex(s.peekData());
-        ret[jss::hash] = to_string(getTransactionID());
-        return ret;
-    }
-    return getJson(options);
+    if (!binary)
+        return getJson(options);
+
+    Json::Value ret;
+    Serializer s;
+    add(s);
+    ret[jss::tx] = strHex(s.slice());
+    ret[jss::hash] = to_string(getTransactionID());
+    return ret;
 }
 
 std::string const&
@@ -271,14 +267,14 @@ STTx::getMetaSQL(std::uint32_t inLedger, std::string const& escapedMetaData)
 // VFALCO This could be a free function elsewhere
 std::string
 STTx::getMetaSQL(
-    Serializer rawTxn,
+    Serializer const& rawTxn,
     std::uint32_t inLedger,
     char status,
     std::string const& escapedMetaData) const
 {
     static boost::format bfTrans(
         "('%s', '%s', '%s', '%d', '%d', '%c', %s, %s)");
-    std::string rTxn = sqlBlobLiteral(rawTxn.peekData());
+    std::string rTxn = sqlBlobLiteral(rawTxn.slice());
 
     auto format = TxFormats::getInstance().findByType(tx_type_);
     assert(format != nullptr);
@@ -309,11 +305,11 @@ STTx::checkSingleSign(RequireFullyCanonicalSig requireCanonicalSig) const
         if (publicKeyType(makeSlice(spk)))
         {
             Blob const signature = getFieldVL(sfTxnSignature);
-            Blob const data = getSigningData(*this);
-
+            Serializer ser;
+            getSigningData(*this, ser);
             validSig = verify(
                 PublicKey(makeSlice(spk)),
-                makeSlice(data),
+                ser.slice(),
                 makeSlice(signature),
                 fullyCanonical);
         }
@@ -354,7 +350,7 @@ STTx::checkMultiSign(
     // We can ease the computational load inside the loop a bit by
     // pre-constructing part of the data that we hash.  Fill a Serializer
     // with the stuff that stays constant from signature to signature.
-    Serializer const dataStart{startMultiSigningData(*this)};
+    auto const preamble = startMultiSigningData(*this);
 
     // We also use the sfAccount field inside the loop.  Get it once.
     auto const txnAccountID = getAccountID(sfAccount);
@@ -389,8 +385,9 @@ STTx::checkMultiSign(
         bool validSig = false;
         try
         {
-            Serializer s = dataStart;
-            finishMultiSigningData(accountID, s);
+            auto data = preamble;
+            SerializerInto s(data);
+            s.addBitString(accountID);
 
             auto spk = signer.getFieldVL(sfSigningPubKey);
 
@@ -400,7 +397,7 @@ STTx::checkMultiSign(
 
                 validSig = verify(
                     PublicKey(makeSlice(spk)),
-                    s.slice(),
+                    makeSlice(data),
                     makeSlice(signature),
                     fullyCanonical);
             }
@@ -431,11 +428,11 @@ isMemoOkay(STObject const& st, std::string& reason)
 
     // The number 2048 is a preallocation hint, not a hard limit
     // to avoid allocate/copy/free's
-    Serializer s(2048);
+    Serializer s;
     memos.add(s);
 
     // FIXME move the memo limit into a config tunable
-    if (s.getDataLength() > 1024)
+    if (s.size() > 1024)
     {
         reason = "The memo exceeds the maximum allowed size.";
         return false;
@@ -551,8 +548,7 @@ sterilize(STTx const& stx)
 {
     Serializer s;
     stx.add(s);
-    SerialIter sit(s.slice());
-    return std::make_shared<STTx const>(std::ref(sit));
+    return std::make_shared<STTx const>(s.slice());
 }
 
 bool

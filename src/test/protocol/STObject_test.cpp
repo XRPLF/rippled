@@ -293,12 +293,21 @@ public:
             {sfTestV256, soeOPTIONAL},
         };
 
+        auto const serializersEqual = [](STObject const& o1,
+                                         STObject const& o2) {
+            Serializer s1;
+            o1.add(s1);
+
+            Serializer s2;
+            o2.add(s2);
+
+            return s1.slice() == s2.slice();
+        };
+
         STObject object1(elements, sfTestObject);
         STObject object2(object1);
 
-        unexpected(
-            object1.getSerializer() != object2.getSerializer(),
-            "STObject error 1");
+        unexpected(!serializersEqual(object1, object2), "STObject error 1");
 
         unexpected(
             object1.isFieldPresent(sfTestH256) ||
@@ -312,7 +321,7 @@ public:
         unexpected(
             object1.getFieldH256(sfTestH256) != uint256(), "STObject error 3");
 
-        if (object1.getSerializer() == object2.getSerializer())
+        if (serializersEqual(object1, object2))
         {
             log << "O1: " << object1.getJson(JsonOptions::none) << '\n'
                 << "O2: " << object2.getJson(JsonOptions::none) << std::endl;
@@ -329,9 +338,7 @@ public:
 
         unexpected(object1.getFlags() != 0, "STObject error 6");
 
-        unexpected(
-            object1.getSerializer() != object2.getSerializer(),
-            "STObject error 7");
+        unexpected(!serializersEqual(object1, object2), "STObject error 7");
 
         STObject copy(object1);
 
@@ -339,15 +346,11 @@ public:
 
         unexpected(copy.isFieldPresent(sfTestH256), "STObject error 9");
 
-        unexpected(
-            object1.getSerializer() != copy.getSerializer(),
-            "STObject error 10");
+        unexpected(!serializersEqual(object1, copy), "STObject error 10");
 
         copy.setFieldU32(sfTestU32, 1);
 
-        unexpected(
-            object1.getSerializer() == copy.getSerializer(),
-            "STObject error 11");
+        unexpected(serializersEqual(object1, copy), "STObject error 11");
 
         for (int i = 0; i < 1000; i++)
         {
@@ -357,9 +360,8 @@ public:
 
             Serializer s;
             object1.add(s);
-            SerialIter it(s.slice());
 
-            STObject object3(elements, it, sfTestObject);
+            STObject object3(elements, s.slice(), sfTestObject);
 
             unexpected(object1.getFieldVL(sfTestVL) != j, "STObject error");
 
@@ -377,9 +379,8 @@ public:
 
             Serializer s;
             object1.add(s);
-            SerialIter it(s.slice());
 
-            STObject object3(elements, it, sfTestObject);
+            STObject object3(elements, s.slice(), sfTestObject);
 
             auto const& uints1 = object1.getFieldV256(sfTestV256);
             auto const& uints3 = object3.getFieldV256(sfTestV256);
@@ -694,8 +695,7 @@ testMalformed()
     try
     {
         std::array<std::uint8_t, 3> const payload{{0xe2, 0xe1, 0xe2}};
-        SerialIter sit{makeSlice(payload)};
-        auto obj = std::make_shared<STObject>(sit, sfMetadata);
+        auto obj = std::make_shared<STObject>(makeSlice(payload), sfMetadata);
         BEAST_EXPECT(!obj);
     }
     catch (std::exception const& e)

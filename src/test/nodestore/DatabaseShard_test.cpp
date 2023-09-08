@@ -405,25 +405,28 @@ class DatabaseShard_test : public TestBase
         std::shared_ptr<Ledger const> const& next = {})
     {
         // Store header
-        {
-            Serializer s(sizeof(std::uint32_t) + sizeof(LedgerInfo));
-            s.add32(HashPrefix::ledgerMaster);
-            addRaw(ledger.info(), s);
-            db.store(
-                hotLEDGER,
-                std::move(s.modData()),
-                ledger.info().hash,
-                ledger.info().seq);
-        }
+        db.store(
+            hotLEDGER,
+            [&ledger]() {
+                Blob b;
+                serializeLedgerHeaderInto(
+                    HashPrefix::ledgerMaster, ledger.info(), b);
+                return b;
+            }(),
+            ledger.info().hash,
+            ledger.info().seq);
 
         // Store the state map
         auto visitAcc = [&](SHAMapTreeNode const& node) {
-            Serializer s;
-            node.serializeWithPrefix(s);
             db.store(
                 node.getType() == SHAMapNodeType::tnINNER ? hotUNKNOWN
                                                           : hotACCOUNT_NODE,
-                std::move(s.modData()),
+                [&node]() {
+                    Blob b;
+                    SerializerInto s(b);
+                    node.serializeWithPrefix(s);
+                    return b;
+                }(),
                 node.getHash().as_uint256(),
                 ledger.info().seq);
             return true;
@@ -445,12 +448,15 @@ class DatabaseShard_test : public TestBase
 
         // Store the transaction map
         auto visitTx = [&](SHAMapTreeNode& node) {
-            Serializer s;
-            node.serializeWithPrefix(s);
             db.store(
                 node.getType() == SHAMapNodeType::tnINNER ? hotUNKNOWN
                                                           : hotTRANSACTION_NODE,
-                std::move(s.modData()),
+                [&node]() {
+                    Blob b;
+                    SerializerInto s(b);
+                    node.serializeWithPrefix(s);
+                    return b;
+                }(),
                 node.getHash().as_uint256(),
                 ledger.info().seq);
             return true;
@@ -490,12 +496,15 @@ class DatabaseShard_test : public TestBase
 
         // walk shamap and validate each node
         auto fcompAcc = [&](SHAMapTreeNode& node) -> bool {
-            Serializer s;
-            node.serializeWithPrefix(s);
             auto nSrc{NodeObject::createObject(
                 node.getType() == SHAMapNodeType::tnINNER ? hotUNKNOWN
                                                           : hotACCOUNT_NODE,
-                std::move(s.modData()),
+                [&node]() {
+                    Blob b;
+                    SerializerInto s(b);
+                    node.serializeWithPrefix(s);
+                    return b;
+                }(),
                 node.getHash().as_uint256())};
             if (!BEAST_EXPECT(nSrc))
                 return false;
@@ -513,12 +522,15 @@ class DatabaseShard_test : public TestBase
             ledger.stateMap().snapShot(false)->visitNodes(fcompAcc);
 
         auto fcompTx = [&](SHAMapTreeNode& node) -> bool {
-            Serializer s;
-            node.serializeWithPrefix(s);
             auto nSrc{NodeObject::createObject(
                 node.getType() == SHAMapNodeType::tnINNER ? hotUNKNOWN
                                                           : hotTRANSACTION_NODE,
-                std::move(s.modData()),
+                [&node]() {
+                    Blob b;
+                    SerializerInto s(b);
+                    node.serializeWithPrefix(s);
+                    return b;
+                }(),
                 node.getHash().as_uint256())};
             if (!BEAST_EXPECT(nSrc))
                 return false;
@@ -645,13 +657,20 @@ class DatabaseShard_test : public TestBase
             if (arrInd % ledgersPerShard == (ledgersPerShard - 1))
             {
                 uint256 const finalKey_{0};
-                Serializer s;
-                s.add32(Shard::version);
-                s.add32(shardStore.firstLedgerSeq(shardIndex));
-                s.add32(shardStore.lastLedgerSeq(shardIndex));
-                s.addRaw(data.ledgers_[arrInd]->info().hash.data(), 256 / 8);
                 shardStore.store(
-                    hotUNKNOWN, std::move(s.modData()), finalKey_, *ledgerSeq);
+                    hotUNKNOWN,
+                    [&shardStore, &data, arrInd, shardIndex]() {
+                        Blob b;
+                        SerializerInto s(b);
+                        s.add32(Shard::version);
+                        s.add32(shardStore.firstLedgerSeq(shardIndex));
+                        s.add32(shardStore.lastLedgerSeq(shardIndex));
+                        s.addRaw(
+                            data.ledgers_[arrInd]->info().hash.data(), 256 / 8);
+                        return b;
+                    }(),
+                    finalKey_,
+                    *ledgerSeq);
             }
             shardStore.setStored(data.ledgers_[arrInd]);
         }
@@ -1030,18 +1049,23 @@ class DatabaseShard_test : public TestBase
                     if (arrInd % ledgersPerShard == (ledgersPerShard - 1))
                     {
                         uint256 const finalKey_{0};
-                        Serializer s;
-                        s.add32(Shard::version + (i == 0));
-                        s.add32(db->firstLedgerSeq(shardIndex) + (i == 1));
-                        s.add32(db->lastLedgerSeq(shardIndex) - (i == 3));
-                        s.addRaw(
-                            data.ledgers_[arrInd - (i == 4)]
-                                ->info()
-                                .hash.data(),
-                            256 / 8);
                         db->store(
                             hotUNKNOWN,
-                            std::move(s.modData()),
+                            [&db, &data, arrInd, shardIndex, i]() {
+                                Blob b;
+                                SerializerInto s(b);
+                                s.add32(Shard::version + (i == 0));
+                                s.add32(
+                                    db->firstLedgerSeq(shardIndex) + (i == 1));
+                                s.add32(
+                                    db->lastLedgerSeq(shardIndex) - (i == 3));
+                                s.addRaw(
+                                    data.ledgers_[arrInd - (i == 4)]
+                                        ->info()
+                                        .hash.data(),
+                                    256 / 8);
+                                return b;
+                            }(),
                             finalKey_,
                             *ledgerSeq);
                     }

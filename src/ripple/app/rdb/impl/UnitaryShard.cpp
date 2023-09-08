@@ -158,7 +158,7 @@ updateLedgerDBs(
                 session
                     << (STTx::getMetaSQLInsertReplaceHeader() +
                         item.first->getMetaSQL(
-                            ledgerSeq, sqlBlobLiteral(s.modData())) +
+                            ledgerSeq, sqlBlobLiteral(s.slice())) +
                         ';');
             }
         }

@@ -63,7 +63,7 @@ verify(
     SF_VL const& sigField = sfSignature);
 
 /** Return a Serializer suitable for computing a multisigning TxnSignature. */
-Serializer
+std::vector<std::uint8_t>
 buildMultiSigningData(STObject const& obj, AccountID const& signingID);
 
 /** Break the multi-signing hash computation into 2 parts for optimization.
@@ -78,11 +78,11 @@ buildMultiSigningData(STObject const& obj, AccountID const& signingID);
      2. finishMuiltiSigningData caps the passed in serializer with each
         signer's unique data.
 */
-Serializer
+std::vector<std::uint8_t>
 startMultiSigningData(STObject const& obj);
 
 inline void
-finishMultiSigningData(AccountID const& signingID, Serializer& s)
+finishMultiSigningData(AccountID const& signingID, SerializerBase& s)
 {
     s.addBitString(signingID);
 }

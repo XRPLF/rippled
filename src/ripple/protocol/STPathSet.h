@@ -184,7 +184,7 @@ public:
     STPathSet(SerialIter& sit, SField const& name);
 
     void
-    add(Serializer& s) const override;
+    add(SerializerBase& s) const override;
 
     Json::Value getJson(JsonOptions) const override;
 

@@ -126,10 +126,8 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
         return {response, errorStatus};
     }
 
-    Serializer s;
-    addRaw(ledger->info(), s, true);
-
-    response.set_ledger_header(s.peekData().data(), s.getLength());
+    serializeLedgerHeaderInto(
+        ledger->info(), *response.mutable_ledger_header(), true);
 
     if (request.transactions())
     {
@@ -142,12 +140,16 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
                 {
                     auto txn = response.mutable_transactions_list()
                                    ->add_transactions();
-                    Serializer sTxn = i.first->getSerializer();
-                    txn->set_transaction_blob(sTxn.data(), sTxn.getLength());
+
+                    {
+                        SerializerInto s(*txn->mutable_transaction_blob());
+                        i.first->add(s);
+                    }
+
                     if (i.second)
                     {
-                        Serializer sMeta = i.second->getSerializer();
-                        txn->set_metadata_blob(sMeta.data(), sMeta.getLength());
+                        SerializerInto s(*txn->mutable_metadata_blob());
+                        i.second->add(s);
                     }
                 }
                 else
@@ -240,8 +242,8 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
                         obj->set_successor(ub->key().data(), ub->key().size());
                     if (objectType == ltDIR_NODE)
                     {
-                        auto sle = std::make_shared<SLE>(SerialIter{blob}, k);
-                        if (!sle->isFieldPresent(sfOwner))
+                        if (auto sle = std::make_shared<SLE>(blob, k);
+                            !sle->isFieldPresent(sfOwner))
                         {
                             auto bookBase = keylet::quality({ltDIR_NODE, k}, 0);
                             if (!inBase && inDesired)

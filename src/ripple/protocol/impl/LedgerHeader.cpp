@@ -17,25 +17,28 @@
 */
 //==============================================================================
 
+#include <ripple/protocol/Deserializer.h>
 #include <ripple/protocol/LedgerHeader.h>
 
 namespace ripple {
 
 void
-addRaw(LedgerHeader const& info, Serializer& s, bool includeHash)
+serializeLedgerHeader(
+    LedgerHeader const& header,
+    SerializerBase& s,
+    bool includeHash)
 {
-    s.add32(info.seq);
-    s.add64(info.drops.drops());
-    s.addBitString(info.parentHash);
-    s.addBitString(info.txHash);
-    s.addBitString(info.accountHash);
-    s.add32(info.parentCloseTime.time_since_epoch().count());
-    s.add32(info.closeTime.time_since_epoch().count());
-    s.add8(info.closeTimeResolution.count());
-    s.add8(info.closeFlags);
-
+    s.add32(header.seq);
+    s.add64(header.drops.drops());
+    s.addBitString(header.parentHash);
+    s.addBitString(header.txHash);
+    s.addBitString(header.accountHash);
+    s.add32(header.parentCloseTime.time_since_epoch().count());
+    s.add32(header.closeTime.time_since_epoch().count());
+    s.add8(header.closeTimeResolution.count());
+    s.add8(header.closeFlags);
     if (includeHash)
-        s.addBitString(info.hash);
+        s.addBitString(header.hash);
 }
 
 LedgerHeader

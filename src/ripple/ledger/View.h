@@ -31,7 +31,6 @@
 #include <ripple/protocol/STLedgerEntry.h>
 #include <ripple/protocol/STObject.h>
 #include <ripple/protocol/STTx.h>
-#include <ripple/protocol/Serializer.h>
 #include <ripple/protocol/TER.h>
 #include <functional>
 #include <map>
@@ -352,7 +351,7 @@ dirNext(
     uint256& entry);
 /** @} */
 
-[[nodiscard]] std::function<void(SLE::ref)>
+[[nodiscard]] std::function<void(std::shared_ptr<SLE> const&)>
 describeOwnerDir(AccountID const& account);
 
 // VFALCO NOTE Both STAmount parameters should just
@@ -368,11 +367,11 @@ trustCreate(
     const bool bSrcHigh,
     AccountID const& uSrcAccountID,
     AccountID const& uDstAccountID,
-    uint256 const& uIndex,      // --> ripple state entry
-    SLE::ref sleAccount,        // --> the account being set.
-    const bool bAuth,           // --> authorize account.
-    const bool bNoRipple,       // --> others cannot ripple through
-    const bool bFreeze,         // --> funds cannot leave
+    uint256 const& uIndex,                   // --> ripple state entry
+    std::shared_ptr<SLE> const& sleAccount,  // --> the account being set.
+    const bool bAuth,                        // --> authorize account.
+    const bool bNoRipple,                    // --> others cannot ripple through
+    const bool bFreeze,                      // --> funds cannot leave
     STAmount const& saBalance,  // --> balance of account being set.
                                 // Issuer should be noAccount()
     STAmount const& saLimit,    // --> limit for account being set.

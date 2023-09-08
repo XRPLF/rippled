@@ -23,6 +23,7 @@
 #include <ripple/protocol/STArray.h>
 #include <ripple/protocol/STBlob.h>
 #include <ripple/protocol/STObject.h>
+#include <ripple/protocol/digest.h>
 
 namespace ripple {
 
@@ -35,15 +36,25 @@ STObject::STObject(SField const& name) : STBase(name), mType(nullptr)
 {
 }
 
-STObject::STObject(SOTemplate const& type, SField const& name) : STBase(name)
+STObject::STObject(SOTemplate const& type, SField const& name)
+    : STBase(name), mType(&type)
 {
-    set(type);
+    v_.reserve(type.size());
+
+    for (auto const& elem : type)
+    {
+        if (elem.style() != soeREQUIRED)
+            v_.emplace_back(detail::nonPresentObject, elem.sField());
+        else
+            v_.emplace_back(detail::defaultObject, elem.sField());
+    }
 }
 
-STObject::STObject(SOTemplate const& type, SerialIter& sit, SField const& name)
+STObject::STObject(SOTemplate const& type, Slice data, SField const& name)
     : STBase(name)
 {
     v_.reserve(type.size());
+    SerialIter sit(data);
     set(sit);
     applyTemplate(type);  // May throw
 }
@@ -55,6 +66,13 @@ STObject::STObject(SerialIter& sit, SField const& name, int depth) noexcept(
     if (depth > 10)
         Throw<std::runtime_error>("Maximum nesting depth of STObject exceeded");
     set(sit, depth);
+}
+
+STObject::STObject(Slice data, SField const& name)
+    : STBase(name), mType(nullptr)
+{
+    if (SerialIter si(data); set(si))
+        Throw<std::runtime_error>("Object contains an object terminator!");
 }
 
 STBase*
@@ -82,7 +100,7 @@ STObject::isDefault() const
 }
 
 void
-STObject::add(Serializer& s) const
+STObject::add(SerializerBase& s) const
 {
     add(s, withAllFields);  // just inner elements
 }
@@ -94,22 +112,6 @@ STObject::operator=(STObject&& other)
     mType = other.mType;
     v_ = std::move(other.v_);
     return *this;
-}
-
-void
-STObject::set(const SOTemplate& type)
-{
-    v_.clear();
-    v_.reserve(type.size());
-    mType = &type;
-
-    for (auto const& elem : type)
-    {
-        if (elem.style() != soeREQUIRED)
-            v_.emplace_back(detail::nonPresentObject, elem.sField());
-        else
-            v_.emplace_back(detail::defaultObject, elem.sField());
-    }
 }
 
 void
@@ -186,11 +188,8 @@ STObject::set(SerialIter& sit, int depth)
     // Consume data in the pipe until we run out or reach the end
     while (!sit.empty())
     {
-        int type;
-        int field;
-
         // Get the metadata for the next field
-        sit.getFieldID(type, field);
+        auto const [type, field] = sit.getFieldID();
 
         // The object termination marker has been found and the termination
         // marker has been consumed. Done deserializing.
@@ -341,7 +340,7 @@ STObject::getHash(HashPrefix prefix) const
     Serializer s;
     s.add32(prefix);
     add(s, withAllFields);
-    return s.getSHA512Half();
+    return sha512Half(s.slice());
 }
 
 uint256
@@ -350,7 +349,7 @@ STObject::getSigningHash(HashPrefix prefix) const
     Serializer s;
     s.add32(prefix);
     add(s, omitSigningFields);
-    return s.getSHA512Half();
+    return sha512Half(s.slice());
 }
 
 int
@@ -784,7 +783,7 @@ STObject::operator==(const STObject& obj) const
 }
 
 void
-STObject::add(Serializer& s, WhichFields whichFields) const
+STObject::add(SerializerBase& s, WhichFields whichFields) const
 {
     // Depending on whichFields, signing fields are either serialized or
     // not.  Then fields are added to the Serializer sorted by fieldCode.

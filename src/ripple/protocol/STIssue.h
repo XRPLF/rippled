@@ -62,7 +62,7 @@ public:
     Json::Value getJson(JsonOptions) const override;
 
     void
-    add(Serializer& s) const override;
+    add(SerializerBase& s) const override;
 
     bool
     isEquivalent(const STBase& t) const override;

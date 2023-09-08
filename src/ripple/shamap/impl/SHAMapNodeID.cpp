@@ -64,10 +64,14 @@ SHAMapNodeID::SHAMapNodeID(unsigned int depth, uint256 const& hash)
 std::string
 SHAMapNodeID::getRawString() const
 {
-    Serializer s(33);
+    std::string ret;
+    ret.reserve(33);
+
+    SerializerInto s(ret);
     s.addBitString(id_);
     s.add8(depth_);
-    return s.getString();
+
+    return ret;
 }
 
 SHAMapNodeID
@@ -104,6 +108,7 @@ deserializeSHAMapNodeID(void const* data, std::size_t size)
 
     if (size == 33)
     {
+        // We manually deserialize here:
         unsigned int depth = *(static_cast<unsigned char const*>(data) + 32);
         if (depth <= SHAMap::leafDepth)
         {

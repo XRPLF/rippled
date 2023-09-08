@@ -442,7 +442,9 @@ class TrustAndBalance_test : public beast::unit_test::suite
         auto tx = env.jt(
             pay(env.master, alice, XRP(10000)),
             json(sfInvoiceID.fieldName, invoiceid));
-        jv[jss::tx_blob] = strHex(tx.stx->getSerializer().slice());
+        Serializer s;
+        tx.stx->add(s);
+        jv[jss::tx_blob] = strHex(s.slice());
         auto jrr = wsc->invoke("submit", jv)[jss::result];
         BEAST_EXPECT(jrr[jss::status] == "success");
         BEAST_EXPECT(jrr[jss::tx_json][sfInvoiceID.fieldName] == invoiceid);

@@ -20,9 +20,9 @@
 #ifndef RIPPLE_PROTOCOL_STVAR_H_INCLUDED
 #define RIPPLE_PROTOCOL_STVAR_H_INCLUDED
 
+#include <ripple/protocol/Deserializer.h>
 #include <ripple/protocol/SField.h>
 #include <ripple/protocol/STBase.h>
-#include <ripple/protocol/Serializer.h>
 #include <cstddef>
 #include <cstdint>
 #include <typeinfo>

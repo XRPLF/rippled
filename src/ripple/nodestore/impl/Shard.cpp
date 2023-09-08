@@ -352,14 +352,16 @@ Shard::storeLedger(
     };
 
     // Store ledger header
-    {
-        Serializer s(sizeof(std::uint32_t) + sizeof(LedgerInfo));
-        s.add32(HashPrefix::ledgerMaster);
-        addRaw(srcLedger->info(), s);
-        auto nodeObject = NodeObject::createObject(
-            hotLEDGER, std::move(s.modData()), srcLedger->info().hash);
-        batch.emplace_back(std::move(nodeObject));
-    }
+    batch.emplace_back(NodeObject::createObject(
+        hotLEDGER,
+        [&srcLedger]() {
+            Blob b;
+            b.reserve(1024);
+            serializeLedgerHeaderInto(
+                HashPrefix::ledgerMaster, srcLedger->info(), b);
+            return b;
+        }(),
+        srcLedger->info().hash));
 
     bool error = false;
     auto visit = [&](SHAMapTreeNode const& node) {
@@ -655,14 +657,18 @@ Shard::finalize(bool writeSQLite, std::optional<uint256> const& referenceHash)
     fullBelowCache->reset();
     treeNodeCache->reset();
 
-    Serializer s;
-    s.add32(version);
-    s.add32(firstSeq_);
-    s.add32(lastSeq_);
-    s.addBitString(lastLedgerHash);
+    Blob blob = [this, &lastLedgerHash]() {
+        Blob b;
+        SerializerInto s(b);
+        s.add32(version);
+        s.add32(firstSeq_);
+        s.add32(lastSeq_);
+        s.addBitString(lastLedgerHash);
+        return b;
+    }();
 
     std::shared_ptr<DeterministicShard> dShard{
-        make_DeterministicShard(app_, dir_, index_, s, j_)};
+        make_DeterministicShard(app_, dir_, index_, makeSlice(blob), j_)};
     if (!dShard)
         return fail("Failed to create deterministic shard");
 
@@ -765,7 +771,7 @@ Shard::finalize(bool writeSQLite, std::optional<uint256> const& referenceHash)
     */
 
     auto const nodeObject{
-        NodeObject::createObject(hotUNKNOWN, std::move(s.modData()), finalKey)};
+        NodeObject::createObject(hotUNKNOWN, std::move(blob), finalKey)};
     if (!dShard->store(nodeObject))
         return fail("failed to store node object");
 

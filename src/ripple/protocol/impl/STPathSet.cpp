@@ -206,7 +206,7 @@ STPathSet::getSType() const
 }
 
 void
-STPathSet::add(Serializer& s) const
+STPathSet::add(SerializerBase& s) const
 {
     assert(getFName().isBinary());
     assert(getFName().fieldType == STI_PATHSET);

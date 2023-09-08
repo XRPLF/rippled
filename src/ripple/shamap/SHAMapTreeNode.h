@@ -159,11 +159,11 @@ public:
 
     /** Serialize the node in a format appropriate for sending over the wire */
     virtual void
-    serializeForWire(Serializer&) const = 0;
+    serializeForWire(SerializerBase&) const = 0;
 
     /** Serialize the node in a format appropriate for hashing */
     virtual void
-    serializeWithPrefix(Serializer&) const = 0;
+    serializeWithPrefix(SerializerBase&) const = 0;
 
     virtual std::string
     getString(SHAMapNodeID const&) const;

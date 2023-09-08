@@ -277,10 +277,8 @@ public:
             info.closeTimeResolution = tk->now().time_since_epoch();
             info.closeTime = tk->now();
             parentHash = ledgerHash(info);
-            Serializer nData;
-            ripple::addRaw(info, nData);
-            ledgerData->add_nodes()->set_nodedata(
-                nData.getDataPtr(), nData.getLength());
+            serializeLedgerHeaderInto(
+                info, *ledgerData->add_nodes()->mutable_nodedata());
         }
 
         return ledgerData;
@@ -341,7 +339,7 @@ public:
         Serializer s1;
         st.add(s1);
         list->set_signature(s1.data(), s1.size());
-        list->set_blob(strHex(s.getString()));
+        list->set_blob(strHex(s.slice()));
         return list;
     }
 
@@ -375,7 +373,7 @@ public:
         st.add(s1);
         auto& blob = *list->add_blobs();
         blob.set_signature(s1.data(), s1.size());
-        blob.set_blob(strHex(s.getString()));
+        blob.set_blob(strHex(s.slice()));
         return list;
     }
 

@@ -65,7 +65,7 @@ private:
 
     /** Initializes the deterministic shard.
      *
-     * @param finalKey Serializer of shard's final key which consists of:
+     * @param finalKey Serialized form of the shard's final key:
      *        shard version (32 bit)
      *        first ledger sequence in the shard (32 bit)
      *        last ledger sequence in the shard (32 bit)
@@ -73,7 +73,7 @@ private:
      * @return true if no error, false if error
      */
     bool
-    init(Serializer const& finalKey);
+    init(Slice finalKey);
 
 public:
     ~DeterministicShard();
@@ -143,7 +143,7 @@ private:
         Application& app,
         boost::filesystem::path const& shardDir,
         std::uint32_t shardIndex,
-        Serializer const& finalKey,
+        Slice finalKey,
         beast::Journal j);
 };
 
@@ -165,7 +165,7 @@ make_DeterministicShard(
     Application& app,
     boost::filesystem::path const& shardDir,
     std::uint32_t shardIndex,
-    Serializer const& finalKey,
+    Slice finalKey,
     beast::Journal j);
 
 }  // namespace NodeStore

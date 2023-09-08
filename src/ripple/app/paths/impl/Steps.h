@@ -22,6 +22,7 @@
 
 #include <ripple/app/paths/impl/AmountSpec.h>
 #include <ripple/basics/Log.h>
+#include <ripple/protocol/Book.h>
 #include <ripple/protocol/Quality.h>
 #include <ripple/protocol/QualityFunction.h>
 #include <ripple/protocol/STLedgerEntry.h>

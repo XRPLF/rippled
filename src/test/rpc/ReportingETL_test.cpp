@@ -94,7 +94,7 @@ class ReportingETL_test : public beast::unit_test::suite
             BEAST_EXPECT(reply.ledger_objects().objects_size() == 0);
 
             Serializer s;
-            addRaw(ledger->info(), s, true);
+            serializeLedgerHeader(ledger->info(), s, true);
             BEAST_EXPECT(s.slice() == makeSlice(reply.ledger_header()));
         }
 
@@ -117,7 +117,7 @@ class ReportingETL_test : public beast::unit_test::suite
         }
 
         Serializer s;
-        addRaw(ledger->info(), s, true);
+        serializeLedgerHeader(ledger->info(), s, true);
 
         {
             auto [status, reply] = grpcLedger(4, true, false, false, false);
@@ -145,6 +145,13 @@ class ReportingETL_test : public beast::unit_test::suite
             BEAST_EXPECT(s.slice() == makeSlice(reply.ledger_header()));
         }
 
+        auto serialize = [](STObject const& ptr) {
+            std::string b;
+            SerializerInto s(b);
+            ptr.add(s);
+            return b;
+        };
+
         {
             auto [status, reply] = grpcLedger(4, true, true, false, false);
 
@@ -155,53 +162,17 @@ class ReportingETL_test : public beast::unit_test::suite
             BEAST_EXPECT(reply.has_transactions_list());
             BEAST_EXPECT(reply.transactions_list().transactions_size() == 4);
 
-            BEAST_EXPECT(
-                makeSlice(reply.transactions_list()
-                              .transactions(0)
-                              .transaction_blob()) ==
-                transactions[0]->getSerializer().slice());
+            for (int i = 0; i != 4; ++i)
+            {
+                BEAST_EXPECT(
+                    reply.transactions_list()
+                        .transactions(i)
+                        .transaction_blob() == serialize(*transactions[i]));
 
-            BEAST_EXPECT(
-                makeSlice(reply.transactions_list()
-                              .transactions(0)
-                              .metadata_blob()) ==
-                metas[0]->getSerializer().slice());
-
-            BEAST_EXPECT(
-                makeSlice(reply.transactions_list()
-                              .transactions(1)
-                              .transaction_blob()) ==
-                transactions[1]->getSerializer().slice());
-
-            BEAST_EXPECT(
-                makeSlice(reply.transactions_list()
-                              .transactions(1)
-                              .metadata_blob()) ==
-                metas[1]->getSerializer().slice());
-
-            BEAST_EXPECT(
-                makeSlice(reply.transactions_list()
-                              .transactions(2)
-                              .transaction_blob()) ==
-                transactions[2]->getSerializer().slice());
-
-            BEAST_EXPECT(
-                makeSlice(reply.transactions_list()
-                              .transactions(2)
-                              .metadata_blob()) ==
-                metas[2]->getSerializer().slice());
-
-            BEAST_EXPECT(
-                makeSlice(reply.transactions_list()
-                              .transactions(3)
-                              .transaction_blob()) ==
-                transactions[3]->getSerializer().slice());
-
-            BEAST_EXPECT(
-                makeSlice(reply.transactions_list()
-                              .transactions(3)
-                              .metadata_blob()) ==
-                metas[3]->getSerializer().slice());
+                BEAST_EXPECT(
+                    reply.transactions_list().transactions(i).metadata_blob() ==
+                    serialize(*metas[i]));
+            }
 
             BEAST_EXPECT(!reply.skiplist_included());
             BEAST_EXPECT(reply.ledger_objects().objects_size() == 0);
@@ -219,53 +190,18 @@ class ReportingETL_test : public beast::unit_test::suite
             BEAST_EXPECT(reply.has_transactions_list());
             BEAST_EXPECT(reply.transactions_list().transactions_size() == 4);
 
-            BEAST_EXPECT(
-                makeSlice(reply.transactions_list()
-                              .transactions(0)
-                              .transaction_blob()) ==
-                transactions[0]->getSerializer().slice());
+            for (int i = 0; i != 4; ++i)
+            {
+                BEAST_EXPECT(
+                    reply.transactions_list()
+                        .transactions(i)
+                        .transaction_blob() == serialize(*transactions[i]));
 
-            BEAST_EXPECT(
-                makeSlice(reply.transactions_list()
-                              .transactions(0)
-                              .metadata_blob()) ==
-                metas[0]->getSerializer().slice());
+                BEAST_EXPECT(
+                    reply.transactions_list().transactions(i).metadata_blob() ==
+                    serialize(*metas[i]));
+            }
 
-            BEAST_EXPECT(
-                makeSlice(reply.transactions_list()
-                              .transactions(1)
-                              .transaction_blob()) ==
-                transactions[1]->getSerializer().slice());
-
-            BEAST_EXPECT(
-                makeSlice(reply.transactions_list()
-                              .transactions(1)
-                              .metadata_blob()) ==
-                metas[1]->getSerializer().slice());
-
-            BEAST_EXPECT(
-                makeSlice(reply.transactions_list()
-                              .transactions(2)
-                              .transaction_blob()) ==
-                transactions[2]->getSerializer().slice());
-
-            BEAST_EXPECT(
-                makeSlice(reply.transactions_list()
-                              .transactions(2)
-                              .metadata_blob()) ==
-                metas[2]->getSerializer().slice());
-
-            BEAST_EXPECT(
-                makeSlice(reply.transactions_list()
-                              .transactions(3)
-                              .transaction_blob()) ==
-                transactions[3]->getSerializer().slice());
-
-            BEAST_EXPECT(
-                makeSlice(reply.transactions_list()
-                              .transactions(3)
-                              .metadata_blob()) ==
-                metas[3]->getSerializer().slice());
             BEAST_EXPECT(reply.skiplist_included());
 
             BEAST_EXPECT(s.slice() == makeSlice(reply.ledger_header()));
@@ -307,53 +243,18 @@ class ReportingETL_test : public beast::unit_test::suite
             BEAST_EXPECT(reply.has_transactions_list());
             BEAST_EXPECT(reply.transactions_list().transactions_size() == 4);
 
-            BEAST_EXPECT(
-                makeSlice(reply.transactions_list()
-                              .transactions(0)
-                              .transaction_blob()) ==
-                transactions[0]->getSerializer().slice());
+            for (int i = 0; i != 4; ++i)
+            {
+                BEAST_EXPECT(
+                    reply.transactions_list()
+                        .transactions(i)
+                        .transaction_blob() == serialize(*transactions[i]));
 
-            BEAST_EXPECT(
-                makeSlice(reply.transactions_list()
-                              .transactions(0)
-                              .metadata_blob()) ==
-                metas[0]->getSerializer().slice());
+                BEAST_EXPECT(
+                    reply.transactions_list().transactions(i).metadata_blob() ==
+                    serialize(*metas[i]));
+            }
 
-            BEAST_EXPECT(
-                makeSlice(reply.transactions_list()
-                              .transactions(1)
-                              .transaction_blob()) ==
-                transactions[1]->getSerializer().slice());
-
-            BEAST_EXPECT(
-                makeSlice(reply.transactions_list()
-                              .transactions(1)
-                              .metadata_blob()) ==
-                metas[1]->getSerializer().slice());
-
-            BEAST_EXPECT(
-                makeSlice(reply.transactions_list()
-                              .transactions(2)
-                              .transaction_blob()) ==
-                transactions[2]->getSerializer().slice());
-
-            BEAST_EXPECT(
-                makeSlice(reply.transactions_list()
-                              .transactions(2)
-                              .metadata_blob()) ==
-                metas[2]->getSerializer().slice());
-
-            BEAST_EXPECT(
-                makeSlice(reply.transactions_list()
-                              .transactions(3)
-                              .transaction_blob()) ==
-                transactions[3]->getSerializer().slice());
-
-            BEAST_EXPECT(
-                makeSlice(reply.transactions_list()
-                              .transactions(3)
-                              .metadata_blob()) ==
-                metas[3]->getSerializer().slice());
             BEAST_EXPECT(reply.skiplist_included());
 
             BEAST_EXPECT(s.slice() == makeSlice(reply.ledger_header()));
@@ -537,9 +438,15 @@ class ReportingETL_test : public beast::unit_test::suite
             size_t idx = 0;
             for (auto& sle : ledger->sles)
             {
+                auto const serialized = [&sle]() {
+                    std::string ret;
+                    SerializerInto s(ret);
+                    sle->add(s);
+                    return ret;
+                }();
+
                 BEAST_EXPECT(
-                    sle->getSerializer().slice() ==
-                    makeSlice(reply.ledger_objects().objects(idx).data()));
+                    serialized == reply.ledger_objects().objects(idx).data());
                 ++idx;
             }
         }
@@ -584,8 +491,9 @@ class ReportingETL_test : public beast::unit_test::suite
                     ? reply.ledger_objects().objects(idx)
                     : reply2.ledger_objects().objects(idx - maxLimit);
 
-                BEAST_EXPECT(
-                    sle->getSerializer().slice() == makeSlice(obj.data()));
+                Serializer s;
+                sle->add(s);
+                BEAST_EXPECT(s.slice() == makeSlice(obj.data()));
                 ++idx;
             }
             BEAST_EXPECT(
@@ -762,9 +670,10 @@ class ReportingETL_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 uint256::fromVoid(reply.ledger_object().key().data()) ==
                 sle->key());
-            BEAST_EXPECT(
-                makeSlice(reply.ledger_object().data()) ==
-                sle->getSerializer().slice());
+
+            Serializer s;
+            sle->add(s);
+            BEAST_EXPECT(makeSlice(reply.ledger_object().data()) == s.slice());
         }
     }
 

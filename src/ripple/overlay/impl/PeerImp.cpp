@@ -1535,11 +1535,9 @@ PeerImp::handleTransaction(
         return;
     }
 
-    SerialIter sit(makeSlice(m->rawtransaction()));
-
     try
     {
-        auto stx = std::make_shared<STTx const>(sit);
+        auto stx = std::make_shared<STTx const>(makeSlice(m->rawtransaction()));
         uint256 txID = stx->getTransactionID();
 
         int flags;
@@ -2535,9 +2533,8 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
 
         std::shared_ptr<STValidation> val;
         {
-            SerialIter sit(makeSlice(m->validation()));
             val = std::make_shared<STValidation>(
-                std::ref(sit),
+                makeSlice(m->validation()),
                 [this](PublicKey const& pk) {
                     return calcNodeID(
                         app_.validatorManifests().getMasterKey(pk));
@@ -3265,19 +3262,17 @@ PeerImp::sendLedgerBase(
 {
     JLOG(p_journal_.trace()) << "sendLedgerBase: Base data";
 
-    Serializer s(sizeof(LedgerInfo));
-    addRaw(ledger->info(), s);
-    ledgerData.add_nodes()->set_nodedata(s.getDataPtr(), s.getLength());
+    serializeLedgerHeaderInto(
+        ledger->info(), *ledgerData.add_nodes()->mutable_nodedata());
 
     auto const& stateMap{ledger->stateMap()};
     if (stateMap.getHash() != beast::zero)
     {
         // Return account state root node if possible
-        Serializer root(768);
+        Serializer root;
 
         stateMap.serializeRoot(root);
-        ledgerData.add_nodes()->set_nodedata(
-            root.getDataPtr(), root.getLength());
+        ledgerData.add_nodes()->set_nodedata(root.data(), root.size());
 
         if (ledger->info().txHash != beast::zero)
         {
@@ -3285,17 +3280,14 @@ PeerImp::sendLedgerBase(
             if (txMap.getHash() != beast::zero)
             {
                 // Return TX root node if possible
-                root.erase();
+                root.clear();
                 txMap.serializeRoot(root);
-                ledgerData.add_nodes()->set_nodedata(
-                    root.getDataPtr(), root.getLength());
+                ledgerData.add_nodes()->set_nodedata(root.data(), root.size());
             }
         }
     }
 
-    auto message{
-        std::make_shared<Message>(ledgerData, protocol::mtLEDGER_DATA)};
-    send(message);
+    send(std::make_shared<Message>(ledgerData, protocol::mtLEDGER_DATA));
 }
 
 std::shared_ptr<Ledger const>

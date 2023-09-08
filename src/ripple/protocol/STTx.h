@@ -65,8 +65,8 @@ public:
     STTx&
     operator=(STTx const& other) = delete;
 
-    explicit STTx(SerialIter& sit);
-    explicit STTx(SerialIter&& sit);
+    explicit STTx(Slice data);
+
     explicit STTx(STObject&& object);
 
     /** Constructs a transaction.
@@ -132,7 +132,7 @@ public:
 
     std::string
     getMetaSQL(
-        Serializer rawTxn,
+        Serializer const& rawTxn,
         std::uint32_t inLedger,
         char status,
         std::string const& escapedMetaData) const;
@@ -170,10 +170,6 @@ sterilize(STTx const& stx);
 /** Check whether a transaction is a pseudo-transaction */
 bool
 isPseudoTx(STObject const& tx);
-
-inline STTx::STTx(SerialIter&& sit) : STTx(sit)
-{
-}
 
 inline TxType
 STTx::getTxnType() const

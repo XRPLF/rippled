@@ -71,7 +71,7 @@ proposalUniqueId(
     Slice const& publicKey,
     Slice const& signature)
 {
-    Serializer s(512);
+    Serializer s;
     s.addBitString(proposeHash);
     s.addBitString(previousLedger);
     s.add32(proposeSeq);
@@ -79,7 +79,7 @@ proposalUniqueId(
     s.addVL(publicKey);
     s.addVL(signature);
 
-    return s.getSHA512Half();
+    return sha512Half(s.slice());
 }
 
 }  // namespace ripple

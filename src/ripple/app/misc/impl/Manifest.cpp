@@ -82,10 +82,7 @@ deserializeManifest(Slice s, beast::Journal journal)
 
     try
     {
-        SerialIter sit{s};
-        STObject st{sit, sfGeneric};
-
-        st.applyTemplate(manifestFormat);
+        STObject const st{manifestFormat, s, sfGeneric};
 
         // We only understand "version 0" manifests at this time:
         if (st.isFieldPresent(sfVersion) && st.getFieldU16(sfVersion) != 0)
@@ -188,9 +185,7 @@ logMftAct(
 bool
 Manifest::verify() const
 {
-    STObject st(sfGeneric);
-    SerialIter sit(serialized.data(), serialized.size());
-    st.set(sit);
+    STObject const st(makeSlice(serialized), sfGeneric);
 
     // Signing key and signature are not required for
     // master key revocations
@@ -204,9 +199,7 @@ Manifest::verify() const
 uint256
 Manifest::hash() const
 {
-    STObject st(sfGeneric);
-    SerialIter sit(serialized.data(), serialized.size());
-    st.set(sit);
+    STObject const st(makeSlice(serialized), sfGeneric);
     return st.getHash(HashPrefix::manifest);
 }
 
@@ -223,9 +216,7 @@ Manifest::revoked() const
 std::optional<Blob>
 Manifest::getSignature() const
 {
-    STObject st(sfGeneric);
-    SerialIter sit(serialized.data(), serialized.size());
-    st.set(sit);
+    STObject const st(makeSlice(serialized), sfGeneric);
     if (!get(st, sfSignature))
         return std::nullopt;
     return st.getFieldVL(sfSignature);
@@ -234,9 +225,7 @@ Manifest::getSignature() const
 Blob
 Manifest::getMasterSignature() const
 {
-    STObject st(sfGeneric);
-    SerialIter sit(serialized.data(), serialized.size());
-    st.set(sit);
+    STObject const st(makeSlice(serialized), sfGeneric);
     return st.getFieldVL(sfMasterSignature);
 }
 

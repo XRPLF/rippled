@@ -55,7 +55,7 @@ DeterministicShard::~DeterministicShard()
 }
 
 bool
-DeterministicShard::init(Serializer const& finalKey)
+DeterministicShard::init(Slice finalKey)
 {
     auto db = app_.getShardStore();
 
@@ -152,7 +152,7 @@ make_DeterministicShard(
     Application& app,
     boost::filesystem::path const& shardDir,
     std::uint32_t shardIndex,
-    Serializer const& finalKey,
+    Slice finalKey,
     beast::Journal j)
 {
     std::shared_ptr<DeterministicShard> dShard(

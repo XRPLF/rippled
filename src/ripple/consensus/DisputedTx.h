@@ -25,7 +25,6 @@
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/consensus/ConsensusParms.h>
 #include <ripple/json/json_writer.h>
-#include <ripple/protocol/Serializer.h>
 #include <ripple/protocol/UintTypes.h>
 #include <boost/container/flat_map.hpp>
 #include <memory>

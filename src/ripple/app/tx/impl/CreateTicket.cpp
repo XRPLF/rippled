@@ -84,7 +84,7 @@ CreateTicket::preclaim(PreclaimContext const& ctx)
 TER
 CreateTicket::doApply()
 {
-    SLE::pointer const sleAccountRoot = view().peek(keylet::account(account_));
+    auto const sleAccountRoot = view().peek(keylet::account(account_));
     if (!sleAccountRoot)
         return tefINTERNAL;
 
@@ -118,7 +118,7 @@ CreateTicket::doApply()
     {
         std::uint32_t const curTicketSeq = firstTicketSeq + i;
         Keylet const ticketKeylet = keylet::ticket(account_, curTicketSeq);
-        SLE::pointer sleTicket = std::make_shared<SLE>(ticketKeylet);
+        auto sleTicket = std::make_shared<SLE>(ticketKeylet);
 
         sleTicket->setAccountID(sfAccount, account_);
         sleTicket->setFieldU32(sfTicketSequence, curTicketSeq);

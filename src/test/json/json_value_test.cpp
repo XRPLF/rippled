@@ -1310,20 +1310,27 @@ struct json_value_test : beast::unit_test::suite
 
             {
                 // Within object nest limit
-                auto json{nest(std::min(10u, Json::Reader::nest_limit))};
+                auto const json{nest(Json::Reader::nest_limit - 1)};
+                Json::Value j;
+                BEAST_EXPECT(r.parse(json, j));
+            }
+
+            {
+                // Within object nest limit
+                auto const json{nest(Json::Reader::nest_limit)};
                 Json::Value j;
                 BEAST_EXPECT(r.parse(json, j));
             }
 
             {
                 // Exceed object nest limit
-                auto json{nest(Json::Reader::nest_limit + 1)};
+                auto const json{nest(Json::Reader::nest_limit + 1)};
                 Json::Value j;
                 BEAST_EXPECT(!r.parse(json, j));
             }
         }
 
-        auto nest = [](std::uint32_t depth) -> std::string {
+        auto nest = [](std::uint32_t depth) {
             std::string s = "{";
             for (std::uint32_t i{1}; i <= depth; ++i)
                 s += "\"array\":[{";

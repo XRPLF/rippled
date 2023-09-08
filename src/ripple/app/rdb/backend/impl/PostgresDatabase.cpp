@@ -365,13 +365,20 @@ flatFetchTransactions(
         if (format == DataFormat::binary)
         {
             auto& transactions = std::get<TxnsDataBinary>(ret);
-            Serializer txnSer = txn->getSerializer();
-            Serializer metaSer = meta->getSerializer();
-            // SerialIter it(item->slice());
-            Blob txnBlob = txnSer.getData();
-            Blob metaBlob = metaSer.getData();
-            transactions.push_back(
-                std::make_tuple(txnBlob, metaBlob, ledgerSequences[i]));
+            transactions.push_back(std::make_tuple(
+                [&txn]() {
+                    Blob b;
+                    SerializerInto s(b);
+                    txn->add(s);
+                    return b;
+                }(),
+                [&meta]() {
+                    Blob b;
+                    SerializerInto s(b);
+                    meta->add(s);
+                    return b;
+                }(),
+                ledgerSequences[i]));
         }
         else
         {

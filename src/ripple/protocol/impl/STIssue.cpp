@@ -66,7 +66,7 @@ Json::Value STIssue::getJson(JsonOptions) const
 }
 
 void
-STIssue::add(Serializer& s) const
+STIssue::add(SerializerBase& s) const
 {
     s.addBitString(issue_.currency);
     if (!isXRP(issue_.currency))

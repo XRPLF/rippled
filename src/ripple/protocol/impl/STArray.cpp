@@ -55,13 +55,18 @@ STArray::STArray(SerialIter& sit, SField const& f, int depth) : STBase(f)
 {
     while (!sit.empty())
     {
-        int type, field;
-        sit.getFieldID(type, field);
+        auto const [type, field] = sit.getFieldID();
 
         if ((type == STI_ARRAY) && (field == 1))
             break;
 
-        if ((type == STI_OBJECT) && (field == 1))
+        if (type != STI_OBJECT)
+        {
+            JLOG(debugLog().error()) << "Array contains non-object";
+            Throw<std::runtime_error>("Non-object in array");
+        }
+
+        if (field == 1)
         {
             JLOG(debugLog().error())
                 << "Encountered array with end of object marker";
@@ -77,14 +82,9 @@ STArray::STArray(SerialIter& sit, SField const& f, int depth) : STBase(f)
             Throw<std::runtime_error>("Unknown field");
         }
 
-        if (fn.fieldType != STI_OBJECT)
-        {
-            JLOG(debugLog().error()) << "Array contains non-object";
-            Throw<std::runtime_error>("Non-object in array");
-        }
+        assert(fn.fieldType == type);
 
         v_.emplace_back(sit, fn, depth + 1);
-
         v_.back().applyTemplateFromSField(fn);  // May throw
     }
 }
@@ -155,7 +155,7 @@ STArray::getJson(JsonOptions p) const
 }
 
 void
-STArray::add(Serializer& s) const
+STArray::add(SerializerBase& s) const
 {
     for (STObject const& object : v_)
     {

@@ -187,10 +187,10 @@ public:
 
         try
         {
-            SerialIter sit{payload8};
-
             auto val = std::make_shared<STValidation>(
-                sit, [](PublicKey const& pk) { return calcNodeID(pk); }, true);
+                makeSlice(payload8),
+                [](PublicKey const& pk) { return calcNodeID(pk); },
+                true);
 
             BEAST_EXPECT(val);
             BEAST_EXPECT(val->isFieldPresent(sfLedgerSequence));
@@ -209,9 +209,10 @@ public:
 
         try
         {
-            SerialIter sit{payload1};
-            auto val = std::make_shared<ripple::STValidation>(
-                sit, [](PublicKey const& pk) { return calcNodeID(pk); }, false);
+            (void)std::make_shared<ripple::STValidation>(
+                makeSlice(payload1),
+                [](PublicKey const& pk) { return calcNodeID(pk); },
+                false);
             fail("An exception should have been thrown");
         }
         catch (std::exception const& ex)
@@ -224,9 +225,10 @@ public:
 
         try
         {
-            SerialIter sit{payload2};
-            auto val = std::make_shared<ripple::STValidation>(
-                sit, [](PublicKey const& pk) { return calcNodeID(pk); }, false);
+            (void)std::make_shared<ripple::STValidation>(
+                makeSlice(payload2),
+                [](PublicKey const& pk) { return calcNodeID(pk); },
+                false);
             fail("An exception should have been thrown");
         }
         catch (std::exception const& ex)
@@ -237,9 +239,10 @@ public:
 
         try
         {
-            SerialIter sit{payload3};
-            auto val = std::make_shared<ripple::STValidation>(
-                sit, [](PublicKey const& pk) { return calcNodeID(pk); }, false);
+            (void)std::make_shared<ripple::STValidation>(
+                makeSlice(payload3),
+                [](PublicKey const& pk) { return calcNodeID(pk); },
+                false);
             fail("An exception should have been thrown");
         }
         catch (std::exception const& ex)
@@ -250,9 +253,10 @@ public:
 
         try
         {
-            SerialIter sit{payload4};
-            auto val = std::make_shared<ripple::STValidation>(
-                sit, [](PublicKey const& pk) { return calcNodeID(pk); }, false);
+            (void)std::make_shared<ripple::STValidation>(
+                makeSlice(payload4),
+                [](PublicKey const& pk) { return calcNodeID(pk); },
+                false);
             fail("An exception should have been thrown");
         }
         catch (std::exception const& ex)
@@ -265,9 +269,10 @@ public:
 
         try
         {
-            SerialIter sit{payload5};
-            auto val = std::make_shared<STValidation>(
-                sit, [](PublicKey const& pk) { return calcNodeID(pk); }, false);
+            (void)std::make_shared<STValidation>(
+                makeSlice(payload5),
+                [](PublicKey const& pk) { return calcNodeID(pk); },
+                false);
             fail("Expected exception not thrown from validation");
         }
         catch (std::exception const& ex)
@@ -280,9 +285,10 @@ public:
 
         try
         {
-            SerialIter sit{payload6};
-            auto val = std::make_shared<STValidation>(
-                sit, [](PublicKey const& pk) { return calcNodeID(pk); }, false);
+            (void)std::make_shared<STValidation>(
+                makeSlice(payload6),
+                [](PublicKey const& pk) { return calcNodeID(pk); },
+                false);
             fail("Expected exception not thrown from validation");
         }
         catch (std::exception const& ex)
@@ -295,11 +301,10 @@ public:
 
         try
         {
-            SerialIter sit{payload7};
-
-            auto val = std::make_shared<STValidation>(
-                sit, [](PublicKey const& pk) { return calcNodeID(pk); }, false);
-
+            (void)std::make_shared<STValidation>(
+                makeSlice(payload7),
+                [](PublicKey const& pk) { return calcNodeID(pk); },
+                false);
             fail("Expected exception not thrown from validation");
         }
         catch (std::exception const& ex)
@@ -328,13 +333,10 @@ public:
 
             try
             {
-                SerialIter sit{makeSlice(v2)};
-
-                auto val = std::make_shared<STValidation>(
-                    sit,
+                (void)std::make_shared<STValidation>(
+                    makeSlice(v2),
                     [](PublicKey const& pk) { return calcNodeID(pk); },
                     true);
-
                 fail(
                     "Mutated validation signature checked out: offset=" +
                     std::to_string(i));

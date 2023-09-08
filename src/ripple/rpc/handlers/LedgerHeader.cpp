@@ -39,8 +39,8 @@ doLedgerHeader(RPC::JsonContext& context)
         return jvResult;
 
     Serializer s;
-    addRaw(lpLedger->info(), s);
-    jvResult[jss::ledger_data] = strHex(s.peekData());
+    serializeLedgerHeader(lpLedger->info(), s);
+    jvResult[jss::ledger_data] = strHex(s.slice());
 
     // This information isn't verified: they should only use it if they trust
     // us.

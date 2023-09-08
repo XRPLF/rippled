@@ -1088,7 +1088,9 @@ public:
         // lambda that submits an STTx and returns the resulting JSON.
         auto submitSTTx = [&env](STTx const& stx) {
             Json::Value jvResult;
-            jvResult[jss::tx_blob] = strHex(stx.getSerializer().slice());
+            Serializer s;
+            stx.add(s);
+            jvResult[jss::tx_blob] = strHex(s.slice());
             return env.rpc("json", "submit", to_string(jvResult));
         };
 

@@ -954,10 +954,17 @@ SHAMap::writeNode(NodeObjectType t, std::shared_ptr<SHAMapTreeNode> node) const
 
     canonicalize(node->getHash(), node);
 
-    Serializer s;
-    node->serializeWithPrefix(s);
     f_.db().store(
-        t, std::move(s.modData()), node->getHash().as_uint256(), ledgerSeq_);
+        t,
+        [&node]() {
+            Blob b;
+            b.reserve(512);
+            SerializerInto s(b);
+            node->serializeWithPrefix(s);
+            return b;
+        }(),
+        node->getHash().as_uint256(),
+        ledgerSeq_);
     return node;
 }
 

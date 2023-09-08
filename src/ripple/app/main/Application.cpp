@@ -1878,11 +1878,11 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
                 return nullptr;
             }
 
-            // VFALCO TODO This is the only place that
-            //             constructor is used, try to remove it
-            STLedgerEntry sle(*stp.object, uIndex);
+            Serializer ser;
+            stp.object->add(ser);
 
-            if (!loadLedger->addSLE(sle))
+            if (STLedgerEntry sle(ser.slice(), uIndex);
+                !loadLedger->addSLE(sle))
             {
                 JLOG(m_journal.fatal())
                     << "Couldn't add serialized ledger: " << uIndex;
@@ -2059,14 +2059,14 @@ ApplicationImp::loadOldLedger(
                 (void)_;
                 auto txID = tx->getTransactionID();
 
-                auto s = std::make_shared<Serializer>();
-                tx->add(*s);
+                Serializer s;
+                tx->add(s);
 
                 forceValidity(getHashRouter(), txID, Validity::SigGoodOnly);
 
                 openLedger_->modify(
                     [&txID, &s](OpenView& view, beast::Journal j) {
-                        view.rawTxInsert(txID, std::move(s), nullptr);
+                        view.rawTxInsert(txID, s.slice(), {});
                         return true;
                     });
             }

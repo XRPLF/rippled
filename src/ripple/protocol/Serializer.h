@@ -29,404 +29,338 @@
 #include <ripple/basics/strHex.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/SField.h>
+#include <ripple/protocol/serdes.h>
+#include <boost/container/small_vector.hpp>
 #include <cassert>
 #include <cstdint>
-#include <cstring>
-#include <iomanip>
+#include <string>
 #include <type_traits>
 
 namespace ripple {
 
-class Serializer
+/** The Serializer class is used to serialize data. */
+class SerializerBase
 {
-private:
-    // DEPRECATED
-    Blob mData;
+protected:
+    /** Constructor
+
+        By making the constructor protected we enforce the requirement that
+        this class not be constructible as a standalone object, but only as
+        as a base class.
+
+        @param buffer The buffer into which data will be serialized.
+
+     */
+    SerializerBase() = default;
+
+    virtual void
+    append(std::uint8_t c) = 0;
+
+    virtual void
+    append(std::uint8_t const* ptr, std::size_t len) = 0;
 
 public:
-    explicit Serializer(int n = 256)
+    virtual ~SerializerBase() = default;
+
+    // The class is not meant to be copy- or move-constructible.
+    SerializerBase(SerializerBase const& s) = delete;
+    SerializerBase&
+    operator=(SerializerBase const& s) = delete;
+
+    SerializerBase(SerializerBase&& s) = delete;
+    SerializerBase&
+    operator=(SerializerBase&& s) = delete;
+
+    /** Empties the underlying buffer, in effect resetting the serializer. */
+    virtual void
+    clear() = 0;
+
+    /** Returns true if the serializer buffer contains no data. */
+    [[nodiscard]] virtual bool
+    empty() const = 0;
+
+    /** Serialize a blob as a sequence of raw bytes. */
+    /** @{ */
+    void
+    addRaw(const void* ptr, std::size_t len)
     {
-        mData.reserve(n);
+        assert(ptr != nullptr);
+
+        if (auto data = reinterpret_cast<std::uint8_t const*>(ptr); len != 0)
+            append(data, len);
     }
 
-    Serializer(void const* data, std::size_t size)
+    void
+    addRaw(Blob const& vector)
     {
-        mData.resize(size);
+        addRaw(vector.data(), vector.size());
+    }
 
-        if (size)
+    void
+    addRaw(Slice slice)
+    {
+        addRaw(slice.data(), slice.size());
+    }
+    /** @} */
+
+    /** Serialize a blob as a length-prefixed sequence of raw bytes. */
+    /** @{ */
+    void
+    addVL(void const* ptr, std::size_t len)
+    {
+        using namespace detail;
+
+        if (len >= serdes::maxSize3)
+            Throw<std::overflow_error>(
+                "Attempt to encode overlong VL field: " + std::to_string(len));
+
+        // First we need to encode the length of this blob as a variable-length
+        // integer without a length prefix, making the packing a little weird.
+        if (len < serdes::maxSize1)
+            append(static_cast<std::uint8_t>(len));
+        else if (len < serdes::maxSize2)
         {
-            assert(data != nullptr);
-            std::memcpy(mData.data(), data, size);
+            auto const rem = len - serdes::maxSize1;
+            append(serdes::offset2 + static_cast<std::uint8_t>(rem >> 8));
+            append(static_cast<std::uint8_t>(rem & 0xff));
         }
+        else
+        {
+            auto const rem = len - serdes::maxSize2;
+            append(serdes::offset3 + static_cast<std::uint8_t>(rem >> 16));
+            append(static_cast<std::uint8_t>((rem >> 8) & 0xff));
+            append(static_cast<std::uint8_t>(rem & 0xff));
+        }
+
+        // Now, finally, we can encode the data:
+        if (len)
+            addRaw(ptr, len);
     }
 
-    Slice
-    slice() const noexcept
+    void
+    addVL(Blob const& vector)
     {
-        return Slice(mData.data(), mData.size());
+        addVL(vector.data(), vector.size());
     }
 
-    std::size_t
-    size() const noexcept
+    void
+    addVL(Slice const& slice)
     {
-        return mData.size();
+        addVL(slice.data(), slice.size());
     }
+    /** @} */
 
-    void const*
-    data() const noexcept
+    inline void
+    add8(unsigned char byte)
     {
-        return mData.data();
+        append(byte);
     }
 
-    // assemble functions
-    int
-    add8(unsigned char i);
-    int
-    add16(std::uint16_t i);
-    int
-    add32(std::uint32_t i);  // ledger indexes, account sequence, timestamps
-    int
-    add32(HashPrefix p);
-    int
-    add64(std::uint64_t i);  // native currency amounts
+    inline void
+    add16(std::uint16_t i)
+    {
+        i = boost::endian::native_to_big(i);
+        addRaw(reinterpret_cast<std::uint8_t const*>(&i), sizeof(i));
+    }
 
-    template <typename Integer>
-    int addInteger(Integer);
+    inline void
+    add32(std::uint32_t i)
+    {
+        i = boost::endian::native_to_big(i);
+        addRaw(reinterpret_cast<std::uint8_t const*>(&i), sizeof(i));
+    }
+
+    inline void
+    add32(HashPrefix p)
+    {
+        // This should never trigger; the size & type of HashPrefix are
+        // integral parts of the protocol and unlikely to ever change.
+        static_assert(
+            std::is_same_v<std::uint32_t, std::underlying_type_t<decltype(p)>>);
+
+        add32(safe_cast<std::uint32_t>(p));
+    }
+
+    inline void
+    add64(std::uint64_t i)
+    {
+        i = boost::endian::native_to_big(i);
+        addRaw(reinterpret_cast<std::uint8_t const*>(&i), sizeof(i));
+    }
 
     template <std::size_t Bits, class Tag>
-    int
+    void
     addBitString(base_uint<Bits, Tag> const& v)
     {
         return addRaw(v.data(), v.size());
     }
 
-    int
-    addRaw(Blob const& vector);
-    int
-    addRaw(Slice slice);
-    int
-    addRaw(const void* ptr, int len);
-    int
-    addRaw(const Serializer& s);
-
-    int
-    addVL(Blob const& vector);
-    int
-    addVL(Slice const& slice);
-    template <class Iter>
-    int
-    addVL(Iter begin, Iter end, int len);
-    int
-    addVL(const void* ptr, int len);
-
-    // disassemble functions
-    bool
-    get8(int&, int offset) const;
-
-    template <typename Integer>
-    bool
-    getInteger(Integer& number, int offset)
+    void
+    addFieldID(int type, int name)
     {
-        static const auto bytes = sizeof(Integer);
-        if ((offset + bytes) > mData.size())
-            return false;
-        number = 0;
+        assert((type > 0) && (type < 256) && (name > 0) && (name < 256));
 
-        auto ptr = &mData[offset];
-        for (auto i = 0; i < bytes; ++i)
+        if (type < 16 && name < 16)
         {
-            if (i)
-                number <<= 8;
-            number |= *ptr++;
+            // common type, common name
+            append(static_cast<std::uint8_t>((type << 4) | name));
         }
-        return true;
+        else if (type < 16)
+        {
+            // common type, uncommon name
+            append(static_cast<std::uint8_t>(type << 4));
+            append(static_cast<std::uint8_t>(name));
+        }
+        else if (name < 16)
+        {
+            // uncommon type, common name
+            append(static_cast<std::uint8_t>(name));
+            append(static_cast<std::uint8_t>(type));
+        }
+        else
+        {
+            // uncommon type, uncommon name
+            append(static_cast<std::uint8_t>(0));
+            append(static_cast<std::uint8_t>(type));
+            append(static_cast<std::uint8_t>(name));
+        }
     }
 
-    template <std::size_t Bits, typename Tag = void>
-    bool
-    getBitString(base_uint<Bits, Tag>& data, int offset) const
-    {
-        auto success = (offset + (Bits / 8)) <= mData.size();
-        if (success)
-            memcpy(data.begin(), &(mData.front()) + offset, (Bits / 8));
-        return success;
-    }
-
-    int
-    addFieldID(int type, int name);
-    int
+    void
     addFieldID(SerializedTypeID type, int name)
     {
         return addFieldID(safe_cast<int>(type), name);
     }
-
-    // DEPRECATED
-    uint256
-    getSHA512Half() const;
-
-    // totality functions
-    Blob const&
-    peekData() const
-    {
-        return mData;
-    }
-    Blob
-    getData() const
-    {
-        return mData;
-    }
-    Blob&
-    modData()
-    {
-        return mData;
-    }
-
-    int
-    getDataLength() const
-    {
-        return mData.size();
-    }
-    const void*
-    getDataPtr() const
-    {
-        return mData.data();
-    }
-    void*
-    getDataPtr()
-    {
-        return mData.data();
-    }
-    int
-    getLength() const
-    {
-        return mData.size();
-    }
-    std::string
-    getString() const
-    {
-        return std::string(static_cast<const char*>(getDataPtr()), size());
-    }
-    void
-    erase()
-    {
-        mData.clear();
-    }
-    bool
-    chop(int num);
-
-    // vector-like functions
-    Blob ::iterator
-    begin()
-    {
-        return mData.begin();
-    }
-    Blob ::iterator
-    end()
-    {
-        return mData.end();
-    }
-    Blob ::const_iterator
-    begin() const
-    {
-        return mData.begin();
-    }
-    Blob ::const_iterator
-    end() const
-    {
-        return mData.end();
-    }
-    void
-    reserve(size_t n)
-    {
-        mData.reserve(n);
-    }
-    void
-    resize(size_t n)
-    {
-        mData.resize(n);
-    }
-    size_t
-    capacity() const
-    {
-        return mData.capacity();
-    }
-
-    bool
-    operator==(Blob const& v) const
-    {
-        return v == mData;
-    }
-    bool
-    operator!=(Blob const& v) const
-    {
-        return v != mData;
-    }
-    bool
-    operator==(const Serializer& v) const
-    {
-        return v.mData == mData;
-    }
-    bool
-    operator!=(const Serializer& v) const
-    {
-        return v.mData != mData;
-    }
-
-    static int
-    decodeLengthLength(int b1);
-    static int
-    decodeVLLength(int b1);
-    static int
-    decodeVLLength(int b1, int b2);
-    static int
-    decodeVLLength(int b1, int b2, int b3);
-
-private:
-    static int
-    encodeLengthLength(int length);  // length to encode length
-    int
-    addEncoded(int length);
 };
 
-template <class Iter>
-int
-Serializer::addVL(Iter begin, Iter end, int len)
-{
-    int ret = addEncoded(len);
-    for (; begin != end; ++begin)
-    {
-        addRaw(begin->data(), begin->size());
-#ifndef NDEBUG
-        len -= begin->size();
-#endif
-    }
-    assert(len == 0);
-    return ret;
-}
+/** A serializer class with a large built-in buffer.
 
-//------------------------------------------------------------------------------
-
-// DEPRECATED
-// Transitional adapter to new serialization interfaces
-class SerialIter
+    @note The size of this buffer may seen extravagant but it helps to
+          reduce the need to perform memory allocations, and the extra
+          space is "free" in terms of runtime costs because this class
+          is intended to be placed on the stack, and not the heap.
+ */
+class Serializer : public SerializerBase
 {
 private:
-    std::uint8_t const* p_;
-    std::size_t remain_;
-    std::size_t used_ = 0;
+    boost::container::small_vector<std::uint8_t, 16384> buffer_;
 
 public:
-    SerialIter(void const* data, std::size_t size) noexcept;
-
-    SerialIter(Slice const& slice) : SerialIter(slice.data(), slice.size())
+    Serializer() = default;
+    Serializer(Serializer const& s) : SerializerBase(), buffer_(s.buffer_)
     {
     }
 
-    // Infer the size of the data based on the size of the passed array.
-    template <int N>
-    explicit SerialIter(std::uint8_t const (&data)[N]) : SerialIter(&data[0], N)
+    Serializer(Serializer&& other)
+        : SerializerBase()
+        , buffer_(other.buffer_)  // notice: invokes *copy* constructor
     {
-        static_assert(N > 0, "");
     }
 
-    std::size_t
-    empty() const noexcept
+    [[nodiscard]] Slice
+    slice() const noexcept
     {
-        return remain_ == 0;
+        return Slice(buffer_.data(), buffer_.size());
     }
 
-    void
-    reset() noexcept;
-
-    int
-    getBytesLeft() const noexcept
+    [[nodiscard]] std::size_t
+    size() const noexcept
     {
-        return static_cast<int>(remain_);
+        return buffer_.size();
     }
 
-    // get functions throw on error
-    unsigned char
-    get8();
-
-    std::uint16_t
-    get16();
-
-    std::uint32_t
-    get32();
-
-    std::uint64_t
-    get64();
-
-    template <std::size_t Bits, class Tag = void>
-    base_uint<Bits, Tag>
-    getBitString();
-
-    uint128
-    get128()
+    [[nodiscard]] unsigned char const*
+    data() const noexcept
     {
-        return getBitString<128>();
-    }
-
-    uint160
-    get160()
-    {
-        return getBitString<160>();
-    }
-
-    uint256
-    get256()
-    {
-        return getBitString<256>();
+        return buffer_.data();
     }
 
     void
-    getFieldID(int& type, int& name);
+    clear() override
+    {
+        buffer_.clear();
+    }
 
-    // Returns the size of the VL if the
-    // next object is a VL. Advances the iterator
-    // to the beginning of the VL.
-    int
-    getVLDataLength();
-
-    Slice
-    getSlice(std::size_t bytes);
-
-    // VFALCO DEPRECATED Returns a copy
-    Blob
-    getRaw(int size);
-
-    // VFALCO DEPRECATED Returns a copy
-    Blob
-    getVL();
+    [[nodiscard]] bool
+    empty() const override
+    {
+        return buffer_.empty();
+    }
 
     void
-    skip(int num);
+    append(std::uint8_t c) override
+    {
+        buffer_.push_back(c);
+    }
 
-    Buffer
-    getVLBuffer();
+    void
+    append(std::uint8_t const* ptr, std::size_t len) override
+    {
+        assert(ptr != nullptr);
 
-    template <class T>
-    T
-    getRawHelper(int size);
+        if (len != 0)
+            buffer_.insert(buffer_.end(), ptr, ptr + len);
+    }
 };
 
-template <std::size_t Bits, class Tag>
-base_uint<Bits, Tag>
-SerialIter::getBitString()
+/** A serializer that uses an externally provided buffer.
+
+    @note The buffer provided must remain valid for the lifetime of the
+          serializer object.
+ */
+template <class Buffer>
+class SerializerInto : public SerializerBase
 {
-    auto const n = Bits / 8;
+    static_assert(
+        std::is_same_v<Buffer, std::vector<std::uint8_t>> ||
+        std::is_same_v<Buffer, std::vector<unsigned char>> ||
+        std::is_same_v<Buffer, std::string>);
 
-    if (remain_ < n)
-        Throw<std::runtime_error>("invalid SerialIter getBitString");
+    Buffer* buffer_;
 
-    auto const x = p_;
+public:
+    SerializerInto(Buffer& buffer, std::size_t reserve = 0) : buffer_(&buffer)
+    {
+        if (reserve)
+            buffer_->reserve(reserve);
+    }
 
-    p_ += n;
-    used_ += n;
-    remain_ -= n;
+    SerializerInto(SerializerInto const& other) = delete;
 
-    return base_uint<Bits, Tag>::fromVoid(x);
-}
+    SerializerInto(SerializerInto&& other) : buffer_(other.buffer_)
+    {
+        other.buffer_ = nullptr;
+    }
+
+    void
+    clear() override
+    {
+        assert(buffer_ != nullptr);
+        buffer_->clear();
+    }
+
+    [[nodiscard]] bool
+    empty() const override
+    {
+        assert(buffer_ != nullptr);
+        return buffer_->empty();
+    }
+
+    void
+    append(std::uint8_t c) override
+    {
+        assert(buffer_ != nullptr);
+        buffer_->push_back(c);
+    }
+
+    void
+    append(std::uint8_t const* ptr, std::size_t len) override
+    {
+        assert(ptr != nullptr);
+        if (len != 0)
+            buffer_->insert(buffer_->end(), ptr, ptr + len);
+    }
+};
 
 }  // namespace ripple
 

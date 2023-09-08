@@ -89,9 +89,8 @@ LedgerReplayMsgHandler::processProofPathRequest(
     }
 
     // pack header
-    Serializer nData(128);
-    addRaw(ledger->info(), nData);
-    reply.set_ledgerheader(nData.getDataPtr(), nData.getLength());
+    serializeLedgerHeaderInto(ledger->info(), *reply.mutable_ledgerheader());
+
     // pack path
     for (auto const& b : *path)
         reply.add_path(b.data(), b.size());
@@ -202,9 +201,8 @@ LedgerReplayMsgHandler::processReplayDeltaRequest(
     }
 
     // pack header
-    Serializer nData(128);
-    addRaw(ledger->info(), nData);
-    reply.set_ledgerheader(nData.getDataPtr(), nData.getLength());
+    serializeLedgerHeaderInto(ledger->info(), *reply.mutable_ledgerheader());
+
     // pack transactions
     auto const& txMap = ledger->txMap();
     txMap.visitLeaves(
@@ -249,26 +247,21 @@ LedgerReplayMsgHandler::processReplayDeltaResponse(
             // -- TxShaMapItem for building a ShaMap for verification
             // -- Tx
             // -- TxMetaData for Tx ordering
-            Serializer shaMapItemData(
-                reply.transaction(i).data(), reply.transaction(i).size());
+            SerialIter sit(makeSlice(reply.transaction(i)));
 
-            SerialIter txMetaSit(makeSlice(reply.transaction(i)));
-            SerialIter txSit(txMetaSit.getSlice(txMetaSit.getVLDataLength()));
-            SerialIter metaSit(txMetaSit.getSlice(txMetaSit.getVLDataLength()));
-
-            auto tx = std::make_shared<STTx const>(txSit);
+            auto tx = std::make_shared<STTx const>(sit.getVL());
             if (!tx)
             {
                 JLOG(journal_.debug()) << "Bad message: Cannot deserialize";
                 return false;
             }
             auto tid = tx->getTransactionID();
-            STObject meta(metaSit, sfMetadata);
+            STObject meta(sit.getVL(), sfMetadata);
             orderedTxns.emplace(meta[sfTransactionIndex], std::move(tx));
 
             if (!txMap.addGiveItem(
                     SHAMapNodeType::tnTRANSACTION_MD,
-                    make_shamapitem(tid, shaMapItemData.slice())))
+                    make_shamapitem(tid, makeSlice(reply.transaction(i)))))
             {
                 JLOG(journal_.debug()) << "Bad message: Cannot deserialize";
                 return false;

@@ -753,10 +753,10 @@ private:
         sConsensusPhase,  // Consensus phase
         sBookChanges,     // Per-ledger order book changes
 
-        sLastEntry = sBookChanges  // as this name implies, any new entry
-                                   // must be ADDED ABOVE this one
+        // If you add any new entries, add them above this line!
+        sLastEntry
     };
-    std::array<SubMapType, SubTypes::sLastEntry + 1> mStreamMaps;
+    std::array<SubMapType, SubTypes::sLastEntry> mStreamMaps;
 
     ServerFeeSummary mLastFeeSummary;
 
@@ -2141,7 +2141,11 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
         jvObj[jss::full] = val->isFull();
         jvObj[jss::flags] = val->getFlags();
         jvObj[jss::signing_time] = *(*val)[~sfSigningTime];
-        jvObj[jss::data] = strHex(val->getSerializer().slice());
+        jvObj[jss::data] = [&val]() {
+            Serializer s;
+            val->add(s);
+            return strHex(s.slice());
+        }();
 
         if (auto version = (*val)[~sfServerVersion])
             jvObj[jss::server_version] = std::to_string(*version);
@@ -4429,8 +4433,7 @@ NetworkOPsImp::getBookPage(
 
     while (iLimit-- > 0 && obIterator.nextOffer())
     {
-        SLE::pointer sleOffer = obIterator.getCurrentOffer();
-        if (sleOffer)
+        if (auto sleOffer = obIterator.getCurrentOffer(); sleOffer)
         {
             auto const uOfferOwnerID = sleOffer->getAccountID(sfAccount);
             auto const& saTakerGets = sleOffer->getFieldAmount(sfTakerGets);

@@ -82,22 +82,23 @@ ReportingETL::insertTransactions(
     {
         auto& raw = txn.transaction_blob();
 
-        SerialIter it{raw.data(), raw.size()};
-        STTx sttx{it};
-
-        auto txSerializer = std::make_shared<Serializer>(sttx.getSerializer());
+        STTx sttx{Slice{raw.data(), raw.size()}};
+        Serializer txSerializer;
+        sttx.add(txSerializer);
 
         TxMeta txMeta{
             sttx.getTransactionID(), ledger->info().seq, txn.metadata_blob()};
 
-        auto metaSerializer =
-            std::make_shared<Serializer>(txMeta.getAsObject().getSerializer());
+        Serializer metaSerializer;
+        txMeta.getAsObject().add(metaSerializer);
 
         JLOG(journal_.trace())
             << __func__ << " : "
             << "Inserting transaction = " << sttx.getTransactionID();
         uint256 nodestoreHash = ledger->rawTxInsertWithHash(
-            sttx.getTransactionID(), txSerializer, metaSerializer);
+            sttx.getTransactionID(),
+            txSerializer.slice(),
+            metaSerializer.slice());
         accountTxData.emplace_back(txMeta, std::move(nodestoreHash), journal_);
     }
     return accountTxData;
@@ -199,16 +200,17 @@ ReportingETL::flushLedger(std::shared_ptr<Ledger>& ledger)
 
     auto numTxFlushed = ledger->txMap().flushDirty(hotTRANSACTION_NODE);
 
-    {
-        Serializer s(128);
-        s.add32(HashPrefix::ledgerMaster);
-        addRaw(ledger->info(), s);
-        app_.getNodeStore().store(
-            hotLEDGER,
-            std::move(s.modData()),
-            ledger->info().hash,
-            ledger->info().seq);
-    }
+    app_.getNodeStore().store(
+        hotLEDGER,
+        [&ledger]() {
+            Blob b;
+            b.reserve(1024);
+            serializeLedgerHeaderInto(
+                HashPrefix::ledgerMaster, ledger->info(), b);
+            return b;
+        }(),
+        ledger->info().hash,
+        ledger->info().seq);
 
     app_.getNodeStore().sync();
 
@@ -423,8 +425,7 @@ ReportingETL::buildNextLedger(
         }
         else
         {
-            SerialIter it{data.data(), data.size()};
-            std::shared_ptr<SLE> sle = std::make_shared<SLE>(it, *key);
+            auto sle = std::make_shared<SLE>(makeSlice(data), *key);
 
             if (next->exists(*key))
             {

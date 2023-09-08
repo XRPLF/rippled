@@ -1023,13 +1023,21 @@ DatabaseShardImp::doImportDatabase()
         if (lastLedgerHash && shard->getState() == ShardState::complete)
         {
             // Store shard final key
-            Serializer s;
-            s.add32(Shard::version);
-            s.add32(firstLedgerSeq(shardIndex));
-            s.add32(lastLedgerSeq(shardIndex));
-            s.addBitString(*lastLedgerHash);
-            auto const nodeObject{NodeObject::createObject(
-                hotUNKNOWN, std::move(s.modData()), Shard::finalKey)};
+            auto const nodeObject = NodeObject::createObject(
+                hotUNKNOWN,
+                [first = firstLedgerSeq(shardIndex),
+                 last = lastLedgerSeq(shardIndex),
+                 &lastLedgerHash]() {
+                    Blob b;
+                    b.reserve(64);
+                    SerializerInto s(b);
+                    s.add32(Shard::version);
+                    s.add32(first);
+                    s.add32(last);
+                    s.addBitString(*lastLedgerHash);
+                    return b;
+                }(),
+                Shard::finalKey);
 
             if (shard->storeNodeObject(nodeObject))
             {

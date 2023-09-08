@@ -44,7 +44,7 @@ public:
     getSType() const override;
 
     void
-    add(Serializer& s) const override;
+    add(SerializerBase& s) const override;
 
     Json::Value getJson(JsonOptions) const override;
 

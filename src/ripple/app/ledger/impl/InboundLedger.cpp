@@ -28,7 +28,9 @@
 #include <ripple/core/JobQueue.h>
 #include <ripple/nodestore/DatabaseShard.h>
 #include <ripple/overlay/Overlay.h>
+#include <ripple/protocol/Deserializer.h>
 #include <ripple/protocol/HashPrefix.h>
+#include <ripple/protocol/Serializer.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/shamap/SHAMapNodeID.h>
@@ -873,10 +875,18 @@ InboundLedger::takeHeader(std::string const& data)
     mLedger->txMap().setLedgerSeq(mSeq);
     mHaveHeader = true;
 
-    Serializer s(data.size() + 4);
-    s.add32(HashPrefix::ledgerMaster);
-    s.addRaw(data.data(), data.size());
-    f->db().store(hotLEDGER, std::move(s.modData()), hash_, mSeq);
+    f->db().store(
+        hotLEDGER,
+        [&data]() {
+            Blob b;
+            b.reserve(data.size() + 4);
+            SerializerInto s(b);
+            s.add32(HashPrefix::ledgerMaster);
+            s.addRaw(data.data(), data.size());
+            return b;
+        }(),
+        hash_,
+        mSeq);
 
     if (mLedger->info().txHash.isZero())
         mHaveTransactions = true;

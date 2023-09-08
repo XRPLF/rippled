@@ -362,7 +362,7 @@ Transactor::checkPriorTxAndLastLedger(PreclaimContext const& ctx)
 }
 
 TER
-Transactor::consumeSeqProxy(SLE::pointer const& sleAccount)
+Transactor::consumeSeqProxy(std::shared_ptr<SLE> const& sleAccount)
 {
     assert(sleAccount);
     SeqProxy const seqProx = ctx_.tx.getSeqProxy();
@@ -388,7 +388,7 @@ Transactor::ticketDelete(
 {
     // Delete the Ticket, adjust the account root ticket count, and
     // reduce the owner count.
-    SLE::pointer const sleTicket = view.peek(keylet::ticket(ticketIndex));
+    auto const sleTicket = view.peek(keylet::ticket(ticketIndex));
     if (!sleTicket)
     {
         JLOG(j.fatal()) << "Ticket disappeared from ledger.";
@@ -832,19 +832,13 @@ Transactor::operator()()
     NumberSO stNumberSO{view().rules().enabled(fixUniversalNumber)};
 
 #ifdef DEBUG
+    if (auto s = sterilize(ctx_.tx); !s->isEquivalent(ctx_.tx))
     {
-        Serializer ser;
-        ctx_.tx.add(ser);
-        SerialIter sit(ser.slice());
-        STTx s2(sit);
-
-        if (!s2.isEquivalent(ctx_.tx))
-        {
-            JLOG(j_.fatal()) << "Transaction serdes mismatch";
-            JLOG(j_.info()) << to_string(ctx_.tx.getJson(JsonOptions::none));
-            JLOG(j_.fatal()) << s2.getJson(JsonOptions::none);
-            assert(false);
-        }
+        JLOG(j_.fatal()) << "Transaction serdes mismatch";
+        JLOG(j_.fatal()) << "Original: "
+                         << to_string(ctx_.tx.getJson(JsonOptions::none));
+        JLOG(j_.fatal()) << "Result:   " << s->getJson(JsonOptions::none);
+        assert(false);
     }
 #endif
 

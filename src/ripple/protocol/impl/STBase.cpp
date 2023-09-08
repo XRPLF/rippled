@@ -102,7 +102,7 @@ Json::Value STBase::getJson(JsonOptions /*options*/) const
 }
 
 void
-STBase::add(Serializer& s) const
+STBase::add(SerializerBase& s) const
 {
     // Should never be called
     assert(false);
@@ -135,7 +135,7 @@ STBase::getFName() const
 }
 
 void
-STBase::addFieldID(Serializer& s) const
+STBase::addFieldID(SerializerBase& s) const
 {
     assert(fName->isBinary());
     s.addFieldID(fName->fieldType, fName->fieldValue);

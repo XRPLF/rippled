@@ -21,53 +21,35 @@
 #include <ripple/basics/contract.h>
 #include <ripple/basics/safe_cast.h>
 #include <ripple/json/to_string.h>
-#include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/STLedgerEntry.h>
 #include <ripple/protocol/jss.h>
 #include <boost/format.hpp>
-#include <limits>
 
 namespace ripple {
 
-STLedgerEntry::STLedgerEntry(Keylet const& k)
-    : STObject(sfLedgerEntry), key_(k.key), type_(k.type)
+static SOTemplate const&
+getSLEFormat(LedgerEntryType type)
 {
-    auto const format = LedgerFormats::getInstance().findByType(type_);
+    if (auto const f = LedgerFormats::getInstance().findByType(type))
+        return f->getSOTemplate();
 
-    if (format == nullptr)
-        Throw<std::runtime_error>(
-            "Attempt to create a SLE of unknown type " +
-            std::to_string(safe_cast<std::uint16_t>(k.type)));
+    Throw<std::runtime_error>(
+        "SLE (" + std::to_string(safe_cast<std::uint16_t>(type)) +
+        "): Unknown format");
+}
 
-    set(format->getSOTemplate());
-
+STLedgerEntry::STLedgerEntry(Keylet const& k)
+    : STObject(getSLEFormat(k.type), sfLedgerEntry), key_(k.key), type_(k.type)
+{
     setFieldU16(sfLedgerEntryType, static_cast<std::uint16_t>(type_));
 }
 
-STLedgerEntry::STLedgerEntry(SerialIter& sit, uint256 const& index)
-    : STObject(sfLedgerEntry), key_(index)
+STLedgerEntry::STLedgerEntry(Slice data, uint256 const& key)
+    : STObject(data, sfLedgerEntry)
+    , key_(key)
+    , type_(safe_cast<LedgerEntryType>(getFieldU16(sfLedgerEntryType)))
 {
-    set(sit);
-    setSLEType();
-}
-
-STLedgerEntry::STLedgerEntry(STObject const& object, uint256 const& index)
-    : STObject(object), key_(index)
-{
-    setSLEType();
-}
-
-void
-STLedgerEntry::setSLEType()
-{
-    auto format = LedgerFormats::getInstance().findByType(
-        safe_cast<LedgerEntryType>(getFieldU16(sfLedgerEntryType)));
-
-    if (format == nullptr)
-        Throw<std::runtime_error>("invalid ledger entry type");
-
-    type_ = format->getType();
-    applyTemplate(format->getSOTemplate());  // May throw
+    applyTemplate(getSLEFormat(type_));  // May throw
 }
 
 std::string
@@ -127,31 +109,6 @@ bool
 STLedgerEntry::isThreadedType() const
 {
     return getFieldIndex(sfPreviousTxnID) != -1;
-}
-
-bool
-STLedgerEntry::thread(
-    uint256 const& txID,
-    std::uint32_t ledgerSeq,
-    uint256& prevTxID,
-    std::uint32_t& prevLedgerID)
-{
-    uint256 oldPrevTxID = getFieldH256(sfPreviousTxnID);
-
-    JLOG(debugLog().info()) << "Thread Tx:" << txID << " prev:" << oldPrevTxID;
-
-    if (oldPrevTxID == txID)
-    {
-        // this transaction is already threaded
-        assert(getFieldU32(sfPreviousTxnLgrSeq) == ledgerSeq);
-        return false;
-    }
-
-    prevTxID = oldPrevTxID;
-    prevLedgerID = getFieldU32(sfPreviousTxnLgrSeq);
-    setFieldH256(sfPreviousTxnID, txID);
-    setFieldU32(sfPreviousTxnLgrSeq, ledgerSeq);
-    return true;
 }
 
 }  // namespace ripple

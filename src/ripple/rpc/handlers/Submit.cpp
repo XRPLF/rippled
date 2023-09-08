@@ -80,13 +80,11 @@ doSubmit(RPC::JsonContext& context)
     if (!ret || !ret->size())
         return rpcError(rpcINVALID_PARAMS);
 
-    SerialIter sitTrans(makeSlice(*ret));
-
     std::shared_ptr<STTx const> stpTrans;
 
     try
     {
-        stpTrans = std::make_shared<STTx const>(std::ref(sitTrans));
+        stpTrans = std::make_shared<STTx const>(makeSlice(*ret));
     }
     catch (std::exception& e)
     {
@@ -143,9 +141,10 @@ doSubmit(RPC::JsonContext& context)
 
     try
     {
+        Serializer s;
+        tpTrans->getSTransaction()->add(s);
         jvResult[jss::tx_json] = tpTrans->getJson(JsonOptions::none);
-        jvResult[jss::tx_blob] =
-            strHex(tpTrans->getSTransaction()->getSerializer().peekData());
+        jvResult[jss::tx_blob] = strHex(s.slice());
 
         if (temUNCERTAIN != tpTrans->getResult())
         {

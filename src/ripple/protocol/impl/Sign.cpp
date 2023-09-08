@@ -83,21 +83,23 @@ verify(
 //
 // So, if we support multiple levels of signing, then we'll need to
 // incorporate the "signing for" accounts into the signing data as well.
-Serializer
+std::vector<std::uint8_t>
 buildMultiSigningData(STObject const& obj, AccountID const& signingID)
 {
-    Serializer s{startMultiSigningData(obj)};
+    auto v = startMultiSigningData(obj);
+    SerializerInto s(v);
     finishMultiSigningData(signingID, s);
-    return s;
+    return v;
 }
 
-Serializer
+std::vector<std::uint8_t>
 startMultiSigningData(STObject const& obj)
 {
-    Serializer s;
+    std::vector<std::uint8_t> ret;
+    SerializerInto s(ret);
     s.add32(HashPrefix::txMultiSign);
     obj.addWithoutSigningFields(s);
-    return s;
+    return ret;
 }
 
 }  // namespace ripple

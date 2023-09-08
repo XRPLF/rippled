@@ -1389,11 +1389,11 @@ public:
             {
                 // A ten-deep nested STObject should throw an exception that
                 // there is no sfTransactionType field.
-                Serializer const tenDeep{inner->getSerializer()};
-                SerialIter tenSit{tenDeep.slice()};
                 try
                 {
-                    auto stx = std::make_shared<ripple::STTx const>(tenSit);
+                    Serializer tenDeep;
+                    inner->add(tenDeep);
+                    (void)std::make_shared<ripple::STTx const>(tenDeep.slice());
                     fail("STTx construction should have thrown.");
                 }
                 catch (std::runtime_error const& ex)
@@ -1408,11 +1408,11 @@ public:
             outer.set(std::move(inner));
             outer.setFieldH256(sfTransactionHash, hash);
 
-            Serializer const tooDeep{outer.getSerializer()};
-            SerialIter tooDeepSit{tooDeep.slice()};
             try
             {
-                auto stx = std::make_shared<ripple::STTx const>(tooDeepSit);
+                Serializer tooDeep;
+                outer.add(tooDeep);
+                (void)std::make_shared<ripple::STTx const>(tooDeep.slice());
                 fail("STTx construction should have thrown.");
             }
             catch (std::runtime_error const& ex)
@@ -1454,11 +1454,12 @@ public:
             {
                 // A nine-deep nested STObject/STArray should throw an
                 // exception that there is no sfTransactionType field.
-                Serializer const nineDeep{inner.getSerializer()};
-                SerialIter nineSit{nineDeep.slice()};
                 try
                 {
-                    auto stx = std::make_shared<ripple::STTx const>(nineSit);
+                    Serializer nineDeep;
+                    inner.add(nineDeep);
+                    (void)std::make_shared<ripple::STTx const>(
+                        nineDeep.slice());
                     fail("STTx construction should have thrown.");
                 }
                 catch (std::runtime_error const& ex)
@@ -1474,11 +1475,11 @@ public:
             STArray& array{outer.peekFieldArray(sfTemplate)};
             array.push_back(std::move(inner));
 
-            Serializer const tooDeep{outer.getSerializer()};
-            SerialIter tooDeepSit{tooDeep.slice()};
             try
             {
-                auto stx = std::make_shared<ripple::STTx const>(tooDeepSit);
+                Serializer tooDeep;
+                outer.add(tooDeep);
+                (void)std::make_shared<ripple::STTx const>(tooDeep.slice());
                 fail("STTx construction should have thrown.");
             }
             catch (std::runtime_error const& ex)
@@ -1503,23 +1504,30 @@ public:
                 obj.setFieldU32(sfClearFlag, 0xB01DFACE);
             });
 
-            Serializer serialized{acctSet.getSerializer()};
-            {
-                // Verify we have a valid transaction.
-                SerialIter sit{serialized.slice()};
-                auto stx = std::make_shared<ripple::STTx const>(sit);
-            }
+            Serializer serialized;
+            acctSet.add(serialized);
 
-            // Tweak the serialized data to change the ClearFlag to
-            // a SetFlag.  This will leave us with two SetFlag fields
-            // which we should trap as a duplicate field.
-            BEAST_EXPECT(serialized.modData()[15] == sfClearFlag.fieldValue);
-            serialized.modData()[15] = sfSetFlag.fieldValue;
-
-            SerialIter sit{serialized.slice()};
             try
             {
-                auto stx = std::make_shared<ripple::STTx const>(sit);
+                // Verify we have a valid transaction.
+                (void)std::make_shared<ripple::STTx const>(serialized.slice());
+            }
+            catch (std::exception const& ex)
+            {
+                fail("Valid transaction unexpectedly failed!");
+            }
+
+            try
+            {
+                // Tweak the serialized data to change the ClearFlag to
+                // a SetFlag.  This will leave us with two SetFlag fields
+                // which we should trap as a duplicate field.
+                std::vector<std::uint8_t> modTx(
+                    serialized.slice().begin(), serialized.slice().end());
+                BEAST_EXPECT(modTx[15] == sfClearFlag.fieldValue);
+                modTx[15] = sfSetFlag.fieldValue;
+
+                (void)std::make_shared<ripple::STTx const>(makeSlice(modTx));
                 fail("An exception should have been thrown");
             }
             catch (std::exception const& ex)
@@ -1546,9 +1554,8 @@ public:
             // vary.
             BEAST_EXPECT(!tx2.ParseFromArray(payload1, sizeof(payload1)));
 
-            ripple::SerialIter sit(ripple::makeSlice(tx2.rawtransaction()));
-
-            auto stx = std::make_shared<ripple::STTx const>(sit);
+            (void)std::make_shared<ripple::STTx const>(
+                makeSlice(tx2.rawtransaction()));
             fail("An exception should have been thrown");
         }
         catch (std::exception const&)
@@ -1558,8 +1565,7 @@ public:
 
         try
         {
-            ripple::SerialIter sit{payload2};
-            auto stx = std::make_shared<ripple::STTx const>(sit);
+            (void)std::make_shared<ripple::STTx const>(makeSlice(payload2));
             fail("An exception should have been thrown");
         }
         catch (std::exception const& ex)
@@ -1569,8 +1575,7 @@ public:
 
         try
         {
-            ripple::SerialIter sit{payload3};
-            auto stx = std::make_shared<ripple::STTx const>(sit);
+            (void)std::make_shared<ripple::STTx const>(makeSlice(payload3));
             fail("An exception should have been thrown");
         }
         catch (std::exception const& ex)
@@ -1599,8 +1604,7 @@ public:
 
         Serializer rawTxn;
         j.add(rawTxn);
-        SerialIter sit(rawTxn.slice());
-        STTx copy(sit);
+        STTx copy(rawTxn.slice());
 
         if (copy != j)
         {
@@ -1740,9 +1744,9 @@ public:
         auto const id2 = calcAccountID(kp2.first);
 
         // Get the stream of the transaction for use in multi-signing.
-        Serializer s = buildMultiSigningData(txn, id2);
+        auto const s = buildMultiSigningData(txn, id2);
 
-        auto const saMultiSignature = sign(kp2.first, kp2.second, s.slice());
+        auto const saMultiSignature = sign(kp2.first, kp2.second, makeSlice(s));
 
         // The InnerObjectFormats say a Signer is supposed to look
         // like this:
@@ -1763,23 +1767,21 @@ public:
                 signers.push_back(signer);
 
                 // Insert signers into transaction.
-                STTx tempTxn(txn);
-                tempTxn.setFieldArray(sfSigners, signers);
+                STTx txn2(txn);
+                txn2.setFieldArray(sfSigners, signers);
 
-                Serializer rawTxn;
-                tempTxn.add(rawTxn);
-                SerialIter sit(rawTxn.slice());
-                bool serialized = false;
                 try
                 {
-                    STTx copy(sit);
-                    serialized = true;
+                    Serializer s;
+                    txn2.add(s);
+                    (void)std::make_shared<STTx const>(s.slice());
+                    BEAST_EXPECT(expectPass);
                 }
                 catch (std::exception const&)
                 {
-                    ;  // If it threw then serialization failed.
+                    // If it threw then serialization failed.
+                    BEAST_EXPECT(!expectPass);
                 }
-                BEAST_EXPECT(serialized == expectPass);
             };
 
         {

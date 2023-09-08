@@ -239,7 +239,6 @@ public:
     void
     gotStaleData(std::shared_ptr<protocol::TMLedgerData> packet_ptr) override
     {
-        Serializer s;
         try
         {
             for (int i = 0; i < packet_ptr->nodes().size(); ++i)
@@ -255,12 +254,14 @@ public:
                 if (!newNode)
                     return;
 
-                s.erase();
+                auto blob = std::make_shared<Blob>();
+                blob->reserve(node.nodedata().size() + 64);
+
+                SerializerInto s(*blob);
                 newNode->serializeWithPrefix(s);
 
                 app_.getLedgerMaster().addFetchPack(
-                    newNode->getHash().as_uint256(),
-                    std::make_shared<Blob>(s.begin(), s.end()));
+                    newNode->getHash().as_uint256(), std::move(blob));
             }
         }
         catch (std::exception const&)

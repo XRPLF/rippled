@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <ripple/basics/Slice.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/ToString.h>
 #include <ripple/basics/contract.h>
@@ -30,7 +29,7 @@
 namespace ripple {
 
 std::string
-sqlBlobLiteral(Blob const& blob)
+sqlBlobLiteral(Slice blob)
 {
     std::string j;
 

@@ -141,7 +141,7 @@ public:
         st.add(s);
 
         return base64_encode(
-            std::string(static_cast<char const*>(s.data()), s.size()));
+            std::string(reinterpret_cast<char const*>(s.data()), s.size()));
     }
 
     static Validator

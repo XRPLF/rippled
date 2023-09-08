@@ -24,6 +24,7 @@
 #include <ripple/basics/contract.h>
 #include <ripple/basics/spinlock.h>
 #include <ripple/beast/core/LexicalCast.h>
+#include <ripple/protocol/Deserializer.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/shamap/SHAMapTreeNode.h>
@@ -140,7 +141,7 @@ SHAMapInnerNode::makeFullInner(
 
     for (int i = 0; i < branchFactor; ++i)
     {
-        hashes[i].as_uint256() = si.getBitString<256>();
+        hashes[i].as_uint256() = si.get256();
 
         if (hashes[i].isNonZero())
             ret->isBranch_ |= (1 << i);
@@ -175,7 +176,7 @@ SHAMapInnerNode::makeCompressedInner(Slice data)
 
     while (!si.empty())
     {
-        auto const hash = si.getBitString<256>();
+        auto const hash = si.get256();
         auto const pos = si.get8();
 
         if (pos >= branchFactor)
@@ -223,7 +224,7 @@ SHAMapInnerNode::updateHashDeep()
 }
 
 void
-SHAMapInnerNode::serializeForWire(Serializer& s) const
+SHAMapInnerNode::serializeForWire(SerializerBase& s) const
 {
     assert(!isEmpty());
 
@@ -247,7 +248,7 @@ SHAMapInnerNode::serializeForWire(Serializer& s) const
 }
 
 void
-SHAMapInnerNode::serializeWithPrefix(Serializer& s) const
+SHAMapInnerNode::serializeWithPrefix(SerializerBase& s) const
 {
     assert(!isEmpty());
 

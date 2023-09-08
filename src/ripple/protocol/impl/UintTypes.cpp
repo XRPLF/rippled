@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <ripple/beast/utility/Zero.h>
-#include <ripple/protocol/Serializer.h>
 #include <ripple/protocol/SystemParameters.h>
 #include <ripple/protocol/UintTypes.h>
 #include <string_view>

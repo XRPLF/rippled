@@ -131,12 +131,4 @@ STValidation::getSignature() const
     return getFieldVL(sfSignature);
 }
 
-Blob
-STValidation::getSerialized() const
-{
-    Serializer s;
-    add(s);
-    return s.peekData();
-}
-
 }  // namespace ripple

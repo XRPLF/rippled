@@ -129,7 +129,7 @@ public:
         st.add(s);
 
         return base64_encode(
-            std::string(static_cast<char const*>(s.data()), s.size()));
+            std::string(reinterpret_cast<char const*>(s.data()), s.size()));
     }
 
     std::string
@@ -158,7 +158,7 @@ public:
         st.add(s);
 
         return base64_encode(
-            std::string(static_cast<char const*>(s.data()), s.size()));
+            std::string(reinterpret_cast<char const*>(s.data()), s.size()));
     }
 
     Manifest
@@ -184,7 +184,7 @@ public:
         st.add(s);
 
         // m is non-const so it can be moved from
-        std::string m(static_cast<char const*>(s.data()), s.size());
+        std::string m(reinterpret_cast<char const*>(s.data()), s.size());
         if (auto r = deserializeManifest(std::move(m)))
             return std::move(*r);
         Throw<std::runtime_error>("Could not create a revocation manifest");
@@ -226,7 +226,7 @@ public:
         st.add(s);
 
         std::string m(
-            static_cast<char const*>(s.data()),
+            reinterpret_cast<char const*>(s.data()),
             s.size());  // non-const so can be moved
         if (auto r = deserializeManifest(std::move(m)))
             return std::move(*r);
@@ -593,7 +593,8 @@ public:
             Serializer s;
             st.add(s);
 
-            return std::string(static_cast<char const*>(s.data()), s.size());
+            return std::string(
+                reinterpret_cast<char const*>(s.data()), s.size());
         };
 
         // We understand version 0 manifests:
@@ -641,7 +642,8 @@ public:
             Serializer s;
             st.add(s);
 
-            return std::string(static_cast<char const*>(s.data()), s.size());
+            return std::string(
+                reinterpret_cast<char const*>(s.data()), s.size());
         };
 
         for (auto const keyType : keyTypes)
@@ -921,7 +923,7 @@ public:
             st.add(s);
 
             return deserializeManifest(
-                std::string(static_cast<char const*>(s.data()), s.size()));
+                std::string(reinterpret_cast<char const*>(s.data()), s.size()));
         };
 
         BEAST_EXPECT(test("example.com"));

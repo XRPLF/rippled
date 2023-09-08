@@ -177,10 +177,10 @@ public:
     updateHashDeep();
 
     void
-    serializeForWire(Serializer&) const override;
+    serializeForWire(SerializerBase&) const override;
 
     void
-    serializeWithPrefix(Serializer&) const override;
+    serializeWithPrefix(SerializerBase&) const override;
 
     std::string
     getString(SHAMapNodeID const&) const override;

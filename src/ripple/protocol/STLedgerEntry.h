@@ -20,7 +20,7 @@
 #ifndef RIPPLE_PROTOCOL_STLEDGERENTRY_H_INCLUDED
 #define RIPPLE_PROTOCOL_STLEDGERENTRY_H_INCLUDED
 
-#include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/Keylet.h>
 #include <ripple/protocol/STObject.h>
 
 namespace ripple {
@@ -29,19 +29,17 @@ class Invariants_test;
 
 class STLedgerEntry final : public STObject, public CountedObject<STLedgerEntry>
 {
-    uint256 key_;
-    LedgerEntryType type_;
+    uint256 const key_;
+    LedgerEntryType const type_;
 
 public:
-    using pointer = std::shared_ptr<STLedgerEntry>;
-    using ref = const std::shared_ptr<STLedgerEntry>&;
-
     /** Create an empty object with the given key and type. */
     explicit STLedgerEntry(Keylet const& k);
     STLedgerEntry(LedgerEntryType type, uint256 const& key);
-    STLedgerEntry(SerialIter& sit, uint256 const& index);
-    STLedgerEntry(SerialIter&& sit, uint256 const& index);
-    STLedgerEntry(STObject const& object, uint256 const& index);
+    STLedgerEntry(Slice data, uint256 const& key);
+
+    /** Special constructor used by the unit testing framework. */
+    STLedgerEntry(Invariants_test const&, Keylet const& k);
 
     SerializedTypeID
     getSType() const override;
@@ -69,22 +67,7 @@ public:
     bool
     isThreadedType() const;
 
-    bool
-    thread(
-        uint256 const& txID,
-        std::uint32_t ledgerSeq,
-        uint256& prevTxID,
-        std::uint32_t& prevLedgerID);
-
 private:
-    /*  Make STObject comply with the template for this SLE type
-        Can throw
-    */
-    void
-    setSLEType();
-
-    friend Invariants_test;  // this test wants access to the private type_
-
     STBase*
     copy(std::size_t n, void* buf) const override;
     STBase*
@@ -100,15 +83,12 @@ inline STLedgerEntry::STLedgerEntry(LedgerEntryType type, uint256 const& key)
 {
 }
 
-inline STLedgerEntry::STLedgerEntry(SerialIter&& sit, uint256 const& index)
-    : STLedgerEntry(sit, index)
+inline STLedgerEntry::STLedgerEntry(Invariants_test const&, Keylet const& k)
+    : STObject(sfLedgerEntry), key_(k.key), type_(k.type)
 {
 }
 
-/** Returns the 'key' (or 'index') of this item.
-    The key identifies this entry's position in
-    the SHAMap associative container.
-*/
+/** Returns the 'key' that determines the position of this item in a SHAMap. */
 inline uint256 const&
 STLedgerEntry::key() const
 {

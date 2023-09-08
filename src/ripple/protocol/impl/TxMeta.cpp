@@ -26,41 +26,25 @@
 
 namespace ripple {
 
+TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, STObject const& obj)
+    : mTransactionID(txid)
+    , mLedger(ledger)
+    , mIndex(obj.getFieldU32(sfTransactionIndex))
+    , mResult(obj.getFieldU8(sfTransactionResult))
+    , mDelivered(obj[~sfDeliveredAmount])
+    , mNodes(sfAffectedNodes)
+{
+    mNodes = obj.getFieldArray(sfAffectedNodes);
+}
+
 template <class T>
 TxMeta::TxMeta(
     uint256 const& txid,
     std::uint32_t ledger,
     T const& data,
     CtorHelper)
-    : mTransactionID(txid), mLedger(ledger), mNodes(sfAffectedNodes, 32)
+    : TxMeta(txid, ledger, {makeSlice(data), sfMetadata})
 {
-    SerialIter sit(makeSlice(data));
-
-    STObject obj(sit, sfMetadata);
-    mResult = obj.getFieldU8(sfTransactionResult);
-    mIndex = obj.getFieldU32(sfTransactionIndex);
-    mNodes = *dynamic_cast<STArray*>(&obj.getField(sfAffectedNodes));
-
-    if (obj.isFieldPresent(sfDeliveredAmount))
-        setDeliveredAmount(obj.getFieldAmount(sfDeliveredAmount));
-}
-
-TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, STObject const& obj)
-    : mTransactionID(txid)
-    , mLedger(ledger)
-    , mNodes(obj.getFieldArray(sfAffectedNodes))
-{
-    mResult = obj.getFieldU8(sfTransactionResult);
-    mIndex = obj.getFieldU32(sfTransactionIndex);
-
-    auto affectedNodes =
-        dynamic_cast<STArray const*>(obj.peekAtPField(sfAffectedNodes));
-    assert(affectedNodes);
-    if (affectedNodes)
-        mNodes = *affectedNodes;
-
-    if (obj.isFieldPresent(sfDeliveredAmount))
-        setDeliveredAmount(obj.getFieldAmount(sfDeliveredAmount));
 }
 
 TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, Blob const& vec)
@@ -76,11 +60,15 @@ TxMeta::TxMeta(
 {
 }
 
-TxMeta::TxMeta(uint256 const& transactionID, std::uint32_t ledger)
+TxMeta::TxMeta(
+    uint256 const& transactionID,
+    std::uint32_t ledger,
+    std::optional<STAmount> delivered)
     : mTransactionID(transactionID)
     , mLedger(ledger)
     , mIndex(static_cast<std::uint32_t>(-1))
     , mResult(255)
+    , mDelivered(delivered)
     , mNodes(sfAffectedNodes)
 {
     mNodes.reserve(32);
@@ -164,7 +152,7 @@ TxMeta::getAffectedAccounts() const
 }
 
 STObject&
-TxMeta::getAffectedNode(SLE::ref node, SField const& type)
+TxMeta::getAffectedNode(std::shared_ptr<SLE> const& node, SField const& type)
 {
     uint256 index = node->key();
     for (auto& n : mNodes)
@@ -198,18 +186,23 @@ TxMeta::getAffectedNode(uint256 const& node)
 STObject
 TxMeta::getAsObject() const
 {
-    STObject metaData(sfTransactionMetaData);
+    assert(mNodes.getFName() == sfAffectedNodes);
     assert(mResult != 255);
+
+    STObject metaData(sfTransactionMetaData);
+
     metaData.setFieldU8(sfTransactionResult, mResult);
     metaData.setFieldU32(sfTransactionIndex, mIndex);
     metaData.emplace_back(mNodes);
-    if (hasDeliveredAmount())
-        metaData.setFieldAmount(sfDeliveredAmount, getDeliveredAmount());
+
+    if (mDelivered)
+        metaData.setFieldAmount(sfDeliveredAmount, *mDelivered);
+
     return metaData;
 }
 
 void
-TxMeta::addRaw(Serializer& s, TER result, std::uint32_t index)
+TxMeta::addRaw(SerializerBase& s, TER result, std::uint32_t index)
 {
     mResult = TERtoInt(result);
     mIndex = index;

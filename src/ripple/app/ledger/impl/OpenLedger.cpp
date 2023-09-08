@@ -202,8 +202,7 @@ debugTostr(SHAMap const& set)
     {
         try
         {
-            SerialIter sit(item.slice());
-            auto const tx = std::make_shared<STTx const>(sit);
+            auto const tx = std::make_shared<STTx const>(item.slice());
             ss << debugTxstr(tx) << ", ";
         }
         catch (std::exception const& ex)

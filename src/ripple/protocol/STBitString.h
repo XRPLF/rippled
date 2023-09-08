@@ -58,7 +58,7 @@ public:
     isEquivalent(const STBase& t) const override;
 
     void
-    add(Serializer& s) const override;
+    add(SerializerBase& s) const override;
 
     bool
     isDefault() const override;
@@ -159,7 +159,7 @@ STBitString<Bits>::isEquivalent(const STBase& t) const
 
 template <int Bits>
 void
-STBitString<Bits>::add(Serializer& s) const
+STBitString<Bits>::add(SerializerBase& s) const
 {
     assert(getFName().isBinary());
     assert(getFName().fieldType == getSType());

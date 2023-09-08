@@ -25,6 +25,7 @@
 #include <ripple/basics/LocalValue.h>
 #include <ripple/basics/Number.h>
 #include <ripple/basics/XRPAmount.h>
+#include <ripple/protocol/Deserializer.h>
 #include <ripple/protocol/Issue.h>
 #include <ripple/protocol/SField.h>
 #include <ripple/protocol/STBase.h>
@@ -250,7 +251,7 @@ public:
     Json::Value getJson(JsonOptions) const override;
 
     void
-    add(Serializer& s) const override;
+    add(SerializerBase& s) const override;
 
     bool
     isEquivalent(const STBase& t) const override;

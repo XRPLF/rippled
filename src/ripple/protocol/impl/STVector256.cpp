@@ -26,7 +26,7 @@ namespace ripple {
 
 STVector256::STVector256(SerialIter& sit, SField const& name) : STBase(name)
 {
-    auto const slice = sit.getSlice(sit.getVLDataLength());
+    auto const slice = sit.getVL();
 
     if (slice.size() % uint256::size() != 0)
         Throw<std::runtime_error>(
@@ -66,17 +66,26 @@ STVector256::isDefault() const
 }
 
 void
-STVector256::add(Serializer& s) const
+STVector256::add(SerializerBase& s) const
 {
     assert(getFName().isBinary());
     assert(getFName().fieldType == STI_VECTOR256);
-    s.addVL(mValue.begin(), mValue.end(), mValue.size() * (256 / 8));
+
+    // Ensure that `base_uint` has no padding bytes.
+    static_assert(
+        std::is_trivially_copyable_v<decltype(mValue)::value_type> &&
+        std::has_unique_object_representations_v<decltype(
+            mValue)::value_type> &&
+        sizeof(decltype(mValue)::value_type) ==
+            decltype(mValue)::value_type::bytes);
+
+    s.addVL(mValue.data(), mValue.size() * decltype(mValue)::value_type::bytes);
 }
 
 bool
 STVector256::isEquivalent(const STBase& t) const
 {
-    const STVector256* v = dynamic_cast<const STVector256*>(&t);
+    auto* v = dynamic_cast<STVector256 const*>(&t);
     return v && (mValue == v->mValue);
 }
 

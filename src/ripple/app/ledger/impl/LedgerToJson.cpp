@@ -89,15 +89,13 @@ template <class Object>
 void
 fillJsonBinary(Object& json, bool closed, LedgerInfo const& info)
 {
-    if (!closed)
-        json[jss::closed] = false;
-    else
-    {
-        json[jss::closed] = true;
+    json[jss::closed] = closed;
 
+    if (closed)
+    {
         Serializer s;
-        addRaw(info, s);
-        json[jss::ledger_data] = strHex(s.peekData());
+        serializeLedgerHeader(info, s);
+        json[jss::ledger_data] = strHex(s.slice());
     }
 }
 
