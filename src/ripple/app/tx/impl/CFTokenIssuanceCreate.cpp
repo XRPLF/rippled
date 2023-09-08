@@ -62,7 +62,6 @@ TER
 CFTokenIssuanceCreate::preclaim(PreclaimContext const& ctx)
 {
     // if already a CFT with this asset code - error
-    // TODO - need to check this again before insert too?
     if (ctx.view.exists(
             keylet::cftIssuance(ctx.tx[sfAccount], ctx.tx[sfAssetCode])))
         return tecDUPLICATE;

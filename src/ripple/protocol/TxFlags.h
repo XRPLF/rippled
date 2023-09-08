@@ -22,6 +22,8 @@
 
 #include <cstdint>
 
+#include <ripple/protocol/LedgerFormats.h>
+
 namespace ripple {
 
 /** Transaction flags.
@@ -130,12 +132,14 @@ constexpr std::uint32_t const tfTrustLine                  = 0x00000004;
 constexpr std::uint32_t const tfTransferable               = 0x00000008;
 
 // CFTokenIssuanceCreate flags:
-constexpr std::uint32_t const tfCFTCannotLockBalances      = 0x00000002;
-constexpr std::uint32_t const tfCFTRequireAuth             = 0x00000004;
-constexpr std::uint32_t const tfCFTCanEscrow               = 0x00000008;
-constexpr std::uint32_t const tfCFTCanTrade                = 0x00000010;
-constexpr std::uint32_t const tfCFTCanTransfer             = 0x00000020;
-constexpr std::uint32_t const tfCFTCanClawback             = 0x00000040;
+// NOTE - there is intentionally no flag here for 0x01 because that
+// corresponds to lsfCFTIsLocked, which this transaction cannot mutate. 
+constexpr std::uint32_t const tfCFTCannotLockBalances      = lsfCFTCannotLockBalances;
+constexpr std::uint32_t const tfCFTRequireAuth             = lsfCFTRequireAuth;
+constexpr std::uint32_t const tfCFTCanEscrow               = lsfCFTCanEscrow;
+constexpr std::uint32_t const tfCFTCanTrade                = lsfCFTCanTrade;
+constexpr std::uint32_t const tfCFTCanTransfer             = lsfCFTCanTransfer;
+constexpr std::uint32_t const tfCFTCanClawback             = lsfCFTCanClawback;
 
 // Prior to fixRemoveNFTokenAutoTrustLine, transfer of an NFToken between
 // accounts allowed a TrustLine to be added to the issuer of that token
