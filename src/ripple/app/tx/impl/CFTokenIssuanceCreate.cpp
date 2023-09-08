@@ -48,11 +48,6 @@ CFTokenIssuanceCreate::preflight(PreflightContext const& ctx)
             return temMALFORMED;
     }
 
-    // TODO length?
-    // if (auto const code = ctx.tx[~sfAssetCode]; code.length() >
-    // maxAssetCodeLength)
-    //     return temMALFORMED;
-
     if (auto const metadata = ctx.tx[~sfCFTokenMetadata])
     {
         if (metadata->length() == 0 ||
@@ -66,8 +61,6 @@ CFTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 TER
 CFTokenIssuanceCreate::preclaim(PreclaimContext const& ctx)
 {
-    // TODO - check number of CFTs? not sure why we need to limit it
-
     // if already a CFT with this asset code - error
     // TODO - need to check this again before insert too?
     if (ctx.view.exists(

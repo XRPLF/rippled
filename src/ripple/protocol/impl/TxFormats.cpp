@@ -333,8 +333,8 @@ TxFormats::TxFormats()
         ttCFTOKEN_ISSUANCE_CREATE,
         {
             {sfAssetCode, soeREQUIRED},
-            {sfAssetScale, soeREQUIRED},
-            {sfTransferFee, soeOPTIONAL},
+            {sfAssetScale, soeDEFAULT},
+            {sfTransferFee, soeDEFAULT},
             {sfMaximumAmount, soeOPTIONAL},
             {sfCFTokenMetadata, soeOPTIONAL},
         },

@@ -276,12 +276,13 @@ enum LedgerSpecificFlags {
     lsfSellNFToken = 0x00000001,
 
     // ltCFTOKEN_ISSUANCE
-    lsfFrozen = 0x00000001,
-    lsfCannotFreezeBalances = 0x00000002,
-    lsfRequiresAuthorization = 0x00000004,
-    lsfTransferable = 0x00000008,
-    lsfCanTrade = 0x00000010,
-    lsfCanEscrow = 0x00000020,
+    lsfCFTIsLocked = 0x00000001,
+    lsfCFTCannotLockBalances = 0x00000002,
+    lsfCFTRequireAuth = 0x00000004,
+    lsfCFTCanEscrow = 0x00000008,
+    lsfCFTCanTrade = 0x00000010,
+    lsfCFTCanTransfer = 0x00000020,
+    lsfCFTCanClawback = 0x00000040,
 };
 
 //------------------------------------------------------------------------------

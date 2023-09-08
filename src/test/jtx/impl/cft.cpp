@@ -28,10 +28,7 @@ namespace jtx {
 namespace cft {
 
 Json::Value
-create(
-    jtx::Account const& account,
-    std::string const& asset,
-    std::uint8_t const scale)
+create(jtx::Account const& account, std::string const& asset)
 {
     auto const assetCurrency = to_currency(asset);
     assert(assetCurrency != noCurrency());
@@ -39,7 +36,6 @@ create(
     Json::Value jv;
     jv[sfAccount.jsonName] = account.human();
     jv[sfAssetCode.jsonName] = ripple::to_string(assetCurrency);
-    jv[sfAssetScale.jsonName] = scale;
     jv[sfTransactionType.jsonName] = jss::CFTokenIssuanceCreate;
     return jv;
 }

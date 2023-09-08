@@ -32,10 +32,7 @@ namespace cft {
 
 /** Issue a CFT. */
 Json::Value
-create(
-    jtx::Account const& account,
-    std::string const& asset,
-    std::uint8_t const scale = 0);
+create(jtx::Account const& account, std::string const& asset);
 
 }  // namespace cft
 
