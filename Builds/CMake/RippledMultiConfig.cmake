@@ -14,7 +14,7 @@ if (is_multiconfig)
   file(GLOB md_files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} CONFIGURE_DEPENDS
     *.md)
   LIST(APPEND all_sources ${md_files})
-  foreach (_target secp256k1::secp256k1 ed25519::ed25519 pbufs xrpl_core rippled)
+  foreach (_target secp256k1::secp256k1 ed25519::ed25519 xrpl_core rippled)
     get_target_property (_type ${_target} TYPE)
     if(_type STREQUAL "INTERFACE_LIBRARY")
       continue()

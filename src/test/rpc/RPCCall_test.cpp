@@ -5639,6 +5639,37 @@ static RPCCallTestData const rpcCallTestArray[] = {
 
     // tx
     // --------------------------------------------------------------------------
+    {"tx: ctid. minimal",
+     __LINE__,
+     {"tx", "FFFFFFFFFFFFFFFF", "1", "2"},
+     RPCCallTestData::no_exception,
+     R"({
+    "method" : "tx",
+    "params" : [
+      {
+         "api_version" : %MAX_API_VER%,
+			"ctid" : "FFFFFFFFFFFFFFFF",
+			"max_ledger" : "2",
+			"min_ledger" : "1"
+      }
+    ]
+    })"},
+    {"tx: ctid. binary",
+     __LINE__,
+     {"tx", "FFFFFFFFFFFFFFFF", "binary", "1", "2"},
+     RPCCallTestData::no_exception,
+     R"({
+    "method" : "tx",
+    "params" : [
+      {
+         "api_version" : %MAX_API_VER%,
+         "binary" : true,
+			"ctid" : "FFFFFFFFFFFFFFFF",
+			"max_ledger" : "2",
+			"min_ledger" : "1"
+      }
+    ]
+    })"},
     {"tx: minimal.",
      __LINE__,
      {"tx", "transaction_hash_is_not_validated"},
@@ -6425,6 +6456,16 @@ updateAPIVersionString(const char* const req)
     return jr;
 }
 
+std::unique_ptr<Config>
+makeNetworkConfig(uint32_t networkID)
+{
+    using namespace test::jtx;
+    return envconfig([&](std::unique_ptr<Config> cfg) {
+        cfg->NETWORK_ID = networkID;
+        return cfg;
+    });
+}
+
 class RPCCall_test : public beast::unit_test::suite
 {
 public:
@@ -6433,7 +6474,8 @@ public:
     {
         testcase << "RPCCall";
 
-        test::jtx::Env env(*this);  // Used only for its Journal.
+        test::jtx::Env env(
+            *this, makeNetworkConfig(11111));  // Used only for its Journal.
 
         // For each RPCCall test.
         for (RPCCallTestData const& rpcCallTest : rpcCallTestArray)

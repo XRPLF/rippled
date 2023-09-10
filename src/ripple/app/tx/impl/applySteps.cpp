@@ -18,11 +18,18 @@
 //==============================================================================
 
 #include <ripple/app/tx/applySteps.h>
+#include <ripple/app/tx/impl/AMMBid.h>
+#include <ripple/app/tx/impl/AMMCreate.h>
+#include <ripple/app/tx/impl/AMMDelete.h>
+#include <ripple/app/tx/impl/AMMDeposit.h>
+#include <ripple/app/tx/impl/AMMVote.h>
+#include <ripple/app/tx/impl/AMMWithdraw.h>
 #include <ripple/app/tx/impl/ApplyContext.h>
 #include <ripple/app/tx/impl/CancelCheck.h>
 #include <ripple/app/tx/impl/CancelOffer.h>
 #include <ripple/app/tx/impl/CashCheck.h>
 #include <ripple/app/tx/impl/Change.h>
+#include <ripple/app/tx/impl/Clawback.h>
 #include <ripple/app/tx/impl/CreateCheck.h>
 #include <ripple/app/tx/impl/CreateOffer.h>
 #include <ripple/app/tx/impl/CreateTicket.h>
@@ -147,6 +154,20 @@ invoke_preflight(PreflightContext const& ctx)
             return invoke_preflight_helper<NFTokenCancelOffer>(ctx);
         case ttNFTOKEN_ACCEPT_OFFER:
             return invoke_preflight_helper<NFTokenAcceptOffer>(ctx);
+        case ttCLAWBACK:
+            return invoke_preflight_helper<Clawback>(ctx);
+        case ttAMM_CREATE:
+            return invoke_preflight_helper<AMMCreate>(ctx);
+        case ttAMM_DEPOSIT:
+            return invoke_preflight_helper<AMMDeposit>(ctx);
+        case ttAMM_WITHDRAW:
+            return invoke_preflight_helper<AMMWithdraw>(ctx);
+        case ttAMM_VOTE:
+            return invoke_preflight_helper<AMMVote>(ctx);
+        case ttAMM_BID:
+            return invoke_preflight_helper<AMMBid>(ctx);
+        case ttAMM_DELETE:
+            return invoke_preflight_helper<AMMDelete>(ctx);
         default:
             assert(false);
             return {temUNKNOWN, TxConsequences{temUNKNOWN}};
@@ -248,6 +269,20 @@ invoke_preclaim(PreclaimContext const& ctx)
             return invoke_preclaim<NFTokenCancelOffer>(ctx);
         case ttNFTOKEN_ACCEPT_OFFER:
             return invoke_preclaim<NFTokenAcceptOffer>(ctx);
+        case ttCLAWBACK:
+            return invoke_preclaim<Clawback>(ctx);
+        case ttAMM_CREATE:
+            return invoke_preclaim<AMMCreate>(ctx);
+        case ttAMM_DEPOSIT:
+            return invoke_preclaim<AMMDeposit>(ctx);
+        case ttAMM_WITHDRAW:
+            return invoke_preclaim<AMMWithdraw>(ctx);
+        case ttAMM_VOTE:
+            return invoke_preclaim<AMMVote>(ctx);
+        case ttAMM_BID:
+            return invoke_preclaim<AMMBid>(ctx);
+        case ttAMM_DELETE:
+            return invoke_preclaim<AMMDelete>(ctx);
         default:
             assert(false);
             return temUNKNOWN;
@@ -311,6 +346,20 @@ invoke_calculateBaseFee(ReadView const& view, STTx const& tx)
             return NFTokenCancelOffer::calculateBaseFee(view, tx);
         case ttNFTOKEN_ACCEPT_OFFER:
             return NFTokenAcceptOffer::calculateBaseFee(view, tx);
+        case ttCLAWBACK:
+            return Clawback::calculateBaseFee(view, tx);
+        case ttAMM_CREATE:
+            return AMMCreate::calculateBaseFee(view, tx);
+        case ttAMM_DEPOSIT:
+            return AMMDeposit::calculateBaseFee(view, tx);
+        case ttAMM_WITHDRAW:
+            return AMMWithdraw::calculateBaseFee(view, tx);
+        case ttAMM_VOTE:
+            return AMMVote::calculateBaseFee(view, tx);
+        case ttAMM_BID:
+            return AMMBid::calculateBaseFee(view, tx);
+        case ttAMM_DELETE:
+            return AMMDelete::calculateBaseFee(view, tx);
         default:
             assert(false);
             return XRPAmount{0};
@@ -461,6 +510,34 @@ invoke_apply(ApplyContext& ctx)
         }
         case ttNFTOKEN_ACCEPT_OFFER: {
             NFTokenAcceptOffer p(ctx);
+            return p();
+        }
+        case ttCLAWBACK: {
+            Clawback p(ctx);
+            return p();
+        }
+        case ttAMM_CREATE: {
+            AMMCreate p(ctx);
+            return p();
+        }
+        case ttAMM_DEPOSIT: {
+            AMMDeposit p(ctx);
+            return p();
+        }
+        case ttAMM_WITHDRAW: {
+            AMMWithdraw p(ctx);
+            return p();
+        }
+        case ttAMM_VOTE: {
+            AMMVote p(ctx);
+            return p();
+        }
+        case ttAMM_BID: {
+            AMMBid p(ctx);
+            return p();
+        }
+        case ttAMM_DELETE: {
+            AMMDelete p(ctx);
             return p();
         }
         default:

@@ -23,9 +23,10 @@
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/protocol/jss.h>
+#include <test/jtx.h>
+
 #include <algorithm>
 #include <iterator>
-#include <test/jtx.h>
 
 namespace ripple {
 namespace test {
@@ -240,7 +241,6 @@ struct Escrow_test : public beast::unit_test::suite
             return (*sle)[sfBalance];
         return STAmount(iou, 0);
     }
-
     void
     testEnablement(FeatureBitset features)
     {

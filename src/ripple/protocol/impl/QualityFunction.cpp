@@ -17,42 +17,43 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_NFTSYNTHETICSERIALIZER_H_INCLUDED
-#define RIPPLE_RPC_NFTSYNTHETICSERIALIZER_H_INCLUDED
+#include <ripple/protocol/QualityFunction.h>
 
-#include <ripple/protocol/Protocol.h>
-#include <ripple/protocol/STBase.h>
-
-#include <functional>
-#include <memory>
-
-namespace Json {
-class Value;
-}
+#include <ripple/protocol/Quality.h>
 
 namespace ripple {
 
-class TxMeta;
-class STTx;
+QualityFunction::QualityFunction(
+    Quality const& quality,
+    QualityFunction::CLOBLikeTag)
+    : m_(0), b_(0), quality_(quality)
+{
+    if (quality.rate() <= beast::zero)
+        Throw<std::runtime_error>("QualityFunction quality rate is 0.");
+    b_ = 1 / quality.rate();
+}
 
-namespace RPC {
-
-struct JsonContext;
-
-/**
-   Adds common synthetic fields to transaction-related JSON responses
-
-   @{
- */
 void
-insertNFTSyntheticInJson(
-    Json::Value&,
-    RPC::JsonContext const&,
-    std::shared_ptr<STTx const> const&,
-    TxMeta const&);
-/** @} */
+QualityFunction::combine(QualityFunction const& qf)
+{
+    m_ += b_ * qf.m_;
+    b_ *= qf.b_;
+    if (m_ != 0)
+        quality_ = std::nullopt;
+}
 
-}  // namespace RPC
+std::optional<Number>
+QualityFunction::outFromAvgQ(Quality const& quality)
+{
+    if (m_ != 0 && quality.rate() != beast::zero)
+    {
+        saveNumberRoundMode rm(Number::setround(Number::rounding_mode::upward));
+        auto const out = (1 / quality.rate() - b_) / m_;
+        if (out <= 0)
+            return std::nullopt;
+        return out;
+    }
+    return std::nullopt;
+}
+
 }  // namespace ripple
-
-#endif

@@ -602,7 +602,7 @@ public:
         return *m_networkOPs;
     }
 
-    virtual ServerHandlerImp&
+    virtual ServerHandler&
     getServerHandler() override
     {
         assert(serverHandler_);

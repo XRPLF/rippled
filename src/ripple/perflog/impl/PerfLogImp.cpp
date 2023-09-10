@@ -20,7 +20,7 @@
 #include <ripple/perflog/impl/PerfLogImp.h>
 
 #include <ripple/basics/BasicConfig.h>
-#include <ripple/beast/core/CurrentThreadName.h>
+#include <ripple/basics/ThreadUtilities.h>
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/core/JobTypes.h>
 #include <ripple/json/json_writer.h>
@@ -255,7 +255,7 @@ PerfLogImp::openLog()
 void
 PerfLogImp::run()
 {
-    beast::setCurrentThreadName("perflog");
+    this_thread::set_name("perflog");
     lastLog_ = system_clock::now();
 
     while (true)

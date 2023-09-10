@@ -19,7 +19,6 @@
 
 #include <ripple/app/reporting/ETLSource.h>
 #include <ripple/app/reporting/ReportingETL.h>
-#include <ripple/beast/core/CurrentThreadName.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/json/json_writer.h>
 

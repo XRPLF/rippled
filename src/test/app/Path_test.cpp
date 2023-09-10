@@ -43,91 +43,6 @@ namespace test {
 
 //------------------------------------------------------------------------------
 
-namespace detail {
-
-void
-stpath_append_one(STPath& st, jtx::Account const& account)
-{
-    st.push_back(STPathElement({account.id(), std::nullopt, std::nullopt}));
-}
-
-template <class T>
-std::enable_if_t<std::is_constructible<jtx::Account, T>::value>
-stpath_append_one(STPath& st, T const& t)
-{
-    stpath_append_one(st, jtx::Account{t});
-}
-
-void
-stpath_append_one(STPath& st, jtx::IOU const& iou)
-{
-    st.push_back(STPathElement({iou.account.id(), iou.currency, std::nullopt}));
-}
-
-void
-stpath_append_one(STPath& st, STPathElement const& pe)
-{
-    st.push_back(pe);
-}
-
-void
-stpath_append_one(STPath& st, jtx::BookSpec const& book)
-{
-    st.push_back(STPathElement({std::nullopt, book.currency, book.account}));
-}
-
-template <class T, class... Args>
-void
-stpath_append(STPath& st, T const& t, Args const&... args)
-{
-    stpath_append_one(st, t);
-    if constexpr (sizeof...(args) > 0)
-        stpath_append(st, args...);
-}
-
-template <class... Args>
-void
-stpathset_append(STPathSet& st, STPath const& p, Args const&... args)
-{
-    st.push_back(p);
-    if constexpr (sizeof...(args) > 0)
-        stpathset_append(st, args...);
-}
-
-}  // namespace detail
-
-template <class... Args>
-STPath
-stpath(Args const&... args)
-{
-    STPath st;
-    detail::stpath_append(st, args...);
-    return st;
-}
-
-template <class... Args>
-bool
-same(STPathSet const& st1, Args const&... args)
-{
-    STPathSet st2;
-    detail::stpathset_append(st2, args...);
-    if (st1.size() != st2.size())
-        return false;
-
-    for (auto const& p : st2)
-    {
-        if (std::find(st1.begin(), st1.end(), p) == st1.end())
-            return false;
-    }
-    return true;
-}
-
-bool
-equal(STAmount const& sa1, STAmount const& sa2)
-{
-    return sa1 == sa2 && sa1.issue().account == sa2.issue().account;
-}
-
 Json::Value
 rpf(jtx::Account const& src, jtx::Account const& dst, std::uint32_t num_src)
 {
@@ -156,17 +71,6 @@ rpf(jtx::Account const& src, jtx::Account const& dst, std::uint32_t num_src)
 
     return jv;
 }
-
-// Issue path element
-auto
-IPE(Issue const& iss)
-{
-    return STPathElement(
-        STPathElement::typeCurrency | STPathElement::typeIssuer,
-        xrpAccount(),
-        iss.currency,
-        iss.account);
-};
 
 //------------------------------------------------------------------------------
 
