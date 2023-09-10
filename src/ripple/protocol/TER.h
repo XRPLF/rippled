@@ -302,9 +302,9 @@ enum TECcodes : TERUnderlyingType {
     tecAMM_EMPTY = 166,
     tecAMM_NOT_EMPTY = 167,
     tecAMM_ACCOUNT = 168,
-    tecINCOMPLETE = 169
+    tecINCOMPLETE = 169,
     tecREQUIRES_FLAG = 186,
-    tecPRECISION_LOSS = 187,
+    tecPRECISION_LOSS = 187
 };
 
 //------------------------------------------------------------------------------
