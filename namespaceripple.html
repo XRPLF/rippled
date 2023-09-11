@@ -2276,7 +2276,8 @@ Enumerations</h2></td></tr>
 <a class="el" href="namespaceripple.html#adebe4d783be9c979e67fdbb2bc27162fac6476cc82d6799d4a026dfa2f430e06e">terQUEUED</a>, 
 <a class="el" href="namespaceripple.html#adebe4d783be9c979e67fdbb2bc27162fad237d4c433f46906a2b8b2e1624c1aff">terPRE_TICKET</a>, 
 <br />
-&#160;&#160;<a class="el" href="namespaceripple.html#adebe4d783be9c979e67fdbb2bc27162fac110e4ea19a46f9ce263c5d746b34178">terNO_AMM</a>
+&#160;&#160;<a class="el" href="namespaceripple.html#adebe4d783be9c979e67fdbb2bc27162fac110e4ea19a46f9ce263c5d746b34178">terNO_AMM</a>, 
+<a class="el" href="namespaceripple.html#adebe4d783be9c979e67fdbb2bc27162facfe6757bb3a9386daccf21fc6441622d">terSUBMITTED</a>
 <br />
  }</td></tr>
 <tr class="separator:adebe4d783be9c979e67fdbb2bc27162f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -3363,9 +3364,9 @@ Functions</h2></td></tr>
 <tr class="separator:a3b2cb95751a41f93d6080e2ce00871c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab28220d8467d795a5a2af4dafc86ca41"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1XRPAmount.html">XRPAmount</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ab28220d8467d795a5a2af4dafc86ca41">mulRatio</a> (<a class="el" href="classripple_1_1XRPAmount.html">XRPAmount</a> const &amp;amt, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> num, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> den, bool roundUp)</td></tr>
 <tr class="separator:ab28220d8467d795a5a2af4dafc86ca41"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3cc2bfd22becf231724104914fefa3b2"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a3cc2bfd22becf231724104914fefa3b2">shouldCloseLedger</a> (bool anyTransactions, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> prevProposers, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> proposersClosed, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> proposersValidated, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> prevRoundTime, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> timeSincePrevClose, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> openTime, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> idleInterval, <a class="el" href="structripple_1_1ConsensusParms.html">ConsensusParms</a> const  &amp;parms, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
-<tr class="memdesc:a3cc2bfd22becf231724104914fefa3b2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Determines whether the current ledger should close at this time.  <a href="namespaceripple.html#a3cc2bfd22becf231724104914fefa3b2">More...</a><br /></td></tr>
-<tr class="separator:a3cc2bfd22becf231724104914fefa3b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a216564c8f7b3d3c62ceb75d04097a8c3"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a216564c8f7b3d3c62ceb75d04097a8c3">shouldCloseLedger</a> (bool anyTransactions, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> prevProposers, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> proposersClosed, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> proposersValidated, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> prevRoundTime, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> timeSincePrevClose, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> openTime, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> &gt; validationDelay, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> idleInterval, <a class="el" href="structripple_1_1ConsensusParms.html">ConsensusParms</a> const  &amp;parms, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
+<tr class="memdesc:a216564c8f7b3d3c62ceb75d04097a8c3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Determines whether the current ledger should close at this time.  <a href="namespaceripple.html#a216564c8f7b3d3c62ceb75d04097a8c3">More...</a><br /></td></tr>
+<tr class="separator:a216564c8f7b3d3c62ceb75d04097a8c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a21eb28deaa9d642c0e0a7d8bbec0f602"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a21eb28deaa9d642c0e0a7d8bbec0f602">checkConsensusReached</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> agreeing, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> total, bool count_self, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> minConsensusPct)</td></tr>
 <tr class="separator:a21eb28deaa9d642c0e0a7d8bbec0f602"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2e640e92bd561e94c1800ea388975d94"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a79cc3b590c118bd551b693bb333fb9d1">ConsensusState</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a2e640e92bd561e94c1800ea388975d94">checkConsensus</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> prevProposers, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> currentProposers, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> currentAgree, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> currentFinished, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> previousAgreeTime, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> currentAgreeTime, <a class="el" href="structripple_1_1ConsensusParms.html">ConsensusParms</a> const  &amp;parms, bool proposing, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
@@ -3374,9 +3375,9 @@ Functions</h2></td></tr>
 <tr class="memitem:aeb66127505ef68a84f565f5a84927229"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aeb66127505ef68a84f565f5a84927229">participantsNeeded</a> (int participants, int percent)</td></tr>
 <tr class="memdesc:aeb66127505ef68a84f565f5a84927229"><td class="mdescLeft">&#160;</td><td class="mdescRight">How many of the participants must agree to reach a given threshold?  <a href="namespaceripple.html#aeb66127505ef68a84f565f5a84927229">More...</a><br /></td></tr>
 <tr class="separator:aeb66127505ef68a84f565f5a84927229"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9bf3dd371c9291c917d56626c6f599a1"><td class="memTemplParams" colspan="2">template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </td></tr>
-<tr class="memitem:a9bf3dd371c9291c917d56626c6f599a1"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a9bf3dd371c9291c917d56626c6f599a1">operator==</a> (<a class="el" href="classripple_1_1ConsensusProposal.html">ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t &gt; const &amp;a, <a class="el" href="classripple_1_1ConsensusProposal.html">ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t &gt; const &amp;b)</td></tr>
-<tr class="separator:a9bf3dd371c9291c917d56626c6f599a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7cc79d0a8d201ae2f11564f7d116d67b"><td class="memTemplParams" colspan="2">template&lt;class NodeID_t , class LedgerID_t , class Position_t , class Seq &gt; </td></tr>
+<tr class="memitem:a7cc79d0a8d201ae2f11564f7d116d67b"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a7cc79d0a8d201ae2f11564f7d116d67b">operator==</a> (<a class="el" href="classripple_1_1ConsensusProposal.html">ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t, Seq &gt; const &amp;a, <a class="el" href="classripple_1_1ConsensusProposal.html">ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t, Seq &gt; const &amp;b)</td></tr>
+<tr class="separator:a7cc79d0a8d201ae2f11564f7d116d67b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adc3c30f5af69be2fb015915e83bec5ff"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#adc3c30f5af69be2fb015915e83bec5ff">to_string</a> (<a class="el" href="namespaceripple.html#a33f8b6e68b5f63faf2e9755cc251563e">ConsensusMode</a> m)</td></tr>
 <tr class="separator:adc3c30f5af69be2fb015915e83bec5ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adacaa5bdc65e1615b5485f9b0b9b72f1"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#adacaa5bdc65e1615b5485f9b0b9b72f1">to_string</a> (<a class="el" href="namespaceripple.html#a77adb10ef53a2e25195ccd38b46bfe9b">ConsensusPhase</a> p)</td></tr>
@@ -7592,7 +7593,7 @@ template&lt;class Value , class Hash  = hardened_hash&lt;strong_hash&gt;, class 
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00539">539</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00540">540</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -7608,7 +7609,7 @@ template&lt;class Value , class Hash  = hardened_hash&lt;strong_hash&gt;, class 
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00579">579</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00580">580</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -8380,7 +8381,7 @@ template&lt;class Value , class Hash  = hardened_hash&lt;strong_hash&gt;, class 
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusTypes_8h_source.html#l00055">55</a> of file <a class="el" href="ConsensusTypes_8h_source.html">ConsensusTypes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusTypes_8h_source.html#l00054">54</a> of file <a class="el" href="ConsensusTypes_8h_source.html">ConsensusTypes.h</a>.</p>
 
 </div>
 </div>
@@ -8422,7 +8423,7 @@ template&lt;class Value , class Hash  = hardened_hash&lt;strong_hash&gt;, class 
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusTypes_8h_source.html#l00103">103</a> of file <a class="el" href="ConsensusTypes_8h_source.html">ConsensusTypes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusTypes_8h_source.html#l00102">102</a> of file <a class="el" href="ConsensusTypes_8h_source.html">ConsensusTypes.h</a>.</p>
 
 </div>
 </div>
@@ -8456,7 +8457,7 @@ template&lt;class Value , class Hash  = hardened_hash&lt;strong_hash&gt;, class 
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusTypes_8h_source.html#l00186">186</a> of file <a class="el" href="ConsensusTypes_8h_source.html">ConsensusTypes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusTypes_8h_source.html#l00185">185</a> of file <a class="el" href="ConsensusTypes_8h_source.html">ConsensusTypes.h</a>.</p>
 
 </div>
 </div>
@@ -8757,7 +8758,7 @@ template&lt;class Value , class Hash  = hardened_hash&lt;strong_hash&gt;, class 
 <tr><td class="fieldname"><a id="a63a883cebf81b764433e67d90d4470d9a84fbe0280a6e0c725f00f8847aa6be49"></a>queued&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="nodestore_2Types_8h_source.html#l00060">60</a> of file <a class="el" href="nodestore_2Types_8h_source.html">nodestore/Types.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="nodestore_2Types_8h_source.html#l00061">61</a> of file <a class="el" href="nodestore_2Types_8h_source.html">nodestore/Types.h</a>.</p>
 
 </div>
 </div>
@@ -9541,6 +9542,7 @@ ledger.
 <tr><td class="fieldname"><a id="adebe4d783be9c979e67fdbb2bc27162fac6476cc82d6799d4a026dfa2f430e06e"></a>terQUEUED&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="adebe4d783be9c979e67fdbb2bc27162fad237d4c433f46906a2b8b2e1624c1aff"></a>terPRE_TICKET&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="adebe4d783be9c979e67fdbb2bc27162fac110e4ea19a46f9ce263c5d746b34178"></a>terNO_AMM&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="adebe4d783be9c979e67fdbb2bc27162facfe6757bb3a9386daccf21fc6441622d"></a>terSUBMITTED&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
 <p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00175">175</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
@@ -9562,7 +9564,7 @@ ledger.
 <tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="aabc7f150d5082c73116a1cd5962b434da28c7d8b3ed759d363503a05fcd59f151"></a>tesSUCCESS&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00215">215</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00216">216</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -9635,7 +9637,7 @@ ledger.
 <tr><td class="fieldname"><a id="aa298e929e02f59c2b05a30ee8805b38ca576f5411ab4458ec9842480e7ebe7072"></a>tecINCOMPLETE&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00230">230</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00231">231</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -10606,7 +10608,7 @@ template&lt;class ApplyTxs &gt; </div>
 <p>The rationale is that for transaction trees, it may make sense to not include the leaves if the fetch pack is being constructed for someone attempting to get a recent ledger for which they already have the transactions.</p>
 <p>However, for historical ledgers, which is the only use we have for fetch packs right now, it makes sense to include the transactions because the caller is unlikely to have them. </p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l02196">2196</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l02201">2201</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -11332,7 +11334,7 @@ template&lt;class ApplyTxs &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l02188">2188</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l02189">2189</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -12879,7 +12881,7 @@ template&lt;class Stream &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ValidatorList_8cpp_source.html#l00043">43</a> of file <a class="el" href="ValidatorList_8cpp_source.html">ValidatorList.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ValidatorList_8cpp_source.html#l00044">44</a> of file <a class="el" href="ValidatorList_8cpp_source.html">ValidatorList.cpp</a>.</p>
 
 </div>
 </div>
@@ -12927,7 +12929,7 @@ template&lt;class Stream &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ValidatorList_8cpp_source.html#l00477">477</a> of file <a class="el" href="ValidatorList_8cpp_source.html">ValidatorList.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ValidatorList_8cpp_source.html#l00478">478</a> of file <a class="el" href="ValidatorList_8cpp_source.html">ValidatorList.cpp</a>.</p>
 
 </div>
 </div>
@@ -12975,7 +12977,7 @@ template&lt;class Stream &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ValidatorList_8cpp_source.html#l00456">456</a> of file <a class="el" href="ValidatorList_8cpp_source.html">ValidatorList.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ValidatorList_8cpp_source.html#l00457">457</a> of file <a class="el" href="ValidatorList_8cpp_source.html">ValidatorList.cpp</a>.</p>
 
 </div>
 </div>
@@ -13023,7 +13025,7 @@ template&lt;class Stream &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ValidatorList_8cpp_source.html#l00540">540</a> of file <a class="el" href="ValidatorList_8cpp_source.html">ValidatorList.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ValidatorList_8cpp_source.html#l00541">541</a> of file <a class="el" href="ValidatorList_8cpp_source.html">ValidatorList.cpp</a>.</p>
 
 </div>
 </div>
@@ -13077,7 +13079,7 @@ template&lt;class Stream &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ValidatorList_8cpp_source.html#l00569">569</a> of file <a class="el" href="ValidatorList_8cpp_source.html">ValidatorList.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ValidatorList_8cpp_source.html#l00570">570</a> of file <a class="el" href="ValidatorList_8cpp_source.html">ValidatorList.cpp</a>.</p>
 
 </div>
 </div>
@@ -13247,7 +13249,7 @@ template&lt;class T , class  = std::enable_if_t&lt;        std::is_same&lt;T, ch
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l02022">2022</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l02034">2034</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
 
 </div>
 </div>
@@ -13285,7 +13287,7 @@ template&lt;class T , class  = std::enable_if_t&lt;        std::is_same&lt;T, ch
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l02829">2829</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l02841">2841</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
 
 </div>
 </div>
@@ -13369,7 +13371,7 @@ template&lt;class T , class  = std::enable_if_t&lt;        std::is_same&lt;T, ch
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l04626">4626</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l04638">4638</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
 
 </div>
 </div>
@@ -23324,8 +23326,8 @@ template&lt;class Char , class Traits &gt; </div>
 
 </div>
 </div>
-<a id="a3cc2bfd22becf231724104914fefa3b2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3cc2bfd22becf231724104914fefa3b2">&#9670;&nbsp;</a></span>shouldCloseLedger()</h2>
+<a id="a216564c8f7b3d3c62ceb75d04097a8c3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a216564c8f7b3d3c62ceb75d04097a8c3">&#9670;&nbsp;</a></span>shouldCloseLedger()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -23375,6 +23377,12 @@ template&lt;class Char , class Traits &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> &gt;&#160;</td>
+          <td class="paramname"><em>validationDelay</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a>&#160;</td>
           <td class="paramname"><em>idleInterval</em>, </td>
         </tr>
@@ -23409,6 +23417,7 @@ template&lt;class Char , class Traits &gt; </div>
     <tr><td class="paramname">prevRoundTime</td><td>time for the previous ledger to reach consensus </td></tr>
     <tr><td class="paramname">timeSincePrevClose</td><td>time since the previous ledger's (possibly rounded) close time </td></tr>
     <tr><td class="paramname">openTime</td><td>duration this ledger has been open </td></tr>
+    <tr><td class="paramname">validationDelay</td><td>duration retrying ledger validation </td></tr>
     <tr><td class="paramname">idleInterval</td><td>the network's desired idle interval </td></tr>
     <tr><td class="paramname">parms</td><td><a class="el" href="classripple_1_1Consensus.html" title="Generic implementation of consensus algorithm.">Consensus</a> constant parameters </td></tr>
     <tr><td class="paramname">j</td><td>journal for logging </td></tr>
@@ -23458,7 +23467,7 @@ template&lt;class Char , class Traits &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8cpp_source.html#l00086">86</a> of file <a class="el" href="Consensus_8cpp_source.html">Consensus.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8cpp_source.html#l00093">93</a> of file <a class="el" href="Consensus_8cpp_source.html">Consensus.cpp</a>.</p>
 
 </div>
 </div>
@@ -23546,7 +23555,7 @@ template&lt;class Char , class Traits &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8cpp_source.html#l00108">108</a> of file <a class="el" href="Consensus_8cpp_source.html">Consensus.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8cpp_source.html#l00115">115</a> of file <a class="el" href="Consensus_8cpp_source.html">Consensus.cpp</a>.</p>
 
 </div>
 </div>
@@ -23587,28 +23596,28 @@ template&lt;class Char , class Traits &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>the number of participants which must agree </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01353">1353</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01663">1663</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
-<a id="a9bf3dd371c9291c917d56626c6f599a1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9bf3dd371c9291c917d56626c6f599a1">&#9670;&nbsp;</a></span>operator==() <span class="overload">[7/17]</span></h2>
+<a id="a7cc79d0a8d201ae2f11564f7d116d67b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7cc79d0a8d201ae2f11564f7d116d67b">&#9670;&nbsp;</a></span>operator==() <span class="overload">[7/17]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
+template&lt;class NodeID_t , class LedgerID_t , class Position_t , class Seq &gt; </div>
       <table class="memname">
         <tr>
           <td class="memname">bool ripple::operator== </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1ConsensusProposal.html">ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t &gt; const &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1ConsensusProposal.html">ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t, Seq &gt; const &amp;&#160;</td>
           <td class="paramname"><em>a</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1ConsensusProposal.html">ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t &gt; const &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1ConsensusProposal.html">ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t, Seq &gt; const &amp;&#160;</td>
           <td class="paramname"><em>b</em>&#160;</td>
         </tr>
         <tr>
@@ -23619,7 +23628,7 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00260">260</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00291">291</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
 
 </div>
 </div>
@@ -23639,7 +23648,7 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConsensusTypes_8h_source.html#l00070">70</a> of file <a class="el" href="ConsensusTypes_8h_source.html">ConsensusTypes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusTypes_8h_source.html#l00069">69</a> of file <a class="el" href="ConsensusTypes_8h_source.html">ConsensusTypes.h</a>.</p>
 
 </div>
 </div>
@@ -23659,7 +23668,7 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConsensusTypes_8h_source.html#l00117">117</a> of file <a class="el" href="ConsensusTypes_8h_source.html">ConsensusTypes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusTypes_8h_source.html#l00116">116</a> of file <a class="el" href="ConsensusTypes_8h_source.html">ConsensusTypes.h</a>.</p>
 
 </div>
 </div>
@@ -27940,7 +27949,7 @@ template&lt;typename headers &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerImp_8cpp_source.html#l00151">151</a> of file <a class="el" href="PeerImp_8cpp_source.html">PeerImp.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerImp_8cpp_source.html#l00154">154</a> of file <a class="el" href="PeerImp_8cpp_source.html">PeerImp.cpp</a>.</p>
 
 </div>
 </div>
@@ -27984,7 +27993,7 @@ template&lt;typename headers &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerImp_8cpp_source.html#l03213">3213</a> of file <a class="el" href="PeerImp_8cpp_source.html">PeerImp.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerImp_8cpp_source.html#l03226">3226</a> of file <a class="el" href="PeerImp_8cpp_source.html">PeerImp.cpp</a>.</p>
 
 </div>
 </div>
@@ -28034,7 +28043,7 @@ template&lt;typename headers &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerImp_8cpp_source.html#l03237">3237</a> of file <a class="el" href="PeerImp_8cpp_source.html">PeerImp.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerImp_8cpp_source.html#l03250">3250</a> of file <a class="el" href="PeerImp_8cpp_source.html">PeerImp.cpp</a>.</p>
 
 </div>
 </div>
@@ -43681,7 +43690,7 @@ template&lt;typename MightSaveRound &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8cpp_source.html#l00205">205</a> of file <a class="el" href="TER_8cpp_source.html">TER.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8cpp_source.html#l00206">206</a> of file <a class="el" href="TER_8cpp_source.html">TER.cpp</a>.</p>
 
 </div>
 </div>
@@ -43701,7 +43710,7 @@ template&lt;typename MightSaveRound &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8cpp_source.html#l00220">220</a> of file <a class="el" href="TER_8cpp_source.html">TER.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8cpp_source.html#l00221">221</a> of file <a class="el" href="TER_8cpp_source.html">TER.cpp</a>.</p>
 
 </div>
 </div>
@@ -43721,7 +43730,7 @@ template&lt;typename MightSaveRound &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8cpp_source.html#l00229">229</a> of file <a class="el" href="TER_8cpp_source.html">TER.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8cpp_source.html#l00230">230</a> of file <a class="el" href="TER_8cpp_source.html">TER.cpp</a>.</p>
 
 </div>
 </div>
@@ -43741,7 +43750,7 @@ template&lt;typename MightSaveRound &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8cpp_source.html#l00238">238</a> of file <a class="el" href="TER_8cpp_source.html">TER.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8cpp_source.html#l00239">239</a> of file <a class="el" href="TER_8cpp_source.html">TER.cpp</a>.</p>
 
 </div>
 </div>
@@ -45676,7 +45685,7 @@ template&lt;class U &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00312">312</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00313">313</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -45704,7 +45713,7 @@ template&lt;class U &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00318">318</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00319">319</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -45732,7 +45741,7 @@ template&lt;class U &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00324">324</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00325">325</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -45760,7 +45769,7 @@ template&lt;class U &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00330">330</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00331">331</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -45788,7 +45797,7 @@ template&lt;class U &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00336">336</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00337">337</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -45816,7 +45825,7 @@ template&lt;class U &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00342">342</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00343">343</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -45860,7 +45869,7 @@ template&lt;typename L , typename R &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00446">446</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00447">447</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -45904,7 +45913,7 @@ template&lt;typename L , typename R &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00456">456</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00457">457</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -45948,7 +45957,7 @@ template&lt;typename L , typename R &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00466">466</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00467">467</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -45992,7 +46001,7 @@ template&lt;typename L , typename R &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00476">476</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00477">477</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -46036,7 +46045,7 @@ template&lt;typename L , typename R &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00486">486</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00487">487</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -46080,7 +46089,7 @@ template&lt;typename L , typename R &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00496">496</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00497">497</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -46100,7 +46109,7 @@ template&lt;typename L , typename R &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00584">584</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00585">585</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -46120,7 +46129,7 @@ template&lt;typename L , typename R &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00590">590</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00591">591</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -46140,7 +46149,7 @@ template&lt;typename L , typename R &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00596">596</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00597">597</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -46160,7 +46169,7 @@ template&lt;typename L , typename R &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00602">602</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00603">603</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -46180,7 +46189,7 @@ template&lt;typename L , typename R &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00608">608</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00609">609</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -46200,7 +46209,7 @@ template&lt;typename L , typename R &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00614">614</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00615">615</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -47823,7 +47832,7 @@ template&lt;typename L , typename R &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Submit_8cpp_source.html#l00047">47</a> of file <a class="el" href="Submit_8cpp_source.html">Submit.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Submit_8cpp_source.html#l00048">48</a> of file <a class="el" href="Submit_8cpp_source.html">Submit.cpp</a>.</p>
 
 </div>
 </div>
@@ -47843,7 +47852,7 @@ template&lt;typename L , typename R &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SubmitMultiSigned_8cpp_source.html#l00034">34</a> of file <a class="el" href="SubmitMultiSigned_8cpp_source.html">SubmitMultiSigned.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SubmitMultiSigned_8cpp_source.html#l00036">36</a> of file <a class="el" href="SubmitMultiSigned_8cpp_source.html">SubmitMultiSigned.cpp</a>.</p>
 
 </div>
 </div>
@@ -48255,7 +48264,7 @@ template&lt;typename L , typename R &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Submit_8cpp_source.html#l00035">35</a> of file <a class="el" href="Submit_8cpp_source.html">Submit.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Submit_8cpp_source.html#l00036">36</a> of file <a class="el" href="Submit_8cpp_source.html">Submit.cpp</a>.</p>
 
 </div>
 </div>
@@ -53577,7 +53586,7 @@ template&lt;class Handler &gt; </div>
 <b>Initial value:</b><div class="fragment"><div class="line">{</div>
 <div class="line">    {<span class="stringliteral">&quot;disconnected&quot;</span>, <span class="stringliteral">&quot;connected&quot;</span>, <span class="stringliteral">&quot;syncing&quot;</span>, <span class="stringliteral">&quot;tracking&quot;</span>, <span class="stringliteral">&quot;full&quot;</span>}}</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l00841">841</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l00826">826</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
 
 </div>
 </div>
@@ -53604,7 +53613,7 @@ template&lt;class Handler &gt; </div>
 <div class="line">    <a class="code" href="namespaceripple.html#a355ec605d1063c4316b6f1480359da19">generateKeyPair</a>(KeyType::secp256k1, <a class="code" href="namespaceripple.html#a50df1a645790d124729a6ed973edf519">generateSeed</a>(<span class="stringliteral">&quot;masterpassphrase&quot;</span>))</div>
 <div class="line">        .first)</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l00854">854</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l00839">839</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
 
 </div>
 </div>

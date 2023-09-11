@@ -1,5 +1,4 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classJson_1_1ValueIteratorBase.html" title="base class for Value iterators." alt="" coords="5,31,179,57"/>
-<area shape="rect" id="node2" href="$classJson_1_1ValueConstIterator.html" title="const iterator for object and array value." alt="" coords="227,5,405,32"/>
-<area shape="rect" id="node3" href="$classJson_1_1ValueIterator.html" title="Iterator for object and array value." alt="" coords="245,56,387,83"/>
+<area shape="rect" id="node1" href="$classJson_1_1ValueAllocator.html" title="Experimental do not use: Allocator to customize member name and string value memory management done b..." alt="" coords="5,5,156,32"/>
+<area shape="rect" id="node2" href="$classJson_1_1DefaultValueAllocator.html" title=" " alt="" coords="204,5,403,32"/>
 </map>

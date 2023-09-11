@@ -1,11 +1,14 @@
 <map id="ripple::test::csf::Peer::Position" name="ripple::test::csf::Peer::Position">
-<area shape="rect" id="node1" title="Basic wrapper of a proposed position taken by a peer." alt="" coords="1137,166,1264,207"/>
-<area shape="rect" id="node2" href="$classripple_1_1ConsensusProposal.html" title=" " alt="" coords="785,166,1021,207"/>
+<area shape="rect" id="node1" title="Basic wrapper of a proposed position taken by a peer." alt="" coords="1100,279,1227,321"/>
+<area shape="rect" id="node2" href="$classripple_1_1ConsensusProposal.html" title=" " alt="" coords="785,272,984,328"/>
 <area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="106,11,209,37"/>
-<area shape="rect" id="node4" href="$classripple_1_1tagged__integer.html" title=" " alt="" coords="419,101,625,142"/>
+<area shape="rect" id="node4" href="$classripple_1_1tagged__integer.html" title=" " alt="" coords="419,127,625,169"/>
 <area shape="rect" id="node5" title=" " alt="" coords="5,61,309,235"/>
-<area shape="rect" id="node6" href="$classripple_1_1tagged__integer.html" title="A type&#45;safe wrap around standard integral types." alt="" coords="439,166,605,207"/>
+<area shape="rect" id="node6" href="$classripple_1_1tagged__integer.html" title="A type&#45;safe wrap around standard integral types." alt="" coords="439,214,605,255"/>
 <area shape="rect" id="node7" title=" " alt="" coords="14,259,301,403"/>
-<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="445,231,599,273"/>
-<area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/time_point.html" title=" " alt="" coords="436,297,608,338"/>
+<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="445,279,599,321"/>
+<area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/time_point.html" title=" " alt="" coords="436,345,608,386"/>
+<area shape="rect" id="node10" href="$classripple_1_1ConsensusTimer.html" title="Measures the duration of phases of consensus." alt="" coords="435,411,609,437"/>
+<area shape="rect" id="node11" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="65,427,249,453"/>
+<area shape="rect" id="node12" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="441,462,603,503"/>
 </map>

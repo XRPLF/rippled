@@ -1,4 +1,5 @@
 <map id="ripple::NodeStore::NuDBBackend" name="ripple::NodeStore::NuDBBackend">
-<area shape="rect" id="node1" title=" " alt="" coords="5,95,148,136"/>
+<area shape="rect" id="node1" title=" " alt="" coords="93,95,236,136"/>
 <area shape="rect" id="node2" href="$classripple_1_1NodeStore_1_1Backend.html" title="A backend used for the NodeStore." alt="" coords="5,5,148,47"/>
+<area shape="rect" id="node3" href="$structripple_1_1NodeStore_1_1BatchWriter_1_1Callback.html" title="This callback does the actual writing." alt="" coords="173,5,335,47"/>
 </map>

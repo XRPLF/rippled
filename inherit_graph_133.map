@@ -1,3 +1,4 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$structripple_1_1AmendmentTable_1_1FeatureInfo.html" title=" " alt="" coords="5,5,187,47"/>
+<area shape="rect" id="node1" href="$classripple_1_1AmendmentTable.html" title="The amendment table stores the list of enabled and potential amendments." alt="" coords="5,5,187,32"/>
+<area shape="rect" id="node2" href="$classripple_1_1AmendmentTableImpl.html" title="Track the list of &quot;amendments&quot;." alt="" coords="235,5,445,32"/>
 </map>

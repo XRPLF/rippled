@@ -1,5 +1,5 @@
 <map id="ripple::ConsensusParms" name="ripple::ConsensusParms">
-<area shape="rect" id="node1" title="Consensus algorithm parameters." alt="" coords="187,212,365,239"/>
+<area shape="rect" id="node1" title="Consensus algorithm parameters." alt="" coords="187,300,365,327"/>
 <area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="5,5,160,32"/>
 <area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="184,5,368,32"/>
 <area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="431,5,519,32"/>

@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.17"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>rippled: ripple::ConsensusProposal&lt; NodeID_t, LedgerID_t, Position_t &gt; Class Template Reference</title>
+<title>rippled: ripple::ConsensusProposal&lt; NodeID_t, LedgerID_t, Position_t, Seq &gt; Class Template Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -72,107 +72,121 @@ $(function() {
 <a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classripple_1_1ConsensusProposal-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">ripple::ConsensusProposal&lt; NodeID_t, LedgerID_t, Position_t &gt; Class Template Reference</div>  </div>
+<div class="title">ripple::ConsensusProposal&lt; NodeID_t, LedgerID_t, Position_t, Seq &gt; Class Template Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 
 <p>Represents a proposed position taken during a round of consensus.  
  <a href="classripple_1_1ConsensusProposal.html#details">More...</a></p>
 <div class="dynheader">
-Collaboration diagram for ripple::ConsensusProposal&lt; NodeID_t, LedgerID_t, Position_t &gt;:</div>
+Collaboration diagram for ripple::ConsensusProposal&lt; NodeID_t, LedgerID_t, Position_t, Seq &gt;:</div>
 <div class="dyncontent">
-<div class="center"><img src="classripple_1_1ConsensusProposal__coll__graph.png" border="0" usemap="#ripple_1_1ConsensusProposal_3_01NodeID__t_00_01LedgerID__t_00_01Position__t_01_4_coll__map" alt="Collaboration graph"/></div>
-<map name="ripple_1_1ConsensusProposal_3_01NodeID__t_00_01LedgerID__t_00_01Position__t_01_4_coll__map" id="ripple_1_1ConsensusProposal_3_01NodeID__t_00_01LedgerID__t_00_01Position__t_01_4_coll__map">
-<area shape="rect" title="Represents a proposed position taken during a round of consensus." alt="" coords="317,59,511,115"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="40,15,143,41"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/utility/optional.html" title=" " alt="" coords="14,66,169,107"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/chrono/time_point.html" title=" " alt="" coords="5,131,177,173"/>
+<div class="center"><img src="classripple_1_1ConsensusProposal__coll__graph.png" border="0" usemap="#ripple_1_1ConsensusProposal_3_01NodeID__t_00_01LedgerID__t_00_01Position__t_00_01Seq_01_4_coll__map" alt="Collaboration graph"/></div>
+<map name="ripple_1_1ConsensusProposal_3_01NodeID__t_00_01LedgerID__t_00_01Position__t_00_01Seq_01_4_coll__map" id="ripple_1_1ConsensusProposal_3_01NodeID__t_00_01LedgerID__t_00_01Position__t_00_01Seq_01_4_coll__map">
+<area shape="rect" title="Represents a proposed position taken during a round of consensus." alt="" coords="585,104,779,160"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="307,9,409,36"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/utility/optional.html" title=" " alt="" coords="279,60,437,87"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/utility/optional.html" title=" " alt="" coords="281,111,435,153"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/chrono/time_point.html" title=" " alt="" coords="272,177,444,218"/>
+<area shape="rect" href="classripple_1_1ConsensusTimer.html" title="Measures the duration of phases of consensus." alt="" coords="271,243,445,269"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/chrono/duration.html" title=" " alt="" coords="5,243,189,269"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:a8aa8f75fd852edae88d109313c96de4d"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#a8aa8f75fd852edae88d109313c96de4d">NodeID</a> = NodeID_t</td></tr>
-<tr class="separator:a8aa8f75fd852edae88d109313c96de4d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7ebb588ecc6d8decbde6db20b8f3ec8b"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#a7ebb588ecc6d8decbde6db20b8f3ec8b">NodeID</a> = NodeID_t</td></tr>
+<tr class="separator:a7ebb588ecc6d8decbde6db20b8f3ec8b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abcb689a6b6d9488cd3d6dd20e510e882"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#abcb689a6b6d9488cd3d6dd20e510e882">clock_type</a> = <a class="el" href="classbeast_1_1abstract__clock.html">beast::abstract_clock</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/steady_clock.html">std::chrono::steady_clock</a> &gt;</td></tr>
+<tr class="memdesc:abcb689a6b6d9488cd3d6dd20e510e882"><td class="mdescLeft">&#160;</td><td class="mdescRight">Clock type for measuring time within the consensus code.  <a href="classripple_1_1ConsensusProposal.html#abcb689a6b6d9488cd3d6dd20e510e882">More...</a><br /></td></tr>
+<tr class="separator:abcb689a6b6d9488cd3d6dd20e510e882"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a262f4ce808b8013b708c573a34e8124e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#a262f4ce808b8013b708c573a34e8124e">ConsensusProposal</a> (LedgerID_t const &amp;<a class="el" href="classripple_1_1ConsensusProposal.html#a8491263073f4b5f4f83584a60c96aee7">prevLedger</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> seq, Position_t const &amp;<a class="el" href="classripple_1_1ConsensusProposal.html#ae6f557d43e5d720f9094194900d91f66">position</a>, <a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> <a class="el" href="classripple_1_1ConsensusProposal.html#ae67cab863fe8ad4fb82a6a558b15844e">closeTime</a>, <a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> now, NodeID_t const &amp;<a class="el" href="classripple_1_1ConsensusProposal.html#ad60bb068af7c1a4aeb9e3f27761d1afa">nodeID</a>)</td></tr>
-<tr class="memdesc:a262f4ce808b8013b708c573a34e8124e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor.  <a href="classripple_1_1ConsensusProposal.html#a262f4ce808b8013b708c573a34e8124e">More...</a><br /></td></tr>
-<tr class="separator:a262f4ce808b8013b708c573a34e8124e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad60bb068af7c1a4aeb9e3f27761d1afa"><td class="memItemLeft" align="right" valign="top">NodeID_t const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#ad60bb068af7c1a4aeb9e3f27761d1afa">nodeID</a> () const</td></tr>
-<tr class="memdesc:ad60bb068af7c1a4aeb9e3f27761d1afa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Identifying which peer took this position.  <a href="classripple_1_1ConsensusProposal.html#ad60bb068af7c1a4aeb9e3f27761d1afa">More...</a><br /></td></tr>
-<tr class="separator:ad60bb068af7c1a4aeb9e3f27761d1afa"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae6f557d43e5d720f9094194900d91f66"><td class="memItemLeft" align="right" valign="top">Position_t const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#ae6f557d43e5d720f9094194900d91f66">position</a> () const</td></tr>
-<tr class="memdesc:ae6f557d43e5d720f9094194900d91f66"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the proposed position.  <a href="classripple_1_1ConsensusProposal.html#ae6f557d43e5d720f9094194900d91f66">More...</a><br /></td></tr>
-<tr class="separator:ae6f557d43e5d720f9094194900d91f66"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8491263073f4b5f4f83584a60c96aee7"><td class="memItemLeft" align="right" valign="top">LedgerID_t const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#a8491263073f4b5f4f83584a60c96aee7">prevLedger</a> () const</td></tr>
-<tr class="memdesc:a8491263073f4b5f4f83584a60c96aee7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the prior accepted ledger this position is based on.  <a href="classripple_1_1ConsensusProposal.html#a8491263073f4b5f4f83584a60c96aee7">More...</a><br /></td></tr>
-<tr class="separator:a8491263073f4b5f4f83584a60c96aee7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aad1cb7d0dc62fcec8ab135e28c4e9606"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#aad1cb7d0dc62fcec8ab135e28c4e9606">proposeSeq</a> () const</td></tr>
-<tr class="memdesc:aad1cb7d0dc62fcec8ab135e28c4e9606"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the sequence number of this proposal.  <a href="classripple_1_1ConsensusProposal.html#aad1cb7d0dc62fcec8ab135e28c4e9606">More...</a><br /></td></tr>
-<tr class="separator:aad1cb7d0dc62fcec8ab135e28c4e9606"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae67cab863fe8ad4fb82a6a558b15844e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#ae67cab863fe8ad4fb82a6a558b15844e">closeTime</a> () const</td></tr>
-<tr class="memdesc:ae67cab863fe8ad4fb82a6a558b15844e"><td class="mdescLeft">&#160;</td><td class="mdescRight">The current position on the consensus close time.  <a href="classripple_1_1ConsensusProposal.html#ae67cab863fe8ad4fb82a6a558b15844e">More...</a><br /></td></tr>
-<tr class="separator:ae67cab863fe8ad4fb82a6a558b15844e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2fd168d38a353460bcb2425f7218922e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#a2fd168d38a353460bcb2425f7218922e">seenTime</a> () const</td></tr>
-<tr class="memdesc:a2fd168d38a353460bcb2425f7218922e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get when this position was taken.  <a href="classripple_1_1ConsensusProposal.html#a2fd168d38a353460bcb2425f7218922e">More...</a><br /></td></tr>
-<tr class="separator:a2fd168d38a353460bcb2425f7218922e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afd1d7ba3a4ff27d8a2b8712ddd7a306e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#afd1d7ba3a4ff27d8a2b8712ddd7a306e">isInitial</a> () const</td></tr>
-<tr class="memdesc:afd1d7ba3a4ff27d8a2b8712ddd7a306e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether this is the first position taken during the current consensus round.  <a href="classripple_1_1ConsensusProposal.html#afd1d7ba3a4ff27d8a2b8712ddd7a306e">More...</a><br /></td></tr>
-<tr class="separator:afd1d7ba3a4ff27d8a2b8712ddd7a306e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2b7c39cd60f61c4e424085f4eefe73f5"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#a2b7c39cd60f61c4e424085f4eefe73f5">isBowOut</a> () const</td></tr>
-<tr class="memdesc:a2b7c39cd60f61c4e424085f4eefe73f5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get whether this node left the consensus process.  <a href="classripple_1_1ConsensusProposal.html#a2b7c39cd60f61c4e424085f4eefe73f5">More...</a><br /></td></tr>
-<tr class="separator:a2b7c39cd60f61c4e424085f4eefe73f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa96c9a25fdbb65b10dd0d73c5ac92526"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#aa96c9a25fdbb65b10dd0d73c5ac92526">isStale</a> (<a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> cutoff) const</td></tr>
-<tr class="memdesc:aa96c9a25fdbb65b10dd0d73c5ac92526"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get whether this position is stale relative to the provided cutoff.  <a href="classripple_1_1ConsensusProposal.html#aa96c9a25fdbb65b10dd0d73c5ac92526">More...</a><br /></td></tr>
-<tr class="separator:aa96c9a25fdbb65b10dd0d73c5ac92526"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0db41af6895dc85c6b5fcf76e9f93237"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#a0db41af6895dc85c6b5fcf76e9f93237">changePosition</a> (Position_t const &amp;newPosition, <a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> newCloseTime, <a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> now)</td></tr>
-<tr class="memdesc:a0db41af6895dc85c6b5fcf76e9f93237"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update the position during the consensus process.  <a href="classripple_1_1ConsensusProposal.html#a0db41af6895dc85c6b5fcf76e9f93237">More...</a><br /></td></tr>
-<tr class="separator:a0db41af6895dc85c6b5fcf76e9f93237"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7d279f2fd7f378e66f151870d1171f75"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#a7d279f2fd7f378e66f151870d1171f75">bowOut</a> (<a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> now)</td></tr>
-<tr class="memdesc:a7d279f2fd7f378e66f151870d1171f75"><td class="mdescLeft">&#160;</td><td class="mdescRight">Leave consensus.  <a href="classripple_1_1ConsensusProposal.html#a7d279f2fd7f378e66f151870d1171f75">More...</a><br /></td></tr>
-<tr class="separator:a7d279f2fd7f378e66f151870d1171f75"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a799315c246e228ac703759505d8997d8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#a799315c246e228ac703759505d8997d8">getJson</a> () const</td></tr>
-<tr class="memdesc:a799315c246e228ac703759505d8997d8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get JSON representation for debugging.  <a href="classripple_1_1ConsensusProposal.html#a799315c246e228ac703759505d8997d8">More...</a><br /></td></tr>
-<tr class="separator:a799315c246e228ac703759505d8997d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af5df2e264785c5310dba333549fb5ec2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#af5df2e264785c5310dba333549fb5ec2">signingHash</a> () const</td></tr>
-<tr class="memdesc:af5df2e264785c5310dba333549fb5ec2"><td class="mdescLeft">&#160;</td><td class="mdescRight">The digest for this proposal, used for signing purposes.  <a href="classripple_1_1ConsensusProposal.html#af5df2e264785c5310dba333549fb5ec2">More...</a><br /></td></tr>
-<tr class="separator:af5df2e264785c5310dba333549fb5ec2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0a71bd6302b28a3156117906230ba272"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#a0a71bd6302b28a3156117906230ba272">ConsensusProposal</a> (LedgerID_t const &amp;<a class="el" href="classripple_1_1ConsensusProposal.html#ad01287fa03ffd21c1fcd485f7d2e7a9d">prevLedger</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> seq, Position_t const &amp;<a class="el" href="classripple_1_1ConsensusProposal.html#a734bd07cbd45bcef6f394aba56cbf1e3">position</a>, <a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> <a class="el" href="classripple_1_1ConsensusProposal.html#a1c744a5ba145b8314cd454d8dcea25b6">closeTime</a>, <a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> now, NodeID_t const &amp;<a class="el" href="classripple_1_1ConsensusProposal.html#a83ff676a53c9bbfd02e880a29f03f844">nodeID</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; Seq &gt; const &amp;<a class="el" href="classripple_1_1ConsensusProposal.html#aab30a6de960572a4f080f0f5cce7bd15">ledgerSeq</a>, <a class="el" href="classripple_1_1ConsensusProposal.html#abcb689a6b6d9488cd3d6dd20e510e882">clock_type</a> const &amp;clock)</td></tr>
+<tr class="memdesc:a0a71bd6302b28a3156117906230ba272"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor.  <a href="classripple_1_1ConsensusProposal.html#a0a71bd6302b28a3156117906230ba272">More...</a><br /></td></tr>
+<tr class="separator:a0a71bd6302b28a3156117906230ba272"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a83ff676a53c9bbfd02e880a29f03f844"><td class="memItemLeft" align="right" valign="top">NodeID_t const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#a83ff676a53c9bbfd02e880a29f03f844">nodeID</a> () const</td></tr>
+<tr class="memdesc:a83ff676a53c9bbfd02e880a29f03f844"><td class="mdescLeft">&#160;</td><td class="mdescRight">Identifying which peer took this position.  <a href="classripple_1_1ConsensusProposal.html#a83ff676a53c9bbfd02e880a29f03f844">More...</a><br /></td></tr>
+<tr class="separator:a83ff676a53c9bbfd02e880a29f03f844"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a734bd07cbd45bcef6f394aba56cbf1e3"><td class="memItemLeft" align="right" valign="top">Position_t const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#a734bd07cbd45bcef6f394aba56cbf1e3">position</a> () const</td></tr>
+<tr class="memdesc:a734bd07cbd45bcef6f394aba56cbf1e3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the proposed position.  <a href="classripple_1_1ConsensusProposal.html#a734bd07cbd45bcef6f394aba56cbf1e3">More...</a><br /></td></tr>
+<tr class="separator:a734bd07cbd45bcef6f394aba56cbf1e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad01287fa03ffd21c1fcd485f7d2e7a9d"><td class="memItemLeft" align="right" valign="top">LedgerID_t const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#ad01287fa03ffd21c1fcd485f7d2e7a9d">prevLedger</a> () const</td></tr>
+<tr class="memdesc:ad01287fa03ffd21c1fcd485f7d2e7a9d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the prior accepted ledger this position is based on.  <a href="classripple_1_1ConsensusProposal.html#ad01287fa03ffd21c1fcd485f7d2e7a9d">More...</a><br /></td></tr>
+<tr class="separator:ad01287fa03ffd21c1fcd485f7d2e7a9d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a12f1226e84d49f7dc0111fde720d01c8"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#a12f1226e84d49f7dc0111fde720d01c8">proposeSeq</a> () const</td></tr>
+<tr class="memdesc:a12f1226e84d49f7dc0111fde720d01c8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the sequence number of this proposal.  <a href="classripple_1_1ConsensusProposal.html#a12f1226e84d49f7dc0111fde720d01c8">More...</a><br /></td></tr>
+<tr class="separator:a12f1226e84d49f7dc0111fde720d01c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1c744a5ba145b8314cd454d8dcea25b6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#a1c744a5ba145b8314cd454d8dcea25b6">closeTime</a> () const</td></tr>
+<tr class="memdesc:a1c744a5ba145b8314cd454d8dcea25b6"><td class="mdescLeft">&#160;</td><td class="mdescRight">The current position on the consensus close time.  <a href="classripple_1_1ConsensusProposal.html#a1c744a5ba145b8314cd454d8dcea25b6">More...</a><br /></td></tr>
+<tr class="separator:a1c744a5ba145b8314cd454d8dcea25b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a328b6f5b77c4e93eb7226d31febca3ac"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#a328b6f5b77c4e93eb7226d31febca3ac">seenTime</a> () const</td></tr>
+<tr class="memdesc:a328b6f5b77c4e93eb7226d31febca3ac"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get when this position was taken.  <a href="classripple_1_1ConsensusProposal.html#a328b6f5b77c4e93eb7226d31febca3ac">More...</a><br /></td></tr>
+<tr class="separator:a328b6f5b77c4e93eb7226d31febca3ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad8f8829f168b549ae75cbabae7a5f6a2"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#ad8f8829f168b549ae75cbabae7a5f6a2">isInitial</a> () const</td></tr>
+<tr class="memdesc:ad8f8829f168b549ae75cbabae7a5f6a2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether this is the first position taken during the current consensus round.  <a href="classripple_1_1ConsensusProposal.html#ad8f8829f168b549ae75cbabae7a5f6a2">More...</a><br /></td></tr>
+<tr class="separator:ad8f8829f168b549ae75cbabae7a5f6a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a37a97b829d3e8232a2cfe11cf020b3b0"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#a37a97b829d3e8232a2cfe11cf020b3b0">isBowOut</a> () const</td></tr>
+<tr class="memdesc:a37a97b829d3e8232a2cfe11cf020b3b0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get whether this node left the consensus process.  <a href="classripple_1_1ConsensusProposal.html#a37a97b829d3e8232a2cfe11cf020b3b0">More...</a><br /></td></tr>
+<tr class="separator:a37a97b829d3e8232a2cfe11cf020b3b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeab5c0f855496bf0bf5a9cc8ecea05b4"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#aeab5c0f855496bf0bf5a9cc8ecea05b4">isStale</a> (<a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> cutoff) const</td></tr>
+<tr class="memdesc:aeab5c0f855496bf0bf5a9cc8ecea05b4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get whether this position is stale relative to the provided cutoff.  <a href="classripple_1_1ConsensusProposal.html#aeab5c0f855496bf0bf5a9cc8ecea05b4">More...</a><br /></td></tr>
+<tr class="separator:aeab5c0f855496bf0bf5a9cc8ecea05b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac766b846e4eee581350742274a47a248"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#ac766b846e4eee581350742274a47a248">changePosition</a> (Position_t const &amp;newPosition, <a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> newCloseTime, <a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> now)</td></tr>
+<tr class="memdesc:ac766b846e4eee581350742274a47a248"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update the position during the consensus process.  <a href="classripple_1_1ConsensusProposal.html#ac766b846e4eee581350742274a47a248">More...</a><br /></td></tr>
+<tr class="separator:ac766b846e4eee581350742274a47a248"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a063f32ad39d433a0a59a2d165d7b8cbc"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#a063f32ad39d433a0a59a2d165d7b8cbc">bowOut</a> (<a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> now)</td></tr>
+<tr class="memdesc:a063f32ad39d433a0a59a2d165d7b8cbc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Leave consensus.  <a href="classripple_1_1ConsensusProposal.html#a063f32ad39d433a0a59a2d165d7b8cbc">More...</a><br /></td></tr>
+<tr class="separator:a063f32ad39d433a0a59a2d165d7b8cbc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad5ae4fa82a1681204852e81d7ada5df5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#ad5ae4fa82a1681204852e81d7ada5df5">getJson</a> () const</td></tr>
+<tr class="memdesc:ad5ae4fa82a1681204852e81d7ada5df5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get JSON representation for debugging.  <a href="classripple_1_1ConsensusProposal.html#ad5ae4fa82a1681204852e81d7ada5df5">More...</a><br /></td></tr>
+<tr class="separator:ad5ae4fa82a1681204852e81d7ada5df5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a22d48728160ca7966f1e616ef65fe919"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#a22d48728160ca7966f1e616ef65fe919">signingHash</a> () const</td></tr>
+<tr class="memdesc:a22d48728160ca7966f1e616ef65fe919"><td class="mdescLeft">&#160;</td><td class="mdescRight">The digest for this proposal, used for signing purposes.  <a href="classripple_1_1ConsensusProposal.html#a22d48728160ca7966f1e616ef65fe919">More...</a><br /></td></tr>
+<tr class="separator:a22d48728160ca7966f1e616ef65fe919"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aab30a6de960572a4f080f0f5cce7bd15"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; Seq &gt; const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#aab30a6de960572a4f080f0f5cce7bd15">ledgerSeq</a> () const</td></tr>
+<tr class="separator:aab30a6de960572a4f080f0f5cce7bd15"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af2dde52afadfd06da28548a3d3d6728e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1ConsensusTimer.html">ConsensusTimer</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#af2dde52afadfd06da28548a3d3d6728e">arrivalTime</a> () const</td></tr>
+<tr class="separator:af2dde52afadfd06da28548a3d3d6728e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
-<tr class="memitem:ab811b62e9290b5aa39c7dfc2b11dbe40"><td class="memItemLeft" align="right" valign="top">static const <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#ab811b62e9290b5aa39c7dfc2b11dbe40">seqJoin</a> = 0</td></tr>
-<tr class="separator:ab811b62e9290b5aa39c7dfc2b11dbe40"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a961d5c5610d80dd0de6d0717c679955f"><td class="memItemLeft" align="right" valign="top">static const <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#a961d5c5610d80dd0de6d0717c679955f">seqLeave</a> = 0xffffffff</td></tr>
-<tr class="separator:a961d5c5610d80dd0de6d0717c679955f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4a367e4b4a8e4137373023584283fbfc"><td class="memItemLeft" align="right" valign="top">static const <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#a4a367e4b4a8e4137373023584283fbfc">seqJoin</a> = 0</td></tr>
+<tr class="separator:a4a367e4b4a8e4137373023584283fbfc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a489f53a36db1c98d1db21b60d512e5c2"><td class="memItemLeft" align="right" valign="top">static const <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#a489f53a36db1c98d1db21b60d512e5c2">seqLeave</a> = 0xffffffff</td></tr>
+<tr class="separator:a489f53a36db1c98d1db21b60d512e5c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
-<tr class="memitem:a742fc2338165bbd58af3af6c7f59c201"><td class="memItemLeft" align="right" valign="top">LedgerID_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#a742fc2338165bbd58af3af6c7f59c201">previousLedger_</a></td></tr>
-<tr class="memdesc:a742fc2338165bbd58af3af6c7f59c201"><td class="mdescLeft">&#160;</td><td class="mdescRight">Unique identifier of prior ledger this proposal is based on.  <a href="classripple_1_1ConsensusProposal.html#a742fc2338165bbd58af3af6c7f59c201">More...</a><br /></td></tr>
-<tr class="separator:a742fc2338165bbd58af3af6c7f59c201"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a860f0abb9aef8bd8bea69e67e4d33c02"><td class="memItemLeft" align="right" valign="top">Position_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#a860f0abb9aef8bd8bea69e67e4d33c02">position_</a></td></tr>
-<tr class="memdesc:a860f0abb9aef8bd8bea69e67e4d33c02"><td class="mdescLeft">&#160;</td><td class="mdescRight">Unique identifier of the position this proposal is taking.  <a href="classripple_1_1ConsensusProposal.html#a860f0abb9aef8bd8bea69e67e4d33c02">More...</a><br /></td></tr>
-<tr class="separator:a860f0abb9aef8bd8bea69e67e4d33c02"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2e8914cd894504750d7a028379070d1b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#a2e8914cd894504750d7a028379070d1b">closeTime_</a></td></tr>
-<tr class="memdesc:a2e8914cd894504750d7a028379070d1b"><td class="mdescLeft">&#160;</td><td class="mdescRight">The ledger close time this position is taking.  <a href="classripple_1_1ConsensusProposal.html#a2e8914cd894504750d7a028379070d1b">More...</a><br /></td></tr>
-<tr class="separator:a2e8914cd894504750d7a028379070d1b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a293a19eb7078770dad6340be1e3b4153"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#a293a19eb7078770dad6340be1e3b4153">time_</a></td></tr>
-<tr class="separator:a293a19eb7078770dad6340be1e3b4153"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4deadd017bafaa3ea45a1a441080ae7c"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#a4deadd017bafaa3ea45a1a441080ae7c">proposeSeq_</a></td></tr>
-<tr class="memdesc:a4deadd017bafaa3ea45a1a441080ae7c"><td class="mdescLeft">&#160;</td><td class="mdescRight">The sequence number of these positions taken by this node.  <a href="classripple_1_1ConsensusProposal.html#a4deadd017bafaa3ea45a1a441080ae7c">More...</a><br /></td></tr>
-<tr class="separator:a4deadd017bafaa3ea45a1a441080ae7c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a85ae5e886165b6dcb4cc60deb3dae2ef"><td class="memItemLeft" align="right" valign="top">NodeID_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#a85ae5e886165b6dcb4cc60deb3dae2ef">nodeID_</a></td></tr>
-<tr class="memdesc:a85ae5e886165b6dcb4cc60deb3dae2ef"><td class="mdescLeft">&#160;</td><td class="mdescRight">The identifier of the node taking this position.  <a href="classripple_1_1ConsensusProposal.html#a85ae5e886165b6dcb4cc60deb3dae2ef">More...</a><br /></td></tr>
-<tr class="separator:a85ae5e886165b6dcb4cc60deb3dae2ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a59392a6dd8f11f23ed3978458f54be31"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#a59392a6dd8f11f23ed3978458f54be31">signingHash_</a></td></tr>
-<tr class="memdesc:a59392a6dd8f11f23ed3978458f54be31"><td class="mdescLeft">&#160;</td><td class="mdescRight">The signing hash for this proposal.  <a href="classripple_1_1ConsensusProposal.html#a59392a6dd8f11f23ed3978458f54be31">More...</a><br /></td></tr>
-<tr class="separator:a59392a6dd8f11f23ed3978458f54be31"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afe7021035cf5521461ba5e0515c4ed27"><td class="memItemLeft" align="right" valign="top">LedgerID_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#afe7021035cf5521461ba5e0515c4ed27">previousLedger_</a></td></tr>
+<tr class="memdesc:afe7021035cf5521461ba5e0515c4ed27"><td class="mdescLeft">&#160;</td><td class="mdescRight">Unique identifier of prior ledger this proposal is based on.  <a href="classripple_1_1ConsensusProposal.html#afe7021035cf5521461ba5e0515c4ed27">More...</a><br /></td></tr>
+<tr class="separator:afe7021035cf5521461ba5e0515c4ed27"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8e84a2b11e116f1d074783649b6816ff"><td class="memItemLeft" align="right" valign="top">Position_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#a8e84a2b11e116f1d074783649b6816ff">position_</a></td></tr>
+<tr class="memdesc:a8e84a2b11e116f1d074783649b6816ff"><td class="mdescLeft">&#160;</td><td class="mdescRight">Unique identifier of the position this proposal is taking.  <a href="classripple_1_1ConsensusProposal.html#a8e84a2b11e116f1d074783649b6816ff">More...</a><br /></td></tr>
+<tr class="separator:a8e84a2b11e116f1d074783649b6816ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2ffbbe818fae65a848bdd2a8c823ff8c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#a2ffbbe818fae65a848bdd2a8c823ff8c">closeTime_</a></td></tr>
+<tr class="memdesc:a2ffbbe818fae65a848bdd2a8c823ff8c"><td class="mdescLeft">&#160;</td><td class="mdescRight">The ledger close time this position is taking.  <a href="classripple_1_1ConsensusProposal.html#a2ffbbe818fae65a848bdd2a8c823ff8c">More...</a><br /></td></tr>
+<tr class="separator:a2ffbbe818fae65a848bdd2a8c823ff8c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab30618b51cf03681d83f21319e11ec0a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#ab30618b51cf03681d83f21319e11ec0a">time_</a></td></tr>
+<tr class="separator:ab30618b51cf03681d83f21319e11ec0a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0645ae909daf758492df4482d17fc410"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#a0645ae909daf758492df4482d17fc410">proposeSeq_</a></td></tr>
+<tr class="memdesc:a0645ae909daf758492df4482d17fc410"><td class="mdescLeft">&#160;</td><td class="mdescRight">The sequence number of these positions taken by this node.  <a href="classripple_1_1ConsensusProposal.html#a0645ae909daf758492df4482d17fc410">More...</a><br /></td></tr>
+<tr class="separator:a0645ae909daf758492df4482d17fc410"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8ca7ecfde9d7a39812b00ff5a4eb9c48"><td class="memItemLeft" align="right" valign="top">NodeID_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#a8ca7ecfde9d7a39812b00ff5a4eb9c48">nodeID_</a></td></tr>
+<tr class="memdesc:a8ca7ecfde9d7a39812b00ff5a4eb9c48"><td class="mdescLeft">&#160;</td><td class="mdescRight">The identifier of the node taking this position.  <a href="classripple_1_1ConsensusProposal.html#a8ca7ecfde9d7a39812b00ff5a4eb9c48">More...</a><br /></td></tr>
+<tr class="separator:a8ca7ecfde9d7a39812b00ff5a4eb9c48"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2554db077d09ca89f772971921d97650"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; Seq &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#a2554db077d09ca89f772971921d97650">ledgerSeq_</a></td></tr>
+<tr class="separator:a2554db077d09ca89f772971921d97650"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab9d372cc71d6bb8c98b6650d8f2e2b9a"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#ab9d372cc71d6bb8c98b6650d8f2e2b9a">signingHash_</a></td></tr>
+<tr class="memdesc:ab9d372cc71d6bb8c98b6650d8f2e2b9a"><td class="mdescLeft">&#160;</td><td class="mdescRight">The signing hash for this proposal.  <a href="classripple_1_1ConsensusProposal.html#ab9d372cc71d6bb8c98b6650d8f2e2b9a">More...</a><br /></td></tr>
+<tr class="separator:ab9d372cc71d6bb8c98b6650d8f2e2b9a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a50ec196239a662e0c01e85109bff6faa"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1ConsensusTimer.html">ConsensusTimer</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConsensusProposal.html#a50ec196239a662e0c01e85109bff6faa">arrivalTime_</a></td></tr>
+<tr class="separator:a50ec196239a662e0c01e85109bff6faa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><h3>template&lt;class NodeID_t, class LedgerID_t, class Position_t&gt;<br />
-class ripple::ConsensusProposal&lt; NodeID_t, LedgerID_t, Position_t &gt;</h3>
+<div class="textblock"><h3>template&lt;class NodeID_t, class LedgerID_t, class Position_t, class Seq&gt;<br />
+class ripple::ConsensusProposal&lt; NodeID_t, LedgerID_t, Position_t, Seq &gt;</h3>
 
 <p>Represents a proposed position taken during a round of consensus. </p>
 <p>During consensus, peers seek agreement on a set of transactions to apply to the prior ledger to generate the next ledger. Each peer takes a position on whether to include or exclude potential transactions. The position on the set of transactions is proposed to its peers as an instance of the <a class="el" href="classripple_1_1ConsensusProposal.html" title="Represents a proposed position taken during a round of consensus.">ConsensusProposal</a> class.</p>
@@ -188,37 +202,57 @@ class ripple::ConsensusProposal&lt; NodeID_t, LedgerID_t, Position_t &gt;</h3>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00055">55</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00059">59</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
-<a id="a8aa8f75fd852edae88d109313c96de4d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8aa8f75fd852edae88d109313c96de4d">&#9670;&nbsp;</a></span>NodeID</h2>
+<a id="a7ebb588ecc6d8decbde6db20b8f3ec8b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7ebb588ecc6d8decbde6db20b8f3ec8b">&#9670;&nbsp;</a></span>NodeID</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
+template&lt;class NodeID_t , class LedgerID_t , class Position_t , class Seq &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t &gt;::<a class="el" href="classripple_1_1ConsensusProposal.html#a8aa8f75fd852edae88d109313c96de4d">NodeID</a> =  NodeID_t</td>
+          <td class="memname">using <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t, Seq &gt;::<a class="el" href="classripple_1_1ConsensusProposal.html#a7ebb588ecc6d8decbde6db20b8f3ec8b">NodeID</a> =  NodeID_t</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00058">58</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00062">62</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
 
 </div>
 </div>
-<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a262f4ce808b8013b708c573a34e8124e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a262f4ce808b8013b708c573a34e8124e">&#9670;&nbsp;</a></span>ConsensusProposal()</h2>
+<a id="abcb689a6b6d9488cd3d6dd20e510e882"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abcb689a6b6d9488cd3d6dd20e510e882">&#9670;&nbsp;</a></span>clock_type</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
+template&lt;class NodeID_t , class LedgerID_t , class Position_t , class Seq &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t &gt;::<a class="el" href="classripple_1_1ConsensusProposal.html">ConsensusProposal</a> </td>
+          <td class="memname">using <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t, Seq &gt;::<a class="el" href="classripple_1_1ConsensusProposal.html#abcb689a6b6d9488cd3d6dd20e510e882">clock_type</a> =  <a class="el" href="classbeast_1_1abstract__clock.html">beast::abstract_clock</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/steady_clock.html">std::chrono::steady_clock</a>&gt;</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Clock type for measuring time within the consensus code. </p>
+
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00065">65</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+
+</div>
+</div>
+<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="a0a71bd6302b28a3156117906230ba272"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0a71bd6302b28a3156117906230ba272">&#9670;&nbsp;</a></span>ConsensusProposal()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class NodeID_t , class LedgerID_t , class Position_t , class Seq &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t, Seq &gt;::<a class="el" href="classripple_1_1ConsensusProposal.html">ConsensusProposal</a> </td>
           <td>(</td>
           <td class="paramtype">LedgerID_t const &amp;&#160;</td>
           <td class="paramname"><em>prevLedger</em>, </td>
@@ -251,7 +285,19 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">NodeID_t const &amp;&#160;</td>
-          <td class="paramname"><em>nodeID</em>&#160;</td>
+          <td class="paramname"><em>nodeID</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; Seq &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>ledgerSeq</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1ConsensusProposal.html#abcb689a6b6d9488cd3d6dd20e510e882">clock_type</a> const &amp;&#160;</td>
+          <td class="paramname"><em>clock</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -270,25 +316,27 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
     <tr><td class="paramname">closeTime</td><td>Position of when this ledger closed. </td></tr>
     <tr><td class="paramname">now</td><td>Time when the proposal was taken. </td></tr>
     <tr><td class="paramname">nodeID</td><td>ID of node/peer taking this position. </td></tr>
+    <tr><td class="paramname">ledgerSeq</td><td><a class="el" href="classripple_1_1Ledger.html" title="Holds a ledger.">Ledger</a> sequence of proposal. </td></tr>
+    <tr><td class="paramname">clock</td><td>Clock that works with real and test time. </td></tr>
   </table>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00075">75</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00084">84</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="ad60bb068af7c1a4aeb9e3f27761d1afa"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad60bb068af7c1a4aeb9e3f27761d1afa">&#9670;&nbsp;</a></span>nodeID()</h2>
+<a id="a83ff676a53c9bbfd02e880a29f03f844"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a83ff676a53c9bbfd02e880a29f03f844">&#9670;&nbsp;</a></span>nodeID()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
+template&lt;class NodeID_t , class LedgerID_t , class Position_t , class Seq &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">NodeID_t const&amp; <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t &gt;::nodeID </td>
+          <td class="memname">NodeID_t const&amp; <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t, Seq &gt;::nodeID </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -298,20 +346,20 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
 
 <p>Identifying which peer took this position. </p>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00093">93</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00108">108</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
 
 </div>
 </div>
-<a id="ae6f557d43e5d720f9094194900d91f66"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae6f557d43e5d720f9094194900d91f66">&#9670;&nbsp;</a></span>position()</h2>
+<a id="a734bd07cbd45bcef6f394aba56cbf1e3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a734bd07cbd45bcef6f394aba56cbf1e3">&#9670;&nbsp;</a></span>position()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
+template&lt;class NodeID_t , class LedgerID_t , class Position_t , class Seq &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">Position_t const&amp; <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t &gt;::position </td>
+          <td class="memname">Position_t const&amp; <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t, Seq &gt;::position </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -321,20 +369,20 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
 
 <p>Get the proposed position. </p>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00100">100</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00115">115</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
 
 </div>
 </div>
-<a id="a8491263073f4b5f4f83584a60c96aee7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8491263073f4b5f4f83584a60c96aee7">&#9670;&nbsp;</a></span>prevLedger()</h2>
+<a id="ad01287fa03ffd21c1fcd485f7d2e7a9d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad01287fa03ffd21c1fcd485f7d2e7a9d">&#9670;&nbsp;</a></span>prevLedger()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
+template&lt;class NodeID_t , class LedgerID_t , class Position_t , class Seq &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">LedgerID_t const&amp; <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t &gt;::prevLedger </td>
+          <td class="memname">LedgerID_t const&amp; <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t, Seq &gt;::prevLedger </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -344,20 +392,20 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
 
 <p>Get the prior accepted ledger this position is based on. </p>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00107">107</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00122">122</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
 
 </div>
 </div>
-<a id="aad1cb7d0dc62fcec8ab135e28c4e9606"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aad1cb7d0dc62fcec8ab135e28c4e9606">&#9670;&nbsp;</a></span>proposeSeq()</h2>
+<a id="a12f1226e84d49f7dc0111fde720d01c8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a12f1226e84d49f7dc0111fde720d01c8">&#9670;&nbsp;</a></span>proposeSeq()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
+template&lt;class NodeID_t , class LedgerID_t , class Position_t , class Seq &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t &gt;::proposeSeq </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t, Seq &gt;::proposeSeq </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -369,20 +417,20 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
 <p>Starting with an initial sequence number of <code>seqJoin</code>, successive proposals from a peer will increase the sequence number.</p>
 <dl class="section return"><dt>Returns</dt><dd>the sequence number </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00120">120</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00135">135</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
 
 </div>
 </div>
-<a id="ae67cab863fe8ad4fb82a6a558b15844e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae67cab863fe8ad4fb82a6a558b15844e">&#9670;&nbsp;</a></span>closeTime()</h2>
+<a id="a1c744a5ba145b8314cd454d8dcea25b6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1c744a5ba145b8314cd454d8dcea25b6">&#9670;&nbsp;</a></span>closeTime()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
+template&lt;class NodeID_t , class LedgerID_t , class Position_t , class Seq &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> const&amp; <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t &gt;::closeTime </td>
+          <td class="memname"><a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> const&amp; <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t, Seq &gt;::closeTime </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -392,20 +440,20 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
 
 <p>The current position on the consensus close time. </p>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00127">127</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00142">142</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
 
 </div>
 </div>
-<a id="a2fd168d38a353460bcb2425f7218922e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2fd168d38a353460bcb2425f7218922e">&#9670;&nbsp;</a></span>seenTime()</h2>
+<a id="a328b6f5b77c4e93eb7226d31febca3ac"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a328b6f5b77c4e93eb7226d31febca3ac">&#9670;&nbsp;</a></span>seenTime()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
+template&lt;class NodeID_t , class LedgerID_t , class Position_t , class Seq &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> const&amp; <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t &gt;::seenTime </td>
+          <td class="memname"><a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> const&amp; <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t, Seq &gt;::seenTime </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -415,20 +463,20 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
 
 <p>Get when this position was taken. </p>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00134">134</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00149">149</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
 
 </div>
 </div>
-<a id="afd1d7ba3a4ff27d8a2b8712ddd7a306e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afd1d7ba3a4ff27d8a2b8712ddd7a306e">&#9670;&nbsp;</a></span>isInitial()</h2>
+<a id="ad8f8829f168b549ae75cbabae7a5f6a2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad8f8829f168b549ae75cbabae7a5f6a2">&#9670;&nbsp;</a></span>isInitial()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
+template&lt;class NodeID_t , class LedgerID_t , class Position_t , class Seq &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">bool <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t &gt;::isInitial </td>
+          <td class="memname">bool <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t, Seq &gt;::isInitial </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -438,20 +486,20 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
 
 <p>Whether this is the first position taken during the current consensus round. </p>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00143">143</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00158">158</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
 
 </div>
 </div>
-<a id="a2b7c39cd60f61c4e424085f4eefe73f5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2b7c39cd60f61c4e424085f4eefe73f5">&#9670;&nbsp;</a></span>isBowOut()</h2>
+<a id="a37a97b829d3e8232a2cfe11cf020b3b0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a37a97b829d3e8232a2cfe11cf020b3b0">&#9670;&nbsp;</a></span>isBowOut()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
+template&lt;class NodeID_t , class LedgerID_t , class Position_t , class Seq &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">bool <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t &gt;::isBowOut </td>
+          <td class="memname">bool <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t, Seq &gt;::isBowOut </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -461,20 +509,20 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
 
 <p>Get whether this node left the consensus process. </p>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00150">150</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00165">165</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
 
 </div>
 </div>
-<a id="aa96c9a25fdbb65b10dd0d73c5ac92526"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa96c9a25fdbb65b10dd0d73c5ac92526">&#9670;&nbsp;</a></span>isStale()</h2>
+<a id="aeab5c0f855496bf0bf5a9cc8ecea05b4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aeab5c0f855496bf0bf5a9cc8ecea05b4">&#9670;&nbsp;</a></span>isStale()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
+template&lt;class NodeID_t , class LedgerID_t , class Position_t , class Seq &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">bool <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t &gt;::isStale </td>
+          <td class="memname">bool <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t, Seq &gt;::isStale </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a>&#160;</td>
           <td class="paramname"><em>cutoff</em></td><td>)</td>
@@ -485,20 +533,20 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
 
 <p>Get whether this position is stale relative to the provided cutoff. </p>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00157">157</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00172">172</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
 
 </div>
 </div>
-<a id="a0db41af6895dc85c6b5fcf76e9f93237"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0db41af6895dc85c6b5fcf76e9f93237">&#9670;&nbsp;</a></span>changePosition()</h2>
+<a id="ac766b846e4eee581350742274a47a248"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac766b846e4eee581350742274a47a248">&#9670;&nbsp;</a></span>changePosition()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
+template&lt;class NodeID_t , class LedgerID_t , class Position_t , class Seq &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t &gt;::changePosition </td>
+          <td class="memname">void <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t, Seq &gt;::changePosition </td>
           <td>(</td>
           <td class="paramtype">Position_t const &amp;&#160;</td>
           <td class="paramname"><em>newPosition</em>, </td>
@@ -534,20 +582,20 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00170">170</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00185">185</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
 
 </div>
 </div>
-<a id="a7d279f2fd7f378e66f151870d1171f75"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7d279f2fd7f378e66f151870d1171f75">&#9670;&nbsp;</a></span>bowOut()</h2>
+<a id="a063f32ad39d433a0a59a2d165d7b8cbc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a063f32ad39d433a0a59a2d165d7b8cbc">&#9670;&nbsp;</a></span>bowOut()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
+template&lt;class NodeID_t , class LedgerID_t , class Position_t , class Seq &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t &gt;::bowOut </td>
+          <td class="memname">void <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t, Seq &gt;::bowOut </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a>&#160;</td>
           <td class="paramname"><em>now</em></td><td>)</td>
@@ -565,20 +613,20 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00190">190</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00205">205</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
 
 </div>
 </div>
-<a id="a799315c246e228ac703759505d8997d8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a799315c246e228ac703759505d8997d8">&#9670;&nbsp;</a></span>getJson()</h2>
+<a id="ad5ae4fa82a1681204852e81d7ada5df5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad5ae4fa82a1681204852e81d7ada5df5">&#9670;&nbsp;</a></span>getJson()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
+template&lt;class NodeID_t , class LedgerID_t , class Position_t , class Seq &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classJson_1_1Value.html">Json::Value</a> <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t &gt;::getJson </td>
+          <td class="memname"><a class="el" href="classJson_1_1Value.html">Json::Value</a> <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t, Seq &gt;::getJson </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -588,20 +636,20 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
 
 <p>Get JSON representation for debugging. </p>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00199">199</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00214">214</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
 
 </div>
 </div>
-<a id="af5df2e264785c5310dba333549fb5ec2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af5df2e264785c5310dba333549fb5ec2">&#9670;&nbsp;</a></span>signingHash()</h2>
+<a id="a22d48728160ca7966f1e616ef65fe919"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a22d48728160ca7966f1e616ef65fe919">&#9670;&nbsp;</a></span>signingHash()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
+template&lt;class NodeID_t , class LedgerID_t , class Position_t , class Seq &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const&amp; <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t &gt;::signingHash </td>
+          <td class="memname"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const&amp; <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t, Seq &gt;::signingHash </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -611,24 +659,66 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
 
 <p>The digest for this proposal, used for signing purposes. </p>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00220">220</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00235">235</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+
+</div>
+</div>
+<a id="aab30a6de960572a4f080f0f5cce7bd15"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aab30a6de960572a4f080f0f5cce7bd15">&#9670;&nbsp;</a></span>ledgerSeq()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class NodeID_t , class LedgerID_t , class Position_t , class Seq &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;Seq&gt; const&amp; <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t, Seq &gt;::ledgerSeq </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00251">251</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+
+</div>
+</div>
+<a id="af2dde52afadfd06da28548a3d3d6728e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af2dde52afadfd06da28548a3d3d6728e">&#9670;&nbsp;</a></span>arrivalTime()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class NodeID_t , class LedgerID_t , class Position_t , class Seq &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1ConsensusTimer.html">ConsensusTimer</a>&amp; <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t, Seq &gt;::arrivalTime </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00257">257</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
-<a id="ab811b62e9290b5aa39c7dfc2b11dbe40"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab811b62e9290b5aa39c7dfc2b11dbe40">&#9670;&nbsp;</a></span>seqJoin</h2>
+<a id="a4a367e4b4a8e4137373023584283fbfc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4a367e4b4a8e4137373023584283fbfc">&#9670;&nbsp;</a></span>seqJoin</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
+template&lt;class NodeID_t , class LedgerID_t , class Position_t , class Seq &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t &gt;::seqJoin = 0</td>
+          <td class="memname">const <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t, Seq &gt;::seqJoin = 0</td>
         </tr>
       </table>
   </td>
@@ -638,23 +728,23 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00061">61</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00068">68</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
 
 </div>
 </div>
-<a id="a961d5c5610d80dd0de6d0717c679955f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a961d5c5610d80dd0de6d0717c679955f">&#9670;&nbsp;</a></span>seqLeave</h2>
+<a id="a489f53a36db1c98d1db21b60d512e5c2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a489f53a36db1c98d1db21b60d512e5c2">&#9670;&nbsp;</a></span>seqLeave</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
+template&lt;class NodeID_t , class LedgerID_t , class Position_t , class Seq &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t &gt;::seqLeave = 0xffffffff</td>
+          <td class="memname">const <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t, Seq &gt;::seqLeave = 0xffffffff</td>
         </tr>
       </table>
   </td>
@@ -664,23 +754,23 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00064">64</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00071">71</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
 
 </div>
 </div>
-<a id="a742fc2338165bbd58af3af6c7f59c201"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a742fc2338165bbd58af3af6c7f59c201">&#9670;&nbsp;</a></span>previousLedger_</h2>
+<a id="afe7021035cf5521461ba5e0515c4ed27"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afe7021035cf5521461ba5e0515c4ed27">&#9670;&nbsp;</a></span>previousLedger_</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
+template&lt;class NodeID_t , class LedgerID_t , class Position_t , class Seq &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">LedgerID_t <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t &gt;::previousLedger_</td>
+          <td class="memname">LedgerID_t <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t, Seq &gt;::previousLedger_</td>
         </tr>
       </table>
   </td>
@@ -692,23 +782,23 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
 
 <p>Unique identifier of prior ledger this proposal is based on. </p>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00237">237</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00264">264</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
 
 </div>
 </div>
-<a id="a860f0abb9aef8bd8bea69e67e4d33c02"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a860f0abb9aef8bd8bea69e67e4d33c02">&#9670;&nbsp;</a></span>position_</h2>
+<a id="a8e84a2b11e116f1d074783649b6816ff"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8e84a2b11e116f1d074783649b6816ff">&#9670;&nbsp;</a></span>position_</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
+template&lt;class NodeID_t , class LedgerID_t , class Position_t , class Seq &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">Position_t <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t &gt;::position_</td>
+          <td class="memname">Position_t <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t, Seq &gt;::position_</td>
         </tr>
       </table>
   </td>
@@ -720,23 +810,23 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
 
 <p>Unique identifier of the position this proposal is taking. </p>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00240">240</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00267">267</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
 
 </div>
 </div>
-<a id="a2e8914cd894504750d7a028379070d1b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2e8914cd894504750d7a028379070d1b">&#9670;&nbsp;</a></span>closeTime_</h2>
+<a id="a2ffbbe818fae65a848bdd2a8c823ff8c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2ffbbe818fae65a848bdd2a8c823ff8c">&#9670;&nbsp;</a></span>closeTime_</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
+template&lt;class NodeID_t , class LedgerID_t , class Position_t , class Seq &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t &gt;::closeTime_</td>
+          <td class="memname"><a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t, Seq &gt;::closeTime_</td>
         </tr>
       </table>
   </td>
@@ -748,23 +838,23 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
 
 <p>The ledger close time this position is taking. </p>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00243">243</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00270">270</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
 
 </div>
 </div>
-<a id="a293a19eb7078770dad6340be1e3b4153"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a293a19eb7078770dad6340be1e3b4153">&#9670;&nbsp;</a></span>time_</h2>
+<a id="ab30618b51cf03681d83f21319e11ec0a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab30618b51cf03681d83f21319e11ec0a">&#9670;&nbsp;</a></span>time_</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
+template&lt;class NodeID_t , class LedgerID_t , class Position_t , class Seq &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t &gt;::time_</td>
+          <td class="memname"><a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t, Seq &gt;::time_</td>
         </tr>
       </table>
   </td>
@@ -774,23 +864,23 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00246">246</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00273">273</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
 
 </div>
 </div>
-<a id="a4deadd017bafaa3ea45a1a441080ae7c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4deadd017bafaa3ea45a1a441080ae7c">&#9670;&nbsp;</a></span>proposeSeq_</h2>
+<a id="a0645ae909daf758492df4482d17fc410"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0645ae909daf758492df4482d17fc410">&#9670;&nbsp;</a></span>proposeSeq_</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
+template&lt;class NodeID_t , class LedgerID_t , class Position_t , class Seq &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t &gt;::proposeSeq_</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t, Seq &gt;::proposeSeq_</td>
         </tr>
       </table>
   </td>
@@ -802,23 +892,23 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
 
 <p>The sequence number of these positions taken by this node. </p>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00249">249</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00276">276</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
 
 </div>
 </div>
-<a id="a85ae5e886165b6dcb4cc60deb3dae2ef"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a85ae5e886165b6dcb4cc60deb3dae2ef">&#9670;&nbsp;</a></span>nodeID_</h2>
+<a id="a8ca7ecfde9d7a39812b00ff5a4eb9c48"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8ca7ecfde9d7a39812b00ff5a4eb9c48">&#9670;&nbsp;</a></span>nodeID_</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
+template&lt;class NodeID_t , class LedgerID_t , class Position_t , class Seq &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">NodeID_t <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t &gt;::nodeID_</td>
+          <td class="memname">NodeID_t <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t, Seq &gt;::nodeID_</td>
         </tr>
       </table>
   </td>
@@ -830,23 +920,49 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
 
 <p>The identifier of the node taking this position. </p>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00252">252</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00279">279</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
 
 </div>
 </div>
-<a id="a59392a6dd8f11f23ed3978458f54be31"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a59392a6dd8f11f23ed3978458f54be31">&#9670;&nbsp;</a></span>signingHash_</h2>
+<a id="a2554db077d09ca89f772971921d97650"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2554db077d09ca89f772971921d97650">&#9670;&nbsp;</a></span>ledgerSeq_</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
+template&lt;class NodeID_t , class LedgerID_t , class Position_t , class Seq &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&gt; <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t &gt;::signingHash_</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;Seq&gt; <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t, Seq &gt;::ledgerSeq_</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00281">281</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+
+</div>
+</div>
+<a id="ab9d372cc71d6bb8c98b6650d8f2e2b9a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab9d372cc71d6bb8c98b6650d8f2e2b9a">&#9670;&nbsp;</a></span>signingHash_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class NodeID_t , class LedgerID_t , class Position_t , class Seq &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&gt; <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t, Seq &gt;::signingHash_</td>
         </tr>
       </table>
   </td>
@@ -858,7 +974,33 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
 
 <p>The signing hash for this proposal. </p>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00255">255</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00284">284</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
+
+</div>
+</div>
+<a id="a50ec196239a662e0c01e85109bff6faa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a50ec196239a662e0c01e85109bff6faa">&#9670;&nbsp;</a></span>arrivalTime_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class NodeID_t , class LedgerID_t , class Position_t , class Seq &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1ConsensusTimer.html">ConsensusTimer</a> <a class="el" href="classripple_1_1ConsensusProposal.html">ripple::ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t, Seq &gt;::arrivalTime_</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">mutable</span><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="ConsensusProposal_8h_source.html#l00286">286</a> of file <a class="el" href="ConsensusProposal_8h_source.html">ConsensusProposal.h</a>.</p>
 
 </div>
 </div>

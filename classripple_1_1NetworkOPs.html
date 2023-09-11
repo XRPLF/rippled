@@ -120,9 +120,12 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:aa4cb3740e2b48d825adba931934e8109"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3f4830e6c223790a1691ec36bbf415a6"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NetworkOPs.html#a3f4830e6c223790a1691ec36bbf415a6">submitTransaction</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1STTx.html">STTx</a> const &gt; const &amp;)=0</td></tr>
 <tr class="separator:a3f4830e6c223790a1691ec36bbf415a6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a96598c02fccf5bce018154a99c2adacd"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NetworkOPs.html#a96598c02fccf5bce018154a99c2adacd">processTransaction</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Transaction.html">Transaction</a> &gt; &amp;transaction, bool bUnlimited, bool bLocal, <a class="el" href="classripple_1_1NetworkOPs.html#ada325f492d3aa1aa62d4b159e106c37a">FailHard</a> failType)=0</td></tr>
-<tr class="memdesc:a96598c02fccf5bce018154a99c2adacd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Process transactions as they arrive from the network or which are submitted by clients.  <a href="classripple_1_1NetworkOPs.html#a96598c02fccf5bce018154a99c2adacd">More...</a><br /></td></tr>
-<tr class="separator:a96598c02fccf5bce018154a99c2adacd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab6b8c3bfa39c12f69aae7efae22f6df4"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NetworkOPs.html#ab6b8c3bfa39c12f69aae7efae22f6df4">processTransaction</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Transaction.html">Transaction</a> &gt; &amp;transaction, bool bUnlimited, <a class="el" href="namespaceripple_1_1RPC.html#a33378ee5e4181cef672fc56627fc0551">RPC::SubmitSync</a> sync, bool bLocal, <a class="el" href="classripple_1_1NetworkOPs.html#ada325f492d3aa1aa62d4b159e106c37a">FailHard</a> failType)=0</td></tr>
+<tr class="memdesc:ab6b8c3bfa39c12f69aae7efae22f6df4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Process a transaction.  <a href="classripple_1_1NetworkOPs.html#ab6b8c3bfa39c12f69aae7efae22f6df4">More...</a><br /></td></tr>
+<tr class="separator:ab6b8c3bfa39c12f69aae7efae22f6df4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a92fd4d2adca67d31a8154cce41d79a8c"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NetworkOPs.html#a92fd4d2adca67d31a8154cce41d79a8c">transactionBatch</a> (bool drain)=0</td></tr>
+<tr class="memdesc:a92fd4d2adca67d31a8154cce41d79a8c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Apply transactions in batches.  <a href="classripple_1_1NetworkOPs.html#a92fd4d2adca67d31a8154cce41d79a8c">More...</a><br /></td></tr>
+<tr class="separator:a92fd4d2adca67d31a8154cce41d79a8c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2eacb63fdf26723bfd4cb7505f3ea0d8"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NetworkOPs.html#a2eacb63fdf26723bfd4cb7505f3ea0d8">getOwnerInfo</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &gt; lpLedger, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;account)=0</td></tr>
 <tr class="separator:a2eacb63fdf26723bfd4cb7505f3ea0d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aef72d5d8b2687f3fdbdfba3fa87b2e8f"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NetworkOPs.html#aef72d5d8b2687f3fdbdfba3fa87b2e8f">getBookPage</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &gt; &amp;lpLedger, <a class="el" href="classripple_1_1Book.html">Book</a> const &amp;book, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;uTakerID, bool const bProof, unsigned int iLimit, <a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;jvMarker, <a class="el" href="classJson_1_1Value.html">Json::Value</a> &amp;jvResult)=0</td></tr>
@@ -141,6 +144,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a6fe4993dc5d3b89ff38090790d83bfd4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afa309faddae30361165a1e79ae888bf1"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NetworkOPs.html#afa309faddae30361165a1e79ae888bf1">setStateTimer</a> ()=0</td></tr>
 <tr class="separator:afa309faddae30361165a1e79ae888bf1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afafe60861a0068962f24d8cd484ae90c"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NetworkOPs.html#afafe60861a0068962f24d8cd484ae90c">setBatchApplyTimer</a> ()=0</td></tr>
+<tr class="separator:afafe60861a0068962f24d8cd484ae90c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a954378c3ec506a306e43038ded881840"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NetworkOPs.html#a954378c3ec506a306e43038ded881840">setNeedNetworkLedger</a> ()=0</td></tr>
 <tr class="separator:a954378c3ec506a306e43038ded881840"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7ebeb2a8f947b729b0a8a1aba97d3b54"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NetworkOPs.html#a7ebeb2a8f947b729b0a8a1aba97d3b54">clearNeedNetworkLedger</a> ()=0</td></tr>
@@ -279,7 +284,7 @@ Static Public Member Functions</h2></td></tr>
 <p>Clients include backend applications, local commands, and connected clients. This class acts as a proxy, fulfilling the command with local data if possible, or asking the network and returning the results if needed.</p>
 <p>A backend application or local client can trust a local instance of rippled / <a class="el" href="classripple_1_1NetworkOPs.html" title="Provides server functionality for clients.">NetworkOPs</a>. However, client software connecting to non-local instances of rippled will need to be hardened to protect against hostile or unreliable servers. </p>
 
-<p class="definition">Definition at line <a class="el" href="NetworkOPs_8h_source.html#l00086">86</a> of file <a class="el" href="NetworkOPs_8h_source.html">NetworkOPs.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NetworkOPs_8h_source.html#l00090">90</a> of file <a class="el" href="NetworkOPs_8h_source.html">NetworkOPs.h</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="a52b5e5b8e68aa4430d35deb844418ddb"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a52b5e5b8e68aa4430d35deb844418ddb">&#9670;&nbsp;</a></span>clock_type</h2>
@@ -293,7 +298,7 @@ Static Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NetworkOPs_8h_source.html#l00089">89</a> of file <a class="el" href="NetworkOPs_8h_source.html">NetworkOPs.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NetworkOPs_8h_source.html#l00093">93</a> of file <a class="el" href="NetworkOPs_8h_source.html">NetworkOPs.h</a>.</p>
 
 </div>
 </div>
@@ -322,7 +327,7 @@ Static Public Member Functions</h2></td></tr>
 <tr><td class="fieldname"><a id="ada325f492d3aa1aa62d4b159e106c37aaa6105c0a611b41b08f1209506350279e"></a>yes&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="NetworkOPs_8h_source.html#l00091">91</a> of file <a class="el" href="NetworkOPs_8h_source.html">NetworkOPs.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NetworkOPs_8h_source.html#l00095">95</a> of file <a class="el" href="NetworkOPs_8h_source.html">NetworkOPs.h</a>.</p>
 
 </div>
 </div>
@@ -377,7 +382,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NetworkOPs_8h_source.html#l00093">93</a> of file <a class="el" href="NetworkOPs_8h_source.html">NetworkOPs.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NetworkOPs_8h_source.html#l00097">97</a> of file <a class="el" href="NetworkOPs_8h_source.html">NetworkOPs.h</a>.</p>
 
 </div>
 </div>
@@ -529,8 +534,8 @@ Static Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a96598c02fccf5bce018154a99c2adacd"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a96598c02fccf5bce018154a99c2adacd">&#9670;&nbsp;</a></span>processTransaction()</h2>
+<a id="ab6b8c3bfa39c12f69aae7efae22f6df4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab6b8c3bfa39c12f69aae7efae22f6df4">&#9670;&nbsp;</a></span>processTransaction()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -549,6 +554,12 @@ Static Public Member Functions</h2></td></tr>
           <td></td>
           <td class="paramtype">bool&#160;</td>
           <td class="paramname"><em>bUnlimited</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple_1_1RPC.html#a33378ee5e4181cef672fc56627fc0551">RPC::SubmitSync</a>&#160;</td>
+          <td class="paramname"><em>sync</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -575,19 +586,59 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Process transactions as they arrive from the network or which are submitted by clients. </p>
-<p>Process local transactions synchronously</p>
+<p>Process a transaction. </p>
+<p>The transaction has been submitted either from the peer network or from a client. For client submissions, there are 3 distinct behaviors: 1) sync (default): process transactions in a batch immediately, and return only once the transaction has been processed. 2) async: Put transaction into the batch for the next processing interval and return immediately. 3) wait: Put transaction into the batch for the next processing interval and return only after it is processed.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">transaction</td><td><a class="el" href="classripple_1_1Transaction.html">Transaction</a> object </td></tr>
+    <tr><td class="paramname">transaction</td><td><a class="el" href="classripple_1_1Transaction.html">Transaction</a> object. </td></tr>
     <tr><td class="paramname">bUnlimited</td><td>Whether a privileged client connection submitted it. </td></tr>
-    <tr><td class="paramname">bLocal</td><td>Client submission. </td></tr>
-    <tr><td class="paramname">failType</td><td>fail_hard setting from transaction submission. </td></tr>
+    <tr><td class="paramname">sync</td><td>Client submission synchronous behavior type requested. </td></tr>
+    <tr><td class="paramname">bLocal</td><td>Whether submitted by client (local) or peer. </td></tr>
+    <tr><td class="paramname">failType</td><td>Whether to fail hard or not. </td></tr>
   </table>
   </dd>
 </dl>
 
-<p>Implemented in <a class="el" href="classripple_1_1NetworkOPsImp.html#a200279dda9327aedf2d851e04ca47ac5">ripple::NetworkOPsImp</a>.</p>
+<p>Implemented in <a class="el" href="classripple_1_1NetworkOPsImp.html#aa05bca39a6daf6aeefe56ff33531c7c0">ripple::NetworkOPsImp</a>.</p>
+
+</div>
+</div>
+<a id="a92fd4d2adca67d31a8154cce41d79a8c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a92fd4d2adca67d31a8154cce41d79a8c">&#9670;&nbsp;</a></span>transactionBatch()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual bool ripple::NetworkOPs::transactionBatch </td>
+          <td>(</td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>drain</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Apply transactions in batches. </p>
+<p>Only a single batch unless drain is set. This is to optimize performance because there is significant overhead in applying each batch, whereas processing an individual transaction is fast.</p>
+<p>Setting the drain parameter is relevant for some transaction processing unit tests that expect all submitted transactions to be processed synchronously.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">drain</td><td>Whether to process batches until none remain. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Whether any transactions were processed. </dd></dl>
+
+<p>Implemented in <a class="el" href="classripple_1_1NetworkOPsImp.html#a3acf0219cf3e69bb9b09a6a60f41d6d5">ripple::NetworkOPsImp</a>.</p>
 
 </div>
 </div>
@@ -907,6 +958,33 @@ Static Public Member Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Implemented in <a class="el" href="classripple_1_1NetworkOPsImp.html#ab06fa91794bedba8284cf18a3bb70b8f">ripple::NetworkOPsImp</a>.</p>
+
+</div>
+</div>
+<a id="afafe60861a0068962f24d8cd484ae90c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afafe60861a0068962f24d8cd484ae90c">&#9670;&nbsp;</a></span>setBatchApplyTimer()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual void ripple::NetworkOPs::setBatchApplyTimer </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Implemented in <a class="el" href="classripple_1_1NetworkOPsImp.html#a26163e2a3690ee993428400e35228de3">ripple::NetworkOPsImp</a>.</p>
 
 </div>
 </div>
