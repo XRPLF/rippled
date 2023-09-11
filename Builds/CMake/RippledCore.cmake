@@ -199,6 +199,7 @@ install (
     src/ripple/basics/StringUtilities.h
     src/ripple/basics/TaggedCache.h
     src/ripple/basics/tagged_integer.h
+    src/ripple/basics/SubmitSync.h
     src/ripple/basics/ThreadSafetyAnalysis.h
     src/ripple/basics/ThreadUtilities.h
     src/ripple/basics/ToString.h
