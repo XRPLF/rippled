@@ -99,7 +99,8 @@ public:
         , ownerPaysTransferFee_(ctx.ownerPaysTransferFee)
         , j_(ctx.j)
     {
-        if (auto const ammSle = ctx.view.read(keylet::amm(in, out)))
+        if (auto const ammSle = ctx.view.read(keylet::amm(in, out));
+            ammSle && ammSle->getFieldAmount(sfLPTokenBalance) != beast::zero)
             ammLiquidity_.emplace(
                 ctx.view,
                 (*ammSle)[sfAccount],

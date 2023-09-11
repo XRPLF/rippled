@@ -215,14 +215,6 @@ private:
         STAmount const& amount,
         STAmount const& ePrice,
         std::uint16_t tfee);
-
-    /** Delete AMM account.
-     * @param view
-     * @param ammAccountID
-     * @return
-     */
-    TER
-    deleteAccount(Sandbox& view, AccountID const& ammAccountID);
 };
 
 }  // namespace ripple

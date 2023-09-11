@@ -52,6 +52,7 @@ JSS(AMMBid);               // transaction type
 JSS(AMMID);                // field
 JSS(AMMCreate);            // transaction type
 JSS(AMMDeposit);           // transaction type
+JSS(AMMDelete);            // transaction type
 JSS(AMMVote);              // transaction type
 JSS(AMMWithdraw);          // transaction type
 JSS(Amendments);           // ledger type.
@@ -159,6 +160,7 @@ JSS(alternatives);           // out: PathRequest, RipplePathFind
 JSS(amendment_blocked);      // out: NetworkOPs
 JSS(amendments);             // in: AccountObjects, out: NetworkOPs
 JSS(amm);                    // out: amm_info
+JSS(amm_account);            // in: amm_info
 JSS(amount);                 // out: AccountChannels, amm_info
 JSS(amount2);                // out: amm_info
 JSS(api_version);            // in: many, out: Version
@@ -226,6 +228,7 @@ JSS(converge_time_s);        // out: NetworkOPs
 JSS(cookie);                 // out: NetworkOPs
 JSS(count);                  // in: AccountTx*, ValidatorList
 JSS(counters);               // in/out: retrieve counters
+JSS(ctid);                   // in/out: Tx RPC
 JSS(currency_a);             // out: BookChanges
 JSS(currency_b);             // out: BookChanges
 JSS(currentShard);           // out: NodeToShardStatus

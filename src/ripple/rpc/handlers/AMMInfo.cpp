@@ -74,51 +74,96 @@ doAMMInfo(RPC::JsonContext& context)
 {
     auto const& params(context.params);
     Json::Value result;
-    std::optional<AccountID> accountID;
-
-    Issue issue1;
-    Issue issue2;
-
-    if (!params.isMember(jss::asset) || !params.isMember(jss::asset2))
-    {
-        RPC::inject_error(rpcINVALID_PARAMS, result);
-        return result;
-    }
-
-    if (auto const i = getIssue(params[jss::asset], context.j); !i)
-    {
-        RPC::inject_error(i.error(), result);
-        return result;
-    }
-    else
-        issue1 = *i;
-    if (auto const i = getIssue(params[jss::asset2], context.j); !i)
-    {
-        RPC::inject_error(i.error(), result);
-        return result;
-    }
-    else
-        issue2 = *i;
 
     std::shared_ptr<ReadView const> ledger;
     result = RPC::lookupLedger(ledger, context);
     if (!ledger)
         return result;
 
-    if (params.isMember(jss::account))
+    struct ValuesFromContextParams
     {
-        accountID = getAccount(params[jss::account], result);
-        if (!accountID || !ledger->read(keylet::account(*accountID)))
+        std::optional<AccountID> accountID;
+        Issue issue1;
+        Issue issue2;
+        std::shared_ptr<SLE const> amm;
+    };
+
+    auto getValuesFromContextParams =
+        [&]() -> Expected<ValuesFromContextParams, error_code_i> {
+        std::optional<AccountID> accountID;
+        std::optional<Issue> issue1;
+        std::optional<Issue> issue2;
+        std::optional<uint256> ammID;
+
+        if ((params.isMember(jss::asset) != params.isMember(jss::asset2)) ||
+            (params.isMember(jss::asset) == params.isMember(jss::amm_account)))
+            return Unexpected(rpcINVALID_PARAMS);
+
+        if (params.isMember(jss::asset))
         {
-            RPC::inject_error(rpcACT_MALFORMED, result);
-            return result;
+            if (auto const i = getIssue(params[jss::asset], context.j))
+                issue1 = *i;
+            else
+                return Unexpected(i.error());
         }
+
+        if (params.isMember(jss::asset2))
+        {
+            if (auto const i = getIssue(params[jss::asset2], context.j))
+                issue2 = *i;
+            else
+                return Unexpected(i.error());
+        }
+
+        if (params.isMember(jss::amm_account))
+        {
+            auto const id = getAccount(params[jss::amm_account], result);
+            if (!id)
+                return Unexpected(rpcACT_MALFORMED);
+            auto const sle = ledger->read(keylet::account(*id));
+            if (!sle)
+                return Unexpected(rpcACT_MALFORMED);
+            ammID = sle->getFieldH256(sfAMMID);
+        }
+
+        assert(
+            (issue1.has_value() == issue2.has_value()) &&
+            (issue1.has_value() != ammID.has_value()));
+
+        if (params.isMember(jss::account))
+        {
+            accountID = getAccount(params[jss::account], result);
+            if (!accountID || !ledger->read(keylet::account(*accountID)))
+                return Unexpected(rpcACT_MALFORMED);
+        }
+
+        auto const ammKeylet = [&]() {
+            if (issue1 && issue2)
+                return keylet::amm(*issue1, *issue2);
+            assert(ammID);
+            return keylet::amm(*ammID);
+        }();
+        auto const amm = ledger->read(ammKeylet);
+        if (!amm)
+            return Unexpected(rpcACT_NOT_FOUND);
+        if (!issue1 && !issue2)
+        {
+            issue1 = (*amm)[sfAsset];
+            issue2 = (*amm)[sfAsset2];
+        }
+
+        return ValuesFromContextParams{
+            accountID, *issue1, *issue2, std::move(amm)};
+    };
+
+    auto const r = getValuesFromContextParams();
+    if (!r)
+    {
+        RPC::inject_error(r.error(), result);
+        return result;
     }
 
-    auto const ammKeylet = keylet::amm(issue1, issue2);
-    auto const amm = ledger->read(ammKeylet);
-    if (!amm)
-        return rpcError(rpcACT_NOT_FOUND);
+    auto const& [accountID, issue1, issue2, amm] = *r;
 
     auto const ammAccountID = amm->getAccountID(sfAccount);
 

@@ -17,11 +17,26 @@
 */
 //==============================================================================
 
-#include <ripple/ledger/LedgerHeader.h>
-
-#include <ripple/basics/chrono.h>
+#include <ripple/protocol/LedgerHeader.h>
 
 namespace ripple {
+
+void
+addRaw(LedgerHeader const& info, Serializer& s, bool includeHash)
+{
+    s.add32(info.seq);
+    s.add64(info.drops.drops());
+    s.addBitString(info.parentHash);
+    s.addBitString(info.txHash);
+    s.addBitString(info.accountHash);
+    s.add32(info.parentCloseTime.time_since_epoch().count());
+    s.add32(info.closeTime.time_since_epoch().count());
+    s.add8(info.closeTimeResolution.count());
+    s.add8(info.closeFlags);
+
+    if (includeHash)
+        s.addBitString(info.hash);
+}
 
 LedgerHeader
 deserializeHeader(Slice data, bool hasHash)

@@ -17,28 +17,40 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_LEDGER_LEDGERHEADER_H_INCLUDED
-#define RIPPLE_LEDGER_LEDGERHEADER_H_INCLUDED
+#ifndef RIPPLE_PROTOCOL_FEES_H_INCLUDED
+#define RIPPLE_PROTOCOL_FEES_H_INCLUDED
 
-#include <ripple/ledger/ReadView.h>
+#include <ripple/basics/XRPAmount.h>
 
 namespace ripple {
 
-// We call them "headers" in conversation
-// but "info" in code. Unintuitive.
-// This alias makes the name easier to understand,
-// without disturbing existing uses.
-// and this header is easier to find.
-// TODO: Move declaration here and rename all uses.
-using LedgerHeader = LedgerInfo;
+/** Reflects the fee settings for a particular ledger.
 
-/** Deserialize a ledger header from a byte array. */
-LedgerHeader
-deserializeHeader(Slice data, bool hasHash = false);
+    The fees are always the same for any transactions applied
+    to a ledger. Changes to fees occur in between ledgers.
+*/
+struct Fees
+{
+    XRPAmount base{0};       // Reference tx cost (drops)
+    XRPAmount reserve{0};    // Reserve base (drops)
+    XRPAmount increment{0};  // Reserve increment (drops)
 
-/** Deserialize a ledger header (prefixed with 4 bytes) from a byte array. */
-LedgerHeader
-deserializePrefixedHeader(Slice data, bool hasHash = false);
+    explicit Fees() = default;
+    Fees(Fees const&) = default;
+    Fees&
+    operator=(Fees const&) = default;
+
+    /** Returns the account reserve given the owner count, in drops.
+
+        The reserve is calculated as the reserve base plus
+        the reserve increment times the number of increments.
+    */
+    XRPAmount
+    accountReserve(std::size_t ownerCount) const
+    {
+        return reserve + ownerCount * increment;
+    }
+};
 
 }  // namespace ripple
 

@@ -26,7 +26,7 @@
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/JobQueue.h>
-#include <ripple/ledger/LedgerHeader.h>
+#include <ripple/protocol/LedgerHeader.h>
 #include <ripple/nodestore/DatabaseShard.h>
 #include <ripple/overlay/Overlay.h>
 #include <ripple/protocol/HashPrefix.h>

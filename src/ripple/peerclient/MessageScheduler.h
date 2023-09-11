@@ -25,7 +25,6 @@
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/overlay/Peer.h>
 #include <ripple/overlay/impl/ProtocolMessage.h>
-#include <ripple.pb.h>
 
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/asio/io_service.hpp>

@@ -19,11 +19,10 @@
 
 #include <ripple/app/rdb/backend/PostgresDatabase.h>
 #include <ripple/app/reporting/ReportingETL.h>
-
-#include <ripple/beast/core/CurrentThreadName.h>
+#include <ripple/basics/ThreadUtilities.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/json/json_writer.h>
-#include <ripple/ledger/LedgerHeader.h>
+#include <ripple/protocol/LedgerHeader.h>
 #include <boost/asio/connect.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/beast/core.hpp>
@@ -511,7 +510,7 @@ ReportingETL::runETLPipeline(uint32_t startSequence)
                            &startSequence,
                            &writeConflict,
                            &transformQueue]() {
-        beast::setCurrentThreadName("rippled: ReportingETL extract");
+        this_thread::set_name("ETL extract");
         uint32_t currentSequence = startSequence;
 
         // there are two stopping conditions here.
@@ -563,7 +562,7 @@ ReportingETL::runETLPipeline(uint32_t startSequence)
                              &writeConflict,
                              &loadQueue,
                              &transformQueue]() {
-        beast::setCurrentThreadName("rippled: ReportingETL transform");
+        this_thread::set_name("ETL transform");
 
         assert(parent);
         parent = std::make_shared<Ledger>(*parent, NetClock::time_point{});
@@ -602,7 +601,7 @@ ReportingETL::runETLPipeline(uint32_t startSequence)
                         &lastPublishedSequence,
                         &loadQueue,
                         &writeConflict]() {
-        beast::setCurrentThreadName("rippled: ReportingETL load");
+        this_thread::set_name("ETL load");
         size_t totalTransactions = 0;
         double totalTime = 0;
         while (!writeConflict)
@@ -826,7 +825,7 @@ void
 ReportingETL::doWork()
 {
     worker_ = std::thread([this]() {
-        beast::setCurrentThreadName("rippled: ReportingETL worker");
+        this_thread::set_name("ETL worker");
         if (readOnly_)
             monitorReadOnly();
         else

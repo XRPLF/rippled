@@ -20,8 +20,8 @@
 #ifndef RIPPLE_SYNC_REPLAYLEDGERS_H_INCLUDED
 #define RIPPLE_SYNC_REPLAYLEDGERS_H_INCLUDED
 
-#include <ripple/ledger/LedgerHeader.h>
 #include <ripple/ledger/LedgerIdentifier.h>
+#include <ripple/protocol/LedgerHeader.h>
 #include <ripple/peerclient/PeerClient.h>
 #include <ripple/sync/LedgerGetter.h>
 

@@ -17,28 +17,16 @@
 */
 //==============================================================================
 
-#include <ripple/rpc/NFTSyntheticSerializer.h>
-
-#include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/app/ledger/OpenLedger.h>
-#include <ripple/app/misc/Transaction.h>
-#include <ripple/ledger/View.h>
-#include <ripple/net/RPCErr.h>
-#include <ripple/protocol/AccountID.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/rpc/Context.h>
-#include <ripple/rpc/NFTokenID.h>
-#include <ripple/rpc/NFTokenOfferID.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
-#include <boost/algorithm/string/case_conv.hpp>
+#include <ripple/protocol/NFTSyntheticSerializer.h>
+#include <ripple/protocol/NFTokenID.h>
+#include <ripple/protocol/NFTokenOfferID.h>
+#include <ripple/protocol/jss.h>
 
 namespace ripple {
-namespace RPC {
 
 void
 insertNFTSyntheticInJson(
     Json::Value& response,
-    RPC::JsonContext const& context,
     std::shared_ptr<STTx const> const& transaction,
     TxMeta const& transactionMeta)
 {
@@ -46,5 +34,4 @@ insertNFTSyntheticInJson(
     insertNFTokenOfferID(response[jss::meta], transaction, transactionMeta);
 }
 
-}  // namespace RPC
 }  // namespace ripple

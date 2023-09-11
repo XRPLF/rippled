@@ -25,7 +25,6 @@
 #include <ripple/overlay/Message.h>
 #include <ripple/overlay/impl/ZeroCopyStream.h>
 #include <ripple/protocol/messages.h>
-#include <ripple.pb.h>
 
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/buffers_iterator.hpp>

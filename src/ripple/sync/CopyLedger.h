@@ -29,8 +29,7 @@
 #include <ripple/nodestore/Database.h>
 #include <ripple/peerclient/CommunicationMeter.h>
 #include <ripple/peerclient/MessageScheduler.h>
-// REVIEWER: Shouldn't this header be nested under the `ripple` directory?
-#include <ripple.pb.h>
+#include <ripple/protocol/messages.h>
 
 #include <cstddef>
 #include <functional>

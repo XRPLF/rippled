@@ -26,12 +26,13 @@
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/random.h>
 #include <ripple/core/ConfigSections.h>
-#include <ripple/ledger/LedgerHeader.h>
+#include <ripple/protocol/LedgerHeader.h>
 #include <ripple/nodestore/DummyScheduler.h>
 #include <ripple/nodestore/impl/DatabaseShardImp.h>
 #include <ripple/overlay/Overlay.h>
 #include <ripple/overlay/predicates.h>
 #include <ripple/protocol/HashPrefix.h>
+#include <ripple/protocol/LedgerHeader.h>
 #include <ripple/protocol/digest.h>
 
 #include <boost/algorithm/string/predicate.hpp>

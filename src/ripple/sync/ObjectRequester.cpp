@@ -19,8 +19,8 @@
 
 #include <ripple/sync/ObjectRequester.h>
 
-#include <ripple/ledger/LedgerHeader.h>
 #include <ripple/protocol/HashPrefix.h>
+#include <ripple/protocol/LedgerHeader.h>
 #include <ripple/shamap/SHAMapInnerNode.h>
 
 namespace ripple {

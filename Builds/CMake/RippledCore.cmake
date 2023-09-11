@@ -24,7 +24,6 @@ add_library(xrpl::libxrpl ALIAS libxrpl)
 #]===============================]
 target_sources (xrpl_core PRIVATE
   src/ripple/beast/clock/basic_seconds_clock.cpp
-  src/ripple/beast/core/CurrentThreadName.cpp
   src/ripple/beast/core/SemanticVersion.cpp
   src/ripple/beast/hash/impl/xxhash.cpp
   src/ripple/beast/insight/impl/Collector.cpp
@@ -56,6 +55,7 @@ target_sources (xrpl_core PRIVATE
   src/ripple/basics/impl/Log.cpp
   src/ripple/basics/impl/Number.cpp
   src/ripple/basics/impl/StringUtilities.cpp
+  src/ripple/basics/impl/ThreadUtilities.cpp
   #[===============================[
     main sources:
       subdir: json
@@ -85,6 +85,7 @@ target_sources (xrpl_core PRIVATE
   src/ripple/protocol/impl/STIssue.cpp
   src/ripple/protocol/impl/Keylet.cpp
   src/ripple/protocol/impl/LedgerFormats.cpp
+  src/ripple/protocol/impl/LedgerHeader.cpp
   src/ripple/protocol/impl/PublicKey.cpp
   src/ripple/protocol/impl/Quality.cpp
   src/ripple/protocol/impl/QualityFunction.cpp
@@ -116,6 +117,9 @@ target_sources (xrpl_core PRIVATE
   src/ripple/protocol/impl/UintTypes.cpp
   src/ripple/protocol/impl/digest.cpp
   src/ripple/protocol/impl/tokens.cpp
+  src/ripple/protocol/impl/NFTSyntheticSerializer.cpp
+  src/ripple/protocol/impl/NFTokenID.cpp
+  src/ripple/protocol/impl/NFTokenOfferID.cpp
   #[===============================[
     main sources:
       subdir: crypto
@@ -196,6 +200,7 @@ install (
     src/ripple/basics/TaggedCache.h
     src/ripple/basics/tagged_integer.h
     src/ripple/basics/ThreadSafetyAnalysis.h
+    src/ripple/basics/ThreadUtilities.h
     src/ripple/basics/ToString.h
     src/ripple/basics/UnorderedContainers.h
     src/ripple/basics/UptimeClock.h
@@ -232,6 +237,7 @@ install (
     src/ripple/protocol/BuildInfo.h
     src/ripple/protocol/ErrorCodes.h
     src/ripple/protocol/Feature.h
+    src/ripple/protocol/Fees.h
     src/ripple/protocol/HashPrefix.h
     src/ripple/protocol/Indexes.h
     src/ripple/protocol/InnerObjectFormats.h
@@ -240,6 +246,10 @@ install (
     src/ripple/protocol/Keylet.h
     src/ripple/protocol/KnownFormats.h
     src/ripple/protocol/LedgerFormats.h
+    src/ripple/protocol/LedgerHeader.h
+    src/ripple/protocol/NFTSyntheticSerializer.h
+    src/ripple/protocol/NFTokenID.h
+    src/ripple/protocol/NFTokenOfferID.h
     src/ripple/protocol/Protocol.h
     src/ripple/protocol/PublicKey.h
     src/ripple/protocol/Quality.h
@@ -277,6 +287,9 @@ install (
     src/ripple/protocol/UintTypes.h
     src/ripple/protocol/digest.h
     src/ripple/protocol/jss.h
+    src/ripple/protocol/serialize.h
+    src/ripple/protocol/nft.h
+    src/ripple/protocol/nftPageMask.h
     src/ripple/protocol/tokens.h
   DESTINATION include/ripple/protocol)
 install (
@@ -296,6 +309,7 @@ install (
   DESTINATION include/ripple/beast/clock)
 install (
   FILES
+    src/ripple/beast/core/CurrentThreadName.h
     src/ripple/beast/core/LexicalCast.h
     src/ripple/beast/core/List.h
     src/ripple/beast/core/SemanticVersion.h
@@ -309,6 +323,14 @@ install (
 install (
   FILES src/ripple/beast/hash/impl/xxhash.h
   DESTINATION include/ripple/beast/hash/impl)
+install (
+  FILES
+  src/ripple/beast/net/IPAddress.h
+  src/ripple/beast/net/IPAddressConversion.h
+  src/ripple/beast/net/IPAddressV4.h
+  src/ripple/beast/net/IPAddressV6.h
+  src/ripple/beast/net/IPEndpoint.h
+  DESTINATION include/ripple/beast/net)
 install (
   FILES
     src/ripple/beast/rfc2616.h
@@ -476,6 +498,7 @@ target_sources (rippled PRIVATE
   src/ripple/app/rdb/impl/Wallet.cpp
   src/ripple/app/tx/impl/AMMBid.cpp
   src/ripple/app/tx/impl/AMMCreate.cpp
+  src/ripple/app/tx/impl/AMMDelete.cpp
   src/ripple/app/tx/impl/AMMDeposit.cpp
   src/ripple/app/tx/impl/AMMVote.cpp
   src/ripple/app/tx/impl/AMMWithdraw.cpp
@@ -560,7 +583,6 @@ target_sources (rippled PRIVATE
   src/ripple/ledger/impl/BookDirs.cpp
   src/ripple/ledger/impl/CachedView.cpp
   src/ripple/ledger/impl/Directory.cpp
-  src/ripple/ledger/impl/LedgerHeader.cpp
   src/ripple/ledger/impl/OpenView.cpp
   src/ripple/ledger/impl/PaymentSandbox.cpp
   src/ripple/ledger/impl/RawStateTable.cpp
@@ -724,9 +746,6 @@ target_sources (rippled PRIVATE
   src/ripple/rpc/impl/ShardVerificationScheduler.cpp
   src/ripple/rpc/impl/Status.cpp
   src/ripple/rpc/impl/TransactionSign.cpp
-  src/ripple/rpc/impl/NFTokenID.cpp
-  src/ripple/rpc/impl/NFTokenOfferID.cpp
-  src/ripple/rpc/impl/NFTSyntheticSerializer.cpp
   #[===============================[
      main sources:
        subdir: perflog
@@ -789,6 +808,7 @@ if (tests)
     src/test/app/HashRouter_test.cpp
     src/test/app/LedgerHistory_test.cpp
     src/test/app/LedgerLoad_test.cpp
+    src/test/app/LedgerMaster_test.cpp
     src/test/app/LedgerReplay_test.cpp
     src/test/app/LoadFeeTrack_test.cpp
     src/test/app/Manifest_test.cpp
@@ -839,6 +859,7 @@ if (tests)
     src/test/basics/Slice_test.cpp
     src/test/basics/StringUtilities_test.cpp
     src/test/basics/TaggedCache_test.cpp
+    src/test/basics/ThreadName_test.cpp
     src/test/basics/XRPAmount_test.cpp
     src/test/basics/base64_test.cpp
     src/test/basics/base_uint_test.cpp
@@ -856,7 +877,6 @@ if (tests)
     src/test/beast/LexicalCast_test.cpp
     src/test/beast/SemanticVersion_test.cpp
     src/test/beast/aged_associative_container_test.cpp
-    src/test/beast/beast_CurrentThreadName_test.cpp
     src/test/beast/beast_Journal_test.cpp
     src/test/beast/beast_PropertyStream_test.cpp
     src/test/beast/beast_Zero_test.cpp

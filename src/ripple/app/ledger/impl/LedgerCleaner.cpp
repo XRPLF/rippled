@@ -21,7 +21,7 @@
 #include <ripple/app/ledger/LedgerCleaner.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/misc/LoadFeeTrack.h>
-#include <ripple/beast/core/CurrentThreadName.h>
+#include <ripple/basics/ThreadUtilities.h>
 #include <ripple/protocol/jss.h>
 
 namespace ripple {
@@ -218,7 +218,7 @@ private:
     void
     run()
     {
-        beast::setCurrentThreadName("LedgerCleaner");
+        this_thread::set_name("LedgerCleaner");
         JLOG(j_.debug()) << "Started";
 
         while (true)

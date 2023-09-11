@@ -21,8 +21,8 @@
 #define RIPPLE_SYNC_REPLAYLEDGER_H_INCLUDED
 
 #include <ripple/basics/promises.h>
-#include <ripple/ledger/LedgerHeader.h>
 #include <ripple/ledger/LedgerIdentifier.h>
+#include <ripple/protocol/LedgerHeader.h>
 #include <ripple/sync/LedgerGetter.h>
 
 namespace ripple {

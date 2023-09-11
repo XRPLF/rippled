@@ -22,8 +22,8 @@
 
 #include <ripple/app/main/Application.h>
 #include <ripple/basics/promises.h>
-#include <ripple/ledger/LedgerHeader.h>
 #include <ripple/ledger/LedgerIdentifier.h>
+#include <ripple/protocol/LedgerHeader.h>
 #include <ripple/peerclient/MessageScheduler.h>
 // TODO: Move `TxSet` into a separate header?
 #include <ripple/peerclient/TxSetRequester.h>

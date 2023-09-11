@@ -29,12 +29,12 @@
 #include <ripple/ledger/ReadView.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
+#include <ripple/protocol/NFTSyntheticSerializer.h>
 #include <ripple/protocol/UintTypes.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/DeliveredAmount.h>
-#include <ripple/rpc/NFTSyntheticSerializer.h>
 #include <ripple/rpc/Role.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 
@@ -334,7 +334,7 @@ populateJsonResponse(
                         insertDeliveredAmount(
                             jvObj[jss::meta], context, txn, *txnMeta);
                         insertNFTSyntheticInJson(
-                            jvObj, context, txn->getSTransaction(), *txnMeta);
+                            jvObj, txn->getSTransaction(), *txnMeta);
                     }
                 }
             }
