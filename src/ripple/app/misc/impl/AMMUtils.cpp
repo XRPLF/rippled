@@ -200,14 +200,17 @@ deleteAMMTrustLines(
         keylet::ownerDir(ammAccountID),
         [&](LedgerEntryType nodeType,
             uint256 const&,
-            std::shared_ptr<SLE>& sleItem) -> TER {
+            std::shared_ptr<SLE>& sleItem) -> std::pair<TER, SkipEntry> {
+            // Skip AMM
+            if (nodeType == LedgerEntryType::ltAMM)
+                return {tesSUCCESS, SkipEntry::Yes};
             // Should only have the trustlines
             if (nodeType != LedgerEntryType::ltRIPPLE_STATE)
             {
                 JLOG(j.error())
                     << "deleteAMMTrustLines: deleting non-trustline "
                     << nodeType;
-                return tecINTERNAL;
+                return {tecINTERNAL, SkipEntry::No};
             }
 
             // Trustlines must have zero balance
@@ -216,10 +219,12 @@ deleteAMMTrustLines(
                 JLOG(j.error())
                     << "deleteAMMTrustLines: deleting trustline with "
                        "non-zero balance.";
-                return tecINTERNAL;
+                return {tecINTERNAL, SkipEntry::No};
             }
 
-            return deleteAMMTrustLine(sb, sleItem, ammAccountID, j);
+            return {
+                deleteAMMTrustLine(sb, sleItem, ammAccountID, j),
+                SkipEntry::No};
         },
         j,
         maxTrustlinesToDelete);
@@ -255,6 +260,12 @@ deleteAMMAccount(
         return ter;
 
     auto const ownerDirKeylet = keylet::ownerDir(ammAccountID);
+    if (!sb.dirRemove(
+            ownerDirKeylet, (*ammSle)[sfOwnerNode], ammSle->key(), false))
+    {
+        JLOG(j.error()) << "deleteAMMAccount: failed to remove dir link";
+        return tecINTERNAL;
+    }
     if (sb.exists(ownerDirKeylet) && !sb.emptyDirDelete(ownerDirKeylet))
     {
         JLOG(j.error()) << "deleteAMMAccount: cannot delete root dir node of "
