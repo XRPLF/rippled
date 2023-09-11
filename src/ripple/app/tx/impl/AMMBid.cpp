@@ -223,9 +223,11 @@ applyBid(
             lptAMMBalance, toSTAmount(lptAMMBalance.issue(), burn), false);
         if (saBurn >= lptAMMBalance)
         {
-            JLOG(ctx_.journal.debug())
-                << "AMM Bid: invalid burn " << burn << " " << lptAMMBalance;
-            return tecAMM_BALANCE;
+            // This error case should never occur.
+            JLOG(ctx_.journal.fatal())
+                << "AMM Bid: LP Token burn exceeds AMM balance " << burn << " "
+                << lptAMMBalance;
+            return tecINTERNAL;
         }
         auto res =
             redeemIOU(sb, account_, saBurn, lpTokens.issue(), ctx_.journal);
@@ -316,9 +318,10 @@ applyBid(
         auto const refund = fractionRemaining * pricePurchased;
         if (refund > *payPrice)
         {
-            JLOG(ctx_.journal.debug())
-                << "AMM Bid: invalid refund " << refund << " " << *payPrice;
-            return {tecINSUFFICIENT_PAYMENT, false};
+            // This error case should never occur.
+            JLOG(ctx_.journal.fatal()) << "AMM Bid: refund exceeds payPrice "
+                                       << refund << " " << *payPrice;
+            return {tecINTERNAL, false};
         }
         res = accountSend(
             sb,

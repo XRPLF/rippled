@@ -23,7 +23,7 @@
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/rdb/State.h>
 #include <ripple/app/rdb/backend/SQLiteDatabase.h>
-#include <ripple/beast/core/CurrentThreadName.h>
+#include <ripple/basics/ThreadUtilities.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/core/Pg.h>
 #include <ripple/nodestore/Scheduler.h>
@@ -286,7 +286,7 @@ SHAMapStoreImp::run()
             "Reporting does not support online_delete. Remove "
             "online_delete info from config");
     }
-    beast::setCurrentThreadName("SHAMapStore");
+    this_thread::set_name("SHAMapStore");
     LedgerIndex lastRotated = state_db_.getState().lastRotated;
     netOPs_ = &app_.getOPs();
     ledgerMaster_ = &app_.getLedgerMaster();

@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/beast/core/CurrentThreadName.h>
+#include <ripple/basics/ThreadUtilities.h>
 #include <ripple/core/Job.h>
 #include <cassert>
 
@@ -61,7 +61,7 @@ Job::queue_time() const
 void
 Job::doJob()
 {
-    beast::setCurrentThreadName("doJob: " + mName);
+    this_thread::set_name("doJob: " + mName);
     m_loadEvent->start();
     m_loadEvent->setName(mName);
 
