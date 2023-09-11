@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2017 Ripple Labs Inc
+    Copyright (c) 2023 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -16,24 +16,26 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#ifndef RIPPLE_TEST_CSF_PROPOSAL_H_INCLUDED
-#define RIPPLE_TEST_CSF_PROPOSAL_H_INCLUDED
 
-#include <ripple/consensus/ConsensusProposal.h>
-#include <test/csf/Tx.h>
-#include <test/csf/Validation.h>
-#include <test/csf/ledgers.h>
+#ifndef RIPPLE_BASICS_SUBMITSYNC_H_INCLUDED
+#define RIPPLE_BASICS_SUBMITSYNC_H_INCLUDED
 
 namespace ripple {
-namespace test {
-namespace csf {
-/** Proposal is a position taken in the consensus process and is represented
-    directly from the generic types.
-*/
-using Proposal = ConsensusProposal<PeerID, Ledger::ID, TxSet::ID, Ledger::Seq>;
+namespace RPC {
 
-}  // namespace csf
-}  // namespace test
+/**
+ * Possible values for defining synchronous behavior of the transaction
+ * submission API.
+ *   1) sync (default): Process transactions in a batch immediately,
+ *       and return only once the transaction has been processed.
+ *   2) async: Put transaction into the batch for the next processing
+ *       interval and return immediately.
+ *   3) wait: Put transaction into the batch for the next processing
+ *       interval and return only after it is processed.
+ */
+enum class SubmitSync { sync, async, wait };
+
+}  // namespace RPC
 }  // namespace ripple
 
 #endif
