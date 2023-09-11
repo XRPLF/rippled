@@ -28,23 +28,6 @@ namespace ripple {
 
 class TrustAndBalance_test : public beast::unit_test::suite
 {
-    static auto
-    ledgerEntryState(
-        test::jtx::Env& env,
-        test::jtx::Account const& acct_a,
-        test::jtx::Account const& acct_b,
-        std::string const& currency)
-    {
-        Json::Value jvParams;
-        jvParams[jss::ledger_index] = "current";
-        jvParams[jss::ripple_state][jss::currency] = currency;
-        jvParams[jss::ripple_state][jss::accounts] = Json::arrayValue;
-        jvParams[jss::ripple_state][jss::accounts].append(acct_a.human());
-        jvParams[jss::ripple_state][jss::accounts].append(acct_b.human());
-        return env.rpc(
-            "json", "ledger_entry", to_string(jvParams))[jss::result];
-    }
-
     void
     testPayNonexistent(FeatureBitset features)
     {

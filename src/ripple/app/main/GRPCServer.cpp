@@ -19,7 +19,7 @@
 
 #include <ripple/app/main/GRPCServer.h>
 #include <ripple/app/reporting/P2pProxy.h>
-#include <ripple/beast/core/CurrentThreadName.h>
+#include <ripple/basics/ThreadUtilities.h>
 #include <ripple/resource/Fees.h>
 
 #include <ripple/beast/net/IPAddressConversion.h>
@@ -429,7 +429,7 @@ GRPCServerImpl::GRPCServerImpl(Application& app)
     // if present, get endpoint from config
     if (app_.config().exists("port_grpc"))
     {
-        Section section = app_.config().section("port_grpc");
+        const auto& section = app_.config().section("port_grpc");
 
         auto const optIp = section.get("ip");
         if (!optIp)
@@ -692,9 +692,8 @@ GRPCServer::start()
     if (running_ = impl_.start(); running_)
     {
         thread_ = std::thread([this]() {
-            beast::setCurrentThreadName("rippled : GRPCServer");
             // Start the event loop and begin handling requests
-            beast::setCurrentThreadName("rippled: grpc");
+            this_thread::set_name("rippled: grpc");
             this->impl_.handleRpcs();
         });
     }

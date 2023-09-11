@@ -59,6 +59,30 @@ InnerObjectFormats::InnerObjectFormats()
             {sfNFTokenID, soeREQUIRED},
             {sfURI, soeOPTIONAL},
         });
+
+    add(sfVoteEntry.jsonName.c_str(),
+        sfVoteEntry.getCode(),
+        {
+            {sfAccount, soeREQUIRED},
+            {sfTradingFee, soeDEFAULT},
+            {sfVoteWeight, soeREQUIRED},
+        });
+
+    add(sfAuctionSlot.jsonName.c_str(),
+        sfAuctionSlot.getCode(),
+        {
+            {sfAccount, soeREQUIRED},
+            {sfExpiration, soeREQUIRED},
+            {sfDiscountedFee, soeDEFAULT},
+            {sfPrice, soeREQUIRED},
+            {sfAuthAccounts, soeOPTIONAL},
+        });
+
+    add(sfAuthAccount.jsonName.c_str(),
+        sfAuthAccount.getCode(),
+        {
+            {sfAccount, soeREQUIRED},
+        });
 }
 
 InnerObjectFormats const&

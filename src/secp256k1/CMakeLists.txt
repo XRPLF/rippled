@@ -24,7 +24,7 @@ target_compile_definitions(secp256k1 PRIVATE
 )
 target_include_directories(secp256k1
   PUBLIC $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-  PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+  PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
 target_compile_options(secp256k1 PRIVATE
   $<$<C_COMPILER_ID:MSVC>:-wd4319>

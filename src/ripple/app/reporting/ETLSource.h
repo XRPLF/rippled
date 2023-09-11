@@ -21,6 +21,7 @@
 #define RIPPLE_APP_REPORTING_ETLSOURCE_H_INCLUDED
 #include <ripple/app/main/Application.h>
 #include <ripple/app/reporting/ETLHelpers.h>
+#include <ripple/proto/org/xrpl/rpc/v1/xrp_ledger.grpc.pb.h>
 #include <ripple/protocol/STLedgerEntry.h>
 #include <ripple/rpc/Context.h>
 
@@ -29,7 +30,6 @@
 #include <boost/beast/core/string.hpp>
 #include <boost/beast/websocket.hpp>
 
-#include "org/xrpl/rpc/v1/xrp_ledger.grpc.pb.h"
 #include <grpcpp/grpcpp.h>
 
 namespace ripple {

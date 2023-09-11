@@ -24,6 +24,7 @@
 #include <ripple/basics/Slice.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/base64.h>
+#include <ripple/consensus/ConsensusParms.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/overlay/Overlay.h>
 #include <ripple/protocol/STValidation.h>
@@ -1761,8 +1762,10 @@ ValidatorList::calculateQuorum(
     // Note that the negative UNL protocol introduced the
     // AbsoluteMinimumQuorum which is 60% of the original UNL size. The
     // effective quorum should not be lower than it.
+    static ConsensusParms const parms;
     return static_cast<std::size_t>(std::max(
-        std::ceil(effectiveUnlSize * 0.8f), std::ceil(unlSize * 0.6f)));
+        std::ceil(effectiveUnlSize * parms.minCONSENSUS_FACTOR),
+        std::ceil(unlSize * parms.negUNL_MIN_CONSENSUS_FACTOR)));
 }
 
 TrustChanges

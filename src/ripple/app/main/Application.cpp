@@ -602,6 +602,13 @@ public:
         return *m_networkOPs;
     }
 
+    virtual ServerHandler&
+    getServerHandler() override
+    {
+        assert(serverHandler_);
+        return *serverHandler_;
+    }
+
     boost::asio::io_service&
     getIOService() override
     {
@@ -1520,6 +1527,7 @@ ApplicationImp::start(bool withTimers)
     {
         setSweepTimer();
         setEntropyTimer();
+        m_networkOPs->setBatchApplyTimer();
     }
 
     m_io_latency_sampler.start();

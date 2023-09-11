@@ -69,6 +69,7 @@ and use it to install Conan:
 ```
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 brew update
+brew install xz
 brew install pyenv
 pyenv install 3.10-dev
 pyenv global 3.10-dev

@@ -34,6 +34,7 @@
 #include <ripple/rpc/DeliveredAmount.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 #include <boost/algorithm/string/case_conv.hpp>
+#include <regex>
 
 namespace ripple {
 namespace RPC {
@@ -981,7 +982,7 @@ chooseLedgerEntryType(Json::Value const& params)
     std::pair<RPC::Status, LedgerEntryType> result{RPC::Status::OK, ltANY};
     if (params.isMember(jss::type))
     {
-        static constexpr std::array<std::pair<char const*, LedgerEntryType>, 15>
+        static constexpr std::array<std::pair<char const*, LedgerEntryType>, 16>
             types{
                 {{jss::account, ltACCOUNT_ROOT},
                  {jss::amendments, ltAMENDMENTS},
@@ -997,7 +998,8 @@ chooseLedgerEntryType(Json::Value const& params)
                  {jss::state, ltRIPPLE_STATE},
                  {jss::ticket, ltTICKET},
                  {jss::nft_offer, ltNFTOKEN_OFFER},
-                 {jss::nft_page, ltNFTOKEN_PAGE}}};
+                 {jss::nft_page, ltNFTOKEN_PAGE},
+                 {jss::amm, ltAMM}}};
 
         auto const& p = params[jss::type];
         if (!p.isString())
@@ -1164,5 +1166,26 @@ getLedgerByContext(RPC::JsonContext& context)
     return RPC::make_error(
         rpcNOT_READY, "findCreate failed to return an inbound ledger");
 }
+
+ripple::Expected<RPC::SubmitSync, Json::Value>
+getSubmitSyncMode(Json::Value const& params)
+{
+    using enum RPC::SubmitSync;
+    if (params.isMember(jss::sync_mode))
+    {
+        std::string const syncMode = params[jss::sync_mode].asString();
+        if (syncMode == "async")
+            return async;
+        else if (syncMode == "wait")
+            return wait;
+        else if (syncMode != "sync")
+            return Unexpected(RPC::make_error(
+                rpcINVALID_PARAMS,
+                "sync_mode parameter must be one of \"sync\", \"async\", or "
+                "\"wait\"."));
+    }
+    return sync;
+}
+
 }  // namespace RPC
 }  // namespace ripple
