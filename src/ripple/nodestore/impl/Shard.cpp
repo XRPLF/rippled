@@ -21,7 +21,6 @@
 #include <ripple/app/main/DBInit.h>
 #include <ripple/app/rdb/backend/detail/Shard.h>
 #include <ripple/core/ConfigSections.h>
-#include <ripple/protocol/LedgerHeader.h>
 #include <ripple/nodestore/Manager.h>
 #include <ripple/nodestore/impl/DeterministicShard.h>
 #include <ripple/nodestore/impl/Shard.h>

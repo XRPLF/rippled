@@ -26,7 +26,6 @@
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/random.h>
 #include <ripple/core/ConfigSections.h>
-#include <ripple/protocol/LedgerHeader.h>
 #include <ripple/nodestore/DummyScheduler.h>
 #include <ripple/nodestore/impl/DatabaseShardImp.h>
 #include <ripple/overlay/Overlay.h>

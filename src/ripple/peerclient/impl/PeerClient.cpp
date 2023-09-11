@@ -25,8 +25,8 @@
 #include <ripple/peerclient/ProofRequester.h>
 #include <ripple/peerclient/TxSetRequester.h>
 #include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/messages.h>
 #include <ripple/protocol/STLedgerEntry.h>
+#include <ripple/protocol/messages.h>
 
 #include <stdexcept>
 

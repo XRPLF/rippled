@@ -21,8 +21,8 @@
 
 #include <ripple/app/main/Application.h>
 #include <ripple/core/JobQueue.h>
-#include <ripple/protocol/digest.h>
 #include <ripple/protocol/LedgerHeader.h>
+#include <ripple/protocol/digest.h>
 #include <ripple/sync/ObjectRequester.h>
 
 namespace ripple {
