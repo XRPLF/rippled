@@ -30,6 +30,8 @@ If you operate an XRP Ledger server, upgrade to version 1.12.0 by September 20, 
 
 On supported platforms, see the [instructions on installing or updating `rippled`](https://xrpl.org/install-rippled.html).
 
+The XRPL Foundation publishes portable binaries, which are drop-in replacements for the `rippled` daemon. [See information and downloads for the portable binaries](https://github.com/XRPLF/rippled-portable-builds#portable-builds-of-the-rippled-server). This will work on most distributions, including Ubuntu 16.04, 18.04, 20.04, and 22.04; CentOS; and others. Please test and open issues on GitHub if there are problems.
+
 
 ## Changelog
 
