@@ -45,8 +45,7 @@ getFeatureValue(
     boost::smatch match;
     boost::regex rx(feature + "=([^;\\s]+)");
     const std::string allFeatures = std::string{header->value()};
-    if (boost::regex_search(allFeatures,
-                            match, rx))
+    if (boost::regex_search(allFeatures, match, rx))
         return {match[1]};
     return {};
 }
@@ -251,8 +250,7 @@ verifyHandshake(
 
     if (auto const iter = headers.find("Network-Time"); iter != headers.end())
     {
-        auto const netTime =
-            [str = iter->value()]() -> TimeKeeper::time_point {
+        auto const netTime = [str = iter->value()]() -> TimeKeeper::time_point {
             TimeKeeper::duration::rep val;
 
             // boost::LexicalCast does not have a specialization for <Out,

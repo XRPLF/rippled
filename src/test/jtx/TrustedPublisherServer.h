@@ -677,7 +677,8 @@ private:
                     // unknown request
                     res.result(boost::beast::http::status::not_found);
                     res.insert("Content-Type", "text/html");
-                    res.body() = "The file '" + std::string(path) + "' was not "
+                    res.body() = "The file '" + std::string(path) +
+                        "' was not "
                         "found";
                 }
 
