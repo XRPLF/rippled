@@ -574,7 +574,7 @@ private:
                 if (ec)
                     break;
 
-                auto path = req.target().to_string();
+                std::string_view const path = req.target();
                 res.insert("Server", "TrustedPublisherServer");
                 res.version(req.version());
                 res.keep_alive(req.keep_alive());
@@ -677,7 +677,8 @@ private:
                     // unknown request
                     res.result(boost::beast::http::status::not_found);
                     res.insert("Content-Type", "text/html");
-                    res.body() = "The file '" + path + "' was not found";
+                    res.body() = "The file '" + std::string(path) + "' was not "
+                        "found";
                 }
 
                 if (prepare)
