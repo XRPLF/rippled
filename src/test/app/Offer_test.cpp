@@ -5095,13 +5095,16 @@ public:
 
         env.fund(XRP(1'000), issuer);
         env.fund(XRP(1'000), maker, taker);
+        env.close();
 
         env.trust(USD(1'000), maker, taker);
         env.trust(EUR(1'000), maker, taker);
+        env.close();
 
         env(pay(issuer, maker, USD(1'000)));
         env(pay(issuer, taker, USD(1'000)));
         env(pay(issuer, maker, EUR(1'000)));
+        env.close();
 
         auto makerUSDBalance = env.balance(maker, USD).value();
         auto takerUSDBalance = env.balance(taker, USD).value();
@@ -5110,20 +5113,24 @@ public:
         auto makerXRPBalance = env.balance(maker, XRP).value();
         auto takerXRPBalance = env.balance(taker, XRP).value();
 
-        TER const err =
-            features[fixFillOrKillOnFlowCross] || !features[featureFlowCross]
-            ? TER(tesSUCCESS)
-            : tecKILLED;
-
         // tfFillOrKill, TakerPays must be filled
         {
+            TER const err = features[fixFillOrKillOnFlowCross] ||
+                    !features[featureFlowCross]
+                ? TER(tesSUCCESS)
+                : tecKILLED;
+
             env(offer(maker, XRP(100), USD(100)));
+            env.close();
+
             env(offer(taker, USD(100), XRP(101)),
                 txflags(tfFillOrKill),
                 ter(err));
+            env.close();
+
             makerXRPBalance -= txfee(env, 1);
             takerXRPBalance -= txfee(env, 1);
-            if (tesSUCCESS == err)
+            if (err == tesSUCCESS)
             {
                 makerUSDBalance -= USD(100);
                 takerUSDBalance += USD(100);
@@ -5133,12 +5140,16 @@ public:
             BEAST_EXPECT(expectOffers(env, taker, 0));
 
             env(offer(maker, USD(100), XRP(100)));
+            env.close();
+
             env(offer(taker, XRP(100), USD(101)),
                 txflags(tfFillOrKill),
                 ter(err));
+            env.close();
+
             makerXRPBalance -= txfee(env, 1);
             takerXRPBalance -= txfee(env, 1);
-            if (tesSUCCESS == err)
+            if (err == tesSUCCESS)
             {
                 makerUSDBalance += USD(100);
                 takerUSDBalance -= USD(100);
@@ -5148,12 +5159,16 @@ public:
             BEAST_EXPECT(expectOffers(env, taker, 0));
 
             env(offer(maker, USD(100), EUR(100)));
+            env.close();
+
             env(offer(taker, EUR(100), USD(101)),
                 txflags(tfFillOrKill),
                 ter(err));
+            env.close();
+
             makerXRPBalance -= txfee(env, 1);
             takerXRPBalance -= txfee(env, 1);
-            if (tesSUCCESS == err)
+            if (err == tesSUCCESS)
             {
                 makerUSDBalance += USD(100);
                 takerUSDBalance -= USD(100);
@@ -5166,8 +5181,12 @@ public:
         // tfFillOrKill + tfSell, TakerGets must be filled
         {
             env(offer(maker, XRP(101), USD(101)));
+            env.close();
+
             env(offer(taker, USD(100), XRP(101)),
                 txflags(tfFillOrKill | tfSell));
+            env.close();
+
             makerUSDBalance -= USD(101);
             takerUSDBalance += USD(101);
             makerXRPBalance += XRP(101).value() - txfee(env, 1);
@@ -5175,8 +5194,12 @@ public:
             BEAST_EXPECT(expectOffers(env, taker, 0));
 
             env(offer(maker, USD(101), XRP(101)));
+            env.close();
+
             env(offer(taker, XRP(100), USD(101)),
                 txflags(tfFillOrKill | tfSell));
+            env.close();
+
             makerUSDBalance += USD(101);
             takerUSDBalance -= USD(101);
             makerXRPBalance -= XRP(101).value() + txfee(env, 1);
@@ -5184,8 +5207,12 @@ public:
             BEAST_EXPECT(expectOffers(env, taker, 0));
 
             env(offer(maker, USD(101), EUR(101)));
+            env.close();
+
             env(offer(taker, EUR(100), USD(101)),
                 txflags(tfFillOrKill | tfSell));
+            env.close();
+
             makerUSDBalance += USD(101);
             takerUSDBalance -= USD(101);
             makerEURBalance -= EUR(101);
@@ -5199,25 +5226,37 @@ public:
         for (auto const flags : {tfFillOrKill, tfFillOrKill + tfSell})
         {
             env(offer(maker, XRP(100), USD(100)));
+            env.close();
+
             env(offer(taker, USD(100), XRP(99)),
                 txflags(flags),
                 ter(tecKILLED));
+            env.close();
+
             makerXRPBalance -= txfee(env, 1);
             takerXRPBalance -= txfee(env, 1);
             BEAST_EXPECT(expectOffers(env, taker, 0));
 
             env(offer(maker, USD(100), XRP(100)));
+            env.close();
+
             env(offer(taker, XRP(100), USD(99)),
                 txflags(flags),
                 ter(tecKILLED));
+            env.close();
+
             makerXRPBalance -= txfee(env, 1);
             takerXRPBalance -= txfee(env, 1);
             BEAST_EXPECT(expectOffers(env, taker, 0));
 
             env(offer(maker, USD(100), EUR(100)));
+            env.close();
+
             env(offer(taker, EUR(100), USD(99)),
                 txflags(flags),
                 ter(tecKILLED));
+            env.close();
+
             makerXRPBalance -= txfee(env, 1);
             takerXRPBalance -= txfee(env, 1);
             BEAST_EXPECT(expectOffers(env, taker, 0));
@@ -5307,15 +5346,15 @@ public:
         FeatureBitset const immediateOfferKilled{featureImmediateOfferKilled};
         FeatureBitset const fixFillOrKill{fixFillOrKillOnFlowCross};
 
-        for (auto const& features : {all - fixFillOrKill, all})
-        {
-            testAll(features - takerDryOffer - immediateOfferKilled);
-            testAll(
-                features - flowCross - takerDryOffer - immediateOfferKilled);
-            testAll(features - flowCross - immediateOfferKilled);
-            testAll(features - rmSmallIncreasedQOffers - immediateOfferKilled);
-            testAll(features);
-        }
+        testAll(all - takerDryOffer - immediateOfferKilled);
+        testAll(all - flowCross - takerDryOffer - immediateOfferKilled);
+        testAll(all - flowCross - immediateOfferKilled);
+        testAll(
+            all - rmSmallIncreasedQOffers - immediateOfferKilled -
+            fixFillOrKill);
+        testAll(all - fixFillOrKill);
+        testAll(all);
+
         testFalseAssert();
     }
 };
