@@ -802,7 +802,8 @@ transactionSubmit(
     Role role,
     std::chrono::seconds validatedLedgerAge,
     Application& app,
-    ProcessTransactionFn const& processTransaction)
+    ProcessTransactionFn const& processTransaction,
+    RPC::SubmitSync sync)
 {
     using namespace detail;
 
@@ -828,8 +829,7 @@ transactionSubmit(
     // Finally, submit the transaction.
     try
     {
-        // FIXME: For performance, should use asynch interface
-        processTransaction(txn.second, isUnlimited(role), true, failType);
+        processTransaction(txn.second, isUnlimited(role), sync, failType);
     }
     catch (std::exception&)
     {
@@ -1038,7 +1038,8 @@ transactionSubmitMultiSigned(
     Role role,
     std::chrono::seconds validatedLedgerAge,
     Application& app,
-    ProcessTransactionFn const& processTransaction)
+    ProcessTransactionFn const& processTransaction,
+    RPC::SubmitSync sync)
 {
     auto const& ledger = app.openLedger().current();
     auto j = app.journal("RPCHandler");
@@ -1211,7 +1212,7 @@ transactionSubmitMultiSigned(
     try
     {
         // FIXME: For performance, should use asynch interface
-        processTransaction(txn.second, isUnlimited(role), true, failType);
+        processTransaction(txn.second, isUnlimited(role), sync, failType);
     }
     catch (std::exception&)
     {
