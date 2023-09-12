@@ -310,6 +310,7 @@ install (
   DESTINATION include/ripple/beast/clock)
 install (
   FILES
+    src/ripple/beast/core/CurrentThreadName.h
     src/ripple/beast/core/LexicalCast.h
     src/ripple/beast/core/List.h
     src/ripple/beast/core/SemanticVersion.h
