@@ -353,7 +353,8 @@ run(int argc, char** argv)
 {
     using namespace std;
 
-    this_thread::set_name("main " + BuildInfo::getVersionString());
+    this_thread::set_name(
+        "main " + BuildInfo::getVersionString().substr(0, 10));
 
     po::variables_map vm;
 

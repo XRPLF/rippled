@@ -62,7 +62,7 @@ Job::queue_time() const
 void
 Job::doJob()
 {
-    this_thread::set_name("doJob: " + mName);
+    this_thread::set_name("doJob: " + mName.substr(0, 8));
     m_loadEvent->start();
     m_loadEvent->setName(mName);
 

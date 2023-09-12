@@ -57,7 +57,10 @@ Database::Database(
             [this](int i) {
                 runningThreads_++;
 
-                this_thread::set_name("prefetch " + std::to_string(i));
+                // pretty unlikely we'll have 6 digit numbers of threads, but
+                // play it safe
+                this_thread::set_name(
+                    "prefetch " + std::to_string(i).substr(0, 6));
 
                 decltype(read_) read;
 

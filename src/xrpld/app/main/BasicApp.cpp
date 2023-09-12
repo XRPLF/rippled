@@ -29,8 +29,10 @@ BasicApp::BasicApp(std::size_t numberOfThreads)
     while (numberOfThreads--)
     {
         threads_.emplace_back([this, numberOfThreads]() {
+            // pretty unlikely we'll have 7 digit numbers of threads, but play
+            // it safe
             ripple::this_thread::set_name(
-                "io svc #" + std::to_string(numberOfThreads));
+                "io svc #" + std::to_string(numberOfThreads).substr(0, 7));
             this->io_service_.run();
         });
     }

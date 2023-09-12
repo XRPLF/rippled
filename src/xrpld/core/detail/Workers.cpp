@@ -209,7 +209,7 @@ Workers::Worker::run()
         for (;;)
         {
             // Put the name back in case the callback changed it
-            this_thread::set_name(threadName_);
+            this_thread::set_name(threadName_.substr(0, 15));
 
             // Acquire a task or "internal task."
             //
@@ -262,7 +262,7 @@ Workers::Worker::run()
         }
 
         // Set inactive thread name.
-        this_thread::set_name("(" + threadName_ + ")");
+        this_thread::set_name("(" + threadName_.substr(0, 13) + ")");
 
         // [1] We will be here when the paused list is popped
         //

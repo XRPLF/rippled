@@ -17,7 +17,9 @@
 */
 //==============================================================================
 
-#include <ripple/basics/ThreadUtilities.h>
+#include <xrpl/basics/ThreadUtilities.h>
+
+#include <cassert>
 #include <stdexcept>
 
 namespace ripple {
@@ -46,6 +48,7 @@ get_name()
 void
 set_name(std::string s)
 {
+    assert(s.size() <= 15);
     s.resize(15);
     if (pthread_setname_np(s.data()) != 0)
         throw std::runtime_error("this_thread::set_name failed\n");
@@ -79,6 +82,7 @@ get_name()
 void
 set_name(std::string s)
 {
+    assert(s.size() <= 15);
     s.resize(15);
     if (pthread_setname_np(pthread_self(), s.data()) != 0)
         throw std::runtime_error("this_thread::set_name failed\n");
@@ -90,11 +94,15 @@ set_name(std::string s)
 
 #ifdef _WIN64
 
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
+#endif
 
+// clang-format off
 #include <memory>
-#include <processthreadsapi.h>
 #include <windows.h>
+#include <processthreadsapi.h>
+// clang-format on
 
 std::string
 get_name(std::thread::native_handle_type t)

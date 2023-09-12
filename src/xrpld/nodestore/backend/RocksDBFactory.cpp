@@ -68,7 +68,7 @@ public:
         std::size_t const id(++n);
         std::stringstream ss;
         ss << "rocksdb #" << id;
-        this_thread::set_name(ss.str());
+        this_thread::set_name(ss.str().substr(0, 15));
 
         (*f)(a);
     }
