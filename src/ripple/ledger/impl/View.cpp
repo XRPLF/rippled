@@ -1531,8 +1531,7 @@ TER
 cleanupOnAccountDelete(
     ApplyView& view,
     Keylet const& ownerDirKeylet,
-    std::function<TER(LedgerEntryType, uint256 const&, std::shared_ptr<SLE>&)>
-        deleter,
+    EntryDeleter const& deleter,
     beast::Journal j,
     std::optional<uint16_t> maxNodesToDelete)
 {
@@ -1567,8 +1566,8 @@ cleanupOnAccountDelete(
 
             // Deleter handles the details of specific account-owned object
             // deletion
-            if (auto const ter = deleter(nodeType, dirEntry, sleItem);
-                ter != tesSUCCESS)
+            auto const [ter, skipEntry] = deleter(nodeType, dirEntry, sleItem);
+            if (ter != tesSUCCESS)
                 return ter;
 
             // dirFirst() and dirNext() are like iterators with exposed
@@ -1580,21 +1579,22 @@ cleanupOnAccountDelete(
             // "iterator state" is invalid.
             //
             //  1. During the process of getting an entry from the
-            //     directory uDirEntry was incremented from 0 to 1.
+            //     directory uDirEntry was incremented from 'it' to 'it'+1.
             //
-            //  2. We then deleted the entry at index 0, which means the
-            //     entry that was at 1 has now moved to 0.
+            //  2. We then deleted the entry at index 'it', which means the
+            //     entry that was at 'it'+1 has now moved to 'it'.
             //
-            //  3. So we verify that uDirEntry is indeed 1.  Then we jam it
-            //     back to zero to "un-invalidate" the iterator.
-            assert(uDirEntry == 1);
-            if (uDirEntry != 1)
+            //  3. So we verify that uDirEntry is indeed 'it'+1.  Then we jam it
+            //     back to 'it' to "un-invalidate" the iterator.
+            assert(uDirEntry >= 1);
+            if (uDirEntry == 0)
             {
                 JLOG(j.error())
                     << "DeleteAccount iterator re-validation failed.";
                 return tefBAD_LEDGER;
             }
-            uDirEntry = 0;
+            if (skipEntry == SkipEntry::No)
+                uDirEntry--;
 
         } while (
             dirNext(view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry));

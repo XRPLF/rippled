@@ -18,8 +18,8 @@
 //==============================================================================
 
 #include <ripple/app/ledger/Ledger.h>
+#include <ripple/basics/ThreadUtilities.h>
 #include <ripple/basics/chrono.h>
-#include <ripple/beast/core/CurrentThreadName.h>
 #include <ripple/json/json_value.h>
 #include <ripple/nodestore/Database.h>
 #include <ripple/protocol/HashPrefix.h>
@@ -63,8 +63,7 @@ Database::Database(
             [this](int i) {
                 runningThreads_++;
 
-                beast::setCurrentThreadName(
-                    "db prefetch #" + std::to_string(i));
+                this_thread::set_name("prefetch " + std::to_string(i));
 
                 decltype(read_) read;
 
