@@ -335,9 +335,11 @@ public:
 
                 auto ret = keypairForSignature(params, error);
                 BEAST_EXPECT(!contains_error(error));
-                BEAST_EXPECT(ret);
-                BEAST_EXPECT(ret->first.size() != 0);
-                BEAST_EXPECT(ret->first == publicKey);
+                if (BEAST_EXPECT(ret))
+                {
+                    BEAST_EXPECT(ret->first.size() != 0);
+                    BEAST_EXPECT(ret->first == publicKey);
+                }
             }
 
             {
@@ -347,9 +349,11 @@ public:
 
                 auto ret = keypairForSignature(params, error);
                 BEAST_EXPECT(!contains_error(error));
-                BEAST_EXPECT(ret);
-                BEAST_EXPECT(ret->first.size() != 0);
-                BEAST_EXPECT(ret->first == publicKey);
+                if (BEAST_EXPECT(ret))
+                {
+                    BEAST_EXPECT(ret->first.size() != 0);
+                    BEAST_EXPECT(ret->first == publicKey);
+                }
             }
 
             {
@@ -359,9 +363,11 @@ public:
 
                 auto ret = keypairForSignature(params, error);
                 BEAST_EXPECT(!contains_error(error));
-                BEAST_EXPECT(ret);
-                BEAST_EXPECT(ret->first.size() != 0);
-                BEAST_EXPECT(ret->first == publicKey);
+                if (BEAST_EXPECT(ret))
+                {
+                    BEAST_EXPECT(ret->first.size() != 0);
+                    BEAST_EXPECT(ret->first == publicKey);
+                }
             }
 
             keyType.emplace("secp256k1");
@@ -376,9 +382,11 @@ public:
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(!contains_error(error));
-            BEAST_EXPECT(ret);
-            BEAST_EXPECT(ret->first.size() != 0);
-            BEAST_EXPECT(ret->first == publicKey);
+            if (BEAST_EXPECT(ret))
+            {
+                BEAST_EXPECT(ret->first.size() != 0);
+                BEAST_EXPECT(ret->first == publicKey);
+            }
         }
 
         {
@@ -390,9 +398,11 @@ public:
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(!contains_error(error));
-            BEAST_EXPECT(ret);
-            BEAST_EXPECT(ret->first.size() != 0);
-            BEAST_EXPECT(ret->first == publicKey);
+            if (BEAST_EXPECT(ret))
+            {
+                BEAST_EXPECT(ret->first.size() != 0);
+                BEAST_EXPECT(ret->first == publicKey);
+            }
         }
 
         {
@@ -404,9 +414,11 @@ public:
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(!contains_error(error));
-            BEAST_EXPECT(ret);
-            BEAST_EXPECT(ret->first.size() != 0);
-            BEAST_EXPECT(ret->first == publicKey);
+            if (BEAST_EXPECT(ret))
+            {
+                BEAST_EXPECT(ret->first.size() != 0);
+                BEAST_EXPECT(ret->first == publicKey);
+            }
         }
     }
 
@@ -754,9 +766,11 @@ public:
                 auto ret = keypairForSignature(params, error);
 
                 BEAST_EXPECT(!contains_error(error));
-                BEAST_EXPECT(ret);
-                BEAST_EXPECT(ret->first.size() != 0);
-                BEAST_EXPECT(toBase58(calcAccountID(ret->first)) == addr);
+                if (BEAST_EXPECT(ret))
+                {
+                    BEAST_EXPECT(ret->first.size() != 0);
+                    BEAST_EXPECT(toBase58(calcAccountID(ret->first)) == addr);
+                }
             }
 
             {
@@ -784,9 +798,11 @@ public:
                 auto ret = keypairForSignature(params, error);
 
                 BEAST_EXPECT(!contains_error(error));
-                BEAST_EXPECT(ret);
-                BEAST_EXPECT(ret->first.size() != 0);
-                BEAST_EXPECT(toBase58(calcAccountID(ret->first)) == addr);
+                if (BEAST_EXPECT(ret))
+                {
+                    BEAST_EXPECT(ret->first.size() != 0);
+                    BEAST_EXPECT(toBase58(calcAccountID(ret->first)) == addr);
+                }
             }
 
             {
