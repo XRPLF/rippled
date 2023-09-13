@@ -26,7 +26,7 @@ namespace ripple {
 
 namespace detail {
 
-static std::unordered_map<
+std::unordered_map<
     TERUnderlyingType,
     std::pair<char const* const, char const* const>> const&
 transResults()

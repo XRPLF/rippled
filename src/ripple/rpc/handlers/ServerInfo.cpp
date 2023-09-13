@@ -25,6 +25,7 @@
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/LedgerFormats.h>
 #include <ripple/protocol/SField.h>
+#include <ripple/protocol/TER.h>
 #include <ripple/protocol/TxFormats.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/protocol/jss.h>
@@ -285,6 +286,13 @@ private:
         }
 
         ret[jss::TRANSACTION_RESULTS] = Json::objectValue;
+
+        for (const auto& pair : detail::transResults())
+        {
+            ret[jss::TRANSACTION_RESULTS][STR(pair.second.first)] =
+                std::stoi(STR(pair.first));
+        }
+
         // for (auto [value, name] : magic_enum::enum_entries<TELcodes>())
         //     ret[jss::TRANSACTION_RESULTS][STR(name)] = std::stoi(STR(value));
         // for (auto [value, name] : magic_enum::enum_entries<TEMcodes>())

@@ -617,6 +617,15 @@ isTecClaim(TER x)
     return ((x) >= tecCLAIM);
 }
 
+namespace detail {
+
+std::unordered_map<
+    TERUnderlyingType,
+    std::pair<char const* const, char const* const>> const&
+transResults();
+
+}  // namespace detail
+
 bool
 transResultInfo(TER code, std::string& token, std::string& text);
 
