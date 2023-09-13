@@ -110,13 +110,13 @@ Currently (prior to the release of 2.0), it is available as a "beta" version, me
 
 Since `api_version` 2 is in "beta", breaking changes can be made at any time.
 
-#### V2 account_info response
+#### Modifications to account_info response in V2
 
 - `signer_lists` is returned in the root of the response. Previously, in API version 1, it was nested under `account_data`. (https://github.com/XRPLF/rippled/pull/3770)
 - When using an invalid `signer_lists` value, the API now returns an "invalidParams" error. (https://github.com/XRPLF/rippled/pull/4585)
   - (`signer_lists` must be a boolean. In API version 1, strings are accepted and may return a normal response - as if `signer_lists` were `true`.)
 
-#### V2 [account_tx](https://xrpl.org/account_tx.html#account_tx) response
+#### Modifications to [account_tx](https://xrpl.org/account_tx.html#account_tx) response in V2
 
 - Using `ledger_index_min`, `ledger_index_max`, and `ledger_index` returns `invalidParams` because if you use `ledger_index_min` or `ledger_index_max`, then it does not make sense to also specify `ledger_index`. Previously, in API version 1, no error was returned. (https://github.com/XRPLF/rippled/pull/4571)
   - The same applies for `ledger_index_min`, `ledger_index_max`, and `ledger_hash`. (https://github.com/XRPLF/rippled/issues/4545#issuecomment-1565065579)
@@ -128,7 +128,7 @@ Since `api_version` 2 is in "beta", breaking changes can be made at any time.
 
 - Attempting to use a non-boolean value (such as a string) for the `binary` or `forward` parameters returns `invalidParams` (`rpcINVALID_PARAMS`). Previously, in API version 1, no error was returned. (https://github.com/XRPLF/rippled/pull/4620)
 
-#### V2 [noripple_check](https://xrpl.org/noripple_check.html#noripple_check) response
+#### Modifications to [noripple_check](https://xrpl.org/noripple_check.html#noripple_check) response in V2
 
 ##### In progress
 
