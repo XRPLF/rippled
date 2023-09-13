@@ -100,7 +100,9 @@ Changes below this point are in development.
 
 ## API Version 2
 
-At the time of writing, this version is expected to be introduced in `rippled` version 1.13. It is currently available as a "beta" version, and can be enabled with a config setting in `rippled.cfg`:
+At the time of writing, this version is expected to be introduced in `rippled` version 2.0.
+
+Currently (prior to the release of 2.0), it is available as a "beta" version, meaning it can be enabled with a config setting in `rippled.cfg`:
 ```
 [beta_rpc_api]
 1
