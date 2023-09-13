@@ -47,87 +47,89 @@ private:
         return ss.str();
     }
 
+    std::string
+    translate(std::string inp)
+    {
+        auto replace = [&](const char* f, const char* r) -> std::string {
+            std::string out = inp;
+            boost::replace_all(out, f, r);
+            return out;
+        };
+
+        auto find = [&](const char* s) -> bool {
+            return inp.find(s) != std::string::npos;
+        };
+
+        if (find("UINT"))
+        {
+            if (find("256") || find("160") || find("128"))
+                return replace("UINT", "Hash");
+            else
+                return replace("UINT", "UInt");
+        }
+
+        if (inp == "OBJECT")
+            return "STObject";
+        if (inp == "ARRAY")
+            return "STArray";
+        if (inp == "AMM")
+            return "AMM";
+        if (inp == "ACCOUNT")
+            return "AccountID";
+        if (inp == "LEDGERENTRY")
+            return "LedgerEntry";
+        if (inp == "NOTPRESENT")
+            return "NotPresent";
+        if (inp == "PATHSET")
+            return "PathSet";
+        if (inp == "VL")
+            return "Blob";
+        if (inp == "DIR_NODE")
+            return "DirectoryNode";
+        if (inp == "PAYCHAN")
+            return "PayChannel";
+
+        static const std::map<std::string, std::string>
+            capitalization_exceptions = {
+                {"NFTOKEN", "NFToken"},
+                {"UNL", "UNL"},
+                {"XCHAIN", "XChain"},
+                {"ID", "ID"},
+                {"AMM", "AMM"},
+                {"URITOKEN", "URIToken"},
+                {"URI", "URI"}};
+
+        std::string out;
+        size_t pos = 0;
+        for (;;)
+        {
+            pos = inp.find("_");
+            if (pos == std::string::npos)
+                pos = inp.size();
+            std::string token = inp.substr(0, pos);
+            if (auto const e = capitalization_exceptions.find(token);
+                e != capitalization_exceptions.end())
+                out += e->second;
+            else if (token.size() > 1)
+            {
+                boost::algorithm::to_lower(token);
+                token.data()[0] -= ('a' - 'A');
+                out += token;
+            }
+            else
+                out += token;
+            if (pos == inp.size())
+                break;
+            inp = inp.substr(pos + 1);
+        }
+        return out;
+    };
+
     Json::Value
     generate()
     {
         Json::Value ret{Json::objectValue};
         ret[jss::TYPES] = Json::objectValue;
-
-        auto const translate = [](std::string inp) -> std::string {
-            auto replace = [&](const char* f, const char* r) -> std::string {
-                std::string out = inp;
-                boost::replace_all(out, f, r);
-                return out;
-            };
-
-            auto find = [&](const char* s) -> bool {
-                return inp.find(s) != std::string::npos;
-            };
-
-            if (find("UINT"))
-            {
-                if (find("256") || find("160") || find("128"))
-                    return replace("UINT", "Hash");
-                else
-                    return replace("UINT", "UInt");
-            }
-
-            if (inp == "OBJECT")
-                return "STObject";
-            if (inp == "ARRAY")
-                return "STArray";
-            if (inp == "AMM")
-                return "AMM";
-            if (inp == "ACCOUNT")
-                return "AccountID";
-            if (inp == "LEDGERENTRY")
-                return "LedgerEntry";
-            if (inp == "NOTPRESENT")
-                return "NotPresent";
-            if (inp == "PATHSET")
-                return "PathSet";
-            if (inp == "VL")
-                return "Blob";
-            if (inp == "DIR_NODE")
-                return "DirectoryNode";
-            if (inp == "PAYCHAN")
-                return "PayChannel";
-
-            static const std::map<std::string, std::string>
-                capitalization_exceptions = {
-                    {"NFTOKEN", "NFToken"},
-                    {"UNL", "UNL"},
-                    {"XCHAIN", "XChain"},
-                    {"ID", "ID"},
-                    {"AMM", "AMM"},
-                    {"URITOKEN", "URIToken"},
-                    {"URI", "URI"}};
-
-            std::string out;
-            size_t pos = 0;
-            for (;;)
-            {
-                pos = inp.find("_");
-                if (pos == std::string::npos)
-                    pos = inp.size();
-                std::string token = inp.substr(0, pos);
-                if (auto const e = capitalization_exceptions.find(token);
-                    e != capitalization_exceptions.end())
-                    out += e->second;
-                else if (token.size() > 1)
-                {
-                    boost::algorithm::to_lower(token);
-                    token.data()[0] -= ('a' - 'A');
-                    out += token;
-                }
-                else
-                    out += token;
-                if (pos == inp.size())
-                    break;
-                inp = inp.substr(pos + 1);
-            }
-            return out;
-        };
 
         ret[jss::TYPES]["Done"] = -1;
         std::map<int32_t, std::string> type_map{{-1, "Done"}};
@@ -182,7 +184,7 @@ private:
             Json::Value v = Json::objectValue;
             v[jss::nth] = 1;
             v[jss::isVLEncoded] = false;
-            v[jss::isSerialized] = false;
+            v[jss::isSerialized] = true;
             v[jss::isSigningField] = true;
             v[jss::type] = "STObject";
             a[1U] = v;
@@ -195,35 +197,9 @@ private:
             Json::Value v = Json::objectValue;
             v[jss::nth] = 1;
             v[jss::isVLEncoded] = false;
-            v[jss::isSerialized] = false;
+            v[jss::isSerialized] = true;
             v[jss::isSigningField] = true;
             v[jss::type] = "STArray";
-            a[1U] = v;
-            ret[jss::FIELDS][i++] = a;
-        }
-
-        {
-            Json::Value a = Json::arrayValue;
-            a[0U] = "hash";
-            Json::Value v = Json::objectValue;
-            v[jss::nth] = 257;
-            v[jss::isVLEncoded] = false;
-            v[jss::isSerialized] = false;
-            v[jss::isSigningField] = false;
-            v[jss::type] = "Hash256";
-            a[1U] = v;
-            ret[jss::FIELDS][i++] = a;
-        }
-
-        {
-            Json::Value a = Json::arrayValue;
-            a[0U] = "index";
-            Json::Value v = Json::objectValue;
-            v[jss::nth] = 258;
-            v[jss::isVLEncoded] = false;
-            v[jss::isSerialized] = false;
-            v[jss::isSigningField] = false;
-            v[jss::type] = "Hash256";
             a[1U] = v;
             ret[jss::FIELDS][i++] = a;
         }
@@ -261,22 +237,23 @@ private:
 
             Json::Value innerObj = Json::objectValue;
 
-            uint32_t fc = code & 0xFFU;
-            uint32_t tc = code >> 16U;
+            uint32_t type = f->fieldType;
 
-            innerObj[jss::nth] = fc;
+            innerObj[jss::nth] = f->fieldValue;
 
             innerObj[jss::isVLEncoded] =
-                (tc == 7U /* Blob       */ || tc == 8U /* AccountID  */ ||
-                 tc == 19U /* Vector256  */);
+                (type == 7U /* Blob       */ || type == 8U /* AccountID  */ ||
+                 type == 19U /* Vector256  */);
 
             innerObj[jss::isSerialized] =
-                (tc <
-                 10000); /* TRANSACTION, LEDGER_ENTRY, VALIDATION, METADATA */
+                (type < 10000 && f->fieldName != "hash" &&
+                 f->fieldName !=
+                     "index"); /* hash, index, TRANSACTION, LEDGER_ENTRY,
+                                  VALIDATION, METADATA */
 
             innerObj[jss::isSigningField] = f->shouldInclude(false);
 
-            innerObj[jss::type] = type_map[tc];
+            innerObj[jss::type] = type_map[type];
 
             Json::Value innerArray = Json::arrayValue;
             innerArray[0U] = f->fieldName;
