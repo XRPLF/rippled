@@ -20,7 +20,6 @@
 #include <ripple/protocol/TER.h>
 #include <boost/range/adaptor/transformed.hpp>
 #include <type_traits>
-#include <unordered_map>
 
 namespace ripple {
 
