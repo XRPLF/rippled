@@ -313,7 +313,7 @@ var searchData=
   ['testdbpath_21698',['testDbPath',['../classripple_1_1Config__test.html#a09a17d63def9ef6f3c093a27b335e541',1,'ripple::Config_test']]],
   ['testdecimal_21699',['testDecimal',['../classripple_1_1XRPAmount__test.html#a0a7be222aadb5969b963897b3ee86c4e',1,'ripple::XRPAmount_test']]],
   ['testdefaultamount_21700',['testDefaultAmount',['../structripple_1_1test_1_1PayChan__test.html#a8cb2af1277398d162b9c793a0946af29',1,'ripple::test::PayChan_test']]],
-  ['testdefaultripple_21701',['testDefaultRipple',['../classripple_1_1test_1_1NoRipple__test.html#a55496039db8360a732a42555bbef8309',1,'ripple::test::NoRipple_test']]],
+  ['testdefaultripple_21701',['testDefaultRipple',['../classripple_1_1test_1_1NoRipple__test.html#a1482d5d5baf787c2718e856976c569dd',1,'ripple::test::NoRipple_test']]],
   ['testdeletedefaultline_21702',['testDeleteDefaultLine',['../classripple_1_1Clawback__test.html#a08400de55a539274d5836c5c83772267',1,'ripple::Clawback_test']]],
   ['testdeletedofferissuer_21703',['testDeletedOfferIssuer',['../classripple_1_1test_1_1Offer__test.html#adf826d70da3bac7b08ebe30c6f259b53',1,'ripple::test::Offer_test']]],
   ['testdelivermin_21704',['testDeliverMin',['../structripple_1_1test_1_1AMMExtended__test.html#a426474fae47ee1d7605065a003aaedc1',1,'ripple::test::AMMExtended_test']]],
