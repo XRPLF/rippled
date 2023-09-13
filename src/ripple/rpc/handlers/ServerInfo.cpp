@@ -24,32 +24,15 @@
 #include <ripple/json/json_writer.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/LedgerFormats.h>
-#include <ripple/protocol/digest.h>
 #include <ripple/protocol/SField.h>
+#include <ripple/protocol/TxFormats.h>
+#include <ripple/protocol/digest.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/Role.h>
 #include <ripple/rpc/impl/TransactionSign.h>
 #include <boost/algorithm/string.hpp>
-#include <magic/magic_enum.h>
 #include <sstream>
-
-#define MAGIC_ENUM(x)                           \
-    template <>                                 \
-    struct magic_enum::customize::enum_range<x> \
-    {                                           \
-        static constexpr int min = -20000;      \
-        static constexpr int max = 20000;       \
-    };
-
-MAGIC_ENUM(ripple::SerializedTypeID);
-MAGIC_ENUM(ripple::LedgerEntryType);
-MAGIC_ENUM(ripple::TELcodes);
-MAGIC_ENUM(ripple::TEMcodes);
-MAGIC_ENUM(ripple::TEFcodes);
-MAGIC_ENUM(ripple::TERcodes);
-MAGIC_ENUM(ripple::TEScodes);
-MAGIC_ENUM(ripple::TECcodes);
 
 namespace ripple {
 
@@ -147,11 +130,11 @@ private:
 
         ret[jss::TYPES]["Done"] = -1;
         std::map<int32_t, std::string> type_map{{-1, "Done"}};
-        for (auto [value, name] : magic_enum::enum_entries<SerializedTypeID>())
+        for (const auto& pair : sTypeMap)
         {
             std::string type_name =
-                translate(STR(name).substr(4) /* remove STI_ */);
-            int32_t type_value = std::stoi(STR(value));
+                translate(STR(pair.first).substr(4) /* remove STI_ */);
+            int32_t type_value = std::stoi(STR(pair.second));
             ret[jss::TYPES][type_name] = type_value;
             type_map[type_value] = type_name;
         }
@@ -159,10 +142,9 @@ private:
         ret[jss::LEDGER_ENTRY_TYPES] = Json::objectValue;
         ret[jss::LEDGER_ENTRY_TYPES][jss::Invalid] = -1;
 
-        for (auto [value, name] : magic_enum::enum_entries<LedgerEntryType>())
-            ret[jss::LEDGER_ENTRY_TYPES]
-               [translate(STR(name).substr(2) /* remove lt_ */)] =
-                   std::stoi(STR(value));
+        for (const auto& pair : LedgerFormats::getInstance().getNamesAndTypes())
+            ret[jss::LEDGER_ENTRY_TYPES][STR(pair.first)] =
+                std::stoi(STR(pair.second));
 
         ret[jss::FIELDS] = Json::arrayValue;
 
@@ -303,47 +285,30 @@ private:
         }
 
         ret[jss::TRANSACTION_RESULTS] = Json::objectValue;
-        for (auto [value, name] : magic_enum::enum_entries<TELcodes>())
-            ret[jss::TRANSACTION_RESULTS][STR(name)] = std::stoi(STR(value));
-        for (auto [value, name] : magic_enum::enum_entries<TEMcodes>())
-            ret[jss::TRANSACTION_RESULTS][STR(name)] = std::stoi(STR(value));
-        for (auto [value, name] : magic_enum::enum_entries<TEFcodes>())
-            ret[jss::TRANSACTION_RESULTS][STR(name)] = std::stoi(STR(value));
-        for (auto [value, name] : magic_enum::enum_entries<TERcodes>())
-            ret[jss::TRANSACTION_RESULTS][STR(name)] = std::stoi(STR(value));
-        for (auto [value, name] : magic_enum::enum_entries<TEScodes>())
-            ret[jss::TRANSACTION_RESULTS][STR(name)] = std::stoi(STR(value));
-        for (auto [value, name] : magic_enum::enum_entries<TECcodes>())
-            ret[jss::TRANSACTION_RESULTS][STR(name)] = std::stoi(STR(value));
-
-
-        auto const translate_tt = [](std::string inp) -> std::string {
-            if (inp == "PaychanClaim")
-                return "PaymentChannelClaim";
-            if (inp == "PaychanCreate")
-                return "PaymentChannelCreate";
-            if (inp == "PaychanFund")
-                return "PaymentChannelFund";
-            if (inp == "RegularKeySet")
-                return "SetRegularKey";
-            if (inp == "HookSet")
-                return "SetHook";
-            return inp;
-        };
+        // for (auto [value, name] : magic_enum::enum_entries<TELcodes>())
+        //     ret[jss::TRANSACTION_RESULTS][STR(name)] = std::stoi(STR(value));
+        // for (auto [value, name] : magic_enum::enum_entries<TEMcodes>())
+        //     ret[jss::TRANSACTION_RESULTS][STR(name)] = std::stoi(STR(value));
+        // for (auto [value, name] : magic_enum::enum_entries<TEFcodes>())
+        //     ret[jss::TRANSACTION_RESULTS][STR(name)] = std::stoi(STR(value));
+        // for (auto [value, name] : magic_enum::enum_entries<TERcodes>())
+        //     ret[jss::TRANSACTION_RESULTS][STR(name)] = std::stoi(STR(value));
+        // for (auto [value, name] : magic_enum::enum_entries<TEScodes>())
+        //     ret[jss::TRANSACTION_RESULTS][STR(name)] = std::stoi(STR(value));
+        // for (auto [value, name] : magic_enum::enum_entries<TECcodes>())
+        //     ret[jss::TRANSACTION_RESULTS][STR(name)] = std::stoi(STR(value));
 
         ret[jss::TRANSACTION_TYPES] = Json::objectValue;
         ret[jss::TRANSACTION_TYPES][jss::Invalid] = -1;
-        for (auto [value, name] : magic_enum::enum_entries<TxType>())
-            ret[jss::TRANSACTION_TYPES][translate_tt(translate(STR(name).substr(2)))] =
-                std::stoi(STR(value));
+        for (const auto& pair : TxFormats::getInstance().getNamesAndTypes())
+            ret[jss::TRANSACTION_TYPES][STR(pair.first)] =
+                std::stoi(STR(pair.second));
 
         // generate hash
         {
             const std::string out = Json::FastWriter().write(ret);
-            defsHash = 
-            ripple::sha512Half(
-                ripple::Slice { out.data(), out.size() }
-            );
+            defsHash =
+                ripple::sha512Half(ripple::Slice{out.data(), out.size()});
             ret[jss::hash] = to_string(*defsHash);
         }
 
@@ -357,8 +322,7 @@ public:
     Definitions() : defs(generate()){};
 
     bool
-    hashMatches(uint256 hash)
-    const
+    hashMatches(uint256 hash) const
     {
         return defsHash && *defsHash == hash;
     }
@@ -378,7 +342,8 @@ doServerDefinitions(RPC::JsonContext& context)
     uint256 hash;
     if (params.isMember(jss::hash))
     {
-        if (!params[jss::hash].isString() || !hash.parseHex(params[jss::hash].asString()))
+        if (!params[jss::hash].isString() ||
+            !hash.parseHex(params[jss::hash].asString()))
             return RPC::invalid_field_error(jss::hash);
     }
 
