@@ -17,34 +17,32 @@
 */
 //==============================================================================
 
-#include <ripple/rpc/NFTSyntheticSerializer.h>
+#ifndef RIPPLE_PROTOCOL_SERIALIZE_H_INCLUDED
+#define RIPPLE_PROTOCOL_SERIALIZE_H_INCLUDED
 
-#include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/app/ledger/OpenLedger.h>
-#include <ripple/app/misc/Transaction.h>
-#include <ripple/ledger/View.h>
-#include <ripple/net/RPCErr.h>
-#include <ripple/protocol/AccountID.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/rpc/Context.h>
-#include <ripple/rpc/NFTokenID.h>
-#include <ripple/rpc/NFTokenOfferID.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
-#include <boost/algorithm/string/case_conv.hpp>
+#include <ripple/basics/strHex.h>
+#include <ripple/protocol/STObject.h>
+#include <ripple/protocol/Serializer.h>
 
 namespace ripple {
-namespace RPC {
 
-void
-insertNFTSyntheticInJson(
-    Json::Value& response,
-    RPC::JsonContext const& context,
-    std::shared_ptr<STTx const> const& transaction,
-    TxMeta const& transactionMeta)
+/** Serialize an object to a blob. */
+template <class Object>
+Blob
+serializeBlob(Object const& o)
 {
-    insertNFTokenID(response[jss::meta], transaction, transactionMeta);
-    insertNFTokenOfferID(response[jss::meta], transaction, transactionMeta);
+    Serializer s;
+    o.add(s);
+    return s.peekData();
 }
 
-}  // namespace RPC
+/** Serialize an object to a hex string. */
+inline std::string
+serializeHex(STObject const& o)
+{
+    return strHex(serializeBlob(o));
+}
+
 }  // namespace ripple
+
+#endif

@@ -28,6 +28,7 @@
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/SOTemplate.h>
 #include <ripple/protocol/STAmount.h>
+#include <ripple/protocol/STIssue.h>
 #include <ripple/protocol/STPathSet.h>
 #include <ripple/protocol/STVector256.h>
 #include <ripple/protocol/impl/STVar.h>
@@ -361,6 +362,8 @@ public:
 
     void
     setFieldAmount(SField const& field, STAmount const&);
+    void
+    setFieldIssue(SField const& field, STIssue const&);
     void
     setFieldPathSet(SField const& field, STPathSet const&);
     void

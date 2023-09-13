@@ -136,7 +136,7 @@ XRPNotCreated::visitEntry(
 
 bool
 XRPNotCreated::finalize(
-    STTx const&,
+    STTx const& tx,
     TER const,
     XRPAmount const fee,
     ReadView const&,
@@ -321,7 +321,13 @@ AccountRootsNotDeleted::finalize(
     ReadView const&,
     beast::Journal const& j)
 {
-    if (tx.getTxnType() == ttACCOUNT_DELETE && result == tesSUCCESS)
+    // AMM account root can be deleted as the result of AMM withdraw/delete
+    // transaction when the total AMM LP Tokens balance goes to 0.
+    // A successful AccountDelete or AMMDelete MUST delete exactly
+    // one account root.
+    if ((tx.getTxnType() == ttACCOUNT_DELETE ||
+         tx.getTxnType() == ttAMM_DELETE) &&
+        result == tesSUCCESS)
     {
         if (accountsDeleted_ == 1)
             return true;
@@ -334,6 +340,13 @@ AccountRootsNotDeleted::finalize(
                                "succeeded but deleted multiple accounts!";
         return false;
     }
+
+    // A successful AMMWithdraw MAY delete one account root
+    // when the total AMM LP Tokens balance goes to 0. Not every AMM withdraw
+    // deletes the AMM account, accountsDeleted_ is set if it is deleted.
+    if (tx.getTxnType() == ttAMM_WITHDRAW && result == tesSUCCESS &&
+        accountsDeleted_ == 1)
+        return true;
 
     if (accountsDeleted_ == 0)
         return true;
@@ -373,6 +386,7 @@ LedgerEntryTypesMatch::visitEntry(
             case ltNEGATIVE_UNL:
             case ltNFTOKEN_PAGE:
             case ltNFTOKEN_OFFER:
+            case ltAMM:
                 break;
             default:
                 invalidTypeAdded_ = true;
@@ -473,7 +487,8 @@ ValidNewAccountRoot::finalize(
     }
 
     // From this point on we know exactly one account was created.
-    if (tx.getTxnType() == ttPAYMENT && result == tesSUCCESS)
+    if ((tx.getTxnType() == ttPAYMENT || tx.getTxnType() == ttAMM_CREATE) &&
+        result == tesSUCCESS)
     {
         std::uint32_t const startingSeq{
             view.rules().enabled(featureDeletableAccounts) ? view.seq() : 1};
@@ -488,7 +503,8 @@ ValidNewAccountRoot::finalize(
     }
 
     JLOG(j.fatal()) << "Invariant failed: account root created "
-                       "by a non-Payment or by an unsuccessful transaction";
+                       "by a non-Payment, by an unsuccessful transaction, "
+                       "or by AMM";
     return false;
 }
 

@@ -17,40 +17,23 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_NFTSYNTHETICSERIALIZER_H_INCLUDED
-#define RIPPLE_RPC_NFTSYNTHETICSERIALIZER_H_INCLUDED
-
-#include <ripple/protocol/Protocol.h>
-#include <ripple/protocol/STBase.h>
-
-#include <functional>
-#include <memory>
-
-namespace Json {
-class Value;
-}
+#ifndef RIPPLE_BASICS_SUBMITSYNC_H_INCLUDED
+#define RIPPLE_BASICS_SUBMITSYNC_H_INCLUDED
 
 namespace ripple {
-
-class TxMeta;
-class STTx;
-
 namespace RPC {
 
-struct JsonContext;
-
 /**
-   Adds common synthetic fields to transaction-related JSON responses
-
-   @{
+ * Possible values for defining synchronous behavior of the transaction
+ * submission API.
+ *   1) sync (default): Process transactions in a batch immediately,
+ *       and return only once the transaction has been processed.
+ *   2) async: Put transaction into the batch for the next processing
+ *       interval and return immediately.
+ *   3) wait: Put transaction into the batch for the next processing
+ *       interval and return only after it is processed.
  */
-void
-insertNFTSyntheticInJson(
-    Json::Value&,
-    RPC::JsonContext const&,
-    std::shared_ptr<STTx const> const&,
-    TxMeta const&);
-/** @} */
+enum class SubmitSync { sync, async, wait };
 
 }  // namespace RPC
 }  // namespace ripple

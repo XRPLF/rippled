@@ -28,10 +28,12 @@
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/app/misc/ValidatorList.h>
 #include <ripple/app/tx/apply.h>
+#include <ripple/basics/SubmitSync.h>
 #include <ripple/basics/UptimeClock.h>
 #include <ripple/basics/base64.h>
 #include <ripple/basics/random.h>
 #include <ripple/basics/safe_cast.h>
+#include <ripple/beast/clock/abstract_clock.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <ripple/beast/core/SemanticVersion.h>
 #include <ripple/nodestore/DatabaseShard.h>
@@ -39,13 +41,14 @@
 #include <ripple/overlay/impl/PeerImp.h>
 #include <ripple/overlay/impl/Tuning.h>
 #include <ripple/overlay/predicates.h>
+#include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/digest.h>
 
-#include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/beast/core/ostream.hpp>
 
 #include <algorithm>
+#include <chrono>
 #include <memory>
 #include <mutex>
 #include <numeric>
@@ -176,7 +179,7 @@ PeerImp::run()
     if (auto const iter = headers_.find("Closed-Ledger");
         iter != headers_.end())
     {
-        closed = parseLedgerHash(iter->value().to_string());
+        closed = parseLedgerHash(iter->value());
 
         if (!closed)
             fail("Malformed handshake data (1)");
@@ -185,7 +188,7 @@ PeerImp::run()
     if (auto const iter = headers_.find("Previous-Ledger");
         iter != headers_.end())
     {
-        previous = parseLedgerHash(iter->value().to_string());
+        previous = parseLedgerHash(iter->value());
 
         if (!previous)
             fail("Malformed handshake data (2)");
@@ -372,8 +375,8 @@ std::string
 PeerImp::getVersion() const
 {
     if (inbound_)
-        return headers_["User-Agent"].to_string();
-    return headers_["Server"].to_string();
+        return headers_["User-Agent"];
+    return headers_["Server"];
 }
 
 Json::Value
@@ -399,8 +402,8 @@ PeerImp::json()
     if (auto const d = domain(); !d.empty())
         ret[jss::server_domain] = domain();
 
-    if (auto const nid = headers_["Network-ID"].to_string(); !nid.empty())
-        ret[jss::network_id] = nid;
+    if (auto const nid = headers_["Network-ID"]; !nid.empty())
+        ret[jss::network_id] = std::string(nid);
 
     ret[jss::load] = usage_.balance();
 
@@ -839,7 +842,7 @@ PeerImp::name() const
 std::string
 PeerImp::domain() const
 {
-    return headers_["Server-Domain"].to_string();
+    return headers_["Server-Domain"];
 }
 
 //------------------------------------------------------------------------------
@@ -1992,6 +1995,10 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
     JLOG(p_journal_.trace())
         << "Proposal: " << (isTrusted ? "trusted" : "untrusted");
 
+    std::optional<LedgerIndex> ledgerSeq;
+    if (set.has_ledgerseq())
+        ledgerSeq = set.ledgerseq();
+
     auto proposal = RCLCxPeerPos(
         publicKey,
         sig,
@@ -2002,7 +2009,9 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
             proposeHash,
             closeTime,
             app_.timeKeeper().closeTime(),
-            calcNodeID(app_.validatorManifests().getMasterKey(publicKey))});
+            calcNodeID(app_.validatorManifests().getMasterKey(publicKey)),
+            ledgerSeq,
+            beast::get_abstract_clock<std::chrono::steady_clock>()});
 
     std::weak_ptr<PeerImp> weak = shared_from_this();
     app_.getJobQueue().addJob(
@@ -3109,7 +3118,11 @@ PeerImp::checkTransaction(
 
         bool const trusted(flags & SF_TRUSTED);
         app_.getOPs().processTransaction(
-            tx, trusted, false, NetworkOPs::FailHard::no);
+            tx,
+            trusted,
+            RPC::SubmitSync::async,
+            false,
+            NetworkOPs::FailHard::no);
     }
     catch (std::exception const& ex)
     {

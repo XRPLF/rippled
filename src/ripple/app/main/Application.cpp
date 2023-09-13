@@ -602,7 +602,7 @@ public:
         return *m_networkOPs;
     }
 
-    virtual ServerHandlerImp&
+    virtual ServerHandler&
     getServerHandler() override
     {
         assert(serverHandler_);
@@ -1527,6 +1527,7 @@ ApplicationImp::start(bool withTimers)
     {
         setSweepTimer();
         setEntropyTimer();
+        m_networkOPs->setBatchApplyTimer();
     }
 
     m_io_latency_sampler.start();

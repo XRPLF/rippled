@@ -36,41 +36,44 @@ History server for XRP Ledger
 %setup -c -n rippled
 
 %build
-rm -rf ~/.conan/profiles/default
+
+source /opt/rh/devtoolset-11/enable
+source /opt/rh/rh-python38/enable
+
+pip install "conan<2"
+
+conan profile new default --detect
+conan profile update settings.compiler.cppstd=20 default
+conan profile update settings.compiler.libcxx=libstdc++11 default
+
+cd rippled
+
+conan export external/snappy snappy/1.1.10@
+conan export external/soci soci/4.0.3@
+
+mkdir -p bld.rippled
+pushd bld.rippled
 
 cp /opt/libcstd/libstdc++.so.6.0.22 /usr/lib64
 cp /opt/libcstd/libstdc++.so.6.0.22 /lib64
 ln -sf /usr/lib64/libstdc++.so.6.0.22 /usr/lib64/libstdc++.so.6
 ln -sf /lib64/libstdc++.so.6.0.22 /usr/lib64/libstdc++.so.6
 
-source /opt/rh/rh-python38/enable
-pip install "conan<2"
-conan profile new default --detect
-conan profile update settings.compiler.libcxx=libstdc++11 default
-conan profile update settings.compiler.cppstd=20 default
-
-cd rippled
-
-mkdir -p bld.rippled
-conan export external/snappy snappy/1.1.9@
-
-pushd bld.rippled
 conan install .. \
-     --settings build_type=Release \
-     --output-folder . \
-     --build missing
+    --profile default \
+    --output-folder . \
+    --build missing \
+    --settings build_type=Release
 
-cmake -G Ninja \
-     -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
-     -DCMAKE_INSTALL_PREFIX=%{_prefix} \
-     -DCMAKE_BUILD_TYPE=Release \
-     -Dunity=OFF \
-     -Dstatic=ON \
-     -Dvalidator_keys=ON \
-     -DCMAKE_VERBOSE_MAKEFILE=ON \
-     ..
+cmake .. \
+    -DCMAKE_BUILD_TYPE=Release \
+    -Dvalidator_keys=ON \
+    -DCMAKE_INSTALL_PREFIX=%{_prefix} \
+    -DCMAKE_VERBOSE_MAKEFILE=ON \
+    -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake
 
 cmake --build . --parallel $(nproc) --target rippled --target validator-keys
+
 popd
 
 mkdir -p bld.rippled-reporting
@@ -83,16 +86,16 @@ conan install .. \
      --settings compiler.cppstd=17 \
      --options reporting=True
 
-cmake -G Ninja \
-     -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
-     -DCMAKE_INSTALL_PREFIX=%{_prefix} \
-     -DCMAKE_BUILD_TYPE=Release \
-     -Dunity=OFF \
-     -Dstatic=ON \
-     -Dvalidator_keys=ON \
-     -Dreporting=ON \
-     -DCMAKE_VERBOSE_MAKEFILE=ON \
-     ..
+cmake .. \
+    -G Ninja \
+    -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
+    -DCMAKE_INSTALL_PREFIX=%{_prefix} \
+    -DCMAKE_BUILD_TYPE=Release \
+    -Dunity=OFF \
+    -Dstatic=ON \
+    -Dvalidator_keys=ON \
+    -Dreporting=ON \
+    -DCMAKE_VERBOSE_MAKEFILE=ON \
 
 cmake --build . --parallel $(nproc) --target rippled
 
@@ -103,7 +106,7 @@ test -e /etc/pki/tls || { mkdir -p /etc/pki; ln -s /usr/lib/ssl /etc/pki/tls; }
 rm -rf $RPM_BUILD_ROOT
 DESTDIR=$RPM_BUILD_ROOT cmake --build rippled/bld.rippled --target install #-- -v
 mkdir -p $RPM_BUILD_ROOT
-rm -rf ${RPM_BUILD_ROOT}/%{_prefix}/lib64/
+rm -rf ${RPM_BUILD_ROOT}%{_prefix}/lib64/
 install -d ${RPM_BUILD_ROOT}/etc/opt/ripple
 install -d ${RPM_BUILD_ROOT}/usr/local/bin
 
@@ -130,9 +133,9 @@ install -D rippled/bld.rippled-reporting/rippled-reporting ${RPM_BUILD_ROOT}%{_b
 install -D ./rippled/cfg/rippled-reporting.cfg ${RPM_BUILD_ROOT}%{_prefix}/etc/rippled-reporting.cfg
 install -D ./rippled/cfg/validators-example.txt ${RPM_BUILD_ROOT}%{_prefix}/etc/validators.txt
 install -D ./rippled/Builds/containers/packaging/rpm/50-rippled-reporting.preset ${RPM_BUILD_ROOT}/usr/lib/systemd/system-preset/50-rippled-reporting.preset
-ln -s %{_prefix}/bin/rippled-reporting ${RPM_BUILD_ROOT}/usr/local/bin/rippled-reporting
-ln -s %{_prefix}/etc/rippled-reporting.cfg ${RPM_BUILD_ROOT}/etc/opt/rippled-reporting/rippled-reporting.cfg
-ln -s %{_prefix}/etc/validators.txt ${RPM_BUILD_ROOT}/etc/opt/rippled-reporting/validators.txt
+ln -sf %{_prefix}/bin/rippled-reporting ${RPM_BUILD_ROOT}/usr/local/bin/rippled-reporting
+ln -sf %{_prefix}/etc/rippled-reporting.cfg ${RPM_BUILD_ROOT}/etc/opt/rippled-reporting/rippled-reporting.cfg
+ln -sf %{_prefix}/etc/validators.txt ${RPM_BUILD_ROOT}/etc/opt/rippled-reporting/validators.txt
 install -d $RPM_BUILD_ROOT/var/log/rippled-reporting
 install -d $RPM_BUILD_ROOT/var/lib/rippled-reporting
 install -D ./rippled/Builds/containers/shared/rippled-reporting.service ${RPM_BUILD_ROOT}/usr/lib/systemd/system/rippled-reporting.service

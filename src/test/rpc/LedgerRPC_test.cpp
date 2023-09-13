@@ -1212,21 +1212,226 @@ class LedgerRPC_test : public beast::unit_test::suite
     }
 
     void
-    testLedgerEntryUnknownOption()
+    testLedgerEntryInvalidParams(unsigned int apiVersion)
     {
-        testcase("ledger_entry Request Unknown Option");
+        testcase(
+            "ledger_entry Request With Invalid Parameters v" +
+            std::to_string(apiVersion));
         using namespace test::jtx;
         Env env{*this};
 
         std::string const ledgerHash{to_string(env.closed()->info().hash)};
 
+        auto makeParams = [&apiVersion](std::function<void(Json::Value&)> f) {
+            Json::Value params;
+            params[jss::api_version] = apiVersion;
+            f(params);
+            return params;
+        };
         // "features" is not an option supported by ledger_entry.
-        Json::Value jvParams;
-        jvParams[jss::features] = ledgerHash;
-        jvParams[jss::ledger_hash] = ledgerHash;
-        Json::Value const jrr =
-            env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
-        checkErrorValue(jrr, "unknownOption", "");
+        {
+            auto const jvParams =
+                makeParams([&ledgerHash](Json::Value& jvParams) {
+                    jvParams[jss::features] = ledgerHash;
+                    jvParams[jss::ledger_hash] = ledgerHash;
+                });
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+
+            if (apiVersion < 2u)
+                checkErrorValue(jrr, "unknownOption", "");
+            else
+                checkErrorValue(jrr, "invalidParams", "");
+        }
+        Json::Value const injectObject = []() {
+            Json::Value obj(Json::objectValue);
+            obj[jss::account] = "rhigTLJJyXXSRUyRCQtqi1NoAZZzZnS4KU";
+            obj[jss::ledger_index] = "validated";
+            return obj;
+        }();
+        Json::Value const injectArray = []() {
+            Json::Value arr(Json::arrayValue);
+            arr[0u] = "rhigTLJJyXXSRUyRCQtqi1NoAZZzZnS4KU";
+            arr[1u] = "validated";
+            return arr;
+        }();
+
+        // invalid input for fields that can handle an object, but can't handle
+        // an array
+        for (auto const& field :
+             {jss::directory, jss::escrow, jss::offer, jss::ticket, jss::amm})
+        {
+            auto const jvParams =
+                makeParams([&field, &injectArray](Json::Value& jvParams) {
+                    jvParams[field] = injectArray;
+                });
+
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+
+            if (apiVersion < 2u)
+                checkErrorValue(jrr, "internal", "Internal error.");
+            else
+                checkErrorValue(jrr, "invalidParams", "");
+        }
+        // Fields that can handle objects just fine
+        for (auto const& field :
+             {jss::directory, jss::escrow, jss::offer, jss::ticket, jss::amm})
+        {
+            auto const jvParams =
+                makeParams([&field, &injectObject](Json::Value& jvParams) {
+                    jvParams[field] = injectObject;
+                });
+
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+
+            checkErrorValue(jrr, "malformedRequest", "");
+        }
+
+        for (auto const& inject : {injectObject, injectArray})
+        {
+            // invalid input for fields that can't handle an object or an array
+            for (auto const& field :
+                 {jss::index,
+                  jss::account_root,
+                  jss::check,
+                  jss::payment_channel})
+            {
+                auto const jvParams =
+                    makeParams([&field, &inject](Json::Value& jvParams) {
+                        jvParams[field] = inject;
+                    });
+
+                Json::Value const jrr = env.rpc(
+                    "json", "ledger_entry", to_string(jvParams))[jss::result];
+
+                if (apiVersion < 2u)
+                    checkErrorValue(jrr, "internal", "Internal error.");
+                else
+                    checkErrorValue(jrr, "invalidParams", "");
+            }
+            // directory sub-fields
+            for (auto const& field : {jss::dir_root, jss::owner})
+            {
+                auto const jvParams =
+                    makeParams([&field, &inject](Json::Value& jvParams) {
+                        jvParams[jss::directory][field] = inject;
+                    });
+
+                Json::Value const jrr = env.rpc(
+                    "json", "ledger_entry", to_string(jvParams))[jss::result];
+
+                if (apiVersion < 2u)
+                    checkErrorValue(jrr, "internal", "Internal error.");
+                else
+                    checkErrorValue(jrr, "invalidParams", "");
+            }
+            // escrow sub-fields
+            {
+                auto const jvParams =
+                    makeParams([&inject](Json::Value& jvParams) {
+                        jvParams[jss::escrow][jss::owner] = inject;
+                        jvParams[jss::escrow][jss::seq] = 99;
+                    });
+
+                Json::Value const jrr = env.rpc(
+                    "json", "ledger_entry", to_string(jvParams))[jss::result];
+
+                if (apiVersion < 2u)
+                    checkErrorValue(jrr, "internal", "Internal error.");
+                else
+                    checkErrorValue(jrr, "invalidParams", "");
+            }
+            // offer sub-fields
+            {
+                auto const jvParams =
+                    makeParams([&inject](Json::Value& jvParams) {
+                        jvParams[jss::offer][jss::account] = inject;
+                        jvParams[jss::offer][jss::seq] = 99;
+                    });
+
+                Json::Value const jrr = env.rpc(
+                    "json", "ledger_entry", to_string(jvParams))[jss::result];
+
+                if (apiVersion < 2u)
+                    checkErrorValue(jrr, "internal", "Internal error.");
+                else
+                    checkErrorValue(jrr, "invalidParams", "");
+            }
+            // ripple_state sub-fields
+            {
+                auto const jvParams =
+                    makeParams([&inject](Json::Value& jvParams) {
+                        Json::Value rs(Json::objectValue);
+                        rs[jss::currency] = "FOO";
+                        rs[jss::accounts] = Json::Value(Json::arrayValue);
+                        rs[jss::accounts][0u] =
+                            "rhigTLJJyXXSRUyRCQtqi1NoAZZzZnS4KU";
+                        rs[jss::accounts][1u] =
+                            "rKssEq6pg1KbqEqAFnua5mFAL6Ggpsh2wv";
+                        rs[jss::currency] = inject;
+                        jvParams[jss::ripple_state] = std::move(rs);
+                    });
+
+                Json::Value const jrr = env.rpc(
+                    "json", "ledger_entry", to_string(jvParams))[jss::result];
+
+                if (apiVersion < 2u)
+                    checkErrorValue(jrr, "internal", "Internal error.");
+                else
+                    checkErrorValue(jrr, "invalidParams", "");
+            }
+            // ticket sub-fields
+            {
+                auto const jvParams =
+                    makeParams([&inject](Json::Value& jvParams) {
+                        jvParams[jss::ticket][jss::account] = inject;
+                        jvParams[jss::ticket][jss::ticket_seq] = 99;
+                    });
+
+                Json::Value const jrr = env.rpc(
+                    "json", "ledger_entry", to_string(jvParams))[jss::result];
+
+                if (apiVersion < 2u)
+                    checkErrorValue(jrr, "internal", "Internal error.");
+                else
+                    checkErrorValue(jrr, "invalidParams", "");
+            }
+
+            // Fields that can handle malformed inputs just fine
+            for (auto const& field : {jss::nft_page, jss::deposit_preauth})
+            {
+                auto const jvParams =
+                    makeParams([&field, &inject](Json::Value& jvParams) {
+                        jvParams[field] = inject;
+                    });
+
+                Json::Value const jrr = env.rpc(
+                    "json", "ledger_entry", to_string(jvParams))[jss::result];
+
+                checkErrorValue(jrr, "malformedRequest", "");
+            }
+            // Subfields of deposit_preauth that can handle malformed inputs
+            // fine
+            for (auto const& field : {jss::owner, jss::authorized})
+            {
+                auto const jvParams =
+                    makeParams([&field, &inject](Json::Value& jvParams) {
+                        auto pa = Json::Value(Json::objectValue);
+                        pa[jss::owner] = "rhigTLJJyXXSRUyRCQtqi1NoAZZzZnS4KU";
+                        pa[jss::authorized] =
+                            "rKssEq6pg1KbqEqAFnua5mFAL6Ggpsh2wv";
+                        pa[field] = inject;
+                        jvParams[jss::deposit_preauth] = std::move(pa);
+                    });
+
+                Json::Value const jrr = env.rpc(
+                    "json", "ledger_entry", to_string(jvParams))[jss::result];
+
+                checkErrorValue(jrr, "malformedRequest", "");
+            }
+        }
     }
 
     /// @brief ledger RPC requests as a way to drive
@@ -1724,11 +1929,13 @@ public:
         testLedgerEntryPayChan();
         testLedgerEntryRippleState();
         testLedgerEntryTicket();
-        testLedgerEntryUnknownOption();
         testLookupLedger();
         testNoQueue();
         testQueue();
         testLedgerAccountsOption();
+
+        test::jtx::forAllApiVersions(std::bind_front(
+            &LedgerRPC_test::testLedgerEntryInvalidParams, this));
     }
 };
 
