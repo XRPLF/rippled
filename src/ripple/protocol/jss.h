@@ -345,9 +345,9 @@ JSS(invalid_API_version);  // out: Many, when a request has an invalid
 JSS(io_latency_ms);        // out: NetworkOPs
 JSS(ip);                   // in: Connect, out: OverlayImpl
 JSS(is_burned);            // out: nft_info (clio)
-JSS(isSerialized);           // out: RPC server_definitions
-JSS(isSigningField);         // out: RPC server_definitions
-JSS(isVLEncoded);            // out: RPC server_definitions
+JSS(isSerialized);         // out: RPC server_definitions
+JSS(isSigningField);       // out: RPC server_definitions
+JSS(isVLEncoded);          // out: RPC server_definitions
 JSS(issuer);               // in: RipplePathFind, Subscribe,
                            //     Unsubscribe, BookOffers
                            // out: STPathSet, STAmount
