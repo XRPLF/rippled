@@ -21,7 +21,6 @@
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/reporting/P2pProxy.h>
 #include <ripple/json/json_value.h>
-#include <ripple/json/json_writer.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/LedgerFormats.h>
 #include <ripple/protocol/SField.h>
@@ -31,7 +30,6 @@
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/Role.h>
-#include <ripple/rpc/impl/TransactionSign.h>
 #include <boost/algorithm/string.hpp>
 #include <sstream>
 
@@ -40,16 +38,18 @@ namespace ripple {
 class Definitions
 {
 private:
+    template <typename T>
+    std::string
+    str(T const& t)
+    {
+        std::ostringstream ss;
+        ss << t;
+        return ss.str();
+    }
+
     Json::Value
     generate()
     {
-        // RH TODO: probably a better way to do this?
-#define STR(x)                      \
-    ([&] {                          \
-        std::ostringstream ss;      \
-        return ss << (x), ss.str(); \
-    }())
-
         Json::Value ret{Json::objectValue};
         ret[jss::TYPES] = Json::objectValue;
 
@@ -134,8 +134,8 @@ private:
         for (const auto& pair : sTypeMap)
         {
             std::string type_name =
-                translate(STR(pair.first).substr(4) /* remove STI_ */);
-            int32_t type_value = std::stoi(STR(pair.second));
+                translate(str(pair.first).substr(4) /* remove STI_ */);
+            int32_t type_value = std::stoi(str(pair.second));
             ret[jss::TYPES][type_name] = type_value;
             type_map[type_value] = type_name;
         }
@@ -144,8 +144,8 @@ private:
         ret[jss::LEDGER_ENTRY_TYPES][jss::Invalid] = -1;
 
         for (const auto& pair : LedgerFormats::getInstance().getNamesAndTypes())
-            ret[jss::LEDGER_ENTRY_TYPES][STR(pair.first)] =
-                std::stoi(STR(pair.second));
+            ret[jss::LEDGER_ENTRY_TYPES][str(pair.first)] =
+                std::stoi(str(pair.second));
 
         ret[jss::FIELDS] = Json::arrayValue;
 
@@ -289,28 +289,15 @@ private:
 
         for (const auto& pair : detail::transResults())
         {
-            ret[jss::TRANSACTION_RESULTS][STR(pair.second.first)] =
-                std::stoi(STR(pair.first));
+            ret[jss::TRANSACTION_RESULTS][str(pair.second.first)] =
+                std::stoi(str(pair.first));
         }
-
-        // for (auto [value, name] : magic_enum::enum_entries<TELcodes>())
-        //     ret[jss::TRANSACTION_RESULTS][STR(name)] = std::stoi(STR(value));
-        // for (auto [value, name] : magic_enum::enum_entries<TEMcodes>())
-        //     ret[jss::TRANSACTION_RESULTS][STR(name)] = std::stoi(STR(value));
-        // for (auto [value, name] : magic_enum::enum_entries<TEFcodes>())
-        //     ret[jss::TRANSACTION_RESULTS][STR(name)] = std::stoi(STR(value));
-        // for (auto [value, name] : magic_enum::enum_entries<TERcodes>())
-        //     ret[jss::TRANSACTION_RESULTS][STR(name)] = std::stoi(STR(value));
-        // for (auto [value, name] : magic_enum::enum_entries<TEScodes>())
-        //     ret[jss::TRANSACTION_RESULTS][STR(name)] = std::stoi(STR(value));
-        // for (auto [value, name] : magic_enum::enum_entries<TECcodes>())
-        //     ret[jss::TRANSACTION_RESULTS][STR(name)] = std::stoi(STR(value));
 
         ret[jss::TRANSACTION_TYPES] = Json::objectValue;
         ret[jss::TRANSACTION_TYPES][jss::Invalid] = -1;
         for (const auto& pair : TxFormats::getInstance().getNamesAndTypes())
-            ret[jss::TRANSACTION_TYPES][STR(pair.first)] =
-                std::stoi(STR(pair.second));
+            ret[jss::TRANSACTION_TYPES][str(pair.first)] =
+                std::stoi(str(pair.second));
 
         // generate hash
         {
