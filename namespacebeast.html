@@ -287,6 +287,12 @@ Functions</h2></td></tr>
 <tr class="memitem:a550eb4307d1fb60bf573a944bacf6a45"><td class="memTemplItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacebeast.html#a550eb4307d1fb60bf573a944bacf6a45">expire</a> (<a class="el" href="classbeast_1_1detail_1_1aged__unordered__container.html">beast::detail::aged_unordered_container</a>&lt; IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator &gt; &amp;c, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::duration</a>&lt; Rep, Period &gt; const &amp;age) noexcept</td></tr>
 <tr class="memdesc:a550eb4307d1fb60bf573a944bacf6a45"><td class="mdescLeft">&#160;</td><td class="mdescRight">Expire aged container items past the specified age.  <a href="namespacebeast.html#a550eb4307d1fb60bf573a944bacf6a45">More...</a><br /></td></tr>
 <tr class="separator:a550eb4307d1fb60bf573a944bacf6a45"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afa60f82c45aadff5ed4da508c797e3a9"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebeast.html#afa60f82c45aadff5ed4da508c797e3a9">getCurrentThreadName</a> ()</td></tr>
+<tr class="memdesc:afa60f82c45aadff5ed4da508c797e3a9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the name of the caller thread.  <a href="namespacebeast.html#afa60f82c45aadff5ed4da508c797e3a9">More...</a><br /></td></tr>
+<tr class="separator:afa60f82c45aadff5ed4da508c797e3a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab3bd70e6eb43bbd99b5fe518efce8c7e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebeast.html#ab3bd70e6eb43bbd99b5fe518efce8c7e">setCurrentThreadName</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string_view.html">std::string_view</a> newThreadName)</td></tr>
+<tr class="memdesc:ab3bd70e6eb43bbd99b5fe518efce8c7e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Changes the name of the caller thread.  <a href="namespacebeast.html#ab3bd70e6eb43bbd99b5fe518efce8c7e">More...</a><br /></td></tr>
+<tr class="separator:ab3bd70e6eb43bbd99b5fe518efce8c7e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aeb241ed2f4422ea57283956ca58c5d42"><td class="memTemplParams" colspan="2">template&lt;class Out , class In &gt; </td></tr>
 <tr class="memitem:aeb241ed2f4422ea57283956ca58c5d42"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacebeast.html#aeb241ed2f4422ea57283956ca58c5d42">lexicalCastChecked</a> (Out &amp;out, In in)</td></tr>
 <tr class="memdesc:aeb241ed2f4422ea57283956ca58c5d42"><td class="mdescLeft">&#160;</td><td class="mdescRight">Intelligently convert from one type to another.  <a href="namespacebeast.html#aeb241ed2f4422ea57283956ca58c5d42">More...</a><br /></td></tr>
@@ -856,6 +862,52 @@ template&lt;bool IsMulti, bool IsMap, class Key , class T , class Clock , class 
 <p>Expire aged container items past the specified age. </p>
 
 <p class="definition">Definition at line <a class="el" href="aged__unordered__container_8h_source.html#l03421">3421</a> of file <a class="el" href="aged__unordered__container_8h_source.html">aged_unordered_container.h</a>.</p>
+
+</div>
+</div>
+<a id="afa60f82c45aadff5ed4da508c797e3a9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afa60f82c45aadff5ed4da508c797e3a9">&#9670;&nbsp;</a></span>getCurrentThreadName()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> beast::getCurrentThreadName </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns the name of the caller thread. </p>
+<p>The name returned is the name as set by a call to <a class="el" href="namespacebeast.html#ab3bd70e6eb43bbd99b5fe518efce8c7e" title="Changes the name of the caller thread.">setCurrentThreadName()</a>. If the thread name is set by an external force, then that name change will not be reported.</p>
+<p>If no name has ever been set, then the empty string is returned. </p>
+
+<p class="definition">Definition at line <a class="el" href="CurrentThreadName_8cpp_source.html#l00113">113</a> of file <a class="el" href="CurrentThreadName_8cpp_source.html">CurrentThreadName.cpp</a>.</p>
+
+</div>
+</div>
+<a id="ab3bd70e6eb43bbd99b5fe518efce8c7e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab3bd70e6eb43bbd99b5fe518efce8c7e">&#9670;&nbsp;</a></span>setCurrentThreadName()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void beast::setCurrentThreadName </td>
+          <td>(</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string_view.html">std::string_view</a>&#160;</td>
+          <td class="paramname"><em>newThreadName</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Changes the name of the caller thread. </p>
+<p>Different OSes may place different length or content limits on this name. </p>
+
+<p class="definition">Definition at line <a class="el" href="CurrentThreadName_8cpp_source.html#l00119">119</a> of file <a class="el" href="CurrentThreadName_8cpp_source.html">CurrentThreadName.cpp</a>.</p>
 
 </div>
 </div>
