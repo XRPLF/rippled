@@ -1279,6 +1279,12 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         }
     }
 
+    if (auto const& forcedRange = config().FORCED_LEDGER_RANGE_PRESENT)
+    {
+        m_ledgerMaster->setLedgerRangePresent(
+            forcedRange->first, forcedRange->second);
+    }
+
     if (!config().reporting())
         m_orderBookDB.setup(getLedgerMaster().getCurrentLedger());
 
