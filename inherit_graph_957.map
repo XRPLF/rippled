@@ -1,0 +1,6 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="node1" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/error/exception.html" title="STL class." alt="" coords="5,56,120,83"/>
+<area shape="rect" id="node2" href="$structJson_1_1JsonMissingKeyError.html" title=" " alt="" coords="178,5,366,32"/>
+<area shape="rect" id="node3" href="$structJson_1_1JsonTypeMismatchError.html" title=" " alt="" coords="168,56,376,83"/>
+<area shape="rect" id="node4" href="$structripple_1_1RPC_1_1Status.html" title="Status represents the results of an operation that might fail." alt="" coords="201,107,343,133"/>
+</map>

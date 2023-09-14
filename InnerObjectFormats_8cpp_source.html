@@ -89,106 +89,162 @@ $(function() {
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="comment">//==============================================================================</span></div>
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160; </div>
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/InnerObjectFormats.h&gt;</span></div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160; </div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/SField.h&gt;</span></div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/SOTemplate.h&gt;</span></div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160; </div>
-<div class="line"><a name="l00024"></a><span class="lineno"><a class="line" href="classripple_1_1InnerObjectFormats.html#a266521cb88032dda52a171334123a7b1">   24</a></span>&#160;<a class="code" href="classripple_1_1InnerObjectFormats.html#a266521cb88032dda52a171334123a7b1">InnerObjectFormats::InnerObjectFormats</a>()</div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;{</div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    <a class="code" href="classripple_1_1KnownFormats.html#ae6c413b859a4a9b5f6400be65b8715b3">add</a>(<a class="code" href="namespaceripple.html#a8d7dab01048b48141ab1d8ddc1d97099">sfSignerEntry</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>.<a class="code" href="classJson_1_1StaticString.html#a21b996fc279e0aea6c063a565ed0308e">c_str</a>(),</div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;        <a class="code" href="namespaceripple.html#a8d7dab01048b48141ab1d8ddc1d97099">sfSignerEntry</a>.<a class="code" href="classripple_1_1SField.html#a0d7b091a27f18d0d4bdb734ccfd780a7">getCode</a>(),</div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;        {</div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;            {sfAccount, soeREQUIRED},</div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;            {sfSignerWeight, soeREQUIRED},</div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;            {sfWalletLocator, soeOPTIONAL},</div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;        });</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160; </div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    add(<a class="code" href="namespaceripple.html#a4bfa815b348a23b5cd7ba52b04d21e43">sfSigner</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>.<a class="code" href="classJson_1_1StaticString.html#a21b996fc279e0aea6c063a565ed0308e">c_str</a>(),</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;        <a class="code" href="namespaceripple.html#a4bfa815b348a23b5cd7ba52b04d21e43">sfSigner</a>.<a class="code" href="classripple_1_1SField.html#a0d7b091a27f18d0d4bdb734ccfd780a7">getCode</a>(),</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;        {</div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;            {sfAccount, soeREQUIRED},</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;            {sfSigningPubKey, soeREQUIRED},</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;            {sfTxnSignature, soeREQUIRED},</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        });</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160; </div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    add(sfMajority.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>.<a class="code" href="classJson_1_1StaticString.html#a21b996fc279e0aea6c063a565ed0308e">c_str</a>(),</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;        sfMajority.<a class="code" href="classripple_1_1SField.html#a0d7b091a27f18d0d4bdb734ccfd780a7">getCode</a>(),</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;        {</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;            {sfAmendment, soeREQUIRED},</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;            {sfCloseTime, soeREQUIRED},</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        });</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160; </div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    add(<a class="code" href="namespaceripple.html#a25781d261e5e805fdf2834ab4af7be30">sfDisabledValidator</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>.<a class="code" href="classJson_1_1StaticString.html#a21b996fc279e0aea6c063a565ed0308e">c_str</a>(),</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;        <a class="code" href="namespaceripple.html#a25781d261e5e805fdf2834ab4af7be30">sfDisabledValidator</a>.<a class="code" href="classripple_1_1SField.html#a0d7b091a27f18d0d4bdb734ccfd780a7">getCode</a>(),</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;        {</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;            {sfPublicKey, soeREQUIRED},</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;            {sfFirstLedgerSequence, soeREQUIRED},</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;        });</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160; </div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    add(<a class="code" href="namespaceripple.html#acecdce9f1463316688f16cf803ef7627">sfNFToken</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>.<a class="code" href="classJson_1_1StaticString.html#a21b996fc279e0aea6c063a565ed0308e">c_str</a>(),</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;        <a class="code" href="namespaceripple.html#acecdce9f1463316688f16cf803ef7627">sfNFToken</a>.<a class="code" href="classripple_1_1SField.html#a0d7b091a27f18d0d4bdb734ccfd780a7">getCode</a>(),</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;        {</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;            {sfNFTokenID, soeREQUIRED},</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;            {sfURI, soeOPTIONAL},</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;        });</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160; </div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    add(<a class="code" href="namespaceripple.html#ae52be80dd6db16e80f8cea3fe9fa183d">sfVoteEntry</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>.<a class="code" href="classJson_1_1StaticString.html#a21b996fc279e0aea6c063a565ed0308e">c_str</a>(),</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        <a class="code" href="namespaceripple.html#ae52be80dd6db16e80f8cea3fe9fa183d">sfVoteEntry</a>.<a class="code" href="classripple_1_1SField.html#a0d7b091a27f18d0d4bdb734ccfd780a7">getCode</a>(),</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;        {</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;            {sfAccount, soeREQUIRED},</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;            {sfTradingFee, soeDEFAULT},</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;            {sfVoteWeight, soeREQUIRED},</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;        });</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160; </div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    add(<a class="code" href="namespaceripple.html#aae61d7b2bf98113dacac8854d15a4ac4">sfAuctionSlot</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>.<a class="code" href="classJson_1_1StaticString.html#a21b996fc279e0aea6c063a565ed0308e">c_str</a>(),</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;        <a class="code" href="namespaceripple.html#aae61d7b2bf98113dacac8854d15a4ac4">sfAuctionSlot</a>.<a class="code" href="classripple_1_1SField.html#a0d7b091a27f18d0d4bdb734ccfd780a7">getCode</a>(),</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;        {</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;            {sfAccount, soeREQUIRED},</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;            {sfExpiration, soeREQUIRED},</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;            {sfDiscountedFee, soeDEFAULT},</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;            {sfPrice, soeREQUIRED},</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;            {sfAuthAccounts, soeOPTIONAL},</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;        });</div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160; </div>
+<div class="line"><a name="l00026"></a><span class="lineno"><a class="line" href="classripple_1_1InnerObjectFormats.html#a266521cb88032dda52a171334123a7b1">   26</a></span>&#160;<a class="code" href="classripple_1_1InnerObjectFormats.html#a266521cb88032dda52a171334123a7b1">InnerObjectFormats::InnerObjectFormats</a>()</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;{</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    <a class="code" href="classripple_1_1KnownFormats.html#ae6c413b859a4a9b5f6400be65b8715b3">add</a>(<a class="code" href="namespaceripple.html#a8d7dab01048b48141ab1d8ddc1d97099">sfSignerEntry</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>.<a class="code" href="classJson_1_1StaticString.html#a21b996fc279e0aea6c063a565ed0308e">c_str</a>(),</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;        <a class="code" href="namespaceripple.html#a8d7dab01048b48141ab1d8ddc1d97099">sfSignerEntry</a>.<a class="code" href="classripple_1_1SField.html#a0d7b091a27f18d0d4bdb734ccfd780a7">getCode</a>(),</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;        {</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;            {sfAccount, soeREQUIRED},</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;            {sfSignerWeight, soeREQUIRED},</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;            {sfWalletLocator, soeOPTIONAL},</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;        });</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160; </div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    add(<a class="code" href="namespaceripple.html#a4bfa815b348a23b5cd7ba52b04d21e43">sfSigner</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>.<a class="code" href="classJson_1_1StaticString.html#a21b996fc279e0aea6c063a565ed0308e">c_str</a>(),</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;        <a class="code" href="namespaceripple.html#a4bfa815b348a23b5cd7ba52b04d21e43">sfSigner</a>.<a class="code" href="classripple_1_1SField.html#a0d7b091a27f18d0d4bdb734ccfd780a7">getCode</a>(),</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;        {</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;            {sfAccount, soeREQUIRED},</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;            {sfSigningPubKey, soeREQUIRED},</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;            {sfTxnSignature, soeREQUIRED},</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;        });</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160; </div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    add(sfMajority.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>.<a class="code" href="classJson_1_1StaticString.html#a21b996fc279e0aea6c063a565ed0308e">c_str</a>(),</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;        sfMajority.<a class="code" href="classripple_1_1SField.html#a0d7b091a27f18d0d4bdb734ccfd780a7">getCode</a>(),</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;        {</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;            {sfAmendment, soeREQUIRED},</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;            {sfCloseTime, soeREQUIRED},</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;        });</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160; </div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    add(<a class="code" href="namespaceripple.html#a25781d261e5e805fdf2834ab4af7be30">sfDisabledValidator</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>.<a class="code" href="classJson_1_1StaticString.html#a21b996fc279e0aea6c063a565ed0308e">c_str</a>(),</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;        <a class="code" href="namespaceripple.html#a25781d261e5e805fdf2834ab4af7be30">sfDisabledValidator</a>.<a class="code" href="classripple_1_1SField.html#a0d7b091a27f18d0d4bdb734ccfd780a7">getCode</a>(),</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;        {</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;            {sfPublicKey, soeREQUIRED},</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;            {sfFirstLedgerSequence, soeREQUIRED},</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;        });</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160; </div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    add(<a class="code" href="namespaceripple.html#acecdce9f1463316688f16cf803ef7627">sfNFToken</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>.<a class="code" href="classJson_1_1StaticString.html#a21b996fc279e0aea6c063a565ed0308e">c_str</a>(),</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;        <a class="code" href="namespaceripple.html#acecdce9f1463316688f16cf803ef7627">sfNFToken</a>.<a class="code" href="classripple_1_1SField.html#a0d7b091a27f18d0d4bdb734ccfd780a7">getCode</a>(),</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;        {</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;            {sfNFTokenID, soeREQUIRED},</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;            {sfURI, soeOPTIONAL},</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;        });</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160; </div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    add(<a class="code" href="namespaceripple.html#ae52be80dd6db16e80f8cea3fe9fa183d">sfVoteEntry</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>.<a class="code" href="classJson_1_1StaticString.html#a21b996fc279e0aea6c063a565ed0308e">c_str</a>(),</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;        <a class="code" href="namespaceripple.html#ae52be80dd6db16e80f8cea3fe9fa183d">sfVoteEntry</a>.<a class="code" href="classripple_1_1SField.html#a0d7b091a27f18d0d4bdb734ccfd780a7">getCode</a>(),</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        {</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;            {sfAccount, soeREQUIRED},</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;            {sfTradingFee, soeDEFAULT},</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;            {sfVoteWeight, soeREQUIRED},</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;        });</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160; </div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    add(<a class="code" href="namespaceripple.html#aae61d7b2bf98113dacac8854d15a4ac4">sfAuctionSlot</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>.<a class="code" href="classJson_1_1StaticString.html#a21b996fc279e0aea6c063a565ed0308e">c_str</a>(),</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;        <a class="code" href="namespaceripple.html#aae61d7b2bf98113dacac8854d15a4ac4">sfAuctionSlot</a>.<a class="code" href="classripple_1_1SField.html#a0d7b091a27f18d0d4bdb734ccfd780a7">getCode</a>(),</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;        {{sfAccount, soeREQUIRED},</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;         {sfExpiration, soeREQUIRED},</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;         {sfDiscountedFee, soeDEFAULT},</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;         {sfPrice, soeREQUIRED},</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;         {sfAuthAccounts, soeOPTIONAL}});</div>
 <div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160; </div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    add(<a class="code" href="namespaceripple.html#adee61ff4681630f2958230e219c7f9ee">sfAuthAccount</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>.<a class="code" href="classJson_1_1StaticString.html#a21b996fc279e0aea6c063a565ed0308e">c_str</a>(),</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;        <a class="code" href="namespaceripple.html#adee61ff4681630f2958230e219c7f9ee">sfAuthAccount</a>.<a class="code" href="classripple_1_1SField.html#a0d7b091a27f18d0d4bdb734ccfd780a7">getCode</a>(),</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    add(<a class="code" href="namespaceripple.html#a3002e9b8cdb820aee9c95f5e939c1e11">sfXChainClaimAttestationCollectionElement</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>.<a class="code" href="classJson_1_1StaticString.html#a21b996fc279e0aea6c063a565ed0308e">c_str</a>(),</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;        <a class="code" href="namespaceripple.html#a3002e9b8cdb820aee9c95f5e939c1e11">sfXChainClaimAttestationCollectionElement</a>.<a class="code" href="classripple_1_1SField.html#a0d7b091a27f18d0d4bdb734ccfd780a7">getCode</a>(),</div>
 <div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;        {</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;            {sfAccount, soeREQUIRED},</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;        });</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;}</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160; </div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;InnerObjectFormats <span class="keyword">const</span>&amp;</div>
-<div class="line"><a name="l00089"></a><span class="lineno"><a class="line" href="classripple_1_1InnerObjectFormats.html#ac8a2a46e333d5db2ecaff032e3eacc2f">   89</a></span>&#160;InnerObjectFormats::getInstance()</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;{</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    <span class="keyword">static</span> <a class="code" href="classripple_1_1InnerObjectFormats.html">InnerObjectFormats</a> instance;</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;    <span class="keywordflow">return</span> instance;</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;}</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;            {sfAttestationSignerAccount, soeREQUIRED},</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;            {sfPublicKey, soeREQUIRED},</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;            {sfSignature, soeREQUIRED},</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;            {sfAmount, soeREQUIRED},</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;            {sfAccount, soeREQUIRED},</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;            {sfAttestationRewardAccount, soeREQUIRED},</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;            {sfWasLockingChainSend, soeREQUIRED},</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;            {sfXChainClaimID, soeREQUIRED},</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;            {sfDestination, soeOPTIONAL},</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;        });</div>
 <div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160; </div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;<a class="code" href="classripple_1_1SOTemplate.html">SOTemplate</a> <span class="keyword">const</span>*</div>
-<div class="line"><a name="l00096"></a><span class="lineno"><a class="line" href="classripple_1_1InnerObjectFormats.html#a5d946acc2637ba9031007888980c3764">   96</a></span>&#160;InnerObjectFormats::findSOTemplateBySField(<a class="code" href="classripple_1_1SField.html">SField</a> <span class="keyword">const</span>&amp; sField)<span class="keyword"> const</span></div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;<span class="keyword"></span>{</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;    <span class="keyword">auto</span> itemPtr = findByType(sField.<a class="code" href="classripple_1_1SField.html#a0d7b091a27f18d0d4bdb734ccfd780a7">getCode</a>());</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;    <span class="keywordflow">if</span> (itemPtr)</div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;        <span class="keywordflow">return</span> &amp;(itemPtr-&gt;getSOTemplate());</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160; </div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">nullptr</span>;</div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;}</div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160; </div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;    add(<a class="code" href="namespaceripple.html#a59a277d8f503a6ff1ee0206573ef1c58">sfXChainCreateAccountAttestationCollectionElement</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>.<a class="code" href="classJson_1_1StaticString.html#a21b996fc279e0aea6c063a565ed0308e">c_str</a>(),</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;        <a class="code" href="namespaceripple.html#a59a277d8f503a6ff1ee0206573ef1c58">sfXChainCreateAccountAttestationCollectionElement</a>.<a class="code" href="classripple_1_1SField.html#a0d7b091a27f18d0d4bdb734ccfd780a7">getCode</a>(),</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;        {</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;            {sfAttestationSignerAccount, soeREQUIRED},</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;            {sfPublicKey, soeREQUIRED},</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;            {sfSignature, soeREQUIRED},</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;            {sfAmount, soeREQUIRED},</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;            {sfAccount, soeREQUIRED},</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;            {sfAttestationRewardAccount, soeREQUIRED},</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;            {sfWasLockingChainSend, soeREQUIRED},</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;            {sfXChainAccountCreateCount, soeREQUIRED},</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;            {sfDestination, soeREQUIRED},</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;            {sfSignatureReward, soeREQUIRED},</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;        });</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160; </div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;    add(<a class="code" href="namespaceripple.html#a53e8cf281b94081508fde18f4d5f0523">sfXChainClaimProofSig</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>.<a class="code" href="classJson_1_1StaticString.html#a21b996fc279e0aea6c063a565ed0308e">c_str</a>(),</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;        <a class="code" href="namespaceripple.html#a53e8cf281b94081508fde18f4d5f0523">sfXChainClaimProofSig</a>.<a class="code" href="classripple_1_1SField.html#a0d7b091a27f18d0d4bdb734ccfd780a7">getCode</a>(),</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;        {</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;            {sfAttestationSignerAccount, soeREQUIRED},</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;            {sfPublicKey, soeREQUIRED},</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;            {sfAmount, soeREQUIRED},</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;            {sfAttestationRewardAccount, soeREQUIRED},</div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;            {sfWasLockingChainSend, soeREQUIRED},</div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;            {sfDestination, soeOPTIONAL},</div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;        });</div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160; </div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;    add(<a class="code" href="namespaceripple.html#ab2d0a950644459837f6263adb187fae1">sfXChainCreateAccountProofSig</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>.<a class="code" href="classJson_1_1StaticString.html#a21b996fc279e0aea6c063a565ed0308e">c_str</a>(),</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;        <a class="code" href="namespaceripple.html#ab2d0a950644459837f6263adb187fae1">sfXChainCreateAccountProofSig</a>.<a class="code" href="classripple_1_1SField.html#a0d7b091a27f18d0d4bdb734ccfd780a7">getCode</a>(),</div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;        {</div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;            {sfAttestationSignerAccount, soeREQUIRED},</div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;            {sfPublicKey, soeREQUIRED},</div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;            {sfAmount, soeREQUIRED},</div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;            {sfSignatureReward, soeREQUIRED},</div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;            {sfAttestationRewardAccount, soeREQUIRED},</div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;            {sfWasLockingChainSend, soeREQUIRED},</div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;            {sfDestination, soeREQUIRED},</div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;        });</div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160; </div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;    add(<a class="code" href="namespaceripple.html#adee61ff4681630f2958230e219c7f9ee">sfAuthAccount</a>.<a class="code" href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">jsonName</a>.<a class="code" href="classJson_1_1StaticString.html#a21b996fc279e0aea6c063a565ed0308e">c_str</a>(),</div>
+<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;        <a class="code" href="namespaceripple.html#adee61ff4681630f2958230e219c7f9ee">sfAuthAccount</a>.<a class="code" href="classripple_1_1SField.html#a0d7b091a27f18d0d4bdb734ccfd780a7">getCode</a>(),</div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;        {</div>
+<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;            {sfAccount, soeREQUIRED},</div>
+<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;        });</div>
+<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;}</div>
+<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160; </div>
+<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;InnerObjectFormats <span class="keyword">const</span>&amp;</div>
+<div class="line"><a name="l00141"></a><span class="lineno"><a class="line" href="classripple_1_1InnerObjectFormats.html#ac8a2a46e333d5db2ecaff032e3eacc2f">  141</a></span>&#160;InnerObjectFormats::getInstance()</div>
+<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;{</div>
+<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;    <span class="keyword">static</span> <a class="code" href="classripple_1_1InnerObjectFormats.html">InnerObjectFormats</a> instance;</div>
+<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;    <span class="keywordflow">return</span> instance;</div>
+<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;}</div>
+<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160; </div>
+<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;<a class="code" href="classripple_1_1SOTemplate.html">SOTemplate</a> <span class="keyword">const</span>*</div>
+<div class="line"><a name="l00148"></a><span class="lineno"><a class="line" href="classripple_1_1InnerObjectFormats.html#a5d946acc2637ba9031007888980c3764">  148</a></span>&#160;InnerObjectFormats::findSOTemplateBySField(<a class="code" href="classripple_1_1SField.html">SField</a> <span class="keyword">const</span>&amp; sField)<span class="keyword"> const</span></div>
+<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;<span class="keyword"></span>{</div>
+<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;    <span class="keyword">auto</span> itemPtr = findByType(sField.<a class="code" href="classripple_1_1SField.html#a0d7b091a27f18d0d4bdb734ccfd780a7">getCode</a>());</div>
+<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;    <span class="keywordflow">if</span> (itemPtr)</div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;        <span class="keywordflow">return</span> &amp;(itemPtr-&gt;getSOTemplate());</div>
+<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160; </div>
+<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">nullptr</span>;</div>
+<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;}</div>
+<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160; </div>
+<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
-<div class="ttc" id="aclassripple_1_1InnerObjectFormats_html_a266521cb88032dda52a171334123a7b1"><div class="ttname"><a href="classripple_1_1InnerObjectFormats.html#a266521cb88032dda52a171334123a7b1">ripple::InnerObjectFormats::InnerObjectFormats</a></div><div class="ttdeci">InnerObjectFormats()</div><div class="ttdoc">Create the object.</div><div class="ttdef"><b>Definition:</b> <a href="InnerObjectFormats_8cpp_source.html#l00024">InnerObjectFormats.cpp:24</a></div></div>
+<div class="ttc" id="aclassripple_1_1InnerObjectFormats_html_a266521cb88032dda52a171334123a7b1"><div class="ttname"><a href="classripple_1_1InnerObjectFormats.html#a266521cb88032dda52a171334123a7b1">ripple::InnerObjectFormats::InnerObjectFormats</a></div><div class="ttdeci">InnerObjectFormats()</div><div class="ttdoc">Create the object.</div><div class="ttdef"><b>Definition:</b> <a href="InnerObjectFormats_8cpp_source.html#l00026">InnerObjectFormats.cpp:26</a></div></div>
 <div class="ttc" id="anamespaceripple_html_ae52be80dd6db16e80f8cea3fe9fa183d"><div class="ttname"><a href="namespaceripple.html#ae52be80dd6db16e80f8cea3fe9fa183d">ripple::sfVoteEntry</a></div><div class="ttdeci">const SField sfVoteEntry</div></div>
+<div class="ttc" id="anamespaceripple_html_a59a277d8f503a6ff1ee0206573ef1c58"><div class="ttname"><a href="namespaceripple.html#a59a277d8f503a6ff1ee0206573ef1c58">ripple::sfXChainCreateAccountAttestationCollectionElement</a></div><div class="ttdeci">const SField sfXChainCreateAccountAttestationCollectionElement</div></div>
 <div class="ttc" id="aclassJson_1_1StaticString_html_a21b996fc279e0aea6c063a565ed0308e"><div class="ttname"><a href="classJson_1_1StaticString.html#a21b996fc279e0aea6c063a565ed0308e">Json::StaticString::c_str</a></div><div class="ttdeci">constexpr const char * c_str() const</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00073">json_value.h:73</a></div></div>
-<div class="ttc" id="aclassripple_1_1SField_html_a45acf918dce2b1e3e40c6344a49f7b51"><div class="ttname"><a href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">ripple::SField::jsonName</a></div><div class="ttdeci">const Json::StaticString jsonName</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00139">SField.h:139</a></div></div>
+<div class="ttc" id="aclassripple_1_1SField_html_a45acf918dce2b1e3e40c6344a49f7b51"><div class="ttname"><a href="classripple_1_1SField.html#a45acf918dce2b1e3e40c6344a49f7b51">ripple::SField::jsonName</a></div><div class="ttdeci">const Json::StaticString jsonName</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00141">SField.h:141</a></div></div>
 <div class="ttc" id="aclassripple_1_1SOTemplate_html"><div class="ttname"><a href="classripple_1_1SOTemplate.html">ripple::SOTemplate</a></div><div class="ttdoc">Defines the fields and their attributes within a STObject.</div><div class="ttdef"><b>Definition:</b> <a href="SOTemplate_8h_source.html#l00082">SOTemplate.h:82</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a53e8cf281b94081508fde18f4d5f0523"><div class="ttname"><a href="namespaceripple.html#a53e8cf281b94081508fde18f4d5f0523">ripple::sfXChainClaimProofSig</a></div><div class="ttdeci">const SField sfXChainClaimProofSig</div></div>
+<div class="ttc" id="anamespaceripple_html_ab2d0a950644459837f6263adb187fae1"><div class="ttname"><a href="namespaceripple.html#ab2d0a950644459837f6263adb187fae1">ripple::sfXChainCreateAccountProofSig</a></div><div class="ttdeci">const SField sfXChainCreateAccountProofSig</div></div>
 <div class="ttc" id="anamespaceripple_html_a4bfa815b348a23b5cd7ba52b04d21e43"><div class="ttname"><a href="namespaceripple.html#a4bfa815b348a23b5cd7ba52b04d21e43">ripple::sfSigner</a></div><div class="ttdeci">const SField sfSigner</div></div>
 <div class="ttc" id="anamespaceripple_html_a8d7dab01048b48141ab1d8ddc1d97099"><div class="ttname"><a href="namespaceripple.html#a8d7dab01048b48141ab1d8ddc1d97099">ripple::sfSignerEntry</a></div><div class="ttdeci">const SField sfSignerEntry</div></div>
 <div class="ttc" id="anamespaceripple_html_acecdce9f1463316688f16cf803ef7627"><div class="ttname"><a href="namespaceripple.html#acecdce9f1463316688f16cf803ef7627">ripple::sfNFToken</a></div><div class="ttdeci">const SField sfNFToken</div></div>
 <div class="ttc" id="aclassripple_1_1InnerObjectFormats_html"><div class="ttname"><a href="classripple_1_1InnerObjectFormats.html">ripple::InnerObjectFormats</a></div><div class="ttdoc">Manages the list of known inner object formats.</div><div class="ttdef"><b>Definition:</b> <a href="InnerObjectFormats_8h_source.html#l00029">InnerObjectFormats.h:29</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
-<div class="ttc" id="aclassripple_1_1SField_html"><div class="ttname"><a href="classripple_1_1SField.html">ripple::SField</a></div><div class="ttdoc">Identifies fields.</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00115">SField.h:115</a></div></div>
+<div class="ttc" id="aclassripple_1_1SField_html"><div class="ttname"><a href="classripple_1_1SField.html">ripple::SField</a></div><div class="ttdoc">Identifies fields.</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00117">SField.h:117</a></div></div>
 <div class="ttc" id="anamespaceripple_html_adee61ff4681630f2958230e219c7f9ee"><div class="ttname"><a href="namespaceripple.html#adee61ff4681630f2958230e219c7f9ee">ripple::sfAuthAccount</a></div><div class="ttdeci">const SField sfAuthAccount</div></div>
+<div class="ttc" id="anamespaceripple_html_a3002e9b8cdb820aee9c95f5e939c1e11"><div class="ttname"><a href="namespaceripple.html#a3002e9b8cdb820aee9c95f5e939c1e11">ripple::sfXChainClaimAttestationCollectionElement</a></div><div class="ttdeci">const SField sfXChainClaimAttestationCollectionElement</div></div>
 <div class="ttc" id="anamespaceripple_html_a25781d261e5e805fdf2834ab4af7be30"><div class="ttname"><a href="namespaceripple.html#a25781d261e5e805fdf2834ab4af7be30">ripple::sfDisabledValidator</a></div><div class="ttdeci">const SField sfDisabledValidator</div></div>
-<div class="ttc" id="aclassripple_1_1SField_html_a0d7b091a27f18d0d4bdb734ccfd780a7"><div class="ttname"><a href="classripple_1_1SField.html#a0d7b091a27f18d0d4bdb734ccfd780a7">ripple::SField::getCode</a></div><div class="ttdeci">int getCode() const</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00224">SField.h:224</a></div></div>
+<div class="ttc" id="aclassripple_1_1SField_html_a0d7b091a27f18d0d4bdb734ccfd780a7"><div class="ttname"><a href="classripple_1_1SField.html#a0d7b091a27f18d0d4bdb734ccfd780a7">ripple::SField::getCode</a></div><div class="ttdeci">int getCode() const</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00226">SField.h:226</a></div></div>
 <div class="ttc" id="anamespaceripple_html_aae61d7b2bf98113dacac8854d15a4ac4"><div class="ttname"><a href="namespaceripple.html#aae61d7b2bf98113dacac8854d15a4ac4">ripple::sfAuctionSlot</a></div><div class="ttdeci">const SField sfAuctionSlot</div></div>
 <div class="ttc" id="aclassripple_1_1KnownFormats_html_ae6c413b859a4a9b5f6400be65b8715b3"><div class="ttname"><a href="classripple_1_1KnownFormats.html#ae6c413b859a4a9b5f6400be65b8715b3">ripple::KnownFormats&lt; int, InnerObjectFormats &gt;::add</a></div><div class="ttdeci">Item const &amp; add(char const *name, int type, std::initializer_list&lt; SOElement &gt; uniqueFields, std::initializer_list&lt; SOElement &gt; commonFields={})</div><div class="ttdoc">Add a new format.</div><div class="ttdef"><b>Definition:</b> <a href="KnownFormats_8h_source.html#l00170">KnownFormats.h:170</a></div></div>
 <!-- start footer part -->

@@ -1,9 +1,9 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" title=" " alt="" coords="5,220,60,247"/>
-<area shape="rect" id="node2" href="$classbeast_1_1aged__associative__container__test__base_1_1MaybeMap.html" title=" " alt="" coords="149,5,349,61"/>
-<area shape="rect" id="node3" href="$classbeast_1_1aged__associative__container__test__base_1_1MaybeMap_3_01Base_00_01true_01_4.html" title=" " alt="" coords="155,85,343,141"/>
-<area shape="rect" id="node4" href="$classbeast_1_1aged__associative__container__test__base_1_1MaybeMulti.html" title=" " alt="" coords="144,165,355,221"/>
-<area shape="rect" id="node5" href="$classbeast_1_1aged__associative__container__test__base_1_1MaybeMulti_3_01Base_00_01true_01_4.html" title=" " alt="" coords="153,245,346,301"/>
-<area shape="rect" id="node6" href="$classbeast_1_1aged__associative__container__test__base_1_1MaybeUnordered.html" title=" " alt="" coords="108,325,391,381"/>
-<area shape="rect" id="node7" href="$classbeast_1_1aged__associative__container__test__base_1_1MaybeUnordered_3_01Base_00_01true_01_4.html" title=" " alt="" coords="135,405,364,461"/>
+<area shape="rect" id="node1" href="$structbeast_1_1aged__associative__container__test__base_1_1ContType.html" title=" " alt="" coords="1085,5,1328,76"/>
+<area shape="rect" id="node2" href="$structbeast_1_1aged__associative__container__test__base_1_1TestTraits.html" title=" " alt="" coords="1376,53,1557,124"/>
+<area shape="rect" id="node3" href="$structbeast_1_1aged__associative__container__test__base_1_1TestTraitsBase.html" title=" " alt="" coords="5,107,184,163"/>
+<area shape="rect" id="node4" href="$classbeast_1_1aged__associative__container__test__base_1_1MaybeMap.html" title=" " alt="" coords="232,100,436,171"/>
+<area shape="rect" id="node5" href="$classbeast_1_1aged__associative__container__test__base_1_1MaybeMulti.html" title=" " alt="" coords="484,100,743,171"/>
+<area shape="rect" id="node6" href="$classbeast_1_1aged__associative__container__test__base_1_1MaybeUnordered.html" title=" " alt="" coords="791,93,1037,178"/>
+<area shape="rect" id="node7" href="$structbeast_1_1aged__associative__container__test__base_1_1TestTraitsHelper.html" title=" " alt="" coords="1095,100,1319,171"/>
 </map>

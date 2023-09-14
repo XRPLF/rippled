@@ -100,7 +100,11 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classJson_1_1FastWriter.html">FastWriter</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Outputs a <a class="el" href="classJson_1_1Value.html" title="Represents a JSON value.">Value</a> in <a href="http://www.json.org">JSON</a> format without formatting (not human friendly).  <a href="classJson_1_1FastWriter.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structJson_1_1JsonMissingKeyError.html">JsonMissingKeyError</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classJson_1_1JsonObject__test.html">JsonObject_test</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structJson_1_1JsonTypeMismatchError.html">JsonTypeMismatchError</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classJson_1_1JsonWriter__test.html">JsonWriter_test</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -278,6 +282,12 @@ Functions</h2></td></tr>
 <tr class="separator:a0b3e981107a574402bc43eb5c01e914b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af3b5e4579dafe6a4a496663e541bfebc"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceJson.html#af3b5e4579dafe6a4a496663e541bfebc">check</a> (bool condition, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;message)</td></tr>
 <tr class="separator:af3b5e4579dafe6a4a496663e541bfebc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae967e29d56a8001d5cf7cbc307ada9a3"><td class="memItemLeft" align="right" valign="top">template&lt;&gt; </td></tr>
+<tr class="memitem:ae967e29d56a8001d5cf7cbc307ada9a3"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">ripple::AccountID</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceJson.html#ae967e29d56a8001d5cf7cbc307ada9a3">getOrThrow</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;v, <a class="el" href="classripple_1_1SField.html">ripple::SField</a> const &amp;field)</td></tr>
+<tr class="separator:ae967e29d56a8001d5cf7cbc307ada9a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af4e497de42902096c809f5f54dfdb99f"><td class="memTemplParams" colspan="2">template&lt;class T &gt; </td></tr>
+<tr class="memitem:af4e497de42902096c809f5f54dfdb99f"><td class="memTemplItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; T &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceJson.html#af4e497de42902096c809f5f54dfdb99f">getOptional</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;v, <a class="el" href="classripple_1_1SField.html">ripple::SField</a> const &amp;field)</td></tr>
+<tr class="separator:af4e497de42902096c809f5f54dfdb99f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aed718ed19c2bcae4be6199a0f10923ff"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceJson.html#aed718ed19c2bcae4be6199a0f10923ff">BEAST_DEFINE_TESTSUITE</a> (JsonObject, ripple_basics, ripple)</td></tr>
 <tr class="separator:aed718ed19c2bcae4be6199a0f10923ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a204a5a911e64d273e15ebab8ca78e290"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceJson.html#a204a5a911e64d273e15ebab8ca78e290">BEAST_DEFINE_TESTSUITE</a> (<a class="el" href="namespaceJson.html#a599350ce83e1407d622c154eb32e763d">Output</a>, ripple_basics, ripple)</td></tr>
@@ -1598,6 +1608,70 @@ template&lt;class Write &gt; </div>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="json_2Writer_8h_source.html#l00252">252</a> of file <a class="el" href="json_2Writer_8h_source.html">json/Writer.h</a>.</p>
+
+</div>
+</div>
+<a id="ae967e29d56a8001d5cf7cbc307ada9a3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae967e29d56a8001d5cf7cbc307ada9a3">&#9670;&nbsp;</a></span>getOrThrow()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1STAmount.html">ripple::STAmount</a> Json::getOrThrow </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;&#160;</td>
+          <td class="paramname"><em>v</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1SField.html">ripple::SField</a> const &amp;&#160;</td>
+          <td class="paramname"><em>field</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="AccountID_8h_source.html#l00132">132</a> of file <a class="el" href="AccountID_8h_source.html">AccountID.h</a>.</p>
+
+</div>
+</div>
+<a id="af4e497de42902096c809f5f54dfdb99f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af4e497de42902096c809f5f54dfdb99f">&#9670;&nbsp;</a></span>getOptional()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;T&gt; Json::getOptional </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;&#160;</td>
+          <td class="paramname"><em>v</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1SField.html">ripple::SField</a> const &amp;&#160;</td>
+          <td class="paramname"><em>field</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="json__get__or__throw_8h_source.html#l00145">145</a> of file <a class="el" href="json__get__or__throw_8h_source.html">json_get_or_throw.h</a>.</p>
 
 </div>
 </div>

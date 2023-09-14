@@ -1,8 +1,7 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classripple_1_1NodeStore_1_1Database.html" title="Persistency layer for NodeObject." alt="" coords="5,71,148,112"/>
-<area shape="rect" id="node2" href="$classripple_1_1NodeStore_1_1DatabaseNodeImp.html" title=" " alt="" coords="196,5,339,47"/>
-<area shape="rect" id="node3" href="$classripple_1_1NodeStore_1_1DatabaseRotating.html" title=" " alt="" coords="196,71,339,112"/>
-<area shape="rect" id="node5" href="$classripple_1_1NodeStore_1_1DatabaseShard.html" title="A collection of historical shards." alt="" coords="196,136,339,177"/>
-<area shape="rect" id="node4" href="$classripple_1_1NodeStore_1_1DatabaseRotatingImp.html" title=" " alt="" coords="387,71,549,112"/>
-<area shape="rect" id="node6" href="$classripple_1_1NodeStore_1_1DatabaseShardImp.html" title=" " alt="" coords="395,136,541,177"/>
+<area shape="rect" id="node1" href="$classripple_1_1NodeStore_1_1Backend.html" title="A backend used for the NodeStore." alt="" coords="15,71,158,112"/>
+<area shape="rect" id="node2" href="$classripple_1_1NodeStore_1_1MemoryBackend.html" title=" " alt="" coords="216,5,359,47"/>
+<area shape="rect" id="node3" href="$classripple_1_1NodeStore_1_1NuDBBackend.html" title=" " alt="" coords="216,136,359,177"/>
+<area shape="rect" id="node4" href="$classripple_1_1NodeStore_1_1NullBackend.html" title=" " alt="" coords="216,71,359,112"/>
+<area shape="rect" id="node5" href="$structripple_1_1NodeStore_1_1BatchWriter_1_1Callback.html" title="This callback does the actual writing." alt="" coords="5,136,168,177"/>
 </map>

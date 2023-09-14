@@ -1,3 +1,4 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classripple_1_1SHAMap.html" title="A SHAMap is both a radix tree with a fan&#45;out of 16 and a Merkle tree." alt="" coords="5,5,127,32"/>
+<area shape="rect" id="node1" href="$classripple_1_1SField.html" title="Identifies fields." alt="" coords="5,5,111,32"/>
+<area shape="rect" id="node2" href="$structripple_1_1TypedField.html" title="A field with a type known at compile time." alt="" coords="159,5,332,32"/>
 </map>

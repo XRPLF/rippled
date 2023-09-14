@@ -264,6 +264,8 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1jtx_1_1txflags.html">txflags</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the flags on a <a class="el" href="structripple_1_1test_1_1jtx_1_1JTx.html" title="Execution context for applying a JSON transaction.">JTx</a>.  <a href="classripple_1_1test_1_1jtx_1_1txflags.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1test_1_1jtx_1_1XChainBridgeObjects.html">XChainBridgeObjects</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1test_1_1jtx_1_1XRP__t.html">XRP_t</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -288,6 +290,8 @@ Typedefs</h2></td></tr>
 <tr class="memitem:ae64f812b5cb3805c184e07d6b1b643de"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#ae64f812b5cb3805c184e07d6b1b643de">tickets</a> = <a class="el" href="classripple_1_1test_1_1jtx_1_1owner__count.html">owner_count</a>&lt; <a class="el" href="namespaceripple.html#ac151bf19e1f4daae2b04c65c65117139aa28c736ec52242ffe39aaa030db1accd">ltTICKET</a> &gt;</td></tr>
 <tr class="memdesc:ae64f812b5cb3805c184e07d6b1b643de"><td class="mdescLeft">&#160;</td><td class="mdescRight">Match the number of tickets on the account.  <a href="namespaceripple_1_1test_1_1jtx.html#ae64f812b5cb3805c184e07d6b1b643de">More...</a><br /></td></tr>
 <tr class="separator:ae64f812b5cb3805c184e07d6b1b643de"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4fe67575d563fee67196173e402a6d51"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#a4fe67575d563fee67196173e402a6d51">JValueVec</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classJson_1_1Value.html">Json::Value</a> &gt;</td></tr>
+<tr class="separator:a4fe67575d563fee67196173e402a6d51"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="enum-members"></a>
 Enumerations</h2></td></tr>
@@ -331,6 +335,10 @@ Functions</h2></td></tr>
 <tr class="separator:ae6b2b104230a13ed478b34c19bcafe82"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad7f31de50870649f0caf5754607702d5"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_ostream.html">std::ostream</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#ad7f31de50870649f0caf5754607702d5">operator&lt;&lt;</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_ostream.html">std::ostream</a> &amp;os, <a class="el" href="classripple_1_1test_1_1jtx_1_1IOU.html">IOU</a> const &amp;iou)</td></tr>
 <tr class="separator:ad7f31de50870649f0caf5754607702d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad26e2edb355e77576b33612626822f60"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Buffer.html">Buffer</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#ad26e2edb355e77576b33612626822f60">sign_claim_attestation</a> (<a class="el" href="classripple_1_1PublicKey.html">PublicKey</a> const &amp;pk, <a class="el" href="classripple_1_1SecretKey.html">SecretKey</a> const &amp;sk, <a class="el" href="classripple_1_1STXChainBridge.html">STXChainBridge</a> const &amp;<a class="el" href="namespaceripple_1_1test_1_1jtx.html#a244c1fdb6a5db501c5f2fb595fc9ac2a">bridge</a>, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;sendingAccount, <a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;sendingAmount, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;rewardAccount, bool wasLockingChainSend, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> claimID, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> &gt; const &amp;dst)</td></tr>
+<tr class="separator:ad26e2edb355e77576b33612626822f60"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ade2d1d5583fded7c86ca6c07e2755d4c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Buffer.html">Buffer</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#ade2d1d5583fded7c86ca6c07e2755d4c">sign_create_account_attestation</a> (<a class="el" href="classripple_1_1PublicKey.html">PublicKey</a> const &amp;pk, <a class="el" href="classripple_1_1SecretKey.html">SecretKey</a> const &amp;sk, <a class="el" href="classripple_1_1STXChainBridge.html">STXChainBridge</a> const &amp;<a class="el" href="namespaceripple_1_1test_1_1jtx.html#a244c1fdb6a5db501c5f2fb595fc9ac2a">bridge</a>, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;sendingAccount, <a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;sendingAmount, <a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;rewardAmount, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;rewardAccount, bool wasLockingChainSend, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> createCount, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;dst)</td></tr>
+<tr class="separator:ade2d1d5583fded7c86ca6c07e2755d4c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a878af2c3339d93c7ad690135ce33e67a"><td class="memTemplParams" colspan="2">template&lt;class... Args&gt; </td></tr>
 <tr class="memitem:a878af2c3339d93c7ad690135ce33e67a"><td class="memTemplItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array</a>&lt; <a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a>, 1+sizeof...(Args)&gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#a878af2c3339d93c7ad690135ce33e67a">noripple</a> (<a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> const &amp;account, Args const &amp;... args)</td></tr>
 <tr class="memdesc:a878af2c3339d93c7ad690135ce33e67a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Designate accounts as no-ripple in <a class="el" href="classripple_1_1test_1_1jtx_1_1Env.html#ae2349266cb09d1f1c3de06606ebdf9e2">Env::fund</a>.  <a href="namespaceripple_1_1test_1_1jtx.html#a878af2c3339d93c7ad690135ce33e67a">More...</a><br /></td></tr>
@@ -483,6 +491,30 @@ Functions</h2></td></tr>
 <tr class="memitem:a3372cf5dcb5746304f6adfff517e746d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#a3372cf5dcb5746304f6adfff517e746d">fill_seq</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> &amp;jv, <a class="el" href="classripple_1_1ReadView.html">ReadView</a> const  &amp;view)</td></tr>
 <tr class="memdesc:a3372cf5dcb5746304f6adfff517e746d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the sequence number automatically.  <a href="namespaceripple_1_1test_1_1jtx.html#a3372cf5dcb5746304f6adfff517e746d">More...</a><br /></td></tr>
 <tr class="separator:a3372cf5dcb5746304f6adfff517e746d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a244c1fdb6a5db501c5f2fb595fc9ac2a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#a244c1fdb6a5db501c5f2fb595fc9ac2a">bridge</a> (<a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> const &amp;lockingChainDoor, <a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;lockingChainIssue, <a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> const &amp;issuingChainDoor, <a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;issuingChainIssue)</td></tr>
+<tr class="separator:a244c1fdb6a5db501c5f2fb595fc9ac2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afd7c3418fc573cf9cc8590bdc202a534"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#afd7c3418fc573cf9cc8590bdc202a534">bridge_rpc</a> (<a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> const &amp;lockingChainDoor, <a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;lockingChainIssue, <a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> const &amp;issuingChainDoor, <a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;issuingChainIssue)</td></tr>
+<tr class="separator:afd7c3418fc573cf9cc8590bdc202a534"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0d8bd66465a4d8494823f843e54aa9db"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#a0d8bd66465a4d8494823f843e54aa9db">bridge_create</a> (<a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> const &amp;acc, <a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;<a class="el" href="namespaceripple_1_1test_1_1jtx.html#a244c1fdb6a5db501c5f2fb595fc9ac2a">bridge</a>, <a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;reward, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1STAmount.html">STAmount</a> &gt; const &amp;minAccountCreate)</td></tr>
+<tr class="separator:a0d8bd66465a4d8494823f843e54aa9db"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab032769efd4d5b4761c4d108d42a69a5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#ab032769efd4d5b4761c4d108d42a69a5">bridge_modify</a> (<a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> const &amp;acc, <a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;<a class="el" href="namespaceripple_1_1test_1_1jtx.html#a244c1fdb6a5db501c5f2fb595fc9ac2a">bridge</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1STAmount.html">STAmount</a> &gt; const &amp;reward, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1STAmount.html">STAmount</a> &gt; const &amp;minAccountCreate)</td></tr>
+<tr class="separator:ab032769efd4d5b4761c4d108d42a69a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9298c16368e46c025f1e0563285a6c33"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#a9298c16368e46c025f1e0563285a6c33">xchain_create_claim_id</a> (<a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> const &amp;acc, <a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;<a class="el" href="namespaceripple_1_1test_1_1jtx.html#a244c1fdb6a5db501c5f2fb595fc9ac2a">bridge</a>, <a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;reward, <a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> const &amp;otherChainSource)</td></tr>
+<tr class="separator:a9298c16368e46c025f1e0563285a6c33"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adb16b0b90c444073e9d4b85351349cd0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#adb16b0b90c444073e9d4b85351349cd0">xchain_commit</a> (<a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> const &amp;acc, <a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;<a class="el" href="namespaceripple_1_1test_1_1jtx.html#a244c1fdb6a5db501c5f2fb595fc9ac2a">bridge</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> claimID, <a class="el" href="structripple_1_1test_1_1jtx_1_1AnyAmount.html">AnyAmount</a> const &amp;amt, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> &gt; const &amp;dst)</td></tr>
+<tr class="separator:adb16b0b90c444073e9d4b85351349cd0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5a095e0f7eea1ab0f33920fd893feb2e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#a5a095e0f7eea1ab0f33920fd893feb2e">xchain_claim</a> (<a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> const &amp;acc, <a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;<a class="el" href="namespaceripple_1_1test_1_1jtx.html#a244c1fdb6a5db501c5f2fb595fc9ac2a">bridge</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> claimID, <a class="el" href="structripple_1_1test_1_1jtx_1_1AnyAmount.html">AnyAmount</a> const &amp;amt, <a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> const &amp;dst)</td></tr>
+<tr class="separator:a5a095e0f7eea1ab0f33920fd893feb2e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a58da4eb28cfb86cc1fb1212cec9b1687"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#a58da4eb28cfb86cc1fb1212cec9b1687">sidechain_xchain_account_create</a> (<a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> const &amp;acc, <a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;<a class="el" href="namespaceripple_1_1test_1_1jtx.html#a244c1fdb6a5db501c5f2fb595fc9ac2a">bridge</a>, <a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> const &amp;dst, <a class="el" href="structripple_1_1test_1_1jtx_1_1AnyAmount.html">AnyAmount</a> const &amp;amt, <a class="el" href="structripple_1_1test_1_1jtx_1_1AnyAmount.html">AnyAmount</a> const &amp;reward)</td></tr>
+<tr class="separator:a58da4eb28cfb86cc1fb1212cec9b1687"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1db012ebf687cbfe101fb8139a7094dc"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#a1db012ebf687cbfe101fb8139a7094dc">claim_attestation</a> (<a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> const &amp;submittingAccount, <a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;jvBridge, <a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> const &amp;sendingAccount, <a class="el" href="structripple_1_1test_1_1jtx_1_1AnyAmount.html">jtx::AnyAmount</a> const &amp;sendingAmount, <a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> const &amp;rewardAccount, bool wasLockingChainSend, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> claimID, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> &gt; const &amp;dst, <a class="el" href="structripple_1_1test_1_1jtx_1_1signer.html">jtx::signer</a> const &amp;<a class="el" href="structripple_1_1test_1_1jtx_1_1signer.html">signer</a>)</td></tr>
+<tr class="separator:a1db012ebf687cbfe101fb8139a7094dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a06dafb9210cb1c81aa510b7536fe6162"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#a06dafb9210cb1c81aa510b7536fe6162">create_account_attestation</a> (<a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> const &amp;submittingAccount, <a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;jvBridge, <a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> const &amp;sendingAccount, <a class="el" href="structripple_1_1test_1_1jtx_1_1AnyAmount.html">jtx::AnyAmount</a> const &amp;sendingAmount, <a class="el" href="structripple_1_1test_1_1jtx_1_1AnyAmount.html">jtx::AnyAmount</a> const &amp;rewardAmount, <a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> const &amp;rewardAccount, bool wasLockingChainSend, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> createCount, <a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> const &amp;dst, <a class="el" href="structripple_1_1test_1_1jtx_1_1signer.html">jtx::signer</a> const &amp;<a class="el" href="structripple_1_1test_1_1jtx_1_1signer.html">signer</a>)</td></tr>
+<tr class="separator:a06dafb9210cb1c81aa510b7536fe6162"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a081ac62247aaa465f14e512a6f9d21fe"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#a4fe67575d563fee67196173e402a6d51">JValueVec</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#a081ac62247aaa465f14e512a6f9d21fe">claim_attestations</a> (<a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> const &amp;submittingAccount, <a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;jvBridge, <a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> const &amp;sendingAccount, <a class="el" href="structripple_1_1test_1_1jtx_1_1AnyAmount.html">jtx::AnyAmount</a> const &amp;sendingAmount, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> &gt; const &amp;rewardAccounts, bool wasLockingChainSend, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> claimID, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> &gt; const &amp;dst, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="structripple_1_1test_1_1jtx_1_1signer.html">jtx::signer</a> &gt; const &amp;<a class="el" href="namespaceripple_1_1test_1_1jtx.html#a2f130edacc0e266d31bd9d4fe4def16c">signers</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> const numAtts, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> const fromIdx)</td></tr>
+<tr class="separator:a081ac62247aaa465f14e512a6f9d21fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a78f65ad7960c3069d61b8f41eec25b2f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#a4fe67575d563fee67196173e402a6d51">JValueVec</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#a78f65ad7960c3069d61b8f41eec25b2f">create_account_attestations</a> (<a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> const &amp;submittingAccount, <a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;jvBridge, <a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> const &amp;sendingAccount, <a class="el" href="structripple_1_1test_1_1jtx_1_1AnyAmount.html">jtx::AnyAmount</a> const &amp;sendingAmount, <a class="el" href="structripple_1_1test_1_1jtx_1_1AnyAmount.html">jtx::AnyAmount</a> const &amp;rewardAmount, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> &gt; const &amp;rewardAccounts, bool wasLockingChainSend, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> createCount, <a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> const &amp;dst, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="structripple_1_1test_1_1jtx_1_1signer.html">jtx::signer</a> &gt; const &amp;<a class="el" href="namespaceripple_1_1test_1_1jtx.html#a2f130edacc0e266d31bd9d4fe4def16c">signers</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> const numAtts, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> const fromIdx)</td></tr>
+<tr class="separator:a78f65ad7960c3069d61b8f41eec25b2f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a95abf901db0a698e0c97d00476c95f34"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#a95abf901db0a698e0c97d00476c95f34">noop</a> (<a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> const &amp;account)</td></tr>
 <tr class="memdesc:a95abf901db0a698e0c97d00476c95f34"><td class="mdescLeft">&#160;</td><td class="mdescRight">The null transaction.  <a href="namespaceripple_1_1test_1_1jtx.html#a95abf901db0a698e0c97d00476c95f34">More...</a><br /></td></tr>
 <tr class="separator:a95abf901db0a698e0c97d00476c95f34"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -525,6 +557,8 @@ Functions</h2></td></tr>
 <tr class="separator:a7dfdba90e98cafa750b77b02ffa477dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3f3f73321e46f9d4f8dba597681005a4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#a3f3f73321e46f9d4f8dba597681005a4">channel</a> (<a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> const &amp;account, <a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> const &amp;dst, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> seqProxyValue)</td></tr>
 <tr class="separator:a3f3f73321e46f9d4f8dba597681005a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4cb76f8a8802479d5eb5013cba62d678"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#a4cb76f8a8802479d5eb5013cba62d678">sidechain_xchain_account_claim</a> (<a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> const &amp;acc, <a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;<a class="el" href="namespaceripple_1_1test_1_1jtx.html#a244c1fdb6a5db501c5f2fb595fc9ac2a">bridge</a>, <a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> const &amp;dst, <a class="el" href="structripple_1_1test_1_1jtx_1_1AnyAmount.html">AnyAmount</a> const &amp;amt)</td></tr>
+<tr class="separator:a4cb76f8a8802479d5eb5013cba62d678"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
 Variables</h2></td></tr>
@@ -558,6 +592,10 @@ Variables</h2></td></tr>
 <tr class="separator:aeeacdf1945147a3e73915cd64ae98646"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a18965524f7e2b3debb48f577050360ff"><td class="memItemLeft" align="right" valign="top">const <a class="elRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a>, 4 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#a18965524f7e2b3debb48f577050360ff">fb1</a> = {{0xA0, 0x02, 0x80, 0x00}}</td></tr>
 <tr class="separator:a18965524f7e2b3debb48f577050360ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a66b1ce7f0e7b4f1753f618114fc2dda2"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#a66b1ce7f0e7b4f1753f618114fc2dda2">UT_XCHAIN_DEFAULT_NUM_SIGNERS</a> = 5</td></tr>
+<tr class="separator:a66b1ce7f0e7b4f1753f618114fc2dda2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a025fdced36c3452b4b2c703b119739ee"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#a025fdced36c3452b4b2c703b119739ee">UT_XCHAIN_DEFAULT_QUORUM</a> = 4</td></tr>
+<tr class="separator:a025fdced36c3452b4b2c703b119739ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Typedef Documentation</h2>
 <a id="aa8ee6dedc82e3189cd3f5c02e463168c"></a>
@@ -679,6 +717,22 @@ Variables</h2></td></tr>
 <p>Match the number of tickets on the account. </p>
 
 <p class="definition">Definition at line <a class="el" href="ticket_8h_source.html#l00064">64</a> of file <a class="el" href="ticket_8h_source.html">ticket.h</a>.</p>
+
+</div>
+</div>
+<a id="a4fe67575d563fee67196173e402a6d51"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4fe67575d563fee67196173e402a6d51">&#9670;&nbsp;</a></span>JValueVec</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="namespaceripple_1_1test_1_1jtx.html#a4fe67575d563fee67196173e402a6d51">ripple::test::jtx::JValueVec</a> = typedef <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt;<a class="el" href="classJson_1_1Value.html">Json::Value</a>&gt;</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="xchain__bridge_8h_source.html#l00034">34</a> of file <a class="el" href="xchain__bridge_8h_source.html">xchain_bridge.h</a>.</p>
 
 </div>
 </div>
@@ -1178,6 +1232,156 @@ template&lt;class Integer , class  = std::enable_if_t&lt;std::is_integral_v&lt;I
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="amount_8cpp_source.html#l00120">120</a> of file <a class="el" href="amount_8cpp_source.html">amount.cpp</a>.</p>
+
+</div>
+</div>
+<a id="ad26e2edb355e77576b33612626822f60"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad26e2edb355e77576b33612626822f60">&#9670;&nbsp;</a></span>sign_claim_attestation()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1Buffer.html">Buffer</a> ripple::test::jtx::sign_claim_attestation </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1PublicKey.html">PublicKey</a> const &amp;&#160;</td>
+          <td class="paramname"><em>pk</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1SecretKey.html">SecretKey</a> const &amp;&#160;</td>
+          <td class="paramname"><em>sk</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1STXChainBridge.html">STXChainBridge</a> const &amp;&#160;</td>
+          <td class="paramname"><em>bridge</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;&#160;</td>
+          <td class="paramname"><em>sendingAccount</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;&#160;</td>
+          <td class="paramname"><em>sendingAmount</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;&#160;</td>
+          <td class="paramname"><em>rewardAccount</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>wasLockingChainSend</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>&#160;</td>
+          <td class="paramname"><em>claimID</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>dst</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="attester_8cpp_source.html#l00033">33</a> of file <a class="el" href="attester_8cpp_source.html">attester.cpp</a>.</p>
+
+</div>
+</div>
+<a id="ade2d1d5583fded7c86ca6c07e2755d4c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ade2d1d5583fded7c86ca6c07e2755d4c">&#9670;&nbsp;</a></span>sign_create_account_attestation()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1Buffer.html">Buffer</a> ripple::test::jtx::sign_create_account_attestation </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1PublicKey.html">PublicKey</a> const &amp;&#160;</td>
+          <td class="paramname"><em>pk</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1SecretKey.html">SecretKey</a> const &amp;&#160;</td>
+          <td class="paramname"><em>sk</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1STXChainBridge.html">STXChainBridge</a> const &amp;&#160;</td>
+          <td class="paramname"><em>bridge</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;&#160;</td>
+          <td class="paramname"><em>sendingAccount</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;&#160;</td>
+          <td class="paramname"><em>sendingAmount</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;&#160;</td>
+          <td class="paramname"><em>rewardAmount</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;&#160;</td>
+          <td class="paramname"><em>rewardAccount</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>wasLockingChainSend</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>&#160;</td>
+          <td class="paramname"><em>createCount</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;&#160;</td>
+          <td class="paramname"><em>dst</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="attester_8cpp_source.html#l00056">56</a> of file <a class="el" href="attester_8cpp_source.html">attester.cpp</a>.</p>
 
 </div>
 </div>
@@ -3306,6 +3510,684 @@ template&lt;typename T &gt; </div>
 
 </div>
 </div>
+<a id="a244c1fdb6a5db501c5f2fb595fc9ac2a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a244c1fdb6a5db501c5f2fb595fc9ac2a">&#9670;&nbsp;</a></span>bridge()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classJson_1_1Value.html">Json::Value</a> ripple::test::jtx::bridge </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> const &amp;&#160;</td>
+          <td class="paramname"><em>lockingChainDoor</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;&#160;</td>
+          <td class="paramname"><em>lockingChainIssue</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> const &amp;&#160;</td>
+          <td class="paramname"><em>issuingChainDoor</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;&#160;</td>
+          <td class="paramname"><em>issuingChainIssue</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="xchain__bridge_8cpp_source.html#l00040">40</a> of file <a class="el" href="xchain__bridge_8cpp_source.html">xchain_bridge.cpp</a>.</p>
+
+</div>
+</div>
+<a id="afd7c3418fc573cf9cc8590bdc202a534"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afd7c3418fc573cf9cc8590bdc202a534">&#9670;&nbsp;</a></span>bridge_rpc()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classJson_1_1Value.html">Json::Value</a> ripple::test::jtx::bridge_rpc </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> const &amp;&#160;</td>
+          <td class="paramname"><em>lockingChainDoor</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;&#160;</td>
+          <td class="paramname"><em>lockingChainIssue</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> const &amp;&#160;</td>
+          <td class="paramname"><em>issuingChainDoor</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;&#160;</td>
+          <td class="paramname"><em>issuingChainIssue</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="xchain__bridge_8cpp_source.html#l00056">56</a> of file <a class="el" href="xchain__bridge_8cpp_source.html">xchain_bridge.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a0d8bd66465a4d8494823f843e54aa9db"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0d8bd66465a4d8494823f843e54aa9db">&#9670;&nbsp;</a></span>bridge_create()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classJson_1_1Value.html">Json::Value</a> ripple::test::jtx::bridge_create </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> const &amp;&#160;</td>
+          <td class="paramname"><em>acc</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;&#160;</td>
+          <td class="paramname"><em>bridge</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;&#160;</td>
+          <td class="paramname"><em>reward</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1STAmount.html">STAmount</a> &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>minAccountCreate</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="xchain__bridge_8cpp_source.html#l00071">71</a> of file <a class="el" href="xchain__bridge_8cpp_source.html">xchain_bridge.cpp</a>.</p>
+
+</div>
+</div>
+<a id="ab032769efd4d5b4761c4d108d42a69a5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab032769efd4d5b4761c4d108d42a69a5">&#9670;&nbsp;</a></span>bridge_modify()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classJson_1_1Value.html">Json::Value</a> ripple::test::jtx::bridge_modify </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> const &amp;&#160;</td>
+          <td class="paramname"><em>acc</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;&#160;</td>
+          <td class="paramname"><em>bridge</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1STAmount.html">STAmount</a> &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>reward</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1STAmount.html">STAmount</a> &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>minAccountCreate</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="xchain__bridge_8cpp_source.html#l00092">92</a> of file <a class="el" href="xchain__bridge_8cpp_source.html">xchain_bridge.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a9298c16368e46c025f1e0563285a6c33"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9298c16368e46c025f1e0563285a6c33">&#9670;&nbsp;</a></span>xchain_create_claim_id()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classJson_1_1Value.html">Json::Value</a> ripple::test::jtx::xchain_create_claim_id </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> const &amp;&#160;</td>
+          <td class="paramname"><em>acc</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;&#160;</td>
+          <td class="paramname"><em>bridge</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;&#160;</td>
+          <td class="paramname"><em>reward</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> const &amp;&#160;</td>
+          <td class="paramname"><em>otherChainSource</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="xchain__bridge_8cpp_source.html#l00115">115</a> of file <a class="el" href="xchain__bridge_8cpp_source.html">xchain_bridge.cpp</a>.</p>
+
+</div>
+</div>
+<a id="adb16b0b90c444073e9d4b85351349cd0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adb16b0b90c444073e9d4b85351349cd0">&#9670;&nbsp;</a></span>xchain_commit()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classJson_1_1Value.html">Json::Value</a> ripple::test::jtx::xchain_commit </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> const &amp;&#160;</td>
+          <td class="paramname"><em>acc</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;&#160;</td>
+          <td class="paramname"><em>bridge</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td>
+          <td class="paramname"><em>claimID</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structripple_1_1test_1_1jtx_1_1AnyAmount.html">AnyAmount</a> const &amp;&#160;</td>
+          <td class="paramname"><em>amt</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>dst</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="xchain__bridge_8cpp_source.html#l00134">134</a> of file <a class="el" href="xchain__bridge_8cpp_source.html">xchain_bridge.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a5a095e0f7eea1ab0f33920fd893feb2e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5a095e0f7eea1ab0f33920fd893feb2e">&#9670;&nbsp;</a></span>xchain_claim()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classJson_1_1Value.html">Json::Value</a> ripple::test::jtx::xchain_claim </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> const &amp;&#160;</td>
+          <td class="paramname"><em>acc</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;&#160;</td>
+          <td class="paramname"><em>bridge</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td>
+          <td class="paramname"><em>claimID</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structripple_1_1test_1_1jtx_1_1AnyAmount.html">AnyAmount</a> const &amp;&#160;</td>
+          <td class="paramname"><em>amt</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> const &amp;&#160;</td>
+          <td class="paramname"><em>dst</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="xchain__bridge_8cpp_source.html#l00156">156</a> of file <a class="el" href="xchain__bridge_8cpp_source.html">xchain_bridge.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a58da4eb28cfb86cc1fb1212cec9b1687"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a58da4eb28cfb86cc1fb1212cec9b1687">&#9670;&nbsp;</a></span>sidechain_xchain_account_create()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classJson_1_1Value.html">Json::Value</a> ripple::test::jtx::sidechain_xchain_account_create </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> const &amp;&#160;</td>
+          <td class="paramname"><em>acc</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;&#160;</td>
+          <td class="paramname"><em>bridge</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> const &amp;&#160;</td>
+          <td class="paramname"><em>dst</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structripple_1_1test_1_1jtx_1_1AnyAmount.html">AnyAmount</a> const &amp;&#160;</td>
+          <td class="paramname"><em>amt</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structripple_1_1test_1_1jtx_1_1AnyAmount.html">AnyAmount</a> const &amp;&#160;</td>
+          <td class="paramname"><em>reward</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="xchain__bridge_8cpp_source.html#l00177">177</a> of file <a class="el" href="xchain__bridge_8cpp_source.html">xchain_bridge.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a1db012ebf687cbfe101fb8139a7094dc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1db012ebf687cbfe101fb8139a7094dc">&#9670;&nbsp;</a></span>claim_attestation()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classJson_1_1Value.html">Json::Value</a> ripple::test::jtx::claim_attestation </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> const &amp;&#160;</td>
+          <td class="paramname"><em>submittingAccount</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;&#160;</td>
+          <td class="paramname"><em>jvBridge</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> const &amp;&#160;</td>
+          <td class="paramname"><em>sendingAccount</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structripple_1_1test_1_1jtx_1_1AnyAmount.html">jtx::AnyAmount</a> const &amp;&#160;</td>
+          <td class="paramname"><em>sendingAmount</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> const &amp;&#160;</td>
+          <td class="paramname"><em>rewardAccount</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>wasLockingChainSend</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>&#160;</td>
+          <td class="paramname"><em>claimID</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>dst</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structripple_1_1test_1_1jtx_1_1signer.html">jtx::signer</a> const &amp;&#160;</td>
+          <td class="paramname"><em>signer</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="xchain__bridge_8cpp_source.html#l00199">199</a> of file <a class="el" href="xchain__bridge_8cpp_source.html">xchain_bridge.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a06dafb9210cb1c81aa510b7536fe6162"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a06dafb9210cb1c81aa510b7536fe6162">&#9670;&nbsp;</a></span>create_account_attestation()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classJson_1_1Value.html">Json::Value</a> ripple::test::jtx::create_account_attestation </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> const &amp;&#160;</td>
+          <td class="paramname"><em>submittingAccount</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;&#160;</td>
+          <td class="paramname"><em>jvBridge</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> const &amp;&#160;</td>
+          <td class="paramname"><em>sendingAccount</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structripple_1_1test_1_1jtx_1_1AnyAmount.html">jtx::AnyAmount</a> const &amp;&#160;</td>
+          <td class="paramname"><em>sendingAmount</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structripple_1_1test_1_1jtx_1_1AnyAmount.html">jtx::AnyAmount</a> const &amp;&#160;</td>
+          <td class="paramname"><em>rewardAmount</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> const &amp;&#160;</td>
+          <td class="paramname"><em>rewardAccount</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>wasLockingChainSend</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>&#160;</td>
+          <td class="paramname"><em>createCount</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> const &amp;&#160;</td>
+          <td class="paramname"><em>dst</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structripple_1_1test_1_1jtx_1_1signer.html">jtx::signer</a> const &amp;&#160;</td>
+          <td class="paramname"><em>signer</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="xchain__bridge_8cpp_source.html#l00251">251</a> of file <a class="el" href="xchain__bridge_8cpp_source.html">xchain_bridge.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a081ac62247aaa465f14e512a6f9d21fe"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a081ac62247aaa465f14e512a6f9d21fe">&#9670;&nbsp;</a></span>claim_attestations()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#a4fe67575d563fee67196173e402a6d51">JValueVec</a> ripple::test::jtx::claim_attestations </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> const &amp;&#160;</td>
+          <td class="paramname"><em>submittingAccount</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;&#160;</td>
+          <td class="paramname"><em>jvBridge</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> const &amp;&#160;</td>
+          <td class="paramname"><em>sendingAccount</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structripple_1_1test_1_1jtx_1_1AnyAmount.html">jtx::AnyAmount</a> const &amp;&#160;</td>
+          <td class="paramname"><em>sendingAmount</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>rewardAccounts</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>wasLockingChainSend</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>&#160;</td>
+          <td class="paramname"><em>claimID</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>dst</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="structripple_1_1test_1_1jtx_1_1signer.html">jtx::signer</a> &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>signers</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> const&#160;</td>
+          <td class="paramname"><em>numAtts</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> const&#160;</td>
+          <td class="paramname"><em>fromIdx</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="xchain__bridge_8cpp_source.html#l00306">306</a> of file <a class="el" href="xchain__bridge_8cpp_source.html">xchain_bridge.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a78f65ad7960c3069d61b8f41eec25b2f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a78f65ad7960c3069d61b8f41eec25b2f">&#9670;&nbsp;</a></span>create_account_attestations()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#a4fe67575d563fee67196173e402a6d51">JValueVec</a> ripple::test::jtx::create_account_attestations </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> const &amp;&#160;</td>
+          <td class="paramname"><em>submittingAccount</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;&#160;</td>
+          <td class="paramname"><em>jvBridge</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> const &amp;&#160;</td>
+          <td class="paramname"><em>sendingAccount</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structripple_1_1test_1_1jtx_1_1AnyAmount.html">jtx::AnyAmount</a> const &amp;&#160;</td>
+          <td class="paramname"><em>sendingAmount</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structripple_1_1test_1_1jtx_1_1AnyAmount.html">jtx::AnyAmount</a> const &amp;&#160;</td>
+          <td class="paramname"><em>rewardAmount</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>rewardAccounts</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>wasLockingChainSend</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>&#160;</td>
+          <td class="paramname"><em>createCount</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> const &amp;&#160;</td>
+          <td class="paramname"><em>dst</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="structripple_1_1test_1_1jtx_1_1signer.html">jtx::signer</a> &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>signers</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> const&#160;</td>
+          <td class="paramname"><em>numAtts</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> const&#160;</td>
+          <td class="paramname"><em>fromIdx</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="xchain__bridge_8cpp_source.html#l00338">338</a> of file <a class="el" href="xchain__bridge_8cpp_source.html">xchain_bridge.cpp</a>.</p>
+
+</div>
+</div>
 <a id="a95abf901db0a698e0c97d00476c95f34"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a95abf901db0a698e0c97d00476c95f34">&#9670;&nbsp;</a></span>noop()</h2>
 
@@ -3866,6 +4748,46 @@ template&lt;typename... Amts&gt; </div>
 
 </div>
 </div>
+<a id="a4cb76f8a8802479d5eb5013cba62d678"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4cb76f8a8802479d5eb5013cba62d678">&#9670;&nbsp;</a></span>sidechain_xchain_account_claim()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classJson_1_1Value.html">Json::Value</a> ripple::test::jtx::sidechain_xchain_account_claim </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> const &amp;&#160;</td>
+          <td class="paramname"><em>acc</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;&#160;</td>
+          <td class="paramname"><em>bridge</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> const &amp;&#160;</td>
+          <td class="paramname"><em>dst</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structripple_1_1test_1_1jtx_1_1AnyAmount.html">AnyAmount</a> const &amp;&#160;</td>
+          <td class="paramname"><em>amt</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <h2 class="groupheader">Variable Documentation</h2>
 <a id="a63a6084150ed52defb16d9139ad247f4"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a63a6084150ed52defb16d9139ad247f4">&#9670;&nbsp;</a></span>dropsPerXRP</h2>
@@ -4139,6 +5061,54 @@ template&lt;class... T&gt; </div>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="TestHelpers_8h_source.html#l00241">241</a> of file <a class="el" href="TestHelpers_8h_source.html">TestHelpers.h</a>.</p>
+
+</div>
+</div>
+<a id="a66b1ce7f0e7b4f1753f618114fc2dda2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a66b1ce7f0e7b4f1753f618114fc2dda2">&#9670;&nbsp;</a></span>UT_XCHAIN_DEFAULT_NUM_SIGNERS</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> ripple::test::jtx::UT_XCHAIN_DEFAULT_NUM_SIGNERS = 5</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="xchain__bridge_8h_source.html#l00036">36</a> of file <a class="el" href="xchain__bridge_8h_source.html">xchain_bridge.h</a>.</p>
+
+</div>
+</div>
+<a id="a025fdced36c3452b4b2c703b119739ee"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a025fdced36c3452b4b2c703b119739ee">&#9670;&nbsp;</a></span>UT_XCHAIN_DEFAULT_QUORUM</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> ripple::test::jtx::UT_XCHAIN_DEFAULT_QUORUM = 4</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="xchain__bridge_8h_source.html#l00037">37</a> of file <a class="el" href="xchain__bridge_8h_source.html">xchain_bridge.h</a>.</p>
 
 </div>
 </div>

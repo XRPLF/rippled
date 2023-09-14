@@ -97,102 +97,122 @@ $(function() {
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/UnorderedContainers.h&gt;</span></div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/base_uint.h&gt;</span></div>
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="preprocessor">#include &lt;ripple/json/json_value.h&gt;</span></div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/cstddef.html">cstddef</a>&gt;</span></div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/mutex.html">mutex</a>&gt;</span></div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/optional.html">optional</a>&gt;</span></div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/string.html">string</a>&gt;</span></div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160; </div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/json_get_or_throw.h&gt;</span></div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160; </div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/cstddef.html">cstddef</a>&gt;</span></div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/mutex.html">mutex</a>&gt;</span></div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/optional.html">optional</a>&gt;</span></div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/string.html">string</a>&gt;</span></div>
 <div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160; </div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;<span class="keyword">namespace </span>detail {</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
 <div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160; </div>
-<div class="line"><a name="l00038"></a><span class="lineno"><a class="line" href="classripple_1_1detail_1_1AccountIDTag.html">   38</a></span>&#160;<span class="keyword">class </span><a class="code" href="classripple_1_1detail_1_1AccountIDTag.html">AccountIDTag</a></div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;{</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    <span class="keyword">explicit</span> <a class="code" href="classripple_1_1detail_1_1AccountIDTag.html#a46a87313743f3aaed347a3b8780929eb">AccountIDTag</a>() = <span class="keywordflow">default</span>;</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;};</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160; </div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;}  <span class="comment">// namespace detail</span></div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;<span class="keyword">namespace </span>detail {</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
+<div class="line"><a name="l00040"></a><span class="lineno"><a class="line" href="classripple_1_1detail_1_1AccountIDTag.html">   40</a></span>&#160;<span class="keyword">class </span><a class="code" href="classripple_1_1detail_1_1AccountIDTag.html">AccountIDTag</a></div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;{</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    <span class="keyword">explicit</span> <a class="code" href="classripple_1_1detail_1_1AccountIDTag.html#a46a87313743f3aaed347a3b8780929eb">AccountIDTag</a>() = <span class="keywordflow">default</span>;</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;};</div>
 <div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160; </div>
-<div class="line"><a name="l00047"></a><span class="lineno"><a class="line" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">   47</a></span>&#160;<span class="keyword">using</span> <a class="code" href="classripple_1_1base__uint.html">AccountID</a> = <a class="code" href="classripple_1_1base__uint.html">base_uint&lt;160, detail::AccountIDTag&gt;</a>;</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160; </div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;<a class="code" href="namespaceripple.html#a08a13b62b18272366f788632359e8793">toBase58</a>(<a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; v);</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160; </div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;<span class="keyword">template</span> &lt;&gt;</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;AccountID&gt;</a></div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;<a class="code" href="namespaceripple.html#a6ed6129376e1d37ef607c2697f5b9d6a">parseBase58</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; s);</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160; </div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;<span class="comment">// VFALCO In PublicKey.h for now</span></div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;<span class="comment">// AccountID</span></div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;<span class="comment">// calcAccountID (PublicKey const&amp; pk);</span></div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160; </div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;<a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp;</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;<a class="code" href="namespaceripple.html#a21696ba0d0fac348f88f1b9da51091b0">xrpAccount</a>();</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160; </div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;<a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp;</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;<a class="code" href="namespaceripple.html#a065cda95aed9cb1d66fb81cad0867ef6">noAccount</a>();</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160; </div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;<span class="comment">// DEPRECATED</span></div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;<span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;<a class="code" href="namespaceripple.html#a300af819bde0c7c49207d10cd787e62e">to_issuer</a>(<a class="code" href="classripple_1_1base__uint.html">AccountID</a>&amp;, <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp;);</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160; </div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;<span class="comment">// DEPRECATED Should be checking the currency or native flag</span></div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;<span class="keyword">inline</span> <span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00089"></a><span class="lineno"><a class="line" href="namespaceripple.html#a20d30277b9c78756b3d14493055a307c">   89</a></span>&#160;<a class="code" href="namespaceripple.html#a20d30277b9c78756b3d14493055a307c">isXRP</a>(<a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; c)</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;{</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    <span class="keywordflow">return</span> c == beast::zero;</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;}</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160; </div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;<span class="comment">// DEPRECATED</span></div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;<span class="keyword">inline</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div>
-<div class="line"><a name="l00096"></a><span class="lineno"><a class="line" href="namespaceripple.html#a7ee2254ebd37325e45375b4d8ac20494">   96</a></span>&#160;<a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(<a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; account)</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;{</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a08a13b62b18272366f788632359e8793">toBase58</a>(account);</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;}</div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160; </div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;<span class="comment">// DEPRECATED</span></div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;<span class="keyword">inline</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/basic_ostream.html">std::ostream</a>&amp;</div>
-<div class="line"><a name="l00103"></a><span class="lineno"><a class="line" href="namespaceripple.html#ac71c9b66116e57fec770751a191491e6">  103</a></span>&#160;<a class="code" href="namespaceripple.html#ad2cbc273400d06e5ff80501de15410e3">operator&lt;&lt;</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/io/basic_ostream.html">std::ostream</a>&amp; os, <a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; x)</div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;{</div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;    os &lt;&lt; <a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(x);</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    <span class="keywordflow">return</span> os;</div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;}</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160; </div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;<a class="code" href="namespaceripple.html#a4b64fe6c72a48b5f30ea74a07fa95716">initAccountIdCache</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> count);</div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160; </div>
-<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;}  <span class="comment">// namespace detail</span></div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160; </div>
+<div class="line"><a name="l00049"></a><span class="lineno"><a class="line" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">   49</a></span>&#160;<span class="keyword">using</span> <a class="code" href="classripple_1_1base__uint.html">AccountID</a> = <a class="code" href="classripple_1_1base__uint.html">base_uint&lt;160, detail::AccountIDTag&gt;</a>;</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160; </div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;<a class="code" href="namespaceripple.html#a08a13b62b18272366f788632359e8793">toBase58</a>(<a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; v);</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160; </div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;<span class="keyword">template</span> &lt;&gt;</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;AccountID&gt;</a></div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;<a class="code" href="namespaceripple.html#a6ed6129376e1d37ef607c2697f5b9d6a">parseBase58</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; s);</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160; </div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;<span class="comment">// VFALCO In PublicKey.h for now</span></div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;<span class="comment">// AccountID</span></div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;<span class="comment">// calcAccountID (PublicKey const&amp; pk);</span></div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160; </div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;<a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp;</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;<a class="code" href="namespaceripple.html#a21696ba0d0fac348f88f1b9da51091b0">xrpAccount</a>();</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160; </div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;<a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp;</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;<a class="code" href="namespaceripple.html#a065cda95aed9cb1d66fb81cad0867ef6">noAccount</a>();</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160; </div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;<span class="comment">// DEPRECATED</span></div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;<span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;<a class="code" href="namespaceripple.html#a300af819bde0c7c49207d10cd787e62e">to_issuer</a>(<a class="code" href="classripple_1_1base__uint.html">AccountID</a>&amp;, <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp;);</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160; </div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;<span class="comment">// DEPRECATED Should be checking the currency or native flag</span></div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;<span class="keyword">inline</span> <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00091"></a><span class="lineno"><a class="line" href="namespaceripple.html#a20d30277b9c78756b3d14493055a307c">   91</a></span>&#160;<a class="code" href="namespaceripple.html#a20d30277b9c78756b3d14493055a307c">isXRP</a>(<a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; c)</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;{</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;    <span class="keywordflow">return</span> c == beast::zero;</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;}</div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160; </div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;<span class="comment">// DEPRECATED</span></div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;<span class="keyword">inline</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div>
+<div class="line"><a name="l00098"></a><span class="lineno"><a class="line" href="namespaceripple.html#a7ee2254ebd37325e45375b4d8ac20494">   98</a></span>&#160;<a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(<a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; account)</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;{</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a08a13b62b18272366f788632359e8793">toBase58</a>(account);</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;}</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160; </div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;<span class="comment">// DEPRECATED</span></div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;<span class="keyword">inline</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/basic_ostream.html">std::ostream</a>&amp;</div>
+<div class="line"><a name="l00105"></a><span class="lineno"><a class="line" href="namespaceripple.html#ac71c9b66116e57fec770751a191491e6">  105</a></span>&#160;<a class="code" href="namespaceripple.html#ad2cbc273400d06e5ff80501de15410e3">operator&lt;&lt;</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/io/basic_ostream.html">std::ostream</a>&amp; os, <a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; x)</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;{</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;    os &lt;&lt; <a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(x);</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;    <span class="keywordflow">return</span> os;</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;}</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160; </div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;<a class="code" href="namespaceripple.html#a4b64fe6c72a48b5f30ea74a07fa95716">initAccountIdCache</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> count);</div>
 <div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160; </div>
-<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;<span class="comment">//------------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 <div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160; </div>
-<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacestd.html">std</a> {</div>
-<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160; </div>
-<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;<span class="comment">// DEPRECATED</span></div>
-<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;<span class="comment">// VFALCO Use beast::uhash or a hardened container</span></div>
-<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;<span class="keyword">template</span> &lt;&gt;</div>
-<div class="line"><a name="l00133"></a><span class="lineno"><a class="line" href="structstd_1_1hash_3_01ripple_1_1AccountID_01_4.html">  133</a></span>&#160;<span class="keyword">struct </span><a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/hash.html">hash</a>&lt;<a class="code" href="namespaceripple.html">ripple</a>::AccountID&gt; : <a class="code" href="classripple_1_1base__uint.html#a2b1b6cd709ca016bd589753b07296bb2">ripple::AccountID::hasher</a></div>
-<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;{</div>
-<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;    <span class="keyword">explicit</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/hash/hash.html">hash</a>() = <span class="keywordflow">default</span>;</div>
-<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;};</div>
-<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160; </div>
-<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;}  <span class="comment">// namespace std</span></div>
-<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160; </div>
-<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;<span class="comment">//------------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceJson.html">Json</a> {</div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;<span class="keyword">template</span> &lt;&gt;</div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;<span class="keyword">inline</span> <a class="code" href="classripple_1_1base__uint.html">ripple::AccountID</a></div>
+<div class="line"><a name="l00132"></a><span class="lineno"><a class="line" href="namespaceJson.html#ae967e29d56a8001d5cf7cbc307ada9a3">  132</a></span>&#160;<a class="code" href="namespaceJson.html#ae967e29d56a8001d5cf7cbc307ada9a3">getOrThrow</a>(<a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span>&amp; v, <a class="code" href="classripple_1_1SField.html">ripple::SField</a> <span class="keyword">const</span>&amp; field)</div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;{</div>
+<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;    <span class="keyword">using namespace </span><a class="code" href="namespaceripple.html">ripple</a>;</div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160; </div>
+<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span> b58 = getOrThrow&lt;std::string&gt;(v, field);</div>
+<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;    <span class="keywordflow">if</span> (<span class="keyword">auto</span> <span class="keyword">const</span> r = parseBase58&lt;AccountID&gt;(b58))</div>
+<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;        <span class="keywordflow">return</span> *r;</div>
+<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;    Throw&lt;JsonTypeMismatchError&gt;(field.getJsonName(), <span class="stringliteral">&quot;AccountID&quot;</span>);</div>
+<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;}</div>
+<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;}  <span class="comment">// namespace Json</span></div>
+<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160; </div>
+<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;<span class="comment">//------------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160; </div>
+<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacestd.html">std</a> {</div>
+<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160; </div>
+<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;<span class="comment">// DEPRECATED</span></div>
+<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;<span class="comment">// VFALCO Use beast::uhash or a hardened container</span></div>
+<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;<span class="keyword">template</span> &lt;&gt;</div>
+<div class="line"><a name="l00150"></a><span class="lineno"><a class="line" href="structstd_1_1hash_3_01ripple_1_1AccountID_01_4.html">  150</a></span>&#160;<span class="keyword">struct </span><a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/hash.html">hash</a>&lt;<a class="code" href="namespaceripple.html">ripple</a>::<a class="code" href="classripple_1_1base__uint.html">AccountID</a>&gt; : <a class="code" href="classripple_1_1hardened__hash.html">ripple::AccountID::hasher</a></div>
+<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;{</div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;    <span class="keyword">explicit</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/hash.html">hash</a>() = <span class="keywordflow">default</span>;</div>
+<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;};</div>
+<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160; </div>
+<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;}  <span class="comment">// namespace std</span></div>
+<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160; </div>
+<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="anamespaceripple_html_a08a13b62b18272366f788632359e8793"><div class="ttname"><a href="namespaceripple.html#a08a13b62b18272366f788632359e8793">ripple::toBase58</a></div><div class="ttdeci">std::string toBase58(AccountID const &amp;v)</div><div class="ttdoc">Convert AccountID to base58 checked string.</div><div class="ttdef"><b>Definition:</b> <a href="AccountID_8cpp_source.html#l00104">AccountID.cpp:104</a></div></div>
+<div class="ttc" id="anamespaceJson_html_ae967e29d56a8001d5cf7cbc307ada9a3"><div class="ttname"><a href="namespaceJson.html#ae967e29d56a8001d5cf7cbc307ada9a3">Json::getOrThrow</a></div><div class="ttdeci">ripple::AccountID getOrThrow(Json::Value const &amp;v, ripple::SField const &amp;field)</div><div class="ttdef"><b>Definition:</b> <a href="AccountID_8h_source.html#l00132">AccountID.h:132</a></div></div>
 <div class="ttc" id="anamespaceripple_html_ad2cbc273400d06e5ff80501de15410e3"><div class="ttname"><a href="namespaceripple.html#ad2cbc273400d06e5ff80501de15410e3">ripple::operator&lt;&lt;</a></div><div class="ttdeci">std::ostream &amp; operator&lt;&lt;(std::ostream &amp;os, TOffer&lt; TIn, TOut &gt; const &amp;offer)</div><div class="ttdef"><b>Definition:</b> <a href="Offer_8h_source.html#l00303">Offer.h:303</a></div></div>
 <div class="ttc" id="aclassripple_1_1base__uint_html"><div class="ttname"><a href="classripple_1_1base__uint.html">ripple::base_uint</a></div><div class="ttdoc">Integers of any length that is a multiple of 32-bits.</div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00082">base_uint.h:82</a></div></div>
+<div class="ttc" id="anamespaceJson_html"><div class="ttname"><a href="namespaceJson.html">Json</a></div><div class="ttdoc">JSON (JavaScript Object Notation).</div><div class="ttdef"><b>Definition:</b> <a href="json__reader_8cpp_source.html#l00029">json_reader.cpp:29</a></div></div>
 <div class="ttc" id="abasic_ostream_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/io/basic_ostream.html">std::ostream</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="aclassripple_1_1detail_1_1AccountIDTag_html_a46a87313743f3aaed347a3b8780929eb"><div class="ttname"><a href="classripple_1_1detail_1_1AccountIDTag.html#a46a87313743f3aaed347a3b8780929eb">ripple::detail::AccountIDTag::AccountIDTag</a></div><div class="ttdeci">AccountIDTag()=default</div></div>
 <div class="ttc" id="acstddef_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/cstddef.html">cstddef</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a21696ba0d0fac348f88f1b9da51091b0"><div class="ttname"><a href="namespaceripple.html#a21696ba0d0fac348f88f1b9da51091b0">ripple::xrpAccount</a></div><div class="ttdeci">AccountID const  &amp; xrpAccount()</div><div class="ttdoc">Compute AccountID from public key.</div><div class="ttdef"><b>Definition:</b> <a href="AccountID_8cpp_source.html#l00168">AccountID.cpp:168</a></div></div>
-<div class="ttc" id="aclassripple_1_1detail_1_1AccountIDTag_html"><div class="ttname"><a href="classripple_1_1detail_1_1AccountIDTag.html">ripple::detail::AccountIDTag</a></div><div class="ttdef"><b>Definition:</b> <a href="AccountID_8h_source.html#l00038">AccountID.h:38</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a20d30277b9c78756b3d14493055a307c"><div class="ttname"><a href="namespaceripple.html#a20d30277b9c78756b3d14493055a307c">ripple::isXRP</a></div><div class="ttdeci">bool isXRP(AccountID const &amp;c)</div><div class="ttdef"><b>Definition:</b> <a href="AccountID_8h_source.html#l00089">AccountID.h:89</a></div></div>
-<div class="ttc" id="aclassripple_1_1base__uint_html_a2b1b6cd709ca016bd589753b07296bb2"><div class="ttname"><a href="classripple_1_1base__uint.html#a2b1b6cd709ca016bd589753b07296bb2">ripple::base_uint&lt; 160, detail::AccountIDTag &gt;::hasher</a></div><div class="ttdeci">hardened_hash&lt;&gt; hasher</div><div class="ttdoc">Value hashing function.</div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00167">base_uint.h:167</a></div></div>
+<div class="ttc" id="aclassripple_1_1hardened__hash_html"><div class="ttname"><a href="classripple_1_1hardened__hash.html">ripple::hardened_hash</a></div><div class="ttdoc">Seed functor once per construction.</div><div class="ttdef"><b>Definition:</b> <a href="hardened__hash_8h_source.html#l00096">hardened_hash.h:96</a></div></div>
+<div class="ttc" id="aclassripple_1_1detail_1_1AccountIDTag_html"><div class="ttname"><a href="classripple_1_1detail_1_1AccountIDTag.html">ripple::detail::AccountIDTag</a></div><div class="ttdef"><b>Definition:</b> <a href="AccountID_8h_source.html#l00040">AccountID.h:40</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a20d30277b9c78756b3d14493055a307c"><div class="ttname"><a href="namespaceripple.html#a20d30277b9c78756b3d14493055a307c">ripple::isXRP</a></div><div class="ttdeci">bool isXRP(AccountID const &amp;c)</div><div class="ttdef"><b>Definition:</b> <a href="AccountID_8h_source.html#l00091">AccountID.h:91</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a4b64fe6c72a48b5f30ea74a07fa95716"><div class="ttname"><a href="namespaceripple.html#a4b64fe6c72a48b5f30ea74a07fa95716">ripple::initAccountIdCache</a></div><div class="ttdeci">void initAccountIdCache(std::size_t count)</div><div class="ttdoc">Initialize the global cache used to map AccountID to base58 conversions.</div><div class="ttdef"><b>Definition:</b> <a href="AccountID_8cpp_source.html#l00097">AccountID.cpp:97</a></div></div>
+<div class="ttc" id="aclassripple_1_1SField_html"><div class="ttname"><a href="classripple_1_1SField.html">ripple::SField</a></div><div class="ttdoc">Identifies fields.</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00117">SField.h:117</a></div></div>
 <div class="ttc" id="anamespacestd_html"><div class="ttname"><a href="namespacestd.html">std</a></div><div class="ttdoc">STL namespace.</div></div>
 <div class="ttc" id="aoptional_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/optional.html">optional</a></div></div>
 <div class="ttc" id="amutex_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/mutex.html">mutex</a></div></div>
@@ -200,6 +220,7 @@ $(function() {
 <div class="ttc" id="anamespaceripple_html_af9776f187d3686a7fba4c2d2fbeebdf4"><div class="ttname"><a href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">ripple::to_string</a></div><div class="ttdeci">std::string to_string(Manifest const &amp;m)</div><div class="ttdoc">Format the specified manifest to a string for debugging purposes.</div><div class="ttdef"><b>Definition:</b> <a href="app_2misc_2impl_2Manifest_8cpp_source.html#l00041">app/misc/impl/Manifest.cpp:41</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a6ed6129376e1d37ef607c2697f5b9d6a"><div class="ttname"><a href="namespaceripple.html#a6ed6129376e1d37ef607c2697f5b9d6a">ripple::parseBase58</a></div><div class="ttdeci">std::optional&lt; AccountID &gt; parseBase58(std::string const &amp;s)</div><div class="ttdoc">Parse AccountID from checked, base58 string.</div><div class="ttdef"><b>Definition:</b> <a href="AccountID_8cpp_source.html#l00114">AccountID.cpp:114</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a065cda95aed9cb1d66fb81cad0867ef6"><div class="ttname"><a href="namespaceripple.html#a065cda95aed9cb1d66fb81cad0867ef6">ripple::noAccount</a></div><div class="ttdeci">AccountID const  &amp; noAccount()</div><div class="ttdoc">A placeholder for empty accounts.</div><div class="ttdef"><b>Definition:</b> <a href="AccountID_8cpp_source.html#l00175">AccountID.cpp:175</a></div></div>
+<div class="ttc" id="aclassJson_1_1Value_html"><div class="ttname"><a href="classJson_1_1Value.html">Json::Value</a></div><div class="ttdoc">Represents a JSON value.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00145">json_value.h:145</a></div></div>
 <div class="ttc" id="ahash_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/hash.html">std::hash</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a300af819bde0c7c49207d10cd787e62e"><div class="ttname"><a href="namespaceripple.html#a300af819bde0c7c49207d10cd787e62e">ripple::to_issuer</a></div><div class="ttdeci">bool to_issuer(AccountID &amp;, std::string const &amp;)</div><div class="ttdoc">Convert hex or base58 string to AccountID.</div><div class="ttdef"><b>Definition:</b> <a href="AccountID_8cpp_source.html#l00182">AccountID.cpp:182</a></div></div>
 <div class="ttc" id="astring_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/string.html">string</a></div></div>
