@@ -18,8 +18,10 @@ macro(group_sources curdir)
 endmacro()
 
 macro (exclude_from_default target_)
-  set_target_properties (${target_} PROPERTIES EXCLUDE_FROM_ALL ON)
-  set_target_properties (${target_} PROPERTIES EXCLUDE_FROM_DEFAULT_BUILD ON)
+  if(target_)
+    set_target_properties (${target_} PROPERTIES EXCLUDE_FROM_ALL ON)
+    set_target_properties (${target_} PROPERTIES EXCLUDE_FROM_DEFAULT_BUILD ON)
+  endif()
 endmacro ()
 
 macro (exclude_if_included target_)

@@ -2,6 +2,12 @@
    package/container targets - (optional)
 #]===================================================================]
 
+# Early return if the `containers` directory is missing,
+# e.g. when we are building a Conan package.
+if(NOT EXISTS containers)
+  return()
+endif()
+
 if (is_root_project)
   if (NOT DOCKER)
     find_program (DOCKER docker)
