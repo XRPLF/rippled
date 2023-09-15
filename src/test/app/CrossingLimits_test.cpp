@@ -18,7 +18,6 @@
 #include <ripple/beast/unit_test.h>
 #include <ripple/protocol/Feature.h>
 #include <test/jtx.h>
-#include <test/jtx/TestHelpers.h>
 
 namespace ripple {
 namespace test {

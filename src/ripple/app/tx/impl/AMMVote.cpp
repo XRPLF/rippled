@@ -69,6 +69,8 @@ AMMVote::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.debug()) << "AMM Vote: Invalid asset pair.";
         return terNO_AMM;
     }
+    else if (ammSle->getFieldAmount(sfLPTokenBalance) == beast::zero)
+        return tecAMM_EMPTY;
     else if (auto const lpTokensNew =
                  ammLPHolds(ctx.view, *ammSle, ctx.tx[sfAccount], ctx.j);
              lpTokensNew == beast::zero)
@@ -208,17 +210,19 @@ applyVote(
             if (auto const discountedFee =
                     fee / AUCTION_SLOT_DISCOUNTED_FEE_FRACTION)
                 auctionSlot.setFieldU16(sfDiscountedFee, discountedFee);
-            else
+            else if (auctionSlot.isFieldPresent(sfDiscountedFee))
                 auctionSlot.makeFieldAbsent(sfDiscountedFee);
         }
     }
     else
     {
-        ammSle->makeFieldAbsent(sfTradingFee);
+        if (ammSle->isFieldPresent(sfTradingFee))
+            ammSle->makeFieldAbsent(sfTradingFee);
         if (ammSle->isFieldPresent(sfAuctionSlot))
         {
             auto& auctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
-            auctionSlot.makeFieldAbsent(sfDiscountedFee);
+            if (auctionSlot.isFieldPresent(sfDiscountedFee))
+                auctionSlot.makeFieldAbsent(sfDiscountedFee);
         }
     }
     sb.update(ammSle);

@@ -91,6 +91,13 @@ enum LedgerEntryType : std::uint16_t
      */
     ltOFFER = 0x006f,
 
+
+    /** The ledger object which lists details about sidechains.
+
+        \sa keylet::bridge
+    */
+    ltBRIDGE = 0x0069,
+
     /** A ledger object that contains a list of ledger hashes.
 
         This type is used to store the ledger hashes which the protocol uses
@@ -108,6 +115,18 @@ enum LedgerEntryType : std::uint16_t
         \sa keylet::amendments
      */
     ltAMENDMENTS = 0x0066,
+
+    /** A claim id for a cross chain transaction.
+
+        \sa keylet::xChainClaimID
+    */
+    ltXCHAIN_OWNED_CLAIM_ID = 0x0071,
+
+    /** A claim id for a cross chain create account transaction.
+
+        \sa keylet::xChainCreateAccountClaimID
+    */
+    ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID = 0x0074,
 
     /** The ledger object which lists the network's fee settings.
 
@@ -255,7 +274,7 @@ enum LedgerSpecificFlags {
         0x10000000,               // True, reject new paychans
     lsfDisallowIncomingTrustline =
         0x20000000,               // True, reject new trustlines (only if no issued assets)
-    lsfAMM [[maybe_unused]] = 0x40000000, // True, AMM account
+    // 0x40000000 is available
     lsfAllowTrustLineClawback =
         0x80000000,               // True, enable clawback
 

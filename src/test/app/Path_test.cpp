@@ -35,7 +35,6 @@
 #include <condition_variable>
 #include <mutex>
 #include <test/jtx.h>
-#include <test/jtx/TestHelpers.h>
 #include <test/jtx/envconfig.h>
 #include <thread>
 

@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2023 Ripple Labs Inc.
+    Copyright (c) 2022 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,34 +17,51 @@
 */
 //==============================================================================
 
-#include <ripple/rpc/NFTSyntheticSerializer.h>
+#ifndef RIPPLE_TEST_JTX_ATTESTER_H_INCLUDED
+#define RIPPLE_TEST_JTX_ATTESTER_H_INCLUDED
 
-#include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/app/ledger/OpenLedger.h>
-#include <ripple/app/misc/Transaction.h>
-#include <ripple/ledger/View.h>
-#include <ripple/net/RPCErr.h>
+#include <ripple/basics/Buffer.h>
 #include <ripple/protocol/AccountID.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/rpc/Context.h>
-#include <ripple/rpc/NFTokenID.h>
-#include <ripple/rpc/NFTokenOfferID.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
-#include <boost/algorithm/string/case_conv.hpp>
+
+#include <cstdint>
+#include <optional>
 
 namespace ripple {
-namespace RPC {
 
-void
-insertNFTSyntheticInJson(
-    Json::Value& response,
-    RPC::JsonContext const& context,
-    std::shared_ptr<STTx const> const& transaction,
-    TxMeta const& transactionMeta)
-{
-    insertNFTokenID(response[jss::meta], transaction, transactionMeta);
-    insertNFTokenOfferID(response[jss::meta], transaction, transactionMeta);
-}
+class PublicKey;
+class SecretKey;
+class STXChainBridge;
+class STAmount;
 
-}  // namespace RPC
+namespace test {
+namespace jtx {
+
+Buffer
+sign_claim_attestation(
+    PublicKey const& pk,
+    SecretKey const& sk,
+    STXChainBridge const& bridge,
+    AccountID const& sendingAccount,
+    STAmount const& sendingAmount,
+    AccountID const& rewardAccount,
+    bool wasLockingChainSend,
+    std::uint64_t claimID,
+    std::optional<AccountID> const& dst);
+
+Buffer
+sign_create_account_attestation(
+    PublicKey const& pk,
+    SecretKey const& sk,
+    STXChainBridge const& bridge,
+    AccountID const& sendingAccount,
+    STAmount const& sendingAmount,
+    STAmount const& rewardAmount,
+    AccountID const& rewardAccount,
+    bool wasLockingChainSend,
+    std::uint64_t createCount,
+    AccountID const& dst);
+}  // namespace jtx
+}  // namespace test
 }  // namespace ripple
+
+#endif

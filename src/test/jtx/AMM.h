@@ -65,8 +65,10 @@ class AMM
     Account const creatorAccount_;
     STAmount const asset1_;
     STAmount const asset2_;
+    uint256 const ammID_;
     IOUAmount const initialLPTokens_;
     bool log_;
+    bool doClose_;
     // Predict next purchase price
     IOUAmount lastPurchasePrice_;
     std::optional<IOUAmount> bidMin_;
@@ -103,7 +105,10 @@ public:
     ammRpcInfo(
         std::optional<AccountID> const& account = std::nullopt,
         std::optional<std::string> const& ledgerIndex = std::nullopt,
-        std::optional<std::pair<Issue, Issue>> tokens = std::nullopt) const;
+        std::optional<Issue> issue1 = std::nullopt,
+        std::optional<Issue> issue2 = std::nullopt,
+        std::optional<AccountID> const& ammAccount = std::nullopt,
+        bool ignoreParams = false) const;
 
     /** Verify the AMM balances.
      */
@@ -148,7 +153,8 @@ public:
         STAmount const& asset2,
         IOUAmount const& balance,
         std::optional<AccountID> const& account = std::nullopt,
-        std::optional<std::string> const& ledger_index = std::nullopt) const;
+        std::optional<std::string> const& ledger_index = std::nullopt,
+        std::optional<AccountID> const& ammAccount = std::nullopt) const;
 
     [[nodiscard]] bool
     ammExists() const;
@@ -180,6 +186,7 @@ public:
         std::optional<std::uint32_t> const& flags,
         std::optional<std::pair<Issue, Issue>> const& assets,
         std::optional<jtx::seq> const& seq,
+        std::optional<std::uint16_t> const& tfee = std::nullopt,
         std::optional<ter> const& ter = std::nullopt);
 
     IOUAmount
@@ -284,6 +291,23 @@ public:
     operator()(AccountID const& lp)
     {
         return ammRpcInfo(lp);
+    }
+
+    void
+    ammDelete(
+        AccountID const& deleter,
+        std::optional<ter> const& ter = std::nullopt);
+
+    void
+    setClose(bool close)
+    {
+        doClose_ = close;
+    }
+
+    uint256
+    ammID() const
+    {
+        return ammID_;
     }
 
 private:
