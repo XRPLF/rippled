@@ -437,16 +437,6 @@ public:
     template <class T>
     void
     emplace_back(T&& att);
-
-    // verify that all the signatures attest to transaction data.
-    [[nodiscard]] bool
-    verify() const;
-
-protected:
-    // Return the message that was expected to be signed by the attesters given
-    // the data to be proved.
-    [[nodiscard]] std::vector<std::uint8_t>
-    message() const;
 };
 
 template <class TAttestation>
