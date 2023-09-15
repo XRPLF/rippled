@@ -398,8 +398,9 @@ TxFormats::TxFormats()
     add(jss::DIDSet,
         ttDID_SET,
         {
+            {sfDIDDocument, soeOPTIONAL},
             {sfURI, soeOPTIONAL},
-            {sfData, soeOPTIONAL},
+            {sfAttestation, soeOPTIONAL},
             {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);

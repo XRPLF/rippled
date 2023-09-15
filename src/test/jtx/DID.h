@@ -37,6 +37,24 @@ set(jtx::Account const& account);
 Json::Value
 setValid(jtx::Account const& account);
 
+/** Sets the optional DIDDocument on a DIDSet. */
+class document
+{
+private:
+    std::string document_;
+
+public:
+    explicit document(std::string const& u) : document_(strHex(u))
+    {
+    }
+
+    void
+    operator()(jtx::Env&, jtx::JTx& jtx) const
+    {
+        jtx.jv[sfDIDDocument.jsonName] = document_;
+    }
+};
+
 /** Sets the optional URI on a DIDSet. */
 class uri
 {
@@ -55,21 +73,21 @@ public:
     }
 };
 
-/** Sets the optional URI on a DIDSet. */
-class data
+/** Sets the optional Attestation on a DIDSet. */
+class attestation
 {
 private:
-    std::string data_;
+    std::string attestation_;
 
 public:
-    explicit data(std::string const& u) : data_(strHex(u))
+    explicit attestation(std::string const& u) : attestation_(strHex(u))
     {
     }
 
     void
     operator()(jtx::Env&, jtx::JTx& jtx) const
     {
-        jtx.jv[sfData.jsonName] = data_;
+        jtx.jv[sfAttestation.jsonName] = attestation_;
     }
 };
 

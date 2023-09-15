@@ -285,8 +285,9 @@ LedgerFormats::LedgerFormats()
         ltDID,
         {
             {sfAccount,              soeREQUIRED},
+            {sfDIDDocument,          soeOPTIONAL},
             {sfURI,                  soeOPTIONAL},
-            {sfData,                 soeOPTIONAL},
+            {sfAttestation,          soeOPTIONAL},
             {sfOwnerNode,            soeREQUIRED},
             {sfPreviousTxnID,        soeREQUIRED},
             {sfPreviousTxnLgrSeq,    soeREQUIRED}

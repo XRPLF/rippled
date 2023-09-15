@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2023 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -50,11 +50,13 @@ DIDSet::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
-    if (!ctx.tx.isFieldPresent(sfURI) && !ctx.tx.isFieldPresent(sfData))
+    if (!ctx.tx.isFieldPresent(sfURI) &&
+        !ctx.tx.isFieldPresent(sfDIDDocument) &&
+        !ctx.tx.isFieldPresent(sfAttestation))
         return temEMPTY_DID;
 
     if (ctx.tx.isFieldPresent(sfURI) && ctx.tx[sfURI].empty() &&
-        ctx.tx.isFieldPresent(sfData) && ctx.tx[sfData].empty())
+        ctx.tx.isFieldPresent(sfDIDDocument) && ctx.tx[sfDIDDocument].empty())
         return temEMPTY_DID;
 
     if (auto uri = ctx.tx[~sfURI])
@@ -63,13 +65,35 @@ DIDSet::preflight(PreflightContext const& ctx)
             return temMALFORMED;
     }
 
-    if (auto data = ctx.tx[~sfData])
+    if (auto document = ctx.tx[~sfDIDDocument])
     {
-        if (data->length() > maxDIDDataLength)
+        if (document->length() > maxDIDDocumentLength)
+            return temMALFORMED;
+    }
+
+    if (auto attestation = ctx.tx[~sfAttestation])
+    {
+        if (attestation->length() > maxDIDAttestationLength)
             return temMALFORMED;
     }
 
     return preflight2(ctx);
+}
+
+TER
+DIDSet::preclaim(PreclaimContext const& ctx)
+{
+    AccountID const account = ctx.tx[sfAccount];
+    Keylet const didKeylet = keylet::did(account);
+
+    if (!ctx.view.read(didKeylet))
+    {
+        if (!ctx.tx.isFieldPresent(sfURI) &&
+            !ctx.tx.isFieldPresent(sfDIDDocument))
+            return tecEMPTY_DID;
+    }
+
+    return tesSUCCESS;
 }
 
 TER
@@ -127,18 +151,31 @@ DIDSet::doApply()
                 (*sleDID)[sfURI] = *uri;
             }
         }
-        if (auto const data = ctx_.tx[~sfData])
+        if (auto const document = ctx_.tx[~sfDIDDocument])
         {
-            if (data->empty())
+            if (document->empty())
             {
-                sleDID->makeFieldAbsent(sfData);
+                sleDID->makeFieldAbsent(sfDIDDocument);
             }
             else
             {
-                (*sleDID)[sfData] = *data;
+                (*sleDID)[sfDIDDocument] = *document;
             }
         }
-        if (!sleDID->isFieldPresent(sfURI) && !sleDID->isFieldPresent(sfData))
+
+        if (auto const attestation = ctx_.tx[~sfAttestation])
+        {
+            if (attestation->empty())
+            {
+                sleDID->makeFieldAbsent(sfAttestation);
+            }
+            else
+            {
+                (*sleDID)[sfAttestation] = *attestation;
+            }
+        }
+        if (!sleDID->isFieldPresent(sfURI) &&
+            !sleDID->isFieldPresent(sfDIDDocument))
         {
             return tecEMPTY_DID;
         }
@@ -151,8 +188,12 @@ DIDSet::doApply()
     (*sleDID)[sfAccount] = account_;
     if (auto const uri = ctx_.tx[~sfURI]; uri.has_value() && !uri->empty())
         (*sleDID)[sfURI] = uri.value();
-    if (auto const data = ctx_.tx[~sfData]; data.has_value() && !data->empty())
-        (*sleDID)[sfData] = data.value();
+    if (auto const document = ctx_.tx[~sfDIDDocument];
+        document.has_value() && !document->empty())
+        (*sleDID)[sfDIDDocument] = document.value();
+    if (auto const attestation = ctx_.tx[~sfAttestation];
+        attestation.has_value() && !attestation->empty())
+        (*sleDID)[sfAttestation] = attestation.value();
 
     return addSLE(ctx_, sleDID, account_);
 }

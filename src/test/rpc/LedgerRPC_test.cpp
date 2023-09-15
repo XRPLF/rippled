@@ -1229,7 +1229,7 @@ class LedgerRPC_test : public beast::unit_test::suite
             Json::Value jv;
             jv[jss::TransactionType] = jss::DIDSet;
             jv[jss::Account] = account.human();
-            jv[sfData.jsonName] = strHex(std::string{"data"});
+            jv[sfDIDDocument.jsonName] = strHex(std::string{"data"});
             jv[sfURI.jsonName] = strHex(std::string{"uri"});
             return jv;
         };
@@ -1247,7 +1247,8 @@ class LedgerRPC_test : public beast::unit_test::suite
             Json::Value const jrr = env.rpc(
                 "json", "ledger_entry", to_string(jvParams))[jss::result];
             BEAST_EXPECT(
-                jrr[jss::node][sfData.jsonName] == strHex(std::string{"data"}));
+                jrr[jss::node][sfDIDDocument.jsonName] ==
+                strHex(std::string{"data"}));
             BEAST_EXPECT(
                 jrr[jss::node][sfURI.jsonName] == strHex(std::string{"uri"}));
         }

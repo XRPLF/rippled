@@ -281,7 +281,6 @@ CONSTRUCT_TYPED_SFIELD(sfCreateCode,            "CreateCode",           VL,     
 CONSTRUCT_TYPED_SFIELD(sfMemoType,              "MemoType",             VL,        12);
 CONSTRUCT_TYPED_SFIELD(sfMemoData,              "MemoData",             VL,        13);
 CONSTRUCT_TYPED_SFIELD(sfMemoFormat,            "MemoFormat",           VL,        14);
-CONSTRUCT_TYPED_SFIELD(sfData,                  "Data",                 VL,        15);
 
 // variable length (uncommon)
 CONSTRUCT_TYPED_SFIELD(sfFulfillment,           "Fulfillment",          VL,        16);
@@ -294,6 +293,8 @@ CONSTRUCT_TYPED_SFIELD(sfHookStateData,         "HookStateData",        VL,     
 CONSTRUCT_TYPED_SFIELD(sfHookReturnString,      "HookReturnString",     VL,        23);
 CONSTRUCT_TYPED_SFIELD(sfHookParameterName,     "HookParameterName",    VL,        24);
 CONSTRUCT_TYPED_SFIELD(sfHookParameterValue,    "HookParameterValue",   VL,        25);
+CONSTRUCT_TYPED_SFIELD(sfDIDDocument,           "DIDDocument",          VL,        26);
+CONSTRUCT_TYPED_SFIELD(sfAttestation,           "Attestation",          VL,        27);
 
 // account
 CONSTRUCT_TYPED_SFIELD(sfAccount,               "Account",              ACCOUNT,    1);
