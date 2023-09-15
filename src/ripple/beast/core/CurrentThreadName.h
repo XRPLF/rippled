@@ -1,7 +1,11 @@
 //------------------------------------------------------------------------------
 /*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2022 Ripple Labs Inc.
+    This file is part of Beast: https://github.com/vinniefalco/Beast
+    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
+
+    Portions of this file are from JUCE.
+    Copyright (c) 2013 - Raw Material Software Ltd.
+    Please visit http://www.juce.com
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,34 +21,31 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_BASICS_THREADUTILITIES_H_INCLUDED
-#define RIPPLE_BASICS_THREADUTILITIES_H_INCLUDED
+#ifndef BEAST_CORE_CURRENT_THREAD_NAME_H_INCLUDED
+#define BEAST_CORE_CURRENT_THREAD_NAME_H_INCLUDED
 
 #include <string>
-#include <thread>
+#include <string_view>
 
-namespace ripple {
+namespace beast {
 
-std::string
-get_name(std::thread::native_handle_type t);
-
-template <class Thread>
-inline auto
-get_name(Thread& t) -> decltype(t.native_handle(), t.join(), std::string{})
-{
-    return get_name(t.native_handle());
-}
-
-namespace this_thread {
-
-std::string
-get_name();
-
+/** Changes the name of the caller thread.
+    Different OSes may place different length or content limits on this name.
+*/
 void
-set_name(std::string s);
+setCurrentThreadName(std::string_view newThreadName);
 
-}  // namespace this_thread
+/** Returns the name of the caller thread.
 
-}  // namespace ripple
+    The name returned is the name as set by a call to setCurrentThreadName().
+    If the thread name is set by an external force, then that name change
+    will not be reported.
+
+    If no name has ever been set, then the empty string is returned.
+*/
+std::string
+getCurrentThreadName();
+
+}  // namespace beast
 
 #endif

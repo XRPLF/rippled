@@ -22,9 +22,9 @@
 #if RIPPLE_ROCKSDB_AVAILABLE
 
 #include <ripple/basics/ByteUtilities.h>
-#include <ripple/basics/ThreadUtilities.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/safe_cast.h>
+#include <ripple/beast/core/CurrentThreadName.h>
 #include <ripple/core/Config.h>  // VFALCO Bad dependency
 #include <ripple/nodestore/Factory.h>
 #include <ripple/nodestore/Manager.h>
@@ -67,7 +67,7 @@ public:
         std::size_t const id(++n);
         std::stringstream ss;
         ss << "rocksdb #" << id;
-        this_thread::set_name(ss.str());
+        beast::setCurrentThreadName(ss.str());
 
         (*f)(a);
     }

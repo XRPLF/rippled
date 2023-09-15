@@ -26,9 +26,11 @@
 #include <ripple/beast/net/IPEndpoint.h>
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/protocol/SystemParameters.h>  // VFALCO Breaks levelization
+
 #include <boost/beast/core/string.hpp>
 #include <boost/filesystem.hpp>  // VFALCO FIX: This include should not be here
 #include <boost/lexical_cast.hpp>
+
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
@@ -37,6 +39,7 @@
 #include <string>
 #include <type_traits>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 namespace ripple {
@@ -295,6 +298,14 @@ public:
 
     // First, attempt to load the latest ledger directly from disk.
     bool FAST_LOAD = false;
+    // When starting rippled with existing database it do not know it has those
+    // ledgers locally until the server naturally tries to backfill. This makes
+    // is difficult to test some functionality (in particular performance
+    // testing sidechains). With this variable the user is able to force rippled
+    // to consider the ledger range to be present. It should be used for testing
+    // only.
+    std::optional<std::pair<std::uint32_t, std::uint32_t>>
+        FORCED_LEDGER_RANGE_PRESENT;
 
 public:
     Config();
