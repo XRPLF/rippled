@@ -239,6 +239,17 @@ STAmount::STAmount(
     canonicalize();
 }
 
+STAmount::STAmount(SField const& name, STAmount const& from)
+    : STBase(name)
+    , mIssue(from.mIssue)
+    , mValue(from.mValue)
+    , mOffset(from.mOffset)
+    , mIsNegative(from.mIsNegative)
+{
+    assert(mValue <= std::numeric_limits<std::int64_t>::max());
+    canonicalize();
+}
+
 //------------------------------------------------------------------------------
 
 STAmount::STAmount(std::uint64_t mantissa, bool negative)

@@ -64,7 +64,7 @@ public:
     STAccount&
     operator=(AccountID const& value);
 
-    AccountID
+    AccountID const&
     value() const noexcept;
 
     void
@@ -86,7 +86,7 @@ STAccount::operator=(AccountID const& value)
     return *this;
 }
 
-inline AccountID
+inline AccountID const&
 STAccount::value() const noexcept
 {
     return value_;
@@ -97,6 +97,36 @@ STAccount::setValue(AccountID const& v)
 {
     value_ = v;
     default_ = false;
+}
+
+inline bool
+operator==(STAccount const& lhs, STAccount const& rhs)
+{
+    return lhs.value() == rhs.value();
+}
+
+inline auto
+operator<(STAccount const& lhs, STAccount const& rhs)
+{
+    return lhs.value() < rhs.value();
+}
+
+inline bool
+operator==(STAccount const& lhs, AccountID const& rhs)
+{
+    return lhs.value() == rhs;
+}
+
+inline auto
+operator<(STAccount const& lhs, AccountID const& rhs)
+{
+    return lhs.value() < rhs;
+}
+
+inline auto
+operator<(AccountID const& lhs, STAccount const& rhs)
+{
+    return lhs < rhs.value();
 }
 
 }  // namespace ripple
