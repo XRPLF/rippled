@@ -89,16 +89,6 @@ private:
         if (inp == "PAYCHAN")
             return "PayChannel";
 
-        static const std::map<std::string, std::string>
-            capitalization_exceptions = {
-                {"NFTOKEN", "NFToken"},
-                {"UNL", "UNL"},
-                {"XCHAIN", "XChain"},
-                {"ID", "ID"},
-                {"AMM", "AMM"},
-                {"URITOKEN", "URIToken"},
-                {"URI", "URI"}};
-
         std::string out;
         size_t pos = 0;
         for (;;)
@@ -107,10 +97,7 @@ private:
             if (pos == std::string::npos)
                 pos = inp.size();
             std::string token = inp.substr(0, pos);
-            if (auto const e = capitalization_exceptions.find(token);
-                e != capitalization_exceptions.end())
-                out += e->second;
-            else if (token.size() > 1)
+            if (token.size() > 1)
             {
                 boost::algorithm::to_lower(token);
                 token.data()[0] -= ('a' - 'A');
@@ -145,9 +132,13 @@ private:
         ret[jss::LEDGER_ENTRY_TYPES] = Json::objectValue;
         ret[jss::LEDGER_ENTRY_TYPES][jss::Invalid] = -1;
 
-        for (const auto& pair : LedgerFormats::getInstance().getNamesAndTypes())
-            ret[jss::LEDGER_ENTRY_TYPES][str(pair.first)] =
-                std::stoi(str(pair.second));
+        for (auto it = LedgerFormats::getInstance().begin();
+             it != LedgerFormats::getInstance().end();
+             ++it)
+        {
+            ret[jss::LEDGER_ENTRY_TYPES][str(it->getName())] =
+                std::stoi(str(it->getType()));
+        }
 
         ret[jss::FIELDS] = Json::arrayValue;
 
@@ -272,9 +263,13 @@ private:
 
         ret[jss::TRANSACTION_TYPES] = Json::objectValue;
         ret[jss::TRANSACTION_TYPES][jss::Invalid] = -1;
-        for (const auto& pair : TxFormats::getInstance().getNamesAndTypes())
-            ret[jss::TRANSACTION_TYPES][str(pair.first)] =
-                std::stoi(str(pair.second));
+        for (auto it = TxFormats::getInstance().begin();
+             it != TxFormats::getInstance().end();
+             ++it)
+        {
+            ret[jss::TRANSACTION_TYPES][str(it->getName())] =
+                std::stoi(str(it->getType()));
+        }
 
         // generate hash
         {

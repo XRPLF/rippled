@@ -145,12 +145,6 @@ public:
         return formats_.end();
     }
 
-    std::map<char const*, KeyType> const
-    getNamesAndTypes() const
-    {
-        return namesAndTypes_;
-    }
-
 protected:
     /** Retrieve a format based on its name.
      */
@@ -191,8 +185,6 @@ protected:
         names_[name] = &item;
         types_[type] = &item;
 
-        namesAndTypes_.insert({name, type});
-
         return item;
     }
 
@@ -206,8 +198,6 @@ private:
 
     boost::container::flat_map<std::string, Item const*> names_;
     boost::container::flat_map<KeyType, Item const*> types_;
-
-    std::map<char const*, KeyType> namesAndTypes_;
 };
 
 }  // namespace ripple
