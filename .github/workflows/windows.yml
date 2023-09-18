@@ -92,4 +92,5 @@ jobs:
       - name: test
         shell: bash
         run: |
-          ${build_dir}/${{ matrix.configuration }}/rippled --unittest --unittest-jobs $(nproc)
+          # ${build_dir}/${{ matrix.configuration }}/rippled --unittest --unittest-jobs $(nproc)
+          ${build_dir}/${{ matrix.configuration }}/rippled --unittest --unittest-jobs 1
