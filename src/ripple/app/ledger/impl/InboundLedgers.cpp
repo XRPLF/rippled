@@ -74,10 +74,46 @@ public:
             reason != InboundLedger::Reason::SHARD ||
             (seq != 0 && app_.getShardStore()));
 
-        // probably not the right rule
-        if (app_.getOPs().isNeedNetworkLedger() &&
-            (reason != InboundLedger::Reason::GENERIC) &&
-            (reason != InboundLedger::Reason::CONSENSUS))
+        /*  Acquiring ledgers is somewhat expensive. It requires lots of
+         *  computation and network communication. Avoid it when it's not
+         *  appropriate. Every validation from a peer for a ledger that
+         *  we do not have locally results in a call to this function: even
+         *  if we are moments away from validating the same ledger.
+         *
+         *  When the following are all true, it is very likely that we will
+         *  soon validate the ledger ourselves. Therefore, avoid acquiring
+         *  ledgers from the network if:
+         *  + Our mode is "full". It is very likely that we will build
+         *    the ledger through the normal consensus process, and
+         *  + Our latest ledger is close to the most recently validated ledger.
+         *    Otherwise, we are likely falling behind the network because
+         *    we have been closing ledgers that have not been validated, and
+         *  + The requested ledger sequence is greater than our validated
+         *    ledger, but not far into the future. Otherwise, it is either a
+         *    request for an historical ledger or, if far into the future,
+         *    likely we're quite behind and will benefit from acquiring it
+         *    from the network.
+         */
+        bool const isFull = app_.getOPs().isFull();
+        bool const fallingBehind = app_.getOPs().isFallingBehind();
+        LedgerIndex const validSeq =
+            app_.getLedgerMaster().getValidLedgerIndex();
+        constexpr std::size_t lagLeeway = 20;
+        bool const nearFuture =
+            (seq > validSeq) && (seq < validSeq + lagLeeway);
+        bool const shouldAcquire = !(isFull && !fallingBehind && nearFuture);
+        JLOG(j_.trace()) << "Evaluating whether to acquire ledger " << hash
+                         << ". full: " << (isFull ? "true" : "false")
+                         << ". falling behind: "
+                         << (fallingBehind ? "true" : "false")
+                         << ". ledger sequence " << seq
+                         << ". Valid sequence: " << validSeq
+                         << ". Lag leeway: " << lagLeeway
+                         << ". request for near future ledger: "
+                         << (nearFuture ? "true" : "false")
+                         << ". Acquiring ledger? "
+                         << (shouldAcquire ? "true" : "false");
+        if (!shouldAcquire)
             return {};
 
         bool isNew = true;
