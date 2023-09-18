@@ -532,7 +532,7 @@ struct XChain_test : public beast::unit_test::suite,
         // coverage test: BridgeCreate::preflight() - create bridge when feature
         // disabled.
         {
-            Env env(*this);
+            Env env(*this, supported_amendments() - featureXChainBridge);
             env(create_bridge(Account::master, jvb), ter(temDISABLED));
         }
 
