@@ -604,6 +604,8 @@ SetAccount::doApply()
     if (uFlagsIn != uFlagsOut)
         sle->setFieldU32(sfFlags, uFlagsOut);
 
+    ctx_.view().update(sle);
+
     return tesSUCCESS;
 }
 

@@ -26,7 +26,7 @@
 
 namespace ripple {
 
-class NFTokenBurn_test : public beast::unit_test::suite
+class NFTokenBurn0_test : public beast::unit_test::suite
 {
     // Helper function that returns the owner count of an account root.
     static std::uint32_t
@@ -786,22 +786,68 @@ class NFTokenBurn_test : public beast::unit_test::suite
         testBurnTooManyOffers(features);
     }
 
+protected:
+    void
+    run(std::uint32_t instance, bool last = false)
+    {
+        using namespace test::jtx;
+        static FeatureBitset const all{supported_amendments()};
+        static FeatureBitset const fixNFTDir{fixNFTokenDirV1};
+
+        static std::array<FeatureBitset, 4> const feats{
+            all - fixNonFungibleTokensV1_2 - fixNFTDir - fixNFTokenRemint,
+            all - fixNonFungibleTokensV1_2 - fixNFTokenRemint,
+            all - fixNFTokenRemint,
+            all};
+
+        if (BEAST_EXPECT(instance < feats.size()))
+        {
+            testWithFeats(feats[instance]);
+        }
+        BEAST_EXPECT(!last || instance == feats.size() - 1);
+    }
+
 public:
     void
     run() override
     {
-        using namespace test::jtx;
-        FeatureBitset const all{supported_amendments()};
-        FeatureBitset const fixNFTDir{fixNFTokenDirV1};
-
-        testWithFeats(
-            all - fixNonFungibleTokensV1_2 - fixNFTDir - fixNFTokenRemint);
-        testWithFeats(all - fixNonFungibleTokensV1_2 - fixNFTokenRemint);
-        testWithFeats(all - fixNFTokenRemint);
-        testWithFeats(all);
+        run(0);
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBurn, tx, ripple, 3);
+class NFTokenBurn1_test : public NFTokenBurn0_test
+{
+public:
+    void
+    run() override
+    {
+        NFTokenBurn0_test::run(1);
+    }
+};
+
+class NFTokenBurn2_test : public NFTokenBurn0_test
+{
+public:
+    void
+    run() override
+    {
+        NFTokenBurn0_test::run(2);
+    }
+};
+
+class NFTokenBurn3_test : public NFTokenBurn0_test
+{
+public:
+    void
+    run() override
+    {
+        NFTokenBurn0_test::run(3, true);
+    }
+};
+
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBurn0, tx, ripple, 3);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBurn1, tx, ripple, 3);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBurn2, tx, ripple, 3);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBurn3, tx, ripple, 3);
 
 }  // namespace ripple

@@ -171,14 +171,19 @@ constexpr std::uint32_t tfSingleAsset                  = 0x00080000;
 constexpr std::uint32_t tfTwoAsset                     = 0x00100000;
 constexpr std::uint32_t tfOneAssetLPToken              = 0x00200000;
 constexpr std::uint32_t tfLimitLPToken                 = 0x00400000;
+constexpr std::uint32_t tfTwoAssetIfEmpty              = 0x00800000;
 constexpr std::uint32_t tfWithdrawSubTx =
     tfLPToken | tfSingleAsset | tfTwoAsset | tfOneAssetLPToken |
     tfLimitLPToken | tfWithdrawAll | tfOneAssetWithdrawAll;
 constexpr std::uint32_t tfDepositSubTx =
     tfLPToken | tfSingleAsset | tfTwoAsset | tfOneAssetLPToken |
-    tfLimitLPToken;
+    tfLimitLPToken | tfTwoAssetIfEmpty;
 constexpr std::uint32_t tfWithdrawMask = ~(tfUniversal | tfWithdrawSubTx);
 constexpr std::uint32_t tfDepositMask = ~(tfUniversal | tfDepositSubTx);
+
+// BridgeModify flags:
+constexpr std::uint32_t tfClearAccountCreateAmount     = 0x00010000;
+constexpr std::uint32_t tfBridgeModifyMask = ~(tfUniversal | tfClearAccountCreateAmount);
 
 // clang-format on
 
