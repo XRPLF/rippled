@@ -79,7 +79,8 @@ jobs:
       - name: try to authenticate to ripple Conan remote
         id: remote
         run: |
-          echo outcome=$(conan user --remote ripple ${{ secrets.CONAN_USERNAME }} --password ${{ secrets.CONAN_TOKEN }} && echo success || echo failure) | tee ${GITHUB_OUTPUT}
+          echo outcome=$(conan user --remote ripple ${{ secrets.CONAN_USERNAME }} --password ${{ secrets.CONAN_TOKEN }} && tee conanuser.txt && echo success || echo failure) | tee ${GITHUB_OUTPUT}
+          cat conanuser.txt
       - name: archive profile
         # Create this archive before dependencies are added to the local cache.
         run: tar -czf conan.tar -C ~/.conan .
