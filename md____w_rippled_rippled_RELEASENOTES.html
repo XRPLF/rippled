@@ -87,45 +87,47 @@ Action Required</h2>
 <h2><a class="anchor" id="autotoc_md324"></a>
 Install / Upgrade</h2>
 <p>On supported platforms, see the <a href="https://xrpl.org/install-rippled.html">instructions on installing or updating <code>rippled</code></a>.</p>
+<p>The XRPL Foundation publishes portable binaries, which are drop-in replacements for the <code>rippled</code> daemon. <a href="https://github.com/XRPLF/rippled-portable-builds#portable-builds-of-the-rippled-server">See information and downloads for the portable binaries</a>. This will work on most distributions, including Ubuntu 16.04, 18.04, 20.04, and 22.04; CentOS; and others. Please test and open issues on GitHub if there are problems.</p>
 <h2><a class="anchor" id="autotoc_md325"></a>
 Changelog</h2>
 <h3><a class="anchor" id="autotoc_md326"></a>
-New Features and Amendments</h3>
+Amendments, New Features, and Changes</h3>
+<p>(These are changes which may impact or be useful to end users. For example, you may be able to update your code/workflow to take advantage of these changes.)</p>
 <ul>
 <li>**<code>AMM</code>**: Introduces an automated market maker (AMM) protocol to the XRP Ledger's decentralized exchange, enabling you to trade assets without a counterparty. For more information about AMMs, see: <a href="https://opensource.ripple.com/docs/xls-30d-amm/amm-uc/">Automated Market Maker</a>. <a href="https://github.com/XRPLF/rippled/pull/4294">#4294</a></li>
-<li>**<code>Clawback</code>**: Allows issuers to add the <code>lsfAllowTrustLineClawback</code> flag to an issuing account. This enables the account to recover, or <em>claw back</em>, issued tokens after they're distributed to accounts. For additional documentation on this feature, see: <a href="https://github.com/XRPLF/rippled/pull/4553">#4553</a>.</li>
+<li>**<code>Clawback</code>**: Adds a setting, <em>Allow Clawback</em>, which lets an issuer recover, or <em>claw back</em>, tokens that they previously issued. Issuers cannot enable this setting if they have issued tokens already. For additional documentation on this feature, see: <a href="https://github.com/XRPLF/rippled/pull/4553">#4553</a>.</li>
 <li>**<code>fixReducedOffersV1</code>**: Reduces the occurrence of order books that are blocked by reduced offers. <a href="https://github.com/XRPLF/rippled/pull/4512">#4512</a></li>
-<li>Added binary hardening and linker flags to enhance security during the build process. <a href="https://github.com/XRPLF/rippled/pull/4603">#4603</a></li>
-<li>Updated build dependencies to the most recent versions in Conan Center. <a href="https://github.com/XRPLF/rippled/pull/4595">#4595</a></li>
-<li>Updated Conan recipe for NuDB. <a href="https://github.com/XRPLF/rippled/pull/4615">#4615</a></li>
-<li>Added a pre-commit hook that runs the clang-format linter locally before committing changes. To install this feature, see: <a href="https://github.com/XRPLF/xrpl-dev-portal/blob/master/CONTRIBUTING.md">CONTRIBUTING</a>. <a href="https://github.com/XRPLF/rippled/pull/4599">#4599</a></li>
-<li>Added quality-of-life improvements to workflows, using new <a href="https://docs.github.com/en/actions/using-jobs/using-concurrency">concurrency control</a> features. <a href="https://github.com/XRPLF/rippled/pull/4597">#4597</a></li>
-<li>Added an Artifactory to the <code>nix</code> workflow to improve build times. <a href="https://github.com/XRPLF/rippled/pull/4556">#4556</a></li>
 <li>Added WebSocket and RPC port info to <code>server_info</code> responses. <a href="https://github.com/XRPLF/rippled/pull/4427">#4427</a></li>
+<li>Removed the deprecated <code>accepted</code>, <code>seqNum</code>, <code>hash</code>, and <code>totalCoins</code> fields from the <code>ledger</code> method. <a href="https://github.com/XRPLF/rippled/pull/4244">#4244</a></li>
 </ul>
 <h3><a class="anchor" id="autotoc_md327"></a>
 Bug Fixes and Performance Improvements</h3>
+<p>(These are behind-the-scenes improvements, such as internal changes to the code, which are not expected to impact end users.)</p>
 <ul>
-<li>Fixed an incorrect error response when there are missing fields in the API v2 <code>ledger_entry</code> method. <a href="https://github.com/XRPLF/rippled/pull/4552">#4552</a></li>
-<li>Updated checkout versions to resolve warnings during Github jobs. <a href="https://github.com/XRPLF/rippled/pull/4598">#4598</a></li>
-<li>Added an error response to the API v2 <code>account_info</code> method when you include an invalid <code>signer_lists</code> value. <a href="https://github.com/XRPLF/rippled/pull/4585">#4585</a></li>
-<li>Fixed an issue with the debug package build. <a href="https://github.com/XRPLF/rippled/pull/4591">#4591</a></li>
-<li>Added additional error responses to the API v2 <code>AccountTx</code> method. <a href="https://github.com/XRPLF/rippled/pull/4571">#4571</a></li>
-<li>Fixed build references to deleted <code>ServerHandlerImp</code>. <a href="https://github.com/XRPLF/rippled/pull/4592">#4592</a></li>
-<li>Fixed package definitions for Conan. <a href="https://github.com/XRPLF/rippled/pull/4485">#4485</a></li>
-<li>Changed the output type of the <code>mulDiv()</code> function from <code><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt;bool, uint64_t&gt;</code> to <code><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a></code>. <a href="https://github.com/XRPLF/rippled/pull/4243">#4243</a></li>
+<li>Added a pre-commit hook that runs the clang-format linter locally before committing changes. To install this feature, see: <a href="https://github.com/XRPLF/xrpl-dev-portal/blob/master/CONTRIBUTING.md">CONTRIBUTING</a>. <a href="https://github.com/XRPLF/rippled/pull/4599">#4599</a></li>
+<li>In order to make it more straightforward to catch and handle overflows: changed the output type of the <code>mulDiv()</code> function from <code><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt;bool, uint64_t&gt;</code> to <code><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a></code>. <a href="https://github.com/XRPLF/rippled/pull/4243">#4243</a></li>
 <li>Updated <code>Handler::Condition</code> enum values to make the code less brittle. <a href="https://github.com/XRPLF/rippled/pull/4239">#4239</a></li>
-<li>Renamed <code>ServerHandlerImp</code> to <code>ServerHandler</code>. <a href="https://github.com/XRPLF/rippled/pull/4516">#4516</a></li>
-<li>Removed the deprecated <code>accepted</code>, <code>seq</code>, <code>hash</code>, and <code>totalCoins</code> fields from the <code>ledger</code> method. <a href="https://github.com/XRPLF/rippled/pull/4244">#4244</a></li>
+<li>Renamed <code>ServerHandlerImp</code> to <code>ServerHandler</code>. <a href="https://github.com/XRPLF/rippled/pull/4516">#4516</a>, <a href="https://github.com/XRPLF/rippled/pull/4592">#4592</a></li>
 <li>Replaced hand-rolled code with <code><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/from_chars.html">std::from_chars</a></code> for better maintainability. <a href="https://github.com/XRPLF/rippled/pull/4473">#4473</a></li>
 <li>Removed an unused <code>TypedField</code> move constructor. <a href="https://github.com/XRPLF/rippled/pull/4567">#4567</a></li>
-<li>Enabled the <code>BETA_RPC_API</code> flag in the default unit tests config, making the API v2 available to all unit tests. <a href="https://github.com/XRPLF/rippled/pull/4573">#4573</a></li>
 </ul>
 <h3><a class="anchor" id="autotoc_md328"></a>
-Docs</h3>
+Docs and Build System</h3>
 <ul>
+<li>Updated checkout versions to resolve warnings during GitHub jobs. <a href="https://github.com/XRPLF/rippled/pull/4598">#4598</a></li>
+<li>Fixed an issue with the Debian package build. <a href="https://github.com/XRPLF/rippled/pull/4591">#4591</a></li>
 <li>Updated build instructions with additional steps to take after updating dependencies. <a href="https://github.com/XRPLF/rippled/pull/4623">#4623</a></li>
 <li>Updated contributing doc to clarify that beta releases should also be pushed to the <code>release</code> branch. <a href="https://github.com/XRPLF/rippled/pull/4589">#4589</a></li>
+<li>Enabled the <code>BETA_RPC_API</code> flag in the default unit tests config, making the API v2 (beta) available to unit tests. <a href="https://github.com/XRPLF/rippled/pull/4573">#4573</a></li>
+<li>Conan dependency management.<ul>
+<li>Fixed package definitions for Conan. <a href="https://github.com/XRPLF/rippled/pull/4485">#4485</a></li>
+<li>Updated build dependencies to the most recent versions in Conan Center. <a href="https://github.com/XRPLF/rippled/pull/4595">#4595</a></li>
+<li>Updated Conan recipe for NuDB. <a href="https://github.com/XRPLF/rippled/pull/4615">#4615</a></li>
+</ul>
+</li>
+<li>Added binary hardening and linker flags to enhance security during the build process. <a href="https://github.com/XRPLF/rippled/pull/4603">#4603</a></li>
+<li>Added an Artifactory to the <code>nix</code> workflow to improve build times. <a href="https://github.com/XRPLF/rippled/pull/4556">#4556</a></li>
+<li>Added quality-of-life improvements to workflows, using new <a href="https://docs.github.com/en/actions/using-jobs/using-concurrency">concurrency control</a> features. <a href="https://github.com/XRPLF/rippled/pull/4597">#4597</a></li>
 </ul>
 <p><a href="https://github.com/XRPLF/rippled/compare/1.11.0...1.12.0">Full Commit Log</a></p>
 <h3><a class="anchor" id="autotoc_md329"></a>
