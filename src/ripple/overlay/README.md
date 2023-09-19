@@ -343,10 +343,11 @@ messages for the local and remote endpoints, and combine them to generate a uniq
 "fingerprint". By design, this fingerprint should be the same for both SSL/TLS
 endpoints.
 
-That fingerprint, which is never shared over the wire (since each endpoint will
-calculate it independently), is then signed by each server using its public
-**`secp256k1`** node identity and the signature is transferred over the SSL/TLS
-encrypted link during the protocol handshake phase.
+That fingerprint is calculated by each endpoint independently, so the
+fingerprint is never transmitted over the network. Each server then utilizes its
+private key to sign the fingerprint. This is the same keypair that determines
+the server's public `secp256k1` node identity. The signature is transferred over
+the secure SSL/TLS encrypted link during the protocol's initial handshake phase.
 
 Each side of the link will verify that the provided signature is from the claimed
 public key against the session's unique fingerprint. If this signature check fails
