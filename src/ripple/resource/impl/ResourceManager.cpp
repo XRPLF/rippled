@@ -18,8 +18,8 @@
 //==============================================================================
 
 #include <ripple/basics/Log.h>
-#include <ripple/basics/ThreadUtilities.h>
 #include <ripple/basics/chrono.h>
+#include <ripple/beast/core/CurrentThreadName.h>
 #include <ripple/beast/net/IPAddressConversion.h>
 #include <ripple/resource/ResourceManager.h>
 #include <ripple/resource/impl/Logic.h>
@@ -149,7 +149,7 @@ private:
     void
     run()
     {
-        this_thread::set_name("Resrc::Manager");
+        beast::setCurrentThreadName("Resource::Manager");
         for (;;)
         {
             logic_.periodicActivity();

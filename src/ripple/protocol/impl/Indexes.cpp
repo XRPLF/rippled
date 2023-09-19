@@ -18,9 +18,13 @@
 //==============================================================================
 
 #include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/LedgerFormats.h>
+#include <ripple/protocol/SField.h>
+#include <ripple/protocol/STXChainBridge.h>
 #include <ripple/protocol/SeqProxy.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/protocol/nftPageMask.h>
+
 #include <algorithm>
 #include <cassert>
 
@@ -64,6 +68,9 @@ enum class LedgerNameSpace : std::uint16_t {
     NFTOKEN_BUY_OFFERS = 'h',
     NFTOKEN_SELL_OFFERS = 'i',
     AMM = 'A',
+    BRIDGE = 'H',
+    XCHAIN_CLAIM_ID = 'Q',
+    XCHAIN_CREATE_ACCOUNT_CLAIM_ID = 'K',
 
     // No longer used or supported. Left here to reserve the space
     // to avoid accidental reuse.
@@ -387,6 +394,47 @@ Keylet
 amm(uint256 const& id) noexcept
 {
     return {ltAMM, id};
+}
+
+Keylet
+bridge(STXChainBridge const& bridge, STXChainBridge::ChainType chainType)
+{
+    // A door account can support multiple bridges. On the locking chain
+    // there can only be one bridge per lockingChainCurrency. On the issuing
+    // chain there can only be one bridge per issuingChainCurrency.
+    auto const& issue = bridge.issue(chainType);
+    return {
+        ltBRIDGE,
+        indexHash(
+            LedgerNameSpace::BRIDGE, bridge.door(chainType), issue.currency)};
+}
+
+Keylet
+xChainClaimID(STXChainBridge const& bridge, std::uint64_t seq)
+{
+    return {
+        ltXCHAIN_OWNED_CLAIM_ID,
+        indexHash(
+            LedgerNameSpace::XCHAIN_CLAIM_ID,
+            bridge.lockingChainDoor(),
+            bridge.lockingChainIssue(),
+            bridge.issuingChainDoor(),
+            bridge.issuingChainIssue(),
+            seq)};
+}
+
+Keylet
+xChainCreateAccountClaimID(STXChainBridge const& bridge, std::uint64_t seq)
+{
+    return {
+        ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID,
+        indexHash(
+            LedgerNameSpace::XCHAIN_CREATE_ACCOUNT_CLAIM_ID,
+            bridge.lockingChainDoor(),
+            bridge.lockingChainIssue(),
+            bridge.issuingChainDoor(),
+            bridge.issuingChainIssue(),
+            seq)};
 }
 
 }  // namespace keylet

@@ -24,7 +24,9 @@
 #include <ripple/protocol/KeyType.h>
 #include <ripple/protocol/STExchange.h>
 #include <ripple/protocol/UintTypes.h>
+#include <ripple/protocol/json_get_or_throw.h>
 #include <ripple/protocol/tokens.h>
+
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
@@ -267,5 +269,28 @@ AccountID
 calcAccountID(PublicKey const& pk);
 
 }  // namespace ripple
+
+//------------------------------------------------------------------------------
+
+namespace Json {
+template <>
+inline ripple::PublicKey
+getOrThrow(Json::Value const& v, ripple::SField const& field)
+{
+    using namespace ripple;
+    std::string const b58 = getOrThrow<std::string>(v, field);
+    if (auto pubKeyBlob = strUnHex(b58); publicKeyType(makeSlice(*pubKeyBlob)))
+    {
+        return PublicKey{makeSlice(*pubKeyBlob)};
+    }
+    for (auto const tokenType :
+         {TokenType::NodePublic, TokenType::AccountPublic})
+    {
+        if (auto const pk = parseBase58<PublicKey>(tokenType, b58))
+            return *pk;
+    }
+    Throw<JsonTypeMismatchError>(field.getJsonName(), "PublicKey");
+}
+}  // namespace Json
 
 #endif
