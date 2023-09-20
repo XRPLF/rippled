@@ -53,8 +53,14 @@ class CFToken_test : public beast::unit_test::suite
 
             BEAST_EXPECT(env.ownerCount(master) == 0);
 
+<<<<<<< Updated upstream
+=======
+            // TODO why not working with short codes?
+            // env(cft::create(
+            //     master, "0158415500000000C1F76FF6ECB0BAC600000000"));
+>>>>>>> Stashed changes
             env(cft::create(
-                master, "0158415500000000C1F76FF6ECB0BAC600000000"));
+                master, "USD"));
             env.close();
 
             BEAST_EXPECT(env.ownerCount(master) == 1);
@@ -144,6 +150,44 @@ class CFToken_test : public beast::unit_test::suite
             env(cft::destroy(master, ripple::to_string(id.key)));
             env.close();
             BEAST_EXPECT(ownerCount(env, master) == 0);
+        }
+        {
+            // If the CFT amendment is not enabled, you should not be able to
+            // specify an amount for a Payment using CFT amount notation
+        }
+        {
+            // If the CFT amendment IS enabled, you should be able to make a
+            // CFT Payment that doesn't cross
+            Env env{*this, features | featureCFTokensV1};
+            Account const& master = env.master;
+
+            Account const gw("gw");
+            Account const rcv("rcv");
+            env.fund(XRP(10000), gw, rcv);
+
+            BEAST_EXPECT(ownerCount(env, master) == 0);
+
+            // TODO why not working with short codes?
+            env(cft::create(
+                gw, "0158415500000000C1F76FF6ECB0BAC600000000"));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, gw) == 1);
+
+            Json::Value amt;
+            amt["issuer"] = gw.human();
+            amt["cft_asset"] = "0158415500000000C1F76FF6ECB0BAC600000000";
+            amt["value"] = "1";
+            STAmount const yo = amountFromJson(sfAmount, amt);
+            BEAST_EXPECT(ownerCount(env, rcv) == 0);
+            env(pay(gw, rcv, yo));
+            env.close();
+            BEAST_EXPECT(ownerCount(env, rcv) == 1);
+
+            Json::Value params;
+            params[jss::account] = gw.human();
+
+
         }
     }
 

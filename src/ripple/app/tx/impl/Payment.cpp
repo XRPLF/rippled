@@ -19,6 +19,7 @@
 
 #include <ripple/app/paths/RippleCalc.h>
 #include <ripple/app/tx/impl/Payment.h>
+#include <ripple/app/tx/impl/details/CFTokenUtils.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/Config.h>
 #include <ripple/protocol/Feature.h>
@@ -73,9 +74,25 @@ Payment::preflight(PreflightContext const& ctx)
     auto const account = tx.getAccountID(sfAccount);
 
     if (bMax)
+    {
         maxSourceAmount = tx.getFieldAmount(sfSendMax);
+        if (maxSourceAmount.isCFT())
+        {
+            // TODO test - not at all possible for now, but will be enabled
+            // with a future amendment
+            return temDISABLED;
+        }
+    }
     else if (saDstAmount.native())
         maxSourceAmount = saDstAmount;
+    else if (saDstAmount.isCFT())
+    {
+        // TODO test - only currently possible to send non-crossing CFT
+        // payments with this amendment
+        if (!ctx.rules.enabled(featureCFTokensV1))
+            return temDISABLED;
+        maxSourceAmount = saDstAmount;
+    }
     else
         maxSourceAmount = STAmount(
             {saDstAmount.getCurrency(), account},
@@ -198,6 +215,12 @@ Payment::preflight(PreflightContext const& ctx)
                 << jss::DeliverMin.c_str() << ". " << dMin.getFullText();
             return temBAD_AMOUNT;
         }
+        if (dMin.isCFT())
+        {
+            // TODO TEST - currently not allowed to make CFT partial payments.
+            // may be enabled with a future amendment.
+            return temDISABLED;
+        }
     }
 
     return preflight2(ctx);
@@ -315,17 +338,23 @@ Payment::doApply()
     STAmount maxSourceAmount;
     if (sendMax)
         maxSourceAmount = *sendMax;
-    else if (saDstAmount.native())
-        maxSourceAmount = saDstAmount;
-    else
+    else if (saDstAmount.isIOU())
         maxSourceAmount = STAmount(
             {saDstAmount.getCurrency(), account_},
             saDstAmount.mantissa(),
             saDstAmount.exponent(),
             saDstAmount < beast::zero);
+    else
+        maxSourceAmount = saDstAmount;
 
     JLOG(j_.trace()) << "maxSourceAmount=" << maxSourceAmount.getFullText()
                      << " saDstAmount=" << saDstAmount.getFullText();
+
+    if (maxSourceAmount.isCFT())
+    {
+        std::cout << "YAGHTZEE!" << std::endl;
+        return cft::upsertToken(view(), uDstAccountID, maxSourceAmount);
+    }
 
     // Open a ledger for editing.
     auto const k = keylet::account(uDstAccountID);
@@ -365,7 +394,7 @@ Payment::doApply()
     if (!depositPreauth && bRipple && reqDepositAuth)
         return tecNO_PERMISSION;
 
-    if (bRipple)
+    if (bRipple && !saDstAmount.isCFT())
     {
         // Ripple payment with at least one intermediate step and uses
         // transitive balances.

@@ -379,6 +379,49 @@ cftIssuance(AccountID const& issuer, uint160 const& asset) noexcept
         indexHash(LedgerNameSpace::CFTOKEN_ISSUANCE, issuer, asset)};
 }
 
+Keylet
+cftIssuance(AccountID const& issuer, Currency const& asset) noexcept
+{
+    return {
+        ltCFTOKEN_ISSUANCE,
+        indexHash(LedgerNameSpace::CFTOKEN_ISSUANCE, issuer, asset)};
+}
+
+Keylet
+cftIssuance(STAmount const& amount)
+{
+    // TODO should this assertion be made?
+    assert(amount.isCFT());
+    return cftIssuance(amount.issue().account, amount.issue().currency);
+}
+
+Keylet
+cftPageMin(AccountID const& owner)
+{
+    std::array<std::uint8_t, 32> buf{};
+    std::memcpy(buf.data(), owner.data(), owner.size());
+    return {ltCFTOKEN_PAGE, uint256{buf}};
+}
+
+Keylet
+cftPageMax(AccountID const& owner)
+{
+    // TODO - we should move this mask somewhere more general. yes we are
+    // using the same one for cfts and nfts
+    uint256 id = nft::pageMask;
+    std::memcpy(id.data(), owner.data(), owner.size());
+    return {ltCFTOKEN_PAGE, id};
+}
+
+Keylet
+cftPage(Keylet const& k, uint256 const& cftID)
+{
+    assert(k.type == ltCFTOKEN_PAGE);
+    // TODO - we should move this mask somewhere more general. yes we are
+    // using the same one for cfts and nfts
+    return {ltCFTOKEN_PAGE, (k.key & ~nft::pageMask) + (cftID & nft::pageMask)};
+}
+
 }  // namespace keylet
 
 }  // namespace ripple

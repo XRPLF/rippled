@@ -386,6 +386,29 @@ public:
         beast::Journal const&);
 };
 
+class ValidCFTPage
+{
+    bool badEntry_ = false;
+    bool badLink_ = false;
+    bool badSort_ = false;
+    bool invalidSize_ = false;
+
+public:
+    void
+    visitEntry(
+        bool,
+        std::shared_ptr<SLE const> const&,
+        std::shared_ptr<SLE const> const&);
+
+    bool
+    finalize(
+        STTx const&,
+        TER const,
+        XRPAmount const,
+        ReadView const&,
+        beast::Journal const&);
+};
+
 // additional invariant checks can be declared above and then added to this
 // tuple
 using InvariantChecks = std::tuple<
@@ -400,7 +423,8 @@ using InvariantChecks = std::tuple<
     ValidNewAccountRoot,
     ValidNFTokenPage,
     NFTokenCountTracking,
-    ValidCFTIssuance>;
+    ValidCFTIssuance,
+    ValidCFTPage>;
 
 /**
  * @brief get a tuple of all invariant checks

@@ -168,6 +168,13 @@ enum LedgerEntryType : std::uint16_t
      */
     ltCFTOKEN_ISSUANCE = 0x007e,
 
+    /** A ledger object which contains a list of CFT balances
+     * any balances of that asset itself.
+
+        \sa keylet::cftPage
+     */
+    ltCFTOKEN_PAGE = 0x007f,
+
     //---------------------------------------------------------------------------
     /** A special type, matching any ledger entry type.
 

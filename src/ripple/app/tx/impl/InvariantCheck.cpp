@@ -373,6 +373,7 @@ LedgerEntryTypesMatch::visitEntry(
             case ltNFTOKEN_PAGE:
             case ltNFTOKEN_OFFER:
             case ltCFTOKEN_ISSUANCE:
+            case ltCFTOKEN_PAGE:
                 break;
             default:
                 invalidTypeAdded_ = true;
@@ -795,6 +796,123 @@ ValidCFTIssuance::finalize(
     }
 
     return cftsCreated_ == 0 && cftsDeleted_ == 0;
+}
+
+//------------------------------------------------------------------------------
+
+void
+ValidCFTPage::visitEntry(
+    bool isDelete,
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
+{
+    // TODO - this is copied from ValidNFTokenPage and some templating could
+    // happen
+    // TODO - should move pageMask to a shared namespace. we do use the same
+    // mask
+    static constexpr uint256 const& pageBits = nft::pageMask;
+    static constexpr uint256 const accountBits = ~pageBits;
+
+    auto check = [this, isDelete](std::shared_ptr<SLE const> const& sle) {
+        uint256 const account = sle->key() & accountBits;
+        uint256 const hiLimit = sle->key() & pageBits;
+        std::optional<uint256> const prev = (*sle)[~sfPreviousPageMin];
+
+        // Make sure that any page links...
+        //  1. Are properly associated with the owning account and
+        //  2. The page is correctly ordered between links.
+        if (prev)
+        {
+            if (account != (*prev & accountBits))
+                badLink_ = true;
+
+            if (hiLimit <= (*prev & pageBits))
+                badLink_ = true;
+        }
+
+        if (auto const next = (*sle)[~sfNextPageMin])
+        {
+            if (account != (*next & accountBits))
+                badLink_ = true;
+
+            if (hiLimit >= (*next & pageBits))
+                badLink_ = true;
+        }
+
+        {
+            auto const& cftokens = sle->getFieldArray(sfCFTokens);
+
+            // A CFTokenPage should never contain too many tokens or be empty.
+            if (std::size_t const cftokenCount = cftokens.size();
+                (!isDelete && cftokenCount == 0) ||
+                cftokenCount > dirMaxTokensPerPage)
+                invalidSize_ = true;
+
+            // If prev is valid, use it to establish a lower bound for
+            // page entries.  If prev is not valid the lower bound is zero.
+            uint256 const loLimit =
+                prev ? *prev & pageBits : uint256(beast::zero);
+
+            // Also verify that all CFTokenIDs in the page are sorted.
+            uint256 loCmp = loLimit;
+            for (auto const& obj : cftokens)
+            {
+                uint256 const tokenID = obj[sfCFTokenIssuanceID];
+                // TODO - should move compareTokens to a shared namespace. we do use the same
+                // mask - and confirm this is even correct
+                if (!nft::compareTokens(loCmp, tokenID))
+                    badSort_ = true;
+                loCmp = tokenID;
+
+                // None of the CFTs on this page should belong on lower or
+                // higher pages.
+                if (uint256 const tokenPageBits = tokenID & pageBits;
+                    tokenPageBits < loLimit || tokenPageBits >= hiLimit)
+                    badEntry_ = true;
+            }
+        }
+    };
+
+    if (before && before->getType() == ltCFTOKEN_PAGE)
+        check(before);
+
+    if (after && after->getType() == ltCFTOKEN_PAGE)
+        check(after);
+}
+
+bool
+ValidCFTPage::finalize(
+    STTx const& tx,
+    TER const result,
+    XRPAmount const _fee,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    if (badLink_)
+    {
+        JLOG(j.fatal()) << "Invariant failed: CFT page is improperly linked.";
+        return false;
+    }
+
+    if (badEntry_)
+    {
+        JLOG(j.fatal()) << "Invariant failed: CFT found in incorrect page.";
+        return false;
+    }
+
+    if (badSort_)
+    {
+        JLOG(j.fatal()) << "Invariant failed: CFTs on page are not sorted.";
+        return false;
+    }
+
+    if (invalidSize_)
+    {
+        JLOG(j.fatal()) << "Invariant failed: CFT page has invalid size.";
+        return false;
+    }
+
+    return true;
 }
 
 }  // namespace ripple

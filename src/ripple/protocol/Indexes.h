@@ -263,14 +263,31 @@ nft_buys(uint256 const& id) noexcept;
 Keylet
 nft_sells(uint256 const& id) noexcept;
 
+/** CFT stuff */
 Keylet
 cftIssuance(AccountID const& issuer, uint160 const& asset) noexcept;
+
+Keylet
+cftIssuance(AccountID const& issuer, Currency const& asset) noexcept;
+
+Keylet
+cftIssuance(STAmount const& amount);
 
 inline Keylet
 cftIssuance(uint256 const& id) noexcept
 {
     return {ltCFTOKEN_ISSUANCE, id};
 }
+
+Keylet
+cftPageMin(AccountID const& owner);
+
+Keylet
+cftPageMax(AccountID const& owner);
+
+Keylet
+cftPage(Keylet const& k, uint256 const& cftID);
+/** End CFT stuff */
 
 }  // namespace keylet
 

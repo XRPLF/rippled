@@ -140,10 +140,10 @@ enum TxType : std::uint16_t
     ttNFTOKEN_ACCEPT_OFFER = 29,
 
     /** This transaction creates a new CFTokenIssuance object. */
-    ttCFTOKEN_ISSUANCE_CREATE = 30,
+    ttCFTOKEN_ISSUANCE_CREATE = 31,
 
     /** This transaction destroys an existing CFTokenIssuance object. */
-    ttCFTOKEN_ISSUANCE_DESTROY = 31,
+    ttCFTOKEN_ISSUANCE_DESTROY = 32,
 
     /** This system-generated transaction type is used to update the status of the various amendments.
 

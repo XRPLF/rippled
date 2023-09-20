@@ -282,6 +282,17 @@ LedgerFormats::LedgerFormats()
             {sfCFTokenMetadata,      soeOPTIONAL},
         },
         commonFields);
+
+    add(jss::CFTokenPage,
+        ltCFTOKEN_PAGE,
+        {
+            {sfPreviousPageMin,      soeOPTIONAL},
+            {sfNextPageMin,          soeOPTIONAL},
+            {sfCFTokens,             soeREQUIRED},
+            {sfPreviousTxnID,        soeREQUIRED},
+            {sfPreviousTxnLgrSeq,    soeREQUIRED},
+        },
+        commonFields);
     // clang-format on
 }
 
