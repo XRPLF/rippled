@@ -97,6 +97,10 @@ CreateCheck::preclaim(PreclaimContext const& ctx)
         (flags & lsfDisallowIncomingCheck))
         return tecNO_PERMISSION;
 
+    // AMM can not cash the check
+    if (sleDst->isFieldPresent(sfAMMID))
+        return tecNO_PERMISSION;
+
     if ((flags & lsfRequireDestTag) && !ctx.tx.isFieldPresent(sfDestinationTag))
     {
         // The tag is basically account-specific information we don't

@@ -134,10 +134,12 @@ doAccountInfo(RPC::JsonContext& context)
 
         result[jss::account_flags] = std::move(acctFlags);
 
-        // The document states that signer_lists is a bool, however
-        // assigning any string value works. Do not allow this.
-        // This check is for api Version 2 onwards only
-        if (!params[jss::signer_lists].isBool() && context.apiVersion > 1)
+        // The document[https://xrpl.org/account_info.html#account_info] states
+        // that signer_lists is a bool, however assigning any string value
+        // works. Do not allow this. This check is for api Version 2 onwards
+        // only
+        if (context.apiVersion > 1u && params.isMember(jss::signer_lists) &&
+            !params[jss::signer_lists].isBool())
         {
             RPC::inject_error(rpcINVALID_PARAMS, result);
             return result;

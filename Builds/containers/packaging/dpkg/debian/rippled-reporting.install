@@ -1,4 +1,4 @@
-bld/rippled-reporting/rippled-reporting opt/rippled-reporting/bin
+build.rippled-reporting/rippled-reporting opt/rippled-reporting/bin
 cfg/rippled-reporting.cfg opt/rippled-reporting/etc
 debian/tmp/opt/rippled-reporting/etc/validators.txt opt/rippled-reporting/etc
 

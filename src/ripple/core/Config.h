@@ -26,9 +26,11 @@
 #include <ripple/beast/net/IPEndpoint.h>
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/protocol/SystemParameters.h>  // VFALCO Breaks levelization
+
 #include <boost/beast/core/string.hpp>
 #include <boost/filesystem.hpp>  // VFALCO FIX: This include should not be here
 #include <boost/lexical_cast.hpp>
+
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
@@ -37,6 +39,7 @@
 #include <string>
 #include <type_traits>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 namespace ripple {
@@ -210,7 +213,7 @@ public:
 
     // Node storage configuration
     std::uint32_t LEDGER_HISTORY = 256;
-    std::uint32_t FETCH_DEPTH = 1000000000;
+    std::uint32_t FETCH_DEPTH = 1'000'000'000;
 
     // Tunable that adjusts various parameters, typically associated
     // with hardware parameters (RAM size and CPU cores). The default
@@ -227,10 +230,11 @@ public:
     // Enable the experimental Ledger Replay functionality
     bool LEDGER_REPLAY = false;
 
-    // Work queue limits
-    int MAX_TRANSACTIONS = 250;
-    static constexpr int MAX_JOB_QUEUE_TX = 1000;
-    static constexpr int MIN_JOB_QUEUE_TX = 100;
+    // Work queue limits. 10000 transactions is 2 full seconds of slowdown at
+    // 5000/s.
+    int MAX_TRANSACTIONS = 10'000;
+    static constexpr int MAX_JOB_QUEUE_TX = 100'000;
+    static constexpr int MIN_JOB_QUEUE_TX = 1'000;
 
     // Amendment majority time
     std::chrono::seconds AMENDMENT_MAJORITY_TIME = defaultAmendmentMajorityTime;
@@ -294,6 +298,14 @@ public:
 
     // First, attempt to load the latest ledger directly from disk.
     bool FAST_LOAD = false;
+    // When starting rippled with existing database it do not know it has those
+    // ledgers locally until the server naturally tries to backfill. This makes
+    // is difficult to test some functionality (in particular performance
+    // testing sidechains). With this variable the user is able to force rippled
+    // to consider the ledger range to be present. It should be used for testing
+    // only.
+    std::optional<std::pair<std::uint32_t, std::uint32_t>>
+        FORCED_LEDGER_RANGE_PRESENT;
 
 public:
     Config();

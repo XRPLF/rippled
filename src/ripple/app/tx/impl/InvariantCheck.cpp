@@ -27,6 +27,7 @@
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/STArray.h>
 #include <ripple/protocol/SystemParameters.h>
+#include <ripple/protocol/TxFormats.h>
 #include <ripple/protocol/nftPageMask.h>
 
 namespace ripple {
@@ -321,12 +322,12 @@ AccountRootsNotDeleted::finalize(
     ReadView const&,
     beast::Journal const& j)
 {
-    // AMM account root can be deleted as the result of AMM withdraw
+    // AMM account root can be deleted as the result of AMM withdraw/delete
     // transaction when the total AMM LP Tokens balance goes to 0.
-    // Not every AMM withdraw deletes the AMM account, accountsDeleted_
-    // is set if it is deleted.
+    // A successful AccountDelete or AMMDelete MUST delete exactly
+    // one account root.
     if ((tx.getTxnType() == ttACCOUNT_DELETE ||
-         (tx.getTxnType() == ttAMM_WITHDRAW && accountsDeleted_ == 1)) &&
+         tx.getTxnType() == ttAMM_DELETE) &&
         result == tesSUCCESS)
     {
         if (accountsDeleted_ == 1)
@@ -340,6 +341,13 @@ AccountRootsNotDeleted::finalize(
                                "succeeded but deleted multiple accounts!";
         return false;
     }
+
+    // A successful AMMWithdraw MAY delete one account root
+    // when the total AMM LP Tokens balance goes to 0. Not every AMM withdraw
+    // deletes the AMM account, accountsDeleted_ is set if it is deleted.
+    if (tx.getTxnType() == ttAMM_WITHDRAW && result == tesSUCCESS &&
+        accountsDeleted_ == 1)
+        return true;
 
     if (accountsDeleted_ == 0)
         return true;
@@ -380,6 +388,9 @@ LedgerEntryTypesMatch::visitEntry(
             case ltNFTOKEN_PAGE:
             case ltNFTOKEN_OFFER:
             case ltAMM:
+            case ltBRIDGE:
+            case ltXCHAIN_OWNED_CLAIM_ID:
+            case ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID:
                 break;
             default:
                 invalidTypeAdded_ = true;
@@ -480,7 +491,9 @@ ValidNewAccountRoot::finalize(
     }
 
     // From this point on we know exactly one account was created.
-    if ((tx.getTxnType() == ttPAYMENT || tx.getTxnType() == ttAMM_CREATE) &&
+    if ((tx.getTxnType() == ttPAYMENT || tx.getTxnType() == ttAMM_CREATE ||
+         tx.getTxnType() == ttXCHAIN_ADD_CLAIM_ATTESTATION ||
+         tx.getTxnType() == ttXCHAIN_ADD_ACCOUNT_CREATE_ATTESTATION) &&
         result == tesSUCCESS)
     {
         std::uint32_t const startingSeq{
