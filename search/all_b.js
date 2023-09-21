@@ -30,7 +30,7 @@ var searchData=
   ['keylistings_5f_5183',['keyListings_',['../classripple_1_1ValidatorList.html#a4489b055e951d0923286cffecd9dee46',1,'ripple::ValidatorList']]],
   ['keyonlycachetype_5184',['KeyOnlyCacheType',['../classripple_1_1TaggedCache.html#aed26009e5db0681488035dd98613ef34',1,'ripple::TaggedCache']]],
   ['keyonlyentry_5185',['KeyOnlyEntry',['../classripple_1_1TaggedCache_1_1KeyOnlyEntry.html',1,'ripple::TaggedCache&lt; Key, T, IsKeyCache, Hash, KeyEqual, Mutex &gt;::KeyOnlyEntry'],['../classripple_1_1TaggedCache_1_1KeyOnlyEntry.html#ac52f5a5afb303578c15ce2216895b49e',1,'ripple::TaggedCache::KeyOnlyEntry::KeyOnlyEntry()']]],
-  ['keypairforsignature_5186',['keypairForSignature',['../namespaceripple_1_1RPC.html#a9bccc1b478a5bda71c12c100373780f4',1,'ripple::RPC']]],
+  ['keypairforsignature_5186',['keypairForSignature',['../namespaceripple_1_1RPC.html#afff8ad9526d4b79a147d6af708a6e697',1,'ripple::RPC::keypairForSignature(Json::Value const &amp;params, Json::Value &amp;error, unsigned int apiVersion)'],['../namespaceripple_1_1RPC.html#a9b97d705666e8ea1786b366f3132ce9e',1,'ripple::RPC::keypairForSignature(Json::Value const &amp;params, Json::Value &amp;error, uint apiVersion=apiVersionIfUnspecified)']]],
   ['keys_5f_5187',['keys_',['../classripple_1_1PeerFinder_1_1Logic.html#a4c83eb9bb7e4eb07064a092bbb1f3018',1,'ripple::PeerFinder::Logic']]],
   ['keytype_5188',['KeyType',['../namespaceripple.html#a9de744cfdefe1132969eb982e57e4dde',1,'ripple']]],
   ['keytypefromstring_5189',['keyTypeFromString',['../namespaceripple.html#a74041120f00ad8558dd67fd3a0150a88',1,'ripple']]],

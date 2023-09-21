@@ -157,7 +157,7 @@ var searchData=
   ['histogram_5ftest_4171',['Histogram_test',['../classripple_1_1test_1_1Histogram__test.html',1,'ripple::test']]],
   ['historical_4172',['historical',['../classripple_1_1NodeStore_1_1DatabaseShardImp.html#ac30abebe86f4437afe564602e793f7c2adff1dc0aa9a196a6e2d755a23cdb0642',1,'ripple::NodeStore::DatabaseShardImp']]],
   ['historicalpaths_5f_4173',['historicalPaths_',['../classripple_1_1NodeStore_1_1DatabaseShardImp.html#a6a9609b4abbe08c0842f0e2ab16cab5a',1,'ripple::NodeStore::DatabaseShardImp']]],
-  ['history_4174',['HISTORY',['../classripple_1_1InboundLedger.html#a3e8d7f8b5fa089a184dcc9b00b6e0da7a5d83de1c9f32e1adaf68625c99c29ac4',1,'ripple::InboundLedger::HISTORY()'],['../structripple_1_1test_1_1NetworkHistory.html#a4aed5acc88964a846fdd3740848ef49b',1,'ripple::test::NetworkHistory::history()']]],
+  ['history_4174',['history',['../structripple_1_1test_1_1NetworkHistory.html#a4aed5acc88964a846fdd3740848ef49b',1,'ripple::test::NetworkHistory::history()'],['../classripple_1_1InboundLedger.html#a3e8d7f8b5fa089a184dcc9b00b6e0da7a5d83de1c9f32e1adaf68625c99c29ac4',1,'ripple::InboundLedger::HISTORY()']]],
   ['historylastledgerseq_5f_4175',['historyLastLedgerSeq_',['../structripple_1_1NetworkOPsImp_1_1SubAccountHistoryIndex.html#a2b28855aa561374367125c30db0bf38b',1,'ripple::NetworkOPsImp::SubAccountHistoryIndex']]],
   ['historysize_4176',['historySize',['../classripple_1_1ServerImpl.html#a02faf19fde600afe01f5f6463730216eae8170535e048264df0ca466fd9efc1c5',1,'ripple::ServerImpl']]],
   ['historytxindex_5f_4177',['historyTxIndex_',['../structripple_1_1NetworkOPsImp_1_1SubAccountHistoryIndex.html#ac462a6210690a40781385b13a9e42723',1,'ripple::NetworkOPsImp::SubAccountHistoryIndex']]],

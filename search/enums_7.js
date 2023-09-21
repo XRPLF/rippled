@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['jobtype_27680',['JobType',['../namespaceripple.html#ae0f54f8ce649d639bf3e2b295347e17a',1,'ripple']]],
-  ['jsonoptions_27681',['JsonOptions',['../namespaceripple.html#a169967ff418b80729654b6d45ade8711',1,'ripple']]]
+  ['jobtype_27685',['JobType',['../namespaceripple.html#ae0f54f8ce649d639bf3e2b295347e17a',1,'ripple']]],
+  ['jsonoptions_27686',['JsonOptions',['../namespaceripple.html#a169967ff418b80729654b6d45ade8711',1,'ripple']]]
 ];
