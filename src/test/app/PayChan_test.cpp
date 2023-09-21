@@ -24,9 +24,9 @@
 #include <ripple/protocol/PayChan.h>
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/protocol/jss.h>
-#include <test/jtx.h>
-
+#include <ripple/rpc/impl/RPCHelpers.h>
 #include <chrono>
+#include <test/jtx.h>
 
 namespace ripple {
 namespace test {
@@ -1064,6 +1064,47 @@ struct PayChan_test : public beast::unit_test::suite
     }
 
     void
+    testAccountChannelAuthorize(FeatureBitset features)
+    {
+        using namespace jtx;
+        using namespace std::literals::chrono_literals;
+
+        Env env{*this, features};
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const charlie = Account("charlie", KeyType::ed25519);
+        env.fund(XRP(10000), alice, bob, charlie);
+        auto const pk = alice.pk();
+        auto const settleDelay = 3600s;
+        auto const channelFunds = XRP(1000);
+        auto const chan1Str = to_string(channel(alice, bob, env.seq(alice)));
+        env(create(alice, bob, channelFunds, settleDelay, pk));
+        env.close();
+
+        Json::Value args{Json::objectValue};
+        args[jss::channel_id] = chan1Str;
+        args[jss::key_type] = "ed255191";
+        args[jss::seed] = "snHq1rzQoN2qiUkC3XF5RyxBzUtN";
+        args[jss::amount] = 51110000;
+
+        // test for all api versions
+        for (auto apiVersion = RPC::apiMinimumSupportedVersion;
+             apiVersion <= RPC::apiBetaVersion;
+             ++apiVersion)
+        {
+            testcase(
+                "PayChan Channel_Auth RPC Api " + std::to_string(apiVersion));
+            args[jss::api_version] = apiVersion;
+            auto const rs = env.rpc(
+                "json",
+                "channel_authorize",
+                args.toStyledString())[jss::result];
+            auto const error = apiVersion < 2u ? "invalidParams" : "badKeyType";
+            BEAST_EXPECT(rs[jss::error] == error);
+        }
+    }
+
+    void
     testAuthVerifyRPC(FeatureBitset features)
     {
         testcase("PayChan Auth/Verify RPC");
@@ -2042,6 +2083,7 @@ struct PayChan_test : public beast::unit_test::suite
         testAccountChannelsRPC(features);
         testAccountChannelsRPCMarkers(features);
         testAccountChannelsRPCSenderOnly(features);
+        testAccountChannelAuthorize(features);
         testAuthVerifyRPC(features);
         testOptionalFields(features);
         testMalformedPK(features);
