@@ -216,7 +216,7 @@ It patches their CMake to correctly import its dependencies.
     and make sure it matches the `build_type` setting you chose in the previous
     step.
 
-    Multi-config gnerators:
+    Multi-config generators:
 
     ```
     cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake ..
