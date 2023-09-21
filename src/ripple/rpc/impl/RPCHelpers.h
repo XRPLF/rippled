@@ -208,9 +208,6 @@ getSeedFromRPC(Json::Value const& params, Json::Value& error);
 std::optional<Seed>
 parseRippleLibSeed(Json::Value const& params);
 
-std::pair<PublicKey, SecretKey>
-keypairForSignature(Json::Value const& params, Json::Value& error);
-
 /**
  * API version numbers used in API version 1
  */
@@ -295,6 +292,11 @@ getAPIVersionNumber(const Json::Value& value, bool betaEnabled);
 std::variant<std::shared_ptr<Ledger const>, Json::Value>
 getLedgerByContext(RPC::JsonContext& context);
 
+std::pair<PublicKey, SecretKey>
+keypairForSignature(
+    Json::Value const& params,
+    Json::Value& error,
+    uint apiVersion = apiVersionIfUnspecified);
 /** Helper to parse submit_mode parameter to RPC submit.
  *
  * @param params RPC parameters
