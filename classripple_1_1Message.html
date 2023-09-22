@@ -117,6 +117,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a4eecf31aa99d9ec11aead71a02092e1b"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1PublicKey.html">PublicKey</a> &gt; const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Message.html#a4eecf31aa99d9ec11aead71a02092e1b">getValidatorKey</a> () const</td></tr>
 <tr class="memdesc:a4eecf31aa99d9ec11aead71a02092e1b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the validator's key.  <a href="classripple_1_1Message.html#a4eecf31aa99d9ec11aead71a02092e1b">More...</a><br /></td></tr>
 <tr class="separator:a4eecf31aa99d9ec11aead71a02092e1b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1d7d635bfa976e3768c1b80f42564d9b"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Message.html#a1d7d635bfa976e3768c1b80f42564d9b">getType</a> () const</td></tr>
+<tr class="memdesc:a1d7d635bfa976e3768c1b80f42564d9b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the message type from the payload header.  <a href="classripple_1_1Message.html#a1d7d635bfa976e3768c1b80f42564d9b">More...</a><br /></td></tr>
+<tr class="separator:a1d7d635bfa976e3768c1b80f42564d9b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">T&#160;</td><td class="memItemRight" valign="bottom"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/enable_shared_from_this/shared_from_this.html">shared_from_this</a> (T... args)</td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">T&#160;</td><td class="memItemRight" valign="bottom"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/enable_shared_from_this/weak_from_this.html">weak_from_this</a> (T... args)</td></tr>
@@ -144,9 +147,6 @@ Private Member Functions</h2></td></tr>
 <tr class="memitem:ad34a23eec4049e1e4206ad6dbb4e3c8d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Message.html#ad34a23eec4049e1e4206ad6dbb4e3c8d">compress</a> ()</td></tr>
 <tr class="memdesc:ad34a23eec4049e1e4206ad6dbb4e3c8d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Try to compress the payload.  <a href="classripple_1_1Message.html#ad34a23eec4049e1e4206ad6dbb4e3c8d">More...</a><br /></td></tr>
 <tr class="separator:ad34a23eec4049e1e4206ad6dbb4e3c8d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aad24b93cd0c33a28c370a91d1e7ffbba"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Message.html#aad24b93cd0c33a28c370a91d1e7ffbba">getType</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> const *in) const</td></tr>
-<tr class="memdesc:aad24b93cd0c33a28c370a91d1e7ffbba"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the message type from the payload header.  <a href="classripple_1_1Message.html#aad24b93cd0c33a28c370a91d1e7ffbba">More...</a><br /></td></tr>
-<tr class="separator:aad24b93cd0c33a28c370a91d1e7ffbba"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
@@ -409,6 +409,28 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="a1d7d635bfa976e3768c1b80f42564d9b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1d7d635bfa976e3768c1b80f42564d9b">&#9670;&nbsp;</a></span>getType()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int ripple::Message::getType </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Get the message type from the payload header. </p>
+<p>First four bytes are the compression/algorithm flag and the payload size. Next two bytes are the message type </p><dl class="section return"><dt>Returns</dt><dd><a class="el" href="classripple_1_1Message.html">Message</a> type </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="Message_8cpp_source.html#l00224">224</a> of file <a class="el" href="Message_8cpp_source.html">Message.cpp</a>.</p>
+
+</div>
+</div>
 <a id="a53f6b565ba4f354eeb13f01dbd041848"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a53f6b565ba4f354eeb13f01dbd041848">&#9670;&nbsp;</a></span>setHeader()</h2>
 
@@ -524,43 +546,6 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="aad24b93cd0c33a28c370a91d1e7ffbba"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aad24b93cd0c33a28c370a91d1e7ffbba">&#9670;&nbsp;</a></span>getType()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int ripple::Message::getType </td>
-          <td>(</td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> const *&#160;</td>
-          <td class="paramname"><em>in</em></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Get the message type from the payload header. </p>
-<p>First four bytes are the compression/algorithm flag and the payload size. Next two bytes are the message type </p><dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">in</td><td>Payload header pointer </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd><a class="el" href="classripple_1_1Message.html">Message</a> type </dd></dl>
-
-<p class="definition">Definition at line <a class="el" href="Message_8cpp_source.html#l00224">224</a> of file <a class="el" href="Message_8cpp_source.html">Message.cpp</a>.</p>
-
-</div>
-</div>
 <h2 class="groupheader">Member Data Documentation</h2>
 <a id="a93709e66e26eb29574a1b5dbcaabf9b6"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a93709e66e26eb29574a1b5dbcaabf9b6">&#9670;&nbsp;</a></span>buffer_</h2>
@@ -582,7 +567,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00104">104</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00112">112</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
 
 </div>
 </div>
@@ -606,7 +591,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00105">105</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00113">113</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
 
 </div>
 </div>
@@ -630,7 +615,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00106">106</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00114">114</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
 
 </div>
 </div>
@@ -654,7 +639,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00107">107</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00115">115</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
 
 </div>
 </div>
@@ -678,7 +663,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00108">108</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00116">116</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
 
 </div>
 </div>

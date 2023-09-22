@@ -1,7 +1,8 @@
 <map id="ripple::OverlayImpl::Child" name="ripple::OverlayImpl::Child">
-<area shape="rect" id="node1" title=" " alt="" coords="203,5,349,47"/>
-<area shape="rect" id="node2" href="$classripple_1_1ConnectAttempt.html" title="Manages an outbound connection attempt." alt="" coords="5,102,179,129"/>
-<area shape="rect" id="node3" href="$structripple_1_1OverlayImpl_1_1Timer.html" title=" " alt="" coords="203,95,349,136"/>
-<area shape="rect" id="node4" href="$classripple_1_1PeerImp.html" title=" " alt="" coords="374,102,495,129"/>
-<area shape="rect" id="node5" href="$classripple_1_1test_1_1tx__reduce__relay__test_1_1PeerTest.html" title=" " alt="" coords="353,184,517,225"/>
+<area shape="rect" id="node1" title=" " alt="" coords="5,78,152,119"/>
+<area shape="rect" id="node2" href="$classripple_1_1ConnectAttempt.html" title="Manages an outbound connection attempt." alt="" coords="200,5,373,32"/>
+<area shape="rect" id="node3" href="$classripple_1_1InboundHandoff.html" title="Sends HTTP response." alt="" coords="201,56,372,83"/>
+<area shape="rect" id="node4" href="$structripple_1_1OverlayImpl_1_1Timer.html" title=" " alt="" coords="213,107,360,149"/>
+<area shape="rect" id="node5" href="$classripple_1_1PeerImp.html" title=" " alt="" coords="226,173,347,200"/>
+<area shape="rect" id="node6" href="$classripple_1_1test_1_1tx__reduce__relay__test_1_1PeerTest.html" title=" " alt="" coords="421,166,585,207"/>
 </map>

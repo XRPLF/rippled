@@ -65,13 +65,13 @@ $(function() {
 <div class="title">How to use RPC coroutines. </div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><h1><a class="anchor" id="autotoc_md281"></a>
+<div class="textblock"><h1><a class="anchor" id="autotoc_md284"></a>
 Introduction.</h1>
 <p>By default, an RPC handler runs as an uninterrupted task on the JobQueue. This is fine for commands that are fast to compute but might not be acceptable for tasks that require multiple parts or are large, like a full ledger.</p>
 <p>For this purpose, the rippled RPC handler allows <em>suspension with continuation</em></p><ul>
 <li>a request to suspend execution of the RPC response and to continue it after some function or job has been executed. A default continuation is supplied which simply reschedules the job on the JobQueue, or the programmer can supply their own.</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md282"></a>
+<h1><a class="anchor" id="autotoc_md285"></a>
 The classes.</h1>
 <p>Suspension with continuation uses four <code><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a></code>s in the <code><a class="el" href="namespaceripple_1_1RPC.html">ripple::RPC</a></code> namespace: </p><pre class="fragment">using Callback = std::function &lt;void ()&gt;;
 using Continuation = std::function &lt;void (Callback const&amp;)&gt;;
@@ -81,7 +81,7 @@ using Coroutine = std::function &lt;void (Suspend const&amp;)&gt;;
 <p>A <code>Continuation</code> is a function that is given a <code>Callback</code> and promises to call it later. A <code>Continuation</code> guarantees to call the <code>Callback</code> exactly once at some point in the future, but it does not have to be immediately or even in the current thread.</p>
 <p>A <code>Suspend</code> is a function belonging to a <code>Coroutine</code>. A <code>Suspend</code> runs a <code>Continuation</code>, passing it a <code>Callback</code> that continues execution of the <code>Coroutine</code>.</p>
 <p>And finally, a <code>Coroutine</code> is a <code><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a></code> which is given a <code>Suspend</code>. This is what the RPC handler gives to the coroutine manager, expecting to get called back with a <code>Suspend</code> and to be able to start execution.</p>
-<h1><a class="anchor" id="autotoc_md283"></a>
+<h1><a class="anchor" id="autotoc_md286"></a>
 The flow of control.</h1>
 <p>Given these functions, the flow of RPC control when using coroutines is straight-forward.</p>
 <ol type="1">
