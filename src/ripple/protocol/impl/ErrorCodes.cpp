@@ -76,6 +76,7 @@ constexpr static ErrorInfo unorderedErrorInfos[]{
     {rpcINTERNAL,               "internal",             "Internal error.", 500},
     {rpcINVALID_LGR_RANGE,      "invalidLgrRange",      "Ledger range is invalid.", 400},
     {rpcINVALID_PARAMS,         "invalidParams",        "Invalid parameters.", 400},
+    {rpcINVALID_HOTWALLET,      "invalidHotWallet",     "Invalid hotwallet.", 400},
     {rpcISSUE_MALFORMED,        "issueMalformed",       "Issue is malformed.", 400},
     {rpcJSON_RPC,               "json_rpc",             "JSON-RPC transport error.", 500},
     {rpcLGR_IDXS_INVALID,       "lgrIdxsInvalid",       "Ledger indexes invalid.", 400},
