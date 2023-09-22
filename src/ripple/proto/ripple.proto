@@ -33,6 +33,8 @@ enum MessageType
     mtPEER_SHARD_INFO_V2        = 62;
     mtHAVE_TRANSACTIONS         = 63;
     mtTRANSACTIONS              = 64;
+    mtSTART_PROTOCOL            = 65;
+    mtGRACEFUL_CLOSE            = 66;
 }
 
 // token, iterations, target, challenge = issue demand for proof of work
@@ -450,5 +452,26 @@ message TMReplayDeltaResponse
 message TMHaveTransactions
 {
     repeated bytes hashes = 1;
+}
+
+message TMStartProtocol
+{
+    required uint64 startTime = 1;
+}
+
+enum TMCloseReason
+{
+    crMALFORMED_HANDSHAKE1 = 1;
+    crMALFORMED_HANDSHAKE2 = 2;
+    crMALFORMED_HANDSHAKE3 = 3;
+    crCHARGE_RESOURCES     = 4;
+    crLARGE_SENDQUEUE      = 5;
+    crNOT_USEFUL           = 6;
+    crPING_TIMEOUT         = 7;
+}
+
+message TMGracefulClose
+{
+    required TMCloseReason reason = 1;
 }
 
