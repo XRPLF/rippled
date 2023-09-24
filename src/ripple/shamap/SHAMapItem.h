@@ -181,9 +181,6 @@ make_shamapitem(uint256 const& tag, Slice data)
         false};
 }
 
-static_assert(alignof(SHAMapItem) != 40);
-static_assert(alignof(SHAMapItem) == 8 || alignof(SHAMapItem) == 4);
-
 inline boost::intrusive_ptr<SHAMapItem const>
 make_shamapitem(SHAMapItem const& other)
 {

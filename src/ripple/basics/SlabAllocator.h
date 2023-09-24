@@ -30,32 +30,109 @@
 #include <atomic>
 #include <cassert>
 #include <cstdint>
-#include <cstring>
 #include <mutex>
-
-#if BOOST_OS_LINUX
-#include <sys/mman.h>
-#endif
 
 namespace ripple {
 
 template <typename Type>
 class SlabAllocator
 {
+    // The code keeps track of the free list using a singly-linked list, that
+    // is allocated in and maintained within the unused memory of a slab. The
+    // assert ensures that we can store the 'next' pointer.
     static_assert(
         sizeof(Type) >= sizeof(std::uint8_t*),
         "SlabAllocator: the requested object must be larger than a pointer.");
 
     static_assert(alignof(Type) == 8 || alignof(Type) == 4);
 
+    // A simple linked list node to keep track of the free list.
+    //
+    // The nodes for this linked list are constructed inside unused memory
+    // in the slab's allocated block.
+    //
+    // By way of example, on a system with 1 byte long pointers, where the
+    // slab allocator allocates 4 byte long items from a 16 byte long slab
+    // the memory layout is as follows:
+    //
+    //     slot: 0      1      2      3
+    //           [ .... | .... | .... | ....]
+    //
+    // We don't need anything too complicated: the only operations that we
+    // perform are insertion and removal, but only at the head of the list
+    // which means that all we need is very basic CAS.
+    //
+    // Normally, to keep a linked list we need a "node" structure, similar
+    // to this. And, if we're going to have a node, we need some memory in
+    // which to "store" it.
+    //
+    // But remember that we only need a "node" when an item is going to be
+    // on the free list, and something is on the free list because there's
+    // some memory that is otherwise unused.
+    //
+    // So if the size of the unused memory is greater than the size of our
+    // node (which is the size of a pointer) then we can use that directly
+    // and overlay a singly linked list of free objects onto the memory of
+    // those free objects.
+    //
+    // Here's what the memory may look like if slots 1 and 3 are allocated
+    // and slots 0 and 2 are free, with the free list overlaid on top:
+    //
+    //     list_ --------------+
+    //                         |
+    //                         v
+    //     slot: 0      1      2      3
+    //           [ N... | .... | N... | .... ]
+    //           ^ |             |
+    //           | '---> NULL    |
+    //           |               |
+    //           '---------------'
+    //
+    // Notice that although the first empty slot in memory order is slot 0
+    // the free list points to slot 2 as the first available slot and slot
+    // 2 points to slot 0, which points to NULL, as it is it the last free
+    // slot.
+    //
+    // Now imagine that the object in slot 1 is released. The free list is
+    // updated to point to slot 1 as the first available slot. The  memory
+    // now looks like this:
+    //
+    //  list_ ----------+
+    //                  |
+    //                  v
+    //     slot: 0      1      2      3
+    //           [ N... | N... | N... | .... ]
+    //           ^ |      |    ^ |
+    //           | |      |    | |
+    //           | |      '----' |
+    //           | '---> NULL    |
+    //           |               |
+    //           '---------------'
+    //
+    // Note that the order of slots within the free list at any given time
+    // is random, as it depends on the pattern and timing of memory access
+    // of the application.
+    struct alignas(Type) FreeItem
+    {
+        FreeItem* next;
+
+        FreeItem(FreeItem* n = nullptr) noexcept : next(n)
+        {
+        }
+
+        ~FreeItem() noexcept = default;
+    };
+
+    static_assert(sizeof(Type) >= sizeof(FreeItem));
+
     /** A block of memory that is owned by a slab allocator */
     struct SlabBlock
     {
-        // A mutex to protect the freelist for this block:
+        // A mutex to protect this block:
         std::mutex m_;
 
         // A linked list of appropriately sized free buffers:
-        std::uint8_t* list_ = nullptr;
+        FreeItem* list_ = nullptr;
 
         // The next block:
         SlabBlock* next_;
@@ -94,41 +171,35 @@ class SlabAllocator
 
             std::lock_guard _(m_);
 
-            // It's possible that this block has an underlying buffer. If it
-            // does, and it has space available, use it.
+            assert(
+                (avail_ == 0 && list_ == nullptr) ||
+                (avail_ != 0 && list_ != nullptr));
+
+            // It's possible that this block has an underlying buffer. If
+            // it does, and it has space available, we use it.
             if (data_ != nullptr)
             {
                 auto ret = list_;
 
                 if (ret != nullptr)
                 {
-                    // We use memcpy to avoid UB for unaligned accesses
-                    std::memcpy(&list_, ret, sizeof(std::uint8_t*));
+                    list_ = ret->next;
                     --avail_;
                 }
 
-                return ret;
+                return reinterpret_cast<std::uint8_t*>(ret);
             }
 
-            assert(data_ == nullptr);
+            // We are going to take the passed-in memory block and use it
+            // to service allocations. The first item will be returned to
+            // the caller, and we chain the rest into a linked list.
+            for (std::size_t i = 1; i != count; ++i)
+                list_ = new (data + (item * i)) FreeItem(list_);
 
             data_ = data;
-            list_ = nullptr;
-
-            // We're needing an allocation, so grab it now.
-            auto ret = data;
-
-            for (std::size_t i = 0; i != count - 1; ++i)
-            {
-                data += item;
-                // We use memcpy to avoid UB for unaligned accesses
-                std::memcpy(data, &list_, sizeof(std::uint8_t*));
-                list_ = data;
-            }
-
             avail_ = count - 1;
 
-            return ret;
+            return data;
         }
 
         SlabBlock(SlabBlock const& other) = delete;
@@ -159,26 +230,20 @@ class SlabAllocator
     // The size of each individual slab:
     std::size_t const slabSize_;
 
-    std::uint8_t*
+    [[nodiscard]] std::uint8_t*
     allocate(SlabBlock* slab) noexcept
     {
         std::lock_guard l(slab->m_);
 
-        std::uint8_t* ret = slab->list_;
+        auto ret = slab->list_;
 
-        if (ret)
+        if (ret != nullptr)
         {
-            assert(
-                (slab->avail_ != 0) && (slab->avail_ <= itemCount_) &&
-                (ret >= slab->data_) &&
-                (ret + itemSize_ <= slab->data_ + slabSize_));
-
-            // We use memcpy to avoid UB for unaligned accesses
-            std::memcpy(&slab->list_, ret, sizeof(std::uint8_t*));
+            slab->list_ = ret->next;
             --slab->avail_;
         }
 
-        return ret;
+        return reinterpret_cast<std::uint8_t*>(ret);
     }
 
     /** Return an item to this allocator's freelist.
@@ -204,9 +269,7 @@ class SlabAllocator
             // doesn't extend past the end of our buffer:
             assert(ptr + itemSize_ <= slab->data_ + slabSize_);
 
-            // We use memcpy to avoid UB for unaligned accesses
-            std::memcpy(ptr, &slab->list_, sizeof(std::uint8_t*));
-            slab->list_ = ptr;
+            slab->list_ = new (ptr) FreeItem(slab->list_);
 
             if (++slab->avail_ != itemCount_)
                 return true;
@@ -271,7 +334,7 @@ public:
     [[nodiscard]] std::uint8_t*
     allocate() noexcept
     {
-        auto active = active_.load();
+        auto active = active_.load(std::memory_order::relaxed);
 
         if (active)
         {
@@ -284,7 +347,8 @@ public:
             if (auto ret = allocate(slab))
             {
                 // This may fail, but that's OK.
-                active_.compare_exchange_strong(active, slab);
+                active_.compare_exchange_weak(
+                    active, slab, std::memory_order::relaxed);
                 return ret;
             }
         }
@@ -298,11 +362,6 @@ public:
 
         if (!buf) [[unlikely]]
             return nullptr;
-
-#if BOOST_OS_LINUX
-        if (slabSize_ >= megabytes(std::size_t(4)))
-            madvise(buf, slabSize_, MADV_HUGEPAGE);
-#endif
 
         // Check whether there's an existing slab with no associated buffer
         // that we can give our newly allocated buffer to:
@@ -320,10 +379,7 @@ public:
 
                 // This may fail, but that's OK.
                 active_.compare_exchange_weak(
-                    active,
-                    slab,
-                    std::memory_order_relaxed,
-                    std::memory_order_relaxed);
+                    active, slab, std::memory_order::relaxed);
 
                 return ret;
             }
@@ -344,15 +400,12 @@ public:
 
         // Finally, link the new slab
         while (!slabs_.compare_exchange_weak(
-            slab->next_,
-            slab,
-            std::memory_order_release,
-            std::memory_order_relaxed))
+            slab->next_, slab, std::memory_order::release))
         {
             // Nothing to do
         }
 
-        active_.store(slab, std::memory_order_relaxed);
+        active_.store(slab, std::memory_order::relaxed);
         return ret;
     }
 
@@ -367,7 +420,7 @@ public:
     {
         assert(ptr);
 
-        for (auto slab = slabs_.load(std::memory_order_relaxed);
+        for (auto slab = slabs_.load(std::memory_order::relaxed);
              slab != nullptr;
              slab = slab->next_)
         {
@@ -399,6 +452,11 @@ public:
         std::size_t align;
 
     public:
+        /**
+         * @param extra_ The number of additional bytes to allocate per item.
+         * @param alloc_ The number of bytes to allocate for the slab.
+         * @param align_ The alignment of returned pointers.
+         */
         constexpr SlabConfig(
             std::size_t extra_,
             std::size_t alloc_ = 0,
@@ -410,6 +468,13 @@ public:
 
     constexpr SlabAllocatorSet(std::vector<SlabConfig> cfg)
     {
+        if (cfg.size() > allocators_.capacity())
+        {
+            throw std::runtime_error(
+                "SlabAllocatorSet<" + beast::type_name<Type>() +
+                ">: too many slab config options");
+        }
+
         // Ensure that the specified allocators are sorted from smallest to
         // largest by size:
         std::sort(
