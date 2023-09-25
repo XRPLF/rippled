@@ -602,6 +602,13 @@ public:
         return *m_networkOPs;
     }
 
+    virtual ServerHandler&
+    getServerHandler() override
+    {
+        assert(serverHandler_);
+        return *serverHandler_;
+    }
+
     boost::asio::io_service&
     getIOService() override
     {
@@ -1272,6 +1279,12 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         }
     }
 
+    if (auto const& forcedRange = config().FORCED_LEDGER_RANGE_PRESENT)
+    {
+        m_ledgerMaster->setLedgerRangePresent(
+            forcedRange->first, forcedRange->second);
+    }
+
     if (!config().reporting())
         m_orderBookDB.setup(getLedgerMaster().getCurrentLedger());
 
@@ -1523,6 +1536,7 @@ ApplicationImp::start(bool withTimers)
     {
         setSweepTimer();
         setEntropyTimer();
+        m_networkOPs->setBatchApplyTimer();
     }
 
     m_io_latency_sampler.start();

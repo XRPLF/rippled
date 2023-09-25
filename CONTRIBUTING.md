@@ -1,54 +1,51 @@
 The XRP Ledger has many and diverse stakeholders, and everyone deserves
-a chance to contribute meaningful changes to the code that runs the XRPL.
+a chance to contribute meaningful changes to the code that runs the
+XRPL.
 
 # Contributing
 
-We assume you are familiar with the general practice of [making contributions
-on GitHub][1].
-This file includes only special instructions specific to this project.
+We assume you are familiar with the general practice of [making
+contributions on GitHub][1]. This file includes only special
+instructions specific to this project.
 
 
 ## Before you start
 
-All of your contributions must be developed in your personal
+In general, contributions should be developed in your personal
 [fork](https://github.com/XRPLF/rippled/fork).
-No personal branches may ever be pushed to the [main project][rippled].
-These are the only branches that may ever exist in the main project:
+
+The following branches exist in the main project repository:
 
 - `develop`: The latest set of unreleased features, and the most common
     starting point for contributions.
-- `release`: The latest release candidate.
+- `release`: The latest beta release or release candidate.
 - `master`: The latest stable release.
 - `gh-pages`: The documentation for this project, built by Doxygen.
 
-The tip of each branch must be signed.
-In order for GitHub to sign a squashed commit that it builds from your pull
-request,
-all of your commits must be signed,
-and GitHub must know your verifying key.
-Please walk through the excellent documentation from GitHub to set
-up [signature verification][signing].
+The tip of each branch must be signed. In order for GitHub to sign a
+squashed commit that it builds from your pull request, GitHub must know
+your verifying key. Please set up [signature verification][signing].
 
 [rippled]: https://github.com/XRPLF/rippled
-[signing]: https://docs.github.com/en/authentication/managing-commit-signature-verification/about-commit-signature-verification
+[signing]:
+    https://docs.github.com/en/authentication/managing-commit-signature-verification/about-commit-signature-verification
 
 
 ## Major contributions
 
-If your contribution is a major feature or breaking change,
-then you must first write an XRP Ledger Standard (XLS) describing it.
-Go to [XRPL-Standards](https://github.com/XRPLF/XRPL-Standards/discussions),
-choose the next available standard number, and
-open a discussion with an appropriate title to propose your draft standard.
+If your contribution is a major feature or breaking change, then you
+must first write an XRP Ledger Standard (XLS) describing it. Go to
+[XRPL-Standards](https://github.com/XRPLF/XRPL-Standards/discussions),
+choose the next available standard number, and open a discussion with an
+appropriate title to propose your draft standard.
 
 When you submit a pull request, please link the corresponding XLS in the
-description.
-An XLS still in draft status is considered a work-in-progress and open for
-discussion.
-Please do not submit a pull request before allowing due time for questions,
-suggestions, and changes to the XLS draft.
-It is the responsibility of the XLS author to update the draft to match the
-final implementation when its corresponding pull request is merged.
+description. An XLS still in draft status is considered a
+work-in-progress and open for discussion. Please allow time for
+questions, suggestions, and changes to the XLS draft. It is the
+responsibility of the XLS author to update the draft to match the final
+implementation when its corresponding pull request is merged, unless the
+author delegates that responsibility to others.
 
 
 ## Before making a pull request
@@ -79,13 +76,13 @@ Header includes must be [levelized](./Builds/levelization).
 
 ## Pull requests
 
-Pull requests must target the `develop` branch.[^1]
+In general, pull requests use `develop` as the base branch.
 
-[^1]: There are exceptions to this policy for hotfixes, but no one consulting
-  this document will be in that situation.
+(Hotfixes are an exception.)
 
 Changes to pull requests must be added as new commits.
-You may **never force push a branch in a pull request** (e.g. after a rebase).
+Once code reviewers have started looking at your code, please avoid
+force-pushing a branch in a pull request.
 This preserves the ability for reviewers to filter changes since their last
 review.
 
@@ -100,8 +97,9 @@ to preserve a linear history for the `develop` branch.
 
 # Style guide
 
-This is a non-exhaustive list of recommended style guidelines.
-These are not always strictly enforced and serve as a way to keep the codebase coherent rather than a set of _thou shalt not_ commandments.
+This is a non-exhaustive list of recommended style guidelines. These are
+not always strictly enforced and serve as a way to keep the codebase
+coherent rather than a set of _thou shalt not_ commandments.
 
 
 ## Formatting
@@ -121,6 +119,11 @@ this:
 You can format individual files in place by running `clang-format -i <file>...`
 from any directory within this project.
 
+You can install a pre-commit hook to automatically run `clang-format` before every commit:
+```
+pip3 install pre-commit
+pre-commit install
+```
 
 ## Avoid
 
@@ -128,20 +131,27 @@ from any directory within this project.
 2. Proliferation of new files and classes.
 3. Complex inheritance and complex OOP patterns.
 4. Unmanaged memory allocation and raw pointers.
-5. Macros and non-trivial templates (unless they add significant value.)
-6. Lambda patterns (unless these add significant value.)
-7. CPU or architecture-specific code unless there is a good reason to include it, and where it is used guard it with macros and provide explanatory comments.
+5. Macros and non-trivial templates (unless they add significant value).
+6. Lambda patterns (unless these add significant value).
+7. CPU or architecture-specific code unless there is a good reason to
+   include it, and where it is used, guard it with macros and provide
+   explanatory comments.
 8. Importing new libraries unless there is a very good reason to do so.
 
 
 ## Seek to
 
 9. Extend functionality of existing code rather than creating new code.
-10. Prefer readability over terseness where important logic is concerned.
-11. Inline functions that are not used or are not likely to be used elsewhere in the codebase.
-12. Use clear and self-explanatory names for functions, variables, structs and classes.
-13. Use TitleCase for classes, structs and filenames, camelCase for function and variable names, lower case for namespaces and folders.
-14. Provide as many comments as you feel that a competent programmer would need to understand what your code does.
+10. Prefer readability over terseness where important logic is
+    concerned.
+11. Inline functions that are not used or are not likely to be used
+    elsewhere in the codebase.
+12. Use clear and self-explanatory names for functions, variables,
+    structs and classes.
+13. Use TitleCase for classes, structs and filenames, camelCase for
+    function and variable names, lower case for namespaces and folders.
+14. Provide as many comments as you feel that a competent programmer
+    would need to understand what your code does.
 
 
 # Maintainers

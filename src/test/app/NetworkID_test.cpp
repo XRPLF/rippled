@@ -68,14 +68,9 @@ public:
                 jv[jss::Destination] = alice.human();
                 jv[jss::TransactionType] = "Payment";
                 jv[jss::Amount] = "10000000000";
-                if (env.app().config().NETWORK_ID > 1024)
-                    jv[jss::NetworkID] =
-                        std::to_string(env.app().config().NETWORK_ID);
-
                 env(jv, fee(1000), sig(env.master));
             }
 
-            // run tx
             env(jv, fee(1000), ter(expectedOutcome));
             env.close();
         };
@@ -127,12 +122,29 @@ public:
         {
             test::jtx::Env env{*this, makeNetworkConfig(1025)};
             BEAST_EXPECT(env.app().config().NETWORK_ID == 1025);
+            {
+                env.fund(XRP(200), alice);
+                // try to submit a txn without network id, this should not work
+                Json::Value jvn;
+                jvn[jss::Account] = alice.human();
+                jvn[jss::TransactionType] = jss::AccountSet;
+                jvn[jss::Fee] = to_string(env.current()->fees().base);
+                jvn[jss::Sequence] = env.seq(alice);
+                jvn[jss::LastLedgerSequence] = env.current()->info().seq + 2;
+                auto jt = env.jtnofill(jvn);
+                Serializer s;
+                jt.stx->add(s);
+                BEAST_EXPECT(
+                    env.rpc(
+                        "submit",
+                        strHex(s.slice()))[jss::result][jss::engine_result] ==
+                    "telREQUIRES_NETWORK_ID");
+                env.close();
+            }
 
-            // try to submit a txn without network id, this should not work
             Json::Value jv;
             jv[jss::Account] = alice.human();
             jv[jss::TransactionType] = jss::AccountSet;
-            runTx(env, jv, telREQUIRES_NETWORK_ID);
 
             // try to submit with wrong network id
             jv[jss::NetworkID] = 0;

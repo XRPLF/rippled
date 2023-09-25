@@ -27,7 +27,7 @@
 namespace ripple {
 namespace test {
 
-class Offer_test : public beast::unit_test::suite
+class Offer0_test : public beast::unit_test::suite
 {
     XRPAmount
     reserve(jtx::Env& env, std::uint32_t count)
@@ -39,42 +39,6 @@ class Offer_test : public beast::unit_test::suite
     lastClose(jtx::Env& env)
     {
         return env.current()->info().parentCloseTime.time_since_epoch().count();
-    }
-
-    static auto
-    xrpMinusFee(jtx::Env const& env, std::int64_t xrpAmount)
-        -> jtx::PrettyAmount
-    {
-        using namespace jtx;
-        auto feeDrops = env.current()->fees().base;
-        return drops(dropsPerXRP * xrpAmount - feeDrops);
-    }
-
-    static auto
-    ledgerEntryState(
-        jtx::Env& env,
-        jtx::Account const& acct_a,
-        jtx::Account const& acct_b,
-        std::string const& currency)
-    {
-        Json::Value jvParams;
-        jvParams[jss::ledger_index] = "current";
-        jvParams[jss::ripple_state][jss::currency] = currency;
-        jvParams[jss::ripple_state][jss::accounts] = Json::arrayValue;
-        jvParams[jss::ripple_state][jss::accounts].append(acct_a.human());
-        jvParams[jss::ripple_state][jss::accounts].append(acct_b.human());
-        return env.rpc(
-            "json", "ledger_entry", to_string(jvParams))[jss::result];
-    }
-
-    static auto
-    ledgerEntryRoot(jtx::Env& env, jtx::Account const& acct)
-    {
-        Json::Value jvParams;
-        jvParams[jss::ledger_index] = "current";
-        jvParams[jss::account_root] = acct.human();
-        return env.rpc(
-            "json", "ledger_entry", to_string(jvParams))[jss::result];
     }
 
     static auto
@@ -2126,18 +2090,17 @@ public:
             BEAST_EXPECT(
                 jrr[jss::node][sfBalance.fieldName][jss::value] ==
                 "49.96666666666667");
+
             jrr = ledgerEntryState(env, bob, gw, "USD");
-            if (NumberSwitchOver)
+            Json::Value const bobsUSD =
+                jrr[jss::node][sfBalance.fieldName][jss::value];
+            if (!NumberSwitchOver)
             {
-                BEAST_EXPECT(
-                    jrr[jss::node][sfBalance.fieldName][jss::value] ==
-                    "-0.9665000000333333");
+                BEAST_EXPECT(bobsUSD == "-0.966500000033334");
             }
             else
             {
-                BEAST_EXPECT(
-                    jrr[jss::node][sfBalance.fieldName][jss::value] ==
-                    "-0.966500000033334");
+                BEAST_EXPECT(bobsUSD == "-0.9665000000333333");
             }
         }
     }
@@ -2719,7 +2682,7 @@ public:
         env.close();
 
         // The scenario:
-        //   o alice has USD but wants XPR.
+        //   o alice has USD but wants XRP.
         //   o bob has XRP but wants EUR.
         //   o carol has EUR but wants USD.
         // Note that carol's offer must come last.  If carol's offer is placed
@@ -3318,7 +3281,7 @@ public:
             env.fund(XRP(2) + reserve(env, 3) + (fee * 3), ova, pat, qae);
             env.close();
 
-            //   o ova has USD but wants XPR.
+            //   o ova has USD but wants XRP.
             //   o pat has XRP but wants EUR.
             //   o qae has EUR but wants USD.
             env(trust(ova, USD(200)));
@@ -5182,25 +5145,76 @@ public:
     }
 
     void
-    run() override
+    run(std::uint32_t instance, bool last = false)
     {
         using namespace jtx;
-        FeatureBitset const all{supported_amendments()};
-        FeatureBitset const flowCross{featureFlowCross};
-        FeatureBitset const takerDryOffer{fixTakerDryOfferRemoval};
-        FeatureBitset const rmSmallIncreasedQOffers{fixRmSmallIncreasedQOffers};
-        FeatureBitset const immediateOfferKilled{featureImmediateOfferKilled};
+        static FeatureBitset const all{supported_amendments()};
+        static FeatureBitset const flowCross{featureFlowCross};
+        static FeatureBitset const takerDryOffer{fixTakerDryOfferRemoval};
+        static FeatureBitset const rmSmallIncreasedQOffers{
+            fixRmSmallIncreasedQOffers};
+        static FeatureBitset const immediateOfferKilled{
+            featureImmediateOfferKilled};
 
-        testAll(all - takerDryOffer - immediateOfferKilled);
-        testAll(all - flowCross - takerDryOffer - immediateOfferKilled);
-        testAll(all - flowCross - immediateOfferKilled);
-        testAll(all - rmSmallIncreasedQOffers - immediateOfferKilled);
-        testAll(all);
+        static std::array<FeatureBitset, 5> const feats{
+            all - takerDryOffer - immediateOfferKilled,
+            all - flowCross - takerDryOffer - immediateOfferKilled,
+            all - flowCross - immediateOfferKilled,
+            all - rmSmallIncreasedQOffers - immediateOfferKilled,
+            all};
+
+        if (BEAST_EXPECT(instance < feats.size()))
+        {
+            testAll(feats[instance]);
+        }
+        BEAST_EXPECT(!last || instance == feats.size() - 1);
+    }
+
+    void
+    run() override
+    {
+        run(0);
         testFalseAssert();
     }
 };
 
-class Offer_manual_test : public Offer_test
+class Offer1_test : public Offer0_test
+{
+    void
+    run() override
+    {
+        Offer0_test::run(1);
+    }
+};
+
+class Offer2_test : public Offer0_test
+{
+    void
+    run() override
+    {
+        Offer0_test::run(2);
+    }
+};
+
+class Offer3_test : public Offer0_test
+{
+    void
+    run() override
+    {
+        Offer0_test::run(3);
+    }
+};
+
+class Offer4_test : public Offer0_test
+{
+    void
+    run() override
+    {
+        Offer0_test::run(4, true);
+    }
+};
+
+class Offer_manual_test : public Offer0_test
 {
     void
     run() override
@@ -5221,7 +5235,11 @@ class Offer_manual_test : public Offer_test
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(Offer, tx, ripple, 4);
+BEAST_DEFINE_TESTSUITE_PRIO(Offer0, tx, ripple, 4);
+BEAST_DEFINE_TESTSUITE_PRIO(Offer1, tx, ripple, 4);
+BEAST_DEFINE_TESTSUITE_PRIO(Offer2, tx, ripple, 4);
+BEAST_DEFINE_TESTSUITE_PRIO(Offer3, tx, ripple, 4);
+BEAST_DEFINE_TESTSUITE_PRIO(Offer4, tx, ripple, 4);
 BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Offer_manual, tx, ripple, 20);
 
 }  // namespace test

@@ -83,6 +83,16 @@ doNoRippleCheck(RPC::JsonContext& context)
     if (params.isMember(jss::transactions))
         transactions = params["transactions"].asBool();
 
+    // The document[https://xrpl.org/noripple_check.html#noripple_check] states
+    // that transactions params is a boolean value, however, assigning any
+    // string value works. Do not allow this. This check is for api Version 2
+    // onwards only
+    if (context.apiVersion > 1u && params.isMember(jss::transactions) &&
+        !params[jss::transactions].isBool())
+    {
+        return rpcError(rpcINVALID_PARAMS);
+    }
+
     std::shared_ptr<ReadView const> ledger;
     auto result = RPC::lookupLedger(ledger, context);
     if (!ledger)

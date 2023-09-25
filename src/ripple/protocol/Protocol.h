@@ -95,6 +95,11 @@ using LedgerIndex = std::uint32_t;
 */
 using TxID = uint256;
 
+/** The maximum number of trustlines to delete as part of AMM account
+ * deletion cleanup.
+ */
+std::uint16_t constexpr maxDeletableAMMTrustLines = 512;
+
 }  // namespace ripple
 
 #endif

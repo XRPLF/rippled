@@ -19,16 +19,16 @@
 
 #include <ripple/basics/contract.h>
 #include <ripple/json/json_reader.h>
+
 #include <algorithm>
 #include <cctype>
+#include <cstdint>
 #include <istream>
 #include <string>
 
 namespace Json {
 // Implementation of class Reader
 // ////////////////////////////////
-
-constexpr unsigned Reader::nest_limit;
 
 static std::string
 codePointToUTF8(unsigned int cp)
@@ -922,8 +922,9 @@ Reader::getLocationLineAndColumn(Location location) const
 {
     int line, column;
     getLocationLineAndColumn(location, line, column);
-    char buffer[18 + 16 + 16 + 1];
-    sprintf(buffer, "Line %d, Column %d", line, column);
+    constexpr std::size_t n = 18 + 16 + 16 + 1;
+    char buffer[n];
+    snprintf(buffer, n, "Line %d, Column %d", line, column);
     return buffer;
 }
 

@@ -28,13 +28,6 @@ class LedgerData_test : public beast::unit_test::suite
 public:
     // test helper
     static bool
-    checkArraySize(Json::Value const& val, unsigned int size)
-    {
-        return val.isArray() && val.size() == size;
-    }
-
-    // test helper
-    static bool
     checkMarker(Json::Value const& val)
     {
         return val.isMember(jss::marker) && val[jss::marker].isString() &&
