@@ -66,6 +66,30 @@ std::chrono::milliseconds constexpr peerHighLatency{300};
 std::chrono::seconds constexpr peerTimerInterval{60};
 }  // namespace
 
+std::string
+closeReasonToString(protocol::TMCloseReason reason)
+{
+    switch (reason)
+    {
+        case protocol::TMCloseReason::crCHARGE_RESOURCES:
+            return "Charge: Resources";
+        case protocol::TMCloseReason::crMALFORMED_HANDSHAKE1:
+            return "Malformed handshake data (1)";
+        case protocol::TMCloseReason::crMALFORMED_HANDSHAKE2:
+            return "Malformed handshake data (2)";
+        case protocol::TMCloseReason::crMALFORMED_HANDSHAKE3:
+            return "Malformed handshake data (3)";
+        case protocol::TMCloseReason::crLARGE_SENDQUEUE:
+            return "Large send queue";
+        case protocol::TMCloseReason::crNOT_USEFUL:
+            return "Not useful";
+        case protocol::TMCloseReason::crPING_TIMEOUT:
+            return "Ping timeout";
+        default:
+            return "Unknown reason";
+    }
+}
+
 PeerImp::PeerImp(
     Application& app,
     id_t id,
@@ -132,6 +156,11 @@ PeerImp::PeerImp(
                           << " tx reduce-relay enabled "
                           << txReduceRelayEnabled_ << " on " << remote_address_
                           << " " << id_;
+    if (auto member = app_.cluster().member(publicKey_))
+    {
+        name_ = *member;
+        JLOG(journal_.info()) << "Cluster name: " << *member;
+    }
 }
 
 PeerImp::~PeerImp()
@@ -182,7 +211,7 @@ PeerImp::run()
         closed = parseLedgerHash(iter->value());
 
         if (!closed)
-            fail("Malformed handshake data (1)");
+            fail(protocol::TMCloseReason::crMALFORMED_HANDSHAKE1);
     }
 
     if (auto const iter = headers_.find("Previous-Ledger");
@@ -191,11 +220,11 @@ PeerImp::run()
         previous = parseLedgerHash(iter->value());
 
         if (!previous)
-            fail("Malformed handshake data (2)");
+            fail(protocol::TMCloseReason::crMALFORMED_HANDSHAKE2);
     }
 
     if (previous && !closed)
-        fail("Malformed handshake data (3)");
+        fail(protocol::TMCloseReason::crMALFORMED_HANDSHAKE3);
 
     {
         std::lock_guard<std::mutex> sl(recentLock_);
@@ -205,10 +234,7 @@ PeerImp::run()
             previousLedgerHash_ = *previous;
     }
 
-    if (inbound_)
-        doAccept();
-    else
-        doProtocolStart();
+    doProtocolStart();
 
     // Anything else that needs to be done with the connection should be
     // done in doProtocolStart
@@ -350,7 +376,7 @@ PeerImp::charge(Resource::Charge const& fee)
     {
         // Sever the connection
         overlay_.incPeerDisconnectCharges();
-        fail("charge: Resources");
+        fail(protocol::TMCloseReason::crCHARGE_RESOURCES);
     }
 }
 
@@ -508,6 +534,8 @@ PeerImp::supportsFeature(ProtocolFeature f) const
             return protocol_ >= make_protocol(2, 2);
         case ProtocolFeature::LedgerReplay:
             return ledgerReplayEnabled_;
+        case ProtocolFeature::StartProtocol:
+            return protocol_ >= make_protocol(2, 3);
     }
     return false;
 }
@@ -600,22 +628,34 @@ PeerImp::close()
 }
 
 void
-PeerImp::fail(std::string const& reason)
+PeerImp::fail(protocol::TMCloseReason reason)
 {
     if (!strand_.running_in_this_thread())
         return post(
             strand_,
             std::bind(
-                (void (Peer::*)(std::string const&)) & PeerImp::fail,
+                (void (Peer::*)(protocol::TMCloseReason)) & PeerImp::fail,
                 shared_from_this(),
                 reason));
     if (journal_.active(beast::severities::kWarning) && socket_.is_open())
     {
         std::string const n = name();
         JLOG(journal_.warn()) << (n.empty() ? remote_address_.to_string() : n)
-                              << " failed: " << reason;
+                              << " failed: " << closeReasonToString(reason);
     }
-    close();
+
+    // erase all outstanding messages except for the one
+    // currently being executed
+    if (send_queue_.size() > 1)
+    {
+        decltype(send_queue_) q({send_queue_.front()});
+        send_queue_.swap(q);
+    }
+
+    closeOnWriteComplete_ = true;
+    protocol::TMGracefulClose tmGC;
+    tmGC.set_reason(reason);
+    send(std::make_shared<Message>(tmGC, protocol::mtGRACEFUL_CLOSE));
 }
 
 void
@@ -707,7 +747,7 @@ PeerImp::onTimer(error_code const& ec)
 
     if (large_sendq_++ >= Tuning::sendqIntervals)
     {
-        fail("Large send queue");
+        fail(protocol::TMCloseReason::crLARGE_SENDQUEUE);
         return;
     }
 
@@ -726,7 +766,7 @@ PeerImp::onTimer(error_code const& ec)
              (duration > app_.config().MAX_UNKNOWN_TIME)))
         {
             overlay_.peerFinder().on_failure(slot_);
-            fail("Not useful");
+            fail(protocol::TMCloseReason::crLARGE_SENDQUEUE);
             return;
         }
     }
@@ -734,7 +774,7 @@ PeerImp::onTimer(error_code const& ec)
     // Already waiting for PONG
     if (lastPingSeq_)
     {
-        fail("Ping Timeout");
+        fail(protocol::TMCloseReason::crPING_TIMEOUT);
         return;
     }
 
@@ -766,71 +806,6 @@ PeerImp::onShutdown(error_code ec)
 }
 
 //------------------------------------------------------------------------------
-void
-PeerImp::doAccept()
-{
-    assert(read_buffer_.size() == 0);
-
-    JLOG(journal_.debug()) << "doAccept: " << remote_address_;
-
-    auto const sharedValue = makeSharedValue(*stream_ptr_, journal_);
-
-    // This shouldn't fail since we already computed
-    // the shared value successfully in OverlayImpl
-    if (!sharedValue)
-        return fail("makeSharedValue: Unexpected failure");
-
-    JLOG(journal_.info()) << "Protocol: " << to_string(protocol_);
-    JLOG(journal_.info()) << "Public Key: "
-                          << toBase58(TokenType::NodePublic, publicKey_);
-
-    if (auto member = app_.cluster().member(publicKey_))
-    {
-        {
-            std::unique_lock lock{nameMutex_};
-            name_ = *member;
-        }
-        JLOG(journal_.info()) << "Cluster name: " << *member;
-    }
-
-    overlay_.activate(shared_from_this());
-
-    // XXX Set timer: connection is in grace period to be useful.
-    // XXX Set timer: connection idle (idle may vary depending on connection
-    // type.)
-
-    auto write_buffer = std::make_shared<boost::beast::multi_buffer>();
-
-    boost::beast::ostream(*write_buffer) << makeResponse(
-        !overlay_.peerFinder().config().peerPrivate,
-        request_,
-        overlay_.setup().public_ip,
-        remote_address_.address(),
-        *sharedValue,
-        overlay_.setup().networkID,
-        protocol_,
-        app_);
-
-    // Write the whole buffer and only start protocol when that's done.
-    boost::asio::async_write(
-        stream_,
-        write_buffer->data(),
-        boost::asio::transfer_all(),
-        bind_executor(
-            strand_,
-            [this, write_buffer, self = shared_from_this()](
-                error_code ec, std::size_t bytes_transferred) {
-                if (!socket_.is_open())
-                    return;
-                if (ec == boost::asio::error::operation_aborted)
-                    return;
-                if (ec)
-                    return fail("onWriteResponse", ec);
-                if (write_buffer->size() == bytes_transferred)
-                    return doProtocolStart();
-                return fail("Failed to write header");
-            }));
-}
 
 std::string
 PeerImp::name() const
@@ -854,39 +829,49 @@ PeerImp::doProtocolStart()
 {
     onReadMessage(error_code(), 0);
 
-    // Send all the validator lists that have been loaded
-    if (inbound_ && supportsFeature(ProtocolFeature::ValidatorListPropagation))
+    bool supportedProtocol = supportsFeature(ProtocolFeature::StartProtocol);
+
+    if (!inbound_)
     {
-        app_.validators().for_each_available(
-            [&](std::string const& manifest,
-                std::uint32_t version,
-                std::map<std::size_t, ValidatorBlobInfo> const& blobInfos,
-                PublicKey const& pubKey,
-                std::size_t maxSequence,
-                uint256 const& hash) {
-                ValidatorList::sendValidatorList(
-                    *this,
-                    0,
-                    pubKey,
-                    maxSequence,
-                    version,
-                    manifest,
-                    blobInfos,
-                    app_.getHashRouter(),
-                    p_journal_);
+        // Instruct connected inbound peer to start sending
+        // protocol messages
+        if (supportedProtocol)
+        {
+            JLOG(journal_.debug())
+                << "doProtocolStart(): outbound sending mtSTART_PROTOCOL to "
+                << remote_address_;
+            protocol::TMStartProtocol tmPS;
+            tmPS.set_starttime(std::chrono::duration_cast<std::chrono::seconds>(
+                                   clock_type::now().time_since_epoch())
+                                   .count());
+            send(std::make_shared<Message>(tmPS, protocol::mtSTART_PROTOCOL));
+        }
+        else
+        {
+            JLOG(journal_.debug()) << "doProtocolStart(): outbound connected "
+                                      "to an older protocol on "
+                                   << remote_address_ << " " << protocol_.first
+                                   << " " << protocol_.second;
+        }
 
-                // Don't send it next time.
-                app_.getHashRouter().addSuppressionPeer(hash, id_);
-            });
+        if (auto m = overlay_.getManifestsMessage())
+            send(m);
+
+        // Request shard info from peer
+        protocol::TMGetPeerShardInfoV2 tmGPS;
+        tmGPS.set_relays(0);
+        send(std::make_shared<Message>(
+            tmGPS, protocol::mtGET_PEER_SHARD_INFO_V2));
     }
-
-    if (auto m = overlay_.getManifestsMessage())
-        send(m);
-
-    // Request shard info from peer
-    protocol::TMGetPeerShardInfoV2 tmGPS;
-    tmGPS.set_relays(0);
-    send(std::make_shared<Message>(tmGPS, protocol::mtGET_PEER_SHARD_INFO_V2));
+    // Backward compatibility with the older protocols
+    else if (!supportedProtocol)
+    {
+        JLOG(journal_.debug())
+            << "doProtocolStart(): inbound handling of an older protocol on "
+            << remote_address_ << " " << protocol_.first << " "
+            << protocol_.second;
+        onStartProtocol();
+    }
 
     setTimer();
 }
@@ -954,7 +939,11 @@ PeerImp::onWriteMessage(error_code ec, std::size_t bytes_transferred)
     if (!socket_.is_open())
         return;
     if (ec == boost::asio::error::operation_aborted)
+    {
+        if (closeOnWriteComplete_)
+            close();
         return;
+    }
     if (ec)
         return fail("onWriteMessage", ec);
     if (auto stream = journal_.trace())
@@ -968,6 +957,11 @@ PeerImp::onWriteMessage(error_code ec, std::size_t bytes_transferred)
     metrics_.sent.add_message(bytes_transferred);
 
     assert(!send_queue_.empty());
+    if (send_queue_.front()->getType() == protocol::mtGRACEFUL_CLOSE)
+    {
+        close();
+        return;
+    }
     send_queue_.pop();
     if (!send_queue_.empty())
     {
@@ -2945,6 +2939,69 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMSquelch> const& m)
 
     JLOG(p_journal_.debug())
         << "onMessage: TMSquelch " << slice << " " << id() << " " << duration;
+}
+
+void
+PeerImp::onStartProtocol()
+{
+    JLOG(journal_.debug()) << "onStartProtocol(): " << remote_address_;
+    // Send all the validator lists that have been loaded
+    if (supportsFeature(ProtocolFeature::ValidatorListPropagation))
+    {
+        app_.validators().for_each_available(
+            [&](std::string const& manifest,
+                std::uint32_t version,
+                std::map<std::size_t, ValidatorBlobInfo> const& blobInfos,
+                PublicKey const& pubKey,
+                std::size_t maxSequence,
+                uint256 const& hash) {
+                ValidatorList::sendValidatorList(
+                    *this,
+                    0,
+                    pubKey,
+                    maxSequence,
+                    version,
+                    manifest,
+                    blobInfos,
+                    app_.getHashRouter(),
+                    p_journal_);
+
+                // Don't send it next time.
+                app_.getHashRouter().addSuppressionPeer(hash, id_);
+            });
+    }
+
+    if (auto m = overlay_.getManifestsMessage())
+        send(m);
+
+    // Request shard info from peer
+    protocol::TMGetPeerShardInfoV2 tmGPS;
+    tmGPS.set_relays(0);
+    send(std::make_shared<Message>(tmGPS, protocol::mtGET_PEER_SHARD_INFO_V2));
+}
+
+void
+PeerImp::onMessage(std::shared_ptr<protocol::TMStartProtocol> const& m)
+{
+    JLOG(journal_.debug()) << "onMessage(TMStartProtocol): " << remote_address_;
+    onStartProtocol();
+}
+
+void
+PeerImp::onMessage(const std::shared_ptr<protocol::TMGracefulClose>& m)
+{
+    using on_message_fn =
+        void (PeerImp::*)(std::shared_ptr<protocol::TMGracefulClose> const&);
+    if (!strand_.running_in_this_thread())
+        return post(
+            strand_,
+            std::bind(
+                (on_message_fn)&PeerImp::onMessage, shared_from_this(), m));
+
+    JLOG(journal_.info()) << "got graceful close from: " << remote_address_
+                          << " reason: " << closeReasonToString(m->reason());
+
+    close();
 }
 
 //--------------------------------------------------------------------------
