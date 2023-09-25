@@ -190,9 +190,17 @@ lower) fee to get into the same position as a reference transaction.
 
 ### Consensus Health
 
-For consensus to be considered healthy, the consensus process must take
-less than 5 seconds. This time limit was chosen based on observed past
-behavior of the network. Note that this is not necessarily the time between
+For consensus to be considered healthy, the peers on the network
+should largely remain in sync with one another. It is particularly
+important for the validators to remain in sync, because they must
+be in sync to participate in consensus. Another factor to consider is
+the duration of the consensus process itself. This generally takes
+under 5 seconds on the main network. This is based on historical
+observations. However, some factors, such as transactions volumes,
+can increase consensus duration. This is because rippled performs
+more work as transaction volume increases. Under sufficient load this
+tends to increase consensus duration.
+Note that this is not necessarily the time between
 ledger closings, as consensus usually starts some amount of time after
 a ledger opens.
 
