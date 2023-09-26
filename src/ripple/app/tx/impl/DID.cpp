@@ -160,14 +160,16 @@ DIDSet::doApply()
     // Create new ledger object otherwise
     auto const sleDID = std::make_shared<SLE>(didKeylet);
     (*sleDID)[sfAccount] = account_;
-    if (auto const uri = ctx_.tx[~sfURI]; uri.has_value() && !uri->empty())
-        (*sleDID)[sfURI] = uri.value();
-    if (auto const document = ctx_.tx[~sfDIDDocument];
-        document.has_value() && !document->empty())
-        (*sleDID)[sfDIDDocument] = document.value();
-    if (auto const attestation = ctx_.tx[~sfAttestation];
-        attestation.has_value() && !attestation->empty())
-        (*sleDID)[sfAttestation] = attestation.value();
+
+    auto set = [&](auto const& sField) {
+        if (auto const field = ctx_.tx[~sField];
+            field.has_value() && !field->empty())
+            (*sleDID)[sField] = field.value();
+    };
+
+    set(sfURI);
+    set(sfDIDDocument);
+    set(sfAttestation);
 
     return addSLE(ctx_, sleDID, account_);
 }
