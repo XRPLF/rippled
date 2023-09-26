@@ -59,23 +59,16 @@ DIDSet::preflight(PreflightContext const& ctx)
         ctx.tx.isFieldPresent(sfDIDDocument) && ctx.tx[sfDIDDocument].empty())
         return temEMPTY_DID;
 
-    if (auto uri = ctx.tx[~sfURI])
-    {
-        if (uri->length() > maxDIDURILength)
-            return temMALFORMED;
-    }
+    auto isTooLong = [&](auto const& sField, std::size_t length) -> bool {
+        if (auto field = ctx.tx[~sField])
+            return field->length() > length;
+        return false;
+    };
 
-    if (auto document = ctx.tx[~sfDIDDocument])
-    {
-        if (document->length() > maxDIDDocumentLength)
-            return temMALFORMED;
-    }
-
-    if (auto attestation = ctx.tx[~sfAttestation])
-    {
-        if (attestation->length() > maxDIDAttestationLength)
-            return temMALFORMED;
-    }
+    if (isTooLong(sfURI, maxDIDURILength) ||
+        isTooLong(sfDIDDocument, maxDIDDocumentLength) ||
+        isTooLong(sfAttestation, maxDIDAttestationLength))
+        return temMALFORMED;
 
     return preflight2(ctx);
 }
@@ -83,14 +76,12 @@ DIDSet::preflight(PreflightContext const& ctx)
 TER
 DIDSet::preclaim(PreclaimContext const& ctx)
 {
-    AccountID const account = ctx.tx[sfAccount];
-    Keylet const didKeylet = keylet::did(account);
-
-    if (!ctx.view.read(didKeylet))
+    if (!ctx.view.read(keylet::did(ctx.tx[sfAccount])) &&
+        !ctx.tx.isFieldPresent(sfURI) && !ctx.tx.isFieldPresent(sfDIDDocument))
     {
-        if (!ctx.tx.isFieldPresent(sfURI) &&
-            !ctx.tx.isFieldPresent(sfDIDDocument))
-            return tecEMPTY_DID;
+        // Need either the URI or document if the account doesn't already have a
+        // DID
+        return tecEMPTY_DID;
     }
 
     return tesSUCCESS;
@@ -140,40 +131,23 @@ DIDSet::doApply()
     Keylet const didKeylet = keylet::did(account_);
     if (auto const sleDID = ctx_.view().peek(didKeylet))
     {
-        if (auto const uri = ctx_.tx[~sfURI])
-        {
-            if (uri->empty())
+        auto update = [&](auto const& sField) {
+            if (auto const field = ctx_.tx[~sField])
             {
-                sleDID->makeFieldAbsent(sfURI);
+                if (field->empty())
+                {
+                    sleDID->makeFieldAbsent(sField);
+                }
+                else
+                {
+                    (*sleDID)[sField] = *field;
+                }
             }
-            else
-            {
-                (*sleDID)[sfURI] = *uri;
-            }
-        }
-        if (auto const document = ctx_.tx[~sfDIDDocument])
-        {
-            if (document->empty())
-            {
-                sleDID->makeFieldAbsent(sfDIDDocument);
-            }
-            else
-            {
-                (*sleDID)[sfDIDDocument] = *document;
-            }
-        }
+        };
+        update(sfURI);
+        update(sfDIDDocument);
+        update(sfAttestation);
 
-        if (auto const attestation = ctx_.tx[~sfAttestation])
-        {
-            if (attestation->empty())
-            {
-                sleDID->makeFieldAbsent(sfAttestation);
-            }
-            else
-            {
-                (*sleDID)[sfAttestation] = *attestation;
-            }
-        }
         if (!sleDID->isFieldPresent(sfURI) &&
             !sleDID->isFieldPresent(sfDIDDocument))
         {
@@ -239,6 +213,9 @@ DIDDelete::deleteSLE(
     }
 
     auto const sleOwner = view.peek(keylet::account(owner));
+    if (!sleOwner)
+        return tecINTERNAL;
+
     adjustOwnerCount(view, sleOwner, -1, j);
     view.update(sleOwner);
 
@@ -250,10 +227,7 @@ DIDDelete::deleteSLE(
 TER
 DIDDelete::doApply()
 {
-    AccountID const account = ctx_.tx[sfAccount];
-    auto const didKeylet = keylet::did(account);
-
-    return deleteSLE(ctx_, didKeylet, account_);
+    return deleteSLE(ctx_, keylet::did(account_), account_);
 }
 
 }  // namespace ripple

@@ -155,7 +155,6 @@ public:
         std::uint32_t const carolTicketSeq{env.seq(carol) + 1};
         env(ticket::create(carol, 1));
         env(signers(carol, 1, {{alice, 1}, {becky, 1}}));
-        env(signers(carol, 1, {{alice, 1}, {becky, 1}}));
         env(did::setValid(carol));
 
         // Deleting should fail with TOO_SOON, which is a relatively

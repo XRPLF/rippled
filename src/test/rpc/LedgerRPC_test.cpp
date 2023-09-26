@@ -1558,7 +1558,7 @@ class LedgerRPC_test : public beast::unit_test::suite
         std::string const ledgerHash{to_string(env.closed()->info().hash)};
 
         {
-            // Request the payment channel using its index.
+            // Request the DID using its index.
             Json::Value jvParams;
             jvParams[jss::did] = alice.human();
             jvParams[jss::ledger_hash] = ledgerHash;
@@ -1571,7 +1571,7 @@ class LedgerRPC_test : public beast::unit_test::suite
                 jrr[jss::node][sfURI.jsonName] == strHex(std::string{"uri"}));
         }
         {
-            // Request an index that is not a payment channel.
+            // Request an index that is not a DID.
             Json::Value jvParams;
             jvParams[jss::did] = env.master.human();
             jvParams[jss::ledger_hash] = ledgerHash;
