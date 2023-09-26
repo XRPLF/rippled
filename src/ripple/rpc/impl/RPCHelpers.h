@@ -26,6 +26,8 @@
 
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/TxQ.h>
+#include <ripple/basics/Expected.h>
+#include <ripple/basics/SubmitSync.h>
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/Status.h>
@@ -206,9 +208,6 @@ getSeedFromRPC(Json::Value const& params, Json::Value& error);
 std::optional<Seed>
 parseRippleLibSeed(Json::Value const& params);
 
-std::pair<PublicKey, SecretKey>
-keypairForSignature(Json::Value const& params, Json::Value& error);
-
 /**
  * API version numbers used in API version 1
  */
@@ -292,6 +291,19 @@ getAPIVersionNumber(const Json::Value& value, bool betaEnabled);
     or an RPC error */
 std::variant<std::shared_ptr<Ledger const>, Json::Value>
 getLedgerByContext(RPC::JsonContext& context);
+
+std::pair<PublicKey, SecretKey>
+keypairForSignature(
+    Json::Value const& params,
+    Json::Value& error,
+    uint apiVersion = apiVersionIfUnspecified);
+/** Helper to parse submit_mode parameter to RPC submit.
+ *
+ * @param params RPC parameters
+ * @return Either the mode or an error object.
+ */
+ripple::Expected<RPC::SubmitSync, Json::Value>
+getSubmitSyncMode(Json::Value const& params);
 
 }  // namespace RPC
 }  // namespace ripple

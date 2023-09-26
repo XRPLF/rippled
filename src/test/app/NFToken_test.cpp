@@ -27,7 +27,7 @@
 
 namespace ripple {
 
-class NFToken_test : public beast::unit_test::suite
+class NFToken0_test : public beast::unit_test::suite
 {
     FeatureBitset const disallowIncoming{featureDisallowIncoming};
 
@@ -6835,23 +6835,74 @@ class NFToken_test : public beast::unit_test::suite
 
 public:
     void
-    run() override
+    run(std::uint32_t instance, bool last = false)
     {
         using namespace test::jtx;
-        FeatureBitset const all{supported_amendments()};
-        FeatureBitset const fixNFTDir{fixNFTokenDirV1};
+        static FeatureBitset const all{supported_amendments()};
+        static FeatureBitset const fixNFTDir{fixNFTokenDirV1};
 
-        testWithFeats(
-            all - fixNFTDir - fixNonFungibleTokensV1_2 - fixNFTokenRemint);
-        testWithFeats(
+        static std::array<FeatureBitset, 5> const feats{
+            all - fixNFTDir - fixNonFungibleTokensV1_2 - fixNFTokenRemint,
             all - disallowIncoming - fixNonFungibleTokensV1_2 -
-            fixNFTokenRemint);
-        testWithFeats(all - fixNonFungibleTokensV1_2 - fixNFTokenRemint);
-        testWithFeats(all - fixNFTokenRemint);
-        testWithFeats(all);
+                fixNFTokenRemint,
+            all - fixNonFungibleTokensV1_2 - fixNFTokenRemint,
+            all - fixNFTokenRemint,
+            all};
+
+        if (BEAST_EXPECT(instance < feats.size()))
+        {
+            testWithFeats(feats[instance]);
+        }
+        BEAST_EXPECT(!last || instance == feats.size() - 1);
+    }
+
+    void
+    run() override
+    {
+        run(0);
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(NFToken, tx, ripple, 2);
+class NFToken1_test : public NFToken0_test
+{
+    void
+    run() override
+    {
+        NFToken0_test::run(1);
+    }
+};
+
+class NFToken2_test : public NFToken0_test
+{
+    void
+    run() override
+    {
+        NFToken0_test::run(2);
+    }
+};
+
+class NFToken3_test : public NFToken0_test
+{
+    void
+    run() override
+    {
+        NFToken0_test::run(3);
+    }
+};
+
+class NFToken4_test : public NFToken0_test
+{
+    void
+    run() override
+    {
+        NFToken0_test::run(4, true);
+    }
+};
+
+BEAST_DEFINE_TESTSUITE_PRIO(NFToken0, tx, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFToken1, tx, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFToken2, tx, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFToken3, tx, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFToken4, tx, ripple, 2);
 
 }  // namespace ripple
