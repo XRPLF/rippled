@@ -21,6 +21,7 @@
 #include <ripple/ledger/ReadView.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/Context.h>
+#include <ripple/rpc/DeliverMax.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 
 namespace ripple {
@@ -71,6 +72,8 @@ doTransactionEntry(RPC::JsonContext& context)
         else
         {
             jvResult[jss::tx_json] = sttx->getJson(JsonOptions::none);
+            insertDeliverMax(
+                jvResult[jss::tx_json], context, sttx->getTxnType());
             if (stobj)
                 jvResult[jss::metadata] = stobj->getJson(JsonOptions::none);
             // 'accounts'

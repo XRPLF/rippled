@@ -69,6 +69,7 @@ JSS(CheckCash);            // transaction type.
 JSS(CheckCreate);          // transaction type.
 JSS(Clawback);             // transaction type.
 JSS(ClearFlag);            // field.
+JSS(DeliverMax);           // out: alias to Amount
 JSS(DeliverMin);           // in: TransactionSign
 JSS(DepositPreauth);       // transaction and ledger type.
 JSS(Destination);          // in: TransactionSign; field.

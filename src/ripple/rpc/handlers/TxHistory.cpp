@@ -29,6 +29,7 @@
 #include <ripple/protocol/jss.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/Context.h>
+#include <ripple/rpc/DeliverMax.h>
 #include <ripple/rpc/Role.h>
 #include <ripple/rpc/Status.h>
 #include <boost/format.hpp>
@@ -63,7 +64,11 @@ doTxHistory(RPC::JsonContext& context)
         obj["used_postgres"] = true;
 
     for (auto const& t : trans)
-        txs.append(t->getJson(JsonOptions::none));
+    {
+        Json::Value tx_json = t->getJson(JsonOptions::none);
+        insertDeliverMax(tx_json, context, t->getSTransaction()->getTxnType());
+        txs.append(tx_json);
+    }
 
     return obj;
 }

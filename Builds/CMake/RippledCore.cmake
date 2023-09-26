@@ -731,6 +731,7 @@ target_sources (rippled PRIVATE
   src/ripple/rpc/handlers/Validators.cpp
   src/ripple/rpc/handlers/WalletPropose.cpp
   src/ripple/rpc/impl/DeliveredAmount.cpp
+  src/ripple/rpc/impl/DeliverMax.cpp
   src/ripple/rpc/impl/Handler.cpp
   src/ripple/rpc/impl/LegacyPathFind.cpp
   src/ripple/rpc/impl/RPCHandler.cpp

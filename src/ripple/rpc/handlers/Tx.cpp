@@ -28,6 +28,7 @@
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/CTID.h>
 #include <ripple/rpc/Context.h>
+#include <ripple/rpc/DeliverMax.h>
 #include <ripple/rpc/DeliveredAmount.h>
 #include <ripple/rpc/GRPCHandlers.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
@@ -311,6 +312,9 @@ populateJsonResponse(
     else if (result.txn)
     {
         response = result.txn->getJson(JsonOptions::include_date, args.binary);
+        auto const& sttx = result.txn->getSTransaction();
+        if (!args.binary)
+            insertDeliverMax(response, context, sttx->getTxnType());
 
         // populate binary metadata
         if (auto blob = std::get_if<Blob>(&result.meta))
@@ -327,8 +331,7 @@ populateJsonResponse(
                 response[jss::meta] = meta->getJson(JsonOptions::none);
                 insertDeliveredAmount(
                     response[jss::meta], context, result.txn, *meta);
-                insertNFTSyntheticInJson(
-                    response, result.txn->getSTransaction(), *meta);
+                insertNFTSyntheticInJson(response, sttx, *meta);
             }
         }
         response[jss::validated] = result.validated;

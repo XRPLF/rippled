@@ -34,6 +34,7 @@
 #include <ripple/protocol/jss.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/Context.h>
+#include <ripple/rpc/DeliverMax.h>
 #include <ripple/rpc/DeliveredAmount.h>
 #include <ripple/rpc/Role.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
@@ -326,6 +327,9 @@ populateJsonResponse(
                     Json::Value& jvObj = jvTxns.append(Json::objectValue);
 
                     jvObj[jss::tx] = txn->getJson(JsonOptions::include_date);
+                    auto const& sttx = txn->getSTransaction();
+                    insertDeliverMax(
+                        jvObj[jss::tx], context, sttx->getTxnType());
                     if (txnMeta)
                     {
                         jvObj[jss::meta] =
@@ -333,8 +337,7 @@ populateJsonResponse(
                         jvObj[jss::validated] = true;
                         insertDeliveredAmount(
                             jvObj[jss::meta], context, txn, *txnMeta);
-                        insertNFTSyntheticInJson(
-                            jvObj, txn->getSTransaction(), *txnMeta);
+                        insertNFTSyntheticInJson(jvObj, sttx, *txnMeta);
                     }
                 }
             }

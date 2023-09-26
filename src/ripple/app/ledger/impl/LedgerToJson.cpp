@@ -23,6 +23,7 @@
 #include <ripple/basics/base_uint.h>
 #include <ripple/core/Pg.h>
 #include <ripple/rpc/Context.h>
+#include <ripple/rpc/DeliverMax.h>
 #include <ripple/rpc/DeliveredAmount.h>
 
 namespace ripple {
@@ -123,6 +124,7 @@ fillJsonTx(
     else
     {
         copyFrom(txJson, txn->getJson(JsonOptions::none));
+        insertDeliverMax(txJson, *fill.context, txnType);
         if (stMeta)
         {
             txJson[jss::metaData] = stMeta->getJson(JsonOptions::none);
