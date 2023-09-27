@@ -296,7 +296,7 @@ std::pair<PublicKey, SecretKey>
 keypairForSignature(
     Json::Value const& params,
     Json::Value& error,
-    uint apiVersion = apiVersionIfUnspecified);
+    unsigned int apiVersion = apiVersionIfUnspecified);
 /** Helper to parse submit_mode parameter to RPC submit.
  *
  * @param params RPC parameters
