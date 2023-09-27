@@ -241,6 +241,10 @@ class SlabAllocator
         {
             slab->list_ = ret->next;
             --slab->avail_;
+
+            // We want to invoke the destructor for the FreeItem object
+            // before we use its memory.
+            std::destroy_at(ret);
         }
 
         return reinterpret_cast<std::uint8_t*>(ret);
@@ -259,6 +263,8 @@ class SlabAllocator
     {
         assert(ptr != nullptr);
 
+        FreeItem* flp;
+
         {
             std::lock_guard l(slab->m_);
 
@@ -269,19 +275,27 @@ class SlabAllocator
             // doesn't extend past the end of our buffer:
             assert(ptr + itemSize_ <= slab->data_ + slabSize_);
 
-            slab->list_ = new (ptr) FreeItem(slab->list_);
+            slab->list_ = new (std::assume_aligned<alignof(FreeItem)>(ptr))
+                FreeItem(slab->list_);
 
             if (++slab->avail_ != itemCount_)
                 return true;
 
             // The slab is now fully unused and doesn't need its data block:
             ptr = std::exchange(slab->data_, nullptr);
-            slab->list_ = nullptr;
+            flp = std::exchange(slab->list_, nullptr);
             slab->avail_ = 0;
         }
 
-        // Release the memory of this fully unused block back to the system
-        // without holding a lock.
+        // We can now destroy the free list and return the fully unused memory
+        // block back to the system without holding a lock.
+        while (flp != nullptr)
+        {
+            auto curr = flp;
+            flp = curr->next;
+            std::destroy_at(curr);
+        }
+
         boost::alignment::aligned_free(ptr);
         return true;
     }
@@ -342,7 +356,8 @@ public:
                 return ret;
         }
 
-        for (auto slab = slabs_.load(); slab; slab = slab->next_)
+        for (auto slab = slabs_.load(std::memory_order::acquire); slab;
+             slab = slab->next_)
         {
             if (auto ret = allocate(slab))
             {
@@ -360,12 +375,12 @@ public:
             reinterpret_cast<std::uint8_t*>(boost::alignment::aligned_alloc(
                 megabytes(std::size_t(2)), slabSize_));
 
-        if (!buf) [[unlikely]]
+        if (!buf)
             return nullptr;
 
         // Check whether there's an existing slab with no associated buffer
         // that we can give our newly allocated buffer to:
-        for (auto slab = slabs_.load(std::memory_order_relaxed);
+        for (auto slab = slabs_.load(std::memory_order::acquire);
              slab != nullptr;
              slab = slab->next_)
         {
@@ -388,7 +403,7 @@ public:
         auto slab = new (std::nothrow)
             SlabBlock(slabs_.load(std::memory_order_relaxed));
 
-        if (slab == nullptr) [[unlikely]]
+        if (slab == nullptr)
         {
             boost::alignment::aligned_free(buf);
             return nullptr;

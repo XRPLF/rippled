@@ -130,7 +130,11 @@ inline SlabAllocatorSet<SHAMapItem> slabber({
 inline void
 intrusive_ptr_add_ref(SHAMapItem const* x)
 {
-    // This can only happen if someone releases the last reference to the
+    assert(x);
+
+    // In order to call this, we must already have an intrusive pointer
+    // to this item, so it's reference count should be at least 1. This
+    // would only happen if someone released that last reference to the
     // item while we were trying to increment the refcount.
     if (x->refcount_++ == 0)
         LogicError("SHAMapItem: the reference count is 0!");
@@ -139,15 +143,15 @@ intrusive_ptr_add_ref(SHAMapItem const* x)
 inline void
 intrusive_ptr_release(SHAMapItem const* x)
 {
+    assert(x);
+
     if (--x->refcount_ == 0)
     {
         auto p = reinterpret_cast<std::uint8_t const*>(x);
 
-        // The SHAMapItem constuctor isn't trivial (because the destructor
-        // for CountedObject isn't) so we can't avoid calling it here, but
-        // plan for a future where we might not need to.
-        if constexpr (!std::is_trivially_destructible_v<SHAMapItem>)
-            std::destroy_at(x);
+        // We need to invoke the destructor for this object before we
+        // release the memory.
+        std::destroy_at(x);
 
         // If the slabber doesn't claim this pointer, it was allocated
         // manually, so we free it manually.
