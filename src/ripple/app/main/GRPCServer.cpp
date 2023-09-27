@@ -430,7 +430,7 @@ GRPCServerImpl::GRPCServerImpl(Application& app)
     // if present, get endpoint from config
     if (app_.config().exists(SECTION_PORT_GRPC))
     {
-        Section section = app_.config().section(SECTION_PORT_GRPC);
+        Section const& section = app_.config().section(SECTION_PORT_GRPC);
 
         auto const optIp = section.get("ip");
         if (!optIp)
