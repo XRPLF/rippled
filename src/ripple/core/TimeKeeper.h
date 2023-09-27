@@ -22,72 +22,98 @@
 
 #include <ripple/basics/chrono.h>
 #include <ripple/beast/clock/abstract_clock.h>
-#include <ripple/beast/utility/Journal.h>
-#include <string>
-#include <vector>
+#include <atomic>
 
 namespace ripple {
 
 /** Manages various times used by the server. */
 class TimeKeeper : public beast::abstract_clock<NetClock>
 {
+private:
+    std::atomic<std::chrono::seconds> closeOffset_{};
+
+    // Adjust system_clock::time_point for NetClock epoch
+    static constexpr time_point
+    adjust(std::chrono::system_clock::time_point when)
+    {
+        return time_point(std::chrono::duration_cast<duration>(
+            when.time_since_epoch() - days(10957)));
+    }
+
 public:
     virtual ~TimeKeeper() = default;
 
-    /** Launch the internal thread.
+    /** Returns the current time, using the server's clock.
 
-        The internal thread synchronizes local network time
-        using the provided list of SNTP servers.
+        It's possible for servers to have a different value for network
+        time, especially if they do not use some external mechanism for
+        time synchronization (e.g. NTP or SNTP). This is fine.
+
+        This estimate is not directly visible to other servers over the
+        protocol, but it is possible for them to make an educated guess
+        if this server publishes proposals or validations.
+
+        @note The network time is adjusted for the "Ripple epoch" which
+              was arbitrarily defined as 2000-01-01T00:00:00Z by Arthur
+              Britto and David Schwartz during early development of the
+              code. No rationale has been provided for this curious and
+              annoying, but otherwise unimportant, choice.
     */
-    virtual void
-    run(std::vector<std::string> const& servers) = 0;
+    [[nodiscard]] time_point
+    now() const override
+    {
+        return adjust(std::chrono::system_clock::now());
+    }
 
-    /** Returns the estimate of wall time, in network time.
+    /** Returns the predicted close time, in network time.
 
-        The network time is wall time adjusted for the Ripple
-        epoch, the beginning of January 1st, 2000 UTC. Each server
-        can compute a different value for network time. Other
-        servers value for network time is not directly observable,
-        but good guesses can be made by looking at validators'
-        positions on close times.
-
-        Servers compute network time by adjusting a local wall
-        clock using SNTP and then adjusting for the epoch.
+        The predicted close time represents the notional "center" of the
+        network. Each server assumes that its clock is correct and tries
+        to pull the close time towards its measure of network time.
     */
-    virtual time_point
-    now() const override = 0;
-
-    /** Returns the close time, in network time.
-
-        Close time is the time the network would agree that
-        a ledger closed, if a ledger closed right now.
-
-        The close time represents the notional "center"
-        of the network. Each server assumes its clock
-        is correct, and tries to pull the close time towards
-        its measure of network time.
-    */
-    virtual time_point
-    closeTime() const = 0;
-
-    /** Adjust the close time.
-
-        This is called in response to received validations.
-    */
-    virtual void
-    adjustCloseTime(std::chrono::duration<std::int32_t> amount) = 0;
+    [[nodiscard]] time_point
+    closeTime() const
+    {
+        return now() + closeOffset_.load();
+    }
 
     // This may return a negative value
-    virtual std::chrono::duration<std::int32_t>
-    nowOffset() const = 0;
+    [[nodiscard]] std::chrono::seconds
+    closeOffset() const
+    {
+        return closeOffset_.load();
+    }
 
-    // This may return a negative value
-    virtual std::chrono::duration<std::int32_t>
-    closeOffset() const = 0;
+    /** Adjust the close time, based on the network's view of time. */
+    std::chrono::seconds
+    adjustCloseTime(std::chrono::seconds by)
+    {
+        using namespace std::chrono_literals;
+
+        auto offset = closeOffset_.load();
+
+        if (by == 0s && offset == 0s)
+            return offset;
+
+        // The close time adjustment is serialized externally to this
+        // code. The compare/exchange only serves as a weak check and
+        // should not fail. Even if it does, it's safe to simply just
+        // skip the adjustment.
+        closeOffset_.compare_exchange_strong(offset, [by, offset]() {
+            // Ignore small offsets and push the close time
+            // towards our wall time.
+            if (by > 1s)
+                return offset + ((by + 3s) / 4);
+
+            if (by < -1s)
+                return offset + ((by - 3s) / 4);
+
+            return (offset * 3) / 4;
+        }());
+
+        return closeOffset_.load();
+    }
 };
-
-extern std::unique_ptr<TimeKeeper>
-make_TimeKeeper(beast::Journal j);
 
 }  // namespace ripple
 
