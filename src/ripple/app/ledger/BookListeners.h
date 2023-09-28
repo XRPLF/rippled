@@ -58,7 +58,7 @@ public:
 
     */
     void
-    publish(Json::Value const& jvObj, hash_set<std::uint64_t>& havePublished);
+    publish(Json::Value const& jvObj, Json::Value const& jvObjApiVer2, hash_set<std::uint64_t>& havePublished);
 
 private:
     std::recursive_mutex mLock;

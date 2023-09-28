@@ -63,7 +63,8 @@ public:
     processTxn(
         std::shared_ptr<ReadView const> const& ledger,
         const AcceptedLedgerTx& alTx,
-        Json::Value const& jvObj);
+        Json::Value const& jvObj,
+        Json::Value const& jvObjApiVer2);
 
 private:
     Application& app_;

@@ -328,8 +328,8 @@ populateJsonResponse(
 
                     jvObj[jss::tx] = txn->getJson(JsonOptions::include_date);
                     auto const& sttx = txn->getSTransaction();
-                    insertDeliverMax(
-                        jvObj[jss::tx], context, sttx->getTxnType());
+                    RPC::insertDeliverMax(
+                        jvObj[jss::tx], sttx->getTxnType(), context.apiVersion);
                     if (txnMeta)
                     {
                         jvObj[jss::meta] =

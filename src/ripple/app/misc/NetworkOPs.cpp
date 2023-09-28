@@ -64,6 +64,7 @@
 #include <ripple/resource/Fees.h>
 #include <ripple/resource/ResourceManager.h>
 #include <ripple/rpc/BookChanges.h>
+#include <ripple/rpc/DeliverMax.h>
 #include <ripple/rpc/DeliveredAmount.h>
 #include <ripple/rpc/ServerHandler.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
@@ -2745,6 +2746,11 @@ NetworkOPsImp::pubProposedTransaction(
     TER result)
 {
     Json::Value jvObj = transJson(*transaction, result, false, ledger);
+    Json::Value jvObjApi2 = transJson(*transaction, result, false, ledger);
+    RPC::insertDeliverMax(
+        jvObj[jss::transaction], transaction->getTxnType(), 1);
+    RPC::insertDeliverMax(
+        jvObjApi2[1][jss::transaction], transaction->getTxnType(), 2);
 
     {
         std::lock_guard sl(mSubLock);
@@ -2756,7 +2762,10 @@ NetworkOPsImp::pubProposedTransaction(
 
             if (p)
             {
-                p->send(jvObj, true);
+                if (p->getApiVersion() == 1)
+                    p->send(jvObj, true);
+                else
+                    p->send(jvObjApi2, true);
                 ++it;
             }
             else
@@ -3149,11 +3158,19 @@ NetworkOPsImp::pubValidatedTransaction(
 
     Json::Value jvObj =
         transJson(*stTxn, transaction.getResult(), true, ledger);
+    Json::Value jvObjApi2 =
+        transJson(*stTxn, transaction.getResult(), true, ledger);
 
     {
         auto const& meta = transaction.getMeta();
         jvObj[jss::meta] = meta.getJson(JsonOptions::none);
         RPC::insertDeliveredAmount(jvObj[jss::meta], *ledger, stTxn, meta);
+        RPC::insertDeliverMax(jvObj[jss::transaction], stTxn->getTxnType(), 1);
+
+        jvObjApi2[jss::meta] = meta.getJson(JsonOptions::none);
+        RPC::insertDeliveredAmount(jvObjApi2[jss::meta], *ledger, stTxn, meta);
+        RPC::insertDeliverMax(
+            jvObjApi2[jss::transaction], stTxn->getTxnType(), 2);
     }
 
     {
@@ -3166,7 +3183,10 @@ NetworkOPsImp::pubValidatedTransaction(
 
             if (p)
             {
-                p->send(jvObj, true);
+                if (p->getApiVersion() == 1)
+                    p->send(jvObj, true);
+                else
+                    p->send(jvObjApi2, true);
                 ++it;
             }
             else
@@ -3181,7 +3201,10 @@ NetworkOPsImp::pubValidatedTransaction(
 
             if (p)
             {
-                p->send(jvObj, true);
+                if (p->getApiVersion() == 1)
+                    p->send(jvObj, true);
+                else
+                    p->send(jvObjApi2, true);
                 ++it;
             }
             else
@@ -3190,7 +3213,7 @@ NetworkOPsImp::pubValidatedTransaction(
     }
 
     if (transaction.getResult() == tesSUCCESS)
-        app_.getOrderBookDB().processTxn(ledger, transaction, jvObj);
+        app_.getOrderBookDB().processTxn(ledger, transaction, jvObj, jvObjApi2);
 
     pubAccountTransaction(ledger, transaction, last);
 }
@@ -3296,28 +3319,55 @@ NetworkOPsImp::pubAccountTransaction(
 
         Json::Value jvObj =
             transJson(*stTxn, transaction.getResult(), true, ledger);
+        Json::Value jvObjApi2 =
+            transJson(*stTxn, transaction.getResult(), true, ledger);
 
         {
             auto const& meta = transaction.getMeta();
 
             jvObj[jss::meta] = meta.getJson(JsonOptions::none);
             RPC::insertDeliveredAmount(jvObj[jss::meta], *ledger, stTxn, meta);
+            RPC::insertDeliverMax(
+                jvObj[jss::transaction], stTxn->getTxnType(), 1);
+
+            jvObjApi2[jss::meta] = meta.getJson(JsonOptions::none);
+            RPC::insertDeliveredAmount(
+                jvObjApi2[jss::meta], *ledger, stTxn, meta);
+            RPC::insertDeliverMax(
+                jvObjApi2[jss::transaction], stTxn->getTxnType(), 2);
         }
 
         for (InfoSub::ref isrListener : notify)
-            isrListener->send(jvObj, true);
+        {
+            if (isrListener->getApiVersion() == 1)
+                isrListener->send(jvObj, true);
+            else
+                isrListener->send(jvObjApi2, true);
+        }
 
         if (last)
+        {
             jvObj[jss::account_history_boundary] = true;
+            jvObjApi2[jss::account_history_boundary] = true;
+        }
 
         assert(!jvObj.isMember(jss::account_history_tx_stream));
         for (auto& info : accountHistoryNotify)
         {
             auto& index = info.index_;
             if (index->forwardTxIndex_ == 0 && !index->haveHistorical_)
+            {
                 jvObj[jss::account_history_tx_first] = true;
-            jvObj[jss::account_history_tx_index] = index->forwardTxIndex_++;
-            info.sink_->send(jvObj, true);
+                jvObjApi2[jss::account_history_tx_first] = true;
+            }
+            jvObj[jss::account_history_tx_index] = index->forwardTxIndex_;
+            jvObjApi2[jss::account_history_tx_index] = index->forwardTxIndex_;
+            index->forwardTxIndex_ += 1;
+
+            if (info.sink_->getApiVersion() == 1)
+                info.sink_->send(jvObj, true);
+            else
+                info.sink_->send(jvObjApi2, true);
         }
     }
 }
@@ -3372,18 +3422,34 @@ NetworkOPsImp::pubProposedAccountTransaction(
     if (!notify.empty() || !accountHistoryNotify.empty())
     {
         Json::Value jvObj = transJson(*tx, result, false, ledger);
-
+        Json::Value jvObjApi2 = transJson(*tx, result, false, ledger);
+        RPC::insertDeliverMax(jvObj[jss::transaction], tx->getTxnType(), 1);
+        RPC::insertDeliverMax(jvObjApi2[jss::transaction], tx->getTxnType(), 2);
         for (InfoSub::ref isrListener : notify)
-            isrListener->send(jvObj, true);
+        {
+            if (isrListener->getApiVersion() == 1)
+                isrListener->send(jvObj, true);
+            else
+                isrListener->send(jvObjApi2, true);
+        }
 
         assert(!jvObj.isMember(jss::account_history_tx_stream));
         for (auto& info : accountHistoryNotify)
         {
             auto& index = info.index_;
             if (index->forwardTxIndex_ == 0 && !index->haveHistorical_)
+            {
                 jvObj[jss::account_history_tx_first] = true;
-            jvObj[jss::account_history_tx_index] = index->forwardTxIndex_++;
-            info.sink_->send(jvObj, true);
+                jvObjApi2[jss::account_history_tx_first] = true;
+            }
+            jvObj[jss::account_history_tx_index] = index->forwardTxIndex_;
+            jvObjApi2[jss::account_history_tx_index] = index->forwardTxIndex_;
+            index->forwardTxIndex_ += 1;
+
+            if (info.sink_->getApiVersion() == 1)
+                info.sink_->send(jvObj, true);
+            else
+                info.sink_->send(jvObjApi2, true);
         }
     }
 }
@@ -3585,6 +3651,24 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                 return false;
             };
 
+            auto send2 = [&](Json::Value const& jvObj,
+                             Json::Value const& jvObjApi2,
+                             bool unsubscribe) -> bool {
+                if (auto sptr = subInfo.sinkWptr_.lock(); sptr)
+                {
+                    if (sptr->getApiVersion() == 1)
+                        sptr->send(jvObj, true);
+                    else
+                        sptr->send(jvObjApi2, true);
+
+                    if (unsubscribe)
+                        unsubAccountHistory(sptr, accountId, false);
+                    return true;
+                }
+
+                return false;
+            };
+
             auto getMoreTxns =
                 [&](std::uint32_t minLedger,
                     std::uint32_t maxLedger,
@@ -3743,21 +3827,41 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                             send(rpcError(rpcINTERNAL), true);
                             return;
                         }
+
                         Json::Value jvTx = transJson(
                             *stTxn, meta->getResultTER(), true, curTxLedger);
                         jvTx[jss::meta] = meta->getJson(JsonOptions::none);
-                        jvTx[jss::account_history_tx_index] = txHistoryIndex--;
+                        jvTx[jss::account_history_tx_index] = txHistoryIndex;
+
+                        Json::Value jvTxApi2 = transJson(
+                            *stTxn, meta->getResultTER(), true, curTxLedger);
+                        jvTxApi2[jss::meta] = meta->getJson(JsonOptions::none);
+                        jvTxApi2[jss::account_history_tx_index] =
+                            txHistoryIndex;
+                        txHistoryIndex -= 1;
 
                         if (i + 1 == num_txns ||
                             txns[i + 1].first->getLedger() != tx->getLedger())
+                        {
                             jvTx[jss::account_history_boundary] = true;
+                            jvTxApi2[jss::account_history_boundary] = true;
+                        }
 
                         RPC::insertDeliveredAmount(
                             jvTx[jss::meta], *curTxLedger, stTxn, *meta);
+                        RPC::insertDeliverMax(
+                            jvTx[jss::transaction], stTxn->getTxnType(), 1);
+
+                        RPC::insertDeliveredAmount(
+                            jvTxApi2[jss::meta], *curTxLedger, stTxn, *meta);
+                        RPC::insertDeliverMax(
+                            jvTxApi2[jss::transaction], stTxn->getTxnType(), 2);
+
                         if (isFirstTx(tx, meta))
                         {
                             jvTx[jss::account_history_tx_first] = true;
-                            send(jvTx, false);
+                            jvTxApi2[jss::account_history_tx_first] = true;
+                            send2(jvTx, jvTxApi2, false);
 
                             JLOG(m_journal.trace())
                                 << "AccountHistory job for account "
@@ -3767,7 +3871,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                         }
                         else
                         {
-                            send(jvTx, false);
+                            send2(jvTx, jvTxApi2, false);
                         }
                     }
 

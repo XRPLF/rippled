@@ -250,7 +250,8 @@ void
 OrderBookDB::processTxn(
     std::shared_ptr<ReadView const> const& ledger,
     const AcceptedLedgerTx& alTx,
-    Json::Value const& jvObj)
+    Json::Value const& jvObj,
+    Json::Value const& jvObjApiVer2)
 {
     std::lock_guard sl(mLock);
 
@@ -277,7 +278,7 @@ OrderBookDB::processTxn(
                             {data->getFieldAmount(sfTakerGets).issue(),
                              data->getFieldAmount(sfTakerPays).issue()});
                         if (listeners)
-                            listeners->publish(jvObj, havePublished);
+                            listeners->publish(jvObj, jvObjApiVer2, havePublished);
                     }
                 };
 

@@ -54,10 +54,7 @@ struct Context;
  */
 
 void
-insertDeliverMax(
-    Json::Value& tx_json,
-    RPC::Context const& context,
-    TxType txnType);
+insertDeliverMax(Json::Value& tx_json, TxType txnType, int apiVersion);
 
 /** @} */
 

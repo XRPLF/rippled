@@ -229,6 +229,12 @@ public:
     std::shared_ptr<InfoSubRequest> const&
     getRequest();
 
+    void
+    setApiVersion(int apiVersion);
+
+    int
+    getApiVersion() const noexcept;
+
 protected:
     std::mutex mLock;
 
@@ -240,6 +246,7 @@ private:
     std::shared_ptr<InfoSubRequest> request_;
     std::uint64_t mSeq;
     hash_set<AccountID> accountHistorySubscriptions_;
+    int apiVersion = 1;
 
     static int
     assign_id()

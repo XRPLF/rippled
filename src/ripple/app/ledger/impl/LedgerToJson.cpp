@@ -124,7 +124,7 @@ fillJsonTx(
     else
     {
         copyFrom(txJson, txn->getJson(JsonOptions::none));
-        insertDeliverMax(txJson, *fill.context, txnType);
+        RPC::insertDeliverMax(txJson, txnType, fill.context->apiVersion);
         if (stMeta)
         {
             txJson[jss::metaData] = stMeta->getJson(JsonOptions::none);

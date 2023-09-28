@@ -27,17 +27,14 @@ namespace ripple {
 namespace RPC {
 
 void
-insertDeliverMax(
-    Json::Value& tx_json,
-    RPC::Context const& context,
-    TxType txnType)
+insertDeliverMax(Json::Value& tx_json, TxType txnType, int apiVersion)
 {
     if (tx_json.isMember(jss::Amount))
     {
         if (txnType == ttPAYMENT)
         {
             tx_json[jss::DeliverMax] = tx_json[jss::Amount];
-            if (context.apiVersion > 1)
+            if (apiVersion > 1)
                 tx_json.removeMember(jss::Amount);
         }
     }

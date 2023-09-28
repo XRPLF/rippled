@@ -314,7 +314,8 @@ populateJsonResponse(
         response = result.txn->getJson(JsonOptions::include_date, args.binary);
         auto const& sttx = result.txn->getSTransaction();
         if (!args.binary)
-            insertDeliverMax(response, context, sttx->getTxnType());
+            RPC::insertDeliverMax(
+                response, sttx->getTxnType(), context.apiVersion);
 
         // populate binary metadata
         if (auto blob = std::get_if<Blob>(&result.meta))
