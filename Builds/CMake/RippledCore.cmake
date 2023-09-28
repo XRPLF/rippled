@@ -568,9 +568,7 @@ target_sources (rippled PRIVATE
   src/ripple/core/impl/JobQueue.cpp
   src/ripple/core/impl/LoadEvent.cpp
   src/ripple/core/impl/LoadMonitor.cpp
-  src/ripple/core/impl/SNTPClock.cpp
   src/ripple/core/impl/SociDB.cpp
-  src/ripple/core/impl/TimeKeeper.cpp
   src/ripple/core/impl/Workers.cpp
   src/ripple/core/Pg.cpp
   #[===============================[
@@ -636,6 +634,7 @@ target_sources (rippled PRIVATE
   src/ripple/overlay/impl/Cluster.cpp
   src/ripple/overlay/impl/ConnectAttempt.cpp
   src/ripple/overlay/impl/Handshake.cpp
+  src/ripple/overlay/impl/InboundHandoff.cpp
   src/ripple/overlay/impl/Message.cpp
   src/ripple/overlay/impl/OverlayImpl.cpp
   src/ripple/overlay/impl/PeerImp.cpp
@@ -928,7 +927,6 @@ if (tests)
     src/test/jtx/impl/AMMTest.cpp
     src/test/jtx/impl/Env.cpp
     src/test/jtx/impl/JSONRPCClient.cpp
-    src/test/jtx/impl/ManualTimeKeeper.cpp
     src/test/jtx/impl/TestHelpers.cpp
     src/test/jtx/impl/WSClient.cpp
     src/test/jtx/impl/acctdelete.cpp

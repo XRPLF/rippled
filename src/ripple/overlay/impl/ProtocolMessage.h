@@ -112,6 +112,10 @@ protocolMessageName(int type)
             return "get_peer_shard_info_v2";
         case protocol::mtPEER_SHARD_INFO_V2:
             return "peer_shard_info_v2";
+        case protocol::mtSTART_PROTOCOL:
+            return "start_protocol";
+        case protocol::mtGRACEFUL_CLOSE:
+            return "graceful_close";
         default:
             break;
     }
@@ -490,6 +494,14 @@ invokeProtocolMessage(
             break;
         case protocol::mtPEER_SHARD_INFO_V2:
             success = detail::invoke<protocol::TMPeerShardInfoV2>(
+                *header, buffers, handler);
+            break;
+        case protocol::mtSTART_PROTOCOL:
+            success = detail::invoke<protocol::TMStartProtocol>(
+                *header, buffers, handler);
+            break;
+        case protocol::mtGRACEFUL_CLOSE:
+            success = detail::invoke<protocol::TMGracefulClose>(
                 *header, buffers, handler);
             break;
         default:

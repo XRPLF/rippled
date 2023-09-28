@@ -1,22 +1,16 @@
 # API Changelog
 
-This changelog is intended to list all updates to the API.
+This changelog is intended to list all updates to the [public API methods](https://xrpl.org/public-api-methods.html).
 
-For info about how API versioning works, view the [XLS-22d spec](https://github.com/XRPLF/XRPL-Standards/discussions/54). For details about the implementation of API versioning, view the [implementation PR](https://github.com/XRPLF/rippled/pull/3155).
+For info about how [API versioning](https://xrpl.org/request-formatting.html#api-versioning) works, including examples, please view the [XLS-22d spec](https://github.com/XRPLF/XRPL-Standards/discussions/54). For details about the implementation of API versioning, view the [implementation PR](https://github.com/XRPLF/rippled/pull/3155). API versioning ensures existing integrations and users continue to receive existing behavior, while those that request a higher API version will experience new behavior.
 
 The API version controls the API behavior you see. This includes what properties you see in responses, what parameters you're permitted to send in requests, and so on. You specify the API version in each of your requests. When a breaking change is introduced to the `rippled` API, a new version is released. To avoid breaking your code, you should set (or increase) your version when you're ready to upgrade.
 
-For a log of breaking changes, see the **API Version [number]** headings. Breaking changes are associated with a particular API Version number. For non-breaking changes, scroll to the **XRP Ledger version [x.y.z]** headings. Non-breaking changes are associated with a particular XRP Ledger (`rippled`) release.
-
-## API Version 2
-This version will be supported by `rippled` version 1.12.
-
-#### V2 account_info response
-
-`signer_lists` is returned in the root of the response, instead of being nested under `account_data` (as it was in API version 1). ([#3770](https://github.com/XRPLF/rippled/pull/3770))
+For a log of breaking changes, see the **API Version [number]** headings. In general, breaking changes are associated with a particular API Version number. For non-breaking changes, scroll to the **XRP Ledger version [x.y.z]** headings. Non-breaking changes are associated with a particular XRP Ledger (`rippled`) release.
 
 ## API Version 1
-This version is supported by `rippled` version 1.11.
+
+This version is supported by all `rippled` versions. At time of writing, it is the default API version, used when no `api_version` is specified. When a new API version is introduced, the command line interface will default to the latest API version. The command line is intended for ad-hoc usage by humans, not programs or automated scripts. The command line is not meant for use in production code.
 
 ### Idiosyncrasies
 
@@ -30,7 +24,7 @@ The `network_id` field was added in the `server_info` response in version 1.5.0 
 
 ## XRP Ledger version 1.12.0
 
-Version 1.12.0 is in development.
+[Version 1.12.0](https://github.com/XRPLF/rippled/releases/tag/1.12.0) was released on Sep 6, 2023.
 
 ### Additions in 1.12
 
@@ -76,9 +70,11 @@ Additions are intended to be non-breaking (because they are purely additive).
 
 ### Breaking changes in 1.11
 
-- Added the ability to mark amendments as obsolete. For the `feature` admin API, there is a new possible value for the `vetoed` field. ([#4291](https://github.com/XRPLF/rippled/pull/4291))
-- The API now won't accept seeds or public keys in place of account addresses. ([#4404](https://github.com/XRPLF/rippled/pull/4404))
-- For the `ledger_data` method, when all entries are filtered out, the API now returns an empty list (an empty array, `[]`). (Previously, it would return `null`.) While this is technically a breaking change, the new behavior is consistent with the documentation, so this is considered only a bug fix. ([#4398](https://github.com/XRPLF/rippled/pull/4398))
+- Added the ability to mark amendments as obsolete. For the `feature` admin API, there is a new possible value for the `vetoed` field. (https://github.com/XRPLF/rippled/pull/4291)
+  - The value of `vetoed` can now be `true`, `false`, or `"Obsolete"`.
+- Removed the acceptance of seeds or public keys in place of account addresses. (https://github.com/XRPLF/rippled/pull/4404)
+  - This simplifies the API and encourages better security practices (i.e. seeds should never be sent over the network).
+- For the `ledger_data` method, when all entries are filtered out, the `state` field of the response is now an empty list (in other words, an empty array, `[]`). (Previously, it would return `null`.) While this is technically a breaking change, the new behavior is consistent with the documentation, so this is considered only a bug fix. (https://github.com/XRPLF/rippled/pull/4398)
 - If and when the `fixNFTokenRemint` amendment activates, there will be a new AccountRoot field, `FirstNFTSequence`. This field is set to the current account sequence when the account issues their first NFT. If an account has not issued any NFTs, then the field is not set. ([#4406](https://github.com/XRPLF/rippled/pull/4406))
   - There is a new account deletion restriction: an account can only be deleted if `FirstNFTSequence` + `MintedNFTokens` + `256` is less than the current ledger sequence.
   - This is potentially a breaking change if clients have logic for determining whether an account can be deleted.
@@ -97,3 +93,51 @@ Additions are intended to be non-breaking (because they are purely additive).
 - Added an `account_flags` object to the `account_info` method response. (https://github.com/XRPLF/rippled/pull/4459)
 - Added `NFTokenPages` to the `account_objects` RPC. (https://github.com/XRPLF/rippled/pull/4352)
 - Fixed: `marker` returned from the `account_lines` command would not work on subsequent commands. (https://github.com/XRPLF/rippled/pull/4361)
+
+# In development
+
+Changes below this point are in development.
+
+## API Version 2
+
+At the time of writing, this version is expected to be introduced in `rippled` version 2.0.
+
+Currently (prior to the release of 2.0), it is available as a "beta" version, meaning it can be enabled with a config setting in `rippled.cfg`:
+```
+[beta_rpc_api]
+1
+```
+
+Since `api_version` 2 is in "beta", breaking changes can be made at any time.
+
+#### Modifications to account_info response in V2
+
+- `signer_lists` is returned in the root of the response. Previously, in API version 1, it was nested under `account_data`. (https://github.com/XRPLF/rippled/pull/3770)
+- When using an invalid `signer_lists` value, the API now returns an "invalidParams" error. (https://github.com/XRPLF/rippled/pull/4585)
+  - (`signer_lists` must be a boolean. In API version 1, strings are accepted and may return a normal response - as if `signer_lists` were `true`.)
+
+#### Modifications to [account_tx](https://xrpl.org/account_tx.html#account_tx) response in V2
+
+- Using `ledger_index_min`, `ledger_index_max`, and `ledger_index` returns `invalidParams` because if you use `ledger_index_min` or `ledger_index_max`, then it does not make sense to also specify `ledger_index`. Previously, in API version 1, no error was returned. (https://github.com/XRPLF/rippled/pull/4571)
+  - The same applies for `ledger_index_min`, `ledger_index_max`, and `ledger_hash`. (https://github.com/XRPLF/rippled/issues/4545#issuecomment-1565065579)
+- Using a `ledger_index_min` or `ledger_index_max` beyond the range of ledgers that the server has:
+  - returns `lgrIdxMalformed` in API version 2. (https://github.com/XRPLF/rippled/issues/4288)
+  - Previously, in API version 1, no error was returned.
+
+##### In progress
+
+- Attempting to use a non-boolean value (such as a string) for the `binary` or `forward` parameters returns `invalidParams` (`rpcINVALID_PARAMS`). Previously, in API version 1, no error was returned. (https://github.com/XRPLF/rippled/pull/4620)
+
+#### Modifications to [noripple_check](https://xrpl.org/noripple_check.html#noripple_check) response in V2
+
+##### In progress
+
+- Attempting to use a non-boolean value (such as a string) for the `transactions` parameter returns `invalidParams` (`rpcINVALID_PARAMS`). Previously, in API version 1, no error was returned. (https://github.com/XRPLF/rippled/pull/4620)
+
+# Unit tests for API changes
+
+The following information is useful to developers contributing to this project:
+
+The purpose of unit tests is to catch bugs and prevent regressions. In general, it often makes sense to create a test function when there is a breaking change to the API. For APIs that have changed in a new API version, the tests should be modified so that both the prior version and the new version are properly tested.
+
+To take one example: for `account_info` version 1, WebSocket and JSON-RPC behavior should be tested. The latest API version, i.e. API version 2, should be tested over WebSocket, JSON-RPC, and command line.

@@ -739,11 +739,10 @@ private:
         sPeerStatus,      // Peer status changes.
         sConsensusPhase,  // Consensus phase
         sBookChanges,     // Per-ledger order book changes
-
-        sLastEntry = sBookChanges  // as this name implies, any new entry
-                                   // must be ADDED ABOVE this one
+        sLastEntry        // Any new entry must be ADDED ABOVE this one
     };
-    std::array<SubMapType, SubTypes::sLastEntry + 1> mStreamMaps;
+
+    std::array<SubMapType, SubTypes::sLastEntry> mStreamMaps;
 
     ServerFeeSummary mLastFeeSummary;
 
@@ -2614,13 +2613,10 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
                 lpClosed->fees().accountReserve(0).decimalXRP();
             l[jss::reserve_inc_xrp] = lpClosed->fees().increment.decimalXRP();
 
-            auto const nowOffset = app_.timeKeeper().nowOffset();
-            if (std::abs(nowOffset.count()) >= 60)
-                l[jss::system_time_offset] = nowOffset.count();
-
-            auto const closeOffset = app_.timeKeeper().closeOffset();
-            if (std::abs(closeOffset.count()) >= 60)
-                l[jss::close_time_offset] = closeOffset.count();
+            if (auto const closeOffset = app_.timeKeeper().closeOffset();
+                std::abs(closeOffset.count()) >= 60)
+                l[jss::close_time_offset] =
+                    static_cast<std::uint32_t>(closeOffset.count());
 
 #if RIPPLED_REPORTING
             std::int64_t const dbAge =
