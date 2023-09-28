@@ -70,7 +70,7 @@ Message::compress()
     using namespace ripple::compression;
     auto const messageBytes = buffer_.size() - headerBytes;
 
-    auto type = getType(buffer_.data());
+    auto type = getType();
 
     bool const compressible = [&] {
         if (messageBytes <= 70)
@@ -221,9 +221,10 @@ Message::getBuffer(Compressed tryCompressed)
 }
 
 int
-Message::getType(std::uint8_t const* in) const
+Message::getType() const
 {
-    int type = (static_cast<int>(*(in + 4)) << 8) + *(in + 5);
+    int type =
+        (static_cast<int>(*(buffer_.data() + 4)) << 8) + *(buffer_.data() + 5);
     return type;
 }
 
