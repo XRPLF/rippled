@@ -37,6 +37,7 @@
 #include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/STObject.h>
 #include <ripple/protocol/STTx.h>
+#include <ripple/rpc/impl/RPCHelpers.h>
 #include <functional>
 #include <string>
 #include <test/jtx/AbstractClient.h>
@@ -445,6 +446,18 @@ public:
         return jt;
     }
 
+    /** Create a JTx from parameters. */
+    template <class JsonValue, class... FN>
+    JTx
+    jtnofill(JsonValue&& jv, FN const&... fN)
+    {
+        JTx jt(std::forward<JsonValue>(jv));
+        invoke(jt, fN...);
+        autofill_sig(jt);
+        jt.stx = st(jt);
+        return jt;
+    }
+
     /** Create JSON from parameters.
         This will apply funclets and autofill.
     */
@@ -701,6 +714,40 @@ Env::rpc(std::string const& cmd, Args&&... args)
         std::unordered_map<std::string, std::string>(),
         cmd,
         std::forward<Args>(args)...);
+}
+
+/**
+ * The SingleVersionedTestCallable concept checks for a callable that takes
+ * an unsigned integer as its argument and returns void.
+ */
+template <class T>
+concept SingleVersionedTestCallable = requires(T callable, unsigned int version)
+{
+    {
+        callable(version)
+    }
+    ->std::same_as<void>;
+};
+
+/**
+ * The VersionedTestCallable concept checks if a set of callables all satisfy
+ * the SingleVersionedTestCallable concept. This allows forAllApiVersions to
+ * accept any number of functions. It executes a set of provided functions over
+ * a range of versions from RPC::apiMinimumSupportedVersion to
+ * RPC::apiBetaVersion. This is useful for running a series of tests or
+ * operations that need to be performed on multiple versions of an API.
+ */
+template <class... T>
+concept VersionedTestCallable = (... && SingleVersionedTestCallable<T>);
+void
+forAllApiVersions(VersionedTestCallable auto... testCallable)
+{
+    for (auto testVersion = RPC::apiMinimumSupportedVersion;
+         testVersion <= RPC::apiBetaVersion;
+         ++testVersion)
+    {
+        (..., testCallable(testVersion));
+    }
 }
 
 }  // namespace jtx

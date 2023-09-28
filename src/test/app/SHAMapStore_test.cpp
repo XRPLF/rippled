@@ -85,7 +85,8 @@ class SHAMapStore_test : public beast::unit_test::suite
         const std::string outTxHash = to_string(info.txHash);
 
         auto const& ledger = json[jss::result][jss::ledger];
-        return outHash == ledger[jss::hash].asString() && outSeq == seq &&
+        return outHash == ledger[jss::ledger_hash].asString() &&
+            outSeq == seq &&
             outParentHash == ledger[jss::parent_hash].asString() &&
             outDrops == ledger[jss::total_coins].asString() &&
             outCloseTime == ledger[jss::close_time].asUInt() &&
@@ -111,9 +112,9 @@ class SHAMapStore_test : public beast::unit_test::suite
         BEAST_EXPECT(
             json.isMember(jss::result) &&
             json[jss::result].isMember(jss::ledger) &&
-            json[jss::result][jss::ledger].isMember(jss::hash) &&
-            json[jss::result][jss::ledger][jss::hash].isString());
-        return json[jss::result][jss::ledger][jss::hash].asString();
+            json[jss::result][jss::ledger].isMember(jss::ledger_hash) &&
+            json[jss::result][jss::ledger][jss::ledger_hash].isString());
+        return json[jss::result][jss::ledger][jss::ledger_hash].asString();
     }
 
     void

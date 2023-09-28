@@ -67,6 +67,10 @@ if [ -e rippled_${RIPPLED_DPKG_FULL_VERSION}_amd64.buildinfo ] ; then
     cp rippled_${RIPPLED_DPKG_FULL_VERSION}_amd64.buildinfo ${PKG_OUTDIR}
 fi
 
+pushd ${PKG_OUTDIR}
+for f in *.ddeb; do mv -- "$f" "${f%.ddeb}.deb"; done
+popd
+
 cat rippled_${RIPPLED_DPKG_FULL_VERSION}_amd64.changes
 # extract the text in the .changes file that appears between
 #    Checksums-Sha256:  ...

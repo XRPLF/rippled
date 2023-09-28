@@ -18,11 +18,18 @@
 //==============================================================================
 
 #include <ripple/app/tx/applySteps.h>
+#include <ripple/app/tx/impl/AMMBid.h>
+#include <ripple/app/tx/impl/AMMCreate.h>
+#include <ripple/app/tx/impl/AMMDelete.h>
+#include <ripple/app/tx/impl/AMMDeposit.h>
+#include <ripple/app/tx/impl/AMMVote.h>
+#include <ripple/app/tx/impl/AMMWithdraw.h>
 #include <ripple/app/tx/impl/ApplyContext.h>
 #include <ripple/app/tx/impl/CancelCheck.h>
 #include <ripple/app/tx/impl/CancelOffer.h>
 #include <ripple/app/tx/impl/CashCheck.h>
 #include <ripple/app/tx/impl/Change.h>
+#include <ripple/app/tx/impl/Clawback.h>
 #include <ripple/app/tx/impl/CreateCheck.h>
 #include <ripple/app/tx/impl/CreateOffer.h>
 #include <ripple/app/tx/impl/CreateTicket.h>
@@ -40,6 +47,8 @@
 #include <ripple/app/tx/impl/SetRegularKey.h>
 #include <ripple/app/tx/impl/SetSignerList.h>
 #include <ripple/app/tx/impl/SetTrust.h>
+#include <ripple/app/tx/impl/XChainBridge.h>
+#include <ripple/protocol/TxFormats.h>
 
 namespace ripple {
 
@@ -147,6 +156,37 @@ invoke_preflight(PreflightContext const& ctx)
             return invoke_preflight_helper<NFTokenCancelOffer>(ctx);
         case ttNFTOKEN_ACCEPT_OFFER:
             return invoke_preflight_helper<NFTokenAcceptOffer>(ctx);
+        case ttCLAWBACK:
+            return invoke_preflight_helper<Clawback>(ctx);
+        case ttAMM_CREATE:
+            return invoke_preflight_helper<AMMCreate>(ctx);
+        case ttAMM_DEPOSIT:
+            return invoke_preflight_helper<AMMDeposit>(ctx);
+        case ttAMM_WITHDRAW:
+            return invoke_preflight_helper<AMMWithdraw>(ctx);
+        case ttAMM_VOTE:
+            return invoke_preflight_helper<AMMVote>(ctx);
+        case ttAMM_BID:
+            return invoke_preflight_helper<AMMBid>(ctx);
+        case ttAMM_DELETE:
+            return invoke_preflight_helper<AMMDelete>(ctx);
+        case ttXCHAIN_CREATE_BRIDGE:
+            return invoke_preflight_helper<XChainCreateBridge>(ctx);
+        case ttXCHAIN_MODIFY_BRIDGE:
+            return invoke_preflight_helper<BridgeModify>(ctx);
+        case ttXCHAIN_CREATE_CLAIM_ID:
+            return invoke_preflight_helper<XChainCreateClaimID>(ctx);
+        case ttXCHAIN_COMMIT:
+            return invoke_preflight_helper<XChainCommit>(ctx);
+        case ttXCHAIN_CLAIM:
+            return invoke_preflight_helper<XChainClaim>(ctx);
+        case ttXCHAIN_ADD_CLAIM_ATTESTATION:
+            return invoke_preflight_helper<XChainAddClaimAttestation>(ctx);
+        case ttXCHAIN_ADD_ACCOUNT_CREATE_ATTESTATION:
+            return invoke_preflight_helper<XChainAddAccountCreateAttestation>(
+                ctx);
+        case ttXCHAIN_ACCOUNT_CREATE_COMMIT:
+            return invoke_preflight_helper<XChainCreateAccountCommit>(ctx);
         default:
             assert(false);
             return {temUNKNOWN, TxConsequences{temUNKNOWN}};
@@ -248,6 +288,36 @@ invoke_preclaim(PreclaimContext const& ctx)
             return invoke_preclaim<NFTokenCancelOffer>(ctx);
         case ttNFTOKEN_ACCEPT_OFFER:
             return invoke_preclaim<NFTokenAcceptOffer>(ctx);
+        case ttCLAWBACK:
+            return invoke_preclaim<Clawback>(ctx);
+        case ttAMM_CREATE:
+            return invoke_preclaim<AMMCreate>(ctx);
+        case ttAMM_DEPOSIT:
+            return invoke_preclaim<AMMDeposit>(ctx);
+        case ttAMM_WITHDRAW:
+            return invoke_preclaim<AMMWithdraw>(ctx);
+        case ttAMM_VOTE:
+            return invoke_preclaim<AMMVote>(ctx);
+        case ttAMM_BID:
+            return invoke_preclaim<AMMBid>(ctx);
+        case ttAMM_DELETE:
+            return invoke_preclaim<AMMDelete>(ctx);
+        case ttXCHAIN_CREATE_BRIDGE:
+            return invoke_preclaim<XChainCreateBridge>(ctx);
+        case ttXCHAIN_MODIFY_BRIDGE:
+            return invoke_preclaim<BridgeModify>(ctx);
+        case ttXCHAIN_CREATE_CLAIM_ID:
+            return invoke_preclaim<XChainCreateClaimID>(ctx);
+        case ttXCHAIN_COMMIT:
+            return invoke_preclaim<XChainCommit>(ctx);
+        case ttXCHAIN_CLAIM:
+            return invoke_preclaim<XChainClaim>(ctx);
+        case ttXCHAIN_ACCOUNT_CREATE_COMMIT:
+            return invoke_preclaim<XChainCreateAccountCommit>(ctx);
+        case ttXCHAIN_ADD_CLAIM_ATTESTATION:
+            return invoke_preclaim<XChainAddClaimAttestation>(ctx);
+        case ttXCHAIN_ADD_ACCOUNT_CREATE_ATTESTATION:
+            return invoke_preclaim<XChainAddAccountCreateAttestation>(ctx);
         default:
             assert(false);
             return temUNKNOWN;
@@ -311,6 +381,37 @@ invoke_calculateBaseFee(ReadView const& view, STTx const& tx)
             return NFTokenCancelOffer::calculateBaseFee(view, tx);
         case ttNFTOKEN_ACCEPT_OFFER:
             return NFTokenAcceptOffer::calculateBaseFee(view, tx);
+        case ttCLAWBACK:
+            return Clawback::calculateBaseFee(view, tx);
+        case ttAMM_CREATE:
+            return AMMCreate::calculateBaseFee(view, tx);
+        case ttAMM_DEPOSIT:
+            return AMMDeposit::calculateBaseFee(view, tx);
+        case ttAMM_WITHDRAW:
+            return AMMWithdraw::calculateBaseFee(view, tx);
+        case ttAMM_VOTE:
+            return AMMVote::calculateBaseFee(view, tx);
+        case ttAMM_BID:
+            return AMMBid::calculateBaseFee(view, tx);
+        case ttAMM_DELETE:
+            return AMMDelete::calculateBaseFee(view, tx);
+        case ttXCHAIN_CREATE_BRIDGE:
+            return XChainCreateBridge::calculateBaseFee(view, tx);
+        case ttXCHAIN_MODIFY_BRIDGE:
+            return BridgeModify::calculateBaseFee(view, tx);
+        case ttXCHAIN_CREATE_CLAIM_ID:
+            return XChainCreateClaimID::calculateBaseFee(view, tx);
+        case ttXCHAIN_COMMIT:
+            return XChainCommit::calculateBaseFee(view, tx);
+        case ttXCHAIN_CLAIM:
+            return XChainClaim::calculateBaseFee(view, tx);
+        case ttXCHAIN_ADD_CLAIM_ATTESTATION:
+            return XChainAddClaimAttestation::calculateBaseFee(view, tx);
+        case ttXCHAIN_ADD_ACCOUNT_CREATE_ATTESTATION:
+            return XChainAddAccountCreateAttestation::calculateBaseFee(
+                view, tx);
+        case ttXCHAIN_ACCOUNT_CREATE_COMMIT:
+            return XChainCreateAccountCommit::calculateBaseFee(view, tx);
         default:
             assert(false);
             return XRPAmount{0};
@@ -461,6 +562,66 @@ invoke_apply(ApplyContext& ctx)
         }
         case ttNFTOKEN_ACCEPT_OFFER: {
             NFTokenAcceptOffer p(ctx);
+            return p();
+        }
+        case ttCLAWBACK: {
+            Clawback p(ctx);
+            return p();
+        }
+        case ttAMM_CREATE: {
+            AMMCreate p(ctx);
+            return p();
+        }
+        case ttAMM_DEPOSIT: {
+            AMMDeposit p(ctx);
+            return p();
+        }
+        case ttAMM_WITHDRAW: {
+            AMMWithdraw p(ctx);
+            return p();
+        }
+        case ttAMM_VOTE: {
+            AMMVote p(ctx);
+            return p();
+        }
+        case ttAMM_BID: {
+            AMMBid p(ctx);
+            return p();
+        }
+        case ttAMM_DELETE: {
+            AMMDelete p(ctx);
+            return p();
+        }
+        case ttXCHAIN_CREATE_BRIDGE: {
+            XChainCreateBridge p(ctx);
+            return p();
+        }
+        case ttXCHAIN_MODIFY_BRIDGE: {
+            BridgeModify p(ctx);
+            return p();
+        }
+        case ttXCHAIN_CREATE_CLAIM_ID: {
+            XChainCreateClaimID p(ctx);
+            return p();
+        }
+        case ttXCHAIN_COMMIT: {
+            XChainCommit p(ctx);
+            return p();
+        }
+        case ttXCHAIN_CLAIM: {
+            XChainClaim p(ctx);
+            return p();
+        }
+        case ttXCHAIN_ADD_CLAIM_ATTESTATION: {
+            XChainAddClaimAttestation p(ctx);
+            return p();
+        }
+        case ttXCHAIN_ADD_ACCOUNT_CREATE_ATTESTATION: {
+            XChainAddAccountCreateAttestation p(ctx);
+            return p();
+        }
+        case ttXCHAIN_ACCOUNT_CREATE_COMMIT: {
+            XChainCreateAccountCommit p(ctx);
             return p();
         }
         default:
