@@ -192,15 +192,19 @@ lower) fee to get into the same position as a reference transaction.
 
 For consensus to be considered healthy, the peers on the network
 should largely remain in sync with one another. It is particularly
-important for the validators to remain in sync, because they must
-be in sync to participate in consensus. Another factor to consider is
+important for the validators to remain in sync, because that is required
+for participation in consensus. However, the network tolerates some
+validators being out of sync. Fundamentally, network health is a
+function of validators reaching consensus on sets of recently submitted
+transactions. 
+Another factor to consider is
 the duration of the consensus process itself. This generally takes
 under 5 seconds on the main network. This is based on historical
 observations. However, some factors, such as transactions volumes,
 can increase consensus duration. This is because rippled performs
 more work as transaction volume increases. Under sufficient load this
 tends to increase consensus duration.
-Note that this is not necessarily the time between
+Note that this is not necessarily the duration between
 ledger closings, as consensus usually starts some amount of time after
 a ledger opens.
 
