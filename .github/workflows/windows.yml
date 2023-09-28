@@ -99,6 +99,4 @@ jobs:
         continue-on-error: true
         run: |
           # Remove these echo statements before merging
-          echo "nproc: $(nproc)"
-          echo "NUMBER_OF_PROCESSORS ${NUMBER_OF_PROCESSORS}"
           ${build_dir}/${{ matrix.configuration }}/rippled --unittest --unittest-jobs $(nproc)

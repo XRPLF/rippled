@@ -10,10 +10,6 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: dependencies
-      uses: ./.github/actions/dependencies
-      with:
-        configuration: ${{ inputs.configuration }}
     - name: configure
       shell: bash
       run: |
