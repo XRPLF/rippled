@@ -1,4 +1,6 @@
 <map id="ripple::TimeKeeper" name="ripple::TimeKeeper">
-<area shape="rect" id="node1" title="Manages various times used by the server." alt="" coords="13,95,158,121"/>
-<area shape="rect" id="node2" href="$classbeast_1_1abstract__clock.html" title=" " alt="" coords="5,5,165,47"/>
+<area shape="rect" id="node1" title="Manages various times used by the server." alt="" coords="34,199,179,225"/>
+<area shape="rect" id="node2" href="$classbeast_1_1abstract__clock.html" title=" " alt="" coords="5,95,165,136"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="190,95,373,136"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="204,5,359,32"/>
 </map>

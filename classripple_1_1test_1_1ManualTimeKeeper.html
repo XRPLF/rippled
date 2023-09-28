@@ -91,12 +91,13 @@ Collaboration diagram for ripple::test::ManualTimeKeeper:</div>
 <div class="dyncontent">
 <div class="center"><img src="classripple_1_1test_1_1ManualTimeKeeper__coll__graph.png" border="0" usemap="#ripple_1_1test_1_1ManualTimeKeeper_coll__map" alt="Collaboration graph"/></div>
 <map name="ripple_1_1test_1_1ManualTimeKeeper_coll__map" id="ripple_1_1test_1_1ManualTimeKeeper_coll__map">
-<area shape="rect" title=" " alt="" coords="520,81,700,123"/>
-<area shape="rect" href="classripple_1_1TimeKeeper.html" title="Manages various times used by the server." alt="" coords="228,13,373,39"/>
-<area shape="rect" href="classbeast_1_1abstract__clock.html" title=" " alt="" coords="5,5,165,47"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/thread/mutex.html" title="STL class." alt="" coords="255,63,347,90"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/chrono/time_point.html" title=" " alt="" coords="215,114,387,141"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/chrono/duration.html" title=" " alt="" coords="223,165,379,207"/>
+<area shape="rect" title=" " alt="" coords="816,100,996,141"/>
+<area shape="rect" href="classripple_1_1TimeKeeper.html" title="Manages various times used by the server." alt="" coords="565,78,711,105"/>
+<area shape="rect" href="classbeast_1_1abstract__clock.html" title=" " alt="" coords="242,5,402,47"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/atomic/atomic.html" title=" " alt="" coords="231,71,413,112"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/chrono/duration.html" title=" " alt="" coords="5,78,160,105"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/atomic/atomic.html" title=" " alt="" coords="547,129,729,171"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/chrono/time_point.html" title=" " alt="" coords="236,137,408,163"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -108,36 +109,30 @@ Public Types</h2></td></tr>
 <tr class="separator:abba11dabb096d89ff62699b64efb472e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad024b15fa67696e8d1eba3744e800d32"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1abstract__clock.html#ad024b15fa67696e8d1eba3744e800d32">duration</a> = typename <a class="el" href="classripple_1_1NetClock.html">NetClock</a> ::<a class="el" href="classbeast_1_1abstract__clock.html#ad024b15fa67696e8d1eba3744e800d32">duration</a></td></tr>
 <tr class="separator:ad024b15fa67696e8d1eba3744e800d32"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4e16832b0bdf9392c5138bbbde024d8e"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">time_point</a> = typename <a class="el" href="classripple_1_1NetClock.html">NetClock</a> ::<a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/time_point.html">time_point</a></td></tr>
+<tr class="memitem:a4e16832b0bdf9392c5138bbbde024d8e"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">time_point</a> = typename <a class="el" href="classripple_1_1NetClock.html">NetClock</a> ::<a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">time_point</a></td></tr>
 <tr class="separator:a4e16832b0bdf9392c5138bbbde024d8e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab2db1e4273a58b6431b330e3c5ebd07f"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1abstract__clock.html#ab2db1e4273a58b6431b330e3c5ebd07f">clock_type</a> = <a class="el" href="classripple_1_1NetClock.html">NetClock</a></td></tr>
 <tr class="separator:ab2db1e4273a58b6431b330e3c5ebd07f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:ae0307c0cafd95511e1f63e6c8af6bf2d"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1ManualTimeKeeper.html#ae0307c0cafd95511e1f63e6c8af6bf2d">ManualTimeKeeper</a> ()</td></tr>
-<tr class="separator:ae0307c0cafd95511e1f63e6c8af6bf2d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8762d4a9dfb3f24a71b9b2d8da022914"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1ManualTimeKeeper.html#a8762d4a9dfb3f24a71b9b2d8da022914">run</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; const &amp;servers) override</td></tr>
-<tr class="memdesc:a8762d4a9dfb3f24a71b9b2d8da022914"><td class="mdescLeft">&#160;</td><td class="mdescRight">Launch the internal thread.  <a href="classripple_1_1test_1_1ManualTimeKeeper.html#a8762d4a9dfb3f24a71b9b2d8da022914">More...</a><br /></td></tr>
-<tr class="separator:a8762d4a9dfb3f24a71b9b2d8da022914"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac82d38f479a173052914954b90791754"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">time_point</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1ManualTimeKeeper.html#ac82d38f479a173052914954b90791754">now</a> () const override</td></tr>
-<tr class="memdesc:ac82d38f479a173052914954b90791754"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the estimate of wall time, in network time.  <a href="classripple_1_1test_1_1ManualTimeKeeper.html#ac82d38f479a173052914954b90791754">More...</a><br /></td></tr>
-<tr class="separator:ac82d38f479a173052914954b90791754"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a92f2c87334fdb6950e3cffd713cfdc63"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">time_point</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1ManualTimeKeeper.html#a92f2c87334fdb6950e3cffd713cfdc63">closeTime</a> () const override</td></tr>
-<tr class="memdesc:a92f2c87334fdb6950e3cffd713cfdc63"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the close time, in network time.  <a href="classripple_1_1test_1_1ManualTimeKeeper.html#a92f2c87334fdb6950e3cffd713cfdc63">More...</a><br /></td></tr>
-<tr class="separator:a92f2c87334fdb6950e3cffd713cfdc63"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a73f2f9d2c3084037d7e93749d99cc3b3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1ManualTimeKeeper.html#a73f2f9d2c3084037d7e93749d99cc3b3">adjustCloseTime</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::duration</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::int32_t</a> &gt; amount) override</td></tr>
-<tr class="memdesc:a73f2f9d2c3084037d7e93749d99cc3b3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adjust the close time.  <a href="classripple_1_1test_1_1ManualTimeKeeper.html#a73f2f9d2c3084037d7e93749d99cc3b3">More...</a><br /></td></tr>
-<tr class="separator:a73f2f9d2c3084037d7e93749d99cc3b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a03e7ee3282d25736c1cf6cd90756404e"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::duration</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::int32_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1ManualTimeKeeper.html#a03e7ee3282d25736c1cf6cd90756404e">nowOffset</a> () const override</td></tr>
-<tr class="separator:a03e7ee3282d25736c1cf6cd90756404e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad420ddf7a50f19579826153e56a7c228"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::duration</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::int32_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1ManualTimeKeeper.html#ad420ddf7a50f19579826153e56a7c228">closeOffset</a> () const override</td></tr>
-<tr class="separator:ad420ddf7a50f19579826153e56a7c228"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adc79836900ad4b5437d1f19a341418e7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1ManualTimeKeeper.html#adc79836900ad4b5437d1f19a341418e7">set</a> (<a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">time_point</a> <a class="el" href="classripple_1_1test_1_1ManualTimeKeeper.html#ac82d38f479a173052914954b90791754">now</a>)</td></tr>
+<tr class="memitem:af11762f5c76386212acf52f7d9a297a9"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1ManualTimeKeeper.html#af11762f5c76386212acf52f7d9a297a9">ManualTimeKeeper</a> ()=default</td></tr>
+<tr class="separator:af11762f5c76386212acf52f7d9a297a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8d4b3ab9d0ae39c1dc964b6cd2ecae2b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">time_point</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1ManualTimeKeeper.html#a8d4b3ab9d0ae39c1dc964b6cd2ecae2b">now</a> () const override</td></tr>
+<tr class="separator:a8d4b3ab9d0ae39c1dc964b6cd2ecae2b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adc79836900ad4b5437d1f19a341418e7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1ManualTimeKeeper.html#adc79836900ad4b5437d1f19a341418e7">set</a> (<a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">time_point</a> <a class="el" href="classripple_1_1test_1_1ManualTimeKeeper.html#a8d4b3ab9d0ae39c1dc964b6cd2ecae2b">now</a>)</td></tr>
 <tr class="separator:adc79836900ad4b5437d1f19a341418e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac9a577663353bfea66a096f12cb85293"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/time_point.html">time_point</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1abstract__clock.html#ac9a577663353bfea66a096f12cb85293">now</a> () const=0</td></tr>
+<tr class="memitem:ac9a577663353bfea66a096f12cb85293"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">time_point</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1abstract__clock.html#ac9a577663353bfea66a096f12cb85293">now</a> () const=0</td></tr>
 <tr class="memdesc:ac9a577663353bfea66a096f12cb85293"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the current time.  <a href="classbeast_1_1abstract__clock.html#ac9a577663353bfea66a096f12cb85293">More...</a><br /></td></tr>
 <tr class="separator:ac9a577663353bfea66a096f12cb85293"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ada2cee023f1dcf3c80250f8840139440"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">time_point</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TimeKeeper.html#ada2cee023f1dcf3c80250f8840139440">closeTime</a> () const</td></tr>
+<tr class="memdesc:ada2cee023f1dcf3c80250f8840139440"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the predicted close time, in network time.  <a href="classripple_1_1TimeKeeper.html#ada2cee023f1dcf3c80250f8840139440">More...</a><br /></td></tr>
+<tr class="separator:ada2cee023f1dcf3c80250f8840139440"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6ea20501ef727ee3f4cd25aa9c164e26"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TimeKeeper.html#a6ea20501ef727ee3f4cd25aa9c164e26">closeOffset</a> () const</td></tr>
+<tr class="separator:a6ea20501ef727ee3f4cd25aa9c164e26"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abfc6614b53f236861e4e61e91574283e"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TimeKeeper.html#abfc6614b53f236861e4e61e91574283e">adjustCloseTime</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> by)</td></tr>
+<tr class="memdesc:abfc6614b53f236861e4e61e91574283e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adjust the close time, based on the network's view of time.  <a href="classripple_1_1TimeKeeper.html#abfc6614b53f236861e4e61e91574283e">More...</a><br /></td></tr>
+<tr class="separator:abfc6614b53f236861e4e61e91574283e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
@@ -146,17 +141,15 @@ Static Public Attributes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-static-methods"></a>
 Static Private Member Functions</h2></td></tr>
-<tr class="memitem:acfd6a514a391688ec01dfd036ee333b3"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">time_point</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1ManualTimeKeeper.html#acfd6a514a391688ec01dfd036ee333b3">adjust</a> (std::chrono::system_clock::time_point when)</td></tr>
-<tr class="separator:acfd6a514a391688ec01dfd036ee333b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a00f890d82fb32b35618b2e0e4244d6e1"><td class="memItemLeft" align="right" valign="top">static constexpr <a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">time_point</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TimeKeeper.html#a00f890d82fb32b35618b2e0e4244d6e1">adjust</a> (std::chrono::system_clock::time_point when)</td></tr>
+<tr class="separator:a00f890d82fb32b35618b2e0e4244d6e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
-<tr class="memitem:a17b716acc192c2d8758f1108a4c78c17"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/mutex.html">std::mutex</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1ManualTimeKeeper.html#a17b716acc192c2d8758f1108a4c78c17">mutex_</a></td></tr>
-<tr class="separator:a17b716acc192c2d8758f1108a4c78c17"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a30d6697f4d206d587c64719c180b6df6"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::duration</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::int32_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1ManualTimeKeeper.html#a30d6697f4d206d587c64719c180b6df6">closeOffset_</a></td></tr>
-<tr class="separator:a30d6697f4d206d587c64719c180b6df6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a95bd7c4bab8f36d2a6d207ac2a2cc26c"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/time_point.html">time_point</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1ManualTimeKeeper.html#a95bd7c4bab8f36d2a6d207ac2a2cc26c">now_</a></td></tr>
-<tr class="separator:a95bd7c4bab8f36d2a6d207ac2a2cc26c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a499e0eb45a936d1a82625940ce29c4c0"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/atomic/atomic.html">std::atomic</a>&lt; <a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">time_point</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1ManualTimeKeeper.html#a499e0eb45a936d1a82625940ce29c4c0">now_</a> {}</td></tr>
+<tr class="separator:a499e0eb45a936d1a82625940ce29c4c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0061e7bf92a6d7a7140a57d5eeb2437d"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/atomic/atomic.html">std::atomic</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TimeKeeper.html#a0061e7bf92a6d7a7140a57d5eeb2437d">closeOffset_</a> {}</td></tr>
+<tr class="separator:a0061e7bf92a6d7a7140a57d5eeb2437d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
@@ -244,7 +237,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classbeast_1_1abstract__clock.html">beast::abstract_clock</a>&lt; <a class="el" href="classripple_1_1NetClock.html">NetClock</a>  &gt;::<a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/time_point.html">time_point</a> =  typename <a class="el" href="classripple_1_1NetClock.html">NetClock</a> ::<a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/time_point.html">time_point</a></td>
+          <td class="memname">using <a class="el" href="classbeast_1_1abstract__clock.html">beast::abstract_clock</a>&lt; <a class="el" href="classripple_1_1NetClock.html">NetClock</a>  &gt;::<a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">time_point</a> =  typename <a class="el" href="classripple_1_1NetClock.html">NetClock</a> ::<a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">time_point</a></td>
         </tr>
       </table>
   </td>
@@ -283,11 +276,14 @@ Private Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="ae0307c0cafd95511e1f63e6c8af6bf2d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae0307c0cafd95511e1f63e6c8af6bf2d">&#9670;&nbsp;</a></span>ManualTimeKeeper()</h2>
+<a id="af11762f5c76386212acf52f7d9a297a9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af11762f5c76386212acf52f7d9a297a9">&#9670;&nbsp;</a></span>ManualTimeKeeper()</h2>
 
 <div class="memitem">
 <div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname">ripple::test::ManualTimeKeeper::ManualTimeKeeper </td>
@@ -296,15 +292,18 @@ Private Attributes</h2></td></tr>
           <td></td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">default</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="ManualTimeKeeper_8cpp_source.html#l00027">27</a> of file <a class="el" href="ManualTimeKeeper_8cpp_source.html">ManualTimeKeeper.cpp</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a8762d4a9dfb3f24a71b9b2d8da022914"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8762d4a9dfb3f24a71b9b2d8da022914">&#9670;&nbsp;</a></span>run()</h2>
+<a id="a8d4b3ab9d0ae39c1dc964b6cd2ecae2b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8d4b3ab9d0ae39c1dc964b6cd2ecae2b">&#9670;&nbsp;</a></span>now() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -313,40 +312,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void ripple::test::ManualTimeKeeper::run </td>
-          <td>(</td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; const &amp;&#160;</td>
-          <td class="paramname"><em>servers</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Launch the internal thread. </p>
-<p>The internal thread synchronizes local network time using the provided list of SNTP servers. </p>
-
-<p>Implements <a class="el" href="classripple_1_1TimeKeeper.html#a79cf5f1ce3f70b37e695547dddfc36cc">ripple::TimeKeeper</a>.</p>
-
-<p class="definition">Definition at line <a class="el" href="ManualTimeKeeper_8cpp_source.html#l00032">32</a> of file <a class="el" href="ManualTimeKeeper_8cpp_source.html">ManualTimeKeeper.cpp</a>.</p>
-
-</div>
-</div>
-<a id="ac82d38f479a173052914954b90791754"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac82d38f479a173052914954b90791754">&#9670;&nbsp;</a></span>now() <span class="overload">[1/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">auto ripple::test::ManualTimeKeeper::now </td>
+          <td class="memname"><a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">time_point</a> ripple::test::ManualTimeKeeper::now </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -354,142 +320,12 @@ Private Attributes</h2></td></tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+<span class="mlabels"><span class="mlabel">override</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p>Returns the estimate of wall time, in network time. </p>
-<p>The network time is wall time adjusted for the Ripple epoch, the beginning of January 1st, 2000 UTC. Each server can compute a different value for network time. Other servers value for network time is not directly observable, but good guesses can be made by looking at validators' positions on close times.</p>
-<p>Servers compute network time by adjusting a local wall clock using SNTP and then adjusting for the epoch. </p>
-
-<p>Implements <a class="el" href="classripple_1_1TimeKeeper.html#af1b5d38f3ba1bcacfbb7a89979af70e4">ripple::TimeKeeper</a>.</p>
-
-<p class="definition">Definition at line <a class="el" href="ManualTimeKeeper_8cpp_source.html#l00037">37</a> of file <a class="el" href="ManualTimeKeeper_8cpp_source.html">ManualTimeKeeper.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a92f2c87334fdb6950e3cffd713cfdc63"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a92f2c87334fdb6950e3cffd713cfdc63">&#9670;&nbsp;</a></span>closeTime()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">auto ripple::test::ManualTimeKeeper::closeTime </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Returns the close time, in network time. </p>
-<p>Close time is the time the network would agree that a ledger closed, if a ledger closed right now.</p>
-<p>The close time represents the notional "center" of the network. Each server assumes its clock is correct, and tries to pull the close time towards its measure of network time. </p>
-
-<p>Implements <a class="el" href="classripple_1_1TimeKeeper.html#a106491f0751b8c2c75978a4d1f7aa0e6">ripple::TimeKeeper</a>.</p>
-
-<p class="definition">Definition at line <a class="el" href="ManualTimeKeeper_8cpp_source.html#l00044">44</a> of file <a class="el" href="ManualTimeKeeper_8cpp_source.html">ManualTimeKeeper.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a73f2f9d2c3084037d7e93749d99cc3b3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a73f2f9d2c3084037d7e93749d99cc3b3">&#9670;&nbsp;</a></span>adjustCloseTime()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ripple::test::ManualTimeKeeper::adjustCloseTime </td>
-          <td>(</td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::duration</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::int32_t</a> &gt;&#160;</td>
-          <td class="paramname"><em>amount</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Adjust the close time. </p>
-<p>This is called in response to received validations. </p>
-
-<p>Implements <a class="el" href="classripple_1_1TimeKeeper.html#aaf051c43afa950aed8fbba203f692843">ripple::TimeKeeper</a>.</p>
-
-<p class="definition">Definition at line <a class="el" href="ManualTimeKeeper_8cpp_source.html#l00051">51</a> of file <a class="el" href="ManualTimeKeeper_8cpp_source.html">ManualTimeKeeper.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a03e7ee3282d25736c1cf6cd90756404e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a03e7ee3282d25736c1cf6cd90756404e">&#9670;&nbsp;</a></span>nowOffset()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::duration</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::int32_t</a> &gt; ripple::test::ManualTimeKeeper::nowOffset </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Implements <a class="el" href="classripple_1_1TimeKeeper.html#a5721d9534982798a239344767a5f5793">ripple::TimeKeeper</a>.</p>
-
-<p class="definition">Definition at line <a class="el" href="ManualTimeKeeper_8cpp_source.html#l00068">68</a> of file <a class="el" href="ManualTimeKeeper_8cpp_source.html">ManualTimeKeeper.cpp</a>.</p>
-
-</div>
-</div>
-<a id="ad420ddf7a50f19579826153e56a7c228"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad420ddf7a50f19579826153e56a7c228">&#9670;&nbsp;</a></span>closeOffset()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::duration</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::int32_t</a> &gt; ripple::test::ManualTimeKeeper::closeOffset </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Implements <a class="el" href="classripple_1_1TimeKeeper.html#a02349f394ef517627d7bfe34cb239756">ripple::TimeKeeper</a>.</p>
-
-<p class="definition">Definition at line <a class="el" href="ManualTimeKeeper_8cpp_source.html#l00074">74</a> of file <a class="el" href="ManualTimeKeeper_8cpp_source.html">ManualTimeKeeper.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ManualTimeKeeper_8h_source.html#l00038">38</a> of file <a class="el" href="ManualTimeKeeper_8h_source.html">ManualTimeKeeper.h</a>.</p>
 
 </div>
 </div>
@@ -509,12 +345,12 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ManualTimeKeeper_8cpp_source.html#l00081">81</a> of file <a class="el" href="ManualTimeKeeper_8cpp_source.html">ManualTimeKeeper.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ManualTimeKeeper_8h_source.html#l00044">44</a> of file <a class="el" href="ManualTimeKeeper_8h_source.html">ManualTimeKeeper.h</a>.</p>
 
 </div>
 </div>
-<a id="acfd6a514a391688ec01dfd036ee333b3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acfd6a514a391688ec01dfd036ee333b3">&#9670;&nbsp;</a></span>adjust()</h2>
+<a id="a00f890d82fb32b35618b2e0e4244d6e1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a00f890d82fb32b35618b2e0e4244d6e1">&#9670;&nbsp;</a></span>adjust()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -523,7 +359,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">auto ripple::test::ManualTimeKeeper::adjust </td>
+          <td class="memname">static constexpr <a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">time_point</a> ripple::TimeKeeper::adjust </td>
           <td>(</td>
           <td class="paramtype">std::chrono::system_clock::time_point&#160;</td>
           <td class="paramname"><em>when</em></td><td>)</td>
@@ -532,12 +368,12 @@ Private Attributes</h2></td></tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">private</span></span>  </td>
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span><span class="mlabel">private</span><span class="mlabel">inherited</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ManualTimeKeeper_8cpp_source.html#l00088">88</a> of file <a class="el" href="ManualTimeKeeper_8cpp_source.html">ManualTimeKeeper.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TimeKeeper_8h_source.html#l00037">37</a> of file <a class="el" href="TimeKeeper_8h_source.html">TimeKeeper.h</a>.</p>
 
 </div>
 </div>
@@ -551,7 +387,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/time_point.html">time_point</a> <a class="el" href="classbeast_1_1abstract__clock.html">beast::abstract_clock</a>&lt; <a class="el" href="classripple_1_1NetClock.html">NetClock</a>  &gt;::now </td>
+          <td class="memname">virtual <a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">time_point</a> <a class="el" href="classbeast_1_1abstract__clock.html">beast::abstract_clock</a>&lt; <a class="el" href="classripple_1_1NetClock.html">NetClock</a>  &gt;::now </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -568,9 +404,96 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="ada2cee023f1dcf3c80250f8840139440"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ada2cee023f1dcf3c80250f8840139440">&#9670;&nbsp;</a></span>closeTime()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">time_point</a> ripple::TimeKeeper::closeTime </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Returns the predicted close time, in network time. </p>
+<p>The predicted close time represents the notional "center" of the network. Each server assumes that its clock is correct and tries to pull the close time towards its measure of network time. </p>
+
+<p class="definition">Definition at line <a class="el" href="TimeKeeper_8h_source.html#l00075">75</a> of file <a class="el" href="TimeKeeper_8h_source.html">TimeKeeper.h</a>.</p>
+
+</div>
+</div>
+<a id="a6ea20501ef727ee3f4cd25aa9c164e26"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6ea20501ef727ee3f4cd25aa9c164e26">&#9670;&nbsp;</a></span>closeOffset()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> ripple::TimeKeeper::closeOffset </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="TimeKeeper_8h_source.html#l00082">82</a> of file <a class="el" href="TimeKeeper_8h_source.html">TimeKeeper.h</a>.</p>
+
+</div>
+</div>
+<a id="abfc6614b53f236861e4e61e91574283e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abfc6614b53f236861e4e61e91574283e">&#9670;&nbsp;</a></span>adjustCloseTime()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> ripple::TimeKeeper::adjustCloseTime </td>
+          <td>(</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a>&#160;</td>
+          <td class="paramname"><em>by</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Adjust the close time, based on the network's view of time. </p>
+
+<p class="definition">Definition at line <a class="el" href="TimeKeeper_8h_source.html#l00089">89</a> of file <a class="el" href="TimeKeeper_8h_source.html">TimeKeeper.h</a>.</p>
+
+</div>
+</div>
 <h2 class="groupheader">Member Data Documentation</h2>
-<a id="a17b716acc192c2d8758f1108a4c78c17"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a17b716acc192c2d8758f1108a4c78c17">&#9670;&nbsp;</a></span>mutex_</h2>
+<a id="a499e0eb45a936d1a82625940ce29c4c0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a499e0eb45a936d1a82625940ce29c4c0">&#9670;&nbsp;</a></span>now_</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -579,31 +502,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/mutex.html">std::mutex</a> ripple::test::ManualTimeKeeper::mutex_</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">mutable</span><span class="mlabel">private</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="ManualTimeKeeper_8h_source.html#l00060">60</a> of file <a class="el" href="ManualTimeKeeper_8h_source.html">ManualTimeKeeper.h</a>.</p>
-
-</div>
-</div>
-<a id="a30d6697f4d206d587c64719c180b6df6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a30d6697f4d206d587c64719c180b6df6">&#9670;&nbsp;</a></span>closeOffset_</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::duration</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::int32_t</a>&gt; ripple::test::ManualTimeKeeper::closeOffset_</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/atomic/atomic.html">std::atomic</a>&lt;<a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">time_point</a>&gt; ripple::test::ManualTimeKeeper::now_ {}</td>
         </tr>
       </table>
   </td>
@@ -613,12 +512,12 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ManualTimeKeeper_8h_source.html#l00061">61</a> of file <a class="el" href="ManualTimeKeeper_8h_source.html">ManualTimeKeeper.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ManualTimeKeeper_8h_source.html#l00032">32</a> of file <a class="el" href="ManualTimeKeeper_8h_source.html">ManualTimeKeeper.h</a>.</p>
 
 </div>
 </div>
-<a id="a95bd7c4bab8f36d2a6d207ac2a2cc26c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a95bd7c4bab8f36d2a6d207ac2a2cc26c">&#9670;&nbsp;</a></span>now_</h2>
+<a id="a0061e7bf92a6d7a7140a57d5eeb2437d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0061e7bf92a6d7a7140a57d5eeb2437d">&#9670;&nbsp;</a></span>closeOffset_</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -627,17 +526,17 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/time_point.html">time_point</a> ripple::test::ManualTimeKeeper::now_</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/atomic/atomic.html">std::atomic</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a>&gt; ripple::TimeKeeper::closeOffset_ {}</td>
         </tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+<span class="mlabels"><span class="mlabel">private</span><span class="mlabel">inherited</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ManualTimeKeeper_8h_source.html#l00062">62</a> of file <a class="el" href="ManualTimeKeeper_8h_source.html">ManualTimeKeeper.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TimeKeeper_8h_source.html#l00033">33</a> of file <a class="el" href="TimeKeeper_8h_source.html">TimeKeeper.h</a>.</p>
 
 </div>
 </div>

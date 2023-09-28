@@ -406,7 +406,7 @@ $(function() {
 <div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;                <a class="code" href="classJson_1_1Value.html">Json::Value</a> error;</div>
 <div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;                params[jss::secret] = strings.<a class="code" href="structripple_1_1RPC_1_1key__strings.html#a2ad58f0e794f97951529edcb90744483">master_seed</a>;</div>
 <div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160; </div>
-<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;                <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#afff8ad9526d4b79a147d6af708a6e697">keypairForSignature</a>(params, error);</div>
+<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;                <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#a011cc0d0221172dd0dab38bbdfe04c35">keypairForSignature</a>(params, error);</div>
 <div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;                BEAST_EXPECT(!<a class="code" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">contains_error</a>(error));</div>
 <div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;                BEAST_EXPECT(ret.first.size() != 0);</div>
 <div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;                BEAST_EXPECT(ret.first == publicKey);</div>
@@ -417,7 +417,7 @@ $(function() {
 <div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;                <a class="code" href="classJson_1_1Value.html">Json::Value</a> error;</div>
 <div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;                params[jss::secret] = strings.<a class="code" href="structripple_1_1RPC_1_1key__strings.html#aaa71994cbc2ce890bb6ab1ec93a2a511">master_seed_hex</a>;</div>
 <div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160; </div>
-<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;                <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#afff8ad9526d4b79a147d6af708a6e697">keypairForSignature</a>(params, error);</div>
+<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;                <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#a011cc0d0221172dd0dab38bbdfe04c35">keypairForSignature</a>(params, error);</div>
 <div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;                BEAST_EXPECT(!<a class="code" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">contains_error</a>(error));</div>
 <div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;                BEAST_EXPECT(ret.first.size() != 0);</div>
 <div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;                BEAST_EXPECT(ret.first == publicKey);</div>
@@ -428,7 +428,7 @@ $(function() {
 <div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;                <a class="code" href="classJson_1_1Value.html">Json::Value</a> error;</div>
 <div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;                params[jss::secret] = strings.<a class="code" href="structripple_1_1RPC_1_1key__strings.html#a07b3d8f86fd291b6f7be389a59173030">master_key</a>;</div>
 <div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160; </div>
-<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;                <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#afff8ad9526d4b79a147d6af708a6e697">keypairForSignature</a>(params, error);</div>
+<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;                <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#a011cc0d0221172dd0dab38bbdfe04c35">keypairForSignature</a>(params, error);</div>
 <div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;                BEAST_EXPECT(!<a class="code" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">contains_error</a>(error));</div>
 <div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;                BEAST_EXPECT(ret.first.size() != 0);</div>
 <div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;                BEAST_EXPECT(ret.first == publicKey);</div>
@@ -444,7 +444,7 @@ $(function() {
 <div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160;            params[jss::key_type] = *keyType;</div>
 <div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;            params[jss::seed] = strings.<a class="code" href="structripple_1_1RPC_1_1key__strings.html#a2ad58f0e794f97951529edcb90744483">master_seed</a>;</div>
 <div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160; </div>
-<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#afff8ad9526d4b79a147d6af708a6e697">keypairForSignature</a>(params, error);</div>
+<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#a011cc0d0221172dd0dab38bbdfe04c35">keypairForSignature</a>(params, error);</div>
 <div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;            BEAST_EXPECT(!<a class="code" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">contains_error</a>(error));</div>
 <div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;            BEAST_EXPECT(ret.first.size() != 0);</div>
 <div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;            BEAST_EXPECT(ret.first == publicKey);</div>
@@ -457,7 +457,7 @@ $(function() {
 <div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;            params[jss::key_type] = *keyType;</div>
 <div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160;            params[jss::seed_hex] = strings.<a class="code" href="structripple_1_1RPC_1_1key__strings.html#aaa71994cbc2ce890bb6ab1ec93a2a511">master_seed_hex</a>;</div>
 <div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160; </div>
-<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#afff8ad9526d4b79a147d6af708a6e697">keypairForSignature</a>(params, error);</div>
+<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#a011cc0d0221172dd0dab38bbdfe04c35">keypairForSignature</a>(params, error);</div>
 <div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;            BEAST_EXPECT(!<a class="code" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">contains_error</a>(error));</div>
 <div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160;            BEAST_EXPECT(ret.first.size() != 0);</div>
 <div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160;            BEAST_EXPECT(ret.first == publicKey);</div>
@@ -470,7 +470,7 @@ $(function() {
 <div class="line"><a name="l00399"></a><span class="lineno">  399</span>&#160;            params[jss::key_type] = *keyType;</div>
 <div class="line"><a name="l00400"></a><span class="lineno">  400</span>&#160;            params[jss::passphrase] = strings.<a class="code" href="structripple_1_1RPC_1_1key__strings.html#a07b3d8f86fd291b6f7be389a59173030">master_key</a>;</div>
 <div class="line"><a name="l00401"></a><span class="lineno">  401</span>&#160; </div>
-<div class="line"><a name="l00402"></a><span class="lineno">  402</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#afff8ad9526d4b79a147d6af708a6e697">keypairForSignature</a>(params, error);</div>
+<div class="line"><a name="l00402"></a><span class="lineno">  402</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#a011cc0d0221172dd0dab38bbdfe04c35">keypairForSignature</a>(params, error);</div>
 <div class="line"><a name="l00403"></a><span class="lineno">  403</span>&#160;            BEAST_EXPECT(!<a class="code" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">contains_error</a>(error));</div>
 <div class="line"><a name="l00404"></a><span class="lineno">  404</span>&#160;            BEAST_EXPECT(ret.first.size() != 0);</div>
 <div class="line"><a name="l00405"></a><span class="lineno">  405</span>&#160;            BEAST_EXPECT(ret.first == publicKey);</div>
@@ -485,7 +485,7 @@ $(function() {
 <div class="line"><a name="l00414"></a><span class="lineno">  414</span>&#160;            <a class="code" href="classJson_1_1Value.html">Json::Value</a> params;</div>
 <div class="line"><a name="l00415"></a><span class="lineno">  415</span>&#160;            <a class="code" href="classJson_1_1Value.html">Json::Value</a> error;</div>
 <div class="line"><a name="l00416"></a><span class="lineno">  416</span>&#160;            params[jss::secret] = 314159265;</div>
-<div class="line"><a name="l00417"></a><span class="lineno">  417</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#afff8ad9526d4b79a147d6af708a6e697">keypairForSignature</a>(params, error);</div>
+<div class="line"><a name="l00417"></a><span class="lineno">  417</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#a011cc0d0221172dd0dab38bbdfe04c35">keypairForSignature</a>(params, error);</div>
 <div class="line"><a name="l00418"></a><span class="lineno">  418</span>&#160;            BEAST_EXPECT(<a class="code" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">contains_error</a>(error));</div>
 <div class="line"><a name="l00419"></a><span class="lineno">  419</span>&#160;            BEAST_EXPECT(</div>
 <div class="line"><a name="l00420"></a><span class="lineno">  420</span>&#160;                error[jss::error_message] ==</div>
@@ -499,7 +499,7 @@ $(function() {
 <div class="line"><a name="l00428"></a><span class="lineno">  428</span>&#160;            params[jss::secret] = <a class="code" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eadc8f264f36b55b063c78126b335415f4">Json::arrayValue</a>;</div>
 <div class="line"><a name="l00429"></a><span class="lineno">  429</span>&#160;            params[jss::secret].<a class="code" href="classJson_1_1Value.html#a7e49ac977e4bcf59745a09d426669f75">append</a>(<span class="stringliteral">&quot;array:0&quot;</span>);</div>
 <div class="line"><a name="l00430"></a><span class="lineno">  430</span>&#160; </div>
-<div class="line"><a name="l00431"></a><span class="lineno">  431</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#afff8ad9526d4b79a147d6af708a6e697">keypairForSignature</a>(params, error);</div>
+<div class="line"><a name="l00431"></a><span class="lineno">  431</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#a011cc0d0221172dd0dab38bbdfe04c35">keypairForSignature</a>(params, error);</div>
 <div class="line"><a name="l00432"></a><span class="lineno">  432</span>&#160;            BEAST_EXPECT(<a class="code" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">contains_error</a>(error));</div>
 <div class="line"><a name="l00433"></a><span class="lineno">  433</span>&#160;            BEAST_EXPECT(</div>
 <div class="line"><a name="l00434"></a><span class="lineno">  434</span>&#160;                error[jss::error_message] ==</div>
@@ -514,7 +514,7 @@ $(function() {
 <div class="line"><a name="l00443"></a><span class="lineno">  443</span>&#160;            params[jss::secret][<span class="stringliteral">&quot;string&quot;</span>] = <span class="stringliteral">&quot;string&quot;</span>;</div>
 <div class="line"><a name="l00444"></a><span class="lineno">  444</span>&#160;            params[jss::secret][<span class="stringliteral">&quot;number&quot;</span>] = 702;</div>
 <div class="line"><a name="l00445"></a><span class="lineno">  445</span>&#160; </div>
-<div class="line"><a name="l00446"></a><span class="lineno">  446</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#afff8ad9526d4b79a147d6af708a6e697">keypairForSignature</a>(params, error);</div>
+<div class="line"><a name="l00446"></a><span class="lineno">  446</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#a011cc0d0221172dd0dab38bbdfe04c35">keypairForSignature</a>(params, error);</div>
 <div class="line"><a name="l00447"></a><span class="lineno">  447</span>&#160;            BEAST_EXPECT(<a class="code" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">contains_error</a>(error));</div>
 <div class="line"><a name="l00448"></a><span class="lineno">  448</span>&#160;            BEAST_EXPECT(ret.first.size() == 0);</div>
 <div class="line"><a name="l00449"></a><span class="lineno">  449</span>&#160;            BEAST_EXPECT(</div>
@@ -529,7 +529,7 @@ $(function() {
 <div class="line"><a name="l00458"></a><span class="lineno">  458</span>&#160;            params[jss::key_type] = <span class="stringliteral">&quot;ed25519&quot;</span>;</div>
 <div class="line"><a name="l00459"></a><span class="lineno">  459</span>&#160;            params[jss::secret] = <a class="code" href="namespaceripple_1_1RPC_1_1common.html#ad72e81e0053397669f527267492ea99f">common::master_seed</a>;</div>
 <div class="line"><a name="l00460"></a><span class="lineno">  460</span>&#160; </div>
-<div class="line"><a name="l00461"></a><span class="lineno">  461</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#afff8ad9526d4b79a147d6af708a6e697">keypairForSignature</a>(params, error);</div>
+<div class="line"><a name="l00461"></a><span class="lineno">  461</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#a011cc0d0221172dd0dab38bbdfe04c35">keypairForSignature</a>(params, error);</div>
 <div class="line"><a name="l00462"></a><span class="lineno">  462</span>&#160;            BEAST_EXPECT(<a class="code" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">contains_error</a>(error));</div>
 <div class="line"><a name="l00463"></a><span class="lineno">  463</span>&#160;            BEAST_EXPECT(</div>
 <div class="line"><a name="l00464"></a><span class="lineno">  464</span>&#160;                error[jss::error_message] ==</div>
@@ -544,7 +544,7 @@ $(function() {
 <div class="line"><a name="l00473"></a><span class="lineno">  473</span>&#160;            params[jss::key_type] = <span class="stringliteral">&quot;prime256v1&quot;</span>;</div>
 <div class="line"><a name="l00474"></a><span class="lineno">  474</span>&#160;            params[jss::passphrase] = <a class="code" href="namespaceripple_1_1RPC_1_1common.html#a2594b6fc363636c23c993437ce7c87d7">common::master_key</a>;</div>
 <div class="line"><a name="l00475"></a><span class="lineno">  475</span>&#160; </div>
-<div class="line"><a name="l00476"></a><span class="lineno">  476</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#afff8ad9526d4b79a147d6af708a6e697">keypairForSignature</a>(params, error);</div>
+<div class="line"><a name="l00476"></a><span class="lineno">  476</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#a011cc0d0221172dd0dab38bbdfe04c35">keypairForSignature</a>(params, error);</div>
 <div class="line"><a name="l00477"></a><span class="lineno">  477</span>&#160;            BEAST_EXPECT(<a class="code" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">contains_error</a>(error));</div>
 <div class="line"><a name="l00478"></a><span class="lineno">  478</span>&#160;            BEAST_EXPECT(</div>
 <div class="line"><a name="l00479"></a><span class="lineno">  479</span>&#160;                error[jss::error_message] == <span class="stringliteral">&quot;Invalid field &#39;key_type&#39;.&quot;</span>);</div>
@@ -557,7 +557,7 @@ $(function() {
 <div class="line"><a name="l00486"></a><span class="lineno">  486</span>&#160;            params[jss::key_type] = <a class="code" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6">Json::objectValue</a>;</div>
 <div class="line"><a name="l00487"></a><span class="lineno">  487</span>&#160;            params[jss::seed_hex] = <a class="code" href="namespaceripple_1_1RPC_1_1common.html#a9e331f98266cdf73a3cbb38fb5a3b714">common::master_seed_hex</a>;</div>
 <div class="line"><a name="l00488"></a><span class="lineno">  488</span>&#160; </div>
-<div class="line"><a name="l00489"></a><span class="lineno">  489</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#afff8ad9526d4b79a147d6af708a6e697">keypairForSignature</a>(params, error);</div>
+<div class="line"><a name="l00489"></a><span class="lineno">  489</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#a011cc0d0221172dd0dab38bbdfe04c35">keypairForSignature</a>(params, error);</div>
 <div class="line"><a name="l00490"></a><span class="lineno">  490</span>&#160;            BEAST_EXPECT(<a class="code" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">contains_error</a>(error));</div>
 <div class="line"><a name="l00491"></a><span class="lineno">  491</span>&#160;            BEAST_EXPECT(</div>
 <div class="line"><a name="l00492"></a><span class="lineno">  492</span>&#160;                error[jss::error_message] ==</div>
@@ -571,7 +571,7 @@ $(function() {
 <div class="line"><a name="l00500"></a><span class="lineno">  500</span>&#160;            params[jss::key_type] = <a class="code" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eadc8f264f36b55b063c78126b335415f4">Json::arrayValue</a>;</div>
 <div class="line"><a name="l00501"></a><span class="lineno">  501</span>&#160;            params[jss::seed] = <a class="code" href="namespaceripple_1_1RPC_1_1common.html#ad72e81e0053397669f527267492ea99f">common::master_seed</a>;</div>
 <div class="line"><a name="l00502"></a><span class="lineno">  502</span>&#160; </div>
-<div class="line"><a name="l00503"></a><span class="lineno">  503</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#afff8ad9526d4b79a147d6af708a6e697">keypairForSignature</a>(params, error);</div>
+<div class="line"><a name="l00503"></a><span class="lineno">  503</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#a011cc0d0221172dd0dab38bbdfe04c35">keypairForSignature</a>(params, error);</div>
 <div class="line"><a name="l00504"></a><span class="lineno">  504</span>&#160;            BEAST_EXPECT(<a class="code" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">contains_error</a>(error));</div>
 <div class="line"><a name="l00505"></a><span class="lineno">  505</span>&#160;            BEAST_EXPECT(</div>
 <div class="line"><a name="l00506"></a><span class="lineno">  506</span>&#160;                error[jss::error_message] ==</div>
@@ -586,7 +586,7 @@ $(function() {
 <div class="line"><a name="l00515"></a><span class="lineno">  515</span>&#160;            params[jss::key_type] = <span class="stringliteral">&quot;secp256k1&quot;</span>;</div>
 <div class="line"><a name="l00516"></a><span class="lineno">  516</span>&#160;            params[jss::passphrase] = 1234567890;</div>
 <div class="line"><a name="l00517"></a><span class="lineno">  517</span>&#160; </div>
-<div class="line"><a name="l00518"></a><span class="lineno">  518</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#afff8ad9526d4b79a147d6af708a6e697">keypairForSignature</a>(params, error);</div>
+<div class="line"><a name="l00518"></a><span class="lineno">  518</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#a011cc0d0221172dd0dab38bbdfe04c35">keypairForSignature</a>(params, error);</div>
 <div class="line"><a name="l00519"></a><span class="lineno">  519</span>&#160;            BEAST_EXPECT(<a class="code" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">contains_error</a>(error));</div>
 <div class="line"><a name="l00520"></a><span class="lineno">  520</span>&#160;            BEAST_EXPECT(</div>
 <div class="line"><a name="l00521"></a><span class="lineno">  521</span>&#160;                error[jss::error_message] ==</div>
@@ -600,7 +600,7 @@ $(function() {
 <div class="line"><a name="l00529"></a><span class="lineno">  529</span>&#160;            params[jss::key_type] = <span class="stringliteral">&quot;secp256k1&quot;</span>;</div>
 <div class="line"><a name="l00530"></a><span class="lineno">  530</span>&#160;            params[jss::passphrase] = <a class="code" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6">Json::objectValue</a>;</div>
 <div class="line"><a name="l00531"></a><span class="lineno">  531</span>&#160; </div>
-<div class="line"><a name="l00532"></a><span class="lineno">  532</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#afff8ad9526d4b79a147d6af708a6e697">keypairForSignature</a>(params, error);</div>
+<div class="line"><a name="l00532"></a><span class="lineno">  532</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#a011cc0d0221172dd0dab38bbdfe04c35">keypairForSignature</a>(params, error);</div>
 <div class="line"><a name="l00533"></a><span class="lineno">  533</span>&#160;            BEAST_EXPECT(<a class="code" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">contains_error</a>(error));</div>
 <div class="line"><a name="l00534"></a><span class="lineno">  534</span>&#160;            BEAST_EXPECT(</div>
 <div class="line"><a name="l00535"></a><span class="lineno">  535</span>&#160;                error[jss::error_message] ==</div>
@@ -614,7 +614,7 @@ $(function() {
 <div class="line"><a name="l00543"></a><span class="lineno">  543</span>&#160;            params[jss::key_type] = <span class="stringliteral">&quot;secp256k1&quot;</span>;</div>
 <div class="line"><a name="l00544"></a><span class="lineno">  544</span>&#160;            params[jss::passphrase] = <a class="code" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eadc8f264f36b55b063c78126b335415f4">Json::arrayValue</a>;</div>
 <div class="line"><a name="l00545"></a><span class="lineno">  545</span>&#160; </div>
-<div class="line"><a name="l00546"></a><span class="lineno">  546</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#afff8ad9526d4b79a147d6af708a6e697">keypairForSignature</a>(params, error);</div>
+<div class="line"><a name="l00546"></a><span class="lineno">  546</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#a011cc0d0221172dd0dab38bbdfe04c35">keypairForSignature</a>(params, error);</div>
 <div class="line"><a name="l00547"></a><span class="lineno">  547</span>&#160;            BEAST_EXPECT(<a class="code" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">contains_error</a>(error));</div>
 <div class="line"><a name="l00548"></a><span class="lineno">  548</span>&#160;            BEAST_EXPECT(</div>
 <div class="line"><a name="l00549"></a><span class="lineno">  549</span>&#160;                error[jss::error_message] ==</div>
@@ -628,7 +628,7 @@ $(function() {
 <div class="line"><a name="l00557"></a><span class="lineno">  557</span>&#160;            params[jss::key_type] = <span class="stringliteral">&quot;secp256k1&quot;</span>;</div>
 <div class="line"><a name="l00558"></a><span class="lineno">  558</span>&#160;            params[jss::passphrase] = <span class="stringliteral">&quot;&quot;</span>;</div>
 <div class="line"><a name="l00559"></a><span class="lineno">  559</span>&#160; </div>
-<div class="line"><a name="l00560"></a><span class="lineno">  560</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#afff8ad9526d4b79a147d6af708a6e697">keypairForSignature</a>(params, error);</div>
+<div class="line"><a name="l00560"></a><span class="lineno">  560</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#a011cc0d0221172dd0dab38bbdfe04c35">keypairForSignature</a>(params, error);</div>
 <div class="line"><a name="l00561"></a><span class="lineno">  561</span>&#160;            BEAST_EXPECT(<a class="code" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">contains_error</a>(error));</div>
 <div class="line"><a name="l00562"></a><span class="lineno">  562</span>&#160;            BEAST_EXPECT(error[jss::error_message] == <span class="stringliteral">&quot;Disallowed seed.&quot;</span>);</div>
 <div class="line"><a name="l00563"></a><span class="lineno">  563</span>&#160;            BEAST_EXPECT(ret.first.size() == 0);</div>
@@ -641,7 +641,7 @@ $(function() {
 <div class="line"><a name="l00570"></a><span class="lineno">  570</span>&#160;            params[jss::key_type] = <span class="stringliteral">&quot;secp256k1&quot;</span>;</div>
 <div class="line"><a name="l00571"></a><span class="lineno">  571</span>&#160;            params[jss::seed] = 443556;</div>
 <div class="line"><a name="l00572"></a><span class="lineno">  572</span>&#160; </div>
-<div class="line"><a name="l00573"></a><span class="lineno">  573</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#afff8ad9526d4b79a147d6af708a6e697">keypairForSignature</a>(params, error);</div>
+<div class="line"><a name="l00573"></a><span class="lineno">  573</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#a011cc0d0221172dd0dab38bbdfe04c35">keypairForSignature</a>(params, error);</div>
 <div class="line"><a name="l00574"></a><span class="lineno">  574</span>&#160;            BEAST_EXPECT(<a class="code" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">contains_error</a>(error));</div>
 <div class="line"><a name="l00575"></a><span class="lineno">  575</span>&#160;            BEAST_EXPECT(</div>
 <div class="line"><a name="l00576"></a><span class="lineno">  576</span>&#160;                error[jss::error_message] ==</div>
@@ -655,7 +655,7 @@ $(function() {
 <div class="line"><a name="l00584"></a><span class="lineno">  584</span>&#160;            params[jss::key_type] = <span class="stringliteral">&quot;secp256k1&quot;</span>;</div>
 <div class="line"><a name="l00585"></a><span class="lineno">  585</span>&#160;            params[jss::seed] = <a class="code" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6">Json::objectValue</a>;</div>
 <div class="line"><a name="l00586"></a><span class="lineno">  586</span>&#160; </div>
-<div class="line"><a name="l00587"></a><span class="lineno">  587</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#afff8ad9526d4b79a147d6af708a6e697">keypairForSignature</a>(params, error);</div>
+<div class="line"><a name="l00587"></a><span class="lineno">  587</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#a011cc0d0221172dd0dab38bbdfe04c35">keypairForSignature</a>(params, error);</div>
 <div class="line"><a name="l00588"></a><span class="lineno">  588</span>&#160;            BEAST_EXPECT(<a class="code" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">contains_error</a>(error));</div>
 <div class="line"><a name="l00589"></a><span class="lineno">  589</span>&#160;            BEAST_EXPECT(</div>
 <div class="line"><a name="l00590"></a><span class="lineno">  590</span>&#160;                error[jss::error_message] ==</div>
@@ -669,7 +669,7 @@ $(function() {
 <div class="line"><a name="l00598"></a><span class="lineno">  598</span>&#160;            params[jss::key_type] = <span class="stringliteral">&quot;secp256k1&quot;</span>;</div>
 <div class="line"><a name="l00599"></a><span class="lineno">  599</span>&#160;            params[jss::seed] = <a class="code" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eadc8f264f36b55b063c78126b335415f4">Json::arrayValue</a>;</div>
 <div class="line"><a name="l00600"></a><span class="lineno">  600</span>&#160; </div>
-<div class="line"><a name="l00601"></a><span class="lineno">  601</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#afff8ad9526d4b79a147d6af708a6e697">keypairForSignature</a>(params, error);</div>
+<div class="line"><a name="l00601"></a><span class="lineno">  601</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#a011cc0d0221172dd0dab38bbdfe04c35">keypairForSignature</a>(params, error);</div>
 <div class="line"><a name="l00602"></a><span class="lineno">  602</span>&#160;            BEAST_EXPECT(<a class="code" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">contains_error</a>(error));</div>
 <div class="line"><a name="l00603"></a><span class="lineno">  603</span>&#160;            BEAST_EXPECT(</div>
 <div class="line"><a name="l00604"></a><span class="lineno">  604</span>&#160;                error[jss::error_message] ==</div>
@@ -683,7 +683,7 @@ $(function() {
 <div class="line"><a name="l00612"></a><span class="lineno">  612</span>&#160;            params[jss::key_type] = <span class="stringliteral">&quot;secp256k1&quot;</span>;</div>
 <div class="line"><a name="l00613"></a><span class="lineno">  613</span>&#160;            params[jss::seed] = <span class="stringliteral">&quot;&quot;</span>;</div>
 <div class="line"><a name="l00614"></a><span class="lineno">  614</span>&#160; </div>
-<div class="line"><a name="l00615"></a><span class="lineno">  615</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#afff8ad9526d4b79a147d6af708a6e697">keypairForSignature</a>(params, error);</div>
+<div class="line"><a name="l00615"></a><span class="lineno">  615</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#a011cc0d0221172dd0dab38bbdfe04c35">keypairForSignature</a>(params, error);</div>
 <div class="line"><a name="l00616"></a><span class="lineno">  616</span>&#160;            BEAST_EXPECT(<a class="code" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">contains_error</a>(error));</div>
 <div class="line"><a name="l00617"></a><span class="lineno">  617</span>&#160;            BEAST_EXPECT(error[jss::error_message] == <span class="stringliteral">&quot;Disallowed seed.&quot;</span>);</div>
 <div class="line"><a name="l00618"></a><span class="lineno">  618</span>&#160;            BEAST_EXPECT(ret.first.size() == 0);</div>
@@ -695,7 +695,7 @@ $(function() {
 <div class="line"><a name="l00624"></a><span class="lineno">  624</span>&#160;            params[jss::key_type] = <span class="stringliteral">&quot;secp256k1&quot;</span>;</div>
 <div class="line"><a name="l00625"></a><span class="lineno">  625</span>&#160;            params[jss::seed] = <span class="stringliteral">&quot;s M V s h z D F p t Z E m h s&quot;</span>;</div>
 <div class="line"><a name="l00626"></a><span class="lineno">  626</span>&#160; </div>
-<div class="line"><a name="l00627"></a><span class="lineno">  627</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#afff8ad9526d4b79a147d6af708a6e697">keypairForSignature</a>(params, error);</div>
+<div class="line"><a name="l00627"></a><span class="lineno">  627</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#a011cc0d0221172dd0dab38bbdfe04c35">keypairForSignature</a>(params, error);</div>
 <div class="line"><a name="l00628"></a><span class="lineno">  628</span>&#160;            BEAST_EXPECT(<a class="code" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">contains_error</a>(error));</div>
 <div class="line"><a name="l00629"></a><span class="lineno">  629</span>&#160;            BEAST_EXPECT(error[jss::error_message] == <span class="stringliteral">&quot;Disallowed seed.&quot;</span>);</div>
 <div class="line"><a name="l00630"></a><span class="lineno">  630</span>&#160;            BEAST_EXPECT(ret.first.size() == 0);</div>
@@ -707,7 +707,7 @@ $(function() {
 <div class="line"><a name="l00636"></a><span class="lineno">  636</span>&#160;            params[jss::key_type] = <span class="stringliteral">&quot;secp256k1&quot;</span>;</div>
 <div class="line"><a name="l00637"></a><span class="lineno">  637</span>&#160;            params[jss::seed] = <span class="stringliteral">&quot;pnnjkbnobnml43679nbvjdsklnbjs&quot;</span>;</div>
 <div class="line"><a name="l00638"></a><span class="lineno">  638</span>&#160; </div>
-<div class="line"><a name="l00639"></a><span class="lineno">  639</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#afff8ad9526d4b79a147d6af708a6e697">keypairForSignature</a>(params, error);</div>
+<div class="line"><a name="l00639"></a><span class="lineno">  639</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#a011cc0d0221172dd0dab38bbdfe04c35">keypairForSignature</a>(params, error);</div>
 <div class="line"><a name="l00640"></a><span class="lineno">  640</span>&#160;            BEAST_EXPECT(<a class="code" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">contains_error</a>(error));</div>
 <div class="line"><a name="l00641"></a><span class="lineno">  641</span>&#160;            BEAST_EXPECT(error[jss::error_message] == <span class="stringliteral">&quot;Disallowed seed.&quot;</span>);</div>
 <div class="line"><a name="l00642"></a><span class="lineno">  642</span>&#160;            BEAST_EXPECT(ret.first.size() == 0);</div>
@@ -720,7 +720,7 @@ $(function() {
 <div class="line"><a name="l00649"></a><span class="lineno">  649</span>&#160;            params[jss::key_type] = <span class="stringliteral">&quot;secp256k1&quot;</span>;</div>
 <div class="line"><a name="l00650"></a><span class="lineno">  650</span>&#160;            params[jss::seed_hex] = 443556;</div>
 <div class="line"><a name="l00651"></a><span class="lineno">  651</span>&#160; </div>
-<div class="line"><a name="l00652"></a><span class="lineno">  652</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#afff8ad9526d4b79a147d6af708a6e697">keypairForSignature</a>(params, error);</div>
+<div class="line"><a name="l00652"></a><span class="lineno">  652</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#a011cc0d0221172dd0dab38bbdfe04c35">keypairForSignature</a>(params, error);</div>
 <div class="line"><a name="l00653"></a><span class="lineno">  653</span>&#160;            BEAST_EXPECT(<a class="code" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">contains_error</a>(error));</div>
 <div class="line"><a name="l00654"></a><span class="lineno">  654</span>&#160;            BEAST_EXPECT(</div>
 <div class="line"><a name="l00655"></a><span class="lineno">  655</span>&#160;                error[jss::error_message] ==</div>
@@ -734,7 +734,7 @@ $(function() {
 <div class="line"><a name="l00663"></a><span class="lineno">  663</span>&#160;            params[jss::key_type] = <span class="stringliteral">&quot;secp256k1&quot;</span>;</div>
 <div class="line"><a name="l00664"></a><span class="lineno">  664</span>&#160;            params[jss::seed_hex] = <a class="code" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6">Json::objectValue</a>;</div>
 <div class="line"><a name="l00665"></a><span class="lineno">  665</span>&#160; </div>
-<div class="line"><a name="l00666"></a><span class="lineno">  666</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#afff8ad9526d4b79a147d6af708a6e697">keypairForSignature</a>(params, error);</div>
+<div class="line"><a name="l00666"></a><span class="lineno">  666</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#a011cc0d0221172dd0dab38bbdfe04c35">keypairForSignature</a>(params, error);</div>
 <div class="line"><a name="l00667"></a><span class="lineno">  667</span>&#160;            BEAST_EXPECT(<a class="code" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">contains_error</a>(error));</div>
 <div class="line"><a name="l00668"></a><span class="lineno">  668</span>&#160;            BEAST_EXPECT(</div>
 <div class="line"><a name="l00669"></a><span class="lineno">  669</span>&#160;                error[jss::error_message] ==</div>
@@ -748,7 +748,7 @@ $(function() {
 <div class="line"><a name="l00677"></a><span class="lineno">  677</span>&#160;            params[jss::key_type] = <span class="stringliteral">&quot;secp256k1&quot;</span>;</div>
 <div class="line"><a name="l00678"></a><span class="lineno">  678</span>&#160;            params[jss::seed_hex] = <a class="code" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eadc8f264f36b55b063c78126b335415f4">Json::arrayValue</a>;</div>
 <div class="line"><a name="l00679"></a><span class="lineno">  679</span>&#160; </div>
-<div class="line"><a name="l00680"></a><span class="lineno">  680</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#afff8ad9526d4b79a147d6af708a6e697">keypairForSignature</a>(params, error);</div>
+<div class="line"><a name="l00680"></a><span class="lineno">  680</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#a011cc0d0221172dd0dab38bbdfe04c35">keypairForSignature</a>(params, error);</div>
 <div class="line"><a name="l00681"></a><span class="lineno">  681</span>&#160;            BEAST_EXPECT(<a class="code" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">contains_error</a>(error));</div>
 <div class="line"><a name="l00682"></a><span class="lineno">  682</span>&#160;            BEAST_EXPECT(</div>
 <div class="line"><a name="l00683"></a><span class="lineno">  683</span>&#160;                error[jss::error_message] ==</div>
@@ -762,7 +762,7 @@ $(function() {
 <div class="line"><a name="l00691"></a><span class="lineno">  691</span>&#160;            params[jss::key_type] = <span class="stringliteral">&quot;secp256k1&quot;</span>;</div>
 <div class="line"><a name="l00692"></a><span class="lineno">  692</span>&#160;            params[jss::seed_hex] = <span class="stringliteral">&quot;&quot;</span>;</div>
 <div class="line"><a name="l00693"></a><span class="lineno">  693</span>&#160; </div>
-<div class="line"><a name="l00694"></a><span class="lineno">  694</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#afff8ad9526d4b79a147d6af708a6e697">keypairForSignature</a>(params, error);</div>
+<div class="line"><a name="l00694"></a><span class="lineno">  694</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#a011cc0d0221172dd0dab38bbdfe04c35">keypairForSignature</a>(params, error);</div>
 <div class="line"><a name="l00695"></a><span class="lineno">  695</span>&#160;            BEAST_EXPECT(<a class="code" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">contains_error</a>(error));</div>
 <div class="line"><a name="l00696"></a><span class="lineno">  696</span>&#160;            BEAST_EXPECT(error[jss::error_message] == <span class="stringliteral">&quot;Disallowed seed.&quot;</span>);</div>
 <div class="line"><a name="l00697"></a><span class="lineno">  697</span>&#160;            BEAST_EXPECT(ret.first.size() == 0);</div>
@@ -774,7 +774,7 @@ $(function() {
 <div class="line"><a name="l00703"></a><span class="lineno">  703</span>&#160;            params[jss::key_type] = <span class="stringliteral">&quot;secp256k1&quot;</span>;</div>
 <div class="line"><a name="l00704"></a><span class="lineno">  704</span>&#160;            params[jss::seed_hex] = <span class="stringliteral">&quot;A670A19B&quot;</span>;</div>
 <div class="line"><a name="l00705"></a><span class="lineno">  705</span>&#160; </div>
-<div class="line"><a name="l00706"></a><span class="lineno">  706</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#afff8ad9526d4b79a147d6af708a6e697">keypairForSignature</a>(params, error);</div>
+<div class="line"><a name="l00706"></a><span class="lineno">  706</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#a011cc0d0221172dd0dab38bbdfe04c35">keypairForSignature</a>(params, error);</div>
 <div class="line"><a name="l00707"></a><span class="lineno">  707</span>&#160;            BEAST_EXPECT(<a class="code" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">contains_error</a>(error));</div>
 <div class="line"><a name="l00708"></a><span class="lineno">  708</span>&#160;            BEAST_EXPECT(error[jss::error_message] == <span class="stringliteral">&quot;Disallowed seed.&quot;</span>);</div>
 <div class="line"><a name="l00709"></a><span class="lineno">  709</span>&#160;            BEAST_EXPECT(ret.first.size() == 0);</div>
@@ -786,7 +786,7 @@ $(function() {
 <div class="line"><a name="l00715"></a><span class="lineno">  715</span>&#160;            params[jss::key_type] = <span class="stringliteral">&quot;secp256k1&quot;</span>;</div>
 <div class="line"><a name="l00716"></a><span class="lineno">  716</span>&#160;            params[jss::seed_hex] = <a class="code" href="namespaceripple_1_1RPC_1_1common.html#aee0b81b1e32fd602fc4dd571aeff7598">common::passphrase</a>;</div>
 <div class="line"><a name="l00717"></a><span class="lineno">  717</span>&#160; </div>
-<div class="line"><a name="l00718"></a><span class="lineno">  718</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#afff8ad9526d4b79a147d6af708a6e697">keypairForSignature</a>(params, error);</div>
+<div class="line"><a name="l00718"></a><span class="lineno">  718</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#a011cc0d0221172dd0dab38bbdfe04c35">keypairForSignature</a>(params, error);</div>
 <div class="line"><a name="l00719"></a><span class="lineno">  719</span>&#160;            BEAST_EXPECT(<a class="code" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">contains_error</a>(error));</div>
 <div class="line"><a name="l00720"></a><span class="lineno">  720</span>&#160;            BEAST_EXPECT(error[jss::error_message] == <span class="stringliteral">&quot;Disallowed seed.&quot;</span>);</div>
 <div class="line"><a name="l00721"></a><span class="lineno">  721</span>&#160;            BEAST_EXPECT(ret.first.size() == 0);</div>
@@ -799,7 +799,7 @@ $(function() {
 <div class="line"><a name="l00728"></a><span class="lineno">  728</span>&#160;            params[jss::seed_hex] =</div>
 <div class="line"><a name="l00729"></a><span class="lineno">  729</span>&#160;                <span class="stringliteral">&quot;BE6A670A19B209E112146D0A7ED2AAD72567D0FC913&quot;</span>;</div>
 <div class="line"><a name="l00730"></a><span class="lineno">  730</span>&#160; </div>
-<div class="line"><a name="l00731"></a><span class="lineno">  731</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#afff8ad9526d4b79a147d6af708a6e697">keypairForSignature</a>(params, error);</div>
+<div class="line"><a name="l00731"></a><span class="lineno">  731</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#a011cc0d0221172dd0dab38bbdfe04c35">keypairForSignature</a>(params, error);</div>
 <div class="line"><a name="l00732"></a><span class="lineno">  732</span>&#160;            BEAST_EXPECT(<a class="code" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">contains_error</a>(error));</div>
 <div class="line"><a name="l00733"></a><span class="lineno">  733</span>&#160;            BEAST_EXPECT(error[jss::error_message] == <span class="stringliteral">&quot;Disallowed seed.&quot;</span>);</div>
 <div class="line"><a name="l00734"></a><span class="lineno">  734</span>&#160;            BEAST_EXPECT(ret.first.size() == 0);</div>
@@ -818,7 +818,7 @@ $(function() {
 <div class="line"><a name="l00747"></a><span class="lineno">  747</span>&#160; </div>
 <div class="line"><a name="l00748"></a><span class="lineno">  748</span>&#160;                params[jss::passphrase] = seed;</div>
 <div class="line"><a name="l00749"></a><span class="lineno">  749</span>&#160; </div>
-<div class="line"><a name="l00750"></a><span class="lineno">  750</span>&#160;                <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#afff8ad9526d4b79a147d6af708a6e697">keypairForSignature</a>(params, error);</div>
+<div class="line"><a name="l00750"></a><span class="lineno">  750</span>&#160;                <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#a011cc0d0221172dd0dab38bbdfe04c35">keypairForSignature</a>(params, error);</div>
 <div class="line"><a name="l00751"></a><span class="lineno">  751</span>&#160; </div>
 <div class="line"><a name="l00752"></a><span class="lineno">  752</span>&#160;                BEAST_EXPECT(!<a class="code" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">contains_error</a>(error));</div>
 <div class="line"><a name="l00753"></a><span class="lineno">  753</span>&#160;                BEAST_EXPECT(ret.first.size() != 0);</div>
@@ -832,7 +832,7 @@ $(function() {
 <div class="line"><a name="l00761"></a><span class="lineno">  761</span>&#160;                params[jss::key_type] = <span class="stringliteral">&quot;secp256k1&quot;</span>;</div>
 <div class="line"><a name="l00762"></a><span class="lineno">  762</span>&#160;                params[jss::passphrase] = seed;</div>
 <div class="line"><a name="l00763"></a><span class="lineno">  763</span>&#160; </div>
-<div class="line"><a name="l00764"></a><span class="lineno">  764</span>&#160;                <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#afff8ad9526d4b79a147d6af708a6e697">keypairForSignature</a>(params, error);</div>
+<div class="line"><a name="l00764"></a><span class="lineno">  764</span>&#160;                <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#a011cc0d0221172dd0dab38bbdfe04c35">keypairForSignature</a>(params, error);</div>
 <div class="line"><a name="l00765"></a><span class="lineno">  765</span>&#160; </div>
 <div class="line"><a name="l00766"></a><span class="lineno">  766</span>&#160;                BEAST_EXPECT(<a class="code" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">contains_error</a>(error));</div>
 <div class="line"><a name="l00767"></a><span class="lineno">  767</span>&#160;                BEAST_EXPECT(</div>
@@ -847,7 +847,7 @@ $(function() {
 <div class="line"><a name="l00776"></a><span class="lineno">  776</span>&#160;                params[jss::key_type] = <span class="stringliteral">&quot;ed25519&quot;</span>;</div>
 <div class="line"><a name="l00777"></a><span class="lineno">  777</span>&#160;                params[jss::seed] = seed;</div>
 <div class="line"><a name="l00778"></a><span class="lineno">  778</span>&#160; </div>
-<div class="line"><a name="l00779"></a><span class="lineno">  779</span>&#160;                <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#afff8ad9526d4b79a147d6af708a6e697">keypairForSignature</a>(params, error);</div>
+<div class="line"><a name="l00779"></a><span class="lineno">  779</span>&#160;                <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#a011cc0d0221172dd0dab38bbdfe04c35">keypairForSignature</a>(params, error);</div>
 <div class="line"><a name="l00780"></a><span class="lineno">  780</span>&#160; </div>
 <div class="line"><a name="l00781"></a><span class="lineno">  781</span>&#160;                BEAST_EXPECT(!<a class="code" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">contains_error</a>(error));</div>
 <div class="line"><a name="l00782"></a><span class="lineno">  782</span>&#160;                BEAST_EXPECT(ret.first.size() != 0);</div>
@@ -861,7 +861,7 @@ $(function() {
 <div class="line"><a name="l00790"></a><span class="lineno">  790</span>&#160;                params[jss::key_type] = <span class="stringliteral">&quot;secp256k1&quot;</span>;</div>
 <div class="line"><a name="l00791"></a><span class="lineno">  791</span>&#160;                params[jss::seed] = seed;</div>
 <div class="line"><a name="l00792"></a><span class="lineno">  792</span>&#160; </div>
-<div class="line"><a name="l00793"></a><span class="lineno">  793</span>&#160;                <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#afff8ad9526d4b79a147d6af708a6e697">keypairForSignature</a>(params, error);</div>
+<div class="line"><a name="l00793"></a><span class="lineno">  793</span>&#160;                <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1RPC.html#a011cc0d0221172dd0dab38bbdfe04c35">keypairForSignature</a>(params, error);</div>
 <div class="line"><a name="l00794"></a><span class="lineno">  794</span>&#160; </div>
 <div class="line"><a name="l00795"></a><span class="lineno">  795</span>&#160;                BEAST_EXPECT(<a class="code" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">contains_error</a>(error));</div>
 <div class="line"><a name="l00796"></a><span class="lineno">  796</span>&#160;                BEAST_EXPECT(</div>
@@ -961,6 +961,7 @@ $(function() {
 <div class="ttc" id="astructripple_1_1RPC_1_1key__strings_html"><div class="ttname"><a href="structripple_1_1RPC_1_1key__strings.html">ripple::RPC::key_strings</a></div><div class="ttdef"><b>Definition:</b> <a href="KeyGeneration__test_8cpp_source.html#l00033">KeyGeneration_test.cpp:33</a></div></div>
 <div class="ttc" id="aclassripple_1_1RPC_1_1WalletPropose__test_html_ac3ff566738261d32467040f53c8b2f9a"><div class="ttname"><a href="classripple_1_1RPC_1_1WalletPropose__test.html#ac3ff566738261d32467040f53c8b2f9a">ripple::RPC::WalletPropose_test::testKeypairForSignatureErrors</a></div><div class="ttdeci">void testKeypairForSignatureErrors()</div><div class="ttdef"><b>Definition:</b> <a href="KeyGeneration__test_8cpp_source.html#l00410">KeyGeneration_test.cpp:410</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1RPC_html_af4ad4f10ce47581de9d1c2442fb4b77a"><div class="ttname"><a href="namespaceripple_1_1RPC.html#af4ad4f10ce47581de9d1c2442fb4b77a">ripple::RPC::secp256k1_strings</a></div><div class="ttdeci">static const key_strings secp256k1_strings</div><div class="ttdef"><b>Definition:</b> <a href="KeyGeneration__test_8cpp_source.html#l00054">KeyGeneration_test.cpp:54</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1RPC_html_a011cc0d0221172dd0dab38bbdfe04c35"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a011cc0d0221172dd0dab38bbdfe04c35">ripple::RPC::keypairForSignature</a></div><div class="ttdeci">std::pair&lt; PublicKey, SecretKey &gt; keypairForSignature(Json::Value const &amp;params, Json::Value &amp;error, unsigned int apiVersion)</div><div class="ttdef"><b>Definition:</b> <a href="RPCHelpers_8cpp_source.html#l00850">RPCHelpers.cpp:850</a></div></div>
 <div class="ttc" id="aclassJson_1_1Value_html_a7e49ac977e4bcf59745a09d426669f75"><div class="ttname"><a href="classJson_1_1Value.html#a7e49ac977e4bcf59745a09d426669f75">Json::Value::append</a></div><div class="ttdeci">Value &amp; append(const Value &amp;value)</div><div class="ttdoc">Append value to array at the end.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8cpp_source.html#l00882">json_value.cpp:882</a></div></div>
 <div class="ttc" id="astructripple_1_1RPC_1_1key__strings_html_aaa71994cbc2ce890bb6ab1ec93a2a511"><div class="ttname"><a href="structripple_1_1RPC_1_1key__strings.html#aaa71994cbc2ce890bb6ab1ec93a2a511">ripple::RPC::key_strings::master_seed_hex</a></div><div class="ttdeci">char const  * master_seed_hex</div><div class="ttdef"><b>Definition:</b> <a href="KeyGeneration__test_8cpp_source.html#l00038">KeyGeneration_test.cpp:38</a></div></div>
 <div class="ttc" id="anamespaceJson_html_a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6"><div class="ttname"><a href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6">Json::objectValue</a></div><div class="ttdeci">@ objectValue</div><div class="ttdoc">object value (collection of name/value pairs).</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00043">json_value.h:43</a></div></div>
@@ -973,7 +974,6 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1RPC_1_1WalletPropose__test_html_ac9b8937da2ddcceb34b3a096ce6bd12f"><div class="ttname"><a href="classripple_1_1RPC_1_1WalletPropose__test.html#ac9b8937da2ddcceb34b3a096ce6bd12f">ripple::RPC::WalletPropose_test::testRandomWallet</a></div><div class="ttdeci">void testRandomWallet(std::optional&lt; std::string &gt; const &amp;keyType)</div><div class="ttdef"><b>Definition:</b> <a href="KeyGeneration__test_8cpp_source.html#l00100">KeyGeneration_test.cpp:100</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1RPC_1_1common_html_a9e331f98266cdf73a3cbb38fb5a3b714"><div class="ttname"><a href="namespaceripple_1_1RPC_1_1common.html#a9e331f98266cdf73a3cbb38fb5a3b714">ripple::RPC::common::master_seed_hex</a></div><div class="ttdeci">static char const  * master_seed_hex</div><div class="ttdef"><b>Definition:</b> <a href="KeyGeneration__test_8cpp_source.html#l00051">KeyGeneration_test.cpp:51</a></div></div>
 <div class="ttc" id="aclassJson_1_1Value_html_ad6d4df2227321bab05e86667609a7fad"><div class="ttname"><a href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">Json::Value::isMember</a></div><div class="ttdeci">bool isMember(const char *key) const</div><div class="ttdoc">Return true if the object has a member named key.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8cpp_source.html#l00932">json_value.cpp:932</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1RPC_html_afff8ad9526d4b79a147d6af708a6e697"><div class="ttname"><a href="namespaceripple_1_1RPC.html#afff8ad9526d4b79a147d6af708a6e697">ripple::RPC::keypairForSignature</a></div><div class="ttdeci">std::pair&lt; PublicKey, SecretKey &gt; keypairForSignature(Json::Value const &amp;params, Json::Value &amp;error, unsigned int apiVersion)</div><div class="ttdef"><b>Definition:</b> <a href="RPCHelpers_8cpp_source.html#l00850">RPCHelpers.cpp:850</a></div></div>
 <div class="ttc" id="aclassripple_1_1TestSuite_html"><div class="ttname"><a href="classripple_1_1TestSuite.html">ripple::TestSuite</a></div><div class="ttdef"><b>Definition:</b> <a href="TestSuite_8h_source.html#l00028">TestSuite.h:28</a></div></div>
 <div class="ttc" id="aclassripple_1_1RPC_1_1WalletPropose__test_html_a48992a195ee482aec37af09bb4819584"><div class="ttname"><a href="classripple_1_1RPC_1_1WalletPropose__test.html#a48992a195ee482aec37af09bb4819584">ripple::RPC::WalletPropose_test::testRippleLibEd25519</a></div><div class="ttdeci">void testRippleLibEd25519()</div><div class="ttdef"><b>Definition:</b> <a href="KeyGeneration__test_8cpp_source.html#l00739">KeyGeneration_test.cpp:739</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>

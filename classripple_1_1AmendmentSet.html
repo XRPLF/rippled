@@ -67,6 +67,7 @@ $(function() {
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pri-methods">Private Member Functions</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classripple_1_1AmendmentSet-members.html">List of all members</a>  </div>
   <div class="headertitle">
@@ -98,8 +99,8 @@ Collaboration diagram for ripple::AmendmentSet:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a7331b983280faf8428744b1b566f6008"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AmendmentSet.html#a7331b983280faf8428744b1b566f6008">AmendmentSet</a> (<a class="el" href="classripple_1_1Rules.html">Rules</a> const &amp;rules, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1STValidation.html">STValidation</a> &gt;&gt; const &amp;valSet)</td></tr>
-<tr class="separator:a7331b983280faf8428744b1b566f6008"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab715d365e58e89818d1d45ec3354988d"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AmendmentSet.html#ab715d365e58e89818d1d45ec3354988d">AmendmentSet</a> (<a class="el" href="classripple_1_1Rules.html">Rules</a> const &amp;rules, <a class="el" href="classripple_1_1TrustedVotes.html">TrustedVotes</a> const &amp;trustedVotes, <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/mutex.html">std::mutex</a> &gt; const &amp;lock)</td></tr>
+<tr class="separator:ab715d365e58e89818d1d45ec3354988d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a784480b9d6fe68e8945fb9378728f534"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AmendmentSet.html#a784480b9d6fe68e8945fb9378728f534">passes</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;amendment) const</td></tr>
 <tr class="separator:a784480b9d6fe68e8945fb9378728f534"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0013b2363b5bb424e124cf0af9997380"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AmendmentSet.html#a0013b2363b5bb424e124cf0af9997380">votes</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;amendment) const</td></tr>
@@ -108,6 +109,11 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a6d6b63ea4b09a0b012667c79aff07528"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac0d9edcc31c8b0fe5a90da0e35e09dc5"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AmendmentSet.html#ac0d9edcc31c8b0fe5a90da0e35e09dc5">threshold</a> () const</td></tr>
 <tr class="separator:ac0d9edcc31c8b0fe5a90da0e35e09dc5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-methods"></a>
+Private Member Functions</h2></td></tr>
+<tr class="memitem:a7539e5037a8c380f9b5baf445298deba"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AmendmentSet.html#a7539e5037a8c380f9b5baf445298deba">computeThreshold</a> (int <a class="el" href="classripple_1_1AmendmentSet.html#a6d6b63ea4b09a0b012667c79aff07528">trustedValidations</a>, <a class="el" href="classripple_1_1Rules.html">Rules</a> const &amp;rules)</td></tr>
+<tr class="separator:a7539e5037a8c380f9b5baf445298deba"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
@@ -123,10 +129,10 @@ Private Attributes</h2></td></tr>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>The status of all amendments requested in a given window. </p>
 
-<p class="definition">Definition at line <a class="el" href="AmendmentTable_8cpp_source.html#l00096">96</a> of file <a class="el" href="AmendmentTable_8cpp_source.html">AmendmentTable.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AmendmentTable_8cpp_source.html#l00245">245</a> of file <a class="el" href="AmendmentTable_8cpp_source.html">AmendmentTable.cpp</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a7331b983280faf8428744b1b566f6008"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7331b983280faf8428744b1b566f6008">&#9670;&nbsp;</a></span>AmendmentSet()</h2>
+<a id="ab715d365e58e89818d1d45ec3354988d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab715d365e58e89818d1d45ec3354988d">&#9670;&nbsp;</a></span>AmendmentSet()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -140,8 +146,14 @@ Private Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1STValidation.html">STValidation</a> &gt;&gt; const &amp;&#160;</td>
-          <td class="paramname"><em>valSet</em>&#160;</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1TrustedVotes.html">TrustedVotes</a> const &amp;&#160;</td>
+          <td class="paramname"><em>trustedVotes</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/mutex.html">std::mutex</a> &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>lock</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -151,11 +163,49 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AmendmentTable_8cpp_source.html#l00108">108</a> of file <a class="el" href="AmendmentTable_8cpp_source.html">AmendmentTable.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AmendmentTable_8cpp_source.html#l00275">275</a> of file <a class="el" href="AmendmentTable_8cpp_source.html">AmendmentTable.cpp</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="a7539e5037a8c380f9b5baf445298deba"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7539e5037a8c380f9b5baf445298deba">&#9670;&nbsp;</a></span>computeThreshold()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::AmendmentSet::computeThreshold </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>trustedValidations</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Rules.html">Rules</a> const &amp;&#160;</td>
+          <td class="paramname"><em>rules</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="AmendmentTable_8cpp_source.html#l00257">257</a> of file <a class="el" href="AmendmentTable_8cpp_source.html">AmendmentTable.cpp</a>.</p>
+
+</div>
+</div>
 <a id="a784480b9d6fe68e8945fb9378728f534"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a784480b9d6fe68e8945fb9378728f534">&#9670;&nbsp;</a></span>passes()</h2>
 
@@ -172,7 +222,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AmendmentTable_8cpp_source.html#l00147">147</a> of file <a class="el" href="AmendmentTable_8cpp_source.html">AmendmentTable.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AmendmentTable_8cpp_source.html#l00291">291</a> of file <a class="el" href="AmendmentTable_8cpp_source.html">AmendmentTable.cpp</a>.</p>
 
 </div>
 </div>
@@ -192,7 +242,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AmendmentTable_8cpp_source.html#l00167">167</a> of file <a class="el" href="AmendmentTable_8cpp_source.html">AmendmentTable.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AmendmentTable_8cpp_source.html#l00311">311</a> of file <a class="el" href="AmendmentTable_8cpp_source.html">AmendmentTable.cpp</a>.</p>
 
 </div>
 </div>
@@ -211,7 +261,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AmendmentTable_8cpp_source.html#l00178">178</a> of file <a class="el" href="AmendmentTable_8cpp_source.html">AmendmentTable.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AmendmentTable_8cpp_source.html#l00322">322</a> of file <a class="el" href="AmendmentTable_8cpp_source.html">AmendmentTable.cpp</a>.</p>
 
 </div>
 </div>
@@ -230,7 +280,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AmendmentTable_8cpp_source.html#l00184">184</a> of file <a class="el" href="AmendmentTable_8cpp_source.html">AmendmentTable.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AmendmentTable_8cpp_source.html#l00328">328</a> of file <a class="el" href="AmendmentTable_8cpp_source.html">AmendmentTable.cpp</a>.</p>
 
 </div>
 </div>
@@ -255,7 +305,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AmendmentTable_8cpp_source.html#l00100">100</a> of file <a class="el" href="AmendmentTable_8cpp_source.html">AmendmentTable.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AmendmentTable_8cpp_source.html#l00249">249</a> of file <a class="el" href="AmendmentTable_8cpp_source.html">AmendmentTable.cpp</a>.</p>
 
 </div>
 </div>
@@ -279,7 +329,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AmendmentTable_8cpp_source.html#l00101">101</a> of file <a class="el" href="AmendmentTable_8cpp_source.html">AmendmentTable.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AmendmentTable_8cpp_source.html#l00250">250</a> of file <a class="el" href="AmendmentTable_8cpp_source.html">AmendmentTable.cpp</a>.</p>
 
 </div>
 </div>
@@ -303,7 +353,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AmendmentTable_8cpp_source.html#l00103">103</a> of file <a class="el" href="AmendmentTable_8cpp_source.html">AmendmentTable.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AmendmentTable_8cpp_source.html#l00252">252</a> of file <a class="el" href="AmendmentTable_8cpp_source.html">AmendmentTable.cpp</a>.</p>
 
 </div>
 </div>
@@ -327,7 +377,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AmendmentTable_8cpp_source.html#l00105">105</a> of file <a class="el" href="AmendmentTable_8cpp_source.html">AmendmentTable.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AmendmentTable_8cpp_source.html#l00254">254</a> of file <a class="el" href="AmendmentTable_8cpp_source.html">AmendmentTable.cpp</a>.</p>
 
 </div>
 </div>
