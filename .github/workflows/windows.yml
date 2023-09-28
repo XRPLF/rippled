@@ -66,6 +66,7 @@ jobs:
         shell: bash
         id: remote
         run: |
+          set +e
           conan user --remote ripple ${{ secrets.CONAN_USERNAME }} --password ${{ secrets.CONAN_TOKEN }}
           echo outcome=$([ $? -eq 0 ] && echo success || echo failure) | tee ${GITHUB_OUTPUT}
       - name: list missing binaries
