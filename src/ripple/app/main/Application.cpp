@@ -1333,6 +1333,9 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
                 << "Invalid entry in [" << SECTION_VALIDATOR_LIST_SITES << "]";
             return false;
         }
+
+        // Tell the AmendmentTable who the trusted validators are.
+        m_amendmentTable->trustChanged(validators_->getQuorumKeys().second);
     }
     //----------------------------------------------------------------------
     //
