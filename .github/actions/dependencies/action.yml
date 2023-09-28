@@ -17,7 +17,7 @@ runs:
     - name: install dependencies
       shell: bash
       run: |
-        mkdir -p ${build_dir}
+        mkdir ${build_dir}
         cd ${build_dir}
         conan install \
           --output-folder . \
