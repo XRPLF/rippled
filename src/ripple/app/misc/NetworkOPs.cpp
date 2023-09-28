@@ -1850,7 +1850,12 @@ NetworkOPsImp::beginConsensus(uint256 const& networkClosed)
         app_.getHashRouter());
 
     if (!changes.added.empty() || !changes.removed.empty())
+    {
         app_.getValidations().trustChanged(changes.added, changes.removed);
+        // Update the AmendmentTable so it tracks the current validators.
+        app_.getAmendmentTable().trustChanged(
+            app_.validators().getQuorumKeys().second);
+    }
 
     mConsensus.startRound(
         app_.timeKeeper().closeTime(),
