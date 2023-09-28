@@ -17,6 +17,9 @@ runs:
     - name: install dependencies
       shell: bash
       run: |
+        # Ensure the build_dir does not exist. This should only happen if
+        # actions/build is called in the same job as actions/dependencies
+        rm -rf ${build_dir}
         mkdir ${build_dir}
         cd ${build_dir}
         conan install \
