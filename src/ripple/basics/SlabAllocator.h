@@ -184,6 +184,7 @@ class SlabAllocator
                 if (ret != nullptr)
                 {
                     list_ = ret->next;
+                    std::destroy_at(ret);
                     --avail_;
                 }
 
@@ -348,7 +349,7 @@ public:
     [[nodiscard]] std::uint8_t*
     allocate() noexcept
     {
-        auto active = active_.load(std::memory_order::relaxed);
+        auto active = active_.load(std::memory_order::acquire);
 
         if (active)
         {
@@ -363,7 +364,7 @@ public:
             {
                 // This may fail, but that's OK.
                 active_.compare_exchange_weak(
-                    active, slab, std::memory_order::relaxed);
+                    active, slab, std::memory_order::release);
                 return ret;
             }
         }
@@ -394,7 +395,7 @@ public:
 
                 // This may fail, but that's OK.
                 active_.compare_exchange_weak(
-                    active, slab, std::memory_order::relaxed);
+                    active, slab, std::memory_order::release);
 
                 return ret;
             }
@@ -420,7 +421,7 @@ public:
             // Nothing to do
         }
 
-        active_.store(slab, std::memory_order::relaxed);
+        active_.store(slab, std::memory_order::release);
         return ret;
     }
 
@@ -435,7 +436,7 @@ public:
     {
         assert(ptr);
 
-        for (auto slab = slabs_.load(std::memory_order::relaxed);
+        for (auto slab = slabs_.load(std::memory_order::acquire);
              slab != nullptr;
              slab = slab->next_)
         {
