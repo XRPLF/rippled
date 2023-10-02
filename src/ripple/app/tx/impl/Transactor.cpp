@@ -42,7 +42,8 @@ preflight0(PreflightContext const& ctx)
 {
     if (isPseudoTx(ctx.tx))
     {
-        // all emitted and pseudo transactions are free to pass, do not need network id
+        // all emitted and pseudo transactions are free to pass, do not need
+        // network id
     }
     else
     {
@@ -58,8 +59,8 @@ preflight0(PreflightContext const& ctx)
         }
         else
         {
-            // new networks both require the field to be present and require it to
-            // match
+            // new networks both require the field to be present and require it
+            // to match
             if (!txNID)
                 return telREQUIRES_NETWORK_ID;
 
