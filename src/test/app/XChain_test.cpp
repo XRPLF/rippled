@@ -472,15 +472,16 @@ struct XChain_test : public beast::unit_test::suite,
                 mcBob, bridge(mcBob, mcGw["USD"], mcBob, mcGw["USD"])),
             ter(temXCHAIN_EQUAL_DOOR_ACCOUNTS));
 
-        // Both door accounts are on the same chain is allowed (they likely
-        // belong to different chains. If they do belong to the same chain, that
-        // is silly, but doesn't violate any invariants).
+        // Both door accounts are on the same chain. This is not allowed.
+        // Although it doesn't violate any invariants, it's not a useful thing
+        // to do and it complicates the "add claim" transactions.
         XEnv(*this)
             .tx(create_bridge(
                 mcAlice, bridge(mcAlice, mcGw["USD"], mcBob, mcBob["USD"])))
             .close()
             .tx(create_bridge(
-                mcBob, bridge(mcAlice, mcGw["USD"], mcBob, mcBob["USD"])))
+                    mcBob, bridge(mcAlice, mcGw["USD"], mcBob, mcBob["USD"])),
+                ter(tecDUPLICATE))
             .close();
 
         // Create a bridge on an account with exactly enough balance to
@@ -622,8 +623,10 @@ struct XChain_test : public beast::unit_test::suite,
         Account const a2("a2");
         Account const a3("a3");
         Account const a4("a4");
+        Account const a5("a5");
+        Account const a6("a6");
 
-        env.fund(XRP(10000), a1, a2, a3, a4);
+        env.fund(XRP(10000), a1, a2, a3, a4, a5, a6);
         env.close();
 
         // Add a bridge on two different accounts with the same locking and
@@ -631,10 +634,19 @@ struct XChain_test : public beast::unit_test::suite,
         env.tx(create_bridge(a1, bridge(a1, GUSD, B, BUSD))).close();
         env.tx(create_bridge(a2, bridge(a2, GUSD, B, BUSD))).close();
 
-        // Add the exact same bridge to two different accoutns (one must locking
-        // account and one must be issuing)
+        // Add the exact same bridge to two different accounts (one locking
+        // account and one issuing)
         env.tx(create_bridge(a3, bridge(a3, GUSD, a4, a4["USD"]))).close();
-        env.tx(create_bridge(a4, bridge(a3, GUSD, a4, a4["USD"]))).close();
+        env.tx(create_bridge(a4, bridge(a3, GUSD, a4, a4["USD"])),
+               ter(tecDUPLICATE))
+            .close();
+
+        // Add the exact same bridge to two different accounts (one issuing
+        // account and one locking - opposite order from the test above)
+        env.tx(create_bridge(a5, bridge(a6, GUSD, a5, a5["USD"]))).close();
+        env.tx(create_bridge(a6, bridge(a6, GUSD, a5, a5["USD"])),
+               ter(tecDUPLICATE))
+            .close();
 
         // Test case 1 ~ 5, create bridges
         auto const goodBridge1 = bridge(A, GUSD, B, BUSD);
