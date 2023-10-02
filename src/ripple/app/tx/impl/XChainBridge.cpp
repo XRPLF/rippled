@@ -1452,13 +1452,19 @@ XChainCreateBridge::preclaim(PreclaimContext const& ctx)
 {
     auto const account = ctx.tx[sfAccount];
     auto const bridgeSpec = ctx.tx[sfXChainBridge];
-
     STXChainBridge::ChainType const chainType =
         STXChainBridge::srcChain(account == bridgeSpec.lockingChainDoor());
 
-    if (ctx.view.read(keylet::bridge(bridgeSpec, chainType)))
     {
-        return tecDUPLICATE;
+        auto hasBridge = [&](STXChainBridge::ChainType ct) -> bool {
+            return ctx.view.exists(keylet::bridge(bridgeSpec, ct));
+        };
+
+        if (hasBridge(STXChainBridge::ChainType::issuing) ||
+            hasBridge(STXChainBridge::ChainType::locking))
+        {
+            return tecDUPLICATE;
+        }
     }
 
     if (!isXRP(bridgeSpec.issue(chainType)))
