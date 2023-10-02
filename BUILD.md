@@ -44,7 +44,7 @@ The [minimum compiler versions][2] required are:
 
 | Compiler    | Version |
 |-------------|---------|
-| GCC         | 10      |
+| GCC         | 11      |
 | Clang       | 13      |
 | Apple Clang | 13.1.6  |
 | MSVC        | 19.23   |
