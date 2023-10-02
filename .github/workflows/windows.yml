@@ -77,7 +77,6 @@ jobs:
         run: |
           echo missing=$(conan info . --build missing --settings build_type=${{ matrix.configuration }} --json 2>/dev/null  | grep '^\[') | tee ${GITHUB_OUTPUT}
       - name: build dependencies
-        if: (steps.binaries.outputs.missing != '[]')
         uses: ./.github/actions/dependencies
         with:
           configuration: ${{ matrix.configuration }}
