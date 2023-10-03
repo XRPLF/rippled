@@ -494,7 +494,7 @@ TxFormats::TxFormats()
         {
             {sfDIDDocument, soeOPTIONAL},
             {sfURI, soeOPTIONAL},
-            {sfAttestation, soeOPTIONAL},
+            {sfData, soeOPTIONAL},
         },
         commonFields);
 

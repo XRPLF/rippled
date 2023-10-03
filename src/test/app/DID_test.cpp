@@ -150,7 +150,7 @@ struct DID_test : public beast::unit_test::suite
         BEAST_EXPECT(ownerCount(env, alice) == 0);
 
         // only attestation
-        env(did::set(alice), did::attestation("attest"), ter(tecEMPTY_DID));
+        env(did::set(alice), did::data("attest"), ter(tecEMPTY_DID));
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == 0);
 
@@ -166,7 +166,7 @@ struct DID_test : public beast::unit_test::suite
         env(did::set(alice),
             did::uri(""),
             did::document(""),
-            did::attestation("attest"),
+            did::data("attest"),
             ter(temEMPTY_DID));
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == 0);
@@ -185,7 +185,7 @@ struct DID_test : public beast::unit_test::suite
         // attestation is too long
         env(did::set(alice),
             did::document("data"),
-            did::attestation(longString),
+            did::data(longString),
             ter(temMALFORMED));
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == 0);
@@ -250,7 +250,7 @@ struct DID_test : public beast::unit_test::suite
         BEAST_EXPECT(ownerCount(env, alice) == 1);
 
         // only URI, plus attestation
-        env(did::set(bob), did::uri("uri"), did::attestation("attest"));
+        env(did::set(bob), did::uri("uri"), did::data("attest"));
         BEAST_EXPECT(ownerCount(env, bob) == 1);
 
         // only DIDDocument
@@ -258,7 +258,7 @@ struct DID_test : public beast::unit_test::suite
         BEAST_EXPECT(ownerCount(env, charlie) == 1);
 
         // only DIDDocument, plus attestation
-        env(did::set(dave), did::document("data"), did::attestation("attest"));
+        env(did::set(dave), did::document("data"), did::data("attest"));
         BEAST_EXPECT(ownerCount(env, dave) == 1);
 
         // both URI and DIDDocument
@@ -269,7 +269,7 @@ struct DID_test : public beast::unit_test::suite
         env(did::set(francis),
             did::uri("uri"),
             did::document("data"),
-            did::attestation("attest"));
+            did::data("attest"));
         BEAST_EXPECT(ownerCount(env, francis) == 1);
     }
 
@@ -297,7 +297,7 @@ struct DID_test : public beast::unit_test::suite
             BEAST_EXPECT(sleDID);
             BEAST_EXPECT(checkVL((*sleDID)[sfURI], initialURI));
             BEAST_EXPECT(!sleDID->isFieldPresent(sfDIDDocument));
-            BEAST_EXPECT(!sleDID->isFieldPresent(sfAttestation));
+            BEAST_EXPECT(!sleDID->isFieldPresent(sfData));
         }
 
         // Try to delete URI, fails because no elements are set
@@ -307,7 +307,7 @@ struct DID_test : public beast::unit_test::suite
             auto const sleDID = env.le(keylet::did(alice.id()));
             BEAST_EXPECT(checkVL((*sleDID)[sfURI], initialURI));
             BEAST_EXPECT(!sleDID->isFieldPresent(sfDIDDocument));
-            BEAST_EXPECT(!sleDID->isFieldPresent(sfAttestation));
+            BEAST_EXPECT(!sleDID->isFieldPresent(sfData));
         }
 
         // Set DIDDocument
@@ -318,18 +318,18 @@ struct DID_test : public beast::unit_test::suite
             auto const sleDID = env.le(keylet::did(alice.id()));
             BEAST_EXPECT(checkVL((*sleDID)[sfURI], initialURI));
             BEAST_EXPECT(checkVL((*sleDID)[sfDIDDocument], initialDocument));
-            BEAST_EXPECT(!sleDID->isFieldPresent(sfAttestation));
+            BEAST_EXPECT(!sleDID->isFieldPresent(sfData));
         }
 
         // Set Attestation
         std::string const initialAttestation = "attest";
         {
-            env(did::set(alice), did::attestation(initialAttestation));
+            env(did::set(alice), did::data(initialAttestation));
             BEAST_EXPECT(ownerCount(env, alice) == 1);
             auto const sleDID = env.le(keylet::did(alice.id()));
             BEAST_EXPECT(checkVL((*sleDID)[sfURI], initialURI));
             BEAST_EXPECT(checkVL((*sleDID)[sfDIDDocument], initialDocument));
-            BEAST_EXPECT(checkVL((*sleDID)[sfAttestation], initialAttestation));
+            BEAST_EXPECT(checkVL((*sleDID)[sfData], initialAttestation));
         }
 
         // Try to delete URI/DIDDocument, fails because no elements are set
@@ -343,7 +343,7 @@ struct DID_test : public beast::unit_test::suite
             auto const sleDID = env.le(keylet::did(alice.id()));
             BEAST_EXPECT(checkVL((*sleDID)[sfURI], initialURI));
             BEAST_EXPECT(checkVL((*sleDID)[sfDIDDocument], initialDocument));
-            BEAST_EXPECT(checkVL((*sleDID)[sfAttestation], initialAttestation));
+            BEAST_EXPECT(checkVL((*sleDID)[sfData], initialAttestation));
         }
 
         // Remove URI
@@ -353,17 +353,17 @@ struct DID_test : public beast::unit_test::suite
             auto const sleDID = env.le(keylet::did(alice.id()));
             BEAST_EXPECT(!sleDID->isFieldPresent(sfURI));
             BEAST_EXPECT(checkVL((*sleDID)[sfDIDDocument], initialDocument));
-            BEAST_EXPECT(checkVL((*sleDID)[sfAttestation], initialAttestation));
+            BEAST_EXPECT(checkVL((*sleDID)[sfData], initialAttestation));
         }
 
         // Remove Attestation
         {
-            env(did::set(alice), did::attestation(""));
+            env(did::set(alice), did::data(""));
             BEAST_EXPECT(ownerCount(env, alice) == 1);
             auto const sleDID = env.le(keylet::did(alice.id()));
             BEAST_EXPECT(!sleDID->isFieldPresent(sfURI));
             BEAST_EXPECT(checkVL((*sleDID)[sfDIDDocument], initialDocument));
-            BEAST_EXPECT(!sleDID->isFieldPresent(sfAttestation));
+            BEAST_EXPECT(!sleDID->isFieldPresent(sfData));
         }
 
         // Remove Data + set URI

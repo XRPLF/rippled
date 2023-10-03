@@ -74,20 +74,20 @@ public:
 };
 
 /** Sets the optional Attestation on a DIDSet. */
-class attestation
+class data
 {
 private:
-    std::string attestation_;
+    std::string data_;
 
 public:
-    explicit attestation(std::string const& u) : attestation_(strHex(u))
+    explicit data(std::string const& u) : data_(strHex(u))
     {
     }
 
     void
     operator()(jtx::Env&, jtx::JTx& jtx) const
     {
-        jtx.jv[sfAttestation.jsonName] = attestation_;
+        jtx.jv[sfData.jsonName] = data_;
     }
 };
 

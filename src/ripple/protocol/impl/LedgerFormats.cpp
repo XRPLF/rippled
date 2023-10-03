@@ -333,7 +333,7 @@ LedgerFormats::LedgerFormats()
             {sfAccount,              soeREQUIRED},
             {sfDIDDocument,          soeOPTIONAL},
             {sfURI,                  soeOPTIONAL},
-            {sfAttestation,          soeOPTIONAL},
+            {sfData,          soeOPTIONAL},
             {sfOwnerNode,            soeREQUIRED},
             {sfPreviousTxnID,        soeREQUIRED},
             {sfPreviousTxnLgrSeq,    soeREQUIRED}

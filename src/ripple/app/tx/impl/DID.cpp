@@ -51,8 +51,7 @@ DIDSet::preflight(PreflightContext const& ctx)
         return ret;
 
     if (!ctx.tx.isFieldPresent(sfURI) &&
-        !ctx.tx.isFieldPresent(sfDIDDocument) &&
-        !ctx.tx.isFieldPresent(sfAttestation))
+        !ctx.tx.isFieldPresent(sfDIDDocument) && !ctx.tx.isFieldPresent(sfData))
         return temEMPTY_DID;
 
     if (ctx.tx.isFieldPresent(sfURI) && ctx.tx[sfURI].empty() &&
@@ -67,7 +66,7 @@ DIDSet::preflight(PreflightContext const& ctx)
 
     if (isTooLong(sfURI, maxDIDURILength) ||
         isTooLong(sfDIDDocument, maxDIDDocumentLength) ||
-        isTooLong(sfAttestation, maxDIDAttestationLength))
+        isTooLong(sfData, maxDIDAttestationLength))
         return temMALFORMED;
 
     return preflight2(ctx);
@@ -146,7 +145,7 @@ DIDSet::doApply()
         };
         update(sfURI);
         update(sfDIDDocument);
-        update(sfAttestation);
+        update(sfData);
 
         if (!sleDID->isFieldPresent(sfURI) &&
             !sleDID->isFieldPresent(sfDIDDocument))
@@ -169,7 +168,7 @@ DIDSet::doApply()
 
     set(sfURI);
     set(sfDIDDocument);
-    set(sfAttestation);
+    set(sfData);
 
     return addSLE(ctx_, sleDID, account_);
 }
