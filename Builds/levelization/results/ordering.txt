@@ -173,7 +173,6 @@ test.nodestore > test.unit_test
 test.overlay > ripple.app
 test.overlay > ripple.basics
 test.overlay > ripple.beast
-test.overlay > ripple.core
 test.overlay > ripple.overlay
 test.overlay > ripple.peerfinder
 test.overlay > ripple.protocol

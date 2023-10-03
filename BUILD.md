@@ -44,7 +44,7 @@ The [minimum compiler versions][2] required are:
 
 | Compiler    | Version |
 |-------------|---------|
-| GCC         | 10      |
+| GCC         | 11      |
 | Clang       | 13      |
 | Apple Clang | 13.1.6  |
 | MSVC        | 19.23   |
@@ -216,7 +216,7 @@ It patches their CMake to correctly import its dependencies.
     and make sure it matches the `build_type` setting you chose in the previous
     step.
 
-    Multi-config gnerators:
+    Multi-config generators:
 
     ```
     cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake ..
