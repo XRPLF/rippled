@@ -276,13 +276,13 @@ private:
             const std::string out = Json::FastWriter().write(ret);
             defsHash =
                 ripple::sha512Half(ripple::Slice{out.data(), out.size()});
-            ret[jss::hash] = to_string(*defsHash);
+            ret[jss::hash] = to_string(defsHash);
         }
 
         return ret;
     }
 
-    std::optional<uint256> defsHash;
+    uint256 defsHash;
     Json::Value defs;
 
 public:
@@ -291,7 +291,7 @@ public:
     bool
     hashMatches(uint256 hash) const
     {
-        return defsHash && *defsHash == hash;
+        return defsHash == hash;
     }
 
     Json::Value const&
