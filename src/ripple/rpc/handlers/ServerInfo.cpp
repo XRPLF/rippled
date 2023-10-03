@@ -88,6 +88,8 @@ private:
             return "DirectoryNode";
         if (inp == "PAYCHAN")
             return "PayChannel";
+        if (inp == "XCHAIN_BRIDGE")
+            return "XChainBridge";
 
         std::string out;
         size_t pos = 0;
