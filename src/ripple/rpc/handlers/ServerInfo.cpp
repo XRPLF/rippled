@@ -297,7 +297,7 @@ public:
     }
 
     Json::Value const&
-    operator()(void) const
+    operator()() const
     {
         return defs;
     }
