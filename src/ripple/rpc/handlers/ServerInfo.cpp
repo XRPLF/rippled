@@ -264,30 +264,30 @@ private:
         // generate hash
         {
             const std::string out = Json::FastWriter().write(ret);
-            defsHash =
+            defsHash_ =
                 ripple::sha512Half(ripple::Slice{out.data(), out.size()});
-            ret[jss::hash] = to_string(defsHash);
+            ret[jss::hash] = to_string(defsHash_);
         }
 
         return ret;
     }
 
-    uint256 defsHash;
-    Json::Value defs;
+    uint256 defsHash_;
+    Json::Value defs_;
 
 public:
-    Definitions() : defs(generate()){};
+    Definitions() : defs_(generate()){};
 
     bool
     hashMatches(uint256 hash) const
     {
-        return defsHash == hash;
+        return defsHash_ == hash;
     }
 
     Json::Value const&
     operator()() const
     {
-        return defs;
+        return defs_;
     }
 };
 
