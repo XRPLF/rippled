@@ -102,7 +102,7 @@ was released on Mar 14, 2023.
 ### Breaking changes in 1.10
 
 - If the `XRPFees` feature is enabled, the `fee_ref` field will be
-  removed from the Ledger subscription stream, because it will no longer
+  removed from the [ledger subscription stream](https://xrpl.org/subscribe.html#ledger-stream), because it will no longer
   have any meaning.
 
 # In development
