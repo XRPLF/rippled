@@ -180,6 +180,8 @@ private:
     bool vpReduceRelayEnabled_ = false;
     bool ledgerReplayEnabled_ = false;
     LedgerReplayMsgHandler ledgerReplayMsgHandler_;
+    // close connection when async write is complete
+    bool closeOnWriteComplete_ = false;
 
     friend class OverlayImpl;
 
@@ -235,7 +237,7 @@ public:
 
     /** Create outgoing, handshaked peer. */
     // VFALCO legacyPublicKey should be implied by the Slot
-    template <class Buffers>
+    template <typename Buffers>
     PeerImp(
         Application& app,
         std::unique_ptr<stream_type>&& stream_ptr,
@@ -413,7 +415,7 @@ public:
     isHighLatency() const override;
 
     void
-    fail(std::string const& reason);
+    fail(protocol::TMCloseReason reason);
 
     // Return any known shard info from this peer and its sub peers
     [[nodiscard]] hash_map<PublicKey, NodeStore::ShardInfo> const
@@ -457,9 +459,6 @@ private:
     // Called when SSL shutdown completes
     void
     onShutdown(error_code ec);
-
-    void
-    doAccept();
 
     std::string
     name() const;
@@ -584,6 +583,10 @@ public:
     onMessage(std::shared_ptr<protocol::TMReplayDeltaRequest> const& m);
     void
     onMessage(std::shared_ptr<protocol::TMReplayDeltaResponse> const& m);
+    void
+    onMessage(std::shared_ptr<protocol::TMStartProtocol> const& m);
+    void
+    onMessage(std::shared_ptr<protocol::TMGracefulClose> const& m);
 
 private:
     //--------------------------------------------------------------------------
@@ -642,6 +645,9 @@ private:
 
     void
     processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m);
+
+    void
+    onStartProtocol();
 };
 
 //------------------------------------------------------------------------------

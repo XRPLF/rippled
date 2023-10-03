@@ -26,9 +26,6 @@
 #include <ripple/json/json_forwards.h>
 #include <ripple/protocol/PublicKey.h>
 
-#define SOCI_USE_BOOST
-#include <soci/soci.h>
-
 #include <mutex>
 #include <optional>
 #include <string>

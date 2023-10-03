@@ -67,6 +67,155 @@ parseSection(Section const& section)
     return names;
 }
 
+/** TrustedVotes records the most recent votes from trusted validators.
+    We keep a record in an effort to avoid "flapping" while amendment voting
+    is in process.
+
+    If a trusted validator loses synchronization near a flag ledger their
+    amendment votes may be lost during that round.  If the validator is a
+    bit flaky, then this can cause an amendment to appear to repeatedly
+    gain and lose support.
+
+    TrustedVotes addresses the problem by holding on to the last vote seen
+    from every trusted validator.  So if any given validator is off line near
+    a flag ledger we can assume that they did not change their vote.
+
+    If we haven't seen any STValidations from a validator for several hours we
+    lose confidence that the validator hasn't changed their position.  So
+    there's a timeout.  We remove upVotes if they haven't been updated in
+    several hours.
+*/
+class TrustedVotes
+{
+private:
+    static constexpr NetClock::time_point maxTimeout =
+        NetClock::time_point::max();
+
+    // Associates each trusted validator with the last votes we saw from them
+    // and an expiration for that record.
+    struct UpvotesAndTimeout
+    {
+        std::vector<uint256> upVotes;
+        NetClock::time_point timeout = maxTimeout;
+    };
+    hash_map<PublicKey, UpvotesAndTimeout> recordedVotes_;
+
+public:
+    TrustedVotes() = default;
+    TrustedVotes(TrustedVotes const& rhs) = delete;
+    TrustedVotes&
+    operator=(TrustedVotes const& rhs) = delete;
+
+    // Called when the list of trusted validators changes.
+    //
+    // Call with AmendmentTable::mutex_ locked.
+    void
+    trustChanged(
+        hash_set<PublicKey> const& allTrusted,
+        std::lock_guard<std::mutex> const& lock)
+    {
+        decltype(recordedVotes_) newRecordedVotes;
+        newRecordedVotes.reserve(allTrusted.size());
+
+        // Make sure every PublicKey in allTrusted is represented in
+        // recordedVotes_.  Also make sure recordedVotes_ contains
+        // no additional PublicKeys.
+        for (auto& trusted : allTrusted)
+        {
+            if (recordedVotes_.contains(trusted))
+            {
+                // Preserve this validator's previously saved voting state.
+                newRecordedVotes.insert(recordedVotes_.extract(trusted));
+            }
+            else
+            {
+                // New validators have a starting position of no on everything.
+                // Add the entry with an empty vector and maxTimeout.
+                newRecordedVotes[trusted];
+            }
+        }
+        // The votes of any no-longer-trusted validators will be destroyed
+        // when changedTrustedVotes goes out of scope.
+        recordedVotes_.swap(newRecordedVotes);
+    }
+
+    // Called when we receive the latest votes.
+    //
+    // Call with AmendmentTable::mutex_ locked.
+    void
+    recordVotes(
+        Rules const& rules,
+        std::vector<std::shared_ptr<STValidation>> const& valSet,
+        NetClock::time_point const closeTime,
+        std::lock_guard<std::mutex> const& lock)
+    {
+        // When we get an STValidation we save the upVotes it contains, but
+        // we also set an expiration for those upVotes.  The following constant
+        // controls the timeout.
+        //
+        // There really is no "best" timeout to choose for when we finally
+        // lose confidence that we know how a validator is voting.  But part
+        // of the point of recording validator votes is to avoid flapping of
+        // amendment votes.  A 24h timeout says that we will change the local
+        // record of a validator's vote to "no" 24h after the last vote seen
+        // from that validator.  So flapping due to that validator being off
+        // line will happen less frequently than every 24 hours.
+        using namespace std::chrono_literals;
+        static constexpr NetClock::duration expiresAfter = 24h;
+
+        // Walk all validations and replace previous votes from trusted
+        // validators with these newest votes.
+        for (auto const& val : valSet)
+        {
+            // If this validation comes from one of our trusted validators...
+            if (auto const iter = recordedVotes_.find(val->getSignerPublic());
+                iter != recordedVotes_.end())
+            {
+                iter->second.timeout = closeTime + expiresAfter;
+                if (val->isFieldPresent(sfAmendments))
+                {
+                    auto const& choices = val->getFieldV256(sfAmendments);
+                    iter->second.upVotes.assign(choices.begin(), choices.end());
+                }
+                else
+                {
+                    // This validator does not upVote any amendments right now.
+                    iter->second.upVotes.clear();
+                }
+            }
+        }
+
+        // Now remove any expired records from recordedVotes_.
+        std::for_each(
+            recordedVotes_.begin(),
+            recordedVotes_.end(),
+            [&closeTime](decltype(recordedVotes_)::value_type& votes) {
+                if (closeTime > votes.second.timeout)
+                {
+                    votes.second.timeout = maxTimeout;
+                    votes.second.upVotes.clear();
+                }
+            });
+    }
+
+    // Return the information needed by AmendmentSet to determine votes.
+    //
+    // Call with AmendmentTable::mutex_ locked.
+    [[nodiscard]] std::pair<int, hash_map<uint256, int>>
+    getVotes(Rules const& rules, std::lock_guard<std::mutex> const& lock) const
+    {
+        hash_map<uint256, int> ret;
+        for (auto& validatorVotes : recordedVotes_)
+        {
+            for (uint256 const& amendment : validatorVotes.second.upVotes)
+            {
+                ret[amendment] += 1;
+            }
+        }
+        return {recordedVotes_.size(), ret};
+    }
+};
+
 /** Current state of an amendment.
     Tells if a amendment is supported, enabled or vetoed. A vetoed amendment
     means the node will never announce its support.
@@ -104,30 +253,9 @@ private:
     // number of votes needed
     int threshold_ = 0;
 
-public:
-    AmendmentSet(
-        Rules const& rules,
-        std::vector<std::shared_ptr<STValidation>> const& valSet)
-        : rules_(rules)
+    void
+    computeThreshold(int trustedValidations, Rules const& rules)
     {
-        // process validations for ledger before flag ledger
-        for (auto const& val : valSet)
-        {
-            if (val->isTrusted())
-            {
-                if (val->isFieldPresent(sfAmendments))
-                {
-                    auto const choices = val->getFieldV256(sfAmendments);
-                    std::for_each(
-                        choices.begin(),
-                        choices.end(),
-                        [&](auto const& amendment) { ++votes_[amendment]; });
-                }
-
-                ++trustedValidations_;
-            }
-        }
-
         threshold_ = !rules_.enabled(fixAmendmentMajorityCalc)
             ? std::max(
                   1L,
@@ -141,6 +269,22 @@ public:
                       (trustedValidations_ *
                        postFixAmendmentMajorityCalcThreshold.num) /
                       postFixAmendmentMajorityCalcThreshold.den));
+    }
+
+public:
+    AmendmentSet(
+        Rules const& rules,
+        TrustedVotes const& trustedVotes,
+        std::lock_guard<std::mutex> const& lock)
+        : rules_(rules)
+    {
+        // process validations for ledger before flag ledger.
+        auto [trustedCount, newVotes] = trustedVotes.getVotes(rules, lock);
+
+        trustedValidations_ = trustedCount;
+        votes_.swap(newVotes);
+
+        computeThreshold(trustedValidations_, rules);
     }
 
     bool
@@ -202,6 +346,9 @@ private:
 
     hash_map<uint256, AmendmentState> amendmentMap_;
     std::uint32_t lastUpdateSeq_;
+
+    // Record of the last votes seen from trusted validators.
+    TrustedVotes previousTrustedVotes_;
 
     // Time that an amendment must hold a majority for
     std::chrono::seconds const majorityTime_;
@@ -293,6 +440,9 @@ public:
         LedgerIndex seq,
         std::set<uint256> const& enabled,
         majorityAmendments_t const& majority) override;
+
+    void
+    trustChanged(hash_set<PublicKey> const& allTrusted) override;
 
     std::vector<uint256>
     doValidation(std::set<uint256> const& enabledAmendments) const override;
@@ -633,8 +783,14 @@ AmendmentTableImpl::doVoting(
                      << ": " << enabledAmendments.size() << ", "
                      << majorityAmendments.size() << ", " << valSet.size();
 
-    auto vote = std::make_unique<AmendmentSet>(rules, valSet);
+    std::lock_guard lock(mutex_);
 
+    // Keep a record of the votes we received.
+    previousTrustedVotes_.recordVotes(rules, valSet, closeTime, lock);
+
+    // Tally the most recent votes.
+    auto vote =
+        std::make_unique<AmendmentSet>(rules, previousTrustedVotes_, lock);
     JLOG(j_.debug()) << "Received " << vote->trustedValidations()
                      << " trusted validations, threshold is: "
                      << vote->threshold();
@@ -642,8 +798,6 @@ AmendmentTableImpl::doVoting(
     // Map of amendments to the action to be taken for each one. The action is
     // the value of the flags in the pseudo-transaction
     std::map<uint256, std::uint32_t> actions;
-
-    std::lock_guard lock(mutex_);
 
     // process all amendments we know of
     for (auto const& entry : amendmentMap_)
@@ -738,6 +892,13 @@ AmendmentTableImpl::doValidatedLedger(
     }
     if (firstUnsupportedExpected_)
         firstUnsupportedExpected_ = *firstUnsupportedExpected_ + majorityTime_;
+}
+
+void
+AmendmentTableImpl::trustChanged(hash_set<PublicKey> const& allTrusted)
+{
+    std::lock_guard lock(mutex_);
+    previousTrustedVotes_.trustChanged(allTrusted, lock);
 }
 
 void
