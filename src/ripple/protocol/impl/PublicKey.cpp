@@ -356,6 +356,14 @@ verifyBatch(std::vector<VerifyBatchData> const& data, bool mustBeFullyCanonical)
         }
         else if (*type == KeyType::ed25519)
         {
+            // rippled unconditionally requires all ed25519 signatures to be
+            // canonical, and batch verification won't do that work for us.
+            if (!ed25519Canonical(makeSlice(data[i].signature)))
+            {
+                result[i] = sigInvalid;
+                return result;
+            }
+
             // If the type is ed25519, then include it in the vectors
             // that will be sent to the batch function later.
             messagesEd.push_back(data[i].message.peekData().data());

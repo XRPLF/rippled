@@ -367,9 +367,8 @@ STTx::checkMultiSign(
     std::vector<VerifyBatchData> batchVerifyData;
     batchVerifyData.reserve(signers.size());
 
-    for (std::size_t i = 0; i < signers.size(); ++i)
+    for (STObject const& signer : signers)
     {
-        STObject const& signer = signers[i];
         auto const accountID = signer.getAccountID(sfAccount);
         // The account owner may not multisign for themselves.
         if (accountID == txnAccountID)
@@ -411,14 +410,20 @@ STTx::checkMultiSign(
     for (std::size_t i = 0; i < signers.size(); ++i)
     {
         using enum VerifyResult;
-        if (result[i] == sigInvalid)
+        switch (result[i])
         {
-            return Unexpected(
-                std::string("Invalid signature on account ") +
-                toBase58(signers[i].getAccountID(sfAccount)) + ".");
+            case sigInvalid:
+                return Unexpected(
+                        std::string("Invalid signature on account ") +
+                        toBase58(signers[i].getAccountID(sfAccount)) + ".");
+
+            case sigUnexamined:
+                hasUnexamined = true;
+                break;
+
+            case sigValid:
+                break;
         }
-        else if (result[i] == sigUnexamined)
-            hasUnexamined = true;
     }
 
     // We don't expect there to be unexamined signatures unless there is a
