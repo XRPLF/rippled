@@ -51,7 +51,6 @@ template <class>
 class STInteger;
 class STXChainBridge;
 class STVector256;
-class Definitions;
 
 #pragma push_macro("XMACRO")
 #undef XMACRO
