@@ -38,15 +38,6 @@ namespace ripple {
 class Definitions
 {
 private:
-    template <typename T>
-    std::string
-    str(T const& t)
-    {
-        std::ostringstream ss;
-        ss << t;
-        return ss.str();
-    }
-
     std::string
     translate(std::string inp)
     {
@@ -125,8 +116,8 @@ private:
         for (const auto& pair : sTypeMap)
         {
             std::string type_name =
-                translate(str(pair.first).substr(4) /* remove STI_ */);
-            int32_t type_value = std::stoi(str(pair.second));
+                translate(std::string(pair.first).substr(4) /* remove STI_ */);
+            int32_t type_value = pair.second;
             ret[jss::TYPES][type_name] = type_value;
             type_map[type_value] = type_name;
         }
@@ -138,8 +129,7 @@ private:
              it != LedgerFormats::getInstance().end();
              ++it)
         {
-            ret[jss::LEDGER_ENTRY_TYPES][str(it->getName())] =
-                std::stoi(str(it->getType()));
+            ret[jss::LEDGER_ENTRY_TYPES][it->getName()] = it->getType();
         }
 
         ret[jss::FIELDS] = Json::arrayValue;
@@ -259,8 +249,7 @@ private:
 
         for (const auto& pair : detail::transResults())
         {
-            ret[jss::TRANSACTION_RESULTS][str(pair.second.first)] =
-                std::stoi(str(pair.first));
+            ret[jss::TRANSACTION_RESULTS][pair.second.first] = pair.first;
         }
 
         ret[jss::TRANSACTION_TYPES] = Json::objectValue;
@@ -269,8 +258,7 @@ private:
              it != TxFormats::getInstance().end();
              ++it)
         {
-            ret[jss::TRANSACTION_TYPES][str(it->getName())] =
-                std::stoi(str(it->getType()));
+            ret[jss::TRANSACTION_TYPES][it->getName()] = it->getType();
         }
 
         // generate hash
