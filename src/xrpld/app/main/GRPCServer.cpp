@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpld/app/main/GRPCServer.h>
+#include <xrpl/basics/ThreadUtilities.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/resource/Fees.h>
 
@@ -600,7 +601,7 @@ GRPCServer::start()
     {
         thread_ = std::thread([this]() {
             // Start the event loop and begin handling requests
-            beast::setCurrentThreadName("rippled: grpc");
+            this_thread::set_name("rippled: grpc");
             this->impl_.handleRpcs();
         });
     }

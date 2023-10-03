@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <xrpl/basics/ThreadUtilities.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/beast/unit_test.h>
 #include <atomic>
@@ -25,7 +26,7 @@
 namespace ripple {
 namespace test {
 
-class CurrentThreadName_test : public beast::unit_test::suite
+class ThreadName_test : public beast::unit_test::suite
 {
 private:
     static void
@@ -34,18 +35,11 @@ private:
         std::atomic<bool>* stop,
         std::atomic<int>* state)
     {
-        // Verify that upon creation a thread has no name.
-        auto const initialThreadName = beast::getCurrentThreadName();
-
         // Set the new name.
-        beast::setCurrentThreadName(myName);
+        this_thread::set_name(myName);
 
         // Indicate to caller that the name is set.
         *state = 1;
-
-        // If there is an initial thread name then we failed.
-        if (!initialThreadName.empty())
-            return;
 
         // Wait until all threads have their names.
         while (!*stop)
@@ -53,7 +47,7 @@ private:
 
         // Make sure the thread name that we set before is still there
         // (not overwritten by, for instance, another thread).
-        if (beast::getCurrentThreadName() == myName)
+        if (this_thread::get_name() == myName)
             *state = 2;
     }
 
@@ -86,7 +80,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(CurrentThreadName, core, beast);
+BEAST_DEFINE_TESTSUITE(ThreadName, basics, ripple);
 
 }  // namespace test
 }  // namespace ripple

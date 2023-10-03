@@ -28,6 +28,7 @@
 #include <xrpld/nodestore/detail/DecodedBlob.h>
 #include <xrpld/nodestore/detail/EncodedBlob.h>
 #include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/ThreadUtilities.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
@@ -67,7 +68,7 @@ public:
         std::size_t const id(++n);
         std::stringstream ss;
         ss << "rocksdb #" << id;
-        beast::setCurrentThreadName(ss.str());
+        this_thread::set_name(ss.str());
 
         (*f)(a);
     }

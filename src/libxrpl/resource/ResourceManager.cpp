@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/ThreadUtilities.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
@@ -148,7 +149,7 @@ private:
     void
     run()
     {
-        beast::setCurrentThreadName("Resource::Manager");
+        this_thread::set_name("Resrc::Manager");
         for (;;)
         {
             logic_.periodicActivity();

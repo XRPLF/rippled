@@ -21,6 +21,7 @@
 
 #include <xrpld/core/JobTypes.h>
 #include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/ThreadUtilities.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_writer.h>
@@ -258,7 +259,7 @@ PerfLogImp::openLog()
 void
 PerfLogImp::run()
 {
-    beast::setCurrentThreadName("perflog");
+    this_thread::set_name("perflog");
     lastLog_ = system_clock::now();
 
     while (true)

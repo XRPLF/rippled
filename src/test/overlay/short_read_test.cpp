@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <test/jtx/envconfig.h>
+#include <xrpl/basics/ThreadUtilities.h>
 #include <xrpl/basics/make_SSLContext.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/beast/unit_test.h>
@@ -629,7 +630,7 @@ public:
     short_read_test()
         : work_(io_context_.get_executor())
         , thread_(std::thread([this]() {
-            beast::setCurrentThreadName("io_context");
+            this_thread::set_name("io_context");
             this->io_context_.run();
         }))
         , context_(make_SSLContext(""))

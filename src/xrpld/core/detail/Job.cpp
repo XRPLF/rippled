@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpld/core/Job.h>
+#include <xrpl/basics/ThreadUtilities.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/beast/utility/instrumentation.h>
 
@@ -61,7 +62,7 @@ Job::queue_time() const
 void
 Job::doJob()
 {
-    beast::setCurrentThreadName("doJob: " + mName);
+    this_thread::set_name("doJob: " + mName);
     m_loadEvent->start();
     m_loadEvent->setName(mName);
 

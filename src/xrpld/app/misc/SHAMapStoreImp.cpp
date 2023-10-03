@@ -27,6 +27,7 @@
 #include <xrpld/nodestore/Scheduler.h>
 #include <xrpld/nodestore/detail/DatabaseRotatingImp.h>
 #include <xrpld/shamap/SHAMapMissingNode.h>
+#include <xrpl/basics/ThreadUtilities.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 
 #include <boost/algorithm/string/predicate.hpp>
@@ -265,7 +266,7 @@ SHAMapStoreImp::copyNode(std::uint64_t& nodeCount, SHAMapTreeNode const& node)
 void
 SHAMapStoreImp::run()
 {
-    beast::setCurrentThreadName("SHAMapStore");
+    this_thread::set_name("SHAMapStore");
     LedgerIndex lastRotated = state_db_.getState().lastRotated;
     netOPs_ = &app_.getOPs();
     ledgerMaster_ = &app_.getLedgerMaster();

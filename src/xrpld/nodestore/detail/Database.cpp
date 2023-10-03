@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpld/nodestore/Database.h>
+#include <xrpl/basics/ThreadUtilities.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/json/json_value.h>
@@ -56,8 +57,7 @@ Database::Database(
             [this](int i) {
                 runningThreads_++;
 
-                beast::setCurrentThreadName(
-                    "db prefetch #" + std::to_string(i));
+                this_thread::set_name("prefetch " + std::to_string(i));
 
                 decltype(read_) read;
 

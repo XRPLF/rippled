@@ -21,6 +21,7 @@
 #include <xrpld/app/ledger/LedgerCleaner.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/misc/LoadFeeTrack.h>
+#include <xrpl/basics/ThreadUtilities.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/protocol/jss.h>
 
@@ -218,7 +219,7 @@ private:
     void
     run()
     {
-        beast::setCurrentThreadName("LedgerCleaner");
+        this_thread::set_name("LedgerCleaner");
         JLOG(j_.debug()) << "Started";
 
         while (true)
