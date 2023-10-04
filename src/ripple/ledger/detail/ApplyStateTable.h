@@ -128,7 +128,10 @@ private:
     using Mods = hash_map<key_type, std::shared_ptr<SLE>>;
 
     static void
-    threadItem(TxMeta& meta, std::shared_ptr<SLE> const& to);
+    threadItem(
+        TxMeta& meta,
+        std::shared_ptr<SLE> const& to,
+        ReadView const& view);
 
     std::shared_ptr<SLE>
     getForMod(

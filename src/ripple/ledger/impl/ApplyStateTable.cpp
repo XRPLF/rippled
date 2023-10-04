@@ -21,8 +21,10 @@
 #include <ripple/json/to_string.h>
 #include <ripple/ledger/detail/ApplyStateTable.h>
 #include <ripple/protocol/Feature.h>
+#include <ripple/protocol/LedgerFormats.h>
 #include <ripple/protocol/st.h>
 #include <cassert>
+#include <set>
 
 namespace ripple {
 namespace detail {
@@ -191,7 +193,7 @@ ApplyStateTable::apply(
 
                 if (curNode->isThreadedType())  // thread transaction to node
                                                 // item modified
-                    threadItem(meta, curNode);
+                    threadItem(meta, curNode, to);
 
                 STObject prevs(sfPreviousFields);
                 for (auto const& obj : *origNode)
@@ -225,7 +227,7 @@ ApplyStateTable::apply(
                 threadOwners(to, meta, curNode, newMod, j);
 
                 if (curNode->isThreadedType())  // always thread to self
-                    threadItem(meta, curNode);
+                    threadItem(meta, curNode, to);
 
                 STObject news(sfNewFields);
                 for (auto const& obj : *curNode)
@@ -520,12 +522,24 @@ ApplyStateTable::destroyXRP(XRPAmount const& fee)
 
 // Insert this transaction to the SLE's threading list
 void
-ApplyStateTable::threadItem(TxMeta& meta, std::shared_ptr<SLE> const& sle)
+ApplyStateTable::threadItem(
+    TxMeta& meta,
+    std::shared_ptr<SLE> const& sle,
+    ReadView const& view)
 {
     key_type prevTxID;
     LedgerIndex prevLgrID;
 
-    if (!sle->thread(meta.getTxID(), meta.getLgrSeq(), prevTxID, prevLgrID))
+    static std::set<LedgerEntryType> newPreviousTxnIDTypes = {
+        ltDIR_NODE, ltAMENDMENTS, ltFEE_SETTINGS, ltNEGATIVE_UNL, ltAMM};
+    bool const includePrevTxnID = view.rules().enabled(fixPreviousTxnID) ||
+        !newPreviousTxnIDTypes.count(sle->getType());
+    if (!sle->thread(
+            meta.getTxID(),
+            meta.getLgrSeq(),
+            prevTxID,
+            prevLgrID,
+            includePrevTxnID))
         return;
 
     if (!prevTxID.isZero())
@@ -610,7 +624,7 @@ ApplyStateTable::threadTx(
         JLOG(j.warn()) << "Threading to non-existent account: " << toBase58(to);
         return;
     }
-    threadItem(meta, sle);
+    threadItem(meta, sle, base);
 }
 
 void

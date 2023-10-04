@@ -397,12 +397,75 @@ struct Directory_test : public beast::unit_test::suite
     }
 
     void
+    testPreviousTxnID()
+    {
+        testcase("fixPreviousTxnID");
+        using namespace jtx;
+
+        auto const gw = Account{"gateway"};
+        auto const alice = Account{"alice"};
+        auto const USD = gw["USD"];
+
+        auto ledger_data = [](Env& env) {
+            Json::Value params;
+            params[jss::type] = jss::directory;
+            params[jss::ledger_index] = "validated";
+            return env.rpc(
+                "json", "ledger_data", to_string(params))[jss::result];
+        };
+
+        {
+            // fixPreviousTxnID is disabled.
+            Env env(*this, supported_amendments() - fixPreviousTxnID);
+            env.fund(XRP(10000), alice, gw);
+            env.close();
+            env.trust(USD(1000), alice);
+            env(pay(gw, alice, USD(1000)));
+            env.close();
+
+            {
+                auto const jrr = ledger_data(env);
+                BEAST_EXPECTS(
+                    checkArraySize(jrr[jss::state], 2), jrr.toStyledString());
+                auto const directory = jrr[jss::state][0u];
+                BEAST_EXPECT(
+                    directory["LedgerEntryType"] ==
+                    jss::DirectoryNode);  // sanity check
+                BEAST_EXPECT(!directory.isMember("PreviousTxnID"));
+                BEAST_EXPECT(!directory.isMember("PreviousTxnLgrSeq"));
+            }
+
+            // Now enable the amendment so the directory node is updated.
+            env.enableFeature(fixPreviousTxnID);
+            env.close();
+
+            // Make sure the `PreviousTxnID` and `PreviousTxnLgrSeq` fields now
+            // exist
+            env(offer(alice, XRP(1), USD(1)));
+            env.close();
+
+            {
+                auto const jrr = ledger_data(env);
+                BEAST_EXPECTS(
+                    checkArraySize(jrr[jss::state], 3), jrr.toStyledString());
+                auto const directory = jrr[jss::state][0u];
+                BEAST_EXPECT(
+                    directory["LedgerEntryType"] ==
+                    jss::DirectoryNode);  // sanity check
+                BEAST_EXPECT(directory.isMember("PreviousTxnID"));
+                BEAST_EXPECT(directory.isMember("PreviousTxnLgrSeq"));
+            }
+        }
+    }
+
+    void
     run() override
     {
         testDirectoryOrdering();
         testDirIsEmpty();
         testRipd1353();
         testEmptyChain();
+        testPreviousTxnID();
     }
 };
 

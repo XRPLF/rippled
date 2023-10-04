@@ -134,7 +134,8 @@ STLedgerEntry::thread(
     uint256 const& txID,
     std::uint32_t ledgerSeq,
     uint256& prevTxID,
-    std::uint32_t& prevLedgerID)
+    std::uint32_t& prevLedgerID,
+    bool const includePrevTxnID)
 {
     uint256 oldPrevTxID = getFieldH256(sfPreviousTxnID);
 
@@ -149,8 +150,11 @@ STLedgerEntry::thread(
 
     prevTxID = oldPrevTxID;
     prevLedgerID = getFieldU32(sfPreviousTxnLgrSeq);
-    setFieldH256(sfPreviousTxnID, txID);
-    setFieldU32(sfPreviousTxnLgrSeq, ledgerSeq);
+    if (includePrevTxnID)
+    {
+        setFieldH256(sfPreviousTxnID, txID);
+        setFieldU32(sfPreviousTxnLgrSeq, ledgerSeq);
+    }
     return true;
 }
 
