@@ -246,152 +246,154 @@ $(function() {
 <div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160; </div>
 <div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> sParentHash{<a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(ledger-&gt;<a class="code" href="classripple_1_1Ledger.html#a31a21cc451eaa0a5af304e2625dc75f5">info</a>().<a class="code" href="structripple_1_1LedgerHeader.html#ab8fd6d4be4001febfe6f2e2b399dfa48">parentHash</a>)};</div>
 <div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> sDrops{<a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(ledger-&gt;<a class="code" href="classripple_1_1Ledger.html#a31a21cc451eaa0a5af304e2625dc75f5">info</a>().<a class="code" href="structripple_1_1LedgerHeader.html#ad05c30cddf4e01a449adfa855fdb8b7d">drops</a>)};</div>
-<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> sAccountHash{<a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(ledger-&gt;<a class="code" href="classripple_1_1Ledger.html#a31a21cc451eaa0a5af304e2625dc75f5">info</a>().<a class="code" href="structripple_1_1LedgerHeader.html#ae2df468f2563d420131543e27231491d">accountHash</a>)};</div>
-<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> sTxHash{<a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(ledger-&gt;<a class="code" href="classripple_1_1Ledger.html#a31a21cc451eaa0a5af304e2625dc75f5">info</a>().<a class="code" href="structripple_1_1LedgerHeader.html#ae9093d3962490ede02dd9da5eb597527">txHash</a>)};</div>
-<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160; </div>
-<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;        session &lt;&lt; <span class="stringliteral">&quot;DELETE FROM Ledgers &quot;</span></div>
-<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;                   <span class="stringliteral">&quot;WHERE LedgerSeq = :seq;&quot;</span>,</div>
-<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;            soci::use(ledgerSeq);</div>
-<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;        session &lt;&lt; <span class="stringliteral">&quot;INSERT OR REPLACE INTO Ledgers (&quot;</span></div>
-<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;                   <span class="stringliteral">&quot;LedgerHash, LedgerSeq, PrevHash, TotalCoins, ClosingTime,&quot;</span></div>
-<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;                   <span class="stringliteral">&quot;PrevClosingTime, CloseTimeRes, CloseFlags, AccountSetHash,&quot;</span></div>
-<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;                   <span class="stringliteral">&quot;TransSetHash)&quot;</span></div>
-<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;                   <span class="stringliteral">&quot;VALUES (&quot;</span></div>
-<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;                   <span class="stringliteral">&quot;:ledgerHash, :ledgerSeq, :prevHash, :totalCoins,&quot;</span></div>
-<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;                   <span class="stringliteral">&quot;:closingTime, :prevClosingTime, :closeTimeRes,&quot;</span></div>
-<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;                   <span class="stringliteral">&quot;:closeFlags, :accountSetHash, :transSetHash);&quot;</span>,</div>
-<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;            soci::use(sHash), soci::use(ledgerSeq), soci::use(sParentHash),</div>
-<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;            soci::use(sDrops),</div>
-<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;            soci::use(ledger-&gt;<a class="code" href="classripple_1_1Ledger.html#a31a21cc451eaa0a5af304e2625dc75f5">info</a>().<a class="code" href="structripple_1_1LedgerHeader.html#a3f117cf9d4ccb20b5ba15d8639540707">closeTime</a>.<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/time_point/time_since_epoch.html">time_since_epoch</a>().count()),</div>
-<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;            soci::use(</div>
-<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;                ledger-&gt;<a class="code" href="classripple_1_1Ledger.html#a31a21cc451eaa0a5af304e2625dc75f5">info</a>().<a class="code" href="structripple_1_1LedgerHeader.html#acbaff4abb7243e02f45e63bd19843aa9">parentCloseTime</a>.<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/time_point/time_since_epoch.html">time_since_epoch</a>().count()),</div>
-<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;            soci::use(ledger-&gt;<a class="code" href="classripple_1_1Ledger.html#a31a21cc451eaa0a5af304e2625dc75f5">info</a>().<a class="code" href="structripple_1_1LedgerHeader.html#ab0b35abca886a06b38eead7b84cba8c3">closeTimeResolution</a>.<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration/count.html">count</a>()),</div>
-<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;            soci::use(ledger-&gt;<a class="code" href="classripple_1_1Ledger.html#a31a21cc451eaa0a5af304e2625dc75f5">info</a>().<a class="code" href="structripple_1_1LedgerHeader.html#a9808a73e7430aff3c1590d4ae552f620">closeFlags</a>), soci::use(sAccountHash),</div>
-<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;            soci::use(sTxHash);</div>
-<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160; </div>
-<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;        tr.commit();</div>
-<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;    }</div>
-<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160; </div>
-<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;}</div>
-<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160; </div>
-<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;DatabaseCon&gt;</a></div>
-<div class="line"><a name="l00208"></a><span class="lineno"><a class="line" href="namespaceripple.html#af2ba549aa6ef230d23f39a19ba2178b1">  208</a></span>&#160;<a class="code" href="namespaceripple.html#af2ba549aa6ef230d23f39a19ba2178b1">makeAcquireDB</a>(</div>
-<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;    <a class="code" href="structripple_1_1DatabaseCon_1_1Setup.html">DatabaseCon::Setup</a> <span class="keyword">const</span>&amp; setup,</div>
-<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;    <a class="code" href="structripple_1_1DatabaseCon_1_1CheckpointerSetup.html">DatabaseCon::CheckpointerSetup</a> <span class="keyword">const</span>&amp; checkpointerSetup)</div>
-<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;{</div>
-<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;    <span class="keywordflow">return</span> std::make_unique&lt;DatabaseCon&gt;(</div>
-<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;        setup,</div>
-<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;        <a class="code" href="namespaceripple.html#a47b009ed46b45fea7af9c99491bd5893">AcquireShardDBName</a>,</div>
-<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;        <a class="code" href="namespaceripple.html#a402fe8f2f041bd9e3d2f74c5d1e02bcd">AcquireShardDBPragma</a>,</div>
-<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;        <a class="code" href="namespaceripple.html#acddd432321b548db97019aa913d637d4">AcquireShardDBInit</a>,</div>
-<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;        checkpointerSetup);</div>
-<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;}</div>
-<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160; </div>
-<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l00221"></a><span class="lineno"><a class="line" href="namespaceripple.html#ae80496e603d320c1d84a42d1d9279362">  221</a></span>&#160;<a class="code" href="namespaceripple.html#ae80496e603d320c1d84a42d1d9279362">insertAcquireDBIndex</a>(soci::session&amp; session, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> index)</div>
-<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;{</div>
-<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;    session &lt;&lt; <span class="stringliteral">&quot;INSERT INTO Shard (ShardIndex) &quot;</span></div>
-<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;               <span class="stringliteral">&quot;VALUES (:shardIndex);&quot;</span>,</div>
-<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;        soci::use(index);</div>
-<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;}</div>
-<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160; </div>
-<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;bool, std::optional&lt;std::string&gt;</a>&gt;</div>
-<div class="line"><a name="l00229"></a><span class="lineno"><a class="line" href="namespaceripple.html#ae10a9a71c9b7a05557edecd508ccfb94">  229</a></span>&#160;<a class="code" href="namespaceripple.html#ae10a9a71c9b7a05557edecd508ccfb94">selectAcquireDBLedgerSeqs</a>(soci::session&amp; session, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> index)</div>
-<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;{</div>
-<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;    <span class="comment">// resIndex and must be boost::optional (not std) because that&#39;s</span></div>
-<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;    <span class="comment">// what SOCI expects in its interface.</span></div>
-<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;    boost::optional&lt;std::uint32_t&gt; resIndex;</div>
-<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;    soci::blob sociBlob(session);</div>
-<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;    soci::indicator blobPresent;</div>
-<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160; </div>
-<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;    session &lt;&lt; <span class="stringliteral">&quot;SELECT ShardIndex, StoredLedgerSeqs &quot;</span></div>
-<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;               <span class="stringliteral">&quot;FROM Shard &quot;</span></div>
-<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;               <span class="stringliteral">&quot;WHERE ShardIndex = :index;&quot;</span>,</div>
-<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;        soci::into(resIndex), soci::into(sociBlob, blobPresent),</div>
-<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;        soci::use(index);</div>
-<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160; </div>
-<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;    <span class="keywordflow">if</span> (!resIndex || index != resIndex)</div>
-<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;        <span class="keywordflow">return</span> {<span class="keyword">false</span>, {}};</div>
-<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160; </div>
-<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;    <span class="keywordflow">if</span> (blobPresent != soci::i_ok)</div>
-<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;        <span class="keywordflow">return</span> {<span class="keyword">true</span>, {}};</div>
-<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160; </div>
-<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> s;</div>
-<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;    <a class="code" href="namespaceripple.html#a60e89f0668645858d48dfd3f67b1a639">convert</a>(sociBlob, s);</div>
-<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160; </div>
-<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;    <span class="keywordflow">return</span> {<span class="keyword">true</span>, s};</div>
-<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;}</div>
-<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160; </div>
-<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;bool, AcquireShardSeqsHash&gt;</a></div>
-<div class="line"><a name="l00256"></a><span class="lineno"><a class="line" href="namespaceripple.html#a300cf0173f5bbe596e928a4689f0c3db">  256</a></span>&#160;<a class="code" href="namespaceripple.html#a300cf0173f5bbe596e928a4689f0c3db">selectAcquireDBLedgerSeqsHash</a>(soci::session&amp; session, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> index)</div>
-<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;{</div>
-<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;    <span class="comment">// resIndex and sHash0 must be boost::optional (not std) because that&#39;s</span></div>
-<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;    <span class="comment">// what SOCI expects in its interface.</span></div>
-<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;    boost::optional&lt;std::uint32_t&gt; resIndex;</div>
-<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;    boost::optional&lt;std::string&gt; sHash0;</div>
-<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;    soci::blob sociBlob(session);</div>
-<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;    soci::indicator blobPresent;</div>
-<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160; </div>
-<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;    session &lt;&lt; <span class="stringliteral">&quot;SELECT ShardIndex, LastLedgerHash, StoredLedgerSeqs &quot;</span></div>
-<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;               <span class="stringliteral">&quot;FROM Shard &quot;</span></div>
-<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;               <span class="stringliteral">&quot;WHERE ShardIndex = :index;&quot;</span>,</div>
-<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;        soci::into(resIndex), soci::into(sHash0),</div>
-<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;        soci::into(sociBlob, blobPresent), soci::use(index);</div>
-<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160; </div>
-<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;std::string&gt;</a> sHash =</div>
-<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;        (sHash0 ? *sHash0 : <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;std::string&gt;</a>());</div>
-<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160; </div>
-<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;    <span class="keywordflow">if</span> (!resIndex || index != resIndex)</div>
-<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;        <span class="keywordflow">return</span> {<span class="keyword">false</span>, {{}, {}}};</div>
-<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160; </div>
-<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;    <span class="keywordflow">if</span> (blobPresent != soci::i_ok)</div>
-<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;        <span class="keywordflow">return</span> {<span class="keyword">true</span>, {{}, sHash}};</div>
-<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160; </div>
-<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> s;</div>
-<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;    <a class="code" href="namespaceripple.html#a60e89f0668645858d48dfd3f67b1a639">convert</a>(sociBlob, s);</div>
-<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160; </div>
-<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;    <span class="keywordflow">return</span> {<span class="keyword">true</span>, {s, sHash}};</div>
-<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;}</div>
-<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160; </div>
-<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l00287"></a><span class="lineno"><a class="line" href="namespaceripple.html#ad44314a03a131640e29655b190aad168">  287</a></span>&#160;<a class="code" href="namespaceripple.html#ad44314a03a131640e29655b190aad168">updateAcquireDB</a>(</div>
-<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;    soci::session&amp; session,</div>
-<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;Ledger const&gt;</a> <span class="keyword">const</span>&amp; ledger,</div>
-<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> index,</div>
-<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> lastSeq,</div>
-<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;std::string&gt;</a> <span class="keyword">const</span>&amp; seqs)</div>
-<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;{</div>
-<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;    soci::blob sociBlob(session);</div>
-<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> sHash{<a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(ledger-&gt;<a class="code" href="classripple_1_1Ledger.html#a31a21cc451eaa0a5af304e2625dc75f5">info</a>().<a class="code" href="structripple_1_1LedgerHeader.html#aed3c6b7c8a2f7b4815507ff942f94fa8">hash</a>)};</div>
-<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160; </div>
-<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;    <span class="keywordflow">if</span> (seqs)</div>
-<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;        <a class="code" href="namespaceripple.html#a60e89f0668645858d48dfd3f67b1a639">convert</a>(*seqs, sociBlob);</div>
-<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160; </div>
-<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;    <span class="keywordflow">if</span> (ledger-&gt;<a class="code" href="classripple_1_1Ledger.html#a31a21cc451eaa0a5af304e2625dc75f5">info</a>().<a class="code" href="structripple_1_1LedgerHeader.html#a233e04cfeb4d879ab8517d8aabb7e38b">seq</a> == lastSeq)</div>
-<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160;    {</div>
-<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;        <span class="comment">// Store shard&#39;s last ledger hash</span></div>
-<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;        session &lt;&lt; <span class="stringliteral">&quot;UPDATE Shard &quot;</span></div>
-<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;                   <span class="stringliteral">&quot;SET LastLedgerHash = :lastLedgerHash,&quot;</span></div>
-<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;                   <span class="stringliteral">&quot;StoredLedgerSeqs = :storedLedgerSeqs &quot;</span></div>
-<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;                   <span class="stringliteral">&quot;WHERE ShardIndex = :shardIndex;&quot;</span>,</div>
-<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;            soci::use(sHash), soci::use(sociBlob), soci::use(index);</div>
-<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;    }</div>
-<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;    <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;    {</div>
-<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;        session &lt;&lt; <span class="stringliteral">&quot;UPDATE Shard &quot;</span></div>
-<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;                   <span class="stringliteral">&quot;SET StoredLedgerSeqs = :storedLedgerSeqs &quot;</span></div>
-<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;                   <span class="stringliteral">&quot;WHERE ShardIndex = :shardIndex;&quot;</span>,</div>
-<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;            soci::use(sociBlob), soci::use(index);</div>
-<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;    }</div>
-<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;}</div>
-<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160; </div>
-<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> closingTime{</div>
+<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;            ledger-&gt;<a class="code" href="classripple_1_1Ledger.html#a31a21cc451eaa0a5af304e2625dc75f5">info</a>().<a class="code" href="structripple_1_1LedgerHeader.html#a3f117cf9d4ccb20b5ba15d8639540707">closeTime</a>.<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/time_point/time_since_epoch.html">time_since_epoch</a>().count()};</div>
+<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> prevClosingTime{</div>
+<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;            ledger-&gt;<a class="code" href="classripple_1_1Ledger.html#a31a21cc451eaa0a5af304e2625dc75f5">info</a>().<a class="code" href="structripple_1_1LedgerHeader.html#acbaff4abb7243e02f45e63bd19843aa9">parentCloseTime</a>.<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/time_point/time_since_epoch.html">time_since_epoch</a>().count()};</div>
+<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> closeTimeRes{ledger-&gt;<a class="code" href="classripple_1_1Ledger.html#a31a21cc451eaa0a5af304e2625dc75f5">info</a>().<a class="code" href="structripple_1_1LedgerHeader.html#ab0b35abca886a06b38eead7b84cba8c3">closeTimeResolution</a>.<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration/count.html">count</a>()};</div>
+<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> sAccountHash{<a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(ledger-&gt;<a class="code" href="classripple_1_1Ledger.html#a31a21cc451eaa0a5af304e2625dc75f5">info</a>().<a class="code" href="structripple_1_1LedgerHeader.html#ae2df468f2563d420131543e27231491d">accountHash</a>)};</div>
+<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> sTxHash{<a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(ledger-&gt;<a class="code" href="classripple_1_1Ledger.html#a31a21cc451eaa0a5af304e2625dc75f5">info</a>().<a class="code" href="structripple_1_1LedgerHeader.html#ae9093d3962490ede02dd9da5eb597527">txHash</a>)};</div>
+<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160; </div>
+<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;        session &lt;&lt; <span class="stringliteral">&quot;DELETE FROM Ledgers &quot;</span></div>
+<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;                   <span class="stringliteral">&quot;WHERE LedgerSeq = :seq;&quot;</span>,</div>
+<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;            soci::use(ledgerSeq);</div>
+<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;        session &lt;&lt; <span class="stringliteral">&quot;INSERT OR REPLACE INTO Ledgers (&quot;</span></div>
+<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;                   <span class="stringliteral">&quot;LedgerHash, LedgerSeq, PrevHash, TotalCoins, ClosingTime,&quot;</span></div>
+<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;                   <span class="stringliteral">&quot;PrevClosingTime, CloseTimeRes, CloseFlags, AccountSetHash,&quot;</span></div>
+<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;                   <span class="stringliteral">&quot;TransSetHash)&quot;</span></div>
+<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;                   <span class="stringliteral">&quot;VALUES (&quot;</span></div>
+<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;                   <span class="stringliteral">&quot;:ledgerHash, :ledgerSeq, :prevHash, :totalCoins,&quot;</span></div>
+<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;                   <span class="stringliteral">&quot;:closingTime, :prevClosingTime, :closeTimeRes,&quot;</span></div>
+<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;                   <span class="stringliteral">&quot;:closeFlags, :accountSetHash, :transSetHash);&quot;</span>,</div>
+<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;            soci::use(sHash), soci::use(ledgerSeq), soci::use(sParentHash),</div>
+<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;            soci::use(sDrops), soci::use(closingTime),</div>
+<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;            soci::use(prevClosingTime), soci::use(closeTimeRes),</div>
+<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;            soci::use(ledger-&gt;<a class="code" href="classripple_1_1Ledger.html#a31a21cc451eaa0a5af304e2625dc75f5">info</a>().<a class="code" href="structripple_1_1LedgerHeader.html#a9808a73e7430aff3c1590d4ae552f620">closeFlags</a>), soci::use(sAccountHash),</div>
+<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;            soci::use(sTxHash);</div>
+<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160; </div>
+<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;        tr.commit();</div>
+<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;    }</div>
+<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160; </div>
+<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;}</div>
+<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160; </div>
+<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;DatabaseCon&gt;</a></div>
+<div class="line"><a name="l00210"></a><span class="lineno"><a class="line" href="namespaceripple.html#af2ba549aa6ef230d23f39a19ba2178b1">  210</a></span>&#160;<a class="code" href="namespaceripple.html#af2ba549aa6ef230d23f39a19ba2178b1">makeAcquireDB</a>(</div>
+<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;    <a class="code" href="structripple_1_1DatabaseCon_1_1Setup.html">DatabaseCon::Setup</a> <span class="keyword">const</span>&amp; setup,</div>
+<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;    <a class="code" href="structripple_1_1DatabaseCon_1_1CheckpointerSetup.html">DatabaseCon::CheckpointerSetup</a> <span class="keyword">const</span>&amp; checkpointerSetup)</div>
+<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;{</div>
+<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;    <span class="keywordflow">return</span> std::make_unique&lt;DatabaseCon&gt;(</div>
+<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;        setup,</div>
+<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;        <a class="code" href="namespaceripple.html#a47b009ed46b45fea7af9c99491bd5893">AcquireShardDBName</a>,</div>
+<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;        <a class="code" href="namespaceripple.html#a402fe8f2f041bd9e3d2f74c5d1e02bcd">AcquireShardDBPragma</a>,</div>
+<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;        <a class="code" href="namespaceripple.html#acddd432321b548db97019aa913d637d4">AcquireShardDBInit</a>,</div>
+<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;        checkpointerSetup);</div>
+<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;}</div>
+<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160; </div>
+<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00223"></a><span class="lineno"><a class="line" href="namespaceripple.html#ae80496e603d320c1d84a42d1d9279362">  223</a></span>&#160;<a class="code" href="namespaceripple.html#ae80496e603d320c1d84a42d1d9279362">insertAcquireDBIndex</a>(soci::session&amp; session, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> index)</div>
+<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;{</div>
+<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;    session &lt;&lt; <span class="stringliteral">&quot;INSERT INTO Shard (ShardIndex) &quot;</span></div>
+<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;               <span class="stringliteral">&quot;VALUES (:shardIndex);&quot;</span>,</div>
+<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;        soci::use(index);</div>
+<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;}</div>
+<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160; </div>
+<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;bool, std::optional&lt;std::string&gt;</a>&gt;</div>
+<div class="line"><a name="l00231"></a><span class="lineno"><a class="line" href="namespaceripple.html#ae10a9a71c9b7a05557edecd508ccfb94">  231</a></span>&#160;<a class="code" href="namespaceripple.html#ae10a9a71c9b7a05557edecd508ccfb94">selectAcquireDBLedgerSeqs</a>(soci::session&amp; session, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> index)</div>
+<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;{</div>
+<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;    <span class="comment">// resIndex and must be boost::optional (not std) because that&#39;s</span></div>
+<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;    <span class="comment">// what SOCI expects in its interface.</span></div>
+<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;    boost::optional&lt;std::uint32_t&gt; resIndex;</div>
+<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;    soci::blob sociBlob(session);</div>
+<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;    soci::indicator blobPresent;</div>
+<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160; </div>
+<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;    session &lt;&lt; <span class="stringliteral">&quot;SELECT ShardIndex, StoredLedgerSeqs &quot;</span></div>
+<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;               <span class="stringliteral">&quot;FROM Shard &quot;</span></div>
+<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;               <span class="stringliteral">&quot;WHERE ShardIndex = :index;&quot;</span>,</div>
+<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;        soci::into(resIndex), soci::into(sociBlob, blobPresent),</div>
+<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;        soci::use(index);</div>
+<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160; </div>
+<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;    <span class="keywordflow">if</span> (!resIndex || index != resIndex)</div>
+<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;        <span class="keywordflow">return</span> {<span class="keyword">false</span>, {}};</div>
+<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160; </div>
+<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;    <span class="keywordflow">if</span> (blobPresent != soci::i_ok)</div>
+<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;        <span class="keywordflow">return</span> {<span class="keyword">true</span>, {}};</div>
+<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160; </div>
+<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> s;</div>
+<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;    <a class="code" href="namespaceripple.html#a60e89f0668645858d48dfd3f67b1a639">convert</a>(sociBlob, s);</div>
+<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160; </div>
+<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;    <span class="keywordflow">return</span> {<span class="keyword">true</span>, s};</div>
+<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;}</div>
+<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160; </div>
+<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;bool, AcquireShardSeqsHash&gt;</a></div>
+<div class="line"><a name="l00258"></a><span class="lineno"><a class="line" href="namespaceripple.html#a300cf0173f5bbe596e928a4689f0c3db">  258</a></span>&#160;<a class="code" href="namespaceripple.html#a300cf0173f5bbe596e928a4689f0c3db">selectAcquireDBLedgerSeqsHash</a>(soci::session&amp; session, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> index)</div>
+<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;{</div>
+<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;    <span class="comment">// resIndex and sHash0 must be boost::optional (not std) because that&#39;s</span></div>
+<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;    <span class="comment">// what SOCI expects in its interface.</span></div>
+<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;    boost::optional&lt;std::uint32_t&gt; resIndex;</div>
+<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;    boost::optional&lt;std::string&gt; sHash0;</div>
+<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;    soci::blob sociBlob(session);</div>
+<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;    soci::indicator blobPresent;</div>
+<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160; </div>
+<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;    session &lt;&lt; <span class="stringliteral">&quot;SELECT ShardIndex, LastLedgerHash, StoredLedgerSeqs &quot;</span></div>
+<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;               <span class="stringliteral">&quot;FROM Shard &quot;</span></div>
+<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;               <span class="stringliteral">&quot;WHERE ShardIndex = :index;&quot;</span>,</div>
+<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;        soci::into(resIndex), soci::into(sHash0),</div>
+<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;        soci::into(sociBlob, blobPresent), soci::use(index);</div>
+<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160; </div>
+<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;std::string&gt;</a> sHash =</div>
+<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;        (sHash0 ? *sHash0 : <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;std::string&gt;</a>());</div>
+<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160; </div>
+<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;    <span class="keywordflow">if</span> (!resIndex || index != resIndex)</div>
+<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;        <span class="keywordflow">return</span> {<span class="keyword">false</span>, {{}, {}}};</div>
+<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160; </div>
+<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;    <span class="keywordflow">if</span> (blobPresent != soci::i_ok)</div>
+<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;        <span class="keywordflow">return</span> {<span class="keyword">true</span>, {{}, sHash}};</div>
+<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160; </div>
+<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> s;</div>
+<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;    <a class="code" href="namespaceripple.html#a60e89f0668645858d48dfd3f67b1a639">convert</a>(sociBlob, s);</div>
+<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160; </div>
+<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;    <span class="keywordflow">return</span> {<span class="keyword">true</span>, {s, sHash}};</div>
+<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;}</div>
+<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160; </div>
+<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00289"></a><span class="lineno"><a class="line" href="namespaceripple.html#ad44314a03a131640e29655b190aad168">  289</a></span>&#160;<a class="code" href="namespaceripple.html#ad44314a03a131640e29655b190aad168">updateAcquireDB</a>(</div>
+<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;    soci::session&amp; session,</div>
+<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;Ledger const&gt;</a> <span class="keyword">const</span>&amp; ledger,</div>
+<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> index,</div>
+<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> lastSeq,</div>
+<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;std::string&gt;</a> <span class="keyword">const</span>&amp; seqs)</div>
+<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;{</div>
+<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;    soci::blob sociBlob(session);</div>
+<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> sHash{<a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(ledger-&gt;<a class="code" href="classripple_1_1Ledger.html#a31a21cc451eaa0a5af304e2625dc75f5">info</a>().<a class="code" href="structripple_1_1LedgerHeader.html#aed3c6b7c8a2f7b4815507ff942f94fa8">hash</a>)};</div>
+<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160; </div>
+<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;    <span class="keywordflow">if</span> (seqs)</div>
+<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;        <a class="code" href="namespaceripple.html#a60e89f0668645858d48dfd3f67b1a639">convert</a>(*seqs, sociBlob);</div>
+<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160; </div>
+<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;    <span class="keywordflow">if</span> (ledger-&gt;<a class="code" href="classripple_1_1Ledger.html#a31a21cc451eaa0a5af304e2625dc75f5">info</a>().<a class="code" href="structripple_1_1LedgerHeader.html#a233e04cfeb4d879ab8517d8aabb7e38b">seq</a> == lastSeq)</div>
+<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;    {</div>
+<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;        <span class="comment">// Store shard&#39;s last ledger hash</span></div>
+<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;        session &lt;&lt; <span class="stringliteral">&quot;UPDATE Shard &quot;</span></div>
+<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;                   <span class="stringliteral">&quot;SET LastLedgerHash = :lastLedgerHash,&quot;</span></div>
+<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;                   <span class="stringliteral">&quot;StoredLedgerSeqs = :storedLedgerSeqs &quot;</span></div>
+<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;                   <span class="stringliteral">&quot;WHERE ShardIndex = :shardIndex;&quot;</span>,</div>
+<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;            soci::use(sHash), soci::use(sociBlob), soci::use(index);</div>
+<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;    }</div>
+<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;    <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;    {</div>
+<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;        session &lt;&lt; <span class="stringliteral">&quot;UPDATE Shard &quot;</span></div>
+<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;                   <span class="stringliteral">&quot;SET StoredLedgerSeqs = :storedLedgerSeqs &quot;</span></div>
+<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;                   <span class="stringliteral">&quot;WHERE ShardIndex = :shardIndex;&quot;</span>,</div>
+<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;            soci::use(sociBlob), soci::use(index);</div>
+<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;    }</div>
+<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;}</div>
+<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160; </div>
+<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="anamespaceripple_html_a402fe8f2f041bd9e3d2f74c5d1e02bcd"><div class="ttname"><a href="namespaceripple.html#a402fe8f2f041bd9e3d2f74c5d1e02bcd">ripple::AcquireShardDBPragma</a></div><div class="ttdeci">constexpr std::array&lt; char const  *, 1 &gt; AcquireShardDBPragma</div><div class="ttdef"><b>Definition:</b> <a href="DBInit_8h_source.html#l00198">DBInit.h:198</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a47b009ed46b45fea7af9c99491bd5893"><div class="ttname"><a href="namespaceripple.html#a47b009ed46b45fea7af9c99491bd5893">ripple::AcquireShardDBName</a></div><div class="ttdeci">constexpr auto AcquireShardDBName</div><div class="ttdef"><b>Definition:</b> <a href="DBInit_8h_source.html#l00196">DBInit.h:196</a></div></div>
 <div class="ttc" id="aclassripple_1_1SHAMap_html_aa36f13285448ce66cdc04a0b7f4d8af7"><div class="ttname"><a href="classripple_1_1SHAMap.html#aa36f13285448ce66cdc04a0b7f4d8af7">ripple::SHAMap::isValid</a></div><div class="ttdeci">bool isValid() const</div><div class="ttdef"><b>Definition:</b> <a href="SHAMap_8h_source.html#l00625">SHAMap.h:625</a></div></div>
-<div class="ttc" id="anamespaceripple_html_af2ba549aa6ef230d23f39a19ba2178b1"><div class="ttname"><a href="namespaceripple.html#af2ba549aa6ef230d23f39a19ba2178b1">ripple::makeAcquireDB</a></div><div class="ttdeci">std::unique_ptr&lt; DatabaseCon &gt; makeAcquireDB(DatabaseCon::Setup const &amp;setup, DatabaseCon::CheckpointerSetup const &amp;checkpointerSetup)</div><div class="ttdoc">makeAcquireDB Opens the shard acquire database and returns its descriptor.</div><div class="ttdef"><b>Definition:</b> <a href="UnitaryShard_8cpp_source.html#l00208">UnitaryShard.cpp:208</a></div></div>
+<div class="ttc" id="anamespaceripple_html_af2ba549aa6ef230d23f39a19ba2178b1"><div class="ttname"><a href="namespaceripple.html#af2ba549aa6ef230d23f39a19ba2178b1">ripple::makeAcquireDB</a></div><div class="ttdeci">std::unique_ptr&lt; DatabaseCon &gt; makeAcquireDB(DatabaseCon::Setup const &amp;setup, DatabaseCon::CheckpointerSetup const &amp;checkpointerSetup)</div><div class="ttdoc">makeAcquireDB Opens the shard acquire database and returns its descriptor.</div><div class="ttdef"><b>Definition:</b> <a href="UnitaryShard_8cpp_source.html#l00210">UnitaryShard.cpp:210</a></div></div>
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="ashared_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="anamespaceripple_html_a10025b86c17707aa738c67c31a3aa540"><div class="ttname"><a href="namespaceripple.html#a10025b86c17707aa738c67c31a3aa540">ripple::TxDBPragma</a></div><div class="ttdeci">constexpr std::array&lt; char const  *, 4 &gt; TxDBPragma</div><div class="ttdef"><b>Definition:</b> <a href="DBInit_8h_source.html#l00078">DBInit.h:78</a></div></div>
@@ -403,8 +405,8 @@ $(function() {
 <div class="ttc" id="apair_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a></div></div>
 <div class="ttc" id="areserve_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string/reserve.html">std::string::reserve</a></div><div class="ttdeci">T reserve(T... args)</div></div>
 <div class="ttc" id="anamespaceripple_html_a60e89f0668645858d48dfd3f67b1a639"><div class="ttname"><a href="namespaceripple.html#a60e89f0668645858d48dfd3f67b1a639">ripple::convert</a></div><div class="ttdeci">void convert(soci::blob &amp;from, std::vector&lt; std::uint8_t &gt; &amp;to)</div><div class="ttdef"><b>Definition:</b> <a href="SociDB_8cpp_source.html#l00154">SociDB.cpp:154</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a300cf0173f5bbe596e928a4689f0c3db"><div class="ttname"><a href="namespaceripple.html#a300cf0173f5bbe596e928a4689f0c3db">ripple::selectAcquireDBLedgerSeqsHash</a></div><div class="ttdeci">std::pair&lt; bool, AcquireShardSeqsHash &gt; selectAcquireDBLedgerSeqsHash(soci::session &amp;session, std::uint32_t index)</div><div class="ttdoc">selectAcquireDBLedgerSeqsHash Returns the set of acquired ledger sequences and the last ledger hash f...</div><div class="ttdef"><b>Definition:</b> <a href="UnitaryShard_8cpp_source.html#l00256">UnitaryShard.cpp:256</a></div></div>
-<div class="ttc" id="anamespaceripple_html_ae80496e603d320c1d84a42d1d9279362"><div class="ttname"><a href="namespaceripple.html#ae80496e603d320c1d84a42d1d9279362">ripple::insertAcquireDBIndex</a></div><div class="ttdeci">void insertAcquireDBIndex(soci::session &amp;session, std::uint32_t index)</div><div class="ttdoc">insertAcquireDBIndex Adds a new shard index to the shard acquire database.</div><div class="ttdef"><b>Definition:</b> <a href="UnitaryShard_8cpp_source.html#l00221">UnitaryShard.cpp:221</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a300cf0173f5bbe596e928a4689f0c3db"><div class="ttname"><a href="namespaceripple.html#a300cf0173f5bbe596e928a4689f0c3db">ripple::selectAcquireDBLedgerSeqsHash</a></div><div class="ttdeci">std::pair&lt; bool, AcquireShardSeqsHash &gt; selectAcquireDBLedgerSeqsHash(soci::session &amp;session, std::uint32_t index)</div><div class="ttdoc">selectAcquireDBLedgerSeqsHash Returns the set of acquired ledger sequences and the last ledger hash f...</div><div class="ttdef"><b>Definition:</b> <a href="UnitaryShard_8cpp_source.html#l00258">UnitaryShard.cpp:258</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ae80496e603d320c1d84a42d1d9279362"><div class="ttname"><a href="namespaceripple.html#ae80496e603d320c1d84a42d1d9279362">ripple::insertAcquireDBIndex</a></div><div class="ttdeci">void insertAcquireDBIndex(soci::session &amp;session, std::uint32_t index)</div><div class="ttdoc">insertAcquireDBIndex Adds a new shard index to the shard acquire database.</div><div class="ttdef"><b>Definition:</b> <a href="UnitaryShard_8cpp_source.html#l00223">UnitaryShard.cpp:223</a></div></div>
 <div class="ttc" id="astructripple_1_1LedgerHeader_html_ab8fd6d4be4001febfe6f2e2b399dfa48"><div class="ttname"><a href="structripple_1_1LedgerHeader.html#ab8fd6d4be4001febfe6f2e2b399dfa48">ripple::LedgerHeader::parentHash</a></div><div class="ttdeci">uint256 parentHash</div><div class="ttdef"><b>Definition:</b> <a href="LedgerHeader_8h_source.html#l00052">LedgerHeader.h:52</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a08a13b62b18272366f788632359e8793"><div class="ttname"><a href="namespaceripple.html#a08a13b62b18272366f788632359e8793">ripple::toBase58</a></div><div class="ttdeci">std::string toBase58(AccountID const &amp;v)</div><div class="ttdoc">Convert AccountID to base58 checked string.</div><div class="ttdef"><b>Definition:</b> <a href="AccountID_8cpp_source.html#l00104">AccountID.cpp:104</a></div></div>
 <div class="ttc" id="astructripple_1_1DatabaseCon_1_1CheckpointerSetup_html"><div class="ttname"><a href="structripple_1_1DatabaseCon_1_1CheckpointerSetup.html">ripple::DatabaseCon::CheckpointerSetup</a></div><div class="ttdef"><b>Definition:</b> <a href="DatabaseCon_8h_source.html#l00107">DatabaseCon.h:107</a></div></div>
@@ -420,7 +422,7 @@ $(function() {
 <div class="ttc" id="astructripple_1_1LedgerHeader_html_aed3c6b7c8a2f7b4815507ff942f94fa8"><div class="ttname"><a href="structripple_1_1LedgerHeader.html#aed3c6b7c8a2f7b4815507ff942f94fa8">ripple::LedgerHeader::hash</a></div><div class="ttdeci">uint256 hash</div><div class="ttdef"><b>Definition:</b> <a href="LedgerHeader_8h_source.html#l00049">LedgerHeader.h:49</a></div></div>
 <div class="ttc" id="anamespaceripple_html_aaeddb4a3396c616a7ef7350e4cc327f0"><div class="ttname"><a href="namespaceripple.html#aaeddb4a3396c616a7ef7350e4cc327f0">ripple::TxDBName</a></div><div class="ttdeci">constexpr auto TxDBName</div><div class="ttdef"><b>Definition:</b> <a href="DBInit_8h_source.html#l00073">DBInit.h:73</a></div></div>
 <div class="ttc" id="aclassripple_1_1base__uint_html"><div class="ttname"><a href="classripple_1_1base__uint.html">ripple::base_uint</a></div><div class="ttdoc">Integers of any length that is a multiple of 32-bits.</div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00082">base_uint.h:82</a></div></div>
-<div class="ttc" id="anamespaceripple_html_ad44314a03a131640e29655b190aad168"><div class="ttname"><a href="namespaceripple.html#ad44314a03a131640e29655b190aad168">ripple::updateAcquireDB</a></div><div class="ttdeci">void updateAcquireDB(soci::session &amp;session, std::shared_ptr&lt; Ledger const &gt; const &amp;ledger, std::uint32_t index, std::uint32_t lastSeq, std::optional&lt; std::string &gt; const &amp;seqs)</div><div class="ttdoc">updateAcquireDB Updates information in the acquire DB.</div><div class="ttdef"><b>Definition:</b> <a href="UnitaryShard_8cpp_source.html#l00287">UnitaryShard.cpp:287</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ad44314a03a131640e29655b190aad168"><div class="ttname"><a href="namespaceripple.html#ad44314a03a131640e29655b190aad168">ripple::updateAcquireDB</a></div><div class="ttdeci">void updateAcquireDB(soci::session &amp;session, std::shared_ptr&lt; Ledger const &gt; const &amp;ledger, std::uint32_t index, std::uint32_t lastSeq, std::optional&lt; std::string &gt; const &amp;seqs)</div><div class="ttdoc">updateAcquireDB Updates information in the acquire DB.</div><div class="ttdef"><b>Definition:</b> <a href="UnitaryShard_8cpp_source.html#l00289">UnitaryShard.cpp:289</a></div></div>
 <div class="ttc" id="aclassripple_1_1Ledger_html_a31a21cc451eaa0a5af304e2625dc75f5"><div class="ttname"><a href="classripple_1_1Ledger.html#a31a21cc451eaa0a5af304e2625dc75f5">ripple::Ledger::info</a></div><div class="ttdeci">LedgerInfo const  &amp; info() const override</div><div class="ttdoc">Returns information about the ledger.</div><div class="ttdef"><b>Definition:</b> <a href="Ledger_8h_source.html#l00152">Ledger.h:152</a></div></div>
 <div class="ttc" id="atime_since_epoch_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/chrono/time_point/time_since_epoch.html">std::chrono::time_point::time_since_epoch</a></div><div class="ttdeci">T time_since_epoch(T... args)</div></div>
 <div class="ttc" id="astructripple_1_1LedgerHeader_html_acbaff4abb7243e02f45e63bd19843aa9"><div class="ttname"><a href="structripple_1_1LedgerHeader.html#acbaff4abb7243e02f45e63bd19843aa9">ripple::LedgerHeader::parentCloseTime</a></div><div class="ttdeci">NetClock::time_point parentCloseTime</div><div class="ttdef"><b>Definition:</b> <a href="LedgerHeader_8h_source.html#l00042">LedgerHeader.h:42</a></div></div>
@@ -449,7 +451,7 @@ $(function() {
 <div class="ttc" id="anamespaceripple_html_a3239662b6259e89c292143a915714934"><div class="ttname"><a href="namespaceripple.html#a3239662b6259e89c292143a915714934">ripple::makeShardIncompleteLedgerDBs</a></div><div class="ttdeci">DatabasePair makeShardIncompleteLedgerDBs(Config const &amp;config, DatabaseCon::Setup const &amp;setup, DatabaseCon::CheckpointerSetup const &amp;checkpointerSetup)</div><div class="ttdoc">makeShardIncompleteLedgerDBs Opens shard databases for partially downloaded or unverified shards and ...</div><div class="ttdef"><b>Definition:</b> <a href="UnitaryShard_8cpp_source.html#l00048">UnitaryShard.cpp:48</a></div></div>
 <div class="ttc" id="aoptional_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt; std::string &gt;</a></div></div>
 <div class="ttc" id="anamespaceripple_html_af9776f187d3686a7fba4c2d2fbeebdf4"><div class="ttname"><a href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">ripple::to_string</a></div><div class="ttdeci">std::string to_string(Manifest const &amp;m)</div><div class="ttdoc">Format the specified manifest to a string for debugging purposes.</div><div class="ttdef"><b>Definition:</b> <a href="app_2misc_2impl_2Manifest_8cpp_source.html#l00041">app/misc/impl/Manifest.cpp:41</a></div></div>
-<div class="ttc" id="anamespaceripple_html_ae10a9a71c9b7a05557edecd508ccfb94"><div class="ttname"><a href="namespaceripple.html#ae10a9a71c9b7a05557edecd508ccfb94">ripple::selectAcquireDBLedgerSeqs</a></div><div class="ttdeci">std::pair&lt; bool, std::optional&lt; std::string &gt; &gt; selectAcquireDBLedgerSeqs(soci::session &amp;session, std::uint32_t index)</div><div class="ttdoc">selectAcquireDBLedgerSeqs Returns the set of acquired ledgers for the given shard.</div><div class="ttdef"><b>Definition:</b> <a href="UnitaryShard_8cpp_source.html#l00229">UnitaryShard.cpp:229</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ae10a9a71c9b7a05557edecd508ccfb94"><div class="ttname"><a href="namespaceripple.html#ae10a9a71c9b7a05557edecd508ccfb94">ripple::selectAcquireDBLedgerSeqs</a></div><div class="ttdeci">std::pair&lt; bool, std::optional&lt; std::string &gt; &gt; selectAcquireDBLedgerSeqs(soci::session &amp;session, std::uint32_t index)</div><div class="ttdoc">selectAcquireDBLedgerSeqs Returns the set of acquired ledgers for the given shard.</div><div class="ttdef"><b>Definition:</b> <a href="UnitaryShard_8cpp_source.html#l00231">UnitaryShard.cpp:231</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a02dace5f2b8af172e9d2d4ee7ea04c55"><div class="ttname"><a href="namespaceripple.html#a02dace5f2b8af172e9d2d4ee7ea04c55">ripple::TxDBInit</a></div><div class="ttdeci">constexpr std::array&lt; char const  *, 8 &gt; TxDBInit</div><div class="ttdef"><b>Definition:</b> <a href="DBInit_8h_source.html#l00094">DBInit.h:94</a></div></div>
 <div class="ttc" id="aunique_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="anamespaceripple_html_a9078e51480fd85c4bff715ecd3f141d5"><div class="ttname"><a href="namespaceripple.html#a9078e51480fd85c4bff715ecd3f141d5">ripple::sqlBlobLiteral</a></div><div class="ttdeci">std::string sqlBlobLiteral(Blob const &amp;blob)</div><div class="ttdoc">Format arbitrary binary data as an SQLite &quot;blob literal&quot;.</div><div class="ttdef"><b>Definition:</b> <a href="StringUtilities_8cpp_source.html#l00033">StringUtilities.cpp:33</a></div></div>
