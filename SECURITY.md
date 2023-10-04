@@ -37,7 +37,7 @@ Your report should include the following:
 - The steps to reproduce the vulnerability;
 - Any other relevant details or artifacts, including code, scripts or patches.
 
-In your mail, please describe of the issue or the potential threat; if possible, please include a "repro" (code that can reproduce the issue) or describe the best way to reproduce and replicate the issue. Please make your report as extensive as possible.
+In your email, please describe the issue or potential threat. If possible, include a "repro" (code that can reproduce the issue) or describe the best way to reproduce and replicate the issue. Please make your report as detailed and comprehensive as possible.
 
 For more information on responsible disclosure, please read this [Wikipedia article](https://en.wikipedia.org/wiki/Responsible_disclosure).
 
