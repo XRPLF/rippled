@@ -175,6 +175,11 @@ updateLedgerDBs(
 
         auto const sParentHash{to_string(ledger->info().parentHash)};
         auto const sDrops{to_string(ledger->info().drops)};
+        auto const closingTime{
+            ledger->info().closeTime.time_since_epoch().count()};
+        auto const prevClosingTime{
+            ledger->info().parentCloseTime.time_since_epoch().count()};
+        auto const closeTimeRes{ledger->info().closeTimeResolution.count()};
         auto const sAccountHash{to_string(ledger->info().accountHash)};
         auto const sTxHash{to_string(ledger->info().txHash)};
 
@@ -190,11 +195,8 @@ updateLedgerDBs(
                    ":closingTime, :prevClosingTime, :closeTimeRes,"
                    ":closeFlags, :accountSetHash, :transSetHash);",
             soci::use(sHash), soci::use(ledgerSeq), soci::use(sParentHash),
-            soci::use(sDrops),
-            soci::use(ledger->info().closeTime.time_since_epoch().count()),
-            soci::use(
-                ledger->info().parentCloseTime.time_since_epoch().count()),
-            soci::use(ledger->info().closeTimeResolution.count()),
+            soci::use(sDrops), soci::use(closingTime),
+            soci::use(prevClosingTime), soci::use(closeTimeRes),
             soci::use(ledger->info().closeFlags), soci::use(sAccountHash),
             soci::use(sTxHash);
 

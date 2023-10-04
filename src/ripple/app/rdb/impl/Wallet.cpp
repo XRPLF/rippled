@@ -205,19 +205,20 @@ insertPeerReservation(
     PublicKey const& nodeId,
     std::string const& description)
 {
+    auto const sNodeId = toBase58(TokenType::NodePublic, nodeId);
     session << "INSERT INTO PeerReservations (PublicKey, Description) "
                "VALUES (:nodeId, :desc) "
                "ON CONFLICT (PublicKey) DO UPDATE SET "
                "Description=excluded.Description",
-        soci::use(toBase58(TokenType::NodePublic, nodeId)),
-        soci::use(description);
+        soci::use(sNodeId), soci::use(description);
 }
 
 void
 deletePeerReservation(soci::session& session, PublicKey const& nodeId)
 {
+    auto const sNodeId = toBase58(TokenType::NodePublic, nodeId);
     session << "DELETE FROM PeerReservations WHERE PublicKey = :nodeId",
-        soci::use(toBase58(TokenType::NodePublic, nodeId));
+        soci::use(sNodeId);
 }
 
 bool
