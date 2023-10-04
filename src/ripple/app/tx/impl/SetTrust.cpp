@@ -133,7 +133,7 @@ SetTrust::preclaim(PreclaimContext const& ctx)
     auto const sleDst = ctx.view.read(keylet::account(uDstAccountID));
 
     // If the destination has opted to disallow incoming trustlines
-    // then honour that flag ONLY if the trustline doesn't exist
+    // then honour that flag
     if (ctx.view.rules().enabled(featureDisallowIncoming))
     {
         if (!sleDst)
@@ -141,6 +141,11 @@ SetTrust::preclaim(PreclaimContext const& ctx)
 
         if (sleDst->getFlags() & lsfDisallowIncomingTrustline)
         {
+            // The original implementation of featureDisallowIncoming was
+            // too restrictive.  If
+            //   o fixDisallowIncomingV1 is enabled and
+            //   o The trust line already exists
+            // Then allow the TrustSet.
             if (ctx.view.rules().enabled(fixDisallowIncomingV1) &&
                 ctx.view.exists(keylet::line(id, uDstAccountID, currency)))
             {
