@@ -95,10 +95,10 @@ Collaboration diagram for ripple::Expected&lt; T, E &gt;:</div>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a9fc739c0940d5a91504161560c043eb0"><td class="memTemplParams" colspan="2">template&lt;typename U &gt; </td></tr>
-<tr class="memitem:a9fc739c0940d5a91504161560c043eb0"><td class="memTemplItemLeft" align="right" valign="top">requires constexpr std::convertible_to&lt; U, T &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1Expected.html#a9fc739c0940d5a91504161560c043eb0">Expected</a> (U &amp;&amp;r)</td></tr>
+<tr class="memitem:a9fc739c0940d5a91504161560c043eb0"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a7796383bfef292efc87ae0c132e4f230">requires</a> constexpr std::convertible_to&lt; U, T &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1Expected.html#a9fc739c0940d5a91504161560c043eb0">Expected</a> (U &amp;&amp;r)</td></tr>
 <tr class="separator:a9fc739c0940d5a91504161560c043eb0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae55b179b30376177ae33ef15745e2892"><td class="memTemplParams" colspan="2">template&lt;typename U &gt; </td></tr>
-<tr class="memitem:ae55b179b30376177ae33ef15745e2892"><td class="memTemplItemLeft" align="right" valign="top">requires std::convertible_to&lt; U, E &gt; &amp;&amp;!std constexpr ::is_reference_v&lt; U &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1Expected.html#ae55b179b30376177ae33ef15745e2892">Expected</a> (<a class="el" href="classripple_1_1Unexpected.html">Unexpected</a>&lt; U &gt; e)</td></tr>
+<tr class="memitem:ae55b179b30376177ae33ef15745e2892"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a7796383bfef292efc87ae0c132e4f230">requires</a> std::convertible_to&lt; U, E &gt; &amp;&amp;!std constexpr ::is_reference_v&lt; U &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1Expected.html#ae55b179b30376177ae33ef15745e2892">Expected</a> (<a class="el" href="classripple_1_1Unexpected.html">Unexpected</a>&lt; U &gt; e)</td></tr>
 <tr class="separator:ae55b179b30376177ae33ef15745e2892"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a21497f2ce9b20f07c1e2df6fed802718"><td class="memItemLeft" align="right" valign="top">constexpr bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Expected.html#a21497f2ce9b20f07c1e2df6fed802718">has_value</a> () const</td></tr>
 <tr class="separator:a21497f2ce9b20f07c1e2df6fed802718"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -174,7 +174,7 @@ template&lt;typename U &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">requires constexpr std::convertible_to&lt;U, T&gt; <a class="el" href="classripple_1_1Expected.html">ripple::Expected</a>&lt; T, E &gt;::<a class="el" href="classripple_1_1Expected.html">Expected</a> </td>
+          <td class="memname"><a class="el" href="namespaceripple.html#a7796383bfef292efc87ae0c132e4f230">requires</a> constexpr std::convertible_to&lt;U, T&gt; <a class="el" href="classripple_1_1Expected.html">ripple::Expected</a>&lt; T, E &gt;::<a class="el" href="classripple_1_1Expected.html">Expected</a> </td>
           <td>(</td>
           <td class="paramtype">U &amp;&amp;&#160;</td>
           <td class="paramname"><em>r</em></td><td>)</td>
@@ -206,7 +206,7 @@ template&lt;typename U &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">requires std::convertible_to&lt;U, E&gt;&amp;&amp; !std constexpr ::is_reference_v&lt;U&gt; <a class="el" href="classripple_1_1Expected.html">ripple::Expected</a>&lt; T, E &gt;::<a class="el" href="classripple_1_1Expected.html">Expected</a> </td>
+          <td class="memname"><a class="el" href="namespaceripple.html#a7796383bfef292efc87ae0c132e4f230">requires</a> std::convertible_to&lt;U, E&gt;&amp;&amp; !std constexpr ::is_reference_v&lt;U&gt; <a class="el" href="classripple_1_1Expected.html">ripple::Expected</a>&lt; T, E &gt;::<a class="el" href="classripple_1_1Expected.html">Expected</a> </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classripple_1_1Unexpected.html">Unexpected</a>&lt; U &gt;&#160;</td>
           <td class="paramname"><em>e</em></td><td>)</td>

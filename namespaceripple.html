@@ -3083,17 +3083,13 @@ Functions</h2></td></tr>
 <tr class="separator:a6ab592f30558cf1139693b7b49ccd8ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaf49b56540b2ba5cbf1aa55fbfa57077"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1STAmount.html">STAmount</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aaf49b56540b2ba5cbf1aa55fbfa57077">tokensWithdraw</a> (<a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;lpTokens, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1STAmount.html">STAmount</a> &gt; const &amp;tokensIn, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> flags)</td></tr>
 <tr class="separator:aaf49b56540b2ba5cbf1aa55fbfa57077"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a02f51e5a1371b22eb9cb1197d3e8d7eb"><td class="memTemplParams" colspan="2">template&lt;class T , std::enable_if_t&lt; T::ConsequencesFactory==Transactor::Normal, int &gt;  = 0&gt; </td></tr>
-<tr class="memitem:a02f51e5a1371b22eb9cb1197d3e8d7eb"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1TxConsequences.html">TxConsequences</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a02f51e5a1371b22eb9cb1197d3e8d7eb">consequences_helper</a> (<a class="el" href="structripple_1_1PreflightContext.html">PreflightContext</a> const &amp;ctx)</td></tr>
-<tr class="separator:a02f51e5a1371b22eb9cb1197d3e8d7eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9c8f4a23c982a952b8a79918d3229e94"><td class="memTemplParams" colspan="2">template&lt;class T &gt; </td></tr>
-<tr class="memitem:a9c8f4a23c982a952b8a79918d3229e94"><td class="memTemplItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="namespaceripple.html#af99ba2263d2a1e29207c40a35fc9f6b3">NotTEC</a>, <a class="el" href="classripple_1_1TxConsequences.html">TxConsequences</a> &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a9c8f4a23c982a952b8a79918d3229e94">invoke_preflight_helper</a> (<a class="el" href="structripple_1_1PreflightContext.html">PreflightContext</a> const &amp;ctx)</td></tr>
-<tr class="separator:a9c8f4a23c982a952b8a79918d3229e94"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7796383bfef292efc87ae0c132e4f230"><td class="memTemplParams" colspan="2">template&lt;class T &gt; </td></tr>
+<tr class="memitem:a7796383bfef292efc87ae0c132e4f230"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a7796383bfef292efc87ae0c132e4f230">requires</a> (T::ConsequencesFactory==<a class="el" href="classripple_1_1Transactor.html#a5c6d16e9402d182a835f50b37ce9a938aa45cb725337de0d627f42b7ebf4be91f">Transactor::Normal</a>) <a class="el" href="classripple_1_1TxConsequences.html">TxConsequences</a> consequences_helper(<a class="el" href="structripple_1_1PreflightContext.html">PreflightContext</a> const &amp;ctx)</td></tr>
+<tr class="separator:a7796383bfef292efc87ae0c132e4f230"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a26e43fb1572286f53326d104ded91fc6"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="namespaceripple.html#af99ba2263d2a1e29207c40a35fc9f6b3">NotTEC</a>, <a class="el" href="classripple_1_1TxConsequences.html">TxConsequences</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a26e43fb1572286f53326d104ded91fc6">invoke_preflight</a> (<a class="el" href="structripple_1_1PreflightContext.html">PreflightContext</a> const &amp;ctx)</td></tr>
 <tr class="separator:a26e43fb1572286f53326d104ded91fc6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac0a3c5972129b7378a049fc580508edb"><td class="memTemplParams" colspan="2">template&lt;class T &gt; </td></tr>
-<tr class="memitem:ac0a3c5972129b7378a049fc580508edb"><td class="memTemplItemLeft" align="right" valign="top">static <a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ac0a3c5972129b7378a049fc580508edb">invoke_preclaim</a> (<a class="el" href="structripple_1_1PreclaimContext.html">PreclaimContext</a> const &amp;ctx)</td></tr>
-<tr class="separator:ac0a3c5972129b7378a049fc580508edb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5ce9345257b7ba96fb206f1d4e1e5315"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a5ce9345257b7ba96fb206f1d4e1e5315">invoke_preclaim</a> (<a class="el" href="structripple_1_1PreclaimContext.html">PreclaimContext</a> const &amp;ctx)</td></tr>
+<tr class="separator:a5ce9345257b7ba96fb206f1d4e1e5315"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a43ae291751b10a0290b5448ea28be2d5"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classripple_1_1XRPAmount.html">XRPAmount</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a43ae291751b10a0290b5448ea28be2d5">invoke_calculateBaseFee</a> (<a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &amp;view, <a class="el" href="classripple_1_1STTx.html">STTx</a> const &amp;tx)</td></tr>
 <tr class="separator:a43ae291751b10a0290b5448ea28be2d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2ecf53cda5a3dc4d4d4a6963961f9e63"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>, bool &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a2ecf53cda5a3dc4d4d4a6963961f9e63">invoke_apply</a> (<a class="el" href="classripple_1_1ApplyContext.html">ApplyContext</a> &amp;ctx)</td></tr>
@@ -18295,7 +18291,7 @@ template&lt;class Request &gt; </div>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="structripple_1_1PreflightResult.html" title="Describes the results of the preflight check.">PreflightResult</a>, <a class="el" href="namespaceripple.html#a5027a5209e954b9478fab70357963466" title="Gate a transaction based on static ledger information.">preclaim</a>, <a class="el" href="namespaceripple.html#a305632c3ccdbb4005fa2b019c51b5ac1" title="Apply a prechecked transaction to an OpenView.">doApply</a>, <a class="el" href="namespaceripple.html#a19f506b57882e3396d15d7c43fa92d92" title="Apply a transaction to an OpenView.">apply</a></dd></dl>
 <dl class="section return"><dt>Returns</dt><dd>A <code><a class="el" href="structripple_1_1PreflightResult.html" title="Describes the results of the preflight check.">PreflightResult</a></code> object containing, among other things, the <code>TER</code> code. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="applySteps_8cpp_source.html#l00634">634</a> of file <a class="el" href="applySteps_8cpp_source.html">applySteps.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="applySteps_8cpp_source.html#l00350">350</a> of file <a class="el" href="applySteps_8cpp_source.html">applySteps.cpp</a>.</p>
 
 </div>
 </div>
@@ -18347,7 +18343,7 @@ template&lt;class Request &gt; </div>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="structripple_1_1PreclaimResult.html" title="Describes the results of the preclaim check.">PreclaimResult</a>, <a class="el" href="namespaceripple.html#a24280b80536d1afd09e24a75f4596922" title="Gate a transaction based on static information.">preflight</a>, <a class="el" href="namespaceripple.html#a305632c3ccdbb4005fa2b019c51b5ac1" title="Apply a prechecked transaction to an OpenView.">doApply</a>, <a class="el" href="namespaceripple.html#a19f506b57882e3396d15d7c43fa92d92" title="Apply a transaction to an OpenView.">apply</a></dd></dl>
 <dl class="section return"><dt>Returns</dt><dd>A <code><a class="el" href="structripple_1_1PreclaimResult.html" title="Describes the results of the preclaim check.">PreclaimResult</a></code> object containing, among other things the <code>TER</code> code and the base fee value for this transaction. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="applySteps_8cpp_source.html#l00654">654</a> of file <a class="el" href="applySteps_8cpp_source.html">applySteps.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="applySteps_8cpp_source.html#l00370">370</a> of file <a class="el" href="applySteps_8cpp_source.html">applySteps.cpp</a>.</p>
 
 </div>
 </div>
@@ -18390,7 +18386,7 @@ template&lt;class Request &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>The base fee. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="applySteps_8cpp_source.html#l00700">700</a> of file <a class="el" href="applySteps_8cpp_source.html">applySteps.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="applySteps_8cpp_source.html#l00416">416</a> of file <a class="el" href="applySteps_8cpp_source.html">applySteps.cpp</a>.</p>
 
 </div>
 </div>
@@ -18431,7 +18427,7 @@ template&lt;class Request &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>The base fee in <a class="el" href="classripple_1_1XRPAmount.html">XRPAmount</a>. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="applySteps_8cpp_source.html#l00706">706</a> of file <a class="el" href="applySteps_8cpp_source.html">applySteps.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="applySteps_8cpp_source.html#l00422">422</a> of file <a class="el" href="applySteps_8cpp_source.html">applySteps.cpp</a>.</p>
 
 </div>
 </div>
@@ -18480,7 +18476,7 @@ template&lt;class Request &gt; </div>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="namespaceripple.html#a24280b80536d1afd09e24a75f4596922" title="Gate a transaction based on static information.">preflight</a>, <a class="el" href="namespaceripple.html#a5027a5209e954b9478fab70357963466" title="Gate a transaction based on static ledger information.">preclaim</a>, <a class="el" href="namespaceripple.html#a19f506b57882e3396d15d7c43fa92d92" title="Apply a transaction to an OpenView.">apply</a></dd></dl>
 <dl class="section return"><dt>Returns</dt><dd>A pair with the <code>TER</code> and a <code>bool</code> indicating whether or not the transaction was applied. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="applySteps_8cpp_source.html#l00712">712</a> of file <a class="el" href="applySteps_8cpp_source.html">applySteps.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="applySteps_8cpp_source.html#l00428">428</a> of file <a class="el" href="applySteps_8cpp_source.html">applySteps.cpp</a>.</p>
 
 </div>
 </div>
@@ -18678,30 +18674,8 @@ template&lt;class Request &gt; </div>
 
 </div>
 </div>
-<a id="a02f51e5a1371b22eb9cb1197d3e8d7eb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a02f51e5a1371b22eb9cb1197d3e8d7eb">&#9670;&nbsp;</a></span>consequences_helper()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;class T , std::enable_if_t&lt; T::ConsequencesFactory==Transactor::Normal, int &gt;  = 0&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classripple_1_1TxConsequences.html">TxConsequences</a> ripple::consequences_helper </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="structripple_1_1PreflightContext.html">PreflightContext</a> const &amp;&#160;</td>
-          <td class="paramname"><em>ctx</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="applySteps_8cpp_source.html#l00067">67</a> of file <a class="el" href="applySteps_8cpp_source.html">applySteps.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a9c8f4a23c982a952b8a79918d3229e94"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9c8f4a23c982a952b8a79918d3229e94">&#9670;&nbsp;</a></span>invoke_preflight_helper()</h2>
+<a id="a7796383bfef292efc87ae0c132e4f230"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7796383bfef292efc87ae0c132e4f230">&#9670;&nbsp;</a></span>requires()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -18709,16 +18683,16 @@ template&lt;class T , std::enable_if_t&lt; T::ConsequencesFactory==Transactor::N
 template&lt;class T &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt;<a class="el" href="namespaceripple.html#af99ba2263d2a1e29207c40a35fc9f6b3">NotTEC</a>, <a class="el" href="classripple_1_1TxConsequences.html">TxConsequences</a>&gt; ripple::invoke_preflight_helper </td>
+          <td class="memname">ripple::requires </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="structripple_1_1PreflightContext.html">PreflightContext</a> const &amp;&#160;</td>
-          <td class="paramname"><em>ctx</em></td><td>)</td>
-          <td></td>
+          <td class="paramtype">T::ConsequencesFactory&#160;</td>
+          <td class="paramname"> = <code>=&#160;<a class="el" href="classripple_1_1Transactor.html#a5c6d16e9402d182a835f50b37ce9a938aa45cb725337de0d627f42b7ebf4be91f">Transactor::Normal</a></code></td><td>)</td>
+          <td> const &amp;</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="applySteps_8cpp_source.html#l00094">94</a> of file <a class="el" href="applySteps_8cpp_source.html">applySteps.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="applySteps_8cpp_source.html#l00176">176</a> of file <a class="el" href="applySteps_8cpp_source.html">applySteps.cpp</a>.</p>
 
 </div>
 </div>
@@ -18746,17 +18720,15 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="applySteps_8cpp_source.html#l00103">103</a> of file <a class="el" href="applySteps_8cpp_source.html">applySteps.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="applySteps_8cpp_source.html#l00203">203</a> of file <a class="el" href="applySteps_8cpp_source.html">applySteps.cpp</a>.</p>
 
 </div>
 </div>
-<a id="ac0a3c5972129b7378a049fc580508edb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac0a3c5972129b7378a049fc580508edb">&#9670;&nbsp;</a></span>invoke_preclaim()</h2>
+<a id="a5ce9345257b7ba96fb206f1d4e1e5315"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5ce9345257b7ba96fb206f1d4e1e5315">&#9670;&nbsp;</a></span>invoke_preclaim()</h2>
 
 <div class="memitem">
 <div class="memproto">
-<div class="memtemplate">
-template&lt;class T &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -18776,7 +18748,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="applySteps_8cpp_source.html#l00202">202</a> of file <a class="el" href="applySteps_8cpp_source.html">applySteps.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="applySteps_8cpp_source.html#l00226">226</a> of file <a class="el" href="applySteps_8cpp_source.html">applySteps.cpp</a>.</p>
 
 </div>
 </div>
@@ -18814,7 +18786,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="applySteps_8cpp_source.html#l00328">328</a> of file <a class="el" href="applySteps_8cpp_source.html">applySteps.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="applySteps_8cpp_source.html#l00275">275</a> of file <a class="el" href="applySteps_8cpp_source.html">applySteps.cpp</a>.</p>
 
 </div>
 </div>
@@ -18842,7 +18814,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="applySteps_8cpp_source.html#l00461">461</a> of file <a class="el" href="applySteps_8cpp_source.html">applySteps.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="applySteps_8cpp_source.html#l00330">330</a> of file <a class="el" href="applySteps_8cpp_source.html">applySteps.cpp</a>.</p>
 
 </div>
 </div>
@@ -63610,13 +63582,13 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="ttc" id="anamespaceripple_html_a33f8b6e68b5f63faf2e9755cc251563eabc8904337817db1a59f2a10ed405b817"><div class="ttname"><a href="namespaceripple.html#a33f8b6e68b5f63faf2e9755cc251563eabc8904337817db1a59f2a10ed405b817">ripple::ConsensusMode::switchedLedger</a></div><div class="ttdeci">@ switchedLedger</div><div class="ttdoc">We switched ledgers since we started this consensus round but are now running on what we believe is t...</div></div>
 <div class="ttc" id="anamespaceripple_html_a0937c341f2f9445f038012ac13cfb8df"><div class="ttname"><a href="namespaceripple.html#a0937c341f2f9445f038012ac13cfb8df">ripple::tfAllowXRP</a></div><div class="ttdeci">constexpr std::uint32_t tfAllowXRP</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00068">TxFlags.h:68</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a61d9fbb44b335fbb5e82e3211e6639a2"><div class="ttname"><a href="namespaceripple.html#a61d9fbb44b335fbb5e82e3211e6639a2">ripple::tfPassive</a></div><div class="ttdeci">constexpr std::uint32_t tfPassive</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00094">TxFlags.h:94</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a24280b80536d1afd09e24a75f4596922"><div class="ttname"><a href="namespaceripple.html#a24280b80536d1afd09e24a75f4596922">ripple::preflight</a></div><div class="ttdeci">PreflightResult preflight(Application &amp;app, Rules const &amp;rules, STTx const &amp;tx, ApplyFlags flags, beast::Journal j)</div><div class="ttdoc">Gate a transaction based on static information.</div><div class="ttdef"><b>Definition:</b> <a href="applySteps_8cpp_source.html#l00634">applySteps.cpp:634</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a24280b80536d1afd09e24a75f4596922"><div class="ttname"><a href="namespaceripple.html#a24280b80536d1afd09e24a75f4596922">ripple::preflight</a></div><div class="ttdeci">PreflightResult preflight(Application &amp;app, Rules const &amp;rules, STTx const &amp;tx, ApplyFlags flags, beast::Journal j)</div><div class="ttdoc">Gate a transaction based on static information.</div><div class="ttdef"><b>Definition:</b> <a href="applySteps_8cpp_source.html#l00350">applySteps.cpp:350</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a355ec605d1063c4316b6f1480359da19"><div class="ttname"><a href="namespaceripple.html#a355ec605d1063c4316b6f1480359da19">ripple::generateKeyPair</a></div><div class="ttdeci">std::pair&lt; PublicKey, SecretKey &gt; generateKeyPair(KeyType type, Seed const &amp;seed)</div><div class="ttdoc">Generate a key pair deterministically.</div><div class="ttdef"><b>Definition:</b> <a href="SecretKey_8cpp_source.html#l00351">SecretKey.cpp:351</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a0cebcc733182bb6794d2d4067a29fb2a"><div class="ttname"><a href="namespaceripple.html#a0cebcc733182bb6794d2d4067a29fb2a">ripple::tfOneAssetWithdrawAll</a></div><div class="ttdeci">constexpr std::uint32_t tfOneAssetWithdrawAll</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00169">TxFlags.h:169</a></div></div>
 <div class="ttc" id="anamespaceripple_html_abc202169b736c0a032eb947f186b6e63"><div class="ttname"><a href="namespaceripple.html#abc202169b736c0a032eb947f186b6e63">ripple::tfLimitQuality</a></div><div class="ttdeci">constexpr std::uint32_t tfLimitQuality</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00104">TxFlags.h:104</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a33f8b6e68b5f63faf2e9755cc251563eaea5234685f43dcab142e132c0e7be2ce"><div class="ttname"><a href="namespaceripple.html#a33f8b6e68b5f63faf2e9755cc251563eaea5234685f43dcab142e132c0e7be2ce">ripple::ConsensusMode::observing</a></div><div class="ttdeci">@ observing</div><div class="ttdoc">We are observing peer positions, but not proposing our position.</div></div>
 <div class="ttc" id="anamespaceripple_html_a8383eb169324b23c0b4b49d6c2d2c877"><div class="ttname"><a href="namespaceripple.html#a8383eb169324b23c0b4b49d6c2d2c877">ripple::tfWithdrawAll</a></div><div class="ttdeci">constexpr std::uint32_t tfWithdrawAll</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00168">TxFlags.h:168</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a305632c3ccdbb4005fa2b019c51b5ac1"><div class="ttname"><a href="namespaceripple.html#a305632c3ccdbb4005fa2b019c51b5ac1">ripple::doApply</a></div><div class="ttdeci">std::pair&lt; TER, bool &gt; doApply(PreclaimResult const &amp;preclaimResult, Application &amp;app, OpenView &amp;view)</div><div class="ttdoc">Apply a prechecked transaction to an OpenView.</div><div class="ttdef"><b>Definition:</b> <a href="applySteps_8cpp_source.html#l00712">applySteps.cpp:712</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a305632c3ccdbb4005fa2b019c51b5ac1"><div class="ttname"><a href="namespaceripple.html#a305632c3ccdbb4005fa2b019c51b5ac1">ripple::doApply</a></div><div class="ttdeci">std::pair&lt; TER, bool &gt; doApply(PreclaimResult const &amp;preclaimResult, Application &amp;app, OpenView &amp;view)</div><div class="ttdoc">Apply a prechecked transaction to an OpenView.</div><div class="ttdef"><b>Definition:</b> <a href="applySteps_8cpp_source.html#l00428">applySteps.cpp:428</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a721db69f8d42aa1b4b6ad75df342d039"><div class="ttname"><a href="namespaceripple.html#a721db69f8d42aa1b4b6ad75df342d039">ripple::tfBurnable</a></div><div class="ttdeci">constexpr const std::uint32_t tfBurnable</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00128">TxFlags.h:128</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a7efcc6de2ed8aa0fa1f3e0a632f2f095"><div class="ttname"><a href="namespaceripple.html#a7efcc6de2ed8aa0fa1f3e0a632f2f095">ripple::tfPartialPayment</a></div><div class="ttdeci">constexpr std::uint32_t tfPartialPayment</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00103">TxFlags.h:103</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a614d8681c8dff84ac2257939751987c5"><div class="ttname"><a href="namespaceripple.html#a614d8681c8dff84ac2257939751987c5">ripple::calcAccountID</a></div><div class="ttdeci">AccountID calcAccountID(PublicKey const &amp;pk)</div><div class="ttdef"><b>Definition:</b> <a href="AccountID_8cpp_source.html#l00158">AccountID.cpp:158</a></div></div>
@@ -63628,7 +63600,7 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="ttc" id="anamespaceripple_html_aa0faf132b3ac4a7638ef97510875887a"><div class="ttname"><a href="namespaceripple.html#aa0faf132b3ac4a7638ef97510875887a">ripple::tfRequireAuth</a></div><div class="ttdeci">constexpr std::uint32_t tfRequireAuth</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00065">TxFlags.h:65</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a5bdaf22398ee3e51d3c2c3c694f917ec"><div class="ttname"><a href="namespaceripple.html#a5bdaf22398ee3e51d3c2c3c694f917ec">ripple::tfFillOrKill</a></div><div class="ttdeci">constexpr std::uint32_t tfFillOrKill</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00096">TxFlags.h:96</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a8a16d6f665a032453ec4cbfca01929b6a3e4d891a5df3d6d0d7dd9432a1bc6470"><div class="ttname"><a href="namespaceripple.html#a8a16d6f665a032453ec4cbfca01929b6a3e4d891a5df3d6d0d7dd9432a1bc6470">ripple::ManifestDisposition::accepted</a></div><div class="ttdeci">@ accepted</div><div class="ttdoc">Manifest is valid.</div></div>
-<div class="ttc" id="anamespaceripple_html_a5027a5209e954b9478fab70357963466"><div class="ttname"><a href="namespaceripple.html#a5027a5209e954b9478fab70357963466">ripple::preclaim</a></div><div class="ttdeci">PreclaimResult preclaim(PreflightResult const &amp;preflightResult, Application &amp;app, OpenView const &amp;view)</div><div class="ttdoc">Gate a transaction based on static ledger information.</div><div class="ttdef"><b>Definition:</b> <a href="applySteps_8cpp_source.html#l00654">applySteps.cpp:654</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a5027a5209e954b9478fab70357963466"><div class="ttname"><a href="namespaceripple.html#a5027a5209e954b9478fab70357963466">ripple::preclaim</a></div><div class="ttdeci">PreclaimResult preclaim(PreflightResult const &amp;preflightResult, Application &amp;app, OpenView const &amp;view)</div><div class="ttdoc">Gate a transaction based on static ledger information.</div><div class="ttdef"><b>Definition:</b> <a href="applySteps_8cpp_source.html#l00370">applySteps.cpp:370</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a50df1a645790d124729a6ed973edf519"><div class="ttname"><a href="namespaceripple.html#a50df1a645790d124729a6ed973edf519">ripple::generateSeed</a></div><div class="ttdeci">Seed generateSeed(std::string const &amp;passPhrase)</div><div class="ttdoc">Generate a seed deterministically.</div><div class="ttdef"><b>Definition:</b> <a href="Seed_8cpp_source.html#l00069">Seed.cpp:69</a></div></div>
 <div class="ttc" id="anamespaceripple_html_ad3bc01fc1c4e0e3191802ff3192c5493"><div class="ttname"><a href="namespaceripple.html#ad3bc01fc1c4e0e3191802ff3192c5493">ripple::tfSell</a></div><div class="ttdeci">constexpr std::uint32_t tfSell</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00097">TxFlags.h:97</a></div></div>
 <div class="ttc" id="anamespaceripple_html_aa3f065b75d23f712be19a1a953fe5b4a"><div class="ttname"><a href="namespaceripple.html#aa3f065b75d23f712be19a1a953fe5b4a">ripple::tfLPToken</a></div><div class="ttdeci">constexpr std::uint32_t tfLPToken</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00167">TxFlags.h:167</a></div></div>
