@@ -86,6 +86,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(LoadFeeTrack, ripple_core, ripple);
+BEAST_DEFINE_TESTSUITE(LoadFeeTrack, app, ripple);
 
 }  // namespace ripple

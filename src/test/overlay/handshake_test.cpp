@@ -58,7 +58,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(handshake, ripple_data, ripple);
+BEAST_DEFINE_TESTSUITE(handshake, overlay, ripple);
 
 }  // namespace test
 }  // namespace ripple

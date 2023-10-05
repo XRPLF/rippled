@@ -128,6 +128,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Zero, types, beast);
+BEAST_DEFINE_TESTSUITE(Zero, beast_, beast);
 
 }  // namespace beast

@@ -1888,7 +1888,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL(DatabaseShard, NodeStore, ripple);
+BEAST_DEFINE_TESTSUITE_MANUAL(DatabaseShard, nodestore, ripple);
 
 }  // namespace NodeStore
 }  // namespace ripple

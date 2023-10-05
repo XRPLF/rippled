@@ -6495,7 +6495,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(RPCCall, app, ripple);
+BEAST_DEFINE_TESTSUITE(RPCCall, rpc, ripple);
 
 }  // namespace test
 }  // namespace ripple

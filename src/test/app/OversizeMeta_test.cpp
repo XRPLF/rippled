@@ -185,7 +185,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(FindOversizeCross, tx, ripple, 50);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(FindOversizeCross, app, ripple, 50);
 
 }  // namespace test
 }  // namespace ripple

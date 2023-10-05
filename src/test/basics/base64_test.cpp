@@ -77,6 +77,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(base64, ripple_basics, ripple);
+BEAST_DEFINE_TESTSUITE(base64, basics, ripple);
 
 }  // namespace ripple

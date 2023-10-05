@@ -284,7 +284,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(DepositAuthorized, app, ripple);
+BEAST_DEFINE_TESTSUITE(DepositAuthorized, rpc, ripple);
 
 }  // namespace test
 }  // namespace ripple

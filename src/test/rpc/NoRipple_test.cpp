@@ -300,7 +300,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(NoRipple, app, ripple);
+BEAST_DEFINE_TESTSUITE(NoRipple, rpc, ripple);
 
 }  // namespace test
 }  // namespace ripple

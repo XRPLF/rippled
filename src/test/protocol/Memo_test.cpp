@@ -118,6 +118,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Memo, ripple_data, ripple);
+BEAST_DEFINE_TESTSUITE(Memo, protocol, ripple);
 
 }  // namespace ripple

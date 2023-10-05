@@ -187,7 +187,7 @@ struct scope_test : beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(scope, ripple_basics, ripple);
+BEAST_DEFINE_TESTSUITE(scope, basics, ripple);
 
 }  // namespace test
 }  // namespace ripple

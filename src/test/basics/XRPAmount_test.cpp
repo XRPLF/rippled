@@ -340,6 +340,6 @@ run() override
 }
 ;
 
-BEAST_DEFINE_TESTSUITE(XRPAmount, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(XRPAmount, basics, ripple);
 
 }  // ripple

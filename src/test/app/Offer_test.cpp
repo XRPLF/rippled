@@ -5235,12 +5235,12 @@ class Offer_manual_test : public Offer0_test
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(Offer0, tx, ripple, 4);
-BEAST_DEFINE_TESTSUITE_PRIO(Offer1, tx, ripple, 4);
-BEAST_DEFINE_TESTSUITE_PRIO(Offer2, tx, ripple, 4);
-BEAST_DEFINE_TESTSUITE_PRIO(Offer3, tx, ripple, 4);
-BEAST_DEFINE_TESTSUITE_PRIO(Offer4, tx, ripple, 4);
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Offer_manual, tx, ripple, 20);
+BEAST_DEFINE_TESTSUITE_PRIO(Offer0, app, ripple, 4);
+BEAST_DEFINE_TESTSUITE_PRIO(Offer1, app, ripple, 4);
+BEAST_DEFINE_TESTSUITE_PRIO(Offer2, app, ripple, 4);
+BEAST_DEFINE_TESTSUITE_PRIO(Offer3, app, ripple, 4);
+BEAST_DEFINE_TESTSUITE_PRIO(Offer4, app, ripple, 4);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Offer_manual, app, ripple, 20);
 
 }  // namespace test
 }  // namespace ripple

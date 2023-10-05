@@ -369,12 +369,12 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(NoRippleCheck, app, ripple);
+BEAST_DEFINE_TESTSUITE(NoRippleCheck, rpc, ripple);
 
 // These tests that deal with limit amounts are slow because of the
 // offer/account setup, so making them manual -- the additional coverage
 // provided by them is minimal
 
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(NoRippleCheckLimits, app, ripple, 1);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(NoRippleCheckLimits, rpc, ripple, 1);
 
 }  // namespace ripple

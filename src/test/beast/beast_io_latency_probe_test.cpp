@@ -240,4 +240,4 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(io_latency_probe, asio, beast);
+BEAST_DEFINE_TESTSUITE(io_latency_probe, beast_, beast);

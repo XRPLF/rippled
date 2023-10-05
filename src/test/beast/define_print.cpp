@@ -45,7 +45,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL(print, unit_test, beast);
+BEAST_DEFINE_TESTSUITE_MANUAL(print, beast_, beast);
 
 }  // namespace unit_test
 }  // namespace beast

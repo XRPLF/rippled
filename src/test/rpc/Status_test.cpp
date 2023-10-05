@@ -218,7 +218,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(fillJson, Status, RPC);
+BEAST_DEFINE_TESTSUITE(fillJson, rpc, RPC);
 
 }  // namespace RPC
 }  // namespace ripple
