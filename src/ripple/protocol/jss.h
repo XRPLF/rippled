@@ -199,7 +199,6 @@ JSS(balance);                     // out: AccountLines
 JSS(balances);                    // out: GatewayBalances
 JSS(base);                        // out: LogLevel
 JSS(base_fee);                    // out: NetworkOPs
-JSS(base_fee_xrp);                // out: NetworkOPs
 JSS(bids);                        // out: Subscribe
 JSS(binary);                      // in: AccountTX, LedgerEntry,
                                   //     AccountTxOld, Tx LedgerData
@@ -555,9 +554,7 @@ JSS(request);               // RPC
 JSS(requested);             // out: Manifest
 JSS(reservations);          // out: Reservations
 JSS(reserve_base);          // out: NetworkOPs
-JSS(reserve_base_xrp);      // out: NetworkOPs
 JSS(reserve_inc);           // out: NetworkOPs
-JSS(reserve_inc_xrp);       // out: NetworkOPs
 JSS(response);              // websocket
 JSS(result);                // RPC
 JSS(ripple_lines);          // out: NetworkOPs
@@ -618,7 +615,6 @@ JSS(subcommand);            // in: PathFind
 JSS(success);               // rpc
 JSS(supported);             // out: AmendmentTableImpl
 JSS(sync_mode);             // in: Submit
-JSS(system_time_offset);    // out: NetworkOPs
 JSS(tag);                   // out: Peers
 JSS(taker);                 // in: Subscribe, BookOffers
 JSS(taker_gets);            // in: Subscribe, Unsubscribe, BookOffers

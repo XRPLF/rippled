@@ -2602,22 +2602,14 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
         l[jss::seq] = Json::UInt(lpClosed->info().seq);
         l[jss::hash] = to_string(lpClosed->info().hash);
 
-        if (!human)
-        {
-            l[jss::base_fee] = baseFee.jsonClipped();
-            l[jss::reserve_base] =
-                lpClosed->fees().accountReserve(0).jsonClipped();
-            l[jss::reserve_inc] = lpClosed->fees().increment.jsonClipped();
-            l[jss::close_time] = Json::Value::UInt(
-                lpClosed->info().closeTime.time_since_epoch().count());
-        }
-        else
-        {
-            l[jss::base_fee_xrp] = baseFee.decimalXRP();
-            l[jss::reserve_base_xrp] =
-                lpClosed->fees().accountReserve(0).decimalXRP();
-            l[jss::reserve_inc_xrp] = lpClosed->fees().increment.decimalXRP();
+        l[jss::base_fee] = baseFee.jsonClipped();
+        l[jss::reserve_base] = lpClosed->fees().accountReserve(0).jsonClipped();
+        l[jss::reserve_inc] = lpClosed->fees().increment.jsonClipped();
+        l[jss::close_time] = Json::Value::UInt(
+            lpClosed->info().closeTime.time_since_epoch().count());
 
+        if (human)
+        {
             if (auto const closeOffset = app_.timeKeeper().closeOffset();
                 std::abs(closeOffset.count()) >= 60)
                 l[jss::close_time_offset] =
