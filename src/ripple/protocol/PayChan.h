@@ -38,6 +38,32 @@ serializePayChanAuthorization(
     msg.add64(amt.drops());
 }
 
+inline void
+serializePayChanAuthorization(
+    Serializer& msg,
+    uint256 const& key,
+    IOUAmount const& amt,
+    Currency const& cur,
+    AccountID const& iss)
+{
+    msg.add32(HashPrefix::paymentChannelClaim);
+    msg.addBitString(key);
+    if (amt == beast::zero)
+        msg.add64(STAmount::cNotNative);
+    else if (amt.signum() == -1)  // 512 = not native
+        msg.add64(
+            amt.mantissa() |
+            (static_cast<std::uint64_t>(amt.exponent() + 512 + 97)
+             << (64 - 10)));
+    else  // 256 = positive
+        msg.add64(
+            amt.mantissa() |
+            (static_cast<std::uint64_t>(amt.exponent() + 512 + 256 + 97)
+             << (64 - 10)));
+    msg.addBitString(cur);
+    msg.addBitString(iss);
+}
+
 }  // namespace ripple
 
 #endif

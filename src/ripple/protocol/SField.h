@@ -405,6 +405,7 @@ extern SF_UINT32 const sfMintedNFTokens;
 extern SF_UINT32 const sfBurnedNFTokens;
 extern SF_UINT32 const sfHookStateCount;
 extern SF_UINT32 const sfEmitGeneration;
+extern SF_UINT32 const sfLockCount;
 extern SF_UINT32 const sfVoteWeight;
 extern SF_UINT32 const sfFirstNFTokenSequence;
 
@@ -487,6 +488,7 @@ extern SF_AMOUNT const sfHighLimit;
 extern SF_AMOUNT const sfFee;
 extern SF_AMOUNT const sfSendMax;
 extern SF_AMOUNT const sfDeliverMin;
+extern SF_AMOUNT const sfLockedBalance;
 extern SF_AMOUNT const sfAmount2;
 extern SF_AMOUNT const sfEPrice;
 extern SF_AMOUNT const sfBidMin;

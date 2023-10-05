@@ -107,6 +107,8 @@ LedgerFormats::LedgerFormats()
             {sfHighNode,             soeOPTIONAL},
             {sfHighQualityIn,        soeOPTIONAL},
             {sfHighQualityOut,       soeOPTIONAL},
+            {sfLockedBalance,        soeOPTIONAL},
+            {sfLockCount,            soeOPTIONAL},
         },
         commonFields);
 
@@ -116,15 +118,16 @@ LedgerFormats::LedgerFormats()
             {sfAccount,              soeREQUIRED},
             {sfDestination,          soeREQUIRED},
             {sfAmount,               soeREQUIRED},
+            {sfTransferRate,         soeOPTIONAL},
             {sfCondition,            soeOPTIONAL},
             {sfCancelAfter,          soeOPTIONAL},
             {sfFinishAfter,          soeOPTIONAL},
             {sfSourceTag,            soeOPTIONAL},
             {sfDestinationTag,       soeOPTIONAL},
+            {sfDestinationNode,      soeOPTIONAL},
             {sfOwnerNode,            soeREQUIRED},
             {sfPreviousTxnID,        soeREQUIRED},
             {sfPreviousTxnLgrSeq,    soeREQUIRED},
-            {sfDestinationNode,      soeOPTIONAL},
         },
         commonFields);
 
@@ -194,14 +197,15 @@ LedgerFormats::LedgerFormats()
             {sfBalance,              soeREQUIRED},
             {sfPublicKey,            soeREQUIRED},
             {sfSettleDelay,          soeREQUIRED},
+            {sfTransferRate,         soeOPTIONAL},
             {sfExpiration,           soeOPTIONAL},
             {sfCancelAfter,          soeOPTIONAL},
             {sfSourceTag,            soeOPTIONAL},
             {sfDestinationTag,       soeOPTIONAL},
+            {sfDestinationNode,      soeOPTIONAL},
             {sfOwnerNode,            soeREQUIRED},
             {sfPreviousTxnID,        soeREQUIRED},
             {sfPreviousTxnLgrSeq,    soeREQUIRED},
-            {sfDestinationNode,      soeOPTIONAL},
         },
         commonFields);
 

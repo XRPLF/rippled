@@ -38,7 +38,7 @@ addChannel(Json::Value& jsonLines, SLE const& line)
     jDst[jss::channel_id] = to_string(line.key());
     jDst[jss::account] = to_string(line[sfAccount]);
     jDst[jss::destination_account] = to_string(line[sfDestination]);
-    jDst[jss::amount] = line[sfAmount].getText();
+    line[sfAmount].setJson(jDst[jss::amount]);
     jDst[jss::balance] = line[sfBalance].getText();
     if (publicKeyType(line[sfPublicKey]))
     {
@@ -161,12 +161,17 @@ doAccountChannels(RPC::JsonContext& context)
             accountID,
             startAfter,
             startHint,
-            limit + 1,
+            limit,
             [&visitData, &accountID, &count, &limit, &marker, &nextHint](
                 std::shared_ptr<SLE const> const& sleCur) {
                 if (!sleCur)
                 {
                     assert(false);
+                    return false;
+                }
+
+                if (sleCur->getType() != ltPAYCHAN)
+                {
                     return false;
                 }
 
@@ -176,10 +181,10 @@ doAccountChannels(RPC::JsonContext& context)
                     nextHint = RPC::getStartHint(sleCur, visitData.accountID);
                 }
 
-                if (count <= limit && sleCur->getType() == ltPAYCHAN &&
-                    (*sleCur)[sfAccount] == accountID &&
+                if (count <= limit && (*sleCur)[sfAccount] == accountID &&
                     (!visitData.raDstAccount ||
                      *visitData.raDstAccount == (*sleCur)[sfDestination]))
+
                 {
                     visitData.items.emplace_back(sleCur);
                 }
@@ -193,7 +198,7 @@ doAccountChannels(RPC::JsonContext& context)
     // Both conditions need to be checked because marker is set on the limit-th
     // item, but if there is no item on the limit + 1 iteration, then there is
     // no need to return a marker.
-    if (count == limit + 1 && marker)
+    if (count == limit && marker)
     {
         result[jss::limit] = limit;
         result[jss::marker] =

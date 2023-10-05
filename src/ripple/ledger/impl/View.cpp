@@ -257,6 +257,29 @@ accountHolds(
             // Put balance in account terms.
             amount.negate();
         }
+
+        // If tokens can be escrowed then they can be locked in the trustline
+        // which means we must never spend them until the escrow is released.
+        if (view.rules().enabled(featurePaychanAndEscrowForTokens) &&
+            sle->isFieldPresent(sfLockedBalance))
+        {
+            STAmount const lockedBalance = sle->getFieldAmount(sfLockedBalance);
+            STAmount const spendableBalance =
+                amount - (account > issuer ? -lockedBalance : lockedBalance);
+
+            // RH NOTE: this is defensively programmed, it should never fire
+            // if something bad does happen the trustline acts as a frozen line.
+            if (spendableBalance < beast::zero || spendableBalance > amount)
+            {
+                JLOG(j.error())
+                    << "SpendableBalance has illegal value in accountHolds "
+                    << spendableBalance;
+                amount.clear(Issue{currency, issuer});
+            }
+            else
+                amount = spendableBalance;
+        }
+
         amount.setIssuer(issuer);
     }
     JLOG(j.trace()) << "accountHolds:"
@@ -904,6 +927,59 @@ trustDelete(
     view.erase(sleRippleState);
 
     return tesSUCCESS;
+}
+
+bool
+isTrustDefault(
+    std::shared_ptr<SLE> const& acc,
+    std::shared_ptr<SLE> const& line)
+{
+    assert(acc && line);
+
+    uint32_t const tlFlags = line->getFieldU32(sfFlags);
+
+    AccountID const highAccID =
+        line->getFieldAmount(sfHighLimit).issue().account;
+    AccountID const lowAccID = line->getFieldAmount(sfLowLimit).issue().account;
+
+    AccountID const accID = acc->getAccountID(sfAccount);
+
+    assert(accID == highAccID || accID == lowAccID);
+
+    bool const high = accID == highAccID;
+
+    uint32_t const acFlags = line->getFieldU32(sfFlags);
+
+    const auto fNoRipple{high ? lsfHighNoRipple : lsfLowNoRipple};
+    const auto fFreeze{high ? lsfHighFreeze : lsfLowFreeze};
+
+    if (tlFlags & fFreeze)
+        return false;
+
+    if ((acFlags & lsfDefaultRipple) && (tlFlags & fNoRipple))
+        return false;
+
+    if (line->getFieldAmount(sfBalance) != beast::zero)
+        return false;
+
+    if (line->isFieldPresent(sfLockedBalance))
+        return false;
+
+    if (line->getFieldAmount(high ? sfHighLimit : sfLowLimit) != beast::zero)
+        return false;
+
+    uint32_t const qualityIn =
+        line->getFieldU32(high ? sfHighQualityIn : sfLowQualityIn);
+    uint32_t const qualityOut =
+        line->getFieldU32(high ? sfHighQualityOut : sfLowQualityOut);
+
+    if (qualityIn && qualityIn != QUALITY_ONE)
+        return false;
+
+    if (qualityOut && qualityOut != QUALITY_ONE)
+        return false;
+
+    return true;
 }
 
 TER

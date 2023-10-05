@@ -77,6 +77,12 @@ isXRP(Currency const& c)
     return c == beast::zero;
 }
 
+inline bool
+isFakeXRP(Currency const& c)
+{
+    return c == badCurrency();
+}
+
 /** Returns "", "XRP", or three letter ISO code. */
 std::string
 to_string(Currency const& c);
