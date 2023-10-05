@@ -140,7 +140,20 @@ SetTrust::preclaim(PreclaimContext const& ctx)
             return tecNO_DST;
 
         if (sleDst->getFlags() & lsfDisallowIncomingTrustline)
-            return tecNO_PERMISSION;
+        {
+            // The original implementation of featureDisallowIncoming was
+            // too restrictive.  If
+            //   o fixDisallowIncomingV1 is enabled and
+            //   o The trust line already exists
+            // Then allow the TrustSet.
+            if (ctx.view.rules().enabled(fixDisallowIncomingV1) &&
+                ctx.view.exists(keylet::line(id, uDstAccountID, currency)))
+            {
+                // pass
+            }
+            else
+                return tecNO_PERMISSION;
+        }
     }
 
     // If destination is AMM and the trustline doesn't exist then only
