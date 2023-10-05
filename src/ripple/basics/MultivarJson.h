@@ -32,32 +32,11 @@ struct MultivarJson
 {
     std::array<Json::Value, size> val;
 
-    Json::Value&
-    operator[](std::size_t i)
-    {
-        return val[i];
-    }
-
-    Json::Value const&
-    operator[](std::size_t i) const
-    {
-        return val[i];
-    }
-
     Json::Value const&
     select(auto selector) const
     {
         static_assert(std::is_same_v<decltype(selector()), std::size_t>);
         return val[selector()];
-    }
-
-    static MultivarJson
-    fill(Json::Value const& v)
-    {
-        MultivarJson ret;
-        for (auto& a : ret.val)
-            a = v;
-        return ret;
     }
 
     void

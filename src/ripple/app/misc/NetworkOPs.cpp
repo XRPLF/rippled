@@ -601,10 +601,12 @@ private:
 
     Json::Value
     transJson(
-        const STTx& transaction,
+        std::shared_ptr<STTx const> const& transaction,
         TER result,
+        std::shared_ptr<ReadView const> const& ledger,
         bool validated,
-        std::shared_ptr<ReadView const> const& ledger);
+        std::optional<std::reference_wrapper<TxMeta const>> meta,
+        int apiVersion);
 
     void
     pubValidatedTransaction(
@@ -2746,12 +2748,9 @@ NetworkOPsImp::pubProposedTransaction(
     std::shared_ptr<STTx const> const& transaction,
     TER result)
 {
-    Json::Value jvSeed = transJson(*transaction, result, false, ledger);
-    MultiApiJson jvObj = MultiApiJson::fill(jvSeed);
-    RPC::insertDeliverMax(
-        jvObj[0][jss::transaction], transaction->getTxnType(), 1);
-    RPC::insertDeliverMax(
-        jvObj[1][jss::transaction], transaction->getTxnType(), 2);
+    MultiApiJson jvObj(
+        {transJson(transaction, result, ledger, false, std::nullopt, 1),
+         transJson(transaction, result, ledger, false, std::nullopt, 2)});
 
     {
         std::lock_guard sl(mSubLock);
@@ -3091,10 +3090,12 @@ NetworkOPsImp::getLocalTxCount()
 // transactions.
 Json::Value
 NetworkOPsImp::transJson(
-    const STTx& transaction,
+    std::shared_ptr<STTx const> const& transaction,
     TER result,
+    std::shared_ptr<ReadView const> const& ledger,
     bool validated,
-    std::shared_ptr<ReadView const> const& ledger)
+    std::optional<std::reference_wrapper<TxMeta const>> meta,
+    int apiVersion)
 {
     Json::Value jvObj(Json::objectValue);
     std::string sToken;
@@ -3103,7 +3104,16 @@ NetworkOPsImp::transJson(
     transResultInfo(result, sToken, sHuman);
 
     jvObj[jss::type] = "transaction";
-    jvObj[jss::transaction] = transaction.getJson(JsonOptions::none);
+    jvObj[jss::transaction] = transaction->getJson(JsonOptions::none);
+    RPC::insertDeliverMax(
+        jvObj[jss::transaction], transaction->getTxnType(), apiVersion);
+
+    if (meta)
+    {
+        jvObj[jss::meta] = meta->get().getJson(JsonOptions::none);
+        RPC::insertDeliveredAmount(
+            jvObj[jss::meta], *ledger, transaction, meta->get());
+    }
 
     if (validated)
     {
@@ -3126,10 +3136,10 @@ NetworkOPsImp::transJson(
     jvObj[jss::engine_result_code] = result;
     jvObj[jss::engine_result_message] = sHuman;
 
-    if (transaction.getTxnType() == ttOFFER_CREATE)
+    if (transaction->getTxnType() == ttOFFER_CREATE)
     {
-        auto const account = transaction.getAccountID(sfAccount);
-        auto const amount = transaction.getFieldAmount(sfTakerGets);
+        auto const account = transaction->getAccountID(sfAccount);
+        auto const amount = transaction->getFieldAmount(sfTakerGets);
 
         // If the offer create is not self funded then add the owner balance
         if (account != amount.issue().account)
@@ -3155,19 +3165,12 @@ NetworkOPsImp::pubValidatedTransaction(
 {
     auto const& stTxn = transaction.getTxn();
 
-    Json::Value jvSeed =
-        transJson(*stTxn, transaction.getResult(), true, ledger);
-
-    {
-        auto const& meta = transaction.getMeta();
-        jvSeed[jss::meta] = meta.getJson(JsonOptions::none);
-        RPC::insertDeliveredAmount(jvSeed[jss::meta], *ledger, stTxn, meta);
-    }
-
     // Create two different Json objects, for different API versions
-    MultiApiJson jvObj = MultiApiJson::fill(jvSeed);
-    RPC::insertDeliverMax(jvObj[0][jss::transaction], stTxn->getTxnType(), 1);
-    RPC::insertDeliverMax(jvObj[1][jss::transaction], stTxn->getTxnType(), 2);
+    auto const metaRef = std::ref(transaction.getMeta());
+    auto const trResult = transaction.getResult();
+    MultiApiJson jvObj(
+        {transJson(stTxn, trResult, ledger, true, metaRef, 1),
+         transJson(stTxn, trResult, ledger, true, metaRef, 2)});
 
     {
         std::lock_guard sl(mSubLock);
@@ -3309,22 +3312,12 @@ NetworkOPsImp::pubAccountTransaction(
     {
         auto const& stTxn = transaction.getTxn();
 
-        Json::Value jvSeed =
-            transJson(*stTxn, transaction.getResult(), true, ledger);
-
-        {
-            auto const& meta = transaction.getMeta();
-
-            jvSeed[jss::meta] = meta.getJson(JsonOptions::none);
-            RPC::insertDeliveredAmount(jvSeed[jss::meta], *ledger, stTxn, meta);
-        }
-
         // Create two different Json objects, for different API versions
-        MultiApiJson jvObj = MultiApiJson::fill(jvSeed);
-        RPC::insertDeliverMax(
-            jvObj[0][jss::transaction], stTxn->getTxnType(), 1);
-        RPC::insertDeliverMax(
-            jvObj[1][jss::transaction], stTxn->getTxnType(), 2);
+        auto const metaRef = std::ref(transaction.getMeta());
+        auto const trResult = transaction.getResult();
+        MultiApiJson jvObj(
+            {transJson(stTxn, trResult, ledger, true, metaRef, 1),
+             transJson(stTxn, trResult, ledger, true, metaRef, 2)});
 
         for (InfoSub::ref isrListener : notify)
         {
@@ -3336,7 +3329,8 @@ NetworkOPsImp::pubAccountTransaction(
         if (last)
             jvObj.set(jss::account_history_boundary, true);
 
-        assert(!jvObj[0].isMember(jss::account_history_tx_stream));
+        assert(!jvObj.val[0].isMember(jss::account_history_tx_stream));
+        assert(!jvObj.val[1].isMember(jss::account_history_tx_stream));
         for (auto& info : accountHistoryNotify)
         {
             auto& index = info.index_;
@@ -3402,18 +3396,19 @@ NetworkOPsImp::pubProposedAccountTransaction(
 
     if (!notify.empty() || !accountHistoryNotify.empty())
     {
-        Json::Value jvSeed = transJson(*tx, result, false, ledger);
-
         // Create two different Json objects, for different API versions
-        MultiApiJson jvObj = MultiApiJson::fill(jvSeed);
-        RPC::insertDeliverMax(jvObj[0][jss::transaction], tx->getTxnType(), 1);
-        RPC::insertDeliverMax(jvObj[1][jss::transaction], tx->getTxnType(), 2);
+        MultiApiJson jvObj({
+            transJson(tx, result, ledger, false, std::nullopt, 1),
+            transJson(tx, result, ledger, false, std::nullopt, 2),
+        });
+
         for (InfoSub::ref isrListener : notify)
             isrListener->send(
                 jvObj.select(apiVersionSelector(isrListener->getApiVersion())),
                 true);
 
-        assert(!jvObj.isMember(jss::account_history_tx_stream));
+        assert(!jvObj.val[0].isMember(jss::account_history_tx_stream));
+        assert(!jvObj.val[1].isMember(jss::account_history_tx_stream));
         for (auto& info : accountHistoryNotify)
         {
             auto& index = info.index_;
@@ -3800,29 +3795,19 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                             return;
                         }
 
-                        Json::Value jvSeed = transJson(
-                            *stTxn, meta->getResultTER(), true, curTxLedger);
-                        jvSeed[jss::meta] = meta->getJson(JsonOptions::none);
-                        jvSeed[jss::account_history_tx_index] = txHistoryIndex;
+                        auto const mRef = std::ref(*meta);
+                        auto const trR = meta->getResultTER();
+                        MultiApiJson jvTx(
+                            {transJson(stTxn, trR, curTxLedger, true, mRef, 1),
+                             transJson(
+                                 stTxn, trR, curTxLedger, true, mRef, 2)});
+
+                        jvTx.set(jss::account_history_tx_index, txHistoryIndex);
                         txHistoryIndex -= 1;
 
                         if (i + 1 == num_txns ||
                             txns[i + 1].first->getLedger() != tx->getLedger())
-                            jvSeed[jss::account_history_boundary] = true;
-
-                        RPC::insertDeliveredAmount(
-                            jvSeed[jss::meta], *curTxLedger, stTxn, *meta);
-
-                        // Create two Json objects, for different API versions
-                        MultiApiJson jvTx = MultiApiJson::fill(jvSeed);
-                        RPC::insertDeliverMax(
-                            jvTx.val[0][jss::transaction],
-                            stTxn->getTxnType(),
-                            1);
-                        RPC::insertDeliverMax(
-                            jvTx.val[1][jss::transaction],
-                            stTxn->getTxnType(),
-                            2);
+                            jvTx.set(jss::account_history_boundary, true);
 
                         if (isFirstTx(tx, meta))
                         {
