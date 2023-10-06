@@ -53,7 +53,7 @@ struct DID_test : public beast::unit_test::suite
     void
     testEnabled(FeatureBitset features)
     {
-        testcase("Enabled");
+        testcase("featureDID Enabled");
 
         using namespace jtx;
         // If the DID amendment is not enabled, you should not be able
@@ -76,7 +76,7 @@ struct DID_test : public beast::unit_test::suite
     testAccountReserve(FeatureBitset features)
     {
         // Verify that the reserve behaves as expected for minting.
-        testcase("Account reserve");
+        testcase("DID Account Reserve");
 
         using namespace test::jtx;
 
@@ -125,7 +125,7 @@ struct DID_test : public beast::unit_test::suite
     void
     testSetInvalid(FeatureBitset features)
     {
-        testcase("Invalid Set");
+        testcase("Invalid DIDSet");
 
         using namespace jtx;
         using namespace std::chrono;
@@ -196,7 +196,7 @@ struct DID_test : public beast::unit_test::suite
     void
     testDeleteInvalid(FeatureBitset features)
     {
-        testcase("Invalid Delete");
+        testcase("Invalid DIDDelete");
 
         using namespace jtx;
         using namespace std::chrono;
@@ -227,7 +227,7 @@ struct DID_test : public beast::unit_test::suite
     void
     testSetValidInitial(FeatureBitset features)
     {
-        testcase("Valid Initial Set");
+        testcase("Valid Initial DIDSet");
 
         using namespace jtx;
         using namespace std::chrono;
@@ -276,7 +276,7 @@ struct DID_test : public beast::unit_test::suite
     void
     testSetModify(FeatureBitset features)
     {
-        testcase("Modify DID with Set");
+        testcase("Modify DID with DIDSet");
 
         using namespace jtx;
         using namespace std::chrono;
