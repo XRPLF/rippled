@@ -173,7 +173,7 @@ checkPayment(
         if (tx_json.isMember(jss::Amount))
             return RPC::make_error(
                 rpcINVALID_PARAMS,
-                "Cannot specify both 'Amount' and 'DeliverMax`");
+                "Cannot specify both 'Amount' and 'DeliverMax'");
 
         tx_json[jss::Amount] = tx_json[jss::DeliverMax];
         tx_json.removeMember(jss::DeliverMax);
