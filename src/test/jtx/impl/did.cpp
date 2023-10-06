@@ -19,7 +19,7 @@
 
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/protocol/jss.h>
-#include <test/jtx/DID.h>
+#include <test/jtx/did.h>
 
 namespace ripple {
 namespace test {

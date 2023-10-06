@@ -24,7 +24,6 @@
 
 #include <ripple/json/to_string.h>
 #include <test/jtx/Account.h>
-#include <test/jtx/DID.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/Env_ss.h>
 #include <test/jtx/JTx.h>
@@ -36,6 +35,7 @@
 #include <test/jtx/check.h>
 #include <test/jtx/delivermin.h>
 #include <test/jtx/deposit.h>
+#include <test/jtx/did.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/invoice_id.h>
