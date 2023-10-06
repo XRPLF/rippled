@@ -92,6 +92,43 @@ DIDSet::preclaim(PreclaimContext const& ctx)
 }
 
 TER
+addSLE(
+    ApplyContext& ctx,
+    std::shared_ptr<SLE> const& sle,
+    AccountID const& owner)
+{
+    auto const sleAccount = ctx.view().peek(keylet::account(owner));
+    if (!sleAccount)
+        return tefINTERNAL;
+
+    // Check reserve availability for new object creation
+    {
+        auto const balance = STAmount((*sleAccount)[sfBalance]).xrp();
+        auto const reserve =
+            ctx.view().fees().accountReserve((*sleAccount)[sfOwnerCount] + 1);
+
+        if (balance < reserve)
+            return tecINSUFFICIENT_RESERVE;
+    }
+
+    // Add ledger object to ledger
+    ctx.view().insert(sle);
+
+    // Add ledger object to owner's page
+    {
+        auto page = ctx.view().dirInsert(
+            keylet::ownerDir(owner), sle->key(), describeOwnerDir(owner));
+        if (!page)
+            return tecDIR_FULL;
+        (*sle)[sfOwnerNode] = *page;
+    }
+    adjustOwnerCount(ctx.view(), sleAccount, 1, ctx.journal);
+    ctx.view().update(sleAccount);
+
+    return tesSUCCESS;
+}
+
+TER
 DIDSet::doApply()
 {
     // Edit ledger object if it already exists
@@ -137,7 +174,7 @@ DIDSet::doApply()
     set(sfDIDDocument);
     set(sfData);
 
-    return addSLE(ctx_.view(), sleDID, account_, ctx_.journal);
+    return addSLE(ctx_, sleDID, account_);
 }
 
 NotTEC
@@ -156,10 +193,46 @@ DIDDelete::preflight(PreflightContext const& ctx)
 }
 
 TER
+DIDDelete::deleteSLE(ApplyContext& ctx, Keylet sleKeylet, AccountID const owner)
+{
+    auto const sle = ctx.view().peek(sleKeylet);
+    if (!sle)
+        return tecNO_ENTRY;
+
+    return DIDDelete::deleteSLE(ctx.view(), sle, owner, ctx.journal);
+}
+
+TER
+DIDDelete::deleteSLE(
+    ApplyView& view,
+    std::shared_ptr<SLE> sle,
+    AccountID const owner,
+    beast::Journal j)
+{
+    // Remove object from owner directory
+    if (!view.dirRemove(
+            keylet::ownerDir(owner), (*sle)[sfOwnerNode], sle->key(), true))
+    {
+        JLOG(j.fatal()) << "Unable to delete DID Token from owner.";
+        return tefBAD_LEDGER;
+    }
+
+    auto const sleOwner = view.peek(keylet::account(owner));
+    if (!sleOwner)
+        return tecINTERNAL;
+
+    adjustOwnerCount(view, sleOwner, -1, j);
+    view.update(sleOwner);
+
+    // Remove object from ledger
+    view.erase(sle);
+    return tesSUCCESS;
+}
+
+TER
 DIDDelete::doApply()
 {
-    return deleteSLE(
-        ctx_.view(), keylet::did(account_), account_, ctx_.journal);
+    return deleteSLE(ctx_, keylet::did(account_), account_);
 }
 
 }  // namespace ripple
