@@ -35,10 +35,10 @@ namespace ripple {
 
     Decentralized Identifiers (DIDs) are a new type of identifier that enable
     verifiable, self-sovereign digital identity and are designed to be
-   compatible with any distributed ledger or network. This implementation
-   conforms to the requirements specified in the DID v1.0 specification
-   currently recommended by the W3C Credentials Community Group
-   (https://www.w3.org/TR/did-core/).
+    compatible with any distributed ledger or network. This implementation
+    conforms to the requirements specified in the DID v1.0 specification
+    currently recommended by the W3C Credentials Community Group
+    (https://www.w3.org/TR/did-core/).
 */
 
 //------------------------------------------------------------------------------
