@@ -855,6 +855,7 @@ if (tests)
     src/test/basics/join_test.cpp
     src/test/basics/mulDiv_test.cpp
     src/test/basics/tagged_integer_test.cpp
+    src/test/basics/MultivarJson_test.cpp
     #[===============================[
        test sources:
          subdir: beast

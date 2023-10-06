@@ -23,24 +23,27 @@
 #include <ripple/json/json_value.h>
 
 #include <array>
+#include <concepts>
 #include <cstdlib>
-#include <type_traits>
 
 namespace ripple {
-template <std::size_t size>
+template <std::size_t Size>
 struct MultivarJson
 {
-    std::array<Json::Value, size> val;
+    std::array<Json::Value, Size> val;
+    constexpr static std::size_t size = Size;
 
     Json::Value const&
-    select(auto selector) const
+    select(auto&& selector) const
+        requires std::same_as<std::size_t, decltype(selector())>
     {
-        static_assert(std::is_same_v<decltype(selector()), std::size_t>);
         return val[selector()];
     }
 
     void
-    set(const char* key, auto const& v)
+    set(const char* key,
+        auto const&
+            v) requires std::constructible_from<Json::Value, decltype(v)>
     {
         for (auto& a : this->val)
             a[key] = v;
