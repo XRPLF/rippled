@@ -143,7 +143,7 @@ removeDIDFromLedger(
     std::shared_ptr<SLE> const& sleDel,
     beast::Journal j)
 {
-    return DIDDelete::deleteSLE(view, sleDel, account, j);
+    return deleteSLE(view, sleDel, account, j);
 }
 
 // Return nullptr if the LedgerEntryType represents an obligation that can't

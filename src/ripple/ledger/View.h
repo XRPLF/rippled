@@ -20,6 +20,7 @@
 #ifndef RIPPLE_LEDGER_VIEW_H_INCLUDED
 #define RIPPLE_LEDGER_VIEW_H_INCLUDED
 
+#include <ripple/basics/Log.h>
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/core/Config.h>
 #include <ripple/ledger/ApplyView.h>
@@ -398,6 +399,33 @@ trustDelete(
 // [[nodiscard]] // nodiscard commented out so Flow, BookTip and others compile.
 TER
 offerDelete(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j);
+
+/**
+ * This is a helper function that adds a SLE to an owner's directory.
+ */
+TER
+addSLE(
+    ApplyView& view,
+    std::shared_ptr<SLE> const& sle,
+    AccountID const& owner,
+    beast::Journal j);
+
+/**
+ * This is a helper function that deletes a SLE from an owner's directory.
+ */
+TER
+deleteSLE(
+    ApplyView& view,
+    std::shared_ptr<SLE> const& sle,
+    AccountID const owner,
+    beast::Journal j);
+
+TER
+deleteSLE(
+    ApplyView& view,
+    Keylet keylet,
+    AccountID const owner,
+    beast::Journal j);
 
 //------------------------------------------------------------------------------
 
