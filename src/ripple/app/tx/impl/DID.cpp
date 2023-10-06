@@ -75,7 +75,7 @@ DIDSet::preflight(PreflightContext const& ctx)
 TER
 DIDSet::preclaim(PreclaimContext const& ctx)
 {
-    if (!ctx.view.read(keylet::did(ctx.tx[sfAccount])) &&
+    if (!ctx.view.exists(keylet::did(ctx.tx[sfAccount])) &&
         !ctx.tx.isFieldPresent(sfURI) && !ctx.tx.isFieldPresent(sfDIDDocument))
     {
         // Need either the URI or document if the account doesn't already have a
@@ -161,9 +161,8 @@ DIDSet::doApply()
     (*sleDID)[sfAccount] = account_;
 
     auto set = [&](auto const& sField) {
-        if (auto const field = ctx_.tx[~sField];
-            field.has_value() && !field->empty())
-            (*sleDID)[sField] = field.value();
+        if (auto const field = ctx_.tx[~sField]; field && !field->empty())
+            (*sleDID)[sField] = *field;
     };
 
     set(sfURI);
