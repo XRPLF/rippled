@@ -16,7 +16,11 @@ This version is supported by all `rippled` versions. At time of writing, it is t
 
 #### V1 account_info response
 
-In [the response to the `account_info` command](https://xrpl.org/account_info.html#response-format), there is `account_data` - which is supposed to be an `AccountRoot` object - and `signer_lists` is in this object. However, the docs say that `signer_lists` should be at the root level of the reponse - and this makes sense, since signer lists are not part of the AccountRoot object. (First reported in [xrpl-dev-portal#938](https://github.com/XRPLF/xrpl-dev-portal/issues/938).) Thanks to [rippled#3770](https://github.com/XRPLF/rippled/pull/3770), this field will be moved in `api_version: 2`, to the root level of the response.
+In [the response to the `account_info` command](https://xrpl.org/account_info.html#response-format), there is `account_data` - which is supposed to be an `AccountRoot` object - and `signer_lists` is returned in this object. However, the docs say that `signer_lists` should be at the root level of the reponse.
+
+It makes sense for `signer_lists` to be at the root level because signer lists are not part of the AccountRoot object. (First reported in [xrpl-dev-portal#938](https://github.com/XRPLF/xrpl-dev-portal/issues/938).)
+
+In `api_version: 2`, the `signer_lists` field [will be moved](#modifications-to-account_info-response-in-v2) to the root level of the account_info response. (https://github.com/XRPLF/rippled/pull/3770)
 
 #### server_info - network_id
 
@@ -94,6 +98,17 @@ Additions are intended to be non-breaking (because they are purely additive).
 - Added `NFTokenPages` to the `account_objects` RPC. (https://github.com/XRPLF/rippled/pull/4352)
 - Fixed: `marker` returned from the `account_lines` command would not work on subsequent commands. (https://github.com/XRPLF/rippled/pull/4361)
 
+## XRP Ledger version 1.10.0
+
+[Version 1.10.0](https://github.com/XRPLF/rippled/releases/tag/1.10.0)
+was released on Mar 14, 2023.
+
+### Breaking changes in 1.10
+
+- If the `XRPFees` feature is enabled, the `fee_ref` field will be
+  removed from the [ledger subscription stream](https://xrpl.org/subscribe.html#ledger-stream), because it will no longer
+  have any meaning.
+
 # In development
 
 Changes below this point are in development.
@@ -108,7 +123,7 @@ Currently (prior to the release of 2.0), it is available as a "beta" version, me
 1
 ```
 
-Since `api_version` 2 is in "beta", breaking changes can be made at any time.
+Since `api_version` 2 is in "beta", breaking changes to V2 can currently be made at any time.
 
 #### Modifications to account_info response in V2
 
