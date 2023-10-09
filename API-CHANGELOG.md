@@ -98,6 +98,17 @@ Additions are intended to be non-breaking (because they are purely additive).
 - Added `NFTokenPages` to the `account_objects` RPC. (https://github.com/XRPLF/rippled/pull/4352)
 - Fixed: `marker` returned from the `account_lines` command would not work on subsequent commands. (https://github.com/XRPLF/rippled/pull/4361)
 
+## XRP Ledger version 1.10.0
+
+[Version 1.10.0](https://github.com/XRPLF/rippled/releases/tag/1.10.0)
+was released on Mar 14, 2023.
+
+### Breaking changes in 1.10
+
+- If the `XRPFees` feature is enabled, the `fee_ref` field will be
+  removed from the [ledger subscription stream](https://xrpl.org/subscribe.html#ledger-stream), because it will no longer
+  have any meaning.
+
 # In development
 
 Changes below this point are in development.
