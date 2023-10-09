@@ -1035,7 +1035,7 @@ static constexpr TxnTestData txnTestArray[] = {
        "Missing field 'tx_json.Destination'.",
        "Missing field 'tx_json.Destination'."}}},
 
-    {"Missing 'Destination' in sign_for.",
+    {"Missing 'Destination' in sign_for, use DeliverMax",
      __LINE__,
      R"({
     "command": "doesnt_matter",
