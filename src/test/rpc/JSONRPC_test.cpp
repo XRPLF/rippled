@@ -1974,7 +1974,29 @@ static constexpr TxnTestData txnTestArray[] = {
        "Missing field 'account'.",
        "tx_json.Signers array may not be empty."}}},
 
-    {"Payment cannot specify both DeliverMax and Amount.",
+    {"Empty Signers array in submit_multisigned, use DeliverMax and Amount",
+     __LINE__,
+     R"({
+    "command": "submit_multisigned",
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "10000000",
+        "DeliverMax": "10000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Fee": 50,
+        "Sequence": 0,
+        "Signers": [
+        ],
+        "SigningPubKey": "",
+        "TransactionType": "Payment"
+    }
+})",
+     {{"Missing field 'secret'.",
+       "Missing field 'secret'.",
+       "Missing field 'account'.",
+       "tx_json.Signers array may not be empty."}}},
+
+    {"Payment cannot specify different DeliverMax and Amount.",
      __LINE__,
      R"({
     "command": "doesnt_matter",
@@ -1984,7 +2006,7 @@ static constexpr TxnTestData txnTestArray[] = {
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
         "Amount": "1000000000",
-        "DeliverMax": "1000000000",
+        "DeliverMax": "1000000020",
         "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
         "Fee": 50,
         "Sequence": 0,
