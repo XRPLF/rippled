@@ -1759,20 +1759,35 @@ Consensus<Adaptor>::updateOurPositions(bool const share)
     else
     {
         int neededWeight;
+        // It's possible to be at a close time impasse (described below), so
+        // keep track of whether this round has taken a long time.
+        bool stuck = false;
 
         if (convergePercent_ < parms.avMID_CONSENSUS_TIME)
+        {
             neededWeight = parms.avINIT_CONSENSUS_PCT;
+        }
         else if (convergePercent_ < parms.avLATE_CONSENSUS_TIME)
+        {
             neededWeight = parms.avMID_CONSENSUS_PCT;
+        }
         else if (convergePercent_ < parms.avSTUCK_CONSENSUS_TIME)
+        {
             neededWeight = parms.avLATE_CONSENSUS_PCT;
+        }
         else
+        {
             neededWeight = parms.avSTUCK_CONSENSUS_PCT;
+            stuck = true;
+        }
 
         int participants = currPeerPositions_.size();
         if (mode_.get() == ConsensusMode::proposing)
         {
-            ++closeTimeVotes[asCloseTime(result_->position.closeTime())];
+            // Validators need to choose their close time differently if
+            // consensus is taking too long, described below.
+            if (!stuck)
+                ++closeTimeVotes[asCloseTime(result_->position.closeTime())];
             ++participants;
         }
 
@@ -1787,47 +1802,89 @@ Consensus<Adaptor>::updateOurPositions(bool const share)
                         << " nw:" << neededWeight << " thrV:" << threshVote
                         << " thrC:" << threshConsensus;
 
-        // An impasse is possible unless a validator pretends to change
-        // its close time vote. Imagine 5 validators. 3 have positions
-        // for close time t1, and 2 with t2. That's an impasse because
-        // 75% will never be met. However, if one of the validators voting
-        // for t2 switches to t1, then that will be 80% and sufficient
-        // to break the impasse. It's also OK for those agreeing
-        // with the 3 to pretend to vote for the one with 2, because
-        // that will never exceed the threshold of 75%, even with as
-        // few as 3 validators. The most it can achieve is 2/3.
+        // Choose a close time and decide whether there is consensus for it.
+        //
+        // Close time is chosen based on the threshVote threshold
+        // calculated above. If a close time has votes equal to or greater than
+        // that threshold, then that is the best close time. If two
+        // close times are equal, then choose the greatest of them. Ensure
+        // that our close time then matches that which meets the criteria.
+        // But if no close time meet the criteria, make no changes.
+        //
+        // This is implemented slightly differently for validators vs
+        // non-validators. For non-validators, it is sufficient to merely
+        // count the close times from all peer positions to determine
+        // the best. Validators, however, risk putting the network into an
+        // impasse unless they are able to change their own position without
+        // first having counted it towards the close time totals.
+        //
+        // Here's how the impasse could occur:
+        // Imagine 5 validators. 3 have close time t1, and 2 have t2.
+        // As consensus time increases, the threshVote threshold also increases.
+        // Once threshVote exceeds 60%, no members of either set of validators
+        // will change their close times.
+        //
+        // Avoiding the impasse means that validators should not necessarily
+        // count their own close time towards the total until they know
+        // the most popular among their peers, and then change their vote
+        // to that of the most popular. In this case, the validators in set
+        // t2 from the example would have switched to close time t1 and ended
+        // the network impasse.
+        //
+        // Another wrinkle, however, is that too many position changes
+        // from validators also has a destabilizing affect. Consensus can
+        // take longer if peers have to keep re-calculating positions,
+        // and mistakes can be made if peers settle on the wrong position.
+        // Therefore, avoiding an impasse should also minimize the likelihood
+        // of gratuitous change of position.
+        //
+        // The solution for validators is to first track whether it's
+        // possible that the network is at an impasse based on how much
+        // time this current consensus round has taken. This is reflected
+        // in the "stuck" boolean. Once possibly stuck, validators do
+        // not use the threshVote threshold to decide whether to change their
+        // vote. Instead, they add their own close time vote in with
+        // those of their peers only after they discover the most popular,
+        // and the greatest of those if there is a tie. This solution avoids
+        // an impasse while minimizing gratuitous close time changes.
+        //
+        // Determining whether there is close time consensus is very simple
+        // in comparison: if votes for the best close time meet or exceed
+        // threshConsensus, then we have close time consensus. Otherwise, not.
+
+        // First, find the best close time with which to agree.
+        std::multimap<int, NetClock::time_point> ctVotesByCount;
         for (auto& [t, v] : closeTimeVotes)
+            ctVotesByCount.insert({v, t});
+        int maxVote = ctVotesByCount.rbegin()->first;
+        NetClock::time_point const& bestCtime = ctVotesByCount.rbegin()->second;
+
+        // If a validator and possibly at an impasse, switch to the best
+        // close time and record our vote for it. Otherwise, make sure to
+        // agree with the best close time only if the threshold is satisfied.
+        if (stuck && mode_.get() == ConsensusMode::proposing)
         {
-            if (adaptor_.validating() &&
-                t != asCloseTime(result_->position.closeTime()))
-            {
-                JLOG(j_.debug()) << "Others have voted for a close time "
-                                    "different than ours. Adding our vote "
-                                    "to this one in case it is necessary "
-                                    "to break an impasse.";
-                ++v;
-            }
-            JLOG(j_.debug())
-                << "CCTime: seq "
-                << static_cast<std::uint32_t>(previousLedger_.seq()) + 1 << ": "
-                << t.time_since_epoch().count() << " has " << v << ", "
-                << threshVote << " required";
-
-            if (v >= threshVote)
-            {
-                // A close time has enough votes for us to try to agree
-                consensusCloseTime = t;
-                threshVote = v;
-
-                if (threshVote >= threshConsensus)
-                {
-                    haveCloseTimeConsensus_ = true;
-                    // Make sure that the winning close time is the one
-                    // that propagates to the rest of the function.
-                    break;
-                }
-            }
+            ++maxVote;
+            consensusCloseTime = bestCtime;
+            JLOG(j_.info()) << "possibly at impasse, setting close time to " << bestCtime.time_since_epoch().count();
         }
+        else if (maxVote >= threshVote)
+        {
+            consensusCloseTime = bestCtime;
+        }
+
+        // We have consensus if the threshold is met.
+        if (maxVote >= threshConsensus)
+            haveCloseTimeConsensus_ = true;
+
+        JLOG(j_.debug())
+            << "CCTime: seq "
+            << static_cast<std::uint32_t>(previousLedger_.seq()) + 1 << ": "
+            << bestCtime.time_since_epoch().count() << " has " << maxVote << ", "
+            << threshVote << "is required for adopting new close time, "
+            << threshConsensus << "is required for close time consensus. "
+            << " close time consensus is "
+            << (haveCloseTimeConsensus_ ? "" : "not") << " met.";
 
         if (!haveCloseTimeConsensus_)
         {
