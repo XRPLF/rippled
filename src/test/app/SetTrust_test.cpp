@@ -275,6 +275,48 @@ public:
             BEAST_EXPECT(!(flags & lsfDisallowIncomingTrustline));
         }
 
+        // fixDisallowIncomingV1
+        {
+            for (bool const withFix : {true, false})
+            {
+                auto const amend = withFix
+                    ? features | disallowIncoming
+                    : (features | disallowIncoming) - fixDisallowIncomingV1;
+
+                Env env{*this, amend};
+                auto const dist = Account("dist");
+                auto const gw = Account("gw");
+                auto const USD = gw["USD"];
+                auto const distUSD = dist["USD"];
+
+                env.fund(XRP(1000), gw, dist);
+                env.close();
+
+                env(fset(gw, asfRequireAuth));
+                env.close();
+
+                env(fset(dist, asfDisallowIncomingTrustline));
+                env.close();
+
+                env(trust(dist, USD(10000)));
+                env.close();
+
+                // withFix: can set trustline
+                // withOutFix: cannot set trustline
+                auto const trustResult =
+                    withFix ? ter(tesSUCCESS) : ter(tecNO_PERMISSION);
+                env(trust(gw, distUSD(10000)),
+                    txflags(tfSetfAuth),
+                    trustResult);
+                env.close();
+
+                auto const txResult =
+                    withFix ? ter(tesSUCCESS) : ter(tecPATH_DRY);
+                env(pay(gw, dist, USD(1000)), txResult);
+                env.close();
+            }
+        }
+
         Env env{*this, features | disallowIncoming};
 
         auto const gw = Account{"gateway"};
