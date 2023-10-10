@@ -803,10 +803,8 @@ run(int argc, char** argv)
         if (vm.count("debug"))
             setDebugLogSink(logs->makeSink("Debug", beast::severities::kTrace));
 
-        auto timeKeeper = make_TimeKeeper(logs->journal("TimeKeeper"));
-
         auto app = make_Application(
-            std::move(config), std::move(logs), std::move(timeKeeper));
+            std::move(config), std::move(logs), std::make_unique<TimeKeeper>());
 
         if (!app->setup(vm))
             return -1;

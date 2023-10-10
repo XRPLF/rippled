@@ -206,14 +206,10 @@ parseIniFile(std::string const& strInput, const bool bTrim)
 IniFileSections::mapped_type*
 getIniFileSection(IniFileSections& secSource, std::string const& strSection)
 {
-    IniFileSections::iterator it;
-    IniFileSections::mapped_type* smtResult;
-    it = secSource.find(strSection);
-    if (it == secSource.end())
-        smtResult = nullptr;
-    else
-        smtResult = &(it->second);
-    return smtResult;
+    if (auto it = secSource.find(strSection); it != secSource.end())
+        return &(it->second);
+
+    return nullptr;
 }
 
 bool
@@ -223,22 +219,21 @@ getSingleSection(
     std::string& strValue,
     beast::Journal j)
 {
-    IniFileSections::mapped_type* pmtEntries =
-        getIniFileSection(secSource, strSection);
-    bool bSingle = pmtEntries && 1 == pmtEntries->size();
+    auto const pmtEntries = getIniFileSection(secSource, strSection);
 
-    if (bSingle)
+    if (pmtEntries && pmtEntries->size() == 1)
     {
         strValue = (*pmtEntries)[0];
-    }
-    else if (pmtEntries)
-    {
-        JLOG(j.warn()) << boost::str(
-            boost::format("Section [%s]: requires 1 line not %d lines.") %
-            strSection % pmtEntries->size());
+        return true;
     }
 
-    return bSingle;
+    if (pmtEntries)
+    {
+        JLOG(j.warn()) << "Section '" << strSection << "': requires 1 line not "
+                       << pmtEntries->size() << " lines.";
+    }
+
+    return false;
 }
 
 //------------------------------------------------------------------------------
@@ -460,9 +455,6 @@ Config::loadFromString(std::string const& fileContents)
 
     if (auto s = getIniFileSection(secConfig, SECTION_IPS_FIXED))
         IPS_FIXED = *s;
-
-    if (auto s = getIniFileSection(secConfig, SECTION_SNTP))
-        SNTP_SERVERS = *s;
 
     // if the user has specified ip:port then replace : with a space.
     {
