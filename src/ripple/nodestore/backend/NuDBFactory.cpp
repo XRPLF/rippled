@@ -266,7 +266,7 @@ public:
     void
     store(std::shared_ptr<NodeObject> const& no) override
     {
-        batch_.store(no);
+        batch_.store(no, j_);
     }
 
     void

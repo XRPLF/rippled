@@ -343,7 +343,7 @@ public:
     void
     store(std::shared_ptr<NodeObject> const& object) override
     {
-        m_batch.store(object);
+        m_batch.store(object, m_journal);
     }
 
     void

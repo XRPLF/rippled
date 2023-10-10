@@ -20,6 +20,7 @@
 #ifndef RIPPLE_NODESTORE_BATCHWRITER_H_INCLUDED
 #define RIPPLE_NODESTORE_BATCHWRITER_H_INCLUDED
 
+#include <ripple/basics/Log.h>
 #include <ripple/nodestore/Scheduler.h>
 #include <ripple/nodestore/Task.h>
 #include <ripple/nodestore/Types.h>
@@ -68,7 +69,7 @@ public:
         write the batch out.
     */
     void
-    store(std::shared_ptr<NodeObject> const& object);
+    store(std::shared_ptr<NodeObject> const& object, beast::Journal const& j);
 
     /** Get an estimate of the amount of writing I/O pending. */
     int
