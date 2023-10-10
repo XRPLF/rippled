@@ -1,7 +1,11 @@
 //------------------------------------------------------------------------------
 /*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    This file is part of Beast: https://github.com/vinniefalco/Beast
+    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
+
+    Portions of this file are from JUCE.
+    Copyright (c) 2013 - Raw Material Software Ltd.
+    Please visit http://www.juce.com
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,31 +21,31 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_NET_SNTPCLOCK_H_INCLUDED
-#define RIPPLE_NET_SNTPCLOCK_H_INCLUDED
+#ifndef BEAST_CORE_CURRENT_THREAD_NAME_H_INCLUDED
+#define BEAST_CORE_CURRENT_THREAD_NAME_H_INCLUDED
 
-#include <ripple/beast/clock/abstract_clock.h>
-#include <ripple/beast/utility/Journal.h>
-#include <chrono>
-#include <memory>
 #include <string>
-#include <vector>
+#include <string_view>
 
-namespace ripple {
+namespace beast {
 
-/** A clock based on system_clock and adjusted for SNTP. */
-class SNTPClock : public beast::abstract_clock<std::chrono::system_clock>
-{
-public:
-    virtual void
-    run(std::vector<std::string> const& servers) = 0;
+/** Changes the name of the caller thread.
+    Different OSes may place different length or content limits on this name.
+*/
+void
+setCurrentThreadName(std::string_view newThreadName);
 
-    virtual duration
-    offset() const = 0;
-};
+/** Returns the name of the caller thread.
 
-extern std::unique_ptr<SNTPClock> make_SNTPClock(beast::Journal);
+    The name returned is the name as set by a call to setCurrentThreadName().
+    If the thread name is set by an external force, then that name change
+    will not be reported.
 
-}  // namespace ripple
+    If no name has ever been set, then the empty string is returned.
+*/
+std::string
+getCurrentThreadName();
+
+}  // namespace beast
 
 #endif

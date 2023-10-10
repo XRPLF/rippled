@@ -24,6 +24,7 @@ add_library(xrpl::libxrpl ALIAS libxrpl)
 #]===============================]
 target_sources (xrpl_core PRIVATE
   src/ripple/beast/clock/basic_seconds_clock.cpp
+  src/ripple/beast/core/CurrentThreadName.cpp
   src/ripple/beast/core/SemanticVersion.cpp
   src/ripple/beast/hash/impl/xxhash.cpp
   src/ripple/beast/insight/impl/Collector.cpp
@@ -55,7 +56,6 @@ target_sources (xrpl_core PRIVATE
   src/ripple/basics/impl/Log.cpp
   src/ripple/basics/impl/Number.cpp
   src/ripple/basics/impl/StringUtilities.cpp
-  src/ripple/basics/impl/ThreadUtilities.cpp
   #[===============================[
     main sources:
       subdir: json
@@ -103,7 +103,9 @@ target_sources (xrpl_core PRIVATE
   src/ripple/protocol/impl/STObject.cpp
   src/ripple/protocol/impl/STParsedJSON.cpp
   src/ripple/protocol/impl/STPathSet.cpp
+  src/ripple/protocol/impl/STXChainBridge.cpp
   src/ripple/protocol/impl/STTx.cpp
+  src/ripple/protocol/impl/XChainAttestations.cpp
   src/ripple/protocol/impl/STValidation.cpp
   src/ripple/protocol/impl/STVar.cpp
   src/ripple/protocol/impl/STVector256.cpp
@@ -201,7 +203,6 @@ install (
     src/ripple/basics/tagged_integer.h
     src/ripple/basics/SubmitSync.h
     src/ripple/basics/ThreadSafetyAnalysis.h
-    src/ripple/basics/ThreadUtilities.h
     src/ripple/basics/ToString.h
     src/ripple/basics/UnorderedContainers.h
     src/ripple/basics/UptimeClock.h
@@ -243,6 +244,7 @@ install (
     src/ripple/protocol/Indexes.h
     src/ripple/protocol/InnerObjectFormats.h
     src/ripple/protocol/Issue.h
+    src/ripple/protocol/json_get_or_throw.h
     src/ripple/protocol/KeyType.h
     src/ripple/protocol/Keylet.h
     src/ripple/protocol/KnownFormats.h
@@ -273,6 +275,8 @@ install (
     src/ripple/protocol/STParsedJSON.h
     src/ripple/protocol/STPathSet.h
     src/ripple/protocol/STTx.h
+    src/ripple/protocol/XChainAttestations.h
+    src/ripple/protocol/STXChainBridge.h
     src/ripple/protocol/STValidation.h
     src/ripple/protocol/STVector256.h
     src/ripple/protocol/SecretKey.h
@@ -310,6 +314,7 @@ install (
   DESTINATION include/ripple/beast/clock)
 install (
   FILES
+    src/ripple/beast/core/CurrentThreadName.h
     src/ripple/beast/core/LexicalCast.h
     src/ripple/beast/core/List.h
     src/ripple/beast/core/SemanticVersion.h
@@ -528,6 +533,7 @@ target_sources (rippled PRIVATE
   src/ripple/app/tx/impl/SetRegularKey.cpp
   src/ripple/app/tx/impl/SetSignerList.cpp
   src/ripple/app/tx/impl/SetTrust.cpp
+  src/ripple/app/tx/impl/XChainBridge.cpp
   src/ripple/app/tx/impl/SignerEntries.cpp
   src/ripple/app/tx/impl/Taker.cpp
   src/ripple/app/tx/impl/Transactor.cpp
@@ -562,9 +568,7 @@ target_sources (rippled PRIVATE
   src/ripple/core/impl/JobQueue.cpp
   src/ripple/core/impl/LoadEvent.cpp
   src/ripple/core/impl/LoadMonitor.cpp
-  src/ripple/core/impl/SNTPClock.cpp
   src/ripple/core/impl/SociDB.cpp
-  src/ripple/core/impl/TimeKeeper.cpp
   src/ripple/core/impl/Workers.cpp
   src/ripple/core/Pg.cpp
   #[===============================[
@@ -630,6 +634,7 @@ target_sources (rippled PRIVATE
   src/ripple/overlay/impl/Cluster.cpp
   src/ripple/overlay/impl/ConnectAttempt.cpp
   src/ripple/overlay/impl/Handshake.cpp
+  src/ripple/overlay/impl/InboundHandoff.cpp
   src/ripple/overlay/impl/Message.cpp
   src/ripple/overlay/impl/OverlayImpl.cpp
   src/ripple/overlay/impl/PeerImp.cpp
@@ -809,6 +814,7 @@ if (tests)
     src/test/app/ReducedOffer_test.cpp
     src/test/app/Regression_test.cpp
     src/test/app/SHAMapStore_test.cpp
+    src/test/app/XChain_test.cpp
     src/test/app/SetAuth_test.cpp
     src/test/app/SetRegularKey_test.cpp
     src/test/app/SetTrust_test.cpp
@@ -839,7 +845,6 @@ if (tests)
     src/test/basics/Slice_test.cpp
     src/test/basics/StringUtilities_test.cpp
     src/test/basics/TaggedCache_test.cpp
-    src/test/basics/ThreadName_test.cpp
     src/test/basics/XRPAmount_test.cpp
     src/test/basics/base64_test.cpp
     src/test/basics/base_uint_test.cpp
@@ -857,6 +862,7 @@ if (tests)
     src/test/beast/LexicalCast_test.cpp
     src/test/beast/SemanticVersion_test.cpp
     src/test/beast/aged_associative_container_test.cpp
+    src/test/beast/beast_CurrentThreadName_test.cpp
     src/test/beast/beast_Journal_test.cpp
     src/test/beast/beast_PropertyStream_test.cpp
     src/test/beast/beast_Zero_test.cpp
@@ -921,12 +927,12 @@ if (tests)
     src/test/jtx/impl/AMMTest.cpp
     src/test/jtx/impl/Env.cpp
     src/test/jtx/impl/JSONRPCClient.cpp
-    src/test/jtx/impl/ManualTimeKeeper.cpp
     src/test/jtx/impl/TestHelpers.cpp
     src/test/jtx/impl/WSClient.cpp
     src/test/jtx/impl/acctdelete.cpp
     src/test/jtx/impl/account_txn_id.cpp
     src/test/jtx/impl/amount.cpp
+    src/test/jtx/impl/attester.cpp
     src/test/jtx/impl/balance.cpp
     src/test/jtx/impl/check.cpp
     src/test/jtx/impl/delivermin.cpp
@@ -948,6 +954,7 @@ if (tests)
     src/test/jtx/impl/regkey.cpp
     src/test/jtx/impl/sendmax.cpp
     src/test/jtx/impl/seq.cpp
+    src/test/jtx/impl/xchain_bridge.cpp
     src/test/jtx/impl/sig.cpp
     src/test/jtx/impl/tag.cpp
     src/test/jtx/impl/ticket.cpp

@@ -56,7 +56,7 @@ doChannelAuthorize(RPC::JsonContext& context)
 
     Json::Value result;
     std::optional<std::pair<PublicKey, SecretKey>> const keyPair =
-        RPC::keypairForSignature(params, result);
+        RPC::keypairForSignature(params, result, context.apiVersion);
 
     assert(keyPair || RPC::contains_error(result));
     if (!keyPair || RPC::contains_error(result))

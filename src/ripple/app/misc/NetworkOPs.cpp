@@ -607,12 +607,14 @@ private:
     void
     pubValidatedTransaction(
         std::shared_ptr<ReadView const> const& ledger,
-        AcceptedLedgerTx const& transaction);
+        AcceptedLedgerTx const& transaction,
+        bool last);
 
     void
     pubAccountTransaction(
         std::shared_ptr<ReadView const> const& ledger,
-        AcceptedLedgerTx const& transaction);
+        AcceptedLedgerTx const& transaction,
+        bool last);
 
     void
     pubProposedAccountTransaction(
@@ -737,11 +739,10 @@ private:
         sPeerStatus,      // Peer status changes.
         sConsensusPhase,  // Consensus phase
         sBookChanges,     // Per-ledger order book changes
-
-        sLastEntry = sBookChanges  // as this name implies, any new entry
-                                   // must be ADDED ABOVE this one
+        sLastEntry        // Any new entry must be ADDED ABOVE this one
     };
-    std::array<SubMapType, SubTypes::sLastEntry + 1> mStreamMaps;
+
+    std::array<SubMapType, SubTypes::sLastEntry> mStreamMaps;
 
     ServerFeeSummary mLastFeeSummary;
 
@@ -1849,7 +1850,12 @@ NetworkOPsImp::beginConsensus(uint256 const& networkClosed)
         app_.getHashRouter());
 
     if (!changes.added.empty() || !changes.removed.empty())
+    {
         app_.getValidations().trustChanged(changes.added, changes.removed);
+        // Update the AmendmentTable so it tracks the current validators.
+        app_.getAmendmentTable().trustChanged(
+            app_.validators().getQuorumKeys().second);
+    }
 
     mConsensus.startRound(
         app_.timeKeeper().closeTime(),
@@ -2612,13 +2618,10 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
                 lpClosed->fees().accountReserve(0).decimalXRP();
             l[jss::reserve_inc_xrp] = lpClosed->fees().increment.decimalXRP();
 
-            auto const nowOffset = app_.timeKeeper().nowOffset();
-            if (std::abs(nowOffset.count()) >= 60)
-                l[jss::system_time_offset] = nowOffset.count();
-
-            auto const closeOffset = app_.timeKeeper().closeOffset();
-            if (std::abs(closeOffset.count()) >= 60)
-                l[jss::close_time_offset] = closeOffset.count();
+            if (auto const closeOffset = app_.timeKeeper().closeOffset();
+                std::abs(closeOffset.count()) >= 60)
+                l[jss::close_time_offset] =
+                    static_cast<std::uint32_t>(closeOffset.count());
 
 #if RIPPLED_REPORTING
             std::int64_t const dbAge =
@@ -3031,7 +3034,8 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
     for (auto const& accTx : *alpAccepted)
     {
         JLOG(m_journal.trace()) << "pubAccepted: " << accTx->getJson();
-        pubValidatedTransaction(lpAccepted, *accTx);
+        pubValidatedTransaction(
+            lpAccepted, *accTx, accTx == *(--alpAccepted->end()));
     }
 }
 
@@ -3138,7 +3142,8 @@ NetworkOPsImp::transJson(
 void
 NetworkOPsImp::pubValidatedTransaction(
     std::shared_ptr<ReadView const> const& ledger,
-    const AcceptedLedgerTx& transaction)
+    const AcceptedLedgerTx& transaction,
+    bool last)
 {
     auto const& stTxn = transaction.getTxn();
 
@@ -3187,13 +3192,14 @@ NetworkOPsImp::pubValidatedTransaction(
     if (transaction.getResult() == tesSUCCESS)
         app_.getOrderBookDB().processTxn(ledger, transaction, jvObj);
 
-    pubAccountTransaction(ledger, transaction);
+    pubAccountTransaction(ledger, transaction, last);
 }
 
 void
 NetworkOPsImp::pubAccountTransaction(
     std::shared_ptr<ReadView const> const& ledger,
-    AcceptedLedgerTx const& transaction)
+    AcceptedLedgerTx const& transaction,
+    bool last)
 {
     hash_set<InfoSub::pointer> notify;
     int iProposed = 0;
@@ -3300,6 +3306,9 @@ NetworkOPsImp::pubAccountTransaction(
 
         for (InfoSub::ref isrListener : notify)
             isrListener->send(jvObj, true);
+
+        if (last)
+            jvObj[jss::account_history_boundary] = true;
 
         assert(!jvObj.isMember(jss::account_history_tx_stream));
         for (auto& info : accountHistoryNotify)
@@ -3699,8 +3708,11 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
 
                     auto const& txns = dbResult->first;
                     marker = dbResult->second;
-                    for (auto const& [tx, meta] : txns)
+                    size_t num_txns = txns.size();
+                    for (size_t i = 0; i < num_txns; ++i)
                     {
+                        auto const& [tx, meta] = txns[i];
+
                         if (!tx || !meta)
                         {
                             JLOG(m_journal.debug())
@@ -3735,6 +3747,11 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                             *stTxn, meta->getResultTER(), true, curTxLedger);
                         jvTx[jss::meta] = meta->getJson(JsonOptions::none);
                         jvTx[jss::account_history_tx_index] = txHistoryIndex--;
+
+                        if (i + 1 == num_txns ||
+                            txns[i + 1].first->getLedger() != tx->getLedger())
+                            jvTx[jss::account_history_boundary] = true;
+
                         RPC::insertDeliveredAmount(
                             jvTx[jss::meta], *curTxLedger, stTxn, *meta);
                         if (isFirstTx(tx, meta))

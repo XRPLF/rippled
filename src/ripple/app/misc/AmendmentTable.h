@@ -111,6 +111,10 @@ public:
         std::set<uint256> const& enabled,
         majorityAmendments_t const& majority) = 0;
 
+    // Called when the set of trusted validators changes.
+    virtual void
+    trustChanged(hash_set<PublicKey> const& allTrusted) = 0;
+
     // Called by the consensus code when we need to
     // inject pseudo-transactions
     virtual std::map<uint256, std::uint32_t>

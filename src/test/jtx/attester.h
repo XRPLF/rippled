@@ -17,34 +17,51 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_BASICS_THREADUTILITIES_H_INCLUDED
-#define RIPPLE_BASICS_THREADUTILITIES_H_INCLUDED
+#ifndef RIPPLE_TEST_JTX_ATTESTER_H_INCLUDED
+#define RIPPLE_TEST_JTX_ATTESTER_H_INCLUDED
 
-#include <string>
-#include <thread>
+#include <ripple/basics/Buffer.h>
+#include <ripple/protocol/AccountID.h>
+
+#include <cstdint>
+#include <optional>
 
 namespace ripple {
 
-std::string
-get_name(std::thread::native_handle_type t);
+class PublicKey;
+class SecretKey;
+class STXChainBridge;
+class STAmount;
 
-template <class Thread>
-inline auto
-get_name(Thread& t) -> decltype(t.native_handle(), t.join(), std::string{})
-{
-    return get_name(t.native_handle());
-}
+namespace test {
+namespace jtx {
 
-namespace this_thread {
+Buffer
+sign_claim_attestation(
+    PublicKey const& pk,
+    SecretKey const& sk,
+    STXChainBridge const& bridge,
+    AccountID const& sendingAccount,
+    STAmount const& sendingAmount,
+    AccountID const& rewardAccount,
+    bool wasLockingChainSend,
+    std::uint64_t claimID,
+    std::optional<AccountID> const& dst);
 
-std::string
-get_name();
-
-void
-set_name(std::string s);
-
-}  // namespace this_thread
-
+Buffer
+sign_create_account_attestation(
+    PublicKey const& pk,
+    SecretKey const& sk,
+    STXChainBridge const& bridge,
+    AccountID const& sendingAccount,
+    STAmount const& sendingAmount,
+    STAmount const& rewardAmount,
+    AccountID const& rewardAccount,
+    bool wasLockingChainSend,
+    std::uint64_t createCount,
+    AccountID const& dst);
+}  // namespace jtx
+}  // namespace test
 }  // namespace ripple
 
 #endif

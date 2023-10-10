@@ -23,6 +23,7 @@
 #include <ripple/protocol/jss.h>
 #include <test/jtx.h>
 #include <test/jtx/AMM.h>
+#include <test/jtx/xchain_bridge.h>
 
 #include <boost/utility/string_ref.hpp>
 
@@ -550,7 +551,9 @@ public:
         Account const gw{"gateway"};
         auto const USD = gw["USD"];
 
-        Env env(*this);
+        auto const features =
+            supported_amendments() | FeatureBitset{featureXChainBridge};
+        Env env(*this, features);
 
         // Make a lambda we can use to get "account_objects" easily.
         auto acct_objs = [&env](
@@ -676,6 +679,142 @@ public:
             BEAST_EXPECT(escrow[sfDestination.jsonName] == gw.human());
             BEAST_EXPECT(escrow[sfAmount.jsonName].asUInt() == 100'000'000);
         }
+        {
+            // Create a bridge
+            test::jtx::XChainBridgeObjects x;
+            Env scEnv(*this, envconfig(port_increment, 3), features);
+            x.createScBridgeObjects(scEnv);
+
+            auto scenv_acct_objs = [&](Account const& acct, char const* type) {
+                Json::Value params;
+                params[jss::account] = acct.human();
+                params[jss::type] = type;
+                params[jss::ledger_index] = "validated";
+                return scEnv.rpc("json", "account_objects", to_string(params));
+            };
+
+            Json::Value const resp =
+                scenv_acct_objs(Account::master, jss::bridge);
+
+            BEAST_EXPECT(acct_objs_is_size(resp, 1));
+            auto const& acct_bridge =
+                resp[jss::result][jss::account_objects][0u];
+            BEAST_EXPECT(
+                acct_bridge[sfAccount.jsonName] == Account::master.human());
+            BEAST_EXPECT(
+                acct_bridge[sfLedgerEntryType.getJsonName()] == "Bridge");
+            BEAST_EXPECT(
+                acct_bridge[sfXChainClaimID.getJsonName()].asUInt() == 0);
+            BEAST_EXPECT(
+                acct_bridge[sfXChainAccountClaimCount.getJsonName()].asUInt() ==
+                0);
+            BEAST_EXPECT(
+                acct_bridge[sfXChainAccountCreateCount.getJsonName()]
+                    .asUInt() == 0);
+            BEAST_EXPECT(
+                acct_bridge[sfMinAccountCreateAmount.getJsonName()].asUInt() ==
+                20000000);
+            BEAST_EXPECT(
+                acct_bridge[sfSignatureReward.getJsonName()].asUInt() ==
+                1000000);
+            BEAST_EXPECT(acct_bridge[sfXChainBridge.getJsonName()] == x.jvb);
+        }
+        {
+            // Alice and Bob create a xchain sequence number that we can look
+            // for in the ledger.
+            test::jtx::XChainBridgeObjects x;
+            Env scEnv(*this, envconfig(port_increment, 3), features);
+            x.createScBridgeObjects(scEnv);
+
+            scEnv(
+                xchain_create_claim_id(x.scAlice, x.jvb, x.reward, x.mcAlice));
+            scEnv.close();
+            scEnv(xchain_create_claim_id(x.scBob, x.jvb, x.reward, x.mcBob));
+            scEnv.close();
+
+            auto scenv_acct_objs = [&](Account const& acct, char const* type) {
+                Json::Value params;
+                params[jss::account] = acct.human();
+                params[jss::type] = type;
+                params[jss::ledger_index] = "validated";
+                return scEnv.rpc("json", "account_objects", to_string(params));
+            };
+
+            {
+                // Find the xchain sequence number for Andrea.
+                Json::Value const resp =
+                    scenv_acct_objs(x.scAlice, jss::xchain_owned_claim_id);
+                BEAST_EXPECT(acct_objs_is_size(resp, 1));
+
+                auto const& xchain_seq =
+                    resp[jss::result][jss::account_objects][0u];
+                BEAST_EXPECT(
+                    xchain_seq[sfAccount.jsonName] == x.scAlice.human());
+                BEAST_EXPECT(
+                    xchain_seq[sfXChainClaimID.getJsonName()].asUInt() == 1);
+            }
+            {
+                // and the one for Bob
+                Json::Value const resp =
+                    scenv_acct_objs(x.scBob, jss::xchain_owned_claim_id);
+                BEAST_EXPECT(acct_objs_is_size(resp, 1));
+
+                auto const& xchain_seq =
+                    resp[jss::result][jss::account_objects][0u];
+                BEAST_EXPECT(xchain_seq[sfAccount.jsonName] == x.scBob.human());
+                BEAST_EXPECT(
+                    xchain_seq[sfXChainClaimID.getJsonName()].asUInt() == 2);
+            }
+        }
+        {
+            test::jtx::XChainBridgeObjects x;
+            Env scEnv(*this, envconfig(port_increment, 3), features);
+            x.createScBridgeObjects(scEnv);
+            auto const amt = XRP(1000);
+
+            // send first batch of account create attestations, so the
+            // xchain_create_account_claim_id should be present on the door
+            // account (Account::master) to collect the signatures until a
+            // quorum is reached
+            scEnv(test::jtx::create_account_attestation(
+                x.scAttester,
+                x.jvb,
+                x.mcCarol,
+                amt,
+                x.reward,
+                x.payees[0],
+                true,
+                1,
+                x.scuAlice,
+                x.signers[0]));
+            scEnv.close();
+
+            auto scenv_acct_objs = [&](Account const& acct, char const* type) {
+                Json::Value params;
+                params[jss::account] = acct.human();
+                params[jss::type] = type;
+                params[jss::ledger_index] = "validated";
+                return scEnv.rpc("json", "account_objects", to_string(params));
+            };
+
+            {
+                // Find the xchain_create_account_claim_id
+                Json::Value const resp = scenv_acct_objs(
+                    Account::master, jss::xchain_owned_create_account_claim_id);
+                BEAST_EXPECT(acct_objs_is_size(resp, 1));
+
+                auto const& xchain_create_account_claim_id =
+                    resp[jss::result][jss::account_objects][0u];
+                BEAST_EXPECT(
+                    xchain_create_account_claim_id[sfAccount.jsonName] ==
+                    Account::master.human());
+                BEAST_EXPECT(
+                    xchain_create_account_claim_id[sfXChainAccountCreateCount
+                                                       .getJsonName()]
+                        .asUInt() == 1);
+            }
+        }
+
         // gw creates an offer that we can look for in the ledger.
         env(offer(gw, USD(7), XRP(14)));
         env.close();
@@ -690,7 +829,8 @@ public:
             BEAST_EXPECT(offer[sfTakerPays.jsonName][jss::value].asUInt() == 7);
         }
         {
-            // Create a payment channel from qw to alice that we can look for.
+            // Create a payment channel from qw to alice that we can look
+            // for.
             Json::Value jvPayChan;
             jvPayChan[jss::TransactionType] = jss::PaymentChannelCreate;
             jvPayChan[jss::Flags] = tfUniversal;
@@ -715,7 +855,7 @@ public:
                 payChan[sfSettleDelay.jsonName].asUInt() == 24 * 60 * 60);
         }
         // Make gw multisigning by adding a signerList.
-        env(signers(gw, 6, {{alice, 7}}));
+        env(jtx::signers(gw, 6, {{alice, 7}}));
         env.close();
         {
             // Find the signer list.
