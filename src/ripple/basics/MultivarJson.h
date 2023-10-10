@@ -55,7 +55,7 @@ using MultiApiJson = MultivarJson<2>;
 
 // Helper to create appropriate selector for indexing MultiApiJson by apiVersion
 constexpr auto
-apiVersionSelector(int apiVersion) noexcept
+apiVersionSelector(unsigned int apiVersion) noexcept
 {
     return [apiVersion]() constexpr
     {

@@ -223,14 +223,13 @@ struct MultivarJson_test : beast::unit_test::suite
             BEAST_EXPECT(x.select(apiVersionSelector(0)) == obj1);
             BEAST_EXPECT(x.select(apiVersionSelector(2)) == str1);
 
-            static_assert(
-                apiVersionSelector(std::numeric_limits<int>::min())() == 0);
             static_assert(apiVersionSelector(0)() == 0);
             static_assert(apiVersionSelector(1)() == 0);
             static_assert(apiVersionSelector(2)() == 1);
             static_assert(apiVersionSelector(3)() == 1);
             static_assert(
-                apiVersionSelector(std::numeric_limits<int>::max())() == 1);
+                apiVersionSelector(
+                    std::numeric_limits<unsigned int>::max())() == 1);
         }
     }
 };

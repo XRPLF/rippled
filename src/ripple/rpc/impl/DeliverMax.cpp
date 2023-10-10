@@ -18,16 +18,13 @@
 //==============================================================================
 
 #include <ripple/protocol/jss.h>
-#include <ripple/rpc/Context.h>
 #include <ripple/rpc/DeliverMax.h>
-#include <ripple/rpc/DeliveredAmount.h>
-#include "ripple/protocol/TxFormats.h"
 
 namespace ripple {
 namespace RPC {
 
 void
-insertDeliverMax(Json::Value& tx_json, TxType txnType, int apiVersion)
+insertDeliverMax(Json::Value& tx_json, TxType txnType, unsigned int apiVersion)
 {
     if (tx_json.isMember(jss::Amount))
     {

@@ -230,9 +230,9 @@ public:
     getRequest();
 
     void
-    setApiVersion(int apiVersion);
+    setApiVersion(unsigned int apiVersion);
 
-    int
+    unsigned int
     getApiVersion() const noexcept;
 
 protected:
@@ -246,7 +246,7 @@ private:
     std::shared_ptr<InfoSubRequest> request_;
     std::uint64_t mSeq;
     hash_set<AccountID> accountHistorySubscriptions_;
-    int apiVersion = 1;
+    unsigned int apiVersion = 1;
 
     static int
     assign_id()

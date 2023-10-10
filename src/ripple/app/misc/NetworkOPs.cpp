@@ -606,7 +606,7 @@ private:
         std::shared_ptr<ReadView const> const& ledger,
         bool validated,
         std::optional<std::reference_wrapper<TxMeta const>> meta,
-        int apiVersion);
+        unsigned int apiVersion);
 
     void
     pubValidatedTransaction(
@@ -3095,7 +3095,7 @@ NetworkOPsImp::transJson(
     std::shared_ptr<ReadView const> const& ledger,
     bool validated,
     std::optional<std::reference_wrapper<TxMeta const>> meta,
-    int apiVersion)
+    unsigned int apiVersion)
 {
     Json::Value jvObj(Json::objectValue);
     std::string sToken;

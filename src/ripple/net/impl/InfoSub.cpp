@@ -137,12 +137,12 @@ InfoSub::getRequest()
 }
 
 void
-InfoSub::setApiVersion(int apiVersion)
+InfoSub::setApiVersion(unsigned int apiVersion)
 {
     this->apiVersion = apiVersion;
 }
 
-int
+unsigned int
 InfoSub::getApiVersion() const noexcept
 {
     return this->apiVersion;
