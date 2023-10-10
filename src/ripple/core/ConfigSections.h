@@ -73,6 +73,7 @@ struct ConfigSection
 #define SECTION_PEERS_MAX "peers_max"
 #define SECTION_PEERS_IN_MAX "peers_in_max"
 #define SECTION_PEERS_OUT_MAX "peers_out_max"
+#define SECTION_PORT_GRPC "port_grpc"
 #define SECTION_REDUCE_RELAY "reduce_relay"
 #define SECTION_RELATIONAL_DB "relational_db"
 #define SECTION_RELAY_PROPOSALS "relay_proposals"
@@ -100,8 +101,6 @@ struct ConfigSection
 #define SECTION_BETA_RPC_API "beta_rpc_api"
 #define SECTION_SWEEP_INTERVAL "sweep_interval"
 #define SECTION_NETWORK_ID "network_id"
-
-#define SECTION_PORT_GRPC "port_grpc"
 
 }  // namespace ripple
 
