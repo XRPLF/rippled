@@ -30,8 +30,10 @@
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/Role.h>
+
 #include <boost/algorithm/string.hpp>
-#include <sstream>
+
+#include <unordered_map>
 
 namespace ripple {
 
@@ -86,37 +88,31 @@ ServerDefinitions::translate(std::string const& inp)
             return replace("UINT", "UInt");
     }
 
-    if (inp == "OBJECT")
-        return "STObject";
-    if (inp == "ARRAY")
-        return "STArray";
-    if (inp == "AMM")
-        return "AMM";
-    if (inp == "ACCOUNT")
-        return "AccountID";
-    if (inp == "LEDGERENTRY")
-        return "LedgerEntry";
-    if (inp == "NOTPRESENT")
-        return "NotPresent";
-    if (inp == "PATHSET")
-        return "PathSet";
-    if (inp == "VL")
-        return "Blob";
-    if (inp == "DIR_NODE")
-        return "DirectoryNode";
-    if (inp == "PAYCHAN")
-        return "PayChannel";
-    if (inp == "XCHAIN_BRIDGE")
-        return "XChainBridge";
+    std::unordered_map<std::string, std::string> replacements{
+        {"OBJECT", "STObject"},
+        {"ARRAY", "STArray"},
+        {"ACCOUNT", "AccountID"},
+        {"LEDGERENTRY", "LedgerEntry"},
+        {"NOTPRESENT", "NotPresent"},
+        {"PATHSET", "PathSet"},
+        {"VL", "Blob"},
+        {"XCHAIN_BRIDGE", "XChainBridge"},
+    };
+
+    if (auto const& it = replacements.find(inp); it != replacements.end())
+    {
+        return it->second;
+    }
 
     std::string out;
     size_t pos = 0;
+    std::string inpToProcess = inp;
     for (;;)
     {
-        pos = inp.find("_");
+        pos = inpToProcess.find("_");
         if (pos == std::string::npos)
-            pos = inp.size();
-        std::string token = inp.substr(0, pos);
+            pos = inpToProcess.size();
+        std::string token = inpToProcess.substr(0, pos);
         if (token.size() > 1)
         {
             boost::algorithm::to_lower(token);
@@ -125,9 +121,9 @@ ServerDefinitions::translate(std::string const& inp)
         }
         else
             out += token;
-        if (pos == inp.size())
+        if (pos == inpToProcess.size())
             break;
-        inp = inp.substr(pos + 1);
+        inpToProcess = inpToProcess.substr(pos + 1);
     }
     return out;
 };
@@ -237,7 +233,7 @@ ServerDefinitions::generate()
         ret[jss::FIELDS][i++] = a;
     }
 
-    for (auto const& [code, f] : ripple::SField::knownCodeToField)
+    for (auto const& [code, f] : ripple::SField::getKnownCodeToField())
     {
         if (f->fieldName == "")
             continue;
