@@ -35,6 +35,7 @@ Please check [x] relevant options, delete irrelevant ones.
 - [ ] Refactor (non-breaking change that only restructures code)
 - [ ] Tests (you added tests for code that already exists, or your new feature included in this PR)
 - [ ] Documentation update
+- [ ] Chore (no impact to binary, e.g. `.gitignore`, formatting, dropping support for older tooling)
 - [ ] Release
 
 ### API Impact
