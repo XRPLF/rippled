@@ -23,8 +23,6 @@
 
 namespace ripple {
 
-namespace detail {
-
 std::unordered_map<
     TERUnderlyingType,
     std::pair<char const* const, char const* const>> const&
@@ -222,12 +220,10 @@ transResults()
     return results;
 }
 
-}  // namespace detail
-
 bool
 transResultInfo(TER code, std::string& token, std::string& text)
 {
-    auto& results = detail::transResults();
+    auto& results = transResults();
 
     auto const r = results.find(TERtoInt(code));
 
@@ -261,7 +257,7 @@ std::optional<TER>
 transCode(std::string const& token)
 {
     static auto const results = [] {
-        auto& byTer = detail::transResults();
+        auto& byTer = transResults();
         auto range = boost::make_iterator_range(byTer.begin(), byTer.end());
         auto tRange = boost::adaptors::transform(range, [](auto const& r) {
             return std::make_pair(r.second.first, r.first);

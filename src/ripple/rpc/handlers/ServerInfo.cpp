@@ -35,25 +35,26 @@
 
 namespace ripple {
 
-class Definitions
+class ServerDefinitions
 {
 private:
-    std::string
+    std::string const
     translate(std::string inp)
     {
-        auto replace = [&](const char* f, const char* r) -> std::string {
+        auto replace = [&](const char* oldStr,
+                           const char* newStr) -> std::string {
             std::string out = inp;
-            boost::replace_all(out, f, r);
+            boost::replace_all(out, oldStr, newStr);
             return out;
         };
 
-        auto find = [&](const char* s) -> bool {
+        auto contains = [&](const char* s) -> bool {
             return inp.find(s) != std::string::npos;
         };
 
-        if (find("UINT"))
+        if (contains("UINT"))
         {
-            if (find("256") || find("160") || find("128"))
+            if (contains("256") || contains("160") || contains("128"))
                 return replace("UINT", "Hash");
             else
                 return replace("UINT", "UInt");
@@ -112,24 +113,21 @@ private:
         ret[jss::TYPES] = Json::objectValue;
 
         ret[jss::TYPES]["Done"] = -1;
-        std::map<int32_t, std::string> type_map{{-1, "Done"}};
-        for (const auto& pair : sTypeMap)
+        std::map<int32_t, std::string> typeMap{{-1, "Done"}};
+        for (auto const& [rawName, typeValue] : sTypeMap)
         {
-            std::string type_name =
-                translate(std::string(pair.first).substr(4) /* remove STI_ */);
-            int32_t type_value = pair.second;
-            ret[jss::TYPES][type_name] = type_value;
-            type_map[type_value] = type_name;
+            std::string typeName =
+                translate(std::string(rawName).substr(4) /* remove STI_ */);
+            ret[jss::TYPES][typeName] = typeValue;
+            typeMap[typeValue] = typeName;
         }
 
         ret[jss::LEDGER_ENTRY_TYPES] = Json::objectValue;
         ret[jss::LEDGER_ENTRY_TYPES][jss::Invalid] = -1;
 
-        for (auto it = LedgerFormats::getInstance().begin();
-             it != LedgerFormats::getInstance().end();
-             ++it)
+        for (auto const& f : LedgerFormats::getInstance())
         {
-            ret[jss::LEDGER_ENTRY_TYPES][it->getName()] = it->getType();
+            ret[jss::LEDGER_ENTRY_TYPES][f.getName()] = f.getType();
         }
 
         ret[jss::FIELDS] = Json::arrayValue;
@@ -236,7 +234,7 @@ private:
 
             innerObj[jss::isSigningField] = f->shouldInclude(false);
 
-            innerObj[jss::type] = type_map[type];
+            innerObj[jss::type] = typeMap[type];
 
             Json::Value innerArray = Json::arrayValue;
             innerArray[0U] = f->fieldName;
@@ -247,18 +245,16 @@ private:
 
         ret[jss::TRANSACTION_RESULTS] = Json::objectValue;
 
-        for (const auto& pair : detail::transResults())
+        for (auto const& [code, terInfo] : transResults())
         {
-            ret[jss::TRANSACTION_RESULTS][pair.second.first] = pair.first;
+            ret[jss::TRANSACTION_RESULTS][terInfo.first] = code;
         }
 
         ret[jss::TRANSACTION_TYPES] = Json::objectValue;
         ret[jss::TRANSACTION_TYPES][jss::Invalid] = -1;
-        for (auto it = TxFormats::getInstance().begin();
-             it != TxFormats::getInstance().end();
-             ++it)
+        for (auto const& f : TxFormats::getInstance())
         {
-            ret[jss::TRANSACTION_TYPES][it->getName()] = it->getType();
+            ret[jss::TRANSACTION_TYPES][f.getName()] = f.getType();
         }
 
         // generate hash
@@ -276,7 +272,7 @@ private:
     Json::Value defs_;
 
 public:
-    Definitions() : defs_(generate()){};
+    ServerDefinitions() : defs_(generate()){};
 
     bool
     hashMatches(uint256 hash) const
@@ -304,7 +300,7 @@ doServerDefinitions(RPC::JsonContext& context)
             return RPC::invalid_field_error(jss::hash);
     }
 
-    static const Definitions defs{};
+    static const ServerDefinitions defs{};
     if (defs.hashMatches(hash))
     {
         Json::Value jv = Json::objectValue;

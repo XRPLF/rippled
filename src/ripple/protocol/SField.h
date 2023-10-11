@@ -103,7 +103,7 @@ class STVector256;
 
 enum SerializedTypeID { XMACRO(TO_ENUM) };
 
-static std::map<char const*, int> const sTypeMap = {XMACRO(TO_MAP)};
+static std::map<std::string, int> const sTypeMap = {XMACRO(TO_MAP)};
 
 #undef XMACRO
 #undef TO_ENUM
