@@ -167,7 +167,7 @@ Handler const handlerArray[]{
     {"stop", byRef(&doStop), Role::ADMIN, NO_CONDITION},
     {"transaction_entry", byRef(&doTransactionEntry), Role::USER, NO_CONDITION},
     {"tx", byRef(&doTxJson), Role::USER, NEEDS_NETWORK_CONNECTION},
-    {"tx_history", byRef(&doTxHistory), Role::USER, NO_CONDITION},
+    {"tx_history", byRef(&doTxHistory), Role::USER, NO_CONDITION, 1, 1},
     {"tx_reduce_relay", byRef(&doTxReduceRelay), Role::USER, NO_CONDITION},
     {"unl_list", byRef(&doUnlList), Role::ADMIN, NO_CONDITION},
     {"validation_create",
