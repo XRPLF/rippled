@@ -25,6 +25,7 @@
 #include <ripple/core/Config.h>
 #include <ripple/rpc/RPCHandler.h>
 #include <ripple/rpc/Status.h>
+#include <ripple/rpc/impl/RPCHelpers.h>
 #include <ripple/rpc/impl/Tuning.h>
 #include <vector>
 
@@ -52,6 +53,9 @@ struct Handler
     Method<Json::Value> valueMethod_;
     Role role_;
     RPC::Condition condition_;
+
+    unsigned minApiVer_ = 1;
+    unsigned maxApiVer_ = apiMaximumValidVersion;
 };
 
 Handler const*

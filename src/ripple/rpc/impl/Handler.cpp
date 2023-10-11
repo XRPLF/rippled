@@ -22,6 +22,8 @@
 #include <ripple/rpc/impl/Handler.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 
+#include <map>
+
 namespace ripple {
 namespace RPC {
 namespace {
@@ -56,6 +58,19 @@ handle(JsonContext& context, Object& object)
         handler.writeResult(object);
     return status;
 };
+
+template <typename HandlerImpl>
+Handler
+handlerFrom()
+{
+    return {
+        HandlerImpl::name,
+        &handle<Json::Value, HandlerImpl>,
+        HandlerImpl::role,
+        HandlerImpl::condition,
+        HandlerImpl::minApiVer,
+        HandlerImpl::maxApiVer};
+}
 
 Handler const handlerArray[]{
     // Some handlers not specified here are added to the table via addHandler()
@@ -174,14 +189,39 @@ Handler const handlerArray[]{
 class HandlerTable
 {
 private:
+    using handler_table_t = std::multimap<std::string, Handler>;
+
+    // Use with equal_range to enforce that API range of a newly added handler
+    // does not overlap with API range of an existing handler with same name
+    bool
+    overlappingApiVersion(
+        std::pair<handler_table_t::iterator, handler_table_t::iterator> range,
+        unsigned minVer,
+        unsigned maxVer)
+    {
+        assert(minVer <= maxVer);
+        assert(maxVer <= RPC::apiMaximumValidVersion);
+
+        for (; range.first != range.second; range.first++)
+        {
+            if (range.first->second.minApiVer_ <= maxVer &&
+                range.first->second.maxApiVer_ >= minVer)
+                return true;
+        }
+        return false;
+    }
+
     template <std::size_t N>
     explicit HandlerTable(const Handler (&entries)[N])
     {
-        for (std::size_t i = 0; i < N; ++i)
+        for (auto const& entry : entries)
         {
-            auto const& entry = entries[i];
-            assert(table_.find(entry.name_) == table_.end());
-            table_[entry.name_] = entry;
+            assert(!overlappingApiVersion(
+                table_.equal_range(entry.name_),
+                entry.minApiVer_,
+                entry.maxApiVer_));
+
+            table_.insert({entry.name_, entry});
         }
 
         // This is where the new-style handlers are added.
@@ -205,36 +245,47 @@ public:
             version > (betaEnabled ? RPC::apiBetaVersion
                                    : RPC::apiMaximumSupportedVersion))
             return nullptr;
-        auto i = table_.find(name);
-        return i == table_.end() ? nullptr : &i->second;
+
+        auto const range = table_.equal_range(name);
+        auto const i = std::find_if(
+            range.first, range.second, [version](auto const& entry) {
+                return version >= entry.second.minApiVer_ &&
+                    version <= entry.second.maxApiVer_;
+            });
+
+        return i == range.second ? nullptr : &i->second;
     }
 
     std::vector<char const*>
     getHandlerNames() const
     {
         std::vector<char const*> ret;
-        ret.reserve(table_.size());
         for (auto const& i : table_)
-            ret.push_back(i.second.name_);
+        {
+            // Note, table_ is always ordered, allowing such a simple check
+            if (ret.empty() || std::strcmp(ret.back(), i.second.name_) != 0)
+                ret.push_back(i.second.name_);
+        }
+
         return ret;
     }
 
 private:
-    std::map<std::string, Handler> table_;
+    handler_table_t table_;
 
     template <class HandlerImpl>
     void
     addHandler()
     {
-        assert(table_.find(HandlerImpl::name()) == table_.end());
+        static_assert(HandlerImpl::minApiVer <= HandlerImpl::maxApiVer);
+        static_assert(HandlerImpl::maxApiVer <= RPC::apiMaximumValidVersion);
 
-        Handler h;
-        h.name_ = HandlerImpl::name();
-        h.valueMethod_ = &handle<Json::Value, HandlerImpl>;
-        h.role_ = HandlerImpl::role();
-        h.condition_ = HandlerImpl::condition();
+        assert(!overlappingApiVersion(
+            table_.equal_range(HandlerImpl::name),
+            HandlerImpl::minApiVer,
+            HandlerImpl::maxApiVer));
 
-        table_[HandlerImpl::name()] = h;
+        table_.insert({HandlerImpl::name, handlerFrom<HandlerImpl>()});
     }
 };
 

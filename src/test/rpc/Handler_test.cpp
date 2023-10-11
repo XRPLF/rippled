@@ -17,13 +17,13 @@
 */
 //==============================================================================
 
+#include <ripple/beast/unit_test.h>
 #include <ripple/rpc/impl/Handler.h>
-#include "ripple/overlay/Peer.h"
-#include <limits>
 #include <test/jtx.h>
 
 #include <chrono>
 #include <iostream>
+#include <limits>
 #include <numeric>
 #include <random>
 
