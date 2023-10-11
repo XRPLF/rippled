@@ -79,7 +79,7 @@ jobs:
       - name: try to authenticate to ripple Conan remote
         id: remote
         run: |
-          echo outcome=$(conan user --remote ripple ${{ secrets.CONAN_USERNAME }} --password ${{ secrets.CONAN_TOKEN }} && echo success || echo failure) | tee ${GITHUB_OUTPUT}
+          echo outcome=$(conan user --remote ripple ${{ secrets.CONAN_USERNAME }} --password ${{ secrets.CONAN_TOKEN }} >&2 && echo success || echo failure) | tee ${GITHUB_OUTPUT}
       - name: archive profile
         # Create this archive before dependencies are added to the local cache.
         run: tar -czf conan.tar -C ~/.conan .
@@ -88,7 +88,7 @@ jobs:
         # Print the list of dependencies that would need to be built locally.
         # A non-empty list means we have "failed" to cache binaries remotely.
         run: |
-          echo missing=$(conan info . --build missing --json 2>/dev/null  | grep '^\[') | tee ${GITHUB_OUTPUT}
+          echo missing=$(conan info . --build missing --settings build_type=${{ matrix.configuration }} --json 2>/dev/null  | grep '^\[') | tee ${GITHUB_OUTPUT}
       - name: build dependencies
         if: (steps.binaries.outputs.missing != '[]')
         uses: ./.github/actions/dependencies
@@ -146,6 +146,10 @@ jobs:
           ls ~/.conan
       - name: checkout
         uses: actions/checkout@v3
+      - name: dependencies
+        uses: ./.github/actions/dependencies
+        with:
+          configuration: ${{ matrix.configuration }}
       - name: build
         uses: ./.github/actions/build
         with:

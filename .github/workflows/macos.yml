@@ -37,6 +37,10 @@ jobs:
         run : |
           conan profile get env.CXXFLAGS default || true
           conan profile update 'conf.tools.build:cxxflags+=["-DBOOST_ASIO_DISABLE_CONCEPTS"]' default
+      - name: dependencies
+        uses: ./.github/actions/dependencies
+        with:
+          configuration: ${{ matrix.configuration }}
       - name: build
         uses: ./.github/actions/build
         with:
