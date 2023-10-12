@@ -38,6 +38,11 @@ private:
         std::shared_ptr<SLE> const& buy,
         std::shared_ptr<SLE> const& sell);
 
+    TER
+    checkBuyerReserve(
+        std::shared_ptr<SLE const> const& sleBuyer,
+        std::uint32_t const buyerOwnerCountBefore);
+
 public:
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 

@@ -302,6 +302,30 @@ NFTokenAcceptOffer::pay(
 }
 
 TER
+NFTokenAcceptOffer::checkBuyerReserve(
+    std::shared_ptr<SLE const> const& sleBuyer,
+    std::uint32_t const buyerOwnerCountBefore)
+{
+    // To check if there is sufficient reserve, we cannot use mPriorBalance
+    // because NFT is sold for a price. So we must use the balance after the
+    // deduction of the potential offer price. A small caveat here is that the
+    // balance has already deducted the transaction fee, meaning that the
+    // reserve requirement is a few drops higher.
+    auto const buyerBalance = sleBuyer->getFieldAmount(sfBalance);
+
+    auto const buyerOwnerCountAfter = sleBuyer->getFieldU32(sfOwnerCount);
+    if (buyerOwnerCountAfter > buyerOwnerCountBefore)
+    {
+        if (auto const reserve =
+                view().fees().accountReserve(buyerOwnerCountAfter);
+            buyerBalance < reserve)
+            return tecINSUFFICIENT_RESERVE;
+    }
+
+    return tesSUCCESS;
+}
+
+TER
 NFTokenAcceptOffer::acceptOffer(std::shared_ptr<SLE> const& offer)
 {
     bool const isSell = offer->isFlag(lsfSellNFToken);
@@ -343,7 +367,34 @@ NFTokenAcceptOffer::acceptOffer(std::shared_ptr<SLE> const& offer)
         !isTesSuccess(ret))
         return ret;
 
-    return nft::insertToken(view(), buyer, std::move(tokenAndPage->token));
+    auto const sleBuyer = view().read(keylet::account(buyer));
+    std::uint32_t const buyerOwnerCountBefore =
+        sleBuyer->getFieldU32(sfOwnerCount);
+
+    auto const insertRet =
+        nft::insertToken(view(), buyer, std::move(tokenAndPage->token));
+
+    // if fixNFTokenReserve is enabled, check if the buyer has sufficient
+    // reserve to own a new object, if their OwnerCount changed.
+    //
+    // There was an issue where the buyer accepts a sell offer, the ledger
+    // didn't check if the buyer has enough reserve, meaning that buyer can get
+    // NFTs free of reserve.
+    //
+    // But, this isn't a problem when a buy offer is involved, because a buy
+    // offer is already taking up reserve. Since the buy offer is deleted
+    // near the end of the transaction, its reserve will be freed up, and at the
+    // same time, the new NFT that the buyer bought could take up that reserve
+    // again. So it's guareenteed that there is enough reserve as long the
+    // transactor pass the preclaim.
+    if (view().rules().enabled(fixNFTokenReserve))
+    {
+        if (auto const ret = checkBuyerReserve(sleBuyer, buyerOwnerCountBefore);
+            !isTesSuccess(ret))
+            return ret;
+    }
+
+    return insertRet;
 }
 
 TER
@@ -441,7 +492,28 @@ NFTokenAcceptOffer::doApply()
             !isTesSuccess(ret))
             return ret;
 
-        return nft::insertToken(view(), buyer, std::move(tokenAndPage->token));
+        auto const sleBuyer = view().read(keylet::account(buyer));
+        std::uint32_t const buyerOwnerCountBefore =
+            sleBuyer->getFieldU32(sfOwnerCount);
+
+        auto const insertRet =
+            nft::insertToken(view(), buyer, std::move(tokenAndPage->token));
+
+        // if fixNFTokenReserve is enabled, check if the buyer has sufficient
+        // reserve to own a new object, if their OwnerCount changed.
+        //
+        // However, this check is merely for safety and should never trigger,
+        // because, in brokered mode, the buy offer's reserve will be freed up,
+        // which can be taken up by the new NFT again. So buyer is always
+        // guarenteed to have enough reserve.
+        if (view().rules().enabled(fixNFTokenReserve))
+        {
+            if (auto const ret =
+                    checkBuyerReserve(sleBuyer, buyerOwnerCountBefore);
+                !isTesSuccess(ret))
+                return ret;
+        }
+        return insertRet;
     }
 
     if (bo)
