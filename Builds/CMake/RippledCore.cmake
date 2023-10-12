@@ -1079,6 +1079,7 @@ if (tests)
     src/test/rpc/ValidatorInfo_test.cpp
     src/test/rpc/ValidatorRPC_test.cpp
     src/test/rpc/Version_test.cpp
+    src/test/rpc/Handler_test.cpp
     #[===============================[
        test sources:
          subdir: server
