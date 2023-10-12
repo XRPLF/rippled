@@ -84,7 +84,7 @@ CMake</h2>
 Conan</h2>
 <p>These next few paragraphs on Conan are going to read much like the ones above for CMake.</p>
 <p>Technically, you don't need Conan to build this project. You could manually download, configure, build, and install all of the dependencies yourself, and then pass all of the parameters necessary for CMake to link to those dependencies. To guarantee ABI compatibility, you must be sure to use the same set of compiler and linker options for all dependencies <em>and</em> this project. However, that is very tedious and error-prone, which is why we lean on tools like Conan.</p>
-<p>We have written a Conan configuration file (<a href="./conanfile.py"><code>conanfile.py</code></a>) so that Conan can be used to correctly download, configure, build, and install all of the dependencies for this project, using a single set of compiler and linker options for all of them. It generates files that contain almost all of the parameters that CMake expects. Those files include:</p>
+<p>We have written a Conan configuration file (<a href="../../conanfile.py"><code>conanfile.py</code></a>) so that Conan can be used to correctly download, configure, build, and install all of the dependencies for this project, using a single set of compiler and linker options for all of them. It generates files that contain almost all of the parameters that CMake expects. Those files include:</p>
 <ul>
 <li>A single toolchain file.</li>
 <li>For every dependency, a CMake [package configuration file][pcf], [package version file][pvf], and for every build type, a package targets file. Together, these files implement version checking and define <code>IMPORTED</code> targets for the dependencies.</li>
