@@ -125,12 +125,12 @@ Currently (prior to the release of 2.0), it is available as a "beta" version, me
 
 Since `api_version` 2 is in "beta", breaking changes to V2 can currently be made at any time.
 
-#### Retired methods
+#### Removed methods
 
 In API version 2, the following methods are no longer available:
 
-- `tx_history` - please use other appropriate method, e.g. `tx` or `account_tx` or `ledger` with `transactions` field set to `true`
-- `ledger_header` - please use `ledger` with `binary` field set to `true`
+- `tx_history` - Instead, use other methods such as `account_tx` or `ledger` with the `transactions` field set to `true`.
+- `ledger_header` - Instead, use the `ledger` method.
 
 #### Modifications to account_info response in V2
 
