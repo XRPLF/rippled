@@ -213,10 +213,6 @@ certain that there is a problem with the network. This circumstance
 often coincides with new ledgers with zero transactions.
 A variety of factors contribute to consensus health.
 
-Note that this is not necessarily the duration between
-ledger closings, as consensus usually starts some amount of time after
-a ledger opens.
-
 ### Other Constants
 
 * *Base fee transaction limit per ledger*. The minimum value of 5 was
