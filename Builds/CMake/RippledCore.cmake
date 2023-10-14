@@ -840,6 +840,7 @@ if (tests)
     src/test/basics/DetectCrash_test.cpp
     src/test/basics/Expected_test.cpp
     src/test/basics/FileUtilities_test.cpp
+    src/test/basics/IntrusiveShared_test.cpp
     src/test/basics/IOUAmount_test.cpp
     src/test/basics/KeyCache_test.cpp
     src/test/basics/Number_test.cpp

@@ -20,11 +20,14 @@
 #ifndef RIPPLE_BASICS_TAGGEDCACHE_H_INCLUDED
 #define RIPPLE_BASICS_TAGGEDCACHE_H_INCLUDED
 
+#include <ripple/basics/IntrusivePointer.h>
 #include <ripple/basics/Log.h>
+#include <ripple/basics/SharedWeakCachePointer.h>
 #include <ripple/basics/UnorderedContainers.h>
 #include <ripple/basics/hardened_hash.h>
 #include <ripple/beast/clock/abstract_clock.h>
 #include <ripple/beast/insight/Insight.h>
+
 #include <atomic>
 #include <functional>
 #include <mutex>
@@ -50,6 +53,8 @@ template <
     class Key,
     class T,
     bool IsKeyCache = false,
+    class SharedWeakUnionPointerType = SharedWeakCachePointer<T>,
+    class SharedPointerType = std::shared_ptr<T>,
     class Hash = hardened_hash<>,
     class KeyEqual = std::equal_to<Key>,
     class Mutex = std::recursive_mutex>
@@ -60,6 +65,8 @@ public:
     using key_type = Key;
     using mapped_type = T;
     using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
+    using shared_weak_combo_pointer_type = SharedWeakUnionPointerType;
+    using shared_pointer_type = SharedPointerType;
 
 public:
     TaggedCache(
@@ -111,9 +118,7 @@ public:
     bool
     touch_if_exists(KeyComparable const& key);
 
-    using SweptPointersVector = std::pair<
-        std::vector<std::shared_ptr<mapped_type>>,
-        std::vector<std::weak_ptr<mapped_type>>>;
+    using SweptPointersVector = std::vector<SharedWeakUnionPointerType>;
 
     void
     sweep();
@@ -135,21 +140,22 @@ public:
         @return `true` If the key already existed.
     */
 public:
+    template <class R>
     bool
     canonicalize(
         const key_type& key,
-        std::shared_ptr<T>& data,
-        std::function<bool(std::shared_ptr<T> const&)>&& replace);
+        SharedPointerType& data,
+        R&& replaceCallback);
 
     bool
     canonicalize_replace_cache(
         const key_type& key,
-        std::shared_ptr<T> const& data);
+        SharedPointerType const& data);
 
     bool
-    canonicalize_replace_client(const key_type& key, std::shared_ptr<T>& data);
+    canonicalize_replace_client(const key_type& key, SharedPointerType& data);
 
-    std::shared_ptr<T>
+    SharedPointerType
     fetch(const key_type& key);
 
     /** Insert the element into the container.
@@ -190,12 +196,12 @@ public:
             std::shared_ptr<SLE const>(void)
     */
     template <class Handler>
-    std::shared_ptr<T>
+    SharedPointerType
     fetch(key_type const& digest, Handler const& h);
     // End CachedSLEs functions.
 
 private:
-    std::shared_ptr<T>
+    SharedPointerType
     initialFetch(key_type const& key, std::lock_guard<mutex_type> const& l);
 
     void
@@ -245,36 +251,35 @@ private:
     class ValueEntry
     {
     public:
-        std::shared_ptr<mapped_type> ptr;
-        std::weak_ptr<mapped_type> weak_ptr;
+        shared_weak_combo_pointer_type ptr;
         clock_type::time_point last_access;
 
         ValueEntry(
             clock_type::time_point const& last_access_,
-            std::shared_ptr<mapped_type> const& ptr_)
-            : ptr(ptr_), weak_ptr(ptr_), last_access(last_access_)
+            shared_pointer_type const& ptr_)
+            : ptr(ptr_), last_access(last_access_)
         {
         }
 
         bool
         isWeak() const
         {
-            return ptr == nullptr;
+            return !ptr;
         }
         bool
         isCached() const
         {
-            return ptr != nullptr;
+            return !!ptr;
         }
         bool
         isExpired() const
         {
-            return weak_ptr.expired();
+            return ptr.expired();
         }
-        std::shared_ptr<mapped_type>
+        SharedPointerType
         lock()
         {
-            return weak_ptr.lock();
+            return ptr.lock();
         }
         void
         touch(clock_type::time_point const& now)
