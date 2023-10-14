@@ -20,6 +20,7 @@
 #ifndef RIPPLE_SHAMAP_TAGGEDPOINTER_H_INCLUDED
 #define RIPPLE_SHAMAP_TAGGEDPOINTER_H_INCLUDED
 
+#include <ripple/basics/IntrusivePointer.h>
 #include <ripple/shamap/SHAMapTreeNode.h>
 
 #include <array>
@@ -58,6 +59,7 @@ namespace ripple {
 */
 class TaggedPointer
 {
+private:
     static_assert(
         alignof(SHAMapHash) >= 4,
         "Bad alignment: Tag pointer requires low two bits to be zero.");
@@ -170,16 +172,18 @@ public:
     /** Get the number of elements in each array and a pointer to the start
         of each array.
     */
-    [[nodiscard]] std::
-        tuple<std::uint8_t, SHAMapHash*, std::shared_ptr<SHAMapTreeNode>*>
-        getHashesAndChildren() const;
+    [[nodiscard]] std::tuple<
+        std::uint8_t,
+        SHAMapHash*,
+        intr_ptr::MaybeAtomicSharedPtr<SHAMapTreeNode>*>
+    getHashesAndChildren() const;
 
     /** Get the `hashes` array */
     [[nodiscard]] SHAMapHash*
     getHashes() const;
 
     /** Get the `children` array */
-    [[nodiscard]] std::shared_ptr<SHAMapTreeNode>*
+    [[nodiscard]] intr_ptr::MaybeAtomicSharedPtr<SHAMapTreeNode>*
     getChildren() const;
 
     /** Call the `f` callback for all 16 (branchFactor) branches - even if

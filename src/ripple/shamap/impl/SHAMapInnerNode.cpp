@@ -22,7 +22,10 @@
 #include <ripple/basics/Log.h>
 #include <ripple/basics/Slice.h>
 #include <ripple/basics/contract.h>
+#ifndef SWD_LOCKLESS_INNER_NODE
 #include <ripple/basics/spinlock.h>
+#endif
+#include <ripple/basics/IntrusivePointer.ipp>
 #include <ripple/beast/core/LexicalCast.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/digest.h>
@@ -35,6 +38,22 @@
 
 namespace ripple {
 
+#ifdef SWD_LOCKLESS_INNER_NODE
+#define LOCK_CHILDREN
+#else
+#define LOCK_CHILDREN   \
+    spinlock sl(lock_); \
+    std::lock_guard lock(sl)
+#endif
+
+#ifdef SWD_LOCKLESS_INNER_NODE
+#define LOCK_CHILD(idx)
+#else
+#define LOCK_CHILD(idx)             \
+    packed_spinlock sl(lock_, idx); \
+    std::lock_guard lock(sl)
+#endif
+
 SHAMapInnerNode::SHAMapInnerNode(
     std::uint32_t cowid,
     std::uint8_t numAllocatedChildren)
@@ -43,6 +62,17 @@ SHAMapInnerNode::SHAMapInnerNode(
 }
 
 SHAMapInnerNode::~SHAMapInnerNode() = default;
+
+void
+SHAMapInnerNode::partialDestructor()
+{
+    intr_ptr::MaybeAtomicSharedPtr<SHAMapTreeNode>* children;
+    // structured bindings can't be captured in c++ 17; use tie instead
+    std::tie(std::ignore, std::ignore, children) =
+        hashesAndChildren_.getHashesAndChildren();
+    iterNonEmptyChildIndexes(
+        [&](auto branchNum, auto indexNum) { children[indexNum].reset(); });
+}
 
 template <class F>
 void
@@ -71,17 +101,17 @@ SHAMapInnerNode::getChildIndex(int i) const
     return hashesAndChildren_.getChildIndex(isBranch_, i);
 }
 
-std::shared_ptr<SHAMapTreeNode>
+intr_ptr::SharedPtr<SHAMapTreeNode>
 SHAMapInnerNode::clone(std::uint32_t cowid) const
 {
     auto const branchCount = getBranchCount();
     auto const thisIsSparse = !hashesAndChildren_.isDense();
-    auto p = std::make_shared<SHAMapInnerNode>(cowid, branchCount);
+    auto p = intr_ptr::make_shared<SHAMapInnerNode>(cowid, branchCount);
     p->hash_ = hash_;
     p->isBranch_ = isBranch_;
     p->fullBelowGen_ = fullBelowGen_;
     SHAMapHash *cloneHashes, *thisHashes;
-    std::shared_ptr<SHAMapTreeNode>*cloneChildren, *thisChildren;
+    intr_ptr::MaybeAtomicSharedPtr<SHAMapTreeNode>*cloneChildren, *thisChildren;
     // structured bindings can't be captured in c++ 17; use tie instead
     std::tie(std::ignore, cloneHashes, cloneChildren) =
         p->hashesAndChildren_.getHashesAndChildren();
@@ -101,10 +131,7 @@ SHAMapInnerNode::clone(std::uint32_t cowid) const
             cloneHashes[branchNum] = thisHashes[indexNum];
         });
     }
-
-    spinlock sl(lock_);
-    std::lock_guard lock(sl);
-
+    LOCK_CHILDREN;
     if (thisIsSparse)
     {
         int cloneChildIndex = 0;
@@ -122,7 +149,7 @@ SHAMapInnerNode::clone(std::uint32_t cowid) const
     return p;
 }
 
-std::shared_ptr<SHAMapTreeNode>
+intr_ptr::SharedPtr<SHAMapTreeNode>
 SHAMapInnerNode::makeFullInner(
     Slice data,
     SHAMapHash const& hash,
@@ -132,7 +159,7 @@ SHAMapInnerNode::makeFullInner(
     if (data.size() != branchFactor * uint256::bytes)
         Throw<std::runtime_error>("Invalid FI node");
 
-    auto ret = std::make_shared<SHAMapInnerNode>(0, branchFactor);
+    auto ret = intr_ptr::make_shared<SHAMapInnerNode>(0, branchFactor);
 
     SerialIter si(data);
 
@@ -156,7 +183,7 @@ SHAMapInnerNode::makeFullInner(
     return ret;
 }
 
-std::shared_ptr<SHAMapTreeNode>
+intr_ptr::SharedPtr<SHAMapTreeNode>
 SHAMapInnerNode::makeCompressedInner(Slice data)
 {
     // A compressed inner node is serialized as a series of 33 byte chunks,
@@ -169,7 +196,7 @@ SHAMapInnerNode::makeCompressedInner(Slice data)
 
     SerialIter si(data);
 
-    auto ret = std::make_shared<SHAMapInnerNode>(0, branchFactor);
+    auto ret = intr_ptr::make_shared<SHAMapInnerNode>(0, branchFactor);
 
     auto hashes = ret->hashesAndChildren_.getHashes();
 
@@ -211,13 +238,14 @@ void
 SHAMapInnerNode::updateHashDeep()
 {
     SHAMapHash* hashes;
-    std::shared_ptr<SHAMapTreeNode>* children;
+    intr_ptr::MaybeAtomicSharedPtr<SHAMapTreeNode>* children;
     // structured bindings can't be captured in c++ 17; use tie instead
     std::tie(std::ignore, hashes, children) =
         hashesAndChildren_.getHashesAndChildren();
     iterNonEmptyChildIndexes([&](auto branchNum, auto indexNum) {
-        if (children[indexNum] != nullptr)
-            hashes[indexNum] = children[indexNum]->getHash();
+        // use `get` to avoid one atomic load
+        if (auto p = children[indexNum].get())
+            hashes[indexNum] = p->getHash();
     });
     updateHash();
 }
@@ -272,7 +300,7 @@ SHAMapInnerNode::getString(const SHAMapNodeID& id) const
 
 // We are modifying an inner node
 void
-SHAMapInnerNode::setChild(int m, std::shared_ptr<SHAMapTreeNode> child)
+SHAMapInnerNode::setChild(int m, intr_ptr::SharedPtr<SHAMapTreeNode> child)
 {
     assert((m >= 0) && (m < branchFactor));
     assert(cowid_ != 0);
@@ -307,8 +335,9 @@ SHAMapInnerNode::setChild(int m, std::shared_ptr<SHAMapTreeNode> child)
 }
 
 // finished modifying, now make shareable
+template <class T>
 void
-SHAMapInnerNode::shareChild(int m, std::shared_ptr<SHAMapTreeNode> const& child)
+SHAMapInnerNode::shareChildHelper(int m, T const& child)
 {
     assert((m >= 0) && (m < branchFactor));
     assert(cowid_ != 0);
@@ -326,13 +355,11 @@ SHAMapInnerNode::getChildPointer(int branch)
     assert(!isEmptyBranch(branch));
 
     auto const index = *getChildIndex(branch);
-
-    packed_spinlock sl(lock_, index);
-    std::lock_guard lock(sl);
+    LOCK_CHILD(index);
     return hashesAndChildren_.getChildren()[index].get();
 }
 
-std::shared_ptr<SHAMapTreeNode>
+intr_ptr::SharedPtr<SHAMapTreeNode>
 SHAMapInnerNode::getChild(int branch)
 {
     assert(branch >= 0 && branch < branchFactor);
@@ -340,8 +367,7 @@ SHAMapInnerNode::getChild(int branch)
 
     auto const index = *getChildIndex(branch);
 
-    packed_spinlock sl(lock_, index);
-    std::lock_guard lock(sl);
+    LOCK_CHILDREN;
     return hashesAndChildren_.getChildren()[index];
 }
 
@@ -355,10 +381,10 @@ SHAMapInnerNode::getChildHash(int m) const
     return zeroSHAMapHash;
 }
 
-std::shared_ptr<SHAMapTreeNode>
+intr_ptr::SharedPtr<SHAMapTreeNode>
 SHAMapInnerNode::canonicalizeChild(
     int branch,
-    std::shared_ptr<SHAMapTreeNode> node)
+    intr_ptr::SharedPtr<SHAMapTreeNode> node)
 {
     assert(branch >= 0 && branch < branchFactor);
     assert(node);
@@ -367,8 +393,7 @@ SHAMapInnerNode::canonicalizeChild(
     auto [_, hashes, children] = hashesAndChildren_.getHashesAndChildren();
     assert(node->getHash() == hashes[childIndex]);
 
-    packed_spinlock sl(lock_, childIndex);
-    std::lock_guard lock(sl);
+    LOCK_CHILD(childIndex);
 
     if (children[childIndex])
     {
@@ -396,8 +421,9 @@ SHAMapInnerNode::invariants(bool is_root) const
         for (int i = 0; i < branchCount; ++i)
         {
             assert(hashes[i].isNonZero());
-            if (children[i] != nullptr)
-                children[i]->invariants();
+            // avoid extra atomic load by using get
+            if (auto p = children[i].get())
+                p->invariants();
             ++count;
         }
     }
@@ -408,8 +434,9 @@ SHAMapInnerNode::invariants(bool is_root) const
             if (hashes[i].isNonZero())
             {
                 assert((isBranch_ & (1 << i)) != 0);
-                if (children[i] != nullptr)
-                    children[i]->invariants();
+                // avoid extra atomic load by using get
+                if (auto p = children[i].get())
+                    p->invariants();
                 ++count;
             }
             else
@@ -426,5 +453,18 @@ SHAMapInnerNode::invariants(bool is_root) const
     }
     assert((count == 0) ? hash_.isZero() : hash_.isNonZero());
 }
+
+// TODO: remove this
+template void
+ripple::SHAMapInnerNode::shareChildHelper<
+    ripple::SharedIntrusive<ripple::SHAMapTreeNode, false>>(
+    int,
+    ripple::SharedIntrusive<ripple::SHAMapTreeNode, false> const&);
+
+template void
+ripple::SHAMapInnerNode::shareChildHelper<
+    ripple::SharedIntrusive<ripple::SHAMapInnerNode, false>>(
+    int,
+    ripple::SharedIntrusive<ripple::SHAMapInnerNode, false> const&);
 
 }  // namespace ripple

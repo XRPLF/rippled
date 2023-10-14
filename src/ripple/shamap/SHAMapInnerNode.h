@@ -20,6 +20,7 @@
 #ifndef RIPPLE_SHAMAP_SHAMAPINNERNODE_H_INCLUDED
 #define RIPPLE_SHAMAP_SHAMAPINNERNODE_H_INCLUDED
 
+#include <ripple/basics/IntrusivePointer.h>
 #include <ripple/basics/TaggedCache.h>
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/shamap/SHAMapItem.h>
@@ -49,15 +50,17 @@ public:
 private:
     /** Opaque type that contains the `hashes` array (array of type
        `SHAMapHash`) and the `children` array (array of type
-       `std::shared_ptr<SHAMapInnerNode>`).
+       `intr_ptr::MaybeAtomicSharedPtr<SHAMapInnerNode>`).
      */
     TaggedPointer hashesAndChildren_;
 
     std::uint32_t fullBelowGen_ = 0;
     std::uint16_t isBranch_ = 0;
 
+#ifndef SWD_LOCKLESS_INNER_NODE
     /** A bitlock for the children of this node, with one bit per child */
     mutable std::atomic<std::uint16_t> lock_ = 0;
+#endif
 
     /** Convert arrays stored in `hashesAndChildren_` so they can store the
         requested number of children.
@@ -114,7 +117,11 @@ public:
     operator=(SHAMapInnerNode const&) = delete;
     ~SHAMapInnerNode();
 
-    std::shared_ptr<SHAMapTreeNode>
+    // Needed to support intrusive weak pointers
+    void
+    partialDestructor() override;
+
+    intr_ptr::SharedPtr<SHAMapTreeNode>
     clone(std::uint32_t cowid) const override;
 
     SHAMapNodeType
@@ -148,19 +155,28 @@ public:
     getChildHash(int m) const;
 
     void
-    setChild(int m, std::shared_ptr<SHAMapTreeNode> child);
+    setChild(int m, intr_ptr::SharedPtr<SHAMapTreeNode> child);
 
+    // TODO: remove this
+    template <class T>
     void
-    shareChild(int m, std::shared_ptr<SHAMapTreeNode> const& child);
+    shareChildHelper(int m, T const& child);
+
+    template <class T, bool Atomic>
+    requires std::derived_from<T, SHAMapTreeNode> void
+    shareChild(int m, SharedIntrusive<T, Atomic> const& child)
+    {
+        shareChildHelper(m, child);
+    }
 
     SHAMapTreeNode*
     getChildPointer(int branch);
 
-    std::shared_ptr<SHAMapTreeNode>
+    intr_ptr::SharedPtr<SHAMapTreeNode>
     getChild(int branch);
 
-    std::shared_ptr<SHAMapTreeNode>
-    canonicalizeChild(int branch, std::shared_ptr<SHAMapTreeNode> node);
+    intr_ptr::SharedPtr<SHAMapTreeNode>
+    canonicalizeChild(int branch, intr_ptr::SharedPtr<SHAMapTreeNode> node);
 
     // sync functions
     bool
@@ -188,10 +204,10 @@ public:
     void
     invariants(bool is_root = false) const override;
 
-    static std::shared_ptr<SHAMapTreeNode>
+    static intr_ptr::SharedPtr<SHAMapTreeNode>
     makeFullInner(Slice data, SHAMapHash const& hash, bool hashValid);
 
-    static std::shared_ptr<SHAMapTreeNode>
+    static intr_ptr::SharedPtr<SHAMapTreeNode>
     makeCompressedInner(Slice data);
 };
 
