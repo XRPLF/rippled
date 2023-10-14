@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpld/nodestore/detail/DatabaseNodeImp.h>
+#include <xrpld/app/ledger/Ledger.h>
 #include <xrpl/basics/TaggedCache.ipp>
 #include <xrpl/protocol/HashPrefix.h>
 

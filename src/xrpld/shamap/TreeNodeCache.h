@@ -21,10 +21,17 @@
 #define RIPPLE_SHAMAP_TREENODECACHE_H_INCLUDED
 
 #include <xrpld/shamap/SHAMapTreeNode.h>
+#include <xrpl/basics/IntrusivePointer.h>
+#include <xrpl/basics/TaggedCache.h>
 
 namespace ripple {
 
-using TreeNodeCache = TaggedCache<uint256, SHAMapTreeNode>;
+using TreeNodeCache = TaggedCache<
+    uint256,
+    SHAMapTreeNode,
+    /*IsKeyCache*/ false,
+    SharedWeakUnion<SHAMapTreeNode>,
+    SharedIntrusive<SHAMapTreeNode>>;
 
 }  // namespace ripple
 
