@@ -74,7 +74,7 @@ makeObjectValue(
 }
 
 /** Return names of all methods. */
-std::vector<char const*>
+std::set<char const*>
 getHandlerNames();
 
 template <class T>

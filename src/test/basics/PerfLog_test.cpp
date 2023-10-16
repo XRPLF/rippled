@@ -309,7 +309,9 @@ public:
 
         // Get the all the labels we can use for RPC interfaces without
         // causing an assert.
-        std::vector<char const*> labels{ripple::RPC::getHandlerNames()};
+        std::set<const char*> handlerNames = ripple::RPC::getHandlerNames();
+        std::vector<char const*> labels(
+            handlerNames.begin(), handlerNames.end());
         std::shuffle(labels.begin(), labels.end(), default_prng());
 
         // Get two IDs to associate with each label.  Errors tend to happen at

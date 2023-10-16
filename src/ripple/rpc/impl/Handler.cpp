@@ -256,16 +256,12 @@ public:
         return i == range.second ? nullptr : &i->second;
     }
 
-    std::vector<char const*>
+    std::set<char const*>
     getHandlerNames() const
     {
-        std::vector<char const*> ret;
+        std::set<char const*> ret;
         for (auto const& i : table_)
-        {
-            // Note, table_ is always ordered, allowing such a simple check
-            if (ret.empty() || std::strcmp(ret.back(), i.second.name_) != 0)
-                ret.push_back(i.second.name_);
-        }
+            ret.insert(i.second.name_);
 
         return ret;
     }
@@ -297,11 +293,11 @@ getHandler(unsigned version, bool betaEnabled, std::string const& name)
     return HandlerTable::instance().getHandler(version, betaEnabled, name);
 }
 
-std::vector<char const*>
+std::set<char const*>
 getHandlerNames()
 {
     return HandlerTable::instance().getHandlerNames();
-};
+}
 
 }  // namespace RPC
 }  // namespace ripple

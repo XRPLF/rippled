@@ -83,7 +83,10 @@ class Handler_test : public beast::unit_test::suite
         std::random_device dev;
         std::ranlux48 prng(dev());
 
-        auto const names = getHandlerNames();
+        std::set<const char*> handlerNames = getHandlerNames();
+        std::vector<const char*> names(
+            handlerNames.begin(), handlerNames.end());
+
         std::uniform_int_distribution<std::size_t> distr{0, names.size() - 1};
 
         std::size_t dummy = 0;
