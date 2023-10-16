@@ -42,7 +42,7 @@ namespace detail {
 class ServerDefinitions
 {
 private:
-    std::string const
+    std::string
     translate(std::string const& inp);
 
     Json::Value
@@ -67,16 +67,16 @@ public:
     }
 };
 
-std::string const
+std::string
 ServerDefinitions::translate(std::string const& inp)
 {
-    auto replace = [&](const char* oldStr, const char* newStr) -> std::string {
+    auto replace = [&](char const* oldStr, char const* newStr) -> std::string {
         std::string out = inp;
         boost::replace_all(out, oldStr, newStr);
         return out;
     };
 
-    auto contains = [&](const char* s) -> bool {
+    auto contains = [&](char const* s) -> bool {
         return inp.find(s) != std::string::npos;
     };
 
