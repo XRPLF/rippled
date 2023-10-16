@@ -33,6 +33,7 @@ jobs:
           conan --version
           cmake --version
           env | sort
+          echo "Test!!!!"
       - name: configure Conan
         run : |
           conan profile get env.CXXFLAGS default || true
