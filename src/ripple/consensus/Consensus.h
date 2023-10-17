@@ -1866,7 +1866,8 @@ Consensus<Adaptor>::updateOurPositions(bool const share)
         {
             ++maxVote;
             consensusCloseTime = bestCtime;
-            JLOG(j_.info()) << "possibly at impasse, setting close time to " << bestCtime.time_since_epoch().count();
+            JLOG(j_.info()) << "possibly at impasse, setting close time to "
+                            << bestCtime.time_since_epoch().count();
         }
         else if (maxVote >= threshVote)
         {
@@ -1877,14 +1878,15 @@ Consensus<Adaptor>::updateOurPositions(bool const share)
         if (maxVote >= threshConsensus)
             haveCloseTimeConsensus_ = true;
 
-        JLOG(j_.debug())
-            << "CCTime: seq "
-            << static_cast<std::uint32_t>(previousLedger_.seq()) + 1 << ": "
-            << bestCtime.time_since_epoch().count() << " has " << maxVote << ", "
-            << threshVote << "is required for adopting new close time, "
-            << threshConsensus << "is required for close time consensus. "
-            << " close time consensus is "
-            << (haveCloseTimeConsensus_ ? "" : "not") << " met.";
+        JLOG(j_.debug()) << "CCTime: seq "
+                         << static_cast<std::uint32_t>(previousLedger_.seq()) +
+                1 << ": " << bestCtime.time_since_epoch().count()
+                         << " has " << maxVote << ", " << threshVote
+                         << "is required for adopting new close time, "
+                         << threshConsensus
+                         << "is required for close time consensus. "
+                         << " close time consensus is "
+                         << (haveCloseTimeConsensus_ ? "" : "not") << " met.";
 
         if (!haveCloseTimeConsensus_)
         {
