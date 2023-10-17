@@ -40,12 +40,7 @@ namespace ripple {
 NotTEC
 preflight0(PreflightContext const& ctx)
 {
-    if (isPseudoTx(ctx.tx))
-    {
-        // all emitted and pseudo transactions are free to pass, do not need
-        // network id
-    }
-    else
+    if (ctx.tx.isFieldPresent(sfNetworkID))
     {
         uint32_t nodeNID = ctx.app.config().NETWORK_ID;
         std::optional<uint32_t> txNID = ctx.tx[~sfNetworkID];
