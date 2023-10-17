@@ -7231,4 +7231,5 @@ BEAST_DEFINE_TESTSUITE_PRIO(NFToken2, tx, ripple, 2);
 BEAST_DEFINE_TESTSUITE_PRIO(NFToken3, tx, ripple, 2);
 BEAST_DEFINE_TESTSUITE_PRIO(NFToken4, tx, ripple, 2);
 BEAST_DEFINE_TESTSUITE_PRIO(NFToken5, tx, ripple, 2);
+
 }  // namespace ripple
