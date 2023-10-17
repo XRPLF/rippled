@@ -95,7 +95,7 @@ public:
     /** Repair a hash to index mapping
         @param ledgerIndex The index whose mapping is to be repaired
         @param ledgerHash The hash it is to be mapped to
-        @return `true` if the mapping was repaired
+        @return `false` if the mapping was repaired
     */
     bool
     fixIndex(LedgerIndex ledgerIndex, LedgerHash const& ledgerHash);

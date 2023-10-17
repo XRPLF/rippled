@@ -19,7 +19,6 @@
 
 #include <ripple/app/main/Application.h>
 #include <ripple/app/tx/impl/details/NFTokenUtils.h>
-#include <ripple/json/json_writer.h>
 #include <ripple/ledger/ReadView.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
@@ -66,7 +65,7 @@ doAccountNFTs(RPC::JsonContext& context)
         RPC::inject_error(rpcACT_MALFORMED, result);
         return result;
     }
-    auto const accountID{std::move(id.value())};
+    auto const accountID{id.value()};
 
     if (!ledger->exists(keylet::account(accountID)))
         return rpcError(rpcACT_NOT_FOUND);
@@ -179,7 +178,7 @@ doAccountObjects(RPC::JsonContext& context)
         RPC::inject_error(rpcACT_MALFORMED, result);
         return result;
     }
-    auto const accountID{std::move(id.value())};
+    auto const accountID{id.value()};
 
     if (!ledger->exists(keylet::account(accountID)))
         return rpcError(rpcACT_NOT_FOUND);
@@ -198,7 +197,11 @@ doAccountObjects(RPC::JsonContext& context)
             {jss::escrow, ltESCROW},
             {jss::nft_page, ltNFTOKEN_PAGE},
             {jss::payment_channel, ltPAYCHAN},
-            {jss::state, ltRIPPLE_STATE}};
+            {jss::state, ltRIPPLE_STATE},
+            {jss::xchain_owned_claim_id, ltXCHAIN_OWNED_CLAIM_ID},
+            {jss::xchain_owned_create_account_claim_id,
+             ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID},
+            {jss::bridge, ltBRIDGE}};
 
         typeFilter.emplace();
         typeFilter->reserve(std::size(deletionBlockers));

@@ -26,6 +26,8 @@
 #include <ripple/basics/UnorderedContainers.h>
 #include <ripple/basics/base_uint.h>
 #include <ripple/json/json_value.h>
+#include <ripple/protocol/json_get_or_throw.h>
+
 #include <cstddef>
 #include <mutex>
 #include <optional>
@@ -122,6 +124,21 @@ void
 initAccountIdCache(std::size_t count);
 
 }  // namespace ripple
+
+//------------------------------------------------------------------------------
+namespace Json {
+template <>
+inline ripple::AccountID
+getOrThrow(Json::Value const& v, ripple::SField const& field)
+{
+    using namespace ripple;
+
+    std::string const b58 = getOrThrow<std::string>(v, field);
+    if (auto const r = parseBase58<AccountID>(b58))
+        return *r;
+    Throw<JsonTypeMismatchError>(field.getJsonName(), "AccountID");
+}
+}  // namespace Json
 
 //------------------------------------------------------------------------------
 

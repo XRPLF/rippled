@@ -40,6 +40,9 @@ trust(
     Account const& peer,
     std::uint32_t flags);
 
+Json::Value
+claw(Account const& account, STAmount const& amount);
+
 }  // namespace jtx
 }  // namespace test
 }  // namespace ripple

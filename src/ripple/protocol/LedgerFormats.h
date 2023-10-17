@@ -91,6 +91,13 @@ enum LedgerEntryType : std::uint16_t
      */
     ltOFFER = 0x006f,
 
+
+    /** The ledger object which lists details about sidechains.
+
+        \sa keylet::bridge
+    */
+    ltBRIDGE = 0x0069,
+
     /** A ledger object that contains a list of ledger hashes.
 
         This type is used to store the ledger hashes which the protocol uses
@@ -108,6 +115,18 @@ enum LedgerEntryType : std::uint16_t
         \sa keylet::amendments
      */
     ltAMENDMENTS = 0x0066,
+
+    /** A claim id for a cross chain transaction.
+
+        \sa keylet::xChainClaimID
+    */
+    ltXCHAIN_OWNED_CLAIM_ID = 0x0071,
+
+    /** A claim id for a cross chain create account transaction.
+
+        \sa keylet::xChainCreateAccountClaimID
+    */
+    ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID = 0x0074,
 
     /** The ledger object which lists the network's fee settings.
 
@@ -160,6 +179,12 @@ enum LedgerEntryType : std::uint16_t
         \sa keylet::nftoffer
      */
     ltNFTOKEN_OFFER = 0x0037,
+
+    /** The ledger object which tracks the AMM.
+
+       \sa keylet::amm
+    */
+    ltAMM = 0x0079,
 
     //---------------------------------------------------------------------------
     /** A special type, matching any ledger entry type.
@@ -243,6 +268,9 @@ enum LedgerSpecificFlags {
         0x10000000,               // True, reject new paychans
     lsfDisallowIncomingTrustline =
         0x20000000,               // True, reject new trustlines (only if no issued assets)
+    // 0x40000000 is available
+    lsfAllowTrustLineClawback =
+        0x80000000,               // True, enable clawback
 
     // ltOFFER
     lsfPassive = 0x00010000,
@@ -257,6 +285,8 @@ enum LedgerSpecificFlags {
     lsfHighNoRipple = 0x00200000,
     lsfLowFreeze = 0x00400000,   // True, low side has set freeze flag
     lsfHighFreeze = 0x00800000,  // True, high side has set freeze flag
+    lsfAMMNode = 0x01000000,     // True, trust line to AMM. Used by client
+                                 // apps to identify payments via AMM.
 
     // ltSIGNER_LIST
     lsfOneOwnerCount = 0x00010000,  // True, uses only one OwnerCount

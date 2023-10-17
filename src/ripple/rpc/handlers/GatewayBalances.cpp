@@ -78,6 +78,12 @@ doGatewayBalances(RPC::JsonContext& context)
 
     result[jss::account] = toBase58(accountID);
 
+    if (context.apiVersion > 1u && !ledger->exists(keylet::account(accountID)))
+    {
+        RPC::inject_error(rpcACT_NOT_FOUND, result);
+        return result;
+    }
+
     // Parse the specified hotwallet(s), if any
     std::set<AccountID> hotWallets;
 
@@ -116,7 +122,18 @@ doGatewayBalances(RPC::JsonContext& context)
 
         if (!valid)
         {
-            result[jss::error] = "invalidHotWallet";
+            // The documentation states that invalidParams is used when
+            // One or more fields are specified incorrectly.
+            // invalidHotwallet should be used when the account exists, but does
+            // not have currency issued by the account from the request.
+            if (context.apiVersion < 2u)
+            {
+                RPC::inject_error(rpcINVALID_HOTWALLET, result);
+            }
+            else
+            {
+                RPC::inject_error(rpcINVALID_PARAMS, result);
+            }
             return result;
         }
     }

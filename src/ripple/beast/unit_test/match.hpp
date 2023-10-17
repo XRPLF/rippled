@@ -94,6 +94,14 @@ selector::operator()(suite_info const& s)
             return ! s.manual();
         }
 
+        // check start of name
+        if (s.name().starts_with(pat_) || s.full_name().starts_with(pat_))
+        {
+            // Don't change the mode so that the partial pattern can match
+            // more than once
+            return !s.manual();
+        }
+
         return false;
 
     case suite:

@@ -68,10 +68,8 @@ namespace detail {
 [[nodiscard]] std::uint64_t
 getMemorySize()
 {
-    struct sysinfo si;
-
-    if (sysinfo(&si) == 0)
-        return static_cast<std::uint64_t>(si.totalram);
+    if (struct sysinfo si; sysinfo(&si) == 0)
+        return static_cast<std::uint64_t>(si.totalram) * si.mem_unit;
 
     return 0;
 }
@@ -128,7 +126,7 @@ sizedItems
     {SizedItem::lgrDBCache,         {{      4,       8,      16,      32,     128 }}},
     {SizedItem::openFinalLimit,     {{      8,      16,      32,      64,     128 }}},
     {SizedItem::burstSize,          {{      4,       8,      16,      32,      48 }}},
-    {SizedItem::ramSizeGB,          {{      8,      12,      16,      24,      32 }}},
+    {SizedItem::ramSizeGB,          {{      6,       8,      12,      24,       0 }}},
     {SizedItem::accountIdCacheSize, {{  20047,   50053,   77081,  150061,  300007 }}}
 }};
 
@@ -208,14 +206,10 @@ parseIniFile(std::string const& strInput, const bool bTrim)
 IniFileSections::mapped_type*
 getIniFileSection(IniFileSections& secSource, std::string const& strSection)
 {
-    IniFileSections::iterator it;
-    IniFileSections::mapped_type* smtResult;
-    it = secSource.find(strSection);
-    if (it == secSource.end())
-        smtResult = nullptr;
-    else
-        smtResult = &(it->second);
-    return smtResult;
+    if (auto it = secSource.find(strSection); it != secSource.end())
+        return &(it->second);
+
+    return nullptr;
 }
 
 bool
@@ -225,22 +219,21 @@ getSingleSection(
     std::string& strValue,
     beast::Journal j)
 {
-    IniFileSections::mapped_type* pmtEntries =
-        getIniFileSection(secSource, strSection);
-    bool bSingle = pmtEntries && 1 == pmtEntries->size();
+    auto const pmtEntries = getIniFileSection(secSource, strSection);
 
-    if (bSingle)
+    if (pmtEntries && pmtEntries->size() == 1)
     {
         strValue = (*pmtEntries)[0];
-    }
-    else if (pmtEntries)
-    {
-        JLOG(j.warn()) << boost::str(
-            boost::format("Section [%s]: requires 1 line not %d lines.") %
-            strSection % pmtEntries->size());
+        return true;
     }
 
-    return bSingle;
+    if (pmtEntries)
+    {
+        JLOG(j.warn()) << "Section '" << strSection << "': requires 1 line not "
+                       << pmtEntries->size() << " lines.";
+    }
+
+    return false;
 }
 
 //------------------------------------------------------------------------------
@@ -265,7 +258,8 @@ getEnvVar(char const* name)
 }
 
 Config::Config()
-    : j_(beast::Journal::getNullSink()), ramSize_(detail::getMemorySize())
+    : j_(beast::Journal::getNullSink())
+    , ramSize_(detail::getMemorySize() / (1024 * 1024 * 1024))
 {
 }
 
@@ -290,22 +284,18 @@ Config::setupControl(bool bQuiet, bool bSilent, bool bStandalone)
             threshold.second.begin(),
             threshold.second.end(),
             [this](std::size_t limit) {
-                return (ramSize_ / (1024 * 1024 * 1024)) < limit;
+                return (limit == 0) || (ramSize_ < limit);
             });
+
+        assert(ns != threshold.second.end());
 
         if (ns != threshold.second.end())
             NODE_SIZE = std::distance(threshold.second.begin(), ns);
 
         // Adjust the size based on the number of hardware threads of
         // execution available to us:
-        if (auto const hc = std::thread::hardware_concurrency())
-        {
-            if (hc == 1)
-                NODE_SIZE = 0;
-
-            if (hc < 4)
-                NODE_SIZE = std::min<std::size_t>(NODE_SIZE, 1);
-        }
+        if (auto const hc = std::thread::hardware_concurrency(); hc != 0)
+            NODE_SIZE = std::min<std::size_t>(hc / 2, NODE_SIZE);
     }
 
     assert(NODE_SIZE <= 4);
@@ -465,9 +455,6 @@ Config::loadFromString(std::string const& fileContents)
 
     if (auto s = getIniFileSection(secConfig, SECTION_IPS_FIXED))
         IPS_FIXED = *s;
-
-    if (auto s = getIniFileSection(secConfig, SECTION_SNTP))
-        SNTP_SERVERS = *s;
 
     // if the user has specified ip:port then replace : with a space.
     {

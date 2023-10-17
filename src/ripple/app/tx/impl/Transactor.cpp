@@ -757,6 +757,32 @@ removeExpiredNFTokenOffers(
     }
 }
 
+static void
+removeDeletedTrustLines(
+    ApplyView& view,
+    std::vector<uint256> const& trustLines,
+    beast::Journal viewJ)
+{
+    if (trustLines.size() > maxDeletableAMMTrustLines)
+    {
+        JLOG(viewJ.error())
+            << "removeDeletedTrustLines: deleted trustlines exceed max "
+            << trustLines.size();
+        return;
+    }
+
+    for (auto const& index : trustLines)
+    {
+        if (auto const sleState = view.peek({ltRIPPLE_STATE, index});
+            deleteAMMTrustLine(view, sleState, std::nullopt, viewJ) !=
+            tesSUCCESS)
+        {
+            JLOG(viewJ.error())
+                << "removeDeletedTrustLines: failed to delete AMM trustline";
+        }
+    }
+}
+
 /** Reset the context, discarding any changes made and adjust the fee */
 std::pair<TER, XRPAmount>
 Transactor::reset(XRPAmount fee)
@@ -849,7 +875,8 @@ Transactor::operator()()
     }
     else if (
         (result == tecOVERSIZE) || (result == tecKILLED) ||
-        (result == tecEXPIRED) || (isTecClaimHardFail(result, view().flags())))
+        (result == tecINCOMPLETE) || (result == tecEXPIRED) ||
+        (isTecClaimHardFail(result, view().flags())))
     {
         JLOG(j_.trace()) << "reapplying because of " << transToken(result);
 
@@ -858,10 +885,21 @@ Transactor::operator()()
         //        should be used, making it possible to do more useful work
         //        when transactions fail with a `tec` code.
         std::vector<uint256> removedOffers;
+        std::vector<uint256> removedTrustLines;
+        std::vector<uint256> expiredNFTokenOffers;
 
-        if ((result == tecOVERSIZE) || (result == tecKILLED))
+        bool const doOffers =
+            ((result == tecOVERSIZE) || (result == tecKILLED));
+        bool const doLines = (result == tecINCOMPLETE);
+        bool const doNFTokenOffers = (result == tecEXPIRED);
+        if (doOffers || doLines || doNFTokenOffers)
         {
-            ctx_.visit([&removedOffers](
+            ctx_.visit([&doOffers,
+                        &removedOffers,
+                        &doLines,
+                        &removedTrustLines,
+                        &doNFTokenOffers,
+                        &expiredNFTokenOffers](
                            uint256 const& index,
                            bool isDelete,
                            std::shared_ptr<SLE const> const& before,
@@ -869,30 +907,23 @@ Transactor::operator()()
                 if (isDelete)
                 {
                     assert(before && after);
-                    if (before && after && (before->getType() == ltOFFER) &&
+                    if (doOffers && before && after &&
+                        (before->getType() == ltOFFER) &&
                         (before->getFieldAmount(sfTakerPays) ==
                          after->getFieldAmount(sfTakerPays)))
                     {
                         // Removal of offer found or made unfunded
                         removedOffers.push_back(index);
                     }
-                }
-            });
-        }
 
-        std::vector<uint256> expiredNFTokenOffers;
+                    if (doLines && before && after &&
+                        (before->getType() == ltRIPPLE_STATE))
+                    {
+                        // Removal of obsolete AMM trust line
+                        removedTrustLines.push_back(index);
+                    }
 
-        if (result == tecEXPIRED)
-        {
-            ctx_.visit([&expiredNFTokenOffers](
-                           uint256 const& index,
-                           bool isDelete,
-                           std::shared_ptr<SLE const> const& before,
-                           std::shared_ptr<SLE const> const& after) {
-                if (isDelete)
-                {
-                    assert(before && after);
-                    if (before && after &&
+                    if (doNFTokenOffers && before && after &&
                         (before->getType() == ltNFTOKEN_OFFER))
                         expiredNFTokenOffers.push_back(index);
                 }
@@ -916,6 +947,10 @@ Transactor::operator()()
         if (result == tecEXPIRED)
             removeExpiredNFTokenOffers(
                 view(), expiredNFTokenOffers, ctx_.app.journal("View"));
+
+        if (result == tecINCOMPLETE)
+            removeDeletedTrustLines(
+                view(), removedTrustLines, ctx_.app.journal("View"));
 
         applied = isTecClaim(result);
     }

@@ -10,16 +10,12 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: dependencies
-      uses: ./.github/actions/dependencies
-      with:
-        configuration: ${{ inputs.configuration }}
     - name: configure
       shell: bash
       run: |
         cd ${build_dir}
         cmake \
-          ${{ inputs.generator && format('-G {0}', inputs.generator) || '' }} \
+          ${{ inputs.generator && format('-G "{0}"', inputs.generator) || '' }} \
           -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
           -DCMAKE_BUILD_TYPE=${{ inputs.configuration }} \
           ${{ inputs.cmake-args }} \
