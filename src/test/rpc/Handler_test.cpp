@@ -29,6 +29,16 @@
 
 namespace ripple::RPC {
 
+// NOTE: there should be no need for this function;
+// `std::cout << some_duration` should just work if built with a compliant
+// C++20 compiler. Sadly, we are not using one, as of today
+// TODO: remove this operator<< overload when we bump compiler version
+std::ostream&
+operator<<(std::ostream& os, std::chrono::nanoseconds ns)
+{
+    return (os << ns.count() << "ns");
+}
+
 // NOTE This is a rather naiive effort at a microbenchmark. Ideally we want
 // Google Benchmark, or something similar. Also, this actually does not belong
 // to unit tests, as it makes little sense to run it in conditions very
@@ -37,25 +47,27 @@ namespace ripple::RPC {
 
 class Handler_test : public beast::unit_test::suite
 {
-    std::tuple<double, double, std::size_t>
-    time(std::size_t n, auto f, auto prng)
+    auto
+    time(std::size_t n, auto f, auto prng) -> auto
     {
+        using clock = std::chrono::steady_clock;
         assert(n > 0);
         double sum = 0;
         double sum_squared = 0;
         std::size_t j = 0;
         while (j < n)
         {
-            // Generate 20 inputs upfront, separated from the inner loop
-            std::array<decltype(prng()), 20> inputs = {};
+            // Generate 100 inputs upfront, separated from the inner loop
+            std::array<decltype(prng()), 100> inputs = {};
             for (auto& i : inputs)
             {
                 i = prng();
             }
 
-            // Take 20 samples and throw away 7 from each end, using middle 6
-            std::array<long, 20> samples = {};
-            for (std::size_t k = 0; k < 20; ++k)
+            // Take 100 samples, then sort and throw away 35 from each end,
+            // using only middle 30. This helps to reduce measurement noise.
+            std::array<long, 100> samples = {};
+            for (std::size_t k = 0; k < 100; ++k)
             {
                 auto start = std::chrono::steady_clock::now();
                 f(inputs[k]);
@@ -63,7 +75,7 @@ class Handler_test : public beast::unit_test::suite
             }
 
             std::sort(samples.begin(), samples.end());
-            for (std::size_t k = 7; k < 13; ++k)
+            for (std::size_t k = 35; k < 65; ++k)
             {
                 j += 1;
                 sum += samples[k];
@@ -71,8 +83,12 @@ class Handler_test : public beast::unit_test::suite
             }
         }
 
-        double const mean = sum / j;
-        return {mean, std::sqrt((sum_squared / j) - (mean * mean)), j};
+        const double mean_squared = (sum * sum) / (j * j);
+        return std::make_tuple(
+            clock::duration{static_cast<long>(sum / j)},
+            clock::duration{
+                static_cast<long>(std::sqrt((sum_squared / j) - mean_squared))},
+            j);
     }
 
     void

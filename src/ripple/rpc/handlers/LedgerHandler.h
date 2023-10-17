@@ -59,7 +59,7 @@ public:
     void
     writeResult(Object&);
 
-    static constexpr char const name[] = "ledger";
+    static constexpr char name[] = "ledger";
 
     static constexpr unsigned minApiVer = 1;
 
