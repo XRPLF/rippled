@@ -60,7 +60,8 @@ DIDSet::preflight(PreflightContext const& ctx)
         return temEMPTY_DID;
 
     if (ctx.tx.isFieldPresent(sfURI) && ctx.tx[sfURI].empty() &&
-        ctx.tx.isFieldPresent(sfDIDDocument) && ctx.tx[sfDIDDocument].empty())
+        ctx.tx.isFieldPresent(sfDIDDocument) && ctx.tx[sfDIDDocument].empty() &&
+        ctx.tx.isFieldPresent(sfData) && ctx.tx[sfData].empty())
         return temEMPTY_DID;
 
     auto isTooLong = [&](auto const& sField, std::size_t length) -> bool {
@@ -75,20 +76,6 @@ DIDSet::preflight(PreflightContext const& ctx)
         return temMALFORMED;
 
     return preflight2(ctx);
-}
-
-TER
-DIDSet::preclaim(PreclaimContext const& ctx)
-{
-    if (!ctx.view.exists(keylet::did(ctx.tx[sfAccount])) &&
-        !ctx.tx.isFieldPresent(sfURI) && !ctx.tx.isFieldPresent(sfDIDDocument))
-    {
-        // Need either the URI or document if the account doesn't already have a
-        // DID
-        return tecEMPTY_DID;
-    }
-
-    return tesSUCCESS;
 }
 
 TER
@@ -153,7 +140,8 @@ DIDSet::doApply()
         update(sfData);
 
         if (!sleDID->isFieldPresent(sfURI) &&
-            !sleDID->isFieldPresent(sfDIDDocument))
+            !sleDID->isFieldPresent(sfDIDDocument) &&
+            !sleDID->isFieldPresent(sfData))
         {
             return tecEMPTY_DID;
         }
