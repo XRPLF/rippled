@@ -6962,7 +6962,7 @@ class NFToken0_test : public beast::unit_test::suite
                 BEAST_EXPECT(ownerCount(env, bob) == 1);
 
                 // alice now mints 31 more NFTs and creates an offer for each
-                // NFT
+                // NFT, then sells to bob
                 for (size_t i = 0; i < 31; i++)
                 {
                     // alice mints an NFT and creates a sell offer for 0 XRP
