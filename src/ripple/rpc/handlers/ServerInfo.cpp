@@ -61,7 +61,7 @@ public:
     }
 
     Json::Value const&
-    operator()() const
+    get() const
     {
         return defs_;
     }
@@ -310,7 +310,7 @@ doServerDefinitions(RPC::JsonContext& context)
         jv[jss::hash] = to_string(hash);
         return jv;
     }
-    return defs();
+    return defs.get();
 }
 
 Json::Value
