@@ -33,6 +33,7 @@
 #include <ripple/app/tx/impl/CreateCheck.h>
 #include <ripple/app/tx/impl/CreateOffer.h>
 #include <ripple/app/tx/impl/CreateTicket.h>
+#include <ripple/app/tx/impl/DID.h>
 #include <ripple/app/tx/impl/DeleteAccount.h>
 #include <ripple/app/tx/impl/DepositPreauth.h>
 #include <ripple/app/tx/impl/Escrow.h>
@@ -154,6 +155,10 @@ with_txn_type(TxType txnType, F&& f)
             return f.template operator()<XChainAddAccountCreateAttestation>();
         case ttXCHAIN_ACCOUNT_CREATE_COMMIT:
             return f.template operator()<XChainCreateAccountCommit>();
+        case ttDID_SET:
+            return f.template operator()<DIDSet>();
+        case ttDID_DELETE:
+            return f.template operator()<DIDDelete>();
         default:
             throw UnknownTxnType(txnType);
     }
