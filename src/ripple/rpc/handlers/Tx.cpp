@@ -311,17 +311,41 @@ populateJsonResponse(
     // no errors
     else if (result.txn)
     {
-        response = result.txn->getJson(JsonOptions::include_date, args.binary);
         auto const& sttx = result.txn->getSTransaction();
-        if (!args.binary)
-            RPC::insertDeliverMax(
-                response, sttx->getTxnType(), context.apiVersion);
+        if (context.apiVersion > 1)
+        {
+            std::string hash;
+            if (args.binary)
+                response[jss::tx_blob] = result.txn->getJson(
+                    JsonOptions::include_date, true, {std::ref(hash)});
+            else
+            {
+                response[jss::tx_json] = result.txn->getJson(
+                    JsonOptions::include_date, false, {std::ref(hash)});
+                RPC::insertDeliverMax(
+                    response[jss::tx_json],
+                    sttx->getTxnType(),
+                    context.apiVersion);
+            }
+            response[jss::hash] = hash;
+            // TODO set `response[jss::close_time_iso]`
+        }
+        else
+        {
+            response =
+                result.txn->getJson(JsonOptions::include_date, args.binary);
+            if (!args.binary)
+                RPC::insertDeliverMax(
+                    response, sttx->getTxnType(), context.apiVersion);
+        }
 
         // populate binary metadata
         if (auto blob = std::get_if<Blob>(&result.meta))
         {
             assert(args.binary);
-            response[jss::meta] = strHex(makeSlice(*blob));
+            auto json_meta =
+                (context.apiVersion > 1 ? jss::meta_blob : jss::meta);
+            response[json_meta] = strHex(makeSlice(*blob));
         }
         // populate meta data
         else if (auto m = std::get_if<std::shared_ptr<TxMeta>>(&result.meta))
