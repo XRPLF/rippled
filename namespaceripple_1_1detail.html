@@ -133,6 +133,8 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1RippledCfgGuard.html">RippledCfgGuard</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Write a rippled config file and remove when done.  <a href="classripple_1_1detail_1_1RippledCfgGuard.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1ServerDefinitions.html">ServerDefinitions</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1STVar.html">STVar</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1test__user__type__free.html">test_user_type_free</a></td></tr>
@@ -363,8 +365,6 @@ Functions</h2></td></tr>
 <tr class="separator:a6d35a1558ac6ed399df07c9eb9dbe2c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab5cc8daa9fe01aa816164b9637c5aa7b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#ab5cc8daa9fe01aa816164b9637c5aa7b">operator!=</a> (<a class="el" href="classripple_1_1detail_1_1STVar.html">STVar</a> const &amp;lhs, <a class="el" href="classripple_1_1detail_1_1STVar.html">STVar</a> const &amp;rhs)</td></tr>
 <tr class="separator:ab5cc8daa9fe01aa816164b9637c5aa7b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a28b0f1cb520feb43eb2d9a3a3c2157fb"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/container/unordered_map.html">std::unordered_map</a>&lt; <a class="el" href="namespaceripple.html#a7e1cdd0fd061abf008712d5e0ccf156d">TERUnderlyingType</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; char const  *const, char const  *const  &gt; &gt; const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a28b0f1cb520feb43eb2d9a3a3c2157fb">transResults</a> ()</td></tr>
-<tr class="separator:a28b0f1cb520feb43eb2d9a3a3c2157fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0417dc5baa8cfe83638ad5483dac985e"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a0417dc5baa8cfe83638ad5483dac985e">encodeBase58</a> (void const *message, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> size, void *temp, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> temp_size)</td></tr>
 <tr class="separator:a0417dc5baa8cfe83638ad5483dac985e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6aa90cf7fb70da61df09715f8c800977"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a6aa90cf7fb70da61df09715f8c800977">decodeBase58</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;s)</td></tr>
@@ -3238,33 +3238,6 @@ template&lt;class T , class... Args&gt; </div>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="STVar_8h_source.html#l00157">157</a> of file <a class="el" href="STVar_8h_source.html">STVar.h</a>.</p>
-
-</div>
-</div>
-<a id="a28b0f1cb520feb43eb2d9a3a3c2157fb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a28b0f1cb520feb43eb2d9a3a3c2157fb">&#9670;&nbsp;</a></span>transResults()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static <a class="elRef" href="http://en.cppreference.com/w/cpp/container/unordered_map.html">std::unordered_map</a>&lt; <a class="el" href="namespaceripple.html#a7e1cdd0fd061abf008712d5e0ccf156d">TERUnderlyingType</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt;char const* const, char const* const&gt; &gt; const&amp; ripple::detail::transResults </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="TER_8cpp_source.html#l00032">32</a> of file <a class="el" href="TER_8cpp_source.html">TER.cpp</a>.</p>
 
 </div>
 </div>
