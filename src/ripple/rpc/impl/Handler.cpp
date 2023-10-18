@@ -23,9 +23,7 @@
 #include <ripple/rpc/impl/Handler.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 
-#include <chrono>
 #include <map>
-#include <type_traits>
 
 namespace ripple {
 namespace RPC {
@@ -52,6 +50,9 @@ template <class Object, class HandlerImpl>
 Status
 handle(JsonContext& context, Object& object)
 {
+    assert(
+        context.apiVersion >= HandlerImpl.minApiVer &&
+        context.apiVersion <= HandlerImpl.maxApiVer);
     HandlerImpl handler(context);
 
     auto status = handler.check();
@@ -60,7 +61,7 @@ handle(JsonContext& context, Object& object)
     else
         handler.writeResult(object);
     return status;
-};
+}
 
 template <typename HandlerImpl>
 Handler
@@ -196,7 +197,7 @@ private:
 
     // Use with equal_range to enforce that API range of a newly added handler
     // does not overlap with API range of an existing handler with same name
-    bool
+    [[nodiscard]] bool
     overlappingApiVersion(
         std::pair<handler_table_t::iterator, handler_table_t::iterator> range,
         unsigned minVer,
@@ -243,7 +244,7 @@ public:
         return handlerTable;
     }
 
-    Handler const*
+    [[nodiscard]] Handler const*
     getHandler(unsigned version, bool betaEnabled, std::string const& name)
         const
     {
@@ -262,7 +263,7 @@ public:
         return i == range.second ? nullptr : &i->second;
     }
 
-    std::set<char const*>
+    [[nodiscard]] std::set<char const*>
     getHandlerNames() const
     {
         std::set<char const*> ret;
