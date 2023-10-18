@@ -23,7 +23,7 @@ var searchData=
   ['tecfailed_5fprocessing_28379',['tecFAILED_PROCESSING',['../namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38caecd11145ac07375d1c0793e699932969',1,'ripple']]],
   ['tecfrozen_28380',['tecFROZEN',['../namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38ca608da193a4a22ae1c78d76b6e843b7e6',1,'ripple']]],
   ['techas_5fobligations_28381',['tecHAS_OBLIGATIONS',['../namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38caa7460a5fac26c1d8abef55b8c1129150',1,'ripple']]],
-  ['techook_5ferror_28382',['tecHOOK_ERROR',['../namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38ca692765f2dd842dbb86d574d0e5c09d76',1,'ripple']]],
+  ['techook_5frejected_28382',['tecHOOK_REJECTED',['../namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38ca13e98f572a44ff062a74288a581d2715',1,'ripple']]],
   ['tecincomplete_28383',['tecINCOMPLETE',['../namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38ca576f5411ab4458ec9842480e7ebe7072',1,'ripple']]],
   ['tecinsuf_5freserve_5fline_28384',['tecINSUF_RESERVE_LINE',['../namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38ca2d4a898185a9c8e604210e789bed6e36',1,'ripple']]],
   ['tecinsuf_5freserve_5foffer_28385',['tecINSUF_RESERVE_OFFER',['../namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38ca30792765079d182f869612fc3b96ef8c',1,'ripple']]],
