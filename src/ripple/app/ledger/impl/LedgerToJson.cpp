@@ -23,6 +23,7 @@
 #include <ripple/app/misc/TxQ.h>
 #include <ripple/basics/base_uint.h>
 #include <ripple/core/Pg.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/DeliveredAmount.h>
 
@@ -118,24 +119,57 @@ fillJsonTx(
     if (bBinary)
     {
         txJson[jss::tx_blob] = serializeHex(*txn);
+        if (fill.context->apiVersion > 1)
+            txJson[jss::hash] = to_string(txn->getTransactionID());
+
+        auto const json_meta =
+            (fill.context->apiVersion > 1 ? jss::meta_blob : jss::meta);
         if (stMeta)
-            txJson[jss::meta] = serializeHex(*stMeta);
+            txJson[json_meta] = serializeHex(*stMeta);
     }
     else
     {
-        copyFrom(txJson, txn->getJson(JsonOptions::none));
-        RPC::insertDeliverMax(txJson, txnType, fill.context->apiVersion);
-        if (stMeta)
+        if (fill.context->apiVersion > 1)
         {
-            txJson[jss::metaData] = stMeta->getJson(JsonOptions::none);
+            std::string hash;
+            copyFrom(
+                txJson[jss::tx_json],
+                txn->getJson(
+                    JsonOptions::none, false, {std::optional(std::ref(hash))}));
+            txJson[jss::hash] = hash;
+            // TODO set `txJson[jss::close_time_iso]`
+            RPC::insertDeliverMax(
+                txJson[jss::tx_json], txnType, fill.context->apiVersion);
 
-            // If applicable, insert delivered amount
-            if (txnType == ttPAYMENT || txnType == ttCHECK_CASH)
-                RPC::insertDeliveredAmount(
-                    txJson[jss::metaData],
-                    fill.ledger,
-                    txn,
-                    {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
+            if (stMeta)
+            {
+                txJson[jss::meta] = stMeta->getJson(JsonOptions::none);
+
+                // If applicable, insert delivered amount
+                if (txnType == ttPAYMENT || txnType == ttCHECK_CASH)
+                    RPC::insertDeliveredAmount(
+                        txJson[jss::meta],
+                        fill.ledger,
+                        txn,
+                        {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
+            }
+        }
+        else
+        {
+            copyFrom(txJson, txn->getJson(JsonOptions::none));
+            RPC::insertDeliverMax(txJson, txnType, fill.context->apiVersion);
+            if (stMeta)
+            {
+                txJson[jss::metaData] = stMeta->getJson(JsonOptions::none);
+
+                // If applicable, insert delivered amount
+                if (txnType == ttPAYMENT || txnType == ttCHECK_CASH)
+                    RPC::insertDeliveredAmount(
+                        txJson[jss::metaData],
+                        fill.ledger,
+                        txn,
+                        {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
+            }
         }
     }
 
@@ -254,7 +288,11 @@ fillJsonQueue(Object& json, LedgerFill const& fill)
         if (tx.lastResult)
             txJson["last_result"] = transToken(*tx.lastResult);
 
-        txJson[jss::tx] = fillJsonTx(fill, bBinary, bExpanded, tx.txn, nullptr);
+        auto&& temp = fillJsonTx(fill, bBinary, bExpanded, tx.txn, nullptr);
+        if (fill.context->apiVersion > 1)
+            copyFrom(txJson, temp);
+        else
+            copyFrom(txJson[jss::tx], temp);
     }
 }
 

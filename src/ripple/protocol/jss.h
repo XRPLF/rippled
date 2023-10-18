@@ -460,6 +460,7 @@ JSS(median_fee);                  // out: TxQ
 JSS(median_level);                // out: TxQ
 JSS(message);                     // error.
 JSS(meta);                        // out: NetworkOPs, AccountTx*, Tx
+JSS(meta_blob);                   // out: NetworkOPs, AccountTx*, Tx
 JSS(metaData);
 JSS(metadata);  // out: TransactionEntry
 JSS(method);    // RPC
