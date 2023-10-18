@@ -165,9 +165,12 @@ Transaction::load(
 
 // options 1 to include the date of the transaction
 Json::Value
-Transaction::getJson(JsonOptions options, bool binary) const
+Transaction::getJson(
+    JsonOptions options,
+    bool binary,
+    std::optional<std::reference_wrapper<std::string>> hash) const
 {
-    Json::Value ret(mTransaction->getJson(JsonOptions::none, binary));
+    Json::Value ret(mTransaction->getJson(JsonOptions::none, binary, hash));
 
     if (mInLedger)
     {

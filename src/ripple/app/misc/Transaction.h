@@ -305,8 +305,12 @@ public:
             validatedLedger, fee, accountSeq, availableSeq);
     }
 
+    /// Same as similar overload for STTx::getJson
     Json::Value
-    getJson(JsonOptions options, bool binary = false) const;
+    getJson(
+        JsonOptions options,
+        bool binary = false,
+        std::optional<std::reference_wrapper<std::string>> hash = {}) const;
 
     // Information used to locate a transaction.
     // Contains a nodestore hash and ledger sequence pair if the transaction was
