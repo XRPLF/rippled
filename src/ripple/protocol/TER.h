@@ -294,7 +294,7 @@ enum TECcodes : TERUnderlyingType {
     tecKILLED = 150,
     tecHAS_OBLIGATIONS = 151,
     tecTOO_SOON = 152,
-    tecHOOK_ERROR [[maybe_unused]] = 153,
+    tecHOOK_REJECTED [[maybe_unused]] = 153,
     tecMAX_SEQUENCE_REACHED = 154,
     tecNO_SUITABLE_NFTOKEN_PAGE = 155,
     tecNFTOKEN_BUY_SELL_MISMATCH = 156,
