@@ -51,8 +51,8 @@ Status
 handle(JsonContext& context, Object& object)
 {
     assert(
-        context.apiVersion >= HandlerImpl.minApiVer &&
-        context.apiVersion <= HandlerImpl.maxApiVer);
+        context.apiVersion >= HandlerImpl::minApiVer &&
+        context.apiVersion <= HandlerImpl::maxApiVer);
     HandlerImpl handler(context);
 
     auto status = handler.check();
