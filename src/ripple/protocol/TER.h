@@ -132,6 +132,8 @@ enum TEMcodes : TERUnderlyingType {
     temXCHAIN_BRIDGE_NONDOOR_OWNER,
     temXCHAIN_BRIDGE_BAD_MIN_ACCOUNT_CREATE_AMOUNT,
     temXCHAIN_BRIDGE_BAD_REWARD_AMOUNT,
+
+    temEMPTY_DID,
 };
 
 //------------------------------------------------------------------------------
@@ -328,6 +330,7 @@ enum TECcodes : TERUnderlyingType {
     tecXCHAIN_SELF_COMMIT = 184,
     tecXCHAIN_BAD_PUBLIC_KEY_ACCOUNT_PAIR = 185,
     tecXCHAIN_CREATE_ACCOUNT_DISABLED = 186,
+    tecEMPTY_DID = 187
 };
 
 //------------------------------------------------------------------------------
