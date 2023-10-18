@@ -113,6 +113,7 @@ transResults()
         MAKE_ERROR(tecXCHAIN_SELF_COMMIT,            "Account cannot commit funds to itself."),
         MAKE_ERROR(tecXCHAIN_BAD_PUBLIC_KEY_ACCOUNT_PAIR, "Bad public key account pair in an xchain transaction."),
         MAKE_ERROR(tecXCHAIN_CREATE_ACCOUNT_DISABLED, "This bridge does not support account creation."),
+        MAKE_ERROR(tecEMPTY_DID,                     "The DID object did not have a URI or DIDDocument field."),
 
         MAKE_ERROR(tefALREADY,                     "The exact transaction was already in this ledger."),
         MAKE_ERROR(tefBAD_ADD_AUTH,                "Not authorized to add account."),
@@ -179,6 +180,7 @@ transResults()
         MAKE_ERROR(temBAD_WEIGHT,                "Malformed: Weight must be a positive value."),
         MAKE_ERROR(temDST_IS_SRC,                "Destination may not be source."),
         MAKE_ERROR(temDST_NEEDED,                "Destination not specified."),
+        MAKE_ERROR(temEMPTY_DID,                 "Malformed: No DID data provided."),
         MAKE_ERROR(temINVALID,                   "The transaction is ill-formed."),
         MAKE_ERROR(temINVALID_FLAG,              "The transaction has an invalid flag."),
         MAKE_ERROR(temREDUNDANT,                 "The transaction is redundant."),

@@ -184,6 +184,12 @@ enum TxType : std::uint16_t
     /** This transactions creates a sidechain */
     ttXCHAIN_CREATE_BRIDGE = 48,
 
+    /** This transaction type creates or updates a DID */
+    ttDID_SET = 49,
+
+    /** This transaction type deletes a DID */
+    ttDID_DELETE = 50,
+
 
     /** This system-generated transaction type is used to update the status of the various amendments.
 
