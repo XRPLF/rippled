@@ -348,7 +348,7 @@ extern uint256 const fixNonFungibleTokensV1_2;
 extern uint256 const fixNFTokenRemint;
 extern uint256 const fixReducedOffersV1;
 extern uint256 const featureClawback;
-extern uint256 const fixFillOrKillOnFlowCross;
+extern uint256 const fixFillOrKill;
 
 }  // namespace ripple
 

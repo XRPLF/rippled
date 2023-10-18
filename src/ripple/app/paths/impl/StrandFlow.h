@@ -557,7 +557,7 @@ flow(
     std::vector<Strand> const& strands,
     TOutAmt const& outReq,
     bool partialPayment,
-    bool offerCrossing,
+    OfferCrossing offerCrossing,
     std::optional<Quality> const& limitQuality,
     std::optional<STAmount> const& sendMaxST,
     beast::Journal j,
@@ -828,23 +828,7 @@ flow(
      *   even if it means obtaining more than TakerPays. Since the pays and gets
      *   are reversed, the owner must send the entire TakerGets.
      */
-    bool const fixFillOrKill =
-        baseView.rules().enabled(fixFillOrKillOnFlowCross);
-    // tfSell is handled by setting the deliver amount to max
-    auto const sell = [&]() -> bool {
-        if constexpr (std::is_same_v<TOutAmt, XRPAmount>)
-        {
-            static auto max = XRPAmount{STAmount::cMaxNative};
-            return outReq == max;
-        }
-        else if constexpr (std::is_same_v<TOutAmt, IOUAmount>)
-        {
-            static auto max =
-                IOUAmount{STAmount::cMaxValue / 2, STAmount::cMaxOffset};
-            return outReq == max;
-        }
-        return false;
-    }();
+    bool const fillOrKillEnabled = baseView.rules().enabled(fixFillOrKill);
 
     if (actualOut != outReq)
     {
@@ -862,7 +846,8 @@ flow(
             // fixFillOrKill amendment:
             //   That case is handled here if tfSell is also not set; i.e,
             //   case 1.
-            if (!offerCrossing || (fixFillOrKill && !sell))
+            if (!offerCrossing ||
+                (fillOrKillEnabled && offerCrossing != OfferCrossing::Sell))
                 return {
                     tecPATH_PARTIAL,
                     actualIn,
@@ -874,7 +859,9 @@ flow(
             return {tecPATH_DRY, std::move(ofrsToRmOnFail)};
         }
     }
-    if (offerCrossing && (!partialPayment && (!fixFillOrKill || sell)))
+    if (offerCrossing &&
+        (!partialPayment &&
+         (!fillOrKillEnabled || offerCrossing == OfferCrossing::Sell)))
     {
         // If we're offer crossing and partialPayment is *not* true, then
         // we're handling a FillOrKill offer.  In this case remainingIn must

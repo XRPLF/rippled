@@ -5084,7 +5084,7 @@ public:
     void
     testFillOrKill(FeatureBitset features)
     {
-        testcase("fixFillOrKillOnFlowCross");
+        testcase("fixFillOrKill");
         using namespace jtx;
         Env env(*this, features);
         Account const issuer("issuer");
@@ -5115,8 +5115,8 @@ public:
 
         // tfFillOrKill, TakerPays must be filled
         {
-            TER const err = features[fixFillOrKillOnFlowCross] ||
-                    !features[featureFlowCross]
+            TER const err =
+                features[fixFillOrKill] || !features[featureFlowCross]
                 ? TER(tesSUCCESS)
                 : tecKILLED;
 
@@ -5222,7 +5222,7 @@ public:
             BEAST_EXPECT(expectOffers(env, taker, 0));
         }
 
-        // Fail regardless of fixFillOrKillOnFlowCross amendment
+        // Fail regardless of fixFillOrKill amendment
         for (auto const flags : {tfFillOrKill, tfFillOrKill + tfSell})
         {
             env(offer(maker, XRP(100), USD(100)));
@@ -5344,7 +5344,7 @@ public:
         FeatureBitset const takerDryOffer{fixTakerDryOfferRemoval};
         FeatureBitset const rmSmallIncreasedQOffers{fixRmSmallIncreasedQOffers};
         FeatureBitset const immediateOfferKilled{featureImmediateOfferKilled};
-        FeatureBitset const fixFillOrKill{fixFillOrKillOnFlowCross};
+        FeatureBitset const fixFillOrKill{fixFillOrKill};
 
         testAll(all - takerDryOffer - immediateOfferKilled);
         testAll(all - flowCross - takerDryOffer - immediateOfferKilled);
