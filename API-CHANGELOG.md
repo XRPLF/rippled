@@ -26,7 +26,18 @@ In `api_version: 2`, the `signer_lists` field [will be moved](#modifications-to-
 
 The `network_id` field was added in the `server_info` response in version 1.5.0 (2019), but it was not returned in [reporting mode](https://xrpl.org/rippled-server-modes.html#reporting-mode).
 
-## XRP Ledger version 1.12.0
+## XRP Ledger server version 2.0.0
+
+Version 2.0.0 is expected to be released by Nov 2023.
+
+### Additions in 2.0
+
+#### In progress
+
+- Provide `ctid` in more responses. (https://github.com/XRPLF/rippled/pull/4738)
+- Add `DeliverMax` (alias for `Amount`). (https://github.com/XRPLF/rippled/pull/4733)
+
+## XRP Ledger server version 1.12.0
 
 [Version 1.12.0](https://github.com/XRPLF/rippled/releases/tag/1.12.0) was released on Sep 6, 2023.
 
@@ -68,7 +79,7 @@ Additions are intended to be non-breaking (because they are purely additive).
        -  tecAMM_ACCOUNT: AMM account. Clawback of AMM account.
        -  tecINCOMPLETE: Some work was completed, but more submissions required to finish. AMMDelete partially deletes the trustlines.
 
-## XRP Ledger version 1.11.0
+## XRP Ledger server version 1.11.0
 
 [Version 1.11.0](https://github.com/XRPLF/rippled/releases/tag/1.11.0) was released on Jun 20, 2023.
 
@@ -98,7 +109,7 @@ Additions are intended to be non-breaking (because they are purely additive).
 - Added `NFTokenPages` to the `account_objects` RPC. (https://github.com/XRPLF/rippled/pull/4352)
 - Fixed: `marker` returned from the `account_lines` command would not work on subsequent commands. (https://github.com/XRPLF/rippled/pull/4361)
 
-## XRP Ledger version 1.10.0
+## XRP Ledger server version 1.10.0
 
 [Version 1.10.0](https://github.com/XRPLF/rippled/releases/tag/1.10.0)
 was released on Mar 14, 2023.
@@ -125,11 +136,17 @@ Currently (prior to the release of 2.0), it is available as a "beta" version, me
 
 Since `api_version` 2 is in "beta", breaking changes to V2 can currently be made at any time.
 
+### Planned changes
+
+- Unify JSON serialization format of transactions. (https://github.com/XRPLF/clio/issues/722, https://github.com/XRPLF/rippled/issues/4727)
+- Remove `Amount`, in favor of its new alias: `DeliverMax`. (https://github.com/XRPLF/rippled/pull/4733)
+- The `tx_history` and `ledger_header` methods will be removed. (https://github.com/XRPLF/rippled/pull/4759)
+
 #### Modifications to account_info response in V2
 
 - `signer_lists` is returned in the root of the response. Previously, in API version 1, it was nested under `account_data`. (https://github.com/XRPLF/rippled/pull/3770)
 - When using an invalid `signer_lists` value, the API now returns an "invalidParams" error. (https://github.com/XRPLF/rippled/pull/4585)
-  - (`signer_lists` must be a boolean. In API version 1, strings are accepted and may return a normal response - as if `signer_lists` were `true`.)
+  - (`signer_lists` must be a boolean. In API version 1, strings were accepted and may return a normal response - i.e. as if `signer_lists` were `true`.)
 
 #### Modifications to [account_tx](https://xrpl.org/account_tx.html#account_tx) response in V2
 
@@ -138,14 +155,9 @@ Since `api_version` 2 is in "beta", breaking changes to V2 can currently be made
 - Using a `ledger_index_min` or `ledger_index_max` beyond the range of ledgers that the server has:
   - returns `lgrIdxMalformed` in API version 2. (https://github.com/XRPLF/rippled/issues/4288)
   - Previously, in API version 1, no error was returned.
-
-##### In progress
-
 - Attempting to use a non-boolean value (such as a string) for the `binary` or `forward` parameters returns `invalidParams` (`rpcINVALID_PARAMS`). Previously, in API version 1, no error was returned. (https://github.com/XRPLF/rippled/pull/4620)
 
 #### Modifications to [noripple_check](https://xrpl.org/noripple_check.html#noripple_check) response in V2
-
-##### In progress
 
 - Attempting to use a non-boolean value (such as a string) for the `transactions` parameter returns `invalidParams` (`rpcINVALID_PARAMS`). Previously, in API version 1, no error was returned. (https://github.com/XRPLF/rippled/pull/4620)
 
