@@ -71,11 +71,24 @@ doTransactionEntry(RPC::JsonContext& context)
         }
         else
         {
-            jvResult[jss::tx_json] = sttx->getJson(JsonOptions::none);
+            if (context.apiVersion > 1)
+            {
+                std::string hash;
+                jvResult[jss::tx_json] =
+                    sttx->getJson(JsonOptions::none, false, {std::ref(hash)});
+                jvResult[jss::hash] = hash;
+                // TODO set `jvResult[jss::close_time_iso]`
+            }
+            else
+                jvResult[jss::tx_json] = sttx->getJson(JsonOptions::none);
+
             RPC::insertDeliverMax(
                 jvResult[jss::tx_json], sttx->getTxnType(), context.apiVersion);
+
+            auto const json_meta =
+                (context.apiVersion > 1 ? jss::meta : jss::metadata);
             if (stobj)
-                jvResult[jss::metadata] = stobj->getJson(JsonOptions::none);
+                jvResult[json_meta] = stobj->getJson(JsonOptions::none);
             // 'accounts'
             // 'engine_...'
             // 'ledger_...'
