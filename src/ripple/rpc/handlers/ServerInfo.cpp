@@ -128,10 +128,8 @@ ServerDefinitions::translate(std::string const& inp)
     return out;
 };
 
-ServerDefinitions::ServerDefinitions()
+ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
 {
-    defs_{Json::objectValue};
-
     // populate SerializedTypeID names and values
     defs_[jss::TYPES] = Json::objectValue;
 
