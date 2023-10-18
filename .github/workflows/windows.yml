@@ -36,7 +36,7 @@ jobs:
         id: pip-cache
         shell: bash
         run: |
-          pip install --upgrade pip
+          python -m pip install --upgrade pip
           echo "dir=$(pip cache dir)" | tee ${GITHUB_OUTPUT}
       - name: restore Python cache directory
         uses: actions/cache@v3
