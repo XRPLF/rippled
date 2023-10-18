@@ -43,16 +43,14 @@ class ServerDefinitions
 {
 private:
     std::string
+    // translate e.g. STI_LEDGERENTRY to LedgerEntry
     translate(std::string const& inp);
-
-    Json::Value
-    generate();
 
     uint256 defsHash_;
     Json::Value defs_;
 
 public:
-    ServerDefinitions() : defs_(generate()){};
+    ServerDefinitions();
 
     bool
     hashMatches(uint256 hash) const
@@ -107,6 +105,8 @@ ServerDefinitions::translate(std::string const& inp)
     std::string out;
     size_t pos = 0;
     std::string inpToProcess = inp;
+
+    // convert snake_case to CamelCase
     for (;;)
     {
         pos = inpToProcess.find("_");
@@ -128,31 +128,34 @@ ServerDefinitions::translate(std::string const& inp)
     return out;
 };
 
-Json::Value
-ServerDefinitions::generate()
+ServerDefinitions::ServerDefinitions()
 {
-    Json::Value ret{Json::objectValue};
-    ret[jss::TYPES] = Json::objectValue;
+    defs_{Json::objectValue};
 
-    ret[jss::TYPES]["Done"] = -1;
+    // populate SerializedTypeID names and values
+    defs_[jss::TYPES] = Json::objectValue;
+
+    defs_[jss::TYPES]["Done"] = -1;
     std::map<int32_t, std::string> typeMap{{-1, "Done"}};
     for (auto const& [rawName, typeValue] : sTypeMap)
     {
         std::string typeName =
             translate(std::string(rawName).substr(4) /* remove STI_ */);
-        ret[jss::TYPES][typeName] = typeValue;
+        defs_[jss::TYPES][typeName] = typeValue;
         typeMap[typeValue] = typeName;
     }
 
-    ret[jss::LEDGER_ENTRY_TYPES] = Json::objectValue;
-    ret[jss::LEDGER_ENTRY_TYPES][jss::Invalid] = -1;
+    // populate LedgerEntryType names and values
+    defs_[jss::LEDGER_ENTRY_TYPES] = Json::objectValue;
+    defs_[jss::LEDGER_ENTRY_TYPES][jss::Invalid] = -1;
 
     for (auto const& f : LedgerFormats::getInstance())
     {
-        ret[jss::LEDGER_ENTRY_TYPES][f.getName()] = f.getType();
+        defs_[jss::LEDGER_ENTRY_TYPES][f.getName()] = f.getType();
     }
 
-    ret[jss::FIELDS] = Json::arrayValue;
+    // populate SField serialization data
+    defs_[jss::FIELDS] = Json::arrayValue;
 
     uint32_t i = 0;
     {
@@ -165,7 +168,7 @@ ServerDefinitions::generate()
         v[jss::isSigningField] = false;
         v[jss::type] = "Unknown";
         a[1U] = v;
-        ret[jss::FIELDS][i++] = a;
+        defs_[jss::FIELDS][i++] = a;
     }
 
     {
@@ -178,7 +181,7 @@ ServerDefinitions::generate()
         v[jss::isSigningField] = false;
         v[jss::type] = "Unknown";
         a[1U] = v;
-        ret[jss::FIELDS][i++] = a;
+        defs_[jss::FIELDS][i++] = a;
     }
 
     {
@@ -191,7 +194,7 @@ ServerDefinitions::generate()
         v[jss::isSigningField] = true;
         v[jss::type] = "STObject";
         a[1U] = v;
-        ret[jss::FIELDS][i++] = a;
+        defs_[jss::FIELDS][i++] = a;
     }
 
     {
@@ -204,7 +207,7 @@ ServerDefinitions::generate()
         v[jss::isSigningField] = true;
         v[jss::type] = "STArray";
         a[1U] = v;
-        ret[jss::FIELDS][i++] = a;
+        defs_[jss::FIELDS][i++] = a;
     }
 
     {
@@ -217,7 +220,7 @@ ServerDefinitions::generate()
         v[jss::isSigningField] = false;
         v[jss::type] = "Amount";
         a[1U] = v;
-        ret[jss::FIELDS][i++] = a;
+        defs_[jss::FIELDS][i++] = a;
     }
 
     {
@@ -230,7 +233,7 @@ ServerDefinitions::generate()
         v[jss::isSigningField] = false;
         v[jss::type] = "Amount";
         a[1U] = v;
-        ret[jss::FIELDS][i++] = a;
+        defs_[jss::FIELDS][i++] = a;
     }
 
     for (auto const& [code, f] : ripple::SField::getKnownCodeToField())
@@ -244,15 +247,19 @@ ServerDefinitions::generate()
 
         innerObj[jss::nth] = f->fieldValue;
 
+        // whether the field is variable-length encoded
+        // this means that the length is included before the content
         innerObj[jss::isVLEncoded] =
             (type == 7U /* Blob       */ || type == 8U /* AccountID  */ ||
              type == 19U /* Vector256  */);
 
+        // whether the field is included in serialization
         innerObj[jss::isSerialized] =
             (type < 10000 && f->fieldName != "hash" &&
              f->fieldName != "index"); /* hash, index, TRANSACTION,
                                          LEDGER_ENTRY, VALIDATION, METADATA */
 
+        // whether the field is included in serialization when signing
         innerObj[jss::isSigningField] = f->shouldInclude(false);
 
         innerObj[jss::type] = typeMap[type];
@@ -261,31 +268,31 @@ ServerDefinitions::generate()
         innerArray[0U] = f->fieldName;
         innerArray[1U] = innerObj;
 
-        ret[jss::FIELDS][i++] = innerArray;
+        defs_[jss::FIELDS][i++] = innerArray;
     }
 
-    ret[jss::TRANSACTION_RESULTS] = Json::objectValue;
+    // populate TER code names and values
+    defs_[jss::TRANSACTION_RESULTS] = Json::objectValue;
 
     for (auto const& [code, terInfo] : transResults())
     {
-        ret[jss::TRANSACTION_RESULTS][terInfo.first] = code;
+        defs_[jss::TRANSACTION_RESULTS][terInfo.first] = code;
     }
 
-    ret[jss::TRANSACTION_TYPES] = Json::objectValue;
-    ret[jss::TRANSACTION_TYPES][jss::Invalid] = -1;
+    // populate TxType names and values
+    defs_[jss::TRANSACTION_TYPES] = Json::objectValue;
+    defs_[jss::TRANSACTION_TYPES][jss::Invalid] = -1;
     for (auto const& f : TxFormats::getInstance())
     {
-        ret[jss::TRANSACTION_TYPES][f.getName()] = f.getType();
+        defs_[jss::TRANSACTION_TYPES][f.getName()] = f.getType();
     }
 
     // generate hash
     {
-        const std::string out = Json::FastWriter().write(ret);
+        const std::string out = Json::FastWriter().write(defs_);
         defsHash_ = ripple::sha512Half(ripple::Slice{out.data(), out.size()});
-        ret[jss::hash] = to_string(defsHash_);
+        defs_[jss::hash] = to_string(defsHash_);
     }
-
-    return ret;
 }
 
 }  // namespace detail

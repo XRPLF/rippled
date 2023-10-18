@@ -318,7 +318,7 @@ JSS(fee_mult_max);          // in: TransactionSign
 JSS(fee_ref);               // out: NetworkOPs, DEPRECATED
 JSS(fetch_pack);            // out: NetworkOPs
 JSS(FIELDS);                // out: RPC server_definitions
-                            // matches server_definitions.json format
+                            // matches definitions.json format
 JSS(first);                 // out: rpc/Version
 JSS(firstSequence);         // out: NodeToShardStatus
 JSS(firstShardIndex);       // out: NodeToShardStatus
@@ -364,11 +364,11 @@ JSS(io_latency_ms);        // out: NetworkOPs
 JSS(ip);                   // in: Connect, out: OverlayImpl
 JSS(is_burned);            // out: nft_info (clio)
 JSS(isSerialized);         // out: RPC server_definitions
-                           // matches server_definitions.json format
+                           // matches definitions.json format
 JSS(isSigningField);       // out: RPC server_definitions
-                           // matches server_definitions.json format
+                           // matches definitions.json format
 JSS(isVLEncoded);          // out: RPC server_definitions
-                           // matches server_definitions.json format
+                           // matches definitions.json format
 JSS(issuer);               // in: RipplePathFind, Subscribe,
                            //     Unsubscribe, BookOffers
                            // out: STPathSet, STAmount
@@ -409,7 +409,7 @@ JSS(ledger_max);                  // in, out: AccountTx*
 JSS(ledger_min);                  // in, out: AccountTx*
 JSS(ledger_time);                 // out: NetworkOPs
 JSS(LEDGER_ENTRY_TYPES);          // out: RPC server_definitions
-                                  // matches server_definitions.json format
+                                  // matches definitions.json format
 JSS(levels);                      // LogLevels
 JSS(limit);                       // in/out: AccountTx*, AccountOffers,
                                   //         AccountLines, AccountObjects
@@ -657,11 +657,11 @@ JSS(transaction_hash);        // out: RCLCxPeerPos, LedgerToJson
 JSS(transactions);            // out: LedgerToJson,
                               // in: AccountTx*, Unsubscribe
 JSS(TRANSACTION_RESULTS);     // out: RPC server_definitions
-                              // matches server_definitions.json format
+                              // matches definitions.json format
 JSS(TRANSACTION_TYPES);       // out: RPC server_definitions
-                              // matches server_definitions.json format
+                              // matches definitions.json format
 JSS(TYPES);                   // out: RPC server_definitions
-                              // matches server_definitions.json format
+                              // matches definitions.json format
 JSS(transfer_rate);           // out: nft_info (clio)
 JSS(transitions);             // out: NetworkOPs
 JSS(treenode_cache_size);     // out: GetCounts
