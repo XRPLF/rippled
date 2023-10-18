@@ -321,6 +321,8 @@ JSS(fee_level);             // out: AccountInfo
 JSS(fee_mult_max);          // in: TransactionSign
 JSS(fee_ref);               // out: NetworkOPs, DEPRECATED
 JSS(fetch_pack);            // out: NetworkOPs
+JSS(FIELDS);                // out: RPC server_definitions
+                            // matches definitions.json format
 JSS(first);                 // out: rpc/Version
 JSS(firstSequence);         // out: NodeToShardStatus
 JSS(firstShardIndex);       // out: NodeToShardStatus
@@ -365,6 +367,12 @@ JSS(invalid_API_version);  // out: Many, when a request has an invalid
 JSS(io_latency_ms);        // out: NetworkOPs
 JSS(ip);                   // in: Connect, out: OverlayImpl
 JSS(is_burned);            // out: nft_info (clio)
+JSS(isSerialized);         // out: RPC server_definitions
+                           // matches definitions.json format
+JSS(isSigningField);       // out: RPC server_definitions
+                           // matches definitions.json format
+JSS(isVLEncoded);          // out: RPC server_definitions
+                           // matches definitions.json format
 JSS(issuer);               // in: RipplePathFind, Subscribe,
                            //     Unsubscribe, BookOffers
                            // out: STPathSet, STAmount
@@ -404,6 +412,8 @@ JSS(ledger_index_min);            // in, out: AccountTx*
 JSS(ledger_max);                  // in, out: AccountTx*
 JSS(ledger_min);                  // in, out: AccountTx*
 JSS(ledger_time);                 // out: NetworkOPs
+JSS(LEDGER_ENTRY_TYPES);          // out: RPC server_definitions
+                                  // matches definitions.json format
 JSS(levels);                      // LogLevels
 JSS(limit);                       // in/out: AccountTx*, AccountOffers,
                                   //         AccountLines, AccountObjects
@@ -490,6 +500,7 @@ JSS(node_written_bytes);         // out: GetCounts
 JSS(node_writes_duration_us);    // out: GetCounts
 JSS(node_write_retries);         // out: GetCounts
 JSS(node_writes_delayed);        // out::GetCounts
+JSS(nth);                        // out: RPC server_definitions
 JSS(obligations);                // out: GatewayBalances
 JSS(offer);                      // in: LedgerEntry
 JSS(offers);                     // out: NetworkOPs, AccountOffers, Subscribe
@@ -649,6 +660,12 @@ JSS(transaction);             // in: Tx
 JSS(transaction_hash);        // out: RCLCxPeerPos, LedgerToJson
 JSS(transactions);            // out: LedgerToJson,
                               // in: AccountTx*, Unsubscribe
+JSS(TRANSACTION_RESULTS);     // out: RPC server_definitions
+                              // matches definitions.json format
+JSS(TRANSACTION_TYPES);       // out: RPC server_definitions
+                              // matches definitions.json format
+JSS(TYPES);                   // out: RPC server_definitions
+                              // matches definitions.json format
 JSS(transfer_rate);           // out: nft_info (clio)
 JSS(transitions);             // out: NetworkOPs
 JSS(treenode_cache_size);     // out: GetCounts
@@ -680,7 +697,7 @@ JSS(txr_not_enabled_cnt);     // out: peers with tx reduce-relay disabled count
 JSS(txr_missing_tx_freq);     // out: missing tx frequency average
 JSS(txs);                     // out: TxHistory
 JSS(type);                    // in: AccountObjects
-                              // out: NetworkOPs
+                              // out: NetworkOPs, RPC server_definitions
                               //      OverlayImpl, Logic
 JSS(type_hex);                // out: STPathSet
 JSS(unl);                     // out: UnlList
