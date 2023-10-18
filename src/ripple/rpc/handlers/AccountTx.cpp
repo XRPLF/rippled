@@ -326,10 +326,23 @@ populateJsonResponse(
                 {
                     Json::Value& jvObj = jvTxns.append(Json::objectValue);
 
-                    jvObj[jss::tx] = txn->getJson(JsonOptions::include_date);
+                    auto const json_tx =
+                        (context.apiVersion > 1 ? jss::tx_json : jss::tx);
+                    if (context.apiVersion > 1)
+                    {
+                        std::string hash;
+                        jvObj[json_tx] = txn->getJson(
+                            JsonOptions::include_date, false, {std::ref(hash)});
+                        jvObj[jss::hash] = hash;
+                        // TODO set `jvObj[jss::close_time_iso]`
+                    }
+                    else
+                        jvObj[json_tx] =
+                            txn->getJson(JsonOptions::include_date);
+
                     auto const& sttx = txn->getSTransaction();
                     RPC::insertDeliverMax(
-                        jvObj[jss::tx], sttx->getTxnType(), context.apiVersion);
+                        jvObj[json_tx], sttx->getTxnType(), context.apiVersion);
                     if (txnMeta)
                     {
                         jvObj[jss::meta] =
@@ -352,7 +365,9 @@ populateJsonResponse(
                 Json::Value& jvObj = jvTxns.append(Json::objectValue);
 
                 jvObj[jss::tx_blob] = strHex(std::get<0>(binaryData));
-                jvObj[jss::meta] = strHex(std::get<1>(binaryData));
+                auto const json_meta =
+                    (context.apiVersion > 1 ? jss::meta_blob : jss::meta);
+                jvObj[json_meta] = strHex(std::get<1>(binaryData));
                 jvObj[jss::ledger_index] = std::get<2>(binaryData);
                 jvObj[jss::validated] = true;
             }

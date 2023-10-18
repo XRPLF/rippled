@@ -120,22 +120,37 @@ class AccountTx_test : public beast::unit_test::suite
         // All other ledgers have no txs
 
         auto hasTxs = [apiVersion](Json::Value const& j) {
-            return j.isMember(jss::result) &&
-                (j[jss::result][jss::status] == "success") &&
-                (j[jss::result][jss::transactions].size() == 2) &&
-                (j[jss::result][jss::transactions][0u][jss::tx]
-                  [jss::TransactionType] == jss::AccountSet) &&
-                (j[jss::result][jss::transactions][1u][jss::tx]
-                  [jss::TransactionType] == jss::Payment) &&
-                (j[jss::result][jss::transactions][1u][jss::tx]
-                  [jss::DeliverMax] == "10000000010") &&
-                ((apiVersion > 1 &&
-                  !j[jss::result][jss::transactions][1u][jss::tx].isMember(
-                      jss::Amount)) ||
-                 (apiVersion <= 1 &&
-                  j[jss::result][jss::transactions][1u][jss::tx][jss::Amount] ==
-                      j[jss::result][jss::transactions][1u][jss::tx]
-                       [jss::DeliverMax]));
+            switch (apiVersion)
+            {
+                case 1:
+                    return j.isMember(jss::result) &&
+                        (j[jss::result][jss::status] == "success") &&
+                        (j[jss::result][jss::transactions].size() == 2) &&
+                        (j[jss::result][jss::transactions][0u][jss::tx]
+                          [jss::TransactionType] == jss::AccountSet) &&
+                        (j[jss::result][jss::transactions][1u][jss::tx]
+                          [jss::TransactionType] == jss::Payment) &&
+                        (j[jss::result][jss::transactions][1u][jss::tx]
+                          [jss::DeliverMax] == "10000000010") &&
+                        (j[jss::result][jss::transactions][1u][jss::tx]
+                          [jss::Amount] ==
+                         j[jss::result][jss::transactions][1u][jss::tx]
+                          [jss::DeliverMax]);
+                case 2:
+                    return j.isMember(jss::result) &&
+                        (j[jss::result][jss::status] == "success") &&
+                        (j[jss::result][jss::transactions].size() == 2) &&
+                        (j[jss::result][jss::transactions][0u][jss::tx_json]
+                          [jss::TransactionType] == jss::AccountSet) &&
+                        (j[jss::result][jss::transactions][1u][jss::tx_json]
+                          [jss::TransactionType] == jss::Payment) &&
+                        (j[jss::result][jss::transactions][1u][jss::tx_json]
+                          [jss::DeliverMax] == "10000000010") &&
+                        (!j[jss::result][jss::transactions][1u][jss::tx_json]
+                              .isMember(jss::Amount));
+                default:
+                    return false;
+            }
         };
 
         auto noTxs = [](Json::Value const& j) {
