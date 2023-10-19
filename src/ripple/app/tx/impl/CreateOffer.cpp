@@ -736,10 +736,10 @@ CreateOffer::flowCross(
         }
         // Special handling for the tfSell flag.
         STAmount deliver = takerAmount.out;
-        OfferCrossing offerCrossing = OfferCrossing::Yes;
+        OfferCrossing offerCrossing = OfferCrossing::yes;
         if (txFlags & tfSell)
         {
-            offerCrossing = OfferCrossing::Sell;
+            offerCrossing = OfferCrossing::sell;
             // We are selling, so we will accept *more* than the offer
             // specified.  Since we don't know how much they might offer,
             // we allow delivery of the largest possible amount.

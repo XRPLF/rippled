@@ -106,7 +106,7 @@ RippleCalc::rippleCalculate(
                 defaultPaths,
                 partialPayment,
                 ownerPaysTransferFee,
-                OfferCrossing::No,
+                OfferCrossing::no,
                 limitQuality,
                 sendMax,
                 j,

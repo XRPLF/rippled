@@ -2103,7 +2103,7 @@ private:
                     false,
                     false,
                     true,
-                    OfferCrossing::No,
+                    OfferCrossing::no,
                     std::nullopt,
                     smax,
                     flowJournal);

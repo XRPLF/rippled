@@ -847,7 +847,7 @@ flow(
             //   That case is handled here if tfSell is also not set; i.e,
             //   case 1.
             if (!offerCrossing ||
-                (fillOrKillEnabled && offerCrossing != OfferCrossing::Sell))
+                (fillOrKillEnabled && offerCrossing != OfferCrossing::sell))
                 return {
                     tecPATH_PARTIAL,
                     actualIn,
@@ -861,7 +861,7 @@ flow(
     }
     if (offerCrossing &&
         (!partialPayment &&
-         (!fillOrKillEnabled || offerCrossing == OfferCrossing::Sell)))
+         (!fillOrKillEnabled || offerCrossing == OfferCrossing::sell)))
     {
         // If we're offer crossing and partialPayment is *not* true, then
         // we're handling a FillOrKill offer.  In this case remainingIn must
