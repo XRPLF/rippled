@@ -1194,6 +1194,20 @@ private:
         return jvRequest;
     }
 
+    // server_definitions [hash]
+    Json::Value
+    parseServerDefinitions(Json::Value const& jvParams)
+    {
+        Json::Value jvRequest{Json::objectValue};
+
+        if (jvParams.size() == 1)
+        {
+            jvRequest[jss::hash] = jvParams[0u].asString();
+        }
+
+        return jvRequest;
+    }
+
     // server_info [counters]
     Json::Value
     parseServerInfo(Json::Value const& jvParams)
@@ -1255,6 +1269,7 @@ public:
             {"channel_verify", &RPCParser::parseChannelVerify, 4, 4},
             {"connect", &RPCParser::parseConnect, 1, 2},
             {"consensus_info", &RPCParser::parseAsIs, 0, 0},
+            {"crawl_shards", &RPCParser::parseAsIs, 0, 2},
             {"deposit_authorized", &RPCParser::parseDepositAuthorized, 2, 3},
             {"download_shard", &RPCParser::parseDownloadShard, 2, -1},
             {"feature", &RPCParser::parseFeature, 0, 2},
@@ -1292,14 +1307,14 @@ public:
              1},
             {"peer_reservations_list", &RPCParser::parseAsIs, 0, 0},
             {"ripple_path_find", &RPCParser::parseRipplePathFind, 1, 2},
-            {"sign", &RPCParser::parseSignSubmit, 2, 3},
-            {"sign_for", &RPCParser::parseSignFor, 3, 4},
-            {"submit", &RPCParser::parseSignSubmit, 1, 3},
-            {"submit_multisigned", &RPCParser::parseSubmitMultiSigned, 1, 1},
+            {"server_definitions", &RPCParser::parseServerDefinitions, 0, 1},
             {"server_info", &RPCParser::parseServerInfo, 0, 1},
             {"server_state", &RPCParser::parseServerInfo, 0, 1},
-            {"crawl_shards", &RPCParser::parseAsIs, 0, 2},
+            {"sign", &RPCParser::parseSignSubmit, 2, 3},
+            {"sign_for", &RPCParser::parseSignFor, 3, 4},
             {"stop", &RPCParser::parseAsIs, 0, 0},
+            {"submit", &RPCParser::parseSignSubmit, 1, 3},
+            {"submit_multisigned", &RPCParser::parseSubmitMultiSigned, 1, 1},
             {"transaction_entry", &RPCParser::parseTransactionEntry, 2, 2},
             {"tx", &RPCParser::parseTx, 1, 4},
             {"tx_account", &RPCParser::parseTxAccount, 1, 7},

@@ -20,13 +20,10 @@
 #include <ripple/protocol/TER.h>
 #include <boost/range/adaptor/transformed.hpp>
 #include <type_traits>
-#include <unordered_map>
 
 namespace ripple {
 
-namespace detail {
-
-static std::unordered_map<
+std::unordered_map<
     TERUnderlyingType,
     std::pair<char const* const, char const* const>> const&
 transResults()
@@ -113,6 +110,7 @@ transResults()
         MAKE_ERROR(tecXCHAIN_SELF_COMMIT,            "Account cannot commit funds to itself."),
         MAKE_ERROR(tecXCHAIN_BAD_PUBLIC_KEY_ACCOUNT_PAIR, "Bad public key account pair in an xchain transaction."),
         MAKE_ERROR(tecXCHAIN_CREATE_ACCOUNT_DISABLED, "This bridge does not support account creation."),
+        MAKE_ERROR(tecEMPTY_DID,                     "The DID object did not have a URI or DIDDocument field."),
 
         MAKE_ERROR(tefALREADY,                     "The exact transaction was already in this ledger."),
         MAKE_ERROR(tefBAD_ADD_AUTH,                "Not authorized to add account."),
@@ -179,6 +177,7 @@ transResults()
         MAKE_ERROR(temBAD_WEIGHT,                "Malformed: Weight must be a positive value."),
         MAKE_ERROR(temDST_IS_SRC,                "Destination may not be source."),
         MAKE_ERROR(temDST_NEEDED,                "Destination not specified."),
+        MAKE_ERROR(temEMPTY_DID,                 "Malformed: No DID data provided."),
         MAKE_ERROR(temINVALID,                   "The transaction is ill-formed."),
         MAKE_ERROR(temINVALID_FLAG,              "The transaction has an invalid flag."),
         MAKE_ERROR(temREDUNDANT,                 "The transaction is redundant."),
@@ -223,12 +222,10 @@ transResults()
     return results;
 }
 
-}  // namespace detail
-
 bool
 transResultInfo(TER code, std::string& token, std::string& text)
 {
-    auto& results = detail::transResults();
+    auto& results = transResults();
 
     auto const r = results.find(TERtoInt(code));
 
@@ -262,7 +259,7 @@ std::optional<TER>
 transCode(std::string const& token)
 {
     static auto const results = [] {
-        auto& byTer = detail::transResults();
+        auto& byTer = transResults();
         auto range = boost::make_iterator_range(byTer.begin(), byTer.end());
         auto tRange = boost::adaptors::transform(range, [](auto const& r) {
             return std::make_pair(r.second.first, r.first);
