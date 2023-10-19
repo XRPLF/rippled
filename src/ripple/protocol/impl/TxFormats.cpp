@@ -18,47 +18,34 @@
 //==============================================================================
 
 #include <ripple/protocol/TxFormats.h>
+
+#include <ripple/protocol/SField.h>
+#include <ripple/protocol/SOTemplate.h>
 #include <ripple/protocol/jss.h>
 
 namespace ripple {
 
 TxFormats::TxFormats()
 {
-#pragma push_macro("PSEUDO_TXN_COMMON_FIELDS")
-
-    // clang-format off
-
-    #define PSEUDO_TXN_COMMON_FIELDS                        \
-        {sfTransactionType, soeREQUIRED},                   \
-        {sfFlags, soeOPTIONAL},                             \
-        {sfSourceTag, soeOPTIONAL},                         \
-        {sfAccount, soeREQUIRED},                           \
-        {sfSequence, soeREQUIRED},                          \
-        {sfPreviousTxnID, soeOPTIONAL}, /* emulate027 */    \
-        {sfLastLedgerSequence, soeOPTIONAL},                \
-        {sfAccountTxnID, soeOPTIONAL},                      \
-        {sfFee, soeREQUIRED},                               \
-        {sfOperationLimit, soeOPTIONAL},                    \
-        {sfMemos, soeOPTIONAL},                             \
-        {sfSigningPubKey, soeREQUIRED},                     \
-        {sfTxnSignature, soeOPTIONAL},                      \
-        {sfSigners, soeOPTIONAL}, /* submit_multisigned */  \
-        {sfNetworkID, soeOPTIONAL}
-
-    // clang-format on
-
-    // Fields shared by all pseudo-transaction txFormats:
-    static const std::initializer_list<SOElement> pseudoCommonFields{
-        PSEUDO_TXN_COMMON_FIELDS,
-    };
-
-    // Fields shared by all normal transaction txFormats:
+    // Fields shared by all txFormats:
     static const std::initializer_list<SOElement> commonFields{
-        PSEUDO_TXN_COMMON_FIELDS,
+        {sfTransactionType, soeREQUIRED},
+        {sfFlags, soeOPTIONAL},
+        {sfSourceTag, soeOPTIONAL},
+        {sfAccount, soeREQUIRED},
+        {sfSequence, soeREQUIRED},
+        {sfPreviousTxnID, soeOPTIONAL},  // emulate027
+        {sfLastLedgerSequence, soeOPTIONAL},
+        {sfAccountTxnID, soeOPTIONAL},
+        {sfFee, soeREQUIRED},
+        {sfOperationLimit, soeOPTIONAL},
+        {sfMemos, soeOPTIONAL},
+        {sfSigningPubKey, soeREQUIRED},
         {sfTicketSequence, soeOPTIONAL},
+        {sfTxnSignature, soeOPTIONAL},
+        {sfSigners, soeOPTIONAL},  // submit_multisigned
+        {sfNetworkID, soeOPTIONAL},
     };
-
-#pragma pop_macro("PSEUDO_TXN_COMMON_FIELDS")
 
     add(jss::AccountSet,
         ttACCOUNT_SET,
@@ -220,7 +207,7 @@ TxFormats::TxFormats()
             {sfLedgerSequence, soeREQUIRED},
             {sfAmendment, soeREQUIRED},
         },
-        pseudoCommonFields);
+        commonFields);
 
     add(jss::SetFee,
         ttFEE,
@@ -236,7 +223,7 @@ TxFormats::TxFormats()
             {sfReserveBaseDrops, soeOPTIONAL},
             {sfReserveIncrementDrops, soeOPTIONAL},
         },
-        pseudoCommonFields);
+        commonFields);
 
     add(jss::UNLModify,
         ttUNL_MODIFY,
@@ -245,7 +232,7 @@ TxFormats::TxFormats()
             {sfLedgerSequence, soeREQUIRED},
             {sfUNLModifyValidator, soeREQUIRED},
         },
-        pseudoCommonFields);
+        commonFields);
 
     add(jss::TicketCreate,
         ttTICKET_CREATE,
@@ -390,6 +377,112 @@ TxFormats::TxFormats()
             {sfAmount, soeREQUIRED},
         },
         commonFields);
+
+    add(jss::XChainCreateBridge,
+        ttXCHAIN_CREATE_BRIDGE,
+        {
+            {sfXChainBridge, soeREQUIRED},
+            {sfSignatureReward, soeREQUIRED},
+            {sfMinAccountCreateAmount, soeOPTIONAL},
+        },
+        commonFields);
+
+    add(jss::XChainModifyBridge,
+        ttXCHAIN_MODIFY_BRIDGE,
+        {
+            {sfXChainBridge, soeREQUIRED},
+            {sfSignatureReward, soeOPTIONAL},
+            {sfMinAccountCreateAmount, soeOPTIONAL},
+        },
+        commonFields);
+
+    add(jss::XChainCreateClaimID,
+        ttXCHAIN_CREATE_CLAIM_ID,
+        {
+            {sfXChainBridge, soeREQUIRED},
+            {sfSignatureReward, soeREQUIRED},
+            {sfOtherChainSource, soeREQUIRED},
+        },
+        commonFields);
+
+    add(jss::XChainCommit,
+        ttXCHAIN_COMMIT,
+        {
+            {sfXChainBridge, soeREQUIRED},
+            {sfXChainClaimID, soeREQUIRED},
+            {sfAmount, soeREQUIRED},
+            {sfOtherChainDestination, soeOPTIONAL},
+        },
+        commonFields);
+
+    add(jss::XChainClaim,
+        ttXCHAIN_CLAIM,
+        {
+            {sfXChainBridge, soeREQUIRED},
+            {sfXChainClaimID, soeREQUIRED},
+            {sfDestination, soeREQUIRED},
+            {sfDestinationTag, soeOPTIONAL},
+            {sfAmount, soeREQUIRED},
+        },
+        commonFields);
+
+    add(jss::XChainAddClaimAttestation,
+        ttXCHAIN_ADD_CLAIM_ATTESTATION,
+        {
+            {sfXChainBridge, soeREQUIRED},
+
+            {sfAttestationSignerAccount, soeREQUIRED},
+            {sfPublicKey, soeREQUIRED},
+            {sfSignature, soeREQUIRED},
+            {sfOtherChainSource, soeREQUIRED},
+            {sfAmount, soeREQUIRED},
+            {sfAttestationRewardAccount, soeREQUIRED},
+            {sfWasLockingChainSend, soeREQUIRED},
+
+            {sfXChainClaimID, soeREQUIRED},
+            {sfDestination, soeOPTIONAL},
+        },
+        commonFields);
+
+    add(jss::XChainAddAccountCreateAttestation,
+        ttXCHAIN_ADD_ACCOUNT_CREATE_ATTESTATION,
+        {
+            {sfXChainBridge, soeREQUIRED},
+
+            {sfAttestationSignerAccount, soeREQUIRED},
+            {sfPublicKey, soeREQUIRED},
+            {sfSignature, soeREQUIRED},
+            {sfOtherChainSource, soeREQUIRED},
+            {sfAmount, soeREQUIRED},
+            {sfAttestationRewardAccount, soeREQUIRED},
+            {sfWasLockingChainSend, soeREQUIRED},
+
+            {sfXChainAccountCreateCount, soeREQUIRED},
+            {sfDestination, soeREQUIRED},
+            {sfSignatureReward, soeREQUIRED},
+        },
+        commonFields);
+
+    add(jss::XChainAccountCreateCommit,
+        ttXCHAIN_ACCOUNT_CREATE_COMMIT,
+        {
+            {sfXChainBridge, soeREQUIRED},
+            {sfDestination, soeREQUIRED},
+            {sfAmount, soeREQUIRED},
+            {sfSignatureReward, soeREQUIRED},
+        },
+        commonFields);
+
+    add(jss::DIDSet,
+        ttDID_SET,
+        {
+            {sfDIDDocument, soeOPTIONAL},
+            {sfURI, soeOPTIONAL},
+            {sfData, soeOPTIONAL},
+        },
+        commonFields);
+
+    add(jss::DIDDelete, ttDID_DELETE, {}, commonFields);
 }
 
 TxFormats const&

@@ -1197,9 +1197,6 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
     // Optionally turn off logging to console.
     logs_->silent(config_->silent());
 
-    if (!config_->standalone())
-        timeKeeper_->run(config_->SNTP_SERVERS);
-
     if (!initRelationalDatabase() || !initNodeStore())
         return false;
 
@@ -1301,6 +1298,12 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         }
     }
 
+    if (auto const& forcedRange = config().FORCED_LEDGER_RANGE_PRESENT)
+    {
+        m_ledgerMaster->setLedgerRangePresent(
+            forcedRange->first, forcedRange->second);
+    }
+
     if (!config().reporting())
         m_orderBookDB.setup(getLedgerMaster().getCurrentLedger());
 
@@ -1352,6 +1355,9 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
                 << "Invalid entry in [" << SECTION_VALIDATOR_LIST_SITES << "]";
             return false;
         }
+
+        // Tell the AmendmentTable who the trusted validators are.
+        m_amendmentTable->trustChanged(validators_->getQuorumKeys().second);
     }
     //----------------------------------------------------------------------
     //
@@ -1549,6 +1555,7 @@ ApplicationImp::start(bool withTimers)
     {
         setSweepTimer();
         setEntropyTimer();
+        m_networkOPs->setBatchApplyTimer();
     }
 
     m_io_latency_sampler.start();

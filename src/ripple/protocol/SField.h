@@ -49,44 +49,68 @@ template <int>
 class STBitString;
 template <class>
 class STInteger;
+class STXChainBridge;
 class STVector256;
 
-enum SerializedTypeID {
-    // special types
-    STI_UNKNOWN = -2,
-    STI_NOTPRESENT = 0,
+#pragma push_macro("XMACRO")
+#undef XMACRO
 
-    // // types (common)
-    STI_UINT16 = 1,
-    STI_UINT32 = 2,
-    STI_UINT64 = 3,
-    STI_UINT128 = 4,
-    STI_UINT256 = 5,
-    STI_AMOUNT = 6,
-    STI_VL = 7,
-    STI_ACCOUNT = 8,
-    // 9-13 are reserved
-    STI_OBJECT = 14,
-    STI_ARRAY = 15,
+#define XMACRO(STYPE)                             \
+    /* special types */                           \
+    STYPE(STI_UNKNOWN, -2)                        \
+    STYPE(STI_NOTPRESENT, 0)                      \
+    STYPE(STI_UINT16, 1)                          \
+                                                  \
+    /* types (common) */                          \
+    STYPE(STI_UINT32, 2)                          \
+    STYPE(STI_UINT64, 3)                          \
+    STYPE(STI_UINT128, 4)                         \
+    STYPE(STI_UINT256, 5)                         \
+    STYPE(STI_AMOUNT, 6)                          \
+    STYPE(STI_VL, 7)                              \
+    STYPE(STI_ACCOUNT, 8)                         \
+                                                  \
+    /* 9-13 are reserved */                       \
+    STYPE(STI_OBJECT, 14)                         \
+    STYPE(STI_ARRAY, 15)                          \
+                                                  \
+    /* types (uncommon) */                        \
+    STYPE(STI_UINT8, 16)                          \
+    STYPE(STI_UINT160, 17)                        \
+    STYPE(STI_PATHSET, 18)                        \
+    STYPE(STI_VECTOR256, 19)                      \
+    STYPE(STI_UINT96, 20)                         \
+    STYPE(STI_UINT192, 21)                        \
+    STYPE(STI_UINT384, 22)                        \
+    STYPE(STI_UINT512, 23)                        \
+    STYPE(STI_ISSUE, 24)                          \
+    STYPE(STI_XCHAIN_BRIDGE, 25)                  \
+                                                  \
+    /* high-level types */                        \
+    /* cannot be serialized inside other types */ \
+    STYPE(STI_TRANSACTION, 10001)                 \
+    STYPE(STI_LEDGERENTRY, 10002)                 \
+    STYPE(STI_VALIDATION, 10003)                  \
+    STYPE(STI_METADATA, 10004)
 
-    // types (uncommon)
-    STI_UINT8 = 16,
-    STI_UINT160 = 17,
-    STI_PATHSET = 18,
-    STI_VECTOR256 = 19,
-    STI_UINT96 = 20,
-    STI_UINT192 = 21,
-    STI_UINT384 = 22,
-    STI_UINT512 = 23,
-    STI_ISSUE = 24,
+#pragma push_macro("TO_ENUM")
+#undef TO_ENUM
+#pragma push_macro("TO_MAP")
+#undef TO_MAP
 
-    // high level types
-    // cannot be serialized inside other types
-    STI_TRANSACTION = 10001,
-    STI_LEDGERENTRY = 10002,
-    STI_VALIDATION = 10003,
-    STI_METADATA = 10004,
-};
+#define TO_ENUM(name, value) name = value,
+#define TO_MAP(name, value) {#name, value},
+
+enum SerializedTypeID { XMACRO(TO_ENUM) };
+
+static std::map<std::string, int> const sTypeMap = {XMACRO(TO_MAP)};
+
+#undef XMACRO
+#undef TO_ENUM
+
+#pragma pop_macro("XMACRO")
+#pragma pop_macro("TO_ENUM")
+#pragma pop_macro("TO_MAP")
 
 // constexpr
 inline int
@@ -264,6 +288,12 @@ public:
     static int
     compare(const SField& f1, const SField& f2);
 
+    static std::map<int, SField const*> const&
+    getKnownCodeToField()
+    {
+        return knownCodeToField;
+    }
+
 private:
     static int num;
     static std::map<int, SField const*> knownCodeToField;
@@ -318,6 +348,7 @@ using SF_AMOUNT = TypedField<STAmount>;
 using SF_ISSUE = TypedField<STIssue>;
 using SF_VL = TypedField<STBlob>;
 using SF_VECTOR256 = TypedField<STVector256>;
+using SF_XCHAIN_BRIDGE = TypedField<STXChainBridge>;
 
 //------------------------------------------------------------------------------
 
@@ -332,6 +363,7 @@ extern SField const sfMetadata;
 extern SF_UINT8 const sfCloseResolution;
 extern SF_UINT8 const sfMethod;
 extern SF_UINT8 const sfTransactionResult;
+extern SF_UINT8 const sfWasLockingChainSend;
 
 // 8-bit integers (uncommon)
 extern SF_UINT8 const sfTickSize;
@@ -424,6 +456,9 @@ extern SF_UINT64 const sfHookOn;
 extern SF_UINT64 const sfHookInstructionCount;
 extern SF_UINT64 const sfHookReturnCode;
 extern SF_UINT64 const sfReferenceCount;
+extern SF_UINT64 const sfXChainClaimID;
+extern SF_UINT64 const sfXChainAccountCreateCount;
+extern SF_UINT64 const sfXChainAccountClaimCount;
 
 // 128-bit
 extern SF_UINT128 const sfEmailHash;
@@ -499,6 +534,8 @@ extern SF_AMOUNT const sfLPTokenIn;
 extern SF_AMOUNT const sfBaseFeeDrops;
 extern SF_AMOUNT const sfReserveBaseDrops;
 extern SF_AMOUNT const sfReserveIncrementDrops;
+extern SF_AMOUNT const sfSignatureReward;
+extern SF_AMOUNT const sfMinAccountCreateAmount;
 
 // variable length (common)
 extern SF_VL const sfPublicKey;
@@ -515,6 +552,8 @@ extern SF_VL const sfCreateCode;
 extern SF_VL const sfMemoType;
 extern SF_VL const sfMemoData;
 extern SF_VL const sfMemoFormat;
+extern SF_VL const sfDIDDocument;
+extern SF_VL const sfData;
 
 // variable length (uncommon)
 extern SF_VL const sfFulfillment;
@@ -541,6 +580,12 @@ extern SF_ACCOUNT const sfEmitCallback;
 
 // account (uncommon)
 extern SF_ACCOUNT const sfHookAccount;
+extern SF_ACCOUNT const sfOtherChainSource;
+extern SF_ACCOUNT const sfOtherChainDestination;
+extern SF_ACCOUNT const sfAttestationSignerAccount;
+extern SF_ACCOUNT const sfAttestationRewardAccount;
+extern SF_ACCOUNT const sfLockingChainDoor;
+extern SF_ACCOUNT const sfIssuingChainDoor;
 
 // path set
 extern SField const sfPaths;
@@ -548,6 +593,11 @@ extern SField const sfPaths;
 // issue
 extern SF_ISSUE const sfAsset;
 extern SF_ISSUE const sfAsset2;
+extern SF_ISSUE const sfLockingChainIssue;
+extern SF_ISSUE const sfIssuingChainIssue;
+
+// bridge
+extern SF_XCHAIN_BRIDGE const sfXChainBridge;
 
 // vector of 256-bit
 extern SF_VECTOR256 const sfIndexes;
@@ -582,6 +632,10 @@ extern SField const sfHookExecution;
 extern SField const sfHookDefinition;
 extern SField const sfHookParameter;
 extern SField const sfHookGrant;
+extern SField const sfXChainClaimProofSig;
+extern SField const sfXChainCreateAccountProofSig;
+extern SField const sfXChainClaimAttestationCollectionElement;
+extern SField const sfXChainCreateAccountAttestationCollectionElement;
 
 // array of objects (common)
 // ARRAY/1 is reserved for end of array
@@ -604,6 +658,8 @@ extern SField const sfDisabledValidators;
 extern SField const sfHookExecutions;
 extern SField const sfHookParameters;
 extern SField const sfHookGrants;
+extern SField const sfXChainClaimAttestations;
+extern SField const sfXChainCreateAccountAttestations;
 
 //------------------------------------------------------------------------------
 
