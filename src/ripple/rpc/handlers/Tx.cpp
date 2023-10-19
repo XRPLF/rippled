@@ -19,6 +19,7 @@
 
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/TransactionMaster.h>
+#include <ripple/app/misc/DeliverMax.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/basics/ToString.h>
@@ -28,7 +29,6 @@
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/CTID.h>
 #include <ripple/rpc/Context.h>
-#include <ripple/rpc/DeliverMax.h>
 #include <ripple/rpc/DeliveredAmount.h>
 #include <ripple/rpc/GRPCHandlers.h>
 #include <ripple/rpc/impl/RPCHelpers.h>

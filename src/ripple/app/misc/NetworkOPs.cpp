@@ -29,6 +29,7 @@
 #include <ripple/app/ledger/TransactionMaster.h>
 #include <ripple/app/main/LoadManager.h>
 #include <ripple/app/misc/AmendmentTable.h>
+#include <ripple/app/misc/DeliverMax.h>
 #include <ripple/app/misc/HashRouter.h>
 #include <ripple/app/misc/LoadFeeTrack.h>
 #include <ripple/app/misc/NetworkOPs.h>
@@ -41,7 +42,7 @@
 #include <ripple/app/rdb/backend/SQLiteDatabase.h>
 #include <ripple/app/reporting/ReportingETL.h>
 #include <ripple/app/tx/apply.h>
-#include <ripple/basics/MultivarJson.h>
+#include <ripple/json/MultivarJson.h>
 #include <ripple/basics/PerfLog.h>
 #include <ripple/basics/SubmitSync.h>
 #include <ripple/basics/UptimeClock.h>
@@ -65,7 +66,6 @@
 #include <ripple/resource/Fees.h>
 #include <ripple/resource/ResourceManager.h>
 #include <ripple/rpc/BookChanges.h>
-#include <ripple/rpc/DeliverMax.h>
 #include <ripple/rpc/DeliveredAmount.h>
 #include <ripple/rpc/ServerHandler.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
@@ -603,8 +603,8 @@ private:
     transJson(
         std::shared_ptr<STTx const> const& transaction,
         TER result,
-        std::shared_ptr<ReadView const> const& ledger,
         bool validated,
+        std::shared_ptr<ReadView const> const& ledger,
         std::optional<std::reference_wrapper<TxMeta const>> meta,
         unsigned int apiVersion);
 
@@ -2749,8 +2749,8 @@ NetworkOPsImp::pubProposedTransaction(
     TER result)
 {
     MultiApiJson jvObj(
-        {transJson(transaction, result, ledger, false, std::nullopt, 1),
-         transJson(transaction, result, ledger, false, std::nullopt, 2)});
+        {transJson(transaction, result, false, ledger, std::nullopt, 1),
+         transJson(transaction, result, false, ledger, std::nullopt, 2)});
 
     {
         std::lock_guard sl(mSubLock);
@@ -3092,8 +3092,8 @@ Json::Value
 NetworkOPsImp::transJson(
     std::shared_ptr<STTx const> const& transaction,
     TER result,
-    std::shared_ptr<ReadView const> const& ledger,
     bool validated,
+    std::shared_ptr<ReadView const> const& ledger,
     std::optional<std::reference_wrapper<TxMeta const>> meta,
     unsigned int apiVersion)
 {
@@ -3169,8 +3169,8 @@ NetworkOPsImp::pubValidatedTransaction(
     auto const metaRef = std::ref(transaction.getMeta());
     auto const trResult = transaction.getResult();
     MultiApiJson jvObj(
-        {transJson(stTxn, trResult, ledger, true, metaRef, 1),
-         transJson(stTxn, trResult, ledger, true, metaRef, 2)});
+        {transJson(stTxn, trResult, true, ledger, metaRef, 1),
+         transJson(stTxn, trResult, true, ledger, metaRef, 2)});
 
     {
         std::lock_guard sl(mSubLock);
@@ -3316,8 +3316,8 @@ NetworkOPsImp::pubAccountTransaction(
         auto const metaRef = std::ref(transaction.getMeta());
         auto const trResult = transaction.getResult();
         MultiApiJson jvObj(
-            {transJson(stTxn, trResult, ledger, true, metaRef, 1),
-             transJson(stTxn, trResult, ledger, true, metaRef, 2)});
+            {transJson(stTxn, trResult, true, ledger, metaRef, 1),
+             transJson(stTxn, trResult, true, ledger, metaRef, 2)});
 
         for (InfoSub::ref isrListener : notify)
         {
@@ -3398,8 +3398,8 @@ NetworkOPsImp::pubProposedAccountTransaction(
     {
         // Create two different Json objects, for different API versions
         MultiApiJson jvObj({
-            transJson(tx, result, ledger, false, std::nullopt, 1),
-            transJson(tx, result, ledger, false, std::nullopt, 2),
+            transJson(tx, result, false, ledger, std::nullopt, 1),
+            transJson(tx, result, false, ledger, std::nullopt, 2),
         });
 
         for (InfoSub::ref isrListener : notify)
@@ -3798,9 +3798,9 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                         auto const mRef = std::ref(*meta);
                         auto const trR = meta->getResultTER();
                         MultiApiJson jvTx(
-                            {transJson(stTxn, trR, curTxLedger, true, mRef, 1),
+                            {transJson(stTxn, trR, true, curTxLedger, mRef, 1),
                              transJson(
-                                 stTxn, trR, curTxLedger, true, mRef, 2)});
+                                 stTxn, trR, true, curTxLedger, mRef, 2)});
 
                         jvTx.set(jss::account_history_tx_index, txHistoryIndex);
                         txHistoryIndex -= 1;

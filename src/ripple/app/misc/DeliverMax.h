@@ -17,25 +17,37 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/jss.h>
-#include <ripple/rpc/DeliverMax.h>
+#ifndef RIPPLE_RPC_DELIVERMAX_H_INCLUDED
+#define RIPPLE_RPC_DELIVERMAX_H_INCLUDED
+
+#include <ripple/protocol/TxFormats.h>
+
+#include <functional>
+#include <memory>
+
+namespace Json {
+class Value;
+}
 
 namespace ripple {
+
 namespace RPC {
 
+/**
+   Copy `Amount` field to `DeliverMax` field in transaction output JSON.
+   This only applies to Payment transaction type, all others are ignored.
+
+   When apiVersion > 1 will also remove `Amount` field, forcing users
+   to access this value using new `DeliverMax` field only.
+   @{
+ */
+
 void
-insertDeliverMax(Json::Value& tx_json, TxType txnType, unsigned int apiVersion)
-{
-    if (tx_json.isMember(jss::Amount))
-    {
-        if (txnType == ttPAYMENT)
-        {
-            tx_json[jss::DeliverMax] = tx_json[jss::Amount];
-            if (apiVersion > 1)
-                tx_json.removeMember(jss::Amount);
-        }
-    }
-}
+insertDeliverMax(Json::Value& tx_json, TxType txnType, unsigned int apiVersion);
+
+/** @} */
 
 }  // namespace RPC
 }  // namespace ripple
+
+#endif

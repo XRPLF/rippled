@@ -217,6 +217,7 @@ install (
 install (
   FILES
     src/ripple/json/JsonPropertyStream.h
+    src/ripple/json/MultivarJson.h
     src/ripple/json/Object.h
     src/ripple/json/Output.h
     src/ripple/json/Writer.h
@@ -467,6 +468,7 @@ target_sources (rippled PRIVATE
   src/ripple/app/misc/detail/impl/WorkSSL.cpp
   src/ripple/app/misc/impl/AccountTxPaging.cpp
   src/ripple/app/misc/impl/AmendmentTable.cpp
+  src/ripple/app/misc/impl/DeliverMax.cpp
   src/ripple/app/misc/impl/LoadFeeTrack.cpp
   src/ripple/app/misc/impl/Manifest.cpp
   src/ripple/app/misc/impl/Transaction.cpp
@@ -731,7 +733,6 @@ target_sources (rippled PRIVATE
   src/ripple/rpc/handlers/Validators.cpp
   src/ripple/rpc/handlers/WalletPropose.cpp
   src/ripple/rpc/impl/DeliveredAmount.cpp
-  src/ripple/rpc/impl/DeliverMax.cpp
   src/ripple/rpc/impl/Handler.cpp
   src/ripple/rpc/impl/LegacyPathFind.cpp
   src/ripple/rpc/impl/RPCHandler.cpp
@@ -855,7 +856,6 @@ if (tests)
     src/test/basics/join_test.cpp
     src/test/basics/mulDiv_test.cpp
     src/test/basics/tagged_integer_test.cpp
-    src/test/basics/MultivarJson_test.cpp
     #[===============================[
        test sources:
          subdir: beast
@@ -918,6 +918,7 @@ if (tests)
     src/test/json/Output_test.cpp
     src/test/json/Writer_test.cpp
     src/test/json/json_value_test.cpp
+    src/test/json/MultivarJson_test.cpp
     #[===============================[
        test sources:
          subdir: jtx

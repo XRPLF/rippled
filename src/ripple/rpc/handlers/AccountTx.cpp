@@ -19,6 +19,7 @@
 
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/main/Application.h>
+#include <ripple/app/misc/DeliverMax.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/app/rdb/backend/PostgresDatabase.h>
@@ -34,7 +35,6 @@
 #include <ripple/protocol/jss.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/Context.h>
-#include <ripple/rpc/DeliverMax.h>
 #include <ripple/rpc/DeliveredAmount.h>
 #include <ripple/rpc/Role.h>
 #include <ripple/rpc/impl/RPCHelpers.h>

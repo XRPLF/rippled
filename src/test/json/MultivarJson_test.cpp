@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 /*
-    This file is part of rippled: https://github0.com/ripple/rippled
+    This file is part of rippled: https://github.com/XRPLF/rippled/
     Copyright (c) 2023 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
@@ -17,7 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/basics/MultivarJson.h>
+#include <ripple/json/MultivarJson.h>
+
 #include <ripple/beast/unit_test.h>
 #include "ripple/beast/unit_test/suite.hpp"
 #include "ripple/json/json_value.h"

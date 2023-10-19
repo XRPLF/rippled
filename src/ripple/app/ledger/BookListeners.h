@@ -20,7 +20,7 @@
 #ifndef RIPPLE_APP_LEDGER_BOOKLISTENERS_H_INCLUDED
 #define RIPPLE_APP_LEDGER_BOOKLISTENERS_H_INCLUDED
 
-#include <ripple/basics/MultivarJson.h>
+#include <ripple/json/MultivarJson.h>
 #include <ripple/net/InfoSub.h>
 
 #include <memory>
