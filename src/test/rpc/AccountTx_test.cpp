@@ -132,9 +132,10 @@ class AccountTx_test : public beast::unit_test::suite
                 ((apiVersion > 1 &&
                   !j[jss::result][jss::transactions][1u][jss::tx].isMember(
                       jss::Amount)) ||
-                 (j[jss::result][jss::transactions][1u][jss::tx][jss::Amount] ==
-                  j[jss::result][jss::transactions][1u][jss::tx]
-                   [jss::DeliverMax]));
+                 (apiVersion <= 1 &&
+                  j[jss::result][jss::transactions][1u][jss::tx][jss::Amount] ==
+                      j[jss::result][jss::transactions][1u][jss::tx]
+                       [jss::DeliverMax]));
         };
 
         auto noTxs = [](Json::Value const& j) {

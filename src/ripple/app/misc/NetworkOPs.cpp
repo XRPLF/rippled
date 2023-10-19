@@ -3329,16 +3329,16 @@ NetworkOPsImp::pubAccountTransaction(
         if (last)
             jvObj.set(jss::account_history_boundary, true);
 
-        assert(!jvObj.val[0].isMember(jss::account_history_tx_stream));
-        assert(!jvObj.val[1].isMember(jss::account_history_tx_stream));
+        assert(
+            jvObj.isMember(jss::account_history_tx_stream) ==
+            MultiApiJson::none);
         for (auto& info : accountHistoryNotify)
         {
             auto& index = info.index_;
             if (index->forwardTxIndex_ == 0 && !index->haveHistorical_)
                 jvObj.set(jss::account_history_tx_first, true);
 
-            jvObj.set(jss::account_history_tx_index, index->forwardTxIndex_);
-            index->forwardTxIndex_ += 1;
+            jvObj.set(jss::account_history_tx_index, index->forwardTxIndex_++);
 
             info.sink_->send(
                 jvObj.select(apiVersionSelector(info.sink_->getApiVersion())),
@@ -3407,15 +3407,15 @@ NetworkOPsImp::pubProposedAccountTransaction(
                 jvObj.select(apiVersionSelector(isrListener->getApiVersion())),
                 true);
 
-        assert(!jvObj.val[0].isMember(jss::account_history_tx_stream));
-        assert(!jvObj.val[1].isMember(jss::account_history_tx_stream));
+        assert(
+            jvObj.isMember(jss::account_history_tx_stream) ==
+            MultiApiJson::none);
         for (auto& info : accountHistoryNotify)
         {
             auto& index = info.index_;
             if (index->forwardTxIndex_ == 0 && !index->haveHistorical_)
                 jvObj.set(jss::account_history_tx_first, true);
-            jvObj.set(jss::account_history_tx_index, index->forwardTxIndex_);
-            index->forwardTxIndex_ += 1;
+            jvObj.set(jss::account_history_tx_index, index->forwardTxIndex_++);
             info.sink_->send(
                 jvObj.select(apiVersionSelector(info.sink_->getApiVersion())),
                 true);
@@ -3609,7 +3609,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
 
             auto send = [&](Json::Value const& jvObj,
                             bool unsubscribe) -> bool {
-                if (auto sptr = subInfo.sinkWptr_.lock(); sptr)
+                if (auto sptr = subInfo.sinkWptr_.lock())
                 {
                     sptr->send(jvObj, true);
                     if (unsubscribe)
@@ -3622,7 +3622,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
 
             auto sendMultiApiJson = [&](MultiApiJson const& jvObj,
                                         bool unsubscribe) -> bool {
-                if (auto sptr = subInfo.sinkWptr_.lock(); sptr)
+                if (auto sptr = subInfo.sinkWptr_.lock())
                 {
                     sptr->send(
                         jvObj.select(apiVersionSelector(sptr->getApiVersion())),
@@ -3802,9 +3802,8 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                              transJson(
                                  stTxn, trR, true, curTxLedger, mRef, 2)});
 
-                        jvTx.set(jss::account_history_tx_index, txHistoryIndex);
-                        txHistoryIndex -= 1;
-
+                        jvTx.set(
+                            jss::account_history_tx_index, txHistoryIndex--);
                         if (i + 1 == num_txns ||
                             txns[i + 1].first->getLedger() != tx->getLedger())
                             jvTx.set(jss::account_history_boundary, true);

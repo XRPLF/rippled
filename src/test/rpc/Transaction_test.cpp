@@ -702,7 +702,6 @@ class Transaction_test : public beast::unit_test::suite
         using std::to_string;
 
         const char* COMMAND = jss::tx.c_str();
-        // const char* BINARY = jss::binary.c_str();
 
         Env env{*this};
         Account const alice{"alice"};
@@ -735,18 +734,20 @@ class Transaction_test : public beast::unit_test::suite
              memberIt++)
         {
             std::string const name = memberIt.memberName();
-            BEAST_EXPECT(result[jss::result].isMember(name));
-            auto const received = result[jss::result][name];
-            std::ostringstream ssReceived;
-            ssReceived << received;
-            std::ostringstream ssExpected;
-            ssExpected << *memberIt;
-            BEAST_EXPECTS(
-                received == *memberIt,
-                "Transaction contains \n\"" + name + "\": "  //
-                    + ssReceived.str()                       //
-                    + "but expected "                        //
-                    + ssExpected.str());
+            if (BEAST_EXPECT(result[jss::result].isMember(name)))
+            {
+                auto const received = result[jss::result][name];
+                std::ostringstream ssReceived;
+                ssReceived << received;
+                std::ostringstream ssExpected;
+                ssExpected << *memberIt;
+                BEAST_EXPECTS(
+                    received == *memberIt,
+                    "Transaction contains \n\"" + name + "\": "  //
+                        + ssReceived.str()                       //
+                        + "but expected "                        //
+                        + ssExpected.str());
+            }
         }
     }
 

@@ -175,7 +175,7 @@ checkPayment(
             if (tx_json[jss::DeliverMax] != tx_json[jss::Amount])
                 return RPC::make_error(
                     rpcINVALID_PARAMS,
-                    "Cannot specify both 'Amount' and 'DeliverMax'");
+                    "Cannot specify differing 'Amount' and 'DeliverMax'");
         }
         else
             tx_json[jss::Amount] = tx_json[jss::DeliverMax];

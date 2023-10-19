@@ -39,7 +39,7 @@ struct MultivarJson_test : beast::unit_test::suite
         static Json::Value const str1{string1};
 
         static Json::Value const obj1{[]() {
-            Json::Value obj1;
+            Json::Value obj1(Json::objectValue);
             obj1["one"] = 1;
             return obj1;
         }()};
@@ -204,6 +204,43 @@ struct MultivarJson_test : beast::unit_test::suite
                     v.set("name", std::nullopt);
                 };
             }(x));
+        }
+
+        {
+            testcase("isMember");
+
+            // Well defined behaviour even if we have different types of members
+            BEAST_EXPECT(subject.isMember("foo") == decltype(subject)::none);
+
+            auto const makeJson = [](const char* key, int val) {
+                Json::Value obj1(Json::objectValue);
+                obj1[key] = val;
+                return obj1;
+            };
+
+            {
+                // All variants have element "One", none have element "Two"
+                MultivarJson<2> const s1{
+                    {makeJson("One", 12), makeJson("One", 42)}};
+                BEAST_EXPECT(s1.isMember("One") == decltype(s1)::all);
+                BEAST_EXPECT(s1.isMember("Two") == decltype(s1)::none);
+            }
+
+            {
+                // Some variants have element "One" and some have "Two"
+                MultivarJson<2> const s2{
+                    {makeJson("One", 12), makeJson("Two", 42)}};
+                BEAST_EXPECT(s2.isMember("One") == decltype(s2)::some);
+                BEAST_EXPECT(s2.isMember("Two") == decltype(s2)::some);
+            }
+
+            {
+                // Not all variants have element "One", because last one is null
+                MultivarJson<3> const s3{
+                    {makeJson("One", 12), makeJson("One", 42), {}}};
+                BEAST_EXPECT(s3.isMember("One") == decltype(s3)::some);
+                BEAST_EXPECT(s3.isMember("Two") == decltype(s3)::none);
+            }
         }
 
         {

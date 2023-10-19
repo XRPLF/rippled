@@ -2014,10 +2014,10 @@ static constexpr TxnTestData txnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Cannot specify both 'Amount' and 'DeliverMax'",
-       "Cannot specify both 'Amount' and 'DeliverMax'",
-       "Cannot specify both 'Amount' and 'DeliverMax'",
-       "Cannot specify both 'Amount' and 'DeliverMax'"}}},
+     {{"Cannot specify differing 'Amount' and 'DeliverMax'",
+       "Cannot specify differing 'Amount' and 'DeliverMax'",
+       "Cannot specify differing 'Amount' and 'DeliverMax'",
+       "Cannot specify differing 'Amount' and 'DeliverMax'"}}},
 
 };
 

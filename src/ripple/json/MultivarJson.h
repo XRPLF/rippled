@@ -48,6 +48,20 @@ struct MultivarJson
         for (auto& a : this->val)
             a[key] = v;
     }
+
+    // Intentionally not using class enum here, MultivarJson is scope enough
+    enum IsMemberResult : int { none = 0, some, all };
+
+    [[nodiscard]] IsMemberResult
+    isMember(const char* key) const
+    {
+        int count = 0;
+        for (auto& a : this->val)
+            if (a.isMember(key))
+                count += 1;
+
+        return (count == 0 ? none : (count < size ? some : all));
+    }
 };
 
 // Wrapper for Json for all supported API versions.

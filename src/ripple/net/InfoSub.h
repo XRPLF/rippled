@@ -246,7 +246,7 @@ private:
     std::shared_ptr<InfoSubRequest> request_;
     std::uint64_t mSeq;
     hash_set<AccountID> accountHistorySubscriptions_;
-    unsigned int apiVersion = 1;
+    unsigned int apiVersion_ = 0;
 
     static int
     assign_id()
