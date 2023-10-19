@@ -5344,15 +5344,14 @@ public:
         FeatureBitset const takerDryOffer{fixTakerDryOfferRemoval};
         FeatureBitset const rmSmallIncreasedQOffers{fixRmSmallIncreasedQOffers};
         FeatureBitset const immediateOfferKilled{featureImmediateOfferKilled};
-        FeatureBitset const fixFillOrKill{fixFillOrKill};
+        FeatureBitset const fillOrKill{fixFillOrKill};
 
         testAll(all - takerDryOffer - immediateOfferKilled);
         testAll(all - flowCross - takerDryOffer - immediateOfferKilled);
         testAll(all - flowCross - immediateOfferKilled);
         testAll(
-            all - rmSmallIncreasedQOffers - immediateOfferKilled -
-            fixFillOrKill);
-        testAll(all - fixFillOrKill);
+            all - rmSmallIncreasedQOffers - immediateOfferKilled - fillOrKill);
+        testAll(all - fillOrKill);
         testAll(all);
 
         testFalseAssert();
