@@ -69,7 +69,7 @@ compiler and linker options for all dependencies _and_ this project.
 However, that is very tedious and error-prone, which is why we lean on tools
 like Conan.
 
-We have written a Conan configuration file ([`conanfile.py`](./conanfile.py))
+We have written a Conan configuration file ([`conanfile.py`](../../conanfile.py))
 so that Conan can be used to correctly download, configure, build, and install
 all of the dependencies for this project,
 using a single set of compiler and linker options for all of them.
