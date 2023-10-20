@@ -42,7 +42,6 @@
 #include <ripple/app/rdb/backend/SQLiteDatabase.h>
 #include <ripple/app/reporting/ReportingETL.h>
 #include <ripple/app/tx/apply.h>
-#include <ripple/json/MultivarJson.h>
 #include <ripple/basics/PerfLog.h>
 #include <ripple/basics/SubmitSync.h>
 #include <ripple/basics/UptimeClock.h>
@@ -54,6 +53,7 @@
 #include <ripple/consensus/ConsensusParms.h>
 #include <ripple/crypto/RFC1751.h>
 #include <ripple/crypto/csprng.h>
+#include <ripple/json/MultivarJson.h>
 #include <ripple/json/to_string.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/nodestore/DatabaseShard.h>

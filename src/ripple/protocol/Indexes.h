@@ -280,6 +280,9 @@ xChainClaimID(STXChainBridge const& bridge, std::uint64_t seq);
 Keylet
 xChainCreateAccountClaimID(STXChainBridge const& bridge, std::uint64_t seq);
 
+Keylet
+did(AccountID const& account) noexcept;
+
 }  // namespace keylet
 
 // Everything below is deprecated and should be removed in favor of keylets:
