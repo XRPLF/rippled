@@ -316,7 +316,7 @@ public:
                 for (auto const& man : inManifests)
                     s1.push_back(
                         toBase58(TokenType::NodePublic, man->masterKey));
-                unl->load(emptyLocalKey, s1, keys);
+                unl->load({}, s1, keys);
 
                 m.save(
                     *dbCon,
