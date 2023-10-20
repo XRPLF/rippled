@@ -23,6 +23,7 @@
 #include <ripple/json/json_value.h>
 
 #include <array>
+#include <cassert>
 #include <concepts>
 #include <cstdlib>
 
@@ -37,7 +38,9 @@ struct MultivarJson
     select(auto&& selector) const
         requires std::same_as<std::size_t, decltype(selector())>
     {
-        return val[selector()];
+        auto const index = selector();
+        assert(index < size);
+        return val[index];
     }
 
     void
