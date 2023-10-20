@@ -179,18 +179,16 @@ class TransactionEntry_test : public beast::unit_test::suite
                      memberIt++)
                 {
                     auto const name = memberIt.memberName();
-                    BEAST_EXPECT(resIndex[jss::tx_json].isMember(name));
-                    auto const received = resIndex[jss::tx_json][name];
-                    std::ostringstream ssReceived;
-                    ssReceived << received;
-                    std::ostringstream ssExpected;
-                    ssExpected << *memberIt;
-                    BEAST_EXPECTS(
-                        received == *memberIt,
-                        txhash + " contains \n\"" + name + "\": "  //
-                            + ssReceived.str()                     //
-                            + "but expected "                      //
-                            + ssExpected.str());
+                    if (BEAST_EXPECT(resIndex[jss::tx_json].isMember(name)))
+                    {
+                        auto const received = resIndex[jss::tx_json][name];
+                        BEAST_EXPECTS(
+                            received == *memberIt,
+                            txhash + " contains \n\"" + name + "\": "  //
+                                + to_string(received)                  //
+                                + " but expected "                     //
+                                + to_string(expected));
+                    }
                 }
             }
 

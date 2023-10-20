@@ -105,7 +105,7 @@ struct MultivarJson_test : beast::unit_test::suite
             static_assert([](auto&& v) {
                 return requires
                 {
-                    v.select([]() -> std::size_t {});
+                    v.select([]() -> std::size_t { return 0; });
                 };
             }(subject));
             static_assert([](auto&& v) {
@@ -117,7 +117,7 @@ struct MultivarJson_test : beast::unit_test::suite
             static_assert([](auto&& v) {
                 return requires
                 {
-                    v.select([]() mutable -> std::size_t {});
+                    v.select([]() mutable -> std::size_t { return 0; });
                 };
             }(subject));
 
@@ -137,7 +137,7 @@ struct MultivarJson_test : beast::unit_test::suite
             static_assert([](auto&& v) {
                 return !requires
                 {
-                    v.select([]() -> bool {});
+                    v.select([]() -> bool { return false; });
                 };
             }(subject));
         }
