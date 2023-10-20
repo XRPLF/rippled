@@ -27,7 +27,7 @@
 #include <numeric>
 #include <random>
 
-namespace ripple::RPC {
+namespace ripple::test {
 
 // NOTE: there should be no need for this function;
 // `std::cout << some_duration` should just work if built with a compliant
@@ -39,7 +39,7 @@ operator<<(std::ostream& os, std::chrono::nanoseconds ns)
     return (os << ns.count() << "ns");
 }
 
-// NOTE This is a rather naiive effort at a microbenchmark. Ideally we want
+// NOTE This is a rather naive effort at a microbenchmark. Ideally we want
 // Google Benchmark, or something similar. Also, this actually does not belong
 // to unit tests, as it makes little sense to run it in conditions very
 // dissimilar to how rippled will normally work.
@@ -99,7 +99,7 @@ class Handler_test : public beast::unit_test::suite
         std::random_device dev;
         std::ranlux48 prng(dev());
 
-        std::set<const char*> handlerNames = getHandlerNames();
+        std::set<const char*> handlerNames = RPC::getHandlerNames();
         std::vector<const char*> names(
             handlerNames.begin(), handlerNames.end());
 
@@ -109,7 +109,7 @@ class Handler_test : public beast::unit_test::suite
         auto const [mean, stdev, n] = time(
             1'000'000,
             [&](std::size_t i) {
-                auto const d = getHandler(1, false, names[i]);
+                auto const d = RPC::getHandler(1, false, names[i]);
                 dummy = dummy + i + (int)d->role_;
             },
             [&]() -> std::size_t { return distr(prng); });
@@ -128,6 +128,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Handler, rpc, ripple);
+BEAST_DEFINE_TESTSUITE_MANUAL(Handler, test, ripple);
 
-}  // namespace ripple::RPC
+}  // namespace ripple::test

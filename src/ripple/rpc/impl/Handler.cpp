@@ -206,13 +206,13 @@ private:
         assert(minVer <= maxVer);
         assert(maxVer <= RPC::apiMaximumValidVersion);
 
-        for (; range.first != range.second; range.first++)
-        {
-            if (range.first->second.minApiVer_ <= maxVer &&
-                range.first->second.maxApiVer_ >= minVer)
-                return true;
-        }
-        return false;
+        return std::any_of(
+            range.first,
+            range.second,  //
+            [minVer, maxVer](auto const& item) {
+                return item.second.minApiVer_ <= maxVer &&
+                    item.second.maxApiVer_ >= minVer;
+            });
     }
 
     template <std::size_t N>
@@ -256,7 +256,7 @@ public:
         auto const range = table_.equal_range(name);
         auto const i = std::find_if(
             range.first, range.second, [version](auto const& entry) {
-                return version >= entry.second.minApiVer_ &&
+                return entry.second.minApiVer_ <= version &&
                     version <= entry.second.maxApiVer_;
             });
 
@@ -282,6 +282,8 @@ private:
     {
         static_assert(HandlerImpl::minApiVer <= HandlerImpl::maxApiVer);
         static_assert(HandlerImpl::maxApiVer <= RPC::apiMaximumValidVersion);
+        static_assert(
+            RPC::apiMinimumSupportedVersion <= HandlerImpl::minApiVer);
 
         if (overlappingApiVersion(
                 table_.equal_range(HandlerImpl::name),

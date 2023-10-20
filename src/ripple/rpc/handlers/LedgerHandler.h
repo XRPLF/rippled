@@ -61,7 +61,7 @@ public:
 
     static constexpr char name[] = "ledger";
 
-    static constexpr unsigned minApiVer = 1;
+    static constexpr unsigned minApiVer = RPC::apiMinimumSupportedVersion;
 
     static constexpr unsigned maxApiVer = RPC::apiMaximumValidVersion;
 
