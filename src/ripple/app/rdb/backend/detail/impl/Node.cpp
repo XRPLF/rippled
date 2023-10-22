@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <ripple/app/rdb/backend/detail/Node.h>
+
 #include <ripple/app/ledger/AcceptedLedger.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/LedgerToJson.h>
@@ -24,9 +26,9 @@
 #include <ripple/app/ledger/TransactionMaster.h>
 #include <ripple/app/misc/Manifest.h>
 #include <ripple/app/rdb/RelationalDatabase.h>
-#include <ripple/app/rdb/backend/detail/Node.h>
 #include <ripple/basics/BasicConfig.h>
 #include <ripple/basics/StringUtilities.h>
+#include <ripple/basics/TaggedCache.ipp>
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/core/SociDB.h>
 #include <ripple/json/to_string.h>

@@ -17,10 +17,12 @@
 */
 //==============================================================================
 
+#include <ripple/app/rdb/backend/detail/Shard.h>
+
 #include <ripple/app/ledger/InboundLedger.h>
 #include <ripple/app/main/DBInit.h>
-#include <ripple/app/rdb/backend/detail/Shard.h>
 #include <ripple/basics/StringUtilities.h>
+#include <ripple/basics/TaggedCache.ipp>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/nodestore/Manager.h>
 #include <ripple/nodestore/impl/DeterministicShard.h>
