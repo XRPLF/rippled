@@ -25,6 +25,7 @@
 #include <xrpld/core/JobQueue.h>
 #include <xrpld/nodestore/Database.h>
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/TaggedCache.ipp>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/digest.h>
 

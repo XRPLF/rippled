@@ -29,6 +29,7 @@
 #include <xrpld/core/SociDB.h>
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/TaggedCache.ipp>
 #include <xrpl/json/to_string.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/range/adaptor/transformed.hpp>

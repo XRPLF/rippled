@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpld/nodestore/detail/DatabaseNodeImp.h>
+#include <xrpl/basics/TaggedCache.ipp>
 #include <xrpl/protocol/HashPrefix.h>
 
 namespace ripple {
