@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <ripple/app/main/Application.h>
+
 #include <ripple/app/consensus/RCLValidations.h>
 #include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/InboundTransactions.h>
@@ -28,7 +30,6 @@
 #include <ripple/app/ledger/OrderBookDB.h>
 #include <ripple/app/ledger/PendingSaves.h>
 #include <ripple/app/ledger/TransactionMaster.h>
-#include <ripple/app/main/Application.h>
 #include <ripple/app/main/BasicApp.h>
 #include <ripple/app/main/DBInit.h>
 #include <ripple/app/main/GRPCServer.h>
@@ -52,6 +53,7 @@
 #include <ripple/basics/ByteUtilities.h>
 #include <ripple/basics/PerfLog.h>
 #include <ripple/basics/ResolverAsio.h>
+#include <ripple/basics/TaggedCache.ipp>
 #include <ripple/basics/random.h>
 #include <ripple/basics/safe_cast.h>
 #include <ripple/beast/asio/io_latency_probe.h>

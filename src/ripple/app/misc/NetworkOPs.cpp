@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <ripple/app/misc/NetworkOPs.h>
+
 #include <ripple/app/consensus/RCLConsensus.h>
 #include <ripple/app/consensus/RCLValidations.h>
 #include <ripple/app/ledger/AcceptedLedger.h>
@@ -32,7 +34,6 @@
 #include <ripple/app/misc/DeliverMax.h>
 #include <ripple/app/misc/HashRouter.h>
 #include <ripple/app/misc/LoadFeeTrack.h>
-#include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/app/misc/TxQ.h>
 #include <ripple/app/misc/ValidatorKeys.h>
@@ -44,6 +45,7 @@
 #include <ripple/app/tx/apply.h>
 #include <ripple/basics/PerfLog.h>
 #include <ripple/basics/SubmitSync.h>
+#include <ripple/basics/TaggedCache.ipp>
 #include <ripple/basics/UptimeClock.h>
 #include <ripple/basics/mulDiv.h>
 #include <ripple/basics/safe_cast.h>

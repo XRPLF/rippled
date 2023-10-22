@@ -22,6 +22,7 @@
 
 #include <ripple/basics/KeyCache.h>
 #include <ripple/basics/TaggedCache.h>
+#include <ripple/basics/TaggedCache.ipp>
 #include <ripple/basics/base_uint.h>
 #include <ripple/beast/insight/Collector.h>
 #include <ripple/beast/utility/Journal.h>
