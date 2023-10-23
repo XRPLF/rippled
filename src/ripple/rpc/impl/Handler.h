@@ -54,7 +54,7 @@ struct Handler
     Role role_;
     RPC::Condition condition_;
 
-    unsigned minApiVer_ = 1;
+    unsigned minApiVer_ = apiMinimumSupportedVersion;
     unsigned maxApiVer_ = apiMaximumValidVersion;
 };
 
