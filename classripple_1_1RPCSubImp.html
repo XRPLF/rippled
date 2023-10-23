@@ -190,6 +190,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:aabccfb7016f5313da9e83cdf23f770c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9bcde2785222af4c9a43f1463e0fe5b0"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1InfoSubRequest.html">InfoSubRequest</a> &gt; const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InfoSub.html#a9bcde2785222af4c9a43f1463e0fe5b0">getRequest</a> ()</td></tr>
 <tr class="separator:a9bcde2785222af4c9a43f1463e0fe5b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8567c5269989303dcd60c1b96b417a16"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InfoSub.html#a8567c5269989303dcd60c1b96b417a16">setApiVersion</a> (unsigned int apiVersion)</td></tr>
+<tr class="separator:a8567c5269989303dcd60c1b96b417a16"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a43d7579c2e91e51f415018ac2f8471dd"><td class="memItemLeft" align="right" valign="top">unsigned int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InfoSub.html#a43d7579c2e91e51f415018ac2f8471dd">getApiVersion</a> () const noexcept</td></tr>
+<tr class="separator:a43d7579c2e91e51f415018ac2f8471dd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
@@ -256,6 +260,8 @@ Private Attributes</h2></td></tr>
 <tr class="separator:ae3518538f25eb97c68ef4fa0c95ad444"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a80daf632d00ac947dec0ac55f5e834ca"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a7750eec5e079354285f1d60cfd0247ca">hash_set</a>&lt; <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InfoSub.html#a80daf632d00ac947dec0ac55f5e834ca">accountHistorySubscriptions_</a></td></tr>
 <tr class="separator:a80daf632d00ac947dec0ac55f5e834ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adca30d674df51e2e48e8dcced4b50645"><td class="memItemLeft" align="right" valign="top">unsigned int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InfoSub.html#adca30d674df51e2e48e8dcced4b50645">apiVersion_</a> = 0</td></tr>
+<tr class="separator:adca30d674df51e2e48e8dcced4b50645"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
@@ -894,6 +900,61 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="a8567c5269989303dcd60c1b96b417a16"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8567c5269989303dcd60c1b96b417a16">&#9670;&nbsp;</a></span>setApiVersion()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::InfoSub::setApiVersion </td>
+          <td>(</td>
+          <td class="paramtype">unsigned int&#160;</td>
+          <td class="paramname"><em>apiVersion</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="InfoSub_8cpp_source.html#l00140">140</a> of file <a class="el" href="InfoSub_8cpp_source.html">InfoSub.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a43d7579c2e91e51f415018ac2f8471dd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a43d7579c2e91e51f415018ac2f8471dd">&#9670;&nbsp;</a></span>getApiVersion()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">unsigned int ripple::InfoSub::getApiVersion </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">noexcept</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="InfoSub_8cpp_source.html#l00146">146</a> of file <a class="el" href="InfoSub_8cpp_source.html">InfoSub.cpp</a>.</p>
+
+</div>
+</div>
 <a id="a53d87f81a40197fbd0e45dcf86b8e500"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a53d87f81a40197fbd0e45dcf86b8e500">&#9670;&nbsp;</a></span>assign_id()</h2>
 
@@ -917,7 +978,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InfoSub_8h_source.html#l00245">245</a> of file <a class="el" href="InfoSub_8h_source.html">InfoSub.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InfoSub_8h_source.html#l00252">252</a> of file <a class="el" href="InfoSub_8h_source.html">InfoSub.h</a>.</p>
 
 </div>
 </div>
@@ -1305,7 +1366,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InfoSub_8h_source.html#l00233">233</a> of file <a class="el" href="InfoSub_8h_source.html">InfoSub.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InfoSub_8h_source.html#l00239">239</a> of file <a class="el" href="InfoSub_8h_source.html">InfoSub.h</a>.</p>
 
 </div>
 </div>
@@ -1329,7 +1390,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InfoSub_8h_source.html#l00236">236</a> of file <a class="el" href="InfoSub_8h_source.html">InfoSub.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InfoSub_8h_source.html#l00242">242</a> of file <a class="el" href="InfoSub_8h_source.html">InfoSub.h</a>.</p>
 
 </div>
 </div>
@@ -1353,7 +1414,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InfoSub_8h_source.html#l00237">237</a> of file <a class="el" href="InfoSub_8h_source.html">InfoSub.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InfoSub_8h_source.html#l00243">243</a> of file <a class="el" href="InfoSub_8h_source.html">InfoSub.h</a>.</p>
 
 </div>
 </div>
@@ -1377,7 +1438,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InfoSub_8h_source.html#l00238">238</a> of file <a class="el" href="InfoSub_8h_source.html">InfoSub.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InfoSub_8h_source.html#l00244">244</a> of file <a class="el" href="InfoSub_8h_source.html">InfoSub.h</a>.</p>
 
 </div>
 </div>
@@ -1401,7 +1462,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InfoSub_8h_source.html#l00239">239</a> of file <a class="el" href="InfoSub_8h_source.html">InfoSub.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InfoSub_8h_source.html#l00245">245</a> of file <a class="el" href="InfoSub_8h_source.html">InfoSub.h</a>.</p>
 
 </div>
 </div>
@@ -1425,7 +1486,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InfoSub_8h_source.html#l00240">240</a> of file <a class="el" href="InfoSub_8h_source.html">InfoSub.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InfoSub_8h_source.html#l00246">246</a> of file <a class="el" href="InfoSub_8h_source.html">InfoSub.h</a>.</p>
 
 </div>
 </div>
@@ -1449,7 +1510,31 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InfoSub_8h_source.html#l00242">242</a> of file <a class="el" href="InfoSub_8h_source.html">InfoSub.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InfoSub_8h_source.html#l00248">248</a> of file <a class="el" href="InfoSub_8h_source.html">InfoSub.h</a>.</p>
+
+</div>
+</div>
+<a id="adca30d674df51e2e48e8dcced4b50645"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adca30d674df51e2e48e8dcced4b50645">&#9670;&nbsp;</a></span>apiVersion_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">unsigned int ripple::InfoSub::apiVersion_ = 0</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="InfoSub_8h_source.html#l00249">249</a> of file <a class="el" href="InfoSub_8h_source.html">InfoSub.h</a>.</p>
 
 </div>
 </div>

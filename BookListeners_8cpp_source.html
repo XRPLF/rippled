@@ -109,8 +109,8 @@ $(function() {
 <div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;}</div>
 <div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
 <div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l00041"></a><span class="lineno"><a class="line" href="classripple_1_1BookListeners.html#ab76eb6a5597ec490e37f5c4a271a8d03">   41</a></span>&#160;<a class="code" href="classripple_1_1BookListeners.html#ab76eb6a5597ec490e37f5c4a271a8d03">BookListeners::publish</a>(</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span>&amp; jvObj,</div>
+<div class="line"><a name="l00041"></a><span class="lineno"><a class="line" href="classripple_1_1BookListeners.html#ace01ee147e463d71092ec8fc84d07eb8">   41</a></span>&#160;<a class="code" href="classripple_1_1BookListeners.html#ace01ee147e463d71092ec8fc84d07eb8">BookListeners::publish</a>(</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    <a class="code" href="structripple_1_1MultivarJson.html">MultiApiJson</a> <span class="keyword">const</span>&amp; jvObj,</div>
 <div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/unordered_set.html">hash_set&lt;std::uint64_t&gt;</a>&amp; havePublished)</div>
 <div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;{</div>
 <div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a> sl(<a class="code" href="classripple_1_1BookListeners.html#a18dd8b67ac39506dcf7a980a4b0e250e">mLock</a>);</div>
@@ -125,29 +125,31 @@ $(function() {
 <div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;            <span class="comment">// Only publish jvObj if this is the first occurence</span></div>
 <div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;            <span class="keywordflow">if</span> (havePublished.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/unordered_set/emplace.html">emplace</a>(p-&gt;getSeq()).second)</div>
 <div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;            {</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;                p-&gt;send(jvObj, <span class="keyword">true</span>);</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;            }</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;            ++it;</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;        }</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;        <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;            it = <a class="code" href="classripple_1_1BookListeners.html#a27f5d2654d8ab4b0ed518c81809b6ebc">mListeners</a>.erase(it);</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    }</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;}</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160; </div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;                p-&gt;send(</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;                    jvObj.select(<a class="code" href="namespaceripple.html#a519cd620ba800774f42d2bac371cc20b">apiVersionSelector</a>(p-&gt;getApiVersion())), <span class="keyword">true</span>);</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;            }</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;            ++it;</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;        }</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;        <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;            it = <a class="code" href="classripple_1_1BookListeners.html#a27f5d2654d8ab4b0ed518c81809b6ebc">mListeners</a>.erase(it);</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    }</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;}</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160; </div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="ashared_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt; InfoSub &gt;</a></div></div>
 <div class="ttc" id="aunordered_set_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/unordered_set.html">std::unordered_set</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="aemplace_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/unordered_set/emplace.html">std::unordered_set::emplace</a></div><div class="ttdeci">T emplace(T... args)</div></div>
 <div class="ttc" id="alock_guard_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a></div><div class="ttdoc">STL class.</div></div>
-<div class="ttc" id="aclassripple_1_1BookListeners_html_a18dd8b67ac39506dcf7a980a4b0e250e"><div class="ttname"><a href="classripple_1_1BookListeners.html#a18dd8b67ac39506dcf7a980a4b0e250e">ripple::BookListeners::mLock</a></div><div class="ttdeci">std::recursive_mutex mLock</div><div class="ttdef"><b>Definition:</b> <a href="BookListeners_8h_source.html#l00064">BookListeners.h:64</a></div></div>
+<div class="ttc" id="aclassripple_1_1BookListeners_html_a18dd8b67ac39506dcf7a980a4b0e250e"><div class="ttname"><a href="classripple_1_1BookListeners.html#a18dd8b67ac39506dcf7a980a4b0e250e">ripple::BookListeners::mLock</a></div><div class="ttdeci">std::recursive_mutex mLock</div><div class="ttdef"><b>Definition:</b> <a href="BookListeners_8h_source.html#l00066">BookListeners.h:66</a></div></div>
 <div class="ttc" id="aclassripple_1_1BookListeners_html_a53dad68c41be892909cfa1d182b54c39"><div class="ttname"><a href="classripple_1_1BookListeners.html#a53dad68c41be892909cfa1d182b54c39">ripple::BookListeners::removeSubscriber</a></div><div class="ttdeci">void removeSubscriber(std::uint64_t sub)</div><div class="ttdoc">Stop publishing to a subscriber.</div><div class="ttdef"><b>Definition:</b> <a href="BookListeners_8cpp_source.html#l00034">BookListeners.cpp:34</a></div></div>
-<div class="ttc" id="aclassripple_1_1BookListeners_html_ab76eb6a5597ec490e37f5c4a271a8d03"><div class="ttname"><a href="classripple_1_1BookListeners.html#ab76eb6a5597ec490e37f5c4a271a8d03">ripple::BookListeners::publish</a></div><div class="ttdeci">void publish(Json::Value const &amp;jvObj, hash_set&lt; std::uint64_t &gt; &amp;havePublished)</div><div class="ttdoc">Publish a transaction to subscribers.</div><div class="ttdef"><b>Definition:</b> <a href="BookListeners_8cpp_source.html#l00041">BookListeners.cpp:41</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a519cd620ba800774f42d2bac371cc20b"><div class="ttname"><a href="namespaceripple.html#a519cd620ba800774f42d2bac371cc20b">ripple::apiVersionSelector</a></div><div class="ttdeci">constexpr auto apiVersionSelector(unsigned int apiVersion) noexcept</div><div class="ttdef"><b>Definition:</b> <a href="MultivarJson_8h_source.html#l00100">MultivarJson.h:100</a></div></div>
 <div class="ttc" id="ainteger_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a></div></div>
+<div class="ttc" id="aclassripple_1_1BookListeners_html_ace01ee147e463d71092ec8fc84d07eb8"><div class="ttname"><a href="classripple_1_1BookListeners.html#ace01ee147e463d71092ec8fc84d07eb8">ripple::BookListeners::publish</a></div><div class="ttdeci">void publish(MultiApiJson const &amp;jvObj, hash_set&lt; std::uint64_t &gt; &amp;havePublished)</div><div class="ttdoc">Publish a transaction to subscribers.</div><div class="ttdef"><b>Definition:</b> <a href="BookListeners_8cpp_source.html#l00041">BookListeners.cpp:41</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
+<div class="ttc" id="astructripple_1_1MultivarJson_html"><div class="ttname"><a href="structripple_1_1MultivarJson.html">ripple::MultivarJson</a></div><div class="ttdef"><b>Definition:</b> <a href="MultivarJson_8h_source.html#l00032">MultivarJson.h:32</a></div></div>
 <div class="ttc" id="aclassripple_1_1BookListeners_html_a5d7f4c227a690e895b952472a4202ca1"><div class="ttname"><a href="classripple_1_1BookListeners.html#a5d7f4c227a690e895b952472a4202ca1">ripple::BookListeners::addSubscriber</a></div><div class="ttdeci">void addSubscriber(InfoSub::ref sub)</div><div class="ttdoc">Add a new subscription for this book.</div><div class="ttdef"><b>Definition:</b> <a href="BookListeners_8cpp_source.html#l00027">BookListeners.cpp:27</a></div></div>
-<div class="ttc" id="aclassJson_1_1Value_html"><div class="ttname"><a href="classJson_1_1Value.html">Json::Value</a></div><div class="ttdoc">Represents a JSON value.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00145">json_value.h:145</a></div></div>
-<div class="ttc" id="aclassripple_1_1BookListeners_html_a27f5d2654d8ab4b0ed518c81809b6ebc"><div class="ttname"><a href="classripple_1_1BookListeners.html#a27f5d2654d8ab4b0ed518c81809b6ebc">ripple::BookListeners::mListeners</a></div><div class="ttdeci">hash_map&lt; std::uint64_t, InfoSub::wptr &gt; mListeners</div><div class="ttdef"><b>Definition:</b> <a href="BookListeners_8h_source.html#l00066">BookListeners.h:66</a></div></div>
+<div class="ttc" id="aclassripple_1_1BookListeners_html_a27f5d2654d8ab4b0ed518c81809b6ebc"><div class="ttname"><a href="classripple_1_1BookListeners.html#a27f5d2654d8ab4b0ed518c81809b6ebc">ripple::BookListeners::mListeners</a></div><div class="ttdeci">hash_map&lt; std::uint64_t, InfoSub::wptr &gt; mListeners</div><div class="ttdef"><b>Definition:</b> <a href="BookListeners_8h_source.html#l00068">BookListeners.h:68</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">
