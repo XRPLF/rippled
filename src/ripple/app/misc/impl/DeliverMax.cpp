@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2023 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,51 +17,26 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/OrderBookDB.h>
-#include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/json/to_string.h>
+#include <ripple/app/misc/DeliverMax.h>
+
+#include <ripple/protocol/jss.h>
 
 namespace ripple {
+namespace RPC {
 
 void
-BookListeners::addSubscriber(InfoSub::ref sub)
+insertDeliverMax(Json::Value& tx_json, TxType txnType, unsigned int apiVersion)
 {
-    std::lock_guard sl(mLock);
-    mListeners[sub->getSeq()] = sub;
-}
-
-void
-BookListeners::removeSubscriber(std::uint64_t seq)
-{
-    std::lock_guard sl(mLock);
-    mListeners.erase(seq);
-}
-
-void
-BookListeners::publish(
-    MultiApiJson const& jvObj,
-    hash_set<std::uint64_t>& havePublished)
-{
-    std::lock_guard sl(mLock);
-    auto it = mListeners.cbegin();
-
-    while (it != mListeners.cend())
+    if (tx_json.isMember(jss::Amount))
     {
-        InfoSub::pointer p = it->second.lock();
-
-        if (p)
+        if (txnType == ttPAYMENT)
         {
-            // Only publish jvObj if this is the first occurence
-            if (havePublished.emplace(p->getSeq()).second)
-            {
-                p->send(
-                    jvObj.select(apiVersionSelector(p->getApiVersion())), true);
-            }
-            ++it;
+            tx_json[jss::DeliverMax] = tx_json[jss::Amount];
+            if (apiVersion > 1)
+                tx_json.removeMember(jss::Amount);
         }
-        else
-            it = mListeners.erase(it);
     }
 }
 
+}  // namespace RPC
 }  // namespace ripple
