@@ -26,6 +26,7 @@
 #include <optional>
 #include <ostream>
 #include <string>
+#include <unordered_map>
 
 namespace ripple {
 
@@ -643,6 +644,11 @@ isTecClaim(TER x)
 {
     return ((x) >= tecCLAIM);
 }
+
+std::unordered_map<
+    TERUnderlyingType,
+    std::pair<char const* const, char const* const>> const&
+transResults();
 
 bool
 transResultInfo(TER code, std::string& token, std::string& text);
