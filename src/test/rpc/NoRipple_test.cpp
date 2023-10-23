@@ -19,6 +19,7 @@
 
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/jss.h>
+#include <ripple/rpc/impl/RPCHelpers.h>
 #include <test/jtx.h>
 
 namespace ripple {
@@ -202,9 +203,12 @@ public:
     }
 
     void
-    testDefaultRipple(FeatureBitset features)
+    testDefaultRipple(FeatureBitset features, unsigned int apiVersion)
     {
-        testcase("Set default ripple on an account and check new trustlines");
+        testcase(
+            "Set default ripple on an account and check new trustlines "
+            "Version " +
+            std::to_string(apiVersion));
 
         using namespace jtx;
         Env env(*this, features);
@@ -221,9 +225,10 @@ public:
 
         env(trust(gw, USD(100), alice, 0));
         env(trust(gw, USD(100), bob, 0));
+        Json::Value params;
+        params[jss::api_version] = apiVersion;
 
         {
-            Json::Value params;
             params[jss::account] = gw.human();
             params[jss::peer] = alice.human();
 
@@ -232,7 +237,6 @@ public:
             BEAST_EXPECT(line0[jss::no_ripple_peer].asBool() == true);
         }
         {
-            Json::Value params;
             params[jss::account] = alice.human();
             params[jss::peer] = gw.human();
 
@@ -241,7 +245,6 @@ public:
             BEAST_EXPECT(line0[jss::no_ripple].asBool() == true);
         }
         {
-            Json::Value params;
             params[jss::account] = gw.human();
             params[jss::peer] = bob.human();
 
@@ -250,13 +253,28 @@ public:
             BEAST_EXPECT(line0[jss::no_ripple].asBool() == false);
         }
         {
-            Json::Value params;
             params[jss::account] = bob.human();
             params[jss::peer] = gw.human();
 
             auto lines = env.rpc("json", "account_lines", to_string(params));
             auto const& line0 = lines[jss::result][jss::lines][0u];
             BEAST_EXPECT(line0[jss::no_ripple_peer].asBool() == false);
+        }
+        {
+            // test for transactions
+            {
+                params[jss::account] = bob.human();
+                params[jss::role] = "gateway";
+                params[jss::transactions] = "asdf";
+
+                auto lines =
+                    env.rpc("json", "noripple_check", to_string(params));
+                if (apiVersion < 2u)
+                    BEAST_EXPECT(lines[jss::result][jss::status] == "success");
+                else
+                    BEAST_EXPECT(
+                        lines[jss::result][jss::error] == "invalidParams");
+            }
         }
     }
 
@@ -266,9 +284,14 @@ public:
         testSetAndClear();
 
         auto withFeatsTests = [this](FeatureBitset features) {
+            for (auto testVersion = RPC::apiMinimumSupportedVersion;
+                 testVersion <= RPC::apiBetaVersion;
+                 ++testVersion)
+            {
+                testDefaultRipple(features, testVersion);
+            }
             testNegativeBalance(features);
             testPairwise(features);
-            testDefaultRipple(features);
         };
         using namespace jtx;
         auto const sa = supported_amendments();

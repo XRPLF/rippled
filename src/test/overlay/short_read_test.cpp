@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/basics/ThreadUtilities.h>
 #include <ripple/basics/make_SSLContext.h>
+#include <ripple/beast/core/CurrentThreadName.h>
 #include <ripple/beast/unit_test.h>
 #include <test/jtx/envconfig.h>
 
@@ -630,7 +630,7 @@ public:
     short_read_test()
         : work_(io_context_.get_executor())
         , thread_(std::thread([this]() {
-            this_thread::set_name("io_context");
+            beast::setCurrentThreadName("io_context");
             this->io_context_.run();
         }))
         , context_(make_SSLContext(""))

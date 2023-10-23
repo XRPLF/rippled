@@ -121,7 +121,13 @@ private:
     static Json::Value
     jvParseCurrencyIssuer(std::string const& strCurrencyIssuer)
     {
-        static boost::regex reCurIss("\\`([[:alpha:]]{3})(?:/(.+))?\\'");
+        // Matches a sequence of 3 characters from
+        // `ripple::detail::isoCharSet` (the currency),
+        // optionally followed by a forward slash and some other characters
+        // (the issuer).
+        // https://www.boost.org/doc/libs/1_82_0/libs/regex/doc/html/boost_regex/syntax/perl_syntax.html
+        static boost::regex reCurIss(
+            "\\`([][:alnum:]<>(){}[|?!@#$%^&*]{3})(?:/(.+))?\\'");
 
         boost::smatch smMatch;
 

@@ -27,7 +27,7 @@
 namespace ripple {
 namespace test {
 
-class Offer_test : public beast::unit_test::suite
+class Offer0_test : public beast::unit_test::suite
 {
     XRPAmount
     reserve(jtx::Env& env, std::uint32_t count)
@@ -5336,29 +5336,78 @@ public:
     }
 
     void
-    run() override
+    run(std::uint32_t instance, bool last = false)
     {
         using namespace jtx;
-        FeatureBitset const all{supported_amendments()};
-        FeatureBitset const flowCross{featureFlowCross};
-        FeatureBitset const takerDryOffer{fixTakerDryOfferRemoval};
-        FeatureBitset const rmSmallIncreasedQOffers{fixRmSmallIncreasedQOffers};
-        FeatureBitset const immediateOfferKilled{featureImmediateOfferKilled};
+        static FeatureBitset const all{supported_amendments()};
+        static FeatureBitset const flowCross{featureFlowCross};
+        static FeatureBitset const takerDryOffer{fixTakerDryOfferRemoval};
+        static FeatureBitset const rmSmallIncreasedQOffers{
+            fixRmSmallIncreasedQOffers};
+        static FeatureBitset const immediateOfferKilled{
+            featureImmediateOfferKilled};
         FeatureBitset const fillOrKill{fixFillOrKill};
 
-        testAll(all - takerDryOffer - immediateOfferKilled);
-        testAll(all - flowCross - takerDryOffer - immediateOfferKilled);
-        testAll(all - flowCross - immediateOfferKilled);
-        testAll(
-            all - rmSmallIncreasedQOffers - immediateOfferKilled - fillOrKill);
-        testAll(all - fillOrKill);
-        testAll(all);
+        static std::array<FeatureBitset, 6> const feats{
+            all - takerDryOffer - immediateOfferKilled,
+            all - flowCross - takerDryOffer - immediateOfferKilled,
+            all - flowCross - immediateOfferKilled,
+            all - rmSmallIncreasedQOffers - immediateOfferKilled - fillOrKill,
+            all - fillOrKill,
+            all};
 
+        if (BEAST_EXPECT(instance < feats.size()))
+        {
+            testAll(feats[instance]);
+        }
+        BEAST_EXPECT(!last || instance == feats.size() - 1);
+    }
+
+    void
+    run() override
+    {
+        run(0);
         testFalseAssert();
     }
 };
 
-class Offer_manual_test : public Offer_test
+class Offer1_test : public Offer0_test
+{
+    void
+    run() override
+    {
+        Offer0_test::run(1);
+    }
+};
+
+class Offer2_test : public Offer0_test
+{
+    void
+    run() override
+    {
+        Offer0_test::run(2);
+    }
+};
+
+class Offer3_test : public Offer0_test
+{
+    void
+    run() override
+    {
+        Offer0_test::run(3);
+    }
+};
+
+class Offer4_test : public Offer0_test
+{
+    void
+    run() override
+    {
+        Offer0_test::run(4, true);
+    }
+};
+
+class Offer_manual_test : public Offer0_test
 {
     void
     run() override
@@ -5369,17 +5418,23 @@ class Offer_manual_test : public Offer_test
         FeatureBitset const f1513{fix1513};
         FeatureBitset const immediateOfferKilled{featureImmediateOfferKilled};
         FeatureBitset const takerDryOffer{fixTakerDryOfferRemoval};
+        FeatureBitset const fillOrKill{fixFillOrKill};
 
         testAll(all - flowCross - f1513 - immediateOfferKilled);
         testAll(all - flowCross - immediateOfferKilled);
-        testAll(all - immediateOfferKilled);
+        testAll(all - immediateOfferKilled - fillOrKill);
+        testAll(all - fillOrKill);
         testAll(all);
 
         testAll(all - flowCross - takerDryOffer);
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(Offer, tx, ripple, 4);
+BEAST_DEFINE_TESTSUITE_PRIO(Offer0, tx, ripple, 4);
+BEAST_DEFINE_TESTSUITE_PRIO(Offer1, tx, ripple, 4);
+BEAST_DEFINE_TESTSUITE_PRIO(Offer2, tx, ripple, 4);
+BEAST_DEFINE_TESTSUITE_PRIO(Offer3, tx, ripple, 4);
+BEAST_DEFINE_TESTSUITE_PRIO(Offer4, tx, ripple, 4);
 BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Offer_manual, tx, ripple, 20);
 
 }  // namespace test
