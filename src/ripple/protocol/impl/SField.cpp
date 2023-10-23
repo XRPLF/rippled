@@ -38,6 +38,13 @@ struct SField::private_access_tag_t
 
 static SField::private_access_tag_t access;
 
+template <class T>
+template <class... Args>
+TypedField<T>::TypedField(private_access_tag_t pat, Args&&... args)
+    : SField(pat, std::forward<Args>(args)...)
+{
+}
+
 // Construct all compile-time SFields, and register them in the knownCodeToField
 // database:
 
@@ -89,12 +96,15 @@ CONSTRUCT_TYPED_SFIELD(sfTransactionResult,     "TransactionResult",    UINT8,  
 CONSTRUCT_TYPED_SFIELD(sfTickSize,              "TickSize",             UINT8,     16);
 CONSTRUCT_TYPED_SFIELD(sfUNLModifyDisabling,    "UNLModifyDisabling",   UINT8,     17);
 CONSTRUCT_TYPED_SFIELD(sfHookResult,            "HookResult",           UINT8,     18);
+CONSTRUCT_TYPED_SFIELD(sfWasLockingChainSend,   "WasLockingChainSend",  UINT8,     19);
 
 // 16-bit integers
 CONSTRUCT_TYPED_SFIELD(sfLedgerEntryType,       "LedgerEntryType",      UINT16,     1, SField::sMD_Never);
 CONSTRUCT_TYPED_SFIELD(sfTransactionType,       "TransactionType",      UINT16,     2);
 CONSTRUCT_TYPED_SFIELD(sfSignerWeight,          "SignerWeight",         UINT16,     3);
 CONSTRUCT_TYPED_SFIELD(sfTransferFee,           "TransferFee",          UINT16,     4);
+CONSTRUCT_TYPED_SFIELD(sfTradingFee,            "TradingFee",           UINT16,     5);
+CONSTRUCT_TYPED_SFIELD(sfDiscountedFee,         "DiscountedFee",        UINT16,     6);
 
 // 16-bit integers (uncommon)
 CONSTRUCT_TYPED_SFIELD(sfVersion,               "Version",              UINT16,    16);
@@ -151,8 +161,8 @@ CONSTRUCT_TYPED_SFIELD(sfMintedNFTokens,        "MintedNFTokens",       UINT32, 
 CONSTRUCT_TYPED_SFIELD(sfBurnedNFTokens,        "BurnedNFTokens",       UINT32,    44);
 CONSTRUCT_TYPED_SFIELD(sfHookStateCount,        "HookStateCount",       UINT32,    45);
 CONSTRUCT_TYPED_SFIELD(sfEmitGeneration,        "EmitGeneration",       UINT32,    46);
-// Three field values of 47, 48 and 49 are reserved for 
-// LockCount(Hooks), VoteWeight(AMM), DiscountedFee(AMM)
+// 47 is reserved for LockCount(Hooks)
+CONSTRUCT_TYPED_SFIELD(sfVoteWeight,            "VoteWeight",           UINT32,    48);
 CONSTRUCT_TYPED_SFIELD(sfFirstNFTokenSequence,  "FirstNFTokenSequence", UINT32,    50);
 
 // 64-bit integers (common)
@@ -171,10 +181,13 @@ CONSTRUCT_TYPED_SFIELD(sfNFTokenOfferNode,      "NFTokenOfferNode",     UINT64, 
 CONSTRUCT_TYPED_SFIELD(sfEmitBurden,            "EmitBurden",           UINT64,    13);
 
 // 64-bit integers (uncommon)
-CONSTRUCT_TYPED_SFIELD(sfHookOn,                "HookOn",               UINT64,    16);
-CONSTRUCT_TYPED_SFIELD(sfHookInstructionCount,  "HookInstructionCount", UINT64,    17);
-CONSTRUCT_TYPED_SFIELD(sfHookReturnCode,        "HookReturnCode",       UINT64,    18);
-CONSTRUCT_TYPED_SFIELD(sfReferenceCount,        "ReferenceCount",       UINT64,    19);
+CONSTRUCT_TYPED_SFIELD(sfHookOn,                   "HookOn",                   UINT64, 16);
+CONSTRUCT_TYPED_SFIELD(sfHookInstructionCount,     "HookInstructionCount",     UINT64, 17);
+CONSTRUCT_TYPED_SFIELD(sfHookReturnCode,           "HookReturnCode",           UINT64, 18);
+CONSTRUCT_TYPED_SFIELD(sfReferenceCount,           "ReferenceCount",           UINT64, 19);
+CONSTRUCT_TYPED_SFIELD(sfXChainClaimID,            "XChainClaimID",            UINT64, 20);
+CONSTRUCT_TYPED_SFIELD(sfXChainAccountCreateCount, "XChainAccountCreateCount", UINT64, 21);
+CONSTRUCT_TYPED_SFIELD(sfXChainAccountClaimCount,  "XChainAccountClaimCount",  UINT64, 22);
 
 // 128-bit
 CONSTRUCT_TYPED_SFIELD(sfEmailHash,             "EmailHash",            UINT128,    1);
@@ -199,6 +212,7 @@ CONSTRUCT_TYPED_SFIELD(sfNFTokenID,             "NFTokenID",            UINT256,
 CONSTRUCT_TYPED_SFIELD(sfEmitParentTxnID,       "EmitParentTxnID",      UINT256,   11);
 CONSTRUCT_TYPED_SFIELD(sfEmitNonce,             "EmitNonce",            UINT256,   12);
 CONSTRUCT_TYPED_SFIELD(sfEmitHookHash,          "EmitHookHash",         UINT256,   13);
+CONSTRUCT_TYPED_SFIELD(sfAMMID,                 "AMMID",                UINT256,   14);
 
 // 256-bit (uncommon)
 CONSTRUCT_TYPED_SFIELD(sfBookDirectory,         "BookDirectory",        UINT256,   16);
@@ -231,6 +245,9 @@ CONSTRUCT_TYPED_SFIELD(sfHighLimit,             "HighLimit",            AMOUNT, 
 CONSTRUCT_TYPED_SFIELD(sfFee,                   "Fee",                  AMOUNT,     8);
 CONSTRUCT_TYPED_SFIELD(sfSendMax,               "SendMax",              AMOUNT,     9);
 CONSTRUCT_TYPED_SFIELD(sfDeliverMin,            "DeliverMin",           AMOUNT,    10);
+CONSTRUCT_TYPED_SFIELD(sfAmount2,               "Amount2",              AMOUNT,    11);
+CONSTRUCT_TYPED_SFIELD(sfBidMin,                "BidMin",               AMOUNT,    12);
+CONSTRUCT_TYPED_SFIELD(sfBidMax,                "BidMax",               AMOUNT,    13);
 
 // currency amount (uncommon)
 CONSTRUCT_TYPED_SFIELD(sfMinimumOffer,          "MinimumOffer",         AMOUNT,    16);
@@ -244,6 +261,15 @@ CONSTRUCT_TYPED_SFIELD(sfNFTokenBrokerFee,      "NFTokenBrokerFee",     AMOUNT, 
 CONSTRUCT_TYPED_SFIELD(sfBaseFeeDrops,            "BaseFeeDrops",           AMOUNT,    22);
 CONSTRUCT_TYPED_SFIELD(sfReserveBaseDrops,        "ReserveBaseDrops",       AMOUNT,    23);
 CONSTRUCT_TYPED_SFIELD(sfReserveIncrementDrops,   "ReserveIncrementDrops",  AMOUNT,    24);
+
+// currency amount (AMM)
+CONSTRUCT_TYPED_SFIELD(sfLPTokenOut,            "LPTokenOut",           AMOUNT,    25);
+CONSTRUCT_TYPED_SFIELD(sfLPTokenIn,             "LPTokenIn",            AMOUNT,    26);
+CONSTRUCT_TYPED_SFIELD(sfEPrice,                "EPrice",               AMOUNT,    27);
+CONSTRUCT_TYPED_SFIELD(sfPrice,                 "Price",                AMOUNT,    28);
+CONSTRUCT_TYPED_SFIELD(sfSignatureReward,       "SignatureReward",      AMOUNT,    29);
+CONSTRUCT_TYPED_SFIELD(sfMinAccountCreateAmount, "MinAccountCreateAmount", AMOUNT, 30);
+CONSTRUCT_TYPED_SFIELD(sfLPTokenBalance,        "LPTokenBalance",       AMOUNT,    31);
 
 // variable length (common)
 CONSTRUCT_TYPED_SFIELD(sfPublicKey,             "PublicKey",            VL,         1);
@@ -272,6 +298,8 @@ CONSTRUCT_TYPED_SFIELD(sfHookStateData,         "HookStateData",        VL,     
 CONSTRUCT_TYPED_SFIELD(sfHookReturnString,      "HookReturnString",     VL,        23);
 CONSTRUCT_TYPED_SFIELD(sfHookParameterName,     "HookParameterName",    VL,        24);
 CONSTRUCT_TYPED_SFIELD(sfHookParameterValue,    "HookParameterValue",   VL,        25);
+CONSTRUCT_TYPED_SFIELD(sfDIDDocument,           "DIDDocument",          VL,        26);
+CONSTRUCT_TYPED_SFIELD(sfData,                  "Data",                 VL,        27);
 
 // account
 CONSTRUCT_TYPED_SFIELD(sfAccount,               "Account",              ACCOUNT,    1);
@@ -287,6 +315,12 @@ CONSTRUCT_TYPED_SFIELD(sfEmitCallback,          "EmitCallback",         ACCOUNT,
 
 // account (uncommon)
 CONSTRUCT_TYPED_SFIELD(sfHookAccount,           "HookAccount",          ACCOUNT,   16);
+CONSTRUCT_TYPED_SFIELD(sfOtherChainSource,      "OtherChainSource",     ACCOUNT,   18);
+CONSTRUCT_TYPED_SFIELD(sfOtherChainDestination, "OtherChainDestination",ACCOUNT,   19);
+CONSTRUCT_TYPED_SFIELD(sfAttestationSignerAccount, "AttestationSignerAccount", ACCOUNT, 20);
+CONSTRUCT_TYPED_SFIELD(sfAttestationRewardAccount, "AttestationRewardAccount", ACCOUNT, 21);
+CONSTRUCT_TYPED_SFIELD(sfLockingChainDoor,      "LockingChainDoor",     ACCOUNT,   22);
+CONSTRUCT_TYPED_SFIELD(sfIssuingChainDoor,      "IssuingChainDoor",     ACCOUNT,   23);
 
 // vector of 256-bit
 CONSTRUCT_TYPED_SFIELD(sfIndexes,               "Indexes",              VECTOR256,  1, SField::sMD_Never);
@@ -297,6 +331,15 @@ CONSTRUCT_TYPED_SFIELD(sfNFTokenOffers,         "NFTokenOffers",        VECTOR25
 // path set
 CONSTRUCT_UNTYPED_SFIELD(sfPaths,               "Paths",                PATHSET,    1);
 
+// issue
+CONSTRUCT_TYPED_SFIELD(sfLockingChainIssue,     "LockingChainIssue",    ISSUE,      1);
+CONSTRUCT_TYPED_SFIELD(sfIssuingChainIssue,     "IssuingChainIssue",    ISSUE,      2);
+CONSTRUCT_TYPED_SFIELD(sfAsset,                 "Asset",                ISSUE,      3);
+CONSTRUCT_TYPED_SFIELD(sfAsset2,                "Asset2",               ISSUE,      4);
+
+// Bridge
+CONSTRUCT_TYPED_SFIELD(sfXChainBridge,           "XChainBridge",        XCHAIN_BRIDGE,
+                                                                               1);
 // inner object
 // OBJECT/1 is reserved for end of object
 CONSTRUCT_UNTYPED_SFIELD(sfTransactionMetaData, "TransactionMetaData",  OBJECT,     2);
@@ -323,6 +366,19 @@ CONSTRUCT_UNTYPED_SFIELD(sfHookExecution,       "HookExecution",        OBJECT, 
 CONSTRUCT_UNTYPED_SFIELD(sfHookDefinition,      "HookDefinition",       OBJECT,    22);
 CONSTRUCT_UNTYPED_SFIELD(sfHookParameter,       "HookParameter",        OBJECT,    23);
 CONSTRUCT_UNTYPED_SFIELD(sfHookGrant,           "HookGrant",            OBJECT,    24);
+CONSTRUCT_UNTYPED_SFIELD(sfVoteEntry,           "VoteEntry",            OBJECT,    25);
+CONSTRUCT_UNTYPED_SFIELD(sfAuctionSlot,         "AuctionSlot",          OBJECT,    26);
+CONSTRUCT_UNTYPED_SFIELD(sfAuthAccount,         "AuthAccount",          OBJECT,    27);
+CONSTRUCT_UNTYPED_SFIELD(sfXChainClaimProofSig, "XChainClaimProofSig",  OBJECT,    28);
+CONSTRUCT_UNTYPED_SFIELD(sfXChainCreateAccountProofSig,
+                                                "XChainCreateAccountProofSig",
+                                                                        OBJECT,    29);
+CONSTRUCT_UNTYPED_SFIELD(sfXChainClaimAttestationCollectionElement,
+                                                 "XChainClaimAttestationCollectionElement",
+                                                                        OBJECT,    30);
+CONSTRUCT_UNTYPED_SFIELD(sfXChainCreateAccountAttestationCollectionElement,
+                                                 "XChainCreateAccountAttestationCollectionElement",
+                                                                        OBJECT,    31);
 
 // array of objects
 //                                                                            ARRAY/1 is reserved for end of array
@@ -336,6 +392,7 @@ CONSTRUCT_UNTYPED_SFIELD(sfAffectedNodes,       "AffectedNodes",        ARRAY,  
 CONSTRUCT_UNTYPED_SFIELD(sfMemos,               "Memos",                ARRAY,      9);
 CONSTRUCT_UNTYPED_SFIELD(sfNFTokens,            "NFTokens",             ARRAY,     10);
 CONSTRUCT_UNTYPED_SFIELD(sfHooks,               "Hooks",                ARRAY,     11);
+CONSTRUCT_UNTYPED_SFIELD(sfVoteSlots,           "VoteSlots",            ARRAY,     12);
 
 // array of objects (uncommon)
 CONSTRUCT_UNTYPED_SFIELD(sfMajorities,          "Majorities",           ARRAY,     16);
@@ -343,6 +400,14 @@ CONSTRUCT_UNTYPED_SFIELD(sfDisabledValidators,  "DisabledValidators",   ARRAY,  
 CONSTRUCT_UNTYPED_SFIELD(sfHookExecutions,      "HookExecutions",       ARRAY,     18);
 CONSTRUCT_UNTYPED_SFIELD(sfHookParameters,      "HookParameters",       ARRAY,     19);
 CONSTRUCT_UNTYPED_SFIELD(sfHookGrants,          "HookGrants",           ARRAY,     20);
+CONSTRUCT_UNTYPED_SFIELD(sfXChainClaimAttestations,
+                                                 "XChainClaimAttestations",
+                                                                        ARRAY,     21);
+CONSTRUCT_UNTYPED_SFIELD(sfXChainCreateAccountAttestations,
+                                                 "XChainCreateAccountAttestations",
+                                                                        ARRAY,     22);
+// 23 and 24 are unused and available for use
+CONSTRUCT_UNTYPED_SFIELD(sfAuthAccounts,        "AuthAccounts",         ARRAY,     25);
 
 // clang-format on
 

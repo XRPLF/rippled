@@ -24,25 +24,15 @@
 #include <ripple/protocol/PayChan.h>
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/protocol/jss.h>
-#include <test/jtx.h>
-
+#include <ripple/rpc/impl/RPCHelpers.h>
 #include <chrono>
+#include <test/jtx.h>
 
 namespace ripple {
 namespace test {
 struct PayChan_test : public beast::unit_test::suite
 {
     FeatureBitset const disallowIncoming{featureDisallowIncoming};
-
-    static uint256
-    channel(
-        jtx::Account const& account,
-        jtx::Account const& dst,
-        std::uint32_t seqProxyValue)
-    {
-        auto const k = keylet::payChan(account, dst, seqProxyValue);
-        return k.key;
-    }
 
     static std::pair<uint256, std::shared_ptr<SLE const>>
     channelKeyAndSle(
@@ -70,22 +60,6 @@ struct PayChan_test : public beast::unit_test::suite
     }
 
     static STAmount
-    channelBalance(ReadView const& view, uint256 const& chan)
-    {
-        auto const slep = view.read({ltPAYCHAN, chan});
-        if (!slep)
-            return XRPAmount{-1};
-        return (*slep)[sfBalance];
-    }
-
-    static bool
-    channelExists(ReadView const& view, uint256 const& chan)
-    {
-        auto const slep = view.read({ltPAYCHAN, chan});
-        return bool(slep);
-    }
-
-    static STAmount
     channelAmount(ReadView const& view, uint256 const& chan)
     {
         auto const slep = view.read({ltPAYCHAN, chan});
@@ -103,77 +77,6 @@ struct PayChan_test : public beast::unit_test::suite
         if (auto const r = (*slep)[~sfExpiration])
             return r.value();
         return std::nullopt;
-    }
-
-    static Json::Value
-    create(
-        jtx::Account const& account,
-        jtx::Account const& to,
-        STAmount const& amount,
-        NetClock::duration const& settleDelay,
-        PublicKey const& pk,
-        std::optional<NetClock::time_point> const& cancelAfter = std::nullopt,
-        std::optional<std::uint32_t> const& dstTag = std::nullopt)
-    {
-        using namespace jtx;
-        Json::Value jv;
-        jv[jss::TransactionType] = jss::PaymentChannelCreate;
-        jv[jss::Flags] = tfUniversal;
-        jv[jss::Account] = account.human();
-        jv[jss::Destination] = to.human();
-        jv[jss::Amount] = amount.getJson(JsonOptions::none);
-        jv["SettleDelay"] = settleDelay.count();
-        jv["PublicKey"] = strHex(pk.slice());
-        if (cancelAfter)
-            jv["CancelAfter"] = cancelAfter->time_since_epoch().count();
-        if (dstTag)
-            jv["DestinationTag"] = *dstTag;
-        return jv;
-    }
-
-    static Json::Value
-    fund(
-        jtx::Account const& account,
-        uint256 const& channel,
-        STAmount const& amount,
-        std::optional<NetClock::time_point> const& expiration = std::nullopt)
-    {
-        using namespace jtx;
-        Json::Value jv;
-        jv[jss::TransactionType] = jss::PaymentChannelFund;
-        jv[jss::Flags] = tfUniversal;
-        jv[jss::Account] = account.human();
-        jv["Channel"] = to_string(channel);
-        jv[jss::Amount] = amount.getJson(JsonOptions::none);
-        if (expiration)
-            jv["Expiration"] = expiration->time_since_epoch().count();
-        return jv;
-    }
-
-    static Json::Value
-    claim(
-        jtx::Account const& account,
-        uint256 const& channel,
-        std::optional<STAmount> const& balance = std::nullopt,
-        std::optional<STAmount> const& amount = std::nullopt,
-        std::optional<Slice> const& signature = std::nullopt,
-        std::optional<PublicKey> const& pk = std::nullopt)
-    {
-        using namespace jtx;
-        Json::Value jv;
-        jv[jss::TransactionType] = jss::PaymentChannelClaim;
-        jv[jss::Flags] = tfUniversal;
-        jv[jss::Account] = account.human();
-        jv["Channel"] = to_string(channel);
-        if (amount)
-            jv[jss::Amount] = amount->getJson(JsonOptions::none);
-        if (balance)
-            jv["Balance"] = balance->getJson(JsonOptions::none);
-        if (signature)
-            jv["Signature"] = strHex(*signature);
-        if (pk)
-            jv["PublicKey"] = strHex(pk->slice());
-        return jv;
     }
 
     void
@@ -1161,6 +1064,47 @@ struct PayChan_test : public beast::unit_test::suite
     }
 
     void
+    testAccountChannelAuthorize(FeatureBitset features)
+    {
+        using namespace jtx;
+        using namespace std::literals::chrono_literals;
+
+        Env env{*this, features};
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const charlie = Account("charlie", KeyType::ed25519);
+        env.fund(XRP(10000), alice, bob, charlie);
+        auto const pk = alice.pk();
+        auto const settleDelay = 3600s;
+        auto const channelFunds = XRP(1000);
+        auto const chan1Str = to_string(channel(alice, bob, env.seq(alice)));
+        env(create(alice, bob, channelFunds, settleDelay, pk));
+        env.close();
+
+        Json::Value args{Json::objectValue};
+        args[jss::channel_id] = chan1Str;
+        args[jss::key_type] = "ed255191";
+        args[jss::seed] = "snHq1rzQoN2qiUkC3XF5RyxBzUtN";
+        args[jss::amount] = 51110000;
+
+        // test for all api versions
+        for (auto apiVersion = RPC::apiMinimumSupportedVersion;
+             apiVersion <= RPC::apiBetaVersion;
+             ++apiVersion)
+        {
+            testcase(
+                "PayChan Channel_Auth RPC Api " + std::to_string(apiVersion));
+            args[jss::api_version] = apiVersion;
+            auto const rs = env.rpc(
+                "json",
+                "channel_authorize",
+                args.toStyledString())[jss::result];
+            auto const error = apiVersion < 2u ? "invalidParams" : "badKeyType";
+            BEAST_EXPECT(rs[jss::error] == error);
+        }
+    }
+
+    void
     testAuthVerifyRPC(FeatureBitset features)
     {
         testcase("PayChan Auth/Verify RPC");
@@ -2139,6 +2083,7 @@ struct PayChan_test : public beast::unit_test::suite
         testAccountChannelsRPC(features);
         testAccountChannelsRPCMarkers(features);
         testAccountChannelsRPCSenderOnly(features);
+        testAccountChannelAuthorize(features);
         testAuthVerifyRPC(features);
         testOptionalFields(features);
         testMalformedPK(features);

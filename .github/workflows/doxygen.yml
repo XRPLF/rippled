@@ -4,10 +4,15 @@ on:
   push:
     branches:
       - develop
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   job:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     container:
       image: docker://rippleci/rippled-ci-builder:2944b78d22db
     steps:
@@ -18,7 +23,7 @@ jobs:
           echo ${PATH} | tr ':' '\n'
           cmake --version
           doxygen --version
-          env
+          env | sort
       - name: build
         run: |
           mkdir build

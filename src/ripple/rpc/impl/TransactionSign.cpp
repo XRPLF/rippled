@@ -167,6 +167,22 @@ checkPayment(
     if (tx_json[jss::TransactionType].asString() != jss::Payment)
         return Json::Value();
 
+    // DeliverMax is an alias to Amount and we use Amount internally
+    if (tx_json.isMember(jss::DeliverMax))
+    {
+        if (tx_json.isMember(jss::Amount))
+        {
+            if (tx_json[jss::DeliverMax] != tx_json[jss::Amount])
+                return RPC::make_error(
+                    rpcINVALID_PARAMS,
+                    "Cannot specify differing 'Amount' and 'DeliverMax'");
+        }
+        else
+            tx_json[jss::Amount] = tx_json[jss::DeliverMax];
+
+        tx_json.removeMember(jss::DeliverMax);
+    }
+
     if (!tx_json.isMember(jss::Amount))
         return RPC::missing_field_error("tx_json.Amount");
 
@@ -738,9 +754,9 @@ checkFee(
     auto const limit = [&]() {
         // Scale fee units to drops:
         auto const result = mulDiv(feeDefault, mult, div);
-        if (!result.first)
+        if (!result)
             Throw<std::overflow_error>("mulDiv");
-        return result.second;
+        return *result;
     }();
 
     if (fee > limit)
@@ -802,7 +818,8 @@ transactionSubmit(
     Role role,
     std::chrono::seconds validatedLedgerAge,
     Application& app,
-    ProcessTransactionFn const& processTransaction)
+    ProcessTransactionFn const& processTransaction,
+    RPC::SubmitSync sync)
 {
     using namespace detail;
 
@@ -828,8 +845,7 @@ transactionSubmit(
     // Finally, submit the transaction.
     try
     {
-        // FIXME: For performance, should use asynch interface
-        processTransaction(txn.second, isUnlimited(role), true, failType);
+        processTransaction(txn.second, isUnlimited(role), sync, failType);
     }
     catch (std::exception&)
     {
@@ -1038,7 +1054,8 @@ transactionSubmitMultiSigned(
     Role role,
     std::chrono::seconds validatedLedgerAge,
     Application& app,
-    ProcessTransactionFn const& processTransaction)
+    ProcessTransactionFn const& processTransaction,
+    RPC::SubmitSync sync)
 {
     auto const& ledger = app.openLedger().current();
     auto j = app.journal("RPCHandler");
@@ -1211,7 +1228,7 @@ transactionSubmitMultiSigned(
     try
     {
         // FIXME: For performance, should use asynch interface
-        processTransaction(txn.second, isUnlimited(role), true, failType);
+        processTransaction(txn.second, isUnlimited(role), sync, failType);
     }
     catch (std::exception&)
     {

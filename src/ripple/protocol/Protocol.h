@@ -83,6 +83,15 @@ std::uint16_t constexpr maxTransferFee = 50000;
 /** The maximum length of a URI inside an NFT */
 std::size_t constexpr maxTokenURILength = 256;
 
+/** The maximum length of a Data element inside a DID */
+std::size_t constexpr maxDIDDocumentLength = 256;
+
+/** The maximum length of a URI inside a DID */
+std::size_t constexpr maxDIDURILength = 256;
+
+/** The maximum length of an Attestation inside a DID */
+std::size_t constexpr maxDIDAttestationLength = 256;
+
 /** The maximum length of a domain */
 std::size_t constexpr maxDomainLength = 256;
 
@@ -94,6 +103,11 @@ using LedgerIndex = std::uint32_t;
     canonicalized, serialized transaction object.
 */
 using TxID = uint256;
+
+/** The maximum number of trustlines to delete as part of AMM account
+ * deletion cleanup.
+ */
+std::uint16_t constexpr maxDeletableAMMTrustLines = 512;
 
 }  // namespace ripple
 

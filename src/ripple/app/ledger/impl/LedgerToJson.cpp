@@ -19,6 +19,7 @@
 
 #include <ripple/app/ledger/LedgerToJson.h>
 #include <ripple/app/main/Application.h>
+#include <ripple/app/misc/DeliverMax.h>
 #include <ripple/app/misc/TxQ.h>
 #include <ripple/basics/base_uint.h>
 #include <ripple/core/Pg.h>
@@ -53,7 +54,6 @@ fillJson(Object& json, bool closed, LedgerInfo const& info, bool bFull)
 {
     json[jss::parent_hash] = to_string(info.parentHash);
     json[jss::ledger_index] = to_string(info.seq);
-    json[jss::seqNum] = to_string(info.seq);  // DEPRECATED
 
     if (closed)
     {
@@ -70,10 +70,6 @@ fillJson(Object& json, bool closed, LedgerInfo const& info, bool bFull)
     json[jss::account_hash] = to_string(info.accountHash);
     json[jss::total_coins] = to_string(info.drops);
 
-    // These next three are DEPRECATED.
-    json[jss::hash] = to_string(info.hash);
-    json[jss::totalCoins] = to_string(info.drops);
-    json[jss::accepted] = closed;
     json[jss::close_flags] = info.closeFlags;
 
     // Always show fields that contribute to the ledger hash
@@ -128,6 +124,7 @@ fillJsonTx(
     else
     {
         copyFrom(txJson, txn->getJson(JsonOptions::none));
+        RPC::insertDeliverMax(txJson, txnType, fill.context->apiVersion);
         if (stMeta)
         {
             txJson[jss::metaData] = stMeta->getJson(JsonOptions::none);

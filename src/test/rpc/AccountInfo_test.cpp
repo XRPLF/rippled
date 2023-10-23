@@ -207,10 +207,7 @@ public:
     testSignerListsApiVersion2()
     {
         using namespace jtx;
-        Env env{*this, envconfig([](std::unique_ptr<Config> c) {
-                    c->loadFromString("\n[beta_rpc_api]\n1\n");
-                    return c;
-                })};
+        Env env{*this};
         Account const alice{"alice"};
         env.fund(XRP(1000), alice);
 
@@ -220,6 +217,10 @@ public:
         auto const withSigners = std::string("{ ") +
             "\"api_version\": 2, \"account\": \"" + alice.human() + "\", " +
             "\"signer_lists\": true }";
+
+        auto const withSignersAsString = std::string("{ ") +
+            "\"api_version\": 2, \"account\": \"" + alice.human() + "\", " +
+            "\"signer_lists\": asdfggh }";
 
         // Alice has no SignerList yet.
         {
@@ -266,6 +267,13 @@ public:
             BEAST_EXPECT(signerEntries.size() == 1);
             auto const& entry0 = signerEntries[0u][sfSignerEntry.jsonName];
             BEAST_EXPECT(entry0[sfSignerWeight.jsonName] == 3);
+        }
+        {
+            // account_info with "signer_lists" as not bool should error out
+            auto const info =
+                env.rpc("json", "account_info", withSignersAsString);
+            BEAST_EXPECT(info[jss::status] == "error");
+            BEAST_EXPECT(info[jss::error] == "invalidParams");
         }
 
         // Give alice a big signer list
@@ -514,13 +522,16 @@ public:
 
         Env env(*this, features);
         Account const alice{"alice"};
-        env.fund(XRP(1000), alice);
+        Account const bob{"bob"};
+        env.fund(XRP(1000), alice, bob);
 
-        auto getAccountFlag = [&env, &alice](std::string_view fName) {
+        auto getAccountFlag = [&env](
+                                  std::string_view fName,
+                                  Account const& account) {
             auto const info = env.rpc(
                 "json",
                 "account_info",
-                R"({"account" : ")" + alice.human() + R"("})");
+                R"({"account" : ")" + account.human() + R"("})");
 
             std::optional<bool> res;
             if (info[jss::result][jss::status] == "success" &&
@@ -548,7 +559,7 @@ public:
             // as expected
             env(fclear(alice, asf.second));
             env.close();
-            auto const f1 = getAccountFlag(asf.first);
+            auto const f1 = getAccountFlag(asf.first, alice);
             BEAST_EXPECT(f1.has_value());
             BEAST_EXPECT(!f1.value());
 
@@ -556,7 +567,7 @@ public:
             // as expected
             env(fset(alice, asf.second));
             env.close();
-            auto const f2 = getAccountFlag(asf.first);
+            auto const f2 = getAccountFlag(asf.first, alice);
             BEAST_EXPECT(f2.has_value());
             BEAST_EXPECT(f2.value());
         }
@@ -579,7 +590,7 @@ public:
                 // as expected
                 env(fclear(alice, asf.second));
                 env.close();
-                auto const f1 = getAccountFlag(asf.first);
+                auto const f1 = getAccountFlag(asf.first, alice);
                 BEAST_EXPECT(f1.has_value());
                 BEAST_EXPECT(!f1.value());
 
@@ -587,7 +598,7 @@ public:
                 // as expected
                 env(fset(alice, asf.second));
                 env.close();
-                auto const f2 = getAccountFlag(asf.first);
+                auto const f2 = getAccountFlag(asf.first, alice);
                 BEAST_EXPECT(f2.has_value());
                 BEAST_EXPECT(f2.value());
             }
@@ -596,8 +607,34 @@ public:
         {
             for (auto& asf : disallowIncomingFlags)
             {
-                BEAST_EXPECT(!getAccountFlag(asf.first));
+                BEAST_EXPECT(!getAccountFlag(asf.first, alice));
             }
+        }
+
+        static constexpr std::pair<std::string_view, std::uint32_t>
+            allowTrustLineClawbackFlag{
+                "allowTrustLineClawback", asfAllowTrustLineClawback};
+
+        if (features[featureClawback])
+        {
+            // must use bob's account because alice has noFreeze set
+            auto const f1 =
+                getAccountFlag(allowTrustLineClawbackFlag.first, bob);
+            BEAST_EXPECT(f1.has_value());
+            BEAST_EXPECT(!f1.value());
+
+            // Set allowTrustLineClawback
+            env(fset(bob, allowTrustLineClawbackFlag.second));
+            env.close();
+            auto const f2 =
+                getAccountFlag(allowTrustLineClawbackFlag.first, bob);
+            BEAST_EXPECT(f2.has_value());
+            BEAST_EXPECT(f2.value());
+        }
+        else
+        {
+            BEAST_EXPECT(
+                !getAccountFlag(allowTrustLineClawbackFlag.first, bob));
         }
     }
 
@@ -613,6 +650,8 @@ public:
             ripple::test::jtx::supported_amendments()};
         testAccountFlags(allFeatures);
         testAccountFlags(allFeatures - featureDisallowIncoming);
+        testAccountFlags(
+            allFeatures - featureDisallowIncoming - featureClawback);
     }
 };
 

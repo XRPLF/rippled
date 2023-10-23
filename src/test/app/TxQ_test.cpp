@@ -22,7 +22,6 @@
 #include <ripple/app/misc/TxQ.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/basics/Log.h>
-#include <ripple/basics/mulDiv.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/protocol/st.h>
@@ -4844,13 +4843,13 @@ public:
                     drops[jss::base_fee] == "0");
                 BEAST_EXPECT(
                     drops.isMember(jss::median_fee) &&
-                    drops[jss::base_fee] == "0");
+                    drops[jss::median_fee] == "0");
                 BEAST_EXPECT(
                     drops.isMember(jss::minimum_fee) &&
-                    drops[jss::base_fee] == "0");
+                    drops[jss::minimum_fee] == "0");
                 BEAST_EXPECT(
                     drops.isMember(jss::open_ledger_fee) &&
-                    drops[jss::base_fee] == "0");
+                    drops[jss::open_ledger_fee] == "0");
             }
         }
 

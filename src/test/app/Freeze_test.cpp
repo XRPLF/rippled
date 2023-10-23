@@ -27,32 +27,6 @@ namespace ripple {
 
 class Freeze_test : public beast::unit_test::suite
 {
-    static Json::Value
-    getAccountLines(test::jtx::Env& env, test::jtx::Account const& account)
-    {
-        Json::Value jq;
-        jq[jss::account] = account.human();
-        return env.rpc("json", "account_lines", to_string(jq))[jss::result];
-    }
-
-    static Json::Value
-    getAccountOffers(
-        test::jtx::Env& env,
-        test::jtx::Account const& account,
-        bool current = false)
-    {
-        Json::Value jq;
-        jq[jss::account] = account.human();
-        jq[jss::ledger_index] = current ? "current" : "validated";
-        return env.rpc("json", "account_offers", to_string(jq))[jss::result];
-    }
-
-    static bool
-    checkArraySize(Json::Value const& val, unsigned int size)
-    {
-        return val.isArray() && val.size() == size;
-    }
-
     void
     testRippleState(FeatureBitset features)
     {

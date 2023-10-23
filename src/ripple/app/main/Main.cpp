@@ -169,6 +169,7 @@ printHelp(const po::options_description& desc)
            "     peer_reservations_list\n"
            "     ripple ...\n"
            "     ripple_path_find <json> [<ledger>]\n"
+           "     server_definitions [<hash>]\n"
            "     server_info [counters]\n"
            "     server_state [counters]\n"
            "     sign <private_key> <tx_json> [offline]\n"
@@ -379,8 +380,13 @@ run(int argc, char** argv)
         "Override the minimum validation quorum.")(
         "reportingReadOnly", "Run in read-only reporting mode")(
         "silent", "No output to the console after startup.")(
-        "standalone,a", "Run with no peers.")("verbose,v", "Verbose logging.")(
-        "version", "Display the build version.");
+        "standalone,a", "Run with no peers.")("verbose,v", "Verbose logging.")
+
+        ("force_ledger_present_range",
+         po::value<std::string>(),
+         "Specify the range of present ledgers for testing purposes. Min and "
+         "max values are comma separated.")(
+            "version", "Display the build version.");
 
     po::options_description data("Ledger/Data Options");
     data.add_options()("import", importText.c_str())(
@@ -603,6 +609,51 @@ run(int argc, char** argv)
         return 0;
     }
 
+    if (vm.contains("force_ledger_present_range"))
+    {
+        try
+        {
+            auto const r = [&vm]() -> std::vector<std::uint32_t> {
+                std::vector<std::string> strVec;
+                boost::split(
+                    strVec,
+                    vm["force_ledger_present_range"].as<std::string>(),
+                    boost::algorithm::is_any_of(","));
+                std::vector<std::uint32_t> result;
+                for (auto& s : strVec)
+                {
+                    boost::trim(s);
+                    if (!s.empty())
+                        result.push_back(std::stoi(s));
+                }
+                return result;
+            }();
+
+            if (r.size() == 2)
+            {
+                if (r[0] > r[1])
+                {
+                    throw std::runtime_error(
+                        "Invalid force_ledger_present_range parameter");
+                }
+                config->FORCED_LEDGER_RANGE_PRESENT.emplace(r[0], r[1]);
+            }
+            else
+            {
+                throw std::runtime_error(
+                    "Invalid force_ledger_present_range parameter");
+            }
+        }
+        catch (std::exception const& e)
+        {
+            std::cerr << "invalid 'force_ledger_present_range' parameter. The "
+                         "parameter must be two numbers separated by a comma. "
+                         "The first number must be <= the second."
+                      << std::endl;
+            return -1;
+        }
+    }
+
     if (vm.count("start"))
     {
         config->START_UP = Config::FRESH;
@@ -753,10 +804,8 @@ run(int argc, char** argv)
         if (vm.count("debug"))
             setDebugLogSink(logs->makeSink("Debug", beast::severities::kTrace));
 
-        auto timeKeeper = make_TimeKeeper(logs->journal("TimeKeeper"));
-
         auto app = make_Application(
-            std::move(config), std::move(logs), std::move(timeKeeper));
+            std::move(config), std::move(logs), std::make_unique<TimeKeeper>());
 
         if (!app->setup(vm))
             return -1;
