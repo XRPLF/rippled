@@ -99,9 +99,8 @@ class Handler_test : public beast::unit_test::suite
         std::random_device dev;
         std::ranlux48 prng(dev());
 
-        std::set<const char*> handlerNames = RPC::getHandlerNames();
-        std::vector<const char*> names(
-            handlerNames.begin(), handlerNames.end());
+        std::vector<const char*> names =
+            test::jtx::make_vector(ripple::RPC::getHandlerNames());
 
         std::uniform_int_distribution<std::size_t> distr{0, names.size() - 1};
 
