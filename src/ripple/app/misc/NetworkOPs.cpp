@@ -63,6 +63,7 @@
 #include <ripple/protocol/BuildInfo.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/STParsedJSON.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/resource/ResourceManager.h>
 #include <ripple/rpc/BookChanges.h>
@@ -74,6 +75,7 @@
 
 #include <algorithm>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <tuple>
 #include <unordered_map>
@@ -3101,7 +3103,12 @@ NetworkOPsImp::transJson(
     transResultInfo(result, sToken, sHuman);
 
     jvObj[jss::type] = "transaction";
-    jvObj[jss::transaction] = transaction->getJson(JsonOptions::none);
+    // NOTE jvObj which is not a finished object for either API version. After
+    // it's populated, we need to finish it for a specific API version. This is
+    // done in a loop, near the end of this function.
+    std::string hash = {};
+    jvObj[jss::transaction] =
+        transaction->getJson(JsonOptions::none, false, {std::ref(hash)});
 
     if (meta)
     {
@@ -3165,11 +3172,21 @@ NetworkOPsImp::transJson(
         assert(index < MultiApiJson::size);
         if (index != lastIndex)
         {
+            Json::Value& jvTx = multiObj.val[index];
             RPC::insertDeliverMax(
-                multiObj.val[index][jss::transaction],
-                transaction->getTxnType(),
-                apiVersion);
+                jvTx[jss::transaction], transaction->getTxnType(), apiVersion);
             lastIndex = index;
+
+            if (apiVersion > 1)
+            {
+                jvTx[jss::tx_json] = jvTx.removeMember(jss::transaction);
+                jvTx[jss::hash] = hash;
+                // TODO set `jvObj[jss::close_time_iso]` if validated
+            }
+            else
+            {
+                jvTx[jss::transaction][jss::hash] = hash;
+            }
         }
     }
 

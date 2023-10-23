@@ -234,17 +234,33 @@ Json::Value STTx::getJson(JsonOptions) const
 }
 
 Json::Value
-STTx::getJson(JsonOptions options, bool binary) const
+STTx::getJson(
+    JsonOptions options,
+    bool binary,
+    std::optional<std::reference_wrapper<std::string>> hash) const
 {
+    if (!hash)  // Old behaviour - default because `hash = {}` in declaration
+    {
+        if (binary)
+        {
+            Json::Value ret;
+            Serializer s = STObject::getSerializer();
+            ret[jss::tx] = strHex(s.peekData());
+            ret[jss::hash] = to_string(getTransactionID());
+            return ret;
+        }
+        return getJson(options);
+    }
+
+    // Since `hash` is set, do not populate `hash` inside JSON output
+    hash->get() = to_string(getTransactionID());
     if (binary)
     {
-        Json::Value ret;
         Serializer s = STObject::getSerializer();
-        ret[jss::tx] = strHex(s.peekData());
-        ret[jss::hash] = to_string(getTransactionID());
+        Json::Value ret = strHex(s.peekData());
         return ret;
     }
-    return getJson(options);
+    return STObject::getJson(JsonOptions::none);  // Yes, want `none`
 }
 
 std::string const&
