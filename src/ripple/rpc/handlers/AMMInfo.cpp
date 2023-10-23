@@ -66,7 +66,7 @@ to_iso8601(NetClock::time_point tp)
     return date::format(
         "%Y-%Om-%dT%H:%M:%OS%z",
         date::sys_time<system_clock::duration>(
-            system_clock::time_point{tp.time_since_epoch() + 946684800s}));
+            system_clock::time_point{tp.time_since_epoch() + epoch_offset}));
 }
 
 Json::Value

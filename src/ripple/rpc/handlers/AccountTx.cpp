@@ -334,7 +334,6 @@ populateJsonResponse(
                         jvObj[json_tx] = txn->getJson(
                             JsonOptions::include_date, false, {std::ref(hash)});
                         jvObj[jss::hash] = hash;
-                        // TODO set `jvObj[jss::close_time_iso]`
                     }
                     else
                         jvObj[json_tx] =
@@ -351,6 +350,11 @@ populateJsonResponse(
                         insertDeliveredAmount(
                             jvObj[jss::meta], context, txn, *txnMeta);
                         insertNFTSyntheticInJson(jvObj, sttx, *txnMeta);
+                        if (auto closeTime =
+                                context.ledgerMaster.getCloseTimeBySeq(
+                                    txnMeta->getIndex()))
+                            jvObj[jss::close_time_iso] =
+                                to_string_iso(*closeTime);
                     }
                 }
             }

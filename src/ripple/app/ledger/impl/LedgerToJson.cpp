@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/LedgerToJson.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/DeliverMax.h>
@@ -26,6 +27,7 @@
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/DeliveredAmount.h>
+#include <ripple/rpc/impl/RPCHelpers.h>
 
 namespace ripple {
 
@@ -137,7 +139,6 @@ fillJsonTx(
                 txn->getJson(
                     JsonOptions::none, false, {std::optional(std::ref(hash))}));
             txJson[jss::hash] = hash;
-            // TODO set `txJson[jss::close_time_iso]`
             RPC::insertDeliverMax(
                 txJson[jss::tx_json], txnType, fill.context->apiVersion);
 
@@ -152,6 +153,17 @@ fillJsonTx(
                         fill.ledger,
                         txn,
                         {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
+            }
+
+            const bool validated = RPC::isValidated(
+                fill.context->ledgerMaster, fill.ledger, fill.context->app);
+            txJson[jss::validated] = validated;
+            if (validated)
+            {
+                if (auto close_time =
+                        fill.context->ledgerMaster.getCloseTimeBySeq(
+                            fill.ledger.seq()))
+                    txJson[jss::close_time_iso] = to_string_iso(*close_time);
             }
         }
         else

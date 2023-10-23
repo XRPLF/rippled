@@ -22,6 +22,7 @@
 #include <ripple/app/misc/DeliverMax.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/Transaction.h>
+#include <ripple/app/rdb/RelationalDatabase.h>
 #include <ripple/basics/ToString.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
@@ -55,6 +56,7 @@ struct TxResult
     std::variant<std::shared_ptr<TxMeta>, Blob> meta;
     bool validated = false;
     std::optional<std::string> ctid;
+    std::optional<NetClock::time_point> closeTime;
     TxSearched searchedAll;
 };
 
@@ -140,6 +142,12 @@ doTxPostgres(RPC::Context& context, TxArgs const& args)
                     *(args.hash), res.txn->getLedger(), *meta);
             }
             res.validated = true;
+
+            auto const ledgerInfo =
+                context.app.getRelationalDatabase().getLedgerInfoByIndex(
+                    locator.getLedgerSequence());
+            res.closeTime = ledgerInfo->closeTime;
+
             return {res, rpcSUCCESS};
         }
         else
@@ -269,6 +277,9 @@ doTxHelp(RPC::Context& context, TxArgs args)
         }
         result.validated = isValidated(
             context.ledgerMaster, ledger->info().seq, ledger->info().hash);
+        if (result.validated)
+            result.closeTime =
+                context.ledgerMaster.getCloseTimeBySeq(txn->getLedger());
 
         // compute outgoing CTID
         uint32_t lgrSeq = ledger->info().seq;
@@ -328,7 +339,9 @@ populateJsonResponse(
                     context.apiVersion);
             }
             response[jss::hash] = hash;
-            // TODO set `response[jss::close_time_iso]`
+            if (result.closeTime)
+                response[jss::close_time_iso] =
+                    to_string_iso(*result.closeTime);
         }
         else
         {

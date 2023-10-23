@@ -230,6 +230,8 @@ JSS(close);                       // out: BookChanges
 JSS(close_flags);                 // out: LedgerToJson
 JSS(close_time);                  // in: Application, out: NetworkOPs,
                                   //      RCLCxPeerPos, LedgerToJson
+JSS(close_time_iso);              // out: Tx, NetworkOPs, TransactionEntry
+                                  //      AccountTx, LedgerToJson
 JSS(close_time_estimated);        // in: Application, out: LedgerToJson
 JSS(close_time_human);            // out: LedgerToJson
 JSS(close_time_offset);           // out: NetworkOPs

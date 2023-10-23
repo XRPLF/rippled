@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/DeliverMax.h>
 #include <ripple/ledger/ReadView.h>
@@ -77,7 +78,18 @@ doTransactionEntry(RPC::JsonContext& context)
                 jvResult[jss::tx_json] =
                     sttx->getJson(JsonOptions::none, false, {std::ref(hash)});
                 jvResult[jss::hash] = hash;
-                // TODO set `jvResult[jss::close_time_iso]`
+
+                bool const validated = RPC::isValidated(
+                    context.ledgerMaster, *lpLedger, context.app);
+
+                jvResult[jss::validated] = validated;
+                if (validated)
+                {
+                    if (auto closeTime = context.ledgerMaster.getCloseTimeBySeq(
+                            lpLedger->seq()))
+                        jvResult[jss::close_time_iso] =
+                            to_string_iso(*closeTime);
+                }
             }
             else
                 jvResult[jss::tx_json] = sttx->getJson(JsonOptions::none);

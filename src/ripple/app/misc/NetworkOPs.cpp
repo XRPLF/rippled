@@ -3124,6 +3124,8 @@ NetworkOPsImp::transJson(
         jvObj[jss::transaction][jss::date] =
             ledger->info().closeTime.time_since_epoch().count();
         jvObj[jss::validated] = true;
+        if (auto close_time = m_ledgerMaster.getCloseTimeBySeq(ledger->seq()))
+            jvObj[jss::close_time_iso] = to_string_iso(*close_time);
 
         // WRITEME: Put the account next seq here
     }
