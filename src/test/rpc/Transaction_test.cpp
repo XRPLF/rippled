@@ -737,16 +737,12 @@ class Transaction_test : public beast::unit_test::suite
             if (BEAST_EXPECT(result[jss::result].isMember(name)))
             {
                 auto const received = result[jss::result][name];
-                std::ostringstream ssReceived;
-                ssReceived << received;
-                std::ostringstream ssExpected;
-                ssExpected << *memberIt;
                 BEAST_EXPECTS(
                     received == *memberIt,
                     "Transaction contains \n\"" + name + "\": "  //
-                        + ssReceived.str()                       //
-                        + "but expected "                        //
-                        + ssExpected.str());
+                        + to_string(received)                    //
+                        + " but expected "                       //
+                        + to_string(expected));
             }
         }
     }
