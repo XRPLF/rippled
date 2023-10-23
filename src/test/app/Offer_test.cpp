@@ -5403,7 +5403,16 @@ class Offer4_test : public Offer0_test
     void
     run() override
     {
-        Offer0_test::run(4, true);
+        Offer0_test::run(4);
+    }
+};
+
+class Offer5_test : public Offer0_test
+{
+    void
+    run() override
+    {
+        Offer0_test::run(5, true);
     }
 };
 
@@ -5435,6 +5444,7 @@ BEAST_DEFINE_TESTSUITE_PRIO(Offer1, tx, ripple, 4);
 BEAST_DEFINE_TESTSUITE_PRIO(Offer2, tx, ripple, 4);
 BEAST_DEFINE_TESTSUITE_PRIO(Offer3, tx, ripple, 4);
 BEAST_DEFINE_TESTSUITE_PRIO(Offer4, tx, ripple, 4);
+BEAST_DEFINE_TESTSUITE_PRIO(Offer5, tx, ripple, 4);
 BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Offer_manual, tx, ripple, 20);
 
 }  // namespace test
