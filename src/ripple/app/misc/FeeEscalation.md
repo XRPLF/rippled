@@ -211,7 +211,6 @@ duration should be roughly 20 seconds. That is far above the normal.
 If the network takes this long to close ledgers, then it is almost
 certain that there is a problem with the network. This circumstance
 often coincides with new ledgers with zero transactions.
-A variety of factors contribute to consensus health.
 
 ### Other Constants
 
