@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_DELIVERMAX_H_INCLUDED
-#define RIPPLE_RPC_DELIVERMAX_H_INCLUDED
+#ifndef RIPPLE_APP_MISC_DELIVERMAX_H_INCLUDED
+#define RIPPLE_APP_MISC_DELIVERMAX_H_INCLUDED
 
 #include <ripple/protocol/TxFormats.h>
 

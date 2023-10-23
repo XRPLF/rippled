@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_BASICS_MULTIVARJSON_H_INCLUDED
-#define RIPPLE_BASICS_MULTIVARJSON_H_INCLUDED
+#ifndef RIPPLE_JSON_MULTIVARJSON_H_INCLUDED
+#define RIPPLE_JSON_MULTIVARJSON_H_INCLUDED
 
 #include <ripple/json/json_value.h>
 
