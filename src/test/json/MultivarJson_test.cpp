@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/json/MultivarJson.h>
+#include <ripple/rpc/impl/RPCHelpers.h>
 
 #include <ripple/beast/unit_test.h>
 #include "ripple/beast/unit_test/suite.hpp"
@@ -244,6 +245,7 @@ struct MultivarJson_test : beast::unit_test::suite
         }
 
         {
+            // NOTE It's fine to change this test when we change API versions
             testcase("apiVersionSelector");
 
             static_assert(MultiApiJson::size == 2);
@@ -268,6 +270,19 @@ struct MultivarJson_test : beast::unit_test::suite
             static_assert(
                 apiVersionSelector(
                     std::numeric_limits<unsigned int>::max())() == 1);
+        }
+
+        {
+            // There should be no reson to change this test
+            testcase("apiVersionSelector invariants");
+
+            static_assert(
+                apiVersionSelector(RPC::apiMinimumSupportedVersion)() == 0);
+            static_assert(
+                apiVersionSelector(RPC::apiBetaVersion)() + 1  //
+                == MultiApiJson::size);
+
+            BEAST_EXPECT(MultiApiJson::size >= 1);
         }
     }
 };

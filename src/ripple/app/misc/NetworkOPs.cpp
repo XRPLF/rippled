@@ -3150,10 +3150,15 @@ NetworkOPsImp::transJson(
     }
 
     MultiApiJson multiObj({jvObj, jvObj});
-    static_assert(MultiApiJson::size == 2);
-    static_assert(RPC::apiMinimumSupportedVersion == 1);
-    for (unsigned apiVersion = 1, lastIndex = MultiApiJson::size;
-         apiVersion <= 2;
+    // Minimum supported API version must match index 0 in MultiApiJson
+    static_assert(apiVersionSelector(RPC::apiMinimumSupportedVersion)() == 0);
+    // Beta API version must match last index in MultiApiJson
+    static_assert(
+        apiVersionSelector(RPC::apiBetaVersion)() + 1  //
+        == MultiApiJson::size);
+    for (unsigned apiVersion = RPC::apiMinimumSupportedVersion,
+                  lastIndex = MultiApiJson::size;
+         apiVersion <= RPC::apiBetaVersion;
          ++apiVersion)
     {
         unsigned const index = apiVersionSelector(apiVersion)();
