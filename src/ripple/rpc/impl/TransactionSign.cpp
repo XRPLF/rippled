@@ -167,6 +167,22 @@ checkPayment(
     if (tx_json[jss::TransactionType].asString() != jss::Payment)
         return Json::Value();
 
+    // DeliverMax is an alias to Amount and we use Amount internally
+    if (tx_json.isMember(jss::DeliverMax))
+    {
+        if (tx_json.isMember(jss::Amount))
+        {
+            if (tx_json[jss::DeliverMax] != tx_json[jss::Amount])
+                return RPC::make_error(
+                    rpcINVALID_PARAMS,
+                    "Cannot specify differing 'Amount' and 'DeliverMax'");
+        }
+        else
+            tx_json[jss::Amount] = tx_json[jss::DeliverMax];
+
+        tx_json.removeMember(jss::DeliverMax);
+    }
+
     if (!tx_json.isMember(jss::Amount))
         return RPC::missing_field_error("tx_json.Amount");
 

@@ -19,6 +19,7 @@
 
 #include <ripple/app/ledger/LedgerToJson.h>
 #include <ripple/app/main/Application.h>
+#include <ripple/app/misc/DeliverMax.h>
 #include <ripple/app/misc/TxQ.h>
 #include <ripple/basics/base_uint.h>
 #include <ripple/core/Pg.h>
@@ -123,6 +124,7 @@ fillJsonTx(
     else
     {
         copyFrom(txJson, txn->getJson(JsonOptions::none));
+        RPC::insertDeliverMax(txJson, txnType, fill.context->apiVersion);
         if (stMeta)
         {
             txJson[jss::metaData] = stMeta->getJson(JsonOptions::none);
