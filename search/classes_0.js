@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['_5fu32_5fs_13498',['_U32_S',['../structbeast_1_1detail_1_1__U32__S.html',1,'beast::detail']]],
-  ['_5fu64_5fs_13499',['_U64_S',['../structbeast_1_1detail_1_1__U64__S.html',1,'beast::detail']]]
+  ['_5fu32_5fs_13509',['_U32_S',['../structbeast_1_1detail_1_1__U32__S.html',1,'beast::detail']]],
+  ['_5fu64_5fs_13510',['_U64_S',['../structbeast_1_1detail_1_1__U64__S.html',1,'beast::detail']]]
 ];
