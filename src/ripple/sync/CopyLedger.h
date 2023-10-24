@@ -101,10 +101,22 @@ private:
 
     void
     schedule();
+
+    /** Add a request to the queue and schedule this sender.
+     *
+     * Adds the request to either the partial or full queue based on its size.
+     * Calls `schedule` only if this sender is not already scheduled.
+     */
     void
     send(RequestPtr&& request);
+
+    /** Remove and return one non-full request, if any, from the queue.
+     *
+     * @return a non-full request or `nullptr`.
+     */
     RequestPtr
     unsend();
+
     void
     receive(RequestPtr&& request, ResponsePtr const& response);
     void

@@ -34,8 +34,9 @@ namespace sync {
 
 /**
  * An `ObjectRequester` is tightly coupled with a `CopyLedger`.
- * It builds requests for objects (identified by their digests),
- * queuing them after they reach a count limit.
+ * It builds requests (of type `TMGetObjectByHash`)
+ * for ledger objects (identified by their digests),
+ * queuing each request after it reachs a limit on the number of digests.
  *
  * The public API is limited:
  *
@@ -55,7 +56,7 @@ namespace sync {
  * Once a request becomes full,
  * `ObjectRequester` will queue it and start another.
  * When it is destroyed,
- * `ObjectRequester` queues any partial request it was last building, if any.
+ * `ObjectRequester` queues any non-empty request it was last building, if any.
  *
  * `request` and `rerequest` are both thin layers over `request_`.
  * `request_` will first look in the local object database,
@@ -63,6 +64,7 @@ namespace sync {
  * will add its digest to the next request.
  *
  * `ObjectRequester` is not thread-safe.
+ * It's designed to have a limited lifetime managed by a block.
  */
 class ObjectRequester
 {

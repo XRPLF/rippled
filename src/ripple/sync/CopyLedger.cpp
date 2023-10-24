@@ -41,7 +41,9 @@ CopyLedger::start_()
     }
 
     // TODO: Technically there is a chance that the ledger is completely
-    // loaded here. In practice, that is virtually guaranteed to never happen,
+    // loaded here, without ever requesting a single object,
+    // which means `receive` is never called.
+    // In practice, that is virtually guaranteed to never happen,
     // but we should handle the possibility anyway.
 }
 
@@ -77,10 +79,10 @@ CopyLedger::send(RequestPtr&& request)
 CopyLedger::RequestPtr
 CopyLedger::unsend()
 {
-    RequestPtr request;
+    RequestPtr request = nullptr;
     std::lock_guard lock(senderMutex_);
     auto& requests = partialRequests_;
-    // Claw back the last pending request if it has room.
+    // Claw back the last non-full request.
     if (!requests.empty())
     {
         request = std::move(requests.back());
