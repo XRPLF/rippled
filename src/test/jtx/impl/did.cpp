@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2019 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,51 +17,51 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/OrderBookDB.h>
-#include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/json/to_string.h>
+#include <ripple/protocol/TxFlags.h>
+#include <ripple/protocol/jss.h>
+#include <test/jtx/did.h>
 
 namespace ripple {
+namespace test {
+namespace jtx {
 
-void
-BookListeners::addSubscriber(InfoSub::ref sub)
+/** DID operations. */
+namespace did {
+
+Json::Value
+set(jtx::Account const& account)
 {
-    std::lock_guard sl(mLock);
-    mListeners[sub->getSeq()] = sub;
+    Json::Value jv;
+    jv[jss::TransactionType] = jss::DIDSet;
+    jv[jss::Account] = to_string(account.id());
+    jv[jss::Flags] = tfUniversal;
+    return jv;
 }
 
-void
-BookListeners::removeSubscriber(std::uint64_t seq)
+Json::Value
+setValid(jtx::Account const& account)
 {
-    std::lock_guard sl(mLock);
-    mListeners.erase(seq);
+    Json::Value jv;
+    jv[jss::TransactionType] = jss::DIDSet;
+    jv[jss::Account] = to_string(account.id());
+    jv[jss::Flags] = tfUniversal;
+    jv[sfURI.jsonName] = strHex(std::string{"uri"});
+    return jv;
 }
 
-void
-BookListeners::publish(
-    MultiApiJson const& jvObj,
-    hash_set<std::uint64_t>& havePublished)
+Json::Value
+del(jtx::Account const& account)
 {
-    std::lock_guard sl(mLock);
-    auto it = mListeners.cbegin();
-
-    while (it != mListeners.cend())
-    {
-        InfoSub::pointer p = it->second.lock();
-
-        if (p)
-        {
-            // Only publish jvObj if this is the first occurence
-            if (havePublished.emplace(p->getSeq()).second)
-            {
-                p->send(
-                    jvObj.select(apiVersionSelector(p->getApiVersion())), true);
-            }
-            ++it;
-        }
-        else
-            it = mListeners.erase(it);
-    }
+    Json::Value jv;
+    jv[jss::TransactionType] = jss::DIDDelete;
+    jv[jss::Account] = to_string(account.id());
+    jv[jss::Flags] = tfUniversal;
+    return jv;
 }
 
+}  // namespace did
+
+}  // namespace jtx
+
+}  // namespace test
 }  // namespace ripple

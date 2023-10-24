@@ -17,51 +17,57 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/OrderBookDB.h>
-#include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/json/to_string.h>
+#ifndef RIPPLE_TX_DID_H_INCLUDED
+#define RIPPLE_TX_DID_H_INCLUDED
+
+#include <ripple/app/tx/impl/Transactor.h>
 
 namespace ripple {
 
-void
-BookListeners::addSubscriber(InfoSub::ref sub)
+class DIDSet : public Transactor
 {
-    std::lock_guard sl(mLock);
-    mListeners[sub->getSeq()] = sub;
-}
+public:
+    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
-void
-BookListeners::removeSubscriber(std::uint64_t seq)
-{
-    std::lock_guard sl(mLock);
-    mListeners.erase(seq);
-}
-
-void
-BookListeners::publish(
-    MultiApiJson const& jvObj,
-    hash_set<std::uint64_t>& havePublished)
-{
-    std::lock_guard sl(mLock);
-    auto it = mListeners.cbegin();
-
-    while (it != mListeners.cend())
+    explicit DIDSet(ApplyContext& ctx) : Transactor(ctx)
     {
-        InfoSub::pointer p = it->second.lock();
-
-        if (p)
-        {
-            // Only publish jvObj if this is the first occurence
-            if (havePublished.emplace(p->getSeq()).second)
-            {
-                p->send(
-                    jvObj.select(apiVersionSelector(p->getApiVersion())), true);
-            }
-            ++it;
-        }
-        else
-            it = mListeners.erase(it);
     }
-}
+
+    static NotTEC
+    preflight(PreflightContext const& ctx);
+
+    TER
+    doApply() override;
+};
+
+//------------------------------------------------------------------------------
+
+class DIDDelete : public Transactor
+{
+public:
+    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+
+    explicit DIDDelete(ApplyContext& ctx) : Transactor(ctx)
+    {
+    }
+
+    static NotTEC
+    preflight(PreflightContext const& ctx);
+
+    static TER
+    deleteSLE(ApplyContext& ctx, Keylet sleKeylet, AccountID const owner);
+
+    static TER
+    deleteSLE(
+        ApplyView& view,
+        std::shared_ptr<SLE> sle,
+        AccountID const owner,
+        beast::Journal j);
+
+    TER
+    doApply() override;
+};
 
 }  // namespace ripple
+
+#endif

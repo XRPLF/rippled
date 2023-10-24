@@ -472,6 +472,17 @@ TxFormats::TxFormats()
             {sfSignatureReward, soeREQUIRED},
         },
         commonFields);
+
+    add(jss::DIDSet,
+        ttDID_SET,
+        {
+            {sfDIDDocument, soeOPTIONAL},
+            {sfURI, soeOPTIONAL},
+            {sfData, soeOPTIONAL},
+        },
+        commonFields);
+
+    add(jss::DIDDelete, ttDID_DELETE, {}, commonFields);
 }
 
 TxFormats const&
