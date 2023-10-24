@@ -86,6 +86,7 @@ fillJson(Object& json, bool closed, LedgerInfo const& info, bool bFull)
         json[jss::close_time_human] = to_string(info.closeTime);
         if (!getCloseAgree(info))
             json[jss::close_time_estimated] = true;
+        json[jss::close_time_iso] = to_string_iso(info.closeTime);
     }
 }
 
@@ -160,6 +161,8 @@ fillJsonTx(
             txJson[jss::validated] = validated;
             if (validated)
             {
+                txJson[jss::ledger_index] = to_string(fill.ledger.seq());
+                txJson[jss::ledger_hash] = to_string(fill.ledger.info().hash);
                 if (auto close_time =
                         fill.context->ledgerMaster.getCloseTimeBySeq(
                             fill.ledger.seq()))

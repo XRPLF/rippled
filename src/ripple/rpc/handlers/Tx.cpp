@@ -57,6 +57,7 @@ struct TxResult
     bool validated = false;
     std::optional<std::string> ctid;
     std::optional<NetClock::time_point> closeTime;
+    std::optional<uint256> ledgerHash;
     TxSearched searchedAll;
 };
 
@@ -147,6 +148,7 @@ doTxPostgres(RPC::Context& context, TxArgs const& args)
                 context.app.getRelationalDatabase().getLedgerInfoByIndex(
                     locator.getLedgerSequence());
             res.closeTime = ledgerInfo->closeTime;
+            res.ledgerHash = ledgerInfo->hash;
 
             return {res, rpcSUCCESS};
         }
@@ -285,6 +287,7 @@ doTxHelp(RPC::Context& context, TxArgs args)
         uint32_t lgrSeq = ledger->info().seq;
         uint32_t txnIdx = meta->getAsObject().getFieldU32(sfTransactionIndex);
         uint32_t netID = context.app.config().NETWORK_ID;
+        result.ledgerHash = ledger->info().hash;
 
         if (txnIdx <= 0xFFFFU && netID < 0xFFFFU && lgrSeq < 0x0FFF'FFFFUL)
             result.ctid =
@@ -339,9 +342,16 @@ populateJsonResponse(
                     context.apiVersion);
             }
             response[jss::hash] = hash;
-            if (result.closeTime)
-                response[jss::close_time_iso] =
-                    to_string_iso(*result.closeTime);
+            if (result.validated)
+            {
+                response[jss::ledger_index] = result.txn->getLedger();
+                if (result.ledgerHash)
+                    response[jss::ledger_hash] = to_string(*result.ledgerHash);
+
+                if (result.closeTime)
+                    response[jss::close_time_iso] =
+                        to_string_iso(*result.closeTime);
+            }
         }
         else
         {

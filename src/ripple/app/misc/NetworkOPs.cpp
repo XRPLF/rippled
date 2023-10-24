@@ -3183,7 +3183,6 @@ NetworkOPsImp::transJson(
             {
                 jvTx[jss::tx_json] = jvTx.removeMember(jss::transaction);
                 jvTx[jss::hash] = hash;
-                // TODO set `jvObj[jss::close_time_iso]` if validated
             }
             else
             {

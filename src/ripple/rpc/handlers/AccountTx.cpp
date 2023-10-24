@@ -337,6 +337,10 @@ populateJsonResponse(
                             false,
                             {std::ref(hash)});
                         jvObj[jss::hash] = hash;
+                        jvObj[jss::ledger_index] = txn->getLedger();
+                        jvObj[jss::ledger_hash] =
+                            to_string(context.ledgerMaster.getHashBySeq(
+                                txn->getLedger()));
                     }
                     else
                         jvObj[json_tx] = txn->getJson(
