@@ -328,11 +328,11 @@ populateJsonResponse(
             std::string hash;
             if (args.binary)
                 response[jss::tx_blob] = result.txn->getJson(
-                    JsonOptions::include_date, true, {std::ref(hash)});
+                    JsonOptions::include_date, true, false, {std::ref(hash)});
             else
             {
                 response[jss::tx_json] = result.txn->getJson(
-                    JsonOptions::include_date, false, {std::ref(hash)});
+                    JsonOptions::include_date, false, false, {std::ref(hash)});
                 RPC::insertDeliverMax(
                     response[jss::tx_json],
                     sttx->getTxnType(),
@@ -345,8 +345,8 @@ populateJsonResponse(
         }
         else
         {
-            response =
-                result.txn->getJson(JsonOptions::include_date, args.binary);
+            response = result.txn->getJson(
+                JsonOptions::include_date, args.binary, true);
             if (!args.binary)
                 RPC::insertDeliverMax(
                     response, sttx->getTxnType(), context.apiVersion);

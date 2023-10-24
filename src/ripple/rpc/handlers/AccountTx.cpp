@@ -332,12 +332,15 @@ populateJsonResponse(
                     {
                         std::string hash;
                         jvObj[json_tx] = txn->getJson(
-                            JsonOptions::include_date, false, {std::ref(hash)});
+                            JsonOptions::include_date,
+                            false,
+                            false,
+                            {std::ref(hash)});
                         jvObj[jss::hash] = hash;
                     }
                     else
-                        jvObj[json_tx] =
-                            txn->getJson(JsonOptions::include_date);
+                        jvObj[json_tx] = txn->getJson(
+                            JsonOptions::include_date, false, true);
 
                     auto const& sttx = txn->getSTransaction();
                     RPC::insertDeliverMax(

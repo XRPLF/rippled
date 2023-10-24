@@ -27,7 +27,7 @@
 #include <ripple/protocol/STTx.h>
 #include <ripple/protocol/TER.h>
 #include <ripple/protocol/TxMeta.h>
-#include <boost/optional.hpp>
+
 #include <optional>
 #include <variant>
 
@@ -310,6 +310,7 @@ public:
     getJson(
         JsonOptions options,
         bool binary = false,
+        bool showInLedger = false,
         std::optional<std::reference_wrapper<std::string>> hash = {}) const;
 
     // Information used to locate a transaction.

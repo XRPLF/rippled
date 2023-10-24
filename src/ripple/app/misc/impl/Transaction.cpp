@@ -168,13 +168,16 @@ Json::Value
 Transaction::getJson(
     JsonOptions options,
     bool binary,
+    bool showInLedger,
     std::optional<std::reference_wrapper<std::string>> hash) const
 {
     Json::Value ret(mTransaction->getJson(JsonOptions::none, binary, hash));
 
     if (mInLedger)
     {
-        ret[jss::inLedger] = mInLedger;  // Deprecated.
+        if (showInLedger)
+            ret[jss::inLedger] = mInLedger;  // Deprecated.
+
         ret[jss::ledger_index] = mInLedger;
 
         if (options == JsonOptions::include_date)
