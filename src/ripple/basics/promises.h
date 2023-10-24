@@ -317,7 +317,7 @@ struct ApplyState : public std::enable_shared_from_this<ApplyState<F, Args...>>
         {
             bool valid = true;
             if (valid_.compare_exchange_strong(
-                    valid, false, std::memory_order_relaxed))
+                    valid, false, std::memory_order_seq_cst))
             {
                 // We are the only writer who invalidated this state.
                 output_->reject(p->error());
@@ -329,7 +329,7 @@ struct ApplyState : public std::enable_shared_from_this<ApplyState<F, Args...>>
             assert(state == FULFILLED);
             std::get<I>(arguments_) = p->value_ptr();
         }
-        auto count = 1 + count_.fetch_add(1, std::memory_order_acq_rel);
+        auto count = 1 + count_.fetch_add(1, std::memory_order_seq_cst);
         if (count != sizeof...(Args))
         {
             return;
@@ -339,7 +339,7 @@ struct ApplyState : public std::enable_shared_from_this<ApplyState<F, Args...>>
         // `count_.fetch_add`, and the effect of their write to `valid_`, if
         // any, is visible in this thread because of the acquire-release
         // synchronization on `count_`.
-        if (!valid_.load(std::memory_order_relaxed))
+        if (!valid_.load(std::memory_order_seq_cst))
         {
             return;
         }
@@ -533,11 +533,11 @@ public:
                 // as if this method were never called.
                 if (rprev == LOCKED)
                 {
-                    rhs->status_.store(LOCKED, std::memory_order_release);
+                    rhs->status_.store(LOCKED, std::memory_order_seq_cst);
                 }
                 if (lprev == LOCKED)
                 {
-                    lhs->status_.store(LOCKED, std::memory_order_release);
+                    lhs->status_.store(LOCKED, std::memory_order_seq_cst);
                 }
                 return false;
             }
@@ -564,7 +564,7 @@ public:
         std::destroy_at(&rhs->storage_.callbacks_);
         // Make `rhs` link to `lhs`.
         std::construct_at(&rhs->storage_.link_, lhs->shared_from_this());
-        rhs->status_.store(LINKED, std::memory_order_release);
+        rhs->status_.store(LINKED, std::memory_order_seq_cst);
 
         if (lprev == PENDING || lprev == LOCKED)
         {
@@ -572,7 +572,7 @@ public:
                 callbacks.begin(),
                 callbacks.end(),
                 std::back_inserter(lhs->storage_.callbacks_));
-            lhs->status_.store(lprev, std::memory_order_release);
+            lhs->status_.store(lprev, std::memory_order_seq_cst);
         }
         else if (lprev != CANCELLED)
         {
@@ -606,7 +606,7 @@ public:
             return;
         }
         self->storage_.callbacks_.push_back(std::move(cb));
-        self->status_.store(previous, std::memory_order_release);
+        self->status_.store(previous, std::memory_order_seq_cst);
     }
 
     template <typename F>
@@ -800,7 +800,7 @@ private:
     State
     state_() const
     {
-        return status_.load(std::memory_order_acquire);
+        return status_.load(std::memory_order_seq_cst);
     }
 
     decltype(auto)
@@ -840,7 +840,7 @@ private:
         State idle = PENDING;
         State expected = idle;
         while (!self->status_.compare_exchange_weak(
-            expected, desired, std::memory_order_acquire))
+            expected, desired, std::memory_order_seq_cst))
         {
             if (expected == WRITING)
             {
@@ -888,7 +888,7 @@ private:
         auto callbacks = std::move(self->storage_.callbacks_);
         std::destroy_at(&self->storage_.callbacks_);
         (self->storage_.*method)(std::forward<Args>(args)...);
-        self->status_.store(status, std::memory_order_release);
+        self->status_.store(status, std::memory_order_seq_cst);
         for (auto& cb : callbacks)
         {
             self->scheduler_.schedule(
