@@ -53,11 +53,11 @@ ObjectRequester::deserialize(ObjectDigest const& digest, Slice const& slice)
     else if (prefix == HashPrefix::innerNode)
     {
         assert(slice.size() == 4 + SHAMapInnerNode::branchFactor * 32);
-        if (isFullBelow(digest))
-        {
-            return;
-        }
-        auto checkpoint = requested_;
+        // There's an opportunity here to exit early if the tree rooted at
+        // this node is "full" (i.e. a complete copy is in the database).
+        // There is a "full below cache" that might have that information,
+        // but I cannot be certain that it is safe to use outside the context
+        // of online delete.
         for (auto i = 0; i < SHAMapInnerNode::branchFactor; ++i)
         {
             auto childDigest = sit.get256();
@@ -67,30 +67,7 @@ ObjectRequester::deserialize(ObjectDigest const& digest, Slice const& slice)
             }
             request(childDigest);
         }
-        // If we finished setting the tree rooted at this parent without making
-        // any requests, then it is full below.
-        if (requested_ == checkpoint)
-        {
-            setFullBelow(digest);
-        }
     }
-}
-
-bool
-ObjectRequester::isFullBelow(ObjectDigest const& digest)
-{
-    // TODO: We can take the sequence number from the header,
-    // which we should have before the first time this method is called.
-    return copier_.app_.getNodeFamily().getFullBelowCache(0)->touch_if_exists(
-        digest);
-}
-
-void
-ObjectRequester::setFullBelow(ObjectDigest const& digest)
-{
-    return;
-    copier_.app_.getNodeFamily().getFullBelowCache(0)->insert(digest);
-    ++fullBelow_;
 }
 
 void

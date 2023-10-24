@@ -93,9 +93,6 @@ private:
     std::size_t loaded_ = 0;
     // searched = loaded + requested + rerequested
 
-    /** The number of object trees marked full below. */
-    std::size_t fullBelow_ = 0;
-
 public:
     ObjectRequester(CopyLedger&);
     ~ObjectRequester();
@@ -118,11 +115,6 @@ public:
     deserialize(ObjectDigest const& digest, Slice const& slice);
 
 private:
-    bool
-    isFullBelow(ObjectDigest const& digest);
-    void
-    setFullBelow(ObjectDigest const& digest);
-
     /**
      * @param requested The number of times this object has been requested
      * before.
