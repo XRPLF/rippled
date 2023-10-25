@@ -100,7 +100,7 @@ public:
     virtual int
     getScore(bool) const = 0;
 
-    virtual PublicKey const&
+    virtual PublicKey
     getNodePublic() const = 0;
 
     virtual Json::Value

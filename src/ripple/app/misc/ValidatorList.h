@@ -252,8 +252,6 @@ class ValidatorList
     // The below variable contains the Publisher list specified in the local
     // config file under the title of SECTION_VALIDATORS or [validators].
     // This list is not associated with the masterKey of any publisher.
-    // In the current codebase, this PublisherListCollection is
-    // mapped along with the PublicKey::emptyPubKey in publisherLists_.
 
     // Appropos PublisherListCollection fields, localPublisherList does not
     // have any "remaining" manifests. It is assumed to be perennially
@@ -565,13 +563,14 @@ public:
     bool
     trustedPublisher(PublicKey const& identity) const;
 
-    /** Returns local validator public key
+    /** This function returns the local validator public key
+     * or a std::nullopt
 
         @par Thread Safety
 
         May be called concurrently
     */
-    PublicKey
+    std::optional<PublicKey>
     localPublicKey() const;
 
     /** Invokes the callback once for every listed validation public key.

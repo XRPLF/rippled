@@ -30,15 +30,20 @@ Json::Value
 doValidatorInfo(RPC::JsonContext& context)
 {
     // return error if not configured as validator
-    if (context.app.getValidationPublicKey() == PublicKey::emptyPubKey)
+    if (!context.app.getValidationPublicKey())
         return RPC::not_validator_error();
 
     Json::Value ret;
 
     auto const pk = context.app.getValidationPublicKey();
 
+    // this node has not been configured as a validator. Hence the
+    // localPublicKey has not been set
+    if (!pk)
+        return ret;
+
     // assume pk is ephemeral key, get master key
-    auto const mk = context.app.validatorManifests().getMasterKey(pk);
+    auto const mk = context.app.validatorManifests().getMasterKey(*pk);
     ret[jss::master_key] = toBase58(TokenType::NodePublic, mk);
 
     // pk is maskter key, eg no ephemeral key, eg no manifest, just return

@@ -197,11 +197,8 @@ ValidatorList::load(
     if (localSigningKey)
         localPubKey_ = validatorManifests_.getMasterKey(*localSigningKey);
 
-    // localPubKey_ should never be set to PublicKey::emptyPubKey
-    assert(!localPubKey_ || *localPubKey_ != PublicKey::emptyPubKey);
-
     // Treat local validator key as though it was listed in the config
-    if (localPubKey_ && *localPubKey_ != PublicKey::emptyPubKey)
+    if (localPubKey_)
         keyListings_.insert({*localPubKey_, 1});
 
     JLOG(j_.debug()) << "Loading configured validator keys";
@@ -340,14 +337,6 @@ ValidatorList::cacheValidatorFile(
 {
     if (dataPath_.empty())
         return;
-
-    if (pubKey == PublicKey::emptyPubKey)
-    {
-        JLOG(j_.fatal()) << "ValidatorList::cacheValidatorFile invoked for the"
-                            " local-configuration-file specified Validator "
-                            " Keys. This function must be executed only on "
-                            "external publisher lists";
-    }
 
     boost::filesystem::path const filename = getCacheFileName(lock, pubKey);
 
@@ -918,14 +907,14 @@ ValidatorList::applyListsAndBroadcast(
     // localPublisherList is not braodcast
     if (broadcast)
     {
-        auto const& pubCollection = publisherLists_[*result.publisherKey];
         assert(
             result.status <= PublisherStatus::expired && result.publisherKey &&
-            pubCollection.maxSequence);
+            publisherLists_[*result.publisherKey].maxSequence);
+        auto const& pubCollection = publisherLists_[*result.publisherKey];
 
-        // The below function call is executed for non-default-constructed
-        // PublicKeys only. The assert statement above filters out
-        // PublicKey::emptyPubKey
+        // The below function call is executed for PublicKeys which are not
+        // specified in the config file. The assert statement above filters
+        // out PublisherLists which are not associated with a master key.
         broadcastBlobs(
             *result.publisherKey,
             pubCollection,
@@ -1444,11 +1433,11 @@ ValidatorList::trustedPublisher(PublicKey const& identity) const
         publisherLists_.at(identity).status < PublisherStatus::revoked;
 }
 
-PublicKey
+std::optional<PublicKey>
 ValidatorList::localPublicKey() const
 {
     std::shared_lock read_lock{mutex_};
-    return *localPubKey_;
+    return localPubKey_;
 }
 
 bool
@@ -1457,10 +1446,6 @@ ValidatorList::removePublisherList(
     PublicKey const& publisherKey,
     PublisherStatus reason)
 {
-    // This function must not be invoked with respect to the ValidatorList
-    // published in the local configuration file. Because such a list has
-    // indefinite validity.
-    assert(publisherKey != PublicKey::emptyPubKey);
     assert(
         reason != PublisherStatus::available &&
         reason != PublisherStatus::unavailable);
@@ -1711,10 +1696,6 @@ ValidatorList::for_each_available(
 
     for (auto const& [key, plCollection] : publisherLists_)
     {
-        // publisherLists_ must not contain default constructed public keys.
-        // Such a validator list is stored in the localPublisherList variable.
-        assert(!key.empty());
-
         if (plCollection.status != PublisherStatus::available)
             continue;
         assert(plCollection.maxSequence);
@@ -1745,14 +1726,6 @@ ValidatorList::getAvailable(
     }
 
     auto id = PublicKey(makeSlice(*keyBlob));
-
-    // search the PubCollection as specified in the local config file
-    if (id == PublicKey::emptyPubKey)
-    {
-        JLOG(j_.fatal()) << "ValidatorList::getAvailable invoked for default "
-                            "constructed emptyPubKey\n";
-        return {};
-    }
 
     auto const iter = publisherLists_.find(id);
 
@@ -1949,7 +1922,12 @@ ValidatorList::updateTrusted(
         // trustedMasterKeys_ contain non-revoked manifests only. Hence the
         // manifests must contain a valid signingKey
         for (auto const& k : trustedMasterKeys_)
-            trustedSigningKeys_.insert(*validatorManifests_.getSigningKey(k));
+        {
+            std::optional<PublicKey> signingKey =
+                validatorManifests_.getSigningKey(k);
+            assert(signingKey);
+            trustedSigningKeys_.insert(*signingKey);
+        }
     }
 
     JLOG(j_.debug())

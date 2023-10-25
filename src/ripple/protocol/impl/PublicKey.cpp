@@ -27,8 +27,6 @@
 
 namespace ripple {
 
-const PublicKey PublicKey::emptyPubKey = PublicKey::getEmptyPubKey();
-
 std::ostream&
 operator<<(std::ostream& os, PublicKey const& pk)
 {
@@ -179,14 +177,12 @@ PublicKey::PublicKey(Slice const& slice)
 {
     if (!publicKeyType(slice))
         LogicError("PublicKey::PublicKey invalid type");
-    //    size_ = slice.size();
     std::memcpy(buf_, slice.data(), size_);
 }
 
 PublicKey::PublicKey(PublicKey const& other)
 {
-    if (size_)
-        std::memcpy(buf_, other.buf_, size_);
+    std::memcpy(buf_, other.buf_, size_);
 }
 
 PublicKey&
@@ -194,8 +190,7 @@ PublicKey::operator=(PublicKey const& other)
 {
     if (this != &other)
     {
-        if (size_)
-            std::memcpy(buf_, other.buf_, size_);
+        std::memcpy(buf_, other.buf_, size_);
     }
 
     return *this;

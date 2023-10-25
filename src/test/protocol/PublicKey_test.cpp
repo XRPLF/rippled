@@ -457,20 +457,20 @@ public:
         BEAST_EXPECT(pk3 == pk2);
         BEAST_EXPECT(pk1 == pk3);
 
-        BEAST_EXPECT(!PublicKey::emptyPubKey.empty());
-        BEAST_EXPECT(PublicKey::emptyPubKey.size() == 33);
+        //        BEAST_EXPECT(!PublicKey::emptyPubKey.empty());
+        //        BEAST_EXPECT(PublicKey::emptyPubKey.size() == 33);
     }
 
-    void
-    testEmptyPubKey()
-    {
-        testcase("Sanity check for Empty Public Key");
-
-        // This test is to emphasize that all constructed Public Keys are
-        // valid, non-empty and have 33 bytes of data.
-        BEAST_EXPECT(!PublicKey::emptyPubKey.empty());
-        BEAST_EXPECT(PublicKey::emptyPubKey.size() == 33);
-    }
+    //    void
+    //    testEmptyPubKey()
+    //    {
+    //        testcase("Sanity check for Empty Public Key");
+    //
+    //        // This test is to emphasize that all constructed Public Keys are
+    //        // valid, non-empty and have 33 bytes of data.
+    //        BEAST_EXPECT(!PublicKey::emptyPubKey.empty());
+    //        BEAST_EXPECT(PublicKey::emptyPubKey.size() == 33);
+    //    }
 
     void
     run() override
@@ -478,7 +478,7 @@ public:
         testBase58();
         testCanonical();
         testMiscOperations();
-        testEmptyPubKey();
+        //        testEmptyPubKey();
     }
 };
 

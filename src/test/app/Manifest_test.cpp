@@ -309,7 +309,6 @@ public:
             }
             {
                 // save should store all trusted master keys to db
-                PublicKey emptyLocalKey(PublicKey::emptyPubKey);
                 std::vector<std::string> s1;
                 std::vector<std::string> keys;
                 std::string cfgManifest;

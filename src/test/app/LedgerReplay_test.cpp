@@ -228,10 +228,10 @@ public:
     {
         return 0;
     }
-    PublicKey const&
+    PublicKey
     getNodePublic() const override
     {
-        return PublicKey::emptyPubKey;
+        return derivePublicKey(KeyType::ed25519, randomSecretKey());
     }
     Json::Value
     json() override

@@ -69,30 +69,6 @@ protected:
 public:
     using const_iterator = std::uint8_t const*;
 
-    // This default constructed public key is used only in ValidatorList class.
-    // Publishers' master PublicKeys are used to map into their respective UNLs
-    // emptyPubKey is used to represent the keys specified in the local config
-    // file. Unlike the other published UNL, this list is not signed with any
-    // publisher's public key and hence needs to be mapped with the emptyPubKey
-    static const PublicKey emptyPubKey;
-
-private:
-    static PublicKey
-    getEmptyPubKey()
-    {
-        std::array<unsigned char, 33> buf;
-
-        // set the values to zero to simulate a default-constructed Public Key
-        for (unsigned int i = 0; i < 33; i++)
-            buf[i] = 0;
-
-        // the first byte of a PublicKey can only be set to one of two
-        // alternatives, as noted in the publicKeyType function.
-        buf[0] = 0xED;
-
-        return PublicKey(makeSlice(buf));
-    }
-
 public:
     PublicKey() = delete;
 
@@ -143,12 +119,6 @@ public:
         return buf_ + size_;
     }
 
-    bool
-    empty() const noexcept
-    {
-        return size_ == 0;
-    }
-
     Slice
     slice() const noexcept
     {
@@ -169,8 +139,7 @@ operator<<(std::ostream& os, PublicKey const& pk);
 inline bool
 operator==(PublicKey const& lhs, PublicKey const& rhs)
 {
-    return lhs.size() == rhs.size() &&
-        std::memcmp(lhs.data(), rhs.data(), rhs.size()) == 0;
+    return std::memcmp(lhs.data(), rhs.data(), rhs.size()) == 0;
 }
 
 inline bool

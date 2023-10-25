@@ -2445,10 +2445,11 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
 
     if (admin)
     {
-        if (!app_.getValidationPublicKey().empty())
+        if (app_.getValidationPublicKey())
         {
+            assert(app_.validators().localPublicKey());
             info[jss::pubkey_validator] = toBase58(
-                TokenType::NodePublic, app_.validators().localPublicKey());
+                TokenType::NodePublic, *app_.validators().localPublicKey());
         }
         else
         {

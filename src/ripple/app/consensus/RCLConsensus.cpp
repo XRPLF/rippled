@@ -1007,9 +1007,6 @@ RCLConsensus::Adaptor::preStartRound(
     RCLCxLedger const& prevLgr,
     hash_set<NodeID> const& nowTrusted)
 {
-    assert(
-        !validatorKeys_.keys ||
-        validatorKeys_.keys->publicKey != PublicKey::emptyPubKey);
     // We have a key, we do not want out of sync validations after a restart
     // and are not amendment blocked.
     validating_ = validatorKeys_.keys &&

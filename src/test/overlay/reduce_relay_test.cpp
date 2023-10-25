@@ -100,10 +100,10 @@ public:
     {
         return 0;
     }
-    PublicKey const&
+    PublicKey
     getNodePublic() const override
     {
-        return PublicKey::emptyPubKey;
+        return derivePublicKey(KeyType::ed25519, randomSecretKey());
     }
     Json::Value
     json() override
@@ -924,7 +924,7 @@ protected:
         bool isSelected_ = false;
         Peer::id_t peer_;
         std::uint16_t validator_;
-        PublicKey key_{PublicKey::emptyPubKey};
+        std::optional<PublicKey> key_;
         time_point<ManualClock> time_;
         bool handled_ = false;
     };
@@ -1052,15 +1052,16 @@ protected:
                 bool mustHandle = false;
                 if (event.state_ == State::On)
                 {
+                    assert(event.key_);
                     event.isSelected_ =
-                        network_.overlay().isSelected(event.key_, event.peer_);
-                    auto peers = network_.overlay().getPeers(event.key_);
+                        network_.overlay().isSelected(*event.key_, event.peer_);
+                    auto peers = network_.overlay().getPeers(*event.key_);
                     auto d = reduce_relay::epoch<milliseconds>(now).count() -
                         std::get<3>(peers[event.peer_]);
                     mustHandle = event.isSelected_ &&
                         d > milliseconds(reduce_relay::IDLED).count() &&
                         network_.overlay().inState(
-                            event.key_, reduce_relay::PeerState::Squelched) >
+                            *event.key_, reduce_relay::PeerState::Squelched) >
                             0 &&
                         peers.find(event.peer_) != peers.end();
                 }

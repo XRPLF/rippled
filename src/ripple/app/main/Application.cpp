@@ -594,11 +594,11 @@ public:
             "Accessing Application::nodeIdentity() before it is initialized.");
     }
 
-    PublicKey const&
+    std::optional<PublicKey const>
     getValidationPublicKey() const override
     {
         if (!validatorKeys_.keys)
-            return PublicKey::emptyPubKey;
+            return {};
 
         return validatorKeys_.keys->publicKey;
     }
@@ -1326,13 +1326,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
             // configuration file does not have either
             // SECTION_VALIDATOR_TOKEN or SECTION_VALIDATION_SEED section.
 
-            // ValidatorList uses PublicKey::emptyPubKey to denote masterKey
-            // for the local-configuration specified validator keys. In the
-            // previous versions of the code, the default-constructed public
-            // key would be used here, owing to the default construction of
-            // ValidatorKeys object. At present, an unseated optional denotes
-            // the default construction of ValidatorKeys object.
-
+            // masterKey for the configuration-file specified validator keys
             std::optional<PublicKey> localSigningKey;
             if (validatorKeys_.keys)
                 localSigningKey = validatorKeys_.keys->publicKey;
