@@ -27,17 +27,25 @@
 #include <ripple/protocol/jss.h>
 #include <test/jtx/Env.h>
 
-#include <ranges>
+#include <vector>
 
 namespace ripple {
 namespace test {
 namespace jtx {
 
 // Helper to make vector from iterable
+template <typename T>
+concept iterable = requires(T& v) {
+                       std::begin(v);
+                       std::end(v);
+                   };
+
+template <typename Input>
 auto
-make_vector(auto const& input) requires std::ranges::range<decltype(input)>
+make_vector(Input const& input)
+    requires iterable<Input>
 {
-    return std::vector(std::ranges::begin(input), std::ranges::end(input));
+    return std::vector(std::begin(input), std::end(input));
 }
 
 // Functions used in debugging
