@@ -6403,7 +6403,7 @@ std::string
 updateAPIVersionString(const char* const req)
 {
     static std::string version_str =
-        std::to_string(RPC::apiMaximumSupportedVersion);
+        std::to_string(RPC::apiMinimumSupportedVersion);
     static auto place_holder = "%MAX_API_VER%";
     std::string jr(req);
     boost::replace_all(jr, place_holder, version_str);
@@ -6442,7 +6442,7 @@ public:
             Json::Value got;
             try
             {
-                got = cmdLineToJSONRPC(args, env.journal);
+                got = unitTestCmdToJSONRPC(args, env.journal);
             }
             catch (std::bad_cast const&)
             {

@@ -289,7 +289,7 @@ public:
         env.timeKeeper().adjustCloseTime(weeks{3});
         result = env.rpc("ledger_request", "1")[jss::result];
         BEAST_EXPECT(result[jss::status] == "error");
-        if (RPC::apiMaximumSupportedVersion == 1)
+        if (RPC::apiMinimumSupportedVersion == 1)
         {
             BEAST_EXPECT(result[jss::error] == "noCurrent");
             BEAST_EXPECT(

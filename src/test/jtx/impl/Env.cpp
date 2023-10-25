@@ -463,7 +463,7 @@ Env::do_rpc(
     std::vector<std::string> const& args,
     std::unordered_map<std::string, std::string> const& headers)
 {
-    return rpcClient(args, app().config(), app().logs(), headers).second;
+    return rpcClient(args, app().config(), app().logs(), false, headers).second;
 }
 
 void

@@ -1473,10 +1473,11 @@ struct RPCCallImp
 
 // Used internally by rpcClient.
 static Json::Value
-rpcCmdLineToJson(
+rpcCmdToJson(
     std::vector<std::string> const& args,
     Json::Value& retParams,
-    beast::Journal j)
+    beast::Journal j,
+    unsigned int apiVersion)
 {
     Json::Value jvRequest(Json::objectValue);
 
@@ -1493,11 +1494,11 @@ rpcCmdLineToJson(
 
     jvRequest = rpParser.parseCommand(args[0], jvRpcParams, true);
 
-    auto insert_api_version = [](Json::Value& jr) {
+    auto insert_api_version = [apiVersion](Json::Value& jr) {
         if (jr.isObject() && !jr.isMember(jss::error) &&
             !jr.isMember(jss::api_version))
         {
-            jr[jss::api_version] = RPC::apiMaximumSupportedVersion;
+            jr[jss::api_version] = apiVersion;
         }
     };
 
@@ -1511,10 +1512,10 @@ rpcCmdLineToJson(
 }
 
 Json::Value
-cmdLineToJSONRPC(std::vector<std::string> const& args, beast::Journal j)
+unitTestCmdToJSONRPC(std::vector<std::string> const& args, beast::Journal j)
 {
     Json::Value jv = Json::Value(Json::objectValue);
-    auto const paramsObj = rpcCmdLineToJson(args, jv, j);
+    auto const paramsObj = rpcCmdToJson(args, jv, j, RPC::apiMinimumSupportedVersion);
 
     // Re-use jv to return our formatted result.
     jv.clear();
@@ -1546,6 +1547,7 @@ rpcClient(
     std::vector<std::string> const& args,
     Config const& config,
     Logs& logs,
+    bool fromCmdLine,
     std::unordered_map<std::string, std::string> const& headers)
 {
     static_assert(
@@ -1561,7 +1563,8 @@ rpcClient(
     try
     {
         Json::Value jvRpc = Json::Value(Json::objectValue);
-        jvRequest = rpcCmdLineToJson(args, jvRpc, logs.journal("RPCParser"));
+        auto apiVersion = fromCmdLine? RPC::apiMaximumSupportedVersion : RPC::apiMinimumSupportedVersion;
+        jvRequest = rpcCmdToJson(args, jvRpc, logs.journal("RPCParser"), apiVersion);
 
         if (jvRequest.isMember(jss::error))
         {
@@ -1698,7 +1701,7 @@ fromCommandLine(
     const std::vector<std::string>& vCmd,
     Logs& logs)
 {
-    auto const result = rpcClient(vCmd, config, logs);
+    auto const result = rpcClient(vCmd, config, logs, true);
 
     std::cout << result.second.toStyledString();
 
