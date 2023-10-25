@@ -117,9 +117,11 @@ public:
             c.section(SECTION_VALIDATION_SEED).append(seed);
 
             ValidatorKeys k{c, journal};
-            BEAST_EXPECT(k.keys);
-            BEAST_EXPECT(k.keys->publicKey == seedPublicKey);
-            BEAST_EXPECT(k.keys->secretKey == seedSecretKey);
+            if (BEAST_EXPECT(k.keys))
+            {
+                BEAST_EXPECT(k.keys->publicKey == seedPublicKey);
+                BEAST_EXPECT(k.keys->secretKey == seedSecretKey);
+            }
             BEAST_EXPECT(k.nodeID == seedNodeID);
             BEAST_EXPECT(k.manifest.empty());
             BEAST_EXPECT(!k.configInvalid());
@@ -142,9 +144,11 @@ public:
             c.section(SECTION_VALIDATOR_TOKEN).append(tokenBlob);
             ValidatorKeys k{c, journal};
 
-            BEAST_EXPECT(k.keys);
-            BEAST_EXPECT(k.keys->publicKey == tokenPublicKey);
-            BEAST_EXPECT(k.keys->secretKey == tokenSecretKey);
+            if (BEAST_EXPECT(k.keys))
+            {
+                BEAST_EXPECT(k.keys->publicKey == seedPublicKey);
+                BEAST_EXPECT(k.keys->secretKey == seedSecretKey);
+            }
             BEAST_EXPECT(k.nodeID == tokenNodeID);
             BEAST_EXPECT(k.manifest == tokenManifest);
             BEAST_EXPECT(!k.configInvalid());

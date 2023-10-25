@@ -366,8 +366,9 @@ public:
         std::vector<PublicKey> keys;
         keys.reserve(32);
 
-        for (std::size_t i = 0; i != keys.size(); ++i)
-            keys[i] = derivePublicKey(keyType, randomSecretKey());
+        for (std::size_t i = 0; i != keys.capacity(); ++i)
+            keys.emplace_back(derivePublicKey(keyType, randomSecretKey()));
+        BEAST_EXPECT(keys.size() == 32);
 
         for (std::size_t i = 0; i != keys.size(); ++i)
         {
@@ -456,21 +457,7 @@ public:
         pk3 = pk2;
         BEAST_EXPECT(pk3 == pk2);
         BEAST_EXPECT(pk1 == pk3);
-
-        //        BEAST_EXPECT(!PublicKey::emptyPubKey.empty());
-        //        BEAST_EXPECT(PublicKey::emptyPubKey.size() == 33);
     }
-
-    //    void
-    //    testEmptyPubKey()
-    //    {
-    //        testcase("Sanity check for Empty Public Key");
-    //
-    //        // This test is to emphasize that all constructed Public Keys are
-    //        // valid, non-empty and have 33 bytes of data.
-    //        BEAST_EXPECT(!PublicKey::emptyPubKey.empty());
-    //        BEAST_EXPECT(PublicKey::emptyPubKey.size() == 33);
-    //    }
 
     void
     run() override
@@ -478,7 +465,6 @@ public:
         testBase58();
         testCanonical();
         testMiscOperations();
-        //        testEmptyPubKey();
     }
 };
 
