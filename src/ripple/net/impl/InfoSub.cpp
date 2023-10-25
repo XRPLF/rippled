@@ -136,4 +136,17 @@ InfoSub::getRequest()
     return request_;
 }
 
+void
+InfoSub::setApiVersion(unsigned int apiVersion)
+{
+    apiVersion_ = apiVersion;
+}
+
+unsigned int
+InfoSub::getApiVersion() const noexcept
+{
+    assert(apiVersion_ > 0);
+    return apiVersion_;
+}
+
 }  // namespace ripple

@@ -27,9 +27,18 @@
 #include <ripple/protocol/jss.h>
 #include <test/jtx/Env.h>
 
+#include <ranges>
+
 namespace ripple {
 namespace test {
 namespace jtx {
+
+// Helper to make vector from iterable
+auto
+make_vector(auto const& input) requires std::ranges::range<decltype(input)>
+{
+    return std::vector(std::ranges::begin(input), std::ranges::end(input));
+}
 
 // Functions used in debugging
 Json::Value
