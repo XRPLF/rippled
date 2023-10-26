@@ -1040,7 +1040,7 @@ chooseLedgerEntryType(Json::Value const& params)
 
 beast::SemanticVersion const firstVersion("1.0.0");
 beast::SemanticVersion const goodVersion("1.0.0");
-beast::SemanticVersion const lastVersion("2.0.0");
+beast::SemanticVersion const lastVersion("1.0.0");
 
 unsigned int
 getAPIVersionNumber(Json::Value const& jv, bool betaEnabled)

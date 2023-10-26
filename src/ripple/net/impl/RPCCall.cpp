@@ -1472,7 +1472,7 @@ struct RPCCallImp
 //------------------------------------------------------------------------------
 
 // Used internally by rpcClient.
-static Json::Value
+Json::Value
 rpcCmdToJson(
     std::vector<std::string> const& args,
     Json::Value& retParams,
@@ -1511,35 +1511,6 @@ rpcCmdToJson(
     return jvRequest;
 }
 
-Json::Value
-unitTestCmdToJSONRPC(std::vector<std::string> const& args, beast::Journal j)
-{
-    Json::Value jv = Json::Value(Json::objectValue);
-    auto const paramsObj = rpcCmdToJson(args, jv, j, RPC::apiMinimumSupportedVersion);
-
-    // Re-use jv to return our formatted result.
-    jv.clear();
-
-    // Allow parser to rewrite method.
-    jv[jss::method] = paramsObj.isMember(jss::method)
-        ? paramsObj[jss::method].asString()
-        : args[0];
-
-    // If paramsObj is not empty, put it in a [params] array.
-    if (paramsObj.begin() != paramsObj.end())
-    {
-        auto& paramsArray = Json::setArray(jv, jss::params);
-        paramsArray.append(paramsObj);
-    }
-    if (paramsObj.isMember(jss::jsonrpc))
-        jv[jss::jsonrpc] = paramsObj[jss::jsonrpc];
-    if (paramsObj.isMember(jss::ripplerpc))
-        jv[jss::ripplerpc] = paramsObj[jss::ripplerpc];
-    if (paramsObj.isMember(jss::id))
-        jv[jss::id] = paramsObj[jss::id];
-    return jv;
-}
-
 //------------------------------------------------------------------------------
 
 std::pair<int, Json::Value>
@@ -1547,7 +1518,7 @@ rpcClient(
     std::vector<std::string> const& args,
     Config const& config,
     Logs& logs,
-    bool fromCmdLine,
+    unsigned int apiVersion,
     std::unordered_map<std::string, std::string> const& headers)
 {
     static_assert(
@@ -1563,8 +1534,8 @@ rpcClient(
     try
     {
         Json::Value jvRpc = Json::Value(Json::objectValue);
-        auto apiVersion = fromCmdLine? RPC::apiMaximumSupportedVersion : RPC::apiMinimumSupportedVersion;
-        jvRequest = rpcCmdToJson(args, jvRpc, logs.journal("RPCParser"), apiVersion);
+        jvRequest =
+            rpcCmdToJson(args, jvRpc, logs.journal("RPCParser"), apiVersion);
 
         if (jvRequest.isMember(jss::error))
         {
@@ -1701,7 +1672,8 @@ fromCommandLine(
     const std::vector<std::string>& vCmd,
     Logs& logs)
 {
-    auto const result = rpcClient(vCmd, config, logs, true);
+    auto const result =
+        rpcClient(vCmd, config, logs, RPC::apiMaximumSupportedVersion);
 
     std::cout << result.second.toStyledString();
 

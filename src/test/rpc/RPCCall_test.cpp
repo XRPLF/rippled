@@ -21,6 +21,7 @@
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 #include <test/jtx.h>
+#include <test/jtx/utility.h>
 
 #include <boost/algorithm/string.hpp>
 #include <initializer_list>
@@ -6403,7 +6404,7 @@ std::string
 updateAPIVersionString(const char* const req)
 {
     static std::string version_str =
-        std::to_string(RPC::apiMinimumSupportedVersion);
+        std::to_string(RPC::apiMaximumSupportedVersion);
     static auto place_holder = "%MAX_API_VER%";
     std::string jr(req);
     boost::replace_all(jr, place_holder, version_str);
@@ -6442,7 +6443,7 @@ public:
             Json::Value got;
             try
             {
-                got = unitTestCmdToJSONRPC(args, env.journal);
+                got = jtx::cmdToJSONRPC(args, env.journal);
             }
             catch (std::bad_cast const&)
             {
