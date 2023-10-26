@@ -134,6 +134,13 @@ Currently (prior to the release of 2.0), it is available as a "beta" version, me
 
 Since `api_version` 2 is in "beta", breaking changes to V2 can currently be made at any time.
 
+#### Removed methods
+
+In API version 2, the following methods are no longer available:
+
+- `tx_history` - Instead, use other methods such as `account_tx` or `ledger` with the `transactions` field set to `true`.
+- `ledger_header` - Instead, use the `ledger` method.
+
 #### Modifications to account_info response in V2
 
 - `signer_lists` is returned in the root of the response. Previously, in API version 1, it was nested under `account_data`. (https://github.com/XRPLF/rippled/pull/3770)

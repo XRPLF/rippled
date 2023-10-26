@@ -25,6 +25,7 @@
 #include <ripple/core/Config.h>
 #include <ripple/rpc/RPCHandler.h>
 #include <ripple/rpc/Status.h>
+#include <ripple/rpc/impl/RPCHelpers.h>
 #include <ripple/rpc/impl/Tuning.h>
 #include <vector>
 
@@ -52,6 +53,9 @@ struct Handler
     Method<Json::Value> valueMethod_;
     Role role_;
     RPC::Condition condition_;
+
+    unsigned minApiVer_ = apiMinimumSupportedVersion;
+    unsigned maxApiVer_ = apiMaximumValidVersion;
 };
 
 Handler const*
@@ -70,7 +74,7 @@ makeObjectValue(
 }
 
 /** Return names of all methods. */
-std::vector<char const*>
+std::set<char const*>
 getHandlerNames();
 
 template <class T>
