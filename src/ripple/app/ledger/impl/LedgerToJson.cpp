@@ -162,10 +162,9 @@ fillJsonTx(
             {
                 txJson[jss::ledger_index] = to_string(fill.ledger.seq());
                 txJson[jss::ledger_hash] = to_string(fill.ledger.info().hash);
-                if (auto close_time =
-                        fill.context->ledgerMaster.getCloseTimeBySeq(
-                            fill.ledger.seq()))
-                    txJson[jss::close_time_iso] = to_string_iso(*close_time);
+                if (fill.closeTime)
+                    txJson[jss::close_time_iso] =
+                        to_string_iso(*fill.closeTime);
             }
         }
         else
