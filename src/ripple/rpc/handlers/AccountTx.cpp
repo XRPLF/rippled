@@ -37,7 +37,6 @@
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/DeliveredAmount.h>
 #include <ripple/rpc/Role.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
 
 #include <grpcpp/grpcpp.h>
 
@@ -195,8 +194,8 @@ getLedgerRange(
                         return status;
                     }
 
-                    bool validated = RPC::isValidated(
-                        context.ledgerMaster, *ledgerView, context.app);
+                    bool validated =
+                        context.ledgerMaster.isValidated(*ledgerView);
 
                     if (!validated || ledgerView->info().seq > uValidatedMax ||
                         ledgerView->info().seq < uValidatedMin)

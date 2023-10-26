@@ -16,6 +16,7 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
+#include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/misc/AMMUtils.h>
 #include <ripple/json/json_value.h>
 #include <ripple/ledger/ReadView.h>
@@ -244,8 +245,7 @@ doAMMInfo(RPC::JsonContext& context)
     if (!result.isMember(jss::ledger_index) &&
         !result.isMember(jss::ledger_hash))
         result[jss::ledger_current_index] = ledger->info().seq;
-    result[jss::validated] =
-        RPC::isValidated(context.ledgerMaster, *ledger, context.app);
+    result[jss::validated] = context.ledgerMaster.isValidated(*ledger);
 
     return result;
 }

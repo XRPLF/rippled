@@ -79,8 +79,8 @@ doTransactionEntry(RPC::JsonContext& context)
                     sttx->getJson(JsonOptions::none, false, {std::ref(hash)});
                 jvResult[jss::hash] = hash;
 
-                bool const validated = RPC::isValidated(
-                    context.ledgerMaster, *lpLedger, context.app);
+                bool const validated =
+                    context.ledgerMaster.isValidated(*lpLedger);
 
                 jvResult[jss::validated] = validated;
                 if (validated)

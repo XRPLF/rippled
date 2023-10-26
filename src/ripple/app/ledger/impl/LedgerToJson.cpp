@@ -27,7 +27,6 @@
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/DeliveredAmount.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
 
 namespace ripple {
 
@@ -156,8 +155,8 @@ fillJsonTx(
                         {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
             }
 
-            const bool validated = RPC::isValidated(
-                fill.context->ledgerMaster, fill.ledger, fill.context->app);
+            const bool validated =
+                fill.context->ledgerMaster.isValidated(fill.ledger);
             txJson[jss::validated] = validated;
             if (validated)
             {
