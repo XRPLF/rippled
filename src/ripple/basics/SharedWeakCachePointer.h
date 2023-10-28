@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_BASICS_STRONGWEAKCACHEPOINTER_H_INCLUDED
-#define RIPPLE_BASICS_STRONGWEAKCACHEPOINTER_H_INCLUDED
+#ifndef RIPPLE_BASICS_SHAREDWEAKCACHEPOINTER_H_INCLUDED
+#define RIPPLE_BASICS_SHAREDWEAKCACHEPOINTER_H_INCLUDED
 
 #include <memory>
 #include <variant>
@@ -35,35 +35,35 @@ memory than storing both pointers directly.
 
 // TODO: Better name for this
 template <class T>
-class StrongWeakCachePointer
+class SharedWeakCachePointer
 {
 public:
-    StrongWeakCachePointer() = default;
+    SharedWeakCachePointer() = default;
 
-    StrongWeakCachePointer(StrongWeakCachePointer const& rhs);
-
-    template <class TT>
-    requires std::convertible_to<TT*, T*>
-    StrongWeakCachePointer(std::shared_ptr<TT> const& rhs);
-
-    StrongWeakCachePointer(StrongWeakCachePointer&& rhs);
+    SharedWeakCachePointer(SharedWeakCachePointer const& rhs);
 
     template <class TT>
     requires std::convertible_to<TT*, T*>
-    StrongWeakCachePointer(std::shared_ptr<TT>&& rhs);
+    SharedWeakCachePointer(std::shared_ptr<TT> const& rhs);
 
-    StrongWeakCachePointer&
-    operator=(StrongWeakCachePointer const& rhs);
+    SharedWeakCachePointer(SharedWeakCachePointer&& rhs);
 
     template <class TT>
-    requires std::convertible_to<TT*, T*> StrongWeakCachePointer&
+    requires std::convertible_to<TT*, T*>
+    SharedWeakCachePointer(std::shared_ptr<TT>&& rhs);
+
+    SharedWeakCachePointer&
+    operator=(SharedWeakCachePointer const& rhs);
+
+    template <class TT>
+    requires std::convertible_to<TT*, T*> SharedWeakCachePointer&
     operator=(std::shared_ptr<TT> const& rhs);
 
     template <class TT>
-    requires std::convertible_to<TT*, T*> StrongWeakCachePointer&
+    requires std::convertible_to<TT*, T*> SharedWeakCachePointer&
     operator=(std::shared_ptr<TT>&& rhs);
 
-    ~StrongWeakCachePointer();
+    ~SharedWeakCachePointer();
 
     /** Return a strong pointer if this is already a strong pointer (i.e. don't
         lock the weak pointer. Use the `lock` method if that's what's needed)

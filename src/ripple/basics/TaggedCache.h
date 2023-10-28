@@ -22,7 +22,7 @@
 
 #include <ripple/basics/IntrusivePointer.h>
 #include <ripple/basics/Log.h>
-#include <ripple/basics/StrongWeakCachePointer.h>
+#include <ripple/basics/SharedWeakCachePointer.h>
 #include <ripple/basics/UnorderedContainers.h>
 #include <ripple/basics/hardened_hash.h>
 #include <ripple/beast/clock/abstract_clock.h>
@@ -53,7 +53,7 @@ template <
     class Key,
     class T,
     bool IsKeyCache = false,
-    class StrongWeakComboPointerType = StrongWeakCachePointer<T>,
+    class SharedWeakUnionPointerType = SharedWeakCachePointer<T>,
     class SharedPointerType = std::shared_ptr<T>,
     class Hash = hardened_hash<>,
     class KeyEqual = std::equal_to<Key>,
@@ -65,7 +65,7 @@ public:
     using key_type = Key;
     using mapped_type = T;
     using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
-    using strong_weak_combo_pointer_type = StrongWeakComboPointerType;
+    using shared_weak_combo_pointer_type = SharedWeakUnionPointerType;
     using shared_pointer_type = SharedPointerType;
 
 public:
@@ -118,7 +118,7 @@ public:
     bool
     touch_if_exists(KeyComparable const& key);
 
-    using SweptPointersVector = std::vector<StrongWeakComboPointerType>;
+    using SweptPointersVector = std::vector<SharedWeakUnionPointerType>;
 
     void
     sweep();
@@ -256,7 +256,7 @@ private:
     class ValueEntry
     {
     public:
-        strong_weak_combo_pointer_type ptr;
+        shared_weak_combo_pointer_type ptr;
         clock_type::time_point last_access;
 
         ValueEntry(

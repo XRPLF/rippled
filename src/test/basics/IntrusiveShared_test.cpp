@@ -78,7 +78,9 @@ public:
             auto a = b.releaseStrongRef();
             BEAST_EXPECT(a == ReleaseRefAction::partialDestroy);
             BEAST_EXPECT(b.use_count() == 0);
-            partialDestructorFinished(&b);
+            TIBase* pb = &b;
+            partialDestructorFinished(&pb);
+            BEAST_EXPECT(!pb);
             a = b.releaseWeakRef();
             BEAST_EXPECT(a == ReleaseRefAction::destroy);
         }

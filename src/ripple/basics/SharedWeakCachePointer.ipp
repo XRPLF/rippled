@@ -17,46 +17,46 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_BASICS_STRONGWEAKCACHEPOINTER_IPP_INCLUDED
-#define RIPPLE_BASICS_STRONGWEAKCACHEPOINTER_IPP_INCLUDED
+#ifndef RIPPLE_BASICS_SHAREDWEAKCACHEPOINTER_IPP_INCLUDED
+#define RIPPLE_BASICS_SHAREDWEAKCACHEPOINTER_IPP_INCLUDED
 
-#include <ripple/basics/StrongWeakCachePointer.h>
+#include <ripple/basics/SharedWeakCachePointer.h>
 
 namespace ripple {
 template <class T>
-StrongWeakCachePointer<T>::StrongWeakCachePointer(
-    StrongWeakCachePointer const& rhs) = default;
+SharedWeakCachePointer<T>::SharedWeakCachePointer(
+    SharedWeakCachePointer const& rhs) = default;
 
 template <class T>
 template <class TT>
 requires std::convertible_to<TT*, T*>
-StrongWeakCachePointer<T>::StrongWeakCachePointer(
+SharedWeakCachePointer<T>::SharedWeakCachePointer(
     std::shared_ptr<TT> const& rhs)
     : combo_{rhs}
 {
 }
 
 template <class T>
-StrongWeakCachePointer<T>::StrongWeakCachePointer(
-    StrongWeakCachePointer&& rhs) = default;
+SharedWeakCachePointer<T>::SharedWeakCachePointer(
+    SharedWeakCachePointer&& rhs) = default;
 
 template <class T>
 template <class TT>
 requires std::convertible_to<TT*, T*>
-StrongWeakCachePointer<T>::StrongWeakCachePointer(std::shared_ptr<TT>&& rhs)
+SharedWeakCachePointer<T>::SharedWeakCachePointer(std::shared_ptr<TT>&& rhs)
     : combo_{std::move(rhs)}
 {
 }
 
 template <class T>
-StrongWeakCachePointer<T>&
-StrongWeakCachePointer<T>::operator=(StrongWeakCachePointer const& rhs) =
+SharedWeakCachePointer<T>&
+SharedWeakCachePointer<T>::operator=(SharedWeakCachePointer const& rhs) =
     default;
 
 template <class T>
 template <class TT>
-requires std::convertible_to<TT*, T*> StrongWeakCachePointer<T>&
-StrongWeakCachePointer<T>::operator=(std::shared_ptr<TT> const& rhs)
+requires std::convertible_to<TT*, T*> SharedWeakCachePointer<T>&
+SharedWeakCachePointer<T>::operator=(std::shared_ptr<TT> const& rhs)
 {
     combo_ = rhs;
     return *this;
@@ -64,21 +64,21 @@ StrongWeakCachePointer<T>::operator=(std::shared_ptr<TT> const& rhs)
 
 template <class T>
 template <class TT>
-requires std::convertible_to<TT*, T*> StrongWeakCachePointer<T>&
-StrongWeakCachePointer<T>::operator=(std::shared_ptr<TT>&& rhs)
+requires std::convertible_to<TT*, T*> SharedWeakCachePointer<T>&
+SharedWeakCachePointer<T>::operator=(std::shared_ptr<TT>&& rhs)
 {
     combo_ = std::move(rhs);
     return *this;
 }
 
 template <class T>
-StrongWeakCachePointer<T>::~StrongWeakCachePointer() = default;
+SharedWeakCachePointer<T>::~SharedWeakCachePointer() = default;
 
 // Return a strong pointer if this is already a strong pointer (i.e. don't
 // lock the weak pointer. Use the `lock` method if that's what's needed)
 template <class T>
 std::shared_ptr<T> const&
-StrongWeakCachePointer<T>::getStrong() const
+SharedWeakCachePointer<T>::getStrong() const
 {
     static std::shared_ptr<T> const empty;
     if (auto p = std::get_if<std::shared_ptr<T>>(&combo_))
@@ -87,28 +87,28 @@ StrongWeakCachePointer<T>::getStrong() const
 }
 
 template <class T>
-StrongWeakCachePointer<T>::operator bool() const noexcept
+SharedWeakCachePointer<T>::operator bool() const noexcept
 {
     return !!std::get_if<std::shared_ptr<T>>(&combo_);
 }
 
 template <class T>
 void
-StrongWeakCachePointer<T>::reset()
+SharedWeakCachePointer<T>::reset()
 {
     combo_ = std::shared_ptr<T>{};
 }
 
 template <class T>
 T*
-StrongWeakCachePointer<T>::get() const
+SharedWeakCachePointer<T>::get() const
 {
     return std::get_if<std::shared_ptr<T>>(&combo_).get();
 }
 
 template <class T>
 std::size_t
-StrongWeakCachePointer<T>::use_count() const
+SharedWeakCachePointer<T>::use_count() const
 {
     if (auto p = std::get_if<std::shared_ptr<T>>(&combo_))
         return p->use_count();
@@ -117,7 +117,7 @@ StrongWeakCachePointer<T>::use_count() const
 
 template <class T>
 bool
-StrongWeakCachePointer<T>::expired() const
+SharedWeakCachePointer<T>::expired() const
 {
     if (auto p = std::get_if<std::weak_ptr<T>>(&combo_))
         return p->expired();
@@ -126,7 +126,7 @@ StrongWeakCachePointer<T>::expired() const
 
 template <class T>
 std::shared_ptr<T>
-StrongWeakCachePointer<T>::lock() const
+SharedWeakCachePointer<T>::lock() const
 {
     if (auto p = std::get_if<std::shared_ptr<T>>(&combo_))
         return *p;
@@ -139,7 +139,7 @@ StrongWeakCachePointer<T>::lock() const
 
 template <class T>
 bool
-StrongWeakCachePointer<T>::isStrong() const
+SharedWeakCachePointer<T>::isStrong() const
 {
     if (auto p = std::get_if<std::shared_ptr<T>>(&combo_))
         return !!p->get();
@@ -148,14 +148,14 @@ StrongWeakCachePointer<T>::isStrong() const
 
 template <class T>
 bool
-StrongWeakCachePointer<T>::isWeak() const
+SharedWeakCachePointer<T>::isWeak() const
 {
     return !isStrong();
 }
 
 template <class T>
 bool
-StrongWeakCachePointer<T>::convertToStrong()
+SharedWeakCachePointer<T>::convertToStrong()
 {
     if (isStrong())
         return true;
@@ -173,7 +173,7 @@ StrongWeakCachePointer<T>::convertToStrong()
 
 template <class T>
 bool
-StrongWeakCachePointer<T>::convertToWeak()
+SharedWeakCachePointer<T>::convertToWeak()
 {
     if (isWeak())
         return true;

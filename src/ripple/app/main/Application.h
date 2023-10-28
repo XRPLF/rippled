@@ -58,7 +58,7 @@ template <
     class Key,
     class T,
     bool IsKeyCache,
-    class StrongWeakComboPointer,
+    class SharedWeakUnionPointer,
     class SharedPointerType,
     class Hash,
     class KeyEqual,

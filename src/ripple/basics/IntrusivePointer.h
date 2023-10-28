@@ -326,39 +326,39 @@ private:
 
 // TODO Better name for this
 template <SharedIntrusiveRefCounted T>
-class StrongWeakCombo
+class SharedWeakUnion
 {
     static_assert(
         alignof(T) >= 2,
         "Bad alignment: Combo pointer requires low bit to be zero");
 
 public:
-    StrongWeakCombo() = default;
+    SharedWeakUnion() = default;
 
-    StrongWeakCombo(StrongWeakCombo const& rhs);
-
-    template <class TT, bool IsAtomic>
-    requires std::convertible_to<TT*, T*>
-    StrongWeakCombo(SharedIntrusive<TT, IsAtomic> const& rhs);
-
-    StrongWeakCombo(StrongWeakCombo&& rhs);
+    SharedWeakUnion(SharedWeakUnion const& rhs);
 
     template <class TT, bool IsAtomic>
     requires std::convertible_to<TT*, T*>
-    StrongWeakCombo(SharedIntrusive<TT, IsAtomic>&& rhs);
+    SharedWeakUnion(SharedIntrusive<TT, IsAtomic> const& rhs);
 
-    StrongWeakCombo&
-    operator=(StrongWeakCombo const& rhs);
+    SharedWeakUnion(SharedWeakUnion&& rhs);
 
     template <class TT, bool IsAtomic>
-    requires std::convertible_to<TT*, T*> StrongWeakCombo&
+    requires std::convertible_to<TT*, T*>
+    SharedWeakUnion(SharedIntrusive<TT, IsAtomic>&& rhs);
+
+    SharedWeakUnion&
+    operator=(SharedWeakUnion const& rhs);
+
+    template <class TT, bool IsAtomic>
+    requires std::convertible_to<TT*, T*> SharedWeakUnion&
     operator=(SharedIntrusive<TT, IsAtomic> const& rhs);
 
     template <class TT, bool IsAtomic>
-    requires std::convertible_to<TT*, T*> StrongWeakCombo&
+    requires std::convertible_to<TT*, T*> SharedWeakUnion&
     operator=(SharedIntrusive<TT, IsAtomic>&& rhs);
 
-    ~StrongWeakCombo();
+    ~SharedWeakUnion();
 
     /** Return a strong pointer if this is already a strong pointer (i.e. don't
         lock the weak pointer. Use the `lock` method if that's what's needed)
@@ -463,9 +463,14 @@ template <SharedIntrusiveRefCounted TT, bool IsAtomic, class... Args>
 SharedIntrusive<TT, IsAtomic>
 make_SharedIntrusive(Args&&... args)
 {
-    // TODO think about exceptions
     auto p = new TT(std::forward<Args>(args)...);
+
+    static_assert(
+        noexcept(std::declval<SharedIntrusive<TT, IsAtomic>>()->addStrongRef()),
+        "addStrongRef should not throw or this can leak memory");
+
     p->addStrongRef();
+
     return SharedIntrusive<TT, IsAtomic>(
         p, SharedIntrusiveAdoptNoIncrementTag{});
 }

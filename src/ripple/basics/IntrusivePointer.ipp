@@ -314,7 +314,8 @@ SharedIntrusive<T, MakeAtomic>::unsafeReleaseNoStore()
             break;
         case partialDestroy:
             p->partialDestructor();
-            partialDestructorFinished(p);
+            partialDestructorFinished(&p);
+            // p is null and may no longer be used
             break;
     }
 }
@@ -441,7 +442,8 @@ WeakIntrusive<T>::unsafeReleaseNoStore()
             assert(0);  // only a strong pointer should case a
                         // partialDestruction
             ptr_->partialDestructor();
-            partialDestructorFinished(ptr_);
+            partialDestructorFinished(&ptr_);
+            // ptr_ is null and may no longer be used
             break;
     }
 }
@@ -449,7 +451,7 @@ WeakIntrusive<T>::unsafeReleaseNoStore()
 //------------------------------------------------------------------------------
 
 template <SharedIntrusiveRefCounted T>
-StrongWeakCombo<T>::StrongWeakCombo(StrongWeakCombo const& rhs) : tp_{rhs.tp_}
+SharedWeakUnion<T>::SharedWeakUnion(SharedWeakUnion const& rhs) : tp_{rhs.tp_}
 {
     auto p = rhs.unsafeGetRawPtr();
     if (!p)
@@ -464,7 +466,7 @@ StrongWeakCombo<T>::StrongWeakCombo(StrongWeakCombo const& rhs) : tp_{rhs.tp_}
 template <SharedIntrusiveRefCounted T>
 template <class TT, bool IsAtomic>
 requires std::convertible_to<TT*, T*>
-StrongWeakCombo<T>::StrongWeakCombo(SharedIntrusive<TT, IsAtomic> const& rhs)
+SharedWeakUnion<T>::SharedWeakUnion(SharedIntrusive<TT, IsAtomic> const& rhs)
 {
     auto p = rhs.unsafeGetRawPtr();
     if (p)
@@ -473,7 +475,7 @@ StrongWeakCombo<T>::StrongWeakCombo(SharedIntrusive<TT, IsAtomic> const& rhs)
 }
 
 template <SharedIntrusiveRefCounted T>
-StrongWeakCombo<T>::StrongWeakCombo(StrongWeakCombo&& rhs) : tp_{rhs.tp_}
+SharedWeakUnion<T>::SharedWeakUnion(SharedWeakUnion&& rhs) : tp_{rhs.tp_}
 {
     rhs.unsafeSetRawPtr(nullptr);
 }
@@ -481,7 +483,7 @@ StrongWeakCombo<T>::StrongWeakCombo(StrongWeakCombo&& rhs) : tp_{rhs.tp_}
 template <SharedIntrusiveRefCounted T>
 template <class TT, bool IsAtomic>
 requires std::convertible_to<TT*, T*>
-StrongWeakCombo<T>::StrongWeakCombo(SharedIntrusive<TT, IsAtomic>&& rhs)
+SharedWeakUnion<T>::SharedWeakUnion(SharedIntrusive<TT, IsAtomic>&& rhs)
 {
     auto p = rhs.unsafeGetRawPtr();
     if (p)
@@ -490,8 +492,8 @@ StrongWeakCombo<T>::StrongWeakCombo(SharedIntrusive<TT, IsAtomic>&& rhs)
 }
 
 template <SharedIntrusiveRefCounted T>
-StrongWeakCombo<T>&
-StrongWeakCombo<T>::operator=(StrongWeakCombo const& rhs)
+SharedWeakUnion<T>&
+SharedWeakUnion<T>::operator=(SharedWeakUnion const& rhs)
 {
     if (this == &rhs)
         return *this;
@@ -519,8 +521,8 @@ StrongWeakCombo<T>::operator=(StrongWeakCombo const& rhs)
 
 template <SharedIntrusiveRefCounted T>
 template <class TT, bool IsAtomic>
-requires std::convertible_to<TT*, T*> StrongWeakCombo<T>&
-StrongWeakCombo<T>::operator=(SharedIntrusive<TT, IsAtomic> const& rhs)
+requires std::convertible_to<TT*, T*> SharedWeakUnion<T>&
+SharedWeakUnion<T>::operator=(SharedIntrusive<TT, IsAtomic> const& rhs)
 {
     unsafeReleaseNoStore();
     auto p = rhs.unsafeGetRawPtr();
@@ -532,8 +534,8 @@ StrongWeakCombo<T>::operator=(SharedIntrusive<TT, IsAtomic> const& rhs)
 
 template <SharedIntrusiveRefCounted T>
 template <class TT, bool IsAtomic>
-requires std::convertible_to<TT*, T*> StrongWeakCombo<T>&
-StrongWeakCombo<T>::operator=(SharedIntrusive<TT, IsAtomic>&& rhs)
+requires std::convertible_to<TT*, T*> SharedWeakUnion<T>&
+SharedWeakUnion<T>::operator=(SharedIntrusive<TT, IsAtomic>&& rhs)
 {
     unsafeReleaseNoStore();
     unsafeSetRawPtr(rhs.unsafeGetRawPtr(), /*isStrong*/ true);
@@ -542,7 +544,7 @@ StrongWeakCombo<T>::operator=(SharedIntrusive<TT, IsAtomic>&& rhs)
 }
 
 template <SharedIntrusiveRefCounted T>
-StrongWeakCombo<T>::~StrongWeakCombo()
+SharedWeakUnion<T>::~SharedWeakUnion()
 {
     unsafeReleaseNoStore();
 };
@@ -551,7 +553,7 @@ StrongWeakCombo<T>::~StrongWeakCombo()
 // lock the weak pointer. Use the `lock` method if that's what's needed)
 template <SharedIntrusiveRefCounted T>
 SharedIntrusive<T, false>
-StrongWeakCombo<T>::getStrong() const
+SharedWeakUnion<T>::getStrong() const
 {
     SharedIntrusive<T, false> result;
     auto p = unsafeGetRawPtr();
@@ -563,14 +565,14 @@ StrongWeakCombo<T>::getStrong() const
 }
 
 template <SharedIntrusiveRefCounted T>
-StrongWeakCombo<T>::operator bool() const noexcept
+SharedWeakUnion<T>::operator bool() const noexcept
 {
     return bool(get());
 }
 
 template <SharedIntrusiveRefCounted T>
 void
-StrongWeakCombo<T>::reset()
+SharedWeakUnion<T>::reset()
 {
     unsafeReleaseNoStore();
     unsafeSetRawPtr(nullptr);
@@ -578,14 +580,14 @@ StrongWeakCombo<T>::reset()
 
 template <SharedIntrusiveRefCounted T>
 T*
-StrongWeakCombo<T>::get() const
+SharedWeakUnion<T>::get() const
 {
     return isStrong() ? unsafeGetRawPtr() : nullptr;
 }
 
 template <SharedIntrusiveRefCounted T>
 std::size_t
-StrongWeakCombo<T>::use_count() const
+SharedWeakUnion<T>::use_count() const
 {
     if (auto p = get())
         return p->use_count();
@@ -594,7 +596,7 @@ StrongWeakCombo<T>::use_count() const
 
 template <SharedIntrusiveRefCounted T>
 bool
-StrongWeakCombo<T>::expired() const
+SharedWeakUnion<T>::expired() const
 {
     auto p = unsafeGetRawPtr();
     return (!p || p->expired());
@@ -602,7 +604,7 @@ StrongWeakCombo<T>::expired() const
 
 template <SharedIntrusiveRefCounted T>
 SharedIntrusive<T, false>
-StrongWeakCombo<T>::lock() const
+SharedWeakUnion<T>::lock() const
 {
     SharedIntrusive<T, false> result;
     auto p = unsafeGetRawPtr();
@@ -625,21 +627,21 @@ StrongWeakCombo<T>::lock() const
 
 template <SharedIntrusiveRefCounted T>
 bool
-StrongWeakCombo<T>::isStrong() const
+SharedWeakUnion<T>::isStrong() const
 {
     return !(tp_ & tagMask);
 }
 
 template <SharedIntrusiveRefCounted T>
 bool
-StrongWeakCombo<T>::isWeak() const
+SharedWeakUnion<T>::isWeak() const
 {
     return tp_ & tagMask;
 }
 
 template <SharedIntrusiveRefCounted T>
 bool
-StrongWeakCombo<T>::convertToStrong()
+SharedWeakUnion<T>::convertToStrong()
 {
     if (isStrong())
         return true;
@@ -658,7 +660,7 @@ StrongWeakCombo<T>::convertToStrong()
 
 template <SharedIntrusiveRefCounted T>
 bool
-StrongWeakCombo<T>::convertToWeak()
+SharedWeakUnion<T>::convertToWeak()
 {
     if (isWeak())
         return true;
@@ -685,7 +687,8 @@ StrongWeakCombo<T>::convertToWeak()
             // This is a weird case. We just converted the last strong
             // pointer to a weak pointer.
             p->partialDestructor();
-            partialDestructorFinished(p);
+            partialDestructorFinished(&p);
+            // p is null and may no longer be used
             break;
     }
     unsafeSetRawPtr(p, /*isStrong*/ false);
@@ -694,14 +697,14 @@ StrongWeakCombo<T>::convertToWeak()
 
 template <SharedIntrusiveRefCounted T>
 T*
-StrongWeakCombo<T>::unsafeGetRawPtr() const
+SharedWeakUnion<T>::unsafeGetRawPtr() const
 {
     return reinterpret_cast<T*>(tp_ & ptrMask);
 }
 
 template <SharedIntrusiveRefCounted T>
 void
-StrongWeakCombo<T>::unsafeSetRawPtr(T* p, bool isStrong)
+SharedWeakUnion<T>::unsafeSetRawPtr(T* p, bool isStrong)
 {
     tp_ = reinterpret_cast<std::uintptr_t>(p);
     if (tp_ && !isStrong)
@@ -709,14 +712,14 @@ StrongWeakCombo<T>::unsafeSetRawPtr(T* p, bool isStrong)
 }
 
 template <SharedIntrusiveRefCounted T>
-void StrongWeakCombo<T>::unsafeSetRawPtr(std::nullptr_t)
+void SharedWeakUnion<T>::unsafeSetRawPtr(std::nullptr_t)
 {
     tp_ = 0;
 }
 
 template <SharedIntrusiveRefCounted T>
 void
-StrongWeakCombo<T>::unsafeReleaseNoStore()
+SharedWeakUnion<T>::unsafeReleaseNoStore()
 {
     auto p = unsafeGetRawPtr();
     if (!p)
@@ -733,7 +736,8 @@ StrongWeakCombo<T>::unsafeReleaseNoStore()
             break;
         case partialDestroy:
             p->partialDestructor();
-            partialDestructorFinished(p);
+            partialDestructorFinished(&p);
+            // p is null and may no longer be used
             break;
     }
 }
