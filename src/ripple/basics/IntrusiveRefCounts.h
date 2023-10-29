@@ -26,9 +26,25 @@
 
 namespace ripple {
 
+/** Action to perform when releasing a strong or weak pointer.
+
+    noop: Do nothing. For example, a `noop` action will occur when a count is
+    decremented to a non-zero value.
+
+    partialDestroy: Run the `partialDestructor`. This action will happen when a
+    strong count is decremented to zero and the weak count is non-zero.
+
+    destroy: Run the destructor. This action will occur when either the strong
+    count or weak count is decremented and the other count is also zero.
+ */
 enum class ReleaseRefAction { noop, partialDestroy, destroy };
 
-// This can be embedded in classes to implement the two atomic counts
+/** Implement the strong count, weak count, and bit flags for an intrusive
+    pointer.
+
+    A class can satisfy the requirements of a ripple::IntrusivePointer by
+    inheriting from this class.
+  */
 struct IntrusiveRefCounts
 {
     virtual ~IntrusiveRefCounts() noexcept;
@@ -111,7 +127,7 @@ private:
          information.
 
          */
-    mutable std::atomic<std::uint32_t> refCounts{0};
+    mutable std::atomic<std::uint32_t> refCounts{strongDelta};
 
     /**  Amount to change the strong count when adding or releasing a reference
 

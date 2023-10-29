@@ -28,7 +28,7 @@ namespace ripple {
 
 template <SharedIntrusiveRefCounted T, bool MakeAtomic>
     template <class TAdoptTag>
-    SharedIntrusive<T, MakeAtomic>::SharedIntrusive(T* p, TAdoptTag)
+    SharedIntrusive<T, MakeAtomic>::SharedIntrusive(T* p, TAdoptTag) noexcept
     // clang-format off
         requires std::is_same_v<TAdoptTag, SharedIntrusiveAdoptIncrementStrongTag> ||
                  std::is_same_v<TAdoptTag, SharedIntrusiveAdoptNoIncrementTag>

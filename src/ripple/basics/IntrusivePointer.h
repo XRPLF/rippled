@@ -114,7 +114,7 @@ public:
     SharedIntrusive() = default;
 
     template <class TAdoptTag>
-        SharedIntrusive(T* p, TAdoptTag)
+        SharedIntrusive(T* p, TAdoptTag) noexcept
         // clang-format off
         requires std::is_same_v<TAdoptTag, SharedIntrusiveAdoptIncrementStrongTag> ||
                  std::is_same_v<TAdoptTag, SharedIntrusiveAdoptNoIncrementTag>;
@@ -466,10 +466,10 @@ make_SharedIntrusive(Args&&... args)
     auto p = new TT(std::forward<Args>(args)...);
 
     static_assert(
-        noexcept(std::declval<SharedIntrusive<TT, IsAtomic>>()->addStrongRef()),
-        "addStrongRef should not throw or this can leak memory");
-
-    p->addStrongRef();
+        noexcept(SharedIntrusive<TT, IsAtomic>(
+            std::declval<TT*>(),
+            std::declval<SharedIntrusiveAdoptNoIncrementTag>())),
+        "SharedIntrusive constructor should not throw or this can leak memory");
 
     return SharedIntrusive<TT, IsAtomic>(
         p, SharedIntrusiveAdoptNoIncrementTag{});

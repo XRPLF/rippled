@@ -71,7 +71,6 @@ public:
     {
         {
             TIBase b;
-            b.addStrongRef();
             BEAST_EXPECT(b.use_count() == 1);
             b.addWeakRef();
             BEAST_EXPECT(b.use_count() == 1);
