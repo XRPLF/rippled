@@ -70,8 +70,9 @@ SHAMapInnerNode::partialDestructor()
     // structured bindings can't be captured in c++ 17; use tie instead
     std::tie(std::ignore, std::ignore, children) =
         hashesAndChildren_.getHashesAndChildren();
-    iterNonEmptyChildIndexes(
-        [&](auto branchNum, auto indexNum) { children[indexNum].reset(); });
+    iterNonEmptyChildIndexes([&](auto branchNum, auto indexNum) {
+        children[indexNum].reset(SharedIntrusiveBypassAtomicOpsTag{});
+    });
 }
 
 template <class F>
@@ -243,8 +244,8 @@ SHAMapInnerNode::updateHashDeep()
     std::tie(std::ignore, hashes, children) =
         hashesAndChildren_.getHashesAndChildren();
     iterNonEmptyChildIndexes([&](auto branchNum, auto indexNum) {
-        // use `get` to avoid one atomic load
-        if (auto p = children[indexNum].get())
+        if (auto p =
+                children[indexNum].get(SharedIntrusiveBypassAtomicOpsTag{}))
             hashes[indexNum] = p->getHash();
     });
     updateHash();
@@ -326,7 +327,8 @@ SHAMapInnerNode::setChild(int m, intr_ptr::SharedPtr<SHAMapTreeNode> child)
         auto const childIndex = *getChildIndex(m);
         auto [_, hashes, children] = hashesAndChildren_.getHashesAndChildren();
         hashes[childIndex].zero();
-        children[childIndex] = std::move(child);
+        children[childIndex].assign(
+            std::move(child), SharedIntrusiveBypassAtomicOpsTag{});
     }
 
     hash_.zero();
@@ -345,7 +347,8 @@ SHAMapInnerNode::shareChildHelper(int m, T const& child)
     assert(child.get() != this);
 
     assert(!isEmptyBranch(m));
-    hashesAndChildren_.getChildren()[*getChildIndex(m)] = child;
+    hashesAndChildren_.getChildren()[*getChildIndex(m)].assign(
+        child, SharedIntrusiveBypassAtomicOpsTag{});
 }
 
 SHAMapTreeNode*
@@ -421,8 +424,7 @@ SHAMapInnerNode::invariants(bool is_root) const
         for (int i = 0; i < branchCount; ++i)
         {
             assert(hashes[i].isNonZero());
-            // avoid extra atomic load by using get
-            if (auto p = children[i].get())
+            if (auto p = children[i].get(SharedIntrusiveBypassAtomicOpsTag{}))
                 p->invariants();
             ++count;
         }
@@ -434,8 +436,8 @@ SHAMapInnerNode::invariants(bool is_root) const
             if (hashes[i].isNonZero())
             {
                 assert((isBranch_ & (1 << i)) != 0);
-                // avoid extra atomic load by using get
-                if (auto p = children[i].get())
+                if (auto p =
+                        children[i].get(SharedIntrusiveBypassAtomicOpsTag{}))
                     p->invariants();
                 ++count;
             }

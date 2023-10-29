@@ -100,13 +100,16 @@ SharedIntrusive<T, MakeAtomic>::operator=(SharedIntrusive const& rhs)
 }
 
 template <SharedIntrusiveRefCounted T, bool MakeAtomic>
-template <class TT, bool IsAtomic>
-// clang-format off
-requires std::convertible_to<TT*, T*>
-    // clang-format on
+    template <class TT, bool IsAtomic, class TBypassAtomicBehaviorTag>
     SharedIntrusive<T, MakeAtomic>&
-    SharedIntrusive<T, MakeAtomic>::operator=(
-        SharedIntrusive<TT, IsAtomic> const& rhs)
+    SharedIntrusive<T, MakeAtomic>::assign(
+        SharedIntrusive<TT, IsAtomic> const& rhs,
+        TBypassAtomicBehaviorTag tag)
+    // clang-format off
+    requires std::convertible_to<TT*, T*> &&
+        (std::is_same_v<TBypassAtomicBehaviorTag, SharedIntrusiveBypassAtomicOpsTag> ||
+         std::is_same_v<TBypassAtomicBehaviorTag, SharedIntrusiveNormalAtomicOpsTag>)
+// clang-format on
 {
     if constexpr (std::is_same_v<T, TT> && IsAtomic == MakeAtomic)
     {
@@ -117,8 +120,20 @@ requires std::convertible_to<TT*, T*>
     auto p = rhs.unsafeGetRawPtr();
     if (p)
         p->addStrongRef();
-    unsafeSetRawPtr(p);
+    unsafeSetRawPtr(p, tag);
     return *this;
+}
+
+template <SharedIntrusiveRefCounted T, bool MakeAtomic>
+template <class TT, bool IsAtomic>
+// clang-format off
+requires std::convertible_to<TT*, T*>
+    // clang-format on
+    SharedIntrusive<T, MakeAtomic>&
+    SharedIntrusive<T, MakeAtomic>::operator=(
+        SharedIntrusive<TT, IsAtomic> const& rhs)
+{
+    return assign(rhs, SharedIntrusiveNormalAtomicOpsTag{});
 }
 
 template <SharedIntrusiveRefCounted T, bool MakeAtomic>
@@ -135,9 +150,16 @@ SharedIntrusive<T, MakeAtomic>::operator=(SharedIntrusive&& rhs)
 }
 
 template <SharedIntrusiveRefCounted T, bool MakeAtomic>
-template <class TT, bool IsAtomic>
-requires std::convertible_to<TT*, T*> SharedIntrusive<T, MakeAtomic>&
-SharedIntrusive<T, MakeAtomic>::operator=(SharedIntrusive<TT, IsAtomic>&& rhs)
+    template <class TT, bool IsAtomic, class TBypassAtomicBehaviorTag>
+    SharedIntrusive<T, MakeAtomic>&
+    SharedIntrusive<T, MakeAtomic>::assign(
+        SharedIntrusive<TT, IsAtomic>&& rhs,
+        TBypassAtomicBehaviorTag tag)
+    // clang-format off
+    requires std::convertible_to<TT*, T*> &&
+        (std::is_same_v<TBypassAtomicBehaviorTag, SharedIntrusiveBypassAtomicOpsTag> ||
+         std::is_same_v<TBypassAtomicBehaviorTag, SharedIntrusiveNormalAtomicOpsTag>)
+// clang-format on
 {
     if constexpr (std::is_same_v<T, TT> && IsAtomic == MakeAtomic)
     {
@@ -146,9 +168,17 @@ SharedIntrusive<T, MakeAtomic>::operator=(SharedIntrusive<TT, IsAtomic>&& rhs)
     }
 
     unsafeReleaseNoStore();
-    unsafeSetRawPtr(rhs.unsafeGetRawPtr());
+    unsafeSetRawPtr(rhs.unsafeGetRawPtr(), tag);
     rhs.unsafeSetRawPtr(nullptr);
     return *this;
+}
+
+template <SharedIntrusiveRefCounted T, bool MakeAtomic>
+template <class TT, bool IsAtomic>
+requires std::convertible_to<TT*, T*> SharedIntrusive<T, MakeAtomic>&
+SharedIntrusive<T, MakeAtomic>::operator=(SharedIntrusive<TT, IsAtomic>&& rhs)
+{
+    return assign(std::move(rhs), SharedIntrusiveNormalAtomicOpsTag{});
 }
 
 template <SharedIntrusiveRefCounted T, bool MakeAtomic>
@@ -266,10 +296,26 @@ SharedIntrusive<T, MakeAtomic>::reset()
 }
 
 template <SharedIntrusiveRefCounted T, bool MakeAtomic>
+void
+SharedIntrusive<T, MakeAtomic>::reset(
+    SharedIntrusiveBypassAtomicOpsTag bypassTag)
+{
+    unsafeReleaseNoStore();
+    unsafeSetRawPtr(nullptr, bypassTag);
+}
+
+template <SharedIntrusiveRefCounted T, bool MakeAtomic>
 T*
 SharedIntrusive<T, MakeAtomic>::get() const
 {
     return unsafeGetRawPtr();
+}
+
+template <SharedIntrusiveRefCounted T, bool MakeAtomic>
+T*
+SharedIntrusive<T, MakeAtomic>::get(SharedIntrusiveBypassAtomicOpsTag tag) const
+{
+    return unsafeGetRawPtr(tag);
 }
 
 template <SharedIntrusiveRefCounted T, bool MakeAtomic>
@@ -287,12 +333,21 @@ SharedIntrusive<T, MakeAtomic>::unsafeGetRawPtr() const
 {
     if constexpr (MakeAtomic)
     {
-        return ptr_.load(std::memory_order_acquire);
+        // TODO: confirm atomic_ref's semantics will do what I want here.
+        std::atomic_ref wrapped{ptr_};
+        return wrapped.load(std::memory_order_acquire);
     }
     else
     {
         return ptr_;
     }
+}
+
+template <SharedIntrusiveRefCounted T, bool MakeAtomic>
+T* SharedIntrusive<T, MakeAtomic>::unsafeGetRawPtr(
+    SharedIntrusiveBypassAtomicOpsTag) const
+{
+    return ptr_;
 }
 
 template <SharedIntrusiveRefCounted T, bool MakeAtomic>
@@ -322,16 +377,28 @@ SharedIntrusive<T, MakeAtomic>::unsafeReleaseNoStore()
 
 template <SharedIntrusiveRefCounted T, bool MakeAtomic>
 void
-SharedIntrusive<T, MakeAtomic>::unsafeSetRawPtr(T* p)
+SharedIntrusive<T, MakeAtomic>::unsafeSetRawPtr(
+    T* p,
+    SharedIntrusiveNormalAtomicOpsTag)
 {
     if constexpr (MakeAtomic)
     {
-        ptr_.store(p, std::memory_order_release);
+        std::atomic_ref wrapped{ptr_};
+        wrapped.store(p, std::memory_order_release);
     }
     else
     {
         ptr_ = p;
     }
+}
+
+template <SharedIntrusiveRefCounted T, bool MakeAtomic>
+void
+SharedIntrusive<T, MakeAtomic>::unsafeSetRawPtr(
+    T* p,
+    SharedIntrusiveBypassAtomicOpsTag)
+{
+    ptr_ = p;
 }
 
 //------------------------------------------------------------------------------

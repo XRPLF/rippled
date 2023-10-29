@@ -92,6 +92,21 @@ struct SharedIntrusiveAdoptNoIncrementTag
 {
 };
 
+/** Perform operations in a non-atomic way, even the pointer is designated as
+    an atomic pointer. This is useful for some optimization where an atomic
+    operation is not needed (especially in SHAMapInnerNode)
+ */
+struct SharedIntrusiveBypassAtomicOpsTag
+{
+};
+
+/** Perform operations without bypassing the atomic ops (useful for generic
+    functions).
+ */
+struct SharedIntrusiveNormalAtomicOpsTag
+{
+};
+
 /** A shared intrusive pointer class that supports weak pointers and optional
     atomic operations.
 
@@ -145,8 +160,29 @@ public:
     requires std::convertible_to<TT*, T*> SharedIntrusive&
     operator=(SharedIntrusive<TT, IsAtomic>&& rhs);
 
-    /** Adopt the raw pointer. The strong reference may or may not be incremented, depending on the TAdoptTag
-    */
+    /** Assign to this object, optionally bypassing atomic operations */
+    template <class TT, bool IsAtomic, class TBypassAtomicBehaviorTag>
+    SharedIntrusive&
+    assign(SharedIntrusive<TT, IsAtomic> const& rhs, TBypassAtomicBehaviorTag)
+        // clang-format off
+    requires std::convertible_to<TT*, T*> &&
+        (std::is_same_v<TBypassAtomicBehaviorTag, SharedIntrusiveBypassAtomicOpsTag> ||
+         std::is_same_v<TBypassAtomicBehaviorTag, SharedIntrusiveNormalAtomicOpsTag>);
+    // clang-format on
+
+    /** Assign to this object, optionally bypassing atomic operations */
+    template <class TT, bool IsAtomic, class TBypassAtomicBehaviorTag>
+        SharedIntrusive&
+        assign(SharedIntrusive<TT, IsAtomic>&& rhs, TBypassAtomicBehaviorTag)
+        // clang-format off
+    requires std::convertible_to<TT*, T*> &&
+        (std::is_same_v<TBypassAtomicBehaviorTag, SharedIntrusiveBypassAtomicOpsTag> ||
+         std::is_same_v<TBypassAtomicBehaviorTag, SharedIntrusiveNormalAtomicOpsTag>);
+    // clang-format on
+
+    /** Adopt the raw pointer. The strong reference may or may not be
+     * incremented, depending on the TAdoptTag
+     */
     template <class TAdoptTag>
         void
         adopt(T* p)
@@ -205,9 +241,13 @@ public:
     void
     reset();
 
+    void reset(SharedIntrusiveBypassAtomicOpsTag);
+
     /** Get the raw pointer */
     T*
     get() const;
+
+    T* get(SharedIntrusiveBypassAtomicOpsTag) const;
 
     /** Return the strong count */
     std::size_t
@@ -227,6 +267,8 @@ public:
     T*
     unsafeGetRawPtr() const;
 
+    T* unsafeGetRawPtr(SharedIntrusiveBypassAtomicOpsTag) const;
+
     /** Decrement the strong count of the raw pointer held by this object and
         run the appropriate release action. Note: this does _not_ set the raw
         pointer to null.
@@ -238,20 +280,30 @@ public:
         can support both atomic and non-atomic pointers.
      */
     void
-    unsafeSetRawPtr(T* p);
+    unsafeSetRawPtr(T* p, SharedIntrusiveNormalAtomicOpsTag = {});
+
+    void
+    unsafeSetRawPtr(T* p, SharedIntrusiveBypassAtomicOpsTag);
 
 private:
-    using PointerType = std::conditional_t<MakeAtomic, std::atomic<T*>, T*>;
-    PointerType ptr_{nullptr};
+    /** pointer to the type with an intrusive count
+
+        ptr_ will be wrapped in an atomic_ref when the `MakeAtomic` parameter is
+        true. The class does not use a construct like:
+        using PointerType = std::conditional_t<MakeAtomic, std::atomic<T*>, T*>;
+        because it is useful to provide non-atomic operations in some special
+        circumstances for performance reasons (this is used in SHAMapInnerNode)
+      */
+    T* ptr_{nullptr};
 };
 
 //------------------------------------------------------------------------------
 
 /** A weak intrusive pointer class for the SharedIntrusive pointer class.
 
-    Note that this weak pointer class asks differently from normal weak pointer
-    classes. When the strong pointer count goes to zero, the "partialDestructor"
-    is called. See the comment on SharedIntrusive for a fuller explanation.
+Note that this weak pointer class asks differently from normal weak pointer
+classes. When the strong pointer count goes to zero, the "partialDestructor"
+is called. See the comment on SharedIntrusive for a fuller explanation.
 */
 template <SharedIntrusiveRefCounted T>
 class WeakIntrusive
@@ -266,9 +318,9 @@ public:
     template <bool IsAtomic>
     WeakIntrusive(SharedIntrusive<T, IsAtomic> const& rhs);
 
-    // There is no move constructor from a strong intrusive ptr because moving
-    // would be move expensive than copying in this case (the strong ref would
-    // need to be decremented)
+    // There is no move constructor from a strong intrusive ptr because
+    // moving would be move expensive than copying in this case (the strong
+    // ref would need to be decremented)
     template <bool IsAtomic>
     WeakIntrusive(SharedIntrusive<T, IsAtomic> const&& rhs) = delete;
 
@@ -282,9 +334,9 @@ public:
 
     ~WeakIntrusive();
 
-    /** Get a strong pointer from the weak pointer, if possible. This will only
-        return a seated pointer if the strong count on the raw pointer is
-        non-zero before locking.
+    /** Get a strong pointer from the weak pointer, if possible. This will
+       only return a seated pointer if the strong count on the raw pointer
+       is non-zero before locking.
      */
     SharedIntrusive<T, false>
     lock() const;
@@ -303,7 +355,8 @@ public:
 private:
     T* ptr_ = nullptr;
 
-    /** Decrement the weak count. This does _not_ set the raw pointer to null.
+    /** Decrement the weak count. This does _not_ set the raw pointer to
+    null.
 
     Note: This may run the destructor if the strong count is zero.
     */
@@ -313,15 +366,15 @@ private:
 
 //------------------------------------------------------------------------------
 
-/** A combination of a strong and a weak intrusive pointer stored in the space
-   of a single pointer.
+/** A combination of a strong and a weak intrusive pointer stored in the
+   space of a single pointer.
 
     This class is similar to a `std::variant<SharedIntrusive,WeakIntrusive>`
-    with some optimizations. In particular, it uses a low-order bit to determine
-    if the raw pointer represents a strong pointer or a weak pointer. It can
-    also be quickly switched between its strong pointer and weak pointer
-    representations. This class is useful for storing intrusive pointers in
-    tagged caches.
+    with some optimizations. In particular, it uses a low-order bit to
+   determine if the raw pointer represents a strong pointer or a weak
+   pointer. It can also be quickly switched between its strong pointer and
+   weak pointer representations. This class is useful for storing intrusive
+   pointers in tagged caches.
   */
 
 // TODO Better name for this
@@ -360,8 +413,9 @@ public:
 
     ~SharedWeakUnion();
 
-    /** Return a strong pointer if this is already a strong pointer (i.e. don't
-        lock the weak pointer. Use the `lock` method if that's what's needed)
+    /** Return a strong pointer if this is already a strong pointer (i.e.
+       don't lock the weak pointer. Use the `lock` method if that's what's
+       needed)
      */
     SharedIntrusive<T, false>
     getStrong() const;
@@ -371,19 +425,20 @@ public:
      */
     explicit operator bool() const noexcept;
 
-    /** Set the pointer to null, decrement the appropriate ref count, and run
-        the appropriate release action.
+    /** Set the pointer to null, decrement the appropriate ref count, and
+       run the appropriate release action.
      */
     void
     reset();
 
-    /** If this is a strong pointer, return the raw pointer. Otherwise return
-        null.
+    /** If this is a strong pointer, return the raw pointer. Otherwise
+       return null.
      */
     T*
     get() const;
 
-    /** If this is a strong pointer, return the strong count. Otherwise return 0
+    /** If this is a strong pointer, return the strong count. Otherwise
+     * return 0
      */
     std::size_t
     use_count() const;
@@ -406,7 +461,8 @@ public:
     bool
     isWeak() const;
 
-    /** If this is a weak pointer, attempt to convert it to a strong pointer.
+    /** If this is a weak pointer, attempt to convert it to a strong
+       pointer.
 
         @return true if successfully converted to a strong pointer (or was
                 already a strong pointer). Otherwise false.
@@ -414,7 +470,8 @@ public:
     bool
     convertToStrong();
 
-    /** If this is a strong pointer, attempt to convert it to a weak pointer.
+    /** If this is a strong pointer, attempt to convert it to a weak
+       pointer.
 
         @return false if the pointer is null. Otherwise return true.
       */
@@ -422,9 +479,9 @@ public:
     convertToWeak();
 
 private:
-    // Tagged pointer. Low bit determines if this is a strong or a weak pointer.
-    // The low bit must be masked to zero when converting back to a pointer.
-    // If the low bit is '1', this is a weak pointer.
+    // Tagged pointer. Low bit determines if this is a strong or a weak
+    // pointer. The low bit must be masked to zero when converting back to a
+    // pointer. If the low bit is '1', this is a weak pointer.
     std::uintptr_t tp_{0};
     static constexpr std::uintptr_t tagMask = 1;
     static constexpr std::uintptr_t ptrMask = ~tagMask;
@@ -455,8 +512,8 @@ private:
 
 /** Create a (non-atomic) shared intrusive pointer.
 
-    Note: unlike std::shared_ptr, where there is an advantage of allocating the
-    pointer and control block together, there is no benefit for intrusive
+    Note: unlike std::shared_ptr, where there is an advantage of allocating
+   the pointer and control block together, there is no benefit for intrusive
     pointers.
 */
 template <SharedIntrusiveRefCounted TT, bool IsAtomic, class... Args>
@@ -469,7 +526,8 @@ make_SharedIntrusive(Args&&... args)
         noexcept(SharedIntrusive<TT, IsAtomic>(
             std::declval<TT*>(),
             std::declval<SharedIntrusiveAdoptNoIncrementTag>())),
-        "SharedIntrusive constructor should not throw or this can leak memory");
+        "SharedIntrusive constructor should not throw or this can leak "
+        "memory");
 
     return SharedIntrusive<TT, IsAtomic>(
         p, SharedIntrusiveAdoptNoIncrementTag{});
