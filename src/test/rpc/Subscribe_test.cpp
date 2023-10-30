@@ -194,8 +194,16 @@ public:
             // Check stream update for payment transaction
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 return jv[jss::meta]["AffectedNodes"][1u]["CreatedNode"]
-                         ["NewFields"][jss::Account] ==
-                    Account("alice").human();
+                         ["NewFields"][jss::Account]  //
+                    == Account("alice").human() &&
+                    jv[jss::transaction][jss::TransactionType]  //
+                    == jss::Payment &&
+                    jv[jss::transaction][jss::DeliverMax]  //
+                    == "10000000010" &&
+                    jv[jss::transaction][jss::Fee]  //
+                    == "10" &&
+                    jv[jss::transaction][jss::Sequence]  //
+                    == 1;
             }));
 
             // Check stream update for accountset transaction
@@ -211,7 +219,16 @@ public:
             // Check stream update for payment transaction
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 return jv[jss::meta]["AffectedNodes"][1u]["CreatedNode"]
-                         ["NewFields"][jss::Account] == Account("bob").human();
+                         ["NewFields"][jss::Account]  //
+                    == Account("bob").human() &&
+                    jv[jss::transaction][jss::TransactionType]  //
+                    == jss::Payment &&
+                    jv[jss::transaction][jss::DeliverMax]  //
+                    == "10000000010" &&
+                    jv[jss::transaction][jss::Fee]  //
+                    == "10" &&
+                    jv[jss::transaction][jss::Sequence]  //
+                    == 2;
             }));
 
             // Check stream update for accountset transaction

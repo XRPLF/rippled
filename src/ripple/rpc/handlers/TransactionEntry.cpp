@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/app/main/Application.h>
+#include <ripple/app/misc/DeliverMax.h>
 #include <ripple/ledger/ReadView.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/Context.h>
@@ -71,6 +72,8 @@ doTransactionEntry(RPC::JsonContext& context)
         else
         {
             jvResult[jss::tx_json] = sttx->getJson(JsonOptions::none);
+            RPC::insertDeliverMax(
+                jvResult[jss::tx_json], sttx->getTxnType(), context.apiVersion);
             if (stobj)
                 jvResult[jss::metadata] = stobj->getJson(JsonOptions::none);
             // 'accounts'
