@@ -60,6 +60,15 @@ struct IntrusiveRefCounts
     ReleaseRefAction
     releaseStrongRef() const;
 
+    // Same as:
+    // {
+    //   addWeakRef();
+    //   return releaseStrongRef;
+    // }
+    // done as one atomic operation
+    ReleaseRefAction
+    addWeakReleaseStrongRef() const;
+
     ReleaseRefAction
     releaseWeakRef() const;
 
@@ -222,9 +231,36 @@ IntrusiveRefCounts::addWeakRef() const noexcept
 inline ReleaseRefAction
 IntrusiveRefCounts::releaseStrongRef() const
 {
-    RefCountPair prevVal =
+    RefCountPair const prevVal =
         refCounts.fetch_sub(strongDelta, std::memory_order_acq_rel);
 
+    if (prevVal.strong == 1)
+    {
+        if (prevVal.weak == 0)
+        {
+            // Can't be in partial destroy because only decrementing the strong
+            // count to zero can start a partial destroy, and that can't happen
+            // twice.
+            assert(!prevVal.partialDestroyStartedBit);
+            return ReleaseRefAction::destroy;
+        }
+        else
+        {
+            auto p = refCounts.fetch_or(partialDestroyStartedMask);
+            (void)p;
+            assert(!(p & partialDestroyStartedMask));
+            return ReleaseRefAction::partialDestroy;
+        }
+    }
+    return ReleaseRefAction::noop;
+}
+
+inline ReleaseRefAction
+IntrusiveRefCounts::addWeakReleaseStrongRef() const
+{
+    static_assert(weakDelta > strongDelta);
+    RefCountPair const prevVal =
+        refCounts.fetch_add(weakDelta - strongDelta, std::memory_order_acq_rel);
     if (prevVal.strong == 1)
     {
         if (prevVal.weak == 0)

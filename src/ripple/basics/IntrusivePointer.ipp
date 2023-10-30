@@ -736,10 +736,8 @@ SharedWeakUnion<T>::convertToWeak()
     if (!p)
         return false;
 
-    // TODO: Could combine addWeak and releaseStrong into a single operation
-    p->addWeakRef();
     using enum ReleaseRefAction;
-    auto action = p->releaseStrongRef();
+    auto action = p->addWeakReleaseStrongRef();
     switch (action)
     {
         case noop:
