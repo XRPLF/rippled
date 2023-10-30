@@ -607,7 +607,7 @@ bool
 LedgerMaster::isValidated(ReadView const& ledger)
 {
     if (app_.config().reporting())
-        return haveLedger(ledger.seq());  // TODO Is this correct ?
+        return true;  // Reporting mode only supports validated ledger
 
     if (ledger.open())
         return false;

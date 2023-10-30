@@ -3124,8 +3124,7 @@ NetworkOPsImp::transJson(
         jvObj[jss::transaction][jss::date] =
             ledger->info().closeTime.time_since_epoch().count();
         jvObj[jss::validated] = true;
-        if (auto close_time = m_ledgerMaster.getCloseTimeBySeq(ledger->seq()))
-            jvObj[jss::close_time_iso] = to_string_iso(*close_time);
+        jvObj[jss::close_time_iso] = to_string_iso(ledger->info().closeTime);
 
         // WRITEME: Put the account next seq here
     }
@@ -3174,10 +3173,11 @@ NetworkOPsImp::transJson(
         assert(index < MultiApiJson::size);
         if (index != lastIndex)
         {
+            lastIndex = index;
+
             Json::Value& jvTx = multiObj.val[index];
             RPC::insertDeliverMax(
                 jvTx[jss::transaction], transaction->getTxnType(), apiVersion);
-            lastIndex = index;
 
             if (apiVersion > 1)
             {
