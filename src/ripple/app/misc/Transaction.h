@@ -99,13 +99,13 @@ public:
     LedgerIndex
     getLedger() const
     {
-        return mInLedger;
+        return mLedgerIndex;
     }
 
     bool
     isValidated() const
     {
-        return mInLedger != 0;
+        return mLedgerIndex != 0;
     }
 
     TransStatus
@@ -138,7 +138,7 @@ public:
     void
     setLedger(LedgerIndex ledger)
     {
-        mInLedger = ledger;
+        mLedgerIndex = ledger;
     }
 
     /**
@@ -391,7 +391,7 @@ private:
 
     uint256 mTransactionID;
 
-    LedgerIndex mInLedger = 0;
+    LedgerIndex mLedgerIndex = 0;
     TransStatus mStatus = INVALID;
     TER mResult = temUNCERTAIN;
     bool mApplying = false;

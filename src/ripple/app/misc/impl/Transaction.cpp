@@ -62,7 +62,7 @@ void
 Transaction::setStatus(TransStatus ts, std::uint32_t lseq)
 {
     mStatus = ts;
-    mInLedger = lseq;
+    mLedgerIndex = lseq;
 }
 
 TransStatus
@@ -173,16 +173,16 @@ Transaction::getJson(
 {
     Json::Value ret(mTransaction->getJson(JsonOptions::none, binary, hash));
 
-    if (mInLedger)
+    if (mLedgerIndex)
     {
         if (showInLedger)
-            ret[jss::inLedger] = mInLedger;  // Deprecated.
+            ret[jss::inLedger] = mLedgerIndex;  // Deprecated.
 
-        ret[jss::ledger_index] = mInLedger;
+        ret[jss::ledger_index] = mLedgerIndex;
 
         if (options == JsonOptions::include_date)
         {
-            auto ct = mApp.getLedgerMaster().getCloseTimeBySeq(mInLedger);
+            auto ct = mApp.getLedgerMaster().getCloseTimeBySeq(mLedgerIndex);
             if (ct)
                 ret[jss::date] = ct->time_since_epoch().count();
         }
