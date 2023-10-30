@@ -159,7 +159,7 @@ Friends</h2></td></tr>
 <p>Amounts are always transformed using liquidity with the same quality (quality is the amount out/amount in). For example, a <a class="el" href="classripple_1_1BookStep.html">BookStep</a> may use multiple offers when executing <code>fwd</code> or <code>rev</code>, but all those offers will be from the same quality directory.</p>
 <p>A step may not have enough liquidity to transform the entire requested amount. Both <code>fwd</code> and <code>rev</code> return a pair of amounts (one for input amount, one for output amount) that show how much of the requested amount the step was actually able to use. </p>
 
-<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00081">81</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00082">82</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a44775ea2303695696046b0e44e436f89"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a44775ea2303695696046b0e44e436f89">&#9670;&nbsp;</a></span>~Step()</h2>
@@ -387,7 +387,7 @@ Friends</h2></td></tr>
 <p>If this step is <a class="el" href="classripple_1_1DirectStepI.html">DirectStepI</a> (IOU-&gt;IOU direct step), return the src account. </p>
 <p>This is needed for checkNoRipple. </p>
 
-<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00141">141</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00142">142</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
 
 </div>
 </div>
@@ -414,7 +414,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00149">149</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00150">150</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
 
 </div>
 </div>
@@ -490,7 +490,7 @@ Friends</h2></td></tr>
 
 <p>If this step is a <a class="el" href="classripple_1_1DirectStepI.html">DirectStepI</a>, return the quality in of the dst account. </p>
 
-<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00169">169</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00170">170</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
 
 </div>
 </div>
@@ -578,7 +578,7 @@ Friends</h2></td></tr>
 <p>Get <a class="el" href="classripple_1_1QualityFunction.html" title="Average quality of a path as a function of out: q(out) = m * out + b, where m = -1 / poolGets,...">QualityFunction</a>. </p>
 <p>Used in one path optimization where the quality function is non-constant (has AMM) and there is limitQuality. <a class="el" href="classripple_1_1QualityFunction.html" title="Average quality of a path as a function of out: q(out) = m * out + b, where m = -1 / poolGets,...">QualityFunction</a> allows calculation of required path output given requested limitQuality. All steps, except for <a class="el" href="classripple_1_1BookStep.html">BookStep</a> have the default implementation. </p>
 
-<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00308">308</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00309">309</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
 
 </div>
 </div>
@@ -608,7 +608,7 @@ Friends</h2></td></tr>
 <p>Return the number of offers consumed or partially consumed the last time the step ran, including expired and unfunded offers. </p>
 <p>N.B. This this not the total number offers consumed by this step for the entire payment, it is only the number the last time it ran. Offers may be partially consumed multiple times during a payment. </p>
 
-<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00211">211</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00212">212</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
 
 </div>
 </div>
@@ -637,7 +637,7 @@ Friends</h2></td></tr>
 
 <p>If this step is a <a class="el" href="classripple_1_1BookStep.html">BookStep</a>, return the book. </p>
 
-<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00220">220</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00221">221</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
 
 </div>
 </div>
@@ -695,7 +695,7 @@ Friends</h2></td></tr>
 <p>Return true if the step should be considered inactive. </p>
 <p>A strand that has additional liquidity may be marked inactive if a step has consumed too many offers. </p>
 
-<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00237">237</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00238">238</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
 
 </div>
 </div>
@@ -924,7 +924,7 @@ Friends</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true if lhs == rhs. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00274">274</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00275">275</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
 
 </div>
 </div>
@@ -972,7 +972,7 @@ Friends</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true if lhs != rhs. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00286">286</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00287">287</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
 
 </div>
 </div>
@@ -1012,7 +1012,7 @@ Friends</h2></td></tr>
 
 <p>Streaming operator for a <a class="el" href="classripple_1_1Step.html" title="A step in a payment path.">Step</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00293">293</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00294">294</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
 
 </div>
 </div>

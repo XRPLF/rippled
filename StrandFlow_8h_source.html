@@ -159,7 +159,7 @@ $(function() {
 <div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160; </div>
 <div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> TInAmt, <span class="keyword">class</span> TOutAmt&gt;</div>
 <div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;StrandResult&lt;TInAmt, TOutAmt&gt;</div>
-<div class="line"><a name="l00105"></a><span class="lineno"><a class="line" href="namespaceripple.html#afe861104eacf66fb6b9720ee8798ad78">  105</a></span>&#160;<a class="code" href="namespaceripple.html#afe0c9c8a168a5803e5d4cb11a2d8fc34">flow</a>(</div>
+<div class="line"><a name="l00105"></a><span class="lineno"><a class="line" href="namespaceripple.html#afe861104eacf66fb6b9720ee8798ad78">  105</a></span>&#160;<a class="code" href="namespaceripple.html#a730261de2af97e6b9a02a751da8e78d2">flow</a>(</div>
 <div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    <a class="code" href="classripple_1_1PaymentSandbox.html">PaymentSandbox</a> <span class="keyword">const</span>&amp; baseView,</div>
 <div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;    Strand <span class="keyword">const</span>&amp; strand,</div>
 <div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;TInAmt&gt;</a> <span class="keyword">const</span>&amp; maxIn,</div>
@@ -574,12 +574,12 @@ $(function() {
 <div class="line"><a name="l00532"></a><span class="lineno">  532</span>&#160; </div>
 <div class="line"><a name="l00553"></a><span class="lineno">  553</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> TInAmt, <span class="keyword">class</span> TOutAmt&gt;</div>
 <div class="line"><a name="l00554"></a><span class="lineno">  554</span>&#160;FlowResult&lt;TInAmt, TOutAmt&gt;</div>
-<div class="line"><a name="l00555"></a><span class="lineno"><a class="line" href="namespaceripple.html#ab4e9a6cba4df9d9b32c29c70499da7cd">  555</a></span>&#160;<a class="code" href="namespaceripple.html#afe0c9c8a168a5803e5d4cb11a2d8fc34">flow</a>(</div>
+<div class="line"><a name="l00555"></a><span class="lineno"><a class="line" href="namespaceripple.html#ac8338aad15b0938d4e87b507ec7a5377">  555</a></span>&#160;<a class="code" href="namespaceripple.html#a730261de2af97e6b9a02a751da8e78d2">flow</a>(</div>
 <div class="line"><a name="l00556"></a><span class="lineno">  556</span>&#160;    <a class="code" href="classripple_1_1PaymentSandbox.html">PaymentSandbox</a> <span class="keyword">const</span>&amp; baseView,</div>
 <div class="line"><a name="l00557"></a><span class="lineno">  557</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;Strand&gt;</a> <span class="keyword">const</span>&amp; strands,</div>
 <div class="line"><a name="l00558"></a><span class="lineno">  558</span>&#160;    TOutAmt <span class="keyword">const</span>&amp; outReq,</div>
 <div class="line"><a name="l00559"></a><span class="lineno">  559</span>&#160;    <span class="keywordtype">bool</span> partialPayment,</div>
-<div class="line"><a name="l00560"></a><span class="lineno">  560</span>&#160;    <span class="keywordtype">bool</span> offerCrossing,</div>
+<div class="line"><a name="l00560"></a><span class="lineno">  560</span>&#160;    <a class="code" href="namespaceripple.html#a786c40cb27211e1704047accb2ca26bd">OfferCrossing</a> offerCrossing,</div>
 <div class="line"><a name="l00561"></a><span class="lineno">  561</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;Quality&gt;</a> <span class="keyword">const</span>&amp; limitQuality,</div>
 <div class="line"><a name="l00562"></a><span class="lineno">  562</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;STAmount&gt;</a> <span class="keyword">const</span>&amp; sendMaxST,</div>
 <div class="line"><a name="l00563"></a><span class="lineno">  563</span>&#160;    <a class="code" href="classbeast_1_1Journal.html">beast::Journal</a> j,</div>
@@ -839,52 +839,78 @@ $(function() {
 <div class="line"><a name="l00817"></a><span class="lineno">  817</span>&#160;    JLOG(j.<a class="code" href="classbeast_1_1Journal.html#abbe082bd27ca0f1d1365af2824e4f85b">trace</a>()) &lt;&lt; <span class="stringliteral">&quot;Total flow: in: &quot;</span> &lt;&lt; <a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(actualIn)</div>
 <div class="line"><a name="l00818"></a><span class="lineno">  818</span>&#160;                    &lt;&lt; <span class="stringliteral">&quot; out: &quot;</span> &lt;&lt; <a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(actualOut);</div>
 <div class="line"><a name="l00819"></a><span class="lineno">  819</span>&#160; </div>
-<div class="line"><a name="l00820"></a><span class="lineno">  820</span>&#160;    <span class="keywordflow">if</span> (actualOut != outReq)</div>
-<div class="line"><a name="l00821"></a><span class="lineno">  821</span>&#160;    {</div>
-<div class="line"><a name="l00822"></a><span class="lineno">  822</span>&#160;        <span class="keywordflow">if</span> (actualOut &gt; outReq)</div>
-<div class="line"><a name="l00823"></a><span class="lineno">  823</span>&#160;        {</div>
-<div class="line"><a name="l00824"></a><span class="lineno">  824</span>&#160;            assert(0);</div>
-<div class="line"><a name="l00825"></a><span class="lineno">  825</span>&#160;            <span class="keywordflow">return</span> {<a class="code" href="namespaceripple.html#a75cb21d7f1df42f2fdc8efddb79b63f4a86b406cfcbffc042f65ac0c78079adbb">tefEXCEPTION</a>, std::move(ofrsToRmOnFail)};</div>
-<div class="line"><a name="l00826"></a><span class="lineno">  826</span>&#160;        }</div>
-<div class="line"><a name="l00827"></a><span class="lineno">  827</span>&#160;        <span class="keywordflow">if</span> (!partialPayment)</div>
-<div class="line"><a name="l00828"></a><span class="lineno">  828</span>&#160;        {</div>
-<div class="line"><a name="l00829"></a><span class="lineno">  829</span>&#160;            <span class="comment">// If we&#39;re offerCrossing a !partialPayment, then we&#39;re</span></div>
-<div class="line"><a name="l00830"></a><span class="lineno">  830</span>&#160;            <span class="comment">// handling tfFillOrKill.  That case is handled below; not here.</span></div>
-<div class="line"><a name="l00831"></a><span class="lineno">  831</span>&#160;            <span class="keywordflow">if</span> (!offerCrossing)</div>
-<div class="line"><a name="l00832"></a><span class="lineno">  832</span>&#160;                <span class="keywordflow">return</span> {</div>
-<div class="line"><a name="l00833"></a><span class="lineno">  833</span>&#160;                    <a class="code" href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38cabd7038b5669becf7271665614c94efb6">tecPATH_PARTIAL</a>,</div>
-<div class="line"><a name="l00834"></a><span class="lineno">  834</span>&#160;                    actualIn,</div>
-<div class="line"><a name="l00835"></a><span class="lineno">  835</span>&#160;                    actualOut,</div>
-<div class="line"><a name="l00836"></a><span class="lineno">  836</span>&#160;                    std::move(ofrsToRmOnFail)};</div>
-<div class="line"><a name="l00837"></a><span class="lineno">  837</span>&#160;        }</div>
-<div class="line"><a name="l00838"></a><span class="lineno">  838</span>&#160;        <span class="keywordflow">else</span> <span class="keywordflow">if</span> (actualOut == beast::zero)</div>
-<div class="line"><a name="l00839"></a><span class="lineno">  839</span>&#160;        {</div>
-<div class="line"><a name="l00840"></a><span class="lineno">  840</span>&#160;            <span class="keywordflow">return</span> {<a class="code" href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38cad7c0f4891446922b7248ed12f2207a57">tecPATH_DRY</a>, std::move(ofrsToRmOnFail)};</div>
-<div class="line"><a name="l00841"></a><span class="lineno">  841</span>&#160;        }</div>
-<div class="line"><a name="l00842"></a><span class="lineno">  842</span>&#160;    }</div>
-<div class="line"><a name="l00843"></a><span class="lineno">  843</span>&#160;    <span class="keywordflow">if</span> (offerCrossing &amp;&amp; !partialPayment)</div>
-<div class="line"><a name="l00844"></a><span class="lineno">  844</span>&#160;    {</div>
-<div class="line"><a name="l00845"></a><span class="lineno">  845</span>&#160;        <span class="comment">// If we&#39;re offer crossing and partialPayment is *not* true, then</span></div>
-<div class="line"><a name="l00846"></a><span class="lineno">  846</span>&#160;        <span class="comment">// we&#39;re handling a FillOrKill offer.  In this case remainingIn must</span></div>
-<div class="line"><a name="l00847"></a><span class="lineno">  847</span>&#160;        <span class="comment">// be zero (all funds must be consumed) or else we kill the offer.</span></div>
-<div class="line"><a name="l00848"></a><span class="lineno">  848</span>&#160;        assert(remainingIn);</div>
-<div class="line"><a name="l00849"></a><span class="lineno">  849</span>&#160;        <span class="keywordflow">if</span> (remainingIn &amp;&amp; *remainingIn != beast::zero)</div>
-<div class="line"><a name="l00850"></a><span class="lineno">  850</span>&#160;            <span class="keywordflow">return</span> {</div>
-<div class="line"><a name="l00851"></a><span class="lineno">  851</span>&#160;                <a class="code" href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38cabd7038b5669becf7271665614c94efb6">tecPATH_PARTIAL</a>,</div>
-<div class="line"><a name="l00852"></a><span class="lineno">  852</span>&#160;                actualIn,</div>
-<div class="line"><a name="l00853"></a><span class="lineno">  853</span>&#160;                actualOut,</div>
-<div class="line"><a name="l00854"></a><span class="lineno">  854</span>&#160;                std::move(ofrsToRmOnFail)};</div>
-<div class="line"><a name="l00855"></a><span class="lineno">  855</span>&#160;    }</div>
-<div class="line"><a name="l00856"></a><span class="lineno">  856</span>&#160; </div>
-<div class="line"><a name="l00857"></a><span class="lineno">  857</span>&#160;    <span class="keywordflow">return</span> {actualIn, actualOut, std::move(sb), std::move(ofrsToRmOnFail)};</div>
-<div class="line"><a name="l00858"></a><span class="lineno">  858</span>&#160;}</div>
-<div class="line"><a name="l00859"></a><span class="lineno">  859</span>&#160; </div>
-<div class="line"><a name="l00860"></a><span class="lineno">  860</span>&#160;}  <span class="comment">// namespace ripple</span></div>
-<div class="line"><a name="l00861"></a><span class="lineno">  861</span>&#160; </div>
-<div class="line"><a name="l00862"></a><span class="lineno">  862</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00820"></a><span class="lineno">  820</span>&#160;    <span class="comment">/* flowCross doesn&#39;t handle offer crossing with tfFillOrKill flag correctly.</span></div>
+<div class="line"><a name="l00821"></a><span class="lineno">  821</span>&#160;<span class="comment">     * 1. If tfFillOrKill is set then the owner must receive the full</span></div>
+<div class="line"><a name="l00822"></a><span class="lineno">  822</span>&#160;<span class="comment">     *   TakerPays. We reverse pays and gets because during crossing</span></div>
+<div class="line"><a name="l00823"></a><span class="lineno">  823</span>&#160;<span class="comment">     *   we are taking, therefore the owner must deliver the full TakerPays and</span></div>
+<div class="line"><a name="l00824"></a><span class="lineno">  824</span>&#160;<span class="comment">     *   the entire TakerGets doesn&#39;t have to be spent.</span></div>
+<div class="line"><a name="l00825"></a><span class="lineno">  825</span>&#160;<span class="comment">     *   Pre-fixFillOrKill amendment code fails if the entire TakerGets</span></div>
+<div class="line"><a name="l00826"></a><span class="lineno">  826</span>&#160;<span class="comment">     *   is not spent. fixFillOrKill addresses this issue.</span></div>
+<div class="line"><a name="l00827"></a><span class="lineno">  827</span>&#160;<span class="comment">     * 2. If tfSell is also set then the owner must spend the entire TakerGets</span></div>
+<div class="line"><a name="l00828"></a><span class="lineno">  828</span>&#160;<span class="comment">     *   even if it means obtaining more than TakerPays. Since the pays and gets</span></div>
+<div class="line"><a name="l00829"></a><span class="lineno">  829</span>&#160;<span class="comment">     *   are reversed, the owner must send the entire TakerGets.</span></div>
+<div class="line"><a name="l00830"></a><span class="lineno">  830</span>&#160;<span class="comment">     */</span></div>
+<div class="line"><a name="l00831"></a><span class="lineno">  831</span>&#160;    <span class="keywordtype">bool</span> <span class="keyword">const</span> fillOrKillEnabled = baseView.<a class="code" href="classripple_1_1detail_1_1ApplyViewBase.html#af16244cf2efd903b4575a0b85c94d159">rules</a>().<a class="code" href="classripple_1_1Rules.html#a1a8388a2b9588aa9446ece92a88e0dd2">enabled</a>(<a class="code" href="namespaceripple.html#ae28dcfd3e9d50e735f0fb46f22979fd2">fixFillOrKill</a>);</div>
+<div class="line"><a name="l00832"></a><span class="lineno">  832</span>&#160; </div>
+<div class="line"><a name="l00833"></a><span class="lineno">  833</span>&#160;    <span class="keywordflow">if</span> (actualOut != outReq)</div>
+<div class="line"><a name="l00834"></a><span class="lineno">  834</span>&#160;    {</div>
+<div class="line"><a name="l00835"></a><span class="lineno">  835</span>&#160;        <span class="keywordflow">if</span> (actualOut &gt; outReq)</div>
+<div class="line"><a name="l00836"></a><span class="lineno">  836</span>&#160;        {</div>
+<div class="line"><a name="l00837"></a><span class="lineno">  837</span>&#160;            assert(0);</div>
+<div class="line"><a name="l00838"></a><span class="lineno">  838</span>&#160;            <span class="keywordflow">return</span> {<a class="code" href="namespaceripple.html#a75cb21d7f1df42f2fdc8efddb79b63f4a86b406cfcbffc042f65ac0c78079adbb">tefEXCEPTION</a>, std::move(ofrsToRmOnFail)};</div>
+<div class="line"><a name="l00839"></a><span class="lineno">  839</span>&#160;        }</div>
+<div class="line"><a name="l00840"></a><span class="lineno">  840</span>&#160;        <span class="keywordflow">if</span> (!partialPayment)</div>
+<div class="line"><a name="l00841"></a><span class="lineno">  841</span>&#160;        {</div>
+<div class="line"><a name="l00842"></a><span class="lineno">  842</span>&#160;            <span class="comment">// If we&#39;re offerCrossing a !partialPayment, then we&#39;re</span></div>
+<div class="line"><a name="l00843"></a><span class="lineno">  843</span>&#160;            <span class="comment">// handling tfFillOrKill.</span></div>
+<div class="line"><a name="l00844"></a><span class="lineno">  844</span>&#160;            <span class="comment">// Pre-fixFillOrKill amendment:</span></div>
+<div class="line"><a name="l00845"></a><span class="lineno">  845</span>&#160;            <span class="comment">//   That case is handled below; not here.</span></div>
+<div class="line"><a name="l00846"></a><span class="lineno">  846</span>&#160;            <span class="comment">// fixFillOrKill amendment:</span></div>
+<div class="line"><a name="l00847"></a><span class="lineno">  847</span>&#160;            <span class="comment">//   That case is handled here if tfSell is also not set; i.e,</span></div>
+<div class="line"><a name="l00848"></a><span class="lineno">  848</span>&#160;            <span class="comment">//   case 1.</span></div>
+<div class="line"><a name="l00849"></a><span class="lineno">  849</span>&#160;            <span class="keywordflow">if</span> (!offerCrossing ||</div>
+<div class="line"><a name="l00850"></a><span class="lineno">  850</span>&#160;                (fillOrKillEnabled &amp;&amp; offerCrossing != OfferCrossing::sell))</div>
+<div class="line"><a name="l00851"></a><span class="lineno">  851</span>&#160;                <span class="keywordflow">return</span> {</div>
+<div class="line"><a name="l00852"></a><span class="lineno">  852</span>&#160;                    <a class="code" href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38cabd7038b5669becf7271665614c94efb6">tecPATH_PARTIAL</a>,</div>
+<div class="line"><a name="l00853"></a><span class="lineno">  853</span>&#160;                    actualIn,</div>
+<div class="line"><a name="l00854"></a><span class="lineno">  854</span>&#160;                    actualOut,</div>
+<div class="line"><a name="l00855"></a><span class="lineno">  855</span>&#160;                    std::move(ofrsToRmOnFail)};</div>
+<div class="line"><a name="l00856"></a><span class="lineno">  856</span>&#160;        }</div>
+<div class="line"><a name="l00857"></a><span class="lineno">  857</span>&#160;        <span class="keywordflow">else</span> <span class="keywordflow">if</span> (actualOut == beast::zero)</div>
+<div class="line"><a name="l00858"></a><span class="lineno">  858</span>&#160;        {</div>
+<div class="line"><a name="l00859"></a><span class="lineno">  859</span>&#160;            <span class="keywordflow">return</span> {<a class="code" href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38cad7c0f4891446922b7248ed12f2207a57">tecPATH_DRY</a>, std::move(ofrsToRmOnFail)};</div>
+<div class="line"><a name="l00860"></a><span class="lineno">  860</span>&#160;        }</div>
+<div class="line"><a name="l00861"></a><span class="lineno">  861</span>&#160;    }</div>
+<div class="line"><a name="l00862"></a><span class="lineno">  862</span>&#160;    <span class="keywordflow">if</span> (offerCrossing &amp;&amp;</div>
+<div class="line"><a name="l00863"></a><span class="lineno">  863</span>&#160;        (!partialPayment &amp;&amp;</div>
+<div class="line"><a name="l00864"></a><span class="lineno">  864</span>&#160;         (!fillOrKillEnabled || offerCrossing == OfferCrossing::sell)))</div>
+<div class="line"><a name="l00865"></a><span class="lineno">  865</span>&#160;    {</div>
+<div class="line"><a name="l00866"></a><span class="lineno">  866</span>&#160;        <span class="comment">// If we&#39;re offer crossing and partialPayment is *not* true, then</span></div>
+<div class="line"><a name="l00867"></a><span class="lineno">  867</span>&#160;        <span class="comment">// we&#39;re handling a FillOrKill offer.  In this case remainingIn must</span></div>
+<div class="line"><a name="l00868"></a><span class="lineno">  868</span>&#160;        <span class="comment">// be zero (all funds must be consumed) or else we kill the offer.</span></div>
+<div class="line"><a name="l00869"></a><span class="lineno">  869</span>&#160;        <span class="comment">// Pre-fixFillOrKill amendment:</span></div>
+<div class="line"><a name="l00870"></a><span class="lineno">  870</span>&#160;        <span class="comment">//   Handles both cases 1. and 2.</span></div>
+<div class="line"><a name="l00871"></a><span class="lineno">  871</span>&#160;        <span class="comment">// fixFillOrKill amendment:</span></div>
+<div class="line"><a name="l00872"></a><span class="lineno">  872</span>&#160;        <span class="comment">//   Handles 2. 1. is handled above and falls through for tfSell.</span></div>
+<div class="line"><a name="l00873"></a><span class="lineno">  873</span>&#160;        assert(remainingIn);</div>
+<div class="line"><a name="l00874"></a><span class="lineno">  874</span>&#160;        <span class="keywordflow">if</span> (remainingIn &amp;&amp; *remainingIn != beast::zero)</div>
+<div class="line"><a name="l00875"></a><span class="lineno">  875</span>&#160;            <span class="keywordflow">return</span> {</div>
+<div class="line"><a name="l00876"></a><span class="lineno">  876</span>&#160;                <a class="code" href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38cabd7038b5669becf7271665614c94efb6">tecPATH_PARTIAL</a>,</div>
+<div class="line"><a name="l00877"></a><span class="lineno">  877</span>&#160;                actualIn,</div>
+<div class="line"><a name="l00878"></a><span class="lineno">  878</span>&#160;                actualOut,</div>
+<div class="line"><a name="l00879"></a><span class="lineno">  879</span>&#160;                std::move(ofrsToRmOnFail)};</div>
+<div class="line"><a name="l00880"></a><span class="lineno">  880</span>&#160;    }</div>
+<div class="line"><a name="l00881"></a><span class="lineno">  881</span>&#160; </div>
+<div class="line"><a name="l00882"></a><span class="lineno">  882</span>&#160;    <span class="keywordflow">return</span> {actualIn, actualOut, std::move(sb), std::move(ofrsToRmOnFail)};</div>
+<div class="line"><a name="l00883"></a><span class="lineno">  883</span>&#160;}</div>
+<div class="line"><a name="l00884"></a><span class="lineno">  884</span>&#160; </div>
+<div class="line"><a name="l00885"></a><span class="lineno">  885</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00886"></a><span class="lineno">  886</span>&#160; </div>
+<div class="line"><a name="l00887"></a><span class="lineno">  887</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aclassbeast_1_1Journal_html_a3dfb8e2e3eecccdb5cf78ff21bca069c"><div class="ttname"><a href="classbeast_1_1Journal.html#a3dfb8e2e3eecccdb5cf78ff21bca069c">beast::Journal::fatal</a></div><div class="ttdeci">Stream fatal() const</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00338">Journal.h:338</a></div></div>
 <div class="ttc" id="asstream_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/sstream.html">sstream</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a786c40cb27211e1704047accb2ca26bd"><div class="ttname"><a href="namespaceripple.html#a786c40cb27211e1704047accb2ca26bd">ripple::OfferCrossing</a></div><div class="ttdeci">OfferCrossing</div><div class="ttdef"><b>Definition:</b> <a href="Steps_8h_source.html#l00042">Steps.h:42</a></div></div>
 <div class="ttc" id="aclassripple_1_1Rules_html_a1a8388a2b9588aa9446ece92a88e0dd2"><div class="ttname"><a href="classripple_1_1Rules.html#a1a8388a2b9588aa9446ece92a88e0dd2">ripple::Rules::enabled</a></div><div class="ttdeci">bool enabled(uint256 const &amp;feature) const</div><div class="ttdoc">Returns true if a feature is enabled.</div><div class="ttdef"><b>Definition:</b> <a href="Rules_8cpp_source.html#l00094">Rules.cpp:94</a></div></div>
 <div class="ttc" id="aclassbeast_1_1Journal_html_abbe082bd27ca0f1d1365af2824e4f85b"><div class="ttname"><a href="classbeast_1_1Journal.html#abbe082bd27ca0f1d1365af2824e4f85b">beast::Journal::trace</a></div><div class="ttdeci">Stream trace() const</div><div class="ttdoc">Severity stream access functions.</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00308">Journal.h:308</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a7c8945b5034bba5f9df719cff2503495"><div class="ttname"><a href="namespaceripple.html#a7c8945b5034bba5f9df719cff2503495">ripple::composed_quality</a></div><div class="ttdeci">Quality composed_quality(Quality const &amp;lhs, Quality const &amp;rhs)</div><div class="ttdef"><b>Definition:</b> <a href="Quality_8cpp_source.html#l00124">Quality.cpp:124</a></div></div>
@@ -912,13 +938,13 @@ $(function() {
 <div class="ttc" id="atie_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/tuple/tie.html">std::tie</a></div><div class="ttdeci">T tie(T... args)</div></div>
 <div class="ttc" id="apush_back_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/push_back.html">std::vector::push_back</a></div><div class="ttdeci">T push_back(T... args)</div></div>
 <div class="ttc" id="astructripple_1_1StrandResult_html_a76c0e7ce0c754e232a089bdd84f00b33"><div class="ttname"><a href="structripple_1_1StrandResult.html#a76c0e7ce0c754e232a089bdd84f00b33">ripple::StrandResult::ofrsToRm</a></div><div class="ttdeci">boost::container::flat_set&lt; uint256 &gt; ofrsToRm</div><div class="ttdoc">Offers to remove.</div><div class="ttdef"><b>Definition:</b> <a href="StrandFlow_8h_source.html#l00053">StrandFlow.h:53</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a730261de2af97e6b9a02a751da8e78d2"><div class="ttname"><a href="namespaceripple.html#a730261de2af97e6b9a02a751da8e78d2">ripple::flow</a></div><div class="ttdeci">path::RippleCalc::Output flow(PaymentSandbox &amp;sb, STAmount const &amp;deliver, AccountID const &amp;src, AccountID const &amp;dst, STPathSet const &amp;paths, bool defaultPaths, bool partialPayment, bool ownerPaysTransferFee, OfferCrossing offerCrossing, std::optional&lt; Quality &gt; const &amp;limitQuality, std::optional&lt; STAmount &gt; const &amp;sendMax, beast::Journal j, path::detail::FlowDebugInfo *flowDebugInfo)</div><div class="ttdoc">Make a payment from the src account to the dst account.</div><div class="ttdef"><b>Definition:</b> <a href="Flow_8cpp_source.html#l00059">Flow.cpp:59</a></div></div>
 <div class="ttc" id="astructripple_1_1StrandResult_html_acea40d3c04504e132b87c1f533a073bd"><div class="ttname"><a href="structripple_1_1StrandResult.html#acea40d3c04504e132b87c1f533a073bd">ripple::StrandResult::in</a></div><div class="ttdeci">TInAmt in</div><div class="ttdoc">Currency amount in.</div><div class="ttdef"><b>Definition:</b> <a href="StrandFlow_8h_source.html#l00050">StrandFlow.h:50</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a260d2970ac1119109937ed1c5d4ca962a453d7db3d36a5516e925c466d1dc0ac1"><div class="ttname"><a href="namespaceripple.html#a260d2970ac1119109937ed1c5d4ca962a453d7db3d36a5516e925c466d1dc0ac1">ripple::telFAILED_PROCESSING</a></div><div class="ttdeci">@ telFAILED_PROCESSING</div><div class="ttdef"><b>Definition:</b> <a href="TER_8h_source.html#l00056">TER.h:56</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275"><div class="ttname"><a href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">ripple::QualityDirection::out</a></div><div class="ttdeci">@ out</div></div>
 <div class="ttc" id="aclassripple_1_1Number_html"><div class="ttname"><a href="classripple_1_1Number.html">ripple::Number</a></div><div class="ttdef"><b>Definition:</b> <a href="Number_8h_source.html#l00036">Number.h:36</a></div></div>
 <div class="ttc" id="aclassripple_1_1AMMContext_html"><div class="ttname"><a href="classripple_1_1AMMContext.html">ripple::AMMContext</a></div><div class="ttdoc">Maintains AMM info per overall payment engine execution and individual iteration.</div><div class="ttdef"><b>Definition:</b> <a href="AMMContext_8h_source.html#l00035">AMMContext.h:35</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a66af773abebf361a8c930c1dc457a740"><div class="ttname"><a href="namespaceripple.html#a66af773abebf361a8c930c1dc457a740">ripple::offerDelete</a></div><div class="ttdeci">TER offerDelete(ApplyView &amp;view, std::shared_ptr&lt; SLE &gt; const &amp;sle, beast::Journal j)</div><div class="ttdoc">Delete an offer.</div><div class="ttdef"><b>Definition:</b> <a href="View_8cpp_source.html#l00910">View.cpp:910</a></div></div>
-<div class="ttc" id="anamespaceripple_html_afe0c9c8a168a5803e5d4cb11a2d8fc34"><div class="ttname"><a href="namespaceripple.html#afe0c9c8a168a5803e5d4cb11a2d8fc34">ripple::flow</a></div><div class="ttdeci">path::RippleCalc::Output flow(PaymentSandbox &amp;sb, STAmount const &amp;deliver, AccountID const &amp;src, AccountID const &amp;dst, STPathSet const &amp;paths, bool defaultPaths, bool partialPayment, bool ownerPaysTransferFee, bool offerCrossing, std::optional&lt; Quality &gt; const &amp;limitQuality, std::optional&lt; STAmount &gt; const &amp;sendMax, beast::Journal j, path::detail::FlowDebugInfo *flowDebugInfo)</div><div class="ttdoc">Make a payment from the src account to the dst account.</div><div class="ttdef"><b>Definition:</b> <a href="Flow_8cpp_source.html#l00059">Flow.cpp:59</a></div></div>
 <div class="ttc" id="anamespaceripple_html_adfb760bc3e4ccb79d5d4f6ecff2f1817"><div class="ttname"><a href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">ripple::TER</a></div><div class="ttdeci">TERSubset&lt; CanCvtToTER &gt; TER</div><div class="ttdef"><b>Definition:</b> <a href="TER_8h_source.html#l00608">TER.h:608</a></div></div>
 <div class="ttc" id="astructripple_1_1StrandResult_html_ad2aeb74ea0283590413f70fd91ac5769"><div class="ttname"><a href="structripple_1_1StrandResult.html#ad2aeb74ea0283590413f70fd91ac5769">ripple::StrandResult::StrandResult</a></div><div class="ttdeci">StrandResult(Strand const &amp;strand, boost::container::flat_set&lt; uint256 &gt; ofrsToRm_)</div><div class="ttdef"><b>Definition:</b> <a href="StrandFlow_8h_source.html#l00082">StrandFlow.h:82</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a69efc1bd8569dd87c04974b3780ce47b"><div class="ttname"><a href="namespaceripple.html#a69efc1bd8569dd87c04974b3780ce47b">ripple::limitStepOut</a></div><div class="ttdeci">static void limitStepOut(Offer const &amp;offer, TAmounts&lt; TIn, TOut &gt; &amp;ofrAmt, TAmounts&lt; TIn, TOut &gt; &amp;stpAmt, TOut &amp;ownerGives, std::uint32_t transferRateIn, std::uint32_t transferRateOut, TOut const &amp;limit, Rules const &amp;rules)</div><div class="ttdef"><b>Definition:</b> <a href="BookStep_8cpp_source.html#l00609">BookStep.cpp:609</a></div></div>
@@ -949,6 +975,7 @@ $(function() {
 <div class="ttc" id="astructripple_1_1StrandResult_html_af976cea690292c2f551b074ef401e38d"><div class="ttname"><a href="structripple_1_1StrandResult.html#af976cea690292c2f551b074ef401e38d">ripple::StrandResult::StrandResult</a></div><div class="ttdeci">StrandResult()=default</div><div class="ttdoc">Strand result constructor.</div></div>
 <div class="ttc" id="anamespaceripple_html_a75cb21d7f1df42f2fdc8efddb79b63f4a86b406cfcbffc042f65ac0c78079adbb"><div class="ttname"><a href="namespaceripple.html#a75cb21d7f1df42f2fdc8efddb79b63f4a86b406cfcbffc042f65ac0c78079adbb">ripple::tefEXCEPTION</a></div><div class="ttdeci">@ tefEXCEPTION</div><div class="ttdef"><b>Definition:</b> <a href="TER_8h_source.html#l00166">TER.h:166</a></div></div>
 <div class="ttc" id="anumeric_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/numeric.html">numeric</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ae28dcfd3e9d50e735f0fb46f22979fd2"><div class="ttname"><a href="namespaceripple.html#ae28dcfd3e9d50e735f0fb46f22979fd2">ripple::fixFillOrKill</a></div><div class="ttdeci">const uint256 fixFillOrKill</div></div>
 <div class="ttc" id="astable_sort_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/algorithm/stable_sort.html">std::stable_sort</a></div><div class="ttdeci">T stable_sort(T... args)</div></div>
 <div class="ttc" id="aunique_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="anamespaceripple_html_a06f1da429e6a72c7a8be4248d88ed6e7"><div class="ttname"><a href="namespaceripple.html#a06f1da429e6a72c7a8be4248d88ed6e7">ripple::sum</a></div><div class="ttdeci">static auto sum(TCollection const &amp;col)</div><div class="ttdef"><b>Definition:</b> <a href="BookStep_8cpp_source.html#l00884">BookStep.cpp:884</a></div></div>
