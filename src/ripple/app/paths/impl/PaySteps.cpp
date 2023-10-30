@@ -141,7 +141,7 @@ toStrand(
     std::optional<Issue> const& sendMaxIssue,
     STPath const& path,
     bool ownerPaysTransferFee,
-    bool offerCrossing,
+    OfferCrossing offerCrossing,
     AMMContext& ammContext,
     beast::Journal j)
 {
@@ -475,7 +475,7 @@ toStrands(
     STPathSet const& paths,
     bool addDefaultPath,
     bool ownerPaysTransferFee,
-    bool offerCrossing,
+    OfferCrossing offerCrossing,
     AMMContext& ammContext,
     beast::Journal j)
 {
@@ -588,7 +588,7 @@ StrandContext::StrandContext(
     std::optional<Quality> const& limitQuality_,
     bool isLast_,
     bool ownerPaysTransferFee_,
-    bool offerCrossing_,
+    OfferCrossing offerCrossing_,
     bool isDefaultPath_,
     std::array<boost::container::flat_set<Issue>, 2>& seenDirectIssues_,
     boost::container::flat_set<Issue>& seenBookOuts_,
