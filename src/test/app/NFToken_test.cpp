@@ -6806,10 +6806,9 @@ class NFToken0_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         // Lambda that mints an NFT and then creates a sell offer
-        auto mintAndCreateSellOffer =
-            [](test::jtx::Env& env,
-               test::jtx::Account const& act,
-               STAmount const amt) ->  uint256 {
+        auto mintAndCreateSellOffer = [](test::jtx::Env& env,
+                                         test::jtx::Account const& act,
+                                         STAmount const amt) -> uint256 {
             // act mints a NFT
             uint256 const nftId{token::getNextID(env, act, 0u, tfTransferable)};
             env(token::mint(act, 0u), txflags(tfTransferable));
