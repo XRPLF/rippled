@@ -28,7 +28,9 @@
 
 #include <chrono>
 #include <cstdint>
+#include <ratio>
 #include <string>
+#include <type_traits>
 
 namespace ripple {
 
@@ -91,16 +93,17 @@ std::string
 to_string_iso(date::sys_time<Duration> tp)
 {
     using namespace std::chrono;
-    return date::format("%FT%H:%M:%OSZ", tp);
+    return date::format("%FT%TZ", tp);
 }
 
 inline std::string
 to_string_iso(NetClock::time_point tp)
 {
     // 2000-01-01 00:00:00 UTC is 946684800s from 1970-01-01 00:00:00 UTC
-    using namespace std::chrono;
-    return to_string_iso(
-        system_clock::time_point{tp.time_since_epoch() + epoch_offset});
+    // Note, NetClock::duration is seconds, as checked by static_assert
+    static_assert(std::is_same_v<NetClock::duration::period, std::ratio<1>>);
+    return to_string_iso(date::sys_time<NetClock::duration>{
+        tp.time_since_epoch() + epoch_offset});
 }
 
 /** A clock for measuring elapsed time.
