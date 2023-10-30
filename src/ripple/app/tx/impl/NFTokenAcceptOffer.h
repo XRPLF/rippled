@@ -39,9 +39,10 @@ private:
         std::shared_ptr<SLE> const& sell);
 
     TER
-    checkBuyerReserve(
-        std::shared_ptr<SLE const> const& sleBuyer,
-        std::uint32_t const buyerOwnerCountBefore);
+    transferNFToken(
+        AccountID const& buyer,
+        AccountID const& seller,
+        uint256 const& nfTokenID);
 
 public:
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};

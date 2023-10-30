@@ -6809,7 +6809,7 @@ class NFToken0_test : public beast::unit_test::suite
         auto mintAndCreateSellOffer =
             [](test::jtx::Env& env,
                test::jtx::Account const& act,
-               STAmount const amt) -> std::tuple<uint256, uint256> {
+               STAmount const amt) ->  uint256 {
             // act mints a NFT
             uint256 const nftId{token::getNextID(env, act, 0u, tfTransferable)};
             env(token::mint(act, 0u), txflags(tfTransferable));
@@ -6821,7 +6821,7 @@ class NFToken0_test : public beast::unit_test::suite
             env(token::createOffer(act, nftId, amt), txflags(tfSellNFToken));
             env.close();
 
-            return {nftId, sellOfferIndex};
+            return sellOfferIndex;
         };
 
         // Test the behaviors when the buyer makes an accept offer, both before
@@ -6843,7 +6843,7 @@ class NFToken0_test : public beast::unit_test::suite
             env.close();
 
             // alice mints an NFT and create a sell offer for 0 XRP
-            auto const [nftId, sellOfferIndex] =
+            auto const sellOfferIndex =
                 mintAndCreateSellOffer(env, alice, XRP(0));
 
             // Bob owns no object
@@ -6929,7 +6929,7 @@ class NFToken0_test : public beast::unit_test::suite
                 for (size_t i = 0; i < 200; i++)
                 {
                     // alice mints an NFT and creates a sell offer for 0 XRP
-                    auto const [nftId, sellOfferIndex] =
+                    auto const sellOfferIndex =
                         mintAndCreateSellOffer(env, alice, XRP(0));
 
                     // Bob is able to accept the offer
@@ -6940,7 +6940,7 @@ class NFToken0_test : public beast::unit_test::suite
             else
             {
                 // alice mints the first NFT and creates a sell offer for 0 XRP
-                auto const [nftId1, sellOfferIndex1] =
+                auto const sellOfferIndex1 =
                     mintAndCreateSellOffer(env, alice, XRP(0));
 
                 // Bob cannot accept this offer because he doesn't have the
@@ -6966,7 +6966,7 @@ class NFToken0_test : public beast::unit_test::suite
                 for (size_t i = 0; i < 31; i++)
                 {
                     // alice mints an NFT and creates a sell offer for 0 XRP
-                    auto const [nftId, sellOfferIndex] =
+                    auto const sellOfferIndex =
                         mintAndCreateSellOffer(env, alice, XRP(0));
 
                     // Bob can accept the offer because the new NFT is stored in
@@ -6979,7 +6979,7 @@ class NFToken0_test : public beast::unit_test::suite
 
                 // alice now mints the 33rd NFT and creates an sell offer for 0
                 // XRP
-                auto const [nftId33, sellOfferIndex33] =
+                auto const sellOfferIndex33 =
                     mintAndCreateSellOffer(env, alice, XRP(0));
 
                 // Bob fails to accept this NFT because he does not have enough
