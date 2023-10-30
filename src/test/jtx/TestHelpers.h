@@ -33,17 +33,17 @@ namespace ripple {
 namespace test {
 namespace jtx {
 
-// Helper to make vector from iterable
-template <typename T>
-concept iterable = requires(T& v)
+// TODO We only need this long "requires" clause as polyfill, for C++20
+// implementations which are missing <ranges> header. Replace with
+// `std::ranges::range<Input>`, and accordingly use std::ranges::begin/end
+// when we have moved to better compilers.
+template <typename Input>
+auto
+make_vector(Input const& input) requires requires(Input& v)
 {
     std::begin(v);
     std::end(v);
-};
-
-template <typename Input>
-auto
-make_vector(Input const& input) requires iterable<Input>
+}
 {
     return std::vector(std::begin(input), std::end(input));
 }
