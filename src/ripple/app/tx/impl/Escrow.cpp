@@ -22,7 +22,6 @@
 #include <ripple/app/misc/HashRouter.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/XRPAmount.h>
-#include <ripple/basics/chrono.h>
 #include <ripple/basics/safe_cast.h>
 #include <ripple/conditions/Condition.h>
 #include <ripple/conditions/Fulfillment.h>
@@ -77,18 +76,6 @@ namespace ripple {
 */
 
 //------------------------------------------------------------------------------
-
-/** Has the specified time passed?
-
-    @param now  the current time
-    @param mark the cutoff point
-    @return true if \a now refers to a time strictly after \a mark, else false.
-*/
-static inline bool
-after(NetClock::time_point now, std::uint32_t mark)
-{
-    return now.time_since_epoch().count() > mark;
-}
 
 TxConsequences
 EscrowCreate::makeTxConsequences(PreflightContext const& ctx)

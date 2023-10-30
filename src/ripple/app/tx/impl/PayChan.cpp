@@ -20,7 +20,6 @@
 #include <ripple/app/tx/impl/PayChan.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/XRPAmount.h>
-#include <ripple/basics/chrono.h>
 #include <ripple/ledger/ApplyView.h>
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/Feature.h>
@@ -248,6 +247,13 @@ PayChanCreate::doApply()
     auto const sle = ctx_.view().peek(keylet::account(account));
     if (!sle)
         return tefINTERNAL;
+
+    if (ctx_.view().rules().enabled(fixPayChanCancelAfter))
+    {
+        auto const closeTime = ctx_.view().info().parentCloseTime;
+        if (ctx_.tx[~sfCancelAfter] && after(closeTime, ctx_.tx[sfCancelAfter]))
+            return tecEXPIRED;
+    }
 
     auto const dst = ctx_.tx[sfDestination];
 
