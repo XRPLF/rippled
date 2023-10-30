@@ -374,8 +374,9 @@ transactionPreProcessImpl(
     if (!keyPair || contains_error(jvResult))
         return jvResult;
 
-    PublicKey pk = keyPair->first;
-    SecretKey sk = keyPair->second;
+    assert(keyPair.has_value());
+    PublicKey const& pk = keyPair->first;
+    SecretKey const& sk = keyPair->second;
 
     bool const verify =
         !(params.isMember(jss::offline) && params[jss::offline].asBool());

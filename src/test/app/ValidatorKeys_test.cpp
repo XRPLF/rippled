@@ -146,8 +146,8 @@ public:
 
             if (BEAST_EXPECT(k.keys))
             {
-                BEAST_EXPECT(k.keys->publicKey == seedPublicKey);
-                BEAST_EXPECT(k.keys->secretKey == seedSecretKey);
+                BEAST_EXPECT(k.keys->publicKey == tokenPublicKey);
+                BEAST_EXPECT(k.keys->secretKey == tokenSecretKey);
             }
             BEAST_EXPECT(k.nodeID == tokenNodeID);
             BEAST_EXPECT(k.manifest == tokenManifest);

@@ -94,8 +94,8 @@ deserializeManifest(Slice s, beast::Journal journal)
         if (!publicKeyType(makeSlice(pk)))
             return std::nullopt;
 
-        std::string serialized;
-        serialized.assign(reinterpret_cast<char const*>(s.data()), s.size());
+        std::string const serialized(
+            reinterpret_cast<char const*>(s.data()), s.size());
         const PublicKey masterKey = PublicKey(makeSlice(pk));
         std::uint32_t seq = st.getFieldU32(sfSequence);
 
