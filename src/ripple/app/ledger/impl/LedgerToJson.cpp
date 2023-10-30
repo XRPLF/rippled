@@ -155,13 +155,15 @@ fillJsonTx(
                         {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
             }
 
+            if (!fill.ledger.open())
+                txJson[jss::ledger_hash] = to_string(fill.ledger.info().hash);
+
             const bool validated =
                 fill.context->ledgerMaster.isValidated(fill.ledger);
             txJson[jss::validated] = validated;
             if (validated)
             {
                 txJson[jss::ledger_index] = to_string(fill.ledger.seq());
-                txJson[jss::ledger_hash] = to_string(fill.ledger.info().hash);
                 if (fill.closeTime)
                     txJson[jss::close_time_iso] =
                         to_string_iso(*fill.closeTime);

@@ -267,6 +267,9 @@ doTxHelp(RPC::Context& context, TxArgs args)
     std::shared_ptr<Ledger const> ledger =
         context.ledgerMaster.getLedgerBySeq(txn->getLedger());
 
+    if (ledger && !ledger->open())
+        result.ledgerHash = ledger->info().hash;
+
     if (ledger && meta)
     {
         if (args.binary)
@@ -287,7 +290,6 @@ doTxHelp(RPC::Context& context, TxArgs args)
         uint32_t lgrSeq = ledger->info().seq;
         uint32_t txnIdx = meta->getAsObject().getFieldU32(sfTransactionIndex);
         uint32_t netID = context.app.config().NETWORK_ID;
-        result.ledgerHash = ledger->info().hash;
 
         if (txnIdx <= 0xFFFFU && netID < 0xFFFFU && lgrSeq < 0x0FFF'FFFFUL)
             result.ctid =
@@ -341,13 +343,14 @@ populateJsonResponse(
                     sttx->getTxnType(),
                     context.apiVersion);
             }
+
+            if (result.ledgerHash)
+                response[jss::ledger_hash] = to_string(*result.ledgerHash);
+
             response[jss::hash] = hash;
             if (result.validated)
             {
                 response[jss::ledger_index] = result.txn->getLedger();
-                if (result.ledgerHash)
-                    response[jss::ledger_hash] = to_string(*result.ledgerHash);
-
                 if (result.closeTime)
                     response[jss::close_time_iso] =
                         to_string_iso(*result.closeTime);

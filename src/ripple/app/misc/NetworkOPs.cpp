@@ -3117,10 +3117,12 @@ NetworkOPsImp::transJson(
             jvObj[jss::meta], *ledger, transaction, meta->get());
     }
 
+    if (!ledger->open())
+        jvObj[jss::ledger_hash] = to_string(ledger->info().hash);
+
     if (validated)
     {
         jvObj[jss::ledger_index] = ledger->info().seq;
-        jvObj[jss::ledger_hash] = to_string(ledger->info().hash);
         jvObj[jss::transaction][jss::date] =
             ledger->info().closeTime.time_since_epoch().count();
         jvObj[jss::validated] = true;
