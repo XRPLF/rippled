@@ -96,8 +96,8 @@ deserializeManifest(Slice s, beast::Journal journal)
 
         std::string const serialized(
             reinterpret_cast<char const*>(s.data()), s.size());
-        const PublicKey masterKey = PublicKey(makeSlice(pk));
-        std::uint32_t seq = st.getFieldU32(sfSequence);
+        PublicKey const masterKey = PublicKey(makeSlice(pk));
+        std::uint32_t const seq = st.getFieldU32(sfSequence);
 
         std::string domain;
 
@@ -136,7 +136,6 @@ deserializeManifest(Slice s, beast::Journal journal)
             if (!hasEphemeralSig)
                 return std::nullopt;
 
-            // extract the signing key from the STObject
             auto const spk = st.getFieldVL(sfSigningPubKey);
 
             if (!publicKeyType(makeSlice(spk)))
@@ -224,6 +223,14 @@ Manifest::revoked() const
         The maximum possible sequence number means that the master key
         has been revoked.
     */
+    return revoked(sequence);
+}
+
+bool
+Manifest::revoked(std::uint32_t sequence)
+{
+    // The maximum possible sequence number means that the master key has
+    // been revoked.
     return sequence == std::numeric_limits<std::uint32_t>::max();
 }
 

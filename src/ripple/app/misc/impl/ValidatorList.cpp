@@ -904,7 +904,7 @@ ValidatorList::applyListsAndBroadcast(
     }
     bool broadcast = disposition <= ListDisposition::known_sequence;
 
-    // localPublisherList is not braodcast
+    // localPublisherList is not broadcast
     if (broadcast)
     {
         assert(

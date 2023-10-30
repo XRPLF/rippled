@@ -131,6 +131,12 @@ struct Manifest
     hash() const;
 
     /// Returns `true` if manifest revokes master key
+    // The maximum possible sequence number means that the master key has
+    // been revoked
+    static bool
+    revoked(std::uint32_t sequence);
+
+    /// Returns `true` if manifest revokes master key
     bool
     revoked() const;
 
