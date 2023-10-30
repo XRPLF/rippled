@@ -260,7 +260,10 @@ STTx::getJson(
         Json::Value ret = strHex(s.peekData());
         return ret;
     }
-    return STObject::getJson(JsonOptions::none);  // Yes, want `none`
+    // We want virtualy the same output as `getJson(JsonOptions)` overload
+    // above, but without the hash element. Since `getJson(JsonOptions)`
+    // is using STObject::getJson(JsonOptions::none), we use it here as well
+    return STObject::getJson(JsonOptions::none);
 }
 
 std::string const&

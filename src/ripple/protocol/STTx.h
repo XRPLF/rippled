@@ -109,10 +109,12 @@ public:
     Json::Value
     getJson(JsonOptions options) const override;
 
-    /// If `hash` is set, will store hash inside the provided string. Otherwise
-    /// hash will be stored as nested jss::hash element inside the returned JSON
-    /// Additionally, if `hash` is set and `binary` is true, will not create
-    /// nested jss::tx for binary hex; instead will return it as JSON string
+    /**
+    If `hash` is set, will store transaction id inside the provided string.
+    Otherwise it will be stored as nested jss::hash element inside the returned
+    JSON. Additionally, if `hash` is set and `binary` is true, will not create
+    nested jss::tx for binary hex; instead will return it as JSON string
+    */
     Json::Value
     getJson(
         JsonOptions options,
