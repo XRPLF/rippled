@@ -21,11 +21,330 @@
 #include <ripple/app/misc/TxQ.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/beast/unit_test.h>
+#include <ripple/protocol/AccountID.h>
 #include <ripple/protocol/ErrorCodes.h>
+#include <ripple/protocol/STXChainBridge.h>
 #include <ripple/protocol/jss.h>
 #include <test/jtx.h>
+#include <test/jtx/attester.h>
+#include <test/jtx/multisign.h>
+#include <test/jtx/xchain_bridge.h>
 
 namespace ripple {
+
+class LedgerRPC_XChain_test : public beast::unit_test::suite,
+                              public test::jtx::XChainBridgeObjects
+{
+    void
+    checkErrorValue(
+        Json::Value const& jv,
+        std::string const& err,
+        std::string const& msg)
+    {
+        if (BEAST_EXPECT(jv.isMember(jss::status)))
+            BEAST_EXPECT(jv[jss::status] == "error");
+        if (BEAST_EXPECT(jv.isMember(jss::error)))
+            BEAST_EXPECT(jv[jss::error] == err);
+        if (msg.empty())
+        {
+            BEAST_EXPECT(
+                jv[jss::error_message] == Json::nullValue ||
+                jv[jss::error_message] == "");
+        }
+        else if (BEAST_EXPECT(jv.isMember(jss::error_message)))
+            BEAST_EXPECT(jv[jss::error_message] == msg);
+    }
+
+    void
+    testLedgerEntryBridge()
+    {
+        testcase("ledger_entry: bridge");
+        using namespace test::jtx;
+
+        Env mcEnv{*this, features};
+        Env scEnv(*this, envconfig(port_increment, 3), features);
+
+        createBridgeObjects(mcEnv, scEnv);
+
+        std::string const ledgerHash{to_string(mcEnv.closed()->info().hash)};
+        std::string bridge_index;
+        Json::Value mcBridge;
+        {
+            // request the bridge via RPC
+            Json::Value jvParams;
+            jvParams[jss::bridge_account] = mcDoor.human();
+            jvParams[jss::bridge] = jvb;
+            Json::Value const jrr = mcEnv.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+
+            BEAST_EXPECT(jrr.isMember(jss::node));
+            auto r = jrr[jss::node];
+            // std::cout << to_string(r) << '\n';
+
+            BEAST_EXPECT(r.isMember(jss::Account));
+            BEAST_EXPECT(r[jss::Account] == mcDoor.human());
+
+            BEAST_EXPECT(r.isMember(jss::Flags));
+
+            BEAST_EXPECT(r.isMember(sfLedgerEntryType.jsonName));
+            BEAST_EXPECT(r[sfLedgerEntryType.jsonName] == jss::Bridge);
+
+            // we not created an account yet
+            BEAST_EXPECT(r.isMember(sfXChainAccountCreateCount.jsonName));
+            BEAST_EXPECT(r[sfXChainAccountCreateCount.jsonName].asInt() == 0);
+
+            // we have not claimed a locking chain tx yet
+            BEAST_EXPECT(r.isMember(sfXChainAccountClaimCount.jsonName));
+            BEAST_EXPECT(r[sfXChainAccountClaimCount.jsonName].asInt() == 0);
+
+            BEAST_EXPECT(r.isMember(jss::index));
+            bridge_index = r[jss::index].asString();
+            mcBridge = r;
+        }
+        {
+            // request the bridge via RPC by index
+            Json::Value jvParams;
+            jvParams[jss::index] = bridge_index;
+            Json::Value const jrr = mcEnv.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+
+            BEAST_EXPECT(jrr.isMember(jss::node));
+            BEAST_EXPECT(jrr[jss::node] == mcBridge);
+        }
+        {
+            // swap door accounts and make sure we get an error value
+            Json::Value jvParams;
+            // Sidechain door account is "master", not scDoor
+            jvParams[jss::bridge_account] = Account::master.human();
+            jvParams[jss::bridge] = jvb;
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = mcEnv.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+
+            checkErrorValue(jrr, "entryNotFound", "");
+        }
+        {
+            // create two claim ids and verify that the bridge counter was
+            // incremented
+            mcEnv(xchain_create_claim_id(mcAlice, jvb, reward, scAlice));
+            mcEnv.close();
+            mcEnv(xchain_create_claim_id(mcBob, jvb, reward, scBob));
+            mcEnv.close();
+
+            // request the bridge via RPC
+            Json::Value jvParams;
+            jvParams[jss::bridge_account] = mcDoor.human();
+            jvParams[jss::bridge] = jvb;
+            // std::cout << to_string(jvParams) << '\n';
+            Json::Value const jrr = mcEnv.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+
+            BEAST_EXPECT(jrr.isMember(jss::node));
+            auto r = jrr[jss::node];
+
+            // we executed two create claim id txs
+            BEAST_EXPECT(r.isMember(sfXChainClaimID.jsonName));
+            BEAST_EXPECT(r[sfXChainClaimID.jsonName].asInt() == 2);
+        }
+    }
+
+    void
+    testLedgerEntryClaimID()
+    {
+        testcase("ledger_entry: xchain_claim_id");
+        using namespace test::jtx;
+
+        Env mcEnv{*this, features};
+        Env scEnv(*this, envconfig(port_increment, 3), features);
+
+        createBridgeObjects(mcEnv, scEnv);
+
+        scEnv(xchain_create_claim_id(scAlice, jvb, reward, mcAlice));
+        scEnv.close();
+        scEnv(xchain_create_claim_id(scBob, jvb, reward, mcBob));
+        scEnv.close();
+
+        std::string bridge_index;
+        {
+            // request the xchain_claim_id via RPC
+            Json::Value jvParams;
+            jvParams[jss::xchain_owned_claim_id] = jvXRPBridgeRPC;
+            jvParams[jss::xchain_owned_claim_id][jss::xchain_owned_claim_id] =
+                1;
+            // std::cout << to_string(jvParams) << '\n';
+            Json::Value const jrr = scEnv.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+
+            BEAST_EXPECT(jrr.isMember(jss::node));
+            auto r = jrr[jss::node];
+            // std::cout << to_string(r) << '\n';
+
+            BEAST_EXPECT(r.isMember(jss::Account));
+            BEAST_EXPECT(r[jss::Account] == scAlice.human());
+            BEAST_EXPECT(
+                r[sfLedgerEntryType.jsonName] == jss::XChainOwnedClaimID);
+            BEAST_EXPECT(r[sfXChainClaimID.jsonName].asInt() == 1);
+            BEAST_EXPECT(r[sfOwnerNode.jsonName].asInt() == 0);
+        }
+
+        {
+            // request the xchain_claim_id via RPC
+            Json::Value jvParams;
+            jvParams[jss::xchain_owned_claim_id] = jvXRPBridgeRPC;
+            jvParams[jss::xchain_owned_claim_id][jss::xchain_owned_claim_id] =
+                2;
+            Json::Value const jrr = scEnv.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+
+            BEAST_EXPECT(jrr.isMember(jss::node));
+            auto r = jrr[jss::node];
+            // std::cout << to_string(r) << '\n';
+
+            BEAST_EXPECT(r.isMember(jss::Account));
+            BEAST_EXPECT(r[jss::Account] == scBob.human());
+            BEAST_EXPECT(
+                r[sfLedgerEntryType.jsonName] == jss::XChainOwnedClaimID);
+            BEAST_EXPECT(r[sfXChainClaimID.jsonName].asInt() == 2);
+            BEAST_EXPECT(r[sfOwnerNode.jsonName].asInt() == 0);
+        }
+    }
+
+    void
+    testLedgerEntryCreateAccountClaimID()
+    {
+        testcase("ledger_entry: xchain_create_account_claim_id");
+        using namespace test::jtx;
+
+        Env mcEnv{*this, features};
+        Env scEnv(*this, envconfig(port_increment, 3), features);
+
+        // note: signers.size() and quorum are both 5 in createBridgeObjects
+        createBridgeObjects(mcEnv, scEnv);
+
+        auto scCarol =
+            Account("scCarol");  // Don't fund it - it will be created with the
+                                 // xchain transaction
+        auto const amt = XRP(1000);
+        mcEnv(sidechain_xchain_account_create(
+            mcAlice, jvb, scCarol, amt, reward));
+        mcEnv.close();
+
+        // send less than quorum of attestations (otherwise funds are
+        // immediately transferred and no "claim" object is created)
+        size_t constexpr num_attest = 3;
+        auto attestations = create_account_attestations(
+            scAttester,
+            jvb,
+            mcAlice,
+            amt,
+            reward,
+            payee,
+            /*wasLockingChainSend*/ true,
+            1,
+            scCarol,
+            signers,
+            UT_XCHAIN_DEFAULT_NUM_SIGNERS);
+        for (size_t i = 0; i < num_attest; ++i)
+        {
+            scEnv(attestations[i]);
+        }
+        scEnv.close();
+
+        {
+            // request the create account claim_id via RPC
+            Json::Value jvParams;
+            jvParams[jss::xchain_owned_create_account_claim_id] =
+                jvXRPBridgeRPC;
+            jvParams[jss::xchain_owned_create_account_claim_id]
+                    [jss::xchain_owned_create_account_claim_id] = 1;
+            // std::cout << to_string(jvParams) << '\n';
+            Json::Value const jrr = scEnv.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            // std::cout << to_string(jrr) << '\n';
+
+            BEAST_EXPECT(jrr.isMember(jss::node));
+            auto r = jrr[jss::node];
+
+            BEAST_EXPECT(r.isMember(jss::Account));
+            BEAST_EXPECT(r[jss::Account] == Account::master.human());
+
+            BEAST_EXPECT(r.isMember(sfXChainAccountCreateCount.jsonName));
+            BEAST_EXPECT(r[sfXChainAccountCreateCount.jsonName].asInt() == 1);
+
+            BEAST_EXPECT(
+                r.isMember(sfXChainCreateAccountAttestations.jsonName));
+            auto attest = r[sfXChainCreateAccountAttestations.jsonName];
+            BEAST_EXPECT(attest.isArray());
+            BEAST_EXPECT(attest.size() == 3);
+            BEAST_EXPECT(attest[Json::Value::UInt(0)].isMember(
+                sfXChainCreateAccountProofSig.jsonName));
+            Json::Value a[num_attest];
+            for (size_t i = 0; i < num_attest; ++i)
+            {
+                a[i] = attest[Json::Value::UInt(0)]
+                             [sfXChainCreateAccountProofSig.jsonName];
+                BEAST_EXPECT(
+                    a[i].isMember(jss::Amount) &&
+                    a[i][jss::Amount].asInt() == 1000 * drop_per_xrp);
+                BEAST_EXPECT(
+                    a[i].isMember(jss::Destination) &&
+                    a[i][jss::Destination] == scCarol.human());
+                BEAST_EXPECT(
+                    a[i].isMember(sfAttestationSignerAccount.jsonName) &&
+                    std::any_of(
+                        signers.begin(), signers.end(), [&](signer const& s) {
+                            return a[i][sfAttestationSignerAccount.jsonName] ==
+                                s.account.human();
+                        }));
+                BEAST_EXPECT(
+                    a[i].isMember(sfAttestationRewardAccount.jsonName) &&
+                    std::any_of(
+                        payee.begin(),
+                        payee.end(),
+                        [&](Account const& account) {
+                            return a[i][sfAttestationRewardAccount.jsonName] ==
+                                account.human();
+                        }));
+                BEAST_EXPECT(
+                    a[i].isMember(sfWasLockingChainSend.jsonName) &&
+                    a[i][sfWasLockingChainSend.jsonName] == 1);
+                BEAST_EXPECT(
+                    a[i].isMember(sfSignatureReward.jsonName) &&
+                    a[i][sfSignatureReward.jsonName].asInt() ==
+                        1 * drop_per_xrp);
+            }
+        }
+
+        // complete attestations quorum - CreateAccountClaimID should not be
+        // present anymore
+        for (size_t i = num_attest; i < UT_XCHAIN_DEFAULT_NUM_SIGNERS; ++i)
+        {
+            scEnv(attestations[i]);
+        }
+        scEnv.close();
+        {
+            // request the create account claim_id via RPC
+            Json::Value jvParams;
+            jvParams[jss::xchain_owned_create_account_claim_id] =
+                jvXRPBridgeRPC;
+            jvParams[jss::xchain_owned_create_account_claim_id]
+                    [jss::xchain_owned_create_account_claim_id] = 1;
+            // std::cout << to_string(jvParams) << '\n';
+            Json::Value const jrr = scEnv.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "entryNotFound", "");
+        }
+    }
+
+public:
+    void
+    run() override
+    {
+        testLedgerEntryBridge();
+        testLedgerEntryClaimID();
+        testLedgerEntryCreateAccountClaimID();
+    }
+};
 
 class LedgerRPC_test : public beast::unit_test::suite
 {
@@ -1212,6 +1531,57 @@ class LedgerRPC_test : public beast::unit_test::suite
     }
 
     void
+    testLedgerEntryDID()
+    {
+        testcase("ledger_entry Request DID");
+        using namespace test::jtx;
+        using namespace std::literals::chrono_literals;
+        Env env{*this};
+        Account const alice{"alice"};
+
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        // Lambda to create a DID.
+        auto didCreate = [](test::jtx::Account const& account) {
+            Json::Value jv;
+            jv[jss::TransactionType] = jss::DIDSet;
+            jv[jss::Account] = account.human();
+            jv[sfDIDDocument.jsonName] = strHex(std::string{"data"});
+            jv[sfURI.jsonName] = strHex(std::string{"uri"});
+            return jv;
+        };
+
+        env(didCreate(alice));
+        env.close();
+
+        std::string const ledgerHash{to_string(env.closed()->info().hash)};
+
+        {
+            // Request the DID using its index.
+            Json::Value jvParams;
+            jvParams[jss::did] = alice.human();
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(
+                jrr[jss::node][sfDIDDocument.jsonName] ==
+                strHex(std::string{"data"}));
+            BEAST_EXPECT(
+                jrr[jss::node][sfURI.jsonName] == strHex(std::string{"uri"}));
+        }
+        {
+            // Request an index that is not a DID.
+            Json::Value jvParams;
+            jvParams[jss::did] = env.master.human();
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "entryNotFound", "");
+        }
+    }
+
+    void
     testLedgerEntryInvalidParams(unsigned int apiVersion)
     {
         testcase(
@@ -1222,18 +1592,216 @@ class LedgerRPC_test : public beast::unit_test::suite
 
         std::string const ledgerHash{to_string(env.closed()->info().hash)};
 
+        auto makeParams = [&apiVersion](std::function<void(Json::Value&)> f) {
+            Json::Value params;
+            params[jss::api_version] = apiVersion;
+            f(params);
+            return params;
+        };
         // "features" is not an option supported by ledger_entry.
-        Json::Value jvParams;
-        jvParams[jss::api_version] = apiVersion;
-        jvParams[jss::features] = ledgerHash;
-        jvParams[jss::ledger_hash] = ledgerHash;
-        Json::Value const jrr =
-            env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
+        {
+            auto const jvParams =
+                makeParams([&ledgerHash](Json::Value& jvParams) {
+                    jvParams[jss::features] = ledgerHash;
+                    jvParams[jss::ledger_hash] = ledgerHash;
+                });
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
 
-        if (apiVersion < 2u)
-            checkErrorValue(jrr, "unknownOption", "");
-        else
-            checkErrorValue(jrr, "invalidParams", "");
+            if (apiVersion < 2u)
+                checkErrorValue(jrr, "unknownOption", "");
+            else
+                checkErrorValue(jrr, "invalidParams", "");
+        }
+        Json::Value const injectObject = []() {
+            Json::Value obj(Json::objectValue);
+            obj[jss::account] = "rhigTLJJyXXSRUyRCQtqi1NoAZZzZnS4KU";
+            obj[jss::ledger_index] = "validated";
+            return obj;
+        }();
+        Json::Value const injectArray = []() {
+            Json::Value arr(Json::arrayValue);
+            arr[0u] = "rhigTLJJyXXSRUyRCQtqi1NoAZZzZnS4KU";
+            arr[1u] = "validated";
+            return arr;
+        }();
+
+        // invalid input for fields that can handle an object, but can't handle
+        // an array
+        for (auto const& field :
+             {jss::directory, jss::escrow, jss::offer, jss::ticket, jss::amm})
+        {
+            auto const jvParams =
+                makeParams([&field, &injectArray](Json::Value& jvParams) {
+                    jvParams[field] = injectArray;
+                });
+
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+
+            if (apiVersion < 2u)
+                checkErrorValue(jrr, "internal", "Internal error.");
+            else
+                checkErrorValue(jrr, "invalidParams", "");
+        }
+        // Fields that can handle objects just fine
+        for (auto const& field :
+             {jss::directory, jss::escrow, jss::offer, jss::ticket, jss::amm})
+        {
+            auto const jvParams =
+                makeParams([&field, &injectObject](Json::Value& jvParams) {
+                    jvParams[field] = injectObject;
+                });
+
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+
+            checkErrorValue(jrr, "malformedRequest", "");
+        }
+
+        for (auto const& inject : {injectObject, injectArray})
+        {
+            // invalid input for fields that can't handle an object or an array
+            for (auto const& field :
+                 {jss::index,
+                  jss::account_root,
+                  jss::check,
+                  jss::payment_channel})
+            {
+                auto const jvParams =
+                    makeParams([&field, &inject](Json::Value& jvParams) {
+                        jvParams[field] = inject;
+                    });
+
+                Json::Value const jrr = env.rpc(
+                    "json", "ledger_entry", to_string(jvParams))[jss::result];
+
+                if (apiVersion < 2u)
+                    checkErrorValue(jrr, "internal", "Internal error.");
+                else
+                    checkErrorValue(jrr, "invalidParams", "");
+            }
+            // directory sub-fields
+            for (auto const& field : {jss::dir_root, jss::owner})
+            {
+                auto const jvParams =
+                    makeParams([&field, &inject](Json::Value& jvParams) {
+                        jvParams[jss::directory][field] = inject;
+                    });
+
+                Json::Value const jrr = env.rpc(
+                    "json", "ledger_entry", to_string(jvParams))[jss::result];
+
+                if (apiVersion < 2u)
+                    checkErrorValue(jrr, "internal", "Internal error.");
+                else
+                    checkErrorValue(jrr, "invalidParams", "");
+            }
+            // escrow sub-fields
+            {
+                auto const jvParams =
+                    makeParams([&inject](Json::Value& jvParams) {
+                        jvParams[jss::escrow][jss::owner] = inject;
+                        jvParams[jss::escrow][jss::seq] = 99;
+                    });
+
+                Json::Value const jrr = env.rpc(
+                    "json", "ledger_entry", to_string(jvParams))[jss::result];
+
+                if (apiVersion < 2u)
+                    checkErrorValue(jrr, "internal", "Internal error.");
+                else
+                    checkErrorValue(jrr, "invalidParams", "");
+            }
+            // offer sub-fields
+            {
+                auto const jvParams =
+                    makeParams([&inject](Json::Value& jvParams) {
+                        jvParams[jss::offer][jss::account] = inject;
+                        jvParams[jss::offer][jss::seq] = 99;
+                    });
+
+                Json::Value const jrr = env.rpc(
+                    "json", "ledger_entry", to_string(jvParams))[jss::result];
+
+                if (apiVersion < 2u)
+                    checkErrorValue(jrr, "internal", "Internal error.");
+                else
+                    checkErrorValue(jrr, "invalidParams", "");
+            }
+            // ripple_state sub-fields
+            {
+                auto const jvParams =
+                    makeParams([&inject](Json::Value& jvParams) {
+                        Json::Value rs(Json::objectValue);
+                        rs[jss::currency] = "FOO";
+                        rs[jss::accounts] = Json::Value(Json::arrayValue);
+                        rs[jss::accounts][0u] =
+                            "rhigTLJJyXXSRUyRCQtqi1NoAZZzZnS4KU";
+                        rs[jss::accounts][1u] =
+                            "rKssEq6pg1KbqEqAFnua5mFAL6Ggpsh2wv";
+                        rs[jss::currency] = inject;
+                        jvParams[jss::ripple_state] = std::move(rs);
+                    });
+
+                Json::Value const jrr = env.rpc(
+                    "json", "ledger_entry", to_string(jvParams))[jss::result];
+
+                if (apiVersion < 2u)
+                    checkErrorValue(jrr, "internal", "Internal error.");
+                else
+                    checkErrorValue(jrr, "invalidParams", "");
+            }
+            // ticket sub-fields
+            {
+                auto const jvParams =
+                    makeParams([&inject](Json::Value& jvParams) {
+                        jvParams[jss::ticket][jss::account] = inject;
+                        jvParams[jss::ticket][jss::ticket_seq] = 99;
+                    });
+
+                Json::Value const jrr = env.rpc(
+                    "json", "ledger_entry", to_string(jvParams))[jss::result];
+
+                if (apiVersion < 2u)
+                    checkErrorValue(jrr, "internal", "Internal error.");
+                else
+                    checkErrorValue(jrr, "invalidParams", "");
+            }
+
+            // Fields that can handle malformed inputs just fine
+            for (auto const& field : {jss::nft_page, jss::deposit_preauth})
+            {
+                auto const jvParams =
+                    makeParams([&field, &inject](Json::Value& jvParams) {
+                        jvParams[field] = inject;
+                    });
+
+                Json::Value const jrr = env.rpc(
+                    "json", "ledger_entry", to_string(jvParams))[jss::result];
+
+                checkErrorValue(jrr, "malformedRequest", "");
+            }
+            // Subfields of deposit_preauth that can handle malformed inputs
+            // fine
+            for (auto const& field : {jss::owner, jss::authorized})
+            {
+                auto const jvParams =
+                    makeParams([&field, &inject](Json::Value& jvParams) {
+                        auto pa = Json::Value(Json::objectValue);
+                        pa[jss::owner] = "rhigTLJJyXXSRUyRCQtqi1NoAZZzZnS4KU";
+                        pa[jss::authorized] =
+                            "rKssEq6pg1KbqEqAFnua5mFAL6Ggpsh2wv";
+                        pa[field] = inject;
+                        jvParams[jss::deposit_preauth] = std::move(pa);
+                    });
+
+                Json::Value const jrr = env.rpc(
+                    "json", "ledger_entry", to_string(jvParams))[jss::result];
+
+                checkErrorValue(jrr, "malformedRequest", "");
+            }
+        }
     }
 
     /// @brief ledger RPC requests as a way to drive
@@ -1735,6 +2303,7 @@ public:
         testNoQueue();
         testQueue();
         testLedgerAccountsOption();
+        testLedgerEntryDID();
 
         test::jtx::forAllApiVersions(std::bind_front(
             &LedgerRPC_test::testLedgerEntryInvalidParams, this));
@@ -1742,5 +2311,6 @@ public:
 };
 
 BEAST_DEFINE_TESTSUITE(LedgerRPC, app, ripple);
+BEAST_DEFINE_TESTSUITE(LedgerRPC_XChain, app, ripple);
 
 }  // namespace ripple

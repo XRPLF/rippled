@@ -103,7 +103,9 @@ target_sources (xrpl_core PRIVATE
   src/ripple/protocol/impl/STObject.cpp
   src/ripple/protocol/impl/STParsedJSON.cpp
   src/ripple/protocol/impl/STPathSet.cpp
+  src/ripple/protocol/impl/STXChainBridge.cpp
   src/ripple/protocol/impl/STTx.cpp
+  src/ripple/protocol/impl/XChainAttestations.cpp
   src/ripple/protocol/impl/STValidation.cpp
   src/ripple/protocol/impl/STVar.cpp
   src/ripple/protocol/impl/STVector256.cpp
@@ -215,6 +217,7 @@ install (
 install (
   FILES
     src/ripple/json/JsonPropertyStream.h
+    src/ripple/json/MultivarJson.h
     src/ripple/json/Object.h
     src/ripple/json/Output.h
     src/ripple/json/Writer.h
@@ -242,6 +245,7 @@ install (
     src/ripple/protocol/Indexes.h
     src/ripple/protocol/InnerObjectFormats.h
     src/ripple/protocol/Issue.h
+    src/ripple/protocol/json_get_or_throw.h
     src/ripple/protocol/KeyType.h
     src/ripple/protocol/Keylet.h
     src/ripple/protocol/KnownFormats.h
@@ -272,6 +276,8 @@ install (
     src/ripple/protocol/STParsedJSON.h
     src/ripple/protocol/STPathSet.h
     src/ripple/protocol/STTx.h
+    src/ripple/protocol/XChainAttestations.h
+    src/ripple/protocol/STXChainBridge.h
     src/ripple/protocol/STValidation.h
     src/ripple/protocol/STVector256.h
     src/ripple/protocol/SecretKey.h
@@ -462,6 +468,7 @@ target_sources (rippled PRIVATE
   src/ripple/app/misc/detail/impl/WorkSSL.cpp
   src/ripple/app/misc/impl/AccountTxPaging.cpp
   src/ripple/app/misc/impl/AmendmentTable.cpp
+  src/ripple/app/misc/impl/DeliverMax.cpp
   src/ripple/app/misc/impl/LoadFeeTrack.cpp
   src/ripple/app/misc/impl/Manifest.cpp
   src/ripple/app/misc/impl/Transaction.cpp
@@ -514,6 +521,7 @@ target_sources (rippled PRIVATE
   src/ripple/app/tx/impl/CreateTicket.cpp
   src/ripple/app/tx/impl/DeleteAccount.cpp
   src/ripple/app/tx/impl/DepositPreauth.cpp
+  src/ripple/app/tx/impl/DID.cpp
   src/ripple/app/tx/impl/Escrow.cpp
   src/ripple/app/tx/impl/InvariantCheck.cpp
   src/ripple/app/tx/impl/NFTokenAcceptOffer.cpp
@@ -528,6 +536,7 @@ target_sources (rippled PRIVATE
   src/ripple/app/tx/impl/SetRegularKey.cpp
   src/ripple/app/tx/impl/SetSignerList.cpp
   src/ripple/app/tx/impl/SetTrust.cpp
+  src/ripple/app/tx/impl/XChainBridge.cpp
   src/ripple/app/tx/impl/SignerEntries.cpp
   src/ripple/app/tx/impl/Taker.cpp
   src/ripple/app/tx/impl/Transactor.cpp
@@ -562,9 +571,7 @@ target_sources (rippled PRIVATE
   src/ripple/core/impl/JobQueue.cpp
   src/ripple/core/impl/LoadEvent.cpp
   src/ripple/core/impl/LoadMonitor.cpp
-  src/ripple/core/impl/SNTPClock.cpp
   src/ripple/core/impl/SociDB.cpp
-  src/ripple/core/impl/TimeKeeper.cpp
   src/ripple/core/impl/Workers.cpp
   src/ripple/core/Pg.cpp
   #[===============================[
@@ -630,6 +637,7 @@ target_sources (rippled PRIVATE
   src/ripple/overlay/impl/Cluster.cpp
   src/ripple/overlay/impl/ConnectAttempt.cpp
   src/ripple/overlay/impl/Handshake.cpp
+  src/ripple/overlay/impl/InboundHandoff.cpp
   src/ripple/overlay/impl/Message.cpp
   src/ripple/overlay/impl/OverlayImpl.cpp
   src/ripple/overlay/impl/PeerImp.cpp
@@ -780,6 +788,7 @@ if (tests)
     src/test/app/DeliverMin_test.cpp
     src/test/app/DepositAuth_test.cpp
     src/test/app/Discrepancy_test.cpp
+    src/test/app/DID_test.cpp
     src/test/app/DNS_test.cpp
     src/test/app/Escrow_test.cpp
     src/test/app/FeeVote_test.cpp
@@ -809,6 +818,7 @@ if (tests)
     src/test/app/ReducedOffer_test.cpp
     src/test/app/Regression_test.cpp
     src/test/app/SHAMapStore_test.cpp
+    src/test/app/XChain_test.cpp
     src/test/app/SetAuth_test.cpp
     src/test/app/SetRegularKey_test.cpp
     src/test/app/SetTrust_test.cpp
@@ -910,6 +920,7 @@ if (tests)
     src/test/json/Output_test.cpp
     src/test/json/Writer_test.cpp
     src/test/json/json_value_test.cpp
+    src/test/json/MultivarJson_test.cpp
     #[===============================[
        test sources:
          subdir: jtx
@@ -921,16 +932,17 @@ if (tests)
     src/test/jtx/impl/AMMTest.cpp
     src/test/jtx/impl/Env.cpp
     src/test/jtx/impl/JSONRPCClient.cpp
-    src/test/jtx/impl/ManualTimeKeeper.cpp
     src/test/jtx/impl/TestHelpers.cpp
     src/test/jtx/impl/WSClient.cpp
     src/test/jtx/impl/acctdelete.cpp
     src/test/jtx/impl/account_txn_id.cpp
     src/test/jtx/impl/amount.cpp
+    src/test/jtx/impl/attester.cpp
     src/test/jtx/impl/balance.cpp
     src/test/jtx/impl/check.cpp
     src/test/jtx/impl/delivermin.cpp
     src/test/jtx/impl/deposit.cpp
+    src/test/jtx/impl/did.cpp
     src/test/jtx/impl/envconfig.cpp
     src/test/jtx/impl/fee.cpp
     src/test/jtx/impl/flags.cpp
@@ -948,6 +960,7 @@ if (tests)
     src/test/jtx/impl/regkey.cpp
     src/test/jtx/impl/sendmax.cpp
     src/test/jtx/impl/seq.cpp
+    src/test/jtx/impl/xchain_bridge.cpp
     src/test/jtx/impl/sig.cpp
     src/test/jtx/impl/tag.cpp
     src/test/jtx/impl/ticket.cpp
@@ -1049,6 +1062,7 @@ if (tests)
     src/test/rpc/KeyGeneration_test.cpp
     src/test/rpc/LedgerClosed_test.cpp
     src/test/rpc/LedgerData_test.cpp
+    src/test/rpc/LedgerHeader_test.cpp
     src/test/rpc/LedgerRPC_test.cpp
     src/test/rpc/LedgerRequestRPC_test.cpp
     src/test/rpc/ManifestRPC_test.cpp
@@ -1072,6 +1086,7 @@ if (tests)
     src/test/rpc/ValidatorInfo_test.cpp
     src/test/rpc/ValidatorRPC_test.cpp
     src/test/rpc/Version_test.cpp
+    src/test/rpc/Handler_test.cpp
     #[===============================[
        test sources:
          subdir: server

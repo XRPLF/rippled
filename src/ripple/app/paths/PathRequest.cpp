@@ -538,7 +538,6 @@ PathRequest::findPaths(
             continueCallback);
         if (!pathfinder)
         {
-            assert(continueCallback && !continueCallback());
             JLOG(m_journal.debug()) << iIdentifier << " No paths found";
             continue;
         }

@@ -847,7 +847,10 @@ getSeedFromRPC(Json::Value const& params, Json::Value& error)
 }
 
 std::pair<PublicKey, SecretKey>
-keypairForSignature(Json::Value const& params, Json::Value& error)
+keypairForSignature(
+    Json::Value const& params,
+    Json::Value& error,
+    unsigned int apiVersion)
 {
     bool const has_key_type = params.isMember(jss::key_type);
 
@@ -901,7 +904,10 @@ keypairForSignature(Json::Value const& params, Json::Value& error)
 
         if (!keyType)
         {
-            error = RPC::invalid_field_error(jss::key_type);
+            if (apiVersion > 1u)
+                error = RPC::make_error(rpcBAD_KEY_TYPE);
+            else
+                error = RPC::invalid_field_error(jss::key_type);
             return {};
         }
 
@@ -982,7 +988,7 @@ chooseLedgerEntryType(Json::Value const& params)
     std::pair<RPC::Status, LedgerEntryType> result{RPC::Status::OK, ltANY};
     if (params.isMember(jss::type))
     {
-        static constexpr std::array<std::pair<char const*, LedgerEntryType>, 16>
+        static constexpr std::array<std::pair<char const*, LedgerEntryType>, 20>
             types{
                 {{jss::account, ltACCOUNT_ROOT},
                  {jss::amendments, ltAMENDMENTS},
@@ -999,7 +1005,12 @@ chooseLedgerEntryType(Json::Value const& params)
                  {jss::ticket, ltTICKET},
                  {jss::nft_offer, ltNFTOKEN_OFFER},
                  {jss::nft_page, ltNFTOKEN_PAGE},
-                 {jss::amm, ltAMM}}};
+                 {jss::amm, ltAMM},
+                 {jss::bridge, ltBRIDGE},
+                 {jss::xchain_owned_claim_id, ltXCHAIN_OWNED_CLAIM_ID},
+                 {jss::xchain_owned_create_account_claim_id,
+                  ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID},
+                 {jss::did, ltDID}}};
 
         auto const& p = params[jss::type];
         if (!p.isString())
@@ -1103,11 +1114,13 @@ getLedgerByContext(RPC::JsonContext& context)
             return RPC::make_param_error("Ledger index too small");
 
         auto const j = context.app.journal("RPCHandler");
-        // Try to get the hash of the desired ledger from the validated ledger
+        // Try to get the hash of the desired ledger from the validated
+        // ledger
         auto neededHash = hashOfSeq(*ledger, ledgerIndex, j);
         if (!neededHash)
         {
-            // Find a ledger more likely to have the hash of the desired ledger
+            // Find a ledger more likely to have the hash of the desired
+            // ledger
             auto const refIndex = getCandidateLedger(ledgerIndex);
             auto refHash = hashOfSeq(*ledger, refIndex, j);
             assert(refHash);
@@ -1115,8 +1128,8 @@ getLedgerByContext(RPC::JsonContext& context)
             ledger = ledgerMaster.getLedgerByHash(*refHash);
             if (!ledger)
             {
-                // We don't have the ledger we need to figure out which ledger
-                // they want. Try to get it.
+                // We don't have the ledger we need to figure out which
+                // ledger they want. Try to get it.
 
                 if (auto il = context.app.getInboundLedgers().acquire(
                         *refHash, refIndex, InboundLedger::Reason::GENERIC))

@@ -18,6 +18,9 @@
 //==============================================================================
 
 #include <ripple/protocol/TxFormats.h>
+
+#include <ripple/protocol/SField.h>
+#include <ripple/protocol/SOTemplate.h>
 #include <ripple/protocol/jss.h>
 
 namespace ripple {
@@ -38,6 +41,7 @@ TxFormats::TxFormats()
         {sfOperationLimit, soeOPTIONAL},
         {sfMemos, soeOPTIONAL},
         {sfSigningPubKey, soeREQUIRED},
+        {sfTicketSequence, soeOPTIONAL},
         {sfTxnSignature, soeOPTIONAL},
         {sfSigners, soeOPTIONAL},  // submit_multisigned
         {sfNetworkID, soeOPTIONAL},
@@ -55,7 +59,6 @@ TxFormats::TxFormats()
             {sfSetFlag, soeOPTIONAL},
             {sfClearFlag, soeOPTIONAL},
             {sfTickSize, soeOPTIONAL},
-            {sfTicketSequence, soeOPTIONAL},
             {sfNFTokenMinter, soeOPTIONAL},
         },
         commonFields);
@@ -66,7 +69,6 @@ TxFormats::TxFormats()
             {sfLimitAmount, soeOPTIONAL},
             {sfQualityIn, soeOPTIONAL},
             {sfQualityOut, soeOPTIONAL},
-            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -77,7 +79,6 @@ TxFormats::TxFormats()
             {sfTakerGets, soeREQUIRED},
             {sfExpiration, soeOPTIONAL},
             {sfOfferSequence, soeOPTIONAL},
-            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -87,7 +88,6 @@ TxFormats::TxFormats()
             {sfAmount, soeREQUIRED},
             {sfAmount2, soeREQUIRED},
             {sfTradingFee, soeREQUIRED},
-            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -100,7 +100,6 @@ TxFormats::TxFormats()
             {sfAmount2, soeOPTIONAL},
             {sfEPrice, soeOPTIONAL},
             {sfLPTokenOut, soeOPTIONAL},
-            {sfTicketSequence, soeOPTIONAL},
             {sfTradingFee, soeOPTIONAL},
         },
         commonFields);
@@ -114,7 +113,6 @@ TxFormats::TxFormats()
             {sfAmount2, soeOPTIONAL},
             {sfEPrice, soeOPTIONAL},
             {sfLPTokenIn, soeOPTIONAL},
-            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -124,7 +122,6 @@ TxFormats::TxFormats()
             {sfAsset, soeREQUIRED},
             {sfAsset2, soeREQUIRED},
             {sfTradingFee, soeREQUIRED},
-            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -136,7 +133,6 @@ TxFormats::TxFormats()
             {sfBidMin, soeOPTIONAL},
             {sfBidMax, soeOPTIONAL},
             {sfAuthAccounts, soeOPTIONAL},
-            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -145,7 +141,6 @@ TxFormats::TxFormats()
         {
             {sfAsset, soeREQUIRED},
             {sfAsset2, soeREQUIRED},
-            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -153,7 +148,6 @@ TxFormats::TxFormats()
         ttOFFER_CANCEL,
         {
             {sfOfferSequence, soeREQUIRED},
-            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -161,7 +155,6 @@ TxFormats::TxFormats()
         ttREGULAR_KEY_SET,
         {
             {sfRegularKey, soeOPTIONAL},
-            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -175,7 +168,6 @@ TxFormats::TxFormats()
             {sfInvoiceID, soeOPTIONAL},
             {sfDestinationTag, soeOPTIONAL},
             {sfDeliverMin, soeOPTIONAL},
-            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -188,7 +180,6 @@ TxFormats::TxFormats()
             {sfCancelAfter, soeOPTIONAL},
             {sfFinishAfter, soeOPTIONAL},
             {sfDestinationTag, soeOPTIONAL},
-            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -199,7 +190,6 @@ TxFormats::TxFormats()
             {sfOfferSequence, soeREQUIRED},
             {sfFulfillment, soeOPTIONAL},
             {sfCondition, soeOPTIONAL},
-            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -208,7 +198,6 @@ TxFormats::TxFormats()
         {
             {sfOwner, soeREQUIRED},
             {sfOfferSequence, soeREQUIRED},
-            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -249,7 +238,6 @@ TxFormats::TxFormats()
         ttTICKET_CREATE,
         {
             {sfTicketCount, soeREQUIRED},
-            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -260,7 +248,6 @@ TxFormats::TxFormats()
         {
             {sfSignerQuorum, soeREQUIRED},
             {sfSignerEntries, soeOPTIONAL},
-            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -273,7 +260,6 @@ TxFormats::TxFormats()
             {sfPublicKey, soeREQUIRED},
             {sfCancelAfter, soeOPTIONAL},
             {sfDestinationTag, soeOPTIONAL},
-            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -283,7 +269,6 @@ TxFormats::TxFormats()
             {sfChannel, soeREQUIRED},
             {sfAmount, soeREQUIRED},
             {sfExpiration, soeOPTIONAL},
-            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -295,7 +280,6 @@ TxFormats::TxFormats()
             {sfBalance, soeOPTIONAL},
             {sfSignature, soeOPTIONAL},
             {sfPublicKey, soeOPTIONAL},
-            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -307,7 +291,6 @@ TxFormats::TxFormats()
             {sfExpiration, soeOPTIONAL},
             {sfDestinationTag, soeOPTIONAL},
             {sfInvoiceID, soeOPTIONAL},
-            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -317,7 +300,6 @@ TxFormats::TxFormats()
             {sfCheckID, soeREQUIRED},
             {sfAmount, soeOPTIONAL},
             {sfDeliverMin, soeOPTIONAL},
-            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -325,7 +307,6 @@ TxFormats::TxFormats()
         ttCHECK_CANCEL,
         {
             {sfCheckID, soeREQUIRED},
-            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -334,7 +315,6 @@ TxFormats::TxFormats()
         {
             {sfDestination, soeREQUIRED},
             {sfDestinationTag, soeOPTIONAL},
-            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -343,7 +323,6 @@ TxFormats::TxFormats()
         {
             {sfAuthorize, soeOPTIONAL},
             {sfUnauthorize, soeOPTIONAL},
-            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -354,7 +333,6 @@ TxFormats::TxFormats()
             {sfTransferFee, soeOPTIONAL},
             {sfIssuer, soeOPTIONAL},
             {sfURI, soeOPTIONAL},
-            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -363,7 +341,6 @@ TxFormats::TxFormats()
         {
             {sfNFTokenID, soeREQUIRED},
             {sfOwner, soeOPTIONAL},
-            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -375,7 +352,6 @@ TxFormats::TxFormats()
             {sfDestination, soeOPTIONAL},
             {sfOwner, soeOPTIONAL},
             {sfExpiration, soeOPTIONAL},
-            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -383,7 +359,6 @@ TxFormats::TxFormats()
         ttNFTOKEN_CANCEL_OFFER,
         {
             {sfNFTokenOffers, soeREQUIRED},
-            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -393,7 +368,6 @@ TxFormats::TxFormats()
             {sfNFTokenBuyOffer, soeOPTIONAL},
             {sfNFTokenSellOffer, soeOPTIONAL},
             {sfNFTokenBrokerFee, soeOPTIONAL},
-            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -401,9 +375,114 @@ TxFormats::TxFormats()
         ttCLAWBACK,
         {
             {sfAmount, soeREQUIRED},
-            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
+
+    add(jss::XChainCreateBridge,
+        ttXCHAIN_CREATE_BRIDGE,
+        {
+            {sfXChainBridge, soeREQUIRED},
+            {sfSignatureReward, soeREQUIRED},
+            {sfMinAccountCreateAmount, soeOPTIONAL},
+        },
+        commonFields);
+
+    add(jss::XChainModifyBridge,
+        ttXCHAIN_MODIFY_BRIDGE,
+        {
+            {sfXChainBridge, soeREQUIRED},
+            {sfSignatureReward, soeOPTIONAL},
+            {sfMinAccountCreateAmount, soeOPTIONAL},
+        },
+        commonFields);
+
+    add(jss::XChainCreateClaimID,
+        ttXCHAIN_CREATE_CLAIM_ID,
+        {
+            {sfXChainBridge, soeREQUIRED},
+            {sfSignatureReward, soeREQUIRED},
+            {sfOtherChainSource, soeREQUIRED},
+        },
+        commonFields);
+
+    add(jss::XChainCommit,
+        ttXCHAIN_COMMIT,
+        {
+            {sfXChainBridge, soeREQUIRED},
+            {sfXChainClaimID, soeREQUIRED},
+            {sfAmount, soeREQUIRED},
+            {sfOtherChainDestination, soeOPTIONAL},
+        },
+        commonFields);
+
+    add(jss::XChainClaim,
+        ttXCHAIN_CLAIM,
+        {
+            {sfXChainBridge, soeREQUIRED},
+            {sfXChainClaimID, soeREQUIRED},
+            {sfDestination, soeREQUIRED},
+            {sfDestinationTag, soeOPTIONAL},
+            {sfAmount, soeREQUIRED},
+        },
+        commonFields);
+
+    add(jss::XChainAddClaimAttestation,
+        ttXCHAIN_ADD_CLAIM_ATTESTATION,
+        {
+            {sfXChainBridge, soeREQUIRED},
+
+            {sfAttestationSignerAccount, soeREQUIRED},
+            {sfPublicKey, soeREQUIRED},
+            {sfSignature, soeREQUIRED},
+            {sfOtherChainSource, soeREQUIRED},
+            {sfAmount, soeREQUIRED},
+            {sfAttestationRewardAccount, soeREQUIRED},
+            {sfWasLockingChainSend, soeREQUIRED},
+
+            {sfXChainClaimID, soeREQUIRED},
+            {sfDestination, soeOPTIONAL},
+        },
+        commonFields);
+
+    add(jss::XChainAddAccountCreateAttestation,
+        ttXCHAIN_ADD_ACCOUNT_CREATE_ATTESTATION,
+        {
+            {sfXChainBridge, soeREQUIRED},
+
+            {sfAttestationSignerAccount, soeREQUIRED},
+            {sfPublicKey, soeREQUIRED},
+            {sfSignature, soeREQUIRED},
+            {sfOtherChainSource, soeREQUIRED},
+            {sfAmount, soeREQUIRED},
+            {sfAttestationRewardAccount, soeREQUIRED},
+            {sfWasLockingChainSend, soeREQUIRED},
+
+            {sfXChainAccountCreateCount, soeREQUIRED},
+            {sfDestination, soeREQUIRED},
+            {sfSignatureReward, soeREQUIRED},
+        },
+        commonFields);
+
+    add(jss::XChainAccountCreateCommit,
+        ttXCHAIN_ACCOUNT_CREATE_COMMIT,
+        {
+            {sfXChainBridge, soeREQUIRED},
+            {sfDestination, soeREQUIRED},
+            {sfAmount, soeREQUIRED},
+            {sfSignatureReward, soeREQUIRED},
+        },
+        commonFields);
+
+    add(jss::DIDSet,
+        ttDID_SET,
+        {
+            {sfDIDDocument, soeOPTIONAL},
+            {sfURI, soeOPTIONAL},
+            {sfData, soeOPTIONAL},
+        },
+        commonFields);
+
+    add(jss::DIDDelete, ttDID_DELETE, {}, commonFields);
 }
 
 TxFormats const&

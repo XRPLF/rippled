@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <ripple/protocol/impl/STVar.h>
+
 #include <ripple/basics/contract.h>
 #include <ripple/protocol/STAccount.h>
 #include <ripple/protocol/STAmount.h>
@@ -29,7 +31,8 @@
 #include <ripple/protocol/STObject.h>
 #include <ripple/protocol/STPathSet.h>
 #include <ripple/protocol/STVector256.h>
-#include <ripple/protocol/impl/STVar.h>
+#include <ripple/protocol/STXChainBridge.h>
+#include <ripple/protocol/XChainAttestations.h>
 
 namespace ripple {
 namespace detail {
@@ -161,6 +164,9 @@ STVar::STVar(SerialIter& sit, SField const& name, int depth)
         case STI_ISSUE:
             construct<STIssue>(sit, name);
             return;
+        case STI_XCHAIN_BRIDGE:
+            construct<STXChainBridge>(sit, name);
+            return;
         default:
             Throw<std::runtime_error>("Unknown object type");
     }
@@ -218,6 +224,9 @@ STVar::STVar(SerializedTypeID id, SField const& name)
             return;
         case STI_ISSUE:
             construct<STIssue>(name);
+            return;
+        case STI_XCHAIN_BRIDGE:
+            construct<STXChainBridge>(name);
             return;
         default:
             Throw<std::runtime_error>("Unknown object type");

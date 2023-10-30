@@ -19,6 +19,7 @@
 
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/main/Application.h>
+#include <ripple/app/misc/DeliverMax.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/app/rdb/backend/PostgresDatabase.h>
@@ -58,7 +59,7 @@ parseLedgerArgs(RPC::Context& context, Json::Value const& params)
     Json::Value response;
     // if ledger_index_min or max is specified, then ledger_hash or ledger_index
     // should not be specified. Error out if it is
-    if (context.apiVersion > 1)
+    if (context.apiVersion > 1u)
     {
         if ((params.isMember(jss::ledger_index_min) ||
              params.isMember(jss::ledger_index_max)) &&
@@ -162,7 +163,7 @@ getLedgerRange(
                     // if ledger_index_min or ledger_index_max is out of
                     // valid ledger range, error out. exclude -1 as
                     // it is a valid input
-                    if (context.apiVersion > 1)
+                    if (context.apiVersion > 1u)
                     {
                         if ((ls.max > uValidatedMax && ls.max != -1) ||
                             (ls.min < uValidatedMin && ls.min != 0))
@@ -326,6 +327,9 @@ populateJsonResponse(
                     Json::Value& jvObj = jvTxns.append(Json::objectValue);
 
                     jvObj[jss::tx] = txn->getJson(JsonOptions::include_date);
+                    auto const& sttx = txn->getSTransaction();
+                    RPC::insertDeliverMax(
+                        jvObj[jss::tx], sttx->getTxnType(), context.apiVersion);
                     if (txnMeta)
                     {
                         jvObj[jss::meta] =
@@ -333,8 +337,7 @@ populateJsonResponse(
                         jvObj[jss::validated] = true;
                         insertDeliveredAmount(
                             jvObj[jss::meta], context, txn, *txnMeta);
-                        insertNFTSyntheticInJson(
-                            jvObj, txn->getSTransaction(), *txnMeta);
+                        insertNFTSyntheticInJson(jvObj, sttx, *txnMeta);
                     }
                 }
             }
@@ -388,6 +391,21 @@ doAccountTxJson(RPC::JsonContext& context)
     auto& params = context.params;
     AccountTxArgs args;
     Json::Value response;
+
+    // The document[https://xrpl.org/account_tx.html#account_tx] states that
+    // binary and forward params are both boolean values, however, assigning any
+    // string value works. Do not allow this. This check is for api Version 2
+    // onwards only
+    if (context.apiVersion > 1u && params.isMember(jss::binary) &&
+        !params[jss::binary].isBool())
+    {
+        return rpcError(rpcINVALID_PARAMS);
+    }
+    if (context.apiVersion > 1u && params.isMember(jss::forward) &&
+        !params[jss::forward].isBool())
+    {
+        return rpcError(rpcINVALID_PARAMS);
+    }
 
     args.limit = params.isMember(jss::limit) ? params[jss::limit].asUInt() : 0;
     args.binary = params.isMember(jss::binary) && params[jss::binary].asBool();

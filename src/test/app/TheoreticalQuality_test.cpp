@@ -266,7 +266,7 @@ class TheoreticalQuality_test : public beast::unit_test::suite
             rcp.paths,
             /*defaultPaths*/ rcp.paths.empty(),
             sb.rules().enabled(featureOwnerPaysFee),
-            /*offerCrossing*/ false,
+            OfferCrossing::no,
             ammContext,
             dummyJ);
 

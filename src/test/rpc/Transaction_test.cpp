@@ -19,6 +19,7 @@
 
 #include <ripple/app/rdb/backend/SQLiteDatabase.h>
 #include <ripple/protocol/ErrorCodes.h>
+#include <ripple/protocol/STBase.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/CTID.h>
 #include <optional>
@@ -692,6 +693,60 @@ class Transaction_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testRequest(FeatureBitset features)
+    {
+        testcase("Test Request");
+
+        using namespace test::jtx;
+        using std::to_string;
+
+        const char* COMMAND = jss::tx.c_str();
+
+        Env env{*this};
+        Account const alice{"alice"};
+        Account const alie{"alie"};
+        Account const gw{"gw"};
+        auto const USD{gw["USD"]};
+
+        env.fund(XRP(1000000), alice, gw);
+        env.close();
+
+        // AccountSet
+        env(noop(alice));
+
+        // Payment
+        env(pay(alice, gw, XRP(100)));
+
+        std::shared_ptr<STTx const> txn = env.tx();
+        env.close();
+        std::shared_ptr<STObject const> meta =
+            env.closed()->txRead(env.tx()->getTransactionID()).second;
+
+        Json::Value expected = txn->getJson(JsonOptions::none);
+        expected[jss::DeliverMax] = expected[jss::Amount];
+
+        auto const result =
+            env.rpc(COMMAND, to_string(txn->getTransactionID()));
+        BEAST_EXPECT(result[jss::result][jss::status] == jss::success);
+
+        for (auto memberIt = expected.begin(); memberIt != expected.end();
+             memberIt++)
+        {
+            std::string const name = memberIt.memberName();
+            if (BEAST_EXPECT(result[jss::result].isMember(name)))
+            {
+                auto const received = result[jss::result][name];
+                BEAST_EXPECTS(
+                    received == *memberIt,
+                    "Transaction contains \n\"" + name + "\": "  //
+                        + to_string(received)                    //
+                        + " but expected "                       //
+                        + to_string(expected));
+            }
+        }
+    }
+
 public:
     void
     run() override
@@ -708,6 +763,7 @@ public:
         testRangeCTIDRequest(features);
         testCTIDValidation(features);
         testCTIDRPC(features);
+        testRequest(features);
     }
 };
 
