@@ -72,6 +72,7 @@ JSS(ClearFlag);            // field.
 JSS(DID);                  // ledger type.
 JSS(DIDDelete);            // transaction type.
 JSS(DIDSet);               // transaction type.
+JSS(DeliverMax);           // out: alias to Amount
 JSS(DeliverMin);           // in: TransactionSign
 JSS(DepositPreauth);       // transaction and ledger type.
 JSS(Destination);          // in: TransactionSign; field.

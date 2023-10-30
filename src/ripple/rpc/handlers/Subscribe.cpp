@@ -110,6 +110,7 @@ doSubscribe(RPC::JsonContext& context)
     {
         ispSub = context.infoSub;
     }
+    ispSub->setApiVersion(context.apiVersion);
 
     if (context.params.isMember(jss::streams))
     {

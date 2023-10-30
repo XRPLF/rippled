@@ -134,6 +134,13 @@ Currently (prior to the release of 2.0), it is available as a "beta" version, me
 
 Since `api_version` 2 is in "beta", breaking changes to V2 can currently be made at any time.
 
+#### Removed methods
+
+In API version 2, the following methods are no longer available:
+
+- `tx_history` - Instead, use other methods such as `account_tx` or `ledger` with the `transactions` field set to `true`.
+- `ledger_header` - Instead, use the `ledger` method.
+
 #### Modifications to account_info response in V2
 
 - `signer_lists` is returned in the root of the response. Previously, in API version 1, it was nested under `account_data`. (https://github.com/XRPLF/rippled/pull/3770)
@@ -157,6 +164,15 @@ Since `api_version` 2 is in "beta", breaking changes to V2 can currently be made
 ##### In progress
 
 - Attempting to use a non-boolean value (such as a string) for the `transactions` parameter returns `invalidParams` (`rpcINVALID_PARAMS`). Previously, in API version 1, no error was returned. (https://github.com/XRPLF/rippled/pull/4620)
+
+##### In progress
+
+- In `Payment` transaction type, JSON RPC field `Amount` is renamed to `DeliverMax`. To enable smooth client transition, `Amount` is still handled, as described below:
+  - On JSON RPC input (e.g. `submit_multisigned` etc. methods), `Amount` is recognized as an alias to `DeliverMax` for both API version 1 and version 2 clients.
+  - On JSON RPC input, submitting both `Amount` and `DeliverMax` fields is allowed _only_ if they are identical; otherwise such input is rejected with `rpcINVALID_PARAMS` error.
+  - On JSON RPC output (e.g. `subscribe`, `account_tx` etc. methods), `DeliverMax` is present in both API version 1 and version 2.
+  - On JSON RPC output, `Amount` is only present in API version 1 and _not_ in version 2.
+
 
 # Unit tests for API changes
 
