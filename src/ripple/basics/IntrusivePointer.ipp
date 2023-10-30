@@ -99,6 +99,8 @@ SharedIntrusive<T, MakeAtomic>::operator=(SharedIntrusive const& rhs)
     return *this;
 }
 
+// TODO: Too much noise on this function. reformat and take the concept
+// out-of-line
 template <SharedIntrusiveRefCounted T, bool MakeAtomic>
     template <class TT, bool IsAtomic, class TBypassAtomicBehaviorTag>
     SharedIntrusive<T, MakeAtomic>&

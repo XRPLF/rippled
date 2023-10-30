@@ -5,15 +5,22 @@
 #include <test/unit_test/SuiteJournal.h>
 
 #include <atomic>
+#include <chrono>
+#include <latch>
 #include <string>
-
-// TODO: rename this test. It tests intrusive pointers
+#include <thread>
 
 namespace ripple {
 namespace tests {
 
 namespace {
-enum class TrackedState { alive, partiallyDeleted, deleted };
+enum class TrackedState {
+    alive,
+    partiallyDeletedStarted,
+    partiallyDeleted,
+    deletedStarted,
+    deleted
+};
 
 class TIBase : public IntrusiveRefCounts
 {
@@ -33,13 +40,33 @@ public:
     }
     ~TIBase()
     {
+        tracingCallback_(state[id_], TrackedState::deletedStarted);
+
+        state[id_] = TrackedState::deletedStarted;
+
+        tracingCallback_(state[id_], TrackedState::deleted);
+
         state[id_] = TrackedState::deleted;
+
+        tracingCallback_(state[id_], std::nullopt);
     }
+
     void
     partialDestructor()
     {
+        tracingCallback_(state[id_], TrackedState::partiallyDeletedStarted);
+
+        state[id_] = TrackedState::partiallyDeletedStarted;
+
+        tracingCallback_(state[id_], TrackedState::partiallyDeleted);
+
         state[id_] = TrackedState::partiallyDeleted;
+
+        tracingCallback_(state[id_], std::nullopt);
     }
+
+    std::function<void(TrackedState, std::optional<TrackedState>)>
+        tracingCallback_ = [](TrackedState, std::optional<TrackedState>) {};
 
     int id_;
 
@@ -67,7 +94,7 @@ class IntrusiveShared_test : public beast::unit_test::suite
 {
 public:
     void
-    testIt(beast::Journal const& journal)
+    testEasy(beast::Journal const& journal)
     {
         {
             TIBase b;
@@ -147,12 +174,70 @@ public:
     }
 
     void
+    testThreads(beast::Journal const& journal)
+    {
+        using enum TrackedState;
+
+        {
+            // This test creates two threads. One with a strong pointer and one
+            // with a weak pointer. We let the weakpointer trigger
+            auto b = make_SharedIntrusive<TIBase, false>();
+            bool destructorRan = false;
+            bool partialDeleteRan = false;
+            std::latch weakCreateLatch{2};
+            std::latch partialDeleteStartedLatch{2};
+            b->tracingCallback_ = [&](TrackedState cur,
+                                      std::optional<TrackedState> next) {
+                using enum TrackedState;
+                if (next == deletedStarted)
+                {
+                    // strong goes out of scope while weak is still in scope
+                    // This checks that partialDelete has run to completion
+                    // before the desturctor is called. A sleep is inserted
+                    // inside the partial delete to make sure the destructor is
+                    // given an opportunity to run durring partial delete.
+                    BEAST_EXPECT(cur == partiallyDeleted);
+                }
+                if (next == partiallyDeletedStarted)
+                {
+                    partialDeleteStartedLatch.arrive_and_wait();
+                    using namespace std::chrono_literals;
+                    // Sleep and let the weak pointer go out of scope,
+                    // potentially triggering a destructor while partial delete
+                    // is running. The test is to make sure that doesn't happen.
+                    std::this_thread::sleep_for(800ms);
+                }
+                if (cur == partiallyDeleted)
+                    partialDeleteRan = true;
+                if (cur == deleted)
+                    destructorRan = true;
+            };
+            std::jthread t1{[&] {
+                WeakIntrusive<TIBase> w{b};
+                weakCreateLatch.arrive_and_wait();
+                partialDeleteStartedLatch.arrive_and_wait();
+                w.reset();  // Trigger a full delete as soon as the partial
+                            // delete starts
+            }};
+            std::jthread t2{[&] {
+                weakCreateLatch.arrive_and_wait();
+                b.reset();  // Trigger a partial delete
+            }};
+            t1.join();
+            t2.join();
+
+            BEAST_EXPECT(destructorRan && partialDeleteRan);
+        }
+    }
+
+    void
     run() override
     {
         using namespace beast::severities;
         test::SuiteJournal journal("IntrusiveShared_test", *this);
 
-        testIt(journal);
+        testEasy(journal);
+        testThreads(journal);
     }
 };
 

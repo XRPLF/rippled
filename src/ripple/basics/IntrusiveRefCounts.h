@@ -300,7 +300,7 @@ IntrusiveRefCounts::releaseWeakRef() const
         {
             // partial destroy MUST finish before running a full destroy (when
             // using weak pointers)
-            refCounts.wait(prevIntVal, std::memory_order_acq_rel);
+            refCounts.wait(prevIntVal - weakDelta, std::memory_order_acq_rel);
         }
         return ReleaseRefAction::destroy;
     }
