@@ -79,12 +79,17 @@ doTransactionEntry(RPC::JsonContext& context)
                     sttx->getJson(JsonOptions::none, false, {std::ref(hash)});
                 jvResult[jss::hash] = hash;
 
+                if (!lpLedger->open())
+                    jvResult[jss::ledger_hash] = to_string(
+                        context.ledgerMaster.getHashBySeq(lpLedger->seq()));
+
                 bool const validated =
                     context.ledgerMaster.isValidated(*lpLedger);
 
                 jvResult[jss::validated] = validated;
                 if (validated)
                 {
+                    jvResult[jss::ledger_index] = lpLedger->seq();
                     if (auto closeTime = context.ledgerMaster.getCloseTimeBySeq(
                             lpLedger->seq()))
                         jvResult[jss::close_time_iso] =
