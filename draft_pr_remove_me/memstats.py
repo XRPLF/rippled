@@ -13,6 +13,7 @@ import seaborn as sns
 from scipy.signal import medfilt
 import matplotlib.pyplot as plt
 
+data_dir= "/home/swd/memstats/data/oct_30"
 
 def raw_file_to_df(data_file_name):
     n_to_skip = 0
@@ -52,7 +53,8 @@ def plot_df(df, ignore_min=30):
     plt.xlabel(f'Up Time ({units})')
     plt.ylabel('Resident (gb)')
     plt.title('Memory Usage Intrusive Pointer')
-
+    plt.subplots_adjust(top=0.9)
+    plt.savefig(f"{data_dir}/mem_usage_intrusive_ptr.png")
     plt.show()
 
 
@@ -79,6 +81,8 @@ def plot_diff(df, filtered=True, ignore_min=30):
         title += ' (filtered)'
     plt.title(title)
 
+    plt.subplots_adjust(top=0.9)
+    plt.savefig(f"{data_dir}/mem_diff_intrusive_ptr.png")
     plt.show()
 
 
@@ -110,11 +114,12 @@ def plot_percent_change(df, filtered=True, ignore_min=30):
         title += ' (filtered)'
     plt.title(title)
 
+    plt.subplots_adjust(top=0.9)
+    plt.savefig(f"{data_dir}/mem_percent_change.png")
     plt.show()
 
-
 def doit():
-    data_file_name = "/home/swd/memstats/data/partial_delete_fix.raw"
+    data_file_name = f"{data_dir}/data.raw"
     df = raw_file_to_df(data_file_name)
     plot_df(df)
     plot_diff(df, filtered=True)
