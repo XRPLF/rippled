@@ -65,7 +65,6 @@ fromNetwork(
     std::unordered_map<std::string, std::string> headers = {});
 }  // namespace RPCCall
 
-
 Json::Value
 rpcCmdToJson(
     std::vector<std::string> const& args,
