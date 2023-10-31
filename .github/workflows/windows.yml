@@ -36,7 +36,7 @@ jobs:
         id: pip-cache
         shell: bash
         run: |
-          pip install --upgrade pip
+          python -m pip install --upgrade pip
           echo "dir=$(pip cache dir)" | tee ${GITHUB_OUTPUT}
       - name: restore Python cache directory
         uses: actions/cache@v3
@@ -89,7 +89,7 @@ jobs:
           generator: '${{ matrix.generator }}'
           configuration: ${{ matrix.configuration }}
           # Hard code for now. Move to the matrix if varied options are needed
-          cmake-args: '-Dassert=ON -Dreporting=OFF -Dunity=OFF'
+          cmake-args: '-Dassert=ON -Dreporting=OFF -Dunity=ON'
       - name: test (permitted to silently fail)
         shell: bash
         # Github runners are resource limited, which causes unit tests to fail

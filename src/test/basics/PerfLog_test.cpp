@@ -25,6 +25,7 @@
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/impl/Handler.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
 
 #include <atomic>
 #include <chrono>
@@ -309,7 +310,8 @@ public:
 
         // Get the all the labels we can use for RPC interfaces without
         // causing an assert.
-        std::vector<char const*> labels{ripple::RPC::getHandlerNames()};
+        std::vector<char const*> labels =
+            test::jtx::make_vector(ripple::RPC::getHandlerNames());
         std::shuffle(labels.begin(), labels.end(), default_prng());
 
         // Get two IDs to associate with each label.  Errors tend to happen at

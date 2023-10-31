@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2023 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,51 +17,26 @@
 */
 //==============================================================================
 
-#ifndef RIPPLED_RIPPLE_RPC_HANDLERS_VERSION_H
-#define RIPPLED_RIPPLE_RPC_HANDLERS_VERSION_H
+#include <ripple/app/misc/DeliverMax.h>
 
-#include <ripple/rpc/impl/RPCHelpers.h>
+#include <ripple/protocol/jss.h>
 
 namespace ripple {
 namespace RPC {
 
-class VersionHandler
+void
+insertDeliverMax(Json::Value& tx_json, TxType txnType, unsigned int apiVersion)
 {
-public:
-    explicit VersionHandler(JsonContext& c)
-        : apiVersion_(c.apiVersion), betaEnabled_(c.app.config().BETA_RPC_API)
+    if (tx_json.isMember(jss::Amount))
     {
+        if (txnType == ttPAYMENT)
+        {
+            tx_json[jss::DeliverMax] = tx_json[jss::Amount];
+            if (apiVersion > 1)
+                tx_json.removeMember(jss::Amount);
+        }
     }
-
-    Status
-    check()
-    {
-        return Status::OK;
-    }
-
-    template <class Object>
-    void
-    writeResult(Object& obj)
-    {
-        setVersion(obj, apiVersion_, betaEnabled_);
-    }
-
-    static constexpr char const* name = "version";
-
-    static constexpr unsigned minApiVer = RPC::apiMinimumSupportedVersion;
-
-    static constexpr unsigned maxApiVer = RPC::apiMaximumValidVersion;
-
-    static constexpr Role role = Role::USER;
-
-    static constexpr Condition condition = NO_CONDITION;
-
-private:
-    unsigned int apiVersion_;
-    bool betaEnabled_;
-};
+}
 
 }  // namespace RPC
 }  // namespace ripple
-
-#endif

@@ -17,51 +17,57 @@
 */
 //==============================================================================
 
-#ifndef RIPPLED_RIPPLE_RPC_HANDLERS_VERSION_H
-#define RIPPLED_RIPPLE_RPC_HANDLERS_VERSION_H
+#ifndef RIPPLE_TX_DID_H_INCLUDED
+#define RIPPLE_TX_DID_H_INCLUDED
 
-#include <ripple/rpc/impl/RPCHelpers.h>
+#include <ripple/app/tx/impl/Transactor.h>
 
 namespace ripple {
-namespace RPC {
 
-class VersionHandler
+class DIDSet : public Transactor
 {
 public:
-    explicit VersionHandler(JsonContext& c)
-        : apiVersion_(c.apiVersion), betaEnabled_(c.app.config().BETA_RPC_API)
+    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+
+    explicit DIDSet(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 
-    Status
-    check()
-    {
-        return Status::OK;
-    }
+    static NotTEC
+    preflight(PreflightContext const& ctx);
 
-    template <class Object>
-    void
-    writeResult(Object& obj)
-    {
-        setVersion(obj, apiVersion_, betaEnabled_);
-    }
-
-    static constexpr char const* name = "version";
-
-    static constexpr unsigned minApiVer = RPC::apiMinimumSupportedVersion;
-
-    static constexpr unsigned maxApiVer = RPC::apiMaximumValidVersion;
-
-    static constexpr Role role = Role::USER;
-
-    static constexpr Condition condition = NO_CONDITION;
-
-private:
-    unsigned int apiVersion_;
-    bool betaEnabled_;
+    TER
+    doApply() override;
 };
 
-}  // namespace RPC
+//------------------------------------------------------------------------------
+
+class DIDDelete : public Transactor
+{
+public:
+    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+
+    explicit DIDDelete(ApplyContext& ctx) : Transactor(ctx)
+    {
+    }
+
+    static NotTEC
+    preflight(PreflightContext const& ctx);
+
+    static TER
+    deleteSLE(ApplyContext& ctx, Keylet sleKeylet, AccountID const owner);
+
+    static TER
+    deleteSLE(
+        ApplyView& view,
+        std::shared_ptr<SLE> sle,
+        AccountID const owner,
+        beast::Journal j);
+
+    TER
+    doApply() override;
+};
+
 }  // namespace ripple
 
 #endif

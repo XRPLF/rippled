@@ -250,7 +250,7 @@ void
 OrderBookDB::processTxn(
     std::shared_ptr<ReadView const> const& ledger,
     const AcceptedLedgerTx& alTx,
-    Json::Value const& jvObj)
+    MultiApiJson const& jvObj)
 {
     std::lock_guard sl(mLock);
 

@@ -656,7 +656,7 @@ struct PayStrand_test : public beast::unit_test::suite
                 sendMaxIssue,
                 path,
                 true,
-                false,
+                OfferCrossing::no,
                 ammContext,
                 env.app().logs().journal("Flow"));
             BEAST_EXPECT(ter == expTer);
@@ -684,7 +684,7 @@ struct PayStrand_test : public beast::unit_test::suite
                     /*sendMaxIssue*/ EUR.issue(),
                     path,
                     true,
-                    false,
+                    OfferCrossing::no,
                     ammContext,
                     env.app().logs().journal("Flow"));
                 (void)_;
@@ -701,7 +701,7 @@ struct PayStrand_test : public beast::unit_test::suite
                     /*sendMaxIssue*/ EUR.issue(),
                     path,
                     true,
-                    false,
+                    OfferCrossing::no,
                     ammContext,
                     env.app().logs().journal("Flow"));
                 (void)_;
@@ -821,7 +821,7 @@ struct PayStrand_test : public beast::unit_test::suite
                         USD.issue(),
                         STPath(),
                         true,
-                        false,
+                        OfferCrossing::no,
                         ammContext,
                         flowJournal);
                     BEAST_EXPECT(r.first == temBAD_PATH);
@@ -837,7 +837,7 @@ struct PayStrand_test : public beast::unit_test::suite
                         std::nullopt,
                         STPath(),
                         true,
-                        false,
+                        OfferCrossing::no,
                         ammContext,
                         flowJournal);
                     BEAST_EXPECT(r.first == temBAD_PATH);
@@ -853,7 +853,7 @@ struct PayStrand_test : public beast::unit_test::suite
                         std::nullopt,
                         STPath(),
                         true,
-                        false,
+                        OfferCrossing::no,
                         ammContext,
                         flowJournal);
                     BEAST_EXPECT(r.first == temBAD_PATH);
@@ -990,7 +990,7 @@ struct PayStrand_test : public beast::unit_test::suite
                 std::nullopt,
                 STPath(),
                 true,
-                false,
+                OfferCrossing::no,
                 ammContext,
                 env.app().logs().journal("Flow"));
             BEAST_EXPECT(ter == tesSUCCESS);
@@ -1017,7 +1017,7 @@ struct PayStrand_test : public beast::unit_test::suite
                 USD.issue(),
                 path,
                 false,
-                false,
+                OfferCrossing::no,
                 ammContext,
                 env.app().logs().journal("Flow"));
             BEAST_EXPECT(ter == tesSUCCESS);

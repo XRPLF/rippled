@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2019 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,51 +17,51 @@
 */
 //==============================================================================
 
-#ifndef RIPPLED_RIPPLE_RPC_HANDLERS_VERSION_H
-#define RIPPLED_RIPPLE_RPC_HANDLERS_VERSION_H
-
-#include <ripple/rpc/impl/RPCHelpers.h>
+#include <ripple/protocol/TxFlags.h>
+#include <ripple/protocol/jss.h>
+#include <test/jtx/did.h>
 
 namespace ripple {
-namespace RPC {
+namespace test {
+namespace jtx {
 
-class VersionHandler
+/** DID operations. */
+namespace did {
+
+Json::Value
+set(jtx::Account const& account)
 {
-public:
-    explicit VersionHandler(JsonContext& c)
-        : apiVersion_(c.apiVersion), betaEnabled_(c.app.config().BETA_RPC_API)
-    {
-    }
+    Json::Value jv;
+    jv[jss::TransactionType] = jss::DIDSet;
+    jv[jss::Account] = to_string(account.id());
+    jv[jss::Flags] = tfUniversal;
+    return jv;
+}
 
-    Status
-    check()
-    {
-        return Status::OK;
-    }
+Json::Value
+setValid(jtx::Account const& account)
+{
+    Json::Value jv;
+    jv[jss::TransactionType] = jss::DIDSet;
+    jv[jss::Account] = to_string(account.id());
+    jv[jss::Flags] = tfUniversal;
+    jv[sfURI.jsonName] = strHex(std::string{"uri"});
+    return jv;
+}
 
-    template <class Object>
-    void
-    writeResult(Object& obj)
-    {
-        setVersion(obj, apiVersion_, betaEnabled_);
-    }
+Json::Value
+del(jtx::Account const& account)
+{
+    Json::Value jv;
+    jv[jss::TransactionType] = jss::DIDDelete;
+    jv[jss::Account] = to_string(account.id());
+    jv[jss::Flags] = tfUniversal;
+    return jv;
+}
 
-    static constexpr char const* name = "version";
+}  // namespace did
 
-    static constexpr unsigned minApiVer = RPC::apiMinimumSupportedVersion;
+}  // namespace jtx
 
-    static constexpr unsigned maxApiVer = RPC::apiMaximumValidVersion;
-
-    static constexpr Role role = Role::USER;
-
-    static constexpr Condition condition = NO_CONDITION;
-
-private:
-    unsigned int apiVersion_;
-    bool betaEnabled_;
-};
-
-}  // namespace RPC
+}  // namespace test
 }  // namespace ripple
-
-#endif

@@ -26,6 +26,14 @@ In `api_version: 2`, the `signer_lists` field [will be moved](#modifications-to-
 
 The `network_id` field was added in the `server_info` response in version 1.5.0 (2019), but it was not returned in [reporting mode](https://xrpl.org/rippled-server-modes.html#reporting-mode).
 
+## Unreleased
+
+### Additions
+
+Additions are intended to be non-breaking (because they are purely additive).
+
+- `server_definitions`: A new RPC that generates a `definitions.json`-like output that can be used in XRPL libraries.
+
 ## XRP Ledger version 1.12.0
 
 [Version 1.12.0](https://github.com/XRPLF/rippled/releases/tag/1.12.0) was released on Sep 6, 2023.
@@ -46,27 +54,27 @@ Additions are intended to be non-breaking (because they are purely additive).
     - `Account`: The issuer of the asset being clawed back. Must also be the sender of the transaction.
     - `Amount`: The amount being clawed back, with the `Amount.issuer` being the token holder's address.
 - Adds [AMM](https://github.com/XRPLF/XRPL-Standards/discussions/78) ([#4294](https://github.com/XRPLF/rippled/pull/4294), [#4626](https://github.com/XRPLF/rippled/pull/4626)) feature:
-    - Adds `amm_info` API to retrieve AMM information for a given tokens pair.
-    - Adds `AMMCreate` transaction type to create `AMM` instance.
-    - Adds `AMMDeposit` transaction type to deposit funds into `AMM` instance.
-    - Adds `AMMWithdraw` transaction type to withdraw funds from `AMM` instance.
-    - Adds `AMMVote` transaction type to vote for the trading fee of `AMM` instance.
-    - Adds `AMMBid` transaction type to bid for the Auction Slot of `AMM` instance.
-    - Adds `AMMDelete` transaction type to delete `AMM` instance.
-    - Adds `sfAMMID` to `AccountRoot` to indicate that the account is `AMM`'s account. `AMMID` is used to fetch `ltAMM`.
-    - Adds `lsfAMMNode` `TrustLine` flag to indicate that one side of the `TrustLine` is `AMM` account.
-    - Adds `tfLPToken`, `tfSingleAsset`, `tfTwoAsset`, `tfOneAssetLPToken`, `tfLimitLPToken`, `tfTwoAssetIfEmpty`,
-      `tfWithdrawAll`, `tfOneAssetWithdrawAll` which allow a trader to specify different fields combination 
-      for `AMMDeposit` and `AMMWithdraw` transactions.
-    - Adds new transaction result codes:
-       - tecUNFUNDED_AMM: insufficient balance to fund AMM. The account does not have funds for liquidity provision.
-       -  tecAMM_BALANCE: AMM has invalid balance. Calculated balances greater than the current pool balances.
-       -  tecAMM_FAILED: AMM transaction failed. Fails due to a processing failure.
-       -  tecAMM_INVALID_TOKENS: AMM invalid LP tokens. Invalid input values, format, or calculated values.
-       -  tecAMM_EMPTY: AMM is in empty state. Transaction expects AMM in non-empty state (LP tokens > 0).
-       -  tecAMM_NOT_EMPTY: AMM is not in empty state. Transaction expects AMM in empty state (LP tokens == 0).
-       -  tecAMM_ACCOUNT: AMM account. Clawback of AMM account.
-       -  tecINCOMPLETE: Some work was completed, but more submissions required to finish. AMMDelete partially deletes the trustlines.
+  - Adds `amm_info` API to retrieve AMM information for a given tokens pair.
+  - Adds `AMMCreate` transaction type to create `AMM` instance.
+  - Adds `AMMDeposit` transaction type to deposit funds into `AMM` instance.
+  - Adds `AMMWithdraw` transaction type to withdraw funds from `AMM` instance.
+  - Adds `AMMVote` transaction type to vote for the trading fee of `AMM` instance.
+  - Adds `AMMBid` transaction type to bid for the Auction Slot of `AMM` instance.
+  - Adds `AMMDelete` transaction type to delete `AMM` instance.
+  - Adds `sfAMMID` to `AccountRoot` to indicate that the account is `AMM`'s account. `AMMID` is used to fetch `ltAMM`.
+  - Adds `lsfAMMNode` `TrustLine` flag to indicate that one side of the `TrustLine` is `AMM` account.
+  - Adds `tfLPToken`, `tfSingleAsset`, `tfTwoAsset`, `tfOneAssetLPToken`, `tfLimitLPToken`, `tfTwoAssetIfEmpty`,
+    `tfWithdrawAll`, `tfOneAssetWithdrawAll` which allow a trader to specify different fields combination
+    for `AMMDeposit` and `AMMWithdraw` transactions.
+  - Adds new transaction result codes:
+    - tecUNFUNDED_AMM: insufficient balance to fund AMM. The account does not have funds for liquidity provision.
+    - tecAMM_BALANCE: AMM has invalid balance. Calculated balances greater than the current pool balances.
+    - tecAMM_FAILED: AMM transaction failed. Fails due to a processing failure.
+    - tecAMM_INVALID_TOKENS: AMM invalid LP tokens. Invalid input values, format, or calculated values.
+    - tecAMM_EMPTY: AMM is in empty state. Transaction expects AMM in non-empty state (LP tokens > 0).
+    - tecAMM_NOT_EMPTY: AMM is not in empty state. Transaction expects AMM in empty state (LP tokens == 0).
+    - tecAMM_ACCOUNT: AMM account. Clawback of AMM account.
+    - tecINCOMPLETE: Some work was completed, but more submissions required to finish. AMMDelete partially deletes the trustlines.
 
 ## XRP Ledger version 1.11.0
 
@@ -118,12 +126,20 @@ Changes below this point are in development.
 At the time of writing, this version is expected to be introduced in `rippled` version 2.0.
 
 Currently (prior to the release of 2.0), it is available as a "beta" version, meaning it can be enabled with a config setting in `rippled.cfg`:
+
 ```
 [beta_rpc_api]
 1
 ```
 
 Since `api_version` 2 is in "beta", breaking changes to V2 can currently be made at any time.
+
+#### Removed methods
+
+In API version 2, the following methods are no longer available:
+
+- `tx_history` - Instead, use other methods such as `account_tx` or `ledger` with the `transactions` field set to `true`.
+- `ledger_header` - Instead, use the `ledger` method.
 
 #### Modifications to account_info response in V2
 
@@ -148,6 +164,15 @@ Since `api_version` 2 is in "beta", breaking changes to V2 can currently be made
 ##### In progress
 
 - Attempting to use a non-boolean value (such as a string) for the `transactions` parameter returns `invalidParams` (`rpcINVALID_PARAMS`). Previously, in API version 1, no error was returned. (https://github.com/XRPLF/rippled/pull/4620)
+
+##### In progress
+
+- In `Payment` transaction type, JSON RPC field `Amount` is renamed to `DeliverMax`. To enable smooth client transition, `Amount` is still handled, as described below:
+  - On JSON RPC input (e.g. `submit_multisigned` etc. methods), `Amount` is recognized as an alias to `DeliverMax` for both API version 1 and version 2 clients.
+  - On JSON RPC input, submitting both `Amount` and `DeliverMax` fields is allowed _only_ if they are identical; otherwise such input is rejected with `rpcINVALID_PARAMS` error.
+  - On JSON RPC output (e.g. `subscribe`, `account_tx` etc. methods), `DeliverMax` is present in both API version 1 and version 2.
+  - On JSON RPC output, `Amount` is only present in API version 1 and _not_ in version 2.
+
 
 # Unit tests for API changes
 
