@@ -175,6 +175,8 @@ loadLedgerInfos(
            "total_coins, closing_time, prev_closing_time, close_time_res, "
            "close_flags, ledger_seq FROM ledgers ";
 
+    uint32_t expNumResults = 1;
+
     if (auto ledgerSeq = std::get_if<uint32_t>(&whichLedger))
     {
         sql << "WHERE ledger_seq = " + std::to_string(*ledgerSeq);
@@ -187,6 +189,8 @@ loadLedgerInfos(
         auto minAndMax =
             std::get_if<std::pair<uint32_t, uint32_t>>(&whichLedger))
     {
+        expNumResults = minAndMax->second - minAndMax->first;
+
         sql
             << ("WHERE ledger_seq >= " + std::to_string(minAndMax->first) +
                 " AND ledger_seq <= " + std::to_string(minAndMax->second));

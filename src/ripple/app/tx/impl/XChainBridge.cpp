@@ -505,7 +505,7 @@ transferHelper(
         /*default path*/ true,
         /*partial payment*/ false,
         /*owner pays transfer fee*/ true,
-        /*offer crossing*/ OfferCrossing::no,
+        /*offer crossing*/ false,
         /*limit quality*/ std::nullopt,
         /*sendmax*/ std::nullopt,
         j);

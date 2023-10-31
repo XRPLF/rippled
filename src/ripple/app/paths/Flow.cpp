@@ -65,7 +65,7 @@ flow(
     bool defaultPaths,
     bool partialPayment,
     bool ownerPaysTransferFee,
-    OfferCrossing offerCrossing,
+    bool offerCrossing,
     std::optional<Quality> const& limitQuality,
     std::optional<STAmount> const& sendMax,
     beast::Journal j,
