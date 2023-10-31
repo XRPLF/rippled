@@ -82,7 +82,7 @@ cmdToJSONRPC(
     unsigned int apiVersion)
 {
     Json::Value jv = Json::Value(Json::objectValue);
-    auto const paramsObj = rpcCmdToJson(args, jv, j, apiVersion);
+    auto const paramsObj = rpcCmdToJson(args, jv, apiVersion, j);
 
     // Re-use jv to return our formatted result.
     jv.clear();

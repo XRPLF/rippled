@@ -69,8 +69,8 @@ Json::Value
 rpcCmdToJson(
     std::vector<std::string> const& args,
     Json::Value& retParams,
-    beast::Journal j,
-    unsigned int apiVersion);
+    unsigned int apiVersion,
+    beast::Journal j);
 
 /** Internal invocation of RPC client.
  *  Used by both rippled command line as well as rippled unit tests

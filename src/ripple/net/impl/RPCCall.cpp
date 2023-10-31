@@ -1476,8 +1476,8 @@ Json::Value
 rpcCmdToJson(
     std::vector<std::string> const& args,
     Json::Value& retParams,
-    beast::Journal j,
-    unsigned int apiVersion)
+    unsigned int apiVersion,
+    beast::Journal j)
 {
     Json::Value jvRequest(Json::objectValue);
 
@@ -1535,7 +1535,7 @@ rpcClient(
     {
         Json::Value jvRpc = Json::Value(Json::objectValue);
         jvRequest =
-            rpcCmdToJson(args, jvRpc, logs.journal("RPCParser"), apiVersion);
+            rpcCmdToJson(args, jvRpc, apiVersion, logs.journal("RPCParser"));
 
         if (jvRequest.isMember(jss::error))
         {
