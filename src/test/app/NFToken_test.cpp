@@ -6810,7 +6810,8 @@ class NFToken0_test : public beast::unit_test::suite
                                          test::jtx::Account const& acct,
                                          STAmount const amt) -> uint256 {
             // acct mints a NFT
-            uint256 const nftId{token::getNextID(env, acct, 0u, tfTransferable)};
+            uint256 const nftId{
+                token::getNextID(env, acct, 0u, tfTransferable)};
             env(token::mint(acct, 0u), txflags(tfTransferable));
             env.close();
 
