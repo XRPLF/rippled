@@ -425,8 +425,10 @@ doLedgerBinaryDump(RPC::JsonContext& context)
     JLOG(j.debug()) << "params " << context.params;
 
     // verify not specified or false if present
-    if (!context.params.isMember("verify") ||
-        !context.params["verify"].asBool())
+    bool dumpMode = !context.params.isMember("verify") ||
+        !context.params["verify"].asBool();
+
+    if (dumpMode)
     {
         auto res = RPC::getLedgerByContext(context);
         if (std::holds_alternative<Json::Value>(res))
@@ -438,7 +440,7 @@ doLedgerBinaryDump(RPC::JsonContext& context)
         auto out = LBD::STFileWriter::open(fn);
         if (!out)
         {
-            auto err = "can not open file" + fn;
+            auto err = "can not open file: " + fn;
             JLOG(j.error()) << err;
             return RPC::make_error(rpcUNKNOWN, err);
         }
@@ -455,13 +457,17 @@ doLedgerBinaryDump(RPC::JsonContext& context)
         jvResult["total_bytes"] = std::uint32_t(out->tell());
         out->close();
     }
-
-    // TODO: can you simply use asBool even when there's no member?
-    if (context.params.isMember("verify") && context.params["verify"].asBool())
+    else
     {  // Should separate this verify function ;)
         auto in = LBD::STFileReader::open(
             fn, context.app.logs().journal("STFileReader"));
-        if (in)
+        if (!in)
+        {
+            auto err = "can not open file: " + fn;
+            JLOG(j.error()) << err;
+            return RPC::make_error(rpcUNKNOWN, err);
+        }
+        else
         {
             JLOG(j.debug()) << "trying to read header";
             try
