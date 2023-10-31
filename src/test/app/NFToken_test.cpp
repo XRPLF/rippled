@@ -6807,17 +6807,17 @@ class NFToken0_test : public beast::unit_test::suite
 
         // Lambda that mints an NFT and then creates a sell offer
         auto mintAndCreateSellOffer = [](test::jtx::Env& env,
-                                         test::jtx::Account const& act,
+                                         test::jtx::Account const& acct,
                                          STAmount const amt) -> uint256 {
-            // act mints a NFT
-            uint256 const nftId{token::getNextID(env, act, 0u, tfTransferable)};
-            env(token::mint(act, 0u), txflags(tfTransferable));
+            // acct mints a NFT
+            uint256 const nftId{token::getNextID(env, acct, 0u, tfTransferable)};
+            env(token::mint(acct, 0u), txflags(tfTransferable));
             env.close();
 
-            // act makes an sell offer
+            // acct makes an sell offer
             uint256 const sellOfferIndex =
-                keylet::nftoffer(act, env.seq(act)).key;
-            env(token::createOffer(act, nftId, amt), txflags(tfSellNFToken));
+                keylet::nftoffer(acct, env.seq(acct)).key;
+            env(token::createOffer(acct, nftId, amt), txflags(tfSellNFToken));
             env.close();
 
             return sellOfferIndex;
