@@ -709,6 +709,43 @@ private:
         return jv_error;
     }
 
+    // ledger_binary_dump [file] [$ledger-specifier|verify]
+    Json::Value
+    parseLedgerBinaryDump(Json::Value const& jvParams)
+    {
+        if (jvParams.size() > 2)
+        {
+            return rpcError(rpcINVALID_PARAMS);
+        }
+
+        Json::Value jvRequest(Json::objectValue);
+
+        auto it = std::find(jvParams.begin(), jvParams.end(), "verify");
+        bool verify = it != jvParams.end();
+        jvRequest["verify"] = verify;
+
+        if (jvParams.size() == 0)
+        {
+            jvRequest[jss::file_name] = "ledger-dump.bin";
+        }
+        else
+        {
+            jvRequest[jss::file_name] = jvParams[0u].asString();
+        }
+        if (!verify)
+        {
+            if (jvParams.size() == 2)
+            {
+                jvParseLedger(jvRequest, jvParams[1u].asString());
+            }
+            else
+            {
+                jvRequest[jss::ledger_index] = "validated";
+            }
+        }
+        return jvRequest;
+    }
+
     // ledger [id|index|current|closed|validated] [full|tx]
     Json::Value
     parseLedger(Json::Value const& jvParams)
@@ -1280,6 +1317,7 @@ public:
             {"json2", &RPCParser::parseJson2, 1, 1},
             {"ledger", &RPCParser::parseLedger, 0, 2},
             {"ledger_accept", &RPCParser::parseAsIs, 0, 0},
+            {"ledger_binary_dump", &RPCParser::parseLedgerBinaryDump, 1, 3},
             {"ledger_closed", &RPCParser::parseAsIs, 0, 0},
             {"ledger_current", &RPCParser::parseAsIs, 0, 0},
             //      {   "ledger_entry",         &RPCParser::parseLedgerEntry,

@@ -75,6 +75,8 @@ doGetCounts(RPC::JsonContext&);
 Json::Value
 doLedgerAccept(RPC::JsonContext&);
 Json::Value
+doLedgerBinaryDump(RPC::JsonContext& context);
+Json::Value
 doLedgerCleaner(RPC::JsonContext&);
 Json::Value
 doLedgerClosed(RPC::JsonContext&);

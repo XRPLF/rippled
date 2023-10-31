@@ -327,6 +327,7 @@ JSS(FIELDS);                // out: RPC server_definitions
 JSS(first);                 // out: rpc/Version
 JSS(firstSequence);         // out: NodeToShardStatus
 JSS(firstShardIndex);       // out: NodeToShardStatus
+JSS(file_name);
 JSS(finished);
 JSS(fix_txns);              // in: LedgerCleaner
 JSS(flags);                 // out: AccountOffers,

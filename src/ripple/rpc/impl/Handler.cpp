@@ -127,6 +127,7 @@ Handler const handlerArray[]{
      byRef(&doLedgerCurrent),
      Role::USER,
      NEEDS_CURRENT_LEDGER},
+    {"ledger_binary_dump", byRef(&doLedgerBinaryDump), Role::ADMIN, NO_CONDITION},
     {"ledger_data", byRef(&doLedgerData), Role::USER, NO_CONDITION},
     {"ledger_entry", byRef(&doLedgerEntry), Role::USER, NO_CONDITION},
     {"ledger_header", byRef(&doLedgerHeader), Role::USER, NO_CONDITION, 1, 1},
