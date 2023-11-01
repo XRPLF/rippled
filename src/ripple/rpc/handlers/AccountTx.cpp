@@ -340,6 +340,12 @@ populateJsonResponse(
                         jvObj[jss::ledger_hash] =
                             to_string(context.ledgerMaster.getHashBySeq(
                                 txn->getLedger()));
+
+                        if (auto closeTime =
+                                context.ledgerMaster.getCloseTimeBySeq(
+                                    txn->getLedger()))
+                            jvObj[jss::close_time_iso] =
+                                to_string_iso(*closeTime);
                     }
                     else
                         jvObj[json_tx] = txn->getJson(
@@ -356,11 +362,6 @@ populateJsonResponse(
                         insertDeliveredAmount(
                             jvObj[jss::meta], context, txn, *txnMeta);
                         insertNFTSyntheticInJson(jvObj, sttx, *txnMeta);
-                        if (auto closeTime =
-                                context.ledgerMaster.getCloseTimeBySeq(
-                                    txnMeta->getIndex()))
-                            jvObj[jss::close_time_iso] =
-                                to_string_iso(*closeTime);
                     }
                 }
             }
