@@ -119,14 +119,23 @@ class AccountTx_test : public beast::unit_test::suite
         // Ledger 3 has the two txs associated with funding the account
         // All other ledgers have no txs
 
-        auto hasTxs = [](Json::Value const& j) {
+        auto hasTxs = [apiVersion](Json::Value const& j) {
             return j.isMember(jss::result) &&
                 (j[jss::result][jss::status] == "success") &&
                 (j[jss::result][jss::transactions].size() == 2) &&
                 (j[jss::result][jss::transactions][0u][jss::tx]
                   [jss::TransactionType] == jss::AccountSet) &&
                 (j[jss::result][jss::transactions][1u][jss::tx]
-                  [jss::TransactionType] == jss::Payment);
+                  [jss::TransactionType] == jss::Payment) &&
+                (j[jss::result][jss::transactions][1u][jss::tx]
+                  [jss::DeliverMax] == "10000000010") &&
+                ((apiVersion > 1 &&
+                  !j[jss::result][jss::transactions][1u][jss::tx].isMember(
+                      jss::Amount)) ||
+                 (apiVersion <= 1 &&
+                  j[jss::result][jss::transactions][1u][jss::tx][jss::Amount] ==
+                      j[jss::result][jss::transactions][1u][jss::tx]
+                       [jss::DeliverMax]));
         };
 
         auto noTxs = [](Json::Value const& j) {

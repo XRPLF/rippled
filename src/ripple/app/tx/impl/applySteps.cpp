@@ -33,6 +33,7 @@
 #include <ripple/app/tx/impl/CreateCheck.h>
 #include <ripple/app/tx/impl/CreateOffer.h>
 #include <ripple/app/tx/impl/CreateTicket.h>
+#include <ripple/app/tx/impl/DID.h>
 #include <ripple/app/tx/impl/DeleteAccount.h>
 #include <ripple/app/tx/impl/DepositPreauth.h>
 #include <ripple/app/tx/impl/Escrow.h>
@@ -50,7 +51,119 @@
 #include <ripple/app/tx/impl/XChainBridge.h>
 #include <ripple/protocol/TxFormats.h>
 
+#include <stdexcept>
+
 namespace ripple {
+
+namespace {
+
+struct UnknownTxnType : std::exception
+{
+    TxType txnType;
+    UnknownTxnType(TxType t) : txnType{t}
+    {
+    }
+};
+
+// Call a lambda with the concrete transaction type as a template parameter
+// throw an "UnknownTxnType" exception on error
+template <class F>
+auto
+with_txn_type(TxType txnType, F&& f)
+{
+    switch (txnType)
+    {
+        case ttACCOUNT_DELETE:
+            return f.template operator()<DeleteAccount>();
+        case ttACCOUNT_SET:
+            return f.template operator()<SetAccount>();
+        case ttCHECK_CANCEL:
+            return f.template operator()<CancelCheck>();
+        case ttCHECK_CASH:
+            return f.template operator()<CashCheck>();
+        case ttCHECK_CREATE:
+            return f.template operator()<CreateCheck>();
+        case ttDEPOSIT_PREAUTH:
+            return f.template operator()<DepositPreauth>();
+        case ttOFFER_CANCEL:
+            return f.template operator()<CancelOffer>();
+        case ttOFFER_CREATE:
+            return f.template operator()<CreateOffer>();
+        case ttESCROW_CREATE:
+            return f.template operator()<EscrowCreate>();
+        case ttESCROW_FINISH:
+            return f.template operator()<EscrowFinish>();
+        case ttESCROW_CANCEL:
+            return f.template operator()<EscrowCancel>();
+        case ttPAYCHAN_CLAIM:
+            return f.template operator()<PayChanClaim>();
+        case ttPAYCHAN_CREATE:
+            return f.template operator()<PayChanCreate>();
+        case ttPAYCHAN_FUND:
+            return f.template operator()<PayChanFund>();
+        case ttPAYMENT:
+            return f.template operator()<Payment>();
+        case ttREGULAR_KEY_SET:
+            return f.template operator()<SetRegularKey>();
+        case ttSIGNER_LIST_SET:
+            return f.template operator()<SetSignerList>();
+        case ttTICKET_CREATE:
+            return f.template operator()<CreateTicket>();
+        case ttTRUST_SET:
+            return f.template operator()<SetTrust>();
+        case ttAMENDMENT:
+        case ttFEE:
+        case ttUNL_MODIFY:
+            return f.template operator()<Change>();
+        case ttNFTOKEN_MINT:
+            return f.template operator()<NFTokenMint>();
+        case ttNFTOKEN_BURN:
+            return f.template operator()<NFTokenBurn>();
+        case ttNFTOKEN_CREATE_OFFER:
+            return f.template operator()<NFTokenCreateOffer>();
+        case ttNFTOKEN_CANCEL_OFFER:
+            return f.template operator()<NFTokenCancelOffer>();
+        case ttNFTOKEN_ACCEPT_OFFER:
+            return f.template operator()<NFTokenAcceptOffer>();
+        case ttCLAWBACK:
+            return f.template operator()<Clawback>();
+        case ttAMM_CREATE:
+            return f.template operator()<AMMCreate>();
+        case ttAMM_DEPOSIT:
+            return f.template operator()<AMMDeposit>();
+        case ttAMM_WITHDRAW:
+            return f.template operator()<AMMWithdraw>();
+        case ttAMM_VOTE:
+            return f.template operator()<AMMVote>();
+        case ttAMM_BID:
+            return f.template operator()<AMMBid>();
+        case ttAMM_DELETE:
+            return f.template operator()<AMMDelete>();
+        case ttXCHAIN_CREATE_BRIDGE:
+            return f.template operator()<XChainCreateBridge>();
+        case ttXCHAIN_MODIFY_BRIDGE:
+            return f.template operator()<BridgeModify>();
+        case ttXCHAIN_CREATE_CLAIM_ID:
+            return f.template operator()<XChainCreateClaimID>();
+        case ttXCHAIN_COMMIT:
+            return f.template operator()<XChainCommit>();
+        case ttXCHAIN_CLAIM:
+            return f.template operator()<XChainClaim>();
+        case ttXCHAIN_ADD_CLAIM_ATTESTATION:
+            return f.template operator()<XChainAddClaimAttestation>();
+        case ttXCHAIN_ADD_ACCOUNT_CREATE_ATTESTATION:
+            return f.template operator()<XChainAddAccountCreateAttestation>();
+        case ttXCHAIN_ACCOUNT_CREATE_COMMIT:
+            return f.template operator()<XChainCreateAccountCommit>();
+        case ttDID_SET:
+            return f.template operator()<DIDSet>();
+        case ttDID_DELETE:
+            return f.template operator()<DIDDelete>();
+        default:
+            throw UnknownTxnType(txnType);
+    }
+}
+}  // namespace
 
 // Templates so preflight does the right thing with T::ConsequencesFactory.
 //
@@ -60,361 +173,122 @@ namespace ripple {
 // templates with a single template function that uses if constexpr.
 //
 // For Transactor::Normal
-template <
-    class T,
-    std::enable_if_t<T::ConsequencesFactory == Transactor::Normal, int> = 0>
+//
+
+// clang-format off
+// Current formatter for rippled is based on clang-10, which does not handle `requires` clauses
+template <class T>
+requires(T::ConsequencesFactory == Transactor::Normal)
 TxConsequences
-consequences_helper(PreflightContext const& ctx)
+    consequences_helper(PreflightContext const& ctx)
 {
     return TxConsequences(ctx.tx);
 };
 
 // For Transactor::Blocker
-template <
-    class T,
-    std::enable_if_t<T::ConsequencesFactory == Transactor::Blocker, int> = 0>
+template <class T>
+requires(T::ConsequencesFactory == Transactor::Blocker)
 TxConsequences
-consequences_helper(PreflightContext const& ctx)
+    consequences_helper(PreflightContext const& ctx)
 {
     return TxConsequences(ctx.tx, TxConsequences::blocker);
 };
 
 // For Transactor::Custom
-template <
-    class T,
-    std::enable_if_t<T::ConsequencesFactory == Transactor::Custom, int> = 0>
+template <class T>
+requires(T::ConsequencesFactory == Transactor::Custom)
 TxConsequences
-consequences_helper(PreflightContext const& ctx)
+    consequences_helper(PreflightContext const& ctx)
 {
     return T::makeTxConsequences(ctx);
 };
-
-template <class T>
-std::pair<NotTEC, TxConsequences>
-invoke_preflight_helper(PreflightContext const& ctx)
-{
-    auto const tec = T::preflight(ctx);
-    return {
-        tec,
-        isTesSuccess(tec) ? consequences_helper<T>(ctx) : TxConsequences{tec}};
-}
+// clang-format on
 
 static std::pair<NotTEC, TxConsequences>
 invoke_preflight(PreflightContext const& ctx)
 {
-    switch (ctx.tx.getTxnType())
+    try
     {
-        case ttACCOUNT_DELETE:
-            return invoke_preflight_helper<DeleteAccount>(ctx);
-        case ttACCOUNT_SET:
-            return invoke_preflight_helper<SetAccount>(ctx);
-        case ttCHECK_CANCEL:
-            return invoke_preflight_helper<CancelCheck>(ctx);
-        case ttCHECK_CASH:
-            return invoke_preflight_helper<CashCheck>(ctx);
-        case ttCHECK_CREATE:
-            return invoke_preflight_helper<CreateCheck>(ctx);
-        case ttDEPOSIT_PREAUTH:
-            return invoke_preflight_helper<DepositPreauth>(ctx);
-        case ttOFFER_CANCEL:
-            return invoke_preflight_helper<CancelOffer>(ctx);
-        case ttOFFER_CREATE:
-            return invoke_preflight_helper<CreateOffer>(ctx);
-        case ttESCROW_CREATE:
-            return invoke_preflight_helper<EscrowCreate>(ctx);
-        case ttESCROW_FINISH:
-            return invoke_preflight_helper<EscrowFinish>(ctx);
-        case ttESCROW_CANCEL:
-            return invoke_preflight_helper<EscrowCancel>(ctx);
-        case ttPAYCHAN_CLAIM:
-            return invoke_preflight_helper<PayChanClaim>(ctx);
-        case ttPAYCHAN_CREATE:
-            return invoke_preflight_helper<PayChanCreate>(ctx);
-        case ttPAYCHAN_FUND:
-            return invoke_preflight_helper<PayChanFund>(ctx);
-        case ttPAYMENT:
-            return invoke_preflight_helper<Payment>(ctx);
-        case ttREGULAR_KEY_SET:
-            return invoke_preflight_helper<SetRegularKey>(ctx);
-        case ttSIGNER_LIST_SET:
-            return invoke_preflight_helper<SetSignerList>(ctx);
-        case ttTICKET_CREATE:
-            return invoke_preflight_helper<CreateTicket>(ctx);
-        case ttTRUST_SET:
-            return invoke_preflight_helper<SetTrust>(ctx);
-        case ttAMENDMENT:
-        case ttFEE:
-        case ttUNL_MODIFY:
-            return invoke_preflight_helper<Change>(ctx);
-        case ttNFTOKEN_MINT:
-            return invoke_preflight_helper<NFTokenMint>(ctx);
-        case ttNFTOKEN_BURN:
-            return invoke_preflight_helper<NFTokenBurn>(ctx);
-        case ttNFTOKEN_CREATE_OFFER:
-            return invoke_preflight_helper<NFTokenCreateOffer>(ctx);
-        case ttNFTOKEN_CANCEL_OFFER:
-            return invoke_preflight_helper<NFTokenCancelOffer>(ctx);
-        case ttNFTOKEN_ACCEPT_OFFER:
-            return invoke_preflight_helper<NFTokenAcceptOffer>(ctx);
-        case ttCLAWBACK:
-            return invoke_preflight_helper<Clawback>(ctx);
-        case ttAMM_CREATE:
-            return invoke_preflight_helper<AMMCreate>(ctx);
-        case ttAMM_DEPOSIT:
-            return invoke_preflight_helper<AMMDeposit>(ctx);
-        case ttAMM_WITHDRAW:
-            return invoke_preflight_helper<AMMWithdraw>(ctx);
-        case ttAMM_VOTE:
-            return invoke_preflight_helper<AMMVote>(ctx);
-        case ttAMM_BID:
-            return invoke_preflight_helper<AMMBid>(ctx);
-        case ttAMM_DELETE:
-            return invoke_preflight_helper<AMMDelete>(ctx);
-        case ttXCHAIN_CREATE_BRIDGE:
-            return invoke_preflight_helper<XChainCreateBridge>(ctx);
-        case ttXCHAIN_MODIFY_BRIDGE:
-            return invoke_preflight_helper<BridgeModify>(ctx);
-        case ttXCHAIN_CREATE_CLAIM_ID:
-            return invoke_preflight_helper<XChainCreateClaimID>(ctx);
-        case ttXCHAIN_COMMIT:
-            return invoke_preflight_helper<XChainCommit>(ctx);
-        case ttXCHAIN_CLAIM:
-            return invoke_preflight_helper<XChainClaim>(ctx);
-        case ttXCHAIN_ADD_CLAIM_ATTESTATION:
-            return invoke_preflight_helper<XChainAddClaimAttestation>(ctx);
-        case ttXCHAIN_ADD_ACCOUNT_CREATE_ATTESTATION:
-            return invoke_preflight_helper<XChainAddAccountCreateAttestation>(
-                ctx);
-        case ttXCHAIN_ACCOUNT_CREATE_COMMIT:
-            return invoke_preflight_helper<XChainCreateAccountCommit>(ctx);
-        default:
-            assert(false);
-            return {temUNKNOWN, TxConsequences{temUNKNOWN}};
+        return with_txn_type(ctx.tx.getTxnType(), [&]<typename T>() {
+            auto const tec = T::preflight(ctx);
+            return std::make_pair(
+                tec,
+                isTesSuccess(tec) ? consequences_helper<T>(ctx)
+                                  : TxConsequences{tec});
+        });
     }
-}
-
-/* invoke_preclaim<T> uses name hiding to accomplish
-    compile-time polymorphism of (presumably) static
-    class functions for Transactor and derived classes.
-*/
-template <class T>
-static TER
-invoke_preclaim(PreclaimContext const& ctx)
-{
-    // If the transactor requires a valid account and the transaction doesn't
-    // list one, preflight will have already a flagged a failure.
-    auto const id = ctx.tx.getAccountID(sfAccount);
-
-    if (id != beast::zero)
+    catch (UnknownTxnType const& e)
     {
-        TER result = T::checkSeqProxy(ctx.view, ctx.tx, ctx.j);
-
-        if (result != tesSUCCESS)
-            return result;
-
-        result = T::checkPriorTxAndLastLedger(ctx);
-
-        if (result != tesSUCCESS)
-            return result;
-
-        result = T::checkFee(ctx, calculateBaseFee(ctx.view, ctx.tx));
-
-        if (result != tesSUCCESS)
-            return result;
-
-        result = T::checkSign(ctx);
-
-        if (result != tesSUCCESS)
-            return result;
+        // Should never happen
+        JLOG(ctx.j.fatal())
+            << "Unknown transaction type in preflight: " << e.txnType;
+        assert(false);
+        return {temUNKNOWN, TxConsequences{temUNKNOWN}};
     }
-
-    return T::preclaim(ctx);
 }
 
 static TER
 invoke_preclaim(PreclaimContext const& ctx)
 {
-    switch (ctx.tx.getTxnType())
+    try
     {
-        case ttACCOUNT_DELETE:
-            return invoke_preclaim<DeleteAccount>(ctx);
-        case ttACCOUNT_SET:
-            return invoke_preclaim<SetAccount>(ctx);
-        case ttCHECK_CANCEL:
-            return invoke_preclaim<CancelCheck>(ctx);
-        case ttCHECK_CASH:
-            return invoke_preclaim<CashCheck>(ctx);
-        case ttCHECK_CREATE:
-            return invoke_preclaim<CreateCheck>(ctx);
-        case ttDEPOSIT_PREAUTH:
-            return invoke_preclaim<DepositPreauth>(ctx);
-        case ttOFFER_CANCEL:
-            return invoke_preclaim<CancelOffer>(ctx);
-        case ttOFFER_CREATE:
-            return invoke_preclaim<CreateOffer>(ctx);
-        case ttESCROW_CREATE:
-            return invoke_preclaim<EscrowCreate>(ctx);
-        case ttESCROW_FINISH:
-            return invoke_preclaim<EscrowFinish>(ctx);
-        case ttESCROW_CANCEL:
-            return invoke_preclaim<EscrowCancel>(ctx);
-        case ttPAYCHAN_CLAIM:
-            return invoke_preclaim<PayChanClaim>(ctx);
-        case ttPAYCHAN_CREATE:
-            return invoke_preclaim<PayChanCreate>(ctx);
-        case ttPAYCHAN_FUND:
-            return invoke_preclaim<PayChanFund>(ctx);
-        case ttPAYMENT:
-            return invoke_preclaim<Payment>(ctx);
-        case ttREGULAR_KEY_SET:
-            return invoke_preclaim<SetRegularKey>(ctx);
-        case ttSIGNER_LIST_SET:
-            return invoke_preclaim<SetSignerList>(ctx);
-        case ttTICKET_CREATE:
-            return invoke_preclaim<CreateTicket>(ctx);
-        case ttTRUST_SET:
-            return invoke_preclaim<SetTrust>(ctx);
-        case ttAMENDMENT:
-        case ttFEE:
-        case ttUNL_MODIFY:
-            return invoke_preclaim<Change>(ctx);
-        case ttNFTOKEN_MINT:
-            return invoke_preclaim<NFTokenMint>(ctx);
-        case ttNFTOKEN_BURN:
-            return invoke_preclaim<NFTokenBurn>(ctx);
-        case ttNFTOKEN_CREATE_OFFER:
-            return invoke_preclaim<NFTokenCreateOffer>(ctx);
-        case ttNFTOKEN_CANCEL_OFFER:
-            return invoke_preclaim<NFTokenCancelOffer>(ctx);
-        case ttNFTOKEN_ACCEPT_OFFER:
-            return invoke_preclaim<NFTokenAcceptOffer>(ctx);
-        case ttCLAWBACK:
-            return invoke_preclaim<Clawback>(ctx);
-        case ttAMM_CREATE:
-            return invoke_preclaim<AMMCreate>(ctx);
-        case ttAMM_DEPOSIT:
-            return invoke_preclaim<AMMDeposit>(ctx);
-        case ttAMM_WITHDRAW:
-            return invoke_preclaim<AMMWithdraw>(ctx);
-        case ttAMM_VOTE:
-            return invoke_preclaim<AMMVote>(ctx);
-        case ttAMM_BID:
-            return invoke_preclaim<AMMBid>(ctx);
-        case ttAMM_DELETE:
-            return invoke_preclaim<AMMDelete>(ctx);
-        case ttXCHAIN_CREATE_BRIDGE:
-            return invoke_preclaim<XChainCreateBridge>(ctx);
-        case ttXCHAIN_MODIFY_BRIDGE:
-            return invoke_preclaim<BridgeModify>(ctx);
-        case ttXCHAIN_CREATE_CLAIM_ID:
-            return invoke_preclaim<XChainCreateClaimID>(ctx);
-        case ttXCHAIN_COMMIT:
-            return invoke_preclaim<XChainCommit>(ctx);
-        case ttXCHAIN_CLAIM:
-            return invoke_preclaim<XChainClaim>(ctx);
-        case ttXCHAIN_ACCOUNT_CREATE_COMMIT:
-            return invoke_preclaim<XChainCreateAccountCommit>(ctx);
-        case ttXCHAIN_ADD_CLAIM_ATTESTATION:
-            return invoke_preclaim<XChainAddClaimAttestation>(ctx);
-        case ttXCHAIN_ADD_ACCOUNT_CREATE_ATTESTATION:
-            return invoke_preclaim<XChainAddAccountCreateAttestation>(ctx);
-        default:
-            assert(false);
-            return temUNKNOWN;
+        // use name hiding to accomplish compile-time polymorphism of static
+        // class functions for Transactor and derived classes.
+        return with_txn_type(ctx.tx.getTxnType(), [&]<typename T>() {
+            // If the transactor requires a valid account and the transaction
+            // doesn't list one, preflight will have already a flagged a
+            // failure.
+            auto const id = ctx.tx.getAccountID(sfAccount);
+
+            if (id != beast::zero)
+            {
+                TER result = T::checkSeqProxy(ctx.view, ctx.tx, ctx.j);
+
+                if (result != tesSUCCESS)
+                    return result;
+
+                result = T::checkPriorTxAndLastLedger(ctx);
+
+                if (result != tesSUCCESS)
+                    return result;
+
+                result = T::checkFee(ctx, calculateBaseFee(ctx.view, ctx.tx));
+
+                if (result != tesSUCCESS)
+                    return result;
+
+                result = T::checkSign(ctx);
+
+                if (result != tesSUCCESS)
+                    return result;
+            }
+
+            return T::preclaim(ctx);
+        });
+    }
+    catch (UnknownTxnType const& e)
+    {
+        // Should never happen
+        JLOG(ctx.j.fatal())
+            << "Unknown transaction type in preclaim: " << e.txnType;
+        assert(false);
+        return temUNKNOWN;
     }
 }
 
 static XRPAmount
 invoke_calculateBaseFee(ReadView const& view, STTx const& tx)
 {
-    switch (tx.getTxnType())
+    try
     {
-        case ttACCOUNT_DELETE:
-            return DeleteAccount::calculateBaseFee(view, tx);
-        case ttACCOUNT_SET:
-            return SetAccount::calculateBaseFee(view, tx);
-        case ttCHECK_CANCEL:
-            return CancelCheck::calculateBaseFee(view, tx);
-        case ttCHECK_CASH:
-            return CashCheck::calculateBaseFee(view, tx);
-        case ttCHECK_CREATE:
-            return CreateCheck::calculateBaseFee(view, tx);
-        case ttDEPOSIT_PREAUTH:
-            return DepositPreauth::calculateBaseFee(view, tx);
-        case ttOFFER_CANCEL:
-            return CancelOffer::calculateBaseFee(view, tx);
-        case ttOFFER_CREATE:
-            return CreateOffer::calculateBaseFee(view, tx);
-        case ttESCROW_CREATE:
-            return EscrowCreate::calculateBaseFee(view, tx);
-        case ttESCROW_FINISH:
-            return EscrowFinish::calculateBaseFee(view, tx);
-        case ttESCROW_CANCEL:
-            return EscrowCancel::calculateBaseFee(view, tx);
-        case ttPAYCHAN_CLAIM:
-            return PayChanClaim::calculateBaseFee(view, tx);
-        case ttPAYCHAN_CREATE:
-            return PayChanCreate::calculateBaseFee(view, tx);
-        case ttPAYCHAN_FUND:
-            return PayChanFund::calculateBaseFee(view, tx);
-        case ttPAYMENT:
-            return Payment::calculateBaseFee(view, tx);
-        case ttREGULAR_KEY_SET:
-            return SetRegularKey::calculateBaseFee(view, tx);
-        case ttSIGNER_LIST_SET:
-            return SetSignerList::calculateBaseFee(view, tx);
-        case ttTICKET_CREATE:
-            return CreateTicket::calculateBaseFee(view, tx);
-        case ttTRUST_SET:
-            return SetTrust::calculateBaseFee(view, tx);
-        case ttAMENDMENT:
-        case ttFEE:
-        case ttUNL_MODIFY:
-            return Change::calculateBaseFee(view, tx);
-        case ttNFTOKEN_MINT:
-            return NFTokenMint::calculateBaseFee(view, tx);
-        case ttNFTOKEN_BURN:
-            return NFTokenBurn::calculateBaseFee(view, tx);
-        case ttNFTOKEN_CREATE_OFFER:
-            return NFTokenCreateOffer::calculateBaseFee(view, tx);
-        case ttNFTOKEN_CANCEL_OFFER:
-            return NFTokenCancelOffer::calculateBaseFee(view, tx);
-        case ttNFTOKEN_ACCEPT_OFFER:
-            return NFTokenAcceptOffer::calculateBaseFee(view, tx);
-        case ttCLAWBACK:
-            return Clawback::calculateBaseFee(view, tx);
-        case ttAMM_CREATE:
-            return AMMCreate::calculateBaseFee(view, tx);
-        case ttAMM_DEPOSIT:
-            return AMMDeposit::calculateBaseFee(view, tx);
-        case ttAMM_WITHDRAW:
-            return AMMWithdraw::calculateBaseFee(view, tx);
-        case ttAMM_VOTE:
-            return AMMVote::calculateBaseFee(view, tx);
-        case ttAMM_BID:
-            return AMMBid::calculateBaseFee(view, tx);
-        case ttAMM_DELETE:
-            return AMMDelete::calculateBaseFee(view, tx);
-        case ttXCHAIN_CREATE_BRIDGE:
-            return XChainCreateBridge::calculateBaseFee(view, tx);
-        case ttXCHAIN_MODIFY_BRIDGE:
-            return BridgeModify::calculateBaseFee(view, tx);
-        case ttXCHAIN_CREATE_CLAIM_ID:
-            return XChainCreateClaimID::calculateBaseFee(view, tx);
-        case ttXCHAIN_COMMIT:
-            return XChainCommit::calculateBaseFee(view, tx);
-        case ttXCHAIN_CLAIM:
-            return XChainClaim::calculateBaseFee(view, tx);
-        case ttXCHAIN_ADD_CLAIM_ATTESTATION:
-            return XChainAddClaimAttestation::calculateBaseFee(view, tx);
-        case ttXCHAIN_ADD_ACCOUNT_CREATE_ATTESTATION:
-            return XChainAddAccountCreateAttestation::calculateBaseFee(
-                view, tx);
-        case ttXCHAIN_ACCOUNT_CREATE_COMMIT:
-            return XChainCreateAccountCommit::calculateBaseFee(view, tx);
-        default:
-            assert(false);
-            return XRPAmount{0};
+        return with_txn_type(tx.getTxnType(), [&]<typename T>() {
+            return T::calculateBaseFee(view, tx);
+        });
+    }
+    catch (UnknownTxnType const& e)
+    {
+        assert(false);
+        return XRPAmount{0};
     }
 }
 
@@ -460,173 +334,20 @@ TxConsequences::TxConsequences(STTx const& tx, std::uint32_t sequencesConsumed)
 static std::pair<TER, bool>
 invoke_apply(ApplyContext& ctx)
 {
-    switch (ctx.tx.getTxnType())
+    try
     {
-        case ttACCOUNT_DELETE: {
-            DeleteAccount p(ctx);
+        return with_txn_type(ctx.tx.getTxnType(), [&]<typename T>() {
+            T p(ctx);
             return p();
-        }
-        case ttACCOUNT_SET: {
-            SetAccount p(ctx);
-            return p();
-        }
-        case ttCHECK_CANCEL: {
-            CancelCheck p(ctx);
-            return p();
-        }
-        case ttCHECK_CASH: {
-            CashCheck p(ctx);
-            return p();
-        }
-        case ttCHECK_CREATE: {
-            CreateCheck p(ctx);
-            return p();
-        }
-        case ttDEPOSIT_PREAUTH: {
-            DepositPreauth p(ctx);
-            return p();
-        }
-        case ttOFFER_CANCEL: {
-            CancelOffer p(ctx);
-            return p();
-        }
-        case ttOFFER_CREATE: {
-            CreateOffer p(ctx);
-            return p();
-        }
-        case ttESCROW_CREATE: {
-            EscrowCreate p(ctx);
-            return p();
-        }
-        case ttESCROW_FINISH: {
-            EscrowFinish p(ctx);
-            return p();
-        }
-        case ttESCROW_CANCEL: {
-            EscrowCancel p(ctx);
-            return p();
-        }
-        case ttPAYCHAN_CLAIM: {
-            PayChanClaim p(ctx);
-            return p();
-        }
-        case ttPAYCHAN_CREATE: {
-            PayChanCreate p(ctx);
-            return p();
-        }
-        case ttPAYCHAN_FUND: {
-            PayChanFund p(ctx);
-            return p();
-        }
-        case ttPAYMENT: {
-            Payment p(ctx);
-            return p();
-        }
-        case ttREGULAR_KEY_SET: {
-            SetRegularKey p(ctx);
-            return p();
-        }
-        case ttSIGNER_LIST_SET: {
-            SetSignerList p(ctx);
-            return p();
-        }
-        case ttTICKET_CREATE: {
-            CreateTicket p(ctx);
-            return p();
-        }
-        case ttTRUST_SET: {
-            SetTrust p(ctx);
-            return p();
-        }
-        case ttAMENDMENT:
-        case ttFEE:
-        case ttUNL_MODIFY: {
-            Change p(ctx);
-            return p();
-        }
-        case ttNFTOKEN_MINT: {
-            NFTokenMint p(ctx);
-            return p();
-        }
-        case ttNFTOKEN_BURN: {
-            NFTokenBurn p(ctx);
-            return p();
-        }
-        case ttNFTOKEN_CREATE_OFFER: {
-            NFTokenCreateOffer p(ctx);
-            return p();
-        }
-        case ttNFTOKEN_CANCEL_OFFER: {
-            NFTokenCancelOffer p(ctx);
-            return p();
-        }
-        case ttNFTOKEN_ACCEPT_OFFER: {
-            NFTokenAcceptOffer p(ctx);
-            return p();
-        }
-        case ttCLAWBACK: {
-            Clawback p(ctx);
-            return p();
-        }
-        case ttAMM_CREATE: {
-            AMMCreate p(ctx);
-            return p();
-        }
-        case ttAMM_DEPOSIT: {
-            AMMDeposit p(ctx);
-            return p();
-        }
-        case ttAMM_WITHDRAW: {
-            AMMWithdraw p(ctx);
-            return p();
-        }
-        case ttAMM_VOTE: {
-            AMMVote p(ctx);
-            return p();
-        }
-        case ttAMM_BID: {
-            AMMBid p(ctx);
-            return p();
-        }
-        case ttAMM_DELETE: {
-            AMMDelete p(ctx);
-            return p();
-        }
-        case ttXCHAIN_CREATE_BRIDGE: {
-            XChainCreateBridge p(ctx);
-            return p();
-        }
-        case ttXCHAIN_MODIFY_BRIDGE: {
-            BridgeModify p(ctx);
-            return p();
-        }
-        case ttXCHAIN_CREATE_CLAIM_ID: {
-            XChainCreateClaimID p(ctx);
-            return p();
-        }
-        case ttXCHAIN_COMMIT: {
-            XChainCommit p(ctx);
-            return p();
-        }
-        case ttXCHAIN_CLAIM: {
-            XChainClaim p(ctx);
-            return p();
-        }
-        case ttXCHAIN_ADD_CLAIM_ATTESTATION: {
-            XChainAddClaimAttestation p(ctx);
-            return p();
-        }
-        case ttXCHAIN_ADD_ACCOUNT_CREATE_ATTESTATION: {
-            XChainAddAccountCreateAttestation p(ctx);
-            return p();
-        }
-        case ttXCHAIN_ACCOUNT_CREATE_COMMIT: {
-            XChainCreateAccountCommit p(ctx);
-            return p();
-        }
-        default:
-            assert(false);
-            return {temUNKNOWN, false};
+        });
+    }
+    catch (UnknownTxnType const& e)
+    {
+        // Should never happen
+        JLOG(ctx.journal.fatal())
+            << "Unknown transaction type in apply: " << e.txnType;
+        assert(false);
+        return {temUNKNOWN, false};
     }
 }
 

@@ -588,6 +588,16 @@ doLedgerEntry(RPC::JsonContext& context)
                 }
             }
         }
+        else if (context.params.isMember(jss::did))
+        {
+            expectedType = ltDID;
+            auto const account =
+                parseBase58<AccountID>(context.params[jss::did].asString());
+            if (!account || account->isZero())
+                jvResult[jss::error] = "malformedAddress";
+            else
+                uNodeIndex = keylet::did(*account).key;
+        }
         else
         {
             if (context.params.isMember("params") &&

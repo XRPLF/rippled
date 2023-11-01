@@ -581,7 +581,7 @@ class NFToken0_test : public beast::unit_test::suite
             ter(temMALFORMED));
 
         //----------------------------------------------------------------------
-        // preflight
+        // preclaim
 
         // Non-existent issuer.
         env(token::mint(alice, 0u),

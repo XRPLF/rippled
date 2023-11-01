@@ -242,10 +242,12 @@ constexpr unsigned int apiVersionIfUnspecified = 1;
 constexpr unsigned int apiMinimumSupportedVersion = 1;
 constexpr unsigned int apiMaximumSupportedVersion = 1;
 constexpr unsigned int apiBetaVersion = 2;
+constexpr unsigned int apiMaximumValidVersion = apiBetaVersion;
 
 static_assert(apiMinimumSupportedVersion >= apiVersionIfUnspecified);
 static_assert(apiMaximumSupportedVersion >= apiMinimumSupportedVersion);
 static_assert(apiBetaVersion >= apiMaximumSupportedVersion);
+static_assert(apiMaximumValidVersion >= apiMaximumSupportedVersion);
 
 template <class Object>
 void
