@@ -86,7 +86,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(CurrentThreadName, beast_, beast);
+BEAST_DEFINE_TESTSUITE(CurrentThreadName, beast, beast);
 
 }  // namespace test
 }  // namespace ripple

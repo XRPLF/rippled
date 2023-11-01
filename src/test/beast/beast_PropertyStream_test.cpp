@@ -236,5 +236,5 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(PropertyStream, beast_, beast);
+BEAST_DEFINE_TESTSUITE(PropertyStream, beast, beast);
 }  // namespace beast

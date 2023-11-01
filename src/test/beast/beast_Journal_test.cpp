@@ -97,6 +97,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Journal, beast_, beast);
+BEAST_DEFINE_TESTSUITE(Journal, beast, beast);
 
 }  // namespace beast

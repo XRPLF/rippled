@@ -1985,13 +1985,13 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(aged_set, beast_, beast);
-BEAST_DEFINE_TESTSUITE(aged_map, beast_, beast);
-BEAST_DEFINE_TESTSUITE(aged_multiset, beast_, beast);
-BEAST_DEFINE_TESTSUITE(aged_multimap, beast_, beast);
-BEAST_DEFINE_TESTSUITE(aged_unordered_set, beast_, beast);
-BEAST_DEFINE_TESTSUITE(aged_unordered_map, beast_, beast);
-BEAST_DEFINE_TESTSUITE(aged_unordered_multiset, beast_, beast);
-BEAST_DEFINE_TESTSUITE(aged_unordered_multimap, beast_, beast);
+BEAST_DEFINE_TESTSUITE(aged_set, beast, beast);
+BEAST_DEFINE_TESTSUITE(aged_map, beast, beast);
+BEAST_DEFINE_TESTSUITE(aged_multiset, beast, beast);
+BEAST_DEFINE_TESTSUITE(aged_multimap, beast, beast);
+BEAST_DEFINE_TESTSUITE(aged_unordered_set, beast, beast);
+BEAST_DEFINE_TESTSUITE(aged_unordered_map, beast, beast);
+BEAST_DEFINE_TESTSUITE(aged_unordered_multiset, beast, beast);
+BEAST_DEFINE_TESTSUITE(aged_unordered_multimap, beast, beast);
 
 }  // namespace beast
