@@ -1807,9 +1807,10 @@ Consensus<Adaptor>::updateOurPositions(bool const share)
         // Close time is chosen based on the threshVote threshold
         // calculated above. If a close time has votes equal to or greater than
         // that threshold, then that is the best close time. If two
-        // close times are equal, then choose the greatest of them. Ensure
-        // that our close time then matches that which meets the criteria.
-        // But if no close time meet the criteria, make no changes.
+        // close times have an equal number of votes, then choose the greatest
+        // of them. Ensure that our close time then matches that which meets
+        // the criteria. But if no close time meet the criteria, make no
+        // changes.
         //
         // This is implemented slightly differently for validators vs
         // non-validators. For non-validators, it is sufficient to merely
@@ -1853,11 +1854,17 @@ Consensus<Adaptor>::updateOurPositions(bool const share)
         // threshConsensus, then we have close time consensus. Otherwise, not.
 
         // First, find the best close time with which to agree.
-        std::multimap<int, NetClock::time_point> ctVotesByCount;
-        for (auto& [t, v] : closeTimeVotes)
-            ctVotesByCount.insert({v, t});
-        int maxVote = ctVotesByCount.rbegin()->first;
-        NetClock::time_point const& bestCtime = ctVotesByCount.rbegin()->second;
+        int maxVote = 0;
+        NetClock::time_point bestCtime{};
+        for (auto const& [closeTime, voteCount] : closeTimeVotes)
+        {
+            if (maxVote <= voteCount)
+            {
+                maxVote = voteCount;
+                if (bestCtime < closeTime)
+                    bestCtime = closeTime;
+            }
+        }
 
         // If a validator and possibly at an impasse, switch to the best
         // close time and record our vote for it. Otherwise, make sure to
