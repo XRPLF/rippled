@@ -447,7 +447,7 @@ CashCheck::doApply()
                 true,                              // default path
                 static_cast<bool>(optDeliverMin),  // partial payment
                 true,                              // owner pays transfer fee
-                false,                             // offer crossing
+                OfferCrossing::no,
                 std::nullopt,
                 sleCheck->getFieldAmount(sfSendMax),
                 viewJ);

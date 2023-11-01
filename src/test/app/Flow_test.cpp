@@ -473,7 +473,7 @@ struct Flow_test : public beast::unit_test::suite
                     false,
                     false,
                     true,
-                    false,
+                    OfferCrossing::no,
                     std::nullopt,
                     smax,
                     flowJournal);
