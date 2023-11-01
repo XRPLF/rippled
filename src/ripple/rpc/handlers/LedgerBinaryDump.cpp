@@ -37,6 +37,7 @@ namespace LBD {
 // may not be used in the end.
 constexpr std::size_t LedgerHeaderSize = 118;
 
+// TODO: ApplicationImp::loadLedgerFromFile
 class STFileReader
 {
 private:
@@ -185,13 +186,20 @@ public:
         return inFile->tellg();
     }
 
+    // TODO: on my MBP M2 Max this takes ~50 seconds while
+    //  Java impl only takes 30.
+    //  Why is that??? Java has simply
+    // public ShaMapNode[] branches = new ShaMapNode[16];
+    // TODO: look into multiple thread impl, partitioning the
+    // maps No need to worry about "dirtying"/CoW until the map
+    // is fully built.
     void
     readItemsIntoSHAMap(
         ripple::SHAMap& into,
         SHAMapNodeType type,
         bool log = false)
     {
-        auto items = readU32();  // 640k ought be enough ...
+        auto items = readU32();  // 640k ought to be enough ...
         JLOG(_j.trace()) << " reading " << items << "items into shamap";
         for (int i = 0; i < items; ++i)
         {
