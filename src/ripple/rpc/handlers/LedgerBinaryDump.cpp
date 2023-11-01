@@ -157,15 +157,18 @@ public:
 
     // Wow, what is this, TypeScript ?? Welcome to the party!
     template <typename T>
-        requires requires(T a) {
-            {
-                a.data()
-            } -> std::convertible_to<void*>;
-            {
-                a.size()
-            } -> std::same_as<std::size_t>;
-            requires sizeof(decltype(*(a.data()))) == 1;
+    requires requires(T a)
+    {
+        {
+            a.data()
         }
+        ->std::convertible_to<void*>;
+        {
+            a.size()
+        }
+        ->std::same_as<std::size_t>;
+        requires sizeof(decltype(*(a.data()))) == 1;
+    }
     T
     read()
     {
