@@ -344,6 +344,8 @@ populateJsonResponse(
                     context.apiVersion);
             }
 
+            // Note, result.ledgerHash is only set in a closed or validated
+            // ledger - as seen in `doTxHelp` and `doTxPostgres`
             if (result.ledgerHash)
                 response[jss::ledger_hash] = to_string(*result.ledgerHash);
 

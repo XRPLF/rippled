@@ -174,7 +174,7 @@ class TransactionEntry_test : public beast::unit_test::suite
                 BEAST_EXPECT(resIndex[jss::validated] == true);
                 BEAST_EXPECT(!resIndex[jss::tx_json].isMember(jss::Amount));
 
-                if (!close_time_iso.empty())
+                if (BEAST_EXPECT(!close_time_iso.empty()))
                     BEAST_EXPECT(
                         resIndex[jss::close_time_iso] == close_time_iso);
             }
