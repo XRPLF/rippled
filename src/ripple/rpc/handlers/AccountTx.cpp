@@ -324,6 +324,7 @@ populateJsonResponse(
                 if (txn)
                 {
                     Json::Value& jvObj = jvTxns.append(Json::objectValue);
+                    jvObj[jss::validated] = true;
 
                     auto const json_tx =
                         (context.apiVersion > 1 ? jss::tx_json : jss::tx);
@@ -356,7 +357,6 @@ populateJsonResponse(
                     {
                         jvObj[jss::meta] =
                             txnMeta->getJson(JsonOptions::include_date);
-                        jvObj[jss::validated] = true;
                         insertDeliveredAmount(
                             jvObj[jss::meta], context, txn, *txnMeta);
                         insertNFTSyntheticInJson(jvObj, sttx, *txnMeta);
