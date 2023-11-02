@@ -306,7 +306,6 @@ public:
             validatedLedger, fee, accountSeq, availableSeq);
     }
 
-    /// Same as similar overload for STTx::getJson
     Json::Value
     getJson(JsonOptions options, bool binary = false) const;
 
