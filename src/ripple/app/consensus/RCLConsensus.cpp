@@ -829,6 +829,15 @@ RCLConsensus::Adaptor::validate(
                         sfServerVersion, BuildInfo::getEncodedVersion());
             }
 
+            if (ledger.ledger_->rules().enabled(featureNetworkIDValidation))
+            {
+                // Report our network ID
+                if (auto const networkID = app_.overlay().networkID())
+                {
+                    v.setFieldU64(sfNetworkID, networkID.value());
+                }
+            }
+
             // Report our load
             {
                 auto const& ft = app_.getFeeTrack();

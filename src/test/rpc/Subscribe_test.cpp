@@ -502,6 +502,9 @@ public:
                 if (!jv.isMember(jss::validated_hash))
                     return false;
 
+                if (!jv.isMember(jss::network_id))
+                    return false;
+
                 // Certain fields are only added on a flag ledger.
                 bool const isFlagLedger =
                     (env.closed()->info().seq + 1) % 256 == 0;

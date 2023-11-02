@@ -66,6 +66,8 @@ STValidation::validationFormat()
         {sfBaseFeeDrops,          soeOPTIONAL},
         {sfReserveBaseDrops,      soeOPTIONAL},
         {sfReserveIncrementDrops, soeOPTIONAL},
+        // featureNetworkIDValidation
+        {sfNetworkID,             soeOPTIONAL},
     };
     // clang-format on
 

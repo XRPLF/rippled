@@ -2163,6 +2163,9 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
         if (auto hash = (*val)[~sfValidatedHash])
             jvObj[jss::validated_hash] = strHex(*hash);
 
+        if (auto networkID = (*val)[~sfNetworkID])
+            jvObj[jss::network_id] = *networkID;
+
         auto const masterKey =
             app_.validatorManifests().getMasterKey(signerPublic);
 
