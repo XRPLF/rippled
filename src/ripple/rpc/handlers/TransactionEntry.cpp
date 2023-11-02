@@ -74,10 +74,9 @@ doTransactionEntry(RPC::JsonContext& context)
         {
             if (context.apiVersion > 1)
             {
-                std::string hash;
                 jvResult[jss::tx_json] =
-                    sttx->getJson(JsonOptions::none, false, {std::ref(hash)});
-                jvResult[jss::hash] = hash;
+                    sttx->getJson(JsonOptions::disable_API_prior_V2);
+                jvResult[jss::hash] = to_string(sttx->getTransactionID());
 
                 if (!lpLedger->open())
                     jvResult[jss::ledger_hash] = to_string(

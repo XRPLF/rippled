@@ -165,22 +165,25 @@ Transaction::load(
 
 // options 1 to include the date of the transaction
 Json::Value
-Transaction::getJson(
-    JsonOptions options,
-    bool binary,
-    bool showInLedger,
-    std::optional<std::reference_wrapper<std::string>> hash) const
+Transaction::getJson(JsonOptions options, bool binary) const
 {
-    Json::Value ret(mTransaction->getJson(JsonOptions::none, binary, hash));
+    // Note, we explicitly suppress `include_date` option here
+    Json::Value ret(
+        mTransaction->getJson(options % JsonOptions::include_date, binary));
 
     if (mLedgerIndex)
     {
-        if (showInLedger)
-            ret[jss::inLedger] = mLedgerIndex;  // Deprecated.
+        if (!(options & JsonOptions::disable_API_prior_V2))
+        {
+            // Behaviour before API version 2
+            ret[jss::inLedger] = mLedgerIndex;
+        }
 
+        // TODO: disable_API_prior_V3 to disable output of both `date` and
+        // `ledger_index` elements (taking precedence over include_date)
         ret[jss::ledger_index] = mLedgerIndex;
 
-        if (options == JsonOptions::include_date)
+        if (options & JsonOptions::include_date)
         {
             auto ct = mApp.getLedgerMaster().getCloseTimeBySeq(mLedgerIndex);
             if (ct)

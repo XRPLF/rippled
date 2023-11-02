@@ -31,7 +31,35 @@
 #include <utility>
 namespace ripple {
 
-enum class JsonOptions { none = 0, include_date = 1 };
+/// Note, should be treated as flags that can be | and &
+enum class JsonOptions : unsigned int {
+    none = 0,
+    include_date = 1,
+    disable_API_prior_V2 = 2
+};
+
+/// Return: JsonOptions union of lh and rh
+[[nodiscard]] constexpr JsonOptions
+operator|(JsonOptions lh, JsonOptions rh) noexcept
+{
+    return JsonOptions(
+        static_cast<unsigned int>(lh) | static_cast<unsigned int>(rh));
+}
+
+/// Return: JsonOptions similar to lh, but with rh disabled (i.e. "remainder")
+[[nodiscard]] constexpr JsonOptions
+operator%(JsonOptions lh, JsonOptions rh) noexcept
+{
+    return JsonOptions(
+        static_cast<unsigned int>(lh) & ~static_cast<unsigned int>(rh));
+}
+
+/// Return: true if lh contains rh
+[[nodiscard]] constexpr bool
+operator&(JsonOptions lh, JsonOptions rh) noexcept
+{
+    return (static_cast<unsigned int>(lh) & static_cast<unsigned int>(rh)) != 0;
+}
 
 namespace detail {
 class STVar;

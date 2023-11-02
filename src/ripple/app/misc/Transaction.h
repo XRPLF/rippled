@@ -24,6 +24,7 @@
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Protocol.h>
+#include <ripple/protocol/STBase.h>
 #include <ripple/protocol/STTx.h>
 #include <ripple/protocol/TER.h>
 #include <ripple/protocol/TxMeta.h>
@@ -307,11 +308,7 @@ public:
 
     /// Same as similar overload for STTx::getJson
     Json::Value
-    getJson(
-        JsonOptions options,
-        bool binary = false,
-        bool showInLedger = false,
-        std::optional<std::reference_wrapper<std::string>> hash = {}) const;
+    getJson(JsonOptions options, bool binary = false) const;
 
     // Information used to locate a transaction.
     // Contains a nodestore hash and ledger sequence pair if the transaction was

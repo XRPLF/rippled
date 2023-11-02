@@ -652,14 +652,13 @@ transactionFormatResultImpl(Transaction::pointer tpTrans, unsigned apiVersion)
     {
         if (apiVersion > 1)
         {
-            std::string hash = {};
-            jvResult[jss::tx_json] = tpTrans->getJson(
-                JsonOptions::none, false, false, {std::ref(hash)});
-            jvResult[jss::hash] = hash;
+            jvResult[jss::tx_json] =
+                tpTrans->getJson(JsonOptions::disable_API_prior_V2);
+            jvResult[jss::hash] =
+                to_string(tpTrans->getSTransaction()->getTransactionID());
         }
         else
-            jvResult[jss::tx_json] =
-                tpTrans->getJson(JsonOptions::none, false, true);
+            jvResult[jss::tx_json] = tpTrans->getJson(JsonOptions::none);
 
         jvResult[jss::tx_blob] =
             strHex(tpTrans->getSTransaction()->getSerializer().peekData());

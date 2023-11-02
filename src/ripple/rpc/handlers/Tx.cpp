@@ -33,6 +33,7 @@
 #include <ripple/rpc/DeliveredAmount.h>
 #include <ripple/rpc/GRPCHandlers.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
+
 #include <charconv>
 #include <regex>
 
@@ -330,14 +331,13 @@ populateJsonResponse(
         auto const& sttx = result.txn->getSTransaction();
         if (context.apiVersion > 1)
         {
-            std::string hash;
+            constexpr auto optionsJson =
+                JsonOptions::include_date | JsonOptions::disable_API_prior_V2;
             if (args.binary)
-                response[jss::tx_blob] = result.txn->getJson(
-                    JsonOptions::include_date, true, false, {std::ref(hash)});
+                response[jss::tx_blob] = result.txn->getJson(optionsJson, true);
             else
             {
-                response[jss::tx_json] = result.txn->getJson(
-                    JsonOptions::include_date, false, false, {std::ref(hash)});
+                response[jss::tx_json] = result.txn->getJson(optionsJson);
                 RPC::insertDeliverMax(
                     response[jss::tx_json],
                     sttx->getTxnType(),
@@ -347,7 +347,8 @@ populateJsonResponse(
             if (result.ledgerHash)
                 response[jss::ledger_hash] = to_string(*result.ledgerHash);
 
-            response[jss::hash] = hash;
+            response[jss::hash] =
+                to_string(result.txn->getSTransaction()->getTransactionID());
             if (result.validated)
             {
                 response[jss::ledger_index] = result.txn->getLedger();
@@ -358,8 +359,8 @@ populateJsonResponse(
         }
         else
         {
-            response = result.txn->getJson(
-                JsonOptions::include_date, args.binary, true);
+            response =
+                result.txn->getJson(JsonOptions::include_date, args.binary);
             if (!args.binary)
                 RPC::insertDeliverMax(
                     response, sttx->getTxnType(), context.apiVersion);

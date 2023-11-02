@@ -329,13 +329,12 @@ populateJsonResponse(
                         (context.apiVersion > 1 ? jss::tx_json : jss::tx);
                     if (context.apiVersion > 1)
                     {
-                        std::string hash;
                         jvObj[json_tx] = txn->getJson(
-                            JsonOptions::include_date,
-                            false,
-                            false,
-                            {std::ref(hash)});
-                        jvObj[jss::hash] = hash;
+                            JsonOptions::include_date |
+                                JsonOptions::disable_API_prior_V2,
+                            false);
+                        jvObj[jss::hash] = to_string(
+                            txn->getSTransaction()->getTransactionID());
                         jvObj[jss::ledger_index] = txn->getLedger();
                         jvObj[jss::ledger_hash] =
                             to_string(context.ledgerMaster.getHashBySeq(
@@ -348,8 +347,8 @@ populateJsonResponse(
                                 to_string_iso(*closeTime);
                     }
                     else
-                        jvObj[json_tx] = txn->getJson(
-                            JsonOptions::include_date, false, true);
+                        jvObj[json_tx] =
+                            txn->getJson(JsonOptions::include_date);
 
                     auto const& sttx = txn->getSTransaction();
                     RPC::insertDeliverMax(

@@ -34,6 +34,7 @@
 #include <ripple/protocol/UintTypes.h>
 #include <ripple/protocol/jss.h>
 #include <boost/format.hpp>
+
 #include <array>
 #include <memory>
 #include <type_traits>
@@ -234,13 +235,11 @@ Json::Value STTx::getJson(JsonOptions) const
 }
 
 Json::Value
-STTx::getJson(
-    JsonOptions options,
-    bool binary,
-    std::optional<std::reference_wrapper<std::string>> hash) const
+STTx::getJson(JsonOptions options, bool binary) const
 {
-    if (!hash)  // Old behaviour - default because `hash = {}` in declaration
+    if (!(options & JsonOptions::disable_API_prior_V2))
     {
+        // Behaviour before API version 2
         if (binary)
         {
             Json::Value ret;
@@ -252,8 +251,7 @@ STTx::getJson(
         return getJson(options);
     }
 
-    // Since `hash` is set, do not populate `hash` inside JSON output
-    hash->get() = to_string(getTransactionID());
+    // API version 2 behaviour
     if (binary)
     {
         Serializer s = STObject::getSerializer();

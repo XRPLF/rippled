@@ -133,12 +133,10 @@ fillJsonTx(
     {
         if (fill.context->apiVersion > 1)
         {
-            std::string hash;
             copyFrom(
                 txJson[jss::tx_json],
-                txn->getJson(
-                    JsonOptions::none, false, {std::optional(std::ref(hash))}));
-            txJson[jss::hash] = hash;
+                txn->getJson(JsonOptions::disable_API_prior_V2, false));
+            txJson[jss::hash] = to_string(txn->getTransactionID());
             RPC::insertDeliverMax(
                 txJson[jss::tx_json], txnType, fill.context->apiVersion);
 

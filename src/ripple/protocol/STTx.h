@@ -24,11 +24,13 @@
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/Rules.h>
+#include <ripple/protocol/STBase.h>
 #include <ripple/protocol/STObject.h>
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/SeqProxy.h>
 #include <ripple/protocol/TxFormats.h>
 #include <boost/container/flat_set.hpp>
+
 #include <functional>
 
 namespace ripple {
@@ -116,10 +118,7 @@ public:
     nested jss::tx for binary hex; instead will return it as JSON string
     */
     Json::Value
-    getJson(
-        JsonOptions options,
-        bool binary,
-        std::optional<std::reference_wrapper<std::string>> hash = {}) const;
+    getJson(JsonOptions options, bool binary) const;
 
     void
     sign(PublicKey const& publicKey, SecretKey const& secretKey);
