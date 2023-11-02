@@ -21,6 +21,7 @@
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 #include <test/jtx.h>
+#include <test/jtx/utility.h>
 
 #include <boost/algorithm/string.hpp>
 #include <initializer_list>
@@ -6442,7 +6443,7 @@ public:
             Json::Value got;
             try
             {
-                got = cmdLineToJSONRPC(args, env.journal);
+                got = jtx::cmdToJSONRPC(args, env.journal);
             }
             catch (std::bad_cast const&)
             {
