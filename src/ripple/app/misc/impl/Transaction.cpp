@@ -169,7 +169,7 @@ Transaction::getJson(JsonOptions options, bool binary) const
 {
     // Note, we explicitly suppress `include_date` option here
     Json::Value ret(
-        mTransaction->getJson(options % JsonOptions::include_date, binary));
+        mTransaction->getJson(options & ~JsonOptions::include_date, binary));
 
     if (mLedgerIndex)
     {

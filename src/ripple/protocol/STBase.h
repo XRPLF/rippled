@@ -32,34 +32,57 @@
 namespace ripple {
 
 /// Note, should be treated as flags that can be | and &
-enum class JsonOptions : unsigned int {
-    none = 0,
-    include_date = 1,
-    disable_API_prior_V2 = 2
+struct JsonOptions
+{
+    using underlying_t = unsigned int;
+    underlying_t value;
+
+    enum values : underlying_t {
+        none = 0u,
+        include_date = 1u,
+        disable_API_prior_V2 = 2u,
+        _all = 3u  // NOTE see `operator~` and bump as needed when adding enums
+    };
+
+    constexpr JsonOptions(underlying_t v) noexcept : value(v)
+    {
+    }
+
+    [[nodiscard]] constexpr explicit operator underlying_t() const noexcept
+    {
+        return value;
+    }
+    [[nodiscard]] constexpr explicit operator bool() const noexcept
+    {
+        return value != 0u;
+    }
+    [[nodiscard]] constexpr auto friend
+    operator==(JsonOptions lh, JsonOptions rh) noexcept -> bool = default;
+    [[nodiscard]] constexpr auto friend
+    operator!=(JsonOptions lh, JsonOptions rh) noexcept -> bool = default;
+
+    /// Returns JsonOptions union of lh and rh
+    [[nodiscard]] constexpr JsonOptions friend
+    operator|(JsonOptions lh, JsonOptions rh) noexcept
+    {
+        return {lh.value | rh.value};
+    }
+
+    /// Returns JsonOptions intersection of lh and rh
+    [[nodiscard]] constexpr JsonOptions friend
+    operator&(JsonOptions lh, JsonOptions rh) noexcept
+    {
+        return {lh.value & rh.value};
+    }
+
+    /// Returns JsonOptions binary negation, can be used with & (above) for set
+    /// difference e.g. `(options & ~JsonOptions::include_date)`
+    [[nodiscard]] constexpr JsonOptions friend
+    operator~(JsonOptions v) noexcept
+    {
+        return {~v.value & static_cast<underlying_t>(_all)};
+    }
 };
-
-/// Return: JsonOptions union of lh and rh
-[[nodiscard]] constexpr JsonOptions
-operator|(JsonOptions lh, JsonOptions rh) noexcept
-{
-    return JsonOptions(
-        static_cast<unsigned int>(lh) | static_cast<unsigned int>(rh));
-}
-
-/// Return: JsonOptions similar to lh, but with rh disabled (i.e. "remainder")
-[[nodiscard]] constexpr JsonOptions
-operator%(JsonOptions lh, JsonOptions rh) noexcept
-{
-    return JsonOptions(
-        static_cast<unsigned int>(lh) & ~static_cast<unsigned int>(rh));
-}
-
-/// Return: true if lh contains rh
-[[nodiscard]] constexpr bool
-operator&(JsonOptions lh, JsonOptions rh) noexcept
-{
-    return (static_cast<unsigned int>(lh) & static_cast<unsigned int>(rh)) != 0;
-}
 
 namespace detail {
 class STVar;
