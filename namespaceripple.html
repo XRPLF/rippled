@@ -3643,14 +3643,11 @@ Functions</h2></td></tr>
 <tr class="separator:a308b7ff6498ad19c844c1d36b5f0d7ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa5bf57e1a7b6f174338fefbdfbc6ded6"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aa5bf57e1a7b6f174338fefbdfbc6ded6">JSONRPCRequest</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;strMethod, <a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;params, <a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;id)</td></tr>
 <tr class="separator:aa5bf57e1a7b6f174338fefbdfbc6ded6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab72afa7b2b33324b108c550dbc0a3c1f"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ab72afa7b2b33324b108c550dbc0a3c1f">rpcCmdLineToJson</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; const &amp;args, <a class="el" href="classJson_1_1Value.html">Json::Value</a> &amp;retParams, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
-<tr class="separator:ab72afa7b2b33324b108c550dbc0a3c1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa9714d222b28553ab9f4e9baf34be4ff"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aa9714d222b28553ab9f4e9baf34be4ff">cmdLineToJSONRPC</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; const  &amp;args, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
-<tr class="memdesc:aa9714d222b28553ab9f4e9baf34be4ff"><td class="mdescLeft">&#160;</td><td class="mdescRight">Given a rippled command line, return the corresponding JSON.  <a href="namespaceripple.html#aa9714d222b28553ab9f4e9baf34be4ff">More...</a><br /></td></tr>
-<tr class="separator:aa9714d222b28553ab9f4e9baf34be4ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a425645d42dd2466ffc69e73fc6861b3d"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; int, <a class="el" href="classJson_1_1Value.html">Json::Value</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a425645d42dd2466ffc69e73fc6861b3d">rpcClient</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; const  &amp;args, <a class="el" href="classripple_1_1Config.html">Config</a> const  &amp;config, <a class="el" href="classripple_1_1Logs.html">Logs</a> &amp;logs, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/unordered_map.html">std::unordered_map</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; const  &amp;headers={})</td></tr>
-<tr class="memdesc:a425645d42dd2466ffc69e73fc6861b3d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Internal invocation of <a class="el" href="namespaceripple_1_1RPC.html">RPC</a> client.  <a href="namespaceripple.html#a425645d42dd2466ffc69e73fc6861b3d">More...</a><br /></td></tr>
-<tr class="separator:a425645d42dd2466ffc69e73fc6861b3d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab4682f4bd2ebab9ae978712b0e2ea894"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ab4682f4bd2ebab9ae978712b0e2ea894">rpcCmdToJson</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; const &amp;args, <a class="el" href="classJson_1_1Value.html">Json::Value</a> &amp;retParams, unsigned int apiVersion, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
+<tr class="separator:ab4682f4bd2ebab9ae978712b0e2ea894"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1675cc24642888c8fd2c1b39923086b0"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; int, <a class="el" href="classJson_1_1Value.html">Json::Value</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a1675cc24642888c8fd2c1b39923086b0">rpcClient</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; const  &amp;args, <a class="el" href="classripple_1_1Config.html">Config</a> const  &amp;config, <a class="el" href="classripple_1_1Logs.html">Logs</a> &amp;logs, unsigned int apiVersion, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/unordered_map.html">std::unordered_map</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; const  &amp;headers={})</td></tr>
+<tr class="memdesc:a1675cc24642888c8fd2c1b39923086b0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Internal invocation of <a class="el" href="namespaceripple_1_1RPC.html">RPC</a> client.  <a href="namespaceripple.html#a1675cc24642888c8fd2c1b39923086b0">More...</a><br /></td></tr>
+<tr class="separator:a1675cc24642888c8fd2c1b39923086b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a67869382f83fd55cf3096d2591a57b07"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a67869382f83fd55cf3096d2591a57b07">rpcError</a> (int iError)</td></tr>
 <tr class="separator:a67869382f83fd55cf3096d2591a57b07"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a88ddae278aa600b476661629e3b930e8"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a88ddae278aa600b476661629e3b930e8">isRpcError</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> jvResult)</td></tr>
@@ -27202,17 +27199,14 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 
 </div>
 </div>
-<a id="ab72afa7b2b33324b108c550dbc0a3c1f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab72afa7b2b33324b108c550dbc0a3c1f">&#9670;&nbsp;</a></span>rpcCmdLineToJson()</h2>
+<a id="ab4682f4bd2ebab9ae978712b0e2ea894"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab4682f4bd2ebab9ae978712b0e2ea894">&#9670;&nbsp;</a></span>rpcCmdToJson()</h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">static <a class="el" href="classJson_1_1Value.html">Json::Value</a> ripple::rpcCmdLineToJson </td>
+          <td class="memname"><a class="el" href="classJson_1_1Value.html">Json::Value</a> ripple::rpcCmdToJson </td>
           <td>(</td>
           <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; const &amp;&#160;</td>
           <td class="paramname"><em>args</em>, </td>
@@ -27226,37 +27220,8 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td>
-          <td class="paramname"><em>j</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="RPCCall_8cpp_source.html#l01476">1476</a> of file <a class="el" href="RPCCall_8cpp_source.html">RPCCall.cpp</a>.</p>
-
-</div>
-</div>
-<a id="aa9714d222b28553ab9f4e9baf34be4ff"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa9714d222b28553ab9f4e9baf34be4ff">&#9670;&nbsp;</a></span>cmdLineToJSONRPC()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classJson_1_1Value.html">Json::Value</a> ripple::cmdLineToJSONRPC </td>
-          <td>(</td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; const &amp;&#160;</td>
-          <td class="paramname"><em>args</em>, </td>
+          <td class="paramtype">unsigned int&#160;</td>
+          <td class="paramname"><em>apiVersion</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -27272,14 +27237,12 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p>Given a rippled command line, return the corresponding JSON. </p>
-
-<p class="definition">Definition at line <a class="el" href="RPCCall_8cpp_source.html#l01514">1514</a> of file <a class="el" href="RPCCall_8cpp_source.html">RPCCall.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCCall_8cpp_source.html#l01476">1476</a> of file <a class="el" href="RPCCall_8cpp_source.html">RPCCall.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a425645d42dd2466ffc69e73fc6861b3d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a425645d42dd2466ffc69e73fc6861b3d">&#9670;&nbsp;</a></span>rpcClient()</h2>
+<a id="a1675cc24642888c8fd2c1b39923086b0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1675cc24642888c8fd2c1b39923086b0">&#9670;&nbsp;</a></span>rpcClient()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -27305,8 +27268,14 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">unsigned int&#160;</td>
+          <td class="paramname"><em>apiVersion</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/unordered_map.html">std::unordered_map</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; const &amp;&#160;</td>
-          <td class="paramname"><em>headers</em>&#160;</td>
+          <td class="paramname"><em>headers</em> = <code>{}</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -27317,8 +27286,9 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 </div><div class="memdoc">
 
 <p>Internal invocation of <a class="el" href="namespaceripple_1_1RPC.html">RPC</a> client. </p>
+<p>Used by both rippled command line as well as rippled unit tests </p>
 
-<p class="definition">Definition at line <a class="el" href="RPCCall_8cpp_source.html#l01545">1545</a> of file <a class="el" href="RPCCall_8cpp_source.html">RPCCall.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCCall_8cpp_source.html#l01517">1517</a> of file <a class="el" href="RPCCall_8cpp_source.html">RPCCall.cpp</a>.</p>
 
 </div>
 </div>

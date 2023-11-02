@@ -494,6 +494,9 @@ Functions</h2></td></tr>
 <tr class="memitem:a3372cf5dcb5746304f6adfff517e746d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#a3372cf5dcb5746304f6adfff517e746d">fill_seq</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> &amp;jv, <a class="el" href="classripple_1_1ReadView.html">ReadView</a> const  &amp;view)</td></tr>
 <tr class="memdesc:a3372cf5dcb5746304f6adfff517e746d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the sequence number automatically.  <a href="namespaceripple_1_1test_1_1jtx.html#a3372cf5dcb5746304f6adfff517e746d">More...</a><br /></td></tr>
 <tr class="separator:a3372cf5dcb5746304f6adfff517e746d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a145fb5e66071d636501a3aeae90f48f4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#a145fb5e66071d636501a3aeae90f48f4">cmdToJSONRPC</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; const  &amp;args, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j, unsigned int apiVersion=<a class="el" href="namespaceripple_1_1RPC.html#a8c4c4528421d724a8a82db708b1a761b">RPC::apiMaximumSupportedVersion</a>)</td></tr>
+<tr class="memdesc:a145fb5e66071d636501a3aeae90f48f4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Given a rippled unit test rpc command, return the corresponding JSON.  <a href="namespaceripple_1_1test_1_1jtx.html#a145fb5e66071d636501a3aeae90f48f4">More...</a><br /></td></tr>
+<tr class="separator:a145fb5e66071d636501a3aeae90f48f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a244c1fdb6a5db501c5f2fb595fc9ac2a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#a244c1fdb6a5db501c5f2fb595fc9ac2a">bridge</a> (<a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> const &amp;lockingChainDoor, <a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;lockingChainIssue, <a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> const &amp;issuingChainDoor, <a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;issuingChainIssue)</td></tr>
 <tr class="separator:a244c1fdb6a5db501c5f2fb595fc9ac2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afd7c3418fc573cf9cc8590bdc202a534"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#afd7c3418fc573cf9cc8590bdc202a534">bridge_rpc</a> (<a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> const &amp;lockingChainDoor, <a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;lockingChainIssue, <a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> const &amp;issuingChainDoor, <a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;issuingChainIssue)</td></tr>
@@ -3417,7 +3420,7 @@ template&lt;typename T &gt; </div>
 <p>Convert JSON to <a class="el" href="classripple_1_1STObject.html">STObject</a>. </p>
 <p>This throws on failure, the JSON must be correct. </p><dl class="section note"><dt>Note</dt><dd>Testing malformed JSON is beyond the scope of this set of unit test routines. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="utility_8cpp_source.html#l00035">35</a> of file <a class="el" href="utility_8cpp_source.html">utility.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="utility_8cpp_source.html#l00037">37</a> of file <a class="el" href="utility_8cpp_source.html">utility.cpp</a>.</p>
 
 </div>
 </div>
@@ -3450,7 +3453,7 @@ template&lt;typename T &gt; </div>
 <p>Sign automatically. </p>
 <dl class="section note"><dt>Note</dt><dd>This only works on accounts with multi-signing off. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="utility_8cpp_source.html#l00044">44</a> of file <a class="el" href="utility_8cpp_source.html">utility.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="utility_8cpp_source.html#l00046">46</a> of file <a class="el" href="utility_8cpp_source.html">utility.cpp</a>.</p>
 
 </div>
 </div>
@@ -3482,7 +3485,7 @@ template&lt;typename T &gt; </div>
 
 <p>Set the fee automatically. </p>
 
-<p class="definition">Definition at line <a class="el" href="utility_8cpp_source.html#l00055">55</a> of file <a class="el" href="utility_8cpp_source.html">utility.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="utility_8cpp_source.html#l00057">57</a> of file <a class="el" href="utility_8cpp_source.html">utility.cpp</a>.</p>
 
 </div>
 </div>
@@ -3514,7 +3517,45 @@ template&lt;typename T &gt; </div>
 
 <p>Set the sequence number automatically. </p>
 
-<p class="definition">Definition at line <a class="el" href="utility_8cpp_source.html#l00063">63</a> of file <a class="el" href="utility_8cpp_source.html">utility.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="utility_8cpp_source.html#l00065">65</a> of file <a class="el" href="utility_8cpp_source.html">utility.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a145fb5e66071d636501a3aeae90f48f4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a145fb5e66071d636501a3aeae90f48f4">&#9670;&nbsp;</a></span>cmdToJSONRPC()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classJson_1_1Value.html">Json::Value</a> ripple::test::jtx::cmdToJSONRPC </td>
+          <td>(</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>args</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td>
+          <td class="paramname"><em>j</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned int&#160;</td>
+          <td class="paramname"><em>apiVersion</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Given a rippled unit test rpc command, return the corresponding JSON. </p>
+
+<p class="definition">Definition at line <a class="el" href="utility_8cpp_source.html#l00079">79</a> of file <a class="el" href="utility_8cpp_source.html">utility.cpp</a>.</p>
 
 </div>
 </div>
