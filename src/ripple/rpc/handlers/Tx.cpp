@@ -349,8 +349,7 @@ populateJsonResponse(
             if (result.ledgerHash)
                 response[jss::ledger_hash] = to_string(*result.ledgerHash);
 
-            response[jss::hash] =
-                to_string(result.txn->getSTransaction()->getTransactionID());
+            response[jss::hash] = to_string(result.txn->getID());
             if (result.validated)
             {
                 response[jss::ledger_index] = result.txn->getLedger();

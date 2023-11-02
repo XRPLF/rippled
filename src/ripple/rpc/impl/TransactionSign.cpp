@@ -654,8 +654,7 @@ transactionFormatResultImpl(Transaction::pointer tpTrans, unsigned apiVersion)
         {
             jvResult[jss::tx_json] =
                 tpTrans->getJson(JsonOptions::disable_API_prior_V2);
-            jvResult[jss::hash] =
-                to_string(tpTrans->getSTransaction()->getTransactionID());
+            jvResult[jss::hash] = to_string(tpTrans->getID());
         }
         else
             jvResult[jss::tx_json] = tpTrans->getJson(JsonOptions::none);

@@ -333,8 +333,7 @@ populateJsonResponse(
                             JsonOptions::include_date |
                                 JsonOptions::disable_API_prior_V2,
                             false);
-                        jvObj[jss::hash] = to_string(
-                            txn->getSTransaction()->getTransactionID());
+                        jvObj[jss::hash] = to_string(txn->getID());
                         jvObj[jss::ledger_index] = txn->getLedger();
                         jvObj[jss::ledger_hash] =
                             to_string(context.ledgerMaster.getHashBySeq(
