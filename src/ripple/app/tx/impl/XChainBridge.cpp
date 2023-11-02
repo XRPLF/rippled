@@ -1211,6 +1211,9 @@ attestationPreflight(PreflightContext const& ctx)
     if (ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;
 
+    if (!publicKeyType(ctx.tx[sfPublicKey]))
+        return temMALFORMED;
+
     auto const att = toClaim<TAttestation>(ctx.tx);
     if (!att)
         return temMALFORMED;
