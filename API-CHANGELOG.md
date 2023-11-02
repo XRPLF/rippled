@@ -160,8 +160,8 @@ Additionally, these elements are now consistently available next to `tx_json` (i
 
 This change affects the following methods:
 
-- `tx` - Transaction data moved into element `tx_json` (was inline inside `result`) or, if binary output was requested, moved from `tx` to `tx_blob`. Renamed binary transaction metadata element (if it was requsted) from `meta` to `meta_blob`. Changed location of `hash` and added new elements
-- `account_tx` - Renamed transaction element from `tx` to `tx_json`. Renamed binary transaction metadata element (if it was requsted) from `meta` to `meta_blob`. Changed location of `hash` and added new elements
+- `tx` - Transaction data moved into element `tx_json` (was inline inside `result`) or, if binary output was requested, moved from `tx` to `tx_blob`. Renamed binary transaction metadata element (if it was requested) from `meta` to `meta_blob`. Changed location of `hash` and added new elements
+- `account_tx` - Renamed transaction element from `tx` to `tx_json`. Renamed binary transaction metadata element (if it was requested) from `meta` to `meta_blob`. Changed location of `hash` and added new elements
 - `transaction_entry` - Renamed transaction metadata element from `metadata` to `meta`. Changed location of `hash` and added new elements
 - `subscribe` - Renamed transaction element from `transaction` to `tx_json`. Changed location of `hash` and added new elements
 - `sign`, `sign_for`, `submit` and `submit_multisigned` - Changed location of `hash` element.
