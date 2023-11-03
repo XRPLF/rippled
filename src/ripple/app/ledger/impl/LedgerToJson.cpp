@@ -129,60 +129,56 @@ fillJsonTx(
         if (stMeta)
             txJson[json_meta] = serializeHex(*stMeta);
     }
+    else if (fill.context->apiVersion > 1)
+    {
+        copyFrom(
+            txJson[jss::tx_json],
+            txn->getJson(JsonOptions::disable_API_prior_V2, false));
+        txJson[jss::hash] = to_string(txn->getTransactionID());
+        RPC::insertDeliverMax(
+            txJson[jss::tx_json], txnType, fill.context->apiVersion);
+
+        if (stMeta)
+        {
+            txJson[jss::meta] = stMeta->getJson(JsonOptions::none);
+
+            // If applicable, insert delivered amount
+            if (txnType == ttPAYMENT || txnType == ttCHECK_CASH)
+                RPC::insertDeliveredAmount(
+                    txJson[jss::meta],
+                    fill.ledger,
+                    txn,
+                    {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
+        }
+
+        if (!fill.ledger.open())
+            txJson[jss::ledger_hash] = to_string(fill.ledger.info().hash);
+
+        const bool validated =
+            fill.context->ledgerMaster.isValidated(fill.ledger);
+        txJson[jss::validated] = validated;
+        if (validated)
+        {
+            txJson[jss::ledger_index] = to_string(fill.ledger.seq());
+            if (fill.closeTime)
+                txJson[jss::close_time_iso] = to_string_iso(*fill.closeTime);
+        }
+    }
     else
     {
-        if (fill.context->apiVersion > 1)
+        copyFrom(txJson, txn->getJson(JsonOptions::none));
+        RPC::insertDeliverMax(txJson, txnType, fill.context->apiVersion);
+        if (stMeta)
         {
-            copyFrom(
-                txJson[jss::tx_json],
-                txn->getJson(JsonOptions::disable_API_prior_V2, false));
-            txJson[jss::hash] = to_string(txn->getTransactionID());
-            RPC::insertDeliverMax(
-                txJson[jss::tx_json], txnType, fill.context->apiVersion);
+            txJson[jss::metaData] = stMeta->getJson(JsonOptions::none);
 
-            if (stMeta)
-            {
-                txJson[jss::meta] = stMeta->getJson(JsonOptions::none);
-
-                // If applicable, insert delivered amount
-                if (txnType == ttPAYMENT || txnType == ttCHECK_CASH)
-                    RPC::insertDeliveredAmount(
-                        txJson[jss::meta],
-                        fill.ledger,
-                        txn,
-                        {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
-            }
-
-            if (!fill.ledger.open())
-                txJson[jss::ledger_hash] = to_string(fill.ledger.info().hash);
-
-            const bool validated =
-                fill.context->ledgerMaster.isValidated(fill.ledger);
-            txJson[jss::validated] = validated;
-            if (validated)
-            {
-                txJson[jss::ledger_index] = to_string(fill.ledger.seq());
-                if (fill.closeTime)
-                    txJson[jss::close_time_iso] =
-                        to_string_iso(*fill.closeTime);
-            }
-        }
-        else
-        {
-            copyFrom(txJson, txn->getJson(JsonOptions::none));
-            RPC::insertDeliverMax(txJson, txnType, fill.context->apiVersion);
-            if (stMeta)
-            {
-                txJson[jss::metaData] = stMeta->getJson(JsonOptions::none);
-
-                // If applicable, insert delivered amount
-                if (txnType == ttPAYMENT || txnType == ttCHECK_CASH)
-                    RPC::insertDeliveredAmount(
-                        txJson[jss::metaData],
-                        fill.ledger,
-                        txn,
-                        {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
-            }
+            // If applicable, insert delivered amount
+            if (txnType == ttPAYMENT || txnType == ttCHECK_CASH)
+                RPC::insertDeliveredAmount(
+                    txJson[jss::metaData],
+                    fill.ledger,
+                    txn,
+                    {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
         }
     }
 

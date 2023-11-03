@@ -3106,7 +3106,6 @@ NetworkOPsImp::transJson(
     // NOTE jvObj which is not a finished object for either API version. After
     // it's populated, we need to finish it for a specific API version. This is
     // done in a loop, near the end of this function.
-    std::string const hash = to_string(transaction->getTransactionID());
     jvObj[jss::transaction] =
         transaction->getJson(JsonOptions::disable_API_prior_V2, false);
 
@@ -3159,6 +3158,7 @@ NetworkOPsImp::transJson(
         }
     }
 
+    std::string const hash = to_string(transaction->getTransactionID());
     MultiApiJson multiObj({jvObj, jvObj});
     // Minimum supported API version must match index 0 in MultiApiJson
     static_assert(apiVersionSelector(RPC::apiMinimumSupportedVersion)() == 0);

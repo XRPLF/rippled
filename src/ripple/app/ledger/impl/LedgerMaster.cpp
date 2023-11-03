@@ -621,7 +621,7 @@ LedgerMaster::isValidated(ReadView const& ledger)
         // Use the skip list in the last validated ledger to see if ledger
         // comes before the last validated ledger (and thus has been
         // validated).
-        auto hash = walkHashBySeq(seq, InboundLedger::Reason::GENERIC);
+        auto const hash = walkHashBySeq(seq, InboundLedger::Reason::GENERIC);
 
         if (!hash || ledger.info().hash != *hash)
         {
@@ -642,8 +642,7 @@ LedgerMaster::isValidated(ReadView const& ledger)
     }
     catch (SHAMapMissingNode const& mn)
     {
-        auto stream = app_.journal("IsValidated").warn();  // TODO Better name ?
-        JLOG(stream) << "Ledger #" << seq << ": " << mn.what();
+        JLOG(m_journal.warn()) << "Ledger #" << seq << ": " << mn.what();
         return false;
     }
 

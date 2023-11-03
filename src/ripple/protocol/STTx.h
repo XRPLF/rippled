@@ -24,7 +24,6 @@
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/Rules.h>
-#include <ripple/protocol/STBase.h>
 #include <ripple/protocol/STObject.h>
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/SeqProxy.h>

@@ -38,10 +38,14 @@ struct JsonOptions
     underlying_t value;
 
     enum values : underlying_t {
-        none = 0u,
-        include_date = 1u,
-        disable_API_prior_V2 = 2u,
-        _all = 3u  // NOTE see `operator~` and bump as needed when adding enums
+        // clang-format off
+        none                        = 0b0000'0000,
+        include_date                = 0b0000'0001,
+        disable_API_prior_V2        = 0b0000'0010,
+
+        // IMPORTANT `_all` must be union of all of the above; see also operator~
+        _all                        = 0b0000'0011
+        // clang-format on
     };
 
     constexpr JsonOptions(underlying_t v) noexcept : value(v)

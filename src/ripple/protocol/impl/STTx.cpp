@@ -237,31 +237,29 @@ Json::Value STTx::getJson(JsonOptions) const
 Json::Value
 STTx::getJson(JsonOptions options, bool binary) const
 {
-    if (!(options & JsonOptions::disable_API_prior_V2))
-    {
-        // Behaviour before API version 2
-        if (binary)
-        {
-            Json::Value ret;
-            Serializer s = STObject::getSerializer();
-            ret[jss::tx] = strHex(s.peekData());
-            ret[jss::hash] = to_string(getTransactionID());
-            return ret;
-        }
-        return getJson(options);
-    }
+    bool const V1 = !(options & JsonOptions::disable_API_prior_V2);
 
-    // API version 2 behaviour
     if (binary)
     {
         Serializer s = STObject::getSerializer();
-        Json::Value ret = strHex(s.peekData());
-        return ret;
+        std::string const dataBin = strHex(s.peekData());
+
+        if (V1)
+        {
+            Json::Value ret(Json::objectValue);
+            ret[jss::tx] = dataBin;
+            ret[jss::hash] = to_string(getTransactionID());
+            return ret;
+        }
+        else
+            return Json::Value{dataBin};
     }
-    // We want virtualy the same output as `getJson(JsonOptions)` overload
-    // above, but without the hash element. Since `getJson(JsonOptions)`
-    // is using STObject::getJson(JsonOptions::none), we use it here as well
-    return STObject::getJson(JsonOptions::none);
+
+    Json::Value ret = STObject::getJson(JsonOptions::none);
+    if (V1)
+        ret[jss::hash] = to_string(getTransactionID());
+
+    return ret;
 }
 
 std::string const&
