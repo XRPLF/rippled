@@ -6443,7 +6443,8 @@ public:
             Json::Value got;
             try
             {
-                got = jtx::cmdToJSONRPC(args, env.journal);
+                got = jtx::cmdToJSONRPC(
+                    args, env.journal, RPC::apiMaximumSupportedVersion);
             }
             catch (std::bad_cast const&)
             {

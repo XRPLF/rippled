@@ -467,7 +467,7 @@ Env::do_rpc(
                args,
                app().config(),
                app().logs(),
-               RPC::apiMaximumSupportedVersion,
+               RPC::apiMinimumSupportedVersion,
                headers)
         .second;
 }

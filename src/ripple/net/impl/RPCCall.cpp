@@ -91,6 +91,7 @@ createHTTPPost(
 class RPCParser
 {
 private:
+    unsigned const apiVersion_;
     beast::Journal const j_;
 
     // TODO New routine for parsing ledger parameters, other routines should
@@ -321,8 +322,7 @@ private:
 
             if (uLedgerMax != -1 && uLedgerMax < uLedgerMin)
             {
-                // The command line always follows apiMaximumSupportedVersion
-                if (RPC::apiMaximumSupportedVersion == 1)
+                if (apiVersion_ == 1)
                     return rpcError(rpcLGR_IDXS_INVALID);
                 return rpcError(rpcNOT_SYNCED);
             }
@@ -394,8 +394,7 @@ private:
 
             if (uLedgerMax != -1 && uLedgerMax < uLedgerMin)
             {
-                // The command line always follows apiMaximumSupportedVersion
-                if (RPC::apiMaximumSupportedVersion == 1)
+                if (apiVersion_ == 1)
                     return rpcError(rpcLGR_IDXS_INVALID);
                 return rpcError(rpcNOT_SYNCED);
             }
@@ -1221,7 +1220,8 @@ private:
 public:
     //--------------------------------------------------------------------------
 
-    explicit RPCParser(beast::Journal j) : j_(j)
+    explicit RPCParser(unsigned apiVersion, beast::Journal j)
+        : apiVersion_(apiVersion), j_(j)
     {
     }
 
@@ -1481,7 +1481,7 @@ rpcCmdToJson(
 {
     Json::Value jvRequest(Json::objectValue);
 
-    RPCParser rpParser(j);
+    RPCParser rpParser(apiVersion, j);
     Json::Value jvRpcParams(Json::arrayValue);
 
     for (int i = 1; i != args.size(); i++)
@@ -1673,7 +1673,7 @@ fromCommandLine(
     Logs& logs)
 {
     auto const result =
-        rpcClient(vCmd, config, logs, RPC::apiMaximumSupportedVersion);
+        rpcClient(vCmd, config, logs, RPC::apiMinimumSupportedVersion);
 
     std::cout << result.second.toStyledString();
 
