@@ -141,6 +141,31 @@ In API version 2, the following methods are no longer available:
 - `tx_history` - Instead, use other methods such as `account_tx` or `ledger` with the `transactions` field set to `true`.
 - `ledger_header` - Instead, use the `ledger` method.
 
+#### Modifications to JSON transaction element in V2
+
+In API version 2, JSON elements for transaction output have been changed and made consistent for all methods which output transactions:
+
+- JSON transaction element is named `tx_json`
+- Binary transaction element is named `tx_blob`
+- JSON transaction metadata element is named `meta`
+- Binary transaction metadata element is named `meta_blob`
+
+Additionally, these elements are now consistently available next to `tx_json` (i.e. sibling elements), where possible:
+
+- `hash` - Transaction ID. This data was stored inside transaction output in API version 1, but in API version 2 is a sibling element.
+- `ledger_index` - Ledger index (only set on validated ledgers)
+- `ledger_hash` - Ledger hash (only set on closed or validated ledgers)
+- `close_time_iso` - Ledger close time expressed in ISO 8601 time format (only set on validated ledgers)
+- `validated` - Bool element set to `true` if the transaction is in a validated ledger, otherwise `false`
+
+This change affects the following methods:
+
+- `tx` - Transaction data moved into element `tx_json` (was inline inside `result`) or, if binary output was requested, moved from `tx` to `tx_blob`. Renamed binary transaction metadata element (if it was requested) from `meta` to `meta_blob`. Changed location of `hash` and added new elements
+- `account_tx` - Renamed transaction element from `tx` to `tx_json`. Renamed binary transaction metadata element (if it was requested) from `meta` to `meta_blob`. Changed location of `hash` and added new elements
+- `transaction_entry` - Renamed transaction metadata element from `metadata` to `meta`. Changed location of `hash` and added new elements
+- `subscribe` - Renamed transaction element from `transaction` to `tx_json`. Changed location of `hash` and added new elements
+- `sign`, `sign_for`, `submit` and `submit_multisigned` - Changed location of `hash` element.
+
 #### Modifications to account_info response in V2
 
 - `signer_lists` is returned in the root of the response. Previously, in API version 1, it was nested under `account_data`. (https://github.com/XRPLF/rippled/pull/3770)
