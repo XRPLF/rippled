@@ -137,7 +137,8 @@ SHAMapInnerNode::makeFullInner(
     // Determine the non-empty branches so we only allocate once what we need
     // with no reallocation and moving around data.
     // When allocating 16 branches, it only has to turn around and reallocate
-    // the right size and compact, which is less than ideal.
+    // the right size and compact, which is less than ideal. In principle,
+    // with less allocations we should see less fragmentation in the arena.
     std::uint16_t isBranch = 0;
     for (int i = 0; i < branchFactor; ++i)
     {
@@ -147,7 +148,7 @@ SHAMapInnerNode::makeFullInner(
         // and decompresses it into this form before handing off to other
         // components. It may be worth investigating whether the compressed form
         // is actually more useful here.
-        if (si.getBitString<256>().isNonZero())
+        if (si.getSlice(uint256::bytes).isNonZero())
         {
             isBranch |= (1 << i);
         }
@@ -167,8 +168,8 @@ SHAMapInnerNode::makeFullInner(
             auto ix = ret->getChildIndex(i);
 
             // We shouldn't really have to check this cause we've
-            // already checked the branch is populated but it's likely
-            // a crime against religion.
+            // already checked the branch is populated. It's tempting
+            // to just go ahead without checking :)
             if (!ix.has_value())
             {
                 Throw<std::runtime_error>("Invalid FI node");
@@ -193,10 +194,15 @@ SHAMapInnerNode::makeFullInner(
         }
     }
 
+#ifdef NDEBUG
     if (hashValid)
         ret->hash_ = hash;
     else
         ret->updateHash();
+#else
+    ret->updateHash();
+    assert(!hashValid || ret->hash_ == hash);
+#endif
 
     return ret;
 }
