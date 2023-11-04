@@ -180,12 +180,15 @@ SHAMapInnerNode::makeFullInner(
         }
         else
         {
-            // The `TaggedPointer` constructor uses placement new to call
-            // `SHAMapHash`'s default constructor for each `hashes` element,
-            // which in turn zero-initializes its underlying
-            // `std::array<std::uint32_t>` member. This ensures all `hashes` are
-            // in a zeroed state, allowing safe use of `si.skip(uint256::bytes)`
-            // later.
+            // The `TaggedPointer` constructor uses placement new to invoke the
+            // default constructor of `SHAMapHash` for each element in the
+            // `hashes` array. Since `SHAMapHash` is a wrapper around `uint256`,
+            // which itself is a template instantiation of `base_uint` with a
+            // `std::array<std::uint32_t>` member, this process effectively
+            // zero-initializes the underlying array. As a result, all elements
+            // in `hashes` are guaranteed to be in a zeroed state, which permits
+            // the subsequent safe use of `si.skip(uint256::bytes)` to bypass
+            // unneeded zero bytes.
             si.skip(uint256::bytes);
         }
     }
