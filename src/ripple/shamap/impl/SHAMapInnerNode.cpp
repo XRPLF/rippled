@@ -74,13 +74,17 @@ SHAMapInnerNode::getChildIndex(int i) const
 std::shared_ptr<SHAMapTreeNode>
 SHAMapInnerNode::clone(std::uint32_t cowid) const
 {
-    auto const branchCount = getBranchCount();
-    auto const thisIsSparse = !hashesAndChildren_.isDense();
-    auto p = std::make_shared<SHAMapInnerNode>(cowid, branchCount);
+    // We are cloning it for writing, and who knows what it'll be used for,
+    // so allocate it 16 branches, and let it get compacted when its hash is
+    // updated.
+    auto p = std::make_shared<SHAMapInnerNode>(cowid, branchFactor);
+
     p->hash_ = hash_;
     p->isBranch_ = isBranch_;
     p->fullBelowGen_ = fullBelowGen_;
+
     SHAMapHash *cloneHashes, *thisHashes;
+
     std::shared_ptr<SHAMapTreeNode>*cloneChildren, *thisChildren;
     // structured bindings can't be captured in c++ 17; use tie instead
     std::tie(std::ignore, cloneHashes, cloneChildren) =
@@ -88,36 +92,16 @@ SHAMapInnerNode::clone(std::uint32_t cowid) const
     std::tie(std::ignore, thisHashes, thisChildren) =
         hashesAndChildren_.getHashesAndChildren();
 
-    if (thisIsSparse)
-    {
-        int cloneChildIndex = 0;
-        iterNonEmptyChildIndexes([&](auto branchNum, auto indexNum) {
-            cloneHashes[cloneChildIndex++] = thisHashes[indexNum];
-        });
-    }
-    else
-    {
-        iterNonEmptyChildIndexes([&](auto branchNum, auto indexNum) {
-            cloneHashes[branchNum] = thisHashes[indexNum];
-        });
-    }
+    iterNonEmptyChildIndexes([&](auto branchNum, auto indexNum) {
+        cloneHashes[branchNum] = thisHashes[indexNum];
+    });
 
     spinlock sl(lock_);
     std::lock_guard lock(sl);
 
-    if (thisIsSparse)
-    {
-        int cloneChildIndex = 0;
-        iterNonEmptyChildIndexes([&](auto branchNum, auto indexNum) {
-            cloneChildren[cloneChildIndex++] = thisChildren[indexNum];
-        });
-    }
-    else
-    {
-        iterNonEmptyChildIndexes([&](auto branchNum, auto indexNum) {
-            cloneChildren[branchNum] = thisChildren[indexNum];
-        });
-    }
+    iterNonEmptyChildIndexes([&](auto branchNum, auto indexNum) {
+        cloneChildren[branchNum] = thisChildren[indexNum];
+    });
 
     return p;
 }
@@ -241,8 +225,6 @@ SHAMapInnerNode::makeCompressedInner(Slice data)
         prevPos = pos;
     }
 
-    // Should effectively be be a noop at this point
-    ret->resizeChildArrays(ret->getBranchCount());
     ret->updateHash();
     return ret;
 }
@@ -265,6 +247,13 @@ SHAMapInnerNode::updateHash()
 void
 SHAMapInnerNode::updateHashDeep()
 {
+    // We only call this here, cause we assume that after this point
+    // this node won't be modified? clone() will be called first, no?
+    this->resizeChildArrays(popcnt16(isBranch_));
+    // Given this works shouldn't we be able to allocate the exact amount
+    // of children for a canonical node? Rather than closest to some
+    // boundary that fits in the last 2 bits of the tagged pointer?
+
     SHAMapHash* hashes;
     std::shared_ptr<SHAMapTreeNode>* children;
     // structured bindings can't be captured in c++ 17; use tie instead
@@ -341,10 +330,15 @@ SHAMapInnerNode::setChild(int m, std::shared_ptr<SHAMapTreeNode> child)
     }();
 
     auto const dstToAllocate = popcnt16(dstIsBranch);
-    // change hashesAndChildren to remove the element, or make room for the
-    // added element, if necessary
-    hashesAndChildren_ = TaggedPointer(
-        std::move(hashesAndChildren_), isBranch_, dstIsBranch, dstToAllocate);
+
+    // We should have allocated 16 branches when cloning, or creating a new node
+    // that wasn't from the wire or db (with a known branch count - it's a
+    // hashed node!)
+    if (hashesAndChildren_.capacity() < dstToAllocate)
+    {
+        assert(false);
+        throw std::runtime_error("insufficient capacity for new child");
+    }
 
     isBranch_ = dstIsBranch;
 
