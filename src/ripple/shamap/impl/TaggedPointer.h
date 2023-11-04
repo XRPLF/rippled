@@ -65,10 +65,12 @@ class TaggedPointer
         A moved-from object will have a tp_ of zero.
     */
     std::uintptr_t tp_ = 0;
-    /** bit-and with this mask to get the tag bits (lowest two bits) */
-    static constexpr std::uintptr_t tagMask = 3;
-    /** bit-and with this mask to get the pointer bits (mask out the tag) */
-    static constexpr std::uintptr_t ptrMask = ~tagMask;
+    std::uint32_t children_ = 0;
+
+    //    /** bit-and with this mask to get the tag bits (lowest two bits) */
+    //    static constexpr std::uintptr_t tagMask = 15;
+    //    /** bit-and with this mask to get the pointer bits (mask out the tag)
+    //    */ static constexpr std::uintptr_t ptrMask = ~tagMask;
 
     /** Deallocate memory and run destructors */
     void
