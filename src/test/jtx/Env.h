@@ -782,7 +782,7 @@ void
 forAllApiVersions(VersionedTestCallable auto... testCallable)
 {
     for (auto testVersion = RPC::apiMinimumSupportedVersion;
-         testVersion <= RPC::apiBetaVersion;
+         testVersion <= RPC::apiMaximumValidVersion;
          ++testVersion)
     {
         (..., testCallable(testVersion));
