@@ -282,6 +282,17 @@ public:
     template <class... Args>
     Json::Value
     rpc(std::unordered_map<std::string, std::string> const& headers,
+        unsigned apiVersion,
+        std::string const& cmd,
+        Args&&... args);
+
+    template <class... Args>
+    Json::Value
+    rpc(unsigned apiVersion, std::string const& cmd, Args&&... args);
+
+    template <class... Args>
+    Json::Value
+    rpc(std::unordered_map<std::string, std::string> const& headers,
         std::string const& cmd,
         Args&&... args);
 
@@ -656,6 +667,7 @@ protected:
     Json::Value
     do_rpc(
         std::vector<std::string> const& args,
+        unsigned apiVersion,
         std::unordered_map<std::string, std::string> const& headers = {});
 
     void
@@ -699,11 +711,38 @@ template <class... Args>
 Json::Value
 Env::rpc(
     std::unordered_map<std::string, std::string> const& headers,
+    unsigned apiVersion,
     std::string const& cmd,
     Args&&... args)
 {
     return do_rpc(
-        std::vector<std::string>{cmd, std::forward<Args>(args)...}, headers);
+        std::vector<std::string>{cmd, std::forward<Args>(args)...},
+        apiVersion,
+        headers);
+}
+
+template <class... Args>
+Json::Value
+Env::rpc(unsigned apiVersion, std::string const& cmd, Args&&... args)
+{
+    return rpc(
+        std::unordered_map<std::string, std::string>(),
+        apiVersion,
+        cmd,
+        std::forward<Args>(args)...);
+}
+
+template <class... Args>
+Json::Value
+Env::rpc(
+    std::unordered_map<std::string, std::string> const& headers,
+    std::string const& cmd,
+    Args&&... args)
+{
+    return do_rpc(
+        std::vector<std::string>{cmd, std::forward<Args>(args)...},
+        RPC::apiMinimumSupportedVersion,
+        headers);
 }
 
 template <class... Args>

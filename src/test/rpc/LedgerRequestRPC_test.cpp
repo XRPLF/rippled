@@ -23,6 +23,9 @@
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 #include <test/jtx.h>
+#include <test/jtx/Env.h>
+
+#include <functional>
 
 namespace ripple {
 
@@ -263,7 +266,7 @@ public:
     }
 
     void
-    testBadInput()
+    testBadInput(unsigned apiVersion)
     {
         using namespace test::jtx;
         Env env{*this};
@@ -287,9 +290,9 @@ public:
         // the purpose in this test is to force the ledger expiration/out of
         // date check to trigger
         env.timeKeeper().adjustCloseTime(weeks{3});
-        result = env.rpc("ledger_request", "1")[jss::result];
+        result = env.rpc(apiVersion, "ledger_request", "1")[jss::result];
         BEAST_EXPECT(result[jss::status] == "error");
-        if (RPC::apiMaximumSupportedVersion == 1)
+        if (apiVersion == 1)
         {
             BEAST_EXPECT(result[jss::error] == "noCurrent");
             BEAST_EXPECT(
@@ -357,7 +360,8 @@ public:
     {
         testLedgerRequest();
         testEvolution();
-        testBadInput();
+        test::jtx::forAllApiVersions(
+            std::bind_front(&LedgerRequestRPC_test::testBadInput, this));
         testMoreThan256Closed();
         testNonAdmin();
     }
