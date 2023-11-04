@@ -154,7 +154,7 @@ SHAMapInnerNode::makeFullInner(
         }
     }
 
-    int nonEmptyBranches = popcnt16(isBranch);
+    auto const nonEmptyBranches = popcnt16(isBranch);
     auto ret = std::make_shared<SHAMapInnerNode>(0, nonEmptyBranches);
     auto hashes = ret->hashesAndChildren_.getHashes();
 
@@ -165,7 +165,7 @@ SHAMapInnerNode::makeFullInner(
     {
         if (isBranch & (1 << i))
         {
-            auto ix = ret->getChildIndex(i);
+            auto const ix = ret->getChildIndex(i);
 
             // We shouldn't really have to check this cause we've
             // already checked the branch is populated. It's tempting
@@ -229,10 +229,10 @@ SHAMapInnerNode::makeCompressedInner(Slice data)
     while (!si.empty())
     {
         auto const hash = si.getBitString<256>();
-        int pos = si.get8();
+        auto const pos = si.get8();
 
         ret->isBranch_ |= (1 << pos);
-        auto ix = ret->getChildIndex(pos);
+        auto const ix = ret->getChildIndex(pos);
 
         if (pos >= branchFactor || prevPos > pos || !ix.has_value())
             Throw<std::runtime_error>("invalid CI node");
