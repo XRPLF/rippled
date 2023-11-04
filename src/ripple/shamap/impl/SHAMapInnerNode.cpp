@@ -145,9 +145,9 @@ SHAMapInnerNode::makeFullInner(
         // If the serialized inners included a branch header we wouldn't have to
         // do this walk to check for non-zero branches. Note that the node store
         // actually defines a custom compression specifically for inner nodes,
-        // and decompresses it into this form before handing off to other
-        // components. It may be worth investigating whether the compressed form
-        // is actually more useful here.
+        // and decompresses it into "full inner" form before handing off to
+        // other components. It may be worth investigating whether the
+        // compressed form is actually more usable here.
         if (si.getSlice(uint256::bytes).isNonZero())
         {
             isBranch |= (1 << i);
