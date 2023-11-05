@@ -88,22 +88,33 @@ static_assert(
 constexpr size_t elementSizeBytes =
     (sizeof(SHAMapHash) + sizeof(std::shared_ptr<SHAMapTreeNode>));
 
+constexpr size_t metaDataBytes = sizeof(TaggedPointer::MetaData);
+
+static_assert(
+    metaDataBytes % alignof(SHAMapHash) == 0,
+    "Metadata size must be a multiple of the alignment of SHAMapHash.");
+
+static_assert(
+    metaDataBytes % alignof(std::shared_ptr<SHAMapTreeNode>) == 0,
+    "Metadata size must be a multiple of the alignment of "
+    "std::shared_ptr<SHAMapTreeNode>.");
+
 constexpr size_t blockSizeBytes = kilobytes(512);
 
 template <std::size_t... I>
-constexpr std::array<size_t, boundaries.size()>
-initArrayChunkSizeBytes(std::index_sequence<I...>)
+constexpr std::array<size_t, boundaries.size()> initArrayChunkSizeBytes(
+    std::index_sequence<I...>)
 {
     return std::array<size_t, boundaries.size()>{
-        boundaries[I] * elementSizeBytes...,
+        ((boundaries[I] * elementSizeBytes) + metaDataBytes)...,
     };
 }
 constexpr auto arrayChunkSizeBytes =
     initArrayChunkSizeBytes(std::make_index_sequence<boundaries.size()>{});
 
 template <std::size_t... I>
-constexpr std::array<size_t, boundaries.size()>
-initArrayChunksPerBlock(std::index_sequence<I...>)
+constexpr std::array<size_t, boundaries.size()> initArrayChunksPerBlock(
+    std::index_sequence<I...>)
 {
     return std::array<size_t, boundaries.size()>{
         blockSizeBytes / arrayChunkSizeBytes[I]...,
@@ -129,8 +140,8 @@ boundariesIndex(std::uint8_t numChildren)
 }
 
 template <std::size_t... I>
-std::array<std::function<void*()>, boundaries.size()>
-initAllocateArrayFuns(std::index_sequence<I...>)
+std::array<std::function<void*()>, boundaries.size()> initAllocateArrayFuns(
+    std::index_sequence<I...>)
 {
     return std::array<std::function<void*()>, boundaries.size()>{
         boost::singleton_pool<
@@ -146,8 +157,8 @@ std::array<std::function<void*()>, boundaries.size()> const allocateArrayFuns =
     initAllocateArrayFuns(std::make_index_sequence<boundaries.size()>{});
 
 template <std::size_t... I>
-std::array<std::function<void(void*)>, boundaries.size()>
-initFreeArrayFuns(std::index_sequence<I...>)
+std::array<std::function<void(void*)>, boundaries.size()> initFreeArrayFuns(
+    std::index_sequence<I...>)
 {
     return std::array<std::function<void(void*)>, boundaries.size()>{
         static_cast<void (*)(void*)>(boost::singleton_pool<
@@ -163,8 +174,8 @@ std::array<std::function<void(void*)>, boundaries.size()> const freeArrayFuns =
     initFreeArrayFuns(std::make_index_sequence<boundaries.size()>{});
 
 template <std::size_t... I>
-std::array<std::function<bool(void*)>, boundaries.size()>
-initIsFromArrayFuns(std::index_sequence<I...>)
+std::array<std::function<bool(void*)>, boundaries.size()> initIsFromArrayFuns(
+    std::index_sequence<I...>)
 {
     return std::array<std::function<bool(void*)>, boundaries.size()>{
         boost::singleton_pool<
@@ -229,6 +240,19 @@ TaggedPointer::iterChildren(std::uint16_t isBranch, F&& f) const
             }
         }
     }
+}
+
+[[nodiscard]] std::uint8_t
+TaggedPointer::getNumChildren() const
+{
+    return (*reinterpret_cast<const MetaData*>(tp_)).allocated;
+}
+
+[[nodiscard]] void*
+TaggedPointer::getPointerAfterMetaData() const
+{
+    return reinterpret_cast<void*>(
+        reinterpret_cast<char*>(tp_) + sizeof(MetaData));
 }
 
 template <class F>
@@ -305,13 +329,9 @@ TaggedPointer::getChildIndex(std::uint16_t isBranch, int i) const
 
 inline TaggedPointer::TaggedPointer(RawAllocateTag, std::uint8_t numChildren)
 {
-    children_ = numChildren;
-    auto [tag, p] = allocateArrays(numChildren);
-    //    assert(tag < boundaries.size());
-    //    assert(
-    //        (reinterpret_cast<std::uintptr_t>(p) & ptrMask) ==
-    //        reinterpret_cast<std::uintptr_t>(p));
-    tp_ = reinterpret_cast<std::uintptr_t>(p);  // + tag;
+    auto [_, p] = allocateArrays(numChildren);
+    new (p) MetaData{.allocated = numChildren, .rfu = {}};
+    tp_ = reinterpret_cast<std::uintptr_t>(p);
 }
 
 inline TaggedPointer::TaggedPointer(
@@ -547,8 +567,7 @@ inline TaggedPointer::TaggedPointer(std::uint8_t numChildren)
     }
 }
 
-inline TaggedPointer::TaggedPointer(TaggedPointer&& other)
-    : tp_{other.tp_}, children_{other.children_}
+inline TaggedPointer::TaggedPointer(TaggedPointer&& other) : tp_{other.tp_}
 {
     other.tp_ = 0;
 }
@@ -560,7 +579,6 @@ TaggedPointer::operator=(TaggedPointer&& other)
         return *this;
     destroyHashesAndChildren();
     tp_ = other.tp_;
-    children_ = other.children_;
     other.tp_ = 0;
     return *this;
 }
@@ -568,27 +586,27 @@ TaggedPointer::operator=(TaggedPointer&& other)
 [[nodiscard]] inline std::pair<std::uint8_t, void*>
 TaggedPointer::decode() const
 {
-    return {boundariesIndex(children_), reinterpret_cast<void*>(tp_)};
+    return {boundariesIndex(getNumChildren()), reinterpret_cast<void*>(tp_)};
 }
 
 [[nodiscard]] inline std::uint8_t
 TaggedPointer::capacity() const
 {
-    return children_;
+    return getNumChildren();
 }
 
 [[nodiscard]] inline bool
 TaggedPointer::isDense() const
 {
-    return children_ == boundaries.size();
+    return getNumChildren() == SHAMapInnerNode::branchFactor;
 }
 
 [[nodiscard]] inline std::
     tuple<std::uint8_t, SHAMapHash*, std::shared_ptr<SHAMapTreeNode>*>
     TaggedPointer::getHashesAndChildren() const
 {
-    auto const [tag, ptr] = decode();
-    auto const hashes = reinterpret_cast<SHAMapHash*>(ptr);
+    auto const [tag, _] = decode();
+    auto const hashes = getHashes();
     std::uint8_t numAllocated = boundaries[tag];
     auto const children = reinterpret_cast<std::shared_ptr<SHAMapTreeNode>*>(
         hashes + numAllocated);
@@ -598,7 +616,7 @@ TaggedPointer::isDense() const
 [[nodiscard]] inline SHAMapHash*
 TaggedPointer::getHashes() const
 {
-    return reinterpret_cast<SHAMapHash*>(tp_);
+    return reinterpret_cast<SHAMapHash*>(getPointerAfterMetaData());
 };
 
 [[nodiscard]] inline std::shared_ptr<SHAMapTreeNode>*
