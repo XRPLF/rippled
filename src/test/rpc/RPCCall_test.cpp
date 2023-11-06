@@ -51,6 +51,20 @@ struct RPCCallTestData
         int line_,
         std::initializer_list<char const*> const& args_,
         Exception throwsWhat_,
+        char const* exp_)
+        : description(description_)
+        , line(line_)
+        , args(args_)
+        , throwsWhat(throwsWhat_)
+        , exp(1, exp_)
+    {
+    }
+
+    RPCCallTestData(
+        char const* description_,
+        int line_,
+        std::initializer_list<char const*> const& args_,
+        Exception throwsWhat_,
         std::initializer_list<char const*> exp_)
         : description(description_)
         , line(line_)
@@ -76,8 +90,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
      __LINE__,
      {"account_channels", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_channels",
     "params" : [
       {
@@ -85,15 +98,14 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"
       }
     ]
-    })"}},
+    })"},
     {"account_channels: account and ledger hash.",
      __LINE__,
      {"account_channels",
       "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
       "rD5MbavGfiSC5m7mkxy1FANuT7s3HxqpoF"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_channels",
     "params" : [
       {
@@ -102,15 +114,14 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "destination_account" : "rD5MbavGfiSC5m7mkxy1FANuT7s3HxqpoF"
       }
     ]
-    })"}},
+    })"},
     {"account_channels: account and ledger index.",
      __LINE__,
      {"account_channels",
       "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
       "r9emE59aTWb85t64dAebKrxYMBTpzK5yR7"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_channels",
     "params" : [
       {
@@ -119,15 +130,14 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "destination_account" : "r9emE59aTWb85t64dAebKrxYMBTpzK5yR7"
       }
     ]
-    })"}},
+    })"},
     {"account_channels: two accounts.",
      __LINE__,
      {"account_channels",
       "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
       "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_channels",
     "params" : [
       {
@@ -136,7 +146,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "destination_account" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA"
       }
     ]
-    })"}},
+    })"},
     {"account_channels: two accounts and ledger hash.",
      __LINE__,
      {"account_channels",
@@ -144,8 +154,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
       "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_channels",
     "params" : [
       {
@@ -155,7 +164,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_hash" : "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF"
       }
     ]
-    })"}},
+    })"},
     {"account_channels: two accounts and ledger index.",
      __LINE__,
      {"account_channels",
@@ -163,8 +172,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
       "90210"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_channels",
     "params" : [
       {
@@ -174,15 +182,14 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index" : 90210
       }
     ]
-    })"}},
+    })"},
     {"account_channels: too few arguments.",
      __LINE__,
      {
          "account_channels",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_channels",
     "params" : [
       {
@@ -191,7 +198,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {"account_channels: too many arguments.",
      __LINE__,
      {"account_channels",
@@ -200,8 +207,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "current",
       "extra"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_channels",
     "params" : [
       {
@@ -210,7 +216,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {"account_channels: invalid accountID.",
      __LINE__,
      {
@@ -218,8 +224,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "",  // Note: very few values are detected as bad!
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_channels",
     "params" : [
       {
@@ -228,7 +233,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Account malformed."
       }
     ]
-    })"}},
+    })"},
 
     // account_currencies
     // ----------------------------------------------------------
@@ -236,8 +241,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
      __LINE__,
      {"account_currencies", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_currencies",
     "params" : [
       {
@@ -245,13 +249,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"
       }
     ]
-    })"}},
+    })"},
     {"account_currencies: minimal 2.",
      __LINE__,
      {"account_currencies", "racb4o3DrdYxuCfyVa6vsLb7vgju9RFbBr"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_currencies",
     "params" : [
       {
@@ -259,13 +262,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "account" : "racb4o3DrdYxuCfyVa6vsLb7vgju9RFbBr"
       }
     ]
-    })"}},
+    })"},
     {"account_currencies: ledger index.",
      __LINE__,
      {"account_currencies", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "42"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_currencies",
     "params" : [
       {
@@ -274,13 +276,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index" : 42
       }
     ]
-    })"}},
+    })"},
     {"account_currencies: validated ledger.",
      __LINE__,
      {"account_currencies", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "validated"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_currencies",
     "params" : [
       {
@@ -289,13 +290,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index" : "validated"
       }
     ]
-    })"}},
+    })"},
     {"account_currencies: current ledger.",
      __LINE__,
      {"account_currencies", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "current"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_currencies",
     "params" : [
       {
@@ -304,15 +304,14 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index" : "current"
       }
     ]
-    })"}},
+    })"},
     {"account_currencies: too few arguments.",
      __LINE__,
      {
          "account_currencies",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_currencies",
     "params" : [
       {
@@ -321,7 +320,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {"account_currencies: too many arguments.",
      __LINE__,
      {"account_currencies",
@@ -330,8 +329,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "spare1",
       "spare2"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_currencies",
     "params" : [
       {
@@ -340,13 +338,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {"account_currencies: invalid second argument.",
      __LINE__,
      {"account_currencies", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "yup"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_currencies",
     "params" : [
       {
@@ -355,17 +352,16 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index" : 0
       }
     ]
-    })"}},
-    {//
-     "account_currencies: invalid accountID.",
-     __LINE__,
-     {
-         "account_currencies",
-         "",  // Note: very few values are detected as bad!
-     },
-     RPCCallTestData::no_exception,
-     {
-         R"({
+    })"},
+    {
+        "account_currencies: invalid accountID.",
+        __LINE__,
+        {
+            "account_currencies",
+            "",  // Note: very few values are detected as bad!
+        },
+        RPCCallTestData::no_exception,
+        R"({
     "method" : "account_currencies",
     "params" : [
        {
@@ -374,7 +370,8 @@ static RPCCallTestData const rpcCallTestArray[] = {
           "error_message" : "Account malformed."
        }
     ]
-    })"}},
+    })",
+    },
 
     // account_info
     // ----------------------------------------------------------------
@@ -382,8 +379,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
      __LINE__,
      {"account_info", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_info",
     "params" : [
       {
@@ -391,13 +387,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"
       }
     ]
-    })"}},
+    })"},
     {"account_info: with numeric ledger index.",
      __LINE__,
      {"account_info", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "77777"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_info",
     "params" : [
       {
@@ -406,13 +401,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index" : 77777
       }
     ]
-    })"}},
+    })"},
     {"account_info: with text ledger index.",
      __LINE__,
      {"account_info", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "closed"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_info",
     "params" : [
       {
@@ -421,15 +415,14 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index" : "closed"
       }
     ]
-    })"}},
+    })"},
     {"account_info: with ledger hash.",
      __LINE__,
      {"account_info",
       "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
       "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_info",
     "params" : [
       {
@@ -438,13 +431,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_hash" : "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF"
       }
     ]
-    })"}},
+    })"},
     {"account_info: with ledger index.",
      __LINE__,
      {"account_info", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "validated"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_info",
     "params" : [
       {
@@ -453,15 +445,14 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index" : "validated"
       }
     ]
-    })"}},
+    })"},
     {"account_info: too few arguments.",
      __LINE__,
      {
          "account_info",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_info",
     "params" : [
       {
@@ -470,7 +461,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {"account_info: too many arguments.",
      __LINE__,
      {"account_info",
@@ -479,8 +470,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "extra1",
       "extra2"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_info",
     "params" : [
       {
@@ -489,17 +479,16 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
-    {//
-     "account_info: invalid accountID.",
-     __LINE__,
-     {
-         "account_info",
-         "",  // Note: very few values are detected as bad!
-     },
-     RPCCallTestData::no_exception,
-     {
-         R"({
+    })"},
+    {
+        "account_info: invalid accountID.",
+        __LINE__,
+        {
+            "account_info",
+            "",  // Note: very few values are detected as bad!
+        },
+        RPCCallTestData::no_exception,
+        R"({
     "method" : "account_info",
     "params" : [
        {
@@ -508,7 +497,8 @@ static RPCCallTestData const rpcCallTestArray[] = {
           "error_message" : "Account malformed."
        }
     ]
-    })"}},
+    })",
+    },
 
     // account_lines
     // ---------------------------------------------------------------
@@ -516,8 +506,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
      __LINE__,
      {"account_lines", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_lines",
     "params" : [
       {
@@ -525,15 +514,14 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
       }
     ]
-    })"}},
+    })"},
     {"account_lines: peer.",
      __LINE__,
      {"account_lines",
       "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
       "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_lines",
     "params" : [
       {
@@ -542,7 +530,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "peer" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA"
       }
     ]
-    })"}},
+    })"},
     {"account_lines: peer and numeric ledger index.",
      __LINE__,
      {"account_lines",
@@ -550,8 +538,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
       "888888888"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_lines",
     "params" : [
       {
@@ -561,7 +548,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "peer" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA"
       }
     ]
-    })"}},
+    })"},
     {"account_lines: peer and text ledger index.",
      __LINE__,
      {"account_lines",
@@ -569,8 +556,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
       "closed"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_lines",
     "params" : [
       {
@@ -580,7 +566,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "peer" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA"
       }
     ]
-    })"}},
+    })"},
     {"account_lines: peer and ledger hash.",
      __LINE__,
      {"account_lines",
@@ -588,8 +574,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
       "FFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_lines",
     "params" : [
       {
@@ -599,15 +584,14 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "peer" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA"
       }
     ]
-    })"}},
+    })"},
     {"account_lines: too few arguments.",
      __LINE__,
      {
          "account_lines",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_lines",
     "params" : [
       {
@@ -616,7 +600,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {// Note: I believe this _ought_ to be detected as too many arguments.
      "account_lines: four arguments.",
      __LINE__,
@@ -626,8 +610,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "12345678",
       "current"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_lines",
     "params" : [
       {
@@ -637,7 +620,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "peer" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA"
       }
     ]
-    })"}},
+    })"},
     {// Note: I believe this _ought_ to be detected as too many arguments.
      "account_lines: five arguments.",
      __LINE__,
@@ -648,8 +631,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "current",
       "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_lines",
     "params" : [
       {
@@ -659,7 +641,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "peer" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA"
       }
     ]
-    })"}},
+    })"},
     {"account_lines: too many arguments.",
      __LINE__,
      {"account_lines",
@@ -670,8 +652,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
       "validated"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_lines",
     "params" : [
       {
@@ -680,17 +661,16 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
-    {//
-     "account_lines: first invalid accountID.",
-     __LINE__,
-     {
-         "account_lines",
-         "",  // Note: very few values are detected as bad!
-     },
-     RPCCallTestData::no_exception,
-     {
-         R"({
+    })"},
+    {
+        "account_lines: first invalid accountID.",
+        __LINE__,
+        {
+            "account_lines",
+            "",  // Note: very few values are detected as bad!
+        },
+        RPCCallTestData::no_exception,
+        R"({
     "method" : "account_lines",
     "params" : [
        {
@@ -699,18 +679,18 @@ static RPCCallTestData const rpcCallTestArray[] = {
           "error_message" : "Account malformed."
        }
     ]
-    })"}},
-    {//
-     "account_lines: second invalid accountID.",
-     __LINE__,
-     {
-         "account_lines",
-         "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-         ""  // Note: very few values are detected as bad!
-     },
-     RPCCallTestData::no_exception,
-     {
-         R"({
+    })",
+    },
+    {
+        "account_lines: second invalid accountID.",
+        __LINE__,
+        {
+            "account_lines",
+            "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+            ""  // Note: very few values are detected as bad!
+        },
+        RPCCallTestData::no_exception,
+        R"({
     "method" : "account_lines",
     "params" : [
        {
@@ -718,17 +698,17 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"
        }
     ]
-    })"}},
-    {//
-     "account_lines: invalid ledger selector.",
-     __LINE__,
-     {"account_lines",
-      "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-      "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
-      "not_a_ledger"},
-     RPCCallTestData::no_exception,
-     {
-         R"({
+    })",
+    },
+    {
+        "account_lines: invalid ledger selector.",
+        __LINE__,
+        {"account_lines",
+         "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+         "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+         "not_a_ledger"},
+        RPCCallTestData::no_exception,
+        R"({
     "method" : "account_lines",
     "params" : [
        {
@@ -738,7 +718,8 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "peer" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA"
        }
     ]
-    })"}},
+    })",
+    },
 
     // account_objects
     // -------------------------------------------------------------
@@ -746,8 +727,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
      __LINE__,
      {"account_objects", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_objects",
     "params" : [
       {
@@ -755,13 +735,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"
       }
     ]
-    })"}},
+    })"},
     {"account_objects: with numeric ledger index.",
      __LINE__,
      {"account_objects", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "77777"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_objects",
     "params" : [
       {
@@ -770,13 +749,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index" : 77777
       }
     ]
-    })"}},
+    })"},
     {"account_objects: with text ledger index.",
      __LINE__,
      {"account_objects", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "closed"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_objects",
     "params" : [
       {
@@ -785,15 +763,14 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index" : "closed"
       }
     ]
-    })"}},
+    })"},
     {"account_objects: with ledger hash.",
      __LINE__,
      {"account_objects",
       "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
       "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_objects",
     "params" : [
       {
@@ -802,13 +779,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_hash" : "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF"
       }
     ]
-    })"}},
+    })"},
     {"account_objects: with ledger index.",
      __LINE__,
      {"account_objects", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "validated"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_objects",
     "params" : [
       {
@@ -817,15 +793,14 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index" : "validated"
       }
     ]
-    })"}},
+    })"},
     {"account_objects: too few arguments.",
      __LINE__,
      {
          "account_objects",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_objects",
     "params" : [
       {
@@ -834,7 +809,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {// Note: I believe this _ought_ to be detected as too many arguments.
      "account_objects: four arguments.",
      __LINE__,
@@ -846,8 +821,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "extra2",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_objects",
     "params" : [
       {
@@ -855,7 +829,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"
       }
     ]
-    })"}},
+    })"},
     {// Note: I believe this _ought_ to be detected as too many arguments.
      "account_objects: five arguments.",
      __LINE__,
@@ -868,8 +842,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "extra3",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_objects",
     "params" : [
       {
@@ -877,7 +850,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"
       }
     ]
-    })"}},
+    })"},
     {"account_objects: too many arguments.",
      __LINE__,
      {
@@ -890,8 +863,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "extra4",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_objects",
     "params" : [
       {
@@ -900,17 +872,16 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
-    {//
-     "account_objects: invalid accountID.",
-     __LINE__,
-     {
-         "account_objects",
-         "",  // Note: very few values are detected as bad!
-     },
-     RPCCallTestData::no_exception,
-     {
-         R"({
+    })"},
+    {
+        "account_objects: invalid accountID.",
+        __LINE__,
+        {
+            "account_objects",
+            "",  // Note: very few values are detected as bad!
+        },
+        RPCCallTestData::no_exception,
+        R"({
     "method" : "account_objects",
     "params" : [
        {
@@ -919,16 +890,16 @@ static RPCCallTestData const rpcCallTestArray[] = {
           "error_message" : "Account malformed."
        }
     ]
-    })"}},
-    {//
-     // Note: there is code in place to return rpcLGR_IDX_MALFORMED.  That
-     // cannot currently occur because jvParseLedger() always returns true.
-     "account_objects: invalid ledger selection 1.",
-     __LINE__,
-     {"account_objects", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "no_ledger"},
-     RPCCallTestData::no_exception,
-     {
-         R"({
+    })",
+    },
+    {
+        // Note: there is code in place to return rpcLGR_IDX_MALFORMED.  That
+        // cannot currently occur because jvParseLedger() always returns true.
+        "account_objects: invalid ledger selection 1.",
+        __LINE__,
+        {"account_objects", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "no_ledger"},
+        RPCCallTestData::no_exception,
+        R"({
     "method" : "account_objects",
     "params" : [
        {
@@ -937,16 +908,16 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index" : 0
        }
     ]
-    })"}},
-    {//
-     // Note: there is code in place to return rpcLGR_IDX_MALFORMED.  That
-     // cannot currently occur because jvParseLedger() always returns true.
-     "account_objects: invalid ledger selection 2.",
-     __LINE__,
-     {"account_objects", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "no_ledger"},
-     RPCCallTestData::no_exception,
-     {
-         R"({
+    })",
+    },
+    {
+        // Note: there is code in place to return rpcLGR_IDX_MALFORMED.  That
+        // cannot currently occur because jvParseLedger() always returns true.
+        "account_objects: invalid ledger selection 2.",
+        __LINE__,
+        {"account_objects", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "no_ledger"},
+        RPCCallTestData::no_exception,
+        R"({
     "method" : "account_objects",
     "params" : [
        {
@@ -955,7 +926,8 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index" : 0
        }
     ]
-    })"}},
+    })",
+    },
 
     // account_offers
     // --------------------------------------------------------------
@@ -963,8 +935,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
      __LINE__,
      {"account_offers", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_offers",
     "params" : [
       {
@@ -972,13 +943,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"
       }
     ]
-    })"}},
+    })"},
     {"account_offers: with numeric ledger index.",
      __LINE__,
      {"account_offers", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "987654321"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_offers",
     "params" : [
       {
@@ -987,13 +957,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index" : 987654321
       }
     ]
-    })"}},
+    })"},
     {"account_offers: with text ledger index.",
      __LINE__,
      {"account_offers", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "validated"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_offers",
     "params" : [
       {
@@ -1002,15 +971,14 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index" : "validated"
       }
     ]
-    })"}},
+    })"},
     {"account_offers: with ledger hash.",
      __LINE__,
      {"account_offers",
       "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
       "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_offers",
     "params" : [
       {
@@ -1019,13 +987,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_hash" : "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF"
       }
     ]
-    })"}},
+    })"},
     {"account_offers: with ledger index.",
      __LINE__,
      {"account_offers", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "validated"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_offers",
     "params" : [
       {
@@ -1034,15 +1001,14 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index" : "validated"
       }
     ]
-    })"}},
+    })"},
     {"account_offers: too few arguments.",
      __LINE__,
      {
          "account_offers",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_offers",
     "params" : [
       {
@@ -1051,7 +1017,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {// Note: I believe this _ought_ to be detected as too many arguments.
      "account_offers: four arguments.",
      __LINE__,
@@ -1060,8 +1026,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "current",
       "extra"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_offers",
     "params" : [
       {
@@ -1069,7 +1034,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"
       }
     ]
-    })"}},
+    })"},
     {"account_offers: too many arguments.",
      __LINE__,
      {
@@ -1081,8 +1046,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "extra3",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_offers",
     "params" : [
       {
@@ -1091,17 +1055,16 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
-    {//
-     "account_offers: invalid accountID.",
-     __LINE__,
-     {
-         "account_offers",
-         "",  // Note: very few values are detected as bad!
-     },
-     RPCCallTestData::no_exception,
-     {
-         R"({
+    })"},
+    {
+        "account_offers: invalid accountID.",
+        __LINE__,
+        {
+            "account_offers",
+            "",  // Note: very few values are detected as bad!
+        },
+        RPCCallTestData::no_exception,
+        R"({
     "method" : "account_offers",
     "params" : [
        {
@@ -1110,16 +1073,16 @@ static RPCCallTestData const rpcCallTestArray[] = {
           "error_message" : "Account malformed."
        }
     ]
-    })"}},
-    {//
-     // Note: there is code in place to return rpcLGR_IDX_MALFORMED.  That
-     // cannot currently occur because jvParseLedger() always returns true.
-     "account_offers: invalid ledger selection 1.",
-     __LINE__,
-     {"account_offers", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "no_ledger"},
-     RPCCallTestData::no_exception,
-     {
-         R"({
+    })",
+    },
+    {
+        // Note: there is code in place to return rpcLGR_IDX_MALFORMED.  That
+        // cannot currently occur because jvParseLedger() always returns true.
+        "account_offers: invalid ledger selection 1.",
+        __LINE__,
+        {"account_offers", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "no_ledger"},
+        RPCCallTestData::no_exception,
+        R"({
     "method" : "account_offers",
     "params" : [
        {
@@ -1128,16 +1091,16 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index" : 0
        }
     ]
-    })"}},
-    {//
-     // Note: there is code in place to return rpcLGR_IDX_MALFORMED.  That
-     // cannot currently occur because jvParseLedger() always returns true.
-     "account_offers: invalid ledger selection 2.",
-     __LINE__,
-     {"account_offers", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "no_ledger"},
-     RPCCallTestData::no_exception,
-     {
-         R"({
+    })",
+    },
+    {
+        // Note: there is code in place to return rpcLGR_IDX_MALFORMED.  That
+        // cannot currently occur because jvParseLedger() always returns true.
+        "account_offers: invalid ledger selection 2.",
+        __LINE__,
+        {"account_offers", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "no_ledger"},
+        RPCCallTestData::no_exception,
+        R"({
     "method" : "account_offers",
     "params" : [
        {
@@ -1146,7 +1109,8 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index" : 0
        }
     ]
-    })"}},
+    })",
+    },
 
     // account_tx
     // ------------------------------------------------------------------
@@ -1154,8 +1118,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
      __LINE__,
      {"account_tx", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_tx",
     "params" : [
       {
@@ -1163,13 +1126,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
       }
     ]
-    })"}},
+    })"},
     {"account_tx: ledger_index .",
      __LINE__,
      {"account_tx", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "444"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_tx",
     "params" : [
       {
@@ -1178,7 +1140,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index" : 444
       }
     ]
-    })"}},
+    })"},
     {"account_tx: ledger_index plus trailing params.",
      __LINE__,
      {"account_tx",
@@ -1188,8 +1150,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "binary",
       "count"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_tx",
     "params" : [
       {
@@ -1201,13 +1162,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index" : 707
       }
     ]
-    })"}},
+    })"},
     {"account_tx: ledger_index_min and _max.",
      __LINE__,
      {"account_tx", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "-1", "-1"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_tx",
     "params" : [
       {
@@ -1217,7 +1177,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index_min" : -1
       }
     ]
-    })"}},
+    })"},
     {"account_tx: ledger_index_min and _max plus trailing params.",
      __LINE__,
      {"account_tx",
@@ -1228,8 +1188,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "count",
       "descending"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_tx",
     "params" : [
       {
@@ -1242,13 +1201,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index_min" : -1
       }
     ]
-    })"}},
+    })"},
     {"account_tx: ledger_index_min and _max plus limit.",
      __LINE__,
      {"account_tx", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "247", "-1", "300"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_tx",
     "params" : [
       {
@@ -1259,7 +1217,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "limit" : 300
       }
     ]
-    })"}},
+    })"},
     {"account_tx: ledger_index_min and _max, limit, trailing args.",
      __LINE__,
      {"account_tx",
@@ -1271,8 +1229,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "descending",
       "binary"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_tx",
     "params" : [
       {
@@ -1286,7 +1243,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "limit" : 300
       }
     ]
-    })"}},
+    })"},
     {"account_tx: ledger_index_min and _max plus limit and offset.",
      __LINE__,
      {"account_tx",
@@ -1296,8 +1253,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "67",
       "45"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_tx",
     "params" : [
       {
@@ -1309,7 +1265,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "offset" : 45
       }
     ]
-    })"}},
+    })"},
     {"account_tx: ledger_index_min and _max, limit, offset, trailing.",
      __LINE__,
      {"account_tx",
@@ -1321,8 +1277,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "descending",
       "count"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_tx",
     "params" : [
       {
@@ -1336,15 +1291,14 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "offset" : 45
       }
     ]
-    })"}},
+    })"},
     {"account_tx: too few arguments.",
      __LINE__,
      {
          "account_tx",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_tx",
     "params" : [
       {
@@ -1353,7 +1307,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {"account_tx: too many arguments.",
      __LINE__,
      {"account_tx",
@@ -1367,8 +1321,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "count",
       "binary"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "account_tx",
     "params" : [
       {
@@ -1377,14 +1330,13 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
-    {//
-     "account_tx: invalid accountID.",
-     __LINE__,
-     {"account_tx", "rHb9CJAWyB4rj9!VRWn96DkukG4bwdtyTh"},
-     RPCCallTestData::no_exception,
-     {
-         R"({
+    })"},
+    {
+        "account_tx: invalid accountID.",
+        __LINE__,
+        {"account_tx", "rHb9CJAWyB4rj9!VRWn96DkukG4bwdtyTh"},
+        RPCCallTestData::no_exception,
+        R"({
     "method" : "account_tx",
     "params" : [
        {
@@ -1393,15 +1345,15 @@ static RPCCallTestData const rpcCallTestArray[] = {
           "error_message" : "Account malformed."
        }
     ]
-    })"}},
-    {//
-     // Note: not currently detected as bad input.
-     "account_tx: invalid ledger.",
-     __LINE__,
-     {"account_tx", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "-478.7"},
-     RPCCallTestData::no_exception,
-     {
-         R"({
+    })",
+    },
+    {
+        // Note: not currently detected as bad input.
+        "account_tx: invalid ledger.",
+        __LINE__,
+        {"account_tx", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "-478.7"},
+        RPCCallTestData::no_exception,
+        R"({
     "method" : "account_tx",
     "params" : [
        {
@@ -1410,14 +1362,15 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index" : 0
        }
     ]
-    })"}},
-    {//
-     "account_tx: max less than min.",
-     __LINE__,
-     {"account_tx", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "580", "579"},
-     RPCCallTestData::no_exception,
-     {
-         R"({
+    })",
+    },
+    {
+        "account_tx: max less than min.",
+        __LINE__,
+        {"account_tx", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "580", "579"},
+        RPCCallTestData::no_exception,
+        {
+            R"({
     "method" : "account_tx",
     "params" : [
        {
@@ -1427,7 +1380,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
        }
     ]
     })",
-         R"({
+            R"({
     "method" : "account_tx",
     "params" : [
        {
@@ -1436,46 +1389,50 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Not synced to the network."
        }
     ]
-    })"}},
-    {//
-     // Note: this really shouldn't throw, but does at the moment.
-     "account_tx: non-integer min.",
-     __LINE__,
-     {"account_tx", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "Binary", "-1"},
-     RPCCallTestData::bad_cast,
-     {""}},
-    {//
-     // Note: this really shouldn't throw, but does at the moment.
-     "account_tx: non-integer max.",
-     __LINE__,
-     {"account_tx", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "-1", "counts"},
-     RPCCallTestData::bad_cast,
-     {""}},
-    {//
-     // Note: this really shouldn't throw, but does at the moment.
-     "account_tx: non-integer offset.",
-     __LINE__,
-     {"account_tx",
-      "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-      "-1",
-      "-1",
-      "decending"},
-     RPCCallTestData::bad_cast,
-     {""}},
-    {//
-     // Note: this really shouldn't throw, but does at the moment.
-     "account_tx: non-integer limit.",
-     __LINE__,
-     {"account_tx",
-      "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-      "-1",
-      "-1",
-      "300",
-      "false"},
-     RPCCallTestData::bad_cast,
-     {""}},
-    {//
-     // Note: this really shouldn't throw, but does at the moment.
+    })"},
+    },
+    {
+        // Note: this really shouldn't throw, but does at the moment.
+        "account_tx: non-integer min.",
+        __LINE__,
+        {"account_tx", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "Binary", "-1"},
+        RPCCallTestData::bad_cast,
+        R"()",
+    },
+    {
+        // Note: this really shouldn't throw, but does at the moment.
+        "account_tx: non-integer max.",
+        __LINE__,
+        {"account_tx", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "-1", "counts"},
+        RPCCallTestData::bad_cast,
+        R"()",
+    },
+    {
+        // Note: this really shouldn't throw, but does at the moment.
+        "account_tx: non-integer offset.",
+        __LINE__,
+        {"account_tx",
+         "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+         "-1",
+         "-1",
+         "decending"},
+        RPCCallTestData::bad_cast,
+        R"()",
+    },
+    {
+        // Note: this really shouldn't throw, but does at the moment.
+        "account_tx: non-integer limit.",
+        __LINE__,
+        {"account_tx",
+         "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+         "-1",
+         "-1",
+         "300",
+         "false"},
+        RPCCallTestData::bad_cast,
+        R"()",
+    },
+    {// Note: this really shouldn't throw, but does at the moment.
      "account_tx: RIPD-1570.",
      __LINE__,
      {"account_tx",
@@ -1487,7 +1444,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "false",
       "false"},
      RPCCallTestData::bad_cast,
-     {""}},
+     R"()"},
 
     // book_offers
     // -----------------------------------------------------------------
@@ -1499,8 +1456,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "EUR",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "book_offers",
     "params" : [
       {
@@ -1513,7 +1469,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          }
       }
     ]
-    })"}},
+    })"},
     {"book_offers: minimal with currency/issuer",
      __LINE__,
      {
@@ -1522,8 +1478,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "EUR/rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "book_offers",
     "params" : [
       {
@@ -1538,15 +1493,14 @@ static RPCCallTestData const rpcCallTestArray[] = {
          }
       }
     ]
-    })"}},
+    })"},
     {// Note: documentation suggests that "issuer" is the wrong type.
      // Should it be "taker" instead?
      "book_offers: add issuer.",
      __LINE__,
      {"book_offers", "USD", "EUR", "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "book_offers",
     "params" : [
       {
@@ -1560,7 +1514,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          }
       }
     ]
-    })"}},
+    })"},
     {"book_offers: add issuer and numeric ledger index.",
      __LINE__,
      {"book_offers",
@@ -1569,8 +1523,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
       "666"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "book_offers",
     "params" : [
       {
@@ -1586,7 +1539,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          }
       }
     ]
-    })"}},
+    })"},
     {"book_offers: add issuer and text ledger index.",
      __LINE__,
      {"book_offers",
@@ -1595,8 +1548,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
       "current"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "book_offers",
     "params" : [
       {
@@ -1612,7 +1564,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          }
       }
     ]
-    })"}},
+    })"},
     {"book_offers: add issuer and ledger hash.",
      __LINE__,
      {"book_offers",
@@ -1621,8 +1573,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
       "ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "book_offers",
     "params" : [
       {
@@ -1639,7 +1590,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          }
       }
     ]
-    })"}},
+    })"},
     {"book_offers: issuer, ledger hash, and limit.",
      __LINE__,
      {
@@ -1653,8 +1604,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "200",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "book_offers",
     "params" : [
       {
@@ -1673,7 +1623,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          }
       }
     ]
-    })"}},
+    })"},
     {// Note: parser supports "marker", but the docs don't cover it.
      "book_offers: issuer, ledger hash, limit, and marker.",
      __LINE__,
@@ -1686,8 +1636,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "200",
       "MyMarker"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "book_offers",
     "params" : [
       {
@@ -1707,15 +1656,14 @@ static RPCCallTestData const rpcCallTestArray[] = {
          }
       }
     ]
-    })"}},
+    })"},
     {"book_offers: too few arguments.",
      __LINE__,
      {
          "book_offers",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "book_offers",
     "params" : [
       {
@@ -1724,7 +1672,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {"book_offers: too many arguments.",
      __LINE__,
      {"book_offers",
@@ -1737,8 +1685,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "MyMarker",
       "extra"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "book_offers",
     "params" : [
       {
@@ -1747,7 +1694,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
 
     {"book_offers: taker pays no currency.",
      __LINE__,
@@ -1757,8 +1704,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "EUR/rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "book_offers",
     "params" : [
       {
@@ -1767,7 +1713,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Invalid currency/issuer '/rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh'"
       }
     ]
-    })"}},
+    })"},
     {"book_offers: taker gets no currency.",
      __LINE__,
      {
@@ -1776,8 +1722,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "/rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "book_offers",
     "params" : [
       {
@@ -1786,13 +1731,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Invalid currency/issuer '/rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA'"
       }
     ]
-    })"}},
+    })"},
     {"book_offers: invalid issuer.",
      __LINE__,
      {"book_offers", "USD", "EUR", "not_a_valid_issuer"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "book_offers",
     "params" : [
       {
@@ -1806,7 +1750,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          }
       }
     ]
-    })"}},
+    })"},
     {"book_offers: invalid text ledger index.",
      __LINE__,
      {"book_offers",
@@ -1815,8 +1759,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
       "not_a_ledger"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "book_offers",
     "params" : [
       {
@@ -1832,7 +1775,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          }
       }
     ]
-    })"}},
+    })"},
     {// Note: this really shouldn't throw, but does at the moment.
      "book_offers: non-numeric limit.",
      __LINE__,
@@ -1847,7 +1790,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "not_a_number",
      },
      RPCCallTestData::bad_cast,
-     {""}},
+     R"()"},
 
     // can_delete
     // ------------------------------------------------------------------
@@ -1857,15 +1800,14 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "can_delete",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "can_delete",
     "params" : [
       {
          "api_version" : %API_VER%,
       }
     ]
-    })"}},
+    })"},
     {"can_delete: ledger index.",
      __LINE__,
      {
@@ -1873,8 +1815,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "4294967295",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "can_delete",
     "params" : [
       {
@@ -1882,7 +1823,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "can_delete" : 4294967295
       }
     ]
-    })"}},
+    })"},
     {"can_delete: ledger hash.",
      __LINE__,
      {
@@ -1890,8 +1831,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "FEDCBA9876543210FEDCBA9876543210FEDCBA9876543210FEDCBA9876543210",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "can_delete",
     "params" : [
       {
@@ -1899,7 +1839,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "can_delete" : "FEDCBA9876543210FEDCBA9876543210FEDCBA9876543210FEDCBA9876543210"
       }
     ]
-    })"}},
+    })"},
     {"can_delete: always.",
      __LINE__,
      {
@@ -1907,8 +1847,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "always",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "can_delete",
     "params" : [
       {
@@ -1916,7 +1855,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "can_delete" : "always"
       }
     ]
-    })"}},
+    })"},
     {"can_delete: never.",
      __LINE__,
      {
@@ -1924,8 +1863,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "never",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "can_delete",
     "params" : [
       {
@@ -1933,7 +1871,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "can_delete" : "never"
       }
     ]
-    })"}},
+    })"},
     {"can_delete: now.",
      __LINE__,
      {
@@ -1941,8 +1879,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "now",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "can_delete",
     "params" : [
       {
@@ -1950,13 +1887,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "can_delete" : "now"
       }
     ]
-    })"}},
+    })"},
     {"can_delete: too many arguments.",
      __LINE__,
      {"can_delete", "always", "never"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "can_delete",
     "params" : [
       {
@@ -1965,13 +1901,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {"can_delete: invalid argument.",
      __LINE__,
      {"can_delete", "invalid"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "can_delete",
     "params" : [
       {
@@ -1979,7 +1914,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "can_delete" : "invalid"
       }
     ]
-    })"}},
+    })"},
     {// Note: this should return an error but not throw.
      "can_delete: ledger index > 32 bits.",
      __LINE__,
@@ -1988,7 +1923,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "4294967296",
      },
      RPCCallTestData::bad_cast,
-     {""}},
+     R"()"},
     {// Note: this really shouldn't throw since it's a legitimate ledger hash.
      "can_delete: ledger hash with no alphas.",
      __LINE__,
@@ -1997,7 +1932,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "0123456701234567012345670123456701234567012345670123456701234567",
      },
      RPCCallTestData::bad_cast,
-     {""}},
+     R"()"},
 
     // channel_authorize
     // -----------------------------------------------------------
@@ -2008,8 +1943,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
       "18446744073709551615"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "channel_authorize",
     "params" : [
       {
@@ -2019,7 +1953,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "secret" : "secret_can_be_anything"
       }
     ]
-    })"}},
+    })"},
     {"channel_authorize: too few arguments.",
      __LINE__,
      {
@@ -2028,8 +1962,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "channel_authorize",
     "params" : [
       {
@@ -2038,7 +1971,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {"channel_authorize: too many arguments.",
      __LINE__,
      {"channel_authorize",
@@ -2048,8 +1981,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "whatever",
       "whenever"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "channel_authorize",
     "params" : [
       {
@@ -2058,7 +1990,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {"channel_authorize: bad key type.",
      __LINE__,
      {"channel_authorize",
@@ -2067,8 +1999,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "2000",
       "whatever"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "channel_authorize",
     "params" : [
       {
@@ -2077,7 +2008,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Bad key type."
       }
     ]
-    })"}},
+    })"},
     {"channel_authorize: channel_id too short.",
      __LINE__,
      {"channel_authorize",
@@ -2085,8 +2016,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
       "2000"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "channel_authorize",
     "params" : [
       {
@@ -2095,7 +2025,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Payment channel is malformed."
       }
     ]
-    })"}},
+    })"},
     {"channel_authorize: channel_id too long.",
      __LINE__,
      {"channel_authorize",
@@ -2103,8 +2033,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "10123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
       "2000"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "channel_authorize",
     "params" : [
       {
@@ -2113,7 +2042,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Payment channel is malformed."
       }
     ]
-    })"}},
+    })"},
     {"channel_authorize: channel_id not hex.",
      __LINE__,
      {"channel_authorize",
@@ -2121,8 +2050,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEZ",
       "2000"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "channel_authorize",
     "params" : [
       {
@@ -2131,7 +2059,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Payment channel is malformed."
       }
     ]
-    })"}},
+    })"},
     {"channel_authorize: negative amount.",
      __LINE__,
      {"channel_authorize",
@@ -2139,8 +2067,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
       "-1"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "channel_authorize",
     "params" : [
       {
@@ -2149,7 +2076,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Payment channel amount is malformed."
       }
     ]
-    })"}},
+    })"},
     {"channel_authorize: amount > 64 bits.",
      __LINE__,
      {"channel_authorize",
@@ -2157,8 +2084,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
       "18446744073709551616"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "channel_authorize",
     "params" : [
       {
@@ -2167,7 +2093,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Payment channel amount is malformed."
       }
     ]
-    })"}},
+    })"},
 
     // channel_verify
     // --------------------------------------------------------------
@@ -2179,8 +2105,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "0",
       "DEADBEEF"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "channel_verify",
     "params" : [
       {
@@ -2191,7 +2116,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "signature" : "DEADBEEF"
       }
     ]
-    })"}},
+    })"},
     {"channel_verify: public key hex.",
      __LINE__,
      {"channel_verify",
@@ -2200,8 +2125,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "18446744073709551615",
       "DEADBEEF"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "channel_verify",
     "params" : [
       {
@@ -2212,15 +2136,14 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "signature" : "DEADBEEF"
       }
     ]
-    })"}},
+    })"},
     {"channel_verify: too few arguments.",
      __LINE__,
      {"channel_verify",
       "aB4BXXLuPu8DpVuyq1DBiu3SrPdtK9AYZisKhu8mvkoiUD8J9Gov",
       "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "channel_verify",
     "params" : [
       {
@@ -2229,7 +2152,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {"channel_verify: too many arguments.",
      __LINE__,
      {"channel_verify",
@@ -2239,8 +2162,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "DEADBEEF",
       "Whatever"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "channel_verify",
     "params" : [
       {
@@ -2249,7 +2171,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {"channel_verify: malformed public key.",
      __LINE__,
      {"channel_verify",
@@ -2258,8 +2180,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "2000",
       "DEADBEEF"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "channel_verify",
     "params" : [
       {
@@ -2268,7 +2189,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Public key is malformed."
       }
     ]
-    })"}},
+    })"},
     {"channel_verify: malformed hex public key.",
      __LINE__,
      {"channel_verify",
@@ -2277,8 +2198,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "2000",
       "DEADBEEF"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "channel_verify",
     "params" : [
       {
@@ -2287,7 +2207,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Public key is malformed."
       }
     ]
-    })"}},
+    })"},
     {"channel_verify: invalid channel id.",
      __LINE__,
      {"channel_verify",
@@ -2296,8 +2216,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "2000",
       "DEADBEEF"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "channel_verify",
     "params" : [
       {
@@ -2306,7 +2225,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Payment channel is malformed."
       }
     ]
-    })"}},
+    })"},
     {"channel_verify: short channel id.",
      __LINE__,
      {"channel_verify",
@@ -2315,8 +2234,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "2000",
       "DEADBEEF"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "channel_verify",
     "params" : [
       {
@@ -2325,7 +2243,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Payment channel is malformed."
       }
     ]
-    })"}},
+    })"},
     {"channel_verify: amount too small.",
      __LINE__,
      {"channel_verify",
@@ -2334,8 +2252,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "-1",
       "DEADBEEF"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "channel_verify",
     "params" : [
       {
@@ -2344,7 +2261,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Payment channel amount is malformed."
       }
     ]
-    })"}},
+    })"},
     {"channel_verify: amount too large.",
      __LINE__,
      {"channel_verify",
@@ -2353,8 +2270,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "18446744073709551616",
       "DEADBEEF"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "channel_verify",
     "params" : [
       {
@@ -2363,7 +2279,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Payment channel amount is malformed."
       }
     ]
-    })"}},
+    })"},
     {"channel_verify: non-hex signature.",
      __LINE__,
      {"channel_verify",
@@ -2372,8 +2288,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "40000000",
       "ThisIsNotHexadecimal"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "channel_verify",
     "params" : [
       {
@@ -2384,7 +2299,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "signature" : "ThisIsNotHexadecimal"
       }
     ]
-    })"}},
+    })"},
 
     // connect
     // ---------------------------------------------------------------------
@@ -2395,8 +2310,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ThereIsNoCheckingOnTheIPFormat",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "connect",
     "params" : [
       {
@@ -2404,13 +2318,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ip" : "ThereIsNoCheckingOnTheIPFormat"
       }
     ]
-    })"}},
+    })"},
     {"connect: ip and port.",
      __LINE__,
      {"connect", "ThereIsNoCheckingOnTheIPFormat", "6561"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "connect",
     "params" : [
       {
@@ -2419,15 +2332,14 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "port" : 6561
       }
     ]
-    })"}},
+    })"},
     {"connect: too few arguments.",
      __LINE__,
      {
          "connect",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "connect",
     "params" : [
       {
@@ -2436,13 +2348,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {"connect: too many arguments.",
      __LINE__,
      {"connect", "ThereIsNoCheckingOnTheIPFormat", "6561", "extra"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "connect",
     "params" : [
       {
@@ -2451,7 +2362,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {// Note: this should return an error but not throw.
      "connect: port too small.",
      __LINE__,
@@ -2461,7 +2372,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "-1",
      },
      RPCCallTestData::bad_cast,
-     {""}},
+     R"()"},
     {// Note: this should return an error but not throw.
      "connect: port too large.",
      __LINE__,
@@ -2471,7 +2382,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "4294967296",
      },
      RPCCallTestData::bad_cast,
-     {""}},
+     R"()"},
 
     // consensus_info
     // --------------------------------------------------------------
@@ -2481,21 +2392,19 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "consensus_info",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "consensus_info",
     "params" : [
       {
          "api_version" : %API_VER%
       }
     ]
-    })"}},
+    })"},
     {"consensus_info: too many arguments.",
      __LINE__,
      {"consensus_info", "whatever"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "consensus_info",
     "params" : [
       {
@@ -2504,7 +2413,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
 
     // deposit_authorized
     // ----------------------------------------------------------
@@ -2516,8 +2425,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "destination_account_NotValidated",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "deposit_authorized",
     "params" : [
       {
@@ -2526,7 +2434,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "source_account" : "source_account_NotValidated"
       }
     ]
-    })"}},
+    })"},
     {"deposit_authorized: with text ledger index.",
      __LINE__,
      {"deposit_authorized",
@@ -2534,8 +2442,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "destination_account_NotValidated",
       "validated"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "deposit_authorized",
     "params" : [
       {
@@ -2545,7 +2452,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "source_account" : "source_account_NotValidated"
       }
     ]
-    })"}},
+    })"},
     {"deposit_authorized: with ledger index.",
      __LINE__,
      {"deposit_authorized",
@@ -2553,8 +2460,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "destination_account_NotValidated",
       "4294967295"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "deposit_authorized",
     "params" : [
       {
@@ -2564,7 +2470,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "source_account" : "source_account_NotValidated"
       }
     ]
-    })"}},
+    })"},
     {"deposit_authorized: with ledger hash.",
      __LINE__,
      {"deposit_authorized",
@@ -2572,8 +2478,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "destination_account_NotValidated",
       "ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "deposit_authorized",
     "params" : [
       {
@@ -2583,7 +2488,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "source_account" : "source_account_NotValidated"
       }
     ]
-    })"}},
+    })"},
     {"deposit_authorized: too few arguments.",
      __LINE__,
      {
@@ -2591,8 +2496,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "source_account_NotValidated",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "deposit_authorized",
     "params" : [
       {
@@ -2601,7 +2505,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {"deposit_authorized: too many arguments.",
      __LINE__,
      {"deposit_authorized",
@@ -2610,8 +2514,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789",
       "spare"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "deposit_authorized",
     "params" : [
       {
@@ -2620,7 +2523,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {"deposit_authorized: invalid ledger selection.",
      __LINE__,
      {
@@ -2630,8 +2533,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "NotALedger",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "deposit_authorized",
     "params" : [
       {
@@ -2641,7 +2543,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "source_account" : "source_account_NotValidated"
       }
     ]
-    })"}},
+    })"},
 
     // download_shard
     // --------------------------------------------------------------
@@ -2653,8 +2555,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "url_NotValidated",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "download_shard",
     "params" : [
       {
@@ -2667,7 +2568,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          ]
       }
     ]
-    })"}},
+    })"},
     {"download_shard:",
      __LINE__,
      {
@@ -2676,8 +2577,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "url_NotValidated",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "download_shard",
     "params" : [
       {
@@ -2690,7 +2590,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          ]
       }
     ]
-    })"}},
+    })"},
     {"download_shard: many shards.",
      __LINE__,
      {
@@ -2705,8 +2605,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "url_NotValidated3",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "download_shard",
     "params" : [
       {
@@ -2731,7 +2630,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          ]
       }
     ]
-    })"}},
+    })"},
     {"download_shard: many shards.",
      __LINE__,
      {
@@ -2748,8 +2647,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "url_NotValidated4",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "download_shard",
     "params" : [
       {
@@ -2778,13 +2676,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          ]
       }
     ]
-    })"}},
+    })"},
     {"download_shard: too few arguments.",
      __LINE__,
      {"download_shard", "20"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "download_shard",
     "params" : [
       {
@@ -2793,13 +2690,13 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {// Note: this should return an error but not throw.
      "download_shard: novalidate too few arguments.",
      __LINE__,
      {"download_shard", "novalidate", "20"},
      RPCCallTestData::bad_cast,
-     {""}},
+     R"()"},
     {"download_shard: novalidate at end.",
      __LINE__,
      {
@@ -2809,8 +2706,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "novalidate",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "download_shard",
     "params" : [
       {
@@ -2823,7 +2719,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          ]
       }
     ]
-    })"}},
+    })"},
     {"download_shard: novalidate in middle.",
      __LINE__,
      {
@@ -2835,8 +2731,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "url_NotValidated200",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "download_shard",
     "params" : [
       {
@@ -2845,7 +2740,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Invalid parameters."
       }
     ]
-    })"}},
+    })"},
     {// Note: this should return an error but not throw.
      "download_shard: arguments swapped.",
      __LINE__,
@@ -2855,7 +2750,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "20",
      },
      RPCCallTestData::bad_cast,
-     {""}},
+     R"()"},
     {"download_shard: index too small.",
      __LINE__,
      {
@@ -2864,7 +2759,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "url_NotValidated",
      },
      RPCCallTestData::bad_cast,
-     {""}},
+     R"()"},
     {"download_shard: index too big.",
      __LINE__,
      {
@@ -2873,7 +2768,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "url_NotValidated",
      },
      RPCCallTestData::bad_cast,
-     {""}},
+     R"()"},
 
     // feature
     // ---------------------------------------------------------------------
@@ -2883,21 +2778,19 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "feature",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "feature",
     "params" : [
       {
          "api_version" : %API_VER%,
       }
     ]
-    })"}},
+    })"},
     {"feature: with name.",
      __LINE__,
      {"feature", "featureNameOrHexIsNotValidated"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "feature",
     "params" : [
       {
@@ -2905,7 +2798,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "feature" : "featureNameOrHexIsNotValidated"
       }
     ]
-    })"}},
+    })"},
     {"feature: accept.",
      __LINE__,
      {"feature",
@@ -2913,8 +2806,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "76543210",
       "accept"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "feature",
     "params" : [
       {
@@ -2923,13 +2815,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "vetoed" : false
       }
     ]
-    })"}},
+    })"},
     {"feature: reject.",
      __LINE__,
      {"feature", "0", "reject"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "feature",
     "params" : [
       {
@@ -2938,13 +2829,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "vetoed" : true
       }
     ]
-    })"}},
+    })"},
     {"feature: too many arguments.",
      __LINE__,
      {"feature", "featureNameOrHexIsNotValidated", "accept", "anotherArg"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "feature",
     "params" : [
       {
@@ -2953,7 +2843,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {"feature: neither accept nor reject.",
      __LINE__,
      {
@@ -2962,8 +2852,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "veto",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "feature",
     "params" : [
       {
@@ -2972,7 +2861,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Invalid parameters."
       }
     ]
-    })"}},
+    })"},
 
     // fetch_info
     // ------------------------------------------------------------------
@@ -2982,21 +2871,19 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "fetch_info",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "fetch_info",
     "params" : [
       {
          "api_version" : %API_VER%,
       }
     ]
-    })"}},
+    })"},
     {"fetch_info: clear.",
      __LINE__,
      {"fetch_info", "clear"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "fetch_info",
     "params" : [
       {
@@ -3004,13 +2891,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "clear" : true
       }
     ]
-    })"}},
+    })"},
     {"fetch_info: too many arguments.",
      __LINE__,
      {"fetch_info", "clear", "other"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "fetch_info",
     "params" : [
       {
@@ -3019,13 +2905,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {"fetch_info: other trailing argument.",
      __LINE__,
      {"fetch_info", "too"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "fetch_info",
     "params" : [
       {
@@ -3033,7 +2918,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "too" : true
       }
     ]
-    })"}},
+    })"},
 
     // gateway_balances
     // ------------------------------------------------------------
@@ -3041,8 +2926,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
      __LINE__,
      {"gateway_balances", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "gateway_balances",
     "params" : [
       {
@@ -3050,13 +2934,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
       }
     ]
-    })"}},
+    })"},
     {"gateway_balances: with ledger index.",
      __LINE__,
      {"gateway_balances", "890765", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "gateway_balances",
     "params" : [
       {
@@ -3065,13 +2948,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index" : "890765"
       }
     ]
-    })"}},
+    })"},
     {"gateway_balances: with text ledger index.",
      __LINE__,
      {"gateway_balances", "current", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "gateway_balances",
     "params" : [
       {
@@ -3080,15 +2962,14 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index" : "current"
       }
     ]
-    })"}},
+    })"},
     {"gateway_balances: with 64 character ledger hash.",
      __LINE__,
      {"gateway_balances",
       "0123456789ABCDEFGHIJKLMNOPQRSTUV0123456789ABCDEFGHIJKLMNOPQRSTUV",
       "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "gateway_balances",
     "params" : [
       {
@@ -3097,15 +2978,14 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_hash" : "0123456789ABCDEFGHIJKLMNOPQRSTUV0123456789ABCDEFGHIJKLMNOPQRSTUV"
       }
     ]
-    })"}},
+    })"},
     {"gateway_balances: 1 hotwallet.",
      __LINE__,
      {"gateway_balances",
       "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
       "hotwallet_is_not_validated"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "gateway_balances",
     "params" : [
       {
@@ -3114,7 +2994,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "hotwallet" : [ "hotwallet_is_not_validated" ]
       }
     ]
-    })"}},
+    })"},
     {"gateway_balances: 3 hotwallets.",
      __LINE__,
      {
@@ -3126,8 +3006,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "hotwallet_is_not_validated_3",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "gateway_balances",
     "params" : [
       {
@@ -3141,15 +3020,14 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_hash" : "0123456789ABCDEFGHIJKLMNOPQRSTUV0123456789ABCDEFGHIJKLMNOPQRSTUV"
       }
     ]
-    })"}},
+    })"},
     {"gateway_balances: too few arguments.",
      __LINE__,
      {
          "gateway_balances",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "gateway_balances",
     "params" : [
       {
@@ -3158,13 +3036,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {"gateway_balances: empty first argument.",
      __LINE__,
      {"gateway_balances", ""},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "gateway_balances",
     "params" : [
       {
@@ -3173,7 +3050,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Invalid first parameter"
       }
     ]
-    })"}},
+    })"},
     {"gateway_balances: with ledger index but no gateway.",
      __LINE__,
      {
@@ -3181,8 +3058,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "890765",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "gateway_balances",
     "params" : [
       {
@@ -3191,7 +3067,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Invalid hotwallet"
       }
     ]
-    })"}},
+    })"},
     {"gateway_balances: with text ledger index but no gateway.",
      __LINE__,
      {
@@ -3199,8 +3075,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "current",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "gateway_balances",
     "params" : [
       {
@@ -3209,7 +3084,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Invalid hotwallet"
       }
     ]
-    })"}},
+    })"},
     {"gateway_balances: with 64 character ledger hash but no gateway.",
      __LINE__,
      {
@@ -3217,8 +3092,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "0123456789ABCDEFGHIJKLMNOPQRSTUV0123456789ABCDEFGHIJKLMNOPQRSTUV",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "gateway_balances",
     "params" : [
       {
@@ -3227,7 +3101,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Invalid hotwallet"
       }
     ]
-    })"}},
+    })"},
 
     // get_counts
     // ------------------------------------------------------------------
@@ -3237,21 +3111,19 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "get_counts",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "get_counts",
     "params" : [
       {
          "api_version" : %API_VER%,
       }
     ]
-    })"}},
+    })"},
     {"get_counts: with maximum count.",
      __LINE__,
      {"get_counts", "100"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "get_counts",
     "params" : [
       {
@@ -3259,13 +3131,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "min_count" : 100
       }
     ]
-    })"}},
+    })"},
     {"get_counts: too many arguments.",
      __LINE__,
      {"get_counts", "100", "whatever"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "get_counts",
     "params" : [
       {
@@ -3274,7 +3145,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {"get_counts: count too small.",
      __LINE__,
      {
@@ -3282,12 +3153,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "-1",
      },
      RPCCallTestData::bad_cast,
-     {""}},
+     R"()"},
     {"get_counts: count too large.",
      __LINE__,
      {"get_counts", "4294967296"},
      RPCCallTestData::bad_cast,
-     {""}},
+     R"()"},
 
     // json
     // ------------------------------------------------------------------------
@@ -3299,8 +3170,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          R"({"json_argument":true})",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "command",
     "params" : [
       {
@@ -3309,7 +3179,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "method" : "command"
       }
     ]
-    })"}},
+    })"},
     {"json: null object.",
      __LINE__,
      {
@@ -3318,8 +3188,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          R"({})",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "command",
     "params" : [
       {
@@ -3327,13 +3196,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "method" : "command"
       }
     ]
-    })"}},
+    })"},
     {"json: too few arguments.",
      __LINE__,
      {"json", "command"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "json",
     "params" : [
       {
@@ -3342,13 +3210,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {"json: too many arguments.",
      __LINE__,
      {"json", "command", R"({"json_argument":true})", "extra"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "json",
     "params" : [
       {
@@ -3357,7 +3224,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {"json: array, not object.",
      __LINE__,
      {
@@ -3366,8 +3233,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          R"(["arg1","arg2"])",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "json",
     "params" : [
       {
@@ -3376,7 +3242,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Invalid parameters."
       }
     ]
-    })"}},
+    })"},
     {"json: invalid json (note closing comma).",
      __LINE__,
      {
@@ -3385,8 +3251,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          R"({"json_argument":true,})",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "json",
     "params" : [
       {
@@ -3395,7 +3260,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Invalid parameters."
       }
     ]
-    })"}},
+    })"},
 
     // json2
     // -----------------------------------------------------------------------
@@ -3406,8 +3271,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          R"({"jsonrpc":"2.0","ripplerpc":"2.0","id":"A1","method":"call_1"})",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "id" : "A1",
     "jsonrpc" : "2.0",
     "method" : "call_1",
@@ -3421,7 +3285,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       }
     ],
     "ripplerpc" : "2.0"
-    })"}},
+    })"},
     {"json2: object with nested params.",
      __LINE__,
      {
@@ -3435,8 +3299,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
         })",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "id" : "A1",
     "jsonrpc" : "2.0",
     "method" : "call_1",
@@ -3453,7 +3316,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       }
     ],
     "ripplerpc" : "2.0"
-    })"}},
+    })"},
     {"json2: minimal array.",
      __LINE__,
      {
@@ -3461,8 +3324,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          R"([{"jsonrpc":"2.0","ripplerpc":"2.0","id":"A1","method":"call_1"}])",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "json2",
     "params" : [
       [
@@ -3475,7 +3337,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          }
       ]
     ]
-    })"}},
+    })"},
     {"json2: array with object with nested params.",
      __LINE__,
      {
@@ -3489,8 +3351,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
         ])",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "json2",
    "params" : [
       [
@@ -3505,15 +3366,14 @@ static RPCCallTestData const rpcCallTestArray[] = {
             "ripplerpc" : "2.0"
          }
       ]
-    ]})"}},
+    ]})"},
     {"json2: too few arguments.",
      __LINE__,
      {
          "json2",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "json2",
     "params" : [
       {
@@ -3522,15 +3382,14 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {"json2: too many arguments.",
      __LINE__,
      {"json2",
       R"({"jsonrpc":"2.0","ripplerpc":"2.0","id":"A1","method":"call_this"})",
       "extra"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "json2",
     "params" : [
       {
@@ -3539,7 +3398,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {"json2: malformed json (note extra comma).",
      __LINE__,
      {
@@ -3547,8 +3406,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          R"({"jsonrpc":"2.0","ripplerpc":"2.0","id":"A1","method":"call_1",})",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "id" : "A1",
     "jsonrpc" : "2.0",
     "method" : "json2",
@@ -3563,7 +3421,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       }
     ],
     "ripplerpc" : "2.0"
-    })"}},
+    })"},
     {"json2: omit jsonrpc.",
      __LINE__,
      {
@@ -3571,8 +3429,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          R"({"ripplerpc":"2.0","id":"A1","method":"call_1"})",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "id" : "A1",
     "method" : "json2",
     "params" : [
@@ -3585,7 +3442,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       }
     ],
     "ripplerpc" : "2.0"
-    })"}},
+    })"},
     {"json2: wrong jsonrpc version.",
      __LINE__,
      {
@@ -3593,8 +3450,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          R"({"jsonrpc":"2.1","ripplerpc":"2.0","id":"A1","method":"call_1"})",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "id" : "A1",
     "jsonrpc" : "2.1",
     "method" : "json2",
@@ -3609,7 +3465,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       }
     ],
     "ripplerpc" : "2.0"
-    })"}},
+    })"},
     {"json2: omit ripplerpc.",
      __LINE__,
      {
@@ -3617,8 +3473,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          R"({"jsonrpc":"2.0","id":"A1","method":"call_1"})",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "id" : "A1",
     "jsonrpc" : "2.0",
     "method" : "json2",
@@ -3631,7 +3486,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "jsonrpc" : "2.0"
       }
     ]
-    })"}},
+    })"},
     {"json2: wrong ripplerpc version.",
      __LINE__,
      {
@@ -3639,8 +3494,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          R"({"jsonrpc":"2.0","ripplerpc":"2.00","id":"A1","method":"call_1"})",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "id" : "A1",
     "jsonrpc" : "2.0",
     "method" : "json2",
@@ -3655,7 +3509,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       }
     ],
     "ripplerpc" : "2.00"
-    })"}},
+    })"},
     {"json2: omit id.",
      __LINE__,
      {
@@ -3663,8 +3517,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          R"({"jsonrpc":"2.0","ripplerpc":"2.0","method":"call_1"})",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "jsonrpc" : "2.0",
     "method" : "json2",
     "params" : [
@@ -3677,7 +3530,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       }
     ],
    "ripplerpc" : "2.0"
-    })"}},
+    })"},
     {"json2: omit method.",
      __LINE__,
      {
@@ -3685,8 +3538,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          R"({"jsonrpc":"2.0","ripplerpc":"2.0","id":"A1"})",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "id" : "A1",
     "jsonrpc" : "2.0",
     "method" : "json2",
@@ -3701,7 +3553,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       }
     ],
    "ripplerpc" : "2.0"
-    })"}},
+    })"},
     {"json2: empty outer array.",
      __LINE__,
      {
@@ -3709,8 +3561,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          R"([])",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "json2",
     "params" : [
       {
@@ -3719,7 +3570,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Invalid parameters."
       }
     ]
-    })"}},
+    })"},
     {"json2: empty inner array.",
      __LINE__,
      {
@@ -3727,8 +3578,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          R"([{"jsonrpc":"2.0","ripplerpc":"2.0","id":"A1","method":"call_1",[]}])",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "json2",
     "params" : [
       {
@@ -3737,7 +3587,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Invalid parameters."
       }
     ]
-    })"}},
+    })"},
     {"json2: array with non-json2 object.",
      __LINE__,
      {
@@ -3751,8 +3601,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
         ])",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "json2",
     "params" : [
       {
@@ -3761,7 +3610,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Invalid parameters."
       }
     ]
-    })"}},
+    })"},
     {"json2: non-object or -array inner params member.",
      __LINE__,
      {
@@ -3775,8 +3624,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
         })",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
    "id" : "A1",
    "jsonrpc" : "2.0",
    "method" : "json2",
@@ -3791,7 +3639,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       }
    ],
    "ripplerpc" : "2.0"
-    })"}},
+    })"},
 
     // ledger
     // ----------------------------------------------------------------------
@@ -3799,21 +3647,19 @@ static RPCCallTestData const rpcCallTestArray[] = {
      __LINE__,
      {"ledger"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "ledger",
     "params" : [
       {
          "api_version" : %API_VER%,
       }
     ]
-    })"}},
+    })"},
     {"ledger: ledger index.",
      __LINE__,
      {"ledger", "4294967295"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "ledger",
     "params" : [
       {
@@ -3821,13 +3667,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index" : 4294967295
       }
     ]
-    })"}},
+    })"},
     {"ledger: text ledger index.",
      __LINE__,
      {"ledger", "validated"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "ledger",
     "params" : [
       {
@@ -3835,14 +3680,13 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index" : "validated"
       }
     ]
-    })"}},
+    })"},
     {"ledger: ledger hash.",
      __LINE__,
      {"ledger",
       "ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "ledger",
     "params" : [
       {
@@ -3850,13 +3694,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_hash" : "ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789"
       }
     ]
-    })"}},
+    })"},
     {"ledger: full.",
      __LINE__,
      {"ledger", "current", "full"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "ledger",
     "params" : [
       {
@@ -3865,13 +3708,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index" : "current"
       }
     ]
-    })"}},
+    })"},
     {"ledger: tx.",
      __LINE__,
      {"ledger", "closed", "tx"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "ledger",
     "params" : [
       {
@@ -3881,13 +3723,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "transactions" : true
       }
     ]
-    })"}},
+    })"},
     {"ledger: too many arguments.",
      __LINE__,
      {"ledger", "4294967295", "spare"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "ledger",
     "params" : [
       {
@@ -3895,13 +3736,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index" : 4294967295
       }
     ]
-    })"}},
+    })"},
     {"ledger: ledger index too small.",
      __LINE__,
      {"ledger", "-1"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "ledger",
     "params" : [
       {
@@ -3909,13 +3749,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index" : 0
       }
     ]
-    })"}},
+    })"},
     {"ledger: ledger index too big.",
      __LINE__,
      {"ledger", "4294967296"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "ledger",
     "params" : [
       {
@@ -3923,13 +3762,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index" : 0
       }
     ]
-    })"}},
+    })"},
     {"ledger: invalid ledger text.",
      __LINE__,
      {"ledger", "latest"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "ledger",
     "params" : [
       {
@@ -3937,13 +3775,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index" : 0
       }
     ]
-    })"}},
+    })"},
     {"ledger: unsupported final argument.",
      __LINE__,
      {"ledger", "current", "expand"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "ledger",
     "params" : [
       {
@@ -3951,7 +3788,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index" : "current"
       }
     ]
-    })"}},
+    })"},
 
     // ledger_closed
     // ---------------------------------------------------------------
@@ -3959,21 +3796,19 @@ static RPCCallTestData const rpcCallTestArray[] = {
      __LINE__,
      {"ledger_closed"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "ledger_closed",
     "params" : [
       {
          "api_version" : %API_VER%,
       }
     ]
-    })"}},
+    })"},
     {"ledger_closed: too many arguments.",
      __LINE__,
      {"ledger_closed", "today"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "ledger_closed",
     "params" : [
       {
@@ -3982,7 +3817,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
 
     // ledger_current
     // --------------------------------------------------------------
@@ -3990,21 +3825,19 @@ static RPCCallTestData const rpcCallTestArray[] = {
      __LINE__,
      {"ledger_current"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "ledger_current",
     "params" : [
       {
          "api_version" : %API_VER%,
       }
     ]
-    })"}},
+    })"},
     {"ledger_current: too many arguments.",
      __LINE__,
      {"ledger_current", "today"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "ledger_current",
     "params" : [
       {
@@ -4013,7 +3846,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
 
     // ledger_header
     // ---------------------------------------------------------------
@@ -4021,8 +3854,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
      __LINE__,
      {"ledger_header", "4294967295"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "ledger_header",
     "params" : [
       {
@@ -4030,14 +3862,13 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index" : 4294967295
       }
     ]
-    })"}},
+    })"},
     {"ledger_header: ledger hash.",
      __LINE__,
      {"ledger_header",
       "ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "ledger_header",
     "params" : [
       {
@@ -4045,15 +3876,14 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_hash" : "ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789"
       }
     ]
-    })"}},
+    })"},
     {"ledger_header: too few arguments.",
      __LINE__,
      {
          "ledger_header",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "ledger_header",
     "params" : [
       {
@@ -4062,13 +3892,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {"ledger_header: too many arguments.",
      __LINE__,
      {"ledger_header", "4294967295", "spare"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "ledger_header",
     "params" : [
       {
@@ -4077,13 +3906,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {"ledger_header: text ledger index.",
      __LINE__,
      {"ledger_header", "current"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "ledger_header",
     "params" : [
       {
@@ -4091,13 +3919,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index" : 0
       }
     ]
-    })"}},
+    })"},
     {"ledger_header: ledger index too small.",
      __LINE__,
      {"ledger_header", "-1"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "ledger_header",
     "params" : [
       {
@@ -4105,13 +3932,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index" : 0
       }
     ]
-    })"}},
+    })"},
     {"ledger_header: ledger index too big.",
      __LINE__,
      {"ledger_header", "4294967296"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "ledger_header",
     "params" : [
       {
@@ -4119,7 +3945,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index" : 0
       }
     ]
-    })"}},
+    })"},
 
     // ledger_request
     // --------------------------------------------------------------
@@ -4127,8 +3953,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
      __LINE__,
      {"ledger_request", "4294967295"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "ledger_request",
     "params" : [
       {
@@ -4136,14 +3961,13 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index" : 4294967295
       }
     ]
-    })"}},
+    })"},
     {"ledger_request: ledger hash.",
      __LINE__,
      {"ledger_request",
       "ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "ledger_request",
     "params" : [
       {
@@ -4151,15 +3975,14 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_hash" : "ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789"
       }
     ]
-    })"}},
+    })"},
     {"ledger_request: too few arguments.",
      __LINE__,
      {
          "ledger_request",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "ledger_request",
     "params" : [
       {
@@ -4168,13 +3991,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {"ledger_request: too many arguments.",
      __LINE__,
      {"ledger_request", "4294967295", "spare"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "ledger_request",
     "params" : [
       {
@@ -4183,13 +4005,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {"ledger_request: text ledger index.",
      __LINE__,
      {"ledger_request", "current"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "ledger_request",
     "params" : [
       {
@@ -4197,13 +4018,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index" : 0
       }
     ]
-    })"}},
+    })"},
     {"ledger_request: ledger index too small.",
      __LINE__,
      {"ledger_request", "-1"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "ledger_request",
     "params" : [
       {
@@ -4211,13 +4031,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index" : 0
       }
     ]
-    })"}},
+    })"},
     {"ledger_request: ledger index too big.",
      __LINE__,
      {"ledger_request", "4294967296"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "ledger_request",
     "params" : [
       {
@@ -4225,7 +4044,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index" : 0
       }
     ]
-    })"}},
+    })"},
 
     // log_level
     // -------------------------------------------------------------------
@@ -4235,21 +4054,19 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "log_level",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "log_level",
     "params" : [
       {
          "api_version" : %API_VER%,
       }
     ]
-    })"}},
+    })"},
     {"log_level: fatal.",
      __LINE__,
      {"log_level", "fatal"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "log_level",
     "params" : [
       {
@@ -4257,13 +4074,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "severity" : "fatal"
       }
     ]
-    })"}},
+    })"},
     {"log_level: error.",
      __LINE__,
      {"log_level", "error"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "log_level",
     "params" : [
       {
@@ -4271,13 +4087,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "severity" : "error"
       }
     ]
-    })"}},
+    })"},
     {"log_level: warn.",
      __LINE__,
      {"log_level", "warn"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "log_level",
     "params" : [
       {
@@ -4285,13 +4100,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "severity" : "warn"
       }
     ]
-    })"}},
+    })"},
     {"log_level: debug.",
      __LINE__,
      {"log_level", "debug"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "log_level",
     "params" : [
       {
@@ -4299,13 +4113,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "severity" : "debug"
       }
     ]
-    })"}},
+    })"},
     {"log_level: trace.",
      __LINE__,
      {"log_level", "trace"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "log_level",
     "params" : [
       {
@@ -4313,13 +4126,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "severity" : "trace"
       }
     ]
-    })"}},
+    })"},
     {"log_level: base partition.",
      __LINE__,
      {"log_level", "base", "trace"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "log_level",
     "params" : [
       {
@@ -4328,13 +4140,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "severity" : "trace"
       }
     ]
-    })"}},
+    })"},
     {"log_level: partiton_name.",
      __LINE__,
      {"log_level", "partition_name", "fatal"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "log_level",
     "params" : [
       {
@@ -4343,13 +4154,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "severity" : "fatal"
       }
     ]
-    })"}},
+    })"},
     {"log_level: too many arguments.",
      __LINE__,
      {"log_level", "partition_name", "fatal", "extra"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "log_level",
     "params" : [
       {
@@ -4358,13 +4168,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {"log_level: invalid severity.",
      __LINE__,
      {"log_level", "err"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "log_level",
     "params" : [
       {
@@ -4372,7 +4181,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "severity" : "err"
       }
     ]
-    })"}},
+    })"},
     {"log_level: swap partition name and severity.",
      __LINE__,
      {
@@ -4381,8 +4190,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "partition_name",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "log_level",
     "params" : [
       {
@@ -4391,7 +4199,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "severity" : "partition_name"
       }
     ]
-    })"}},
+    })"},
 
     // logrotate
     // -------------------------------------------------------------------
@@ -4401,21 +4209,19 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "logrotate",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "logrotate",
     "params" : [
       {
          "api_version" : %API_VER%,
       }
     ]
-    })"}},
+    })"},
     {"logrotate: too many arguments.",
      __LINE__,
      {"logrotate", "extra"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "logrotate",
     "params" : [
       {
@@ -4424,7 +4230,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
 
     // node_to_shard
     // -------------------------------------------------------------------
@@ -4432,8 +4238,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
      __LINE__,
      {"node_to_shard", "status"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "node_to_shard",
     "params" : [
       {
@@ -4441,13 +4246,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "action" : "status"
       }
     ]
-    })"}},
+    })"},
     {"node_to_shard: start.",
      __LINE__,
      {"node_to_shard", "start"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "node_to_shard",
     "params" : [
       {
@@ -4455,13 +4259,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "action" : "start"
       }
     ]
-    })"}},
+    })"},
     {"node_to_shard: stop.",
      __LINE__,
      {"node_to_shard", "stop"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "node_to_shard",
     "params" : [
       {
@@ -4469,13 +4272,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "action" : "stop"
       }
     ]
-    })"}},
+    })"},
     {"node_to_shard: too many arguments.",
      __LINE__,
      {"node_to_shard", "start", "stop"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "node_to_shard",
     "params" : [
       {
@@ -4484,13 +4286,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {"node_to_shard: invalid argument.",
      __LINE__,
      {"node_to_shard", "invalid"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "node_to_shard",
     "params" : [
       {
@@ -4498,7 +4299,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "action" : "invalid"
       }
     ]
-    })"}},
+    })"},
 
     // owner_info
     // ------------------------------------------------------------------
@@ -4506,8 +4307,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
      __LINE__,
      {"owner_info", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "owner_info",
     "params" : [
       {
@@ -4515,13 +4315,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"
       }
     ]
-    })"}},
+    })"},
     {"owner_info: with numeric ledger index.",
      __LINE__,
      {"owner_info", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "987654321"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "owner_info",
     "params" : [
       {
@@ -4530,13 +4329,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index" : 987654321
       }
     ]
-    })"}},
+    })"},
     {"owner_info: with text ledger index.",
      __LINE__,
      {"owner_info", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "validated"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "owner_info",
     "params" : [
       {
@@ -4545,15 +4343,14 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index" : "validated"
       }
     ]
-    })"}},
+    })"},
     {"owner_info: with ledger hash.",
      __LINE__,
      {"owner_info",
       "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
       "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "owner_info",
     "params" : [
       {
@@ -4562,13 +4359,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_hash" : "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF"
       }
     ]
-    })"}},
+    })"},
     {"owner_info: with ledger index.",
      __LINE__,
      {"owner_info", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "validated"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "owner_info",
     "params" : [
       {
@@ -4577,15 +4373,14 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index" : "validated"
       }
     ]
-    })"}},
+    })"},
     {"owner_info: too few arguments.",
      __LINE__,
      {
          "owner_info",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "owner_info",
     "params" : [
       {
@@ -4594,7 +4389,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {"owner_info: too many arguments.",
      __LINE__,
      {
@@ -4605,8 +4400,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "extra2",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "owner_info",
     "params" : [
       {
@@ -4615,17 +4409,16 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
-    {//
-     "owner_info: invalid accountID.",
-     __LINE__,
-     {
-         "owner_info",
-         "",  // Note: very few values are detected as bad!
-     },
-     RPCCallTestData::no_exception,
-     {
-         R"({
+    })"},
+    {
+        "owner_info: invalid accountID.",
+        __LINE__,
+        {
+            "owner_info",
+            "",  // Note: very few values are detected as bad!
+        },
+        RPCCallTestData::no_exception,
+        R"({
     "method" : "owner_info",
     "params" : [
        {
@@ -4634,16 +4427,16 @@ static RPCCallTestData const rpcCallTestArray[] = {
           "error_message" : "Account malformed."
        }
     ]
-    })"}},
-    {//
-     // Note: there is code in place to return rpcLGR_IDX_MALFORMED.  That
-     // cannot currently occur because jvParseLedger() always returns true.
-     "owner_info: invalid ledger selection.",
-     __LINE__,
-     {"owner_info", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "no_ledger"},
-     RPCCallTestData::no_exception,
-     {
-         R"({
+    })",
+    },
+    {
+        // Note: there is code in place to return rpcLGR_IDX_MALFORMED.  That
+        // cannot currently occur because jvParseLedger() always returns true.
+        "owner_info: invalid ledger selection.",
+        __LINE__,
+        {"owner_info", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "no_ledger"},
+        RPCCallTestData::no_exception,
+        R"({
     "method" : "owner_info",
     "params" : [
        {
@@ -4652,16 +4445,16 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index" : 0
        }
     ]
-    })"}},
-    {//
-     // Note: there is code in place to return rpcLGR_IDX_MALFORMED.  That
-     // cannot currently occur because jvParseLedger() always returns true.
-     "owner_info: invalid ledger selection.",
-     __LINE__,
-     {"owner_info", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "no_ledger"},
-     RPCCallTestData::no_exception,
-     {
-         R"({
+    })",
+    },
+    {
+        // Note: there is code in place to return rpcLGR_IDX_MALFORMED.  That
+        // cannot currently occur because jvParseLedger() always returns true.
+        "owner_info: invalid ledger selection.",
+        __LINE__,
+        {"owner_info", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "no_ledger"},
+        RPCCallTestData::no_exception,
+        R"({
     "method" : "owner_info",
     "params" : [
        {
@@ -4670,7 +4463,8 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index" : 0
        }
     ]
-    })"}},
+    })",
+    },
 
     // peers
     // -----------------------------------------------------------------------
@@ -4680,21 +4474,19 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "peers",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "peers",
     "params" : [
        {
          "api_version" : %API_VER%,
        }
     ]
-    })"}},
+    })"},
     {"peers: too many arguments.",
      __LINE__,
      {"peers", "extra"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "peers",
     "params" : [
       {
@@ -4703,7 +4495,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
 
     // peer_reservations_add
     // -------------------------------------------------------
@@ -4711,8 +4503,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
      __LINE__,
      {"peer_reservations_add", "public_key_string"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "peer_reservations_add",
     "params" : [
        {
@@ -4720,13 +4511,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "public_key" : "public_key_string"
        }
     ]
-    })"}},
+    })"},
     {"peer_reservations_add: with description.",
      __LINE__,
      {"peer_reservations_add", "public_key_string", "public_key_description"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "peer_reservations_add",
     "params" : [
        {
@@ -4735,13 +4525,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "public_key" : "public_key_string"
        }
     ]
-    })"}},
+    })"},
     {"peer_reservations_add: too few arguments.",
      __LINE__,
      {"peer_reservations_add"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "peer_reservations_add",
     "params" : [
        {
@@ -4750,7 +4539,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
        }
     ]
-    })"}},
+    })"},
     {"peer_reservations_add: too many arguments.",
      __LINE__,
      {"peer_reservations_add",
@@ -4758,8 +4547,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "public_key_description",
       "spare"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "peer_reservations_add",
     "params" : [
        {
@@ -4768,7 +4556,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
        }
     ]
-    })"}},
+    })"},
 
     // peer_reservations_del
     // -------------------------------------------------------
@@ -4776,8 +4564,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
      __LINE__,
      {"peer_reservations_del", "public_key_string"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "peer_reservations_del",
     "params" : [
        {
@@ -4785,13 +4572,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "public_key" : "public_key_string"
        }
     ]
-    })"}},
+    })"},
     {"peer_reservations_del: too few arguments.",
      __LINE__,
      {"peer_reservations_del"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "peer_reservations_del",
     "params" : [
        {
@@ -4800,7 +4586,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
        }
     ]
-    })"}},
+    })"},
     {"peer_reservations_del: too many arguments.",
      __LINE__,
      {"peer_reservations_del",
@@ -4808,8 +4594,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "public_key_description",
       "spare"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "peer_reservations_del",
     "params" : [
        {
@@ -4818,7 +4603,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
        }
     ]
-    })"}},
+    })"},
 
     // ping
     // ------------------------------------------------------------------------
@@ -4828,21 +4613,19 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ping",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "ping",
     "params" : [
        {
          "api_version" : %API_VER%,
        }
     ]
-    })"}},
+    })"},
     {"ping: too many arguments.",
      __LINE__,
      {"ping", "extra"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "ping",
     "params" : [
       {
@@ -4851,7 +4634,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
 
     // print
     // -----------------------------------------------------------------------
@@ -4861,23 +4644,20 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "print",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "print",
     "params" : [
        {
          "api_version" : %API_VER%,
        }
     ]
-    })"}},
-    {//
-     // The docs indicate that no arguments are allowed. So should this error?
+    })"},
+    {// The docs indicate that no arguments are allowed.  So should this error?
      "print: extra argument.",
      __LINE__,
      {"print", "extra"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "print",
     "params" : [
       {
@@ -4885,13 +4665,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "params" : [ "extra" ]
       }
     ]
-    })"}},
+    })"},
     {"print: too many arguments.",
      __LINE__,
      {"print", "extra1", "extra2"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "print",
     "params" : [
       {
@@ -4900,7 +4679,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
 
     // random
     // ----------------------------------------------------------------------
@@ -4910,21 +4689,19 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "random",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "random",
     "params" : [
       {
          "api_version" : %API_VER%,
       }
     ]
-    })"}},
+    })"},
     {"random: too many arguments.",
      __LINE__,
      {"random", "extra"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "random",
     "params" : [
       {
@@ -4933,7 +4710,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
 
     // ripple_path_find
     // ------------------------------------------------------------
@@ -4944,8 +4721,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          R"({"json_argument":true})",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "ripple_path_find",
     "params" : [
       {
@@ -4953,13 +4729,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "json_argument" : true
       }
     ]
-    })"}},
+    })"},
     {"ripple_path_find: ledger index.",
      __LINE__,
      {"ripple_path_find", R"({"json_argument":true})", "4294967295"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "ripple_path_find",
     "params" : [
       {
@@ -4968,13 +4743,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index" : 4294967295
       }
     ]
-    })"}},
+    })"},
     {"ripple_path_find: text ledger index.",
      __LINE__,
      {"ripple_path_find", R"({"json_argument":true})", "closed"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "ripple_path_find",
     "params" : [
       {
@@ -4983,15 +4757,14 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index" : "closed"
       }
     ]
-    })"}},
+    })"},
     {"ripple_path_find: ledger hash.",
      __LINE__,
      {"ripple_path_find",
       R"({"json_argument":true})",
       "0123456789ABCDEFGHIJKLMNOPQRSTUV0123456789ABCDEFGHIJKLMNOPQRSTUV"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "ripple_path_find",
     "params" : [
       {
@@ -5000,7 +4773,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_hash" : "0123456789ABCDEFGHIJKLMNOPQRSTUV0123456789ABCDEFGHIJKLMNOPQRSTUV"
       }
     ]
-    })"}},
+    })"},
 
     {"ripple_path_find: too few arguments.",
      __LINE__,
@@ -5008,8 +4781,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ripple_path_find",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "ripple_path_find",
     "params" : [
       {
@@ -5018,13 +4790,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {"ripple_path_find: too many arguments.",
      __LINE__,
      {"ripple_path_find", R"({"json_argument":true})", "current", "extra"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "ripple_path_find",
     "params" : [
       {
@@ -5033,7 +4804,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {"ripple_path_find: invalid json (note extra comma).",
      __LINE__,
      {
@@ -5041,8 +4812,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          R"({"json_argument":true,})",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "ripple_path_find",
     "params" : [
       {
@@ -5051,13 +4821,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Invalid parameters."
       }
     ]
-    })"}},
+    })"},
     {"ripple_path_find: ledger index too small.",
      __LINE__,
      {"ripple_path_find", R"({"json_argument":true})", "-1"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "ripple_path_find",
     "params" : [
       {
@@ -5066,13 +4835,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index" : 0
       }
     ]
-    })"}},
+    })"},
     {"ripple_path_find: ledger index too big.",
      __LINE__,
      {"ripple_path_find", R"({"json_argument":true})", "4294967296"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "ripple_path_find",
     "params" : [
       {
@@ -5081,13 +4849,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index" : 0
       }
     ]
-    })"}},
+    })"},
     {"ripple_path_find: invalid text ledger index.",
      __LINE__,
      {"ripple_path_find", R"({"json_argument":true})", "cur"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "ripple_path_find",
     "params" : [
       {
@@ -5096,7 +4863,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "ledger_index" : 0
       }
     ]
-    })"}},
+    })"},
 
     // sign
     // ------------------------------------------------------------------------
@@ -5108,8 +4875,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          R"({"json_argument":true})",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "sign",
     "params" : [
       {
@@ -5120,13 +4886,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          }
       }
     ]
-    })"}},
+    })"},
     {"sign: offline.",
      __LINE__,
      {"sign", "my_secret", R"({"json_argument":true})", "offline"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "sign",
     "params" : [
       {
@@ -5138,13 +4903,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          }
       }
     ]
-    })"}},
+    })"},
     {"sign: too few arguments.",
      __LINE__,
      {"sign", "contents_of_blob"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "sign",
     "params" : [
       {
@@ -5153,13 +4917,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {"sign: too many arguments.",
      __LINE__,
      {"sign", "my_secret", R"({"json_argument":true})", "offline", "extra"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "sign",
     "params" : [
       {
@@ -5168,7 +4931,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {"sign: invalid JSON (note extra comma).",
      __LINE__,
      {
@@ -5177,8 +4940,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          R"({"json_argument":true,})",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "sign",
     "params" : [
       {
@@ -5187,13 +4949,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Invalid parameters."
       }
     ]
-    })"}},
+    })"},
     {"sign: invalid final argument.",
      __LINE__,
      {"sign", "my_secret", R"({"json_argument":true})", "offlin"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "sign",
     "params" : [
       {
@@ -5202,7 +4963,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Invalid parameters."
       }
     ]
-    })"}},
+    })"},
 
     // sign_for
     // --------------------------------------------------------------------
@@ -5215,8 +4976,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          R"({"json_argument":true})",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "sign_for",
     "params" : [
       {
@@ -5228,7 +4988,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          }
       }
     ]
-    })"}},
+    })"},
     {"sign_for: offline.",
      __LINE__,
      {"sign_for",
@@ -5237,8 +4997,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       R"({"json_argument":true})",
       "offline"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "sign_for",
     "params" : [
       {
@@ -5251,7 +5010,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          }
       }
     ]
-    })"}},
+    })"},
     {"sign_for: too few arguments.",
      __LINE__,
      {
@@ -5260,8 +5019,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "my_secret",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "sign_for",
     "params" : [
       {
@@ -5270,7 +5028,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {"sign_for: too many arguments.",
      __LINE__,
      {"sign_for",
@@ -5280,8 +5038,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "offline",
       "extra"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "sign_for",
     "params" : [
       {
@@ -5290,7 +5047,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {"sign_for: invalid json (note extra comma).",
      __LINE__,
      {
@@ -5300,8 +5057,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          R"({"json_argument":true,})",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "sign_for",
     "params" : [
       {
@@ -5310,7 +5066,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Invalid parameters."
       }
     ]
-    })"}},
+    })"},
     {"sign_for: invalid final argument.",
      __LINE__,
      {"sign_for",
@@ -5319,8 +5075,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       R"({"json_argument":true})",
       "ofline"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "sign_for",
     "params" : [
       {
@@ -5329,7 +5084,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Invalid parameters."
       }
     ]
-    })"}},
+    })"},
 
     // submit
     // ----------------------------------------------------------------------
@@ -5337,8 +5092,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
      __LINE__,
      {"submit", "the blob is unvalidated and may be any length..."},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "submit",
     "params" : [
       {
@@ -5346,7 +5100,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "tx_blob" : "the blob is unvalidated and may be any length..."
       }
     ]
-    })"}},
+    })"},
     {"submit: json.",
      __LINE__,
      {
@@ -5355,8 +5109,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          R"({"json_argument":true})",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "submit",
     "params" : [
       {
@@ -5367,15 +5120,14 @@ static RPCCallTestData const rpcCallTestArray[] = {
          }
       }
     ]
-    })"}},
+    })"},
     {"submit: too few arguments.",
      __LINE__,
      {
          "submit",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "submit",
     "params" : [
       {
@@ -5384,15 +5136,13 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
-    {//
-     // Note: I believe this _ought_ to be detected as too many arguments.
+    })"},
+    {// Note: I believe this _ought_ to be detected as too many arguments.
      "submit: four arguments.",
      __LINE__,
      {"submit", "my_secret", R"({"json_argument":true})", "offline"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "submit",
     "params" : [
       {
@@ -5404,13 +5154,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          }
       }
     ]
-    })"}},
+    })"},
     {"submit: too many arguments.",
      __LINE__,
      {"submit", "my_secret", R"({"json_argument":true})", "offline", "extra"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "submit",
     "params" : [
       {
@@ -5419,7 +5168,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {"submit: invalid json (note extra comma).",
      __LINE__,
      {
@@ -5428,8 +5177,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          R"({"json_argument":true,})",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "submit",
     "params" : [
       {
@@ -5438,13 +5186,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Invalid parameters."
       }
     ]
-    })"}},
+    })"},
     {"submit: last argument not \"offline\".",
      __LINE__,
      {"submit", "my_secret", R"({"json_argument":true})", "offlne"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "submit",
     "params" : [
       {
@@ -5453,7 +5200,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Invalid parameters."
       }
     ]
-    })"}},
+    })"},
 
     // submit_multisigned
     // ----------------------------------------------------------
@@ -5464,8 +5211,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          R"({"json_argument":true})",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "submit_multisigned",
     "params" : [
       {
@@ -5475,15 +5221,14 @@ static RPCCallTestData const rpcCallTestArray[] = {
          }
       }
     ]
-    })"}},
+    })"},
     {"submit_multisigned: too few arguments.",
      __LINE__,
      {
          "submit_multisigned",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "submit_multisigned",
     "params" : [
       {
@@ -5492,13 +5237,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {"submit_multisigned: too many arguments.",
      __LINE__,
      {"submit_multisigned", R"({"json_argument":true})", "extra"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "submit_multisigned",
     "params" : [
       {
@@ -5507,7 +5251,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {"submit_multisigned: invalid json (note extra comma).",
      __LINE__,
      {
@@ -5515,8 +5259,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          R"({"json_argument":true,})",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "submit_multisigned",
     "params" : [
       {
@@ -5526,7 +5269,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          }
       }
     ]
-    })"}},
+    })"},
 
     // server_info
     // -----------------------------------------------------------------
@@ -5536,21 +5279,19 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "server_info",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "server_info",
     "params" : [
       {
          "api_version" : %API_VER%,
       }
     ]
-    })"}},
+    })"},
     {"server_info: counters.",
      __LINE__,
      {"server_info", "counters"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "server_info",
     "params" : [
       {
@@ -5558,13 +5299,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "counters" : true
       }
     ]
-    })"}},
+    })"},
     {"server_info: too many arguments.",
      __LINE__,
      {"server_info", "counters", "extra"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "server_info",
     "params" : [
       {
@@ -5573,20 +5313,19 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {"server_info: non-counters argument.",
      __LINE__,
      {"server_info", "counter"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "server_info",
     "params" : [
       {
          "api_version" : %API_VER%,
       }
     ]
-    })"}},
+    })"},
 
     // server_state
     // ----------------------------------------------------------------
@@ -5596,21 +5335,19 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "server_state",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "server_state",
     "params" : [
       {
          "api_version" : %API_VER%,
       }
     ]
-    })"}},
+    })"},
     {"server_state: counters.",
      __LINE__,
      {"server_state", "counters"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "server_state",
     "params" : [
       {
@@ -5618,13 +5355,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "counters" : true
       }
     ]
-    })"}},
+    })"},
     {"server_state: too many arguments.",
      __LINE__,
      {"server_state", "counters", "extra"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "server_state",
     "params" : [
       {
@@ -5633,20 +5369,19 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {"server_state: non-counters argument.",
      __LINE__,
      {"server_state", "counter"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "server_state",
     "params" : [
       {
          "api_version" : %API_VER%,
       }
     ]
-    })"}},
+    })"},
 
     // stop
     // ------------------------------------------------------------------------
@@ -5656,21 +5391,19 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "stop",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "stop",
     "params" : [
       {
          "api_version" : %API_VER%,
       }
     ]
-    })"}},
+    })"},
     {"stop: too many arguments.",
      __LINE__,
      {"stop", "extra"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "stop",
     "params" : [
       {
@@ -5679,7 +5412,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
 
     // transaction_entry
     // -----------------------------------------------------------
@@ -5689,8 +5422,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "0123456789ABCDEFGHIJKLMNOPQRSTUV0123456789ABCDEFGHIJKLMNOPQRSTUV",
       "4294967295"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "transaction_entry",
     "params" : [
       {
@@ -5699,15 +5431,14 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "tx_hash" : "0123456789ABCDEFGHIJKLMNOPQRSTUV0123456789ABCDEFGHIJKLMNOPQRSTUV"
       }
     ]
-    })"}},
+    })"},
     {"transaction_entry: text ledger index.",
      __LINE__,
      {"transaction_entry",
       "0123456789ABCDEFGHIJKLMNOPQRSTUV0123456789ABCDEFGHIJKLMNOPQRSTUV",
       "current"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "transaction_entry",
     "params" : [
       {
@@ -5716,15 +5447,14 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "tx_hash" : "0123456789ABCDEFGHIJKLMNOPQRSTUV0123456789ABCDEFGHIJKLMNOPQRSTUV"
       }
     ]
-    })"}},
+    })"},
     {"transaction_entry: ledger hash.",
      __LINE__,
      {"transaction_entry",
       "0123456789ABCDEFGHIJKLMNOPQRSTUV0123456789ABCDEFGHIJKLMNOPQRSTUV",
       "VUTSRQPONMLKJIHGFEDCBA9876543210VUTSRQPONMLKJIHGFEDCBA9876543210"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "transaction_entry",
     "params" : [
       {
@@ -5733,7 +5463,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "tx_hash" : "0123456789ABCDEFGHIJKLMNOPQRSTUV0123456789ABCDEFGHIJKLMNOPQRSTUV"
       }
     ]
-    })"}},
+    })"},
     {"transaction_entry: too few arguments.",
      __LINE__,
      {
@@ -5741,8 +5471,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "0123456789ABCDEFGHIJKLMNOPQRSTUV0123456789ABCDEFGHIJKLMNOPQRSTUV",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "transaction_entry",
     "params" : [
       {
@@ -5751,7 +5480,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {"transaction_entry: too many arguments.",
      __LINE__,
      {"transaction_entry",
@@ -5759,8 +5488,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "validated",
       "extra"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "transaction_entry",
     "params" : [
       {
@@ -5769,7 +5497,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {"transaction_entry: short tx_hash.",
      __LINE__,
      {
@@ -5778,8 +5506,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "validated",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "transaction_entry",
     "params" : [
       {
@@ -5788,7 +5515,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Invalid parameters."
       }
     ]
-    })"}},
+    })"},
     {"transaction_entry: long tx_hash.",
      __LINE__,
      {
@@ -5797,8 +5524,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "validated",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "transaction_entry",
     "params" : [
       {
@@ -5807,7 +5533,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Invalid parameters."
       }
     ]
-    })"}},
+    })"},
     {"transaction_entry: small ledger index.",
      __LINE__,
      {
@@ -5816,8 +5542,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "0",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "transaction_entry",
     "params" : [
       {
@@ -5826,7 +5551,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Invalid parameters."
       }
     ]
-    })"}},
+    })"},
     {"transaction_entry: large ledger index.",
      __LINE__,
      {
@@ -5835,8 +5560,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "4294967296",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "transaction_entry",
     "params" : [
       {
@@ -5845,7 +5569,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Invalid parameters."
       }
     ]
-    })"}},
+    })"},
     {"transaction_entry: short ledger hash.",
      __LINE__,
      {
@@ -5854,8 +5578,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "VUTSRQPONMLKJIHGFEDCBA9876543210VUTSRQPONMLKJIHGFEDCBA987654321",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "transaction_entry",
     "params" : [
       {
@@ -5864,7 +5587,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Invalid parameters."
       }
     ]
-    })"}},
+    })"},
     {"transaction_entry: long ledger hash.",
      __LINE__,
      {
@@ -5873,8 +5596,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "VUTSRQPONMLKJIHGFEDCBA9876543210VUTSRQPONMLKJIHGFEDCBA9876543210Z",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "transaction_entry",
     "params" : [
       {
@@ -5883,7 +5605,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Invalid parameters."
       }
     ]
-    })"}},
+    })"},
 
     // tx
     // --------------------------------------------------------------------------
@@ -5891,8 +5613,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
      __LINE__,
      {"tx", "FFFFFFFFFFFFFFFF", "1", "2"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "tx",
     "params" : [
       {
@@ -5902,13 +5623,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
 			"min_ledger" : "1"
       }
     ]
-    })"}},
+    })"},
     {"tx: ctid. binary",
      __LINE__,
      {"tx", "FFFFFFFFFFFFFFFF", "binary", "1", "2"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "tx",
     "params" : [
       {
@@ -5919,13 +5639,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
 			"min_ledger" : "1"
       }
     ]
-    })"}},
+    })"},
     {"tx: minimal.",
      __LINE__,
      {"tx", "transaction_hash_is_not_validated"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "tx",
     "params" : [
       {
@@ -5933,13 +5652,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "transaction" : "transaction_hash_is_not_validated"
       }
     ]
-    })"}},
+    })"},
     {"tx: binary.",
      __LINE__,
      {"tx", "transaction_hash_is_not_validated", "binary"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "tx",
     "params" : [
       {
@@ -5948,15 +5666,14 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "transaction" : "transaction_hash_is_not_validated"
       }
     ]
-    })"}},
+    })"},
     {"tx: too few arguments.",
      __LINE__,
      {
          "tx",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "tx",
     "params" : [
       {
@@ -5965,13 +5682,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {"tx: too many arguments.",
      __LINE__,
      {"tx", "transaction_hash_is_not_validated", "binary", "1", "2", "extra"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "tx",
     "params" : [
       {
@@ -5980,13 +5696,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {"tx: invalid final argument is apparently ignored.",
      __LINE__,
      {"tx", "transaction_hash_is_not_validated", "bin"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "tx",
     "params" : [
       {
@@ -5994,7 +5709,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "transaction" : "transaction_hash_is_not_validated"
       }
     ]
-    })"}},
+    })"},
 
     // tx_history
     // ------------------------------------------------------------------
@@ -6002,8 +5717,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
      __LINE__,
      {"tx_history", "0"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "tx_history",
     "params" : [
       {
@@ -6011,15 +5725,14 @@ static RPCCallTestData const rpcCallTestArray[] = {
         "start" : 0
       }
     ]
-    })"}},
+    })"},
     {"tx_history: too few arguments.",
      __LINE__,
      {
          "tx_history",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "tx_history",
     "params" : [
       {
@@ -6028,13 +5741,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
     {"tx_history: too many arguments.",
      __LINE__,
      {"tx_history", "0", "1"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "tx_history",
     "params" : [
       {
@@ -6043,28 +5755,31 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
-    {//
-     // Note: this really shouldn't throw, but does at the moment.
-     "tx_history: start too small.",
-     __LINE__,
-     {"tx_history", "-1"},
-     RPCCallTestData::bad_cast,
-     {""}},
-    {//
-     // Note: this really shouldn't throw, but does at the moment.
-     "tx_history: start too big.",
-     __LINE__,
-     {"tx_history", "4294967296"},
-     RPCCallTestData::bad_cast,
-     {""}},
-    {//
-     // Note: this really shouldn't throw, but does at the moment.
-     "tx_history: start not integer.",
-     __LINE__,
-     {"tx_history", "beginning"},
-     RPCCallTestData::bad_cast,
-     {""}},
+    })"},
+    {
+        // Note: this really shouldn't throw, but does at the moment.
+        "tx_history: start too small.",
+        __LINE__,
+        {"tx_history", "-1"},
+        RPCCallTestData::bad_cast,
+        R"()",
+    },
+    {
+        // Note: this really shouldn't throw, but does at the moment.
+        "tx_history: start too big.",
+        __LINE__,
+        {"tx_history", "4294967296"},
+        RPCCallTestData::bad_cast,
+        R"()",
+    },
+    {
+        // Note: this really shouldn't throw, but does at the moment.
+        "tx_history: start not integer.",
+        __LINE__,
+        {"tx_history", "beginning"},
+        RPCCallTestData::bad_cast,
+        R"()",
+    },
 
     // unl_list
     // --------------------------------------------------------------------
@@ -6074,21 +5789,19 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "unl_list",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "unl_list",
     "params" : [
       {
          "api_version" : %API_VER%,
       }
     ]
-    })"}},
+    })"},
     {"unl_list: too many arguments.",
      __LINE__,
      {"unl_list", "extra"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "unl_list",
     "params" : [
       {
@@ -6097,7 +5810,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
 
     // validation_create
     // -----------------------------------------------------------
@@ -6107,21 +5820,19 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "validation_create",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "validation_create",
     "params" : [
       {
          "api_version" : %API_VER%,
       }
     ]
-    })"}},
+    })"},
     {"validation_create: with secret.",
      __LINE__,
      {"validation_create", "the form of the secret is not validated"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "validation_create",
     "params" : [
       {
@@ -6129,13 +5840,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "secret" : "the form of the secret is not validated"
       }
     ]
-    })"}},
+    })"},
     {"validation_create: too many arguments.",
      __LINE__,
      {"validation_create", "the form of the secret is not validated", "extra"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "validation_create",
     "params" : [
       {
@@ -6144,7 +5854,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
 
     // version
     // ---------------------------------------------------------------------
@@ -6154,21 +5864,19 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "version",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "version",
     "params" : [
       {
          "api_version" : %API_VER%,
       }
     ]
-    })"}},
+    })"},
     {"version: too many arguments.",
      __LINE__,
      {"version", "extra"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "version",
     "params" : [
       {
@@ -6177,7 +5885,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
 
     // wallet_propose
     // --------------------------------------------------------------
@@ -6187,21 +5895,19 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "wallet_propose",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "wallet_propose",
     "params" : [
       {
          "api_version" : %API_VER%,
       }
     ]
-    })"}},
+    })"},
     {"wallet_propose: with passphrase.",
      __LINE__,
      {"wallet_propose", "the form of the passphrase is not validated"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "wallet_propose",
     "params" : [
       {
@@ -6209,13 +5915,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "passphrase" : "the form of the passphrase is not validated"
       }
     ]
-    })"}},
+    })"},
     {"wallet_propose: too many arguments.",
      __LINE__,
      {"wallet_propose", "the form of the passphrase is not validated", "extra"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "wallet_propose",
     "params" : [
       {
@@ -6224,7 +5929,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
 
     // internal
     // --------------------------------------------------------------------
@@ -6232,8 +5937,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
      __LINE__,
      {"internal", "command_name"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "internal",
     "params" : [
       {
@@ -6242,7 +5946,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "params" : []
       }
     ]
-    })"}},
+    })"},
     {"internal: with parameters.",
      __LINE__,
      {"internal",
@@ -6253,8 +5957,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       "4294967296",
       "3.14159"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "internal",
     "params" : [
       {
@@ -6263,15 +5966,14 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "params" : [ "string_arg", "1", "-1", "4294967296", "3.14159" ]
       }
     ]
-    })"}},
+    })"},
     {"internal: too few arguments.",
      __LINE__,
      {
          "internal",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "internal",
     "params" : [
       {
@@ -6280,7 +5982,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Syntax error."
       }
     ]
-    })"}},
+    })"},
 
     // path_find
     // -------------------------------------------------------------------
@@ -6290,8 +5992,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "path_find",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "path_find",
     "params" : [
       {
@@ -6300,13 +6001,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Current transport does not support events."
       }
     ]
-    })"}},
+    })"},
     {"path_find: with arguments.",
      __LINE__,
      {"path_find", "string_arg", "1", "-1", "4294967296", "3.14159"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "path_find",
     "params" : [
       {
@@ -6315,7 +6015,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Current transport does not support events."
       }
     ]
-    })"}},
+    })"},
 
     // subscribe
     // -------------------------------------------------------------------
@@ -6325,8 +6025,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "subscribe",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "subscribe",
     "params" : [
       {
@@ -6335,13 +6034,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Current transport does not support events."
       }
     ]
-    })"}},
+    })"},
     {"subscribe: with arguments.",
      __LINE__,
      {"subscribe", "string_arg", "1", "-1", "4294967296", "3.14159"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "subscribe",
     "params" : [
       {
@@ -6350,7 +6048,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Current transport does not support events."
       }
     ]
-    })"}},
+    })"},
 
     // unsubscribe
     // -----------------------------------------------------------------
@@ -6360,8 +6058,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "unsubscribe",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "unsubscribe",
     "params" : [
       {
@@ -6370,13 +6067,12 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Current transport does not support events."
       }
     ]
-    })"}},
+    })"},
     {"unsubscribe: with arguments.",
      __LINE__,
      {"unsubscribe", "string_arg", "1", "-1", "4294967296", "3.14159"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "unsubscribe",
     "params" : [
       {
@@ -6385,7 +6081,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Current transport does not support events."
       }
     ]
-    })"}},
+    })"},
 
     // unknown_command
     // -------------------------------------------------------------
@@ -6395,21 +6091,19 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "unknown_command",
      },
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "unknown_command",
     "params" : [
       {
          "api_version" : %API_VER%,
       }
     ]
-    })"}},
+    })"},
     {"unknown_command: with arguments.",
      __LINE__,
      {"unknown_command", "string_arg", "1", "-1", "4294967296", "3.14159"},
      RPCCallTestData::no_exception,
-     {
-         R"({
+     R"({
     "method" : "unknown_command",
     "params" : [
       {
@@ -6417,14 +6111,14 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "params" : [ "string_arg", "1", "-1", "4294967296", "3.14159" ]
       }
     ]
-    })"}},
+    })"},
 };
 
 std::string
 updateAPIVersionString(const char* const req, unsigned apiVersion)
 {
     std::string const version_str = std::to_string(apiVersion);
-    static auto place_holder = "%API_VER%";
+    static auto const place_holder = "%API_VER%";
     std::string jr(req);
     boost::replace_all(jr, place_holder, version_str);
     return jr;
@@ -6447,8 +6141,10 @@ public:
     testRPCCall(unsigned apiVersion)
     {
         testcase << "RPCCall API version " << apiVersion;
-        assert(apiVersion > 0);
-        assert(apiVersion <= RPC::apiMaximumValidVersion);
+        if (!BEAST_EXPECT(
+                apiVersion >= RPC::apiMinimumSupportedVersion &&
+                apiVersion <= RPC::apiMaximumValidVersion))
+            return;
 
         test::jtx::Env env(
             *this, makeNetworkConfig(11111));  // Used only for its Journal.
@@ -6456,11 +6152,16 @@ public:
         // For each RPCCall test.
         for (RPCCallTestData const& rpcCallTest : rpcCallTestArray)
         {
+            if (!BEAST_EXPECT(!rpcCallTest.exp.empty()))
+                break;
+
             std::vector<std::string> const args{
                 rpcCallTest.args.begin(), rpcCallTest.args.end()};
+
             const char* const expVersioned =
-                rpcCallTest.exp.size() >= apiVersion
-                ? rpcCallTest.exp[apiVersion - 1]
+                (apiVersion - RPC::apiMinimumSupportedVersion) <
+                    rpcCallTest.exp.size()
+                ? rpcCallTest.exp[apiVersion - RPC::apiMinimumSupportedVersion]
                 : rpcCallTest.exp.back();
 
             // Note that, over the long term, none of these tests should
