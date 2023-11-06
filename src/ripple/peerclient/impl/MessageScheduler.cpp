@@ -89,6 +89,10 @@ MessageScheduler::connect(PeerPtr const& peer, ChannelCnt nchannels)
         return metaPeer->id > id;
     });
     peers_.insert(it, metaPeer);
+    assert(std::is_sorted(
+        peers_.begin(), peers_.end(), [](auto const& a, auto const& b) {
+            return a->id < b->id;
+        }));
     nchannels_ += nchannels;
     if (!senders_.empty())
     {
@@ -118,7 +122,9 @@ MessageScheduler::disconnect(Peer::id_t peerId)
             return;
         }
         auto metaPeer = *it;
+        assert(nclosed_ >= metaPeer->nclosed);
         nclosed_ -= metaPeer->nclosed;
+        assert(nchannels_ >= metaPeer->nchannels);
         nchannels_ -= metaPeer->nchannels;
         peers_.erase(it);
         peerList_.erase(metaPeer);
@@ -341,7 +347,9 @@ MessageScheduler::send_(
             if (it != requests_.end())
             {
                 auto& request = it->second;
+                assert(request->metaPeer->nclosed > 0);
                 --request->metaPeer->nclosed;
+                assert(nclosed_ > 0);
                 --nclosed_;
                 try
                 {
@@ -474,7 +482,9 @@ MessageScheduler::receive_(
     assert(peers.size() == 1);
     {
         std::lock_guard<std::mutex> sendLock(sendMutex_);
+        assert(nclosed_ > 0);
         --nclosed_;
+        assert(peers.front()->nclosed > 0);
         --peers.front()->nclosed;
         if (!senders_.empty())
         {

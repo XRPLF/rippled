@@ -141,6 +141,7 @@ CopyLedger::onReady(MessageScheduler::Courier& courier)
     std::vector<RequestPtr> requests;
     {
         std::lock_guard lock(senderMutex_);
+        assert(scheduled_);
         if (fullRequests_.empty())
         {
             queue = &CopyLedger::partialRequests_;
@@ -150,6 +151,8 @@ CopyLedger::onReady(MessageScheduler::Courier& courier)
     // TODO: If holding multiple partial requests,
     // now is a good time to merge them.
 
+    assert(courier.closed() == 0);
+    assert(courier.limit() > 0);
     JLOG(journal_.trace()) << "onReady,enter,closed=" << (int)courier.closed()
                            << "/" << (int)courier.limit()
                            << ",requests=" << requests.size();

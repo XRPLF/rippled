@@ -413,6 +413,7 @@ public:
         , freshPeers_(freshPeers)
         , limit_(limit)
     {
+        assert(limit_ > closed_);
     }
 
     // Delete all copy and move constructors and assignments.
@@ -546,6 +547,7 @@ public:
         MessageScheduler::Receiver* receiver,
         Duration timeout)
     {
+        assert(index_ < peers_.size());
         auto sent = courier_.send(peers_[index_], message, receiver, timeout);
         if (sent)
         {
