@@ -46,7 +46,7 @@ namespace ripple {
 
 using PeerPtr = std::shared_ptr<Peer>;
 
-using ChannelCnt = std::uint8_t;
+using ChannelCnt = std::uint16_t;
 
 /**
  * We must hold idle peers by `std::weak_ptr`
@@ -488,6 +488,11 @@ public:
     withdraw()
     {
         evict_ = true;
+    }
+
+    bool
+    evicting() const {
+        return evict_;
     }
 };
 

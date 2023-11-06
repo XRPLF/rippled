@@ -59,13 +59,13 @@ CopyLedger::schedule()
 void
 CopyLedger::send(RequestPtr&& request)
 {
+    auto queue = (request->objects_size() < MAX_OBJECTS_PER_MESSAGE)
+        ? &CopyLedger::partialRequests_
+        : &CopyLedger::fullRequests_;
     // This is the value we want it to be.
     bool scheduled = true;
     {
         std::lock_guard lock(senderMutex_);
-        auto queue = (request->objects_size() < MAX_OBJECTS_PER_MESSAGE)
-            ? &CopyLedger::partialRequests_
-            : &CopyLedger::fullRequests_;
         (this->*queue).emplace_back(std::move(request));
         std::swap(scheduled, scheduled_);
         // Now it is the value it was.
@@ -80,14 +80,21 @@ CopyLedger::RequestPtr
 CopyLedger::unsend()
 {
     RequestPtr request = nullptr;
-    std::lock_guard lock(senderMutex_);
-    auto& requests = partialRequests_;
-    // Claw back the last non-full request.
-    if (!requests.empty())
+    std::size_t before = 0;
+    std::size_t after = 0;
     {
-        request = std::move(requests.back());
-        requests.pop_back();
+        std::lock_guard lock(senderMutex_);
+        before = partialRequests_.size() + fullRequests_.size();
+        auto& requests = partialRequests_;
+        // Claw back the last non-full request.
+        if (!requests.empty())
+        {
+            request = std::move(requests.back());
+            requests.pop_back();
+        }
+        after = partialRequests_.size() + fullRequests_.size();
     }
+    JLOG(journal_.warn()) << "unsend: " << before << " -> " << after;
     return request;
 }
 
@@ -203,7 +210,7 @@ CopyLedger::onReady(MessageScheduler::Courier& courier)
     }
     if (remaining)
     {
-        if (courier.closed())
+        if (courier.evicting())
         {
             schedule();
         }

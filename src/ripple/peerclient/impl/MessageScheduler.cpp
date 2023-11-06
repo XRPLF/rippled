@@ -138,25 +138,23 @@ MessageScheduler::disconnect(Peer::id_t peerId)
         for (auto it = requests_.begin(); it != requests_.end();)
         {
             auto& request = it->second;
-            if (request->metaPeer->id == peerId)
-            {
-                // This callback may add a sender to `senders`.
-                try
-                {
-                    request->receiver->onFailure(
-                        request->id, FailureCode::DISCONNECT);
-                }
-                catch (...)
-                {
-                    JLOG(journal_.error())
-                        << "unhandled exception from onFailure(DISCONNECT)";
-                }
-                it = requests_.erase(it);
-            }
-            else
+            if (request->metaPeer->id != peerId)
             {
                 ++it;
+                continue;
             }
+            // This callback may add a sender to `senders`.
+            try
+            {
+                request->receiver->onFailure(
+                    request->id, FailureCode::DISCONNECT);
+            }
+            catch (...)
+            {
+                JLOG(journal_.error())
+                    << "unhandled exception from onFailure(DISCONNECT)";
+            }
+            it = requests_.erase(it);
         }
     }
     // If failing those requests tried to add any new senders,
@@ -173,13 +171,16 @@ MessageScheduler::schedule(Sender* sender)
     JLOG(journal_.trace()) << "schedule,during=" << during << ",sender=" << sender;
     if (tsenders)
     {
-        // The scheduler is already locked in this thread.
-        // Save new senders to be served later.
-        // TODO: Insert in priority order.
+        // `sendMutex_` is already locked in this thread.
+        if (stopped_) {
+            return false;
+        }
+        // Stash new senders to be served later.
         tsenders->emplace_back(sender);
         return true;
     }
     std::vector<Sender*> senders = {sender};
+    std::lock_guard<std::mutex> sendLock(sendMutex_);
     return schedule_(sendLock, senders);
 }
 
@@ -369,11 +370,11 @@ MessageScheduler::send_(
             ready_(sendLock, peers_, senders_);
         }
     };
+    request->timer.expires_after(timeout);
+    request->timer.async_wait(std::move(onTimer));
     std::size_t nrequests;
     {
         std::lock_guard<std::mutex> receiveLock(receiveMutex_);
-        request->timer.expires_after(timeout);
-        request->timer.async_wait(std::move(onTimer));
         requests_.emplace(requestId, std::move(request));
         nrequests = requests_.size();
     }
