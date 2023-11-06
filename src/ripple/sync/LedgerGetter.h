@@ -66,6 +66,13 @@ public:
     get(LedgerDigest const& digest);
 
     LedgerFuturePtr
+    get(LedgerDigest const& digest, std::string const& caller)
+    {
+        JLOG(journal_.info()) << caller << " called get with " << digest;
+        return get(digest);
+    }
+
+    LedgerFuturePtr
     get(LedgerIdentifier const& id)
     {
         return get(id.digest);

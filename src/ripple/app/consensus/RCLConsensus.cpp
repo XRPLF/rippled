@@ -135,7 +135,7 @@ RCLConsensus::Adaptor::acquireLedger(LedgerHash const& hash)
 
             app_.getJobQueue().addJob(
                 jtADVANCE, "getConsensusLedger", [&app = app_, hash]() {
-                    app.getLedgerGetter().get(hash);
+                    app.getLedgerGetter().get(hash, "RCLConsensus");
                 });
         }
         return std::nullopt;
