@@ -37,13 +37,14 @@ using RequestId = MessageScheduler::RequestId;
 // behavior. Instead, we just save the sender here to be handled after the
 // callback returns.
 thread_local static std::vector<MessageScheduler::Sender*>* tsenders = nullptr;
-// `caller` is logged whenever a sender is scheduled or a channel is offered.
-// It names the method that called either (a) the callback that called
-// `schedule` or (b) `ready_`.
-// The (b) case can be solved with a parameter (to `offer_`), but the (a) case
-// cannot, and if we're using a thread-local variable for the (a) case anyway,
-// it doesn't hurt anything to use it for the (b) case too.
-thread_local static char const* caller = "none";
+// The value of `during` is logged at the start of every call to `schedule`,
+// when a sender is being added to the queue,
+// and `ready_`, when a courier is being offered to a sender.
+// Before every call to those methods,
+// it is assigned to the name of the calling method.
+// The calls to `schedule` are buried in calls to the sender callbacks,
+// `onReady` and `onFailure`.
+thread_local static char const* during = "idle";
 
 /**
  * "Push" a value at this point in the call stack.
@@ -91,7 +92,7 @@ MessageScheduler::connect(PeerPtr const& peer, ChannelCnt nchannels)
     nchannels_ += nchannels;
     if (!senders_.empty())
     {
-        push_value top(caller, "connect");
+        push_value top(during, "connect");
         MetaPeerSet peers{metaPeer};
         ready_(sendLock, peers, senders_);
     }
@@ -102,8 +103,8 @@ MessageScheduler::disconnect(Peer::id_t peerId)
 {
     JLOG(journal_.warn()) << "disconnect,id=" << peerId;
     // We have to acquire both locks for this operation.
-    // Always acquire the offers lock first.
-    push_value top(caller, "disconnect");
+    // Always acquire the send lock first.
+    push_value top(during, "disconnect");
     std::lock_guard<std::mutex> sendLock(sendMutex_);
     {
         auto it = std::find_if(
@@ -163,7 +164,7 @@ MessageScheduler::disconnect(Peer::id_t peerId)
 bool
 MessageScheduler::schedule(Sender* sender)
 {
-    JLOG(journal_.trace()) << "schedule,during=" << caller;
+    JLOG(journal_.trace()) << "schedule,during=" << during << ",sender=" << sender;
     if (tsenders)
     {
         // The scheduler is already locked in this thread.
@@ -172,8 +173,6 @@ MessageScheduler::schedule(Sender* sender)
         tsenders->emplace_back(sender);
         return true;
     }
-    std::lock_guard<std::mutex> sendLock(sendMutex_);
-    push_value top(caller, "schedule");
     std::vector<Sender*> senders = {sender};
     return schedule_(sendLock, senders);
 }
@@ -183,15 +182,18 @@ MessageScheduler::schedule_(
     std::lock_guard<std::mutex> const& sendLock,
     std::vector<Sender*>& senders)
 {
+    JLOG(journal_.trace()) << "schedule_,during=" << during;
     if (stopped_)
     {
         return false;
     }
     if (hasOpenChannels())
     {
+        push_value top(during, "schedule_");
         ready_(sendLock, peers_, senders);
     }
     std::move(senders.begin(), senders.end(), std::back_inserter(senders_));
+    JLOG(journal_.trace()) << "schedule_,senders=" << senders_.size();
     return true;
 }
 
@@ -257,13 +259,15 @@ MessageScheduler::ready_(
     MetaPeerSet const& peers,
     std::vector<Sender*>& senders)
 {
-    JLOG(journal_.trace()) << "ready_,during=" << caller
+    JLOG(journal_.trace()) << "ready_,during=" << during
                            << ",peers=" << peers.size()
+                           << ",nclosed=" << nclosed_ << "/" << nchannels_
                            << ",senders=" << senders.size();
     assert(!peers.empty());
     assert(!senders.empty());
     assert(nclosed_ < nchannels_);
     push_value top1(tsenders, &senders);
+    push_value top2(during, "ready_");
     // We must iterate `senders` using an index
     // because the offer may grow the vector,
     // invalidating any iterators or references.
@@ -325,7 +329,7 @@ MessageScheduler::send_(
         if (error == boost::asio::error::operation_aborted)
             return;
         JLOG(journal_.trace()) << "timeout,id=" << requestId;
-        push_value top(caller, "timeout");
+        push_value top(during, "timeout");
         std::lock_guard<std::mutex> sendLock(sendMutex_);
         {
             push_value top(tsenders, &senders_);
@@ -365,7 +369,10 @@ MessageScheduler::send_(
         requests_.emplace(requestId, std::move(request));
         nrequests = requests_.size();
     }
-    // REVIEW: Do we need to wrap this in a try-catch?
+    // REVIEW: `PeerImp::send` seems to have no way to indicate an error.
+    // Can we assume it is always successful?
+    // If not, then that will undermine the guarantees
+    // that `MessageScheduler` makes to `Sender`s.
     peer->send(packet);
     ++metaPeer->nclosed;
     ++nclosed_;
@@ -411,7 +418,7 @@ MessageScheduler::receive_(
     protocol::MessageType type,
     MessagePtr const& message)
 {
-    push_value top(caller, "receive");
+    push_value top(during, "receive_");
     std::vector<Sender*> senders;
     MetaPeerSet peers;
     {
@@ -487,6 +494,7 @@ MessageScheduler::receive_(
 void
 MessageScheduler::stop()
 {
+    push_value top(during, "stop");
     std::lock_guard<std::mutex> lock1(sendMutex_);
     stopped_ = true;
     {

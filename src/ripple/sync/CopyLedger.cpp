@@ -132,6 +132,11 @@ CopyLedger::onReady(MessageScheduler::Courier& courier)
         }
     };
 
+    // Take the first non-empty queue in the sequence [fulls, partials].
+    // Do not change the value of `scheduled_`, which must be `true`.
+    // There is a chance that, by the time this method returns,
+    // more requests have been added to one or the other queue,
+    // but `MessageScheduler::schedule` will not have been called.
     auto queue = &CopyLedger::fullRequests_;
     std::vector<RequestPtr> requests;
     {
@@ -202,6 +207,8 @@ CopyLedger::onReady(MessageScheduler::Courier& courier)
     }
     else
     {
+        // Make sure we leave the sender queue
+        // when the above assertion is disabled.
         courier.withdraw();
     }
 

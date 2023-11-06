@@ -49,9 +49,10 @@ using PeerPtr = std::shared_ptr<Peer>;
 using ChannelCnt = std::uint8_t;
 
 /**
- * We must hold idle peers by `std::weak_ptr` so that they can destruct upon
- * disconnect.
- * When we remove peers in `disconnect`, we need to find them by peer ID,
+ * We must hold idle peers by `std::weak_ptr`
+ * so that they can destruct upon disconnect.
+ * When we remove metapeers from our bookkeeping in `disconnect`,
+ * we need to find them by peer ID,
  * because `std::weak_ptr` is not equality-comparable with anything,
  * but we do not want to lock the `std::weak_ptr` to get that ID,
  * so we copy it into `MetaPeer`.
@@ -61,7 +62,7 @@ struct MetaPeer
     std::weak_ptr<Peer> peer;
     Peer::id_t id;
     ChannelCnt nchannels;
-    /** Number of channels that are closed. */
+    /** Number of channels that are closed. May exceed `nchannels`. */
     ChannelCnt nclosed;
 
     bool
@@ -122,15 +123,15 @@ public:
     // response to the correct `MessageScheduler::Receiver`.
     //
     // `MessageScheduler` uses request identifiers in the range
-    // [`MINIMUM_REQUEST_ID`, `MAXIMUM_REQUEST_ID`]. `MINIMUM_REQUEST_ID` is
-    // chosen to leave enough low numbers so that we can reasonably assume
-    // that the other senders using request identifiers do not start to creep
-    // into our space and unintentionally use our request identifiers. The
-    // other senders use peer identifiers, which are low numbers starting from
-    // 1 and incrementing for each peer added, never wrapping, and never
-    // reusing even after a peer disconnects. We never expect the number of
-    // peers to come anywhere close to `MINIMUM_REQUEST_ID` before a server is
-    // shutdown.
+    // [`MINIMUM_REQUEST_ID`, `MAXIMUM_REQUEST_ID`], a span of over 4 billion.
+    // `MINIMUM_REQUEST_ID` is chosen to leave enough low numbers that we can
+    // reasonably assume that the other senders using request identifiers do
+    // not start to creep into our space and unintentionally use our request
+    // identifiers. The other senders use peer identifiers, which are low
+    // numbers starting from 1 and incrementing for each peer added, never
+    // wrapping, and never reusing even after a peer disconnects. We never
+    // expect the number of peers to come anywhere close to
+    // `MINIMUM_REQUEST_ID` (over 16 million) before a server is shutdown.
     //
     // We expect requests to happen on the order of 10 per second, but
     // even if requests happen at a rate of 1000/second it would take
@@ -168,7 +169,6 @@ private:
     // The list is for storage.
     // The set is for couriers.
     MetaPeerList peerList_;
-    // TODO: Reserve some sizes for `peers_`, `senders_`, and `requests_`.
     MetaPeerSet peers_;
     // These are the sums, across all connected peers,
     // of total and closed channels.
@@ -203,7 +203,6 @@ public:
      * then offer these new open channels to them.
      * Then add this peer to the pool.
      */
-    // TODO: Peers seem to disconnect if nchannels > 1. Investigate.
     void
     connect(PeerPtr const& peer, ChannelCnt nchannels = 2);
 
@@ -297,6 +296,8 @@ private:
      *
      * The message must be taken by non-const reference in order to assign
      * a request identifier.
+     *
+     * @return zero if the message cannot be sent to the peer; non-zero otherwise
      */
     RequestId
     send(
@@ -372,16 +373,15 @@ operator<<(std::ostream& out, MessageScheduler::FailureCode code)
  * `Courier` represents an offer to close M among N channels, M <= N.
  * M is called the "limit".
  *
- * `Courier` is an interface around a set of channels represented by
- * a `std::vector` of weak pointers.
- * `Courier` does not own the set; it holds the set by reference.
- * The set is owned by the stack.
- * When passed an `Courier`, a `Sender` must use it or lose it.
- * `Sender`s may not save references to `MetaPeerPtr`s, or make copies.
+ * A `Sender` is passed a `Courier` when `MessageScheduler` calls `onReady()`.
+ * The sender must use it or lose it.
+ * The sender must not save references or copies of metapeers
+ * that outlive the call to `onReady()`.
  *
- * `Sender`s may close channels in the courier by sending messages to them.
- * After `Courier` is destroyed, the set is left with only the remaining
- * open channels.
+ * The sender may close channels in the courier by sending messages through
+ * them. If the sender closes any channels, or calls `withdraw()`, then it is
+ * removed from the sender queue in `MessageScheduler` after it returns from
+ * `onReady()`.
  */
 class MessageScheduler::Courier
 {
@@ -389,7 +389,14 @@ private:
     friend class MessageScheduler;
 
     MessageScheduler& scheduler_;
+    /**
+     * `sendLock_` is a lock on `scheduler_.sendMutex_`.
+     * Its presence guarantees that
+     * no other thread is reading or writing the sender queue.
+     * It is passed when calling `MessageScheduler::send()`.
+     */
     std::lock_guard<std::mutex> const& sendLock_;
+    /** `freshPeers_` is owned by the stack. */
     MetaPeerSet const& freshPeers_;
     ChannelCnt limit_;
     ChannelCnt closed_ = 0;
@@ -428,6 +435,9 @@ public:
         return freshPeers_;
     }
 
+    /**
+     * @return zero if the message cannot be sent to the peer; non-zero otherwise
+     */
     template <typename Message>
     RequestId
     send(
@@ -483,9 +493,19 @@ public:
 /**
  * Round-robin after random shuffle, until limit exhausted.
  *
+ * // `blaster` constructs itself with a copy of the set of all peers.
  * auto blaster = Blaster(courier);
+ * // `blaster` is truthy until either:
+ * // a. there are no peers in the set, or
+ * // b. the number of closed channels meets or exceeds the courier's limit.
  * while (blaster) {
+ *     // Trying to send a message either:
+ *     // a. removes a closed peer from the set, or
+ *     // b. increments the number of closed channels.
  *     auto sent = blaster.send(request, receiver, timeout);
+ *     if (sent) {
+ *         break;
+ *     }
  * }
  */
 class Blaster
@@ -503,10 +523,13 @@ public:
         std::mt19937 urbg(rd());
         std::shuffle(peers_.begin(), peers_.end(), urbg);
         auto const& freshPeers = courier_.freshPeers();
+        // Move fresh peers to the front.
         std::partition(peers_.begin(), peers_.end(), [&](auto const& peer) {
             return std::find(freshPeers.begin(), freshPeers.end(), peer) !=
                 freshPeers.end();
         });
+        // Do not remove closed peers here.
+        // That can wait for when and if the caller tries to send a message.
     }
 
     operator bool() const
@@ -526,12 +549,14 @@ public:
         auto sent = courier_.send(peers_[index_], message, receiver, timeout);
         if (sent)
         {
+            // Increment `index_`, which may make it match `peers_.size()`.
             ++index_;
         }
         else
         {
             // Remove dead peer.
             peers_[index_] = std::move(peers_.back());
+            // Decrement `peers_.size()`, which may make it match `index_`.
             peers_.pop_back();
         }
         // Wrap around.
