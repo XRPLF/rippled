@@ -176,6 +176,17 @@ if (use_lld)
   unset (LD_VERSION)
 endif()
 
+if (use_mold AND is_gcc)
+  # use mold linker if available
+  execute_process (
+    COMMAND ${CMAKE_CXX_COMPILER} -fuse-ld=mold -Wl,--version
+    ERROR_QUIET OUTPUT_VARIABLE LD_VERSION)
+  if ("${LD_VERSION}" MATCHES "mold")
+    target_link_libraries (common INTERFACE -fuse-ld=mold)
+  endif ()
+  unset (LD_VERSION)
+endif ()
+
 if (assert)
   foreach (var_ CMAKE_C_FLAGS_RELEASE CMAKE_CXX_FLAGS_RELEASE)
     STRING (REGEX REPLACE "[-/]DNDEBUG" "" ${var_} "${${var_}}")
