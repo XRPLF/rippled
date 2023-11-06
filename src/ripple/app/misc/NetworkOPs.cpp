@@ -3103,7 +3103,7 @@ NetworkOPsImp::transJson(
     transResultInfo(result, sToken, sHuman);
 
     jvObj[jss::type] = "transaction";
-    // NOTE jvObj which is not a finished object for either API version. After
+    // NOTE jvObj is not a finished object for either API version. After
     // it's populated, we need to finish it for a specific API version. This is
     // done in a loop, near the end of this function.
     jvObj[jss::transaction] =
@@ -3162,13 +3162,13 @@ NetworkOPsImp::transJson(
     MultiApiJson multiObj({jvObj, jvObj});
     // Minimum supported API version must match index 0 in MultiApiJson
     static_assert(apiVersionSelector(RPC::apiMinimumSupportedVersion)() == 0);
-    // Beta API version must match last index in MultiApiJson
+    // Last valid (possibly beta) API ver. must match last index in MultiApiJson
     static_assert(
-        apiVersionSelector(RPC::apiBetaVersion)() + 1  //
+        apiVersionSelector(RPC::apiMaximumValidVersion)() + 1  //
         == MultiApiJson::size);
     for (unsigned apiVersion = RPC::apiMinimumSupportedVersion,
                   lastIndex = MultiApiJson::size;
-         apiVersion <= RPC::apiBetaVersion;
+         apiVersion <= RPC::apiMaximumValidVersion;
          ++apiVersion)
     {
         unsigned const index = apiVersionSelector(apiVersion)();

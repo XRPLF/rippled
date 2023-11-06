@@ -319,6 +319,7 @@ populateJsonResponse(
         if (auto txnsData = std::get_if<TxnsData>(&result.transactions))
         {
             assert(!args.binary);
+
             for (auto const& [txn, txnMeta] : *txnsData)
             {
                 if (txn)
@@ -361,6 +362,8 @@ populateJsonResponse(
                             jvObj[jss::meta], context, txn, *txnMeta);
                         insertNFTSyntheticInJson(jvObj, sttx, *txnMeta);
                     }
+                    else
+                        assert(false && "Missing transaction medatata");
                 }
             }
         }

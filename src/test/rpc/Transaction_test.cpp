@@ -790,8 +790,8 @@ public:
         testRangeCTIDRequest(features);
         testCTIDValidation(features);
         testCTIDRPC(features);
-        testRequest(features, 1);
-        testRequest(features, 2);
+        test::jtx::forAllApiVersions(
+            std::bind_front(&Transaction_test::testRequest, this, features));
     }
 };
 

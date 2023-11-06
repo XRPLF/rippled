@@ -20,9 +20,9 @@
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/core/ConfigSections.h>
+#include <ripple/json/json_value.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/jss.h>
-#include "ripple/json/json_value.h"
 #include <test/jtx.h>
 #include <test/jtx/WSClient.h>
 #include <test/jtx/envconfig.h>
@@ -164,7 +164,7 @@ public:
     }
 
     void
-    testTransactions()
+    testTransactions_APIv1()
     {
         using namespace std::chrono_literals;
         using namespace jtx;
@@ -1302,7 +1302,7 @@ public:
 
         testServer();
         testLedger();
-        testTransactions();
+        testTransactions_APIv1();
         testTransactions_APIv2();
         testManifests();
         testValidations(all - xrpFees);
