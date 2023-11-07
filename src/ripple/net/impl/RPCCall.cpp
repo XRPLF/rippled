@@ -1603,7 +1603,7 @@ fromCommandLine(
     Logs& logs)
 {
     auto const result =
-        rpcClient(vCmd, config, logs, RPC::apiMinimumSupportedVersion);
+        rpcClient(vCmd, config, logs, RPC::apiCommandLineVersion);
 
     std::cout << result.second.toStyledString();
 

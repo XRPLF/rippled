@@ -235,7 +235,8 @@ constexpr unsigned int apiInvalidVersion = 0;
 constexpr unsigned int apiVersionIfUnspecified = 1;
 constexpr unsigned int apiMinimumSupportedVersion = 1;
 constexpr unsigned int apiMaximumSupportedVersion = 2;
-constexpr unsigned int apiBetaVersion = 2;
+constexpr unsigned int apiCommandLineVersion = 1;  // TODO Bump to 2 later
+constexpr unsigned int apiBetaVersion = 3;
 constexpr unsigned int apiMaximumValidVersion = apiBetaVersion;
 
 static_assert(apiMinimumSupportedVersion >= apiVersionIfUnspecified);

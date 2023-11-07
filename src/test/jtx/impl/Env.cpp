@@ -460,8 +460,8 @@ Env::st(JTx const& jt)
 
 Json::Value
 Env::do_rpc(
-    std::vector<std::string> const& args,
     unsigned apiVersion,
+    std::vector<std::string> const& args,
     std::unordered_map<std::string, std::string> const& headers)
 {
     return rpcClient(args, app().config(), app().logs(), apiVersion, headers)
