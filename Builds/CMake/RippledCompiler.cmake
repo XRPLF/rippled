@@ -131,7 +131,19 @@ else ()
       >)
 endif ()
 
-if (use_gold AND is_gcc)
+if (use_mold)
+  # use mold linker if available
+  execute_process (
+    COMMAND ${CMAKE_CXX_COMPILER} -fuse-ld=mold -Wl,--version
+    ERROR_QUIET OUTPUT_VARIABLE LD_VERSION)
+  if ("${LD_VERSION}" MATCHES "mold")
+    set(found_nondefault_linker TRUE)
+    target_link_libraries (common INTERFACE -fuse-ld=mold)
+  endif ()
+  unset (LD_VERSION)
+endif ()
+
+if (use_gold AND is_gcc AND (NOT found_non_default_linker))
   # use gold linker if available
   execute_process (
     COMMAND ${CMAKE_CXX_COMPILER} -fuse-ld=gold -Wl,--version
@@ -150,6 +162,7 @@ if (use_gold AND is_gcc)
        required to make gold play nicely with jemalloc.
     #]=========================================================]
   if (("${LD_VERSION}" MATCHES "GNU gold") AND (NOT jemalloc))
+    set(found_nondefault_linker TRUE)
     target_link_libraries (common
       INTERFACE
         -fuse-ld=gold
@@ -165,7 +178,7 @@ if (use_gold AND is_gcc)
   unset (LD_VERSION)
 endif ()
 
-if (use_lld)
+if (use_lld AND (NOT found_nondefault_linker))
   # use lld linker if available
   execute_process (
     COMMAND ${CMAKE_CXX_COMPILER} -fuse-ld=lld -Wl,--version
@@ -176,16 +189,6 @@ if (use_lld)
   unset (LD_VERSION)
 endif()
 
-if (use_mold AND is_gcc)
-  # use mold linker if available
-  execute_process (
-    COMMAND ${CMAKE_CXX_COMPILER} -fuse-ld=mold -Wl,--version
-    ERROR_QUIET OUTPUT_VARIABLE LD_VERSION)
-  if ("${LD_VERSION}" MATCHES "mold")
-    target_link_libraries (common INTERFACE -fuse-ld=mold)
-  endif ()
-  unset (LD_VERSION)
-endif ()
 
 if (assert)
   foreach (var_ CMAKE_C_FLAGS_RELEASE CMAKE_CXX_FLAGS_RELEASE)
