@@ -137,13 +137,10 @@ if (use_mold)
     COMMAND ${CMAKE_CXX_COMPILER} -fuse-ld=mold -Wl,--version
     ERROR_QUIET OUTPUT_VARIABLE LD_VERSION)
   if ("${LD_VERSION}" MATCHES "mold")
-    set(found_nondefault_linker TRUE)
     target_link_libraries (common INTERFACE -fuse-ld=mold)
   endif ()
   unset (LD_VERSION)
-endif ()
-
-if (use_gold AND is_gcc AND (NOT found_non_default_linker))
+elseif (use_gold AND is_gcc)
   # use gold linker if available
   execute_process (
     COMMAND ${CMAKE_CXX_COMPILER} -fuse-ld=gold -Wl,--version
@@ -162,7 +159,6 @@ if (use_gold AND is_gcc AND (NOT found_non_default_linker))
        required to make gold play nicely with jemalloc.
     #]=========================================================]
   if (("${LD_VERSION}" MATCHES "GNU gold") AND (NOT jemalloc))
-    set(found_nondefault_linker TRUE)
     target_link_libraries (common
       INTERFACE
         -fuse-ld=gold
@@ -176,9 +172,7 @@ if (use_gold AND is_gcc AND (NOT found_non_default_linker))
         $<$<NOT:$<BOOL:${static}>>:-Wl,--disable-new-dtags>)
   endif ()
   unset (LD_VERSION)
-endif ()
-
-if (use_lld AND (NOT found_nondefault_linker))
+elseif (use_lld)
   # use lld linker if available
   execute_process (
     COMMAND ${CMAKE_CXX_COMPILER} -fuse-ld=lld -Wl,--version
