@@ -61,8 +61,8 @@ class Invariants_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env{*this};
 
-        Account A1{"A1"};
-        Account A2{"A2"};
+        Account const A1{"A1"};
+        Account const A2{"A2"};
         env.fund(XRP(1000), A1, A2);
         if (preclose)
             BEAST_EXPECT(preclose(A1, A2, env));
@@ -266,7 +266,7 @@ class Invariants_test : public beast::unit_test::suite
             [&](Account const& A1, Account const& A2, Env& env) {
                 // Preclose callback to create the AMM which will be deleted in
                 // the Precheck callback above.
-                AMM amm(env, A1, XRP(100), A1["USD"](50));
+                AMM const amm(env, A1, XRP(100), A1["USD"](50));
                 ammAcctID = amm.ammAccount();
                 ammKey = amm.ammID();
                 ammIssue = amm.lptIssue();
@@ -284,7 +284,7 @@ class Invariants_test : public beast::unit_test::suite
                 BEAST_EXPECT(sle->at(~sfAMMID));
                 BEAST_EXPECT(sle->at(~sfAMMID) == ammKey);
 
-                for (auto const trustKeylet :
+                for (auto const& trustKeylet :
                      {keylet::line(ammAcctID, A1["USD"]),
                       keylet::line(A1, ammIssue)})
                 {
@@ -294,8 +294,8 @@ class Invariants_test : public beast::unit_test::suite
                     }
                     else
                     {
-                        STAmount lowLimit = line->at(sfLowLimit);
-                        STAmount highLimit = line->at(sfHighLimit);
+                        STAmount const lowLimit = line->at(sfLowLimit);
+                        STAmount const highLimit = line->at(sfHighLimit);
                         BEAST_EXPECT(
                             trustDelete(
                                 ac.view(),
@@ -327,7 +327,7 @@ class Invariants_test : public beast::unit_test::suite
             [&](Account const& A1, Account const& A2, Env& env) {
                 // Delete the AMM account, cleaning up the directory, but
                 // without deleting the AMM object
-                AMM amm(env, A1, XRP(100), A1["USD"](50));
+                AMM const amm(env, A1, XRP(100), A1["USD"](50));
                 ammAcctID = amm.ammAccount();
                 ammKey = amm.ammID();
                 ammIssue = amm.lptIssue();
@@ -348,7 +348,7 @@ class Invariants_test : public beast::unit_test::suite
                 auto const sle = ac.view().peek(keylet::account(A1.id()));
                 if (!sle)
                     return false;
-                auto sleNew = std::make_shared<SLE>(ltTICKET, sle->key());
+                auto const sleNew = std::make_shared<SLE>(ltTICKET, sle->key());
                 ac.rawView().rawReplace(sleNew);
                 return true;
             });
@@ -364,7 +364,7 @@ class Invariants_test : public beast::unit_test::suite
                 // make a dummy escrow ledger entry, then change the type to an
                 // unsupported value so that the valid type invariant check
                 // will fail.
-                auto sleNew = std::make_shared<SLE>(
+                auto const sleNew = std::make_shared<SLE>(
                     keylet::escrow(A1, (*sle)[sfSequence] + 2));
 
                 // We don't use ltNICKNAME directly since it's marked deprecated
@@ -404,7 +404,7 @@ class Invariants_test : public beast::unit_test::suite
                 auto const sle = ac.view().peek(keylet::account(A1.id()));
                 if (!sle)
                     return false;
-                STAmount nonNative(A2["USD"](51));
+                STAmount const nonNative(A2["USD"](51));
                 sle->setFieldAmount(sfBalance, nonNative);
                 ac.view().update(sle);
                 return true;
@@ -593,7 +593,7 @@ class Invariants_test : public beast::unit_test::suite
             [](Account const&, Account const&, ApplyContext& ac) {
                 // Insert a new account root created by a non-payment into
                 // the view.
-                const Account A3{"A3"};
+                Account const A3{"A3"};
                 Keylet const acctKeylet = keylet::account(A3);
                 auto const sleNew = std::make_shared<SLE>(acctKeylet);
                 ac.view().insert(sleNew);
@@ -605,13 +605,13 @@ class Invariants_test : public beast::unit_test::suite
             [](Account const&, Account const&, ApplyContext& ac) {
                 // Insert two new account roots into the view.
                 {
-                    const Account A3{"A3"};
+                    Account const A3{"A3"};
                     Keylet const acctKeylet = keylet::account(A3);
                     auto const sleA3 = std::make_shared<SLE>(acctKeylet);
                     ac.view().insert(sleA3);
                 }
                 {
-                    const Account A4{"A4"};
+                    Account const A4{"A4"};
                     Keylet const acctKeylet = keylet::account(A4);
                     auto const sleA4 = std::make_shared<SLE>(acctKeylet);
                     ac.view().insert(sleA4);
@@ -623,7 +623,7 @@ class Invariants_test : public beast::unit_test::suite
             {{"account created with wrong starting sequence number"}},
             [](Account const&, Account const&, ApplyContext& ac) {
                 // Insert a new account root with the wrong starting sequence.
-                const Account A3{"A3"};
+                Account const A3{"A3"};
                 Keylet const acctKeylet = keylet::account(A3);
                 auto const sleNew = std::make_shared<SLE>(acctKeylet);
                 sleNew->setFieldU32(sfSequence, ac.view().seq() + 1);

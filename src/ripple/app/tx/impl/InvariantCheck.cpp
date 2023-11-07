@@ -411,6 +411,7 @@ AccountRootsDeletedClean::finalize(
             JLOG(j.fatal())
                 << "Invariant failed: account deletion left behind a "
                 << typeName << " object";
+            (void)enforce;
             assert(enforce);
             return true;
         }
