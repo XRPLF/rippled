@@ -45,6 +45,7 @@ doSubmitMultiSigned(RPC::JsonContext& context)
 
     return RPC::transactionSubmitMultiSigned(
         context.params,
+        context.apiVersion,
         failType,
         context.role,
         context.ledgerMaster.getValidatedLedgerAge(),

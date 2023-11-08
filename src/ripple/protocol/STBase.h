@@ -31,7 +31,62 @@
 #include <utility>
 namespace ripple {
 
-enum class JsonOptions { none = 0, include_date = 1 };
+/// Note, should be treated as flags that can be | and &
+struct JsonOptions
+{
+    using underlying_t = unsigned int;
+    underlying_t value;
+
+    enum values : underlying_t {
+        // clang-format off
+        none                        = 0b0000'0000,
+        include_date                = 0b0000'0001,
+        disable_API_prior_V2        = 0b0000'0010,
+
+        // IMPORTANT `_all` must be union of all of the above; see also operator~
+        _all                        = 0b0000'0011
+        // clang-format on
+    };
+
+    constexpr JsonOptions(underlying_t v) noexcept : value(v)
+    {
+    }
+
+    [[nodiscard]] constexpr explicit operator underlying_t() const noexcept
+    {
+        return value;
+    }
+    [[nodiscard]] constexpr explicit operator bool() const noexcept
+    {
+        return value != 0u;
+    }
+    [[nodiscard]] constexpr auto friend
+    operator==(JsonOptions lh, JsonOptions rh) noexcept -> bool = default;
+    [[nodiscard]] constexpr auto friend
+    operator!=(JsonOptions lh, JsonOptions rh) noexcept -> bool = default;
+
+    /// Returns JsonOptions union of lh and rh
+    [[nodiscard]] constexpr JsonOptions friend
+    operator|(JsonOptions lh, JsonOptions rh) noexcept
+    {
+        return {lh.value | rh.value};
+    }
+
+    /// Returns JsonOptions intersection of lh and rh
+    [[nodiscard]] constexpr JsonOptions friend
+    operator&(JsonOptions lh, JsonOptions rh) noexcept
+    {
+        return {lh.value & rh.value};
+    }
+
+    /// Returns JsonOptions binary negation, can be used with & (above) for set
+    /// difference e.g. `(options & ~JsonOptions::include_date)`
+    [[nodiscard]] constexpr JsonOptions friend
+    operator~(JsonOptions v) noexcept
+    {
+        return {~v.value & static_cast<underlying_t>(_all)};
+    }
+};
 
 namespace detail {
 class STVar;
