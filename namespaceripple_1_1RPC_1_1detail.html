@@ -96,8 +96,8 @@ Functions</h2></td></tr>
 <tr class="separator:a5243c8f203b40c3b2cedf27af29f7218"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abafd63792821196881f9a3a2de040aed"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="classJson_1_1Value.html">Json::Value</a>, <a class="el" href="classripple_1_1Transaction.html#ab9691bbf2e54050d728dc25baf1d48a0">Transaction::pointer</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC_1_1detail.html#abafd63792821196881f9a3a2de040aed">transactionConstructImpl</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1STTx.html">STTx</a> const &gt; const &amp;stpTrans, <a class="el" href="classripple_1_1Rules.html">Rules</a> const &amp;rules, <a class="el" href="classripple_1_1Application.html">Application</a> &amp;app)</td></tr>
 <tr class="separator:abafd63792821196881f9a3a2de040aed"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0912a681a9aae2f9ff0f6f24327934db"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC_1_1detail.html#a0912a681a9aae2f9ff0f6f24327934db">transactionFormatResultImpl</a> (<a class="el" href="classripple_1_1Transaction.html#ab9691bbf2e54050d728dc25baf1d48a0">Transaction::pointer</a> tpTrans)</td></tr>
-<tr class="separator:a0912a681a9aae2f9ff0f6f24327934db"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af4dc49eb0a127a2e10548647378fea74"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC_1_1detail.html#af4dc49eb0a127a2e10548647378fea74">transactionFormatResultImpl</a> (<a class="el" href="classripple_1_1Transaction.html#ab9691bbf2e54050d728dc25baf1d48a0">Transaction::pointer</a> tpTrans, unsigned apiVersion)</td></tr>
+<tr class="separator:af4dc49eb0a127a2e10548647378fea74"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9951e7bcb8c906eb76608e94b1f56320"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC_1_1detail.html#a9951e7bcb8c906eb76608e94b1f56320">checkMultiSignFields</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;jvRequest)</td></tr>
 <tr class="separator:a9951e7bcb8c906eb76608e94b1f56320"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae55247d02759e159363f3e9e370eee81"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC_1_1detail.html#ae55247d02759e159363f3e9e370eee81">sortAndValidateSigners</a> (<a class="el" href="classripple_1_1STArray.html">STArray</a> &amp;signers, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;signingForID)</td></tr>
@@ -418,8 +418,8 @@ template&lt;int M, int N&gt; </div>
 
 </div>
 </div>
-<a id="a0912a681a9aae2f9ff0f6f24327934db"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0912a681a9aae2f9ff0f6f24327934db">&#9670;&nbsp;</a></span>transactionFormatResultImpl()</h2>
+<a id="af4dc49eb0a127a2e10548647378fea74"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af4dc49eb0a127a2e10548647378fea74">&#9670;&nbsp;</a></span>transactionFormatResultImpl()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -431,8 +431,18 @@ template&lt;int M, int N&gt; </div>
           <td class="memname">static <a class="el" href="classJson_1_1Value.html">Json::Value</a> ripple::RPC::detail::transactionFormatResultImpl </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classripple_1_1Transaction.html#ab9691bbf2e54050d728dc25baf1d48a0">Transaction::pointer</a>&#160;</td>
-          <td class="paramname"><em>tpTrans</em></td><td>)</td>
+          <td class="paramname"><em>tpTrans</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">unsigned&#160;</td>
+          <td class="paramname"><em>apiVersion</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
   </td>
@@ -470,7 +480,7 @@ template&lt;int M, int N&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l00863">863</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l00873">873</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
 
 </div>
 </div>
@@ -508,7 +518,7 @@ template&lt;int M, int N&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l00894">894</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l00904">904</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
 
 </div>
 </div>

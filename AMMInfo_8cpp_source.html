@@ -87,236 +87,236 @@ $(function() {
 <div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="comment">    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.</span></div>
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="comment">*/</span></div>
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="comment">//==============================================================================</span></div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="preprocessor">#include &lt;ripple/app/misc/AMMUtils.h&gt;</span></div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &lt;ripple/json/json_value.h&gt;</span></div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;ripple/ledger/ReadView.h&gt;</span></div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &lt;ripple/net/RPCErr.h&gt;</span></div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/AMMCore.h&gt;</span></div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/Issue.h&gt;</span></div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;ripple/rpc/Context.h&gt;</span></div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;ripple/rpc/impl/RPCHelpers.h&gt;</span></div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#include &lt;grpcpp/support/status.h&gt;</span></div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160; </div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160; </div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;AccountID&gt;</a></div>
-<div class="line"><a name="l00032"></a><span class="lineno"><a class="line" href="namespaceripple.html#aee9f82c657b04d4d79bbd225a60ca815">   32</a></span>&#160;<a class="code" href="namespaceripple.html#aee9f82c657b04d4d79bbd225a60ca815">getAccount</a>(<a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span>&amp; v, <a class="code" href="classJson_1_1Value.html">Json::Value</a>&amp; result)</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;{</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> strIdent(v.<a class="code" href="classJson_1_1Value.html#ab0d86bf425efefd03513e8dbfaca317b">asString</a>());</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">AccountID</a> accountID;</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160; </div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    <span class="keywordflow">if</span> (<span class="keyword">auto</span> jv = <a class="code" href="namespaceripple_1_1RPC.html#a9dc259937a004b30e88f41a95756bee0">RPC::accountFromString</a>(accountID, strIdent))</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    {</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> it = jv.begin(); it != jv.end(); ++it)</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;            result[it.memberName()] = (*it);</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160; </div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;        <span class="keywordflow">return</span> std::nullopt;</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    }</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    <span class="keywordflow">return</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;AccountID&gt;</a>(accountID);</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;}</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160; </div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;Expected&lt;Issue, error_code_i&gt;</div>
-<div class="line"><a name="l00048"></a><span class="lineno"><a class="line" href="namespaceripple.html#acaac575db8b34aeb8a3312fd25c5a2df">   48</a></span>&#160;<a class="code" href="namespaceripple.html#a35d75f3e8c1d99beb8c834d767070d8c">getIssue</a>(<a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span>&amp; v, <a class="code" href="classbeast_1_1Journal.html">beast::Journal</a> j)</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;{</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    <span class="keywordflow">try</span></div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    {</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a853eecfd00cbdc3b1f996e4c961eda69">issueFromJson</a>(v);</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    }</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/runtime_error.html">std::runtime_error</a> <span class="keyword">const</span>&amp; ex)</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    {</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;        JLOG(j.<a class="code" href="classbeast_1_1Journal.html#a556228cb60bcf405c225d3f64b7b01ae">debug</a>()) &lt;&lt; <span class="stringliteral">&quot;getIssue &quot;</span> &lt;&lt; ex.<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception/what.html">what</a>();</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    }</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#ad6887fe0534dd3b0df2da54ff8994e2f">Unexpected</a>(<a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a13cb05bfc011d1eec5fa52b5a3417043">rpcISSUE_MALFORMED</a>);</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;}</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160; </div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div>
-<div class="line"><a name="l00062"></a><span class="lineno"><a class="line" href="namespaceripple.html#af58d1f8cb315a2e5487a028714b13982">   62</a></span>&#160;<a class="code" href="namespaceripple.html#af58d1f8cb315a2e5487a028714b13982">to_iso8601</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/time_point.html">NetClock::time_point</a> tp)</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;{</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    <span class="comment">// 2000-01-01 00:00:00 UTC is 946684800s from 1970-01-01 00:00:00 UTC</span></div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    <span class="keyword">using namespace </span><a class="codeRef" href="http://en.cppreference.com/w/namespacestd_1_1chrono.html">std::chrono</a>;</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    <span class="keywordflow">return</span> date::format(</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        <span class="stringliteral">&quot;%Y-%Om-%dT%H:%M:%OS%z&quot;</span>,</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;        date::sys_time&lt;system_clock::duration&gt;(</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;            system_clock::time_point{tp.<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/time_point/time_since_epoch.html">time_since_epoch</a>() + 946684800s}));</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;}</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160; </div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;<a class="code" href="classJson_1_1Value.html">Json::Value</a></div>
-<div class="line"><a name="l00073"></a><span class="lineno"><a class="line" href="namespaceripple.html#a522e233bde2b262fa9ba54d0bb3b134a">   73</a></span>&#160;<a class="code" href="namespaceripple.html#a522e233bde2b262fa9ba54d0bb3b134a">doAMMInfo</a>(<a class="code" href="structripple_1_1RPC_1_1JsonContext.html">RPC::JsonContext</a>&amp; context)</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;{</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span>&amp; params(context.<a class="code" href="structripple_1_1RPC_1_1JsonContext.html#a036b2c14552fbca49011c3d0e78017fa">params</a>);</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a> result;</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160; </div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;ReadView const&gt;</a> ledger;</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    result = <a class="code" href="namespaceripple_1_1RPC.html#aaebfaaee35308269fab499f4e203a8c9">RPC::lookupLedger</a>(ledger, context);</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    <span class="keywordflow">if</span> (!ledger)</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;        <span class="keywordflow">return</span> result;</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160; </div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;    <span class="keyword">struct </span>ValuesFromContextParams</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    {</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;AccountID&gt;</a> accountID;</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;        <a class="code" href="classripple_1_1Issue.html">Issue</a> issue1;</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;        <a class="code" href="classripple_1_1Issue.html">Issue</a> issue2;</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;SLE const&gt;</a> amm;</div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    };</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160; </div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    <span class="keyword">auto</span> getValuesFromContextParams =</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;        [&amp;]() -&gt; <a class="code" href="classripple_1_1Expected.html">Expected&lt;ValuesFromContextParams, error_code_i&gt;</a> {</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;AccountID&gt;</a> accountID;</div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;Issue&gt;</a> issue1;</div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;Issue&gt;</a> issue2;</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;uint256&gt;</a> ammID;</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160; </div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;        <span class="keywordflow">if</span> ((params.isMember(jss::asset) != params.isMember(jss::asset2)) ||</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;            (params.isMember(jss::asset) == params.isMember(jss::amm_account)))</div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;            <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#ad6887fe0534dd3b0df2da54ff8994e2f">Unexpected</a>(<a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a82ddebc5ec7a37ff38892487277bf9c4">rpcINVALID_PARAMS</a>);</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160; </div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;        <span class="keywordflow">if</span> (params.isMember(jss::asset))</div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;        {</div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;            <span class="keywordflow">if</span> (<span class="keyword">auto</span> <span class="keyword">const</span> i = <a class="code" href="namespaceripple.html#a35d75f3e8c1d99beb8c834d767070d8c">getIssue</a>(params[jss::asset], context.<a class="code" href="structripple_1_1RPC_1_1Context.html#ac6ec0f79fbac84b6c8911117792ed0e6">j</a>))</div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;                issue1 = *i;</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;            <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;                <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#ad6887fe0534dd3b0df2da54ff8994e2f">Unexpected</a>(i.error());</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;        }</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160; </div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;        <span class="keywordflow">if</span> (params.isMember(jss::asset2))</div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;        {</div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;            <span class="keywordflow">if</span> (<span class="keyword">auto</span> <span class="keyword">const</span> i = <a class="code" href="namespaceripple.html#a35d75f3e8c1d99beb8c834d767070d8c">getIssue</a>(params[jss::asset2], context.<a class="code" href="structripple_1_1RPC_1_1Context.html#ac6ec0f79fbac84b6c8911117792ed0e6">j</a>))</div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;                issue2 = *i;</div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;            <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;                <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#ad6887fe0534dd3b0df2da54ff8994e2f">Unexpected</a>(i.error());</div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;        }</div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160; </div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;        <span class="keywordflow">if</span> (params.isMember(jss::amm_account))</div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;        {</div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> <span class="keywordtype">id</span> = <a class="code" href="namespaceripple.html#aee9f82c657b04d4d79bbd225a60ca815">getAccount</a>(params[jss::amm_account], result);</div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;            <span class="keywordflow">if</span> (!<span class="keywordtype">id</span>)</div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;                <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#ad6887fe0534dd3b0df2da54ff8994e2f">Unexpected</a>(<a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a4fba57dbbed9bfaa196e1a0e0915dc8a">rpcACT_MALFORMED</a>);</div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> sle = ledger-&gt;<a class="code" href="classripple_1_1ReadView.html#a3351e0244f921234d5ba005a07ddf539">read</a>(<a class="code" href="namespaceripple_1_1keylet.html#a50c370db96b4fdcdd202d9c2c38afce9">keylet::account</a>(*<span class="keywordtype">id</span>));</div>
-<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;            <span class="keywordflow">if</span> (!sle)</div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;                <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#ad6887fe0534dd3b0df2da54ff8994e2f">Unexpected</a>(<a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a4fba57dbbed9bfaa196e1a0e0915dc8a">rpcACT_MALFORMED</a>);</div>
-<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;            ammID = sle-&gt;getFieldH256(<a class="code" href="namespaceripple.html#af487c2d8c871030560b07f7b7c118fd1">sfAMMID</a>);</div>
-<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;        }</div>
-<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160; </div>
-<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;        assert(</div>
-<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;            (issue1.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional/operator_bool.html">has_value</a>() == issue2.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional/operator_bool.html">has_value</a>()) &amp;&amp;</div>
-<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;            (issue1.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional/operator_bool.html">has_value</a>() != ammID.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional/operator_bool.html">has_value</a>()));</div>
-<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160; </div>
-<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;        <span class="keywordflow">if</span> (params.isMember(jss::account))</div>
-<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;        {</div>
-<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;            accountID = <a class="code" href="namespaceripple.html#aee9f82c657b04d4d79bbd225a60ca815">getAccount</a>(params[jss::account], result);</div>
-<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;            <span class="keywordflow">if</span> (!accountID || !ledger-&gt;<a class="code" href="classripple_1_1ReadView.html#a3351e0244f921234d5ba005a07ddf539">read</a>(<a class="code" href="namespaceripple_1_1keylet.html#a50c370db96b4fdcdd202d9c2c38afce9">keylet::account</a>(*accountID)))</div>
-<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;                <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#ad6887fe0534dd3b0df2da54ff8994e2f">Unexpected</a>(<a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a4fba57dbbed9bfaa196e1a0e0915dc8a">rpcACT_MALFORMED</a>);</div>
-<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;        }</div>
-<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160; </div>
-<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> ammKeylet = [&amp;]() {</div>
-<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;            <span class="keywordflow">if</span> (issue1 &amp;&amp; issue2)</div>
-<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;                <span class="keywordflow">return</span> <a class="code" href="namespaceripple_1_1keylet.html#abdda705f5bcd7002243740a748496454">keylet::amm</a>(*issue1, *issue2);</div>
-<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;            assert(ammID);</div>
-<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;            <span class="keywordflow">return</span> <a class="code" href="namespaceripple_1_1keylet.html#abdda705f5bcd7002243740a748496454">keylet::amm</a>(*ammID);</div>
-<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;        }();</div>
-<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> amm = ledger-&gt;<a class="code" href="classripple_1_1ReadView.html#a3351e0244f921234d5ba005a07ddf539">read</a>(ammKeylet);</div>
-<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;        <span class="keywordflow">if</span> (!amm)</div>
-<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;            <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#ad6887fe0534dd3b0df2da54ff8994e2f">Unexpected</a>(<a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a044301ed3c32624aade5888d1c60566f">rpcACT_NOT_FOUND</a>);</div>
-<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;        <span class="keywordflow">if</span> (!issue1 &amp;&amp; !issue2)</div>
-<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;        {</div>
-<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;            issue1 = (*amm)[<a class="code" href="namespaceripple.html#a9953d4af61379095c9d6da470b3c757b">sfAsset</a>];</div>
-<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;            issue2 = (*amm)[<a class="code" href="namespaceripple.html#a591104015d6a14c18338888b22c65a9f">sfAsset2</a>];</div>
-<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;        }</div>
-<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160; </div>
-<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;        <span class="keywordflow">return</span> ValuesFromContextParams{</div>
-<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;            accountID, *issue1, *issue2, std::move(amm)};</div>
-<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;    };</div>
-<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160; </div>
-<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> r = getValuesFromContextParams();</div>
-<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;    <span class="keywordflow">if</span> (!r)</div>
-<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;    {</div>
-<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;        <a class="code" href="namespaceripple_1_1RPC.html#a577bde9602a28f59e445c496f92a1ccf">RPC::inject_error</a>(r.error(), result);</div>
-<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;        <span class="keywordflow">return</span> result;</div>
-<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;    }</div>
-<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160; </div>
-<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span>&amp; [accountID, issue1, issue2, amm] = *r;</div>
-<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160; </div>
-<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> <a class="code" href="namespaceripple.html#a768092086ea18d2dbeb64efb9fa12ba5">ammAccountID</a> = amm-&gt;getAccountID(<a class="code" href="namespaceripple.html#a5bab99595719d22579e10d21cf048eb0">sfAccount</a>);</div>
-<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160; </div>
-<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;    <span class="comment">// provide funds if frozen, specify asset_frozen flag</span></div>
-<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> [asset1Balance, asset2Balance] = <a class="code" href="namespaceripple.html#a887bf45d7cc0bf68aec6440746faca36">ammPoolHolds</a>(</div>
-<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;        *ledger,</div>
-<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;        <a class="code" href="namespaceripple.html#a768092086ea18d2dbeb64efb9fa12ba5">ammAccountID</a>,</div>
-<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;        issue1,</div>
-<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;        issue2,</div>
-<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;        FreezeHandling::fhIGNORE_FREEZE,</div>
-<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;        context.<a class="code" href="structripple_1_1RPC_1_1Context.html#ac6ec0f79fbac84b6c8911117792ed0e6">j</a>);</div>
-<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> lptAMMBalance = accountID</div>
-<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;        ? <a class="code" href="namespaceripple.html#a7c5d3108f4942ebc53a3fa4f83c2d577">ammLPHolds</a>(*ledger, *amm, *accountID, context.<a class="code" href="structripple_1_1RPC_1_1Context.html#ac6ec0f79fbac84b6c8911117792ed0e6">j</a>)</div>
-<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;        : (*amm)[<a class="code" href="namespaceripple.html#a8b2408d93e4f8fd8f128e979249c9e22">sfLPTokenBalance</a>];</div>
-<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160; </div>
-<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a> ammResult;</div>
-<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;    asset1Balance.setJson(ammResult[jss::amount]);</div>
-<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;    asset2Balance.setJson(ammResult[jss::amount2]);</div>
-<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;    lptAMMBalance.setJson(ammResult[jss::lp_token]);</div>
-<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;    ammResult[jss::trading_fee] = (*amm)[<a class="code" href="namespaceripple.html#a53c800501c3d2514b460720d391163bd">sfTradingFee</a>];</div>
-<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;    ammResult[jss::account] = <a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(<a class="code" href="namespaceripple.html#a768092086ea18d2dbeb64efb9fa12ba5">ammAccountID</a>);</div>
-<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a> voteSlots(<a class="code" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eadc8f264f36b55b063c78126b335415f4">Json::arrayValue</a>);</div>
-<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;    <span class="keywordflow">if</span> (amm-&gt;isFieldPresent(<a class="code" href="namespaceripple.html#afc4137eeed6ddbd61647efe0e0c61c86">sfVoteSlots</a>))</div>
-<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;    {</div>
-<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; voteEntry : amm-&gt;getFieldArray(<a class="code" href="namespaceripple.html#afc4137eeed6ddbd61647efe0e0c61c86">sfVoteSlots</a>))</div>
-<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;        {</div>
-<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;            <a class="code" href="classJson_1_1Value.html">Json::Value</a> vote;</div>
-<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;            vote[jss::account] = <a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(voteEntry.getAccountID(<a class="code" href="namespaceripple.html#a5bab99595719d22579e10d21cf048eb0">sfAccount</a>));</div>
-<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;            vote[jss::trading_fee] = voteEntry[<a class="code" href="namespaceripple.html#a53c800501c3d2514b460720d391163bd">sfTradingFee</a>];</div>
-<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;            vote[jss::vote_weight] = voteEntry[<a class="code" href="namespaceripple.html#ab0b9bdf7999299816bd31a43482d8b85">sfVoteWeight</a>];</div>
-<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;            voteSlots.<a class="code" href="classJson_1_1Value.html#a7e49ac977e4bcf59745a09d426669f75">append</a>(std::move(vote));</div>
-<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;        }</div>
-<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;    }</div>
-<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;    <span class="keywordflow">if</span> (voteSlots.<a class="code" href="classJson_1_1Value.html#a23c7027ca674f989f90564d63ef36c74">size</a>() &gt; 0)</div>
-<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;        ammResult[jss::vote_slots] = std::move(voteSlots);</div>
-<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;    <span class="keywordflow">if</span> (amm-&gt;isFieldPresent(<a class="code" href="namespaceripple.html#aae61d7b2bf98113dacac8854d15a4ac4">sfAuctionSlot</a>))</div>
-<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;    {</div>
-<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span>&amp; auctionSlot =</div>
-<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;            <span class="keyword">static_cast&lt;</span><a class="code" href="classripple_1_1STObject.html">STObject</a> const&amp;<span class="keyword">&gt;</span>(amm-&gt;peekAtField(<a class="code" href="namespaceripple.html#aae61d7b2bf98113dacac8854d15a4ac4">sfAuctionSlot</a>));</div>
-<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;        <span class="keywordflow">if</span> (auctionSlot.isFieldPresent(<a class="code" href="namespaceripple.html#a5bab99595719d22579e10d21cf048eb0">sfAccount</a>))</div>
-<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;        {</div>
-<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;            <a class="code" href="classJson_1_1Value.html">Json::Value</a> auction;</div>
-<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> timeSlot = <a class="code" href="namespaceripple.html#a23fcbb81cb52959dfbeebade68c4db18">ammAuctionTimeSlot</a>(</div>
-<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;                ledger-&gt;<a class="code" href="classripple_1_1ReadView.html#a9263b10d706a447166b229ad8e3b574c">info</a>().<a class="code" href="structripple_1_1LedgerHeader.html#acbaff4abb7243e02f45e63bd19843aa9">parentCloseTime</a>.<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/time_point/time_since_epoch.html">time_since_epoch</a>().count(),</div>
-<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;                auctionSlot);</div>
-<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;            auction[jss::time_interval] =</div>
-<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;                timeSlot ? *timeSlot : <a class="code" href="namespaceripple.html#a3227a0599e217de9084e5fc5bf55ee0c">AUCTION_SLOT_TIME_INTERVALS</a>;</div>
-<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;            auctionSlot[<a class="code" href="namespaceripple.html#ac1094212a3f17c0903e4d13ffe345596">sfPrice</a>].setJson(auction[jss::price]);</div>
-<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;            auction[jss::discounted_fee] = auctionSlot[<a class="code" href="namespaceripple.html#a5647f794f04aab275b4b1e0cd348413b">sfDiscountedFee</a>];</div>
-<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;            auction[jss::account] =</div>
-<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;                <a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(auctionSlot.getAccountID(<a class="code" href="namespaceripple.html#a5bab99595719d22579e10d21cf048eb0">sfAccount</a>));</div>
-<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;            auction[jss::expiration] = <a class="code" href="namespaceripple.html#af58d1f8cb315a2e5487a028714b13982">to_iso8601</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/time_point.html">NetClock::time_point</a>{</div>
-<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">NetClock::duration</a>{auctionSlot[<a class="code" href="namespaceripple.html#ae3182ff3db5f7f67e4fe8bcd69316727">sfExpiration</a>]}});</div>
-<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;            <span class="keywordflow">if</span> (auctionSlot.isFieldPresent(<a class="code" href="namespaceripple.html#a833a9abab16c97acc59f47135a6f6b26">sfAuthAccounts</a>))</div>
-<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;            {</div>
-<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;                <a class="code" href="classJson_1_1Value.html">Json::Value</a> auth;</div>
-<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;                <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; acct :</div>
-<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;                     auctionSlot.getFieldArray(<a class="code" href="namespaceripple.html#a833a9abab16c97acc59f47135a6f6b26">sfAuthAccounts</a>))</div>
-<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;                {</div>
-<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;                    <a class="code" href="classJson_1_1Value.html">Json::Value</a> jv;</div>
-<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;                    jv[jss::account] = <a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(acct.getAccountID(<a class="code" href="namespaceripple.html#a5bab99595719d22579e10d21cf048eb0">sfAccount</a>));</div>
-<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;                    auth.<a class="code" href="classJson_1_1Value.html#a7e49ac977e4bcf59745a09d426669f75">append</a>(jv);</div>
-<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;                }</div>
-<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;                auction[jss::auth_accounts] = auth;</div>
-<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;            }</div>
-<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;            ammResult[jss::auction_slot] = std::move(auction);</div>
-<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;        }</div>
-<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;    }</div>
-<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160; </div>
-<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;    <span class="keywordflow">if</span> (!<a class="code" href="namespaceripple.html#a20d30277b9c78756b3d14493055a307c">isXRP</a>(asset1Balance))</div>
-<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;        ammResult[jss::asset_frozen] =</div>
-<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;            <a class="code" href="namespaceripple.html#a6cb89b79bc073abda42953c323d36cda">isFrozen</a>(*ledger, <a class="code" href="namespaceripple.html#a768092086ea18d2dbeb64efb9fa12ba5">ammAccountID</a>, issue1.currency, issue1.account);</div>
-<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;    <span class="keywordflow">if</span> (!<a class="code" href="namespaceripple.html#a20d30277b9c78756b3d14493055a307c">isXRP</a>(asset2Balance))</div>
-<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;        ammResult[jss::asset2_frozen] =</div>
-<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;            <a class="code" href="namespaceripple.html#a6cb89b79bc073abda42953c323d36cda">isFrozen</a>(*ledger, <a class="code" href="namespaceripple.html#a768092086ea18d2dbeb64efb9fa12ba5">ammAccountID</a>, issue2.currency, issue2.account);</div>
-<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160; </div>
-<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;    result[jss::amm] = std::move(ammResult);</div>
-<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;    <span class="keywordflow">if</span> (!result.<a class="code" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::ledger_index) &amp;&amp;</div>
-<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;        !result.<a class="code" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::ledger_hash))</div>
-<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;        result[jss::ledger_current_index] = ledger-&gt;<a class="code" href="classripple_1_1ReadView.html#a9263b10d706a447166b229ad8e3b574c">info</a>().<a class="code" href="structripple_1_1LedgerHeader.html#a233e04cfeb4d879ab8517d8aabb7e38b">seq</a>;</div>
-<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;    result[jss::validated] =</div>
-<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;        <a class="code" href="namespaceripple_1_1RPC.html#a917fae72b7b1397139e909f58fe058ca">RPC::isValidated</a>(context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a92c98828663b6b80d3eb15850ec6897a">ledgerMaster</a>, *ledger, context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a7878751d68ed7fd43c385913c5e6ff04">app</a>);</div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="preprocessor">#include &lt;ripple/app/ledger/LedgerMaster.h&gt;</span></div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &lt;ripple/app/misc/AMMUtils.h&gt;</span></div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;ripple/json/json_value.h&gt;</span></div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &lt;ripple/ledger/ReadView.h&gt;</span></div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/net/RPCErr.h&gt;</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/AMMCore.h&gt;</span></div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/Issue.h&gt;</span></div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;ripple/rpc/Context.h&gt;</span></div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#include &lt;ripple/rpc/impl/RPCHelpers.h&gt;</span></div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="preprocessor">#include &lt;grpcpp/support/status.h&gt;</span></div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160; </div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160; </div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;AccountID&gt;</a></div>
+<div class="line"><a name="l00033"></a><span class="lineno"><a class="line" href="namespaceripple.html#aee9f82c657b04d4d79bbd225a60ca815">   33</a></span>&#160;<a class="code" href="namespaceripple.html#aee9f82c657b04d4d79bbd225a60ca815">getAccount</a>(<a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span>&amp; v, <a class="code" href="classJson_1_1Value.html">Json::Value</a>&amp; result)</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;{</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> strIdent(v.<a class="code" href="classJson_1_1Value.html#ab0d86bf425efefd03513e8dbfaca317b">asString</a>());</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">AccountID</a> accountID;</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160; </div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <span class="keywordflow">if</span> (<span class="keyword">auto</span> jv = <a class="code" href="namespaceripple_1_1RPC.html#a9dc259937a004b30e88f41a95756bee0">RPC::accountFromString</a>(accountID, strIdent))</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    {</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> it = jv.begin(); it != jv.end(); ++it)</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;            result[it.memberName()] = (*it);</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160; </div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;        <span class="keywordflow">return</span> std::nullopt;</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    }</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    <span class="keywordflow">return</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;AccountID&gt;</a>(accountID);</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;}</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160; </div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;Expected&lt;Issue, error_code_i&gt;</div>
+<div class="line"><a name="l00049"></a><span class="lineno"><a class="line" href="namespaceripple.html#acaac575db8b34aeb8a3312fd25c5a2df">   49</a></span>&#160;<a class="code" href="namespaceripple.html#a35d75f3e8c1d99beb8c834d767070d8c">getIssue</a>(<a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span>&amp; v, <a class="code" href="classbeast_1_1Journal.html">beast::Journal</a> j)</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;{</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <span class="keywordflow">try</span></div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    {</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a853eecfd00cbdc3b1f996e4c961eda69">issueFromJson</a>(v);</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    }</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/runtime_error.html">std::runtime_error</a> <span class="keyword">const</span>&amp; ex)</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    {</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;        JLOG(j.<a class="code" href="classbeast_1_1Journal.html#a556228cb60bcf405c225d3f64b7b01ae">debug</a>()) &lt;&lt; <span class="stringliteral">&quot;getIssue &quot;</span> &lt;&lt; ex.<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception/what.html">what</a>();</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    }</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#ad6887fe0534dd3b0df2da54ff8994e2f">Unexpected</a>(<a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a13cb05bfc011d1eec5fa52b5a3417043">rpcISSUE_MALFORMED</a>);</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;}</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160; </div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div>
+<div class="line"><a name="l00063"></a><span class="lineno"><a class="line" href="namespaceripple.html#af58d1f8cb315a2e5487a028714b13982">   63</a></span>&#160;<a class="code" href="namespaceripple.html#af58d1f8cb315a2e5487a028714b13982">to_iso8601</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/time_point.html">NetClock::time_point</a> tp)</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;{</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    <span class="comment">// 2000-01-01 00:00:00 UTC is 946684800s from 1970-01-01 00:00:00 UTC</span></div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    <span class="keyword">using namespace </span><a class="codeRef" href="http://en.cppreference.com/w/namespacestd_1_1chrono.html">std::chrono</a>;</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    <span class="keywordflow">return</span> date::format(</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;        <span class="stringliteral">&quot;%Y-%Om-%dT%H:%M:%OS%z&quot;</span>,</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;        date::sys_time&lt;system_clock::duration&gt;(</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;            system_clock::time_point{tp.<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/time_point/time_since_epoch.html">time_since_epoch</a>() + <a class="code" href="namespaceripple.html#ad4e2a948afe60129e9b99dc30af7a5fd">epoch_offset</a>}));</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;}</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160; </div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;<a class="code" href="classJson_1_1Value.html">Json::Value</a></div>
+<div class="line"><a name="l00074"></a><span class="lineno"><a class="line" href="namespaceripple.html#a522e233bde2b262fa9ba54d0bb3b134a">   74</a></span>&#160;<a class="code" href="namespaceripple.html#a522e233bde2b262fa9ba54d0bb3b134a">doAMMInfo</a>(<a class="code" href="structripple_1_1RPC_1_1JsonContext.html">RPC::JsonContext</a>&amp; context)</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;{</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span>&amp; params(context.<a class="code" href="structripple_1_1RPC_1_1JsonContext.html#a036b2c14552fbca49011c3d0e78017fa">params</a>);</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a> result;</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160; </div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;ReadView const&gt;</a> ledger;</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    result = <a class="code" href="namespaceripple_1_1RPC.html#aaebfaaee35308269fab499f4e203a8c9">RPC::lookupLedger</a>(ledger, context);</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    <span class="keywordflow">if</span> (!ledger)</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;        <span class="keywordflow">return</span> result;</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160; </div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    <span class="keyword">struct </span>ValuesFromContextParams</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    {</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;AccountID&gt;</a> accountID;</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;        <a class="code" href="classripple_1_1Issue.html">Issue</a> issue1;</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;        <a class="code" href="classripple_1_1Issue.html">Issue</a> issue2;</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;SLE const&gt;</a> amm;</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;    };</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160; </div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;    <span class="keyword">auto</span> getValuesFromContextParams =</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;        [&amp;]() -&gt; <a class="code" href="classripple_1_1Expected.html">Expected&lt;ValuesFromContextParams, error_code_i&gt;</a> {</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;AccountID&gt;</a> accountID;</div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;Issue&gt;</a> issue1;</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;Issue&gt;</a> issue2;</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;uint256&gt;</a> ammID;</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160; </div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;        <span class="keywordflow">if</span> ((params.isMember(jss::asset) != params.isMember(jss::asset2)) ||</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;            (params.isMember(jss::asset) == params.isMember(jss::amm_account)))</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;            <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#ad6887fe0534dd3b0df2da54ff8994e2f">Unexpected</a>(<a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a82ddebc5ec7a37ff38892487277bf9c4">rpcINVALID_PARAMS</a>);</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160; </div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;        <span class="keywordflow">if</span> (params.isMember(jss::asset))</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;        {</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;            <span class="keywordflow">if</span> (<span class="keyword">auto</span> <span class="keyword">const</span> i = <a class="code" href="namespaceripple.html#a35d75f3e8c1d99beb8c834d767070d8c">getIssue</a>(params[jss::asset], context.<a class="code" href="structripple_1_1RPC_1_1Context.html#ac6ec0f79fbac84b6c8911117792ed0e6">j</a>))</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;                issue1 = *i;</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;            <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;                <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#ad6887fe0534dd3b0df2da54ff8994e2f">Unexpected</a>(i.error());</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;        }</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160; </div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;        <span class="keywordflow">if</span> (params.isMember(jss::asset2))</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;        {</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;            <span class="keywordflow">if</span> (<span class="keyword">auto</span> <span class="keyword">const</span> i = <a class="code" href="namespaceripple.html#a35d75f3e8c1d99beb8c834d767070d8c">getIssue</a>(params[jss::asset2], context.<a class="code" href="structripple_1_1RPC_1_1Context.html#ac6ec0f79fbac84b6c8911117792ed0e6">j</a>))</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;                issue2 = *i;</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;            <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;                <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#ad6887fe0534dd3b0df2da54ff8994e2f">Unexpected</a>(i.error());</div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;        }</div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160; </div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;        <span class="keywordflow">if</span> (params.isMember(jss::amm_account))</div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;        {</div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> <span class="keywordtype">id</span> = <a class="code" href="namespaceripple.html#aee9f82c657b04d4d79bbd225a60ca815">getAccount</a>(params[jss::amm_account], result);</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;            <span class="keywordflow">if</span> (!<span class="keywordtype">id</span>)</div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;                <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#ad6887fe0534dd3b0df2da54ff8994e2f">Unexpected</a>(<a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a4fba57dbbed9bfaa196e1a0e0915dc8a">rpcACT_MALFORMED</a>);</div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> sle = ledger-&gt;<a class="code" href="classripple_1_1ReadView.html#a3351e0244f921234d5ba005a07ddf539">read</a>(<a class="code" href="namespaceripple_1_1keylet.html#a50c370db96b4fdcdd202d9c2c38afce9">keylet::account</a>(*<span class="keywordtype">id</span>));</div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;            <span class="keywordflow">if</span> (!sle)</div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;                <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#ad6887fe0534dd3b0df2da54ff8994e2f">Unexpected</a>(<a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a4fba57dbbed9bfaa196e1a0e0915dc8a">rpcACT_MALFORMED</a>);</div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;            ammID = sle-&gt;getFieldH256(<a class="code" href="namespaceripple.html#af487c2d8c871030560b07f7b7c118fd1">sfAMMID</a>);</div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;        }</div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160; </div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;        assert(</div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;            (issue1.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional/operator_bool.html">has_value</a>() == issue2.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional/operator_bool.html">has_value</a>()) &amp;&amp;</div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;            (issue1.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional/operator_bool.html">has_value</a>() != ammID.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional/operator_bool.html">has_value</a>()));</div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160; </div>
+<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;        <span class="keywordflow">if</span> (params.isMember(jss::account))</div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;        {</div>
+<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;            accountID = <a class="code" href="namespaceripple.html#aee9f82c657b04d4d79bbd225a60ca815">getAccount</a>(params[jss::account], result);</div>
+<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;            <span class="keywordflow">if</span> (!accountID || !ledger-&gt;<a class="code" href="classripple_1_1ReadView.html#a3351e0244f921234d5ba005a07ddf539">read</a>(<a class="code" href="namespaceripple_1_1keylet.html#a50c370db96b4fdcdd202d9c2c38afce9">keylet::account</a>(*accountID)))</div>
+<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;                <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#ad6887fe0534dd3b0df2da54ff8994e2f">Unexpected</a>(<a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a4fba57dbbed9bfaa196e1a0e0915dc8a">rpcACT_MALFORMED</a>);</div>
+<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;        }</div>
+<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160; </div>
+<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> ammKeylet = [&amp;]() {</div>
+<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;            <span class="keywordflow">if</span> (issue1 &amp;&amp; issue2)</div>
+<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;                <span class="keywordflow">return</span> <a class="code" href="namespaceripple_1_1keylet.html#abdda705f5bcd7002243740a748496454">keylet::amm</a>(*issue1, *issue2);</div>
+<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;            assert(ammID);</div>
+<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;            <span class="keywordflow">return</span> <a class="code" href="namespaceripple_1_1keylet.html#abdda705f5bcd7002243740a748496454">keylet::amm</a>(*ammID);</div>
+<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;        }();</div>
+<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> amm = ledger-&gt;<a class="code" href="classripple_1_1ReadView.html#a3351e0244f921234d5ba005a07ddf539">read</a>(ammKeylet);</div>
+<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;        <span class="keywordflow">if</span> (!amm)</div>
+<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;            <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#ad6887fe0534dd3b0df2da54ff8994e2f">Unexpected</a>(<a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a044301ed3c32624aade5888d1c60566f">rpcACT_NOT_FOUND</a>);</div>
+<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;        <span class="keywordflow">if</span> (!issue1 &amp;&amp; !issue2)</div>
+<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;        {</div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;            issue1 = (*amm)[<a class="code" href="namespaceripple.html#a9953d4af61379095c9d6da470b3c757b">sfAsset</a>];</div>
+<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;            issue2 = (*amm)[<a class="code" href="namespaceripple.html#a591104015d6a14c18338888b22c65a9f">sfAsset2</a>];</div>
+<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;        }</div>
+<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160; </div>
+<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;        <span class="keywordflow">return</span> ValuesFromContextParams{</div>
+<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;            accountID, *issue1, *issue2, std::move(amm)};</div>
+<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;    };</div>
+<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160; </div>
+<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> r = getValuesFromContextParams();</div>
+<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;    <span class="keywordflow">if</span> (!r)</div>
+<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;    {</div>
+<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;        <a class="code" href="namespaceripple_1_1RPC.html#a577bde9602a28f59e445c496f92a1ccf">RPC::inject_error</a>(r.error(), result);</div>
+<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;        <span class="keywordflow">return</span> result;</div>
+<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;    }</div>
+<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160; </div>
+<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span>&amp; [accountID, issue1, issue2, amm] = *r;</div>
+<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160; </div>
+<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> <a class="code" href="namespaceripple.html#a768092086ea18d2dbeb64efb9fa12ba5">ammAccountID</a> = amm-&gt;getAccountID(<a class="code" href="namespaceripple.html#a5bab99595719d22579e10d21cf048eb0">sfAccount</a>);</div>
+<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160; </div>
+<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;    <span class="comment">// provide funds if frozen, specify asset_frozen flag</span></div>
+<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> [asset1Balance, asset2Balance] = <a class="code" href="namespaceripple.html#a887bf45d7cc0bf68aec6440746faca36">ammPoolHolds</a>(</div>
+<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;        *ledger,</div>
+<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;        <a class="code" href="namespaceripple.html#a768092086ea18d2dbeb64efb9fa12ba5">ammAccountID</a>,</div>
+<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;        issue1,</div>
+<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;        issue2,</div>
+<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;        FreezeHandling::fhIGNORE_FREEZE,</div>
+<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;        context.<a class="code" href="structripple_1_1RPC_1_1Context.html#ac6ec0f79fbac84b6c8911117792ed0e6">j</a>);</div>
+<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> lptAMMBalance = accountID</div>
+<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;        ? <a class="code" href="namespaceripple.html#a7c5d3108f4942ebc53a3fa4f83c2d577">ammLPHolds</a>(*ledger, *amm, *accountID, context.<a class="code" href="structripple_1_1RPC_1_1Context.html#ac6ec0f79fbac84b6c8911117792ed0e6">j</a>)</div>
+<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;        : (*amm)[<a class="code" href="namespaceripple.html#a8b2408d93e4f8fd8f128e979249c9e22">sfLPTokenBalance</a>];</div>
+<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160; </div>
+<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a> ammResult;</div>
+<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;    asset1Balance.setJson(ammResult[jss::amount]);</div>
+<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;    asset2Balance.setJson(ammResult[jss::amount2]);</div>
+<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;    lptAMMBalance.setJson(ammResult[jss::lp_token]);</div>
+<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;    ammResult[jss::trading_fee] = (*amm)[<a class="code" href="namespaceripple.html#a53c800501c3d2514b460720d391163bd">sfTradingFee</a>];</div>
+<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;    ammResult[jss::account] = <a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(<a class="code" href="namespaceripple.html#a768092086ea18d2dbeb64efb9fa12ba5">ammAccountID</a>);</div>
+<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a> voteSlots(<a class="code" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eadc8f264f36b55b063c78126b335415f4">Json::arrayValue</a>);</div>
+<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;    <span class="keywordflow">if</span> (amm-&gt;isFieldPresent(<a class="code" href="namespaceripple.html#afc4137eeed6ddbd61647efe0e0c61c86">sfVoteSlots</a>))</div>
+<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;    {</div>
+<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; voteEntry : amm-&gt;getFieldArray(<a class="code" href="namespaceripple.html#afc4137eeed6ddbd61647efe0e0c61c86">sfVoteSlots</a>))</div>
+<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;        {</div>
+<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;            <a class="code" href="classJson_1_1Value.html">Json::Value</a> vote;</div>
+<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;            vote[jss::account] = <a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(voteEntry.getAccountID(<a class="code" href="namespaceripple.html#a5bab99595719d22579e10d21cf048eb0">sfAccount</a>));</div>
+<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;            vote[jss::trading_fee] = voteEntry[<a class="code" href="namespaceripple.html#a53c800501c3d2514b460720d391163bd">sfTradingFee</a>];</div>
+<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;            vote[jss::vote_weight] = voteEntry[<a class="code" href="namespaceripple.html#ab0b9bdf7999299816bd31a43482d8b85">sfVoteWeight</a>];</div>
+<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;            voteSlots.<a class="code" href="classJson_1_1Value.html#a7e49ac977e4bcf59745a09d426669f75">append</a>(std::move(vote));</div>
+<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;        }</div>
+<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;    }</div>
+<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;    <span class="keywordflow">if</span> (voteSlots.<a class="code" href="classJson_1_1Value.html#a23c7027ca674f989f90564d63ef36c74">size</a>() &gt; 0)</div>
+<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;        ammResult[jss::vote_slots] = std::move(voteSlots);</div>
+<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;    <span class="keywordflow">if</span> (amm-&gt;isFieldPresent(<a class="code" href="namespaceripple.html#aae61d7b2bf98113dacac8854d15a4ac4">sfAuctionSlot</a>))</div>
+<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;    {</div>
+<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span>&amp; auctionSlot =</div>
+<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;            <span class="keyword">static_cast&lt;</span><a class="code" href="classripple_1_1STObject.html">STObject</a> const&amp;<span class="keyword">&gt;</span>(amm-&gt;peekAtField(<a class="code" href="namespaceripple.html#aae61d7b2bf98113dacac8854d15a4ac4">sfAuctionSlot</a>));</div>
+<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;        <span class="keywordflow">if</span> (auctionSlot.isFieldPresent(<a class="code" href="namespaceripple.html#a5bab99595719d22579e10d21cf048eb0">sfAccount</a>))</div>
+<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;        {</div>
+<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;            <a class="code" href="classJson_1_1Value.html">Json::Value</a> auction;</div>
+<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> timeSlot = <a class="code" href="namespaceripple.html#a23fcbb81cb52959dfbeebade68c4db18">ammAuctionTimeSlot</a>(</div>
+<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;                ledger-&gt;<a class="code" href="classripple_1_1ReadView.html#a9263b10d706a447166b229ad8e3b574c">info</a>().<a class="code" href="structripple_1_1LedgerHeader.html#acbaff4abb7243e02f45e63bd19843aa9">parentCloseTime</a>.<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/time_point/time_since_epoch.html">time_since_epoch</a>().count(),</div>
+<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;                auctionSlot);</div>
+<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;            auction[jss::time_interval] =</div>
+<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;                timeSlot ? *timeSlot : <a class="code" href="namespaceripple.html#a3227a0599e217de9084e5fc5bf55ee0c">AUCTION_SLOT_TIME_INTERVALS</a>;</div>
+<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;            auctionSlot[<a class="code" href="namespaceripple.html#ac1094212a3f17c0903e4d13ffe345596">sfPrice</a>].setJson(auction[jss::price]);</div>
+<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;            auction[jss::discounted_fee] = auctionSlot[<a class="code" href="namespaceripple.html#a5647f794f04aab275b4b1e0cd348413b">sfDiscountedFee</a>];</div>
+<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;            auction[jss::account] =</div>
+<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;                <a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(auctionSlot.getAccountID(<a class="code" href="namespaceripple.html#a5bab99595719d22579e10d21cf048eb0">sfAccount</a>));</div>
+<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;            auction[jss::expiration] = <a class="code" href="namespaceripple.html#af58d1f8cb315a2e5487a028714b13982">to_iso8601</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/time_point.html">NetClock::time_point</a>{</div>
+<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">NetClock::duration</a>{auctionSlot[<a class="code" href="namespaceripple.html#ae3182ff3db5f7f67e4fe8bcd69316727">sfExpiration</a>]}});</div>
+<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;            <span class="keywordflow">if</span> (auctionSlot.isFieldPresent(<a class="code" href="namespaceripple.html#a833a9abab16c97acc59f47135a6f6b26">sfAuthAccounts</a>))</div>
+<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;            {</div>
+<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;                <a class="code" href="classJson_1_1Value.html">Json::Value</a> auth;</div>
+<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;                <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; acct :</div>
+<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;                     auctionSlot.getFieldArray(<a class="code" href="namespaceripple.html#a833a9abab16c97acc59f47135a6f6b26">sfAuthAccounts</a>))</div>
+<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;                {</div>
+<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;                    <a class="code" href="classJson_1_1Value.html">Json::Value</a> jv;</div>
+<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;                    jv[jss::account] = <a class="code" href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">to_string</a>(acct.getAccountID(<a class="code" href="namespaceripple.html#a5bab99595719d22579e10d21cf048eb0">sfAccount</a>));</div>
+<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;                    auth.<a class="code" href="classJson_1_1Value.html#a7e49ac977e4bcf59745a09d426669f75">append</a>(jv);</div>
+<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;                }</div>
+<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;                auction[jss::auth_accounts] = auth;</div>
+<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;            }</div>
+<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;            ammResult[jss::auction_slot] = std::move(auction);</div>
+<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;        }</div>
+<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;    }</div>
+<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160; </div>
+<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;    <span class="keywordflow">if</span> (!<a class="code" href="namespaceripple.html#a20d30277b9c78756b3d14493055a307c">isXRP</a>(asset1Balance))</div>
+<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;        ammResult[jss::asset_frozen] =</div>
+<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;            <a class="code" href="namespaceripple.html#a6cb89b79bc073abda42953c323d36cda">isFrozen</a>(*ledger, <a class="code" href="namespaceripple.html#a768092086ea18d2dbeb64efb9fa12ba5">ammAccountID</a>, issue1.currency, issue1.account);</div>
+<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;    <span class="keywordflow">if</span> (!<a class="code" href="namespaceripple.html#a20d30277b9c78756b3d14493055a307c">isXRP</a>(asset2Balance))</div>
+<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;        ammResult[jss::asset2_frozen] =</div>
+<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;            <a class="code" href="namespaceripple.html#a6cb89b79bc073abda42953c323d36cda">isFrozen</a>(*ledger, <a class="code" href="namespaceripple.html#a768092086ea18d2dbeb64efb9fa12ba5">ammAccountID</a>, issue2.currency, issue2.account);</div>
+<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160; </div>
+<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;    result[jss::amm] = std::move(ammResult);</div>
+<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;    <span class="keywordflow">if</span> (!result.<a class="code" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::ledger_index) &amp;&amp;</div>
+<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;        !result.<a class="code" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::ledger_hash))</div>
+<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;        result[jss::ledger_current_index] = ledger-&gt;<a class="code" href="classripple_1_1ReadView.html#a9263b10d706a447166b229ad8e3b574c">info</a>().<a class="code" href="structripple_1_1LedgerHeader.html#a233e04cfeb4d879ab8517d8aabb7e38b">seq</a>;</div>
+<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;    result[jss::validated] = context.<a class="code" href="structripple_1_1RPC_1_1Context.html#a92c98828663b6b80d3eb15850ec6897a">ledgerMaster</a>.<a class="code" href="classripple_1_1LedgerMaster.html#a48138c39fa398b7f218f8278b496f550">isValidated</a>(*ledger);</div>
 <div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160; </div>
 <div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;    <span class="keywordflow">return</span> result;</div>
 <div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;}</div>
@@ -343,13 +343,14 @@ $(function() {
 <div class="ttc" id="astructripple_1_1LedgerHeader_html_a233e04cfeb4d879ab8517d8aabb7e38b"><div class="ttname"><a href="structripple_1_1LedgerHeader.html#a233e04cfeb4d879ab8517d8aabb7e38b">ripple::LedgerHeader::seq</a></div><div class="ttdeci">LedgerIndex seq</div><div class="ttdef"><b>Definition:</b> <a href="LedgerHeader_8h_source.html#l00041">LedgerHeader.h:41</a></div></div>
 <div class="ttc" id="anamespaceripple_html_ac1094212a3f17c0903e4d13ffe345596"><div class="ttname"><a href="namespaceripple.html#ac1094212a3f17c0903e4d13ffe345596">ripple::sfPrice</a></div><div class="ttdeci">const SF_AMOUNT sfPrice</div></div>
 <div class="ttc" id="anamespaceripple_html_ab0b9bdf7999299816bd31a43482d8b85"><div class="ttname"><a href="namespaceripple.html#ab0b9bdf7999299816bd31a43482d8b85">ripple::sfVoteWeight</a></div><div class="ttdeci">const SF_UINT32 sfVoteWeight</div></div>
-<div class="ttc" id="anamespaceripple_1_1RPC_html_aaebfaaee35308269fab499f4e203a8c9"><div class="ttname"><a href="namespaceripple_1_1RPC.html#aaebfaaee35308269fab499f4e203a8c9">ripple::RPC::lookupLedger</a></div><div class="ttdeci">Status lookupLedger(std::shared_ptr&lt; ReadView const &gt; &amp;ledger, JsonContext &amp;context, Json::Value &amp;result)</div><div class="ttdoc">Look up a ledger from a request and fill a Json::Result with the data representing a ledger.</div><div class="ttdef"><b>Definition:</b> <a href="RPCHelpers_8cpp_source.html#l00676">RPCHelpers.cpp:676</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1RPC_html_aaebfaaee35308269fab499f4e203a8c9"><div class="ttname"><a href="namespaceripple_1_1RPC.html#aaebfaaee35308269fab499f4e203a8c9">ripple::RPC::lookupLedger</a></div><div class="ttdeci">Status lookupLedger(std::shared_ptr&lt; ReadView const &gt; &amp;ledger, JsonContext &amp;context, Json::Value &amp;result)</div><div class="ttdoc">Look up a ledger from a request and fill a Json::Result with the data representing a ledger.</div><div class="ttdef"><b>Definition:</b> <a href="RPCHelpers_8cpp_source.html#l00623">RPCHelpers.cpp:623</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a768092086ea18d2dbeb64efb9fa12ba5"><div class="ttname"><a href="namespaceripple.html#a768092086ea18d2dbeb64efb9fa12ba5">ripple::ammAccountID</a></div><div class="ttdeci">AccountID ammAccountID(std::uint16_t prefix, uint256 const &amp;parentHash, uint256 const &amp;ammID)</div><div class="ttdoc">Calculate AMM account ID.</div><div class="ttdef"><b>Definition:</b> <a href="AMMCore_8cpp_source.html#l00030">AMMCore.cpp:30</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a53c800501c3d2514b460720d391163bd"><div class="ttname"><a href="namespaceripple.html#a53c800501c3d2514b460720d391163bd">ripple::sfTradingFee</a></div><div class="ttdeci">const SF_UINT16 sfTradingFee</div></div>
-<div class="ttc" id="anamespaceripple_html_af58d1f8cb315a2e5487a028714b13982"><div class="ttname"><a href="namespaceripple.html#af58d1f8cb315a2e5487a028714b13982">ripple::to_iso8601</a></div><div class="ttdeci">std::string to_iso8601(NetClock::time_point tp)</div><div class="ttdef"><b>Definition:</b> <a href="AMMInfo_8cpp_source.html#l00062">AMMInfo.cpp:62</a></div></div>
+<div class="ttc" id="anamespaceripple_html_af58d1f8cb315a2e5487a028714b13982"><div class="ttname"><a href="namespaceripple.html#af58d1f8cb315a2e5487a028714b13982">ripple::to_iso8601</a></div><div class="ttdeci">std::string to_iso8601(NetClock::time_point tp)</div><div class="ttdef"><b>Definition:</b> <a href="AMMInfo_8cpp_source.html#l00063">AMMInfo.cpp:63</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a887bf45d7cc0bf68aec6440746faca36"><div class="ttname"><a href="namespaceripple.html#a887bf45d7cc0bf68aec6440746faca36">ripple::ammPoolHolds</a></div><div class="ttdeci">std::pair&lt; STAmount, STAmount &gt; ammPoolHolds(ReadView const &amp;view, AccountID const &amp;ammAccountID, Issue const &amp;issue1, Issue const &amp;issue2, FreezeHandling freezeHandling, beast::Journal const j)</div><div class="ttdoc">Get AMM pool balances.</div><div class="ttdef"><b>Definition:</b> <a href="AMMUtils_8cpp_source.html#l00029">AMMUtils.cpp:29</a></div></div>
 <div class="ttc" id="anamespaceripple_html_ae3182ff3db5f7f67e4fe8bcd69316727"><div class="ttname"><a href="namespaceripple.html#ae3182ff3db5f7f67e4fe8bcd69316727">ripple::sfExpiration</a></div><div class="ttdeci">const SF_UINT32 sfExpiration</div></div>
 <div class="ttc" id="astructripple_1_1RPC_1_1Context_html_ac6ec0f79fbac84b6c8911117792ed0e6"><div class="ttname"><a href="structripple_1_1RPC_1_1Context.html#ac6ec0f79fbac84b6c8911117792ed0e6">ripple::RPC::Context::j</a></div><div class="ttdeci">const beast::Journal j</div><div class="ttdef"><b>Definition:</b> <a href="Context_8h_source.html#l00041">Context.h:41</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ad4e2a948afe60129e9b99dc30af7a5fd"><div class="ttname"><a href="namespaceripple.html#ad4e2a948afe60129e9b99dc30af7a5fd">ripple::epoch_offset</a></div><div class="ttdeci">constexpr static std::chrono::seconds epoch_offset</div><div class="ttdoc">Clock for measuring the network time.</div><div class="ttdef"><b>Definition:</b> <a href="chrono_8h_source.html#l00056">chrono.h:56</a></div></div>
 <div class="ttc" id="aclassripple_1_1base__uint_html"><div class="ttname"><a href="classripple_1_1base__uint.html">ripple::base_uint</a></div><div class="ttdoc">Integers of any length that is a multiple of 32-bits.</div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00082">base_uint.h:82</a></div></div>
 <div class="ttc" id="atime_since_epoch_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/chrono/time_point/time_since_epoch.html">std::chrono::time_point::time_since_epoch</a></div><div class="ttdeci">T time_since_epoch(T... args)</div></div>
 <div class="ttc" id="astructripple_1_1LedgerHeader_html_acbaff4abb7243e02f45e63bd19843aa9"><div class="ttname"><a href="structripple_1_1LedgerHeader.html#acbaff4abb7243e02f45e63bd19843aa9">ripple::LedgerHeader::parentCloseTime</a></div><div class="ttdeci">NetClock::time_point parentCloseTime</div><div class="ttdef"><b>Definition:</b> <a href="LedgerHeader_8h_source.html#l00042">LedgerHeader.h:42</a></div></div>
@@ -360,7 +361,6 @@ $(function() {
 <div class="ttc" id="anamespaceripple_1_1keylet_html_a50c370db96b4fdcdd202d9c2c38afce9"><div class="ttname"><a href="namespaceripple_1_1keylet.html#a50c370db96b4fdcdd202d9c2c38afce9">ripple::keylet::account</a></div><div class="ttdeci">Keylet account(AccountID const &amp;id) noexcept</div><div class="ttdoc">AccountID root.</div><div class="ttdef"><b>Definition:</b> <a href="Indexes_8cpp_source.html#l00142">Indexes.cpp:142</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a833a9abab16c97acc59f47135a6f6b26"><div class="ttname"><a href="namespaceripple.html#a833a9abab16c97acc59f47135a6f6b26">ripple::sfAuthAccounts</a></div><div class="ttdeci">const SField sfAuthAccounts</div></div>
 <div class="ttc" id="anamespaceripple_html_a32d6d3ce1a48272b677d2c88b1d30932a044301ed3c32624aade5888d1c60566f"><div class="ttname"><a href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a044301ed3c32624aade5888d1c60566f">ripple::rpcACT_NOT_FOUND</a></div><div class="ttdeci">@ rpcACT_NOT_FOUND</div><div class="ttdef"><b>Definition:</b> <a href="ErrorCodes_8h_source.html#l00070">ErrorCodes.h:70</a></div></div>
-<div class="ttc" id="astructripple_1_1RPC_1_1Context_html_a7878751d68ed7fd43c385913c5e6ff04"><div class="ttname"><a href="structripple_1_1RPC_1_1Context.html#a7878751d68ed7fd43c385913c5e6ff04">ripple::RPC::Context::app</a></div><div class="ttdeci">Application &amp; app</div><div class="ttdef"><b>Definition:</b> <a href="Context_8h_source.html#l00042">Context.h:42</a></div></div>
 <div class="ttc" id="atime_point_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/chrono/time_point.html">std::chrono::time_point</a></div></div>
 <div class="ttc" id="aclassJson_1_1Value_html_a23c7027ca674f989f90564d63ef36c74"><div class="ttname"><a href="classJson_1_1Value.html#a23c7027ca674f989f90564d63ef36c74">Json::Value::size</a></div><div class="ttdeci">UInt size() const</div><div class="ttdoc">Number of values in array or object.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8cpp_source.html#l00706">json_value.cpp:706</a></div></div>
 <div class="ttc" id="aruntime_error_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/error/runtime_error.html">std::runtime_error</a></div><div class="ttdoc">STL class.</div></div>
@@ -370,12 +370,12 @@ $(function() {
 <div class="ttc" id="anamespaceripple_html_a853eecfd00cbdc3b1f996e4c961eda69"><div class="ttname"><a href="namespaceripple.html#a853eecfd00cbdc3b1f996e4c961eda69">ripple::issueFromJson</a></div><div class="ttdeci">Issue issueFromJson(Json::Value const &amp;v)</div><div class="ttdef"><b>Definition:</b> <a href="Issue_8cpp_source.html#l00078">Issue.cpp:78</a></div></div>
 <div class="ttc" id="anamespaceripple_html_af487c2d8c871030560b07f7b7c118fd1"><div class="ttname"><a href="namespaceripple.html#af487c2d8c871030560b07f7b7c118fd1">ripple::sfAMMID</a></div><div class="ttdeci">const SF_UINT256 sfAMMID</div></div>
 <div class="ttc" id="aclassripple_1_1ReadView_html_a3351e0244f921234d5ba005a07ddf539"><div class="ttname"><a href="classripple_1_1ReadView.html#a3351e0244f921234d5ba005a07ddf539">ripple::ReadView::read</a></div><div class="ttdeci">virtual std::shared_ptr&lt; SLE const  &gt; read(Keylet const &amp;k) const =0</div><div class="ttdoc">Return the state item associated with a key.</div></div>
-<div class="ttc" id="anamespaceripple_html_aee9f82c657b04d4d79bbd225a60ca815"><div class="ttname"><a href="namespaceripple.html#aee9f82c657b04d4d79bbd225a60ca815">ripple::getAccount</a></div><div class="ttdeci">std::optional&lt; AccountID &gt; getAccount(Json::Value const &amp;v, Json::Value &amp;result)</div><div class="ttdef"><b>Definition:</b> <a href="AMMInfo_8cpp_source.html#l00032">AMMInfo.cpp:32</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a522e233bde2b262fa9ba54d0bb3b134a"><div class="ttname"><a href="namespaceripple.html#a522e233bde2b262fa9ba54d0bb3b134a">ripple::doAMMInfo</a></div><div class="ttdeci">Json::Value doAMMInfo(RPC::JsonContext &amp;context)</div><div class="ttdef"><b>Definition:</b> <a href="AMMInfo_8cpp_source.html#l00073">AMMInfo.cpp:73</a></div></div>
-<div class="ttc" id="aclassripple_1_1STObject_html"><div class="ttname"><a href="classripple_1_1STObject.html">ripple::STObject</a></div><div class="ttdef"><b>Definition:</b> <a href="STObject_8h_source.html#l00052">STObject.h:52</a></div></div>
+<div class="ttc" id="anamespaceripple_html_aee9f82c657b04d4d79bbd225a60ca815"><div class="ttname"><a href="namespaceripple.html#aee9f82c657b04d4d79bbd225a60ca815">ripple::getAccount</a></div><div class="ttdeci">std::optional&lt; AccountID &gt; getAccount(Json::Value const &amp;v, Json::Value &amp;result)</div><div class="ttdef"><b>Definition:</b> <a href="AMMInfo_8cpp_source.html#l00033">AMMInfo.cpp:33</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a522e233bde2b262fa9ba54d0bb3b134a"><div class="ttname"><a href="namespaceripple.html#a522e233bde2b262fa9ba54d0bb3b134a">ripple::doAMMInfo</a></div><div class="ttdeci">Json::Value doAMMInfo(RPC::JsonContext &amp;context)</div><div class="ttdef"><b>Definition:</b> <a href="AMMInfo_8cpp_source.html#l00074">AMMInfo.cpp:74</a></div></div>
+<div class="ttc" id="aclassripple_1_1STObject_html"><div class="ttname"><a href="classripple_1_1STObject.html">ripple::STObject</a></div><div class="ttdef"><b>Definition:</b> <a href="STObject_8h_source.html#l00053">STObject.h:53</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1RPC_html_a917fae72b7b1397139e909f58fe058ca"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a917fae72b7b1397139e909f58fe058ca">ripple::RPC::isValidated</a></div><div class="ttdeci">bool isValidated(LedgerMaster &amp;ledgerMaster, ReadView const &amp;ledger, Application &amp;app)</div><div class="ttdef"><b>Definition:</b> <a href="RPCHelpers_8cpp_source.html#l00604">RPCHelpers.cpp:604</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a32d6d3ce1a48272b677d2c88b1d30932a4fba57dbbed9bfaa196e1a0e0915dc8a"><div class="ttname"><a href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a4fba57dbbed9bfaa196e1a0e0915dc8a">ripple::rpcACT_MALFORMED</a></div><div class="ttdeci">@ rpcACT_MALFORMED</div><div class="ttdef"><b>Definition:</b> <a href="ErrorCodes_8h_source.html#l00090">ErrorCodes.h:90</a></div></div>
+<div class="ttc" id="aclassripple_1_1LedgerMaster_html_a48138c39fa398b7f218f8278b496f550"><div class="ttname"><a href="classripple_1_1LedgerMaster.html#a48138c39fa398b7f218f8278b496f550">ripple::LedgerMaster::isValidated</a></div><div class="ttdeci">bool isValidated(ReadView const &amp;ledger)</div><div class="ttdef"><b>Definition:</b> <a href="LedgerMaster_8cpp_source.html#l00607">LedgerMaster.cpp:607</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a7c5d3108f4942ebc53a3fa4f83c2d577"><div class="ttname"><a href="namespaceripple.html#a7c5d3108f4942ebc53a3fa4f83c2d577">ripple::ammLPHolds</a></div><div class="ttdeci">STAmount ammLPHolds(ReadView const &amp;view, Currency const &amp;cur1, Currency const &amp;cur2, AccountID const &amp;ammAccount, AccountID const &amp;lpAccount, beast::Journal const j)</div><div class="ttdoc">Get the balance of LP tokens.</div><div class="ttdef"><b>Definition:</b> <a href="AMMUtils_8cpp_source.html#l00104">AMMUtils.cpp:104</a></div></div>
 <div class="ttc" id="aoptional_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a></div></div>
 <div class="ttc" id="aclassbeast_1_1Journal_html_a556228cb60bcf405c225d3f64b7b01ae"><div class="ttname"><a href="classbeast_1_1Journal.html#a556228cb60bcf405c225d3f64b7b01ae">beast::Journal::debug</a></div><div class="ttdeci">Stream debug() const</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00314">Journal.h:314</a></div></div>

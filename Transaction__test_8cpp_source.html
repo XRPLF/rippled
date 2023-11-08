@@ -765,82 +765,110 @@ $(function() {
 <div class="line"><a name="l00694"></a><span class="lineno">  694</span>&#160;<span class="stringliteral">    }</span></div>
 <div class="line"><a name="l00695"></a><span class="lineno">  695</span>&#160;<span class="stringliteral"></span> </div>
 <div class="line"><a name="l00696"></a><span class="lineno">  696</span>&#160;<span class="stringliteral">    void</span></div>
-<div class="line"><a name="l00697"></a><span class="lineno"><a class="line" href="classripple_1_1Transaction__test.html#a31527586ed864226ea5bb9fe92ebec71">  697</a></span>&#160;<span class="stringliteral">    testRequest(FeatureBitset features)</span></div>
+<div class="line"><a name="l00697"></a><span class="lineno"><a class="line" href="classripple_1_1Transaction__test.html#a6eb5ff63bdad69bf58c121d06aff2446">  697</a></span>&#160;<span class="stringliteral">    testRequest(FeatureBitset features, unsigned apiVersion)</span></div>
 <div class="line"><a name="l00698"></a><span class="lineno">  698</span>&#160;<span class="stringliteral">    {</span></div>
-<div class="line"><a name="l00699"></a><span class="lineno">  699</span>&#160;<span class="stringliteral">        testcase(&quot;Test Request&quot;);</span></div>
+<div class="line"><a name="l00699"></a><span class="lineno">  699</span>&#160;<span class="stringliteral">        testcase(&quot;Test Request API version &quot; + std::to_string(apiVersion));</span></div>
 <div class="line"><a name="l00700"></a><span class="lineno">  700</span>&#160;<span class="stringliteral"></span> </div>
 <div class="line"><a name="l00701"></a><span class="lineno">  701</span>&#160;<span class="stringliteral">        using namespace test::jtx;</span></div>
 <div class="line"><a name="l00702"></a><span class="lineno">  702</span>&#160;<span class="stringliteral">        using std::to_string;</span></div>
 <div class="line"><a name="l00703"></a><span class="lineno">  703</span>&#160;<span class="stringliteral"></span> </div>
-<div class="line"><a name="l00704"></a><span class="lineno">  704</span>&#160;<span class="stringliteral">        const char* COMMAND = jss::tx.c_str();</span></div>
-<div class="line"><a name="l00705"></a><span class="lineno">  705</span>&#160;<span class="stringliteral"></span> </div>
-<div class="line"><a name="l00706"></a><span class="lineno">  706</span>&#160;<span class="stringliteral">        Env env{*this};</span></div>
-<div class="line"><a name="l00707"></a><span class="lineno">  707</span>&#160;<span class="stringliteral">        Account const alice{&quot;alice&quot;};</span></div>
-<div class="line"><a name="l00708"></a><span class="lineno">  708</span>&#160;<span class="stringliteral">        Account const alie{&quot;alie&quot;};</span></div>
-<div class="line"><a name="l00709"></a><span class="lineno">  709</span>&#160;<span class="stringliteral">        Account const gw{&quot;gw&quot;};</span></div>
-<div class="line"><a name="l00710"></a><span class="lineno">  710</span>&#160;<span class="stringliteral">        auto const USD{gw[&quot;USD&quot;]};</span></div>
-<div class="line"><a name="l00711"></a><span class="lineno">  711</span>&#160;<span class="stringliteral"></span> </div>
-<div class="line"><a name="l00712"></a><span class="lineno">  712</span>&#160;<span class="stringliteral">        env.fund(XRP(1000000), alice, gw);</span></div>
-<div class="line"><a name="l00713"></a><span class="lineno">  713</span>&#160;<span class="stringliteral">        env.close();</span></div>
-<div class="line"><a name="l00714"></a><span class="lineno">  714</span>&#160;<span class="stringliteral"></span> </div>
-<div class="line"><a name="l00715"></a><span class="lineno">  715</span>&#160;<span class="stringliteral">        // AccountSet</span></div>
-<div class="line"><a name="l00716"></a><span class="lineno">  716</span>&#160;<span class="stringliteral">        env(noop(alice));</span></div>
-<div class="line"><a name="l00717"></a><span class="lineno">  717</span>&#160;<span class="stringliteral"></span> </div>
-<div class="line"><a name="l00718"></a><span class="lineno">  718</span>&#160;<span class="stringliteral">        // Payment</span></div>
-<div class="line"><a name="l00719"></a><span class="lineno">  719</span>&#160;<span class="stringliteral">        env(pay(alice, gw, XRP(100)));</span></div>
-<div class="line"><a name="l00720"></a><span class="lineno">  720</span>&#160;<span class="stringliteral"></span> </div>
-<div class="line"><a name="l00721"></a><span class="lineno">  721</span>&#160;<span class="stringliteral">        std::shared_ptr&lt;STTx const&gt; txn = env.tx();</span></div>
-<div class="line"><a name="l00722"></a><span class="lineno">  722</span>&#160;<span class="stringliteral">        env.close();</span></div>
-<div class="line"><a name="l00723"></a><span class="lineno">  723</span>&#160;<span class="stringliteral">        std::shared_ptr&lt;STObject const&gt; meta =</span></div>
-<div class="line"><a name="l00724"></a><span class="lineno">  724</span>&#160;<span class="stringliteral">            env.closed()-&gt;txRead(env.tx()-&gt;getTransactionID()).second;</span></div>
-<div class="line"><a name="l00725"></a><span class="lineno">  725</span>&#160;<span class="stringliteral"></span> </div>
-<div class="line"><a name="l00726"></a><span class="lineno">  726</span>&#160;<span class="stringliteral">        Json::Value expected = txn-&gt;getJson(JsonOptions::none);</span></div>
-<div class="line"><a name="l00727"></a><span class="lineno">  727</span>&#160;<span class="stringliteral">        expected[jss::DeliverMax] = expected[jss::Amount];</span></div>
-<div class="line"><a name="l00728"></a><span class="lineno">  728</span>&#160;<span class="stringliteral"></span> </div>
-<div class="line"><a name="l00729"></a><span class="lineno">  729</span>&#160;<span class="stringliteral">        auto const result =</span></div>
-<div class="line"><a name="l00730"></a><span class="lineno">  730</span>&#160;<span class="stringliteral">            env.rpc(COMMAND, to_string(txn-&gt;getTransactionID()));</span></div>
-<div class="line"><a name="l00731"></a><span class="lineno">  731</span>&#160;<span class="stringliteral">        BEAST_EXPECT(result[jss::result][jss::status] == jss::success);</span></div>
-<div class="line"><a name="l00732"></a><span class="lineno">  732</span>&#160;<span class="stringliteral"></span> </div>
-<div class="line"><a name="l00733"></a><span class="lineno">  733</span>&#160;<span class="stringliteral">        for (auto memberIt = expected.begin(); memberIt != expected.end();</span></div>
-<div class="line"><a name="l00734"></a><span class="lineno">  734</span>&#160;<span class="stringliteral">             memberIt++)</span></div>
-<div class="line"><a name="l00735"></a><span class="lineno">  735</span>&#160;<span class="stringliteral">        {</span></div>
-<div class="line"><a name="l00736"></a><span class="lineno">  736</span>&#160;<span class="stringliteral">            std::string const name = memberIt.memberName();</span></div>
-<div class="line"><a name="l00737"></a><span class="lineno">  737</span>&#160;<span class="stringliteral">            if (BEAST_EXPECT(result[jss::result].isMember(name)))</span></div>
-<div class="line"><a name="l00738"></a><span class="lineno">  738</span>&#160;<span class="stringliteral">            {</span></div>
-<div class="line"><a name="l00739"></a><span class="lineno">  739</span>&#160;<span class="stringliteral">                auto const received = result[jss::result][name];</span></div>
-<div class="line"><a name="l00740"></a><span class="lineno">  740</span>&#160;<span class="stringliteral">                BEAST_EXPECTS(</span></div>
-<div class="line"><a name="l00741"></a><span class="lineno">  741</span>&#160;<span class="stringliteral">                    received == *memberIt,</span></div>
-<div class="line"><a name="l00742"></a><span class="lineno">  742</span>&#160;<span class="stringliteral">                    &quot;Transaction contains \n\&quot;&quot; + name + &quot;\&quot;: &quot;  //</span></div>
-<div class="line"><a name="l00743"></a><span class="lineno">  743</span>&#160;<span class="stringliteral">                        + to_string(received)                    //</span></div>
-<div class="line"><a name="l00744"></a><span class="lineno">  744</span>&#160;<span class="stringliteral">                        + &quot; but expected &quot;                       //</span></div>
-<div class="line"><a name="l00745"></a><span class="lineno">  745</span>&#160;<span class="stringliteral">                        + to_string(expected));</span></div>
-<div class="line"><a name="l00746"></a><span class="lineno">  746</span>&#160;<span class="stringliteral">            }</span></div>
-<div class="line"><a name="l00747"></a><span class="lineno">  747</span>&#160;<span class="stringliteral">        }</span></div>
-<div class="line"><a name="l00748"></a><span class="lineno">  748</span>&#160;<span class="stringliteral">    }</span></div>
-<div class="line"><a name="l00749"></a><span class="lineno">  749</span>&#160;<span class="stringliteral"></span> </div>
-<div class="line"><a name="l00750"></a><span class="lineno">  750</span>&#160;<span class="stringliteral">public:</span></div>
-<div class="line"><a name="l00751"></a><span class="lineno">  751</span>&#160;<span class="stringliteral">    void</span></div>
-<div class="line"><a name="l00752"></a><span class="lineno"><a class="line" href="classripple_1_1Transaction__test.html#a3b5240c3100c62e2f33cfcd10f784c09">  752</a></span>&#160;<span class="stringliteral">    run() override</span></div>
-<div class="line"><a name="l00753"></a><span class="lineno">  753</span>&#160;<span class="stringliteral">    {</span></div>
-<div class="line"><a name="l00754"></a><span class="lineno">  754</span>&#160;<span class="stringliteral">        using namespace test::jtx;</span></div>
-<div class="line"><a name="l00755"></a><span class="lineno">  755</span>&#160;<span class="stringliteral">        FeatureBitset const all{supported_amendments()};</span></div>
-<div class="line"><a name="l00756"></a><span class="lineno">  756</span>&#160;<span class="stringliteral">        testWithFeats(all);</span></div>
-<div class="line"><a name="l00757"></a><span class="lineno">  757</span>&#160;<span class="stringliteral">    }</span></div>
-<div class="line"><a name="l00758"></a><span class="lineno">  758</span>&#160;<span class="stringliteral"></span> </div>
-<div class="line"><a name="l00759"></a><span class="lineno">  759</span>&#160;<span class="stringliteral">    void</span></div>
-<div class="line"><a name="l00760"></a><span class="lineno"><a class="line" href="classripple_1_1Transaction__test.html#af1bc3b8bcd7bac4e7ef5860053745530">  760</a></span>&#160;<span class="stringliteral">    testWithFeats(FeatureBitset features)</span></div>
-<div class="line"><a name="l00761"></a><span class="lineno">  761</span>&#160;<span class="stringliteral">    {</span></div>
-<div class="line"><a name="l00762"></a><span class="lineno">  762</span>&#160;<span class="stringliteral">        testRangeRequest(features);</span></div>
-<div class="line"><a name="l00763"></a><span class="lineno">  763</span>&#160;<span class="stringliteral">        testRangeCTIDRequest(features);</span></div>
-<div class="line"><a name="l00764"></a><span class="lineno">  764</span>&#160;<span class="stringliteral">        testCTIDValidation(features);</span></div>
-<div class="line"><a name="l00765"></a><span class="lineno">  765</span>&#160;<span class="stringliteral">        testCTIDRPC(features);</span></div>
-<div class="line"><a name="l00766"></a><span class="lineno">  766</span>&#160;<span class="stringliteral">        testRequest(features);</span></div>
-<div class="line"><a name="l00767"></a><span class="lineno">  767</span>&#160;<span class="stringliteral">    }</span></div>
-<div class="line"><a name="l00768"></a><span class="lineno">  768</span>&#160;<span class="stringliteral">};</span></div>
-<div class="line"><a name="l00769"></a><span class="lineno">  769</span>&#160;<span class="stringliteral"></span> </div>
-<div class="line"><a name="l00770"></a><span class="lineno">  770</span>&#160;<span class="stringliteral">BEAST_DEFINE_TESTSUITE(Transaction, rpc, ripple);</span></div>
-<div class="line"><a name="l00771"></a><span class="lineno">  771</span>&#160;<span class="stringliteral"></span> </div>
-<div class="line"><a name="l00772"></a><span class="lineno">  772</span>&#160;<span class="stringliteral">}  // namespace ripple</span></div>
+<div class="line"><a name="l00704"></a><span class="lineno">  704</span>&#160;<span class="stringliteral">        Env env{*this};</span></div>
+<div class="line"><a name="l00705"></a><span class="lineno">  705</span>&#160;<span class="stringliteral">        Account const alice{&quot;alice&quot;};</span></div>
+<div class="line"><a name="l00706"></a><span class="lineno">  706</span>&#160;<span class="stringliteral">        Account const alie{&quot;alie&quot;};</span></div>
+<div class="line"><a name="l00707"></a><span class="lineno">  707</span>&#160;<span class="stringliteral">        Account const gw{&quot;gw&quot;};</span></div>
+<div class="line"><a name="l00708"></a><span class="lineno">  708</span>&#160;<span class="stringliteral">        auto const USD{gw[&quot;USD&quot;]};</span></div>
+<div class="line"><a name="l00709"></a><span class="lineno">  709</span>&#160;<span class="stringliteral"></span> </div>
+<div class="line"><a name="l00710"></a><span class="lineno">  710</span>&#160;<span class="stringliteral">        env.fund(XRP(1000000), alice, gw);</span></div>
+<div class="line"><a name="l00711"></a><span class="lineno">  711</span>&#160;<span class="stringliteral">        env.close();</span></div>
+<div class="line"><a name="l00712"></a><span class="lineno">  712</span>&#160;<span class="stringliteral"></span> </div>
+<div class="line"><a name="l00713"></a><span class="lineno">  713</span>&#160;<span class="stringliteral">        // AccountSet</span></div>
+<div class="line"><a name="l00714"></a><span class="lineno">  714</span>&#160;<span class="stringliteral">        env(noop(alice));</span></div>
+<div class="line"><a name="l00715"></a><span class="lineno">  715</span>&#160;<span class="stringliteral"></span> </div>
+<div class="line"><a name="l00716"></a><span class="lineno">  716</span>&#160;<span class="stringliteral">        // Payment</span></div>
+<div class="line"><a name="l00717"></a><span class="lineno">  717</span>&#160;<span class="stringliteral">        env(pay(alice, gw, XRP(100)));</span></div>
+<div class="line"><a name="l00718"></a><span class="lineno">  718</span>&#160;<span class="stringliteral"></span> </div>
+<div class="line"><a name="l00719"></a><span class="lineno">  719</span>&#160;<span class="stringliteral">        std::shared_ptr&lt;STTx const&gt; txn = env.tx();</span></div>
+<div class="line"><a name="l00720"></a><span class="lineno">  720</span>&#160;<span class="stringliteral">        env.close();</span></div>
+<div class="line"><a name="l00721"></a><span class="lineno">  721</span>&#160;<span class="stringliteral">        std::shared_ptr&lt;STObject const&gt; meta =</span></div>
+<div class="line"><a name="l00722"></a><span class="lineno">  722</span>&#160;<span class="stringliteral">            env.closed()-&gt;txRead(env.tx()-&gt;getTransactionID()).second;</span></div>
+<div class="line"><a name="l00723"></a><span class="lineno">  723</span>&#160;<span class="stringliteral"></span> </div>
+<div class="line"><a name="l00724"></a><span class="lineno">  724</span>&#160;<span class="stringliteral">        Json::Value expected = txn-&gt;getJson(JsonOptions::none);</span></div>
+<div class="line"><a name="l00725"></a><span class="lineno">  725</span>&#160;<span class="stringliteral">        expected[jss::DeliverMax] = expected[jss::Amount];</span></div>
+<div class="line"><a name="l00726"></a><span class="lineno">  726</span>&#160;<span class="stringliteral">        if (apiVersion &gt; 1)</span></div>
+<div class="line"><a name="l00727"></a><span class="lineno">  727</span>&#160;<span class="stringliteral">        {</span></div>
+<div class="line"><a name="l00728"></a><span class="lineno">  728</span>&#160;<span class="stringliteral">            expected.removeMember(jss::hash);</span></div>
+<div class="line"><a name="l00729"></a><span class="lineno">  729</span>&#160;<span class="stringliteral">            expected.removeMember(jss::Amount);</span></div>
+<div class="line"><a name="l00730"></a><span class="lineno">  730</span>&#160;<span class="stringliteral">        }</span></div>
+<div class="line"><a name="l00731"></a><span class="lineno">  731</span>&#160;<span class="stringliteral"></span> </div>
+<div class="line"><a name="l00732"></a><span class="lineno">  732</span>&#160;<span class="stringliteral">        Json::Value const result = {[&amp;env, txn, apiVersion]() {</span></div>
+<div class="line"><a name="l00733"></a><span class="lineno">  733</span>&#160;<span class="stringliteral">            Json::Value params{Json::objectValue};</span></div>
+<div class="line"><a name="l00734"></a><span class="lineno">  734</span>&#160;<span class="stringliteral">            params[jss::transaction] = to_string(txn-&gt;getTransactionID());</span></div>
+<div class="line"><a name="l00735"></a><span class="lineno">  735</span>&#160;<span class="stringliteral">            params[jss::binary] = false;</span></div>
+<div class="line"><a name="l00736"></a><span class="lineno">  736</span>&#160;<span class="stringliteral">            params[jss::api_version] = apiVersion;</span></div>
+<div class="line"><a name="l00737"></a><span class="lineno">  737</span>&#160;<span class="stringliteral">            return env.client().invoke(&quot;tx&quot;, params);</span></div>
+<div class="line"><a name="l00738"></a><span class="lineno">  738</span>&#160;<span class="stringliteral">        }()};</span></div>
+<div class="line"><a name="l00739"></a><span class="lineno">  739</span>&#160;<span class="stringliteral"></span> </div>
+<div class="line"><a name="l00740"></a><span class="lineno">  740</span>&#160;<span class="stringliteral">        BEAST_EXPECT(result[jss::result][jss::status] == jss::success);</span></div>
+<div class="line"><a name="l00741"></a><span class="lineno">  741</span>&#160;<span class="stringliteral">        if (apiVersion &gt; 1)</span></div>
+<div class="line"><a name="l00742"></a><span class="lineno">  742</span>&#160;<span class="stringliteral">        {</span></div>
+<div class="line"><a name="l00743"></a><span class="lineno">  743</span>&#160;<span class="stringliteral">            BEAST_EXPECT(</span></div>
+<div class="line"><a name="l00744"></a><span class="lineno">  744</span>&#160;<span class="stringliteral">                result[jss::result][jss::close_time_iso] ==</span></div>
+<div class="line"><a name="l00745"></a><span class="lineno">  745</span>&#160;<span class="stringliteral">                &quot;2000-01-01T00:00:20Z&quot;);</span></div>
+<div class="line"><a name="l00746"></a><span class="lineno">  746</span>&#160;<span class="stringliteral">            BEAST_EXPECT(</span></div>
+<div class="line"><a name="l00747"></a><span class="lineno">  747</span>&#160;<span class="stringliteral">                result[jss::result][jss::hash] ==</span></div>
+<div class="line"><a name="l00748"></a><span class="lineno">  748</span>&#160;<span class="stringliteral">                to_string(txn-&gt;getTransactionID()));</span></div>
+<div class="line"><a name="l00749"></a><span class="lineno">  749</span>&#160;<span class="stringliteral">            BEAST_EXPECT(result[jss::result][jss::validated] == true);</span></div>
+<div class="line"><a name="l00750"></a><span class="lineno">  750</span>&#160;<span class="stringliteral">            BEAST_EXPECT(result[jss::result][jss::ledger_index] == 4);</span></div>
+<div class="line"><a name="l00751"></a><span class="lineno">  751</span>&#160;<span class="stringliteral">            BEAST_EXPECT(</span></div>
+<div class="line"><a name="l00752"></a><span class="lineno">  752</span>&#160;<span class="stringliteral">                result[jss::result][jss::ledger_hash] ==</span></div>
+<div class="line"><a name="l00753"></a><span class="lineno">  753</span>&#160;<span class="stringliteral">                &quot;B41882E20F0EC6228417D28B9AE0F33833645D35F6799DFB782AC97FC4BB51&quot;</span></div>
+<div class="line"><a name="l00754"></a><span class="lineno">  754</span>&#160;<span class="stringliteral">                &quot;D2&quot;);</span></div>
+<div class="line"><a name="l00755"></a><span class="lineno">  755</span>&#160;<span class="stringliteral">        }</span></div>
+<div class="line"><a name="l00756"></a><span class="lineno">  756</span>&#160;<span class="stringliteral"></span> </div>
+<div class="line"><a name="l00757"></a><span class="lineno">  757</span>&#160;<span class="stringliteral">        for (auto memberIt = expected.begin(); memberIt != expected.end();</span></div>
+<div class="line"><a name="l00758"></a><span class="lineno">  758</span>&#160;<span class="stringliteral">             memberIt++)</span></div>
+<div class="line"><a name="l00759"></a><span class="lineno">  759</span>&#160;<span class="stringliteral">        {</span></div>
+<div class="line"><a name="l00760"></a><span class="lineno">  760</span>&#160;<span class="stringliteral">            std::string const name = memberIt.memberName();</span></div>
+<div class="line"><a name="l00761"></a><span class="lineno">  761</span>&#160;<span class="stringliteral">            auto const&amp; result_transaction =</span></div>
+<div class="line"><a name="l00762"></a><span class="lineno">  762</span>&#160;<span class="stringliteral">                (apiVersion &gt; 1 ? result[jss::result][jss::tx_json]</span></div>
+<div class="line"><a name="l00763"></a><span class="lineno">  763</span>&#160;<span class="stringliteral">                                : result[jss::result]);</span></div>
+<div class="line"><a name="l00764"></a><span class="lineno">  764</span>&#160;<span class="stringliteral">            if (BEAST_EXPECT(result_transaction.isMember(name)))</span></div>
+<div class="line"><a name="l00765"></a><span class="lineno">  765</span>&#160;<span class="stringliteral">            {</span></div>
+<div class="line"><a name="l00766"></a><span class="lineno">  766</span>&#160;<span class="stringliteral">                auto const received = result_transaction[name];</span></div>
+<div class="line"><a name="l00767"></a><span class="lineno">  767</span>&#160;<span class="stringliteral">                BEAST_EXPECTS(</span></div>
+<div class="line"><a name="l00768"></a><span class="lineno">  768</span>&#160;<span class="stringliteral">                    received == *memberIt,</span></div>
+<div class="line"><a name="l00769"></a><span class="lineno">  769</span>&#160;<span class="stringliteral">                    &quot;Transaction contains \n\&quot;&quot; + name + &quot;\&quot;: &quot;  //</span></div>
+<div class="line"><a name="l00770"></a><span class="lineno">  770</span>&#160;<span class="stringliteral">                        + to_string(received)                    //</span></div>
+<div class="line"><a name="l00771"></a><span class="lineno">  771</span>&#160;<span class="stringliteral">                        + &quot; but expected &quot;                       //</span></div>
+<div class="line"><a name="l00772"></a><span class="lineno">  772</span>&#160;<span class="stringliteral">                        + to_string(expected));</span></div>
+<div class="line"><a name="l00773"></a><span class="lineno">  773</span>&#160;<span class="stringliteral">            }</span></div>
+<div class="line"><a name="l00774"></a><span class="lineno">  774</span>&#160;<span class="stringliteral">        }</span></div>
+<div class="line"><a name="l00775"></a><span class="lineno">  775</span>&#160;<span class="stringliteral">    }</span></div>
+<div class="line"><a name="l00776"></a><span class="lineno">  776</span>&#160;<span class="stringliteral"></span> </div>
+<div class="line"><a name="l00777"></a><span class="lineno">  777</span>&#160;<span class="stringliteral">public:</span></div>
+<div class="line"><a name="l00778"></a><span class="lineno">  778</span>&#160;<span class="stringliteral">    void</span></div>
+<div class="line"><a name="l00779"></a><span class="lineno"><a class="line" href="classripple_1_1Transaction__test.html#a3b5240c3100c62e2f33cfcd10f784c09">  779</a></span>&#160;<span class="stringliteral">    run() override</span></div>
+<div class="line"><a name="l00780"></a><span class="lineno">  780</span>&#160;<span class="stringliteral">    {</span></div>
+<div class="line"><a name="l00781"></a><span class="lineno">  781</span>&#160;<span class="stringliteral">        using namespace test::jtx;</span></div>
+<div class="line"><a name="l00782"></a><span class="lineno">  782</span>&#160;<span class="stringliteral">        FeatureBitset const all{supported_amendments()};</span></div>
+<div class="line"><a name="l00783"></a><span class="lineno">  783</span>&#160;<span class="stringliteral">        testWithFeats(all);</span></div>
+<div class="line"><a name="l00784"></a><span class="lineno">  784</span>&#160;<span class="stringliteral">    }</span></div>
+<div class="line"><a name="l00785"></a><span class="lineno">  785</span>&#160;<span class="stringliteral"></span> </div>
+<div class="line"><a name="l00786"></a><span class="lineno">  786</span>&#160;<span class="stringliteral">    void</span></div>
+<div class="line"><a name="l00787"></a><span class="lineno"><a class="line" href="classripple_1_1Transaction__test.html#af1bc3b8bcd7bac4e7ef5860053745530">  787</a></span>&#160;<span class="stringliteral">    testWithFeats(FeatureBitset features)</span></div>
+<div class="line"><a name="l00788"></a><span class="lineno">  788</span>&#160;<span class="stringliteral">    {</span></div>
+<div class="line"><a name="l00789"></a><span class="lineno">  789</span>&#160;<span class="stringliteral">        testRangeRequest(features);</span></div>
+<div class="line"><a name="l00790"></a><span class="lineno">  790</span>&#160;<span class="stringliteral">        testRangeCTIDRequest(features);</span></div>
+<div class="line"><a name="l00791"></a><span class="lineno">  791</span>&#160;<span class="stringliteral">        testCTIDValidation(features);</span></div>
+<div class="line"><a name="l00792"></a><span class="lineno">  792</span>&#160;<span class="stringliteral">        testCTIDRPC(features);</span></div>
+<div class="line"><a name="l00793"></a><span class="lineno">  793</span>&#160;<span class="stringliteral">        test::jtx::forAllApiVersions(</span></div>
+<div class="line"><a name="l00794"></a><span class="lineno">  794</span>&#160;<span class="stringliteral">            std::bind_front(&amp;Transaction_test::testRequest, this, features));</span></div>
+<div class="line"><a name="l00795"></a><span class="lineno">  795</span>&#160;<span class="stringliteral">    }</span></div>
+<div class="line"><a name="l00796"></a><span class="lineno">  796</span>&#160;<span class="stringliteral">};</span></div>
+<div class="line"><a name="l00797"></a><span class="lineno">  797</span>&#160;<span class="stringliteral"></span> </div>
+<div class="line"><a name="l00798"></a><span class="lineno">  798</span>&#160;<span class="stringliteral">BEAST_DEFINE_TESTSUITE(Transaction, rpc, ripple);</span></div>
+<div class="line"><a name="l00799"></a><span class="lineno">  799</span>&#160;<span class="stringliteral"></span> </div>
+<div class="line"><a name="l00800"></a><span class="lineno">  800</span>&#160;<span class="stringliteral">}  // namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aclassripple_1_1SQLiteDatabase_html"><div class="ttname"><a href="classripple_1_1SQLiteDatabase.html">ripple::SQLiteDatabase</a></div><div class="ttdef"><b>Definition:</b> <a href="SQLiteDatabase_8h_source.html#l00027">SQLiteDatabase.h:27</a></div></div>
 <div class="ttc" id="amake_tuple_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/tuple/make_tuple.html">std::make_tuple</a></div><div class="ttdeci">T make_tuple(T... args)</div></div>
@@ -860,7 +888,7 @@ $(function() {
 <div class="ttc" id="aemplace_back_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/emplace_back.html">std::vector::emplace_back</a></div><div class="ttdeci">T emplace_back(T... args)</div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="aclassripple_1_1Transaction__test_html_a4ca3f5882f8182921c20bb60b0148948"><div class="ttname"><a href="classripple_1_1Transaction__test.html#a4ca3f5882f8182921c20bb60b0148948">ripple::Transaction_test::testRangeRequest</a></div><div class="ttdeci">void testRangeRequest(FeatureBitset features)</div><div class="ttdef"><b>Definition:</b> <a href="Transaction__test_8cpp_source.html#l00046">Transaction_test.cpp:46</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a2e97c395a5e1ef4ed1052299e0e60843af8c5e3e10d98fcbda2c4d43d50d712a2"><div class="ttname"><a href="namespaceripple.html#a2e97c395a5e1ef4ed1052299e0e60843af8c5e3e10d98fcbda2c4d43d50d712a2">ripple::INVALID</a></div><div class="ttdeci">@ INVALID</div><div class="ttdef"><b>Definition:</b> <a href="Transaction_8h_source.html#l00047">Transaction.h:47</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a2e97c395a5e1ef4ed1052299e0e60843af8c5e3e10d98fcbda2c4d43d50d712a2"><div class="ttname"><a href="namespaceripple.html#a2e97c395a5e1ef4ed1052299e0e60843af8c5e3e10d98fcbda2c4d43d50d712a2">ripple::INVALID</a></div><div class="ttdeci">@ INVALID</div><div class="ttdef"><b>Definition:</b> <a href="Transaction_8h_source.html#l00048">Transaction.h:48</a></div></div>
 <div class="ttc" id="aclassripple_1_1FeatureBitset_html"><div class="ttname"><a href="classripple_1_1FeatureBitset.html">ripple::FeatureBitset</a></div><div class="ttdef"><b>Definition:</b> <a href="Feature_8h_source.html#l00113">Feature.h:113</a></div></div>
 <div class="ttc" id="aoptional_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/optional.html">optional</a></div></div>
 <div class="ttc" id="anamespaceripple_html_af9776f187d3686a7fba4c2d2fbeebdf4"><div class="ttname"><a href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">ripple::to_string</a></div><div class="ttdeci">std::string to_string(Manifest const &amp;m)</div><div class="ttdoc">Format the specified manifest to a string for debugging purposes.</div><div class="ttdef"><b>Definition:</b> <a href="app_2misc_2impl_2Manifest_8cpp_source.html#l00041">app/misc/impl/Manifest.cpp:41</a></div></div>

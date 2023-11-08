@@ -590,6 +590,9 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1json__value__test.html">json_value_test</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1JsonOptions.html">JsonOptions</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Note, should be treated as flags that can be | and &amp;.  <a href="structripple_1_1JsonOptions.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1JsonPropertyStream.html">JsonPropertyStream</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A PropertyStream::Sink which produces a <a class="el" href="classJson_1_1Value.html" title="Represents a JSON value.">Json::Value</a> of type objectValue.  <a href="classripple_1_1JsonPropertyStream.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -706,7 +709,6 @@ Classes</h2></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Manager to create NegativeUNL votes.  <a href="classripple_1_1NegativeUNLVote.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NetClock.html">NetClock</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Clock for measuring the network time.  <a href="classripple_1_1NetClock.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NetworkOPs.html">NetworkOPs</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Provides server functionality for clients.  <a href="classripple_1_1NetworkOPs.html#details">More...</a><br /></td></tr>
@@ -2181,10 +2183,6 @@ Enumerations</h2></td></tr>
  }</td></tr>
 <tr class="memdesc:ad905dc8b70717f4492bebb6b7e189042"><td class="mdescLeft">&#160;</td><td class="mdescRight">Kind of element in each entry of an SOTemplate.  <a href="namespaceripple.html#ad905dc8b70717f4492bebb6b7e189042">More...</a><br /></td></tr>
 <tr class="separator:ad905dc8b70717f4492bebb6b7e189042"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a169967ff418b80729654b6d45ade8711"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a169967ff418b80729654b6d45ade8711">JsonOptions</a> { <a class="el" href="namespaceripple.html#a169967ff418b80729654b6d45ade8711a334c4a4c42fdb79d7ebc3e73b517e6f8">JsonOptions::none</a> = 0, 
-<a class="el" href="namespaceripple.html#a169967ff418b80729654b6d45ade8711a48680239f46f3fdb40cb2e7e4d92a903">JsonOptions::include_date</a> = 1
- }</td></tr>
-<tr class="separator:a169967ff418b80729654b6d45ade8711"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aae5869c83af3223f1d21900ff39134fe"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aae5869c83af3223f1d21900ff39134fe">TxnSql</a> : char { <br />
 &#160;&#160;<a class="el" href="namespaceripple.html#aae5869c83af3223f1d21900ff39134feae67d9cca2c41179528ed755ceebdf5e0">txnSqlNew</a> = 'N', 
 <a class="el" href="namespaceripple.html#aae5869c83af3223f1d21900ff39134fea80794519f546e60b00318f7a4e0642ac">txnSqlConflict</a> = 'C', 
@@ -3206,6 +3204,11 @@ Functions</h2></td></tr>
 <tr class="separator:aa7c655d460cd49a70a942831c924292f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a36812daaa079fa01b096438639a019e4"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a36812daaa079fa01b096438639a019e4">to_string</a> (<a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> tp)</td></tr>
 <tr class="separator:a36812daaa079fa01b096438639a019e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab8a538c16be43509b3ab21d93c19521a"><td class="memTemplParams" colspan="2">template&lt;class Duration &gt; </td></tr>
+<tr class="memitem:ab8a538c16be43509b3ab21d93c19521a"><td class="memTemplItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ab8a538c16be43509b3ab21d93c19521a">to_string_iso</a> (date::sys_time&lt; Duration &gt; tp)</td></tr>
+<tr class="separator:ab8a538c16be43509b3ab21d93c19521a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a21949149ac2c9dc2b39f3a47a4c1e2e6"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a21949149ac2c9dc2b39f3a47a4c1e2e6">to_string_iso</a> (<a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> tp)</td></tr>
+<tr class="separator:a21949149ac2c9dc2b39f3a47a4c1e2e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac70521ab6e1277870a9e400e7a08e937"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#abfbcd3fa60b2ddb83f5b2991900fe153">Stopwatch</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ac70521ab6e1277870a9e400e7a08e937">stopwatch</a> ()</td></tr>
 <tr class="memdesc:ac70521ab6e1277870a9e400e7a08e937"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns an instance of a wall clock.  <a href="namespaceripple.html#ac70521ab6e1277870a9e400e7a08e937">More...</a><br /></td></tr>
 <tr class="separator:ac70521ab6e1277870a9e400e7a08e937"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -5461,6 +5464,9 @@ Variables</h2></td></tr>
 <tr class="separator:a366eafd5d369bdf291588cfd4d215916"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a25c9defcdfda1f87e16cd9b20563f37d"><td class="memItemLeft" align="right" valign="top">constexpr size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a25c9defcdfda1f87e16cd9b20563f37d">xbridgeMaxAccountCreateClaims</a> = 128</td></tr>
 <tr class="separator:a25c9defcdfda1f87e16cd9b20563f37d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad4e2a948afe60129e9b99dc30af7a5fd"><td class="memItemLeft" align="right" valign="top">constexpr static <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ad4e2a948afe60129e9b99dc30af7a5fd">epoch_offset</a></td></tr>
+<tr class="memdesc:ad4e2a948afe60129e9b99dc30af7a5fd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Clock for measuring the network time.  <a href="namespaceripple.html#ad4e2a948afe60129e9b99dc30af7a5fd">More...</a><br /></td></tr>
+<tr class="separator:ad4e2a948afe60129e9b99dc30af7a5fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afee293b11beff5e74fa2134b0cac6c98"><td class="memItemLeft" align="right" valign="top">static constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::int64_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#afee293b11beff5e74fa2134b0cac6c98">minMantissa</a> = 1000000000000000ull</td></tr>
 <tr class="separator:afee293b11beff5e74fa2134b0cac6c98"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab58b057b415c6cdbd520b10b674c1ef7"><td class="memItemLeft" align="right" valign="top">static constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::int64_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ab58b057b415c6cdbd520b10b674c1ef7">maxMantissa</a> = 9999999999999999ull</td></tr>
@@ -6741,7 +6747,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="chrono_8h_source.html#l00038">38</a> of file <a class="el" href="chrono_8h_source.html">chrono.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="chrono_8h_source.html#l00041">41</a> of file <a class="el" href="chrono_8h_source.html">chrono.h</a>.</p>
 
 </div>
 </div>
@@ -6757,7 +6763,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="chrono_8h_source.html#l00041">41</a> of file <a class="el" href="chrono_8h_source.html">chrono.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="chrono_8h_source.html#l00044">44</a> of file <a class="el" href="chrono_8h_source.html">chrono.h</a>.</p>
 
 </div>
 </div>
@@ -6776,7 +6782,7 @@ Variables</h2></td></tr>
 <p>A clock for measuring elapsed time. </p>
 <p>The epoch is unspecified. </p>
 
-<p class="definition">Definition at line <a class="el" href="chrono_8h_source.html#l00081">81</a> of file <a class="el" href="chrono_8h_source.html">chrono.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="chrono_8h_source.html#l00113">113</a> of file <a class="el" href="chrono_8h_source.html">chrono.h</a>.</p>
 
 </div>
 </div>
@@ -6794,7 +6800,7 @@ Variables</h2></td></tr>
 
 <p>A manual Stopwatch for unit tests. </p>
 
-<p class="definition">Definition at line <a class="el" href="chrono_8h_source.html#l00084">84</a> of file <a class="el" href="chrono_8h_source.html">chrono.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="chrono_8h_source.html#l00116">116</a> of file <a class="el" href="chrono_8h_source.html">chrono.h</a>.</p>
 
 </div>
 </div>
@@ -7950,7 +7956,7 @@ template&lt;class Value , class Hash  = hardened_hash&lt;strong_hash&gt;, class 
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AccountTx_8cpp_source.html#l00048">48</a> of file <a class="el" href="AccountTx_8cpp_source.html">AccountTx.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AccountTx_8cpp_source.html#l00047">47</a> of file <a class="el" href="AccountTx_8cpp_source.html">AccountTx.cpp</a>.</p>
 
 </div>
 </div>
@@ -7966,7 +7972,7 @@ template&lt;class Value , class Hash  = hardened_hash&lt;strong_hash&gt;, class 
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AccountTx_8cpp_source.html#l00049">49</a> of file <a class="el" href="AccountTx_8cpp_source.html">AccountTx.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AccountTx_8cpp_source.html#l00048">48</a> of file <a class="el" href="AccountTx_8cpp_source.html">AccountTx.cpp</a>.</p>
 
 </div>
 </div>
@@ -7982,7 +7988,7 @@ template&lt;class Value , class Hash  = hardened_hash&lt;strong_hash&gt;, class 
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AccountTx_8cpp_source.html#l00052">52</a> of file <a class="el" href="AccountTx_8cpp_source.html">AccountTx.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AccountTx_8cpp_source.html#l00051">51</a> of file <a class="el" href="AccountTx_8cpp_source.html">AccountTx.cpp</a>.</p>
 
 </div>
 </div>
@@ -7998,7 +8004,7 @@ template&lt;class Value , class Hash  = hardened_hash&lt;strong_hash&gt;, class 
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AccountTx_8cpp_source.html#l00053">53</a> of file <a class="el" href="AccountTx_8cpp_source.html">AccountTx.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AccountTx_8cpp_source.html#l00052">52</a> of file <a class="el" href="AccountTx_8cpp_source.html">AccountTx.cpp</a>.</p>
 
 </div>
 </div>
@@ -8231,7 +8237,7 @@ template&lt;class Value , class Hash  = hardened_hash&lt;strong_hash&gt;, class 
 <tr><td class="fieldname"><a id="a2e97c395a5e1ef4ed1052299e0e60843a5ca47754cb7976987bbc36d2828985bc"></a>INCOMPLETE&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00045">45</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00046">46</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -8260,7 +8266,7 @@ template&lt;class Value , class Hash  = hardened_hash&lt;strong_hash&gt;, class 
 <tr><td class="fieldname"><a id="a7ffb3f54d739bb8f967d695f08fb66ccaad921d60486366258809553a3db49a4a"></a>unknown&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00057">57</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00058">58</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -9620,34 +9626,6 @@ ledger.
 
 </div>
 </div>
-<a id="a169967ff418b80729654b6d45ade8711"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a169967ff418b80729654b6d45ade8711">&#9670;&nbsp;</a></span>JsonOptions</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">enum <a class="el" href="namespaceripple.html#a169967ff418b80729654b6d45ade8711">ripple::JsonOptions</a></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">strong</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a169967ff418b80729654b6d45ade8711a334c4a4c42fdb79d7ebc3e73b517e6f8"></a>none&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a169967ff418b80729654b6d45ade8711a48680239f46f3fdb40cb2e7e4d92a903"></a>include_date&#160;</td><td class="fielddoc"></td></tr>
-</table>
-
-<p class="definition">Definition at line <a class="el" href="STBase_8h_source.html#l00034">34</a> of file <a class="el" href="STBase_8h_source.html">STBase.h</a>.</p>
-
-</div>
-</div>
 <a id="aae5869c83af3223f1d21900ff39134fe"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aae5869c83af3223f1d21900ff39134fe">&#9670;&nbsp;</a></span>TxnSql</h2>
 
@@ -9668,7 +9646,7 @@ ledger.
 <tr><td class="fieldname"><a id="aae5869c83af3223f1d21900ff39134fea700ed758a46fd9b4defa38b8b1f5e6ed"></a>txnSqlUnknown&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="STTx_8h_source.html#l00036">36</a> of file <a class="el" href="STTx_8h_source.html">STTx.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STTx_8h_source.html#l00037">37</a> of file <a class="el" href="STTx_8h_source.html">STTx.h</a>.</p>
 
 </div>
 </div>
@@ -10967,7 +10945,7 @@ template&lt;class ApplyTxs &gt; </div>
 <p>The rationale is that for transaction trees, it may make sense to not include the leaves if the fetch pack is being constructed for someone attempting to get a recent ledger for which they already have the transactions.</p>
 <p>However, for historical ledgers, which is the only use we have for fetch packs right now, it makes sense to include the transactions because the caller is unlikely to have them. </p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l02201">2201</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l02249">2249</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -10999,7 +10977,7 @@ template&lt;class ApplyTxs &gt; </div>
 
 <p>Given a <a class="el" href="classripple_1_1Ledger.html" title="Holds a ledger.">Ledger</a> and options, fill a <a class="el" href="classJson_1_1Object.html" title="Represents a JSON object being written to a Writer.">Json::Object</a> or <a class="el" href="classJson_1_1Value.html" title="Represents a JSON value.">Json::Value</a> with a description of the ledger. </p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerToJson_8cpp_source.html#l00283">283</a> of file <a class="el" href="LedgerToJson_8cpp_source.html">LedgerToJson.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerToJson_8cpp_source.html#l00330">330</a> of file <a class="el" href="LedgerToJson_8cpp_source.html">LedgerToJson.cpp</a>.</p>
 
 </div>
 </div>
@@ -11021,7 +10999,7 @@ template&lt;class ApplyTxs &gt; </div>
 
 <p>Return a new <a class="el" href="classJson_1_1Value.html" title="Represents a JSON value.">Json::Value</a> representing the ledger with given options. </p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerToJson_8cpp_source.html#l00293">293</a> of file <a class="el" href="LedgerToJson_8cpp_source.html">LedgerToJson.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerToJson_8cpp_source.html#l00340">340</a> of file <a class="el" href="LedgerToJson_8cpp_source.html">LedgerToJson.cpp</a>.</p>
 
 </div>
 </div>
@@ -13608,7 +13586,7 @@ template&lt;class T , class  = std::enable_if_t&lt;        std::is_same&lt;T, ch
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l02043">2043</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l02045">2045</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
 
 </div>
 </div>
@@ -13646,7 +13624,7 @@ template&lt;class T , class  = std::enable_if_t&lt;        std::is_same&lt;T, ch
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l02849">2849</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l02851">2851</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
 
 </div>
 </div>
@@ -13730,7 +13708,7 @@ template&lt;class T , class  = std::enable_if_t&lt;        std::is_same&lt;T, ch
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l04719">4719</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l04739">4739</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
 
 </div>
 </div>
@@ -20650,7 +20628,7 @@ template&lt;class Duration &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="chrono_8h_source.html#l00063">63</a> of file <a class="el" href="chrono_8h_source.html">chrono.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="chrono_8h_source.html#l00077">77</a> of file <a class="el" href="chrono_8h_source.html">chrono.h</a>.</p>
 
 </div>
 </div>
@@ -20670,7 +20648,49 @@ template&lt;class Duration &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="chrono_8h_source.html#l00069">69</a> of file <a class="el" href="chrono_8h_source.html">chrono.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="chrono_8h_source.html#l00083">83</a> of file <a class="el" href="chrono_8h_source.html">chrono.h</a>.</p>
+
+</div>
+</div>
+<a id="ab8a538c16be43509b3ab21d93c19521a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab8a538c16be43509b3ab21d93c19521a">&#9670;&nbsp;</a></span>to_string_iso() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class Duration &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> ripple::to_string_iso </td>
+          <td>(</td>
+          <td class="paramtype">date::sys_time&lt; Duration &gt;&#160;</td>
+          <td class="paramname"><em>tp</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="chrono_8h_source.html#l00093">93</a> of file <a class="el" href="chrono_8h_source.html">chrono.h</a>.</p>
+
+</div>
+</div>
+<a id="a21949149ac2c9dc2b39f3a47a4c1e2e6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a21949149ac2c9dc2b39f3a47a4c1e2e6">&#9670;&nbsp;</a></span>to_string_iso() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> ripple::to_string_iso </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a>&#160;</td>
+          <td class="paramname"><em>tp</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="chrono_8h_source.html#l00100">100</a> of file <a class="el" href="chrono_8h_source.html">chrono.h</a>.</p>
 
 </div>
 </div>
@@ -20691,7 +20711,7 @@ template&lt;class Duration &gt; </div>
 
 <p>Returns an instance of a wall clock. </p>
 
-<p class="definition">Definition at line <a class="el" href="chrono_8h_source.html#l00088">88</a> of file <a class="el" href="chrono_8h_source.html">chrono.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="chrono_8h_source.html#l00120">120</a> of file <a class="el" href="chrono_8h_source.html">chrono.h</a>.</p>
 
 </div>
 </div>
@@ -44853,7 +44873,7 @@ template&lt;typename MightSaveRound &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STTx_8cpp_source.html#l00045">45</a> of file <a class="el" href="STTx_8cpp_source.html">STTx.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STTx_8cpp_source.html#l00046">46</a> of file <a class="el" href="STTx_8cpp_source.html">STTx.cpp</a>.</p>
 
 </div>
 </div>
@@ -44881,7 +44901,7 @@ template&lt;typename MightSaveRound &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STTx_8cpp_source.html#l00155">155</a> of file <a class="el" href="STTx_8cpp_source.html">STTx.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STTx_8cpp_source.html#l00156">156</a> of file <a class="el" href="STTx_8cpp_source.html">STTx.cpp</a>.</p>
 
 </div>
 </div>
@@ -44919,7 +44939,7 @@ template&lt;typename MightSaveRound &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STTx_8cpp_source.html#l00425">425</a> of file <a class="el" href="STTx_8cpp_source.html">STTx.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STTx_8cpp_source.html#l00442">442</a> of file <a class="el" href="STTx_8cpp_source.html">STTx.cpp</a>.</p>
 
 </div>
 </div>
@@ -44947,7 +44967,7 @@ template&lt;typename MightSaveRound &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STTx_8cpp_source.html#l00517">517</a> of file <a class="el" href="STTx_8cpp_source.html">STTx.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STTx_8cpp_source.html#l00534">534</a> of file <a class="el" href="STTx_8cpp_source.html">STTx.cpp</a>.</p>
 
 </div>
 </div>
@@ -44977,7 +44997,7 @@ template&lt;typename MightSaveRound &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STTx_8cpp_source.html#l00530">530</a> of file <a class="el" href="STTx_8cpp_source.html">STTx.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STTx_8cpp_source.html#l00547">547</a> of file <a class="el" href="STTx_8cpp_source.html">STTx.cpp</a>.</p>
 
 </div>
 </div>
@@ -45000,7 +45020,7 @@ template&lt;typename MightSaveRound &gt; </div>
 <p>Sterilize a transaction. </p>
 <p>The transaction is serialized and then deserialized, ensuring that all equivalent transactions are in canonical form. This also ensures that program metadata such as the transaction's digest, are all computed. </p>
 
-<p class="definition">Definition at line <a class="el" href="STTx_8cpp_source.html#l00550">550</a> of file <a class="el" href="STTx_8cpp_source.html">STTx.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STTx_8cpp_source.html#l00567">567</a> of file <a class="el" href="STTx_8cpp_source.html">STTx.cpp</a>.</p>
 
 </div>
 </div>
@@ -45022,7 +45042,7 @@ template&lt;typename MightSaveRound &gt; </div>
 
 <p>Check whether a transaction is a pseudo-transaction. </p>
 
-<p class="definition">Definition at line <a class="el" href="STTx_8cpp_source.html#l00559">559</a> of file <a class="el" href="STTx_8cpp_source.html">STTx.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STTx_8cpp_source.html#l00576">576</a> of file <a class="el" href="STTx_8cpp_source.html">STTx.cpp</a>.</p>
 
 </div>
 </div>
@@ -47156,7 +47176,7 @@ template&lt;class U &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l00047">47</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l00048">48</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
 
 </div>
 </div>
@@ -47918,7 +47938,7 @@ template&lt;class TAttestation &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerHandler_8cpp_source.html#l00105">105</a> of file <a class="el" href="LedgerHandler_8cpp_source.html">LedgerHandler.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerHandler_8cpp_source.html#l00104">104</a> of file <a class="el" href="LedgerHandler_8cpp_source.html">LedgerHandler.cpp</a>.</p>
 
 </div>
 </div>
@@ -48241,7 +48261,7 @@ template&lt;class TAttestation &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AccountTx_8cpp_source.html#l00057">57</a> of file <a class="el" href="AccountTx_8cpp_source.html">AccountTx.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AccountTx_8cpp_source.html#l00056">56</a> of file <a class="el" href="AccountTx_8cpp_source.html">AccountTx.cpp</a>.</p>
 
 </div>
 </div>
@@ -48271,7 +48291,7 @@ template&lt;class TAttestation &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AccountTx_8cpp_source.html#l00136">136</a> of file <a class="el" href="AccountTx_8cpp_source.html">AccountTx.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AccountTx_8cpp_source.html#l00135">135</a> of file <a class="el" href="AccountTx_8cpp_source.html">AccountTx.cpp</a>.</p>
 
 </div>
 </div>
@@ -48301,7 +48321,7 @@ template&lt;class TAttestation &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AccountTx_8cpp_source.html#l00219">219</a> of file <a class="el" href="AccountTx_8cpp_source.html">AccountTx.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AccountTx_8cpp_source.html#l00218">218</a> of file <a class="el" href="AccountTx_8cpp_source.html">AccountTx.cpp</a>.</p>
 
 </div>
 </div>
@@ -48337,7 +48357,7 @@ template&lt;class TAttestation &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AccountTx_8cpp_source.html#l00298">298</a> of file <a class="el" href="AccountTx_8cpp_source.html">AccountTx.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AccountTx_8cpp_source.html#l00297">297</a> of file <a class="el" href="AccountTx_8cpp_source.html">AccountTx.cpp</a>.</p>
 
 </div>
 </div>
@@ -48357,7 +48377,7 @@ template&lt;class TAttestation &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AccountTx_8cpp_source.html#l00386">386</a> of file <a class="el" href="AccountTx_8cpp_source.html">AccountTx.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AccountTx_8cpp_source.html#l00413">413</a> of file <a class="el" href="AccountTx_8cpp_source.html">AccountTx.cpp</a>.</p>
 
 </div>
 </div>
@@ -48387,7 +48407,7 @@ template&lt;class TAttestation &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AMMInfo_8cpp_source.html#l00032">32</a> of file <a class="el" href="AMMInfo_8cpp_source.html">AMMInfo.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AMMInfo_8cpp_source.html#l00033">33</a> of file <a class="el" href="AMMInfo_8cpp_source.html">AMMInfo.cpp</a>.</p>
 
 </div>
 </div>
@@ -48417,7 +48437,7 @@ template&lt;class TAttestation &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AMMInfo_8cpp_source.html#l00048">48</a> of file <a class="el" href="AMMInfo_8cpp_source.html">AMMInfo.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AMMInfo_8cpp_source.html#l00049">49</a> of file <a class="el" href="AMMInfo_8cpp_source.html">AMMInfo.cpp</a>.</p>
 
 </div>
 </div>
@@ -48437,7 +48457,7 @@ template&lt;class TAttestation &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AMMInfo_8cpp_source.html#l00062">62</a> of file <a class="el" href="AMMInfo_8cpp_source.html">AMMInfo.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AMMInfo_8cpp_source.html#l00063">63</a> of file <a class="el" href="AMMInfo_8cpp_source.html">AMMInfo.cpp</a>.</p>
 
 </div>
 </div>
@@ -48457,7 +48477,7 @@ template&lt;class TAttestation &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AMMInfo_8cpp_source.html#l00073">73</a> of file <a class="el" href="AMMInfo_8cpp_source.html">AMMInfo.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AMMInfo_8cpp_source.html#l00074">74</a> of file <a class="el" href="AMMInfo_8cpp_source.html">AMMInfo.cpp</a>.</p>
 
 </div>
 </div>
@@ -49601,7 +49621,7 @@ template&lt;class TAttestation &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionEntry_8cpp_source.html#l00037">37</a> of file <a class="el" href="TransactionEntry_8cpp_source.html">TransactionEntry.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionEntry_8cpp_source.html#l00038">38</a> of file <a class="el" href="TransactionEntry_8cpp_source.html">TransactionEntry.cpp</a>.</p>
 
 </div>
 </div>
@@ -49621,7 +49641,7 @@ template&lt;class TAttestation &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Tx_8cpp_source.html#l00347">347</a> of file <a class="el" href="Tx_8cpp_source.html">Tx.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Tx_8cpp_source.html#l00399">399</a> of file <a class="el" href="Tx_8cpp_source.html">Tx.cpp</a>.</p>
 
 </div>
 </div>
@@ -50017,7 +50037,7 @@ template&lt;class TAttestation &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Tx_8cpp_source.html#l00041">41</a> of file <a class="el" href="Tx_8cpp_source.html">Tx.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Tx_8cpp_source.html#l00043">43</a> of file <a class="el" href="Tx_8cpp_source.html">Tx.cpp</a>.</p>
 
 </div>
 </div>
@@ -50047,7 +50067,7 @@ template&lt;class TAttestation &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Tx_8cpp_source.html#l00070">70</a> of file <a class="el" href="Tx_8cpp_source.html">Tx.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Tx_8cpp_source.html#l00074">74</a> of file <a class="el" href="Tx_8cpp_source.html">Tx.cpp</a>.</p>
 
 </div>
 </div>
@@ -50077,7 +50097,7 @@ template&lt;class TAttestation &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Tx_8cpp_source.html#l00181">181</a> of file <a class="el" href="Tx_8cpp_source.html">Tx.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Tx_8cpp_source.html#l00192">192</a> of file <a class="el" href="Tx_8cpp_source.html">Tx.cpp</a>.</p>
 
 </div>
 </div>
@@ -50113,7 +50133,7 @@ template&lt;class TAttestation &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Tx_8cpp_source.html#l00287">287</a> of file <a class="el" href="Tx_8cpp_source.html">Tx.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Tx_8cpp_source.html#l00304">304</a> of file <a class="el" href="Tx_8cpp_source.html">Tx.cpp</a>.</p>
 
 </div>
 </div>
@@ -55643,7 +55663,7 @@ template&lt;class Handler &gt; </div>
 <b>Initial value:</b><div class="fragment"><div class="line">{</div>
 <div class="line">    {<span class="stringliteral">&quot;disconnected&quot;</span>, <span class="stringliteral">&quot;connected&quot;</span>, <span class="stringliteral">&quot;syncing&quot;</span>, <span class="stringliteral">&quot;tracking&quot;</span>, <span class="stringliteral">&quot;full&quot;</span>}}</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l00830">830</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l00832">832</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
 
 </div>
 </div>
@@ -55670,7 +55690,7 @@ template&lt;class Handler &gt; </div>
 <div class="line">    <a class="code" href="namespaceripple.html#a355ec605d1063c4316b6f1480359da19">generateKeyPair</a>(KeyType::secp256k1, <a class="code" href="namespaceripple.html#a50df1a645790d124729a6ed973edf519">generateSeed</a>(<span class="stringliteral">&quot;masterpassphrase&quot;</span>))</div>
 <div class="line">        .first)</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l00843">843</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l00845">845</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
 
 </div>
 </div>
@@ -55719,6 +55739,37 @@ template&lt;class Handler &gt; </div>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="XChainBridge_8h_source.html#l00029">29</a> of file <a class="el" href="XChainBridge_8h_source.html">XChainBridge.h</a>.</p>
+
+</div>
+</div>
+<a id="ad4e2a948afe60129e9b99dc30af7a5fd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad4e2a948afe60129e9b99dc30af7a5fd">&#9670;&nbsp;</a></span>epoch_offset</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr static <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> ripple::epoch_offset</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<b>Initial value:</b><div class="fragment"><div class="line">=</div>
+<div class="line">    date::sys_days{date::year{2000} / 1 / 1} -</div>
+<div class="line">    date::sys_days{date::year{1970} / 1 / 1}</div>
+</div><!-- fragment -->
+<p>Clock for measuring the network time. </p>
+<p>The epoch is January 1, 2000</p>
+<p>epoch_offset = date(2000-01-01) - date(1970-0-01) = days(10957) = seconds(946684800) </p>
+
+<p class="definition">Definition at line <a class="el" href="chrono_8h_source.html#l00056">56</a> of file <a class="el" href="chrono_8h_source.html">chrono.h</a>.</p>
 
 </div>
 </div>

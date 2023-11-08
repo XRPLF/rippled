@@ -261,8 +261,6 @@ Functions</h2></td></tr>
 <tr class="separator:abc4fb3db0759532944b15fa92a232c5a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a838ab33647927ef556b4e740ce175c20"><td class="memItemLeft" align="right" valign="top">template <a class="el" href="structripple_1_1RPC_1_1Status.html">Status</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a838ab33647927ef556b4e740ce175c20">getLedger</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &gt; &amp;, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;, <a class="el" href="structripple_1_1RPC_1_1Context.html">Context</a> &amp;)</td></tr>
 <tr class="separator:a838ab33647927ef556b4e740ce175c20"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a917fae72b7b1397139e909f58fe058ca"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a917fae72b7b1397139e909f58fe058ca">isValidated</a> (<a class="el" href="classripple_1_1LedgerMaster.html">LedgerMaster</a> &amp;ledgerMaster, <a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &amp;ledger, <a class="el" href="classripple_1_1Application.html">Application</a> &amp;app)</td></tr>
-<tr class="separator:a917fae72b7b1397139e909f58fe058ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaebfaaee35308269fab499f4e203a8c9"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structripple_1_1RPC_1_1Status.html">Status</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#aaebfaaee35308269fab499f4e203a8c9">lookupLedger</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1ReadView.html">ReadView</a> const  &gt; &amp;, <a class="el" href="structripple_1_1RPC_1_1JsonContext.html">JsonContext</a> &amp;, <a class="el" href="classJson_1_1Value.html">Json::Value</a> &amp;result)</td></tr>
 <tr class="memdesc:aaebfaaee35308269fab499f4e203a8c9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Look up a ledger from a request and fill a Json::Result with the data representing a ledger.  <a href="namespaceripple_1_1RPC.html#aaebfaaee35308269fab499f4e203a8c9">More...</a><br /></td></tr>
 <tr class="separator:aaebfaaee35308269fab499f4e203a8c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -302,18 +300,18 @@ Functions</h2></td></tr>
 <tr class="memitem:adf952f7ca5d0d26e982a92acce6bf937"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#adf952f7ca5d0d26e982a92acce6bf937">checkFee</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> &amp;request, <a class="el" href="namespaceripple.html#ae08fe18f17b24699ce41d3898fbb8c2c">Role</a> const role, bool doAutoFill, <a class="el" href="classripple_1_1Config.html">Config</a> const  &amp;config, <a class="el" href="classripple_1_1LoadFeeTrack.html">LoadFeeTrack</a> const  &amp;feeTrack, <a class="el" href="classripple_1_1TxQ.html">TxQ</a> const  &amp;txQ, <a class="el" href="classripple_1_1Application.html">Application</a> const  &amp;app)</td></tr>
 <tr class="memdesc:adf952f7ca5d0d26e982a92acce6bf937"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fill in the fee on behalf of the client.  <a href="namespaceripple_1_1RPC.html#adf952f7ca5d0d26e982a92acce6bf937">More...</a><br /></td></tr>
 <tr class="separator:adf952f7ca5d0d26e982a92acce6bf937"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a22e1b9888dfab6a73dd8116ad4ec6d0b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a22e1b9888dfab6a73dd8116ad4ec6d0b">transactionSign</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> jvRequest, <a class="el" href="classripple_1_1NetworkOPs.html#ada325f492d3aa1aa62d4b159e106c37a">NetworkOPs::FailHard</a> failType, <a class="el" href="namespaceripple.html#ae08fe18f17b24699ce41d3898fbb8c2c">Role</a> role, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> validatedLedgerAge, <a class="el" href="classripple_1_1Application.html">Application</a> &amp;app)</td></tr>
-<tr class="memdesc:a22e1b9888dfab6a73dd8116ad4ec6d0b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a <a class="el" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6" title="object value (collection of name/value pairs).">Json::objectValue</a>.  <a href="namespaceripple_1_1RPC.html#a22e1b9888dfab6a73dd8116ad4ec6d0b">More...</a><br /></td></tr>
-<tr class="separator:a22e1b9888dfab6a73dd8116ad4ec6d0b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aec2860565139f7e6f21a31ce991f96f4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#aec2860565139f7e6f21a31ce991f96f4">transactionSubmit</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> jvRequest, <a class="el" href="classripple_1_1NetworkOPs.html#ada325f492d3aa1aa62d4b159e106c37a">NetworkOPs::FailHard</a> failType, <a class="el" href="namespaceripple.html#ae08fe18f17b24699ce41d3898fbb8c2c">Role</a> role, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> validatedLedgerAge, <a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, <a class="el" href="namespaceripple_1_1RPC.html#afaa2fd678ac2606b4797f3a074cb5d99">ProcessTransactionFn</a> const &amp;processTransaction, <a class="el" href="namespaceripple_1_1RPC.html#a33378ee5e4181cef672fc56627fc0551">RPC::SubmitSync</a> sync)</td></tr>
-<tr class="memdesc:aec2860565139f7e6f21a31ce991f96f4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a <a class="el" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6" title="object value (collection of name/value pairs).">Json::objectValue</a>.  <a href="namespaceripple_1_1RPC.html#aec2860565139f7e6f21a31ce991f96f4">More...</a><br /></td></tr>
-<tr class="separator:aec2860565139f7e6f21a31ce991f96f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2466eabd830ae0eb35322fc7a284c629"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a2466eabd830ae0eb35322fc7a284c629">transactionSignFor</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> jvRequest, <a class="el" href="classripple_1_1NetworkOPs.html#ada325f492d3aa1aa62d4b159e106c37a">NetworkOPs::FailHard</a> failType, <a class="el" href="namespaceripple.html#ae08fe18f17b24699ce41d3898fbb8c2c">Role</a> role, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> validatedLedgerAge, <a class="el" href="classripple_1_1Application.html">Application</a> &amp;app)</td></tr>
-<tr class="memdesc:a2466eabd830ae0eb35322fc7a284c629"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a <a class="el" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6" title="object value (collection of name/value pairs).">Json::objectValue</a>.  <a href="namespaceripple_1_1RPC.html#a2466eabd830ae0eb35322fc7a284c629">More...</a><br /></td></tr>
-<tr class="separator:a2466eabd830ae0eb35322fc7a284c629"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2fb0d86fd372bbf3ce906631e0aeca73"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a2fb0d86fd372bbf3ce906631e0aeca73">transactionSubmitMultiSigned</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> jvRequest, <a class="el" href="classripple_1_1NetworkOPs.html#ada325f492d3aa1aa62d4b159e106c37a">NetworkOPs::FailHard</a> failType, <a class="el" href="namespaceripple.html#ae08fe18f17b24699ce41d3898fbb8c2c">Role</a> role, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> validatedLedgerAge, <a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, <a class="el" href="namespaceripple_1_1RPC.html#afaa2fd678ac2606b4797f3a074cb5d99">ProcessTransactionFn</a> const &amp;processTransaction, <a class="el" href="namespaceripple_1_1RPC.html#a33378ee5e4181cef672fc56627fc0551">RPC::SubmitSync</a> sync)</td></tr>
-<tr class="memdesc:a2fb0d86fd372bbf3ce906631e0aeca73"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a <a class="el" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6" title="object value (collection of name/value pairs).">Json::objectValue</a>.  <a href="namespaceripple_1_1RPC.html#a2fb0d86fd372bbf3ce906631e0aeca73">More...</a><br /></td></tr>
-<tr class="separator:a2fb0d86fd372bbf3ce906631e0aeca73"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0e52076e77d0078231dda289f8048200"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a0e52076e77d0078231dda289f8048200">transactionSign</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> jvRequest, unsigned apiVersion, <a class="el" href="classripple_1_1NetworkOPs.html#ada325f492d3aa1aa62d4b159e106c37a">NetworkOPs::FailHard</a> failType, <a class="el" href="namespaceripple.html#ae08fe18f17b24699ce41d3898fbb8c2c">Role</a> role, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> validatedLedgerAge, <a class="el" href="classripple_1_1Application.html">Application</a> &amp;app)</td></tr>
+<tr class="memdesc:a0e52076e77d0078231dda289f8048200"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a <a class="el" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6" title="object value (collection of name/value pairs).">Json::objectValue</a>.  <a href="namespaceripple_1_1RPC.html#a0e52076e77d0078231dda289f8048200">More...</a><br /></td></tr>
+<tr class="separator:a0e52076e77d0078231dda289f8048200"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac16a3a5fc27cf3801186c4d19bc934bc"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#ac16a3a5fc27cf3801186c4d19bc934bc">transactionSubmit</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> jvRequest, unsigned apiVersion, <a class="el" href="classripple_1_1NetworkOPs.html#ada325f492d3aa1aa62d4b159e106c37a">NetworkOPs::FailHard</a> failType, <a class="el" href="namespaceripple.html#ae08fe18f17b24699ce41d3898fbb8c2c">Role</a> role, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> validatedLedgerAge, <a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, <a class="el" href="namespaceripple_1_1RPC.html#afaa2fd678ac2606b4797f3a074cb5d99">ProcessTransactionFn</a> const &amp;processTransaction, <a class="el" href="namespaceripple_1_1RPC.html#a33378ee5e4181cef672fc56627fc0551">RPC::SubmitSync</a> sync)</td></tr>
+<tr class="memdesc:ac16a3a5fc27cf3801186c4d19bc934bc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a <a class="el" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6" title="object value (collection of name/value pairs).">Json::objectValue</a>.  <a href="namespaceripple_1_1RPC.html#ac16a3a5fc27cf3801186c4d19bc934bc">More...</a><br /></td></tr>
+<tr class="separator:ac16a3a5fc27cf3801186c4d19bc934bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aced54d69612c2b58940e2132e905dfc6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#aced54d69612c2b58940e2132e905dfc6">transactionSignFor</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> jvRequest, unsigned apiVersion, <a class="el" href="classripple_1_1NetworkOPs.html#ada325f492d3aa1aa62d4b159e106c37a">NetworkOPs::FailHard</a> failType, <a class="el" href="namespaceripple.html#ae08fe18f17b24699ce41d3898fbb8c2c">Role</a> role, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> validatedLedgerAge, <a class="el" href="classripple_1_1Application.html">Application</a> &amp;app)</td></tr>
+<tr class="memdesc:aced54d69612c2b58940e2132e905dfc6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a <a class="el" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6" title="object value (collection of name/value pairs).">Json::objectValue</a>.  <a href="namespaceripple_1_1RPC.html#aced54d69612c2b58940e2132e905dfc6">More...</a><br /></td></tr>
+<tr class="separator:aced54d69612c2b58940e2132e905dfc6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aca22c2f943740539f8a1560924cae9cd"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#aca22c2f943740539f8a1560924cae9cd">transactionSubmitMultiSigned</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> jvRequest, unsigned apiVersion, <a class="el" href="classripple_1_1NetworkOPs.html#ada325f492d3aa1aa62d4b159e106c37a">NetworkOPs::FailHard</a> failType, <a class="el" href="namespaceripple.html#ae08fe18f17b24699ce41d3898fbb8c2c">Role</a> role, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> validatedLedgerAge, <a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, <a class="el" href="namespaceripple_1_1RPC.html#afaa2fd678ac2606b4797f3a074cb5d99">ProcessTransactionFn</a> const &amp;processTransaction, <a class="el" href="namespaceripple_1_1RPC.html#a33378ee5e4181cef672fc56627fc0551">RPC::SubmitSync</a> sync)</td></tr>
+<tr class="memdesc:aca22c2f943740539f8a1560924cae9cd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a <a class="el" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6" title="object value (collection of name/value pairs).">Json::objectValue</a>.  <a href="namespaceripple_1_1RPC.html#aca22c2f943740539f8a1560924cae9cd">More...</a><br /></td></tr>
+<tr class="separator:aca22c2f943740539f8a1560924cae9cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac78278b4a437dd58b6266dd101f1925e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple_1_1RPC.html#afaa2fd678ac2606b4797f3a074cb5d99">ProcessTransactionFn</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#ac78278b4a437dd58b6266dd101f1925e">getProcessTxnFn</a> (<a class="el" href="classripple_1_1NetworkOPs.html">NetworkOPs</a> &amp;netOPs)</td></tr>
 <tr class="separator:ac78278b4a437dd58b6266dd101f1925e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a001205e70b842e99ac28d568b8b8652d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple_1_1RPC.html#acca76813aa71dce78dcac6a8212380f2">Output</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a001205e70b842e99ac28d568b8b8652d">stringOutput</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &amp;s)</td></tr>
@@ -2428,42 +2426,6 @@ template&lt;class T &gt; </div>
 
 </div>
 </div>
-<a id="a917fae72b7b1397139e909f58fe058ca"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a917fae72b7b1397139e909f58fe058ca">&#9670;&nbsp;</a></span>isValidated()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool ripple::RPC::isValidated </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1LedgerMaster.html">LedgerMaster</a> &amp;&#160;</td>
-          <td class="paramname"><em>ledgerMaster</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &amp;&#160;</td>
-          <td class="paramname"><em>ledger</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1Application.html">Application</a> &amp;&#160;</td>
-          <td class="paramname"><em>app</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00604">604</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
-
-</div>
-</div>
 <a id="aaebfaaee35308269fab499f4e203a8c9"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aaebfaaee35308269fab499f4e203a8c9">&#9670;&nbsp;</a></span>lookupLedger() <span class="overload">[1/2]</span></h2>
 
@@ -2499,7 +2461,7 @@ template&lt;class T &gt; </div>
 <p>Look up a ledger from a request and fill a Json::Result with the data representing a ledger. </p>
 <p>If the returned <a class="el" href="structripple_1_1RPC_1_1Status.html" title="Status represents the results of an operation that might fail.">Status</a> is OK, the ledger pointer will have been filled. </p>
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00676">676</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00623">623</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
 
 </div>
 </div>
@@ -2532,7 +2494,7 @@ template&lt;class T &gt; </div>
 <p>Look up a ledger from a request and fill a Json::Result with either an error, or data representing a ledger. </p>
 <p>If there is no error in the return value, then the ledger pointer will have been filled. </p>
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00702">702</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00648">648</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
 
 </div>
 </div>
@@ -2552,7 +2514,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00712">712</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00658">658</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
 
 </div>
 </div>
@@ -2586,7 +2548,7 @@ template&lt;class T &gt; </div>
 <p>Effects: Adds the JSON description of <code>sle</code> to <code>jv</code>.</p>
 <p>If <code>sle</code> holds an account root, also adds the urlgravatar field JSON if sfEmailHash is present. </p>
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00728">728</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00674">674</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
 
 </div>
 </div>
@@ -2625,7 +2587,7 @@ template&lt;class T &gt; </div>
 <p>Retrieve the limit value from a <a class="el" href="structripple_1_1RPC_1_1JsonContext.html">JsonContext</a>, or set a default - then restrict the limit by max and min if not an ADMIN request. </p>
 <p>If there is an error, return it as JSON. </p>
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00753">753</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00699">699</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
 
 </div>
 </div>
@@ -2645,7 +2607,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00772">772</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00718">718</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
 
 </div>
 </div>
@@ -2675,7 +2637,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00791">791</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00737">737</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
 
 </div>
 </div>
@@ -2711,7 +2673,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00850">850</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00796">796</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
 
 </div>
 </div>
@@ -2731,7 +2693,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00986">986</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00932">932</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
 
 </div>
 </div>
@@ -2772,7 +2734,7 @@ template&lt;class T &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>the api version number </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l01046">1046</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00992">992</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
 
 </div>
 </div>
@@ -2794,7 +2756,7 @@ template&lt;class T &gt; </div>
 
 <p>Return a ledger based on ledger_hash or ledger_index, or an <a class="el" href="namespaceripple_1_1RPC.html">RPC</a> error. </p>
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l01067">1067</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l01013">1013</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
 
 </div>
 </div>
@@ -2823,7 +2785,7 @@ template&lt;class T &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Either the mode or an error object. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l01184">1184</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l01130">1130</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
 
 </div>
 </div>
@@ -2879,7 +2841,7 @@ template&lt;class Object &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00254">254</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00248">248</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
 
 </div>
 </div>
@@ -2954,12 +2916,12 @@ template&lt;class Object &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>A JSON object containing the error results, if any </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l00682">682</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l00690">690</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a22e1b9888dfab6a73dd8116ad4ec6d0b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a22e1b9888dfab6a73dd8116ad4ec6d0b">&#9670;&nbsp;</a></span>transactionSign()</h2>
+<a id="a0e52076e77d0078231dda289f8048200"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0e52076e77d0078231dda289f8048200">&#9670;&nbsp;</a></span>transactionSign()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2973,6 +2935,12 @@ template&lt;class Object &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">unsigned&#160;</td>
+          <td class="paramname"><em>apiVersion</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype"><a class="el" href="classripple_1_1NetworkOPs.html#ada325f492d3aa1aa62d4b159e106c37a">NetworkOPs::FailHard</a>&#160;</td>
           <td class="paramname"><em>failType</em>, </td>
         </tr>
@@ -3004,12 +2972,12 @@ template&lt;class Object &gt; </div>
 
 <p>Returns a <a class="el" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6" title="object value (collection of name/value pairs).">Json::objectValue</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l00778">778</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l00786">786</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
 
 </div>
 </div>
-<a id="aec2860565139f7e6f21a31ce991f96f4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aec2860565139f7e6f21a31ce991f96f4">&#9670;&nbsp;</a></span>transactionSubmit()</h2>
+<a id="ac16a3a5fc27cf3801186c4d19bc934bc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac16a3a5fc27cf3801186c4d19bc934bc">&#9670;&nbsp;</a></span>transactionSubmit()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3023,6 +2991,12 @@ template&lt;class Object &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">unsigned&#160;</td>
+          <td class="paramname"><em>apiVersion</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype"><a class="el" href="classripple_1_1NetworkOPs.html#ada325f492d3aa1aa62d4b159e106c37a">NetworkOPs::FailHard</a>&#160;</td>
           <td class="paramname"><em>failType</em>, </td>
         </tr>
@@ -3066,12 +3040,12 @@ template&lt;class Object &gt; </div>
 
 <p>Returns a <a class="el" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6" title="object value (collection of name/value pairs).">Json::objectValue</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l00815">815</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l00824">824</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a2466eabd830ae0eb35322fc7a284c629"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2466eabd830ae0eb35322fc7a284c629">&#9670;&nbsp;</a></span>transactionSignFor()</h2>
+<a id="aced54d69612c2b58940e2132e905dfc6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aced54d69612c2b58940e2132e905dfc6">&#9670;&nbsp;</a></span>transactionSignFor()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3081,6 +3055,12 @@ template&lt;class Object &gt; </div>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td>
           <td class="paramname"><em>jvRequest</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned&#160;</td>
+          <td class="paramname"><em>apiVersion</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -3116,12 +3096,12 @@ template&lt;class Object &gt; </div>
 
 <p>Returns a <a class="el" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6" title="object value (collection of name/value pairs).">Json::objectValue</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l00944">944</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l00954">954</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a2fb0d86fd372bbf3ce906631e0aeca73"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2fb0d86fd372bbf3ce906631e0aeca73">&#9670;&nbsp;</a></span>transactionSubmitMultiSigned()</h2>
+<a id="aca22c2f943740539f8a1560924cae9cd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aca22c2f943740539f8a1560924cae9cd">&#9670;&nbsp;</a></span>transactionSubmitMultiSigned()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3131,6 +3111,12 @@ template&lt;class Object &gt; </div>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td>
           <td class="paramname"><em>jvRequest</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned&#160;</td>
+          <td class="paramname"><em>apiVersion</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -3178,7 +3164,7 @@ template&lt;class Object &gt; </div>
 
 <p>Returns a <a class="el" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6" title="object value (collection of name/value pairs).">Json::objectValue</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l01051">1051</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l01062">1062</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
 
 </div>
 </div>
@@ -3441,7 +3427,7 @@ template&lt;class Object &gt; </div>
 
 <p>API version numbers used in API version 1. </p>
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00214">214</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00208">208</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
 
 </div>
 </div>
@@ -3457,7 +3443,7 @@ template&lt;class Object &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00215">215</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00209">209</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
 
 </div>
 </div>
@@ -3473,7 +3459,7 @@ template&lt;class Object &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00216">216</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00210">210</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
 
 </div>
 </div>
@@ -3503,7 +3489,7 @@ template&lt;class Object &gt; </div>
 <p>Network Requests without explicit version numbers use apiVersionIfUnspecified. apiVersionIfUnspecified is 1, because all the <a class="el" href="namespaceripple_1_1RPC.html">RPC</a> requests with a version &gt;= 2 must explicitly specify the version in the requests. Note that apiVersionIfUnspecified will be lower than apiMinimumSupportedVersion when we stop supporting API version 1.</p>
 <p>Command line Requests use apiMaximumSupportedVersion. </p>
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00240">240</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00234">234</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
 
 </div>
 </div>
@@ -3527,7 +3513,7 @@ template&lt;class Object &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00241">241</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00235">235</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
 
 </div>
 </div>
@@ -3551,7 +3537,7 @@ template&lt;class Object &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00242">242</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00236">236</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
 
 </div>
 </div>
@@ -3575,7 +3561,7 @@ template&lt;class Object &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00243">243</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00237">237</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
 
 </div>
 </div>
@@ -3599,7 +3585,7 @@ template&lt;class Object &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00244">244</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00238">238</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
 
 </div>
 </div>
@@ -3623,7 +3609,7 @@ template&lt;class Object &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00245">245</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00239">239</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
 
 </div>
 </div>
