@@ -694,14 +694,12 @@ class Transaction_test : public beast::unit_test::suite
     }
 
     void
-    testRequest(FeatureBitset features)
+    testRequest(FeatureBitset features, unsigned apiVersion)
     {
-        testcase("Test Request");
+        testcase("Test Request API version " + std::to_string(apiVersion));
 
         using namespace test::jtx;
         using std::to_string;
-
-        const char* COMMAND = jss::tx.c_str();
 
         Env env{*this};
         Account const alice{"alice"};
@@ -725,18 +723,47 @@ class Transaction_test : public beast::unit_test::suite
 
         Json::Value expected = txn->getJson(JsonOptions::none);
         expected[jss::DeliverMax] = expected[jss::Amount];
+        if (apiVersion > 1)
+        {
+            expected.removeMember(jss::hash);
+            expected.removeMember(jss::Amount);
+        }
 
-        auto const result =
-            env.rpc(COMMAND, to_string(txn->getTransactionID()));
+        Json::Value const result = {[&env, txn, apiVersion]() {
+            Json::Value params{Json::objectValue};
+            params[jss::transaction] = to_string(txn->getTransactionID());
+            params[jss::binary] = false;
+            params[jss::api_version] = apiVersion;
+            return env.client().invoke("tx", params);
+        }()};
+
         BEAST_EXPECT(result[jss::result][jss::status] == jss::success);
+        if (apiVersion > 1)
+        {
+            BEAST_EXPECT(
+                result[jss::result][jss::close_time_iso] ==
+                "2000-01-01T00:00:20Z");
+            BEAST_EXPECT(
+                result[jss::result][jss::hash] ==
+                to_string(txn->getTransactionID()));
+            BEAST_EXPECT(result[jss::result][jss::validated] == true);
+            BEAST_EXPECT(result[jss::result][jss::ledger_index] == 4);
+            BEAST_EXPECT(
+                result[jss::result][jss::ledger_hash] ==
+                "B41882E20F0EC6228417D28B9AE0F33833645D35F6799DFB782AC97FC4BB51"
+                "D2");
+        }
 
         for (auto memberIt = expected.begin(); memberIt != expected.end();
              memberIt++)
         {
             std::string const name = memberIt.memberName();
-            if (BEAST_EXPECT(result[jss::result].isMember(name)))
+            auto const& result_transaction =
+                (apiVersion > 1 ? result[jss::result][jss::tx_json]
+                                : result[jss::result]);
+            if (BEAST_EXPECT(result_transaction.isMember(name)))
             {
-                auto const received = result[jss::result][name];
+                auto const received = result_transaction[name];
                 BEAST_EXPECTS(
                     received == *memberIt,
                     "Transaction contains \n\"" + name + "\": "  //
@@ -763,7 +790,8 @@ public:
         testRangeCTIDRequest(features);
         testCTIDValidation(features);
         testCTIDRPC(features);
-        testRequest(features);
+        test::jtx::forAllApiVersions(
+            std::bind_front(&Transaction_test::testRequest, this, features));
     }
 };
 

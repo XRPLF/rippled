@@ -96,6 +96,7 @@ getProcessTxnFn(NetworkOPs& netOPs)
 Json::Value
 transactionSign(
     Json::Value params,  // Passed by value so it can be modified locally.
+    unsigned apiVersion,
     NetworkOPs::FailHard failType,
     Role role,
     std::chrono::seconds validatedLedgerAge,
@@ -105,6 +106,7 @@ transactionSign(
 Json::Value
 transactionSubmit(
     Json::Value params,  // Passed by value so it can be modified locally.
+    unsigned apiVersion,
     NetworkOPs::FailHard failType,
     Role role,
     std::chrono::seconds validatedLedgerAge,
@@ -116,6 +118,7 @@ transactionSubmit(
 Json::Value
 transactionSignFor(
     Json::Value params,  // Passed by value so it can be modified locally.
+    unsigned apiVersion,
     NetworkOPs::FailHard failType,
     Role role,
     std::chrono::seconds validatedLedgerAge,
@@ -125,6 +128,7 @@ transactionSignFor(
 Json::Value
 transactionSubmitMultiSigned(
     Json::Value params,  // Passed by value so it can be modified locally.
+    unsigned apiVersion,
     NetworkOPs::FailHard failType,
     Role role,
     std::chrono::seconds validatedLedgerAge,

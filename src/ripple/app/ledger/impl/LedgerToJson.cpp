@@ -17,12 +17,14 @@
 */
 //==============================================================================
 
+#include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/LedgerToJson.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/DeliverMax.h>
 #include <ripple/app/misc/TxQ.h>
 #include <ripple/basics/base_uint.h>
 #include <ripple/core/Pg.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/DeliveredAmount.h>
 
@@ -83,6 +85,7 @@ fillJson(Object& json, bool closed, LedgerInfo const& info, bool bFull)
         json[jss::close_time_human] = to_string(info.closeTime);
         if (!getCloseAgree(info))
             json[jss::close_time_estimated] = true;
+        json[jss::close_time_iso] = to_string_iso(info.closeTime);
     }
 }
 
@@ -118,8 +121,48 @@ fillJsonTx(
     if (bBinary)
     {
         txJson[jss::tx_blob] = serializeHex(*txn);
+        if (fill.context->apiVersion > 1)
+            txJson[jss::hash] = to_string(txn->getTransactionID());
+
+        auto const json_meta =
+            (fill.context->apiVersion > 1 ? jss::meta_blob : jss::meta);
         if (stMeta)
-            txJson[jss::meta] = serializeHex(*stMeta);
+            txJson[json_meta] = serializeHex(*stMeta);
+    }
+    else if (fill.context->apiVersion > 1)
+    {
+        copyFrom(
+            txJson[jss::tx_json],
+            txn->getJson(JsonOptions::disable_API_prior_V2, false));
+        txJson[jss::hash] = to_string(txn->getTransactionID());
+        RPC::insertDeliverMax(
+            txJson[jss::tx_json], txnType, fill.context->apiVersion);
+
+        if (stMeta)
+        {
+            txJson[jss::meta] = stMeta->getJson(JsonOptions::none);
+
+            // If applicable, insert delivered amount
+            if (txnType == ttPAYMENT || txnType == ttCHECK_CASH)
+                RPC::insertDeliveredAmount(
+                    txJson[jss::meta],
+                    fill.ledger,
+                    txn,
+                    {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
+        }
+
+        if (!fill.ledger.open())
+            txJson[jss::ledger_hash] = to_string(fill.ledger.info().hash);
+
+        const bool validated =
+            fill.context->ledgerMaster.isValidated(fill.ledger);
+        txJson[jss::validated] = validated;
+        if (validated)
+        {
+            txJson[jss::ledger_index] = to_string(fill.ledger.seq());
+            if (fill.closeTime)
+                txJson[jss::close_time_iso] = to_string_iso(*fill.closeTime);
+        }
     }
     else
     {
@@ -254,7 +297,11 @@ fillJsonQueue(Object& json, LedgerFill const& fill)
         if (tx.lastResult)
             txJson["last_result"] = transToken(*tx.lastResult);
 
-        txJson[jss::tx] = fillJsonTx(fill, bBinary, bExpanded, tx.txn, nullptr);
+        auto&& temp = fillJsonTx(fill, bBinary, bExpanded, tx.txn, nullptr);
+        if (fill.context->apiVersion > 1)
+            copyFrom(txJson, temp);
+        else
+            copyFrom(txJson[jss::tx], temp);
     }
 }
 
