@@ -27,7 +27,6 @@
 #include <ripple/rpc/GRPCHandlers.h>
 #include <ripple/rpc/Role.h>
 #include <ripple/rpc/handlers/LedgerHandler.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
 
 namespace ripple {
 namespace RPC {
@@ -301,8 +300,7 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
         response.set_skiplist_included(true);
     }
 
-    response.set_validated(
-        RPC::isValidated(context.ledgerMaster, *ledger, context.app));
+    response.set_validated(context.ledgerMaster.isValidated(*ledger));
 
     auto end = std::chrono::system_clock::now();
     auto duration =

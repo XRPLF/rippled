@@ -63,6 +63,7 @@
 #include <ripple/protocol/BuildInfo.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/STParsedJSON.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/resource/ResourceManager.h>
 #include <ripple/rpc/BookChanges.h>
@@ -74,6 +75,7 @@
 
 #include <algorithm>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <tuple>
 #include <unordered_map>
@@ -3101,7 +3103,11 @@ NetworkOPsImp::transJson(
     transResultInfo(result, sToken, sHuman);
 
     jvObj[jss::type] = "transaction";
-    jvObj[jss::transaction] = transaction->getJson(JsonOptions::none);
+    // NOTE jvObj is not a finished object for either API version. After
+    // it's populated, we need to finish it for a specific API version. This is
+    // done in a loop, near the end of this function.
+    jvObj[jss::transaction] =
+        transaction->getJson(JsonOptions::disable_API_prior_V2, false);
 
     if (meta)
     {
@@ -3110,13 +3116,16 @@ NetworkOPsImp::transJson(
             jvObj[jss::meta], *ledger, transaction, meta->get());
     }
 
+    if (!ledger->open())
+        jvObj[jss::ledger_hash] = to_string(ledger->info().hash);
+
     if (validated)
     {
         jvObj[jss::ledger_index] = ledger->info().seq;
-        jvObj[jss::ledger_hash] = to_string(ledger->info().hash);
         jvObj[jss::transaction][jss::date] =
             ledger->info().closeTime.time_since_epoch().count();
         jvObj[jss::validated] = true;
+        jvObj[jss::close_time_iso] = to_string_iso(ledger->info().closeTime);
 
         // WRITEME: Put the account next seq here
     }
@@ -3149,27 +3158,38 @@ NetworkOPsImp::transJson(
         }
     }
 
+    std::string const hash = to_string(transaction->getTransactionID());
     MultiApiJson multiObj({jvObj, jvObj});
     // Minimum supported API version must match index 0 in MultiApiJson
     static_assert(apiVersionSelector(RPC::apiMinimumSupportedVersion)() == 0);
-    // Beta API version must match last index in MultiApiJson
+    // Last valid (possibly beta) API ver. must match last index in MultiApiJson
     static_assert(
-        apiVersionSelector(RPC::apiBetaVersion)() + 1  //
+        apiVersionSelector(RPC::apiMaximumValidVersion)() + 1  //
         == MultiApiJson::size);
     for (unsigned apiVersion = RPC::apiMinimumSupportedVersion,
                   lastIndex = MultiApiJson::size;
-         apiVersion <= RPC::apiBetaVersion;
+         apiVersion <= RPC::apiMaximumValidVersion;
          ++apiVersion)
     {
         unsigned const index = apiVersionSelector(apiVersion)();
         assert(index < MultiApiJson::size);
         if (index != lastIndex)
         {
-            RPC::insertDeliverMax(
-                multiObj.val[index][jss::transaction],
-                transaction->getTxnType(),
-                apiVersion);
             lastIndex = index;
+
+            Json::Value& jvTx = multiObj.val[index];
+            RPC::insertDeliverMax(
+                jvTx[jss::transaction], transaction->getTxnType(), apiVersion);
+
+            if (apiVersion > 1)
+            {
+                jvTx[jss::tx_json] = jvTx.removeMember(jss::transaction);
+                jvTx[jss::hash] = hash;
+            }
+            else
+            {
+                jvTx[jss::transaction][jss::hash] = hash;
+            }
         }
     }
 
