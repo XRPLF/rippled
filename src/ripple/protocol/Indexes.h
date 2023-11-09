@@ -29,6 +29,7 @@
 #include <ripple/protocol/STXChainBridge.h>
 #include <ripple/protocol/Serializer.h>
 #include <ripple/protocol/UintTypes.h>
+#include <ripple/protocol/jss.h>
 #include <cstdint>
 
 namespace ripple {
@@ -302,6 +303,26 @@ getTicketIndex(AccountID const& account, std::uint32_t uSequence);
 
 uint256
 getTicketIndex(AccountID const& account, SeqProxy ticketSeq);
+
+template <class... keyletParams>
+struct keyletDesc
+{
+    std::function<Keylet(keyletParams...)> function;
+    Json::StaticString expectedLEName;
+    bool includeInTests;
+};
+
+// This list should include all of the keylet functions that take a single
+// AccountID parameter.
+std::array<keyletDesc<AccountID const&>, 6> const directAccountKeylets{
+    {{&keylet::account, jss::AccountRoot, false},
+     {&keylet::ownerDir, jss::DirectoryNode, true},
+     {&keylet::signers, jss::SignerList, true},
+     // It's normally impossible to create an item at nftpage_min, but
+     // test it anyway, since the invariant checks for it.
+     {&keylet::nftpage_min, jss::NFTokenPage, true},
+     {&keylet::nftpage_max, jss::NFTokenPage, true},
+     {&keylet::did, jss::DID, true}}};
 
 }  // namespace ripple
 

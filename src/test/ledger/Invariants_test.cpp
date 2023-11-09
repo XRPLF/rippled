@@ -180,25 +180,15 @@ class Invariants_test : public beast::unit_test::suite
         using namespace test::jtx;
         testcase << "account root deletion left artifact";
 
-        // This list should include all of the keylet functions that take a
-        // single AccountID parameter
-        using fType = std::function<Keylet(AccountID const& id)>;
-        static std::map<std::string, fType> const keyletfuncs{
-            // Skip the account root, since that's what's being deleted.
-            //{"AccountRoot", &keylet::account},
-            {"DirectoryNode", &keylet::ownerDir},
-            {"SignerList", &keylet::signers},
-            // It's normally impossible to create an item at nftpage_min, but
-            // test it anyway, since the invariant checks for it.
-            {"NFTokenPage", &keylet::nftpage_min},
-            {"NFTokenPage", &keylet::nftpage_max}};
-
-        for (auto const& item : keyletfuncs)
+        for (auto const& [keyletfunc, type, include] : directAccountKeylets)
         {
-            auto const& type = item.first;
-            fType const& keyletfunc = item.second;
+            if (!include)
+                continue;
+            using namespace std::string_literals;
+
             doInvariantCheck(
-                {{"account deletion left behind a " + type + " object"}},
+                {{"account deletion left behind a "s + type.c_str() +
+                  " object"}},
                 [&](Account const& A1, Account const& A2, ApplyContext& ac) {
                     // Add an object to the ledger for account A1, then delete
                     // A1

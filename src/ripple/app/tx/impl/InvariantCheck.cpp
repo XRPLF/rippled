@@ -376,19 +376,6 @@ AccountRootsDeletedClean::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
-    // This list should include all of the keylet functions that take a single
-    // AccountID parameter, except nftpage_max, because it is exercised below
-    // using the NFT page lookup logic. (nftpage_min is included because it
-    // should _never_ be present.)
-    using fType = std::function<Keylet(AccountID const& id)>;
-    static std::array<fType, 4> const keyletfuncs{
-        &keylet::account,
-        &keylet::ownerDir,
-        &keylet::signers,
-        &keylet::nftpage_min,
-        //&keylet::nftpage_max
-    };
-
     // Always check for objects in the ledger, but to prevent differing
     // transaction processing results, however unlikely, only fail if the
     // feature is enabled. Enabled, or not, though, a fatal-level message will
@@ -422,7 +409,7 @@ AccountRootsDeletedClean::finalize(
     {
         auto const accountID = accountSLE->getAccountID(sfAccount);
         // Simple types
-        for (auto const& keyletfunc : keyletfuncs)
+        for (auto const& [keyletfunc, _, __] : directAccountKeylets)
         {
             if (objectExists(std::invoke(keyletfunc, accountID)) && enforce)
                 return false;
@@ -433,11 +420,10 @@ AccountRootsDeletedClean::finalize(
             Keylet const first = keylet::nftpage_min(accountID);
             Keylet const last = keylet::nftpage_max(accountID);
 
-            uint256 key =
-                view.succ(first.key, last.key.next()).value_or(last.key);
+            std::optional<uint256> key = view.succ(first.key, last.key.next());
 
             // current page
-            if (objectExists(Keylet{ltNFTOKEN_PAGE, key}) && enforce)
+            if (key && objectExists(Keylet{ltNFTOKEN_PAGE, *key}) && enforce)
                 return false;
         }
 
