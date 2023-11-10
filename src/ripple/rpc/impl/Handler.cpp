@@ -165,6 +165,7 @@ Handler const handlerArray[]{
      NO_CONDITION},
     {"server_info", byRef(&doServerInfo), Role::USER, NO_CONDITION},
     {"server_state", byRef(&doServerState), Role::USER, NO_CONDITION},
+    {"shamap_info", byRef(&doSHAMapInfo), Role::ADMIN, NEEDS_CLOSED_LEDGER},
     {"sign", byRef(&doSign), Role::USER, NO_CONDITION},
     {"sign_for", byRef(&doSignFor), Role::USER, NO_CONDITION},
     {"stop", byRef(&doStop), Role::ADMIN, NO_CONDITION},

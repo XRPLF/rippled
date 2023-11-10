@@ -133,6 +133,8 @@ doServerInfo(RPC::JsonContext&);  // for humans
 Json::Value
 doServerState(RPC::JsonContext&);  // for machines
 Json::Value
+doSHAMapInfo(RPC::JsonContext&);
+Json::Value
 doSign(RPC::JsonContext&);
 Json::Value
 doSignFor(RPC::JsonContext&);

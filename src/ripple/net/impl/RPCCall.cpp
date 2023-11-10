@@ -1310,6 +1310,7 @@ public:
             {"server_definitions", &RPCParser::parseServerDefinitions, 0, 1},
             {"server_info", &RPCParser::parseServerInfo, 0, 1},
             {"server_state", &RPCParser::parseServerInfo, 0, 1},
+            {"shamap_info", &RPCParser::parseAsIs, 0, 0},
             {"sign", &RPCParser::parseSignSubmit, 2, 3},
             {"sign_for", &RPCParser::parseSignFor, 3, 4},
             {"stop", &RPCParser::parseAsIs, 0, 0},

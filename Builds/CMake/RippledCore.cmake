@@ -716,6 +716,7 @@ target_sources (rippled PRIVATE
   src/ripple/rpc/handlers/RipplePathFind.cpp
   src/ripple/rpc/handlers/ServerInfo.cpp
   src/ripple/rpc/handlers/ServerState.cpp
+  src/ripple/rpc/handlers/SHAMapInfo.cpp
   src/ripple/rpc/handlers/SignFor.cpp
   src/ripple/rpc/handlers/SignHandler.cpp
   src/ripple/rpc/handlers/Stop.cpp
