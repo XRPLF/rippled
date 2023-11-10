@@ -58,12 +58,13 @@ doSHAMapInfo(RPC::JsonContext& context)
 
     composition["inners_count"] = inners;
     composition["leaves_count"] = leaves;
-    auto& branches = composition["inners_child_count"] = Json::objectValue;
-
-    for (int i = 0; i < SHAMapInnerNode::branchFactor; ++i)
+    // Not super readable without a lot of faffing around so just export an
+    // array
+    auto& branches = composition["inners_count_per_child_count"] =
+        Json::arrayValue;
+    for (const auto& count : children)
     {
-        auto count = to_string(i + 1);
-        branches[(count.size() == 1 ? "0" + count : count)] = children[i];
+        branches.append(count);
     }
 
     return jvResult;
