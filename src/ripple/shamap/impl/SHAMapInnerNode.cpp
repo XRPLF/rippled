@@ -166,18 +166,8 @@ SHAMapInnerNode::makeFullInner(
         if (isBranch & (1 << i))
         {
             auto const ix = ret->getChildIndex(i);
-
-            // We shouldn't really have to check this cause we've
-            // already checked the branch is populated. It's tempting
-            // to just go ahead without checking :)
-            if (!ix.has_value())
-            {
-                Throw<std::runtime_error>("Invalid FI node");
-            }
-            else
-            {
-                hashes[ix.value()].as_uint256() = si.getBitString<256>();
-            }
+            assert(ix);
+            hashes[*ix].as_uint256() = si.getBitString<256>();
         }
         else
         {
@@ -234,15 +224,13 @@ SHAMapInnerNode::makeCompressedInner(Slice data)
         ret->isBranch_ |= (1 << pos);
         auto const ix = ret->getChildIndex(pos);
 
-        if (pos >= branchFactor || prevPos > pos || !ix.has_value())
+        if (pos >= branchFactor || prevPos > pos || !ix)
             Throw<std::runtime_error>("invalid CI node");
 
-        hashes[ix.value()].as_uint256() = hash;
+        hashes[*ix].as_uint256() = hash;
         prevPos = pos;
     }
 
-    // Should effectively be be a noop at this point
-    ret->resizeChildArrays(ret->getBranchCount());
     ret->updateHash();
     return ret;
 }
