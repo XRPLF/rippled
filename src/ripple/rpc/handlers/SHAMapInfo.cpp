@@ -40,11 +40,11 @@ doSHAMapInfo(RPC::JsonContext& context)
 
     auto validated = context.ledgerMaster.getValidatedLedger();
     auto& state = validated->stateMap();
-    state.visitNodes([&](SHAMapTreeNode& node) {
+    state.visitNodes([&](SHAMapTreeNode const& node) {
         if (node.isInner())
         {
             inners++;
-            auto& inner = static_cast<SHAMapInnerNode&>(node);
+            auto& inner = static_cast<SHAMapInnerNode const&>(node);
             auto count = inner.getBranchCount();
             assert(count > 0);
             children[count - 1]++;
