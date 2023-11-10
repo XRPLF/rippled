@@ -60,11 +60,11 @@ doSHAMapInfo(RPC::JsonContext& context)
     composition["leaves_count"] = leaves;
     // Not super readable without a lot of faffing around so just export an
     // array
-    auto& branches = composition["inners_count_per_child_count"] =
+    auto& childCounts = composition["inners_count_per_child_count"] =
         Json::arrayValue;
     for (const auto& count : children)
     {
-        branches.append(count);
+        childCounts.append(count);
     }
 
     return jvResult;
