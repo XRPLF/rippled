@@ -136,9 +136,9 @@ SHAMapInnerNode::makeFullInner(
 
     // Determine the non-empty branches so we only allocate once what we need
     // with no reallocation and moving around data.
-    // When allocating 16 branches, it only has to turn around and reallocate
+    // When allocating 16 branches, it has to turn around and reallocate
     // the right size and compact, which is less than ideal. In principle,
-    // with less allocations we should see less fragmentation in the arena.
+    // with fewer allocations we should see less fragmentation in the arena.
     std::uint16_t isBranch = 0;
     for (int i = 0; i < branchFactor; ++i)
     {
