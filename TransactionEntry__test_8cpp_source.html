@@ -301,182 +301,180 @@ $(function() {
 <div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;            }</div>
 <div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160; </div>
 <div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;            <span class="comment">// Use the command line form with the index.</span></div>
-<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;            <span class="keywordflow">if</span> (apiVersion == <a class="code" href="namespaceripple_1_1RPC.html#a8c4c4528421d724a8a82db708b1a761b">RPC::apiMaximumSupportedVersion</a>)</div>
-<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;            {</div>
-<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;                <a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span> clIndex{env.rpc(</div>
-<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;                    <span class="stringliteral">&quot;transaction_entry&quot;</span>, txhash, <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(index))};</div>
-<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;                BEAST_EXPECT(clIndex[<span class="stringliteral">&quot;result&quot;</span>] == resIndex);</div>
-<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;            }</div>
+<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;            <a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span> clIndex{env.rpc(</div>
+<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;                apiVersion,</div>
+<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;                <span class="stringliteral">&quot;transaction_entry&quot;</span>,</div>
+<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;                txhash,</div>
+<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(index))};</div>
+<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;            BEAST_EXPECT(clIndex[<span class="stringliteral">&quot;result&quot;</span>] == resIndex);</div>
 <div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160; </div>
 <div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;            <span class="comment">// Use the command line form with the ledger_hash.</span></div>
-<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;            <span class="keywordflow">if</span> (apiVersion == <a class="code" href="namespaceripple_1_1RPC.html#a8c4c4528421d724a8a82db708b1a761b">RPC::apiMaximumSupportedVersion</a>)</div>
-<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;            {</div>
-<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;                <a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span> clHash{env.rpc(</div>
-<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;                    <span class="stringliteral">&quot;transaction_entry&quot;</span>,</div>
-<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;                    txhash,</div>
-<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;                    resIndex[jss::ledger_hash].asString())};</div>
-<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;                BEAST_EXPECT(clHash[<span class="stringliteral">&quot;result&quot;</span>] == resIndex);</div>
-<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;            }</div>
-<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;        };</div>
-<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160; </div>
-<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;        Account A1{<span class="stringliteral">&quot;A1&quot;</span>};</div>
-<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;        Account A2{<span class="stringliteral">&quot;A2&quot;</span>};</div>
-<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160; </div>
-<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;        env.fund(XRP(10000), A1);</div>
-<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;        <span class="keyword">auto</span> fund_1_tx =</div>
-<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;            boost::lexical_cast&lt;std::string&gt;(env.tx()-&gt;getTransactionID());</div>
-<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;        BEAST_EXPECT(</div>
-<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;            fund_1_tx ==</div>
-<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;            <span class="stringliteral">&quot;F4E9DF90D829A9E8B423FF68C34413E240D8D8BB0EFD080DF08114ED398E2506&quot;</span>);</div>
-<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160; </div>
-<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;        env.fund(XRP(10000), A2);</div>
-<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;        <span class="keyword">auto</span> fund_2_tx =</div>
-<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;            boost::lexical_cast&lt;std::string&gt;(env.tx()-&gt;getTransactionID());</div>
-<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;        BEAST_EXPECT(</div>
-<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;            fund_2_tx ==</div>
-<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;            <span class="stringliteral">&quot;6853CD8226A05068C951CB1F54889FF4E40C5B440DC1C5BA38F114C4E0B1E705&quot;</span>);</div>
+<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;            <a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span> clHash{env.rpc(</div>
+<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;                apiVersion,</div>
+<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;                <span class="stringliteral">&quot;transaction_entry&quot;</span>,</div>
+<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;                txhash,</div>
+<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;                resIndex[jss::ledger_hash].asString())};</div>
+<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;            BEAST_EXPECT(clHash[<span class="stringliteral">&quot;result&quot;</span>] == resIndex);</div>
+<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;        };</div>
+<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160; </div>
+<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;        Account A1{<span class="stringliteral">&quot;A1&quot;</span>};</div>
+<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;        Account A2{<span class="stringliteral">&quot;A2&quot;</span>};</div>
+<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160; </div>
+<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;        env.fund(XRP(10000), A1);</div>
+<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;        <span class="keyword">auto</span> fund_1_tx =</div>
+<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;            boost::lexical_cast&lt;std::string&gt;(env.tx()-&gt;getTransactionID());</div>
+<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;        BEAST_EXPECT(</div>
+<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;            fund_1_tx ==</div>
+<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;            <span class="stringliteral">&quot;F4E9DF90D829A9E8B423FF68C34413E240D8D8BB0EFD080DF08114ED398E2506&quot;</span>);</div>
+<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160; </div>
+<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;        env.fund(XRP(10000), A2);</div>
+<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;        <span class="keyword">auto</span> fund_2_tx =</div>
+<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;            boost::lexical_cast&lt;std::string&gt;(env.tx()-&gt;getTransactionID());</div>
+<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;        BEAST_EXPECT(</div>
+<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;            fund_2_tx ==</div>
+<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;            <span class="stringliteral">&quot;6853CD8226A05068C951CB1F54889FF4E40C5B440DC1C5BA38F114C4E0B1E705&quot;</span>);</div>
+<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160; </div>
+<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;        env.close();</div>
 <div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160; </div>
-<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;        env.close();</div>
-<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160; </div>
-<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;        <span class="comment">// these are actually AccountSet txs because fund does two txs and</span></div>
-<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;        <span class="comment">// env.tx only reports the last one</span></div>
-<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;        check_tx(</div>
-<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;            env.closed()-&gt;seq(),</div>
-<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;            fund_1_tx,</div>
-<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;            R<span class="stringliteral">&quot;({</span></div>
-<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;<span class="stringliteral">            &quot;Account&quot; : &quot;r4nmQNH4Fhjfh6cHDbvVSsBv7KySbj4cBf&quot;,</span></div>
-<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;<span class="stringliteral">            &quot;Fee&quot; : &quot;10&quot;,</span></div>
-<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;<span class="stringliteral">            &quot;Sequence&quot; : 3,</span></div>
-<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;<span class="stringliteral">            &quot;SetFlag&quot; : 8,</span></div>
-<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;<span class="stringliteral">            &quot;SigningPubKey&quot; : &quot;0324CAAFA2212D2AEAB9D42D481535614AED486293E1FB1380FF070C3DD7FB4264&quot;,</span></div>
-<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;<span class="stringliteral">            &quot;TransactionType&quot; : &quot;AccountSet&quot;,</span></div>
-<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;<span class="stringliteral">            &quot;TxnSignature&quot; : &quot;3044022007B35E3B99460534FF6BC3A66FBBA03591C355CC38E38588968E87CCD01BE229022071A443026DE45041B55ABB1CC76812A87EA701E475BBB7E165513B4B242D3474&quot;,</span></div>
-<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;<span class="stringliteral">})&quot;,</span></div>
-<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;<span class="stringliteral">            </span><span class="stringliteral">&quot;ADB727BCC74B29421BB01B847740B179B8A0ED3248D76A89ED2E39B02C427784&quot;</span>,</div>
-<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;            <span class="stringliteral">&quot;2000-01-01T00:00:10Z&quot;</span>);</div>
-<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;        check_tx(</div>
-<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;            env.closed()-&gt;seq(),</div>
-<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;            fund_2_tx,</div>
-<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;            R<span class="stringliteral">&quot;({</span></div>
-<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;<span class="stringliteral">            &quot;Account&quot; : &quot;rGpeQzUWFu4fMhJHZ1Via5aqFC3A5twZUD&quot;,</span></div>
-<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;<span class="stringliteral">            &quot;Fee&quot; : &quot;10&quot;,</span></div>
-<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;<span class="stringliteral">            &quot;Sequence&quot; : 3,</span></div>
-<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;<span class="stringliteral">            &quot;SetFlag&quot; : 8,</span></div>
-<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;<span class="stringliteral">            &quot;SigningPubKey&quot; : &quot;03CFF28E067A2CCE6CC5A598C0B845CBD3F30A7863BE9C0DD55F4960EFABCCF4D0&quot;,</span></div>
-<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;<span class="stringliteral">            &quot;TransactionType&quot; : &quot;AccountSet&quot;,</span></div>
-<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;<span class="stringliteral">            &quot;TxnSignature&quot; : &quot;3045022100C8857FC0759A2AC0D2F320684691A66EAD252EAED9EF88C79791BC58BFCC9D860220421722286487DD0ED6BBA626CE6FCBDD14289F7F4726870C3465A4054C2702D7&quot;,</span></div>
-<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;<span class="stringliteral">})&quot;,</span></div>
-<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;<span class="stringliteral">            </span><span class="stringliteral">&quot;ADB727BCC74B29421BB01B847740B179B8A0ED3248D76A89ED2E39B02C427784&quot;</span>,</div>
-<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;            <span class="stringliteral">&quot;2000-01-01T00:00:10Z&quot;</span>);</div>
-<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160; </div>
-<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160;        env.trust(A2[<span class="stringliteral">&quot;USD&quot;</span>](1000), A1);</div>
-<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;        <span class="comment">// the trust tx is actually a payment since the trust method</span></div>
-<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;        <span class="comment">// refunds fees with a payment after TrustSet..so just ignore the type</span></div>
-<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;        <span class="comment">// in the check below</span></div>
-<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;        <span class="keyword">auto</span> trust_tx =</div>
-<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;            boost::lexical_cast&lt;std::string&gt;(env.tx()-&gt;getTransactionID());</div>
-<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;        BEAST_EXPECT(</div>
-<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;            trust_tx ==</div>
-<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;            <span class="stringliteral">&quot;C992D97D88FF444A1AB0C06B27557EC54B7F7DA28254778E60238BEA88E0C101&quot;</span>);</div>
-<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160; </div>
-<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;        env(pay(A2, A1, A2[<span class="stringliteral">&quot;USD&quot;</span>](5)));</div>
-<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;        <span class="keyword">auto</span> pay_tx =</div>
-<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;            boost::lexical_cast&lt;std::string&gt;(env.tx()-&gt;getTransactionID());</div>
-<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;        env.close();</div>
-<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;        BEAST_EXPECT(</div>
-<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;            pay_tx ==</div>
-<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;            <span class="stringliteral">&quot;988046D484ACE9F5F6A8C792D89C6EA2DB307B5DDA9864AEBA88E6782ABD0865&quot;</span>);</div>
-<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160; </div>
-<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;        check_tx(</div>
-<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;            env.closed()-&gt;seq(),</div>
-<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;            trust_tx,</div>
-<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;            R<span class="stringliteral">&quot;({</span></div>
-<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;<span class="stringliteral">            &quot;Account&quot; : &quot;rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh&quot;,</span></div>
-<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;<span class="stringliteral">            &quot;DeliverMax&quot; : &quot;10&quot;,</span></div>
-<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;<span class="stringliteral">            &quot;Destination&quot; : &quot;r4nmQNH4Fhjfh6cHDbvVSsBv7KySbj4cBf&quot;,</span></div>
-<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;<span class="stringliteral">            &quot;Fee&quot; : &quot;10&quot;,</span></div>
-<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;<span class="stringliteral">            &quot;Flags&quot; : 2147483648,</span></div>
-<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;<span class="stringliteral">            &quot;Sequence&quot; : 3,</span></div>
-<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;<span class="stringliteral">            &quot;SigningPubKey&quot; : &quot;0330E7FC9D56BB25D6893BA3F317AE5BCF33B3291BD63DB32654A313222F7FD020&quot;,</span></div>
-<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;<span class="stringliteral">            &quot;TransactionType&quot; : &quot;Payment&quot;,</span></div>
-<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;<span class="stringliteral">            &quot;TxnSignature&quot; : &quot;3044022033D9EBF7F02950AF2F6B13C07AEE641C8FEBDD540A338FCB9027A965A4AED35B02206E4E227DCC226A3456C0FEF953449D21645A24EB63CA0BB7C5B62470147FD1D1&quot;,</span></div>
-<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;<span class="stringliteral">})&quot;,</span></div>
-<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;<span class="stringliteral">            </span><span class="stringliteral">&quot;39AA166131D56622EFD96CB4B2BD58003ACD37091C90977FF6B81419DB451775&quot;</span>,</div>
-<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;            <span class="stringliteral">&quot;2000-01-01T00:00:20Z&quot;</span>);</div>
-<div class="line"><a name="l00335"></a><span class="lineno"><a class="line" href="classripple_1_1TransactionEntry__test.html#ac25a0116728ed64d2b9b6c3d6ae0bafe">  335</a></span>&#160; </div>
-<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;        check_tx(</div>
-<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;            env.closed()-&gt;seq(),</div>
-<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;            pay_tx,</div>
-<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;            R<span class="stringliteral">&quot;({</span></div>
-<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;<span class="stringliteral">            &quot;Account&quot; : &quot;rGpeQzUWFu4fMhJHZ1Via5aqFC3A5twZUD&quot;,</span></div>
-<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;<span class="stringliteral">            &quot;DeliverMax&quot; :</span></div>
-<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;<span class="stringliteral">            {</span></div>
-<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;<span class="stringliteral">                &quot;currency&quot; : &quot;USD&quot;,</span></div>
-<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;<span class="stringliteral">                &quot;issuer&quot; : &quot;rGpeQzUWFu4fMhJHZ1Via5aqFC3A5twZUD&quot;,</span></div>
-<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;<span class="stringliteral">                &quot;value&quot; : &quot;5&quot;</span></div>
-<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;<span class="stringliteral">            },</span></div>
-<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;<span class="stringliteral">            &quot;Destination&quot; : &quot;r4nmQNH4Fhjfh6cHDbvVSsBv7KySbj4cBf&quot;,</span></div>
-<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;<span class="stringliteral">            &quot;Fee&quot; : &quot;10&quot;,</span></div>
-<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;<span class="stringliteral">            &quot;Flags&quot; : 2147483648,</span></div>
-<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;<span class="stringliteral">            &quot;Sequence&quot; : 4,</span></div>
-<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;<span class="stringliteral">            &quot;SigningPubKey&quot; : &quot;03CFF28E067A2CCE6CC5A598C0B845CBD3F30A7863BE9C0DD55F4960EFABCCF4D0&quot;,</span></div>
-<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;<span class="stringliteral">            &quot;TransactionType&quot; : &quot;Payment&quot;,</span></div>
-<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;<span class="stringliteral">            &quot;TxnSignature&quot; : &quot;30450221008A722B7F16EDB2348886E88ED4EC682AE9973CC1EE0FF37C93BB2CEC821D3EDF022059E464472031BA5E0D88A93E944B6A8B8DB3E1D5E5D1399A805F615789DB0BED&quot;,</span></div>
-<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;<span class="stringliteral">})&quot;,</span></div>
-<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;<span class="stringliteral">            </span><span class="stringliteral">&quot;39AA166131D56622EFD96CB4B2BD58003ACD37091C90977FF6B81419DB451775&quot;</span>,</div>
-<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;            <span class="stringliteral">&quot;2000-01-01T00:00:20Z&quot;</span>);</div>
-<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160; </div>
-<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;        env(offer(A2, XRP(100), A2[<span class="stringliteral">&quot;USD&quot;</span>](1)));</div>
-<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;        <span class="keyword">auto</span> offer_tx =</div>
-<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;            boost::lexical_cast&lt;std::string&gt;(env.tx()-&gt;getTransactionID());</div>
-<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;        BEAST_EXPECT(</div>
-<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;            offer_tx ==</div>
-<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;            <span class="stringliteral">&quot;5FCC1A27A7664F82A0CC4BE5766FBBB7C560D52B93AA7B550CD33B27AEC7EFFB&quot;</span>);</div>
-<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160; </div>
-<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;        env.close();</div>
-<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;        check_tx(</div>
-<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;            env.closed()-&gt;seq(),</div>
-<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;            offer_tx,</div>
-<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;            R<span class="stringliteral">&quot;({</span></div>
-<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;<span class="stringliteral">            &quot;Account&quot; : &quot;rGpeQzUWFu4fMhJHZ1Via5aqFC3A5twZUD&quot;,</span></div>
-<div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160;<span class="stringliteral">            &quot;Fee&quot; : &quot;10&quot;,</span></div>
-<div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;<span class="stringliteral">            &quot;Sequence&quot; : 5,</span></div>
-<div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160;<span class="stringliteral">            &quot;SigningPubKey&quot; : &quot;03CFF28E067A2CCE6CC5A598C0B845CBD3F30A7863BE9C0DD55F4960EFABCCF4D0&quot;,</span></div>
-<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;<span class="stringliteral">            &quot;TakerGets&quot; :</span></div>
-<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;<span class="stringliteral">            {</span></div>
-<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160;<span class="stringliteral">                &quot;currency&quot; : &quot;USD&quot;,</span></div>
-<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;<span class="stringliteral">                &quot;issuer&quot; : &quot;rGpeQzUWFu4fMhJHZ1Via5aqFC3A5twZUD&quot;,</span></div>
-<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;<span class="stringliteral">                &quot;value&quot; : &quot;1&quot;</span></div>
-<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;<span class="stringliteral">            },</span></div>
-<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;<span class="stringliteral">            &quot;TakerPays&quot; : &quot;100000000&quot;,</span></div>
-<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;<span class="stringliteral">            &quot;TransactionType&quot; : &quot;OfferCreate&quot;,</span></div>
-<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;<span class="stringliteral">            &quot;TxnSignature&quot; : &quot;304502210093FC93ACB77B4E3DE3315441BD010096734859080C1797AB735EB47EBD541BD102205020BB1A7C3B4141279EE4C287C13671E2450EA78914EFD0C6DB2A18344CD4F2&quot;,</span></div>
-<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;<span class="stringliteral">})&quot;,</span></div>
-<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;<span class="stringliteral">            </span><span class="stringliteral">&quot;0589B876DF5AFE335781E8FC12C2EC62A80151DF13BBAFE9EB2DA62E798ED434&quot;</span>,</div>
-<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160;            <span class="stringliteral">&quot;2000-01-01T00:00:30Z&quot;</span>);</div>
-<div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;    }</div>
-<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160; </div>
-<div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;    <a class="code" href="classripple_1_1TransactionEntry__test.html#ac25a0116728ed64d2b9b6c3d6ae0bafe">run</a>()<span class="keyword"> override</span></div>
-<div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160;        <a class="code" href="classripple_1_1TransactionEntry__test.html#a7bbca856f64ea30dc1ee806fabaa408a">testBadInput</a>();</div>
-<div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;        <a class="code" href="namespaceripple_1_1test_1_1jtx.html#ac337719c5a60c4146c27812ab541dc7c">test::jtx::forAllApiVersions</a>(</div>
-<div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/bind_front.html">std::bind_front</a>(&amp;<a class="code" href="classripple_1_1TransactionEntry__test.html#a4b390985be3448922d23b34f4f0e7ca3">TransactionEntry_test::testRequest</a>, <span class="keyword">this</span>));</div>
-<div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160;    }</div>
-<div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160;};</div>
+<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;        <span class="comment">// these are actually AccountSet txs because fund does two txs and</span></div>
+<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;        <span class="comment">// env.tx only reports the last one</span></div>
+<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;        check_tx(</div>
+<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;            env.closed()-&gt;seq(),</div>
+<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;            fund_1_tx,</div>
+<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;            R<span class="stringliteral">&quot;({</span></div>
+<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;<span class="stringliteral">            &quot;Account&quot; : &quot;r4nmQNH4Fhjfh6cHDbvVSsBv7KySbj4cBf&quot;,</span></div>
+<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;<span class="stringliteral">            &quot;Fee&quot; : &quot;10&quot;,</span></div>
+<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;<span class="stringliteral">            &quot;Sequence&quot; : 3,</span></div>
+<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;<span class="stringliteral">            &quot;SetFlag&quot; : 8,</span></div>
+<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;<span class="stringliteral">            &quot;SigningPubKey&quot; : &quot;0324CAAFA2212D2AEAB9D42D481535614AED486293E1FB1380FF070C3DD7FB4264&quot;,</span></div>
+<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;<span class="stringliteral">            &quot;TransactionType&quot; : &quot;AccountSet&quot;,</span></div>
+<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;<span class="stringliteral">            &quot;TxnSignature&quot; : &quot;3044022007B35E3B99460534FF6BC3A66FBBA03591C355CC38E38588968E87CCD01BE229022071A443026DE45041B55ABB1CC76812A87EA701E475BBB7E165513B4B242D3474&quot;,</span></div>
+<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;<span class="stringliteral">})&quot;,</span></div>
+<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;<span class="stringliteral">            </span><span class="stringliteral">&quot;ADB727BCC74B29421BB01B847740B179B8A0ED3248D76A89ED2E39B02C427784&quot;</span>,</div>
+<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;            <span class="stringliteral">&quot;2000-01-01T00:00:10Z&quot;</span>);</div>
+<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;        check_tx(</div>
+<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;            env.closed()-&gt;seq(),</div>
+<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;            fund_2_tx,</div>
+<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;            R<span class="stringliteral">&quot;({</span></div>
+<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;<span class="stringliteral">            &quot;Account&quot; : &quot;rGpeQzUWFu4fMhJHZ1Via5aqFC3A5twZUD&quot;,</span></div>
+<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;<span class="stringliteral">            &quot;Fee&quot; : &quot;10&quot;,</span></div>
+<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;<span class="stringliteral">            &quot;Sequence&quot; : 3,</span></div>
+<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;<span class="stringliteral">            &quot;SetFlag&quot; : 8,</span></div>
+<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;<span class="stringliteral">            &quot;SigningPubKey&quot; : &quot;03CFF28E067A2CCE6CC5A598C0B845CBD3F30A7863BE9C0DD55F4960EFABCCF4D0&quot;,</span></div>
+<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;<span class="stringliteral">            &quot;TransactionType&quot; : &quot;AccountSet&quot;,</span></div>
+<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;<span class="stringliteral">            &quot;TxnSignature&quot; : &quot;3045022100C8857FC0759A2AC0D2F320684691A66EAD252EAED9EF88C79791BC58BFCC9D860220421722286487DD0ED6BBA626CE6FCBDD14289F7F4726870C3465A4054C2702D7&quot;,</span></div>
+<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;<span class="stringliteral">})&quot;,</span></div>
+<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;<span class="stringliteral">            </span><span class="stringliteral">&quot;ADB727BCC74B29421BB01B847740B179B8A0ED3248D76A89ED2E39B02C427784&quot;</span>,</div>
+<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;            <span class="stringliteral">&quot;2000-01-01T00:00:10Z&quot;</span>);</div>
+<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160; </div>
+<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;        env.trust(A2[<span class="stringliteral">&quot;USD&quot;</span>](1000), A1);</div>
+<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;        <span class="comment">// the trust tx is actually a payment since the trust method</span></div>
+<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160;        <span class="comment">// refunds fees with a payment after TrustSet..so just ignore the type</span></div>
+<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;        <span class="comment">// in the check below</span></div>
+<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;        <span class="keyword">auto</span> trust_tx =</div>
+<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;            boost::lexical_cast&lt;std::string&gt;(env.tx()-&gt;getTransactionID());</div>
+<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;        BEAST_EXPECT(</div>
+<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;            trust_tx ==</div>
+<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;            <span class="stringliteral">&quot;C992D97D88FF444A1AB0C06B27557EC54B7F7DA28254778E60238BEA88E0C101&quot;</span>);</div>
+<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160; </div>
+<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;        env(pay(A2, A1, A2[<span class="stringliteral">&quot;USD&quot;</span>](5)));</div>
+<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;        <span class="keyword">auto</span> pay_tx =</div>
+<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;            boost::lexical_cast&lt;std::string&gt;(env.tx()-&gt;getTransactionID());</div>
+<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;        env.close();</div>
+<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;        BEAST_EXPECT(</div>
+<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;            pay_tx ==</div>
+<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;            <span class="stringliteral">&quot;988046D484ACE9F5F6A8C792D89C6EA2DB307B5DDA9864AEBA88E6782ABD0865&quot;</span>);</div>
+<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160; </div>
+<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;        check_tx(</div>
+<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;            env.closed()-&gt;seq(),</div>
+<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;            trust_tx,</div>
+<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;            R<span class="stringliteral">&quot;({</span></div>
+<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;<span class="stringliteral">            &quot;Account&quot; : &quot;rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh&quot;,</span></div>
+<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;<span class="stringliteral">            &quot;DeliverMax&quot; : &quot;10&quot;,</span></div>
+<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;<span class="stringliteral">            &quot;Destination&quot; : &quot;r4nmQNH4Fhjfh6cHDbvVSsBv7KySbj4cBf&quot;,</span></div>
+<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;<span class="stringliteral">            &quot;Fee&quot; : &quot;10&quot;,</span></div>
+<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;<span class="stringliteral">            &quot;Flags&quot; : 2147483648,</span></div>
+<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;<span class="stringliteral">            &quot;Sequence&quot; : 3,</span></div>
+<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;<span class="stringliteral">            &quot;SigningPubKey&quot; : &quot;0330E7FC9D56BB25D6893BA3F317AE5BCF33B3291BD63DB32654A313222F7FD020&quot;,</span></div>
+<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;<span class="stringliteral">            &quot;TransactionType&quot; : &quot;Payment&quot;,</span></div>
+<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;<span class="stringliteral">            &quot;TxnSignature&quot; : &quot;3044022033D9EBF7F02950AF2F6B13C07AEE641C8FEBDD540A338FCB9027A965A4AED35B02206E4E227DCC226A3456C0FEF953449D21645A24EB63CA0BB7C5B62470147FD1D1&quot;,</span></div>
+<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;<span class="stringliteral">})&quot;,</span></div>
+<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;<span class="stringliteral">            </span><span class="stringliteral">&quot;39AA166131D56622EFD96CB4B2BD58003ACD37091C90977FF6B81419DB451775&quot;</span>,</div>
+<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;            <span class="stringliteral">&quot;2000-01-01T00:00:20Z&quot;</span>);</div>
+<div class="line"><a name="l00333"></a><span class="lineno"><a class="line" href="classripple_1_1TransactionEntry__test.html#ac25a0116728ed64d2b9b6c3d6ae0bafe">  333</a></span>&#160; </div>
+<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;        check_tx(</div>
+<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;            env.closed()-&gt;seq(),</div>
+<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;            pay_tx,</div>
+<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;            R<span class="stringliteral">&quot;({</span></div>
+<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;<span class="stringliteral">            &quot;Account&quot; : &quot;rGpeQzUWFu4fMhJHZ1Via5aqFC3A5twZUD&quot;,</span></div>
+<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;<span class="stringliteral">            &quot;DeliverMax&quot; :</span></div>
+<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;<span class="stringliteral">            {</span></div>
+<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;<span class="stringliteral">                &quot;currency&quot; : &quot;USD&quot;,</span></div>
+<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;<span class="stringliteral">                &quot;issuer&quot; : &quot;rGpeQzUWFu4fMhJHZ1Via5aqFC3A5twZUD&quot;,</span></div>
+<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;<span class="stringliteral">                &quot;value&quot; : &quot;5&quot;</span></div>
+<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;<span class="stringliteral">            },</span></div>
+<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;<span class="stringliteral">            &quot;Destination&quot; : &quot;r4nmQNH4Fhjfh6cHDbvVSsBv7KySbj4cBf&quot;,</span></div>
+<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;<span class="stringliteral">            &quot;Fee&quot; : &quot;10&quot;,</span></div>
+<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;<span class="stringliteral">            &quot;Flags&quot; : 2147483648,</span></div>
+<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;<span class="stringliteral">            &quot;Sequence&quot; : 4,</span></div>
+<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;<span class="stringliteral">            &quot;SigningPubKey&quot; : &quot;03CFF28E067A2CCE6CC5A598C0B845CBD3F30A7863BE9C0DD55F4960EFABCCF4D0&quot;,</span></div>
+<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;<span class="stringliteral">            &quot;TransactionType&quot; : &quot;Payment&quot;,</span></div>
+<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;<span class="stringliteral">            &quot;TxnSignature&quot; : &quot;30450221008A722B7F16EDB2348886E88ED4EC682AE9973CC1EE0FF37C93BB2CEC821D3EDF022059E464472031BA5E0D88A93E944B6A8B8DB3E1D5E5D1399A805F615789DB0BED&quot;,</span></div>
+<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;<span class="stringliteral">})&quot;,</span></div>
+<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;<span class="stringliteral">            </span><span class="stringliteral">&quot;39AA166131D56622EFD96CB4B2BD58003ACD37091C90977FF6B81419DB451775&quot;</span>,</div>
+<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;            <span class="stringliteral">&quot;2000-01-01T00:00:20Z&quot;</span>);</div>
+<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160; </div>
+<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;        env(offer(A2, XRP(100), A2[<span class="stringliteral">&quot;USD&quot;</span>](1)));</div>
+<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;        <span class="keyword">auto</span> offer_tx =</div>
+<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;            boost::lexical_cast&lt;std::string&gt;(env.tx()-&gt;getTransactionID());</div>
+<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;        BEAST_EXPECT(</div>
+<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;            offer_tx ==</div>
+<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;            <span class="stringliteral">&quot;5FCC1A27A7664F82A0CC4BE5766FBBB7C560D52B93AA7B550CD33B27AEC7EFFB&quot;</span>);</div>
+<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160; </div>
+<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;        env.close();</div>
+<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;        check_tx(</div>
+<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;            env.closed()-&gt;seq(),</div>
+<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;            offer_tx,</div>
+<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;            R<span class="stringliteral">&quot;({</span></div>
+<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;<span class="stringliteral">            &quot;Account&quot; : &quot;rGpeQzUWFu4fMhJHZ1Via5aqFC3A5twZUD&quot;,</span></div>
+<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;<span class="stringliteral">            &quot;Fee&quot; : &quot;10&quot;,</span></div>
+<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;<span class="stringliteral">            &quot;Sequence&quot; : 5,</span></div>
+<div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160;<span class="stringliteral">            &quot;SigningPubKey&quot; : &quot;03CFF28E067A2CCE6CC5A598C0B845CBD3F30A7863BE9C0DD55F4960EFABCCF4D0&quot;,</span></div>
+<div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;<span class="stringliteral">            &quot;TakerGets&quot; :</span></div>
+<div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160;<span class="stringliteral">            {</span></div>
+<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;<span class="stringliteral">                &quot;currency&quot; : &quot;USD&quot;,</span></div>
+<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;<span class="stringliteral">                &quot;issuer&quot; : &quot;rGpeQzUWFu4fMhJHZ1Via5aqFC3A5twZUD&quot;,</span></div>
+<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160;<span class="stringliteral">                &quot;value&quot; : &quot;1&quot;</span></div>
+<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;<span class="stringliteral">            },</span></div>
+<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;<span class="stringliteral">            &quot;TakerPays&quot; : &quot;100000000&quot;,</span></div>
+<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;<span class="stringliteral">            &quot;TransactionType&quot; : &quot;OfferCreate&quot;,</span></div>
+<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;<span class="stringliteral">            &quot;TxnSignature&quot; : &quot;304502210093FC93ACB77B4E3DE3315441BD010096734859080C1797AB735EB47EBD541BD102205020BB1A7C3B4141279EE4C287C13671E2450EA78914EFD0C6DB2A18344CD4F2&quot;,</span></div>
+<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;<span class="stringliteral">})&quot;,</span></div>
+<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;<span class="stringliteral">            </span><span class="stringliteral">&quot;0589B876DF5AFE335781E8FC12C2EC62A80151DF13BBAFE9EB2DA62E798ED434&quot;</span>,</div>
+<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;            <span class="stringliteral">&quot;2000-01-01T00:00:30Z&quot;</span>);</div>
+<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;    }</div>
+<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160; </div>
+<div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160;    <a class="code" href="classripple_1_1TransactionEntry__test.html#ac25a0116728ed64d2b9b6c3d6ae0bafe">run</a>()<span class="keyword"> override</span></div>
+<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;        <a class="code" href="classripple_1_1TransactionEntry__test.html#a7bbca856f64ea30dc1ee806fabaa408a">testBadInput</a>();</div>
+<div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160;        <a class="code" href="namespaceripple_1_1test_1_1jtx.html#ac337719c5a60c4146c27812ab541dc7c">test::jtx::forAllApiVersions</a>(</div>
+<div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/bind_front.html">std::bind_front</a>(&amp;<a class="code" href="classripple_1_1TransactionEntry__test.html#a4b390985be3448922d23b34f4f0e7ca3">TransactionEntry_test::testRequest</a>, <span class="keyword">this</span>));</div>
+<div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;    }</div>
+<div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160;};</div>
+<div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160; </div>
+<div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160;<a class="code" href="namespaceripple.html#a2701412a11b118c19256a4c901db2938">BEAST_DEFINE_TESTSUITE</a>(TransactionEntry, rpc, <a class="code" href="namespaceripple.html">ripple</a>);</div>
 <div class="line"><a name="l00397"></a><span class="lineno">  397</span>&#160; </div>
-<div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160;<a class="code" href="namespaceripple.html#a2701412a11b118c19256a4c901db2938">BEAST_DEFINE_TESTSUITE</a>(TransactionEntry, rpc, <a class="code" href="namespaceripple.html">ripple</a>);</div>
-<div class="line"><a name="l00399"></a><span class="lineno">  399</span>&#160; </div>
-<div class="line"><a name="l00400"></a><span class="lineno">  400</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
-<div class="ttc" id="aclassripple_1_1TransactionEntry__test_html_ac25a0116728ed64d2b9b6c3d6ae0bafe"><div class="ttname"><a href="classripple_1_1TransactionEntry__test.html#ac25a0116728ed64d2b9b6c3d6ae0bafe">ripple::TransactionEntry_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="TransactionEntry__test_8cpp_source.html#l00335">TransactionEntry_test.cpp:335</a></div></div>
+<div class="ttc" id="aclassripple_1_1TransactionEntry__test_html_ac25a0116728ed64d2b9b6c3d6ae0bafe"><div class="ttname"><a href="classripple_1_1TransactionEntry__test.html#ac25a0116728ed64d2b9b6c3d6ae0bafe">ripple::TransactionEntry_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="TransactionEntry__test_8cpp_source.html#l00333">TransactionEntry_test.cpp:333</a></div></div>
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="aclassripple_1_1TransactionEntry__test_html"><div class="ttname"><a href="classripple_1_1TransactionEntry__test.html">ripple::TransactionEntry_test</a></div><div class="ttdef"><b>Definition:</b> <a href="TransactionEntry__test_8cpp_source.html#l00031">TransactionEntry_test.cpp:31</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a2701412a11b118c19256a4c901db2938"><div class="ttname"><a href="namespaceripple.html#a2701412a11b118c19256a4c901db2938">ripple::BEAST_DEFINE_TESTSUITE</a></div><div class="ttdeci">BEAST_DEFINE_TESTSUITE(AccountTxPaging, app, ripple)</div></div>
 <div class="ttc" id="afunctional_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/functional.html">functional</a></div></div>
 <div class="ttc" id="aclassripple_1_1TransactionEntry__test_html_a4b390985be3448922d23b34f4f0e7ca3"><div class="ttname"><a href="classripple_1_1TransactionEntry__test.html#a4b390985be3448922d23b34f4f0e7ca3">ripple::TransactionEntry_test::testRequest</a></div><div class="ttdeci">void testRequest(unsigned apiVersion)</div><div class="ttdef"><b>Definition:</b> <a href="TransactionEntry__test_8cpp_source.html#l00149">TransactionEntry_test.cpp:149</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1test_1_1jtx_html_ac337719c5a60c4146c27812ab541dc7c"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx.html#ac337719c5a60c4146c27812ab541dc7c">ripple::test::jtx::forAllApiVersions</a></div><div class="ttdeci">void forAllApiVersions(VersionedTestCallable auto... testCallable)</div><div class="ttdef"><b>Definition:</b> <a href="Env_8h_source.html#l00743">Env.h:743</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1test_1_1jtx_html_ac337719c5a60c4146c27812ab541dc7c"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx.html#ac337719c5a60c4146c27812ab541dc7c">ripple::test::jtx::forAllApiVersions</a></div><div class="ttdeci">void forAllApiVersions(VersionedTestCallable auto... testCallable)</div><div class="ttdef"><b>Definition:</b> <a href="Env_8h_source.html#l00782">Env.h:782</a></div></div>
 <div class="ttc" id="abind_front_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/functional/bind_front.html">std::bind_front</a></div><div class="ttdeci">T bind_front(T... args)</div></div>
 <div class="ttc" id="aclassJson_1_1Value_html_af10a897ca5a73c578df78b434204139b"><div class="ttname"><a href="classJson_1_1Value.html#af10a897ca5a73c578df78b434204139b">Json::Value::end</a></div><div class="ttdeci">const_iterator end() const</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8cpp_source.html#l01064">json_value.cpp:1064</a></div></div>
 <div class="ttc" id="aclassJson_1_1Reader_html"><div class="ttname"><a href="classJson_1_1Reader.html">Json::Reader</a></div><div class="ttdoc">Unserialize a JSON document into a Value.</div><div class="ttdef"><b>Definition:</b> <a href="json__reader_8h_source.html#l00036">json_reader.h:36</a></div></div>
@@ -486,7 +484,6 @@ $(function() {
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="aclassripple_1_1TransactionEntry__test_html_a7bbca856f64ea30dc1ee806fabaa408a"><div class="ttname"><a href="classripple_1_1TransactionEntry__test.html#a7bbca856f64ea30dc1ee806fabaa408a">ripple::TransactionEntry_test::testBadInput</a></div><div class="ttdeci">void testBadInput()</div><div class="ttdef"><b>Definition:</b> <a href="TransactionEntry__test_8cpp_source.html#l00034">TransactionEntry_test.cpp:34</a></div></div>
 <div class="ttc" id="aclassJson_1_1Reader_html_a8ee4d40504e4f8b069745d762ab4d78c"><div class="ttname"><a href="classJson_1_1Reader.html#a8ee4d40504e4f8b069745d762ab4d78c">Json::Reader::parse</a></div><div class="ttdeci">bool parse(std::string const &amp;document, Value &amp;root)</div><div class="ttdoc">Read a Value from a JSON document.</div><div class="ttdef"><b>Definition:</b> <a href="json__reader_8cpp_source.html#l00074">json_reader.cpp:74</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1RPC_html_a8c4c4528421d724a8a82db708b1a761b"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a8c4c4528421d724a8a82db708b1a761b">ripple::RPC::apiMaximumSupportedVersion</a></div><div class="ttdeci">constexpr unsigned int apiMaximumSupportedVersion</div><div class="ttdef"><b>Definition:</b> <a href="RPCHelpers_8h_source.html#l00237">RPCHelpers.h:237</a></div></div>
 <div class="ttc" id="aempty_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string/empty.html">std::string::empty</a></div><div class="ttdeci">T empty(T... args)</div></div>
 <div class="ttc" id="anamespaceripple_html_af9776f187d3686a7fba4c2d2fbeebdf4"><div class="ttname"><a href="namespaceripple.html#af9776f187d3686a7fba4c2d2fbeebdf4">ripple::to_string</a></div><div class="ttdeci">std::string to_string(Manifest const &amp;m)</div><div class="ttdoc">Format the specified manifest to a string for debugging purposes.</div><div class="ttdef"><b>Definition:</b> <a href="app_2misc_2impl_2Manifest_8cpp_source.html#l00041">app/misc/impl/Manifest.cpp:41</a></div></div>
 <div class="ttc" id="aclassJson_1_1Value_html_a4544f7b3f4163ebe5da9273258936fe5"><div class="ttname"><a href="classJson_1_1Value.html#a4544f7b3f4163ebe5da9273258936fe5">Json::Value::begin</a></div><div class="ttdeci">const_iterator begin() const</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8cpp_source.html#l01046">json_value.cpp:1046</a></div></div>

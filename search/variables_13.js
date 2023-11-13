@@ -187,7 +187,7 @@ var searchData=
   ['txdbpragma_27050',['TxDBPragma',['../namespaceripple.html#a10025b86c17707aa738c67c31a3aa540',1,'ripple']]],
   ['txfees_5f_27051',['txFees_',['../structripple_1_1test_1_1BalanceTransfer.html#ad3b64fd201ead20a27ec2a3a42ea234e',1,'ripple::test::BalanceTransfer']]],
   ['txhash_27052',['txHash',['../structripple_1_1RelationalDatabase_1_1AccountTransactionsData.html#a441541b8fb78df2af54fdef4ec08ac07',1,'ripple::RelationalDatabase::AccountTransactionsData::txHash()'],['../structripple_1_1LedgerHeader.html#ae9093d3962490ede02dd9da5eb597527',1,'ripple::LedgerHeader::txHash()']]],
-  ['txid_27053',['txid',['../structripple_1_1RCLCensorshipDetector_1_1TxIDSeq.html#a582d5d20a720234907544dc68150f29d',1,'ripple::RCLCensorshipDetector::TxIDSeq::txid()'],['../classripple_1_1TxQ_1_1MaybeTx.html#a9a01c0f83b25bb3c4063c84557790e3c',1,'ripple::TxQ::MaybeTx::txID()']]],
+  ['txid_27053',['txID',['../classripple_1_1TxQ_1_1MaybeTx.html#a9a01c0f83b25bb3c4063c84557790e3c',1,'ripple::TxQ::MaybeTx::txID()'],['../structripple_1_1RCLCensorshipDetector_1_1TxIDSeq.html#a582d5d20a720234907544dc68150f29d',1,'ripple::RCLCensorshipDetector::TxIDSeq::txid()']]],
   ['txid_5f_27054',['txId_',['../classripple_1_1CanonicalTXSet_1_1Key.html#adf775870caf991a0a05dec169756e74b',1,'ripple::CanonicalTXSet::Key::txId_()'],['../classripple_1_1test_1_1jtx_1_1Env.html#a9590c5d87e3b4586d6fe0824db0b1d70',1,'ripple::test::jtx::Env::txid_()']]],
   ['txinjections_27055',['txInjections',['../structripple_1_1test_1_1csf_1_1Peer.html#a766f1c44852f9689c0a70e4ce1881179',1,'ripple::test::csf::Peer']]],
   ['txinledger_27056',['txInLedger',['../structripple_1_1TxQ_1_1Metrics.html#aa6d188cab1f33a838cda74a0dc6cbbf2',1,'ripple::TxQ::Metrics']]],
