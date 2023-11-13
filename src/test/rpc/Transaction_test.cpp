@@ -861,8 +861,7 @@ public:
         testCTIDValidation(features);
         testCTIDRPC(features);
         test::jtx::forAllApiVersions(
-            std::bind_front(&Transaction_test::testRequest, this, features));
-        test::jtx::forAllApiVersions(
+            std::bind_front(&Transaction_test::testRequest, this, features),
             std::bind_front(&Transaction_test::testBinaryRequest, this));
     }
 };
