@@ -802,13 +802,13 @@ class Transaction_test : public beast::unit_test::suite
         std::string const expected_tx_blob = serializeHex(*txn);
         std::string const expected_meta_blob = serializeHex(*meta);
 
-        Json::Value const result = {[&env, txn, apiVersion]() {
+        Json::Value const result = [&env, txn, apiVersion]() {
             Json::Value params{Json::objectValue};
             params[jss::transaction] = to_string(txn->getTransactionID());
             params[jss::binary] = true;
             params[jss::api_version] = apiVersion;
             return env.client().invoke("tx", params);
-        }()};
+        }();
 
         if (BEAST_EXPECT(result[jss::status] == "success"))
         {
