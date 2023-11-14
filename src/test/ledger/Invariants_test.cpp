@@ -180,10 +180,16 @@ class Invariants_test : public beast::unit_test::suite
         using namespace test::jtx;
         testcase << "account root deletion left artifact";
 
-        for (auto const& [keyletfunc, type, include] : directAccountKeylets)
+        for (auto const& keyletInfo : directAccountKeylets)
         {
-            if (!include)
+            // TODO: Use structured binding once LLVM issue
+            // https://github.com/llvm/llvm-project/issues/48582
+            // is fixed.
+            if (!keyletInfo.includeInTests)
                 continue;
+            auto const& keyletfunc = keyletInfo.function;
+            auto const& type = keyletInfo.expectedLEName;
+
             using namespace std::string_literals;
 
             doInvariantCheck(
