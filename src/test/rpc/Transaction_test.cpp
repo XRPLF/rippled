@@ -791,13 +791,13 @@ class Transaction_test : public beast::unit_test::suite
         auto const USD{gw["USD"]};
 
         env.fund(XRP(1000000), alice, gw);
-        std::shared_ptr<STTx const> txn = env.tx();
+        std::shared_ptr<STTx const> const txn = env.tx();
         BEAST_EXPECT(
             to_string(txn->getTransactionID()) ==
             "3F8BDE5A5F82C4F4708E5E9255B713E303E6E1A371FD5C7A704AFD1387C23981");
         env.close();
         std::shared_ptr<STObject const> meta =
-            env.closed()->txRead(env.tx()->getTransactionID()).second;
+            env.closed()->txRead(txn->getTransactionID()).second;
 
         std::string const expected_tx_blob = serializeHex(*txn);
         std::string const expected_meta_blob = serializeHex(*meta);
@@ -849,6 +849,9 @@ public:
     run() override
     {
         using namespace test::jtx;
+        test::jtx::forAllApiVersions(
+            std::bind_front(&Transaction_test::testBinaryRequest, this));
+
         FeatureBitset const all{supported_amendments()};
         testWithFeats(all);
     }
@@ -861,8 +864,7 @@ public:
         testCTIDValidation(features);
         testCTIDRPC(features);
         test::jtx::forAllApiVersions(
-            std::bind_front(&Transaction_test::testRequest, this, features),
-            std::bind_front(&Transaction_test::testBinaryRequest, this));
+            std::bind_front(&Transaction_test::testRequest, this, features));
     }
 };
 
