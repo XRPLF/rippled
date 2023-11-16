@@ -1803,7 +1803,7 @@ Consensus<Adaptor>::updateOurPositions(bool const share)
         //
         // Close time is chosen based on the threshVote threshold
         // calculated above. If a close time has votes equal to or greater than
-        // that threshold, then that is the best close time. If two
+        // that threshold, then that is the best close time. If multiple
         // close times have an equal number of votes, then choose the greatest
         // of them. Ensure that our close time then matches that which meets
         // the criteria. But if no close time meet the criteria, make no
@@ -1822,12 +1822,16 @@ Consensus<Adaptor>::updateOurPositions(bool const share)
         // Once threshVote exceeds 60%, no members of either set of validators
         // will change their close times.
         //
-        // Avoiding the impasse means that validators should not necessarily
-        // count their own close time towards the total until they know
-        // the most popular among their peers, and then change their vote
-        // to that of the most popular. In this case, the validators in set
-        // t2 from the example would have switched to close time t1 and ended
-        // the network impasse.
+        // Avoiding the impasse means that validators should identify
+        // whether they currently have the best close time. First, choose
+        // the close time with the most votes. However, if multiple close times
+        // have the same number of votes, pick the latest of them.
+        // If the validator does not currently have the best close time,
+        // switch to it and increase the local vote tally for that better
+        // close time. This will result in consensus in the next iteration
+        // assuming that the peer messages propagate successfully.
+        // In this case the validators in set t1 will remain the same but
+        // those in t2 switch to t1.
         //
         // Another wrinkle, however, is that too many position changes
         // from validators also has a destabilizing affect. Consensus can
@@ -1839,19 +1843,10 @@ Consensus<Adaptor>::updateOurPositions(bool const share)
         // The solution for validators is to first track whether it's
         // possible that the network is at an impasse based on how much
         // time this current consensus round has taken. This is reflected
-        // in the "stuck" boolean.
-        //
-        // The best close time is the close time with the highest number of
-        // votes. If multiple close times are tied, choose the latest one.
-        // Whether earlier or later does not matter. What matters is
-        // coming to agreement with the same criteria.
-        //
-        // For validators that are stuck and do not have the best close time,
-        // they change their close time position add their vote to the tally
-        // for that close time. This solution avoids an impasse while
-        // minimizing gratuitous close time changes. The other way
-        // for a validator to change its position is if it exceeds threshVote
-        // as described above.
+        // in the "stuck" boolean. When stuck, validators perform the
+        // above-described position change based solely on whether or not
+        // they agree with the best position, and ignore the threshVote
+        // criteria used for the earlier part of the phase.
         //
         // Determining whether there is close time consensus is very simple
         // in comparison: if votes for the best close time meet or exceed
