@@ -242,30 +242,31 @@ $(function() {
 <div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a> ret(</div>
 <div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;        <a class="code" href="classripple_1_1Transaction.html#ad192ef3e613cd427dca8fecf9a4681ea">mTransaction</a>-&gt;getJson(options &amp; ~<a class="code" href="structripple_1_1JsonOptions.html#ab85e43ec84df987200d3355c3ba89f0aafbf455cd24e4be77ea2f5049de627345">JsonOptions::include_date</a>, binary));</div>
 <div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160; </div>
-<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;    <span class="keywordflow">if</span> (<a class="code" href="classripple_1_1Transaction.html#a58e768466a55ba2cd86c1c309b10ab2b">mLedgerIndex</a>)</div>
-<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;    {</div>
-<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;        <span class="keywordflow">if</span> (!(options &amp; <a class="code" href="structripple_1_1JsonOptions.html#ab85e43ec84df987200d3355c3ba89f0aa3ace7cc623d6c6f5783c87db5efea1bc">JsonOptions::disable_API_prior_V2</a>))</div>
-<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;        {</div>
-<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;            <span class="comment">// Behaviour before API version 2</span></div>
-<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;            ret[jss::inLedger] = <a class="code" href="classripple_1_1Transaction.html#a58e768466a55ba2cd86c1c309b10ab2b">mLedgerIndex</a>;</div>
-<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;        }</div>
-<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160; </div>
-<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;        <span class="comment">// TODO: disable_API_prior_V3 to disable output of both `date` and</span></div>
-<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;        <span class="comment">// `ledger_index` elements (taking precedence over include_date)</span></div>
-<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;        ret[jss::ledger_index] = <a class="code" href="classripple_1_1Transaction.html#a58e768466a55ba2cd86c1c309b10ab2b">mLedgerIndex</a>;</div>
-<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160; </div>
-<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;        <span class="keywordflow">if</span> (options &amp; <a class="code" href="structripple_1_1JsonOptions.html#ab85e43ec84df987200d3355c3ba89f0aafbf455cd24e4be77ea2f5049de627345">JsonOptions::include_date</a>)</div>
-<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;        {</div>
-<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;            <span class="keyword">auto</span> ct = <a class="code" href="classripple_1_1Transaction.html#ab64684c6504fdebd2630cb9f7377c466">mApp</a>.<a class="code" href="classripple_1_1Application.html#a57929fa83c551514e364fe6981b0c104">getLedgerMaster</a>().<a class="code" href="classripple_1_1LedgerMaster.html#a330510efd66b4b08e57f5c0b896560ef">getCloseTimeBySeq</a>(<a class="code" href="classripple_1_1Transaction.html#a58e768466a55ba2cd86c1c309b10ab2b">mLedgerIndex</a>);</div>
-<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;            <span class="keywordflow">if</span> (ct)</div>
-<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;                ret[jss::date] = ct-&gt;time_since_epoch().count();</div>
-<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;        }</div>
-<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;    }</div>
-<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160; </div>
-<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;    <span class="keywordflow">return</span> ret;</div>
-<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;}</div>
-<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160; </div>
-<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;    <span class="comment">// NOTE Binary STTx::getJson output might not be a JSON object</span></div>
+<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;    <span class="keywordflow">if</span> (ret.<a class="code" href="classJson_1_1Value.html#a8cf96c0f2a552051fcfc78ffee60e037">isObject</a>() &amp;&amp; <a class="code" href="classripple_1_1Transaction.html#a58e768466a55ba2cd86c1c309b10ab2b">mLedgerIndex</a>)</div>
+<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;    {</div>
+<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;        <span class="keywordflow">if</span> (!(options &amp; <a class="code" href="structripple_1_1JsonOptions.html#ab85e43ec84df987200d3355c3ba89f0aa3ace7cc623d6c6f5783c87db5efea1bc">JsonOptions::disable_API_prior_V2</a>))</div>
+<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;        {</div>
+<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;            <span class="comment">// Behaviour before API version 2</span></div>
+<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;            ret[jss::inLedger] = <a class="code" href="classripple_1_1Transaction.html#a58e768466a55ba2cd86c1c309b10ab2b">mLedgerIndex</a>;</div>
+<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;        }</div>
+<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160; </div>
+<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;        <span class="comment">// TODO: disable_API_prior_V3 to disable output of both `date` and</span></div>
+<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;        <span class="comment">// `ledger_index` elements (taking precedence over include_date)</span></div>
+<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;        ret[jss::ledger_index] = <a class="code" href="classripple_1_1Transaction.html#a58e768466a55ba2cd86c1c309b10ab2b">mLedgerIndex</a>;</div>
+<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160; </div>
+<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;        <span class="keywordflow">if</span> (options &amp; <a class="code" href="structripple_1_1JsonOptions.html#ab85e43ec84df987200d3355c3ba89f0aafbf455cd24e4be77ea2f5049de627345">JsonOptions::include_date</a>)</div>
+<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;        {</div>
+<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;            <span class="keyword">auto</span> ct = <a class="code" href="classripple_1_1Transaction.html#ab64684c6504fdebd2630cb9f7377c466">mApp</a>.<a class="code" href="classripple_1_1Application.html#a57929fa83c551514e364fe6981b0c104">getLedgerMaster</a>().<a class="code" href="classripple_1_1LedgerMaster.html#a330510efd66b4b08e57f5c0b896560ef">getCloseTimeBySeq</a>(<a class="code" href="classripple_1_1Transaction.html#a58e768466a55ba2cd86c1c309b10ab2b">mLedgerIndex</a>);</div>
+<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;            <span class="keywordflow">if</span> (ct)</div>
+<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;                ret[jss::date] = ct-&gt;time_since_epoch().count();</div>
+<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;        }</div>
+<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;    }</div>
+<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160; </div>
+<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;    <span class="keywordflow">return</span> ret;</div>
+<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;}</div>
+<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160; </div>
+<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aclassripple_1_1SQLiteDatabase_html"><div class="ttname"><a href="classripple_1_1SQLiteDatabase.html">ripple::SQLiteDatabase</a></div><div class="ttdef"><b>Definition:</b> <a href="SQLiteDatabase_8h_source.html#l00027">SQLiteDatabase.h:27</a></div></div>
 <div class="ttc" id="astructripple_1_1JsonOptions_html_ab85e43ec84df987200d3355c3ba89f0aa3ace7cc623d6c6f5783c87db5efea1bc"><div class="ttname"><a href="structripple_1_1JsonOptions.html#ab85e43ec84df987200d3355c3ba89f0aa3ace7cc623d6c6f5783c87db5efea1bc">ripple::JsonOptions::disable_API_prior_V2</a></div><div class="ttdeci">@ disable_API_prior_V2</div><div class="ttdef"><b>Definition:</b> <a href="STBase_8h_source.html#l00044">STBase.h:44</a></div></div>
@@ -275,6 +276,7 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1Application_html"><div class="ttname"><a href="classripple_1_1Application.html">ripple::Application</a></div><div class="ttdef"><b>Definition:</b> <a href="Application_8h_source.html#l00116">Application.h:116</a></div></div>
 <div class="ttc" id="aclassripple_1_1Transaction_html_a0e007f454719831e6885ef33158dc0f7"><div class="ttname"><a href="classripple_1_1Transaction.html#a0e007f454719831e6885ef33158dc0f7">ripple::Transaction::transactionFromSQL</a></div><div class="ttdeci">static Transaction::pointer transactionFromSQL(boost::optional&lt; std::uint64_t &gt; const &amp;ledgerSeq, boost::optional&lt; std::string &gt; const &amp;status, Blob const &amp;rawTxn, Application &amp;app)</div><div class="ttdef"><b>Definition:</b> <a href="Transaction_8cpp_source.html#l00092">Transaction.cpp:92</a></div></div>
 <div class="ttc" id="anamespaceripple_html_aabe37451093c21757855542d68fba3ce"><div class="ttname"><a href="namespaceripple.html#aabe37451093c21757855542d68fba3ce">ripple::makeSlice</a></div><div class="ttdeci">std::enable_if_t&lt; std::is_same&lt; T, char &gt;::value||std::is_same&lt; T, unsigned char &gt;::value, Slice &gt; makeSlice(std::array&lt; T, N &gt; const &amp;a)</div><div class="ttdef"><b>Definition:</b> <a href="Slice_8h_source.html#l00241">Slice.h:241</a></div></div>
+<div class="ttc" id="aclassJson_1_1Value_html_a8cf96c0f2a552051fcfc78ffee60e037"><div class="ttname"><a href="classJson_1_1Value.html#a8cf96c0f2a552051fcfc78ffee60e037">Json::Value::isObject</a></div><div class="ttdeci">bool isObject() const</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8cpp_source.html#l01027">json_value.cpp:1027</a></div></div>
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="ashared_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="aclassripple_1_1Transaction_html_ac8746fa431dbfc2527f6448033caa53e"><div class="ttname"><a href="classripple_1_1Transaction.html#ac8746fa431dbfc2527f6448033caa53e">ripple::Transaction::getJson</a></div><div class="ttdeci">Json::Value getJson(JsonOptions options, bool binary=false) const</div><div class="ttdef"><b>Definition:</b> <a href="Transaction_8cpp_source.html#l00168">Transaction.cpp:168</a></div></div>
