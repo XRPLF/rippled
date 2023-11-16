@@ -458,6 +458,7 @@ REGISTER_FEATURE(AMM,                           Supported::yes, VoteBehavior::De
 REGISTER_FEATURE(XChainBridge,                  Supported::yes, VoteBehavior::DefaultNo);
 REGISTER_FIX    (fixDisallowIncomingV1,         Supported::yes, VoteBehavior::DefaultNo);
 REGISTER_FEATURE(DID,                           Supported::yes, VoteBehavior::DefaultNo);
+REGISTER_FIX(fixFillOrKill,                     Supported::yes, VoteBehavior::DefaultNo);
 
 // The following amendments are obsolete, but must remain supported
 // because they could potentially get enabled.

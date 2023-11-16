@@ -30,6 +30,7 @@
 #include <ripple/rpc/Role.h>
 #include <ripple/rpc/Status.h>
 #include <ripple/rpc/impl/Handler.h>
+#include <ripple/rpc/impl/RPCHelpers.h>
 
 namespace Json {
 class Object;
@@ -58,23 +59,15 @@ public:
     void
     writeResult(Object&);
 
-    static char const*
-    name()
-    {
-        return "ledger";
-    }
+    static constexpr char name[] = "ledger";
 
-    static Role
-    role()
-    {
-        return Role::USER;
-    }
+    static constexpr unsigned minApiVer = RPC::apiMinimumSupportedVersion;
 
-    static Condition
-    condition()
-    {
-        return NO_CONDITION;
-    }
+    static constexpr unsigned maxApiVer = RPC::apiMaximumValidVersion;
+
+    static constexpr Role role = Role::USER;
+
+    static constexpr Condition condition = NO_CONDITION;
 
 private:
     JsonContext& context_;

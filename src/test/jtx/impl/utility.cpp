@@ -18,6 +18,8 @@
 //==============================================================================
 
 #include <ripple/basics/contract.h>
+#include <ripple/json/Object.h>
+#include <ripple/net/RPCCall.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/Indexes.h>
@@ -71,6 +73,38 @@ fill_seq(Json::Value& jv, ReadView const& view)
     if (!ar)
         Throw<parse_error>("unexpected missing account root");
     jv[jss::Sequence] = ar->getFieldU32(sfSequence);
+}
+
+Json::Value
+cmdToJSONRPC(
+    std::vector<std::string> const& args,
+    beast::Journal j,
+    unsigned int apiVersion)
+{
+    Json::Value jv = Json::Value(Json::objectValue);
+    auto const paramsObj = rpcCmdToJson(args, jv, apiVersion, j);
+
+    // Re-use jv to return our formatted result.
+    jv.clear();
+
+    // Allow parser to rewrite method.
+    jv[jss::method] = paramsObj.isMember(jss::method)
+        ? paramsObj[jss::method].asString()
+        : args[0];
+
+    // If paramsObj is not empty, put it in a [params] array.
+    if (paramsObj.begin() != paramsObj.end())
+    {
+        auto& paramsArray = Json::setArray(jv, jss::params);
+        paramsArray.append(paramsObj);
+    }
+    if (paramsObj.isMember(jss::jsonrpc))
+        jv[jss::jsonrpc] = paramsObj[jss::jsonrpc];
+    if (paramsObj.isMember(jss::ripplerpc))
+        jv[jss::ripplerpc] = paramsObj[jss::ripplerpc];
+    if (paramsObj.isMember(jss::id))
+        jv[jss::id] = paramsObj[jss::id];
+    return jv;
 }
 
 }  // namespace jtx

@@ -21,8 +21,10 @@
 #define RIPPLE_APP_LEDGER_LEDGERTOJSON_H_INCLUDED
 
 #include <ripple/app/ledger/Ledger.h>
+#include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/misc/TxQ.h>
 #include <ripple/basics/StringUtilities.h>
+#include <ripple/basics/chrono.h>
 #include <ripple/json/Object.h>
 #include <ripple/protocol/STTx.h>
 #include <ripple/protocol/jss.h>
@@ -41,6 +43,8 @@ struct LedgerFill
         LedgerEntryType t = ltANY)
         : ledger(l), options(o), txQueue(std::move(q)), type(t), context(ctx)
     {
+        if (context)
+            closeTime = context->ledgerMaster.getCloseTimeBySeq(ledger.seq());
     }
 
     enum Options {
@@ -58,6 +62,7 @@ struct LedgerFill
     std::vector<TxQ::TxDetails> txQueue;
     LedgerEntryType type;
     RPC::Context* context;
+    std::optional<NetClock::time_point> closeTime;
 };
 
 /** Given a Ledger and options, fill a Json::Object or Json::Value with a

@@ -1062,6 +1062,7 @@ if (tests)
     src/test/rpc/KeyGeneration_test.cpp
     src/test/rpc/LedgerClosed_test.cpp
     src/test/rpc/LedgerData_test.cpp
+    src/test/rpc/LedgerHeader_test.cpp
     src/test/rpc/LedgerRPC_test.cpp
     src/test/rpc/LedgerRequestRPC_test.cpp
     src/test/rpc/ManifestRPC_test.cpp
@@ -1085,6 +1086,7 @@ if (tests)
     src/test/rpc/ValidatorInfo_test.cpp
     src/test/rpc/ValidatorRPC_test.cpp
     src/test/rpc/Version_test.cpp
+    src/test/rpc/Handler_test.cpp
     #[===============================[
        test sources:
          subdir: server

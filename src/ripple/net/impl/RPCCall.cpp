@@ -91,6 +91,7 @@ createHTTPPost(
 class RPCParser
 {
 private:
+    unsigned const apiVersion_;
     beast::Journal const j_;
 
     // TODO New routine for parsing ledger parameters, other routines should
@@ -321,8 +322,7 @@ private:
 
             if (uLedgerMax != -1 && uLedgerMax < uLedgerMin)
             {
-                // The command line always follows apiMaximumSupportedVersion
-                if (RPC::apiMaximumSupportedVersion == 1)
+                if (apiVersion_ == 1)
                     return rpcError(rpcLGR_IDXS_INVALID);
                 return rpcError(rpcNOT_SYNCED);
             }
@@ -335,76 +335,6 @@ private:
 
             if (iParams >= 5)
                 jvRequest[jss::offset] = jvParams[4u].asInt();
-        }
-
-        return jvRequest;
-    }
-
-    // tx_account accountID [ledger_min [ledger_max [limit]]]] [binary] [count]
-    // [forward]
-    Json::Value
-    parseTxAccount(Json::Value const& jvParams)
-    {
-        Json::Value jvRequest(Json::objectValue);
-        unsigned int iParams = jvParams.size();
-
-        auto const account = parseBase58<AccountID>(jvParams[0u].asString());
-        if (!account)
-            return rpcError(rpcACT_MALFORMED);
-
-        jvRequest[jss::account] = toBase58(*account);
-
-        bool bDone = false;
-
-        while (!bDone && iParams >= 2)
-        {
-            if (jvParams[iParams - 1].asString() == jss::binary)
-            {
-                jvRequest[jss::binary] = true;
-                --iParams;
-            }
-            else if (jvParams[iParams - 1].asString() == jss::count)
-            {
-                jvRequest[jss::count] = true;
-                --iParams;
-            }
-            else if (jvParams[iParams - 1].asString() == jss::forward)
-            {
-                jvRequest[jss::forward] = true;
-                --iParams;
-            }
-            else
-            {
-                bDone = true;
-            }
-        }
-
-        if (1 == iParams)
-        {
-        }
-        else if (2 == iParams)
-        {
-            if (!jvParseLedger(jvRequest, jvParams[1u].asString()))
-                return jvRequest;
-        }
-        else
-        {
-            std::int64_t uLedgerMin = jvParams[1u].asInt();
-            std::int64_t uLedgerMax = jvParams[2u].asInt();
-
-            if (uLedgerMax != -1 && uLedgerMax < uLedgerMin)
-            {
-                // The command line always follows apiMaximumSupportedVersion
-                if (RPC::apiMaximumSupportedVersion == 1)
-                    return rpcError(rpcLGR_IDXS_INVALID);
-                return rpcError(rpcNOT_SYNCED);
-            }
-
-            jvRequest[jss::ledger_index_min] = jvParams[1u].asInt();
-            jvRequest[jss::ledger_index_max] = jvParams[2u].asInt();
-
-            if (iParams >= 4)
-                jvRequest[jss::limit] = jvParams[3u].asInt();
         }
 
         return jvRequest;
@@ -1221,7 +1151,8 @@ private:
 public:
     //--------------------------------------------------------------------------
 
-    explicit RPCParser(beast::Journal j) : j_(j)
+    explicit RPCParser(unsigned apiVersion, beast::Journal j)
+        : apiVersion_(apiVersion), j_(j)
     {
     }
 
@@ -1317,7 +1248,6 @@ public:
             {"submit_multisigned", &RPCParser::parseSubmitMultiSigned, 1, 1},
             {"transaction_entry", &RPCParser::parseTransactionEntry, 2, 2},
             {"tx", &RPCParser::parseTx, 1, 4},
-            {"tx_account", &RPCParser::parseTxAccount, 1, 7},
             {"tx_history", &RPCParser::parseTxHistory, 1, 1},
             {"unl_list", &RPCParser::parseAsIs, 0, 0},
             {"validation_create", &RPCParser::parseValidationCreate, 0, 1},
@@ -1472,15 +1402,16 @@ struct RPCCallImp
 //------------------------------------------------------------------------------
 
 // Used internally by rpcClient.
-static Json::Value
-rpcCmdLineToJson(
+Json::Value
+rpcCmdToJson(
     std::vector<std::string> const& args,
     Json::Value& retParams,
+    unsigned int apiVersion,
     beast::Journal j)
 {
     Json::Value jvRequest(Json::objectValue);
 
-    RPCParser rpParser(j);
+    RPCParser rpParser(apiVersion, j);
     Json::Value jvRpcParams(Json::arrayValue);
 
     for (int i = 1; i != args.size(); i++)
@@ -1493,11 +1424,11 @@ rpcCmdLineToJson(
 
     jvRequest = rpParser.parseCommand(args[0], jvRpcParams, true);
 
-    auto insert_api_version = [](Json::Value& jr) {
+    auto insert_api_version = [apiVersion](Json::Value& jr) {
         if (jr.isObject() && !jr.isMember(jss::error) &&
             !jr.isMember(jss::api_version))
         {
-            jr[jss::api_version] = RPC::apiMaximumSupportedVersion;
+            jr[jss::api_version] = apiVersion;
         }
     };
 
@@ -1510,35 +1441,6 @@ rpcCmdLineToJson(
     return jvRequest;
 }
 
-Json::Value
-cmdLineToJSONRPC(std::vector<std::string> const& args, beast::Journal j)
-{
-    Json::Value jv = Json::Value(Json::objectValue);
-    auto const paramsObj = rpcCmdLineToJson(args, jv, j);
-
-    // Re-use jv to return our formatted result.
-    jv.clear();
-
-    // Allow parser to rewrite method.
-    jv[jss::method] = paramsObj.isMember(jss::method)
-        ? paramsObj[jss::method].asString()
-        : args[0];
-
-    // If paramsObj is not empty, put it in a [params] array.
-    if (paramsObj.begin() != paramsObj.end())
-    {
-        auto& paramsArray = Json::setArray(jv, jss::params);
-        paramsArray.append(paramsObj);
-    }
-    if (paramsObj.isMember(jss::jsonrpc))
-        jv[jss::jsonrpc] = paramsObj[jss::jsonrpc];
-    if (paramsObj.isMember(jss::ripplerpc))
-        jv[jss::ripplerpc] = paramsObj[jss::ripplerpc];
-    if (paramsObj.isMember(jss::id))
-        jv[jss::id] = paramsObj[jss::id];
-    return jv;
-}
-
 //------------------------------------------------------------------------------
 
 std::pair<int, Json::Value>
@@ -1546,6 +1448,7 @@ rpcClient(
     std::vector<std::string> const& args,
     Config const& config,
     Logs& logs,
+    unsigned int apiVersion,
     std::unordered_map<std::string, std::string> const& headers)
 {
     static_assert(
@@ -1561,7 +1464,8 @@ rpcClient(
     try
     {
         Json::Value jvRpc = Json::Value(Json::objectValue);
-        jvRequest = rpcCmdLineToJson(args, jvRpc, logs.journal("RPCParser"));
+        jvRequest =
+            rpcCmdToJson(args, jvRpc, apiVersion, logs.journal("RPCParser"));
 
         if (jvRequest.isMember(jss::error))
         {
@@ -1698,7 +1602,8 @@ fromCommandLine(
     const std::vector<std::string>& vCmd,
     Logs& logs)
 {
-    auto const result = rpcClient(vCmd, config, logs);
+    auto const result =
+        rpcClient(vCmd, config, logs, RPC::apiCommandLineVersion);
 
     std::cout << result.second.toStyledString();
 

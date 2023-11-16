@@ -21,11 +21,13 @@
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/STBase.h>
 #include <ripple/protocol/jss.h>
+#include <ripple/protocol/serialize.h>
 #include <ripple/rpc/CTID.h>
-#include <optional>
 #include <test/jtx.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/envconfig.h>
+
+#include <optional>
 #include <tuple>
 
 namespace ripple {
@@ -694,14 +696,12 @@ class Transaction_test : public beast::unit_test::suite
     }
 
     void
-    testRequest(FeatureBitset features)
+    testRequest(FeatureBitset features, unsigned apiVersion)
     {
-        testcase("Test Request");
+        testcase("Test Request API version " + std::to_string(apiVersion));
 
         using namespace test::jtx;
         using std::to_string;
-
-        const char* COMMAND = jss::tx.c_str();
 
         Env env{*this};
         Account const alice{"alice"};
@@ -725,18 +725,47 @@ class Transaction_test : public beast::unit_test::suite
 
         Json::Value expected = txn->getJson(JsonOptions::none);
         expected[jss::DeliverMax] = expected[jss::Amount];
+        if (apiVersion > 1)
+        {
+            expected.removeMember(jss::hash);
+            expected.removeMember(jss::Amount);
+        }
 
-        auto const result =
-            env.rpc(COMMAND, to_string(txn->getTransactionID()));
+        Json::Value const result = {[&env, txn, apiVersion]() {
+            Json::Value params{Json::objectValue};
+            params[jss::transaction] = to_string(txn->getTransactionID());
+            params[jss::binary] = false;
+            params[jss::api_version] = apiVersion;
+            return env.client().invoke("tx", params);
+        }()};
+
         BEAST_EXPECT(result[jss::result][jss::status] == jss::success);
+        if (apiVersion > 1)
+        {
+            BEAST_EXPECT(
+                result[jss::result][jss::close_time_iso] ==
+                "2000-01-01T00:00:20Z");
+            BEAST_EXPECT(
+                result[jss::result][jss::hash] ==
+                to_string(txn->getTransactionID()));
+            BEAST_EXPECT(result[jss::result][jss::validated] == true);
+            BEAST_EXPECT(result[jss::result][jss::ledger_index] == 4);
+            BEAST_EXPECT(
+                result[jss::result][jss::ledger_hash] ==
+                "B41882E20F0EC6228417D28B9AE0F33833645D35F6799DFB782AC97FC4BB51"
+                "D2");
+        }
 
         for (auto memberIt = expected.begin(); memberIt != expected.end();
              memberIt++)
         {
             std::string const name = memberIt.memberName();
-            if (BEAST_EXPECT(result[jss::result].isMember(name)))
+            auto const& result_transaction =
+                (apiVersion > 1 ? result[jss::result][jss::tx_json]
+                                : result[jss::result]);
+            if (BEAST_EXPECT(result_transaction.isMember(name)))
             {
-                auto const received = result[jss::result][name];
+                auto const received = result_transaction[name];
                 BEAST_EXPECTS(
                     received == *memberIt,
                     "Transaction contains \n\"" + name + "\": "  //
@@ -747,11 +776,82 @@ class Transaction_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testBinaryRequest(unsigned apiVersion)
+    {
+        testcase(
+            "Test binary request API version " + std::to_string(apiVersion));
+
+        using namespace test::jtx;
+        using std::to_string;
+
+        Env env{*this};
+        Account const alice{"alice"};
+        Account const gw{"gw"};
+        auto const USD{gw["USD"]};
+
+        env.fund(XRP(1000000), alice, gw);
+        std::shared_ptr<STTx const> const txn = env.tx();
+        BEAST_EXPECT(
+            to_string(txn->getTransactionID()) ==
+            "3F8BDE5A5F82C4F4708E5E9255B713E303E6E1A371FD5C7A704AFD1387C23981");
+        env.close();
+        std::shared_ptr<STObject const> meta =
+            env.closed()->txRead(txn->getTransactionID()).second;
+
+        std::string const expected_tx_blob = serializeHex(*txn);
+        std::string const expected_meta_blob = serializeHex(*meta);
+
+        Json::Value const result = [&env, txn, apiVersion]() {
+            Json::Value params{Json::objectValue};
+            params[jss::transaction] = to_string(txn->getTransactionID());
+            params[jss::binary] = true;
+            params[jss::api_version] = apiVersion;
+            return env.client().invoke("tx", params);
+        }();
+
+        if (BEAST_EXPECT(result[jss::status] == "success"))
+        {
+            BEAST_EXPECT(result[jss::result][jss::status] == "success");
+            BEAST_EXPECT(result[jss::result][jss::validated] == true);
+            BEAST_EXPECT(
+                result[jss::result][jss::hash] ==
+                to_string(txn->getTransactionID()));
+            BEAST_EXPECT(result[jss::result][jss::ledger_index] == 3);
+            BEAST_EXPECT(result[jss::result][jss::ctid] == "C000000300030000");
+
+            if (apiVersion > 1)
+            {
+                BEAST_EXPECT(
+                    result[jss::result][jss::tx_blob] == expected_tx_blob);
+                BEAST_EXPECT(
+                    result[jss::result][jss::meta_blob] == expected_meta_blob);
+                BEAST_EXPECT(
+                    result[jss::result][jss::ledger_hash] ==
+                    "2D5150E5A5AA436736A732291E437ABF01BC9E206C2DF3C77C4F856915"
+                    "7905AA");
+                BEAST_EXPECT(
+                    result[jss::result][jss::close_time_iso] ==
+                    "2000-01-01T00:00:10Z");
+            }
+            else
+            {
+                BEAST_EXPECT(result[jss::result][jss::tx] == expected_tx_blob);
+                BEAST_EXPECT(
+                    result[jss::result][jss::meta] == expected_meta_blob);
+                BEAST_EXPECT(result[jss::result][jss::date] == 10);
+            }
+        }
+    }
+
 public:
     void
     run() override
     {
         using namespace test::jtx;
+        test::jtx::forAllApiVersions(
+            std::bind_front(&Transaction_test::testBinaryRequest, this));
+
         FeatureBitset const all{supported_amendments()};
         testWithFeats(all);
     }
@@ -763,7 +863,8 @@ public:
         testRangeCTIDRequest(features);
         testCTIDValidation(features);
         testCTIDRPC(features);
-        testRequest(features);
+        test::jtx::forAllApiVersions(
+            std::bind_front(&Transaction_test::testRequest, this, features));
     }
 };
 

@@ -55,6 +55,21 @@ class TransactionHistory_test : public beast::unit_test::suite
     }
 
     void
+    testCommandRetired()
+    {
+        testcase("Command retired from API v2");
+        using namespace test::jtx;
+        Env env{*this, envconfig(no_admin)};
+
+        Json::Value params{Json::objectValue};
+        params[jss::api_version] = 2;
+        auto const result =
+            env.client().invoke("tx_history", params)[jss::result];
+        BEAST_EXPECT(result[jss::error] == "unknownCmd");
+        BEAST_EXPECT(result[jss::status] == "error");
+    }
+
+    void
     testRequest()
     {
         testcase("Basic request");
@@ -148,6 +163,7 @@ public:
     {
         testBadInput();
         testRequest();
+        testCommandRetired();
     }
 };
 
