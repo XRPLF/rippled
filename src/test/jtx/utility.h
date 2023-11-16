@@ -67,7 +67,7 @@ Json::Value
 cmdToJSONRPC(
     std::vector<std::string> const& args,
     beast::Journal j,
-    unsigned int apiVersion = RPC::apiMaximumSupportedVersion);
+    unsigned int apiVersion);
 
 }  // namespace jtx
 }  // namespace test
