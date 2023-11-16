@@ -22,6 +22,7 @@
 
 #include <ripple/basics/chrono.h>
 #include <ripple/beast/clock/abstract_clock.h>
+
 #include <atomic>
 
 namespace ripple {
@@ -37,7 +38,7 @@ private:
     adjust(std::chrono::system_clock::time_point when)
     {
         return time_point(std::chrono::duration_cast<duration>(
-            when.time_since_epoch() - days(10957)));
+            when.time_since_epoch() - epoch_offset));
     }
 
 public:
