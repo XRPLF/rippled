@@ -1784,10 +1784,7 @@ Consensus<Adaptor>::updateOurPositions(bool const share)
         int participants = currPeerPositions_.size();
         if (mode_.get() == ConsensusMode::proposing)
         {
-            // Validators need to choose their close time differently if
-            // consensus is taking too long, described below.
-            if (!stuck)
-                ++closeTimeVotes[asCloseTime(result_->position.closeTime())];
+            ++closeTimeVotes[asCloseTime(result_->position.closeTime())];
             ++participants;
         }
 
@@ -1842,68 +1839,109 @@ Consensus<Adaptor>::updateOurPositions(bool const share)
         // The solution for validators is to first track whether it's
         // possible that the network is at an impasse based on how much
         // time this current consensus round has taken. This is reflected
-        // in the "stuck" boolean. Once possibly stuck, validators do
-        // not use the threshVote threshold to decide whether to change their
-        // vote. Instead, they add their own close time vote in with
-        // those of their peers only after they discover the most popular,
-        // and the greatest of those if there is a tie. This solution avoids
-        // an impasse while minimizing gratuitous close time changes.
+        // in the "stuck" boolean.
+        //
+        // The best close time is the close time with the highest number of
+        // votes. If multiple close times are tied, choose the latest one.
+        // Whether earlier or later does not matter. What matters is
+        // coming to agreement with the same criteria.
+        //
+        // For validators that are stuck and do not have the best close time,
+        // they change their close time position add their vote to the tally
+        // for that close time. This solution avoids an impasse while
+        // minimizing gratuitous close time changes. The other way
+        // for a validator to change its position is if it exceeds threshVote
+        // as described above.
         //
         // Determining whether there is close time consensus is very simple
         // in comparison: if votes for the best close time meet or exceed
         // threshConsensus, then we have close time consensus. Otherwise, not.
 
-        // First, find the best close time with which to agree.
-        int maxVote = 0;
-        NetClock::time_point bestCtime{};
-        for (auto const& [closeTime, voteCount] : closeTimeVotes)
+        // First, find the best close time with which to agree: first criteria
+        // is the close time with the most votes. If a tie, the latest
+        // close time of those tied for the maximum number of votes.
+        std::multimap<int, NetClock::time_point> votesByCloseTime;
+        std::stringstream ss;
+        ss << "Close time calculation for ledger sequence "
+           << static_cast<std::uint32_t>(previousLedger_.seq()) + 1
+           << " Close times and vote count are as follows: ";
+        bool first = true;
+        for (auto const& [closeTime, voteCount]: closeTimeVotes)
         {
-            if (maxVote <= voteCount)
-            {
+            if (first)
+                first = false;
+            else
+                ss << ',';
+            votesByCloseTime.insert({voteCount, closeTime});
+            ss << closeTime.time_since_epoch().count() << ':' << voteCount;
+        }
+        std::optional<int> maxVote;
+        std::set<NetClock::time_point> maxCloseTimes;
+        // Highest vote getter is last. Track each close time that is tied
+        // with the highest.
+        for (auto rit = votesByCloseTime.crbegin();
+            rit != votesByCloseTime.crend(); ++rit)
+        {
+            int const& voteCount = rit->first;
+            if (!maxVote.has_value())
                 maxVote = voteCount;
-                if (bestCtime < closeTime)
-                    bestCtime = closeTime;
+            else if (voteCount < *maxVote)
+                break;
+            maxCloseTimes.insert(rit->second);
+        }
+        // The best close time is the latest close time of those that have
+        // the maximum number of votes.
+        NetClock::time_point const bestCloseTime = *maxCloseTimes.crbegin();
+        ss << ". The best close time has the most votes. If there is a tie, "
+              "choose the latest. This is " << bestCloseTime.time_since_epoch().count() <<
+              "with " << *maxVote << " votes. ";
+
+        // If we are a validator potentially at an impasse and our own close
+        // time is not the best, change our close time to match it and
+        // tally another vote for it.
+        if (adaptor_.validating() && stuck &&
+            consensusCloseTime != bestCloseTime)
+        {
+            consensusCloseTime = bestCloseTime;
+            ++*maxVote;
+            ss << " We are a validator. Consensus has taken "
+               << result_->roundTime.read().count() << "ms. Previous round "
+                   "took " << prevRoundTime_.count() << "ms. Now changing our "
+                   "close time to " << bestCloseTime.time_since_epoch().count() << " that "
+                   "now has " << *maxVote << " votes.";
+        }
+        // If the close time with the most votes also meets or exceeds the
+        // threshold to change our position, then change our position.
+        // Then check if we have met or exceeded the threshold for close
+        // time consensus.
+        //
+        // The 2nd check has been nested within the first historically.
+        // It's possible that this can be optimized by doing the
+        // 2nd check independently--this may make consensus happen faster in
+        // some cases. Then again, the trade-offs have not been modelled.
+        if (*maxVote >= threshVote)
+        {
+            consensusCloseTime = bestCloseTime;
+            ss << "Close time " << bestCloseTime.time_since_epoch().count() << " has " <<
+                *maxVote << " votes, which is >= the threshold (" << threshVote
+                << " to make that our positions if it isn't already.";
+            if (*maxVote >= threshConsensus)
+            {
+                haveCloseTimeConsensus_ = true;
+                ss << " The maximum votes also >= the threshold (" << threshConsensus
+                    << ") for consensus.";
             }
         }
 
-        // If a validator and possibly at an impasse, switch to the best
-        // close time and record our vote for it. Otherwise, make sure to
-        // agree with the best close time only if the threshold is satisfied.
-        if (stuck && mode_.get() == ConsensusMode::proposing)
-        {
-            ++maxVote;
-            consensusCloseTime = bestCtime;
-            JLOG(j_.info()) << "possibly at impasse, setting close time to "
-                            << bestCtime.time_since_epoch().count();
-        }
-        else if (maxVote >= threshVote)
-        {
-            consensusCloseTime = bestCtime;
-        }
-
-        // We have consensus if the threshold is met.
-        if (maxVote >= threshConsensus)
-            haveCloseTimeConsensus_ = true;
-
-        JLOG(j_.debug()) << "CCTime: seq "
-                         << static_cast<std::uint32_t>(previousLedger_.seq()) +
-                1 << ": " << bestCtime.time_since_epoch().count()
-                         << " has " << maxVote << ", " << threshVote
-                         << "is required for adopting new close time, "
-                         << threshConsensus
-                         << "is required for close time consensus. "
-                         << " close time consensus is "
-                         << (haveCloseTimeConsensus_ ? "" : "not") << " met.";
-
         if (!haveCloseTimeConsensus_)
         {
-            JLOG(j_.debug())
-                << "No CT consensus:"
-                << " Proposers:" << currPeerPositions_.size()
-                << " Mode:" << to_string(mode_.get())
-                << " Thresh:" << threshConsensus
-                << " Pos:" << consensusCloseTime.time_since_epoch().count();
+            ss << " No CT consensus:"
+               << " Proposers:" << currPeerPositions_.size()
+               << " Mode:" << to_string(mode_.get())
+               << " Thresh:" << threshConsensus
+               << " Pos:" << consensusCloseTime.time_since_epoch().count();
         }
+        JLOG(j_.debug()) << ss.str();
     }
 
     if (!ourNewSet &&
