@@ -2182,7 +2182,7 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
             jvObj[jss::master_key] = toBase58(TokenType::NodePublic, masterKey);
 
         if (auto const seq = (*val)[~sfLedgerSequence])
-            jvObj[jss::ledger_index] = to_string(*seq);
+            jvObj[jss::ledger_index] = *seq;
 
         if (val->isFieldPresent(sfAmendments))
         {

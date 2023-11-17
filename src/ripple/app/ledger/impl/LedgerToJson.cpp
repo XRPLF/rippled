@@ -55,7 +55,7 @@ void
 fillJson(Object& json, bool closed, LedgerInfo const& info, bool bFull)
 {
     json[jss::parent_hash] = to_string(info.parentHash);
-    json[jss::ledger_index] = to_string(info.seq);
+    json[jss::ledger_index] = info.seq;
 
     if (closed)
     {
@@ -159,7 +159,7 @@ fillJsonTx(
         txJson[jss::validated] = validated;
         if (validated)
         {
-            txJson[jss::ledger_index] = to_string(fill.ledger.seq());
+            txJson[jss::ledger_index] = fill.ledger.seq();
             if (fill.closeTime)
                 txJson[jss::close_time_iso] = to_string_iso(*fill.closeTime);
         }
