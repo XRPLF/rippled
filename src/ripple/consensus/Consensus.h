@@ -1861,7 +1861,7 @@ Consensus<Adaptor>::updateOurPositions(bool const share)
            << static_cast<std::uint32_t>(previousLedger_.seq()) + 1
            << " Close times and vote count are as follows: ";
         bool first = true;
-        for (auto const& [closeTime, voteCount]: closeTimeVotes)
+        for (auto const& [closeTime, voteCount] : closeTimeVotes)
         {
             if (first)
                 first = false;
@@ -1870,14 +1870,18 @@ Consensus<Adaptor>::updateOurPositions(bool const share)
             votesByCloseTime.insert({voteCount, closeTime});
             ss << closeTime.time_since_epoch().count() << ':' << voteCount;
         }
+        // These always gets populated because currPeerPositions_ is not
+        // empty to end up here, so at least 1 close time has at least 1 vote.
+        assert(!currPeerPositions_.empty());
         std::optional<int> maxVote;
         std::set<NetClock::time_point> maxCloseTimes;
         // Highest vote getter is last. Track each close time that is tied
         // with the highest.
         for (auto rit = votesByCloseTime.crbegin();
-            rit != votesByCloseTime.crend(); ++rit)
+             rit != votesByCloseTime.crend();
+             ++rit)
         {
-            int const& voteCount = rit->first;
+            int const voteCount = rit->first;
             if (!maxVote.has_value())
                 maxVote = voteCount;
             else if (voteCount < *maxVote)
@@ -1888,8 +1892,9 @@ Consensus<Adaptor>::updateOurPositions(bool const share)
         // the maximum number of votes.
         NetClock::time_point const bestCloseTime = *maxCloseTimes.crbegin();
         ss << ". The best close time has the most votes. If there is a tie, "
-              "choose the latest. This is " << bestCloseTime.time_since_epoch().count() <<
-              "with " << *maxVote << " votes. ";
+              "choose the latest. This is "
+           << bestCloseTime.time_since_epoch().count() << "with " << *maxVote
+           << " votes. ";
 
         // If we are a validator potentially at an impasse and our own close
         // time is not the best, change our close time to match it and
@@ -1900,10 +1905,16 @@ Consensus<Adaptor>::updateOurPositions(bool const share)
             consensusCloseTime = bestCloseTime;
             ++*maxVote;
             ss << " We are a validator. Consensus has taken "
-               << result_->roundTime.read().count() << "ms. Previous round "
-                   "took " << prevRoundTime_.count() << "ms. Now changing our "
-                   "close time to " << bestCloseTime.time_since_epoch().count() << " that "
-                   "now has " << *maxVote << " votes.";
+               << result_->roundTime.read().count()
+               << "ms. Previous round "
+                  "took "
+               << prevRoundTime_.count()
+               << "ms. Now changing our "
+                  "close time to "
+               << bestCloseTime.time_since_epoch().count()
+               << " that "
+                  "now has "
+               << *maxVote << " votes.";
         }
         // If the close time with the most votes also meets or exceeds the
         // threshold to change our position, then change our position.
@@ -1917,14 +1928,15 @@ Consensus<Adaptor>::updateOurPositions(bool const share)
         if (*maxVote >= threshVote)
         {
             consensusCloseTime = bestCloseTime;
-            ss << "Close time " << bestCloseTime.time_since_epoch().count() << " has " <<
-                *maxVote << " votes, which is >= the threshold (" << threshVote
-                << " to make that our positions if it isn't already.";
+            ss << "Close time " << bestCloseTime.time_since_epoch().count()
+               << " has " << *maxVote << " votes, which is >= the threshold ("
+               << threshVote
+               << " to make that our position if it isn't already.";
             if (*maxVote >= threshConsensus)
             {
                 haveCloseTimeConsensus_ = true;
-                ss << " The maximum votes also >= the threshold (" << threshConsensus
-                    << ") for consensus.";
+                ss << " The maximum votes also >= the threshold ("
+                   << threshConsensus << ") for consensus.";
             }
         }
 
