@@ -37,6 +37,9 @@ NFTokenMint::preflight(PreflightContext const& ctx)
     if (!ctx.rules.enabled(featureNonFungibleTokensV1))
         return temDISABLED;
 
+    if (!ctx.rules.enabled(featureNFTokenMintOffer) && (ctx.tx[sfAmount] || ctx.tx[~sfDestination] || ctx.tx[~sfExpiration]))
+        return temDISABLED;
+
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
@@ -78,6 +81,29 @@ NFTokenMint::preflight(PreflightContext const& ctx)
     {
         if (uri->length() == 0 || uri->length() > maxTokenURILength)
             return temMALFORMED;
+    }
+
+    // Amount field should be set if Destination and/or Expiration is set
+    if (ctx.tx[~sfDestination] || ctx.tx[~sfExpiration])
+    {
+        if (!ctx.tx.isFieldPresent(sfAmount))
+            return temMALFORMED;
+    }
+
+    if(STAmount const amount = ctx.tx[sfAmount])
+    {
+        if (amount.negative() && ctx.rules.enabled(fixNFTokenNegOffer))
+            // An offer for a negative amount makes no sense.
+            return temBAD_AMOUNT;
+
+        if (!isXRP(amount))
+        {
+            if (ctx.tx.isFlag(tfOnlyXRP))
+                return temBAD_AMOUNT;
+
+            if (!amount)
+                return temBAD_AMOUNT;
+        }
     }
 
     return preflight2(ctx);
@@ -146,6 +172,52 @@ NFTokenMint::preclaim(PreclaimContext const& ctx)
             return tecNO_PERMISSION;
     }
 
+    if(STAmount const amount = ctx.tx[sfAmount]){
+      
+      if (hasExpired(ctx.view, ctx.tx[~sfExpiration]))
+          return tecEXPIRED;
+
+      if (!(ctx.tx.getFlags() & nft::flagCreateTrustLines) && !amount.native() &&
+          ctx.tx[~sfTransferFee])
+      {
+          auto const nftIssuer = ctx.tx[~sfIssuer].value_or(ctx.tx[sfAccount]);
+          if (!ctx.view.exists(keylet::account(nftIssuer)))
+              return tecNO_ISSUER;
+
+          if (!ctx.view.exists(keylet::line(nftIssuer, amount.issue())))
+              return tecNO_LINE;
+
+          if (isFrozen(
+                  ctx.view, nftIssuer, amount.getCurrency(), amount.getIssuer()))
+              return tecFROZEN;
+      }
+
+      if (isFrozen(
+              ctx.view,
+              ctx.tx[sfAccount],
+              amount.getCurrency(),
+              amount.getIssuer()))
+          return tecFROZEN;
+      
+      if (auto const destination = ctx.tx[~sfDestination])
+      {
+          // If a destination is specified, the destination must already be in
+          // the ledger.
+          auto const sleDst = ctx.view.read(keylet::account(*destination));
+
+          if (!sleDst)
+              return tecNO_DST;
+
+          // check if the destination has disallowed incoming offers
+          if (ctx.view.rules().enabled(featureDisallowIncoming))
+          {
+              // flag cannot be set unless amendment is enabled but
+              // out of an abundance of caution check anyway
+              if (sleDst->getFlags() & lsfDisallowIncomingNFTokenOffer)
+                  return tecNO_PERMISSION;
+          }
+      }
+    }
     return tesSUCCESS;
 }
 
@@ -237,19 +309,21 @@ NFTokenMint::doApply()
     if (nfTokenTemplate == nullptr)
         // Should never happen.
         return tecINTERNAL;
+    
+    auto const nftokenID = createNFTokenID(
+        static_cast<std::uint16_t>(ctx_.tx.getFlags() & 0x0000FFFF),
+        ctx_.tx[~sfTransferFee].value_or(0),
+        issuer,
+        nft::toTaxon(ctx_.tx[sfNFTokenTaxon]),
+        tokenSeq.value());
 
     STObject newToken(
         *nfTokenTemplate,
         sfNFToken,
-        [this, &issuer, &tokenSeq](STObject& object) {
+        [this, &nftokenID](STObject& object) {
             object.setFieldH256(
                 sfNFTokenID,
-                createNFTokenID(
-                    static_cast<std::uint16_t>(ctx_.tx.getFlags() & 0x0000FFFF),
-                    ctx_.tx[~sfTransferFee].value_or(0),
-                    issuer,
-                    nft::toTaxon(ctx_.tx[sfNFTokenTaxon]),
-                    tokenSeq.value()));
+                nftokenID);
 
             if (auto const uri = ctx_.tx[~sfURI])
                 object.setFieldVL(sfURI, *uri);
@@ -259,6 +333,57 @@ NFTokenMint::doApply()
             nft::insertToken(ctx_.view(), account_, std::move(newToken));
         ret != tesSUCCESS)
         return ret;
+    
+    if (ctx_.tx.isFieldPresent(sfAmount)) {
+      auto const offerID =
+          keylet::nftoffer(account_, ctx_.tx.getSeqProxy().value());
+
+      // Create the offer:
+      {
+          // Token offers are always added to the owner's owner directory:
+          auto const ownerNode = view().dirInsert(
+              keylet::ownerDir(account_), offerID, describeOwnerDir(account_));
+
+          if (!ownerNode)
+              return tecDIR_FULL;
+
+          bool const isSellOffer = true;
+
+          // Token offers are also added to the token's buy or sell offer
+          // directory
+          auto const offerNode = view().dirInsert(
+              keylet::nft_sells(nftokenID),
+              offerID,
+              [&nftokenID](std::shared_ptr<SLE> const& sle) {
+                  (*sle)[sfFlags] =lsfNFTokenSellOffers;
+                  (*sle)[sfNFTokenID] = nftokenID;
+              });
+
+          if (!offerNode)
+              return tecDIR_FULL;
+
+          std::uint32_t sleFlags = 0;
+
+          if (isSellOffer)
+              sleFlags |= lsfSellNFToken;
+
+          auto offer = std::make_shared<SLE>(offerID);
+          (*offer)[sfOwner] = account_;
+          (*offer)[sfNFTokenID] = nftokenID;
+          (*offer)[sfAmount] = ctx_.tx[sfAmount];
+          (*offer)[sfFlags] = sleFlags;
+          (*offer)[sfOwnerNode] = *ownerNode;
+          (*offer)[sfNFTokenOfferNode] = *offerNode;
+
+          if (auto const expiration = ctx_.tx[~sfExpiration])
+              (*offer)[sfExpiration] = *expiration;
+
+          if (auto const destination = ctx_.tx[~sfDestination])
+              (*offer)[sfDestination] = *destination;
+
+          view().insert(offer);
+      }
+    }
 
     // Only check the reserve if the owner count actually changed.  This
     // allows NFTs to be added to the page (and burn fees) without

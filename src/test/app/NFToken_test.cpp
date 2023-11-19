@@ -6567,6 +6567,68 @@ class NFToken0_test : public beast::unit_test::suite
     }
 
     void
+    testFeatNFTokenMintAndOffer(FeatureBitset features)
+    {
+
+        testcase("NFTokenMint and Create NFTokenOffer");
+
+        using namespace test::jtx;
+        
+        if (!features[featureNFTokenMintOffer]) 
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const becky("becky");
+            
+            env.fund(XRP(10000), alice, becky);
+            env.close();
+            
+            env(token::mint(alice), token::amount(XRP(10000)), ter(temDISABLED));
+            env.close();
+        }
+
+        if(features[featureNFTokenMintOffer])
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const becky("becky");
+            
+            env.fund(XRP(10000), alice, becky);
+            env.close();
+            
+            // Destination field specified but Amount field not specified
+            env(token::mint(alice), token::destination(becky), ter(temMALFORMED));
+            env.close();
+
+            // Expiration field specified but Amount field not specified
+            env(token::mint(alice), token::expiration(lastClose(env) + 25), ter(temMALFORMED));
+            env.close();
+            
+            // Amount field specified
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            env(token::mint(alice), token::amount(XRP(10)));
+            BEAST_EXPECT(ownerCount(env, alice) == 2);
+            env.close();
+            
+            // Amount field and Destination field, Expiration field specified
+            env(token::mint(alice), token::amount(XRP(10)), token::destination(becky), token::expiration(lastClose(env) + 25));
+            env.close();
+            
+            env(token::mint(alice), token::amount(XRP(10)), token::destination(becky), token::expiration(lastClose(env) + 25));
+            uint256 const offerAliceSellsToBecky =
+                keylet::nftoffer(alice, env.seq(alice)).key;
+            env(token::cancelOffer(alice, {offerAliceSellsToBecky}));
+            env.close();
+
+            env(token::mint(becky), token::amount(XRP(10)), token::destination(alice), token::expiration(lastClose(env) + 25));
+            uint256 const offerBeckySellsToAlice =
+                keylet::nftoffer(becky, env.seq(becky)).key;
+            env(token::cancelOffer(alice, {offerBeckySellsToAlice}));
+            env.close();
+        }
+    }
+
+    void
     testTxJsonMetaFields(FeatureBitset features)
     {
         // `nftoken_id` is added in the `tx` response for NFTokenMint and
@@ -6831,6 +6893,7 @@ class NFToken0_test : public beast::unit_test::suite
         testBrokeredSaleToSelf(features);
         testFixNFTokenRemint(features);
         testTxJsonMetaFields(features);
+        testFeatNFTokenMintAndOffer(features);
     }
 
 public:
@@ -6842,11 +6905,12 @@ public:
         static FeatureBitset const fixNFTDir{fixNFTokenDirV1};
 
         static std::array<FeatureBitset, 5> const feats{
-            all - fixNFTDir - fixNonFungibleTokensV1_2 - fixNFTokenRemint,
+            all - fixNFTDir - fixNonFungibleTokensV1_2 - fixNFTokenRemint - featureNFTokenMintOffer,
             all - disallowIncoming - fixNonFungibleTokensV1_2 -
-                fixNFTokenRemint,
-            all - fixNonFungibleTokensV1_2 - fixNFTokenRemint,
-            all - fixNFTokenRemint,
+                fixNFTokenRemint - featureNFTokenMintOffer,
+            all - fixNonFungibleTokensV1_2 - fixNFTokenRemint - featureNFTokenMintOffer,
+            all - fixNFTokenRemint - featureNFTokenMintOffer,
+            all - featureNFTokenMintOffer,
             all};
 
         if (BEAST_EXPECT(instance < feats.size()))
