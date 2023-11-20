@@ -61,7 +61,7 @@ fillJson(
     unsigned apiVersion)
 {
     json[jss::parent_hash] = to_string(info.parentHash);
-    json[jss::ledger_index] = (apiVersion > 1)
+    json[jss::ledger_index] = (apiVersion > 2)
         ? Json::Value(info.seq)
         : Json::Value(std::to_string(info.seq));
 
@@ -168,7 +168,7 @@ fillJsonTx(
         if (validated)
         {
             auto const seq = fill.ledger.seq();
-            txJson[jss::ledger_index] = (fill.context->apiVersion > 1)
+            txJson[jss::ledger_index] = (fill.context->apiVersion > 2)
                 ? Json::Value(seq)
                 : Json::Value(std::to_string(seq));
             if (fill.closeTime)
