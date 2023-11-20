@@ -171,7 +171,8 @@ Transaction::getJson(JsonOptions options, bool binary) const
     Json::Value ret(
         mTransaction->getJson(options & ~JsonOptions::include_date, binary));
 
-    if (mLedgerIndex)
+    // NOTE Binary STTx::getJson output might not be a JSON object
+    if (ret.isObject() && mLedgerIndex)
     {
         if (!(options & JsonOptions::disable_API_prior_V2))
         {

@@ -24,6 +24,8 @@
 #include <test/jtx/utility.h>
 
 #include <boost/algorithm/string.hpp>
+
+#include <functional>
 #include <initializer_list>
 #include <vector>
 
@@ -42,7 +44,7 @@ struct RPCCallTestData
     Exception const throwsWhat;
 
     // Expected JSON response.
-    char const* const exp;
+    std::vector<char const*> exp;
 
     RPCCallTestData(
         char const* description_,
@@ -50,6 +52,20 @@ struct RPCCallTestData
         std::initializer_list<char const*> const& args_,
         Exception throwsWhat_,
         char const* exp_)
+        : description(description_)
+        , line(line_)
+        , args(args_)
+        , throwsWhat(throwsWhat_)
+        , exp(1, exp_)
+    {
+    }
+
+    RPCCallTestData(
+        char const* description_,
+        int line_,
+        std::initializer_list<char const*> const& args_,
+        Exception throwsWhat_,
+        std::initializer_list<char const*> exp_)
         : description(description_)
         , line(line_)
         , args(args_)
@@ -78,7 +94,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_channels",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"
       }
     ]
@@ -93,7 +109,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_channels",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "destination_account" : "rD5MbavGfiSC5m7mkxy1FANuT7s3HxqpoF"
       }
@@ -109,7 +125,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_channels",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "destination_account" : "r9emE59aTWb85t64dAebKrxYMBTpzK5yR7"
       }
@@ -125,7 +141,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_channels",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "destination_account" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA"
       }
@@ -142,7 +158,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_channels",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "destination_account" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
          "ledger_hash" : "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF"
@@ -160,7 +176,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_channels",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "destination_account" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
          "ledger_index" : 90210
@@ -229,7 +245,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_currencies",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"
       }
     ]
@@ -242,7 +258,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_currencies",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "racb4o3DrdYxuCfyVa6vsLb7vgju9RFbBr"
       }
     ]
@@ -255,7 +271,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_currencies",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "ledger_index" : 42
       }
@@ -269,7 +285,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_currencies",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "ledger_index" : "validated"
       }
@@ -284,7 +300,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "params" : [
       {
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "ledger_index" : "current"
       }
     ]
@@ -331,7 +347,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_currencies",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "ledger_index" : 0
       }
@@ -367,7 +383,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_info",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"
       }
     ]
@@ -380,7 +396,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_info",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "ledger_index" : 77777
       }
@@ -394,7 +410,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_info",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "ledger_index" : "closed"
       }
@@ -410,7 +426,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_info",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "ledger_hash" : "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF"
       }
@@ -425,7 +441,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "params" : [
       {
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "ledger_index" : "validated"
       }
     ]
@@ -494,7 +510,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_lines",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
       }
     ]
@@ -509,7 +525,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_lines",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "peer" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA"
       }
@@ -526,7 +542,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_lines",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "ledger_index" : 888888888,
          "peer" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA"
@@ -544,7 +560,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_lines",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "ledger_index" : "closed",
          "peer" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA"
@@ -562,7 +578,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_lines",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "ledger_hash" : "FFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000",
          "peer" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA"
@@ -598,7 +614,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_lines",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "ledger_index" : 12345678,
          "peer" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA"
@@ -619,7 +635,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_lines",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "ledger_index" : 12345678,
          "peer" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA"
@@ -678,7 +694,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_lines",
     "params" : [
        {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"
        }
     ]
@@ -696,7 +712,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_lines",
     "params" : [
        {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "ledger_index" : 0,
          "peer" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA"
@@ -715,7 +731,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_objects",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"
       }
     ]
@@ -728,7 +744,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_objects",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "ledger_index" : 77777
       }
@@ -742,7 +758,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_objects",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "ledger_index" : "closed"
       }
@@ -758,7 +774,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_objects",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "ledger_hash" : "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF"
       }
@@ -772,7 +788,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_objects",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "ledger_index" : "validated"
       }
@@ -809,7 +825,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_objects",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"
       }
     ]
@@ -830,7 +846,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_objects",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"
       }
     ]
@@ -887,7 +903,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_objects",
     "params" : [
        {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "ledger_index" : 0
        }
@@ -905,7 +921,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_objects",
     "params" : [
        {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "ledger_index" : 0
        }
@@ -923,7 +939,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_offers",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"
       }
     ]
@@ -936,7 +952,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_offers",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "ledger_index" : 987654321
       }
@@ -950,7 +966,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_offers",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "ledger_index" : "validated"
       }
@@ -966,7 +982,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_offers",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "ledger_hash" : "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF"
       }
@@ -980,7 +996,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_offers",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "ledger_index" : "validated"
       }
@@ -1014,7 +1030,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_offers",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"
       }
     ]
@@ -1070,7 +1086,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_offers",
     "params" : [
        {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "ledger_index" : 0
        }
@@ -1088,7 +1104,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_offers",
     "params" : [
        {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "ledger_index" : 0
        }
@@ -1106,7 +1122,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_tx",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
       }
     ]
@@ -1119,7 +1135,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_tx",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "ledger_index" : 444
       }
@@ -1138,7 +1154,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_tx",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "count" : true,
          "binary" : true,
@@ -1155,7 +1171,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_tx",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "ledger_index_max" : -1,
          "ledger_index_min" : -1
@@ -1176,7 +1192,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_tx",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "binary" : true,
          "count" : true,
@@ -1194,7 +1210,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_tx",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "ledger_index_max" : -1,
          "ledger_index_min" : 247,
@@ -1217,7 +1233,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_tx",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "binary" : true,
          "count" : true,
@@ -1241,7 +1257,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_tx",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "ledger_index_max" : 590,
          "ledger_index_min" : 589,
@@ -1265,7 +1281,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_tx",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "count" : true,
          "descending" : true,
@@ -1341,7 +1357,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_tx",
     "params" : [
        {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "ledger_index" : 0
        }
@@ -1353,8 +1369,8 @@ static RPCCallTestData const rpcCallTestArray[] = {
         __LINE__,
         {"account_tx", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "580", "579"},
         RPCCallTestData::no_exception,
-        RPC::apiMaximumSupportedVersion == 1 ?
-                                             R"({
+        {
+            R"({
     "method" : "account_tx",
     "params" : [
        {
@@ -1363,9 +1379,8 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Ledger indexes invalid."
        }
     ]
-    })"
-                                             :
-                                             R"({
+    })",
+            R"({
     "method" : "account_tx",
     "params" : [
        {
@@ -1374,7 +1389,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "error_message" : "Not synced to the network."
        }
     ]
-    })",
+    })"},
     },
     {
         // Note: this really shouldn't throw, but does at the moment.
@@ -1445,7 +1460,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "book_offers",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "taker_gets" : {
             "currency" : "EUR"
          },
@@ -1467,7 +1482,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "book_offers",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "taker_gets" : {
             "currency" : "EUR",
             "issuer" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA"
@@ -1489,7 +1504,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "book_offers",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "issuer" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
          "taker_gets" : {
             "currency" : "EUR"
@@ -1512,7 +1527,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "book_offers",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "issuer" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
          "ledger_index" : 666,
          "taker_gets" : {
@@ -1537,7 +1552,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "book_offers",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "issuer" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
          "ledger_index" : "current",
          "taker_gets" : {
@@ -1562,7 +1577,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "book_offers",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "issuer" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
          "ledger_hash" : "ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789",
          "taker_gets" : {
@@ -1593,7 +1608,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "book_offers",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "issuer" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
          "ledger_hash" : "ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789",
          "limit" : 200,
@@ -1625,7 +1640,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "book_offers",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "issuer" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
          "ledger_hash" : "ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789",
          "limit" : 200,
@@ -1725,7 +1740,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "book_offers",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "issuer" : "not_a_valid_issuer",
          "taker_gets" : {
             "currency" : "EUR"
@@ -1748,7 +1763,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "book_offers",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "issuer" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
          "ledger_index" : 0,
          "taker_gets" : {
@@ -1789,7 +1804,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "can_delete",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
       }
     ]
     })"},
@@ -1804,7 +1819,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "can_delete",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "can_delete" : 4294967295
       }
     ]
@@ -1820,7 +1835,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "can_delete",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "can_delete" : "FEDCBA9876543210FEDCBA9876543210FEDCBA9876543210FEDCBA9876543210"
       }
     ]
@@ -1836,7 +1851,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "can_delete",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "can_delete" : "always"
       }
     ]
@@ -1852,7 +1867,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "can_delete",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "can_delete" : "never"
       }
     ]
@@ -1868,7 +1883,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "can_delete",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "can_delete" : "now"
       }
     ]
@@ -1895,7 +1910,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "can_delete",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "can_delete" : "invalid"
       }
     ]
@@ -1932,7 +1947,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "channel_authorize",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "amount" : "18446744073709551615",
          "channel_id" : "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
          "secret" : "secret_can_be_anything"
@@ -2094,7 +2109,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "channel_verify",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "amount" : "0",
          "channel_id" : "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
          "public_key" : "aB4BXXLuPu8DpVuyq1DBiu3SrPdtK9AYZisKhu8mvkoiUD8J9Gov",
@@ -2114,7 +2129,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "channel_verify",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "amount" : "18446744073709551615",
          "channel_id" : "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
          "public_key" : "021D93E21C44160A1B3B66DA1F37B86BE39FFEA3FC4B95FAA2063F82EE823599F6",
@@ -2277,7 +2292,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "channel_verify",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "amount" : "40000000",
          "channel_id" : "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
          "public_key" : "aB4BXXLuPu8DpVuyq1DBiu3SrPdtK9AYZisKhu8mvkoiUD8J9Gov",
@@ -2299,7 +2314,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "connect",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "ip" : "ThereIsNoCheckingOnTheIPFormat"
       }
     ]
@@ -2312,7 +2327,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "connect",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "ip" : "ThereIsNoCheckingOnTheIPFormat",
          "port" : 6561
       }
@@ -2381,7 +2396,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "consensus_info",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%
+         "api_version" : %API_VER%
       }
     ]
     })"},
@@ -2414,7 +2429,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "deposit_authorized",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "destination_account" : "destination_account_NotValidated",
          "source_account" : "source_account_NotValidated"
       }
@@ -2431,7 +2446,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "deposit_authorized",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "destination_account" : "destination_account_NotValidated",
          "ledger_index" : "validated",
          "source_account" : "source_account_NotValidated"
@@ -2449,7 +2464,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "deposit_authorized",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "destination_account" : "destination_account_NotValidated",
          "ledger_index" : 4294967295,
          "source_account" : "source_account_NotValidated"
@@ -2467,7 +2482,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "deposit_authorized",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "destination_account" : "destination_account_NotValidated",
          "ledger_hash" : "ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789",
          "source_account" : "source_account_NotValidated"
@@ -2522,7 +2537,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "deposit_authorized",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "destination_account" : "destination_account_NotValidated",
          "ledger_index" : 0,
          "source_account" : "source_account_NotValidated"
@@ -2544,7 +2559,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "download_shard",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "shards" : [
             {
                "index" : 20,
@@ -2566,7 +2581,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "download_shard",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "shards" : [
             {
                "index" : 20,
@@ -2594,7 +2609,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "download_shard",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "shards" : [
             {
                "index" : 200000000,
@@ -2636,7 +2651,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "download_shard",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "shards" : [
             {
                "index" : 2000000,
@@ -2695,7 +2710,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "download_shard",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "shards" : [
             {
                "index" : 20,
@@ -2767,7 +2782,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "feature",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
       }
     ]
     })"},
@@ -2779,7 +2794,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "feature",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "feature" : "featureNameOrHexIsNotValidated"
       }
     ]
@@ -2795,7 +2810,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "feature",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "feature" : "FEDCBA9876543210FEDCBA9876543210FEDCBA9876543210FEDCBA9876543210FEDCBA9876543210",
          "vetoed" : false
       }
@@ -2809,7 +2824,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "feature",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "feature" : "0",
          "vetoed" : true
       }
@@ -2860,7 +2875,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "fetch_info",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
       }
     ]
     })"},
@@ -2872,7 +2887,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "fetch_info",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "clear" : true
       }
     ]
@@ -2899,7 +2914,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "fetch_info",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "too" : true
       }
     ]
@@ -2915,7 +2930,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "gateway_balances",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
       }
     ]
@@ -2928,7 +2943,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "gateway_balances",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "ledger_index" : "890765"
       }
@@ -2942,7 +2957,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "gateway_balances",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "ledger_index" : "current"
       }
@@ -2958,7 +2973,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "gateway_balances",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "ledger_hash" : "0123456789ABCDEFGHIJKLMNOPQRSTUV0123456789ABCDEFGHIJKLMNOPQRSTUV"
       }
@@ -2974,7 +2989,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "gateway_balances",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "hotwallet" : [ "hotwallet_is_not_validated" ]
       }
@@ -2995,7 +3010,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "gateway_balances",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "hotwallet" : [
             "hotwallet_is_not_validated_1",
@@ -3100,7 +3115,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "get_counts",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
       }
     ]
     })"},
@@ -3112,7 +3127,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "get_counts",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "min_count" : 100
       }
     ]
@@ -3159,7 +3174,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "command",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "json_argument" : true,
          "method" : "command"
       }
@@ -3177,7 +3192,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "command",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "method" : "command"
       }
     ]
@@ -3262,7 +3277,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "call_1",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "id" : "A1",
          "jsonrpc" : "2.0",
          "method" : "call_1",
@@ -3290,7 +3305,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "call_1",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "0" : {
             "inner_arg" : "yup"
          },
@@ -3314,7 +3329,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "params" : [
       [
          {
-            "api_version" : %MAX_API_VER%,
+            "api_version" : %API_VER%,
             "id" : "A1",
             "jsonrpc" : "2.0",
             "method" : "call_1",
@@ -3341,7 +3356,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
    "params" : [
       [
          {
-            "api_version" : %MAX_API_VER%,
+            "api_version" : %API_VER%,
             "0" : {
                "inner_arg" : "yup"
             },
@@ -3636,7 +3651,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "ledger",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
       }
     ]
     })"},
@@ -3648,7 +3663,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "ledger",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "ledger_index" : 4294967295
       }
     ]
@@ -3661,7 +3676,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "ledger",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "ledger_index" : "validated"
       }
     ]
@@ -3675,7 +3690,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "ledger",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "ledger_hash" : "ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789"
       }
     ]
@@ -3688,7 +3703,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "ledger",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "full" : true,
          "ledger_index" : "current"
       }
@@ -3702,7 +3717,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "ledger",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "expand" : true,
          "ledger_index" : "closed",
          "transactions" : true
@@ -3717,7 +3732,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "ledger",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "ledger_index" : 4294967295
       }
     ]
@@ -3730,7 +3745,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "ledger",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "ledger_index" : 0
       }
     ]
@@ -3743,7 +3758,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "ledger",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "ledger_index" : 0
       }
     ]
@@ -3756,7 +3771,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "ledger",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "ledger_index" : 0
       }
     ]
@@ -3769,7 +3784,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "ledger",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "ledger_index" : "current"
       }
     ]
@@ -3785,7 +3800,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "ledger_closed",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
       }
     ]
     })"},
@@ -3814,7 +3829,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "ledger_current",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
       }
     ]
     })"},
@@ -3843,7 +3858,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "ledger_header",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "ledger_index" : 4294967295
       }
     ]
@@ -3857,7 +3872,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "ledger_header",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "ledger_hash" : "ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789"
       }
     ]
@@ -3900,7 +3915,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "ledger_header",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "ledger_index" : 0
       }
     ]
@@ -3913,7 +3928,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "ledger_header",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "ledger_index" : 0
       }
     ]
@@ -3926,7 +3941,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "ledger_header",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "ledger_index" : 0
       }
     ]
@@ -3942,7 +3957,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "ledger_request",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "ledger_index" : 4294967295
       }
     ]
@@ -3956,7 +3971,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "ledger_request",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "ledger_hash" : "ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789"
       }
     ]
@@ -3999,7 +4014,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "ledger_request",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "ledger_index" : 0
       }
     ]
@@ -4012,7 +4027,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "ledger_request",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "ledger_index" : 0
       }
     ]
@@ -4025,7 +4040,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "ledger_request",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "ledger_index" : 0
       }
     ]
@@ -4043,7 +4058,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "log_level",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
       }
     ]
     })"},
@@ -4055,7 +4070,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "log_level",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "severity" : "fatal"
       }
     ]
@@ -4068,7 +4083,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "log_level",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "severity" : "error"
       }
     ]
@@ -4081,7 +4096,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "log_level",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "severity" : "warn"
       }
     ]
@@ -4094,7 +4109,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "log_level",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "severity" : "debug"
       }
     ]
@@ -4107,7 +4122,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "log_level",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "severity" : "trace"
       }
     ]
@@ -4120,7 +4135,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "log_level",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "partition" : "base",
          "severity" : "trace"
       }
@@ -4134,7 +4149,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "log_level",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "partition" : "partition_name",
          "severity" : "fatal"
       }
@@ -4162,7 +4177,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "log_level",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "severity" : "err"
       }
     ]
@@ -4179,7 +4194,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "log_level",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "partition" : "fatal",
          "severity" : "partition_name"
       }
@@ -4198,7 +4213,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "logrotate",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
       }
     ]
     })"},
@@ -4227,7 +4242,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "node_to_shard",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "action" : "status"
       }
     ]
@@ -4240,7 +4255,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "node_to_shard",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "action" : "start"
       }
     ]
@@ -4253,7 +4268,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "node_to_shard",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "action" : "stop"
       }
     ]
@@ -4280,7 +4295,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "node_to_shard",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "action" : "invalid"
       }
     ]
@@ -4296,7 +4311,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "owner_info",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"
       }
     ]
@@ -4309,7 +4324,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "owner_info",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "ledger_index" : 987654321
       }
@@ -4323,7 +4338,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "owner_info",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "ledger_index" : "validated"
       }
@@ -4339,7 +4354,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "owner_info",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "ledger_hash" : "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF"
       }
@@ -4354,7 +4369,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "params" : [
       {
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "ledger_index" : "validated"
       }
     ]
@@ -4425,7 +4440,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "owner_info",
     "params" : [
        {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "ledger_index" : 0
        }
@@ -4444,7 +4459,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "params" : [
        {
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "ledger_index" : 0
        }
     ]
@@ -4463,7 +4478,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "peers",
     "params" : [
        {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
        }
     ]
     })"},
@@ -4492,7 +4507,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "peer_reservations_add",
     "params" : [
        {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "public_key" : "public_key_string"
        }
     ]
@@ -4505,7 +4520,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "peer_reservations_add",
     "params" : [
        {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "description" : "public_key_description",
          "public_key" : "public_key_string"
        }
@@ -4553,7 +4568,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "peer_reservations_del",
     "params" : [
        {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "public_key" : "public_key_string"
        }
     ]
@@ -4602,7 +4617,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "ping",
     "params" : [
        {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
        }
     ]
     })"},
@@ -4633,7 +4648,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "print",
     "params" : [
        {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
        }
     ]
     })"},
@@ -4646,7 +4661,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "print",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "params" : [ "extra" ]
       }
     ]
@@ -4678,7 +4693,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "random",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
       }
     ]
     })"},
@@ -4710,7 +4725,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "ripple_path_find",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "json_argument" : true
       }
     ]
@@ -4723,7 +4738,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "ripple_path_find",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "json_argument" : true,
          "ledger_index" : 4294967295
       }
@@ -4737,7 +4752,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "ripple_path_find",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "json_argument" : true,
          "ledger_index" : "closed"
       }
@@ -4753,7 +4768,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "ripple_path_find",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "json_argument" : true,
          "ledger_hash" : "0123456789ABCDEFGHIJKLMNOPQRSTUV0123456789ABCDEFGHIJKLMNOPQRSTUV"
       }
@@ -4815,7 +4830,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "ripple_path_find",
     "params" : [
       {
-        "api_version" : %MAX_API_VER%,
+        "api_version" : %API_VER%,
         "json_argument" : true,
          "ledger_index" : 0
       }
@@ -4829,7 +4844,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "ripple_path_find",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "json_argument" : true,
          "ledger_index" : 0
       }
@@ -4843,7 +4858,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "ripple_path_find",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "json_argument" : true,
          "ledger_index" : 0
       }
@@ -4864,7 +4879,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "sign",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "secret" : "my_secret",
          "tx_json" : {
             "json_argument" : true
@@ -4880,7 +4895,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "sign",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "offline" : true,
          "secret" : "my_secret",
          "tx_json" : {
@@ -4965,7 +4980,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "sign_for",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "secret" : "my_secret",
          "tx_json" : {
@@ -4986,7 +5001,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "sign_for",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "offline" : true,
          "secret" : "my_secret",
@@ -5081,7 +5096,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "submit",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "tx_blob" : "the blob is unvalidated and may be any length..."
       }
     ]
@@ -5098,7 +5113,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "submit",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "secret" : "my_secret",
          "tx_json" : {
             "json_argument" : true
@@ -5131,7 +5146,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "submit",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "offline" : true,
          "secret" : "my_secret",
          "tx_json" : {
@@ -5200,7 +5215,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "submit_multisigned",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "tx_json" : {
             "json_argument" : true
          }
@@ -5268,7 +5283,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "server_info",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
       }
     ]
     })"},
@@ -5280,7 +5295,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "server_info",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "counters" : true
       }
     ]
@@ -5307,7 +5322,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "server_info",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
       }
     ]
     })"},
@@ -5324,7 +5339,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "server_state",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
       }
     ]
     })"},
@@ -5336,7 +5351,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "server_state",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "counters" : true
       }
     ]
@@ -5363,7 +5378,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "server_state",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
       }
     ]
     })"},
@@ -5380,7 +5395,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "stop",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
       }
     ]
     })"},
@@ -5411,7 +5426,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "transaction_entry",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "ledger_index" : 4294967295,
          "tx_hash" : "0123456789ABCDEFGHIJKLMNOPQRSTUV0123456789ABCDEFGHIJKLMNOPQRSTUV"
       }
@@ -5427,7 +5442,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "transaction_entry",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "ledger_index" : "current",
          "tx_hash" : "0123456789ABCDEFGHIJKLMNOPQRSTUV0123456789ABCDEFGHIJKLMNOPQRSTUV"
       }
@@ -5443,7 +5458,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "transaction_entry",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "ledger_hash" : "VUTSRQPONMLKJIHGFEDCBA9876543210VUTSRQPONMLKJIHGFEDCBA9876543210",
          "tx_hash" : "0123456789ABCDEFGHIJKLMNOPQRSTUV0123456789ABCDEFGHIJKLMNOPQRSTUV"
       }
@@ -5602,7 +5617,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "tx",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
 			"ctid" : "FFFFFFFFFFFFFFFF",
 			"max_ledger" : "2",
 			"min_ledger" : "1"
@@ -5617,7 +5632,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "tx",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "binary" : true,
 			"ctid" : "FFFFFFFFFFFFFFFF",
 			"max_ledger" : "2",
@@ -5633,7 +5648,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "tx",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "transaction" : "transaction_hash_is_not_validated"
       }
     ]
@@ -5646,7 +5661,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "tx",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "binary" : true,
          "transaction" : "transaction_hash_is_not_validated"
       }
@@ -5690,312 +5705,11 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "tx",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "transaction" : "transaction_hash_is_not_validated"
       }
     ]
     })"},
-
-    // tx_account
-    // ------------------------------------------------------------------
-    {"tx_account: minimal.",
-     __LINE__,
-     {"tx_account", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"},
-     RPCCallTestData::no_exception,
-     R"({
-    "method" : "tx_account",
-    "params" : [
-      {
-         "api_version" : %MAX_API_VER%,
-         "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-      }
-    ]
-    })"},
-    {"tx_account: ledger_index .",
-     __LINE__,
-     {"tx_account", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "4294967295"},
-     RPCCallTestData::no_exception,
-     R"({
-    "method" : "tx_account",
-    "params" : [
-      {
-         "api_version" : %MAX_API_VER%,
-         "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-         "ledger_index" : 4294967295
-      }
-    ]
-    })"},
-    {"tx_account: ledger_index plus trailing params.",
-     __LINE__,
-     {"tx_account",
-      "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-      "707",
-      "forward",
-      "binary",
-      "count"},
-     RPCCallTestData::no_exception,
-     R"({
-    "method" : "tx_account",
-    "params" : [
-      {
-         "api_version" : %MAX_API_VER%,
-         "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-         "binary" : true,
-         "count" : true,
-         "forward" : true,
-         "ledger_index" : 707
-      }
-    ]
-    })"},
-    {"tx_account: ledger_index_min and _max.",
-     __LINE__,
-     {"tx_account",
-      "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-      "2147483647",
-      "2147483647"},
-     RPCCallTestData::no_exception,
-     R"({
-    "method" : "tx_account",
-    "params" : [
-      {
-         "api_version" : %MAX_API_VER%,
-         "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-         "ledger_index_max" : 2147483647,
-         "ledger_index_min" : 2147483647
-      }
-    ]
-    })"},
-    {"tx_account: ledger_index_min and _max plus trailing params.",
-     __LINE__,
-     {"tx_account",
-      "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-      "33333",
-      "2147483647",
-      "binary",
-      "count",
-      "forward"},
-     RPCCallTestData::no_exception,
-     R"({
-    "method" : "tx_account",
-    "params" : [
-      {
-         "api_version" : %MAX_API_VER%,
-         "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-         "binary" : true,
-         "count" : true,
-         "forward" : true,
-         "ledger_index_max" : 2147483647,
-         "ledger_index_min" : 33333
-      }
-    ]
-    })"},
-    {"tx_account: ledger_index_min and _max plus limit.",
-     __LINE__,
-     {"tx_account",
-      "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-      "-1",
-      "2147483647",
-      "2147483647"},
-     RPCCallTestData::no_exception,
-     R"({
-    "method" : "tx_account",
-    "params" : [
-      {
-         "api_version" : %MAX_API_VER%,
-         "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-         "ledger_index_max" : 2147483647,
-         "ledger_index_min" : -1,
-         "limit" : 2147483647
-      }
-    ]
-    })"},
-    {"tx_account: ledger_index_min and _max, limit, trailing args.",
-     __LINE__,
-     {"tx_account",
-      "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-      "1",
-      "1",
-      "-1",
-      "count",
-      "forward",
-      "binary"},
-     RPCCallTestData::no_exception,
-     R"({
-    "method" : "tx_account",
-    "params" : [
-      {
-         "api_version" : %MAX_API_VER%,
-         "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-         "binary" : true,
-         "count" : true,
-         "forward" : true,
-         "ledger_index_max" : 1,
-         "ledger_index_min" : 1,
-         "limit" : -1
-      }
-    ]
-    })"},
-    {"tx_account: too few arguments.",
-     __LINE__,
-     {
-         "tx_account",
-     },
-     RPCCallTestData::no_exception,
-     R"({
-    "method" : "tx_account",
-    "params" : [
-      {
-         "error" : "badSyntax",
-         "error_code" : 1,
-         "error_message" : "Syntax error."
-      }
-    ]
-    })"},
-    {"tx_account: too many arguments.",
-     __LINE__,
-     {"tx_account",
-      "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-      "589",
-      "590",
-      "67",
-      "extra",
-      "descending",
-      "count",
-      "binary"},
-     RPCCallTestData::no_exception,
-     R"({
-    "method" : "tx_account",
-    "params" : [
-      {
-         "error" : "badSyntax",
-         "error_code" : 1,
-         "error_message" : "Syntax error."
-      }
-    ]
-    })"},
-    {
-        "tx_account: invalid accountID.",
-        __LINE__,
-        {"tx_account", "rHb9CJAWyB4rj9!VRWn96DkukG4bwdtyTh"},
-        RPCCallTestData::no_exception,
-        R"({
-    "method" : "tx_account",
-    "params" : [
-       {
-          "error" : "actMalformed",
-          "error_code" : 35,
-          "error_message" : "Account malformed."
-       }
-    ]
-    })",
-    },
-    {
-        // Note: not currently detected as bad input.
-        "tx_account: invalid ledger.",
-        __LINE__,
-        {"tx_account", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "-478.7"},
-        RPCCallTestData::no_exception,
-        R"({
-    "method" : "tx_account",
-    "params" : [
-       {
-         "api_version" : %MAX_API_VER%,
-         "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-         "ledger_index" : 0
-       }
-    ]
-    })",
-    },
-    {
-        "tx_account: max less than min.",
-        __LINE__,
-        {"tx_account", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "580", "579"},
-        RPCCallTestData::no_exception,
-        RPC::apiMaximumSupportedVersion == 1 ?
-                                             R"({
-    "method" : "tx_account",
-    "params" : [
-       {
-         "error" : "lgrIdxsInvalid",
-         "error_code" : 55,
-         "error_message" : "Ledger indexes invalid."
-       }
-    ]
-    })"
-                                             :
-                                             R"({
-    "method" : "tx_account",
-    "params" : [
-       {
-         "error" : "notSynced",
-         "error_code" : 55,
-         "error_message" : "Not synced to the network."
-       }
-    ]
-    })",
-    },
-    {
-        // Note: this really shouldn't throw, but does at the moment.
-        "tx_account: min large but still valid.",
-        __LINE__,
-        {"tx_account",
-         "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-         "2147483648",
-         "2147483648"},
-        RPCCallTestData::bad_cast,
-        R"()",
-    },
-    {
-        // Note: this really shouldn't throw, but does at the moment.
-        "tx_account: max large but still valid.",
-        __LINE__,
-        {"tx_account",
-         "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-         "2147483647",
-         "2147483648"},
-        RPCCallTestData::bad_cast,
-        R"()",
-    },
-    {
-        // Note: this really shouldn't throw, but does at the moment.
-        "tx_account: large limit.",
-        __LINE__,
-        {"tx_account",
-         "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-         "-1",
-         "-1",
-         "2147483648"},
-        RPCCallTestData::bad_cast,
-        R"()",
-    },
-    {
-        // Note: this really shouldn't throw, but does at the moment.
-        "tx_account: non-integer min.",
-        __LINE__,
-        {"tx_account", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "Binary", "-1"},
-        RPCCallTestData::bad_cast,
-        R"()",
-    },
-    {
-        // Note: this really shouldn't throw, but does at the moment.
-        "tx_account: non-integer max.",
-        __LINE__,
-        {"tx_account", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "-1", "counts"},
-        RPCCallTestData::bad_cast,
-        R"()",
-    },
-    {
-        // Note: this really shouldn't throw, but does at the moment.
-        "tx_account: non-integer limit.",
-        __LINE__,
-        {"tx_account",
-         "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-         "-1",
-         "-1",
-         "decending"},
-        RPCCallTestData::bad_cast,
-        R"()",
-    },
 
     // tx_history
     // ------------------------------------------------------------------
@@ -6007,7 +5721,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "tx_history",
     "params" : [
       {
-        "api_version" : %MAX_API_VER%,
+        "api_version" : %API_VER%,
         "start" : 0
       }
     ]
@@ -6079,7 +5793,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "unl_list",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
       }
     ]
     })"},
@@ -6110,7 +5824,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "validation_create",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
       }
     ]
     })"},
@@ -6122,7 +5836,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "validation_create",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "secret" : "the form of the secret is not validated"
       }
     ]
@@ -6154,7 +5868,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "version",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
       }
     ]
     })"},
@@ -6185,7 +5899,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "wallet_propose",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
       }
     ]
     })"},
@@ -6197,7 +5911,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "wallet_propose",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "passphrase" : "the form of the passphrase is not validated"
       }
     ]
@@ -6227,7 +5941,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "internal",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "internal_command" : "command_name",
          "params" : []
       }
@@ -6247,7 +5961,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "internal",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "internal_command" : "command_name",
          "params" : [ "string_arg", "1", "-1", "4294967296", "3.14159" ]
       }
@@ -6381,7 +6095,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "unknown_command",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
       }
     ]
     })"},
@@ -6393,7 +6107,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "unknown_command",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "params" : [ "string_arg", "1", "-1", "4294967296", "3.14159" ]
       }
     ]
@@ -6401,11 +6115,10 @@ static RPCCallTestData const rpcCallTestArray[] = {
 };
 
 std::string
-updateAPIVersionString(const char* const req)
+updateAPIVersionString(const char* const req, unsigned apiVersion)
 {
-    static std::string version_str =
-        std::to_string(RPC::apiMaximumSupportedVersion);
-    static auto place_holder = "%MAX_API_VER%";
+    std::string const version_str = std::to_string(apiVersion);
+    static auto const place_holder = "%API_VER%";
     std::string jr(req);
     boost::replace_all(jr, place_holder, version_str);
     return jr;
@@ -6425,9 +6138,13 @@ class RPCCall_test : public beast::unit_test::suite
 {
 public:
     void
-    testRPCCall()
+    testRPCCall(unsigned apiVersion)
     {
-        testcase << "RPCCall";
+        testcase << "RPCCall API version " << apiVersion;
+        if (!BEAST_EXPECT(
+                apiVersion >= RPC::apiMinimumSupportedVersion &&
+                apiVersion <= RPC::apiMaximumValidVersion))
+            return;
 
         test::jtx::Env env(
             *this, makeNetworkConfig(11111));  // Used only for its Journal.
@@ -6435,20 +6152,29 @@ public:
         // For each RPCCall test.
         for (RPCCallTestData const& rpcCallTest : rpcCallTestArray)
         {
+            if (!BEAST_EXPECT(!rpcCallTest.exp.empty()))
+                break;
+
             std::vector<std::string> const args{
                 rpcCallTest.args.begin(), rpcCallTest.args.end()};
+
+            const char* const expVersioned =
+                (apiVersion - RPC::apiMinimumSupportedVersion) <
+                    rpcCallTest.exp.size()
+                ? rpcCallTest.exp[apiVersion - RPC::apiMinimumSupportedVersion]
+                : rpcCallTest.exp.back();
 
             // Note that, over the long term, none of these tests should
             // throw.  But, for the moment, some of them do.  So handle it.
             Json::Value got;
             try
             {
-                got = jtx::cmdToJSONRPC(args, env.journal);
+                got = jtx::cmdToJSONRPC(args, env.journal, apiVersion);
             }
             catch (std::bad_cast const&)
             {
                 if ((rpcCallTest.throwsWhat == RPCCallTestData::bad_cast) &&
-                    (std::strlen(rpcCallTest.exp) == 0))
+                    (std::strlen(expVersioned) == 0))
                 {
                     pass();
                 }
@@ -6461,7 +6187,8 @@ public:
             }
 
             Json::Value exp;
-            Json::Reader{}.parse(updateAPIVersionString(rpcCallTest.exp), exp);
+            Json::Reader{}.parse(
+                updateAPIVersionString(expVersioned, apiVersion), exp);
 
             // Lambda to remove the "params[0u]:error_code" field if present.
             // Error codes are not expected to be stable between releases.
@@ -6492,7 +6219,8 @@ public:
     void
     run() override
     {
-        testRPCCall();
+        test::jtx::forAllApiVersions(
+            std::bind_front(&RPCCall_test::testRPCCall, this));
     }
 };
 
